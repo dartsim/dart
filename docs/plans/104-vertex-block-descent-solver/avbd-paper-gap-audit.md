@@ -63,12 +63,14 @@ time. Their recorded native-runner timing ratios remain historical
 whole-pipeline `World::step` comparisons, not AVBD-contact-solver comparisons:
 pure-contact rows timed no AVBD rows; joint-plus-contact rows timed AVBD
 point-joint/motor/spring rows while ordinary contacts ran sequential impulse;
-and incidental chain contacts also ran sequential impulse. Seven current
-source-row scenes now explicitly select public AVBD so they cannot silently
-exercise SI. Faster-than-native rows below retain their historical
+and incidental chain contacts also ran sequential impulse. All 31 current
+source-row scenes and their free-rigid benchmark builders now explicitly
+select public AVBD so they cannot silently exercise SI. Faster-than-native rows
+below retain their historical
 classification until refreshed. New packets must machine-record
 `resolved_solver_identity` and `rigid_contact_selection` at AVBD packet schema
-version 3, enforced by `pixi run check-avbd-packets`.
+version 6, including multibody identity and the paper-benchmark solver-profile
+binding where applicable, enforced by `pixi run check-avbd-packets`.
 
 The public `RigidBodySolver::Avbd` family now provides an explicit, reported
 world-level AVBD contact/joint selection without the private body opt-in. Its
@@ -84,11 +86,12 @@ does not retroactively change any source-row packet identity.
   force is not clamped. Finite-stiffness forces use the same progressive ramp
   but saturate at the material stiffness and do not carry a Lagrange multiplier.
 - **Bounds and friction:** Contacts and joint limits are inequality rows. The
-  normal row has a non-negative lower bound. Friction rows are bounded by the
-  lagged normal force and coefficient of friction; static/dynamic friction
-  switching is based on whether the previous tangential dual lies inside the
-  cone.
-- **Error regularization:** Constraint values are regularized as
+  normal row has a one-sided bound. The 2D source refreshes each tangent bound
+  from the latest normal dual; the 3D source jointly clamps the current normal
+  and tangential force to a Coulomb cone during primal and dual updates.
+  Persistent material-point anchors are reused while the prior contact is
+  classified as sticking.
+- **Error regularization:** Hard-constraint values are regularized as
   `C(x) = C*(x) - alpha * C*(x_t)` so pre-existing hard-constraint error is
   corrected gradually instead of injecting a large impulse-like momentum spike.
 - **Warm starting:** `lambda` and `k` persist across frames and decay by
@@ -99,8 +102,11 @@ does not retroactively change any source-row packet identity.
 - **Parallelization:** AVBD keeps VBD's vertex/body coloring, then adds one
   parallel dual/stiffness update pass after each primal iteration.
 - **Rigid bodies:** Rigid rows use a 6-DOF block with linear and angular terms;
-  the paper represents rotation by unit quaternions and maps rotational
-  differences/updates through tangent-space angular vectors.
+  Equation 20 defines the angular difference as
+  `2 * (q_i * inverse(q_j)).vector`, while Equation 21 applies
+  `normalize(q_i + 0.5 * (0, delta_w) * q_i)`. The pinned 3D demo implements
+  those same operations directly; these are the source-equivalent operations,
+  not merely any tangent-space rotation representation.
 - **Reference demo sources:** `avbd-demo2d` implements boxes, joints, springs,
   motors, contact manifolds, fracture thresholds, and 19 scenes. `avbd-demo3d`
   implements 6-DOF rigid boxes, spring/joint/contact rows, bridge/breakable
@@ -108,6 +114,86 @@ does not retroactively change any source-row packet identity.
   heavily optimized implementations.
 
 ## DART Current State
+
+### Zero-trust implementation discrepancies
+
+The current rigid AVBD foundation is useful, but it is not paper-equivalent in
+several load-bearing places:
+
+- its angular difference is a logarithmic rotation vector and its update is an
+  exponential-map quaternion. Both differ from paper Equations 20-21 and from
+  the pinned 3D demo's vector-part difference and normalized first-order
+  quaternion update;
+- its rigid primal state starts from the current transform. It predicts an
+  inertial target, but does not apply the paper/reference adaptive
+  initialization before the first block sweep;
+- its primal rigid-body sweep is serial body-order Gauss-Seidel, without the
+  paper's body coloring and parallel-within-color/double-buffered update; and
+- the public rigid solver has no AVBD CUDA row/contact/dual-update backend. Its
+  CPU family now resolves the paper-2025 Table 2 profile
+  (`beta = 10`, `alpha = 0.95`, `gamma = 0.99`), but the deformable family and
+  CUDA backend do not yet share that closed profile contract.
+
+Rigid contact normal and friction-tangent rows now implement the previously
+missing step-start Taylor model rather than merely carrying a
+`TaylorLinearized` label. Before the first block update they cache the scalar
+constraint and both 6-DOF Jacobians at `x_t`; direct and indexed primal/dual
+paths then evaluate that same affine `C_t + J_t delta_x` model through finite
+off-center rotations. Friction evaluates the augmented trial `K C + lambda`,
+projects only an out-of-cone result, and keeps the paper/source unclamped penalty
+Hessian. This is narrow rigid-contact Equation 18 foundation, not completion of
+the rigid formulation: the Equation 20 angular difference, Equation 21 update,
+adaptive primal initialization, and remaining angular-constraint Hessians stay
+open, as do source-scene CPU/CUDA trajectory and performance oracles.
+
+Solver labels alone are not execution evidence. All 31 Python files named
+`avbd_demo*.py` now select `RigidBodySolver::AVBD`, and the rigid benchmark
+fixtures select and report the public AVBD family. The historical
+`BM_AvbdArticulated*` fixtures still exercise the variational multibody path,
+which rigid AVBD does not accept, and their runtime counters identify that
+family explicitly. The separate parallel-row-update benchmark times a detached
+helper, not an AVBD World solve. Current-build runtime identity, physical
+oracles, and regenerated source-bound measurements remain required before any
+of these rows support AVBD method-performance claims.
+
+The CPU friction foundation now retains contact-owned feature-local tangent
+anchors while a manifold point sticks, cold-starts on identity/cardinality or
+non-finite mismatches, and refreshes the Coulomb limit from the current normal
+force during primal and dual updates. Deformable ground and self-contact rows
+use separate persistent anchor sidecars with the same live-cone rule. This
+repairs the previous frame-by-frame anchor reset and lagged-cone defects, but it
+does not yet establish source equivalence: DART's manifold reduction/feature
+identity, collision margins, static-friction tolerance, and immutable public
+paper profile differ from the pinned 2D and 3D demo defaults. The resolved
+runtime report and benchmark counters bind the public rigid Table 2 profile.
+Source-profile trajectories, Figure 15, deformable profile closure, fresh
+long-horizon evidence, and CUDA parity remain open.
+
+The shared lifecycle foundation is also stricter without becoming paper
+evidence. Deformable point-triangle and edge-edge normal rows clear their dual
+on true separation and reject invalid safety-floor differentials. Fixed-penalty
+VBD clears every AVBD scalar inventory, contact identity, tangent anchor, and
+borrowed row pointer on entry and on all exits, including empty and exceptional
+paths. Native rigid collision capacities reject candidate/contact/derived-row
+overflow atomically, and replay restores those capacities together with
+derivative validity, last-step diagnostics, contact forces, and rigid/deformable
+AVBD continuation sidecars. These regressions prevent stale or partially
+restored solver state; they do not supply source-equivalent collision refresh,
+paper trajectories, GPU execution, or comparable timings.
+
+Fracture load accounting also needs an explicit physical contract. The current
+rigid path squares linear constraint forces, angular constraint torques, and
+bounded motor loads into one Euclidean norm and compares it with one
+`breakForce`. Newtons and newton-metres cannot be combined without a declared
+characteristic length (or separate thresholds), while the pinned sources apply
+row-family fracture tests instead. Existing deterministic breakage is therefore
+not sufficient evidence for source-equivalent fracture semantics.
+
+Focused helper tests that reproduce the current logarithmic/exponential-map
+implementation are circular evidence for paper parity. Completion requires
+equation-derived or source-derived independent oracles,
+end-to-end World tests that fail when the source-equivalent operations are
+mutated, and matched CPU/CUDA trajectory and performance evidence.
 
 PLAN-104 already has a DART-owned VBD foundation: CPU block kernels, vertex
 coloring, colored Gauss-Seidel sweeps, Stable Neo-Hookean/FEM tetrahedra,
@@ -149,15 +235,18 @@ The first AVBD implementation slices add:
   spring rows in supported serial mass-spring scenes, keyed by body/entity and
   spring index, with focused `VbdFiniteStiffness.*` tests and
   `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenSpringChain` coverage; and
-- a finite-stiffness tetrahedral material row slice:
-  `AvbdTetMaterialFiniteStiffnessRow`, strain-norm row error, scaled Lamé
-  material stamping, and `blockDescentTetMeshAvbdFiniteStiffness`, with focused
-  `VbdFiniteStiffness.*` tests plus a narrow internal World VBD integration
-  path for supported serial, frictionless pure-tet scenes, separate tet-row
-  diagnostics, coexistence with the existing lagged VBD self-contact penalty,
-  `VbdWorldSolver.AvbdFiniteStiffnessRowsHardenTetrahedralMaterial` coverage,
-  and
-  `VbdWorldSolver.AvbdFiniteStiffnessRowsIgnoreUnusedFrictionCoefficient`
+- an explicit tetrahedral finite-stiffness exclusion: a published no-log
+  Neo-Hookean formulation has two scalar energy constraints, but both are
+  nonzero at rest and their forces cancel only at their coupled material
+  stiffnesses. Applying AVBD Equation 16 independently changes that ratio and
+  creates a rest force; DART's public shared-log model has no independently
+  rampable formulation either. DART therefore keeps the complete configured
+  tet material and rejects a simultaneous finite-stiffness-row request. A
+  separate extension must prove coupled growth, rest equilibrium at every
+  intermediate stiffness, energy/force equivalence, rotation behavior, and
+  the supported Poisson-ratio domain; it must not be described as existing
+  AVBD paper parity; and
+- `VbdWorldSolver.AvbdFiniteStiffnessRowsIgnoreUnusedFrictionCoefficient`
   coverage for contact-free finite-stiffness mass-spring scenes whose material
   friction coefficient has no active contact or self-contact source; and
 - a combined serial mass-spring AVBD row solve for those contact-normal,
@@ -232,12 +321,11 @@ The first AVBD implementation slices add:
   coverage for combined static-contact and self-contact friction row
   coexistence in one supported solve; and
 - a pure-tetrahedral AVBD self-contact envelope:
-  `blockDescentTetMeshAvbdFiniteStiffness` can now take AVBD self-contact
-  normal rows and matching self-contact friction tangent rows alongside
-  finite-stiffness material rows, so supported serial pure-tet World scenes can
-  report tet finite-stiffness, self-contact normal, and self-contact friction
-  row families in one solve, with
-  `VbdWorldSolver.AvbdTetRowsCombineSelfContactFrictionRows` coverage; and
+  `blockDescentTetMeshAvbdSelfContact` keeps full Neo-Hookean tet material terms
+  while applying AVBD self-contact normal rows and matching self-contact
+  friction tangent rows, with
+  `VbdWorldSolver.TetrahedralMaterialCombinesAvbdSelfContactFrictionRows`
+  coverage; and
 - a private 6-DOF rigid-body block foundation:
   `AvbdRigidBodyBlock`, world-frame quaternion tangent-step helpers,
   `addAvbdRigidBodyInertiaTerm`, `solveAvbdRigidBodyBlock`,
@@ -274,6 +362,13 @@ The first AVBD implementation slices add:
 Those are foundation pieces only. They are not a full World AVBD solver, not a
 full hard-contact/friction solver, and not CPU/GPU parity.
 
+In the A8 row below, “Taylor-linearized zero-curvature” now means an actual
+step-start cache of the rigid contact constraint and both 6-DOF Jacobians,
+shared by the direct and indexed primal/dual paths. Friction also uses the
+unclamped penalty Hessian before its live-cone projection. This does not close
+the paper's angular constraint-Hessian coverage, source-level omission rules,
+deformable/material row families, GPU parity, or achieved-accuracy performance.
+
 ## Component Gap Matrix
 
 | AVBD component                                                                                     | DART status                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Closing phase |
@@ -287,10 +382,10 @@ full hard-contact/friction solver, and not CPU/GPU parity.
 | Unified rigid/soft interactions and cloth/articulated-body coupling                                | Missing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | A6            |
 | Collision candidate generation, contact persistence, and row warm-start mapping                    | Static half-space row keys include static box face/edge/corner feature IDs and smooth-frame tangent projection, lagged self-contact normal/friction candidate row keys plus self-contact tangent projection started for mass-spring and pure-tet envelopes, and private dynamic/rigid contact feature IDs plus canonical two-endpoint row keys, normal/friction row descriptor helpers, rigid point-pair contact/friction constructors, a private rigid contact-manifold row builder, private World-contact snapshot/solve/writeback extraction plus combined wrapper, initial contact-stage activation with focused dynamic/dynamic and static/dynamic velocity-projection coverage plus mixed-config all-or-nothing fallback and warm-started friction slip-reduction coverage including dynamic-owned, static-owned, kinematic-owned, enabled-peer/disabled-peer, simultaneous multi-contact, static/dynamic box-manifold, dynamic/dynamic box-manifold, stacked static/dynamic plus dynamic/dynamic box-manifold, multi-top stacked box-manifold, default-step dynamic/dynamic, stacked, and multi-top stacked box-manifold schedule paths, and dynamic/dynamic sphere focused regressions, box/sphere/cylinder/capsule endpoint feature persistence, known/unknown shape-frame feature mapping from world contact points including endpoint-A/B explicit compound shape-index coverage that uses narrow-phase shape-local contact points, actual `World::collide()` sphere/cylinder/capsule/plane/mesh primitive-feature coverage including shape-scoped sphere body features, plane face feature persistence, mesh face/edge/vertex feature persistence, deterministic same-feature rigid contact row ordering including actual `World::collide()` sphere/plane contact-point replay, sphere/mesh-face contact-point replay, sphere/mesh-edge contact-point replay, mesh-vertex replay, mesh-face/mesh-edge/mesh-vertex small-pose persistence plus endpoint-order stability, cylinder-cap/plane contact-point replay, capsule-cap/plane contact-point replay, cylinder-side/capsule-side contact-point replay, cylinder-rim contact-point replay, and cylinder/capsule cap/side/rim small-pose persistence plus endpoint-order stability, live sphere/plane friction tangent warm-start mapping, live sphere/plane normal-rotation friction tangent projection evidence, live sphere/plane and box-box manifold endpoint-order row-identity evidence, live endpoint-swapped box-box friction tangent projection evidence, live box-box small-pose row-persistence evidence, live box-box manifold friction warm-start evidence, live stacked-box friction warm-start and endpoint-swapped friction tangent projection evidence, live spanning-top and multi-top box-pile friction row-persistence, contact-order replay, and endpoint-swapped tangent projection evidence plus contact-stage/default-step friction slip-reduction evidence, and live box-box manifold box-face feature evidence, private rigid contact tangent-dual projection across tangent-basis changes, and the first private multibody-link endpoint projection bridge started; broader contact-stage dynamic-contact coverage, broad articulated endpoint mapping, broad feature persistence, and broad row generation remain open                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | A7            |
 | Hessian approximation for hard constraints and stiffness-rescaling friction                        | Section 3.5 column-norm geometric-stiffness lumping now covers CPU deformable distance springs, rigid distance springs, rigid point attachments, and nonlinear rigid point-pair joint/motor rows; rigid contact rows explicitly retain the paper's Taylor-linearized zero-curvature model. [`avbd-quasi-newton-evidence.json`](avbd-quasi-newton-evidence.json) records mutation-sensitive analytic tests, post-bake allocation coverage, a 60-second source Spring oracle, an assessed current-build render, and an interleaved exact-HEAD mechanism-cost benchmark. Remaining deformable/material and angular row families, friction stiffness rescaling, full source-corpus closure, achieved-accuracy reference performance, and CUDA parity are open.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | A8            |
-| CPU parallel color sweeps plus deterministic dual update pass                                      | The Section 4 post-primal pass now dispatches deterministic contiguous ranges over the currently promoted CPU deformable contact, attachment, spring, tet-material, self-contact, and paired-friction rows plus private free-rigid attachment, point-pair, distance-spring, angular, and paired-friction rows. Small inventories remain inline behind a measured 8,192-row cost gate; incomplete friction-pair layouts preserve the exact serial fallback. Bitwise serial/2-worker/4-worker state tests, non-finite propagation, production-World activation, warmed world-base/global/raw allocation gates, executor nesting/concurrency/exception recovery, and an interleaved exact-parent throughput packet are recorded in [`avbd-parallel-dual-update-evidence.json`](avbd-parallel-dual-update-evidence.json). Parallel primal color sweeps for the AVBD-specific inventories, full articulated/unified row coverage, CUDA, and source-matched achieved-accuracy performance remain open.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | A9            |
+| CPU parallel color sweeps plus deterministic dual update pass                                      | The Section 4 post-primal pass now dispatches deterministic contiguous ranges over the currently promoted CPU deformable contact, attachment, spring, self-contact, and paired-friction rows plus private free-rigid attachment, point-pair, distance-spring, angular, and paired-friction rows. Small inventories remain inline behind a measured 8,192-row cost gate; incomplete friction-pair layouts preserve the exact serial fallback. Bitwise serial/2-worker/4-worker state tests, non-finite propagation, production-World activation, warmed world-base/global/raw allocation gates, executor nesting/concurrency/exception recovery, and an interleaved exact-parent throughput packet are recorded in [`avbd-parallel-dual-update-evidence.json`](avbd-parallel-dual-update-evidence.json). Parallel primal color sweeps for the AVBD-specific inventories, full articulated/unified row coverage, CUDA, and source-matched achieved-accuracy performance remain open.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | A9            |
 | CUDA/GPU AVBD backend for all row families and scene corpus                                        | VBD CUDA mass-spring/tet rollout only                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | G1-G5         |
-| DART-owned reproductions of 2D/3D demos and paper/video scenes                                     | First narrow AVBD rigid-constraint py-demo started (`avbd_rigid_fixed_joint_contact` for fixed-joint rows plus ordinary contact), `avbd_rigid_revolute_motor` covers the public free-rigid-body velocity-motor row path, `avbd_articulated_revolute_motor` and `avbd_articulated_prismatic_motor` cover narrow public articulated velocity-motor command-update paths, `avbd_articulated_motor_breakable_joint` covers a narrow same-multibody public articulated revolute motor break/reset lifecycle, `avbd_articulated_prismatic_pair_motor_breakable_joint` covers a narrow same-multibody public articulated prismatic motor break/reset lifecycle, `avbd_articulated_prismatic_motor_breakable_joint` covers a narrow world-anchored public articulated prismatic motor break/reset lifecycle, `avbd_articulated_world_revolute_motor_breakable_joint` covers a narrow world-anchored public articulated revolute motor break/reset lifecycle, `avbd_rigid_breakable_joint` covers the narrow public free-rigid-body break-force lifecycle, `avbd_rigid_spherical_breakable_joint` covers the narrow public free-rigid-body spherical break/reset lifecycle, `avbd_articulated_breakable_joint` covers the narrow public world-link articulated fixed point-joint break/reset lifecycle, `avbd_articulated_fixed_pair_breakable_joint` covers the narrow public same-multibody articulated fixed point-joint break/reset lifecycle, `avbd_articulated_spherical_breakable_joint` covers the narrow public world-link articulated spherical break/reset lifecycle, `avbd_articulated_spherical_pair_breakable_joint` covers the narrow public same-multibody articulated spherical break/reset lifecycle, `avbd_articulated_high_ratio_chain`, `BM_AvbdArticulatedHighRatioChainStep`, and [`avbd-articulated-high-ratio-chain-packet.json`](avbd-articulated-high-ratio-chain-packet.json) cover a narrow five-link 200:1 high mass-ratio articulated-chain smoke, `avbd_paper_scale_high_ratio_chain`, `BM_AvbdPaperScaleHighRatioChainStep`, and [`avbd-paper-scale-high-ratio-chain-packet.json`](avbd-paper-scale-high-ratio-chain-packet.json) add 50-link/50,000:1 visual and CPU benchmark evidence without a same-hardware comparison, `avbd_empty_baseline` provides a shared smoke baseline plus source-row metadata/reference invariant for the 2D/3D source-demo empty rows with a tracked visual/benchmark packet, `avbd_demo2d_ground`, `avbd_demo2d_motor`, `avbd_demo2d_hanging_rope`, `avbd_demo2d_fracture`, `avbd_demo2d_dynamic_friction`, `avbd_demo2d_static_friction`, `avbd_demo2d_pyramid`, `avbd_demo2d_cards`, `avbd_demo2d_stack`, `avbd_demo2d_stack_ratio`, `avbd_demo2d_rod`, `avbd_demo2d_soft_body`, `avbd_demo2d_joint_grid`, `avbd_demo2d_rope`, `avbd_demo2d_net`, `avbd_demo3d_ground`, `avbd_demo3d_dynamic_friction`, `avbd_demo3d_static_friction`, `avbd_demo3d_pyramid`, `avbd_demo3d_rope`, `avbd_demo3d_heavy_rope`, `avbd_demo3d_spring`, `avbd_demo3d_spring_ratio`, `avbd_demo3d_stack`, `avbd_demo3d_stack_ratio`, `avbd_demo3d_soft_body`, `avbd_demo3d_bridge`, and `avbd_demo3d_breakable` now provide the first non-empty source-row ports with focused invariants, dashboard rows, and tracked source timing packets, and `sx_rigid_limited_joints` covers the public one-DOF joint facade path; paper figures, parameter sweeps, website demos, video/headline scenes, broad GPU evidence, benchmark-linked reproductions, and matched source-demo CPU wins remain missing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | D1-D6         |
-| Benchmark packets beating reference demos and paper numbers on CPU/GPU                             | Narrow CPU dashboard rows now track the public free-rigid-body revolute velocity-motor AVBD path, public articulated revolute/prismatic velocity-motor paths, public free-rigid/articulated breakable fixed point-joint paths, the narrow five-link 200:1 high-ratio articulated-chain smoke, the 50-link/50,000:1 paper-scale high-ratio dashboard row, the `avbd-demo2d` Ground, Motor, Hanging Rope, Fracture, Dynamic Friction, Static Friction, Pyramid, Cards, Stack, Stack Ratio, Rod, Soft Body, Joint Grid, Rope, Heavy Rope, and Net source rows, the `avbd-demo3d` Ground, Dynamic Friction, Static Friction, Pyramid, Rope, Heavy Rope, Spring, Spring Ratio, Stack, Stack Ratio, Soft Body, Bridge, and Breakable source rows, and empty source-demo baseline alongside the fixed-joint row; the narrow high-ratio chain smoke, empty source-demo baseline, `avbd-demo2d` Ground/Motor/Hanging Rope/Fracture/Dynamic Friction/Static Friction/Pyramid/Cards/Stack/Stack Ratio/Rod/Soft Body/Joint Grid/Rope/Heavy Rope/Net rows, and `avbd-demo3d` Ground, Dynamic Friction, Static Friction, Pyramid, Rope, Heavy Rope, Spring, Spring Ratio, Stack, Stack Ratio, Soft Body, Bridge, and Breakable rows have tracked packets, with the soft-body and Joint Grid packets configuring the source diagonal ignore-collision pairs through DART's public per-pair filter; the paper-scale high-ratio row now has a visual/benchmark packet but still lacks a same-hardware paper-number comparison; 2D Ground, 2D Fracture, 2D Dynamic Friction, 2D Static Friction, 2D Pyramid, 2D Stack, 2D Stack Ratio, 3D Ground, 3D Dynamic Friction, 3D Static Friction, Pyramid, Stack, Stack Ratio, Soft Body, Bridge, and Breakable are faster than the native source runner on this host but Motor, Hanging Rope, 2D Cards, 2D Rod, 2D Soft Body, 2D Joint Grid, 2D Rope, 2D Heavy Rope, 2D Net, 2D/3D Spring, 2D/3D Spring Ratio, 3D Rope, and 3D Heavy Rope are still slower, so broad CPU/GPU parity and proof against published paper numbers remain missing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | P1-P4         |
+| DART-owned reproductions of 2D/3D demos and paper/video scenes                                     | Runtime identity audit: all current source-demo scenes and free-rigid benchmark builders select public rigid AVBD, while the articulated/high-ratio fixtures still exercise Variational multibody integration. Their legacy packets do not retroactively become AVBD evidence, and the high-ratio packets retain only unbound capture hashes/timing metadata with unavailable source media and no semantic visual review. Exact paper figures, website/video scenes, full parameter sweeps, current source-bound AVBD runtime evidence, CUDA parity, and long-horizon media remain missing.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | D1-D6         |
+| Runtime-bound benchmark packets beating references/paper on CPU/GPU                                | No current packet closes this component. Legacy faster/slower values are historical Sequential Impulse or Variational whole-pipeline fixture measurements, not AVBD results. The high-ratio packets are explicitly legacy-unbound and lack runtime identity counters, current-build provenance, inspectable source media, and semantic visual review. New AVBD performance evidence must record runtime-derived solver identity, achieved-accuracy comparability, current source/build provenance, stable repeated CPU and CUDA measurements, and the canonical row claim binding.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | P1-P4         |
 
 Contact-stage note:
 `World.RigidBodyContactStageAvbdProjectsDynamicPairWithSingleConfig` verifies
@@ -468,13 +563,14 @@ now validates the five public fixed/spherical breakable point-joint benchmark
 rows over 1, 8, and 32 joints. Broad fracture-constraint, breakable-wall, GPU
 parity, and paper-number gates remain open.
 [`avbd-articulated-compliant-fracture-packet.json`](avbd-articulated-compliant-fracture-packet.json)
-adds the first finite articulated fracture contract: accepted finite-row forces
-and bounded motor projection loads are converted to physical units, aggregated
-per public joint, and drive break/reset/re-arm plus save/load behavior. Its
-exact-parent mutation, allocation gates, docked lifecycle capture, and
-candidate-only 2/8/32-motor benchmark close the prior load-accounting gap
-without claiming the paper wall, broad fracture corpus, CUDA parity, or a
-paper/reference performance win.
+adds the first finite articulated DART fracture contract: accepted finite-row
+forces and bounded motor projection loads use the current `dt^2` normalization,
+are aggregated per public joint under DART's dimensionally mixed norm, and drive
+break/reset/re-arm plus save/load behavior. Its exact-parent mutation,
+allocation gates, docked lifecycle capture, and candidate-only 2/8/32-motor
+benchmark verify that narrow DART behavior; they do not close source-equivalent
+fracture-load semantics, the paper wall, broad fracture corpus, CUDA parity, or
+a paper/reference performance win.
 [`avbd-paper-breakable-wall-packet.json`](avbd-paper-breakable-wall-packet.json)
 adds the first publication-shaped Figure 13 row through the public AVBD
 world-family selector. The 252-brick, 712-attachment, three-impact scene runs
@@ -592,15 +688,14 @@ diagnostic over Rod, Joint Grid, Soft Body, and Spring rows ran under load
 average around 11.7 and is also non-packet overhead smoke.
 Same-command benchmark smoke over selected 2D contact-heavy source rows was
 mixed and host-load sensitive, so this is overhead cleanup only; no packet
-CPU-win gate is closed by this note.
+CPU-win or AVBD performance gate is closed by this note.
 
 Note: `avbd_demo3d_soft_body`, `BM_AvbdDemo3dSoftBodyStep`, and
-`avbd-demo3d-soft-body-packet.json` now cover the 3D source Soft Body row's
+`avbd-demo3d-soft-body-packet.json` preserve the 3D source Soft Body row's
 shape/count, finite linear/angular joint stiffness, diagonal ignored-collision
-pairs, visual-capture, DART benchmark, and native timing evidence. The packet
-records DART about 1.21x faster than the native Soft Body runner on this host,
-so the narrow CPU gate is closed while GPU parity and paper-number gates remain
-open.
+pairs, visual capture, and historical DART/native timing. The measured DART
+fixture was about 1.21x faster on that host, but its rigid execution identity
+was not AVBD, so it closes no AVBD CPU, GPU, or paper-number gate.
 
 ## Implementation Workstreams
 
@@ -624,7 +719,8 @@ open.
    breakage persistence. CPU hard point-joint bridges and passive finite
    world-link/same-multibody fixed/spherical/revolute/prismatic masked rows plus
    bounded same-multibody finite revolute/prismatic motors now include narrow
-   physical finite-plus-motor load accounting and break/reset persistence;
+   the current dimensionally mixed finite-plus-motor break-threshold convention
+   and break/reset persistence; physical force/torque accounting remains open;
    broad fracture-corpus coverage and CUDA remain open.
 7. **A6 - unified rigid/soft coupling:** Couple rigid rows and deformable VBD
    rows in one AVBD solve so soft cloth/elastic bodies interact with articulated
@@ -684,12 +780,14 @@ next three gaps from that packet. The adjacent
 now records mutation-sensitive same-multibody passive S/R/P coverage, bounded
 finite revolute/prismatic motor rows, all three warmed allocation policies,
 an assessed docked capture, and candidate-only 2/8/32-motor scale data. The
-first two gaps are closed on CPU.
+first two gaps now have narrow DART-specific CPU coverage, but neither closes a
+canonical source/paper-parity row.
 [`avbd-articulated-compliant-fracture-packet.json`](avbd-articulated-compliant-fracture-packet.json)
-closes the third narrowly with physical accepted finite-row and bounded-motor
-load aggregation, timestep-unit invariance, break/reset/re-arm and save/load
-oracles, exact-parent mutation evidence, allocation gates, an assessed docked
-capture, and candidate-only scale data. The adjacent
+implements the third narrowly under DART's current finite-row and bounded-motor
+load aggregation, with timestep-unit invariance, break/reset/re-arm and
+save/load oracles, exact-parent mutation evidence, allocation gates, an
+assessed docked capture, and candidate-only scale data. It does not close the
+source-equivalent fracture-load gap. The adjacent
 [`avbd-paper-breakable-wall-packet.json`](avbd-paper-breakable-wall-packet.json)
 now covers the publication-shaped AVBD Figure 13 outcome with a deterministic
 fracture/localization oracle, assessed impact/outcome frames, allocation
@@ -824,7 +922,8 @@ plus a focused C++ 50-link/50,000:1 finite/reset smoke and
 `BM_AvbdPaperScaleHighRatioChainStep` dashboard row through configured
 `World::step()` solve-budget fields with
 [`avbd-paper-scale-high-ratio-chain-packet.json`](avbd-paper-scale-high-ratio-chain-packet.json)
-visual/benchmark evidence. `BM_AvbdPaperScaleHighRatioChainIterationSweep`
+legacy unbound capture-hash/timing metadata; its source media is unavailable
+and no semantic visual review is recorded. `BM_AvbdPaperScaleHighRatioChainIterationSweep`
 now adds dashboard-selected 25/50/100/200 max-iteration coverage for that same
 fixture, and
 [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](avbd-paper-scale-high-ratio-iteration-sweep-packet.json)
@@ -847,9 +946,10 @@ corpus matrix, or keep filling the private articulated AVBD state/extraction
 bridge before claiming contact-stage or source-demo completeness.
 The latest Fracture-focused cleanup replaces a duplicate rigid-contact-stage
 prepare-time collision query with collision-shape-count constraint prewarm and
-keeps live constrained-pair filtering aligned with the native solver; a
-refreshed same-source Fracture packet now records DART about 1.20x faster than
-the native source runner, closing only that narrow source-row CPU comparison.
+keeps live constrained-pair filtering aligned with the native solver. Its
+historical same-source packet records the DART fixture about 1.20x faster than
+the native source runner, but the DART fixture did not execute AVBD contacts,
+so it closes no AVBD source-row CPU comparison.
 
 ## Required Experiment And Demo Corpus
 
@@ -876,6 +976,14 @@ complete.
 Each promoted scene needs a correctness invariant, a benchmark profile, and a
 headless visual artifact or py-demo smoke where visual behavior matters.
 
+Paper and reference-demo parameter profiles are distinct evidence targets. The
+paper defaults are `beta = 10`, `alpha = 0.95`, and `gamma = 0.99`; the pinned
+2D source instead defaults to `beta = 100000`, `alpha = 0.99`, `gamma = 0.99`
+with post-stabilization enabled, while the pinned 3D source uses
+`betaLin = 10000`, `betaAng = 100`, `alpha = 0.99`, and `gamma = 0.999`.
+Benchmarks and reproductions must name one of these profiles and may not combine
+their parameters into an unlabeled hybrid.
+
 ## Performance Targets
 
 Reference targets are not complete until measured in DART benchmark JSON:
@@ -883,84 +991,27 @@ Reference targets are not complete until measured in DART benchmark JSON:
 - Paper Table 1, RTX 4090 GPU:
   - Figure 1, 110,000 bodies: AVBD 4 iterations at 3.5 ms/frame.
   - Figure 3, 510,000 bodies: AVBD 3 iterations at 10.3 ms/frame.
+    The Figure 3 caption instead states 4 iterations for the same 10.3 ms
+    result. Preserve both cases: use the 3-iteration Table 1/prose case for the
+    table performance row and a separately labeled 4-iteration caption case
+    for visual/accuracy reproduction unless author clarification supersedes
+    the published record.
   - Baseline rows for sequential impulse, XPBD, and VBD must be reproduced or
     documented with audited equivalent setups before claiming relative speedup.
 - Paper Figure 14: 35,000 rigid bodies, 72,000 joints, cloth with 10,000
   vertices and 20,000 triangles, 10 AVBD iterations, 16 ms/frame including
   collision detection.
 - Reference demo CPU baselines: DART CPU must beat native `avbd-demo2d` and
-  `avbd-demo3d` on matched scene counts, timestep, iteration count, and compiler
-  mode before a CPU win is claimed. The current `avbd_demo2d_ground` packet
-  times the native static Ground row and, after skipping static-only contact
-  queries, no-op rigid dynamics stages, clean frame-cache graph execution, and
-  the clean no-work default step pipeline with a cheap scratch reset, records
-  the DART public World row about 1.51x faster on this host, so that narrow CPU
-  win is claimed. The current
-  `avbd_demo2d_motor` packet times the native source Motor row and, after
-  skipping contact queries for no-collision-geometry worlds in contact-stage
-  prepare/execute, records the DART public World row about 6.18x slower on this
-  host, so no CPU win is claimed. The
-  current `avbd_demo2d_hanging_rope` packet times the native source Hanging
-  Rope row and records the DART public World row about 7.84x slower on this
-  host, so no CPU win is claimed. The current
-  `avbd_demo2d_dynamic_friction` packet times the native source Dynamic Friction
-  row and records the DART public World row about 1.83x faster on this host.
-  The current `avbd_demo2d_static_friction` packet times the native source
-  Static Friction row and records the DART public World row about 2.68x faster
-  on this host. The current `avbd_demo2d_pyramid` packet times the native source
-  Pyramid row and records the DART public World row about 9.84x faster than the
-  10,000-step native source runner on this host. The current
-  `avbd_demo2d_cards` packet times the native source Cards row and records the
-  DART public World row about 5.38x slower on this host; later friction
-  tangent-pair world-anchor reuse, row-state constraint-vector reuse, and
-  shared-anchor reuse removed local contact-heavy duplicate work but have not
-  refreshed this packet, so no CPU win is claimed. The current
-  `avbd_demo2d_stack` packet times the native source Stack row and records the
-  DART public World row about 2.17x faster on this
-  host. The current `avbd_demo2d_stack_ratio` packet times the native source
-  Stack Ratio row and records the DART public World row about 2.22x faster on
-  this host. The current `avbd_demo2d_rod` packet times the native source Rod
-  row and records the DART public World row about 9.58x slower on this host, so
-  no CPU win is claimed. The current `avbd_demo2d_joint_grid` packet times the
-  native source Joint Grid row, configures the source's 1152 diagonal
-  ignore-collision pairs through DART's public per-pair filter, and records the
-  DART public World row about 2.06x slower on this host after reusing per-body
-  row-index scratch and caching snapshot body indices. Later row-layout and
-  no-copy solve overhead cleanup, angular-row orientation-error reuse, and
-  precomputed world-anchor reuse through distance-spring Hessian/Jacobian
-  stamping, plus friction tangent-pair world-anchor and row-state
-  constraint-vector reuse plus shared-anchor reuse, improved local profile
-  slices but have not refreshed this packet, so no CPU win is claimed.
-  The current `avbd_demo2d_rope` packet times the native source Rope row and
-  records the DART public World row about 5.20x slower on this host, so no CPU
-  win is claimed. The current `avbd_demo2d_heavy_rope` packet times the native
-  source Heavy Rope row and records the DART public World row about 5.85x
-  slower on this host after reusing per-body row-index scratch and caching
-  snapshot body indices, so no CPU win is claimed. The
-  current `avbd_demo3d_ground` packet times the native source Ground row and
-  records the DART public World row about 1.11x faster on this host, the
-  current `avbd_demo3d_dynamic_friction` packet times the native source Dynamic
-  Friction row and records the DART public World row about 1.41x faster, the
-  current `avbd_demo3d_static_friction` packet times the native source Static
-  Friction row and records the DART public World row about 1.08x faster, the
-  current `avbd_demo3d_pyramid` packet times the native source Pyramid row and
-  records the DART public World row about 2.83x faster, the current
-  `avbd_demo3d_rope` packet times the native source Rope row and records the
-  DART public World row about 3.75x slower, the current
-  `avbd_demo3d_heavy_rope` packet times the native source Heavy Rope row and
-  records the DART public World row about 3.84x slower, the current
-  `avbd_demo3d_stack` packet times the native source Stack row and records the
-  DART public World row about 1.80x faster, the current
-  `avbd_demo3d_stack_ratio` packet times the native source Stack Ratio row and
-  records the DART public World row about 2.32x faster, the current
-  `avbd_demo3d_soft_body` packet times the native source Soft Body row and
-  records the DART public World row about 1.21x faster, the current
-  `avbd_demo3d_bridge` packet times the native source Bridge row and records
-  the DART public World row about 1.61x faster, and the current
-  `avbd_demo3d_breakable` packet times the native source Breakable row and
-  records the DART public World row about 1.42x faster on this host. No broad
-  CPU win is claimed until the matched source corpus is broader and the
-  remaining slower rows are closed.
+  `avbd-demo3d` on matched scene counts, timestep, iteration count, compiler
+  mode, and runtime-resolved AVBD solver identity before any AVBD CPU win is
+  claimed. The existing source-row packets preserve useful historical
+  whole-pipeline timings, including both faster and slower DART fixtures, but
+  their `BM_Avbd*` names are not runtime identity. The zero-trust audit shows
+  that those rigid rows executed Sequential Impulse or, for selected
+  articulated fixtures, Variational integration. None of those ratios closes
+  an AVBD performance predicate. Regenerate each row from an explicitly
+  selected AVBD scene and a benchmark-emitted solver-identity contract before
+  reusing its timing as AVBD evidence.
 - DART GPU claims must use the same GPU class when comparing to published
   paper numbers, and must record fallback hardware separately.
 

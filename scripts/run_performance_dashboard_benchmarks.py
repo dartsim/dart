@@ -99,11 +99,9 @@ BENCHMARK_SPECS = [
     # Augmented VBD (PLAN-104): end-to-end World step of the empty and first
     # non-empty 2D source-demo baselines plus 2D/3D dynamic/static friction,
     # 3D ground, stacking, and breakable source rows and narrow public rigid
-    # fixed/revolute/prismatic/breakable/spherical rows and articulated
-    # revolute/prismatic/breakable motor, same-multibody/world-anchored one-DOF
-    # breakable motors, and breakable rows routed through the AVBD projection
-    # paths, with narrow and paper-scale high mass-ratio articulated-chain
-    # smoke rows plus the paper-scale high-ratio iteration-count sweep.
+    # fixed/revolute/prismatic/breakable/spherical rows that resolve through
+    # the public AVBD family. The configured empty-world row remains only as an
+    # explicit no-solver-work overhead baseline.
     BenchmarkSpec(
         surface="avbd-world",
         target="bm_avbd_rigid_fixed_joint",
@@ -142,17 +140,31 @@ BENCHMARK_SPECS = [
             "BM_AvbdDemo3dBridgeStep$|"
             "BM_AvbdDemo3dBreakableStep$|"
             "BM_AvbdPaperBreakableWallStep/iterations:120$|"
-            "BM_AvbdArticulatedHighRatioChainStep$|"
-            "BM_AvbdPaperScaleHighRatioChainStep$|"
-            "BM_AvbdPaperScaleHighRatioChainIterationSweep/.*|"
-            "BM_Avbd(Rigid(FixedJoint|RevoluteMotor|PrismaticMotor|BreakableJoint"
-            "|SphericalBreakableJoint)"
-            "|Articulated((Revolute|World(Revolute|Prismatic)Breakable"
-            "|PrismaticBreakable|Prismatic|Breakable)Motor"
-            "|BreakableJoint|WorldSphericalBreakableJoint"
-            "|SphericalPairBreakableJoint))Step/.*"
+            "BM_AvbdRigid(FixedJoint|RevoluteMotor|PrismaticMotor|BreakableJoint"
+            "|SphericalBreakableJoint)Step/.*"
         ),
         output_name="dashboard_avbd_world.json",
+    ),
+    # These historical BM_Avbd* symbols execute the Variational multibody
+    # integrator, not the public AVBD rigid solver. Publish them on a separate
+    # surface until genuine articulated AVBD exists; the benchmark counters
+    # fail closed on any runtime-identity drift.
+    BenchmarkSpec(
+        surface="variational-world",
+        target="bm_avbd_rigid_fixed_joint",
+        benchmark_filter=(
+            "BM_AvbdArticulated("
+            "RevoluteMotor|BreakableMotor|PrismaticMotor|"
+            "PrismaticBreakableMotor|WorldPrismaticBreakableMotor|"
+            "WorldRevoluteBreakableMotor|BreakableJoint|"
+            "WorldSphericalBreakableJoint|SphericalPairBreakableJoint|"
+            "CompliantJoint|CompliantMotor|CompliantBreakableMotor"
+            ")Step/.*|"
+            "BM_AvbdArticulatedHighRatioChainStep$|"
+            "BM_AvbdPaperScaleHighRatioChainStep$|"
+            "BM_AvbdPaperScaleHighRatioChainIterationSweep/.*"
+        ),
+        output_name="dashboard_variational_world.json",
     ),
 ]
 

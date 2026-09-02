@@ -1,4 +1,16 @@
 {
+  "evidence_boundary": {
+    "artifact_status": "legacy_unbound",
+    "avbd_performance_claim_supported": false,
+    "avbd_solver_evidence": false,
+    "current_build_bound": false,
+    "historical_identifiers_retained": true,
+    "historical_measurements_preserved": true,
+    "measurement_runtime_identity_recorded": false,
+    "plan104_avbd_row_closure_supported": false,
+    "reason": "This pre-runtime-identity packet preserves historical measurements and identifiers only; it is not bound to the current build and cannot support AVBD solver, performance, or PLAN-104 row-closure claims.",
+    "supported_scope": "historical_artifact_or_topology_metadata_only"
+  },
   "benchmark": {
     "benchmark": "BM_AvbdEmptyWorldStep",
     "context": {

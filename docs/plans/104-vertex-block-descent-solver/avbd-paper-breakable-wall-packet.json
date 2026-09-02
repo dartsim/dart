@@ -3,7 +3,7 @@
     "benchmark": "BM_AvbdPaperBreakableWallStep",
     "context": {
       "benchmark_source_sha256": "cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834",
-      "capture_source_provenance_digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
+      "capture_source_provenance_digest": "ce6b6be09bc06b23b7932a88e2c89dd6dafbeb54828a1c92212aaaa7af47e30a",
       "executable": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint",
       "host_name": "mark26",
       "json_schema_version": 1,
@@ -12,18 +12,18 @@
       "mhz_per_cpu": 5300,
       "num_cpus": 32
     },
-    "json_sha256": "1a69ca3c576e4b71f3cc3f2abe4a720ebf1dc15cb0b7fbda11f77d5e5ae1d0c0",
+    "json_sha256": "75ae6f9223d5d2db3d99290e1aca38125953f67cb7051c8f79b0c8f561548bd9",
     "rows": [
       {
         "aggregate_name": "mean",
         "aggregate_unit": "time",
         "breakable_joints": 712.0,
         "collision_shapes": 256.0,
-        "cpu_time": 8178949.550000002,
+        "cpu_time": 8089315.87666667,
         "impacting_balls": 3.0,
         "iterations": 5,
         "public_avbd_family": 1.0,
-        "real_time": 8183844.183319403,
+        "real_time": 8091261.368438913,
         "repetitions": 5,
         "resolved_rigid_body_avbd": 1.0,
         "resolved_rigid_constraint_iterations": 1.0,
@@ -45,11 +45,11 @@
         "aggregate_unit": "time",
         "breakable_joints": 712.0,
         "collision_shapes": 256.0,
-        "cpu_time": 8214461.283333337,
+        "cpu_time": 8044503.5,
         "impacting_balls": 3.0,
         "iterations": 5,
         "public_avbd_family": 1.0,
-        "real_time": 8218947.825662327,
+        "real_time": 8047468.174966829,
         "repetitions": 5,
         "resolved_rigid_body_avbd": 1.0,
         "resolved_rigid_constraint_iterations": 1.0,
@@ -69,9 +69,9 @@
       {
         "aggregate_name": "stddev",
         "aggregate_unit": "time",
-        "cpu_time": 94142.05129219542,
+        "cpu_time": 143419.36446862997,
         "iterations": 5,
-        "real_time": 94021.64259774199,
+        "real_time": 142385.84674940273,
         "repetitions": 5,
         "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
         "run_type": "aggregate",
@@ -80,9 +80,9 @@
       {
         "aggregate_name": "cv",
         "aggregate_unit": "percentage",
-        "cpu_time": 0.011510286341379301,
+        "cpu_time": 0.017729480051869133,
         "iterations": 5,
-        "real_time": 0.011488689238411964,
+        "real_time": 0.017597484528777983,
         "repetitions": 5,
         "run_name": "BM_AvbdPaperBreakableWallStep/iterations:120",
         "run_type": "aggregate",
@@ -92,18 +92,18 @@
     "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
     "source_provenance": {
       "benchmark_source_sha256": "cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834",
-      "capture_source_provenance_digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0"
+      "capture_source_provenance_digest": "ce6b6be09bc06b23b7932a88e2c89dd6dafbeb54828a1c92212aaaa7af47e30a"
     },
     "stability": {
-      "cpu_time_cv_fraction": 0.011510286341379301,
-      "real_time_cv_fraction": 0.011488689238411964,
+      "cpu_time_cv_fraction": 0.017729480051869133,
+      "real_time_cv_fraction": 0.017597484528777983,
       "repetitions": 5
     },
     "timing": {
-      "mean_cpu_time_per_step_ns": 8178949.550000002,
-      "mean_real_time_per_step_ns": 8183844.183319403,
-      "median_cpu_time_per_step_ns": 8214461.283333337,
-      "median_real_time_per_step_ns": 8218947.825662327
+      "mean_cpu_time_per_step_ns": 8089315.87666667,
+      "mean_real_time_per_step_ns": 8091261.368438913,
+      "median_cpu_time_per_step_ns": 8044503.5,
+      "median_real_time_per_step_ns": 8047468.174966829
     }
   },
   "claim_boundary": "This packet covers the AVBD row of the publication-shaped Figure 13 breakable-wall outcome on the public CPU solver family. It does not claim exact source-scene replay, reproduce the Sequential Impulse, XPBD, and VBD comparison rows, or establish public CUDA AVBD parity.",
@@ -135,7 +135,7 @@
     },
     "locator": "Section 5.4 and Figure 13, PDF page 10",
     "paper_pdf": {
-      "file": "avbd.pdf",
+      "file": "avbd-paper.pdf",
       "sha256": "7957d116b9130cfb0aa5a48ab7cd0d74a64ad79f75c99acd291bdece2be3f2d6"
     }
   },
@@ -198,10 +198,10 @@
     "rigid_point_joint_solver": "avbd"
   },
   "scene": "avbd_paper_breakable_wall",
-  "schema_version": 4,
+  "schema_version": 5,
   "source_provenance": {
     "algorithm": "sha256-length-prefixed-path-and-content-v1",
-    "digest": "e8715822cf80680774dfb8b6fc8a3d78ecb0f424bfe55424fb709d8f30fddaa2",
+    "digest": "0825d03f6a49e2978c7f29207dfe601abfdcfbf5d50fb378e6bca3b11083ff27",
     "files": [
       {
         "path": "dart/gui/view_quality.cpp",
@@ -257,7 +257,7 @@
       },
       {
         "path": "python/examples/demos/scenes/avbd_paper_breakable_wall.py",
-        "sha256": "4794bd7e3a2b549996c8774edaa3de37b10fef9b775083f8ab474e2b1b240a09"
+        "sha256": "ad6914ca4e9cb15831f43b396783ea2cae0efc0de3fe661cbff781ff5bc2d04e"
       },
       {
         "path": "python/tests/integration/test_demos_cycle.py",
@@ -272,8 +272,12 @@
         "sha256": "db7c701ddf83cad31e50ebe62758c1da49996cdf1e4bd9fd4df13886710ae269"
       },
       {
+        "path": "scripts/_image_tools.py",
+        "sha256": "1962f1f2676c4b5a24c51e03c130ea17574d06b8fe110215c6bf14a7919623c6"
+      },
+      {
         "path": "scripts/avbd_packet_schema.py",
-        "sha256": "95f3a7373d9ddf5bae975a7be9f822f8884cbe67e64f352954861ef8fc23aca4"
+        "sha256": "fd93a1d7d6e89b2ee49e7bcd740171f1acecd51b552ae55c1951fa341c498d8e"
       },
       {
         "path": "scripts/capture_py_demo.py",
@@ -284,8 +288,12 @@
         "sha256": "f81a59a95a97a3efb5901d1eb6507dd1272f75cd2a4320db6d863cb48186b612"
       },
       {
+        "path": "scripts/image_verdict.py",
+        "sha256": "7aac20e90eb81520c29553b5b8042d436f10d3149d166f218e8fa3fddb062ce0"
+      },
+      {
         "path": "scripts/write_avbd_paper_breakable_wall_packet.py",
-        "sha256": "fa4704b68dffeb11b0357d91642c4ca2917cb22b1d182f21d6353cb1c6db7aaa"
+        "sha256": "6c16f06b11dcffd9ea4b652fd006c48ead1565a19aff89d4c6442cbbbb1a5043"
       }
     ]
   },
@@ -320,11 +328,11 @@
       "image_verdict": {
         "checks": {
           "contrast": {
-            "bright_pixels": 1376,
-            "dark_pixels": 11957,
-            "mid_pixels": 208965,
-            "p05": 54.312,
-            "p95": 149.737,
+            "bright_pixels": 1282,
+            "dark_pixels": 12161,
+            "mid_pixels": 208662,
+            "p05": 53.87,
+            "p95": 149.723,
             "pass": true,
             "reasons": [],
             "region": {
@@ -334,7 +342,7 @@
               "y1": 648
             },
             "sample_count": 236196,
-            "spread": 95.425,
+            "spread": 95.853,
             "thresholds": {
               "bright_luminance_gt": 190.0,
               "dark_luminance_lt": 55.0,
@@ -355,6 +363,7 @@
           }
         },
         "file": "image_verdict.json",
+        "image_sha256": "c01d0de8ae3e9ee1df09a4fca9da19b5407182be90f05440efbb7ce3dedb9117",
         "machine_scope": "pixel-integrity",
         "metadata": {
           "frame": "60",
@@ -362,12 +371,12 @@
           "view": "front-oblique"
         },
         "pass": true,
-        "sha256": "74159d7594b8704381cee9912ed7abcda094620c9fd405726833c4e8dd303cf3"
+        "sha256": "a96c404b489ec09903e2c181aa0fc6939e1cdeba0018cdb7ab9243dc3af17f5d"
       },
       "label": "impact",
       "manifest": {
         "file": "manifest.json",
-        "sha256": "9c574230629f4a521e697fd98c8bcf89639ff1b599c77233196bf2ab9acaf530"
+        "sha256": "d42ab5ba2811e93ff26197caa00410262a793d8cd3ea2d5703ee16a823cbbbcb"
       },
       "scene_metrics": {
         "event_count": 60,
@@ -4677,13 +4686,13 @@
       },
       "screenshot": {
         "file": "avbd_paper_breakable_wall_impact.png",
-        "sha256": "9d1fa2bf21bc6cd0807e55ee4c9b866a0e2e44a77e02ccd18f50f28d03309724"
+        "sha256": "c01d0de8ae3e9ee1df09a4fca9da19b5407182be90f05440efbb7ce3dedb9117"
       },
       "source_provenance": {
         "algorithm": "sha256-length-prefixed-capture-source-tree-v1",
-        "digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
-        "file_count": 1556,
-        "git_head": "58bf1c3e85f702ea21a5417f2f6ae352c12dcb0a",
+        "digest": "ce6b6be09bc06b23b7932a88e2c89dd6dafbeb54828a1c92212aaaa7af47e30a",
+        "file_count": 1557,
+        "git_head": "f0d08e92fe19a8e73aa4e24158e1b4827a454a37",
         "roots": [
           "CMakeLists.txt",
           "cmake",
@@ -4720,10 +4729,10 @@
       "image_verdict": {
         "checks": {
           "contrast": {
-            "bright_pixels": 1903,
-            "dark_pixels": 11907,
-            "mid_pixels": 208063,
-            "p05": 54.657,
+            "bright_pixels": 1864,
+            "dark_pixels": 11958,
+            "mid_pixels": 208052,
+            "p05": 54.367,
             "p95": 155.511,
             "pass": true,
             "reasons": [],
@@ -4734,7 +4743,7 @@
               "y1": 648
             },
             "sample_count": 236196,
-            "spread": 100.853,
+            "spread": 101.143,
             "thresholds": {
               "bright_luminance_gt": 190.0,
               "dark_luminance_lt": 55.0,
@@ -4755,6 +4764,7 @@
           }
         },
         "file": "image_verdict.json",
+        "image_sha256": "605a4b5cca2e82cbe81037c2161512c57897271aba28d9440e5d31ead662ec9b",
         "machine_scope": "pixel-integrity",
         "metadata": {
           "frame": "120",
@@ -4762,12 +4772,12 @@
           "view": "front-oblique"
         },
         "pass": true,
-        "sha256": "d9b2e0d9a08a58f11a7516f48cf2ce3c6782d22c35fb9607a510773e26d2b2ff"
+        "sha256": "5296c21ca7e711b0c1667300f8a557154c817ce4addac5a7bd8fbb4902c62095"
       },
       "label": "outcome",
       "manifest": {
         "file": "manifest.json",
-        "sha256": "42d77abb52b479cff04fb7679696eccb312a132806d8f2488eb293823d672b71"
+        "sha256": "3c0b98d2d5bda31c241d3483876ff1cbfef9898ea482024e1cb73f1bf31d01e5"
       },
       "scene_metrics": {
         "event_count": 120,
@@ -9077,13 +9087,13 @@
       },
       "screenshot": {
         "file": "avbd_paper_breakable_wall_outcome.png",
-        "sha256": "5199cc27d8cb7176476de756234f962c32ee78205eb0df53915d875e1d272a89"
+        "sha256": "605a4b5cca2e82cbe81037c2161512c57897271aba28d9440e5d31ead662ec9b"
       },
       "source_provenance": {
         "algorithm": "sha256-length-prefixed-capture-source-tree-v1",
-        "digest": "7a96ffd3b73b9649961ed858f7d9967044b6e2fe47477227e04e2840c5f0b4d0",
-        "file_count": 1556,
-        "git_head": "58bf1c3e85f702ea21a5417f2f6ae352c12dcb0a",
+        "digest": "ce6b6be09bc06b23b7932a88e2c89dd6dafbeb54828a1c92212aaaa7af47e30a",
+        "file_count": 1557,
+        "git_head": "f0d08e92fe19a8e73aa4e24158e1b4827a454a37",
         "roots": [
           "CMakeLists.txt",
           "cmake",
@@ -9100,18 +9110,18 @@
       }
     },
     "semantic_review": {
-      "claim_and_expected_observation": "The reconstructed AVBD Figure 13 row should fracture under the three high-momentum impacts while the attachment rows retained after fracture remain tightly satisfied and the wall stays globally standing.",
-      "file": "avbd-visual-review.json",
+      "claim_and_expected_observation": "This review covers only DART's publication-shaped 252-brick AVBD reconstruction: three impact bands should be damaged while substantial wall regions outside those bands remain attached and standing through frame 120.",
+      "file": "avbd-semantic-review.json",
       "inspected_images": [
         {
           "file": "avbd_paper_breakable_wall_impact.png",
           "role": "impact_frame_60",
-          "sha256": "9d1fa2bf21bc6cd0807e55ee4c9b866a0e2e44a77e02ccd18f50f28d03309724"
+          "sha256": "c01d0de8ae3e9ee1df09a4fca9da19b5407182be90f05440efbb7ce3dedb9117"
         },
         {
           "file": "avbd_paper_breakable_wall_outcome.png",
           "role": "outcome_frame_120",
-          "sha256": "5199cc27d8cb7176476de756234f962c32ee78205eb0df53915d875e1d272a89"
+          "sha256": "605a4b5cca2e82cbe81037c2161512c57897271aba28d9440e5d31ead662ec9b"
         },
         {
           "file": "paper-10.png",
@@ -9119,13 +9129,13 @@
           "sha256": "040361603d4e986de4d2da570593b9dc8295f8def2f57fd200de9a3e3836c61b"
         }
       ],
-      "not_proven_and_limitations": "The checked identity evidence records 154 broken joints, including 79 whose initial anchors lie outside the selected 1.15 m impact regions, so this reconstruction does not claim that broken topology itself is spatially localized. The visible and numeric claim is narrower: the wall fractures, displacement damage reaches all three impact bands, and all 558 surviving joint rows remain tightly satisfied. This row does not prove exact unpublished source constants, XPBD, CUDA parity, or published/source timing parity.",
-      "reconciliation_and_verdict": "PASS for the scoped AVBD observation: both engine ViewReports pass with all 252 bricks in focus. Frames 60 and 120 reproduce the accepted text-oracle records exactly, including the same checked 154-member broken-joint identity digest and 558 surviving rows. The maximum retained-row residuals are respectively 0.000406 m and 0.000178 rad, then 0.000772 m and 0.000317 rad. The current-source images show a broad fractured opening around the impacts while the left, right, and upper wall regions remain upright without global collapse. The broad broken-topology distribution is disclosed rather than described as localized.",
-      "reviewer_capability": "Codex native image input with original-resolution inspection of the six current-source captures and pinned paper figure",
-      "sha256": "b73b4b5db17d287aa258272ad12f2d2f4eed5ddb124736c5eadd9bb5ef0409af",
-      "text_oracle": "Figure 13 states that AVBD forms plausible fractures and maintains the attachment constraints retained after the initial impacts; this reconstruction verifies every retained-row residual and separately records every broken identity.",
+      "not_proven_and_limitations": "These images do not establish a faithful reproduction of the paper's unpublished source scene, scale, geometry, material or launch constants; they do not prove XPBD or Sequential Impulse equivalence, CUDA parity, published timing parity, matched-accuracy performance, or AVBD paper completeness beyond this bounded DART reconstruction.",
+      "reconciliation_and_verdict": "PASS for the bounded DART reconstruction only: both engine ViewReports pass framing and visibility checks; the frame-60 and frame-120 numeric oracles record finite state, three-band damage, bounded fracture, retained constraint rows, and retained outside wall; the inspected images visibly show localized missing or displaced bricks with large side and upper wall regions still standing. This is not a pass for source-scene or full paper parity.",
+      "reviewer_capability": "native image input at original 1280x720 detail",
+      "sha256": "841dcd64ec00e857ec1734056d14da5c9758feb5b2ef4721bce6c4294d69eb66",
+      "text_oracle": "The runtime-resolved public_avbd scene reports 154 broken of 712 joints at frames 60 and 120, damage counts in all three impact bands, finite residuals, 99.4 percent outside-wall retention, 99.2 percent total-wall retention, and all configured checkpoint thresholds passing at frame 120.",
       "verdict": "pass",
-      "visible_observation": "At frame 60 a broad central opening and loose bricks are visible around the impacts while substantial left, right, and upper wall regions remain upright. At frame 120 the same overall structure is still globally standing with no broad folding or collapse."
+      "visible_observation": "At frame 60 the three balls have passed the wall and a broad central impact span contains missing or displaced bricks. At frame 120 the balls are separated from the wall, a few bricks remain displaced, and most side and upper wall courses are visibly standing. The reconstruction is visibly much smaller and simpler than paper Figure 13."
     }
   }
 }

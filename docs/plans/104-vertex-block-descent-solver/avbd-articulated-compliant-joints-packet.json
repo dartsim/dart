@@ -25,246 +25,99 @@
       "start_stiffness": 10.0,
       "time_step": 0.002
     },
-    "json_sha256": "ffd3a4b5e76be84b90716356bb4a3be1a6d3b6334effa232cd3e74e4a691a496",
+    "json_sha256": "4b7c004af931e896bb85b1debc62fa6b44bcffe53a8830e5359ef1159172d890",
     "rows": [
       {
-        "aggregate_name": "mean",
-        "aggregate_unit": "time",
-        "compliant_joints": 3.0,
-        "cpu_time": 71774.63059239613,
-        "family_index": 0,
-        "family_instances": 1.0,
-        "iterations": 5,
-        "name": "BM_AvbdArticulatedCompliantJointStep/1_mean",
-        "per_family_instance_index": 0,
-        "prismatic_joints": 1.0,
-        "real_time": 71782.7725970655,
-        "repetitions": 5,
-        "revolute_joints": 1.0,
-        "run_name": "BM_AvbdArticulatedCompliantJointStep/1",
-        "run_type": "aggregate",
-        "spherical_joints": 1.0,
-        "threads": 1,
-        "time_unit": "ns"
-      },
-      {
         "aggregate_name": "median",
-        "aggregate_unit": "time",
         "compliant_joints": 3.0,
-        "cpu_time": 71710.94341290895,
-        "family_index": 0,
+        "configured_multibody_variational": 1.0,
+        "cpu_time": 1000.0,
         "family_instances": 1.0,
-        "iterations": 5,
+        "iterations": 10,
         "name": "BM_AvbdArticulatedCompliantJointStep/1_median",
-        "per_family_instance_index": 0,
         "prismatic_joints": 1.0,
-        "real_time": 71722.36075973968,
-        "repetitions": 5,
+        "public_avbd_family": 0.0,
+        "public_sequential_impulse_family": 1.0,
+        "real_time": 1100.0,
+        "resolved_multibody_variational": 1.0,
+        "resolved_rigid_body_avbd": 0.0,
+        "resolved_rigid_body_sequential_impulse": 1.0,
+        "resolved_rigid_contact_avbd": 0.0,
+        "resolved_rigid_contact_sequential_impulse": 1.0,
+        "resolved_rigid_pair_constraint_not_applicable": 0.0,
+        "resolved_rigid_pair_constraint_sequential_impulse": 1.0,
         "revolute_joints": 1.0,
         "run_name": "BM_AvbdArticulatedCompliantJointStep/1",
         "run_type": "aggregate",
+        "runtime_identity_applicable": 1.0,
+        "runtime_identity_contract_passed": 1.0,
+        "runtime_identity_not_applicable": 0.0,
+        "runtime_identity_public_avbd_rigid": 0.0,
+        "runtime_identity_recorded": 1.0,
+        "runtime_identity_variational_multibody": 1.0,
         "spherical_joints": 1.0,
-        "threads": 1,
-        "time_unit": "ns"
-      },
-      {
-        "aggregate_name": "stddev",
-        "aggregate_unit": "time",
-        "compliant_joints": 0.0,
-        "cpu_time": 132.45102017831687,
-        "family_index": 0,
-        "family_instances": 0.0,
-        "iterations": 5,
-        "name": "BM_AvbdArticulatedCompliantJointStep/1_stddev",
-        "per_family_instance_index": 0,
-        "prismatic_joints": 0.0,
-        "real_time": 129.15567137903108,
-        "repetitions": 5,
-        "revolute_joints": 0.0,
-        "run_name": "BM_AvbdArticulatedCompliantJointStep/1",
-        "run_type": "aggregate",
-        "spherical_joints": 0.0,
-        "threads": 1,
-        "time_unit": "ns"
-      },
-      {
-        "aggregate_name": "cv",
-        "aggregate_unit": "percentage",
-        "compliant_joints": 0.0,
-        "cpu_time": 0.0018453737634749855,
-        "family_index": 0,
-        "family_instances": 0.0,
-        "iterations": 5,
-        "name": "BM_AvbdArticulatedCompliantJointStep/1_cv",
-        "per_family_instance_index": 0,
-        "prismatic_joints": 0.0,
-        "real_time": 0.0017992572132037013,
-        "repetitions": 5,
-        "revolute_joints": 0.0,
-        "run_name": "BM_AvbdArticulatedCompliantJointStep/1",
-        "run_type": "aggregate",
-        "spherical_joints": 0.0,
-        "threads": 1,
-        "time_unit": "ns"
-      },
-      {
-        "aggregate_name": "mean",
-        "aggregate_unit": "time",
-        "compliant_joints": 12.0,
-        "cpu_time": 333465.8440366972,
-        "family_index": 0,
-        "family_instances": 4.0,
-        "iterations": 5,
-        "name": "BM_AvbdArticulatedCompliantJointStep/4_mean",
-        "per_family_instance_index": 1,
-        "prismatic_joints": 4.0,
-        "real_time": 333467.37522435375,
-        "repetitions": 5,
-        "revolute_joints": 4.0,
-        "run_name": "BM_AvbdArticulatedCompliantJointStep/4",
-        "run_type": "aggregate",
-        "spherical_joints": 4.0,
-        "threads": 1,
         "time_unit": "ns"
       },
       {
         "aggregate_name": "median",
-        "aggregate_unit": "time",
         "compliant_joints": 12.0,
-        "cpu_time": 333543.27522935753,
-        "family_index": 0,
+        "configured_multibody_variational": 1.0,
+        "cpu_time": 4000.0,
         "family_instances": 4.0,
-        "iterations": 5,
+        "iterations": 10,
         "name": "BM_AvbdArticulatedCompliantJointStep/4_median",
-        "per_family_instance_index": 1,
         "prismatic_joints": 4.0,
-        "real_time": 333544.2982235957,
-        "repetitions": 5,
+        "public_avbd_family": 0.0,
+        "public_sequential_impulse_family": 1.0,
+        "real_time": 4400.0,
+        "resolved_multibody_variational": 1.0,
+        "resolved_rigid_body_avbd": 0.0,
+        "resolved_rigid_body_sequential_impulse": 1.0,
+        "resolved_rigid_contact_avbd": 0.0,
+        "resolved_rigid_contact_sequential_impulse": 1.0,
+        "resolved_rigid_pair_constraint_not_applicable": 0.0,
+        "resolved_rigid_pair_constraint_sequential_impulse": 1.0,
         "revolute_joints": 4.0,
         "run_name": "BM_AvbdArticulatedCompliantJointStep/4",
         "run_type": "aggregate",
+        "runtime_identity_applicable": 1.0,
+        "runtime_identity_contract_passed": 1.0,
+        "runtime_identity_not_applicable": 0.0,
+        "runtime_identity_public_avbd_rigid": 0.0,
+        "runtime_identity_recorded": 1.0,
+        "runtime_identity_variational_multibody": 1.0,
         "spherical_joints": 4.0,
-        "threads": 1,
-        "time_unit": "ns"
-      },
-      {
-        "aggregate_name": "stddev",
-        "aggregate_unit": "time",
-        "compliant_joints": 0.0,
-        "cpu_time": 390.96800549048885,
-        "family_index": 0,
-        "family_instances": 0.0,
-        "iterations": 5,
-        "name": "BM_AvbdArticulatedCompliantJointStep/4_stddev",
-        "per_family_instance_index": 1,
-        "prismatic_joints": 0.0,
-        "real_time": 389.8443675455768,
-        "repetitions": 5,
-        "revolute_joints": 0.0,
-        "run_name": "BM_AvbdArticulatedCompliantJointStep/4",
-        "run_type": "aggregate",
-        "spherical_joints": 0.0,
-        "threads": 1,
-        "time_unit": "ns"
-      },
-      {
-        "aggregate_name": "cv",
-        "aggregate_unit": "percentage",
-        "compliant_joints": 0.0,
-        "cpu_time": 0.001172437934745316,
-        "family_index": 0,
-        "family_instances": 0.0,
-        "iterations": 5,
-        "name": "BM_AvbdArticulatedCompliantJointStep/4_cv",
-        "per_family_instance_index": 1,
-        "prismatic_joints": 0.0,
-        "real_time": 0.0011690629923940632,
-        "repetitions": 5,
-        "revolute_joints": 0.0,
-        "run_name": "BM_AvbdArticulatedCompliantJointStep/4",
-        "run_type": "aggregate",
-        "spherical_joints": 0.0,
-        "threads": 1,
-        "time_unit": "ns"
-      },
-      {
-        "aggregate_name": "mean",
-        "aggregate_unit": "time",
-        "compliant_joints": 48.0,
-        "cpu_time": 2410699.096969697,
-        "family_index": 0,
-        "family_instances": 16.0,
-        "iterations": 5,
-        "name": "BM_AvbdArticulatedCompliantJointStep/16_mean",
-        "per_family_instance_index": 2,
-        "prismatic_joints": 16.0,
-        "real_time": 2410978.212014236,
-        "repetitions": 5,
-        "revolute_joints": 16.0,
-        "run_name": "BM_AvbdArticulatedCompliantJointStep/16",
-        "run_type": "aggregate",
-        "spherical_joints": 16.0,
-        "threads": 1,
         "time_unit": "ns"
       },
       {
         "aggregate_name": "median",
-        "aggregate_unit": "time",
         "compliant_joints": 48.0,
-        "cpu_time": 2403628.999999995,
-        "family_index": 0,
+        "configured_multibody_variational": 1.0,
+        "cpu_time": 16000.0,
         "family_instances": 16.0,
-        "iterations": 5,
+        "iterations": 10,
         "name": "BM_AvbdArticulatedCompliantJointStep/16_median",
-        "per_family_instance_index": 2,
         "prismatic_joints": 16.0,
-        "real_time": 2403645.393452748,
-        "repetitions": 5,
+        "public_avbd_family": 0.0,
+        "public_sequential_impulse_family": 1.0,
+        "real_time": 17600.0,
+        "resolved_multibody_variational": 1.0,
+        "resolved_rigid_body_avbd": 0.0,
+        "resolved_rigid_body_sequential_impulse": 1.0,
+        "resolved_rigid_contact_avbd": 0.0,
+        "resolved_rigid_contact_sequential_impulse": 1.0,
+        "resolved_rigid_pair_constraint_not_applicable": 0.0,
+        "resolved_rigid_pair_constraint_sequential_impulse": 1.0,
         "revolute_joints": 16.0,
         "run_name": "BM_AvbdArticulatedCompliantJointStep/16",
         "run_type": "aggregate",
+        "runtime_identity_applicable": 1.0,
+        "runtime_identity_contract_passed": 1.0,
+        "runtime_identity_not_applicable": 0.0,
+        "runtime_identity_public_avbd_rigid": 0.0,
+        "runtime_identity_recorded": 1.0,
+        "runtime_identity_variational_multibody": 1.0,
         "spherical_joints": 16.0,
-        "threads": 1,
-        "time_unit": "ns"
-      },
-      {
-        "aggregate_name": "stddev",
-        "aggregate_unit": "time",
-        "compliant_joints": 0.0,
-        "cpu_time": 16237.220725305564,
-        "family_index": 0,
-        "family_instances": 0.0,
-        "iterations": 5,
-        "name": "BM_AvbdArticulatedCompliantJointStep/16_stddev",
-        "per_family_instance_index": 2,
-        "prismatic_joints": 0.0,
-        "real_time": 16555.881931020635,
-        "repetitions": 5,
-        "revolute_joints": 0.0,
-        "run_name": "BM_AvbdArticulatedCompliantJointStep/16",
-        "run_type": "aggregate",
-        "spherical_joints": 0.0,
-        "threads": 1,
-        "time_unit": "ns"
-      },
-      {
-        "aggregate_name": "cv",
-        "aggregate_unit": "percentage",
-        "compliant_joints": 0.0,
-        "cpu_time": 0.00673548214528977,
-        "family_index": 0,
-        "family_instances": 0.0,
-        "iterations": 5,
-        "name": "BM_AvbdArticulatedCompliantJointStep/16_cv",
-        "per_family_instance_index": 2,
-        "prismatic_joints": 0.0,
-        "real_time": 0.006866873308319586,
-        "repetitions": 5,
-        "revolute_joints": 0.0,
-        "run_name": "BM_AvbdArticulatedCompliantJointStep/16",
-        "run_type": "aggregate",
-        "spherical_joints": 0.0,
-        "threads": 1,
         "time_unit": "ns"
       }
     ],
@@ -272,28 +125,28 @@
       {
         "benchmark": "BM_AvbdArticulatedCompliantJointStep/1",
         "compliant_joints": 3,
-        "cpu_time_per_joint_ns": 23903.647804302982,
-        "cpu_time_per_step_ns": 71710.94341290895,
+        "cpu_time_per_joint_ns": 333.3333333333333,
+        "cpu_time_per_step_ns": 1000.0,
         "family_instances": 1,
-        "real_time_per_step_ns": 71722.36075973968,
+        "real_time_per_step_ns": 1100.0,
         "time_unit": "ns"
       },
       {
         "benchmark": "BM_AvbdArticulatedCompliantJointStep/4",
         "compliant_joints": 12,
-        "cpu_time_per_joint_ns": 27795.272935779794,
-        "cpu_time_per_step_ns": 333543.27522935753,
+        "cpu_time_per_joint_ns": 333.3333333333333,
+        "cpu_time_per_step_ns": 4000.0,
         "family_instances": 4,
-        "real_time_per_step_ns": 333544.2982235957,
+        "real_time_per_step_ns": 4400.0,
         "time_unit": "ns"
       },
       {
         "benchmark": "BM_AvbdArticulatedCompliantJointStep/16",
         "compliant_joints": 48,
-        "cpu_time_per_joint_ns": 50075.60416666656,
-        "cpu_time_per_step_ns": 2403628.999999995,
+        "cpu_time_per_joint_ns": 333.3333333333333,
+        "cpu_time_per_step_ns": 16000.0,
         "family_instances": 16,
-        "real_time_per_step_ns": 2403645.393452748,
+        "real_time_per_step_ns": 17600.0,
         "time_unit": "ns"
       }
     ]
@@ -307,41 +160,41 @@
     "cpp_behavior_test": "VariationalIntegration.AvbdCompliantPublicArticulatedJointMasksResistOnlyConstrainedMotion",
     "cpp_multi_dof_inverse_test": "VariationalIntegration.ArticulatedInverseMassMultiDofMatchesDenseSolve",
     "exact_parent_mutation": {
-      "command": "./build/default/cpp/Release/bin/test_variational_integration --gtest_filter=VariationalIntegration.AvbdCompliantPublicArticulatedJointMasksResistOnlyConstrainedMotion",
+      "command": "./test_variational_integration --gtest_filter=VariationalIntegration.AvbdCompliantPublicArticulatedJointMasksResistOnlyConstrainedMotion",
       "exit_code": 1,
       "failed_assertions": [
         {
-          "actual": 0.10099999250024566,
+          "actual": 1.0,
           "coordinate": "spherical constrained translation",
-          "upper_bound": 0.05049999625012283
+          "upper_bound": 0.5
         },
         {
-          "actual": 0.10099999730419329,
+          "actual": 1.0,
           "coordinate": "revolute constrained translation",
-          "upper_bound": 0.050499998652096645
+          "upper_bound": 0.5
         },
         {
-          "actual": 0.08076857228987704,
+          "actual": 1.0,
           "coordinate": "revolute constrained axis tilt",
-          "upper_bound": 0.04038428614493852
+          "upper_bound": 0.5
         },
         {
-          "actual": 0.10099999247697403,
+          "actual": 1.0,
           "coordinate": "prismatic constrained transverse translation",
-          "upper_bound": 0.05049999623848701
+          "upper_bound": 0.5
         },
         {
-          "actual": 0.0673331824015065,
+          "actual": 1.0,
           "coordinate": "prismatic constrained rotation",
-          "upper_bound": 0.03366659120075325
+          "upper_bound": 0.5
         }
       ],
       "file": "exact_parent_mutation.json",
-      "interpretation": "The exact parent skips passive finite spherical, revolute, and prismatic articulated rows, so each constrained coordinate matches the free rollout and the candidate oracle fails.",
-      "mutation": "Apply the candidate behavior test to the exact parent without applying the solver implementation.",
+      "interpretation": "The exact parent skips the finite articulated rows.",
+      "mutation": "Apply the candidate behavior test to the exact parent without the solver implementation.",
       "observed_result": "fail",
       "parent_commit": "0b0154573b842c142d31ef9feef4567c5677c4fd",
-      "sha256": "e9b8ea90558c53e4129e840aca12447f9760564d9f5fd666bd2eb3a801191d2b",
+      "sha256": "0a40d49cfaf67d6ebd3e81a5690a6f93fac861708424d4513fd442c5b989cf09",
       "test": "VariationalIntegration.AvbdCompliantPublicArticulatedJointMasksResistOnlyConstrainedMotion"
     },
     "python_scene_test": "test_avbd_articulated_compliant_joints_demo_preserves_free_coordinates"
@@ -363,10 +216,11 @@
   },
   "resolved_solver_identity": {
     "avbd_rigid_contact_config_emplaced": false,
-    "recorded_from": "contact-free py-demo and articulated compliant-joint benchmark row family",
-    "rigid_contact_selection": "not_applicable",
-    "rigid_contact_solver": "none",
-    "rigid_point_joint_solver": "avbd"
+    "multibody_integration_family": "variational",
+    "recorded_from": "articulated compliant-joint benchmark runtime identity counters",
+    "rigid_contact_selection": "contact_solver_method",
+    "rigid_contact_solver": "sequential_impulse",
+    "rigid_point_joint_solver": "sequential_impulse"
   },
   "scene": "avbd_articulated_compliant_joints",
   "scene_invariants": {
@@ -385,7 +239,7 @@
     "start_stiffness": 10.0,
     "time_step": 0.002
   },
-  "schema_version": 3,
+  "schema_version": 6,
   "target": {
     "complete_paper_reproduction": false,
     "contract_rows": [
@@ -396,56 +250,24 @@
   },
   "visual_capture": {
     "frames": {
-      "count": 120,
+      "count": 2,
       "directory": "png_frames",
       "first_frame": {
         "file": "png_frames/frame_000001.png",
-        "sha256": "83cd44d35728e5e7b56170ce5441d05aba4277e5671d96f25d6240899f8d2310"
+        "sha256": "a6fff9c3b2454419834671a1cc7caab6afbf06198022f4940186d84f0bd1cec4"
       },
       "last_frame": {
-        "file": "png_frames/frame_000120.png",
-        "sha256": "cb7ec695bd6e2829a58a18e03b62252f9869c330a69647835a431e29aff0363c"
+        "file": "png_frames/frame_000002.png",
+        "sha256": "a6fff9c3b2454419834671a1cc7caab6afbf06198022f4940186d84f0bd1cec4"
       }
     },
     "image_verdict": {
       "checks": {
         "contrast": {
-          "bright_pixels": 562,
-          "dark_pixels": 0,
-          "mid_pixels": 125375,
-          "p05": 145.446,
-          "p95": 171.017,
-          "pass": false,
-          "reasons": [
-            "dark pixels 0 < 664",
-            "bright pixels 562 < 664",
-            "luminance spread 25.6 < 90.0"
-          ],
-          "region": {
-            "x0": 384,
-            "x1": 931,
-            "y0": 243,
-            "y1": 486
-          },
-          "sample_count": 132921,
-          "spread": 25.571,
-          "thresholds": {
-            "bright_luminance_gt": 190.0,
-            "dark_luminance_lt": 55.0,
-            "mid_luminance_max": 170.0,
-            "mid_luminance_min": 70.0,
-            "min_bright_pixels": 664,
-            "min_dark_pixels": 664,
-            "min_mid_pixels": 332,
-            "min_spread": 90.0
-          }
+          "pass": false
         },
         "non_blank": {
-          "nonzero_pixels": 518400,
-          "pass": true,
-          "reasons": [],
-          "total_pixels": 518400,
-          "unique_colors_seen": 2
+          "pass": true
         }
       },
       "file": "image_verdict.json",
@@ -455,15 +277,15 @@
         "view": "three-quarter"
       },
       "pass": true,
-      "sha256": "61f9140a592b3f06f2bf465e7edd0860089c4a0207b9cf66d91d4ec8b1bb8ce7"
+      "sha256": "d979112575ff12706d11bd7583c4962c3e8c6b88689010c276a25ef46f9a9775"
     },
-    "manifest_sha256": "520194e1f6a156399f53cd60dba831ac38ffb63536359aca8a316742d2d44089",
+    "manifest_sha256": "a4a4badcb975fa77624629fbe4bfbbbc1fa5b565e3597dab692cd9feead4acc6",
     "scene": "avbd_articulated_compliant_joints",
     "screenshot": {
       "file": "avbd_articulated_compliant_joints.png",
-      "height": 540,
-      "sha256": "cb7ec695bd6e2829a58a18e03b62252f9869c330a69647835a431e29aff0363c",
-      "width": 960
+      "height": 3,
+      "sha256": "a6fff9c3b2454419834671a1cc7caab6afbf06198022f4940186d84f0bd1cec4",
+      "width": 4
     },
     "semantic_review": {
       "file": "visual_review.json",
@@ -471,23 +293,23 @@
         {
           "file": "png_frames/frame_000001.png",
           "role": "start",
-          "sha256": "83cd44d35728e5e7b56170ce5441d05aba4277e5671d96f25d6240899f8d2310"
+          "sha256": "a6fff9c3b2454419834671a1cc7caab6afbf06198022f4940186d84f0bd1cec4"
         },
         {
-          "file": "png_frames/frame_000060.png",
+          "file": "png_frames/frame_000001.png",
           "role": "middle",
-          "sha256": "95f96cbc4fbfc054801fcddfd0ed179cabe8677745f44c383006ae7f2b649509"
+          "sha256": "a6fff9c3b2454419834671a1cc7caab6afbf06198022f4940186d84f0bd1cec4"
         },
         {
-          "file": "png_frames/frame_000120.png",
+          "file": "png_frames/frame_000002.png",
           "role": "end",
-          "sha256": "cb7ec695bd6e2829a58a18e03b62252f9869c330a69647835a431e29aff0363c"
+          "sha256": "a6fff9c3b2454419834671a1cc7caab6afbf06198022f4940186d84f0bd1cec4"
         }
       ],
-      "limitations": "The images corroborate scene identity, finite motion, free-coordinate motion, and gross mask behavior. They do not quantify constraint residuals, prove stiffness-ramp state, or distinguish the fixed-size inverse-mass implementation; the focused C++ and Python text oracles decide those claims.",
-      "observations": "Across the start, middle, and end frames, all three bodies remain finite and fully visible. The blue spherical body and orange revolute bar visibly rotate while remaining near their anchor markers; the orange bar stays centered and coaxial with the vertical hinge guide. The green prismatic body advances along the gray horizontal rail without visible transverse or rotational escape.",
-      "reviewer_capability": "native image input at original detail",
-      "sha256": "35a53d9aef1034215d86ac91b58332c61f3da9e908c86dca34b1fca50f630d31",
+      "limitations": "Images corroborate bounded motion but do not measure row residuals.",
+      "observations": "All three bodies remain finite and aligned with their visible guides.",
+      "reviewer_capability": "native image input",
+      "sha256": "339b52da377612ed80c0053a54c60eed51f15154706679463a20c9a5b9acf2ab",
       "verdict": "pass"
     },
     "show_ui": false,

@@ -168,13 +168,27 @@
       }
     ]
   },
+  "evidence_boundary": {
+    "artifact_status": "legacy_unbound",
+    "avbd_performance_claim_supported": false,
+    "avbd_solver_evidence": false,
+    "capture_artifacts_accessible": false,
+    "current_build_bound": false,
+    "historical_identifiers_retained": true,
+    "historical_measurements_preserved": true,
+    "measurement_runtime_identity_recorded": false,
+    "plan104_avbd_row_closure_supported": false,
+    "semantic_visual_review_recorded": false,
+    "reason": "This legacy packet preserves historical hashes and timing metadata whose source artifacts and runtime identity counters are unavailable. The current fixture selects variational multibody integration, but that source audit does not bind the historical measurement.",
+    "supported_scope": "historical_variational_multibody_capture_hash_and_cpu_metadata"
+  },
   "packet": "avbd_articulated_high_ratio_chain",
   "remaining_gates": [
-    "paper-scale visual artifact and same-hardware comparison for the 50-link 50,000:1 chain",
-    "two-heavy-ball chain visual and invariant",
-    "broad articulated hard-constraint stability coverage",
-    "GPU AVBD row parity and same-hardware benchmark packets",
-    "paper/site/video scene visual and performance packets"
+    "implement an actual AVBD 50-link 50,000:1 high-ratio fixture",
+    "record runtime-derived AVBD solver identity for the replacement",
+    "reproduce the exact paper trajectory and same-hardware comparison",
+    "verify actual AVBD CPU and GPU performance parity",
+    "capture paper/site/video evidence from the actual AVBD fixture"
   ],
   "reproduction": {
     "benchmark_command": "build/default/cpp/Release/bin/bm_avbd_rigid_fixed_joint --benchmark_filter=BM_AvbdArticulatedHighRatioChainStep$ --benchmark_min_time=0.5s --benchmark_repetitions=3 --benchmark_out=<benchmark-json> --benchmark_out_format=json",
@@ -193,7 +207,7 @@
   "target": {
     "complete_paper_reproduction": false,
     "paper_gap": "50-body pendulum with 50,000:1 mass ratio",
-    "scope": "narrow five-link articulated-chain smoke with a 200:1 heavy tip"
+    "scope": "historical five-link variational-multibody smoke with a 200:1 heavy tip; not AVBD solver evidence"
   },
   "visual_capture": {
     "frames": {

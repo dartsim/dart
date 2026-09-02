@@ -9,18 +9,99 @@ import json
 import math
 import sys
 from collections import Counter
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from avbd_packet_schema import (  # noqa: E402
+    AVBD_PACKET_SCHEMA_VERSION,
+    PLAN104_CLAIMS_KEY,
+)
+from check_avbd_packets import (  # noqa: E402
+    PacketValidationContext,
+)
+from check_avbd_packets import packet_errors as avbd_packet_errors  # noqa: E402
+
 REPO_ROOT = SCRIPT_DIR.parent
 CONTRACT_DIR = REPO_ROOT / "docs" / "plans" / "104-vertex-block-descent-solver"
+CONTRACT_DIR_RELATIVE = Path("docs/plans/104-vertex-block-descent-solver")
 MATRIX_PATH = CONTRACT_DIR / "paper-parity-matrix.md"
 DEFAULT_CONTRACTS = (
     CONTRACT_DIR / "vbd-paper-coverage-contract.json",
     CONTRACT_DIR / "avbd-paper-coverage-contract.json",
 )
+
+PLAN104_PACKET_VALIDATOR = "plan104_packet/v1"
+# Compatibility alias for existing tests and callers; the validator is
+# deliberately family-neutral and accepts both VBD and AVBD packet names.
+AVBD_PACKET_VALIDATOR = PLAN104_PACKET_VALIDATOR
+CLOSURE_EVIDENCE_KEYS = ("path", "validator", "sha256", "claim_id")
+
+
+@dataclass
+class _ValidationContext:
+    validator_results: dict[tuple[str, Path], tuple[str, ...]] = field(
+        default_factory=dict
+    )
+    reported_validator_results: set[tuple[str, Path]] = field(default_factory=set)
+    reported_validator_errors: set[str] = field(default_factory=set)
+    avbd_packets: PacketValidationContext = field(
+        default_factory=lambda: PacketValidationContext(
+            packet_dir=REPO_ROOT / CONTRACT_DIR_RELATIVE
+        )
+    )
+    closure_packet_results: dict[Path, tuple[str, ...]] = field(default_factory=dict)
+
+
+def _validate_avbd_packet(path: Path, context: _ValidationContext) -> list[str]:
+    return avbd_packet_errors(path, context=context.avbd_packets)
+
+
+EVIDENCE_VALIDATORS: dict[str, Callable[[Path, _ValidationContext], list[str]]] = {
+    AVBD_PACKET_VALIDATOR: _validate_avbd_packet
+}
+
+
+@dataclass(frozen=True)
+class ClosureProfile:
+    """Path-bound substantive and row-authorization closure policy.
+
+    The ``required_*`` tuples declare, as data, what the backing packet must
+    carry. This module enforces them itself before either hook runs, so a
+    permissive hook can never close a row over a packet that omits the declared
+    provenance, capture, or benchmark evidence.
+    """
+
+    solver_family: str
+    claim_ids: tuple[str, ...]
+    required_packet_keys: tuple[str, ...]
+    required_source_paths: tuple[str, ...]
+    required_capture_roles: tuple[str, ...]
+    required_benchmark_methods: tuple[str, ...]
+    validate_packet: Callable[[Path, dict[str, Any]], list[str]]
+    authorize_row: Callable[
+        [
+            Path,
+            dict[str, Any],
+            str,
+            str,
+            dict[str, bool],
+            dict[str, bool],
+        ],
+        list[str],
+    ]
+
+
+# No production profile is registered while all 176 PLAN-104 rows remain
+# incomplete. A complete row needs one exact resolved-path entry here.
+CLOSURE_PROFILES: dict[Path, ClosureProfile] = {}
+
 
 ALLOWED_STATUSES = frozenset({"missing", "partial", "blocked", "complete"})
 KNOWN_PREDICATES = (
@@ -355,8 +436,8 @@ AVBD_GROUPS = (
 
 EXPECTED_GROUPS = {"vbd": VBD_GROUPS, "avbd": AVBD_GROUPS}
 EXPECTED_SCHEMAS = {
-    "vbd": "dart.vbd_paper_coverage_contract/v1",
-    "avbd": "dart.avbd_paper_coverage_contract/v1",
+    "vbd": "dart.vbd_paper_coverage_contract/v2",
+    "avbd": "dart.avbd_paper_coverage_contract/v2",
 }
 EXPECTED_PREDICATE_DEFINITIONS = {
     family: {
@@ -664,13 +745,18 @@ def _value_at(value: Any, path: tuple[str, ...]) -> Any:
 
 
 def _source_locator_digest(groups: list[Any]) -> str:
-    inventory = [
-        [requirement.get("id"), requirement.get("source_locator")]
-        for group in groups
-        if isinstance(group, dict)
-        for requirement in group.get("requirements", ())
-        if isinstance(requirement, dict)
-    ]
+    inventory = []
+    for group in groups:
+        if not isinstance(group, dict):
+            continue
+        requirements = group.get("requirements")
+        if not isinstance(requirements, list):
+            continue
+        inventory.extend(
+            [requirement.get("id"), requirement.get("source_locator")]
+            for requirement in requirements
+            if isinstance(requirement, dict)
+        )
     serialized = json.dumps(inventory, ensure_ascii=False, separators=(",", ":"))
     return hashlib.sha256(f"{serialized}\n".encode()).hexdigest()
 
@@ -679,6 +765,366 @@ def _list_of_nonempty_strings(value: Any) -> bool:
     return isinstance(value, list) and all(
         isinstance(item, str) and bool(item.strip()) for item in value
     )
+
+
+def _reject_duplicate_json_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate object key {key!r}")
+        result[key] = value
+    return result
+
+
+def _reject_nonstandard_json_constant(value: str) -> None:
+    raise ValueError(f"non-standard JSON constant {value!r}")
+
+
+def _strict_json_loads(payload: str | bytes) -> Any:
+    return json.loads(
+        payload,
+        object_pairs_hook=_reject_duplicate_json_keys,
+        parse_constant=_reject_nonstandard_json_constant,
+    )
+
+
+def _finite_number(value: Any) -> float | None:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return None
+    try:
+        converted = float(value)
+    except OverflowError, TypeError, ValueError:
+        return None
+    return converted if math.isfinite(converted) else None
+
+
+def _safe_relative_path(value: Any) -> Path | None:
+    if not isinstance(value, str) or not value:
+        return None
+    if "\x00" in value:
+        return None
+    try:
+        value.encode("utf-8", errors="strict")
+        path = Path(value)
+        rendered = path.as_posix()
+    except UnicodeError, ValueError:
+        return None
+    if path.is_absolute() or ".." in path.parts or rendered != value:
+        return None
+    return path
+
+
+def _is_plan104_packet_path(path: Path) -> bool:
+    return (
+        path.parent == CONTRACT_DIR_RELATIVE
+        and path.name.startswith(("avbd-", "vbd-"))
+        and path.name.endswith("-packet.json")
+    )
+
+
+def _is_avbd_packet_path(path: Path) -> bool:
+    """Compatibility wrapper for the former AVBD-only packet predicate."""
+    return _is_plan104_packet_path(path)
+
+
+def _repository_path(relative_path: Path) -> Path | None:
+    try:
+        repository_root = REPO_ROOT.resolve()
+        path = (REPO_ROOT / relative_path).resolve()
+    except OSError, RuntimeError, UnicodeError, ValueError:
+        return None
+    try:
+        path.relative_to(repository_root)
+    except ValueError:
+        return None
+    return path
+
+
+def _resolved_contract_directory() -> Path:
+    return (REPO_ROOT / CONTRACT_DIR_RELATIVE).resolve()
+
+
+def _validator_result(
+    validator_name: str,
+    path: Path,
+    context: _ValidationContext,
+) -> tuple[str, ...] | None:
+    validator = EVIDENCE_VALIDATORS.get(validator_name)
+    if validator is None:
+        return None
+    try:
+        resolved = path.resolve()
+    except OSError, RuntimeError, UnicodeError, ValueError:
+        return (f"evidence packet path cannot be resolved: {path}",)
+    key = (validator_name, resolved)
+    if key not in context.validator_results:
+        context.validator_results[key] = tuple(validator(path, context))
+    return context.validator_results[key]
+
+
+def _reported_validator_errors(
+    validator_name: str,
+    path: Path,
+    context: _ValidationContext,
+) -> list[str]:
+    result = _validator_result(validator_name, path, context)
+    if result is None:
+        return [f"unknown evidence validator {validator_name!r}"]
+    try:
+        resolved = path.resolve()
+    except OSError, RuntimeError, UnicodeError, ValueError:
+        return [f"evidence packet path cannot be resolved: {path}"]
+    key = (validator_name, resolved)
+    if key in context.reported_validator_results:
+        return []
+    context.reported_validator_results.add(key)
+    fresh_errors = [
+        error for error in result if error not in context.reported_validator_errors
+    ]
+    context.reported_validator_errors.update(result)
+    return fresh_errors
+
+
+def _string_tuple_declaration_errors(value: Any, label: str) -> list[str]:
+    """Reject a profile declaration that is not a non-empty unique string tuple."""
+    if (
+        not isinstance(value, tuple)
+        or not value
+        or any(not isinstance(item, str) or not item for item in value)
+        or len(set(value)) != len(value)
+    ):
+        return [f"profile {label} must be a non-empty unique string tuple"]
+    return []
+
+
+def _packet_source_paths(packet: Any) -> frozenset[str]:
+    """Collect the ``source_provenance.files[*].path`` entries of a packet."""
+    provenance = (
+        packet.get("source_provenance") if isinstance(packet, Mapping) else None
+    )
+    files = provenance.get("files") if isinstance(provenance, Mapping) else None
+    if not isinstance(files, list):
+        return frozenset()
+    return frozenset(
+        entry["path"]
+        for entry in files
+        if isinstance(entry, Mapping)
+        and isinstance(entry.get("path"), str)
+        and entry["path"]
+    )
+
+
+def _packet_capture_roles(packet: Any) -> frozenset[str]:
+    """Collect the ``visual_evidence`` roles of a packet that carry an object."""
+    captures = packet.get("visual_evidence") if isinstance(packet, Mapping) else None
+    if not isinstance(captures, Mapping):
+        return frozenset()
+    return frozenset(
+        role
+        for role, capture in captures.items()
+        if isinstance(role, str) and role and isinstance(capture, Mapping)
+    )
+
+
+def _benchmark_section_methods(section: Any) -> frozenset[str]:
+    """Collect the benchmark method names recorded by one benchmark section."""
+    if not isinstance(section, Mapping):
+        return frozenset()
+    names: set[str] = set()
+    named = section.get("benchmark")
+    if isinstance(named, str) and named:
+        names.add(named)
+    listed = section.get("benchmarks")
+    if isinstance(listed, list):
+        names.update(entry for entry in listed if isinstance(entry, str) and entry)
+    rows = section.get("rows")
+    if isinstance(rows, list):
+        for row in rows:
+            if not isinstance(row, Mapping):
+                continue
+            for key in ("name", "run_name"):
+                value = row.get(key)
+                if isinstance(value, str) and value:
+                    names.add(value)
+                    names.add(value.partition("/")[0])
+    return frozenset(names)
+
+
+def _packet_benchmark_methods(packet: Any) -> frozenset[str]:
+    """Collect benchmark method names across every verified benchmark shape."""
+    benchmark = packet.get("benchmark") if isinstance(packet, Mapping) else None
+    if not isinstance(benchmark, Mapping):
+        return frozenset()
+    names = set(_benchmark_section_methods(benchmark))
+    names.update(_benchmark_section_methods(benchmark.get("method")))
+    methods = benchmark.get("methods")
+    if isinstance(methods, Mapping):
+        for method in methods.values():
+            names.update(_benchmark_section_methods(method))
+    return frozenset(names)
+
+
+def _closure_packet_profile_errors(
+    path: Path,
+    packet: dict[str, Any],
+    profile: ClosureProfile,
+    context: _ValidationContext,
+) -> list[str]:
+    cached = context.closure_packet_results.get(path)
+    if cached is not None:
+        return list(cached)
+
+    errors: list[str] = []
+    if profile.solver_family not in ("avbd", "vbd"):
+        errors.append("profile solver_family must be 'avbd' or 'vbd'")
+    claim_errors = _string_tuple_declaration_errors(profile.claim_ids, "claim_ids")
+    errors.extend(claim_errors)
+    if not claim_errors and any(
+        claim_id.partition(".")[0] != profile.solver_family
+        for claim_id in profile.claim_ids
+    ):
+        errors.append("profile claim_ids must belong to profile solver_family")
+
+    # Declared packet content is enforced here, before the profile hooks run, so
+    # that a hook returning no errors cannot close a row over a packet that is
+    # missing any declared element.
+    members = packet if isinstance(packet, Mapping) else {}
+    key_errors = _string_tuple_declaration_errors(
+        profile.required_packet_keys, "required_packet_keys"
+    )
+    errors.extend(key_errors)
+    if not key_errors:
+        errors.extend(
+            f"packet must contain object member {key!r}"
+            for key in profile.required_packet_keys
+            if not isinstance(members.get(key), Mapping)
+        )
+
+    source_errors = _string_tuple_declaration_errors(
+        profile.required_source_paths, "required_source_paths"
+    )
+    errors.extend(source_errors)
+    if not source_errors:
+        covered_paths = _packet_source_paths(packet)
+        errors.extend(
+            f"packet source_provenance.files must cover {source_path!r}"
+            for source_path in profile.required_source_paths
+            if source_path not in covered_paths
+        )
+
+    role_errors = _string_tuple_declaration_errors(
+        profile.required_capture_roles, "required_capture_roles"
+    )
+    errors.extend(role_errors)
+    if not role_errors:
+        captured_roles = _packet_capture_roles(packet)
+        errors.extend(
+            f"packet visual_evidence must contain capture role {role!r}"
+            for role in profile.required_capture_roles
+            if role not in captured_roles
+        )
+
+    method_errors = _string_tuple_declaration_errors(
+        profile.required_benchmark_methods, "required_benchmark_methods"
+    )
+    errors.extend(method_errors)
+    if not method_errors:
+        recorded_methods = _packet_benchmark_methods(packet)
+        errors.extend(
+            f"packet benchmark must record method {method!r}"
+            for method in profile.required_benchmark_methods
+            if method not in recorded_methods
+        )
+
+    if not callable(profile.validate_packet):
+        errors.append("profile validate_packet must be callable")
+    else:
+        try:
+            result = profile.validate_packet(path, packet)
+            if not isinstance(result, list) or any(
+                not isinstance(error, str) or not error.strip() for error in result
+            ):
+                errors.append(
+                    "profile validate_packet must return a list of non-empty strings"
+                )
+            else:
+                errors.extend(result)
+        except Exception as exc:  # noqa: BLE001 - evidence validators fail closed
+            errors.append(f"profile validate_packet raised {type(exc).__name__}: {exc}")
+
+    result = tuple(errors)
+    context.closure_packet_results[path] = result
+    return list(result)
+
+
+def _closure_row_profile_errors(
+    path: Path,
+    packet: dict[str, Any],
+    profile: ClosureProfile,
+    *,
+    requirement_id: str,
+    predicate_results: Any,
+    backend_results: Any,
+) -> list[str]:
+    errors: list[str] = []
+    solver_family = requirement_id.partition(".")[0]
+    if solver_family not in ("avbd", "vbd"):
+        errors.append("row solver family must be 'avbd' or 'vbd'")
+    if solver_family != profile.solver_family:
+        errors.append(
+            f"profile solver_family {profile.solver_family!r} cannot authorize "
+            f"{solver_family!r} row {requirement_id!r}"
+        )
+    if requirement_id not in profile.claim_ids:
+        errors.append(f"profile does not authorize claim_id {requirement_id!r}")
+
+    claims = packet.get(PLAN104_CLAIMS_KEY)
+    claim = claims.get(requirement_id) if isinstance(claims, Mapping) else None
+    if not isinstance(claim, Mapping):
+        errors.append(f"packet must contain {PLAN104_CLAIMS_KEY}[{requirement_id!r}]")
+    else:
+        if tuple(claim) != ("status", "predicate_results", "backend_results"):
+            errors.append("claim fields must use the exact canonical order")
+        if claim.get("status") != "complete":
+            errors.append("claim status must be 'complete'")
+        claim_predicates = claim.get("predicate_results")
+        if not isinstance(predicate_results, dict) or not isinstance(
+            claim_predicates, Mapping
+        ):
+            errors.append("claim predicate_results cannot authorize this row")
+        elif tuple(claim_predicates.items()) != tuple(predicate_results.items()):
+            errors.append("claim predicate_results must exactly match the row")
+        claim_backends = claim.get("backend_results")
+        if not isinstance(backend_results, dict) or not isinstance(
+            claim_backends, Mapping
+        ):
+            errors.append("claim backend_results cannot authorize this row")
+        elif tuple(claim_backends.items()) != tuple(backend_results.items()):
+            errors.append("claim backend_results must exactly match the row")
+
+    if not callable(profile.authorize_row):
+        errors.append("profile authorize_row must be callable")
+    elif isinstance(predicate_results, dict) and isinstance(backend_results, dict):
+        try:
+            result = profile.authorize_row(
+                path,
+                packet,
+                requirement_id,
+                solver_family,
+                predicate_results,
+                backend_results,
+            )
+            if not isinstance(result, list) or any(
+                not isinstance(error, str) or not error.strip() for error in result
+            ):
+                errors.append(
+                    "profile authorize_row must return a list of non-empty strings"
+                )
+            else:
+                errors.extend(result)
+        except Exception as exc:  # noqa: BLE001 - evidence validators fail closed
+            errors.append(f"profile authorize_row raised {type(exc).__name__}: {exc}")
+    return errors
 
 
 def _result_map_errors(
@@ -694,9 +1140,10 @@ def _result_map_errors(
         return [f"{label} must be an object"]
 
     errors: list[str] = []
-    unknown = sorted(set(value) - set(allowed_keys))
+    unknown = [key for key in value if key not in allowed_keys]
     if unknown:
-        errors.append(f"{label} has unknown keys: {', '.join(unknown)}")
+        rendered = ", ".join(sorted(repr(key) for key in unknown))
+        errors.append(f"{label} has unknown keys: {rendered}")
     for key, result in value.items():
         if not isinstance(result, bool):
             errors.append(f"{label}.{key} must be boolean")
@@ -711,21 +1158,215 @@ def _result_map_errors(
     return errors
 
 
-def _evidence_path_errors(requirement_id: str, evidence: Any) -> list[str]:
+def _evidence_path_errors(
+    requirement_id: str,
+    evidence: Any,
+    context: _ValidationContext,
+) -> list[str]:
     if not _list_of_nonempty_strings(evidence):
         return [f"{requirement_id}: evidence must be a list of non-empty paths"]
 
     errors: list[str] = []
     for raw_path in evidence:
-        path = Path(raw_path)
-        if path.is_absolute() or ".." in path.parts:
+        path = _safe_relative_path(raw_path)
+        if path is None:
             errors.append(
                 f"{requirement_id}: evidence path must be repository-relative: "
                 f"{raw_path}"
             )
             continue
-        if not (REPO_ROOT / path).is_file():
-            errors.append(f"{requirement_id}: evidence path does not exist: {raw_path}")
+        if _is_plan104_packet_path(path) and (REPO_ROOT / path).is_symlink():
+            errors.append(
+                f"{requirement_id}: PLAN-104 packet path cannot be a symbolic link: "
+                f"{raw_path}"
+            )
+            continue
+        absolute_path = _repository_path(path)
+        if absolute_path is None:
+            errors.append(
+                f"{requirement_id}: evidence path resolves outside the repository: "
+                f"{raw_path}"
+            )
+            continue
+        if not absolute_path.is_file():
+            if _is_plan104_packet_path(path):
+                errors.append(
+                    f"{requirement_id}: PLAN-104 packet path must be a regular file: "
+                    f"{raw_path}"
+                )
+            else:
+                errors.append(
+                    f"{requirement_id}: evidence path does not exist: {raw_path}"
+                )
+            continue
+        if _is_plan104_packet_path(path):
+            if absolute_path.parent != _resolved_contract_directory():
+                errors.append(
+                    f"{requirement_id}: PLAN-104 packet path must resolve directly "
+                    f"under {CONTRACT_DIR_RELATIVE.as_posix()}: {raw_path}"
+                )
+                continue
+            errors.extend(
+                _reported_validator_errors(
+                    AVBD_PACKET_VALIDATOR,
+                    absolute_path,
+                    context,
+                )
+            )
+    return errors
+
+
+def _closure_evidence_errors(
+    requirement: dict[str, Any],
+    *,
+    requirement_id: str,
+    status: Any,
+    evidence: Any,
+    predicate_results: Any,
+    backend_results: Any,
+    context: _ValidationContext,
+) -> list[str]:
+    if status != "complete":
+        if "closure_evidence" in requirement:
+            return [f"{requirement_id}: incomplete rows cannot carry closure_evidence"]
+        return []
+
+    closure = requirement.get("closure_evidence")
+    if closure is None:
+        return [f"{requirement_id}: complete rows require closure_evidence"]
+    if not isinstance(closure, dict):
+        return [f"{requirement_id}: closure_evidence must be an object"]
+
+    label = f"{requirement_id}: closure_evidence"
+    errors: list[str] = []
+    if tuple(closure) != CLOSURE_EVIDENCE_KEYS:
+        errors.append(
+            f"{label} must contain exactly, in order: "
+            f"{', '.join(CLOSURE_EVIDENCE_KEYS)}"
+        )
+
+    raw_path = closure.get("path")
+    relative_path = _safe_relative_path(raw_path)
+    if relative_path is None:
+        errors.append(f"{label}.path must be a safe repository-relative path")
+        absolute_path = None
+    else:
+        lexical_path = REPO_ROOT / relative_path
+        if _is_plan104_packet_path(relative_path) and lexical_path.is_symlink():
+            errors.append(f"{label}.path cannot be a symbolic link")
+        absolute_path = _repository_path(relative_path)
+        if absolute_path is None:
+            errors.append(f"{label}.path resolves outside the repository")
+        if not _is_plan104_packet_path(relative_path):
+            errors.append(
+                f"{label}.path must name an avbd-*-packet.json or "
+                "vbd-*-packet.json file"
+            )
+        elif (
+            absolute_path is not None
+            and absolute_path.parent != _resolved_contract_directory()
+        ):
+            errors.append(
+                f"{label}.path must resolve directly under "
+                f"{CONTRACT_DIR_RELATIVE.as_posix()}"
+            )
+        if not isinstance(evidence, list) or raw_path not in evidence:
+            errors.append(f"{label}.path must also be present in evidence")
+        if absolute_path is not None and not absolute_path.is_file():
+            errors.append(f"{label}.path must be a regular file: {raw_path}")
+
+    validator_name = closure.get("validator")
+    validator_registered = False
+    if not isinstance(validator_name, str):
+        errors.append(f"{label}.validator must be a string")
+    elif validator_name != AVBD_PACKET_VALIDATOR:
+        if validator_name not in EVIDENCE_VALIDATORS:
+            errors.append(f"{label}.validator is unknown: {validator_name!r}")
+        else:
+            errors.append(f"{label}.validator must be {AVBD_PACKET_VALIDATOR!r}")
+    elif validator_name not in EVIDENCE_VALIDATORS:
+        errors.append(f"{label}.validator is not registered")
+    else:
+        validator_registered = True
+
+    expected_sha256 = closure.get("sha256")
+    if (
+        not isinstance(expected_sha256, str)
+        or len(expected_sha256) != 64
+        or any(character not in "0123456789abcdef" for character in expected_sha256)
+    ):
+        errors.append(f"{label}.sha256 must be a lowercase SHA-256 digest")
+
+    claim_id = closure.get("claim_id")
+    if claim_id != requirement_id:
+        errors.append(f"{label}.claim_id must equal {requirement_id!r}")
+
+    if absolute_path is None or not absolute_path.is_file():
+        return errors
+
+    validator_errors: tuple[str, ...] | None = None
+    if validator_registered:
+        validator_errors = _validator_result(validator_name, absolute_path, context)
+        if validator_errors:
+            errors.append(f"{label}.path failed registered packet validation")
+
+    loaded = context.avbd_packets.loaded.get(absolute_path.resolve())
+    packet = loaded.packet if loaded is not None else None
+    actual_sha256 = loaded.sha256 if loaded is not None else None
+    if actual_sha256 is None:
+        errors.append(f"{label}.path could not be hashed by its validator")
+    elif expected_sha256 != actual_sha256:
+        errors.append(
+            f"{label}.sha256 does not match current packet contents: "
+            f"expected {actual_sha256}"
+        )
+    if not isinstance(packet, dict):
+        errors.append(f"{label}.path was not parsed by its registered validator")
+        return errors
+
+    packet_schema_version = packet.get("schema_version")
+    if (
+        not isinstance(packet_schema_version, int)
+        or isinstance(packet_schema_version, bool)
+        or packet_schema_version != AVBD_PACKET_SCHEMA_VERSION
+    ):
+        errors.append(
+            f"{label}.path must use current nonlegacy PLAN-104 packet "
+            f"schema_version {AVBD_PACKET_SCHEMA_VERSION}"
+        )
+    packet_id = packet.get("packet")
+    if not isinstance(packet_id, str) or not packet_id.strip():
+        errors.append(f"{label}.path packet identity must be a non-empty string")
+    target = packet.get("target")
+    contract_rows = target.get("contract_rows") if isinstance(target, dict) else None
+    if not isinstance(contract_rows, list) or requirement_id not in contract_rows:
+        errors.append(
+            f"{label}.path target.contract_rows must contain {requirement_id!r}"
+        )
+
+    profile = CLOSURE_PROFILES.get(absolute_path.resolve())
+    if profile is None:
+        errors.append(f"{label}.path has no registered row-closing profile")
+    elif not isinstance(profile, ClosureProfile):
+        errors.append(f"{label}.path row-closing profile has an invalid type")
+    else:
+        errors.extend(
+            f"{label}.path closure profile: {profile_error}"
+            for profile_error in _closure_packet_profile_errors(
+                absolute_path.resolve(), packet, profile, context
+            )
+        )
+        errors.extend(
+            f"{label}.path row authorization: {profile_error}"
+            for profile_error in _closure_row_profile_errors(
+                absolute_path.resolve(),
+                packet,
+                profile,
+                requirement_id=requirement_id,
+                predicate_results=predicate_results,
+                backend_results=backend_results,
+            )
+        )
     return errors
 
 
@@ -734,6 +1375,7 @@ def _requirement_errors(
     *,
     expected_id: str,
     required_predicates: tuple[str, ...],
+    context: _ValidationContext,
 ) -> list[str]:
     label = expected_id
     if not isinstance(requirement, dict):
@@ -749,12 +1391,12 @@ def _requirement_errors(
         errors.append(f"{label}: source_locator must be a non-empty string")
 
     status = requirement.get("status")
-    if status not in ALLOWED_STATUSES:
+    if not isinstance(status, str) or status not in ALLOWED_STATUSES:
         errors.append(f"{label}: invalid status {status!r}")
 
     evidence = requirement.get("evidence")
     blockers = requirement.get("blockers")
-    errors.extend(_evidence_path_errors(label, evidence))
+    errors.extend(_evidence_path_errors(label, evidence, context))
     if not _list_of_nonempty_strings(blockers):
         errors.append(f"{label}: blockers must be a list of non-empty strings")
 
@@ -785,6 +1427,17 @@ def _requirement_errors(
             allowed_keys=REQUIRED_BACKENDS,
             label=f"{label}: backend_results",
             require_all_true=require_all_true,
+        )
+    )
+    errors.extend(
+        _closure_evidence_errors(
+            requirement,
+            requirement_id=label,
+            status=status,
+            evidence=evidence,
+            predicate_results=predicate_results,
+            backend_results=requirement.get("backend_results"),
+            context=context,
         )
     )
     if (
@@ -833,19 +1486,17 @@ def _video_errors(family: str, groups_by_id: dict[str, dict[str, Any]]) -> list[
         source_seconds = (
             requirement.get("source_seconds") if isinstance(requirement, dict) else None
         )
-        if (
-            not isinstance(source_seconds, list)
-            or len(source_seconds) != 2
-            or any(
-                not isinstance(value, (int, float))
-                or isinstance(value, bool)
-                or not math.isfinite(value)
-                for value in source_seconds
-            )
+        converted_seconds = (
+            [_finite_number(value) for value in source_seconds]
+            if isinstance(source_seconds, list) and len(source_seconds) == 2
+            else None
+        )
+        if converted_seconds is None or any(
+            value is None for value in converted_seconds
         ):
             errors.append(f"{label}: source_seconds must be two finite numbers")
             continue
-        actual_range = tuple(float(value) for value in source_seconds)
+        actual_range = tuple(converted_seconds)
         if actual_range != expected_range:
             errors.append(
                 f"{label}: source_seconds must be {list(expected_range)}, "
@@ -892,17 +1543,13 @@ def _project_surface_errors(
                 f"{requirement_id}: source_seconds must be " f"{list(expected_range)}"
             )
             continue
-        if any(
-            not isinstance(value, (int, float))
-            or isinstance(value, bool)
-            or not math.isfinite(value)
-            for value in source_seconds
-        ):
+        converted_seconds = [_finite_number(value) for value in source_seconds]
+        if any(value is None for value in converted_seconds):
             errors.append(
                 f"{requirement_id}: source_seconds must be two finite numbers"
             )
             continue
-        actual_range = tuple(float(value) for value in source_seconds)
+        actual_range = tuple(converted_seconds)
         if actual_range != expected_range:
             errors.append(
                 f"{requirement_id}: source_seconds must be "
@@ -911,13 +1558,21 @@ def _project_surface_errors(
     return errors
 
 
-def validate_contract(contract: Any, *, source_name: str = "<contract>") -> list[str]:
+def validate_contract(
+    contract: Any,
+    *,
+    source_name: str = "<contract>",
+    validation_context: _ValidationContext | None = None,
+) -> list[str]:
     if not isinstance(contract, dict):
         return [f"{source_name}: contract must be a JSON object"]
 
+    if validation_context is None:
+        validation_context = _ValidationContext()
+
     errors: list[str] = []
     family = contract.get("solver_family")
-    if family not in EXPECTED_GROUPS:
+    if not isinstance(family, str) or family not in EXPECTED_GROUPS:
         return [
             f"{source_name}: solver_family must be one of "
             f"{', '.join(sorted(EXPECTED_GROUPS))}"
@@ -999,11 +1654,19 @@ def validate_contract(contract: Any, *, source_name: str = "<contract>") -> list
             errors.append(f"{label}: id must be {group_id!r}")
         if group.get("kind") != expected_kind:
             errors.append(f"{label}: kind must be {expected_kind!r}")
-        if tuple(group.get("required_backends", ())) != REQUIRED_BACKENDS:
+        required_backends = group.get("required_backends")
+        if (
+            not isinstance(required_backends, list)
+            or tuple(required_backends) != REQUIRED_BACKENDS
+        ):
             errors.append(
                 f"{label}: required_backends must be " f"{list(REQUIRED_BACKENDS)!r}"
             )
-        if tuple(group.get("required_predicates", ())) != expected_predicates:
+        required_predicates = group.get("required_predicates")
+        if (
+            not isinstance(required_predicates, list)
+            or tuple(required_predicates) != expected_predicates
+        ):
             errors.append(
                 f"{label}: required_predicates must be "
                 f"{list(expected_predicates)!r}"
@@ -1028,6 +1691,7 @@ def validate_contract(contract: Any, *, source_name: str = "<contract>") -> list
                     requirement,
                     expected_id=expected_id,
                     required_predicates=expected_predicates,
+                    context=validation_context,
                 )
             )
         all_ids.extend(
@@ -1047,13 +1711,18 @@ def validate_contract(contract: Any, *, source_name: str = "<contract>") -> list
     errors.extend(_video_errors(family, groups_by_id))
     errors.extend(_project_surface_errors(family, groups_by_id))
 
-    statuses = [
-        requirement.get("status")
-        for group in groups
-        if isinstance(group, dict)
-        for requirement in group.get("requirements", ())
-        if isinstance(requirement, dict)
-    ]
+    statuses = []
+    for group in groups:
+        if not isinstance(group, dict):
+            continue
+        requirements = group.get("requirements")
+        if not isinstance(requirements, list):
+            continue
+        statuses.extend(
+            requirement.get("status")
+            for requirement in requirements
+            if isinstance(requirement, dict)
+        )
     computed_complete = bool(statuses) and all(
         status == "complete" for status in statuses
     )
@@ -1066,18 +1735,26 @@ def validate_contract(contract: Any, *, source_name: str = "<contract>") -> list
     return errors
 
 
-def contract_errors(path: Path) -> list[str]:
+def contract_errors(
+    path: Path,
+    *,
+    validation_context: _ValidationContext | None = None,
+) -> list[str]:
     if not path.is_file():
         return [f"{path}: contract file not found"]
     try:
-        contract = json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError) as exc:
+        contract = _strict_json_loads(path.read_bytes())
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
         return [f"{path}: invalid JSON ({exc})"]
-    return validate_contract(contract, source_name=path.name)
+    return validate_contract(
+        contract,
+        source_name=path.name,
+        validation_context=validation_context,
+    )
 
 
 def contract_summary(path: Path) -> str:
-    contract = json.loads(path.read_text())
+    contract = _strict_json_loads(path.read_bytes())
     statuses = Counter(
         requirement["status"]
         for group in contract["coverage_groups"]
@@ -1092,8 +1769,10 @@ def contract_summary(path: Path) -> str:
     return f"{contract['solver_family'].upper()}: {total} rows ({status_summary})"
 
 
-def _matrix_table_rows(text: str) -> dict[str, tuple[int, int, int, int, int]]:
-    rows: dict[str, tuple[int, int, int, int, int]] = {}
+def _matrix_table_rows(
+    text: str,
+) -> dict[str, list[tuple[int, int, int, int, int]]]:
+    rows: dict[str, list[tuple[int, int, int, int, int]]] = {}
     for line in text.splitlines():
         if not line.startswith("|"):
             continue
@@ -1104,7 +1783,7 @@ def _matrix_table_rows(text: str) -> dict[str, tuple[int, int, int, int, int]]:
             counts = tuple(int(cell) for cell in cells[1:])
         except ValueError:
             continue
-        rows[cells[0]] = counts
+        rows.setdefault(cells[0], []).append(counts)
     return rows
 
 
@@ -1153,12 +1832,21 @@ def matrix_errors(
 
     errors: list[str] = []
     for label, expected in expected_rows.items():
-        actual = rows.get(label)
+        occurrences = rows.get(label, [])
+        if len(occurrences) != 1:
+            errors.append(
+                f"{matrix_path.name}: table row {label!r} must appear exactly "
+                f"once, got {len(occurrences)} occurrences {occurrences}"
+            )
+            continue
+        actual = occurrences[0]
         if actual != expected:
             errors.append(
                 f"{matrix_path.name}: table row {label!r} must be {expected}, "
                 f"got {actual}"
             )
+    for label in sorted(rows.keys() - expected_rows.keys()):
+        errors.append(f"{matrix_path.name}: unexpected numeric table row {label!r}")
     return errors
 
 
@@ -1178,10 +1866,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     paths = tuple(args.contract) if args.contract else DEFAULT_CONTRACTS
     all_errors: list[str] = []
+    validation_context = _ValidationContext()
     for path in paths:
-        all_errors.extend(contract_errors(path))
+        all_errors.extend(contract_errors(path, validation_context=validation_context))
     if not args.contract and not all_errors:
-        contracts = tuple(json.loads(path.read_text()) for path in paths)
+        contracts = tuple(_strict_json_loads(path.read_bytes()) for path in paths)
         all_errors.extend(matrix_errors(contracts))
 
     if all_errors:
@@ -1192,7 +1881,7 @@ def main(argv: list[str] | None = None) -> int:
     total = 0
     for path in paths:
         print(contract_summary(path))
-        contract = json.loads(path.read_text())
+        contract = _strict_json_loads(path.read_bytes())
         total += sum(
             len(group["requirements"]) for group in contract["coverage_groups"]
         )

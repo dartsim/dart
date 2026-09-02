@@ -1,8 +1,7 @@
 """Tests for scripts/avbd_packet_schema.py (PLAN-091 WP-091.11 slice 4).
 
 These cover the report-derived ``resolved_solver_identity`` builder: it must
-reproduce, byte-for-byte, the identities the AVBD packet writers previously
-hand-typed (so committed packets are unchanged), and it must translate the C++
+translate the C++
 resolved-configuration report's rigid-contact family vocabulary onto the packet
 enum through the single mapping in the schema module.
 """
@@ -30,9 +29,7 @@ def _load_module():
 schema = _load_module()
 
 
-# The identities the four AVBD packet writers committed before slice 4. The
-# builder must reproduce each exactly so regeneration leaves the packets byte
-# identical.
+# Representative writer identities exercise the shared builder contract.
 _WRITER_CASES = {
     "breakable_joint": (
         {
@@ -43,6 +40,7 @@ _WRITER_CASES = {
         },
         {
             "avbd_rigid_contact_config_emplaced": False,
+            "multibody_integration_family": "none",
             "recorded_from": "breakable joint scale benchmark row family",
             "rigid_contact_selection": "not_applicable",
             "rigid_contact_solver": "none",
@@ -58,6 +56,7 @@ _WRITER_CASES = {
         },
         {
             "avbd_rigid_contact_config_emplaced": False,
+            "multibody_integration_family": "none",
             "recorded_from": "breakable motor scale benchmark row family",
             "rigid_contact_selection": "not_applicable",
             "rigid_contact_solver": "none",
@@ -73,6 +72,7 @@ _WRITER_CASES = {
         },
         {
             "avbd_rigid_contact_config_emplaced": False,
+            "multibody_integration_family": "none",
             "recorded_from": "friction coefficient sweep benchmark scene counters",
             "rigid_contact_selection": "contact_solver_method",
             "rigid_contact_solver": "sequential_impulse",
@@ -88,6 +88,7 @@ _WRITER_CASES = {
         },
         {
             "avbd_rigid_contact_config_emplaced": False,
+            "multibody_integration_family": "none",
             "recorded_from": "paper-scale high-ratio iteration benchmark row family",
             "rigid_contact_selection": "not_applicable",
             "rigid_contact_solver": "none",
@@ -111,6 +112,215 @@ def test_builder_output_passes_schema_contract():
             schema.RESOLVED_SOLVER_IDENTITY_KEY: identity,
         }
         assert schema.resolved_solver_identity_errors(packet, "case") == []
+
+
+def test_current_flat_identity_requires_explicit_multibody_family():
+    identity = schema.make_resolved_solver_identity(
+        resolved_rigid_contact_family="avbd",
+        rigid_point_joint_solver="none",
+        avbd_rigid_contact_config_emplaced=False,
+        recorded_from="runtime report",
+        rigid_contact_selection="world_solver_family",
+    )
+    del identity["multibody_integration_family"]
+
+    errors = schema.resolved_solver_identity_errors(
+        {
+            "schema_version": schema.AVBD_PACKET_SCHEMA_VERSION,
+            schema.RESOLVED_SOLVER_IDENTITY_KEY: identity,
+        },
+        "case",
+    )
+
+    assert any("multibody_integration_family is required" in error for error in errors)
+
+
+def test_pre_v5_identity_without_multibody_family_stays_readable():
+    packet = {
+        "schema_version": schema.MULTIBODY_IDENTITY_MIN_SCHEMA_VERSION - 1,
+        schema.RESOLVED_SOLVER_IDENTITY_KEY: {
+            "avbd_rigid_contact_config_emplaced": False,
+            "recorded_from": "legacy runtime report",
+            "rigid_contact_selection": "world_solver_family",
+            "rigid_contact_solver": "avbd",
+            "rigid_point_joint_solver": "avbd",
+        },
+    }
+
+    assert schema.resolved_solver_identity_errors(packet, "case") == []
+
+
+def test_unknown_multibody_family_is_rejected():
+    identity = schema.make_resolved_solver_identity(
+        resolved_rigid_contact_family=None,
+        rigid_point_joint_solver="none",
+        avbd_rigid_contact_config_emplaced=False,
+        recorded_from="runtime report",
+    )
+    identity["multibody_integration_family"] = "avbd"
+
+    errors = schema.resolved_solver_identity_errors(
+        {
+            "schema_version": schema.AVBD_PACKET_SCHEMA_VERSION,
+            schema.RESOLVED_SOLVER_IDENTITY_KEY: identity,
+        },
+        "case",
+    )
+
+    assert any("must be one of" in error for error in errors), errors
+
+
+def _runtime_identity_row(runtime_family, *, pair_rows):
+    common = {
+        "name": "BM_RuntimeIdentity/1_median",
+        "runtime_identity_recorded": 1.0,
+        "runtime_identity_applicable": 1.0,
+        "runtime_identity_not_applicable": 0.0,
+        "runtime_identity_contract_passed": 1.0,
+    }
+    if runtime_family == "public_avbd_rigid":
+        return {
+            **common,
+            "runtime_identity_public_avbd_rigid": 1.0,
+            "runtime_identity_variational_multibody": 0.0,
+            "public_avbd_family": 1.0,
+            "resolved_rigid_body_avbd": 1.0,
+            "resolved_rigid_contact_avbd": 1.0,
+            "resolved_rigid_pair_constraint_avbd": 1.0 if pair_rows else 0.0,
+            "resolved_rigid_pair_constraint_not_applicable": (
+                0.0 if pair_rows else 1.0
+            ),
+            "resolved_multibody_variational": 0.0,
+        }
+    return {
+        **common,
+        "runtime_identity_public_avbd_rigid": 0.0,
+        "runtime_identity_variational_multibody": 1.0,
+        "public_avbd_family": 0.0,
+        "public_sequential_impulse_family": 1.0,
+        "resolved_rigid_body_avbd": 0.0,
+        "resolved_rigid_contact_avbd": 0.0,
+        "resolved_rigid_body_sequential_impulse": 1.0,
+        "resolved_rigid_contact_sequential_impulse": 1.0,
+        "resolved_rigid_pair_constraint_sequential_impulse": (
+            1.0 if pair_rows else 0.0
+        ),
+        "resolved_rigid_pair_constraint_not_applicable": (0.0 if pair_rows else 1.0),
+        "configured_multibody_variational": 1.0,
+        "resolved_multibody_variational": 1.0,
+    }
+
+
+def test_runtime_counters_derive_public_avbd_rigid_identity():
+    identity = schema.make_resolved_solver_identity_from_benchmark_row(
+        _runtime_identity_row("public_avbd_rigid", pair_rows=True),
+        recorded_from="benchmark runtime counters",
+    )
+
+    assert identity["rigid_contact_solver"] == "avbd"
+    assert identity["rigid_point_joint_solver"] == "avbd"
+    assert identity["multibody_integration_family"] == "none"
+
+
+def test_runtime_counters_derive_variational_multibody_identity():
+    identity = schema.make_resolved_solver_identity_from_benchmark_row(
+        _runtime_identity_row("variational_multibody", pair_rows=False),
+        recorded_from="benchmark runtime counters",
+    )
+
+    assert identity["rigid_contact_solver"] == "sequential_impulse"
+    assert identity["rigid_point_joint_solver"] == "none"
+    assert identity["multibody_integration_family"] == "variational"
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    (
+        ("runtime_identity_recorded", 0.0),
+        ("runtime_identity_contract_passed", 0.0),
+        ("runtime_identity_variational_multibody", 1.0),
+        ("resolved_rigid_contact_avbd", 0.0),
+        ("resolved_rigid_pair_constraint_avbd", 0.0),
+        ("runtime_identity_recorded", float("nan")),
+    ),
+)
+def test_runtime_identity_counter_mutations_fail_closed(field, replacement):
+    row = _runtime_identity_row("public_avbd_rigid", pair_rows=True)
+    row[field] = replacement
+
+    with pytest.raises(ValueError):
+        schema.make_resolved_solver_identity_from_benchmark_row(
+            row,
+            recorded_from="benchmark runtime counters",
+        )
+
+
+def _heterogeneous_identity_packet(*, duplicate_identity=False):
+    avbd = schema.make_resolved_solver_identity_from_benchmark_row(
+        _runtime_identity_row("public_avbd_rigid", pair_rows=True),
+        recorded_from="benchmark runtime counters",
+    )
+    variational = schema.make_resolved_solver_identity_from_benchmark_row(
+        _runtime_identity_row("variational_multibody", pair_rows=False),
+        recorded_from="benchmark runtime counters",
+    )
+    if duplicate_identity:
+        variational = avbd
+    return {
+        "schema_version": schema.AVBD_PACKET_SCHEMA_VERSION,
+        "resolved_solver_identity": schema.make_per_benchmark_row_solver_identity(
+            recorded_from="benchmark runtime counters"
+        ),
+        "benchmark": {
+            "rows": [
+                {"benchmark": "BM_Rigid/1", "resolved_solver_identity": avbd},
+                {
+                    "benchmark": "BM_Articulated/1",
+                    "resolved_solver_identity": variational,
+                },
+            ],
+            "scale_data": [
+                {"benchmark": "BM_Rigid/1", "resolved_solver_identity": avbd},
+                {
+                    "benchmark": "BM_Articulated/1",
+                    "resolved_solver_identity": variational,
+                },
+            ],
+        },
+    }
+
+
+def test_heterogeneous_packet_accepts_complete_per_row_identities():
+    packet = _heterogeneous_identity_packet()
+    assert schema.resolved_solver_identity_errors(packet, "case") == []
+
+
+def test_heterogeneous_packet_rejects_missing_row_identity():
+    packet = _heterogeneous_identity_packet()
+    del packet["benchmark"]["rows"][1]["resolved_solver_identity"]
+
+    errors = schema.resolved_solver_identity_errors(packet, "case")
+
+    assert any(
+        "benchmark.rows[1].resolved_solver_identity" in error for error in errors
+    )
+
+
+def test_homogeneous_packet_cannot_hide_behind_per_row_scope():
+    packet = _heterogeneous_identity_packet(duplicate_identity=True)
+
+    errors = schema.resolved_solver_identity_errors(packet, "case")
+
+    assert any("at least two distinct" in error for error in errors), errors
+
+
+def test_heterogeneous_packet_rejects_conflicting_identity_for_same_benchmark():
+    packet = _heterogeneous_identity_packet()
+    packet["benchmark"]["scale_data"][1]["benchmark"] = "BM_Rigid/1"
+
+    errors = schema.resolved_solver_identity_errors(packet, "case")
+
+    assert any("conflicts with another row" in error for error in errors), errors
 
 
 def test_contact_solver_method_rejects_private_avbd_body_config():
@@ -187,6 +397,7 @@ def test_public_avbd_family_records_selection_without_private_config():
     )
     assert identity == {
         "avbd_rigid_contact_config_emplaced": False,
+        "multibody_integration_family": "none",
         "recorded_from": "World resolved-configuration report",
         "rigid_contact_selection": "world_solver_family",
         "rigid_contact_solver": "avbd",
@@ -400,3 +611,215 @@ def test_future_schema_version_is_rejected_fail_closed():
     errors = schema.packet_schema_version_errors(packet, "case")
 
     assert any("newer than the supported version" in error for error in errors)
+
+
+def _plan104_claim(**overrides):
+    claim = {
+        "status": "complete",
+        "predicate_results": {
+            "artifact_valid": True,
+            "solver_contract_valid": True,
+            "physical_outcome_valid": True,
+            "performance_comparable": True,
+            "claim_valid": True,
+        },
+        "backend_results": {"cpu": True, "cuda": True},
+    }
+    claim.update(overrides)
+    return claim
+
+
+def _plan104_packet(claims, *, contract_rows=None):
+    if contract_rows is None:
+        contract_rows = ["avbd.method.cpu_solver"]
+    return {
+        "schema_version": schema.AVBD_PACKET_SCHEMA_VERSION,
+        "target": {"contract_rows": contract_rows},
+        "plan104_claims": claims,
+    }
+
+
+def test_current_packet_may_omit_plan104_claims_while_partial():
+    packet = {"schema_version": schema.AVBD_PACKET_SCHEMA_VERSION}
+    assert schema.plan104_claims_errors(packet, "case") == []
+
+
+def test_current_packet_accepts_typed_complete_plan104_claim():
+    packet = _plan104_packet({"avbd.method.cpu_solver": _plan104_claim()})
+    assert schema.plan104_claims_errors(packet, "case") == []
+
+
+def test_plan104_claims_require_target_contract_rows():
+    packet = _plan104_packet({"avbd.method.cpu_solver": _plan104_claim()})
+    del packet["target"]
+
+    errors = schema.plan104_claims_errors(packet, "case")
+
+    assert any("requires target to be an object" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "claim_id",
+    (
+        "method.cpu_solver",
+        "AVBD.method.cpu_solver",
+        "avbd.method.cpu-solver",
+        "avbd..cpu_solver",
+        "avbd.method",
+    ),
+)
+def test_plan104_claim_keys_must_be_canonical_row_ids(claim_id):
+    packet = _plan104_packet({claim_id: _plan104_claim()}, contract_rows=[claim_id])
+
+    errors = schema.plan104_claims_errors(packet, "case")
+
+    assert any("canonical VBD or AVBD row ID" in error for error in errors)
+
+
+def test_plan104_claim_cannot_escape_target_contract_rows():
+    packet = _plan104_packet(
+        {"avbd.method.cuda_solver": _plan104_claim()},
+        contract_rows=["avbd.method.cpu_solver"],
+    )
+
+    errors = schema.plan104_claims_errors(packet, "case")
+
+    assert any("is not authorized by target.contract_rows" in error for error in errors)
+
+
+def test_plan104_target_contract_rows_must_be_unique_canonical_ids():
+    packet = _plan104_packet(
+        {"avbd.method.cpu_solver": _plan104_claim()},
+        contract_rows=[
+            "avbd.method.cpu_solver",
+            "avbd.method.cpu_solver",
+            "not-canonical",
+        ],
+    )
+
+    errors = schema.plan104_claims_errors(packet, "case")
+
+    assert any("must not duplicate" in error for error in errors)
+    assert any("target.contract_rows[2]" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("claims", "message"),
+    [
+        (None, "must be a non-empty object"),
+        (
+            {"avbd.method.cpu_solver": _plan104_claim(status="partial")},
+            "status must be 'complete'",
+        ),
+        (
+            {
+                "avbd.method.cpu_solver": _plan104_claim(
+                    backend_results={"cpu": True, "cuda": False}
+                )
+            },
+            "backend_results must be true for: cuda",
+        ),
+        (
+            {
+                "avbd.method.cpu_solver": _plan104_claim(
+                    predicate_results={"unknown": True}
+                )
+            },
+            "predicate_results has unknown keys",
+        ),
+        (
+            {
+                "avbd.method.cpu_solver": {
+                    **_plan104_claim(),
+                    "unvalidated_note": "not part of the closure contract",
+                }
+            },
+            "must contain exactly, in order",
+        ),
+        (
+            {
+                "avbd.method.cpu_solver": _plan104_claim(
+                    predicate_results={"artifact_valid": "yes"}
+                )
+            },
+            "artifact_valid must be boolean",
+        ),
+        (
+            {
+                "avbd.method.cpu_solver": _plan104_claim(
+                    predicate_results={"artifact_valid": False}
+                )
+            },
+            "predicate_results must be true for: artifact_valid",
+        ),
+        (
+            {"avbd.method.cpu_solver": _plan104_claim(backend_results={"cpu": True})},
+            "must contain exactly, in order: cpu, cuda",
+        ),
+    ],
+)
+def test_plan104_claim_mutations_are_rejected(claims, message):
+    packet = _plan104_packet(claims)
+    errors = schema.plan104_claims_errors(packet, "case")
+    assert any(message in error for error in errors), errors
+
+
+@pytest.mark.parametrize("map_name", ("predicate_results", "backend_results"))
+def test_plan104_claim_non_string_result_key_fails_closed(map_name):
+    claim = _plan104_claim()
+    claim[map_name] = {0: True, **claim[map_name]}
+    packet = _plan104_packet({"avbd.method.cpu_solver": claim})
+
+    errors = schema.plan104_claims_errors(packet, "case")
+
+    assert any(f"{map_name} has unknown keys" in error for error in errors), errors
+
+
+def test_plan104_claim_non_string_false_predicate_key_fails_closed():
+    claim = _plan104_claim(predicate_results={0: False})
+    packet = _plan104_packet({"avbd.method.cpu_solver": claim})
+
+    errors = schema.plan104_claims_errors(packet, "case")
+
+    assert any("predicate_results must be true for: 0" in error for error in errors)
+
+
+def test_legacy_packet_cannot_add_plan104_claims():
+    packet = _plan104_packet({"avbd.method.cpu_solver": _plan104_claim()})
+    packet["schema_version"] = schema.PLAN104_CLAIMS_MIN_SCHEMA_VERSION - 1
+    errors = schema.plan104_claims_errors(packet, "case")
+    assert any("requires schema_version 5" in error for error in errors), errors
+
+
+def test_plan104_claim_minimum_schema_version_is_fixed_at_five():
+    assert schema.PLAN104_CLAIMS_MIN_SCHEMA_VERSION == 5
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda claim: {
+            "predicate_results": claim["predicate_results"],
+            "status": claim["status"],
+            "backend_results": claim["backend_results"],
+        },
+        lambda claim: {
+            **claim,
+            "predicate_results": dict(
+                reversed(tuple(claim["predicate_results"].items()))
+            ),
+        },
+        lambda claim: {
+            **claim,
+            "backend_results": dict(reversed(tuple(claim["backend_results"].items()))),
+        },
+    ],
+)
+def test_plan104_claim_same_content_order_mutations_are_rejected(mutation):
+    claim = _plan104_claim()
+    packet = _plan104_packet({"avbd.method.cpu_solver": mutation(claim)})
+
+    errors = schema.plan104_claims_errors(packet, "case")
+
+    assert errors, packet
+    assert any("order" in error for error in errors), errors

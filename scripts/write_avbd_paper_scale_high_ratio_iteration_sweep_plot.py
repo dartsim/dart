@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the AVBD high-ratio iteration-sweep packet as an SVG plot."""
+"""Render the historical variational-multibody iteration-sweep packet."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ DEFAULT_OUTPUT = Path(
     "docs/plans/104-vertex-block-descent-solver/"
     "avbd-paper-scale-high-ratio-iteration-sweep-plot.svg"
 )
+LEGACY_PACKET_SCHEMA_VERSION = 3
 WIDTH = 720
 HEIGHT = 420
 PLOT_LEFT = 76
@@ -70,13 +71,34 @@ def _finite(row: dict[str, Any], key: str) -> float:
 
 def _validate_packet(packet_path: Path) -> list[dict[str, float]]:
     packet = _load_json(packet_path)
-    if packet.get("schema_version") != 1:
+    if packet.get("schema_version") != LEGACY_PACKET_SCHEMA_VERSION:
         raise AvbdPaperScaleHighRatioIterationSweepPlotError(
-            "packet schema_version must be 1"
+            "packet schema_version must match the pinned legacy version 3"
         )
     if packet.get("packet") != "avbd_paper_scale_high_ratio_iteration_sweep":
         raise AvbdPaperScaleHighRatioIterationSweepPlotError(
             "packet must be avbd_paper_scale_high_ratio_iteration_sweep"
+        )
+    rigid_identity = packet.get("resolved_solver_identity")
+    if not isinstance(rigid_identity, dict) or any(
+        rigid_identity.get(field) != "none"
+        for field in ("rigid_contact_solver", "rigid_point_joint_solver")
+    ):
+        raise AvbdPaperScaleHighRatioIterationSweepPlotError(
+            "packet must record no rigid AVBD solver participation"
+        )
+    boundary = packet.get("evidence_boundary")
+    if (
+        not isinstance(boundary, dict)
+        or boundary.get("avbd_solver_evidence") is not False
+        or boundary.get("avbd_performance_claim_supported") is not False
+        or boundary.get("current_build_bound") is not False
+        or boundary.get("measurement_runtime_identity_recorded") is not False
+        or boundary.get("plan104_avbd_row_closure_supported") is not False
+    ):
+        raise AvbdPaperScaleHighRatioIterationSweepPlotError(
+            "packet must explicitly reject AVBD solver, performance, current-build, "
+            "runtime-identity, and PLAN-104 row-closure claims"
         )
     benchmark = packet.get("benchmark")
     if not isinstance(benchmark, dict):
@@ -190,8 +212,8 @@ def render_svg(rows: list[dict[str, float]]) -> str:
         ".tick{font-size:11px;fill:#4b5563}",
         "</style>",
         '<rect width="720" height="420" fill="#ffffff"/>',
-        '<text x="32" y="34" class="title">AVBD Paper-Scale High-Ratio Iteration Sweep</text>',
-        '<text x="32" y="54" class="subtitle">50 links, 50,000:1 tip mass, 32-step replay envelope; lower CPU time is better, finite replay required.</text>',
+        '<text x="32" y="34" class="title">Variational Multibody High-Ratio Iteration Sweep</text>',
+        '<text x="32" y="54" class="subtitle">Historical DART measurement; not AVBD solver evidence. 50 links, 50,000:1 tip mass, 32-step replay.</text>',
     ]
     svg_lines.extend(
         _panel_svg(
@@ -214,7 +236,7 @@ def render_svg(rows: list[dict[str, float]]) -> str:
         )
     )
     svg_lines.append(
-        '<text x="379" y="412" class="subtitle" text-anchor="middle">Max solver iterations</text>'
+        '<text x="379" y="412" class="subtitle" text-anchor="middle">Max variational iterations</text>'
     )
     svg_lines.append("</svg>")
     return "\n".join(svg_lines) + "\n"
@@ -232,7 +254,10 @@ def main(argv: list[str]) -> int:
     except AvbdPaperScaleHighRatioIterationSweepPlotError as exc:
         raise SystemExit(str(exc)) from exc
     write_plot(args.output, render_svg(rows))
-    print(f"Wrote AVBD paper-scale high-ratio iteration-sweep plot: {args.output}")
+    print(
+        "Wrote historical variational-multibody high-ratio iteration-sweep "
+        f"plot: {args.output}"
+    )
     return 0
 
 

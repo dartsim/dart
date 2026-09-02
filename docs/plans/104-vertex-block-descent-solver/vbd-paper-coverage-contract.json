@@ -1,8 +1,8 @@
 {
-  "schema_version": "dart.vbd_paper_coverage_contract/v1",
+  "schema_version": "dart.vbd_paper_coverage_contract/v2",
   "plan_id": "PLAN-104",
   "solver_family": "vbd",
-  "snapshot_date": "2026-07-30",
+  "snapshot_date": "2026-08-31",
   "overall_status": "incomplete",
   "completion_rule": "paper-parity-matrix.md#completion-rule",
   "sources": {
@@ -112,7 +112,7 @@
           "status": "partial",
           "source_locator": "Section 3.3 and the paper experiment materials",
           "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_neo_hookean.cpp"],
-          "blockers": ["The tetrahedral material kernel exists, but paper-scene CPU/CUDA correctness and performance are incomplete."]
+          "blockers": ["The paper-shaped no-log tetrahedral kernel exists in isolation, but the public World VBD path forces the different shared FEM Stable Neo-Hookean energy. End-to-end paper-profile routing, a mutation-sensitive independent energy/trajectory oracle, paper scenes, CPU/CUDA correctness, and matched performance remain incomplete."]
         },
         {
           "id": "vbd.method.rayleigh_damping",
@@ -132,8 +132,8 @@
           "id": "vbd.method.penalty_contact",
           "status": "partial",
           "source_locator": "Section 3.6, penetration-potential contact with DCD/CCD",
-          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_contact.cpp"],
-          "blockers": ["Static-obstacle and self-contact slices exist, but the paper collision corpus and CUDA candidate path are incomplete."]
+          "evidence": ["dart/simulation/compute/rigid_body_contact_stage.cpp", "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp", "tests/unit/simulation/deformable_vbd/test_vbd_contact.cpp", "tests/unit/simulation/world/test_world.cpp"],
+          "blockers": ["Static-obstacle and self-contact slices exist. Public rigid fixed-penalty VBD now clears every AVBD continuation inventory and pointer on entry, empty snapshots, solver-family transitions, and exceptional exits, while bounded collision capacities fail closed and survive replay. This lifecycle safety is not the paper's persistent force-element loop: VBD still queries only current penetrating contacts before the position solve and performs no periodic CCD/candidate refresh. Separated high-speed and refresh mutation tests, persistent force-element diagnostics, the paper collision corpus, and CUDA candidate parity remain incomplete."]
         },
         {
           "id": "vbd.method.lagged_friction",
@@ -153,8 +153,8 @@
           "id": "vbd.method.chebyshev_acceleration",
           "status": "partial",
           "source_locator": "Section 3.8, Equations 18-19",
-          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_acceleration.cpp"],
-          "blockers": ["The accelerator exists, but source-equivalent collision skip policy and Figure 7/17 performance closure are missing."]
+          "evidence": ["dart/simulation/detail/deformable_vbd/parallel_block_descent.hpp", "dart/simulation/compute/deformable_dynamics_stage.cpp", "tests/unit/simulation/deformable_vbd/test_vbd_acceleration.cpp", "tests/unit/simulation/world/test_vbd_world_solver.cpp"],
+          "blockers": ["The serial accelerator exists, but the public multithreaded World path silently ignores both Chebyshev acceleration and its configured convergence tolerance. Multithreaded mutation tests, source-equivalent collision skip policy, CPU/CUDA trajectory parity, and Figure 7/17 achieved-accuracy performance closure are missing."]
         },
         {
           "id": "vbd.method.vertex_coloring",
@@ -181,22 +181,22 @@
           "id": "vbd.method.gpu_hierarchical_kernel",
           "status": "partial",
           "source_locator": "Section 4 and Algorithm 1",
-          "evidence": ["tests/unit/simulation/cuda/test_vbd_block_descent_cuda.cpp"],
-          "blockers": ["CUDA mass-spring and tetrahedral slices exist, but the full force/contact/friction kernel and paper workloads are incomplete."]
+          "evidence": ["dart/simulation/compute/cuda/vbd_block_descent_cuda.cu", "tests/unit/simulation/cuda/test_vbd_block_descent_cuda.cpp"],
+          "blockers": ["CUDA mass-spring and tetrahedral slices now use a Sylvester positive-definite guard with adversarial indefinite and near-singular boundary tests. A reachable indefinite-element regression, public World routing without fallback, the full force/contact/friction kernel, and paper workloads remain incomplete."]
         },
         {
           "id": "vbd.method.particle_blocks",
           "status": "partial",
           "source_locator": "Section 6.1 and Figure 21",
           "evidence": ["python/examples/demos/scenes/vbd_tilted_strand.py"],
-          "blockers": ["The TinyVBD-shaped strand is narrow CPU evidence, not full particle CPU/CUDA paper parity."]
+          "blockers": ["The current strand is only TinyVBD-inspired: skip-spring stiffness is 1,000,000x too large, tip spacing and demo damping differ, and DART uses a different Hessian/solve policy. A source-matched CPU/CUDA scene, independent outcome oracle, and comparable timing packet are missing."]
         },
         {
           "id": "vbd.method.rigid_six_dof_blocks",
           "status": "partial",
           "source_locator": "Section 6.2 and Figures 22-23",
-          "evidence": ["tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp"],
-          "blockers": ["A private rigid block foundation exists under AVBD work, but VBD rigid-chain and rigid-contact paper reproductions are missing."]
+          "evidence": ["dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp", "tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp", "tests/unit/simulation/world/test_world.cpp"],
+          "blockers": ["Public rigid VBD reuses the AVBD 6-DOF kernel in fixed-penalty mode, including its cached step-start Taylor contact C/J foundation and fail-closed continuation/capacity lifecycle. It still uses a pre-position discrete penetrating-contact query, no paper DCD/periodic-CCD refresh, and no persistent force-element loop. Source-equivalent rigid-block oracles, separated-contact mutation tests, rigid-chain/teapot reproductions, matched performance, and CUDA remain missing."]
         },
         {
           "id": "vbd.method.unified_simulation",
@@ -230,10 +230,10 @@
         },
         {
           "id": "vbd.limit.high_stiffness_ratio",
-          "status": "partial",
+          "status": "missing",
           "source_locator": "Section 7 and Figure 24",
-          "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json"],
-          "blockers": ["A related AVBD sweep exists, but the exact VBD 100-iteration versus converged limitation row is not reproduced on both backends."]
+          "evidence": [],
+          "blockers": ["The historical high-ratio sweep exercises variational multibody integration, not VBD. The exact VBD 100-iteration versus converged limitation row is not reproduced on either backend."]
         },
         {
           "id": "vbd.limit.penetration_contact",
@@ -285,10 +285,10 @@
         {"id": "vbd.paper.fig.18", "status": "partial", "source_locator": "Figure 18, PDF page 13: single-thread CPU VBD versus Newton convergence", "evidence": ["tests/benchmark/simulation/bm_vbd_block_descent.cpp"], "blockers": ["No matched armadillo workload or controlled single-thread Newton comparison packet exists."]},
         {"id": "vbd.paper.fig.19", "status": "missing", "source_locator": "Figure 19, PDF page 13: XPBD timestep/collision-frequency comparison", "evidence": [], "blockers": ["The four-way 230K-vertex squishy-ball comparison and source performance claims are missing."]},
         {"id": "vbd.paper.fig.20", "status": "partial", "source_locator": "Figure 20, PDF page 13: 1:2000 elastic-cube mass-ratio collision", "evidence": ["python/examples/demos/scenes/vbd_obstacle_drape.py"], "blockers": ["No source-equivalent two-cube VBD/XPBD outcome and timing comparison exists."]},
-        {"id": "vbd.paper.fig.21", "status": "partial", "source_locator": "Figure 21, PDF page 14: 20-particle 1:1000 tilted strand", "evidence": ["python/examples/demos/scenes/vbd_tilted_strand.py"], "blockers": ["The narrow TinyVBD-shaped CPU scene lacks full paper visual, CUDA, Gaia, and matched-accuracy evidence."]},
+        {"id": "vbd.paper.fig.21", "status": "partial", "source_locator": "Figure 21, PDF page 14: 20-particle 1:1000 tilted strand", "evidence": ["python/examples/demos/scenes/vbd_tilted_strand.py"], "blockers": ["The DART smoke is not source-equivalent: skip stiffness, final-segment geometry, damping, and Hessian/solve policy differ. The exact paper/TinyVBD visual, independent trajectory oracle, CUDA path, Gaia comparison, and matched-accuracy timing are missing."]},
         {"id": "vbd.paper.fig.22", "status": "missing", "source_locator": "Figure 22, PDF page 14: five 6-DOF rigid bodies in a collision chain", "evidence": [], "blockers": ["No DART VBD rigid-chain paper scene or validated rigid VBD solver identity exists."]},
         {"id": "vbd.paper.fig.23", "status": "missing", "source_locator": "Figure 23, PDF page 14: 60 rigid bodies dropped into a Utah teapot", "evidence": [], "blockers": ["No DART VBD rigid-contact teapot scene, friction outcome, or performance packet exists."]},
-        {"id": "vbd.paper.fig.24", "status": "partial", "source_locator": "Figure 24, PDF page 15: 1:10,000 stiffness-ratio VBD limitation", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json"], "blockers": ["The exact VBD 100-iteration and converged comparison is not reproduced on CPU and CUDA."]}
+        {"id": "vbd.paper.fig.24", "status": "missing", "source_locator": "Figure 24, PDF page 15: 1:10,000 stiffness-ratio VBD limitation", "evidence": [], "blockers": ["The historical high-ratio sweep exercises variational multibody integration, not VBD. The exact VBD 100-iteration and converged comparison is not reproduced on either backend."]}
       ]
     },
     {
@@ -419,9 +419,9 @@
           "source_locator": "TinyVBD main.cpp default tilted-strand scene",
           "evidence": [
             "python/examples/demos/scenes/vbd_tilted_strand.py",
-            "tests/benchmark/simulation/bm_vbd_world_solver.cpp"
+            "tests/benchmark/simulation/bm_vbd_block_descent.cpp"
           ],
-          "blockers": ["DART has a narrow CPU reproduction and smoke comparison, but no current validated visual packet, CUDA comparison, or matched full claim."]
+          "blockers": ["DART has an explicitly unmatched CPU smoke, not a reproduction: per-edge stiffness, final-segment geometry, damping, and Hessian/solve policy differ from pinned TinyVBD. No independent trajectory oracle, current visual packet, comparable CPU timing, or CUDA comparison exists."]
         }
       ]
     },

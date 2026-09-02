@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write the matched Sequential Impulse row for AVBD paper Figure 13."""
+"""Write the SI row for DART's publication-shaped Figure 13 reconstruction."""
 
 from __future__ import annotations
 
@@ -78,6 +78,19 @@ CHECKPOINTS = {
             "wall_collapses": True,
         },
     },
+    600: {
+        "label": "long_horizon",
+        "checkpoint": "collapse",
+        "threshold_checks": {
+            "damage_in_three_impact_bands": True,
+            "finite_state": True,
+            "fracture_identity_unchanged": True,
+            "initial_fracture_remains_visible": True,
+            "outside_wall_collapses": True,
+            "retained_rows_fail_outside_impacts": True,
+            "wall_collapses": True,
+        },
+    },
 }
 
 OUTCOME_ORACLE = {
@@ -87,7 +100,7 @@ OUTCOME_ORACLE = {
     "outside_radius": 1.15,
     "evaluation_frame": 14,
     "collapse_evaluation_frame": 120,
-    "joint_evidence_frames": [14, 120],
+    "joint_evidence_frames": [14, 120, 600],
     "minimum_initial_broken_joints": 3,
     "minimum_initial_broken_joints_per_impact_region": 1,
     "maximum_initial_broken_joints": 20,
@@ -148,7 +161,7 @@ SOURCE_PATHS = tuple(
 
 
 class AvbdPaperSequentialImpulseComparisonPacketError(RuntimeError):
-    """Raised when inputs cannot support the matched SI comparison claim."""
+    """Raised when inputs cannot support the cross-solver SI comparison."""
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -171,6 +184,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--collapse-image-verdict-json",
+        type=Path,
+        required=True,
+    )
+    parser.add_argument(
+        "--long-horizon-capture-manifest",
+        type=Path,
+        required=True,
+    )
+    parser.add_argument(
+        "--long-horizon-image-verdict-json",
         type=Path,
         required=True,
     )
@@ -273,34 +296,51 @@ def _validate_outcome(
     expected_frame: int,
 ) -> dict[str, Any]:
     checkpoint = CHECKPOINTS[expected_frame]
-    expected_outcome = EXPECTED_OUTCOMES[expected_frame]
+    expected_outcome = EXPECTED_OUTCOMES.get(expected_frame)
     shared._validate_finite_tree(outcome, f"frame {expected_frame} outcome")
-    for key, expected in (
+    exact_fields: list[tuple[str, Any]] = [
         ("frame", expected_frame),
         ("evaluated", True),
         ("checkpoint", checkpoint["checkpoint"]),
         ("status", "pass"),
         ("thresholds_pass", True),
         ("threshold_checks", checkpoint["threshold_checks"]),
-        ("broken_joints", expected_outcome["broken_joints"]),
-        ("unbroken_joints", expected_outcome["unbroken_joints"]),
-        (
-            "impact_band_displaced_counts",
-            expected_outcome["impact_band_displaced_counts"],
-        ),
         ("last_step_iterations", RIGID_CONSTRAINT_ITERATIONS),
-    ):
+    ]
+    if expected_outcome is not None:
+        exact_fields.extend(
+            (
+                ("broken_joints", expected_outcome["broken_joints"]),
+                ("unbroken_joints", expected_outcome["unbroken_joints"]),
+                (
+                    "impact_band_displaced_counts",
+                    expected_outcome["impact_band_displaced_counts"],
+                ),
+            )
+        )
+    else:
+        exact_fields.extend(
+            (
+                ("broken_joints", OUTCOME_ORACLE["expected_broken_joints"]),
+                (
+                    "unbroken_joints",
+                    BREAKABLE_JOINTS - OUTCOME_ORACLE["expected_broken_joints"],
+                ),
+            )
+        )
+    for key, expected in exact_fields:
         shared._require_exact(
             outcome.get(key),
             expected,
             f"frame {expected_frame} outcome {key}",
         )
-    for key in ("outside_retained_fraction", "total_retained_fraction"):
-        shared._require_close(
-            outcome.get(key),
-            expected_outcome[key],
-            f"frame {expected_frame} outcome {key}",
-        )
+    if expected_outcome is not None:
+        for key in ("outside_retained_fraction", "total_retained_fraction"):
+            shared._require_close(
+                outcome.get(key),
+                expected_outcome[key],
+                f"frame {expected_frame} outcome {key}",
+            )
     shared._require_close(
         outcome.get("world_time"),
         expected_frame * TIME_STEP,
@@ -405,8 +445,43 @@ def _validate_outcome(
             )
             if actual < minimum:
                 raise AvbdPaperSequentialImpulseComparisonPacketError(
-                    f"frame 120 outcome {key} must be >= {minimum}, " f"got {actual}"
+                    f"frame {expected_frame} outcome {key} must be >= "
+                    f"{minimum}, got {actual}"
                 )
+        for key, maximum in (
+            (
+                "outside_retained_fraction",
+                OUTCOME_ORACLE["maximum_collapse_outside_retained_fraction"],
+            ),
+            (
+                "total_retained_fraction",
+                OUTCOME_ORACLE["maximum_collapse_total_retained_fraction"],
+            ),
+        ):
+            actual = shared._finite_number(
+                outcome.get(key), f"frame {expected_frame} outcome {key}"
+            )
+            if actual > maximum:
+                raise AvbdPaperSequentialImpulseComparisonPacketError(
+                    f"frame {expected_frame} outcome {key} must be <= "
+                    f"{maximum}, got {actual}"
+                )
+        displaced = outcome.get("impact_band_displaced_counts")
+        minimum_displaced = OUTCOME_ORACLE["minimum_displaced_bricks_per_impact_band"]
+        if (
+            not isinstance(displaced, list)
+            or len(displaced) != 3
+            or any(
+                not isinstance(value, int)
+                or isinstance(value, bool)
+                or value < minimum_displaced
+                for value in displaced
+            )
+        ):
+            raise AvbdPaperSequentialImpulseComparisonPacketError(
+                f"frame {expected_frame} displaced-brick counts must satisfy "
+                "all three collapse minima"
+            )
     return outcome
 
 
@@ -457,6 +532,7 @@ def _validate_scene_metrics(
         "brick_count": BRICK_COUNT,
         "collision_shapes": COLLISION_SHAPES,
         "executor": "World.step default",
+        "effective_scene_contract_passed": True,
         "paper_locator": PAPER_LOCATOR,
         "rigid_bodies": RIGID_BODIES,
         "rigid_body_solver": "SEQUENTIAL_IMPULSE",
@@ -524,6 +600,7 @@ def _validate_scene_metrics(
                 "brick_count",
                 "collision_shapes",
                 "executor",
+                "effective_scene_contract_passed",
                 "paper_locator",
                 "rigid_bodies",
                 "rigid_body_solver",
@@ -541,7 +618,7 @@ def _validate_capture(
     manifest_path: Path,
     *,
     expected_frame: int,
-) -> tuple[dict[str, Any], Path]:
+) -> tuple[dict[str, Any], Path, Path]:
     expected_label = CHECKPOINTS[expected_frame]["label"]
     manifest = shared._load_json(manifest_path)
     shared._require_exact(manifest.get("schema_version"), 1, "capture schema")
@@ -601,6 +678,21 @@ def _validate_capture(
         artifacts.get("scene_metrics_events"),
         "artifacts.scene_metrics_events",
     )
+    frames = shared._artifact_directory(
+        manifest_path,
+        artifacts.get("frames"),
+        "artifacts.frames",
+    )
+    video = shared._artifact_path(
+        manifest_path,
+        artifacts.get("video"),
+        "artifacts.video",
+    )
+    shared._require_exact(
+        video.name,
+        f"{SCENE_ID}_{expected_label}.mp4",
+        "capture video filename",
+    )
     if not screenshot.is_file() or not metrics_events.is_file():
         raise AvbdPaperSequentialImpulseComparisonPacketError(
             "capture screenshot and scene metric log must both exist"
@@ -612,8 +704,27 @@ def _validate_capture(
     events = shared._read_scene_metric_events(
         metrics_events,
         expected_frame=expected_frame,
+        expected_focus=VIEW_FOCUS,
         expected_scene_id=SCENE_ID,
+        height=height,
+        width=width,
     )
+    for checkpoint_frame in sorted(CHECKPOINTS):
+        if checkpoint_frame > expected_frame:
+            continue
+        checkpoint_event = events[checkpoint_frame - 1]
+        _validate_scene_metrics(
+            {
+                "scene_metrics": {
+                    "event_count": checkpoint_frame,
+                    "latest": checkpoint_event,
+                }
+            },
+            expected_frame=checkpoint_frame,
+            height=height,
+            logged_latest=checkpoint_event,
+            width=width,
+        )
     scene_metrics = _validate_scene_metrics(
         manifest,
         expected_frame=expected_frame,
@@ -621,15 +732,26 @@ def _validate_capture(
         logged_latest=events[-1],
         width=width,
     )
-    capture_source_provenance = shared._validate_capture_provenance(
+    (
+        capture_source_provenance,
+        capture_runtime_provenance,
+        capture_artifacts,
+    ) = shared._validate_capture_provenance(
         manifest,
+        expected_frame_count=expected_frame,
+        expected_width=width,
+        expected_height=height,
+        frames=frames,
         metrics_events=metrics_events,
         screenshot=screenshot,
+        video=video,
     )
     return (
         {
+            "artifact_provenance": capture_artifacts,
             "camera": shared._validate_camera(manifest),
             "capture": {
+                "converted_frames": expected_frame,
                 "height": height,
                 "requested_frames": expected_frame,
                 "width": width,
@@ -641,9 +763,15 @@ def _validate_capture(
             },
             "scene_metrics": scene_metrics,
             "source_provenance": capture_source_provenance,
+            "runtime_provenance": capture_runtime_provenance,
             "scene_metrics_events": {
                 "event_count": len(events),
                 "file": metrics_events.name,
+                "prefix_sha256": {
+                    str(frame): shared._scene_metric_prefix_digest(events, frame)
+                    for frame in sorted(CHECKPOINTS)
+                    if frame <= expected_frame
+                },
                 "sha256": shared._sha256(metrics_events),
             },
             "screenshot": {
@@ -652,6 +780,7 @@ def _validate_capture(
             },
         },
         screenshot,
+        video,
     )
 
 
@@ -684,7 +813,36 @@ def _validate_benchmark(
         "release",
         "benchmark library_build_type",
     )
-    benchmark_source_provenance = shared._validate_benchmark_source_provenance(context)
+    raw_evidence = data.get("dart_evidence_run")
+    raw_build_identity = (
+        raw_evidence.get("build_identity") if isinstance(raw_evidence, dict) else None
+    )
+    loaded_dart_libraries = (
+        raw_build_identity.get("loaded_dart_libraries")
+        if isinstance(raw_build_identity, dict)
+        else None
+    )
+    build_configuration = (
+        raw_build_identity.get("build_configuration")
+        if isinstance(raw_build_identity, dict)
+        else None
+    )
+    runtime_image_inventory = (
+        raw_build_identity.get("runtime_image_inventory")
+        if isinstance(raw_build_identity, dict)
+        else None
+    )
+    benchmark_source_provenance = shared._validate_benchmark_source_provenance(
+        context,
+        loaded_dart_libraries=loaded_dart_libraries,
+        runtime_image_inventory=runtime_image_inventory,
+        build_configuration=build_configuration,
+    )
+    run_evidence = shared._validate_benchmark_run_evidence(
+        data,
+        context=context,
+        source_provenance=benchmark_source_provenance,
+    )
     return {
         "context": {
             key: context[key]
@@ -696,8 +854,15 @@ def _validate_benchmark(
                 "library_version",
                 "mhz_per_cpu",
                 "num_cpus",
-                "benchmark_source_sha256",
-                "capture_source_provenance_digest",
+                "dart_benchmark_executable_path",
+                "dart_benchmark_source_sha256",
+                "dart_capture_source_git_head",
+                "dart_capture_source_provenance_digest",
+                "dart_cmake_build_type",
+                "dart_compiler_id",
+                "dart_compiler_version",
+                "dart_ndebug",
+                "dart_optimization_enabled",
             )
             if key in context
         },
@@ -705,6 +870,7 @@ def _validate_benchmark(
         "method": method,
         "scene_spec_fingerprint": expected_fingerprint,
         "source_provenance": benchmark_source_provenance,
+        "run_evidence": run_evidence,
     }
 
 
@@ -782,6 +948,58 @@ def _validate_linked_source_provenance(
     }
 
 
+def _validate_linked_image_binding(
+    capture: object,
+    *,
+    label: str,
+) -> dict[str, str]:
+    if not isinstance(capture, dict):
+        raise AvbdPaperSequentialImpulseComparisonPacketError(
+            f"{label} visual evidence is missing"
+        )
+    screenshot = capture.get("screenshot")
+    if not isinstance(screenshot, dict):
+        raise AvbdPaperSequentialImpulseComparisonPacketError(
+            f"{label} evidence lacks a screenshot"
+        )
+    screenshot_file = screenshot.get("file")
+    if not isinstance(screenshot_file, str) or not screenshot_file:
+        raise AvbdPaperSequentialImpulseComparisonPacketError(
+            f"{label} screenshot file must be non-empty"
+        )
+    screenshot_hash = comparison._validate_sha256_value(
+        screenshot.get("sha256"),
+        f"{label} screenshot sha256",
+    )
+    image_verdict = capture.get("image_verdict")
+    if not isinstance(image_verdict, dict):
+        raise AvbdPaperSequentialImpulseComparisonPacketError(
+            f"{label} image verdict is missing"
+        )
+    shared._require_exact(
+        image_verdict.get("pass"),
+        True,
+        f"{label} image verdict pass",
+    )
+    comparison._validate_sha256_value(
+        image_verdict.get("sha256"),
+        f"{label} image verdict sha256",
+    )
+    image_sha256 = comparison._validate_sha256_value(
+        image_verdict.get("image_sha256"),
+        f"{label} image verdict image_sha256",
+    )
+    shared._require_exact(
+        image_sha256,
+        screenshot_hash,
+        f"{label} image verdict screenshot binding",
+    )
+    return {
+        "file": screenshot_file,
+        "sha256": screenshot_hash,
+    }
+
+
 def _validate_linked_visual_capture(
     capture: object,
     *,
@@ -789,38 +1007,11 @@ def _validate_linked_visual_capture(
     expected_fingerprint: str,
     label: str,
 ) -> dict[str, Any]:
-    if not isinstance(capture, dict):
-        raise AvbdPaperSequentialImpulseComparisonPacketError(
-            f"linked AVBD/VBD packet lacks {label} visual evidence"
-        )
-    screenshot = capture.get("screenshot")
-    if not isinstance(screenshot, dict):
-        raise AvbdPaperSequentialImpulseComparisonPacketError(
-            f"linked AVBD/VBD {label} evidence lacks a screenshot"
-        )
-    screenshot_file = screenshot.get("file")
-    if not isinstance(screenshot_file, str) or not screenshot_file:
-        raise AvbdPaperSequentialImpulseComparisonPacketError(
-            f"linked AVBD/VBD {label} screenshot file must be non-empty"
-        )
-    screenshot_hash = comparison._validate_sha256_value(
-        screenshot.get("sha256"),
-        f"linked AVBD/VBD {label} screenshot sha256",
+    screenshot = _validate_linked_image_binding(
+        capture,
+        label=f"linked AVBD/VBD {label}",
     )
-    image_verdict = capture.get("image_verdict")
-    if not isinstance(image_verdict, dict):
-        raise AvbdPaperSequentialImpulseComparisonPacketError(
-            f"linked AVBD/VBD {label} image verdict is missing"
-        )
-    shared._require_exact(
-        image_verdict.get("pass"),
-        True,
-        f"linked AVBD/VBD {label} image verdict pass",
-    )
-    comparison._validate_sha256_value(
-        image_verdict.get("sha256"),
-        f"linked AVBD/VBD {label} image verdict sha256",
-    )
+    assert isinstance(capture, dict)
     scene_metrics = capture.get("scene_metrics")
     if not isinstance(scene_metrics, dict):
         raise AvbdPaperSequentialImpulseComparisonPacketError(
@@ -841,36 +1032,18 @@ def _validate_linked_visual_capture(
         raise AvbdPaperSequentialImpulseComparisonPacketError(
             f"linked AVBD/VBD {label} evidence lacks outcome"
         )
-    for key, expected in (
-        ("broken_joints", 0),
-        ("unbroken_joints", BREAKABLE_JOINTS),
-        ("evaluated", True),
-        ("status", "pass"),
-        ("thresholds_pass", True),
-        (
-            "threshold_checks",
-            comparison.CHECKPOINTS[expected_frame]["threshold_checks"],
-        ),
-    ):
-        shared._require_exact(
-            outcome.get(key),
-            expected,
-            f"linked AVBD/VBD {label} outcome {key}",
-        )
-    shared._validate_joint_evidence(
-        outcome,
-        expected_broken_count=0,
-        expected_broken_ids_sha256=(
-            "e3b0c44298fc1c149afbf4c8996fb924" "27ae41e4649b934ca495991b7852b855"
-        ),
-        expected_outside_unbroken_count=484,
-        label=f"linked AVBD/VBD {label} outcome",
-    )
+    try:
+        comparison._validate_outcome(outcome, expected_frame=expected_frame)
+    except (
+        comparison.AvbdPaperVbdComparisonPacketError,
+        shared.AvbdPaperBreakableWallPacketError,
+    ) as error:
+        detail = str(error).removeprefix(f"frame {expected_frame} outcome ")
+        raise AvbdPaperSequentialImpulseComparisonPacketError(
+            f"linked AVBD/VBD {label} outcome {detail}"
+        ) from error
     return {
-        "screenshot": {
-            "file": screenshot_file,
-            "sha256": screenshot_hash,
-        },
+        "screenshot": screenshot,
         "frame": expected_frame,
     }
 
@@ -879,6 +1052,7 @@ def _validate_linked_avbd_vbd_packet(
     packet_path: Path,
     *,
     benchmark_sha256: str,
+    expected_run_evidence: dict[str, Any],
     expected_fingerprint: str,
 ) -> dict[str, Any]:
     packet = shared._load_json(packet_path)
@@ -928,6 +1102,11 @@ def _validate_linked_avbd_vbd_packet(
         benchmark.get("scene_spec_fingerprint"),
         expected_fingerprint,
         "linked AVBD/VBD scene fingerprint",
+    )
+    shared._require_exact(
+        benchmark.get("run_evidence"),
+        expected_run_evidence,
+        "linked AVBD/VBD benchmark run/host/build evidence",
     )
     methods = benchmark.get("methods")
     if not isinstance(methods, dict) or set(methods) != {"avbd", "vbd"}:
@@ -1023,6 +1202,16 @@ def _validate_linked_avbd_vbd_packet(
         shared.SCENE_ID,
         "nested linked AVBD scene",
     )
+    linked_avbd_visual = linked_avbd_packet.get("visual_evidence")
+    if not isinstance(linked_avbd_visual, dict):
+        raise AvbdPaperSequentialImpulseComparisonPacketError(
+            "nested linked AVBD packet lacks visual evidence"
+        )
+    for label in ("impact", "outcome", "long_horizon"):
+        _validate_linked_image_binding(
+            linked_avbd_visual.get(label),
+            label=f"nested linked AVBD {label}",
+        )
     linked_avbd_benchmark = linked_avbd_packet.get("benchmark")
     if not isinstance(linked_avbd_benchmark, dict):
         raise AvbdPaperSequentialImpulseComparisonPacketError(
@@ -1032,6 +1221,11 @@ def _validate_linked_avbd_vbd_packet(
         linked_avbd_benchmark.get("scene_spec_fingerprint"),
         expected_fingerprint,
         "nested linked AVBD scene fingerprint",
+    )
+    shared._require_exact(
+        linked_avbd_benchmark.get("run_evidence"),
+        expected_run_evidence,
+        "nested linked AVBD benchmark run/host/build evidence",
     )
     shared._require_exact(
         linked_avbd.get("scene_spec_fingerprint"),
@@ -1083,6 +1277,12 @@ def _validate_linked_avbd_vbd_packet(
             expected_fingerprint=expected_fingerprint,
             label="retention",
         ),
+        "long_horizon": _validate_linked_visual_capture(
+            visual.get("long_horizon"),
+            expected_frame=600,
+            expected_fingerprint=expected_fingerprint,
+            label="long_horizon",
+        ),
     }
     semantic = visual.get("semantic_review")
     if not isinstance(semantic, dict):
@@ -1128,16 +1328,18 @@ def _validate_linked_avbd_vbd_packet(
     expected_roles = {
         "bend_frame_18",
         "retention_frame_120",
+        "long_horizon_frame_600",
         "paper_figure_13_reference",
     }
     if set(by_role) != expected_roles:
         raise AvbdPaperSequentialImpulseComparisonPacketError(
             "linked AVBD/VBD semantic review must inspect bend, retention, "
-            "and paper Figure 13 images"
+            "long-horizon, and paper Figure 13 images"
         )
     for role, visual_key in (
         ("bend_frame_18", "bend"),
         ("retention_frame_120", "retention"),
+        ("long_horizon_frame_600", "long_horizon"),
     ):
         expected_screenshot = validated_visuals[visual_key]["screenshot"]
         entry = by_role.get(role)
@@ -1181,6 +1383,7 @@ def _validate_linked_avbd_vbd_packet(
         "visual_evidence": {
             "bend_screenshot": validated_visuals["bend"]["screenshot"],
             "retention_screenshot": validated_visuals["retention"]["screenshot"],
+            "long_horizon_screenshot": validated_visuals["long_horizon"]["screenshot"],
             "semantic_review": {
                 "sha256": semantic_hash,
                 "verdict": "pass",
@@ -1194,9 +1397,28 @@ def _validate_visual_review(
     *,
     fracture_screenshot: Path,
     collapse_screenshot: Path,
+    long_horizon_screenshot: Path,
+    long_horizon_video: dict[str, Any],
+    long_horizon_video_path: Path,
     paper_figure: Path,
 ) -> dict[str, Any]:
     review = shared._load_json(review_path)
+    expected_review_keys = {
+        "assessment_assertions",
+        "claim_assessments",
+        "inspected_images",
+        "inspected_videos",
+        "reviewer_capabilities",
+        "scene",
+        "schema_version",
+        "structured_observations",
+        "temporal_assessment",
+        "verdict",
+    }
+    if set(review) != expected_review_keys:
+        raise AvbdPaperSequentialImpulseComparisonPacketError(
+            "visual review must use the exact structured semantic-review fields"
+        )
     shared._require_exact(
         review.get("schema_version"),
         "dart.visual_semantic_review/v1",
@@ -1208,45 +1430,40 @@ def _validate_visual_review(
         "pass",
         "visual review verdict",
     )
-    fields = (
-        "reviewer_capability",
-        "claim_and_expected_observation",
-        "text_oracle",
-        "visible_observation",
-        "reconciliation_and_verdict",
-        "not_proven_and_limitations",
+    expected_capabilities = {
+        "image_semantic_review": True,
+        "video_semantic_review": True,
+    }
+    shared._require_exact(
+        review.get("reviewer_capabilities"),
+        expected_capabilities,
+        "visual review reviewer_capabilities",
     )
-    for key in fields:
-        value = review.get(key)
-        if not isinstance(value, str) or not value.strip():
-            raise AvbdPaperSequentialImpulseComparisonPacketError(
-                f"visual review {key} must be non-empty"
-            )
-    if "image" not in review["reviewer_capability"].lower():
-        raise AvbdPaperSequentialImpulseComparisonPacketError(
-            "visual review must name an image-capable reviewer"
+    expected_assertions = {
+        "capture_images_assessed": True,
+        "long_horizon_video_assessed": True,
+        "no_contradictions_found": True,
+        "paper_reference_assessed": True,
+        "text_oracle_agrees": True,
+        "view_reports_agree": True,
+    }
+    shared._require_exact(
+        review.get("assessment_assertions"),
+        expected_assertions,
+        "visual review assessment_assertions",
+    )
+    claim_assessments, temporal_assessment, structured_observations = (
+        shared._validate_semantic_claim_contract(
+            review,
+            expected_terminal_behavior="collapsed_wall",
+            error_type=AvbdPaperSequentialImpulseComparisonPacketError,
         )
-    if (
-        "viewreport"
-        not in review["reconciliation_and_verdict"].replace(" ", "").lower()
-    ):
-        raise AvbdPaperSequentialImpulseComparisonPacketError(
-            "visual review reconciliation must account for ViewReports"
-        )
-    limitations = review["not_proven_and_limitations"].lower()
-    for required in ("cuda", "unpublished", "xpbd"):
-        if required not in limitations:
-            raise AvbdPaperSequentialImpulseComparisonPacketError(
-                f"visual review limitations must name {required}"
-            )
-    if "published" not in limitations or "timing" not in limitations:
-        raise AvbdPaperSequentialImpulseComparisonPacketError(
-            "visual review limitations must name published/source timing"
-        )
+    )
 
     expected = {
         "fracture_frame_14": fracture_screenshot,
         "collapse_frame_120": collapse_screenshot,
+        "long_horizon_frame_600": long_horizon_screenshot,
         "paper_figure_13_reference": paper_figure,
     }
     entries = review.get("inspected_images")
@@ -1261,7 +1478,8 @@ def _validate_visual_review(
     }
     if set(by_role) != set(expected):
         raise AvbdPaperSequentialImpulseComparisonPacketError(
-            "visual review must inspect fracture, collapse, and paper images"
+            "visual review must inspect fracture, collapse, long-horizon, "
+            "and paper images"
         )
     inspected = []
     for role, path in expected.items():
@@ -1287,17 +1505,52 @@ def _validate_visual_review(
                 "sha256": expected_hash,
             }
         )
+    video_entries = review.get("inspected_videos")
+    if not isinstance(video_entries, list) or len(video_entries) != 1:
+        raise AvbdPaperSequentialImpulseComparisonPacketError(
+            "visual review must inspect exactly one long-horizon video"
+        )
+    video_entry = video_entries[0]
+    if not isinstance(video_entry, dict) or set(video_entry) != {
+        "decoded_frame_count",
+        "duration_seconds",
+        "file",
+        "role",
+        "sha256",
+    }:
+        raise AvbdPaperSequentialImpulseComparisonPacketError(
+            "visual review long-horizon video entry has unexpected fields"
+        )
+    expected_video_review = {
+        "decoded_frame_count": long_horizon_video["decoded_frame_count"],
+        "duration_seconds": long_horizon_video["duration_seconds"],
+        "file": long_horizon_video["file"],
+        "role": "long_horizon_video_600",
+        "sha256": long_horizon_video["sha256"],
+    }
+    video_entry_path = Path(str(video_entry.get("file")))
+    if video_entry_path.resolve() != long_horizon_video_path.resolve():
+        raise AvbdPaperSequentialImpulseComparisonPacketError(
+            "visual review long-horizon video file does not match capture"
+        )
+    video_entry = dict(video_entry)
+    video_entry["file"] = Path(str(video_entry["file"])).name
+    shared._require_exact(
+        video_entry,
+        expected_video_review,
+        "visual review long-horizon video",
+    )
     return {
-        "claim_and_expected_observation": review["claim_and_expected_observation"],
+        "assessment_assertions": expected_assertions,
+        "claim_assessments": claim_assessments,
         "file": review_path.name,
         "inspected_images": inspected,
-        "not_proven_and_limitations": review["not_proven_and_limitations"],
-        "reconciliation_and_verdict": review["reconciliation_and_verdict"],
-        "reviewer_capability": review["reviewer_capability"],
+        "inspected_videos": [expected_video_review],
+        "reviewer_capabilities": expected_capabilities,
         "sha256": shared._sha256(review_path),
-        "text_oracle": review["text_oracle"],
+        "structured_observations": structured_observations,
+        "temporal_assessment": temporal_assessment,
         "verdict": "pass",
-        "visible_observation": review["visible_observation"],
     }
 
 
@@ -1308,12 +1561,14 @@ def make_packet(
     fracture_image_verdict_json: Path,
     collapse_capture_manifest: Path,
     collapse_image_verdict_json: Path,
+    long_horizon_capture_manifest: Path,
+    long_horizon_image_verdict_json: Path,
     visual_review_json: Path,
     paper_pdf: Path,
     paper_figure_image: Path,
     avbd_vbd_packet: Path,
 ) -> dict[str, Any]:
-    fracture, fracture_screenshot = _validate_capture(
+    fracture, fracture_screenshot, _fracture_video = _validate_capture(
         fracture_capture_manifest,
         expected_frame=14,
     )
@@ -1323,7 +1578,7 @@ def make_packet(
         expected_frame=14,
         expected_scene_id=SCENE_ID,
     )
-    collapse, collapse_screenshot = _validate_capture(
+    collapse, collapse_screenshot, _collapse_video = _validate_capture(
         collapse_capture_manifest,
         expected_frame=120,
     )
@@ -1333,19 +1588,61 @@ def make_packet(
         expected_frame=120,
         expected_scene_id=SCENE_ID,
     )
+    (
+        long_horizon,
+        long_horizon_screenshot,
+        long_horizon_video_path,
+    ) = _validate_capture(
+        long_horizon_capture_manifest,
+        expected_frame=600,
+    )
+    long_horizon["image_verdict"] = shared._validate_image_verdict(
+        long_horizon_image_verdict_json,
+        long_horizon_screenshot,
+        expected_frame=600,
+        expected_scene_id=SCENE_ID,
+    )
+    shared._require_exact(
+        collapse["scene_metrics_events"]["prefix_sha256"]["14"],
+        fracture["scene_metrics_events"]["prefix_sha256"]["14"],
+        "fracture/collapse exact scene-metric event prefix",
+    )
+    for frame in (14, 120):
+        shared._require_exact(
+            long_horizon["scene_metrics_events"]["prefix_sha256"][str(frame)],
+            collapse["scene_metrics_events"]["prefix_sha256"][str(frame)],
+            f"collapse/long-horizon exact {frame}-frame scene-metric prefix",
+        )
     fingerprint = fracture["scene_metrics"]["scene_spec_fingerprint"]
     shared._require_exact(
         collapse["scene_metrics"]["scene_spec_fingerprint"],
         fingerprint,
         "fracture/collapse scene fingerprint",
     )
+    shared._require_exact(
+        long_horizon["scene_metrics"]["scene_spec_fingerprint"],
+        fingerprint,
+        "fracture/long-horizon scene fingerprint",
+    )
+    shared._require_exact(
+        long_horizon["scene_metrics"]["outcome_oracle"],
+        fracture["scene_metrics"]["outcome_oracle"],
+        "fracture/long-horizon outcome oracle",
+    )
     benchmark = _validate_benchmark(
         benchmark_json,
         expected_fingerprint=fingerprint,
     )
+    shared._require_shared_capture_benchmark_build(
+        benchmark,
+        fracture,
+        collapse,
+        long_horizon,
+    )
     linked_avbd_vbd = _validate_linked_avbd_vbd_packet(
         avbd_vbd_packet,
         benchmark_sha256=benchmark["json_sha256"],
+        expected_run_evidence=benchmark["run_evidence"],
         expected_fingerprint=fingerprint,
     )
     paper_reference = shared._validate_paper_artifacts(
@@ -1356,6 +1653,9 @@ def make_packet(
         visual_review_json,
         fracture_screenshot=fracture_screenshot,
         collapse_screenshot=collapse_screenshot,
+        long_horizon_screenshot=long_horizon_screenshot,
+        long_horizon_video=long_horizon["artifact_provenance"]["video"],
+        long_horizon_video_path=long_horizon_video_path,
         paper_figure=paper_figure_image,
     )
 
@@ -1377,12 +1677,14 @@ def make_packet(
     return {
         "benchmark": benchmark,
         "claim_boundary": (
-            "This packet covers the matched Sequential Impulse Figure 13 row "
+            "This packet covers the Sequential Impulse row of DART's "
+            "cross-solver-matched, publication-shaped Figure 13 reconstruction "
             "and links the same-host AVBD/VBD comparison packet. Together "
-            "they establish three of the four published comparison rows. It "
+            "they establish three DART solver variants on one reconstructed "
+            "scene, not three source-equivalent published rows. The packet "
             "does not reproduce XPBD, claim exact unpublished source-scene "
-            "constants, establish CUDA parity, or compare against a "
-            "published/source timing."
+            "constants, establish CUDA parity, or compare against a published/"
+            "source timing."
         ),
         "correctness": {
             "determinism_test": (
@@ -1459,7 +1761,7 @@ def make_packet(
                     "--height 720 --view front --camera-azimuth -112.5 "
                     "--camera-elevation 35.52338329811104 "
                     "--camera-distance 22 --camera-target 0,0.45,1.6 "
-                    "--capture-label fracture "
+                    "--capture-label fracture --video --fps 60 "
                     "--output-dir <fracture-capture-dir>"
                 ),
                 (
@@ -1468,8 +1770,17 @@ def make_packet(
                     "--height 720 --view front --camera-azimuth -112.5 "
                     "--camera-elevation 35.52338329811104 "
                     "--camera-distance 22 --camera-target 0,0.45,1.6 "
-                    "--capture-label collapse "
+                    "--capture-label collapse --video --fps 60 "
                     "--output-dir <collapse-capture-dir>"
+                ),
+                (
+                    "pixi run py-demo-capture -- "
+                    f"--scene {SCENE_ID} --frames 600 --width 1280 "
+                    "--height 720 --view front --camera-azimuth -112.5 "
+                    "--camera-elevation 35.52338329811104 "
+                    "--camera-distance 22 --camera-target 0,0.45,1.6 "
+                    "--capture-label long_horizon --video --fps 60 "
+                    "--output-dir <long-horizon-capture-dir>"
                 ),
             ],
             "image_verdict_commands": [
@@ -1486,6 +1797,13 @@ def make_packet(
                     f"--meta scene={SCENE_ID} --meta frame=120 "
                     f"--meta view={CAMERA_VIEW} "
                     "--out <collapse-capture-dir>/image_verdict.json"
+                ),
+                (
+                    "pixi run image-verdict -- "
+                    f"<long-horizon-capture-dir>/{SCENE_ID}_long_horizon.png "
+                    f"--meta scene={SCENE_ID} --meta frame=600 "
+                    f"--meta view={CAMERA_VIEW} "
+                    "--out <long-horizon-capture-dir>/image_verdict.json"
                 ),
             ],
         },
@@ -1505,6 +1823,7 @@ def make_packet(
         "visual_evidence": {
             "collapse": collapse,
             "fracture": fracture,
+            "long_horizon": long_horizon,
             "semantic_review": semantic_review,
         },
     }
@@ -1519,6 +1838,8 @@ def main(argv: list[str]) -> int:
             fracture_image_verdict_json=args.fracture_image_verdict_json,
             collapse_capture_manifest=args.collapse_capture_manifest,
             collapse_image_verdict_json=args.collapse_image_verdict_json,
+            long_horizon_capture_manifest=args.long_horizon_capture_manifest,
+            long_horizon_image_verdict_json=(args.long_horizon_image_verdict_json),
             visual_review_json=args.visual_review_json,
             paper_pdf=args.paper_pdf,
             paper_figure_image=args.paper_figure_image,

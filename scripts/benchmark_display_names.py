@@ -33,6 +33,7 @@ FAMILY_LCP = "LCP solver and contact comparison"
 FAMILY_VBD = "Deformable solver (Vertex Block Descent)"
 FAMILY_FEM = "Deformable solver (FEM)"
 FAMILY_AVBD = "Augmented VBD"
+FAMILY_VARIATIONAL = "Variational multibody"
 FAMILY_OTHER = "Other benchmarks"
 
 
@@ -198,55 +199,74 @@ SURFACES: dict[str, Surface] = {
         ("breakable joints",),
     ),
     "BM_AvbdArticulatedRevoluteMotorStep": Surface(
-        "AVBD articulated revolute-motor step", FAMILY_AVBD, ("motors",)
+        "Variational articulated revolute-motor step",
+        FAMILY_VARIATIONAL,
+        ("motors",),
     ),
     "BM_AvbdArticulatedBreakableMotorStep": Surface(
-        "AVBD articulated breakable-motor step",
-        FAMILY_AVBD,
+        "Variational articulated breakable-motor step",
+        FAMILY_VARIATIONAL,
         ("breakable motors",),
     ),
     "BM_AvbdArticulatedPrismaticMotorStep": Surface(
-        "AVBD articulated prismatic-motor step", FAMILY_AVBD, ("motors",)
+        "Variational articulated prismatic-motor step",
+        FAMILY_VARIATIONAL,
+        ("motors",),
     ),
     "BM_AvbdArticulatedPrismaticBreakableMotorStep": Surface(
-        "AVBD articulated prismatic breakable-motor step",
-        FAMILY_AVBD,
+        "Variational articulated prismatic breakable-motor step",
+        FAMILY_VARIATIONAL,
         ("breakable motors",),
     ),
     "BM_AvbdArticulatedWorldPrismaticBreakableMotorStep": Surface(
-        "AVBD articulated world-prismatic breakable-motor step",
-        FAMILY_AVBD,
+        "Variational articulated world-prismatic breakable-motor step",
+        FAMILY_VARIATIONAL,
         ("breakable motors",),
     ),
     "BM_AvbdArticulatedWorldRevoluteBreakableMotorStep": Surface(
-        "AVBD articulated world-revolute breakable-motor step",
-        FAMILY_AVBD,
+        "Variational articulated world-revolute breakable-motor step",
+        FAMILY_VARIATIONAL,
         ("breakable motors",),
     ),
     "BM_AvbdArticulatedBreakableJointStep": Surface(
-        "AVBD articulated breakable-joint step",
-        FAMILY_AVBD,
+        "Variational articulated breakable-joint step",
+        FAMILY_VARIATIONAL,
         ("breakable joints",),
     ),
     "BM_AvbdArticulatedWorldSphericalBreakableJointStep": Surface(
-        "AVBD articulated world-spherical breakable-joint step",
-        FAMILY_AVBD,
+        "Variational articulated world-spherical breakable-joint step",
+        FAMILY_VARIATIONAL,
         ("breakable joints",),
     ),
     "BM_AvbdArticulatedSphericalPairBreakableJointStep": Surface(
-        "AVBD articulated spherical-pair breakable-joint step",
-        FAMILY_AVBD,
+        "Variational articulated spherical-pair breakable-joint step",
+        FAMILY_VARIATIONAL,
         ("breakable joints",),
     ),
+    "BM_AvbdArticulatedCompliantJointStep": Surface(
+        "Variational articulated compliant-joint step",
+        FAMILY_VARIATIONAL,
+        ("joint families",),
+    ),
+    "BM_AvbdArticulatedCompliantMotorStep": Surface(
+        "Variational articulated compliant-motor step",
+        FAMILY_VARIATIONAL,
+        ("motor families",),
+    ),
+    "BM_AvbdArticulatedCompliantBreakableMotorStep": Surface(
+        "Variational articulated compliant breakable-motor step",
+        FAMILY_VARIATIONAL,
+        ("motor families",),
+    ),
     "BM_AvbdArticulatedHighRatioChainStep": Surface(
-        "AVBD articulated high-ratio chain step", FAMILY_AVBD
+        "Variational articulated high-ratio chain step", FAMILY_VARIATIONAL
     ),
     "BM_AvbdPaperScaleHighRatioChainStep": Surface(
-        "AVBD paper-scale high-ratio chain step", FAMILY_AVBD
+        "Variational paper-scale high-ratio chain step", FAMILY_VARIATIONAL
     ),
     "BM_AvbdPaperScaleHighRatioChainIterationSweep": Surface(
-        "AVBD paper-scale high-ratio chain iteration sweep",
-        FAMILY_AVBD,
+        "Variational paper-scale high-ratio chain iteration sweep",
+        FAMILY_VARIATIONAL,
         ("max iterations",),
     ),
 }

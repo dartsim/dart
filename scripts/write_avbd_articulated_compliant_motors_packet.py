@@ -17,6 +17,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from avbd_packet_schema import (  # noqa: E402
     AVBD_PACKET_SCHEMA_VERSION,
     make_resolved_solver_identity,
+    make_resolved_solver_identity_from_benchmark_row,
 )
 from write_avbd_demo3d_static_friction_packet import (  # noqa: E402
     _artifact_label,
@@ -50,12 +51,11 @@ LINEAR_STIFFNESS = 2000.0
 ANGULAR_STIFFNESS = 2000.0
 EFFORT_LIMIT = 800.0
 RESOLVED_SOLVER_IDENTITY = make_resolved_solver_identity(
-    resolved_rigid_contact_family=None,
-    rigid_point_joint_solver="avbd",
+    resolved_rigid_contact_family="sequential-impulse",
+    rigid_point_joint_solver="sequential_impulse",
     avbd_rigid_contact_config_emplaced=False,
-    recorded_from=(
-        "contact-free py-demo and articulated compliant-motor benchmark row family"
-    ),
+    recorded_from=("articulated compliant-motor benchmark runtime identity counters"),
+    multibody_integration_family="variational",
 )
 
 
@@ -197,6 +197,24 @@ def _validate_capture(
     )
 
 
+def _validate_sha256_hex(value: object, label: str) -> str:
+    if not isinstance(value, str) or len(value) != 64:
+        raise AvbdArticulatedCompliantMotorsPacketError(
+            f"{label} must be a 64-character lowercase hexadecimal string"
+        )
+    try:
+        parsed = int(value, 16)
+    except ValueError as exc:
+        raise AvbdArticulatedCompliantMotorsPacketError(
+            f"{label} must be hexadecimal"
+        ) from exc
+    if f"{parsed:064x}" != value:
+        raise AvbdArticulatedCompliantMotorsPacketError(
+            f"{label} must use canonical lowercase hexadecimal"
+        )
+    return value
+
+
 def _validate_image_verdict(
     verdict_path: Path,
     screenshot: Path,
@@ -228,9 +246,19 @@ def _validate_image_verdict(
         raise AvbdArticulatedCompliantMotorsPacketError(
             "image verdict dimensions do not match capture screenshot"
         )
+    screenshot_sha256 = _sha256(screenshot)
+    recorded_sha256 = _validate_sha256_hex(
+        image.get("sha256"),
+        "image verdict image sha256",
+    )
+    if recorded_sha256 != screenshot_sha256:
+        raise AvbdArticulatedCompliantMotorsPacketError(
+            "image verdict image sha256 does not match capture screenshot"
+        )
     return {
         "file": verdict_path.name,
         "sha256": _sha256(verdict_path),
+        "image_sha256": screenshot_sha256,
         "machine_scope": verdict.get("machine_scope"),
         "metadata": verdict.get("metadata"),
         "checks": checks,
@@ -409,6 +437,18 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
     scale_data = []
     for arg in BENCHMARK_ARGS:
         row = _timing_row(representative[arg])
+        try:
+            runtime_identity = make_resolved_solver_identity_from_benchmark_row(
+                row,
+                recorded_from=RESOLVED_SOLVER_IDENTITY["recorded_from"],
+            )
+        except ValueError as exc:
+            raise AvbdArticulatedCompliantMotorsPacketError(str(exc)) from exc
+        if runtime_identity != RESOLVED_SOLVER_IDENTITY:
+            raise AvbdArticulatedCompliantMotorsPacketError(
+                f"{BENCHMARK_NAME}/{arg}: runtime solver identity is not the "
+                "Variational multibody packet identity"
+            )
         compliant_motors = 2 * arg
         cpu_time = _finite_counter(row, "cpu_time")
         real_time = _finite_counter(row, "real_time")

@@ -9,7 +9,8 @@ inventories are:
 
 Run `pixi run check-plan104-paper-parity` to validate their authoritative source
 pins, canonical row order, evidence paths, backend requirements, predicates,
-video timecodes, and aggregate completion status. The older
+video timecodes, registered AVBD packet validators, typed closure evidence, and
+aggregate completion status. The older
 [`avbd-demo-corpus.md`](avbd-demo-corpus.md) remains useful as a detailed
 inventory of narrow DART surfaces, but its historical `Complete` labels mean
 only that a local asset or packet met that document's earlier row contract.
@@ -17,30 +18,30 @@ They do not establish AVBD solver identity or paper parity.
 
 ## Current Fail-Closed Snapshot
 
-Snapshot date: 2026-07-30. No canonical row is complete under the contract
+Snapshot date: 2026-08-31. No canonical row is complete under the contract
 below, so neither solver family has a paper-parity claim.
 
 | Family / source surface |    Rows | Partial | Blocked | Missing | Complete |
 | ----------------------- | ------: | ------: | ------: | ------: | -------: |
 | VBD method              |      17 |      15 |       0 |       2 |        0 |
-| VBD limitations         |       4 |       4 |       0 |       0 |        0 |
-| VBD paper figures       |      24 |      13 |       0 |      11 |        0 |
+| VBD limitations         |       4 |       3 |       0 |       1 |        0 |
+| VBD paper figures       |      24 |      12 |       0 |      12 |        0 |
 | VBD paper tables        |       1 |       1 |       0 |       0 |        0 |
 | VBD official video      |      19 |       6 |       0 |      13 |        0 |
 | VBD Gaia dynamics       |      14 |       0 |       0 |      14 |        0 |
 | VBD Gaia cloth          |       5 |       0 |       0 |       5 |        0 |
 | VBD TinyVBD             |       1 |       1 |       0 |       0 |        0 |
 | VBD project page        |       3 |       0 |       0 |       3 |        0 |
-| **VBD total**           |  **88** |  **40** |   **0** |  **48** |    **0** |
+| **VBD total**           |  **88** |  **38** |   **0** |  **50** |    **0** |
 | AVBD method             |      20 |      18 |       0 |       2 |        0 |
-| AVBD paper figures      |      15 |       9 |       0 |       6 |        0 |
+| AVBD paper figures      |      15 |       5 |       0 |      10 |        0 |
 | AVBD paper tables       |       2 |       1 |       0 |       1 |        0 |
-| AVBD official video     |      14 |       7 |       0 |       7 |        0 |
+| AVBD official video     |      14 |       5 |       0 |       9 |        0 |
 | AVBD demo2d             |      19 |      19 |       0 |       0 |        0 |
 | AVBD demo3d             |      14 |      14 |       0 |       0 |        0 |
 | AVBD project page       |       4 |       2 |       0 |       2 |        0 |
-| **AVBD total**          |  **88** |  **70** |   **0** |  **18** |    **0** |
-| **Grand total**         | **176** | **110** |   **0** |  **66** |    **0** |
+| **AVBD total**          |  **88** |  **64** |   **0** |  **24** |    **0** |
+| **Grand total**         | **176** | **102** |   **0** |  **74** |    **0** |
 
 `Partial` means only that at least one relevant DART artifact exists and that
 the row still records an explicit blocker. It is negative evidence against a
@@ -53,6 +54,17 @@ remain partial because the shared scene is a publication-shaped
 reconstruction, the exact source constants are unpublished, and XPBD, the
 source-matched four-method edit, CUDA, and achieved-accuracy reference-
 performance evidence are still absent.
+
+The post-audit foundation repairs also do not change the table: rigid contacts
+now use a real cached step-start Taylor `C`/Jacobian model; rigid and deformable
+friction retain validated material-point anchors and use live coupled-normal
+cones; inactive or mismatched continuation is cleared; fixed-penalty exits are
+continuation-clean; and replay/capacity handling is fail-closed. Those are
+focused mechanism and lifecycle predicates, not source-matched row closure.
+All 176 rows therefore remain incomplete. In particular, AVBD Equations 20-21,
+adaptive rigid initialization, angular-constraint Hessians, source-equivalent
+fracture loads, a closed deformable profile, GPU, the full demo/media corpus,
+and achieved-accuracy performance remain open.
 
 ## Authoritative Sources
 
@@ -113,7 +125,9 @@ the main paper and project teaser, so it introduces no duplicate row.
 ## Completion Rule
 
 A canonical row may change to `complete` only when all of the following are
-true and recorded in the row:
+true and recorded in the row. Family completion covers every canonical key
+paper demo, example, correctness test, visual surface, and benchmark row; no
+representative subset can close the family.
 
 1. **Source-matched scope.** The DART scene, inputs, parameters, events,
    declared duration, and accuracy target match the pinned paper, repository,
@@ -127,16 +141,23 @@ true and recorded in the row:
    sequential-impulse substitution, undisclosed iteration/contact cap, or
    unsupported-row skip fails the predicate.
 4. **Physical outcome.** A scenario-specific quantitative oracle passes for
-   the full declared duration. Finite output alone is not a correctness oracle.
+   the full declared duration. Every claimed feature has a mutation-sensitive
+   correctness test that fails when that feature is disabled. Finite output
+   alone is not a correctness oracle.
 5. **CPU and CUDA closure.** Both required backend results are explicitly true.
    Backend-neutral setup may be shared, but evidence from one backend cannot
    stand in for the other.
 6. **Visual closure.** Required images and videos decode, are bound to the
    validated current-build run, and receive a recorded manual semantic
-   inspection. A successful renderer exit or file existence is insufficient.
+   inspection. Dynamic claims require a long-horizon video covering the full
+   declared interval. Claim-tied inspected stills are the fallback presentation
+   for static details or unavailable inline playback, not a substitute for the
+   full-interval video predicate. A successful renderer exit or file existence
+   is insufficient.
 7. **Comparable performance.** Performance claims match scene, numerical
    precision, backend, hardware, compiler, timer boundary, warmup, aggregation,
-   and achieved accuracy. Unmatched results remain descriptive smoke data.
+   and achieved accuracy, with correctness established before timing. Unmatched
+   results remain descriptive smoke data.
 8. **Current-build closure.** Evidence records the exact DART commit and
    build/configuration identity. Any change to solver, collision, pipeline,
    reference-scene, benchmark, or inherited base code invalidates affected
@@ -148,11 +169,29 @@ true and recorded in the row:
     clean review passes must find no correctness, regression, contract, or
     evidence-boundary defect.
 
-The checker additionally requires every row's exact group predicates and
-`cpu`/`cuda` backend results to be boolean `true`, its blocker list to be empty,
-and its evidence paths to exist before accepting `complete`. Overall VBD or AVBD
-status becomes `complete` only when every canonical row for that family is
-complete; full PLAN-104 paper parity requires all 176 rows.
+The checker additionally requires every referenced `avbd-*-packet.json` or
+`vbd-*-packet.json` to pass its family-neutral registered packet validator,
+even while its row is partial. Before accepting
+`complete`, it requires every row's exact group predicates and `cpu`/`cuda`
+backend results to be boolean `true`, its blocker list to be empty, and a typed
+`closure_evidence` reference to a current-schema packet. That reference is
+content-addressed, names the exact row, is already present in the row's evidence
+list, and binds the packet's target plus ordered predicate/backend results back
+to the contract row. It must also resolve to an exact packet path registered
+with a two-layer closure profile: packet-level substantive artifact validation
+is cached once per resolved path, while row authorization runs for every row and
+binds the exact claim ID, solver family, ordered predicate map, and ordered
+backend map. The production profile registry is intentionally empty while no
+row is complete. File existence, schema-only assertion packets, or manually
+asserted booleans alone never establish closure. Overall VBD or AVBD status
+becomes `complete` only when every canonical row for that family is complete;
+full PLAN-104 paper parity requires all 176 rows.
+
+The owning implementation PR must publish the dynamic visual result as a
+long-horizon video, include claim-tied still images as the review fallback, and
+link or embed both from the PR description. PR-hosted media is reviewer-facing
+corroboration only: durable, hashed, current-build artifacts and their closure
+profile remain the machine-checkable evidence of record.
 
 ## Evidence Workflow
 
@@ -163,17 +202,20 @@ Use the same lifecycle for each bounded implementation packet:
 2. Implement the smallest reusable solver, pipeline, scene, or evidence
    capability that closes those rows without weakening DART's long-term
    architecture.
-3. Add focused equation/kernel tests, scenario-level physical oracles, and
-   mutation tests that prove the oracle fails when the intended mechanism is
-   disabled.
+3. Add focused equation/kernel tests for every claimed feature,
+   scenario-level physical oracles, and mutation tests that prove the oracle
+   fails when the intended mechanism is disabled.
 4. Capture solver identity, row/iteration/contact counters, fallback state,
    build identity, and backend identity in a machine-readable packet.
 5. Run source-matched CPU and CUDA correctness, then controlled performance
-   comparisons at matched achieved accuracy.
+   comparisons at matched achieved accuracy. Never time an unverified or
+   accuracy-mismatched implementation as paper-performance evidence.
 6. Follow
    [`../../onboarding/agent-sim-verification.md`](../../onboarding/agent-sim-verification.md)
-   for text-first scene diagnostics, current-build renders, media decoding, and
-   recorded manual inspection.
+   for text-first scene diagnostics, current-build renders, full-interval video
+   decoding, claim-tied stills, and recorded manual inspection. Publish the
+   long-horizon video and still fallback in the owning PR and link or embed them
+   from its description.
 7. Update only the rows directly proven by the packet. Keep narrower,
    contradictory, or failed evidence in the ledger with its blocker.
 8. Rerun `pixi run check-plan104-paper-parity`, the focused tests, the relevant

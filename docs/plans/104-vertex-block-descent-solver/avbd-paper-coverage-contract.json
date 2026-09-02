@@ -1,8 +1,8 @@
 {
-  "schema_version": "dart.avbd_paper_coverage_contract/v1",
+  "schema_version": "dart.avbd_paper_coverage_contract/v2",
   "plan_id": "PLAN-104",
   "solver_family": "avbd",
-  "snapshot_date": "2026-07-30",
+  "snapshot_date": "2026-08-31",
   "overall_status": "incomplete",
   "completion_rule": "paper-parity-matrix.md#completion-rule",
   "sources": {
@@ -108,8 +108,8 @@
           "id": "avbd.method.hard_equality_inequality",
           "status": "partial",
           "source_locator": "Sections 3.1-3.3, hard equality and bounded inequality constraints",
-          "evidence": ["tests/unit/simulation/deformable_vbd/test_avbd_constraint.cpp"],
-          "blockers": ["Focused scalar and World rows exist, but every hard row family and both backends are not complete."]
+          "evidence": ["tests/unit/simulation/deformable_vbd/test_avbd_constraint.cpp", "tests/unit/simulation/deformable_vbd/test_vbd_combined_descent.cpp"],
+          "blockers": ["Focused scalar and World rows exist, and point-triangle/edge-edge self-contact normal rows now clear an inactive dual on true separation while rejecting invalid safety-floor differentials. Every hard row family, conflicting-row diagnostic, source scene, and both-backend closure remain incomplete."]
         },
         {
           "id": "avbd.method.finite_stiffness_ramping",
@@ -122,7 +122,7 @@
             "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json",
             "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json"
           ],
-          "blockers": ["CPU finite-stiffness spring/tetrahedral rows, passive world-link and same-multibody articulated masks, bounded same-multibody finite motors, and physical finite-plus-motor fracture accounting exist, but the full paper/source corpus, broad finite-row fracture coverage, unified rows, and CUDA parity are incomplete."]
+          "blockers": ["Narrow AVBD-style finite-row components exist on CPU, but the cited articulated packets run a variational multibody integrator and are not end-to-end AVBD solver evidence. The full paper/source corpus, broad finite-row fracture coverage, unified rows, and CUDA parity are incomplete."]
         },
         {
           "id": "avbd.method.force_bounds",
@@ -135,22 +135,22 @@
           "id": "avbd.method.friction_static_dynamic",
           "status": "partial",
           "source_locator": "Section 3.3, static/dynamic friction and normal-force bounds",
-          "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_contact.cpp"],
-          "blockers": ["Private friction rows exist, but broad AVBD contact activation, paper scenes, and CUDA parity are incomplete."]
+          "evidence": ["dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp", "dart/simulation/compute/deformable_dynamics_stage.cpp", "tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp", "tests/unit/simulation/deformable_vbd/test_vbd_contact.cpp", "tests/unit/simulation/deformable_vbd/test_vbd_combined_descent.cpp"],
+          "blockers": ["CPU rigid, deformable half-space, and point-triangle/edge-edge self-contact friction rows now retain validated material-point anchors, evaluate the augmented tangent trial before radial cone projection, preserve the paper's unclamped penalty Hessian, and refresh each cone from the live coupled normal trial within the block sweep. Source-equivalent manifold reduction, collision margins, 2D/3D static-friction profiles and tolerances, broad AVBD contact activation, long-horizon paper scenes, achieved-accuracy performance, and CUDA parity remain incomplete."]
         },
         {
           "id": "avbd.method.alpha_error_regularization",
           "status": "partial",
           "source_locator": "Section 3.6, Equation 18",
-          "evidence": ["tests/unit/simulation/deformable_vbd/test_avbd_constraint.cpp"],
-          "blockers": ["The scalar rule is covered narrowly, but Figure 15 alpha trajectories and both backends are not reproduced."]
+          "evidence": ["dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp", "dart/simulation/compute/rigid_body_contact_stage.cpp", "tests/unit/simulation/deformable_vbd/test_avbd_constraint.cpp", "tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp", "tests/unit/simulation/world/test_world_resolved_configuration.cpp"],
+          "blockers": ["The public rigid AVBD family resolves the paper-2025 Table 2 profile and applies alpha=0.95 coherently to warm starts and generic rows; rigid contact-normal and friction-tangent rows now cache the step-start constraint and 6-DOF Jacobians before the sweep and use that affine Taylor model in direct, indexed, primal, and dual paths. Independent end-to-end Equation 18 trajectory oracles, Figure 15 alpha sweeps, deformable-family profile closure, and CUDA parity remain incomplete."]
         },
         {
           "id": "avbd.method.gamma_warm_start",
           "status": "partial",
           "source_locator": "Section 3.7, Equation 19",
-          "evidence": ["tests/unit/simulation/deformable_vbd/test_avbd_constraint.cpp"],
-          "blockers": ["Warm-started row state exists, but broad persistence, Figure 15 gamma trajectories, and CUDA parity are missing."]
+          "evidence": ["dart/simulation/detail/deformable_vbd/avbd_row_inventory.hpp", "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp", "dart/simulation/compute/rigid_body_contact_stage.cpp", "tests/unit/simulation/deformable_vbd/test_avbd_constraint.cpp", "tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp"],
+          "blockers": ["The public rigid AVBD family now resolves alpha=0.95 and gamma=0.99 through one profile and persistent scalar-row storage. Long-horizon persistent-contact World oracles, Figure 15 gamma trajectories, deformable-family profile closure, and CUDA parity remain incomplete."]
         },
         {
           "id": "avbd.method.quasi_newton_hessian",
@@ -162,21 +162,21 @@
             "tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp",
             "docs/plans/104-vertex-block-descent-solver/avbd-quasi-newton-evidence.json"
           ],
-          "blockers": ["CPU deformable distance-spring, rigid point, and rigid distance-spring rows now use the Section 3.5 column-norm approximation, with contact explicitly Taylor-linearized; a narrow current-build scene oracle, assessed render, allocation gate, and matched before/after mechanism-cost benchmark pass, but remaining row families, the pinned 3D spring source's omission of the paper geometric term, source-matched corpus closure, CUDA, and achieved-accuracy reference performance are still open."]
+          "blockers": ["CPU deformable distance-spring, rigid point, and rigid distance-spring rows use the Section 3.5 column-norm approximation; rigid contact rows now implement a cached step-start Taylor C/J model and friction keeps the unclamped penalty Hessian through cone projection. The angular-constraint Hessian family, pinned 3D spring source's omission of the paper geometric term, source-matched corpus, CUDA, and achieved-accuracy reference performance remain open."]
         },
         {
           "id": "avbd.method.rigid_six_dof_blocks",
           "status": "partial",
           "source_locator": "Section 3, Equations 7-9 and 20-21",
           "evidence": ["tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp"],
-          "blockers": ["A private CPU rigid block exists, but broad constraints, paper scenes, performance, and CUDA parity are incomplete."]
+          "blockers": ["A private CPU rigid block exists, but its logarithmic orientation difference and exponential-map update do not implement paper Equations 20-21 or the pinned 3D demo operations, and it lacks adaptive primal initialization. Source-equivalent independent oracles, broad constraints, paper scenes, performance, and CUDA parity are incomplete."]
         },
         {
           "id": "avbd.method.vertex_body_coloring",
           "status": "partial",
           "source_locator": "Section 4 parallelization and incremental greedy coloring",
           "evidence": ["tests/unit/simulation/deformable_vbd/test_vbd_vertex_coloring.cpp"],
-          "blockers": ["DART has VBD coloring foundation, but AVBD all-constraint dynamic coloring and paper GPU evidence are incomplete."]
+          "blockers": ["DART has VBD coloring foundation, but the rigid AVBD primal path still sweeps bodies serially. AVBD all-constraint dynamic coloring, parallel-within-color double buffering, and paper GPU evidence are incomplete."]
         },
         {
           "id": "avbd.method.parallel_dual_stiffness_pass",
@@ -186,14 +186,14 @@
             "docs/plans/104-vertex-block-descent-solver/avbd-parallel-dual-update-evidence.json",
             "tests/benchmark/simulation/bm_avbd_parallel_row_update.cpp"
           ],
-          "blockers": ["The deterministic CPU pass covers the currently promoted deformable and free-rigid row families only; complete articulated/unified row coverage, CUDA parity, and source-matched achieved-accuracy performance remain open."]
+          "blockers": ["The deterministic CPU helper covers the currently promoted deformable and free-rigid row families only, and its benchmark measures a detached post-sweep helper rather than an AVBD World solve. Complete articulated/unified row coverage, in-solver counters, CUDA parity, and source-matched achieved-accuracy performance remain open."]
         },
         {
           "id": "avbd.method.contact_persistence",
           "status": "partial",
           "source_locator": "Sections 3.3-4, persistent contact/friction rows and warm starts",
-          "evidence": ["dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp"],
-          "blockers": ["Feature-key and warm-start slices exist, but broad articulated/deformable contacts and GPU candidate generation are incomplete."]
+          "evidence": ["dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp", "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp", "dart/simulation/compute/deformable_dynamics_stage.cpp", "tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp", "tests/unit/simulation/deformable_vbd/test_vbd_contact.cpp", "tests/unit/simulation/world/test_world.cpp"],
+          "blockers": ["Feature keys, dual storage, rigid material-point tangent anchors, and deformable ground/self-contact anchors now persist across validated identity/stencil matches; mismatch cold-starts the pair, and replay restores the rigid/deformable anchor sidecars. Broad articulated/deformable manifold persistence, source-equivalent candidate refresh, long-horizon paper trajectories, and GPU candidate generation remain incomplete."]
         },
         {
           "id": "avbd.method.joints_and_attachments",
@@ -206,7 +206,7 @@
             "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json",
             "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json"
           ],
-          "blockers": ["Hard point-joint bridges, passive finite world-link and same-multibody masks, bounded same-multibody finite motors, and physical finite-plus-motor break/reset accounting exist on CPU, but the full joint corpus, unified paper scenes, broad fracture coverage, and CUDA parity are incomplete."]
+          "blockers": ["Narrow hard/finite point-row components exist on CPU, but the cited articulated packets run a variational multibody integrator and are not end-to-end AVBD solver evidence. The full joint corpus, unified paper scenes, broad fracture coverage, and CUDA parity are incomplete."]
         },
         {
           "id": "avbd.method.motors",
@@ -217,7 +217,7 @@
             "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-motors-packet.json",
             "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json"
           ],
-          "blockers": ["Narrow public hard and finite motor rows plus physical break-load accounting exist, but source-wide CPU wins, CUDA parity, and paper-scene integration are incomplete."]
+          "blockers": ["Narrow hard and finite motor-row components exist, but the cited articulated packets run a variational multibody integrator and the legacy rigid packet has no runtime identity. Source-wide AVBD correctness, achieved-accuracy CPU performance, CUDA parity, and paper-scene integration are incomplete."]
         },
         {
           "id": "avbd.method.fracture",
@@ -227,7 +227,7 @@
             "docs/plans/104-vertex-block-descent-solver/avbd-demo3d-breakable-packet.json",
             "docs/plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json"
           ],
-          "blockers": ["Hard and finite articulated break/reset rows now have narrow CPU and solver-identity evidence, but the paper wall, broad fracture lifecycle and row corpus, achieved-accuracy performance, and CUDA parity are incomplete."]
+          "blockers": ["Narrow break/reset components exist, but the cited articulated packet runs a variational multibody integrator and the legacy source-demo packet has no runtime identity. The current fracture norm also combines linear forces, angular torques, and motor loads without a declared characteristic length or separate thresholds. Source-equivalent load semantics, the paper wall, broad lifecycle/row corpus, achieved-accuracy performance, and CUDA parity are incomplete."]
         },
         {
           "id": "avbd.method.unified_rigid_soft",
@@ -240,8 +240,8 @@
           "id": "avbd.method.cpu_solver",
           "status": "partial",
           "source_locator": "CPU implementation across the paper and reference demos",
-          "evidence": ["tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp"],
-          "blockers": ["CPU row foundations and narrow scenes exist, but several reference rows are slower and the paper corpus is incomplete."]
+          "evidence": ["tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp", "tests/unit/simulation/world/test_world.cpp"],
+          "blockers": ["CPU row foundations and rigid AVBD fixtures select and report the public AVBD family; bounded collision capacities fail closed, replay restores solver diagnostics/contact forces/continuation sidecars, and fixed-penalty family transitions clear AVBD continuation even on empty or exceptional exits. These lifecycle regressions do not establish AVBD paper behavior. Historical BM_AvbdArticulated fixtures remain variational rather than AVBD, detached microbenchmarks are not World-solver evidence, and current source-bound physical oracles plus matched CPU corpus closure remain incomplete."]
         },
         {
           "id": "avbd.method.cuda_solver",
@@ -254,8 +254,15 @@
           "id": "avbd.method.parameter_defaults",
           "status": "partial",
           "source_locator": "Table 2 and Section 5.6: beta=10, alpha=0.95, gamma=0.99",
-          "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json"],
-          "blockers": ["DART has related controls, but the exact beta/alpha/gamma defaults and all Figure 15 sweeps are not closed."]
+          "evidence": [
+            "dart/simulation/compute/rigid_body_contact_stage.cpp",
+            "dart/simulation/detail/deformable_vbd/avbd_row_inventory.hpp",
+            "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp",
+            "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp",
+            "tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp",
+            "tests/unit/simulation/world/test_world_resolved_configuration.cpp"
+          ],
+          "blockers": ["The public rigid AVBD family now resolves an immutable paper-2025 Table 2 profile with beta=10, alpha=0.95, and gamma=0.99 across its implemented row families, and benchmark runtime identity records that profile. Deformable-family profile closure, all Figure 15 sweeps, current regenerated evidence packets, and CUDA parity are not closed."]
         },
         {
           "id": "avbd.method.baseline_comparisons",
@@ -265,7 +272,7 @@
             "docs/plans/104-vertex-block-descent-solver/avbd-demo-corpus.md",
             "docs/plans/104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json"
           ],
-          "blockers": ["A matched public fixed-penalty VBD versus public AVBD Figure 13 reconstruction now binds solver identity, identical scene topology, independent outcome oracles, assessed VBD renders, and descriptive same-host CPU timing. The paper's matched XPBD and sequential-impulse rows, exact unpublished scene constants, CUDA, and achieved-accuracy reference performance remain incomplete."]
+          "blockers": ["The solver-parameterized Figure 13 reconstruction binds public VBD/AVBD identity, identical topology, outcome oracles, assessed renders, and descriptive CPU timing. Other rigid fixtures now identify AVBD at runtime, while articulated fixtures identify their variational family, but their historical packets are not current source-matched comparison evidence. The paper's XPBD row, exact unpublished scene constants, CUDA, and achieved-accuracy reference performance remain incomplete."]
         }
       ]
     },
@@ -284,20 +291,20 @@
       ],
       "requirements": [
         {"id": "avbd.paper.fig.01", "status": "missing", "source_locator": "Figure 1, PDF page 1: 110,000-block pile smashed by a sphere", "evidence": [], "blockers": ["The 110K-body scene and 3.5 ms solver/9.8 ms inclusive RTX 4090 rows are missing."]},
-        {"id": "avbd.paper.fig.02", "status": "partial", "source_locator": "Figure 2, PDF page 5: three blocks and two springs at 1:10,000 stiffness ratio", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json"], "blockers": ["The exact five-way VBD/substep/AVBD comparison and reference-error oracle are missing."]},
+        {"id": "avbd.paper.fig.02", "status": "missing", "source_locator": "Figure 2, PDF page 5: three blocks and two springs at 1:10,000 stiffness ratio", "evidence": [], "blockers": ["The historical high-ratio sweep is a different articulated-chain scene under variational multibody integration. The exact three-block/two-spring five-way VBD/substep/AVBD comparison and reference-error oracle are missing."]},
         {"id": "avbd.paper.fig.03", "status": "missing", "source_locator": "Figure 3, PDF page 7: 510,000-block piles smashed by two spheres", "evidence": [], "blockers": ["The 510K-body scene and 10.3 ms solver/17.6 ms inclusive RTX 4090 rows are missing."]},
-        {"id": "avbd.paper.fig.04", "status": "partial", "source_locator": "Figure 4, PDF page 7: 10 alternating-stiffness blocks between fixed endpoints", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json"], "blockers": ["The exact reference/AVBD/VBD five-way result and matched error/timing packet are missing."]},
+        {"id": "avbd.paper.fig.04", "status": "missing", "source_locator": "Figure 4, PDF page 7: 10 alternating-stiffness blocks between fixed endpoints", "evidence": [], "blockers": ["The historical high-ratio sweep is a different articulated-chain scene under variational multibody integration. The exact alternating-stiffness reference/AVBD/VBD five-way result and matched error/timing packet are missing."]},
         {"id": "avbd.paper.fig.05", "status": "missing", "source_locator": "Figure 5, PDF page 8: 1,500-vertex flag attached to 20-body deformable pole", "evidence": [], "blockers": ["DART lacks the unified cloth, hard attachments, articulated pole, visual grid, and benchmark."]},
         {"id": "avbd.paper.fig.06", "status": "partial", "source_locator": "Figure 6, PDF page 8: friction-held card tower struck by balls", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-cards-packet.json"], "blockers": ["The narrow 2D card port uses sequential-impulse contacts and does not reproduce the paper VBD/AVBD impact comparison."]},
-        {"id": "avbd.paper.fig.07", "status": "partial", "source_locator": "Figure 7, PDF page 9: 50-body pendulum with 50,000:1 tip mass", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json"], "blockers": ["A narrow AVBD chain exists, but the seven-way baseline grid, exact trajectory, GPU path, and paper timing are missing."]},
-        {"id": "avbd.paper.fig.08", "status": "partial", "source_locator": "Figure 8, PDF page 9: pendulum constraint error across frames", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json"], "blockers": ["Current iteration sweeps do not reproduce the matched XPBD/VBD/AVBD constraint-error histories."]},
+        {"id": "avbd.paper.fig.07", "status": "partial", "source_locator": "Figure 7, PDF page 9: 50-body pendulum with 50,000:1 tip mass", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json"], "blockers": ["A narrow 50-link/50,000:1 reconstruction exists, but it exercises variational multibody integration rather than AVBD. The AVBD seven-way baseline grid, exact trajectory, GPU path, and paper timing are missing."]},
+        {"id": "avbd.paper.fig.08", "status": "missing", "source_locator": "Figure 8, PDF page 9: pendulum constraint error across frames", "evidence": [], "blockers": ["The historical iteration sweep exercises variational multibody integration and records no matched XPBD/VBD/AVBD constraint-error histories. The exact plot is not reproduced."]},
         {"id": "avbd.paper.fig.09", "status": "missing", "source_locator": "Figure 9, PDF page 9: two heavy balls linked by a 50-body chain", "evidence": [], "blockers": ["No exact four-method/five-row two-heavy-ball chain reproduction exists."]},
         {"id": "avbd.paper.fig.10", "status": "partial", "source_locator": "Figure 10, PDF page 9: high-mass-ratio box stack", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-stack-packet.json"], "blockers": ["The narrow stack port uses sequential-impulse contacts and lacks the paper sequential-impulse/AVBD comparison."]},
-        {"id": "avbd.paper.fig.11", "status": "partial", "source_locator": "Figure 11, PDF page 9: friction-coefficient blocks versus sequential impulse", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json"], "blockers": ["The DART sweep does not establish AVBD-contact solver identity, paper trajectory equivalence, GPU parity, or the matched visual pair."]},
+        {"id": "avbd.paper.fig.11", "status": "partial", "source_locator": "Figure 11, PDF page 9: friction-coefficient blocks versus sequential impulse", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json"], "blockers": ["The legacy sweep packet does not establish current-source AVBD-contact identity, paper trajectory equivalence, GPU parity, or the matched visual pair; current source selection alone does not repair that evidence."]},
         {"id": "avbd.paper.fig.12", "status": "missing", "source_locator": "Figure 12, PDF page 10: heavy ball dropped on chain mail", "evidence": [], "blockers": ["The chain-mail scene, four-method comparison, hard-contact oracle, and performance packet are missing."]},
         {"id": "avbd.paper.fig.13", "status": "partial", "source_locator": "Figure 13, PDF page 10: breakable brick wall hit by three balls", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-breakable-packet.json", "docs/plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json", "docs/plans/104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json", "docs/plans/104-vertex-block-descent-solver/avbd-paper-sequential-impulse-comparison-packet.json"], "blockers": ["Matched public Sequential Impulse, fixed-penalty VBD, and AVBD CPU rows now share the reconstructed 252-brick, 712-attachment, three-ball scene fingerprint and bind independent paper-shaped outcome oracles plus assessed renders. Exact wall geometry, masses, impact speed, targets, and break threshold remain unpublished; XPBD, CUDA, a source-matched four-method edit, and achieved-accuracy reference performance are still missing."]},
         {"id": "avbd.paper.fig.14", "status": "missing", "source_locator": "Figure 14, PDF page 10: 35K rigid bodies, 72K joints, and 10K-vertex cloth", "evidence": [], "blockers": ["Unified rigid/soft coupling and the 16 ms inclusive performance row are missing."]},
-        {"id": "avbd.paper.fig.15", "status": "partial", "source_locator": "Figure 15, PDF page 11: beta, alpha, gamma, and iteration sweeps", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json"], "blockers": ["Only a DART iteration-budget sweep exists; the exact beta/alpha/gamma trajectories and defaults are missing."]}
+        {"id": "avbd.paper.fig.15", "status": "missing", "source_locator": "Figure 15, PDF page 11: beta, alpha, gamma, and iteration sweeps", "evidence": [], "blockers": ["The historical iteration-budget sweep exercises variational multibody integration, not AVBD, and cannot evidence AVBD parameter behavior. The exact beta/alpha/gamma/iteration trajectories and defaults are missing."]}
       ]
     },
     {
@@ -324,8 +331,8 @@
           "id": "avbd.paper.table.02",
           "status": "partial",
           "source_locator": "Table 2, PDF page 11: beta, alpha, and gamma parameter defaults",
-          "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-gap-audit.md"],
-          "blockers": ["The formulas are audited, but the exact defaults, public/private configuration identity, and Figure 15 evidence are incomplete."]
+          "evidence": ["dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp", "dart/simulation/compute/rigid_body_contact_stage.cpp", "tests/unit/simulation/deformable_vbd/test_avbd_rigid_block.cpp", "tests/unit/simulation/world/test_world_resolved_configuration.cpp", "docs/plans/104-vertex-block-descent-solver/avbd-paper-gap-audit.md"],
+          "blockers": ["The public rigid AVBD family now resolves the exact Table 2 beta, alpha, and gamma profile independently of private compatibility configs. Deformable-family profile closure, Figure 15 trajectories, current benchmark packets, and CUDA parity remain incomplete."]
         }
       ]
     },
@@ -346,16 +353,16 @@
         {"id": "avbd.video.01_110k_block_pile", "status": "missing", "source_locator": "00:00.000-00:31.033 110K-block pile smashed by sphere", "source_seconds": [0, 31.033], "evidence": [], "blockers": ["No full DART scene, validated edit, or matched RTX 4090 packet exists."]},
         {"id": "avbd.video.02_510k_block_pile", "status": "missing", "source_locator": "00:31.033-00:55.633 510K-block piles smashed by two spheres", "source_seconds": [31.033, 55.633], "evidence": [], "blockers": ["No full DART scene, validated edit, or matched RTX 4090 packet exists."]},
         {"id": "avbd.video.03_unified_cloth_rigid", "status": "missing", "source_locator": "00:55.633-01:33.167 cloth plus 35K articulated rigid bodies", "source_seconds": [55.633, 93.167], "evidence": [], "blockers": ["DART lacks unified AVBD rigid/soft coupling and a source-matched edit."]},
-        {"id": "avbd.video.04_high_stiffness", "status": "partial", "source_locator": "01:33.167-01:42.933 high-stiffness VBD/substep/AVBD comparison", "source_seconds": [93.167, 102.933], "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json"], "blockers": ["The exact five-way source comparison, reference error, and validated edit are missing."]},
+        {"id": "avbd.video.04_high_stiffness", "status": "missing", "source_locator": "01:33.167-01:42.933 high-stiffness VBD/substep/AVBD comparison", "source_seconds": [93.167, 102.933], "evidence": [], "blockers": ["The historical high-ratio sweep is a different scene under variational multibody integration. The exact five-way source comparison, reference error, and validated edit are missing."]},
         {"id": "avbd.video.05_flag_pole", "status": "missing", "source_locator": "01:42.933-02:01.133 flag attached to articulated pole", "source_seconds": [102.933, 121.133], "evidence": [], "blockers": ["The unified cloth/pole scene and source-matched edit are missing."]},
         {"id": "avbd.video.06_card_tower", "status": "partial", "source_locator": "02:01.133-02:12.900 VBD/AVBD card tower impacts", "source_seconds": [121.133, 132.9], "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-cards-packet.json"], "blockers": ["The narrow port uses sequential-impulse contacts and lacks the paper impact comparison/edit."]},
-        {"id": "avbd.video.07_pendulum", "status": "partial", "source_locator": "02:12.900-02:37.567 50-body high-ratio pendulum comparison", "source_seconds": [132.9, 157.567], "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json"], "blockers": ["The seven-way source comparison, exact edit, and matched GPU evidence are missing."]},
+        {"id": "avbd.video.07_pendulum", "status": "partial", "source_locator": "02:12.900-02:37.567 50-body high-ratio pendulum comparison", "source_seconds": [132.9, 157.567], "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json"], "blockers": ["The narrow pendulum reconstruction exercises variational multibody integration rather than AVBD. The seven-way AVBD source comparison, exact edit, and matched GPU evidence are missing."]},
         {"id": "avbd.video.08_two_heavy_balls", "status": "missing", "source_locator": "02:37.567-02:51.567 two-heavy-ball chain comparison", "source_seconds": [157.567, 171.567], "evidence": [], "blockers": ["No exact four-method source scene or validated DART edit exists."]},
         {"id": "avbd.video.09_box_stack", "status": "partial", "source_locator": "02:51.567-03:02.033 sequential-impulse/AVBD box stack", "source_seconds": [171.567, 182.033], "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-stack-packet.json"], "blockers": ["The current port does not run AVBD contacts and lacks the paper comparison/edit."]},
-        {"id": "avbd.video.10_friction", "status": "partial", "source_locator": "03:02.033-03:11.800 friction coefficient comparison", "source_seconds": [182.033, 191.8], "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json"], "blockers": ["The current sweep lacks AVBD-contact solver identity and the matched source visual edit."]},
+        {"id": "avbd.video.10_friction", "status": "partial", "source_locator": "03:02.033-03:11.800 friction coefficient comparison", "source_seconds": [182.033, 191.8], "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-packet.json"], "blockers": ["The legacy sweep packet lacks current-source AVBD-contact identity, a decoded long-horizon result, and the matched source visual edit; current source selection alone does not close those predicates."]},
         {"id": "avbd.video.11_chain_mail", "status": "missing", "source_locator": "03:11.800-03:19.200 heavy-ball chain-mail comparison", "source_seconds": [191.8, 199.2], "evidence": [], "blockers": ["No chain-mail source scene, four-method outcome, or validated DART edit exists."]},
         {"id": "avbd.video.12_breakable_wall", "status": "partial", "source_locator": "03:19.200-03:59.667 four-method breakable-wall comparison", "source_seconds": [199.2, 239.667], "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-breakable-packet.json", "docs/plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json", "docs/plans/104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json", "docs/plans/104-vertex-block-descent-solver/avbd-paper-sequential-impulse-comparison-packet.json"], "blockers": ["The publication-shaped DART Sequential Impulse, fixed-penalty VBD, and AVBD CPU rows bind identical reconstructed scene topology, distinct quantitative outcomes, and assessed current-build renders. The XPBD row, source-matched four-method video edit, exact unpublished scene constants, CUDA evidence, and achieved-accuracy comparable performance remain missing."]},
-        {"id": "avbd.video.13_parameter_sweeps", "status": "partial", "source_locator": "03:59.667-04:32.633 beta, alpha, gamma, and iteration sweeps", "source_seconds": [239.667, 272.633], "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json"], "blockers": ["Only a non-source iteration sweep exists; beta/alpha/gamma trajectories and the full edit are missing."]},
+        {"id": "avbd.video.13_parameter_sweeps", "status": "missing", "source_locator": "03:59.667-04:32.633 beta, alpha, gamma, and iteration sweeps", "source_seconds": [239.667, 272.633], "evidence": [], "blockers": ["The historical iteration sweep exercises variational multibody integration, not AVBD. The beta/alpha/gamma/iteration trajectories and full source edit are missing."]},
         {"id": "avbd.video.14_closing", "status": "missing", "source_locator": "04:32.633-04:39.000 closing card", "source_seconds": [272.633, 279], "evidence": [], "blockers": ["No approved DART replacement closing edit exists."]}
       ]
     },
@@ -375,23 +382,23 @@
       "requirements": [
         {"id": "avbd.demo2d.empty", "status": "partial", "source_locator": "avbd-demo2d sceneEmpty, scene index 0", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-empty-baseline-packet.json"], "blockers": ["The shared narrow baseline lacks full CPU/CUDA predicate and matched-source closure."]},
         {"id": "avbd.demo2d.ground", "status": "partial", "source_locator": "avbd-demo2d sceneGround, scene index 1", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-ground-packet.json"], "blockers": ["The narrow static row does not close the required CPU/CUDA and full visual/performance predicate set."]},
-        {"id": "avbd.demo2d.dynamic_friction", "status": "partial", "source_locator": "avbd-demo2d sceneDynamicFriction, scene index 2", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-dynamic-friction-packet.json"], "blockers": ["Rigid contacts resolve through sequential impulse; AVBD-contact, CUDA, and full source predicates remain open."]},
-        {"id": "avbd.demo2d.static_friction", "status": "partial", "source_locator": "avbd-demo2d sceneStaticFriction, scene index 3", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-static-friction-packet.json"], "blockers": ["Rigid contacts resolve through sequential impulse; AVBD-contact, CUDA, and full source predicates remain open."]},
-        {"id": "avbd.demo2d.pyramid", "status": "partial", "source_locator": "avbd-demo2d scenePyramid, scene index 4", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-pyramid-packet.json"], "blockers": ["Rigid contacts resolve through sequential impulse; AVBD-contact, CUDA, and full source predicates remain open."]},
-        {"id": "avbd.demo2d.cards", "status": "partial", "source_locator": "avbd-demo2d sceneCards, scene index 5", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-cards-packet.json"], "blockers": ["The port is slower, contacts resolve through sequential impulse, and AVBD/CUDA/source outcome predicates remain open."]},
-        {"id": "avbd.demo2d.rope", "status": "partial", "source_locator": "avbd-demo2d sceneRope, scene index 6", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-rope-packet.json"], "blockers": ["The port is slower and lacks full joint/contact solver identity, CUDA, and source-trajectory closure."]},
-        {"id": "avbd.demo2d.heavy_rope", "status": "partial", "source_locator": "avbd-demo2d sceneHeavyRope, scene index 7", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-heavy-rope-packet.json"], "blockers": ["The port is slower and lacks full joint/contact solver identity, CUDA, and source-trajectory closure."]},
-        {"id": "avbd.demo2d.hanging_rope", "status": "partial", "source_locator": "avbd-demo2d sceneHangingRope, scene index 8", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-hanging-rope-packet.json"], "blockers": ["The port is slower and lacks full joint/contact solver identity, CUDA, and source-trajectory closure."]},
-        {"id": "avbd.demo2d.spring", "status": "partial", "source_locator": "avbd-demo2d sceneSpring, scene index 9", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-spring-packet.json"], "blockers": ["The port is slower and lacks schema-v2 identity, CUDA, and full source-trajectory closure."]},
-        {"id": "avbd.demo2d.spring_ratio", "status": "partial", "source_locator": "avbd-demo2d sceneSpringsRatio, scene index 10", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-spring-ratio-packet.json"], "blockers": ["The port is slower and lacks schema-v2 identity, CUDA, and full source-trajectory closure."]},
-        {"id": "avbd.demo2d.stack", "status": "partial", "source_locator": "avbd-demo2d sceneStack, scene index 11", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-stack-packet.json"], "blockers": ["Rigid contacts resolve through sequential impulse; AVBD-contact, CUDA, and full source predicates remain open."]},
-        {"id": "avbd.demo2d.stack_ratio", "status": "partial", "source_locator": "avbd-demo2d sceneStackRatio, scene index 12", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-stack-ratio-packet.json"], "blockers": ["Rigid contacts resolve through sequential impulse; AVBD-contact, CUDA, and full source predicates remain open."]},
-        {"id": "avbd.demo2d.rod", "status": "partial", "source_locator": "avbd-demo2d sceneRod, scene index 13", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-rod-packet.json"], "blockers": ["The port is slower and lacks full joint/contact solver identity, CUDA, and source-trajectory closure."]},
-        {"id": "avbd.demo2d.soft_body", "status": "partial", "source_locator": "avbd-demo2d sceneSoftBody, scene index 14", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-soft-body-packet.json"], "blockers": ["The port is slower, contacts use sequential impulse, and unified AVBD/CUDA/source predicates remain open."]},
-        {"id": "avbd.demo2d.joint_grid", "status": "partial", "source_locator": "avbd-demo2d sceneJointGrid, scene index 15", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-joint-grid-packet.json"], "blockers": ["The port is slower and lacks full joint/contact solver identity, CUDA, and source-trajectory closure."]},
-        {"id": "avbd.demo2d.net", "status": "partial", "source_locator": "avbd-demo2d sceneNet, scene index 16", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-net-packet.json"], "blockers": ["The port is slower, contacts use sequential impulse, and unified AVBD/CUDA/source predicates remain open."]},
-        {"id": "avbd.demo2d.motor", "status": "partial", "source_locator": "avbd-demo2d sceneMotor, scene index 17", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-motor-packet.json"], "blockers": ["The port is slower and lacks CUDA, full solver-contract, visual, and source-trajectory closure."]},
-        {"id": "avbd.demo2d.fracture", "status": "partial", "source_locator": "avbd-demo2d sceneFracture, scene index 18", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-fracture-packet.json"], "blockers": ["The narrow CPU row wins, but contacts use sequential impulse and CUDA/full source predicates remain open."]}
+        {"id": "avbd.demo2d.dynamic_friction", "status": "partial", "source_locator": "avbd-demo2d sceneDynamicFriction, scene index 2", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-dynamic-friction-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public AVBD, but no regenerated source-bound AVBD outcome, long-horizon visual, CUDA result, or comparable performance packet closes this row."]},
+        {"id": "avbd.demo2d.static_friction", "status": "partial", "source_locator": "avbd-demo2d sceneStaticFriction, scene index 3", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-static-friction-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public AVBD, but no regenerated source-bound AVBD outcome, long-horizon visual, CUDA result, or comparable performance packet closes this row."]},
+        {"id": "avbd.demo2d.pyramid", "status": "partial", "source_locator": "avbd-demo2d scenePyramid, scene index 4", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-pyramid-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public AVBD, but no regenerated source-bound AVBD outcome, long-horizon visual, CUDA result, or comparable performance packet closes this row."]},
+        {"id": "avbd.demo2d.cards", "status": "partial", "source_locator": "avbd-demo2d sceneCards, scene index 5", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-cards-packet.json"], "blockers": ["The legacy slower-than-source packet captured Sequential Impulse contacts. Current source selects public AVBD, but regenerated source-bound outcome, long-horizon visual, CUDA, and comparable-performance predicates remain open."]},
+        {"id": "avbd.demo2d.rope", "status": "partial", "source_locator": "avbd-demo2d sceneRope, scene index 6", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-rope-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but no regenerated packet proves full joint/contact execution, source trajectory, long-horizon visual, CUDA, or comparable performance."]},
+        {"id": "avbd.demo2d.heavy_rope", "status": "partial", "source_locator": "avbd-demo2d sceneHeavyRope, scene index 7", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-heavy-rope-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but no regenerated packet proves full joint/contact execution, source trajectory, long-horizon visual, CUDA, or comparable performance."]},
+        {"id": "avbd.demo2d.hanging_rope", "status": "partial", "source_locator": "avbd-demo2d sceneHangingRope, scene index 8", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-hanging-rope-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but no regenerated packet proves full joint/contact execution, source trajectory, long-horizon visual, CUDA, or comparable performance."]},
+        {"id": "avbd.demo2d.spring", "status": "partial", "source_locator": "avbd-demo2d sceneSpring, scene index 9", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-spring-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but current-schema solver identity, source trajectory, long-horizon visual, CUDA, and comparable-performance closure remain missing."]},
+        {"id": "avbd.demo2d.spring_ratio", "status": "partial", "source_locator": "avbd-demo2d sceneSpringsRatio, scene index 10", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-spring-ratio-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but current-schema solver identity, source trajectory, long-horizon visual, CUDA, and comparable-performance closure remain missing."]},
+        {"id": "avbd.demo2d.stack", "status": "partial", "source_locator": "avbd-demo2d sceneStack, scene index 11", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-stack-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public AVBD, but no regenerated source-bound AVBD outcome, long-horizon visual, CUDA result, or comparable performance packet closes this row."]},
+        {"id": "avbd.demo2d.stack_ratio", "status": "partial", "source_locator": "avbd-demo2d sceneStackRatio, scene index 12", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-stack-ratio-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public AVBD, but no regenerated source-bound AVBD outcome, long-horizon visual, CUDA result, or comparable performance packet closes this row."]},
+        {"id": "avbd.demo2d.rod", "status": "partial", "source_locator": "avbd-demo2d sceneRod, scene index 13", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-rod-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but no regenerated packet proves full joint/contact execution, source trajectory, long-horizon visual, CUDA, or comparable performance."]},
+        {"id": "avbd.demo2d.soft_body", "status": "partial", "source_locator": "avbd-demo2d sceneSoftBody, scene index 14", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-soft-body-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public rigid AVBD, but the scene does not prove one unified rigid/deformable AVBD solve, source trajectory, long-horizon visual, CUDA, or comparable performance."]},
+        {"id": "avbd.demo2d.joint_grid", "status": "partial", "source_locator": "avbd-demo2d sceneJointGrid, scene index 15", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-joint-grid-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but no regenerated packet proves full joint/contact execution, source trajectory, long-horizon visual, CUDA, or comparable performance."]},
+        {"id": "avbd.demo2d.net", "status": "partial", "source_locator": "avbd-demo2d sceneNet, scene index 16", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-net-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public rigid AVBD, but the scene does not prove one unified rigid/deformable AVBD solve, source trajectory, long-horizon visual, CUDA, or comparable performance."]},
+        {"id": "avbd.demo2d.motor", "status": "partial", "source_locator": "avbd-demo2d sceneMotor, scene index 17", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-motor-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but current-schema solver-contract, source-trajectory, long-horizon visual, CUDA, and comparable-performance closure remain missing."]},
+        {"id": "avbd.demo2d.fracture", "status": "partial", "source_locator": "avbd-demo2d sceneFracture, scene index 18", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo2d-fracture-packet.json"], "blockers": ["The legacy narrow CPU timing captured Sequential Impulse contacts. Current source selects public AVBD, but source-equivalent fracture-load semantics, regenerated outcome/media, CUDA, and comparable-performance predicates remain open."]}
       ]
     },
     {
@@ -409,19 +416,19 @@
       ],
       "requirements": [
         {"id": "avbd.demo3d.empty", "status": "partial", "source_locator": "avbd-demo3d sceneEmpty, scene index 0", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-empty-baseline-packet.json"], "blockers": ["The shared narrow baseline lacks full CPU/CUDA predicate and matched-source closure."]},
-        {"id": "avbd.demo3d.ground", "status": "partial", "source_locator": "avbd-demo3d sceneGround, scene index 1", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-ground-packet.json"], "blockers": ["Rigid contacts resolve through sequential impulse; AVBD-contact, CUDA, and full source predicates remain open."]},
-        {"id": "avbd.demo3d.dynamic_friction", "status": "partial", "source_locator": "avbd-demo3d sceneDynamicFriction, scene index 2", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-dynamic-friction-packet.json"], "blockers": ["Rigid contacts resolve through sequential impulse; AVBD-contact, CUDA, and full source predicates remain open."]},
-        {"id": "avbd.demo3d.static_friction", "status": "partial", "source_locator": "avbd-demo3d sceneStaticFriction, scene index 3", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-static-friction-packet.json"], "blockers": ["Rigid contacts resolve through sequential impulse; AVBD-contact, CUDA, and full source predicates remain open."]},
-        {"id": "avbd.demo3d.pyramid", "status": "partial", "source_locator": "avbd-demo3d scenePyramid, scene index 4", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-pyramid-packet.json"], "blockers": ["Rigid contacts resolve through sequential impulse; AVBD-contact, CUDA, and full source predicates remain open."]},
-        {"id": "avbd.demo3d.rope", "status": "partial", "source_locator": "avbd-demo3d sceneRope, scene index 5", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-rope-packet.json"], "blockers": ["The port is slower and lacks full joint/contact solver identity, CUDA, and source-trajectory closure."]},
-        {"id": "avbd.demo3d.heavy_rope", "status": "partial", "source_locator": "avbd-demo3d sceneHeavyRope, scene index 6", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-heavy-rope-packet.json"], "blockers": ["The port is slower and lacks full joint/contact solver identity, CUDA, and source-trajectory closure."]},
-        {"id": "avbd.demo3d.spring", "status": "partial", "source_locator": "avbd-demo3d sceneSpring, scene index 7", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-spring-packet.json"], "blockers": ["The port is slower and lacks schema-v2 identity, CUDA, and full source-trajectory closure."]},
-        {"id": "avbd.demo3d.spring_ratio", "status": "partial", "source_locator": "avbd-demo3d sceneSpringsRatio, scene index 8", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-spring-ratio-packet.json"], "blockers": ["The port is slower and lacks schema-v2 identity, CUDA, and full source-trajectory closure."]},
-        {"id": "avbd.demo3d.stack", "status": "partial", "source_locator": "avbd-demo3d sceneStack, scene index 9", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-stack-packet.json"], "blockers": ["Rigid contacts resolve through sequential impulse; AVBD-contact, CUDA, and full source predicates remain open."]},
-        {"id": "avbd.demo3d.stack_ratio", "status": "partial", "source_locator": "avbd-demo3d sceneStackRatio, scene index 10", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-stack-ratio-packet.json"], "blockers": ["Rigid contacts resolve through sequential impulse; AVBD-contact, CUDA, and full source predicates remain open."]},
-        {"id": "avbd.demo3d.soft_body", "status": "partial", "source_locator": "avbd-demo3d sceneSoftBody, scene index 11", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-soft-body-packet.json"], "blockers": ["The port is slower, contacts use sequential impulse, and unified AVBD/CUDA/source predicates remain open."]},
-        {"id": "avbd.demo3d.bridge", "status": "partial", "source_locator": "avbd-demo3d sceneBridge, scene index 12", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-bridge-packet.json"], "blockers": ["The narrow CPU row wins, but contacts use sequential impulse and CUDA/full source predicates remain open."]},
-        {"id": "avbd.demo3d.breakable", "status": "partial", "source_locator": "avbd-demo3d sceneBreakable, scene index 13", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-breakable-packet.json"], "blockers": ["The narrow CPU row wins, but contacts use sequential impulse and CUDA/full source predicates remain open."]}
+        {"id": "avbd.demo3d.ground", "status": "partial", "source_locator": "avbd-demo3d sceneGround, scene index 1", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-ground-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public AVBD, but no regenerated source-bound AVBD outcome, long-horizon visual, CUDA result, or comparable performance packet closes this row."]},
+        {"id": "avbd.demo3d.dynamic_friction", "status": "partial", "source_locator": "avbd-demo3d sceneDynamicFriction, scene index 2", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-dynamic-friction-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public AVBD, but no regenerated source-bound AVBD outcome, long-horizon visual, CUDA result, or comparable performance packet closes this row."]},
+        {"id": "avbd.demo3d.static_friction", "status": "partial", "source_locator": "avbd-demo3d sceneStaticFriction, scene index 3", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-static-friction-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public AVBD, but no regenerated source-bound AVBD outcome, long-horizon visual, CUDA result, or comparable performance packet closes this row."]},
+        {"id": "avbd.demo3d.pyramid", "status": "partial", "source_locator": "avbd-demo3d scenePyramid, scene index 4", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-pyramid-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public AVBD, but no regenerated source-bound AVBD outcome, long-horizon visual, CUDA result, or comparable performance packet closes this row."]},
+        {"id": "avbd.demo3d.rope", "status": "partial", "source_locator": "avbd-demo3d sceneRope, scene index 5", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-rope-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but no regenerated packet proves full joint/contact execution, source trajectory, long-horizon visual, CUDA, or comparable performance."]},
+        {"id": "avbd.demo3d.heavy_rope", "status": "partial", "source_locator": "avbd-demo3d sceneHeavyRope, scene index 6", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-heavy-rope-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but no regenerated packet proves full joint/contact execution, source trajectory, long-horizon visual, CUDA, or comparable performance."]},
+        {"id": "avbd.demo3d.spring", "status": "partial", "source_locator": "avbd-demo3d sceneSpring, scene index 7", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-spring-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but current-schema solver identity, source trajectory, long-horizon visual, CUDA, and comparable-performance closure remain missing."]},
+        {"id": "avbd.demo3d.spring_ratio", "status": "partial", "source_locator": "avbd-demo3d sceneSpringsRatio, scene index 8", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-spring-ratio-packet.json"], "blockers": ["The legacy timing/visual packet predates current runtime binding. Current source selects public AVBD, but current-schema solver identity, source trajectory, long-horizon visual, CUDA, and comparable-performance closure remain missing."]},
+        {"id": "avbd.demo3d.stack", "status": "partial", "source_locator": "avbd-demo3d sceneStack, scene index 9", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-stack-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public AVBD, but no regenerated source-bound AVBD outcome, long-horizon visual, CUDA result, or comparable performance packet closes this row."]},
+        {"id": "avbd.demo3d.stack_ratio", "status": "partial", "source_locator": "avbd-demo3d sceneStackRatio, scene index 10", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-stack-ratio-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public AVBD, but no regenerated source-bound AVBD outcome, long-horizon visual, CUDA result, or comparable performance packet closes this row."]},
+        {"id": "avbd.demo3d.soft_body", "status": "partial", "source_locator": "avbd-demo3d sceneSoftBody, scene index 11", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-soft-body-packet.json"], "blockers": ["The legacy packet captured Sequential Impulse contacts. Current source selects public rigid AVBD, but the scene does not prove one unified rigid/deformable AVBD solve, source trajectory, long-horizon visual, CUDA, or comparable performance."]},
+        {"id": "avbd.demo3d.bridge", "status": "partial", "source_locator": "avbd-demo3d sceneBridge, scene index 12", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-bridge-packet.json"], "blockers": ["The legacy narrow CPU timing captured Sequential Impulse contacts. Current source selects public AVBD, but regenerated source outcome/media, CUDA, and comparable-performance predicates remain open."]},
+        {"id": "avbd.demo3d.breakable", "status": "partial", "source_locator": "avbd-demo3d sceneBreakable, scene index 13", "evidence": ["docs/plans/104-vertex-block-descent-solver/avbd-demo3d-breakable-packet.json"], "blockers": ["The legacy narrow CPU timing captured Sequential Impulse contacts. Current source selects public AVBD, but source-equivalent fracture-load semantics, regenerated outcome/media, CUDA, and comparable-performance predicates remain open."]}
       ]
     },
     {

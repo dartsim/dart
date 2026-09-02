@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write the matched fixed-penalty VBD row for AVBD paper Figure 13."""
+"""Write the fixed-penalty VBD row for DART's Figure 13 reconstruction."""
 
 from __future__ import annotations
 
@@ -77,6 +77,17 @@ CHECKPOINTS = {
             "wall_retained": True,
         },
     },
+    600: {
+        "label": "long_horizon",
+        "checkpoint": "retention",
+        "threshold_checks": {
+            "finite_state": True,
+            "no_fracture": True,
+            "retained_joint_rows_satisfied": True,
+            "topology_retained": True,
+            "wall_retained": True,
+        },
+    },
 }
 
 OUTCOME_ORACLE = {
@@ -86,7 +97,7 @@ OUTCOME_ORACLE = {
     "outside_radius": 1.15,
     "evaluation_frame": 18,
     "retention_evaluation_frame": 120,
-    "joint_evidence_frames": [18, 120],
+    "joint_evidence_frames": [18, 120, 600],
     "maximum_broken_joints": 0,
     "maximum_unbroken_joint_angular_residual_radians": 0.02,
     "maximum_unbroken_joint_linear_residual": 0.025,
@@ -122,7 +133,7 @@ SOURCE_PATHS = tuple(
 
 
 class AvbdPaperVbdComparisonPacketError(RuntimeError):
-    """Raised when inputs cannot support the matched comparison claim."""
+    """Raised when inputs cannot support the cross-solver comparison claim."""
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -136,6 +147,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         type=Path,
         required=True,
     )
+    parser.add_argument("--long-horizon-capture-manifest", type=Path, required=True)
+    parser.add_argument("--long-horizon-image-verdict-json", type=Path, required=True)
     parser.add_argument("--visual-review-json", type=Path, required=True)
     parser.add_argument("--paper-pdf", type=Path, required=True)
     parser.add_argument("--paper-figure-image", type=Path, required=True)
@@ -417,6 +430,7 @@ def _validate_scene_metrics(
         "brick_count": BRICK_COUNT,
         "collision_shapes": COLLISION_SHAPES,
         "executor": "World.step default",
+        "effective_scene_contract_passed": True,
         "paper_locator": PAPER_LOCATOR,
         "rigid_bodies": RIGID_BODIES,
         "rigid_body_solver": "VBD",
@@ -453,7 +467,6 @@ def _validate_scene_metrics(
     outcome = metrics.get("outcome")
     if not isinstance(outcome, dict):
         raise AvbdPaperVbdComparisonPacketError("scene metrics missing outcome")
-    _validate_outcome(outcome, expected_frame=expected_frame)
     resolved = _validate_resolved_configuration(metrics)
     view_report = shared._validate_view_report(
         metrics,
@@ -465,6 +478,7 @@ def _validate_scene_metrics(
         metrics.get("scene_spec_fingerprint"),
         "scene metrics scene_spec_fingerprint",
     )
+    _validate_outcome(outcome, expected_frame=expected_frame)
     return {
         "event_count": expected_frame,
         "frame": expected_frame,
@@ -482,6 +496,7 @@ def _validate_scene_metrics(
                 "brick_count",
                 "collision_shapes",
                 "executor",
+                "effective_scene_contract_passed",
                 "paper_locator",
                 "rigid_bodies",
                 "rigid_body_solver",
@@ -497,7 +512,7 @@ def _validate_capture(
     manifest_path: Path,
     *,
     expected_frame: int,
-) -> tuple[dict[str, Any], Path]:
+) -> tuple[dict[str, Any], Path, Path]:
     expected_label = CHECKPOINTS[expected_frame]["label"]
     manifest = shared._load_json(manifest_path)
     shared._require_exact(manifest.get("schema_version"), 1, "capture schema")
@@ -553,6 +568,21 @@ def _validate_capture(
         artifacts.get("scene_metrics_events"),
         "artifacts.scene_metrics_events",
     )
+    frames = shared._artifact_directory(
+        manifest_path,
+        artifacts.get("frames"),
+        "artifacts.frames",
+    )
+    video = shared._artifact_path(
+        manifest_path,
+        artifacts.get("video"),
+        "artifacts.video",
+    )
+    shared._require_exact(
+        video.name,
+        f"{SCENE_ID}_{expected_label}.mp4",
+        "capture video filename",
+    )
     if not screenshot.is_file() or not metrics_events.is_file():
         raise AvbdPaperVbdComparisonPacketError(
             "capture screenshot and scene metric log must both exist"
@@ -564,8 +594,27 @@ def _validate_capture(
     events = shared._read_scene_metric_events(
         metrics_events,
         expected_frame=expected_frame,
+        expected_focus=VIEW_FOCUS,
         expected_scene_id=SCENE_ID,
+        height=height,
+        width=width,
     )
+    for checkpoint_frame in sorted(CHECKPOINTS):
+        if checkpoint_frame > expected_frame:
+            continue
+        checkpoint_event = events[checkpoint_frame - 1]
+        _validate_scene_metrics(
+            {
+                "scene_metrics": {
+                    "event_count": checkpoint_frame,
+                    "latest": checkpoint_event,
+                }
+            },
+            expected_frame=checkpoint_frame,
+            height=height,
+            logged_latest=checkpoint_event,
+            width=width,
+        )
     scene_metrics = _validate_scene_metrics(
         manifest,
         expected_frame=expected_frame,
@@ -573,15 +622,26 @@ def _validate_capture(
         logged_latest=events[-1],
         width=width,
     )
-    capture_source_provenance = shared._validate_capture_provenance(
+    (
+        capture_source_provenance,
+        capture_runtime_provenance,
+        capture_artifacts,
+    ) = shared._validate_capture_provenance(
         manifest,
+        expected_frame_count=expected_frame,
+        expected_width=width,
+        expected_height=height,
+        frames=frames,
         metrics_events=metrics_events,
         screenshot=screenshot,
+        video=video,
     )
     return (
         {
+            "artifact_provenance": capture_artifacts,
             "camera": shared._validate_camera(manifest),
             "capture": {
+                "converted_frames": expected_frame,
                 "height": height,
                 "requested_frames": expected_frame,
                 "width": width,
@@ -593,9 +653,15 @@ def _validate_capture(
             },
             "scene_metrics": scene_metrics,
             "source_provenance": capture_source_provenance,
+            "runtime_provenance": capture_runtime_provenance,
             "scene_metrics_events": {
                 "event_count": len(events),
                 "file": metrics_events.name,
+                "prefix_sha256": {
+                    str(frame): shared._scene_metric_prefix_digest(events, frame)
+                    for frame in sorted(CHECKPOINTS)
+                    if frame <= expected_frame
+                },
                 "sha256": shared._sha256(metrics_events),
             },
             "screenshot": {
@@ -604,6 +670,7 @@ def _validate_capture(
             },
         },
         screenshot,
+        video,
     )
 
 
@@ -647,6 +714,9 @@ def _benchmark_rows(
     counters = {
         "breakable_joints": BREAKABLE_JOINTS,
         "collision_shapes": COLLISION_SHAPES,
+        "contact_method_sequential_impulse": 1,
+        "effective_scene_contract_passed": 1,
+        "effective_scene_mutation_audit_passed": 1,
         "impacting_balls": IMPACTING_BALLS,
         f"public_{solver_key}_family": 1,
         f"resolved_rigid_body_{solver_key}": 1,
@@ -656,14 +726,61 @@ def _benchmark_rows(
         "rigid_constraint_iterations": RIGID_CONSTRAINT_ITERATIONS,
         "rigid_bodies": RIGID_BODIES,
         "rigid_body_joints": BREAKABLE_JOINTS,
+        "rigid_avbd_alpha": (shared.RIGID_AVBD_ALPHA if solver_key == "avbd" else 0.0),
+        "rigid_avbd_beta": (shared.RIGID_AVBD_BETA if solver_key == "avbd" else 0.0),
+        "rigid_avbd_gamma": (shared.RIGID_AVBD_GAMMA if solver_key == "avbd" else 0.0),
+        "rigid_avbd_parameter_profile_paper_2025": (1 if solver_key == "avbd" else 0),
         "runtime_contract_passed": 1,
+        "runtime_identity_recorded": 1,
+        "runtime_identity_applicable": 1,
+        "runtime_identity_not_applicable": 0,
+        "runtime_identity_public_avbd_rigid": (1 if solver_key == "avbd" else 0),
+        "runtime_identity_variational_multibody": 0,
+        "runtime_identity_contract_passed": 1,
+        "scene_spec_matches_python": 1,
+        "solver_projection_policies_match": 1,
         "trajectory_frames": 120,
     }
     fingerprint = int(expected_fingerprint, 16)
+    representative_rows = (by_aggregate["mean"], by_aggregate["median"])
+    configuration_words: list[int] = []
+    for key in (
+        "solver_configuration_fingerprint_hi",
+        "solver_configuration_fingerprint_lo",
+    ):
+        values = []
+        for row in representative_rows:
+            value = shared._finite_number(row.get(key), f"{benchmark_run} {key}")
+            if value < 0.0 or value > 0xFFFFFFFF or value != math.floor(value):
+                raise AvbdPaperVbdComparisonPacketError(
+                    f"{benchmark_run} {key} must be an unsigned 32-bit integer"
+                )
+            values.append(int(value))
+        if values[0] != values[1]:
+            raise AvbdPaperVbdComparisonPacketError(
+                f"{benchmark_run} mean/median {key} counters must match"
+            )
+        configuration_words.append(values[0])
+    solver_configuration_fingerprint = (
+        f"{configuration_words[0]:08x}{configuration_words[1]:08x}"
+    )
     fingerprint_counters = {
         "scene_spec_fingerprint_hi": fingerprint >> 32,
         "scene_spec_fingerprint_lo": fingerprint & 0xFFFFFFFF,
+        "solver_configuration_fingerprint_hi": configuration_words[0],
+        "solver_configuration_fingerprint_lo": configuration_words[1],
     }
+    stable_counter_keys = tuple((*counters, *fingerprint_counters))
+    for key in stable_counter_keys:
+        value = shared._finite_number(
+            by_aggregate["stddev"].get(key),
+            f"{benchmark_run} stddev {key}",
+        )
+        if value != 0.0:
+            raise AvbdPaperVbdComparisonPacketError(
+                f"{benchmark_run}: stddev {key} must be 0 to prove identical "
+                "configuration across benchmark repetitions"
+            )
     packet_rows = []
     for aggregate in ("mean", "median", "stddev", "cv"):
         row = by_aggregate[aggregate]
@@ -734,6 +851,7 @@ def _benchmark_rows(
     return {
         "benchmark": benchmark_run.removesuffix("/iterations:120"),
         "rows": packet_rows,
+        "solver_configuration_fingerprint": (solver_configuration_fingerprint),
         "stability": {
             "cpu_time_cv_fraction": cpu_cv,
             "real_time_cv_fraction": real_cv,
@@ -778,7 +896,36 @@ def _validate_benchmark(
         "release",
         "benchmark library_build_type",
     )
-    benchmark_source_provenance = shared._validate_benchmark_source_provenance(context)
+    raw_evidence = data.get("dart_evidence_run")
+    raw_build_identity = (
+        raw_evidence.get("build_identity") if isinstance(raw_evidence, dict) else None
+    )
+    loaded_dart_libraries = (
+        raw_build_identity.get("loaded_dart_libraries")
+        if isinstance(raw_build_identity, dict)
+        else None
+    )
+    build_configuration = (
+        raw_build_identity.get("build_configuration")
+        if isinstance(raw_build_identity, dict)
+        else None
+    )
+    runtime_image_inventory = (
+        raw_build_identity.get("runtime_image_inventory")
+        if isinstance(raw_build_identity, dict)
+        else None
+    )
+    benchmark_source_provenance = shared._validate_benchmark_source_provenance(
+        context,
+        loaded_dart_libraries=loaded_dart_libraries,
+        runtime_image_inventory=runtime_image_inventory,
+        build_configuration=build_configuration,
+    )
+    run_evidence = shared._validate_benchmark_run_evidence(
+        data,
+        context=context,
+        source_provenance=benchmark_source_provenance,
+    )
     avbd_median = float(methods["avbd"]["timing"]["median_cpu_time_per_step_ns"])
     vbd_median = float(methods["vbd"]["timing"]["median_cpu_time_per_step_ns"])
     return {
@@ -792,8 +939,15 @@ def _validate_benchmark(
                 "library_version",
                 "mhz_per_cpu",
                 "num_cpus",
-                "benchmark_source_sha256",
-                "capture_source_provenance_digest",
+                "dart_benchmark_executable_path",
+                "dart_benchmark_source_sha256",
+                "dart_capture_source_git_head",
+                "dart_capture_source_provenance_digest",
+                "dart_cmake_build_type",
+                "dart_compiler_id",
+                "dart_compiler_version",
+                "dart_ndebug",
+                "dart_optimization_enabled",
             )
             if key in context
         },
@@ -801,6 +955,7 @@ def _validate_benchmark(
         "methods": methods,
         "scene_spec_fingerprint": expected_fingerprint,
         "source_provenance": benchmark_source_provenance,
+        "run_evidence": run_evidence,
         "comparison": {
             "basis": (
                 "same executable, host, reconstructed scene fingerprint, "
@@ -815,6 +970,7 @@ def _validate_avbd_packet(
     packet_path: Path,
     *,
     benchmark_sha256: str,
+    expected_run_evidence: dict[str, Any],
     expected_fingerprint: str,
 ) -> dict[str, Any]:
     packet = shared._load_json(packet_path)
@@ -861,6 +1017,11 @@ def _validate_avbd_packet(
         expected_fingerprint,
         "linked AVBD scene fingerprint",
     )
+    shared._require_exact(
+        benchmark.get("run_evidence"),
+        expected_run_evidence,
+        "linked AVBD benchmark run/host/build evidence",
+    )
 
     correctness = packet.get("correctness")
     if not isinstance(correctness, dict):
@@ -885,7 +1046,11 @@ def _validate_avbd_packet(
         )
 
     validated_screenshots: dict[str, dict[str, str]] = {}
-    for label, expected_frame in (("impact", 60), ("outcome", 120)):
+    for label, expected_frame in (
+        ("impact", 60),
+        ("outcome", 120),
+        ("long_horizon", 600),
+    ):
         capture = visual.get(label)
         if not isinstance(capture, dict):
             raise AvbdPaperVbdComparisonPacketError(
@@ -918,6 +1083,15 @@ def _validate_avbd_packet(
         _validate_sha256_value(
             image_verdict.get("sha256"),
             f"linked AVBD {label} image verdict sha256",
+        )
+        image_sha256 = _validate_sha256_value(
+            image_verdict.get("image_sha256"),
+            f"linked AVBD {label} image verdict image_sha256",
+        )
+        shared._require_exact(
+            image_sha256,
+            screenshot_hash,
+            f"linked AVBD {label} image verdict screenshot binding",
         )
 
         scene_metrics = capture.get("scene_metrics")
@@ -958,6 +1132,17 @@ def _validate_avbd_packet(
             raise AvbdPaperVbdComparisonPacketError(
                 f"linked AVBD {label} evidence lacks outcome"
             )
+        if expected_frame == 600:
+            try:
+                shared._validate_long_horizon_outcome(
+                    outcome, expected_frame=expected_frame
+                )
+            except shared.AvbdPaperBreakableWallPacketError as error:
+                detail = str(error).removeprefix(f"frame {expected_frame} outcome ")
+                raise AvbdPaperVbdComparisonPacketError(
+                    f"linked AVBD long-horizon outcome {detail}"
+                ) from error
+            continue
         expected_outcome = shared.EXPECTED_OUTCOMES[expected_frame]
         for key in (
             "broken_joints",
@@ -1042,6 +1227,7 @@ def _validate_avbd_packet(
     expected_inspected = {
         "impact_frame_60": validated_screenshots["impact"],
         "outcome_frame_120": validated_screenshots["outcome"],
+        "long_horizon_frame_600": validated_screenshots["long_horizon"],
         "paper_figure_13_reference": {
             "file": paper_figure.get("file"),
             "sha256": _validate_sha256_value(
@@ -1052,8 +1238,8 @@ def _validate_avbd_packet(
     }
     if set(by_role) != set(expected_inspected):
         raise AvbdPaperVbdComparisonPacketError(
-            "linked AVBD semantic review must inspect impact, outcome, and "
-            "paper Figure 13 images"
+            "linked AVBD semantic review must inspect impact, outcome, "
+            "long-horizon, and paper Figure 13 images"
         )
     for role, expected in expected_inspected.items():
         shared._require_exact(
@@ -1077,14 +1263,15 @@ def _validate_avbd_packet(
         raise AvbdPaperVbdComparisonPacketError(
             "linked AVBD source provenance must list files"
         )
-    expected_source_paths = {relative.as_posix() for relative in shared.SOURCE_PATHS}
-    actual_source_paths = {
-        entry.get("path") for entry in files if isinstance(entry, dict)
-    }
-    if actual_source_paths != expected_source_paths:
-        raise AvbdPaperVbdComparisonPacketError(
-            "linked AVBD source provenance must list the canonical writer " "source set"
-        )
+    expected_source_paths = [relative.as_posix() for relative in shared.SOURCE_PATHS]
+    actual_source_paths = [
+        entry.get("path") if isinstance(entry, dict) else None for entry in files
+    ]
+    shared._require_exact(
+        actual_source_paths,
+        expected_source_paths,
+        "linked AVBD source provenance paths",
+    )
     combined = sha256()
     for entry in files:
         if not isinstance(entry, dict):
@@ -1127,6 +1314,7 @@ def _validate_avbd_packet(
         "visual_evidence": {
             "impact_screenshot": validated_screenshots["impact"],
             "outcome_screenshot": validated_screenshots["outcome"],
+            "long_horizon_screenshot": validated_screenshots["long_horizon"],
             "semantic_review": {
                 "file": semantic_file,
                 "sha256": semantic_hash,
@@ -1141,9 +1329,28 @@ def _validate_visual_review(
     *,
     bend_screenshot: Path,
     retention_screenshot: Path,
+    long_horizon_screenshot: Path,
+    long_horizon_video: dict[str, Any],
+    long_horizon_video_path: Path,
     paper_figure: Path,
 ) -> dict[str, Any]:
     review = shared._load_json(review_path)
+    expected_review_keys = {
+        "assessment_assertions",
+        "claim_assessments",
+        "inspected_images",
+        "inspected_videos",
+        "reviewer_capabilities",
+        "scene",
+        "schema_version",
+        "structured_observations",
+        "temporal_assessment",
+        "verdict",
+    }
+    if set(review) != expected_review_keys:
+        raise AvbdPaperVbdComparisonPacketError(
+            "visual review must use the exact structured semantic-review fields"
+        )
     shared._require_exact(
         review.get("schema_version"),
         "dart.visual_semantic_review/v1",
@@ -1155,41 +1362,40 @@ def _validate_visual_review(
         "pass",
         "visual review verdict",
     )
-    fields = (
-        "reviewer_capability",
-        "claim_and_expected_observation",
-        "text_oracle",
-        "visible_observation",
-        "reconciliation_and_verdict",
-        "not_proven_and_limitations",
+    expected_capabilities = {
+        "image_semantic_review": True,
+        "video_semantic_review": True,
+    }
+    shared._require_exact(
+        review.get("reviewer_capabilities"),
+        expected_capabilities,
+        "visual review reviewer_capabilities",
     )
-    for key in fields:
-        value = review.get(key)
-        if not isinstance(value, str) or not value.strip():
-            raise AvbdPaperVbdComparisonPacketError(
-                f"visual review {key} must be non-empty"
-            )
-    if "image" not in review["reviewer_capability"].lower():
-        raise AvbdPaperVbdComparisonPacketError(
-            "visual review must name an image-capable reviewer"
+    expected_assertions = {
+        "capture_images_assessed": True,
+        "long_horizon_video_assessed": True,
+        "no_contradictions_found": True,
+        "paper_reference_assessed": True,
+        "text_oracle_agrees": True,
+        "view_reports_agree": True,
+    }
+    shared._require_exact(
+        review.get("assessment_assertions"),
+        expected_assertions,
+        "visual review assessment_assertions",
+    )
+    claim_assessments, temporal_assessment, structured_observations = (
+        shared._validate_semantic_claim_contract(
+            review,
+            expected_terminal_behavior="bent_retained_wall",
+            error_type=AvbdPaperVbdComparisonPacketError,
         )
-    if (
-        "viewreport"
-        not in review["reconciliation_and_verdict"].replace(" ", "").lower()
-    ):
-        raise AvbdPaperVbdComparisonPacketError(
-            "visual review reconciliation must account for ViewReports"
-        )
-    limitations = review["not_proven_and_limitations"].lower()
-    for required in ("cuda", "sequential impulse", "unpublished", "xpbd"):
-        if required not in limitations:
-            raise AvbdPaperVbdComparisonPacketError(
-                f"visual review limitations must name {required}"
-            )
+    )
 
     expected = {
         "bend_frame_18": bend_screenshot,
         "retention_frame_120": retention_screenshot,
+        "long_horizon_frame_600": long_horizon_screenshot,
         "paper_figure_13_reference": paper_figure,
     }
     entries = review.get("inspected_images")
@@ -1204,7 +1410,8 @@ def _validate_visual_review(
     }
     if set(by_role) != set(expected):
         raise AvbdPaperVbdComparisonPacketError(
-            "visual review must inspect bend, retention, and paper images"
+            "visual review must inspect bend, retention, long-horizon, and "
+            "paper images"
         )
     inspected = []
     for role, path in expected.items():
@@ -1224,17 +1431,52 @@ def _validate_visual_review(
             f"visual review {role} sha256",
         )
         inspected.append({"file": path.name, "role": role, "sha256": expected_hash})
+    video_entries = review.get("inspected_videos")
+    if not isinstance(video_entries, list) or len(video_entries) != 1:
+        raise AvbdPaperVbdComparisonPacketError(
+            "visual review must inspect exactly one long-horizon video"
+        )
+    video_entry = video_entries[0]
+    if not isinstance(video_entry, dict) or set(video_entry) != {
+        "decoded_frame_count",
+        "duration_seconds",
+        "file",
+        "role",
+        "sha256",
+    }:
+        raise AvbdPaperVbdComparisonPacketError(
+            "visual review long-horizon video entry has unexpected fields"
+        )
+    expected_video_review = {
+        "decoded_frame_count": long_horizon_video["decoded_frame_count"],
+        "duration_seconds": long_horizon_video["duration_seconds"],
+        "file": long_horizon_video["file"],
+        "role": "long_horizon_video_600",
+        "sha256": long_horizon_video["sha256"],
+    }
+    video_entry_path = Path(str(video_entry.get("file")))
+    if video_entry_path.resolve() != long_horizon_video_path.resolve():
+        raise AvbdPaperVbdComparisonPacketError(
+            "visual review long-horizon video file does not match capture"
+        )
+    video_entry = dict(video_entry)
+    video_entry["file"] = Path(str(video_entry["file"])).name
+    shared._require_exact(
+        video_entry,
+        expected_video_review,
+        "visual review long-horizon video",
+    )
     return {
-        "claim_and_expected_observation": review["claim_and_expected_observation"],
+        "assessment_assertions": expected_assertions,
+        "claim_assessments": claim_assessments,
         "file": review_path.name,
         "inspected_images": inspected,
-        "not_proven_and_limitations": review["not_proven_and_limitations"],
-        "reconciliation_and_verdict": review["reconciliation_and_verdict"],
-        "reviewer_capability": review["reviewer_capability"],
+        "inspected_videos": [expected_video_review],
+        "reviewer_capabilities": expected_capabilities,
         "sha256": shared._sha256(review_path),
-        "text_oracle": review["text_oracle"],
+        "structured_observations": structured_observations,
+        "temporal_assessment": temporal_assessment,
         "verdict": "pass",
-        "visible_observation": review["visible_observation"],
     }
 
 
@@ -1245,12 +1487,14 @@ def make_packet(
     bend_image_verdict_json: Path,
     retention_capture_manifest: Path,
     retention_image_verdict_json: Path,
+    long_horizon_capture_manifest: Path,
+    long_horizon_image_verdict_json: Path,
     visual_review_json: Path,
     paper_pdf: Path,
     paper_figure_image: Path,
     avbd_packet: Path,
 ) -> dict[str, Any]:
-    bend, bend_screenshot = _validate_capture(
+    bend, bend_screenshot, _bend_video = _validate_capture(
         bend_capture_manifest,
         expected_frame=18,
     )
@@ -1260,7 +1504,7 @@ def make_packet(
         expected_frame=18,
         expected_scene_id=SCENE_ID,
     )
-    retention, retention_screenshot = _validate_capture(
+    retention, retention_screenshot, _retention_video = _validate_capture(
         retention_capture_manifest,
         expected_frame=120,
     )
@@ -1270,19 +1514,61 @@ def make_packet(
         expected_frame=120,
         expected_scene_id=SCENE_ID,
     )
+    (
+        long_horizon,
+        long_horizon_screenshot,
+        long_horizon_video_path,
+    ) = _validate_capture(
+        long_horizon_capture_manifest,
+        expected_frame=600,
+    )
+    long_horizon["image_verdict"] = shared._validate_image_verdict(
+        long_horizon_image_verdict_json,
+        long_horizon_screenshot,
+        expected_frame=600,
+        expected_scene_id=SCENE_ID,
+    )
+    shared._require_exact(
+        retention["scene_metrics_events"]["prefix_sha256"]["18"],
+        bend["scene_metrics_events"]["prefix_sha256"]["18"],
+        "bend/retention exact scene-metric event prefix",
+    )
+    for frame in (18, 120):
+        shared._require_exact(
+            long_horizon["scene_metrics_events"]["prefix_sha256"][str(frame)],
+            retention["scene_metrics_events"]["prefix_sha256"][str(frame)],
+            f"retention/long-horizon exact {frame}-frame scene-metric prefix",
+        )
     fingerprint = bend["scene_metrics"]["scene_spec_fingerprint"]
     shared._require_exact(
         retention["scene_metrics"]["scene_spec_fingerprint"],
         fingerprint,
         "bend/retention scene fingerprint",
     )
+    shared._require_exact(
+        long_horizon["scene_metrics"]["scene_spec_fingerprint"],
+        fingerprint,
+        "bend/long-horizon scene fingerprint",
+    )
+    shared._require_exact(
+        long_horizon["scene_metrics"]["outcome_oracle"],
+        bend["scene_metrics"]["outcome_oracle"],
+        "bend/long-horizon outcome_oracle",
+    )
     benchmark = _validate_benchmark(
         benchmark_json,
         expected_fingerprint=fingerprint,
     )
+    shared._require_shared_capture_benchmark_build(
+        benchmark,
+        bend,
+        retention,
+        long_horizon,
+    )
     linked_avbd = _validate_avbd_packet(
         avbd_packet,
         benchmark_sha256=benchmark["json_sha256"],
+        expected_run_evidence=benchmark["run_evidence"],
         expected_fingerprint=fingerprint,
     )
     paper_reference = shared._validate_paper_artifacts(
@@ -1293,13 +1579,17 @@ def make_packet(
         visual_review_json,
         bend_screenshot=bend_screenshot,
         retention_screenshot=retention_screenshot,
+        long_horizon_screenshot=long_horizon_screenshot,
+        long_horizon_video=long_horizon["artifact_provenance"]["video"],
+        long_horizon_video_path=long_horizon_video_path,
         paper_figure=paper_figure_image,
     )
 
     return {
         "benchmark": benchmark,
         "claim_boundary": (
-            "This packet covers the matched fixed-penalty VBD row and its "
+            "This packet covers the fixed-penalty VBD row of DART's "
+            "cross-solver-matched, publication-shaped reconstruction and its "
             "same-host CPU comparison with the linked public AVBD Figure 13 "
             "packet. It does not reproduce the Sequential Impulse or XPBD "
             "rows, claim exact unpublished source constants, establish CUDA "
@@ -1367,7 +1657,7 @@ def make_packet(
                     "--height 720 --view front --camera-azimuth -112.5 "
                     "--camera-elevation 35.52338329811104 "
                     "--camera-distance 22 --camera-target 0,0.45,1.6 "
-                    "--capture-label bend "
+                    "--capture-label bend --video --fps 60 "
                     "--output-dir <bend-capture-dir>"
                 ),
                 (
@@ -1376,8 +1666,17 @@ def make_packet(
                     "--height 720 --view front --camera-azimuth -112.5 "
                     "--camera-elevation 35.52338329811104 "
                     "--camera-distance 22 --camera-target 0,0.45,1.6 "
-                    "--capture-label retention "
+                    "--capture-label retention --video --fps 60 "
                     "--output-dir <retention-capture-dir>"
+                ),
+                (
+                    "pixi run py-demo-capture -- "
+                    f"--scene {SCENE_ID} --frames 600 --width 1280 "
+                    "--height 720 --view front --camera-azimuth -112.5 "
+                    "--camera-elevation 35.52338329811104 "
+                    "--camera-distance 22 --camera-target 0,0.45,1.6 "
+                    "--capture-label long_horizon --video --fps 60 "
+                    "--output-dir <long-horizon-capture-dir>"
                 ),
             ],
             "image_verdict_commands": [
@@ -1394,6 +1693,13 @@ def make_packet(
                     f"--meta scene={SCENE_ID} --meta frame=120 "
                     f"--meta view={CAMERA_VIEW} "
                     "--out <retention-capture-dir>/image_verdict.json"
+                ),
+                (
+                    "pixi run image-verdict -- "
+                    f"<long-horizon-capture-dir>/{SCENE_ID}_long_horizon.png "
+                    f"--meta scene={SCENE_ID} --meta frame=600 "
+                    f"--meta view={CAMERA_VIEW} "
+                    "--out <long-horizon-capture-dir>/image_verdict.json"
                 ),
             ],
         },
@@ -1414,6 +1720,7 @@ def make_packet(
         "visual_evidence": {
             "bend": bend,
             "retention": retention,
+            "long_horizon": long_horizon,
             "semantic_review": semantic_review,
         },
     }
@@ -1428,6 +1735,8 @@ def main(argv: list[str]) -> int:
             bend_image_verdict_json=args.bend_image_verdict_json,
             retention_capture_manifest=args.retention_capture_manifest,
             retention_image_verdict_json=(args.retention_image_verdict_json),
+            long_horizon_capture_manifest=args.long_horizon_capture_manifest,
+            long_horizon_image_verdict_json=(args.long_horizon_image_verdict_json),
             visual_review_json=args.visual_review_json,
             paper_pdf=args.paper_pdf,
             paper_figure_image=args.paper_figure_image,
