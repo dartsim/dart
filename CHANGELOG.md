@@ -524,6 +524,7 @@ compatibility remains on the active DART 6 LTS branch._
   importable by name; the simulation-verification guide now also states that
   step-metrics contact count and penetration skip static/kinematic-only pairs
   and that rest claims need an explicit criterion.
+  ([#3476](https://github.com/dartsim/dart/pull/3476))
 - Fixed the trajectory recorder so its `--factory module:callable` path works
   instead of tripping its own scene/factory exclusivity guard.
   ([#3416](https://github.com/dartsim/dart/pull/3416))
