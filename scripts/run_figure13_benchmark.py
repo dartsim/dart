@@ -35,6 +35,7 @@ BUILD_CONFIGURATION_ALGORITHM = "sha256-cmake-build-configuration-record-v2"
 LOADER_POLICY_ALGORITHM = "empty-loader-control-environment-v1"
 RUNTIME_IMAGE_INVENTORY_ALGORITHM = "sha256-complete-mapped-elf-inventory-v1"
 DEFAULT_QUIET_SECONDS = 120.0
+DEFAULT_SETTLE_SECONDS = 600.0
 DEFAULT_SAMPLE_INTERVAL_SECONDS = 1.0
 DEFAULT_MAX_NORMALIZED_LOAD = 0.25
 MIN_WARMUP_SECONDS = 1.0
@@ -892,6 +893,43 @@ def _require_quiet_snapshot(
         )
 
 
+def _wait_for_quiet_host(
+    max_wait_seconds: float,
+    interval_seconds: float,
+    max_normalized_load: float,
+) -> dict[str, object]:
+    """Let the runner's own build load decay before the quiet-host gate starts.
+
+    The gate samples the one-minute load average, which the just-finished
+    parallel evidence build keeps elevated for a minute or two. Waiting here
+    is not evidence: the gate still records its own uninterrupted samples and
+    still fails closed on any foreign build process or load excursion.
+    """
+    started_monotonic = time.monotonic()
+    deadline = started_monotonic + max_wait_seconds
+    last: dict[str, object] | None = None
+    while True:
+        snapshot = _load_snapshot()
+        try:
+            _require_quiet_snapshot(
+                snapshot,
+                max_normalized_load=max_normalized_load,
+                phase="settle before the quiet-host gate",
+            )
+        except Figure13BenchmarkError as exc:
+            last = {"reason": str(exc)}
+            if time.monotonic() >= deadline:
+                raise Figure13BenchmarkError(
+                    f"host did not settle within {max_wait_seconds:g} s: {exc}"
+                ) from exc
+            time.sleep(interval_seconds)
+            continue
+        return {
+            "elapsed_seconds": time.monotonic() - started_monotonic,
+            "last_rejection": last,
+        }
+
+
 def _quiet_gate(
     duration_seconds: float,
     interval_seconds: float,
@@ -1229,6 +1267,12 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
     parser.add_argument("--build-type", default="Release")
     parser.add_argument("--quiet-seconds", type=float, default=DEFAULT_QUIET_SECONDS)
     parser.add_argument(
+        "--settle-seconds",
+        type=float,
+        default=DEFAULT_SETTLE_SECONDS,
+        help="maximum time to let the host settle after the evidence build",
+    )
+    parser.add_argument(
         "--sample-interval-seconds",
         type=float,
         default=DEFAULT_SAMPLE_INTERVAL_SECONDS,
@@ -1268,6 +1312,13 @@ def main(argv: list[str] | None = None) -> int:
     binary = _build_target(build_dir)
     binary_sha256 = _sha256(binary)
     host_identity = _host_identity()
+    if args.settle_seconds < 0.0:
+        raise Figure13BenchmarkError("--settle-seconds must be non-negative")
+    _wait_for_quiet_host(
+        args.settle_seconds,
+        args.sample_interval_seconds,
+        args.max_normalized_load,
+    )
     quiet_host = _quiet_gate(
         args.quiet_seconds,
         args.sample_interval_seconds,

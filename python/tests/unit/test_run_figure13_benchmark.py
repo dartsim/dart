@@ -314,6 +314,44 @@ def test_build_configuration_rejects_replaced_link_flags(tmp_path: Path) -> None
         runner._load_build_configuration(build_dir)
 
 
+def test_settle_waits_for_the_runner_build_load_to_decay(monkeypatch) -> None:
+    snapshots = iter(
+        [
+            {"foreign_build_processes": [], "load_one": 16.0, "normalized_load_one": 0.5},
+            {"foreign_build_processes": [], "load_one": 8.0, "normalized_load_one": 0.25},
+            {"foreign_build_processes": [], "load_one": 4.0, "normalized_load_one": 0.125},
+        ]
+    )
+    clock = {"now": 0.0}
+    monkeypatch.setattr(runner, "_load_snapshot", lambda: next(snapshots))
+    monkeypatch.setattr(runner.time, "monotonic", lambda: clock["now"])
+    monkeypatch.setattr(
+        runner.time, "sleep", lambda seconds: clock.__setitem__("now", clock["now"] + seconds)
+    )
+    settled = runner._wait_for_quiet_host(600.0, 1.0, 0.25)
+    assert settled["elapsed_seconds"] == 1.0
+    assert "exceeds" in settled["last_rejection"]["reason"]
+
+
+def test_settle_fails_closed_when_the_host_stays_busy(monkeypatch) -> None:
+    clock = {"now": 0.0}
+    monkeypatch.setattr(
+        runner,
+        "_load_snapshot",
+        lambda: {
+            "foreign_build_processes": [{"command": "ninja", "pid": 1}],
+            "load_one": 20.0,
+            "normalized_load_one": 0.625,
+        },
+    )
+    monkeypatch.setattr(runner.time, "monotonic", lambda: clock["now"])
+    monkeypatch.setattr(
+        runner.time, "sleep", lambda seconds: clock.__setitem__("now", clock["now"] + seconds)
+    )
+    with pytest.raises(runner.Figure13BenchmarkError, match="did not settle within 5 s"):
+        runner._wait_for_quiet_host(5.0, 1.0, 0.25)
+
+
 def test_evidence_rejects_loaded_library_with_stale_compiled_source(
     tmp_path: Path,
 ) -> None:
