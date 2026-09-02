@@ -62,14 +62,14 @@ This folder is the temporary working surface; the durable owner is the plan.
   Nine captures (three per method, including one 600-frame long-horizon
   still/video each) and their semantic reviews are sealed to capture-source
   digest
-  `115a185b7ae0f2d122f227503091da5236990716160ad9263595a6f880671a43`
+  `d54b0460b9806b462307881053810c76e7acb92f03ea25e1c765402e2f86c9be`
   and record the sealed source commit's Git HEAD (the validators recompute
   the digest; the recorded head is format-checked, not looked up in git).
   One quiet-host
   five-repeat Release run through `scripts/run_figure13_benchmark.py`
-  recorded median CPU costs of 16.050815 ms AVBD, 13.973706 ms VBD,
-  and 14.499464 ms Sequential Impulse, with CPU CVs of 0.99%,
-  0.65%, and 0.28%, respectively. Packet file hashes are
+  recorded median CPU costs of 14.735410 ms AVBD, 12.438459 ms VBD,
+  and 13.349352 ms Sequential Impulse, with CPU CVs of 0.24%,
+  2.00%, and 2.32%, respectively. Packet file hashes are
   validated transitively by `check-avbd-packets`; this tracker quotes only the
   capture-source seal digest above and does not duplicate the mutable packet
   hashes. The same-host ratios are
@@ -431,8 +431,8 @@ All linked canonical method rows remain partial.
   its benchmark translation unit, the evidence build configuration, the
   quiet-host gate, and the in-run watchdog.
 - **Performance boundary:** the five-repeat Release benchmark on the sealed
-  bytes records a 16.050815 ms median CPU cost per step with
-  0.99% CPU CV. This is an absolute DART timing only; the paper
+  bytes records a 14.735410 ms median CPU cost per step with
+  0.24% CPU CV. This is an absolute DART timing only; the paper
   and source publish no directly comparable timing for this scene.
 - **Non-goals:** exact replay of unpublished source constants, the XPBD
   comparison row, source-matched video edit, broad fracture corpus, unified
@@ -463,9 +463,9 @@ Figure 13 and official-video row 12 remain partial.
   frame 120. All three VBD captures pass their engine ViewReports,
   pixel-integrity checks, and paper-grounded semantic review.
 - **Performance boundary:** the five-repeat medians on the sealed bytes are
-  13.973706 ms VBD and 16.050815 ms AVBD, with 0.65% and
-  0.99% CPU CV. The VBD/AVBD median CPU-cost ratio is
-  0.8706x and is descriptive only: the outcomes intentionally
+  12.438459 ms VBD and 14.735410 ms AVBD, with 2.00% and
+  0.24% CPU CV. The VBD/AVBD median CPU-cost ratio is
+  0.8441x and is descriptive only: the outcomes intentionally
   differ, and no source achieved-accuracy or same-hardware denominator
   exists.
 - **Remaining boundary:** exact unpublished constants, honest XPBD, a
@@ -499,9 +499,9 @@ Figure 13 and official-video row 12 remain partial.
   wall. All three SI captures match the paper's initial fracture followed by
   retained-row failure and collapse.
 - **Performance boundary:** the five-repeat median CPU costs on the sealed
-  bytes are 14.499464 ms SI, 13.973706 ms VBD, and 16.050815 ms
-  AVBD, with 0.28%, 0.65%, and 0.99% CPU
-  CV. SI/AVBD is 0.9033x and SI/VBD is 1.0376x.
+  bytes are 13.349352 ms SI, 12.438459 ms VBD, and 14.735410 ms
+  AVBD, with 2.32%, 2.00%, and 0.24% CPU
+  CV. SI/AVBD is 0.9059x and SI/VBD is 1.0732x.
   These are
   descriptive costs for intentionally different outcomes, not paper speedups
   or achieved-accuracy comparisons. Frame 120 is the only shared quantitative

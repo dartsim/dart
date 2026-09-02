@@ -17,10 +17,10 @@ This file owns only the exact branch/session stop point and takeover sequence.
 > `e8b02fcfcdb`, `c549b9f24de` (evidence-runner fixes: retired Filament
 > option, project-appended link flag, settle before the quiet gate), followed
 > by the evidence commit that reseals the three Figure 13 packets on
-> `c549b9f24de`. The sealed Figure 13 evidence binds capture-source digest
-> `115a185b7ae0f2d122f227503091da5236990716160ad9263595a6f880671a43`; the
-> quiet-host five-repeat run records 16.050815 ms/0.99% AVBD,
-> 13.973706 ms/0.65% VBD, and 14.499464 ms/0.28% SI median CPU cost per step
+> `3d2d543ecdf`. The sealed Figure 13 evidence binds capture-source digest
+> `d54b0460b9806b462307881053810c76e7acb92f03ea25e1c765402e2f86c9be`; the
+> quiet-host five-repeat run records 14.735410 ms/0.24% AVBD,
+> 12.438459 ms/2.00% VBD, and 13.349352 ms/2.32% SI median CPU cost per step
 > (descriptive same-host costs). Under the immutable paper profile the AVBD
 > wall keeps standing with 36 broken attachments ([5, 5, 5] in the impact
 > regions plus 21 outside) and no displaced brick, so its review records visual
@@ -191,8 +191,8 @@ in AVBD -> VBD -> SI order.
     rejected before packet generation.
 
 Packet hashes are validated transitively from the committed files and are not
-duplicated in this mutable handoff. On the sealed `c549b9f24de` evidence
-VBD/AVBD is 0.8706x, SI/AVBD is 0.9033x, and SI/VBD is 1.0376x (median CPU
+duplicated in this mutable handoff. On the sealed `3d2d543ecdf` evidence
+VBD/AVBD is 0.8441x, SI/AVBD is 0.9059x, and SI/VBD is 1.0732x (median CPU
 cost per step; the earlier 0.9551x / 1.6233x / 1.6997x figures were the
 pre-audit head's). Outcomes
 intentionally differ, and there is no source achieved-accuracy or

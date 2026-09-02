@@ -14,10 +14,18 @@ from pathlib import Path
 import pytest
 
 _ROOT = Path(__file__).resolve().parents[3]
+import sys
+
 _SPEC = importlib.util.spec_from_file_location(
     "capture_source_provenance_under_test",
     _ROOT / "scripts" / "capture_source_provenance.py",
 )
+# The module resolves the paper packet source lists through its sibling
+# `avbd_packet_schema`, which the production entry points find because
+# they run from `scripts/`; the file-path loader must add that directory.
+_SCRIPTS_DIR = Path(_SPEC.origin).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
 assert _SPEC is not None
 assert _SPEC.loader is not None
 provenance = importlib.util.module_from_spec(_SPEC)

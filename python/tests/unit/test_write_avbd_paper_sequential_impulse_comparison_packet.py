@@ -24,6 +24,11 @@ def _load_packet_module():
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
+    # The script imports its sibling writers by name and re-wraps their
+    # exception classes; drop any copies another suite cached so the siblings
+    # it binds are the ones whose classes it will catch.
+    sys.modules.pop("write_avbd_paper_breakable_wall_packet", None)
+    sys.modules.pop("write_avbd_paper_vbd_comparison_packet", None)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
