@@ -191,41 +191,25 @@ compatibility remains on the active DART 6 LTS branch._
   line), skipping the general inverse/compose when the child (and optionally
   parent) joint frame is identity. Guarded by an equivalence regression test.
 - Added and hardened DART 7 deformable, VBD, AVBD, FEM, IPC/barrier, and
-  variational solver paths behind the `World` and executor model; AVBD CPU
-  distance-spring and nonlinear rigid-point rows now use the paper's
-  non-negative quasi-Newton geometric-stiffness diagonal while contact
-  remains intentionally Taylor-linearized. Large promoted AVBD CPU row
-  inventories now perform the Section 4 post-primal dual/stiffness update over
-  deterministic, allocation-stable worker ranges while preserving exact serial
-  row state. Passive articulated spherical, revolute, and prismatic point
-  joints now also apply masked finite-stiffness rows for world-link and
-  same-multibody movable-link endpoints while preserving their free
-  coordinates. Finite articulated revolute and prismatic velocity motors now
-  add bounded free-coordinate motor rows alongside those compliant masks, and
-  finite plus motor row loads now share physical break-force accounting with
-  reset, re-arm, and binary persistence.
-  ([PLAN-104](docs/plans/104-vertex-block-descent-solver.md))
-- Added explicit experimental fixed-penalty VBD and augmented-Lagrangian AVBD
-  rigid-body families to the DART 7 `World` C++ and dartpy facades, including
-  typed rigid-constraint options, binary/replay persistence, fail-closed
-  configuration, and matched publication-shaped breakable-wall demos. The
-  matched Figure 13 evidence records exact broken-joint identities,
-  retained-row residuals, allocation gates, descriptive performance, and
-  assessed visuals across Sequential Impulse, VBD, and AVBD.
-  Claim-tied view assessment now scopes ambiguity to an explicitly named
-  subject while still treating other renderables as possible occluders, so
-  dense debris scenes cannot reject a clear subject view because of an
-  unrelated overlapping pair.
-  ([PLAN-104](docs/plans/104-vertex-block-descent-solver.md))
-- Changed the default Sequential Impulse rigid-body family to own hard
-  fixed/spherical/revolute/prismatic pair constraints, bounded velocity
-  motors, impulse-derived fracture, and non-velocity post-stabilization in the
-  same projected Gauss-Seidel sweeps as contacts, instead of routing public
-  pair constraints through the private AVBD projection; finite-stiffness pair
-  rows fail closed to the VBD/AVBD families, and bounded velocity-motor loads
-  now count toward the public break threshold identically across Sequential
-  Impulse, VBD, and AVBD.
-  ([PLAN-104](docs/plans/104-vertex-block-descent-solver.md))
+  variational solver paths behind the `World` and executor model.
+- Added opt-in experimental fixed-penalty VBD and augmented-Lagrangian AVBD
+  rigid-body solver families to the DART 7 `World` C++ and dartpy APIs, with
+  typed constraints, state serialization/replay, fail-closed unsupported
+  configurations, independently owned Sequential Impulse hard rigid
+  constraints, and publication-shaped Figure 13 evidence. Machine-checked
+  row-bound evidence contracts keep full CPU/CUDA paper parity explicitly open.
+  ([#3432](https://github.com/dartsim/dart/pull/3432))
+- Added bounded, fail-closed DART 7 contact storage: `World` construction
+  options cap the baked rigid collision candidate-pair and contact buffers
+  (automatic limits reject at the complete shape-pair envelope while reserving
+  storage only up to a fixed budget), and deformable bodies expose
+  `surfaceContactCandidateCapacity`. The automatic deformable
+  policy reserves the exact valid point-triangle/edge-edge pair bound of the
+  frozen topology, so in-budget scenes step without allocating; above the
+  65,536-candidate reserve budget it grows and reports
+  `DeformableSolverDiagnostics::surfaceContactCandidateOverflowCount`, while
+  explicit capacities always fail closed.
+  ([#3432](https://github.com/dartsim/dart/pull/3432))
 - Added compute-executor and backend-boundary work so CPU threading, optional
   CUDA experiments, and future accelerator sidecars do not leak into the default
   public API.

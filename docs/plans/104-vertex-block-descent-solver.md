@@ -55,6 +55,21 @@
 
 ## Current Implementation Evidence
 
+> **AVBD runtime-identity boundary:** A zero-trust source audit found that the
+> repository's `avbd_demo*` filenames and `BM_Avbd*` benchmark symbols are
+> labels, not proof that AVBD ran. At the legacy packet captures, only seven of
+> the 31 source-demo Python scenes explicitly selected public rigid AVBD; the
+> other 24 inherited Sequential Impulse, and only the Figure 13 wall benchmark
+> ran public rigid AVBD. Current source now makes the distinction explicit: all
+> 31 source-demo scenes and their free-rigid benchmark builders select and
+> report public AVBD, while articulated/high-ratio fixtures report the
+> Variational multibody integrator. That source repair does not retroactively
+> change legacy packets, which remain fixture/topology or historical
+> whole-pipeline evidence and cannot close an AVBD correctness, paper-parity,
+> regression, or performance claim. Every refreshed claim must record the
+> runtime-resolved solver identity at the current packet schema; requested
+> configuration, filename, and benchmark symbol are insufficient.
+
 The temporary `docs/dev_tasks/vbd_deformable_solver/` tracker was retired after
 the post-merge self-collision follow-up slice because the durable method audit
 and remaining work now live here. PR #2781 landed the DART-owned VBD CPU+CUDA
@@ -67,11 +82,11 @@ tetrahedral material kernels, handles static sphere/box obstacle barriers,
 adds lagged VT/EE surface self-collision penalties, and provides the TinyVBD
 tilted-strand plus contact showcase py-demos.
 
-Remaining durable work is deliberately narrower than the retired task tracker:
-self-contact tangential friction, committed benchmark/profiling JSON, paper
-tetrahedral scene reproduction, OGC source/code audit plus CPU proof-of-contact,
-Phase 8 SoA plus Gaia CPU comparison, and same-GPU RTX-4090 Table 1
-reproduction.
+Remaining durable work is the full 88-row VBD contract, not the earlier narrow
+follow-up list: source-equivalent materials and collision behavior, every
+paper/project/video/reference scene, CPU/CUDA correctness, long-horizon visual
+evidence, OGC intake, matched Gaia/TinyVBD baselines, and achieved-accuracy
+performance leadership. The retired task tracker does not narrow that objective.
 
 Maintainer direction now extends this same solver-family plan to Augmented VBD
 (`avbd-2025`). AVBD is not a replacement for the VBD foundation above; it is
@@ -84,9 +99,8 @@ regularization, warm starting, hard-row clamping, dual updates, and
 finite-stiffness ramping. Follow-on local slices add deterministic scalar-row
 keys/inventory for warm-started `lambda`/`k` state, standalone CPU
 half-space contact-normal, hard point-attachment, and finite-stiffness spring
-row drivers, plus a standalone finite-stiffness tetrahedral material row
-driver, a bounded half-space friction-tangent row primitive, and self-contact
-normal rows for point-triangle / edge-edge primitive directions and AVBD
+row drivers, plus a bounded half-space friction-tangent row primitive and
+self-contact normal rows for point-triangle / edge-edge primitive directions and AVBD
 hard-row stamping. Self-contact friction tangent rows reuse lagged
 point-triangle / edge-edge tangent stencils in the combined mass-spring row
 driver, with supported World generation for self-contact scenes plus
@@ -96,28 +110,38 @@ contact-normal, friction-tangent, self-contact-normal, attachment, and spring
 finite-stiffness families in one AVBD row solve. Its primal sweep remains
 serial and deterministic, while sufficiently large independent post-primal
 dual/stiffness row inventories use deterministic CPU ranges. The supported
-frictionless pure-tetrahedral World envelope now carries finite-stiffness
-material rows with a dimensionless Lamé multiplier and separate tet-row
-diagnostics, while still using the existing lagged VBD self-contact penalty
-when hard self-contact rows are not requested. That pure-tet envelope can now
-also combine finite-stiffness material rows with AVBD self-contact normal rows
-and matching bounded self-contact friction tangent rows when requested.
+pure-tetrahedral World envelope retains the complete configured Neo-Hookean
+material while AVBD self-contact normal rows and matching bounded self-contact
+friction tangent rows participate in the same solve. AVBD finite-stiffness
+rows remain spring-only. A published two-row no-log Neo-Hookean factorization
+has nonzero rest constraints whose forces cancel only at coupled stiffness;
+AVBD Equation 16 grows scalar rows independently and would break that rest
+equilibrium. No independently rampable formulation exists for DART's public
+shared-log model, so the combination fails closed instead of silently scaling
+Lamé parameters.
 The supported mass-spring friction tangent pairs now use the lagged tangential
-dual to switch between static sticking and dynamic sliding and project paired
-forces to the circular Coulomb cone. Static box obstacle row keys now include
-face/edge/corner feature IDs so rows warm-start across small same-feature
-penetrations but reset when contact moves to another box manifold. Persisting
-static half-space friction rows also project their decayed tangential dual into
-the current tangent basis when smooth obstacle normals change, and persisting
-self-contact friction rows project their generalized tangential dual into the
-current 12D tangent stencil.
+dual to switch between static sticking and dynamic sliding, evaluate the full
+augmented tangent trial, and project only out-of-cone forces to the circular
+Coulomb boundary. Static box obstacle row keys include face/edge/corner feature
+IDs so rows warm-start across small same-feature penetrations but reset when
+contact moves to another box manifold. Persisting static half-space and
+self-contact friction rows now retain a validated material-point displacement
+anchor, transport it into the current tangent basis, cold-start on identity,
+cardinality, stencil, or non-finite mismatch, and refresh their cone from the
+current coupled normal trial during each block sweep. Point-triangle and
+edge-edge normal rows clear inactive duals after true separation and reject an
+invalid safety-floor differential instead of reusing it.
 The first private rigid-body foundation adds a 6-DOF block accumulator,
 world-frame quaternion tangent updates, an inertia term, a 6x6 block solve, and
 a scalar rigid point-attachment row plus two-body point-pair row stamping with
 focused tests. Point-pair rows now also carry a scalar offset and private
 constructors for rigid contact-normal rows and bounded contact-friction tangent
-rows, plus a paired friction helper that switches between static sticking and
-dynamic sliding while projecting the force to a circular Coulomb cone. A
+rows. Rigid contact normal and tangent rows now cache their step-start scalar
+constraint and both 6-DOF Jacobians before the sweep, so direct, indexed,
+primal, and dual paths evaluate one affine Taylor model instead of recomputing
+rotated anchors after each body update. The paired friction helper evaluates
+`K C + lambda`, projects only an out-of-cone trial, uses the source static-slip
+tolerance, and retains the unclamped penalty Hessian during projection. A
 private serial rigid row driver now sweeps point attachments,
 contact-normal point pairs, and paired friction tangent rows; paired friction
 row updates now reuse the regularized tangent constraint vector for both cone
@@ -310,24 +334,27 @@ including selected dartpy design-mode rebuild evidence; a
 narrow `avbd_articulated_high_ratio_chain` py-demo,
 `BM_AvbdArticulatedHighRatioChainStep` dashboard row, and tracked
 [`avbd-articulated-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-articulated-high-ratio-chain-packet.json)
-now exercise a five-link variational chain with a 200:1 heavy tip, but broader
-articulated entrypoints and default paper-scale scene coverage are not solved
-yet. `PaperScaleHighRatioChainStaysFiniteAndResets` now adds a focused
+exercise a five-link Variational chain with a 200:1 heavy tip. The `Avbd` names
+are historical: this fixture explicitly selects
+`MultibodyIntegrationFamily::Variational`, not AVBD, so the packet is reusable
+topology/stability evidence only. `PaperScaleHighRatioChainStaysFiniteAndResets`
+adds a focused Variational
 50-link/50,000:1 finite/reset stability smoke through configured
 `World::step()` solve-budget fields, and
-`BM_AvbdPaperScaleHighRatioChainStep` adds a matching paper-scale CPU
-dashboard row with tracked
+the historically named `BM_AvbdPaperScaleHighRatioChainStep` adds a matching
+Variational CPU dashboard row with tracked
 [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
-visual/benchmark evidence, without closing same-hardware paper-number or GPU
-parity gates. `BM_AvbdPaperScaleHighRatioChainIterationSweep` now adds the
-first dashboard-selected max-iteration sweep for that same fixture over
+legacy capture-hash/timing metadata. The source media is unavailable and no
+semantic visual review is recorded, so it does not close any AVBD row.
+`BM_AvbdPaperScaleHighRatioChainIterationSweep` adds a Variational
+dashboard-selected max-iteration sweep for that same fixture over
 25/50/100/200 iterations, with finite replay counters, tracked
 benchmark/stability-plot evidence in
 [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
 and a rendered
 [`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg);
-it still needs same-hardware paper-number comparison and GPU parity before
-counting as a completed parameter sweep.
+it is not an AVBD parameter sweep. Actual AVBD articulated execution,
+same-hardware paper-number comparison, and GPU parity remain missing.
 Public free-rigid-body revolute/prismatic velocity actuators now also extract
 to private AVBD angular/linear motor rows. Both paths have categorized
 `avbd_rigid_revolute_motor` / `avbd_rigid_prismatic_motor` py-demos,
@@ -335,25 +362,18 @@ end-to-end dashboard benchmark rows for the public motor paths, and tracked
 [`avbd-rigid-revolute-motor-packet.json`](104-vertex-block-descent-solver/avbd-rigid-revolute-motor-packet.json)
 and
 [`avbd-rigid-prismatic-motor-packet.json`](104-vertex-block-descent-solver/avbd-rigid-prismatic-motor-packet.json)
-visual/benchmark evidence.
-Solver-identity relabel (PLAN-091 WP-091.1): the checked-in historical
-`avbd-demo2d`/`avbd-demo3d` benchmark and py-demo packets were captured before
-their scenes selected the public AVBD rigid-body family or emplaced the
-compatibility-only internal AVBD rigid-contact opt-in
-(`comps::RigidAvbdContactConfig`). At capture time, their rigid contacts ran
-DART's default sequential-impulse path. Their recorded native-runner timing
-ratios therefore remain historical whole-pipeline `World::step` comparisons,
-not AVBD-contact-solver comparisons: pure-contact rows timed no AVBD rows;
-joint-plus-contact rows timed AVBD point-joint/motor/spring rows while ordinary
-contacts ran sequential impulse; and incidental chain contacts also ran
-sequential impulse. The current `avbd_demo2d_fracture`,
-`avbd_demo2d_hanging_rope`, `avbd_demo2d_heavy_rope`, `avbd_demo2d_rod`,
-`avbd_demo2d_soft_body`, `avbd_demo3d_breakable`, and
-`avbd_demo3d_soft_body` scenes now explicitly select public AVBD so they fail
-closed instead of silently exercising SI. That source change does not
-retroactively reclassify their historical packets; refreshed claims need
-current schema-version-4 packets that machine-record both
-`resolved_solver_identity` and `rigid_contact_selection`, enforced by
+visual/benchmark evidence. The current `BM_AvbdRigid*Step` builders select and
+report public AVBD, but their checked-in predecessor packets predate that
+runtime binding, so those packet timings are not current AVBD motor performance
+evidence.
+The runtime-identity boundary above supersedes the earlier PLAN-091 relabel:
+all 31 current Python source-demo scenes and their free-rigid benchmark
+builders explicitly select public AVBD, but none of the legacy source-demo
+packets retroactively becomes AVBD performance evidence. The articulated and
+high-ratio builders continue to identify the Variational multibody integrator,
+not rigid AVBD. Refreshed claims need current schema-version-6 packets that machine-record
+`resolved_solver_identity`, `rigid_contact_selection`, multibody identity, and
+the resolved solver-configuration/profile binding, enforced by
 `pixi run check-avbd-packets`.
 
 Public C++ and dartpy callers can now select the default
@@ -370,10 +390,30 @@ private-AVBD compatibility fallback, invalidates AVBD contact and hard
 point-joint/motor continuation state while preserving independently active
 AVBD distance-spring continuation, guarded by the
 `World.SequentialImpulseFallbackPreservesAvbdDistanceSpringWarmStart`
-regression. Each choice survives binary save/load and replay where
-supported, the resolved-configuration report names the selected family, and
-unsupported combinations fail before stepping instead of falling through to
-another contact family.
+regression. Fixed-penalty VBD now clears all AVBD row inventories, detected
+contact identities, tangent anchors, and borrowed row pointers on entry and on
+every exit, including an empty snapshot or a rejected hard row, so returning to
+AVBD after a failed VBD step matches a cold continuation state. Bounded native
+collision capacities are derived or configured at bake, reject candidate,
+contact, and derived-row overflow atomically, and survive replay. Replay frames
+also restore derivative validity, last-step diagnostics, contact forces, and
+rigid/deformable AVBD continuation sidecars instead of combining historic poses
+with current solver state. Each solver choice survives binary save/load and
+replay where supported, the resolved-configuration report names the selected
+family, and unsupported combinations fail before stepping instead of falling
+through to another contact family.
+
+These zero-trust repairs strengthen the shared foundation but close none of the
+176 canonical paper-parity predicates. AVBD still lacks the source-equivalent
+Equation 20 angular difference, Equation 21 quaternion update, adaptive rigid
+primal initialization, remaining angular-constraint Hessian coverage,
+dimensionally valid/source-equivalent fracture-load semantics, one closed
+deformable parameter profile, the full GPU solver, the complete paper/site/video
+and 2D/3D demo corpus, and achieved-accuracy performance leadership. VBD still
+lacks its source material/contact/collision loop, full rigid/deformable/particle
+corpus, full CUDA path, and matched performance closure. The authoritative
+contracts therefore remain 88 incomplete VBD rows plus 88 incomplete AVBD rows.
+
 The publication-shaped `avbd_paper_breakable_wall` scene exercises that public
 path at the paper's 1/60 s step and 20-iteration budget with 252 staggered
 bricks, 712 breakable attachments, and three impacts. Its deterministic
@@ -384,16 +424,19 @@ stable broken-joint identity digest; `[18, 44, 13]` identities start inside the
 three selected impact regions and 79 start outside, so this row claims
 localized displacement damage rather than localized broken topology. The 558
 surviving rows stay below 0.772 mm linear and 0.000317 rad angular residual at
-frame 120. The frame-60 capture remains an explicit pre-evaluation state. Both
-engine ViewReports pass, the runtime scene and benchmark share fingerprint
-`8ca3fbfa00c3dce9`, and the six current captures bind source digest
-`10400178732ca18b4c0717c7b531766e20f31f9c5de01efc35144332f9580b8d`.
+frame 120. The frame-60 capture remains an explicit pre-evaluation state. In
+the now-historical predecessor packet, both engine ViewReports passed, the
+runtime scene and benchmark shared fingerprint `8ca3fbfa00c3dce9`, and six
+captures bound source digest
+`ce6b6be09bc06b23b7932a88e2c89dd6dafbeb54828a1c92212aaaa7af47e30a`.
 Capture manifests bind the capture-time source tree and artifacts; an accepted
-benchmark binds that same source tree plus its translation unit. The accepted
-quiet-host five-repeat Release run records 9.515544 ms median CPU cost per step
-with 0.49% CPU CV; its raw JSON SHA-256 is
-`abab909f3693333c0bb43bdd54b15df9fd6f0c3e9d4b7dd838208fb76d12565a`.
-The current evidence is sealed in
+benchmark binds that same source tree plus its translation unit. That
+predecessor quiet-host five-repeat Release run recorded 8.044504 ms median CPU
+cost per step with 1.77% CPU CV; its raw JSON SHA-256 was
+`75ae6f9223d5d2db3d99290e1aca38125953f67cb7051c8f79b0c8f561548bd9`.
+It is readable historical evidence but cannot close a current row; schema 6
+and the final source must be recaptured, re-reviewed, and rebenchmarked. The
+predecessor packet is stored in
 [`avbd-paper-breakable-wall-packet.json`](104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json).
 The matched `vbd_paper_breakable_wall` row reuses that exact scene fingerprint
 and projection budget with fixed finite-penalty rows, no dual accumulation or
@@ -401,12 +444,12 @@ progressive stiffness. Its frame-18 oracle records 0 broken and 712 retained
 attachments, 0.132 m peak wall-normal and 0.062 m RMS displacement, and 120
 bricks beyond 0.05 m; its frame-120 oracle retains the full connected wall.
 All 712 retained VBD rows stay below 16.39 mm and 0.01328 rad at frame 18,
-then 11.10 mm and 0.001310 rad at frame 120. Both assessed VBD renders pass.
-The same five-repeat benchmark records 9.292560 ms VBD and 9.515544 ms AVBD
-median CPU cost per step with 0.18% and 0.49% CPU CV. Its 0.9766x VBD/AVBD
+then 11.10 mm and 0.001310 rad at frame 120. Both predecessor VBD renders
+passed. The same historical benchmark recorded 7.683010 ms VBD and 8.044504 ms AVBD
+median CPU cost per step with 0.41% and 1.77% CPU CV. Its 0.9551x VBD/AVBD
 ratio is descriptive only because the methods produce different physical
-outcomes and there is no achieved-accuracy reference denominator. The current
-cross-linked evidence is sealed in
+outcomes and there is no achieved-accuracy reference denominator. The
+historical cross-linked evidence is stored in
 [`avbd-paper-vbd-comparison-packet.json`](104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json).
 The matched `sequential_impulse_paper_breakable_wall` row records exactly five
 frame-14 broken identities, distributed `[2, 1, 2]` across the three impact
@@ -415,17 +458,27 @@ the broken-identity digest is unchanged, but the 484 retained rows outside all
 impact regions reach 0.06346 m maximum / 0.02076 m RMS linear residual and
 0.7270 rad maximum / 0.2164 rad RMS angular residual. Only 27.27% of bricks
 outside impact bands and 19.05% overall remain placed, with 2.878 m maximum
-wall-normal displacement. Both assessed SI renders pass. The same benchmark
-records 15.651049 ms SI median CPU cost per step with 0.34% CPU CV. Its
-1.6448x SI/AVBD and 1.6843x SI/VBD ratios are descriptive only. Frame 120 is
+wall-normal displacement. Both predecessor SI renders passed. The same
+historical benchmark recorded 13.058432 ms SI median CPU cost per step with
+0.52% CPU CV. Its
+1.6233x SI/AVBD and 1.6997x SI/VBD ratios are descriptive only. Frame 120 is
 the only shared quantitative
 checkpoint across the three method rows; the earlier frame-14, frame-18, and
 frame-60 checkpoints are per-family diagnostic oracles, not cross-method
-comparisons. The current linked three-method evidence is sealed in
+comparisons. The historical linked three-method evidence is stored in
 [`avbd-paper-sequential-impulse-comparison-packet.json`](104-vertex-block-descent-solver/avbd-paper-sequential-impulse-comparison-packet.json).
 Figure 13 and the matching video row stay partial because the exact source
 constants are unpublished and XPBD, the source-matched four-method edit, CUDA,
 and achieved-accuracy reference-performance evidence are still missing.
+
+The following source-demo timing ledger preserves historical measurements, but
+the runtime-identity audit above invalidates its former AVBD gate conclusions.
+Its 2D/3D `BM_Avbd*` rows execute Sequential Impulse, even when a corresponding
+current Python scene is one of the seven that now selects AVBD. Treat each
+faster/slower ratio below as a captured whole-pipeline SI comparison and each
+former “closed” statement as a historical fixture threshold only; none closes
+an AVBD performance or parity row without a fresh runtime-resolved AVBD packet.
+
 The `avbd_empty_baseline` py-demo and `BM_AvbdEmptyWorldStep` row now provide a
 first runnable baseline for the 2D/3D source-demo empty rows, with source
 revision/default metadata and a `sceneEmpty` zero-count reference invariant.
@@ -444,7 +497,7 @@ static-only worlds, later clean frame-cache graph execution, and the clean
 no-work default step pipeline with a cheap scratch reset, the refreshed packet
 records the DART public World Ground row at 16.3 ns median CPU time per step
 versus 24.5 ns for the native static source runner on this host. The narrow CPU
-reference-comparison gate is closed at about 1.51x faster than native, while
+reference-comparison threshold was historically met at about 1.51x faster than native, while
 broad ground-contact, GPU, and paper-number gates remain open.
 The `avbd_demo2d_motor` py-demo now ports the first one-DOF motor
 `avbd-demo2d` source row, matching the reference Motor row's revision, source scene
@@ -473,17 +526,19 @@ row with source revision/scene metadata, 11 chain links, two dynamic supports,
 15 falling blocks, 10 public breakable fixed joints, focused Python source-row
 coverage, and focused break/reset lifecycle coverage proving the
 source-configured fixed joints eventually fracture under DART's public
-combined-row load contract, reset at a high break force, stay unbroken, and
+combined solver-row metric contract, reset at a high threshold, stay unbroken,
+and
 reduce their anchor residuals again, plus a `BM_AvbdDemo2dFractureStep`
 dashboard row. This does not claim native fracture timing or predicate parity:
 the pinned 2D source breaks only its torque-arm-scaled angular dual row, while
-DART evaluates the combined physical fixed-joint row load. The
+DART combines linear-force and angular-torque row coordinates without a
+characteristic-length normalization. The
 tracked
 [`avbd-demo2d-fracture-packet.json`](104-vertex-block-descent-solver/avbd-demo2d-fracture-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing;
 after a refreshed same-source timing run, it records the DART public World
 Fracture row at 51.2 us median CPU time per step versus 61.4 us for the native
-source runner on this host, closing only this narrow CPU reference-comparison
+source runner on this host, historically meeting only this narrow CPU reference-comparison
 gate. Follow-up contact-stage cleanup replaces the duplicate prepare-time
 collision query with collision-shape-count constraint prewarm; execute-time
 contact discovery remains authoritative. Follow-up source-row alignment now
@@ -504,7 +559,7 @@ row. The tracked
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Dynamic Friction row at 5.73 us median CPU
 time per step versus 10.49 us for the native source runner on this host,
-closing that narrow source row while leaving broad contact-manifold friction
+historically meeting that narrow source row while leaving broad contact-manifold friction
 persistence, stacking/friction sweeps, GPU, and paper-number gates open.
 The companion `BM_AvbdDemo2dFrictionCoefficientSweep` benchmark now sweeps the
 same source-shaped scene over maximum Coulomb friction values 0, 0.5, 1, 2.5,
@@ -517,7 +572,7 @@ all-zero Coulomb contact-friction row blocks DART is faster for max friction
 case on this host.
 The rendered
 [`avbd-friction-coefficient-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-friction-coefficient-sweep-plot.svg)
-plots DART and native source CPU step time versus maximum friction. This closes
+plots DART and native source CPU step time versus maximum friction. This historically meets
 only the source/reference timing-evidence and per-coefficient visual-capture
 gaps for this friction-coefficient comparison; it is not a full CPU-win, GPU,
 or paper-number claim.
@@ -529,7 +584,7 @@ row. The tracked
 [`avbd-demo2d-static-friction-packet.json`](104-vertex-block-descent-solver/avbd-demo2d-static-friction-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Static Friction row at 5.44 us median CPU time
-per step versus 14.56 us for the native source runner on this host, closing
+per step versus 14.56 us for the native source runner on this host, historically meeting
 that narrow source row while leaving broad contact-manifold friction
 persistence, stacking/friction sweeps, GPU, and paper-number gates open.
 The `avbd_demo2d_pyramid` py-demo now ports the `avbd-demo2d` Pyramid source
@@ -539,7 +594,7 @@ coverage, and a `BM_AvbdDemo2dPyramidStep` dashboard row. The tracked
 [`avbd-demo2d-pyramid-packet.json`](104-vertex-block-descent-solver/avbd-demo2d-pyramid-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing; it
 records the DART public World Pyramid row at 0.251 ms median CPU time per step
-versus 2.47 ms for the 10,000-step native source runner on this host, closing
+versus 2.47 ms for the 10,000-step native source runner on this host, historically meeting
 that narrow source row while leaving broad rigid stacking, GPU, and paper-number
 gates open.
 The `avbd_demo2d_stack` py-demo now ports the `avbd-demo2d` Stack source row
@@ -549,7 +604,7 @@ ground, 21 collision shapes, focused Python source-row coverage, and a
 [`avbd-demo2d-stack-packet.json`](104-vertex-block-descent-solver/avbd-demo2d-stack-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Stack row at 10.37 us median CPU time per step
-versus 22.46 us for the native source runner on this host, closing that narrow
+versus 22.46 us for the native source runner on this host, historically meeting that narrow
 source row while leaving broad rigid stacking, GPU, and paper-number gates
 open.
 The `avbd_demo2d_stack_ratio` py-demo now ports the `avbd-demo2d` Stack Ratio
@@ -559,7 +614,7 @@ coverage, and a `BM_AvbdDemo2dStackRatioStep` dashboard row. The tracked
 [`avbd-demo2d-stack-ratio-packet.json`](104-vertex-block-descent-solver/avbd-demo2d-stack-ratio-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing; it
 records the DART public World Stack Ratio row at 3.62 us median CPU time per
-step versus 8.03 us for the native source runner on this host, closing that
+step versus 8.03 us for the native source runner on this host, historically meeting that
 narrow source row while leaving broad rigid stacking, high-ratio stability, GPU,
 and paper-number gates open.
 The `avbd_demo2d_rod` py-demo now ports the `avbd-demo2d` Rod source row with
@@ -667,8 +722,8 @@ tracked
 [`avbd-demo3d-ground-packet.json`](104-vertex-block-descent-solver/avbd-demo3d-ground-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Ground row at 5.49 us median CPU time per
-step versus 6.10 us for the native source runner on this host, closing that
-narrow source row without closing broad stacking/friction, GPU, or paper-number
+step versus 6.10 us for the native source runner on this host, historically meeting that
+narrow source row without historically meeting broad stacking/friction, GPU, or paper-number
 gates.
 The `avbd_demo3d_dynamic_friction` py-demo now ports the `avbd-demo3d` Dynamic
 Friction source row with source revision/scene metadata, 11 sliding rigid
@@ -678,7 +733,7 @@ boxes, a static floor, focused Python source-row coverage, and a
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Dynamic Friction row at 36.85 us median CPU
 time per step versus 51.98 us for the native source runner on this host,
-closing that narrow source row without closing broad contact-manifold friction
+historically meeting that narrow source row without historically meeting broad contact-manifold friction
 persistence, stacking/friction sweeps, GPU, or paper-number gates.
 The `avbd_demo3d_static_friction` py-demo now ports the `avbd-demo3d` Static
 Friction source row with source revision/scene metadata, a static floor,
@@ -688,7 +743,7 @@ a `BM_AvbdDemo3dStaticFrictionStep` dashboard row. The tracked
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Static Friction row at 48.27 us median CPU
 time per step versus 51.97 us for the native source runner on this host,
-closing that narrow CPU reference-comparison gate.
+historically meeting that narrow CPU reference-comparison gate.
 The `avbd_demo3d_pyramid` py-demo now ports the `avbd-demo3d` Pyramid source
 row with source revision/scene metadata, a static ground, 136 dynamic boxes in
 the triangular pile layout, focused Python source-row coverage, and a
@@ -696,8 +751,8 @@ the triangular pile layout, focused Python source-row coverage, and a
 [`avbd-demo3d-pyramid-packet.json`](104-vertex-block-descent-solver/avbd-demo3d-pyramid-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Pyramid row at 0.991 ms median CPU time per
-step versus 2.80 ms for the native source runner on this host, closing that
-narrow source row without closing broad stacking, GPU, or paper-number gates.
+step versus 2.80 ms for the native source runner on this host, historically meeting that
+narrow source row without historically meeting broad stacking, GPU, or paper-number gates.
 The `avbd_demo3d_rope` py-demo now ports the `avbd-demo3d` Rope source row with
 source revision/scene metadata, 20 rigid links, 19 anchored linear-only public
 spherical point joints, focused Python source-row coverage, and a
@@ -745,8 +800,8 @@ dashboard row. The tracked
 [`avbd-demo3d-stack-packet.json`](104-vertex-block-descent-solver/avbd-demo3d-stack-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Stack row at 42.1 us median CPU time per step
-versus 75.7 us for the native source runner on this host, closing that narrow
-source row without closing broad stacking, high-ratio stability, GPU, or
+versus 75.7 us for the native source runner on this host, historically meeting that narrow
+source row without historically meeting broad stacking, high-ratio stability, GPU, or
 paper-number gates.
 The `avbd_demo3d_stack_ratio` py-demo now ports the `avbd-demo3d` Stack Ratio
 source row with source revision/scene metadata, four geometric-size dynamic
@@ -755,8 +810,8 @@ boxes over static ground, focused Python source-row coverage, and a
 [`avbd-demo3d-stack-ratio-packet.json`](104-vertex-block-descent-solver/avbd-demo3d-stack-ratio-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Stack Ratio row at 18.1 us median CPU time per
-step versus 42.0 us for the native source runner on this host, closing that
-narrow source row without closing broad size-ratio stability, GPU, or
+step versus 42.0 us for the native source runner on this host, historically meeting that
+narrow source row without historically meeting broad size-ratio stability, GPU, or
 paper-number gates.
 The `avbd_demo3d_soft_body` py-demo now ports the `avbd-demo3d` Soft Body
 source row with source revision/scene metadata, three 4x4x4 dynamic rigid-box
@@ -766,7 +821,7 @@ coverage, and a `BM_AvbdDemo3dSoftBodyStep` dashboard row. The tracked
 [`avbd-demo3d-soft-body-packet.json`](104-vertex-block-descent-solver/avbd-demo3d-soft-body-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Soft Body row at 3.93 ms median CPU time per
-step versus 4.76 ms for the native source runner on this host, closing that
+step versus 4.76 ms for the native source runner on this host, historically meeting that
 narrow CPU reference-comparison gate while leaving GPU, soft/rigid coupling,
 and paper-number gates open.
 Follow-up row-inventory work now warm-starts unchanged same-order AVBD scalar
@@ -818,23 +873,24 @@ and a `BM_AvbdDemo3dBridgeStep` dashboard row. The tracked
 adds headless visual capture, DART benchmark JSON, and native source timing;
 after reusing per-body row-index scratch and caching snapshot body indices, it records
 the DART public World Bridge row at 0.746 ms median CPU time per step versus
-1.20 ms for the native source runner on this host, closing that narrow source
+1.20 ms for the native source runner on this host, historically meeting that narrow source
 row while leaving broad coupled-constraint, GPU, and paper-number gates open.
 The `avbd_demo3d_breakable` py-demo now ports the `avbd-demo3d` Breakable
 source row with source revision/scene metadata, 19 rigid bodies, 10 breakable
 fixed joints, 19 collision shapes, focused Python source-row coverage, and
 focused break/reset lifecycle coverage proving the source-configured fixed
-joints eventually fracture under DART's public combined-row load contract,
-reset at a high break force, stay unbroken, and reduce their anchor residuals
+joints eventually fracture under DART's public combined solver-row metric
+contract, reset at a high threshold, stay unbroken, and reduce their anchor residuals
 again, plus a `BM_AvbdDemo3dBreakableStep` dashboard row. This does not claim
 native fracture timing or predicate parity: the pinned 3D source breaks only
-its torque-arm-scaled angular dual vector, while DART evaluates the combined
-physical fixed-joint row load. The tracked
+its torque-arm-scaled angular dual vector, while DART combines linear-force and
+angular-torque row coordinates without a characteristic-length normalization.
+The tracked
 [`avbd-demo3d-breakable-packet.json`](104-vertex-block-descent-solver/avbd-demo3d-breakable-packet.json)
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records the DART public World Breakable row at 79.5 us median CPU time per
 step versus 112.7 us for the native source runner on this host, so the narrow
-CPU reference-comparison gate is closed for that source row.
+CPU reference-comparison threshold was historically met for that source row.
 Public articulated revolute velocity motors now also have a categorized
 `avbd_articulated_revolute_motor` py-demo covering command updates through the
 variational bridge plus tracked
@@ -859,8 +915,9 @@ evidence and post-reset reversed-command plus weak re-arm coverage, plus
 `avbd_articulated_world_revolute_motor_breakable_joint` for a world-anchored
 revolute motor with tracked
 [`avbd-articulated-world-revolute-breakable-motor-packet.json`](104-vertex-block-descent-solver/avbd-articulated-world-revolute-breakable-motor-packet.json)
-evidence and post-reset reversed-command plus weak re-arm coverage. The bounded AVBD World
-dashboard slice now also tracks those public articulated motor paths through
+evidence and post-reset reversed-command plus weak re-arm coverage. The
+historically named dashboard slice tracks those public articulated motor
+fixtures through
 `BM_AvbdArticulatedRevoluteMotorStep` and
 `BM_AvbdArticulatedPrismaticMotorStep`, tracks the active break-force armed
 articulated revolute motor path through `BM_AvbdArticulatedBreakableMotorStep`,
@@ -874,17 +931,19 @@ world-anchored articulated revolute motor path through
 now validates those four public articulated breakable motor benchmark rows over
 1, 8, and 32 motors with finite timing rows and exact `motors` plus
 `breakable_motors` counters. This remains benchmark-only scale evidence rather
-than a broad motor lifecycle, source-demo, GPU, or paper-number claim. The same
-dashboard slice also
-tracks the public free-rigid and
+than a broad motor lifecycle, source-demo, GPU, or paper-number claim. All of
+these articulated benchmarks run the Variational multibody integrator, not
+AVBD, so they also cannot support an AVBD performance claim. The same
+historically named dashboard slice tracks the public free-rigid and
 articulated breakable fixed point-joint paths through
 `BM_AvbdRigidBreakableJointStep` and
 `BM_AvbdArticulatedBreakableJointStep`, now backed by tracked
 [`avbd-rigid-breakable-joint-packet.json`](104-vertex-block-descent-solver/avbd-rigid-breakable-joint-packet.json)
 and
 [`avbd-articulated-breakable-joint-packet.json`](104-vertex-block-descent-solver/avbd-articulated-breakable-joint-packet.json)
-evidence.
-The same dashboard slice also tracks public spherical break/reset rows through
+fixture evidence. The rigid step builder runs SI and the articulated builder
+runs Variational. The same dashboard slice also tracks public spherical
+break/reset fixtures through
 `BM_AvbdRigidSphericalBreakableJointStep`,
 `BM_AvbdArticulatedWorldSphericalBreakableJointStep`, and
 `BM_AvbdArticulatedSphericalPairBreakableJointStep`, each backed by tracked
@@ -893,7 +952,9 @@ packet evidence. The companion
 now validates those five public fixed/spherical breakable point-joint
 benchmark rows over 1, 8, and 32 joints with finite timing rows and exact
 `breakable_joints` counters; this remains benchmark-only scale evidence rather
-than a broad fracture-corpus, breakable-wall, GPU, or paper-number claim.
+than a broad fracture-corpus, breakable-wall, GPU, or paper-number claim. Its
+rigid row runs SI and its articulated rows run Variational, so none is AVBD
+performance evidence.
 Public free-rigid-body AVBD point joints now also expose a narrow break-force
 and broken-state lifecycle through C++/dartpy, with solved-row fracture marking,
 later extraction skip behavior, and a categorized `avbd_rigid_breakable_joint`
@@ -923,25 +984,30 @@ world-link spherical break/reset path plus an
 same-multibody spherical break/reset path; both spherical demo regressions
 verify weak re-arm breaks again after reset. A narrow
 `avbd_articulated_high_ratio_chain` py-demo and
-`BM_AvbdArticulatedHighRatioChainStep` dashboard row now cover a five-link
-articulated variational-chain smoke with a 200:1 heavy tip, and the tracked
+`BM_AvbdArticulatedHighRatioChainStep` dashboard row cover a five-link
+articulated Variational-chain smoke with a 200:1 heavy tip, and the tracked
 [`avbd-articulated-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-articulated-high-ratio-chain-packet.json)
-records focused visual/benchmark evidence without claiming the full
-50-body/50,000:1 paper pendulum. The
+records only legacy unbound capture hashes and timing metadata; its source
+media is unavailable and no semantic visual review is recorded. Despite their historical `Avbd`
+names, these surfaces explicitly run the Variational multibody integrator and
+provide no AVBD solver evidence. The
 `PaperScaleHighRatioChainStaysFiniteAndResets` C++ regression separately covers
-a 50-link/50,000:1 finite/reset smoke through configured `World::step()`
+a 50-link/50,000:1 Variational finite/reset smoke through configured `World::step()`
 solve-budget fields, and `BM_AvbdPaperScaleHighRatioChainStep` adds the
-matching paper-scale CPU dashboard row with
+matching Variational CPU dashboard row with
 [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
-visual/benchmark evidence but no same-hardware paper-number claim.
+legacy unbound capture-hash/timing metadata but no inspectable media, semantic
+visual review, AVBD claim, or same-hardware paper-number
+claim.
 `BM_AvbdPaperScaleHighRatioChainIterationSweep` is now selected by the
 dashboard runner over 25/50/100/200 max-iteration budgets for the same
-paper-scale fixture, with finite replay counters, tracked benchmark/stability
+Variational fixture, with finite replay counters, tracked benchmark/stability
 evidence in
 [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
 and rendered plot evidence in
 [`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg);
-the same-hardware paper-number comparison and GPU evidence remain open.
+it is not an AVBD iteration sweep. Actual AVBD articulated execution, the
+same-hardware paper-number comparison, and GPU evidence remain open.
 The private
 endpoint classifier now separates free rigid-body endpoints from multibody
 links, with
@@ -975,10 +1041,12 @@ support same-multibody movable-link endpoint pairs. Finite public revolute and
 prismatic `Velocity` joints additionally project a bounded motor-only row on
 their free coordinate while their constrained coordinates remain compliant.
 Accepted finite-row forces and position-level hard/motor projection loads now
-share one physical-unit break-force contract: projection loads are divided by
-`dt^2`, every active row is aggregated into the owning public joint's L2 load,
-and fracture clears finite lambda/stiffness state before later-step extraction
-skips the broken joint. Focused load, timestep-invariance, combined-load,
+share one implemented break-threshold convention: projection loads are divided
+by `dt^2`, then the current code combines linear-force and angular-torque row
+magnitudes in one L2 norm without a characteristic length. That dimensional
+ambiguity prevents a physical-unit fracture-parity claim. Fracture clears
+finite lambda/stiffness state before later-step extraction skips the broken
+joint. Focused load, timestep-invariance, combined-load,
 break/reset/re-arm, and simulation-mode save/load regressions cover that
 lifecycle. The focused
 `avbd_articulated_compliant_joints` py-demo, allocation gates, exact-parent
@@ -1070,7 +1138,7 @@ internal/explicit-opt-in decision, not a leaked solver registry.
    stiffness, contact normal, friction tangent, joint, motor, fracture, and
    attachment rows with persistent IDs for warm starting.
 3. **CPU deformable AVBD** — Extend the existing VBD deformable path so hard
-   attachments, finite-stiffness ramped springs/tets, self-contact, and static
+   attachments, finite-stiffness ramped springs, self-contact, and static
    obstacle contact use AVBD rows rather than pure penalty terms.
 4. **CPU rigid/articulated AVBD** — Add 6-DOF rigid blocks, tangent angular
    updates, rigid contact manifolds, ball/revolute/limited joints, motors,
@@ -1110,9 +1178,10 @@ claims and review/CI boundaries stay separate. Published PR branches are merged
 with current `main`, never rebased.
 
 The free-rigid fixed-joint/contact, free-rigid/articulated one-DOF motor,
-breakable fixed point-joint, prismatic/revolute/spherical facade,
-articulated breakable-joint, high-ratio articulated-chain, and public AVBD
-Figure 13 slices are user-visible but intentionally bounded. The wall now has
+breakable fixed point-joint, prismatic/revolute/spherical facade, articulated
+breakable-joint, and public AVBD Figure 13 slices are user-visible but
+intentionally bounded. The historically named high-ratio articulated-chain
+slice is a separate Variational fixture, not an AVBD slice. The wall now has
 matched public Sequential Impulse, fixed-penalty VBD, and AVBD rows on one
 reconstructed scene fingerprint, with distinct quantitative and assessed
 visual outcomes. It is not an exact source replay or a four-method/CUDA
@@ -1122,8 +1191,12 @@ historical solver identities. The Section 4 post-primal
 dual/stiffness update is now a verified CPU partial over the promoted
 deformable and private free-rigid inventories; it remains open for
 articulated/unified rows, CUDA, and source-matched achieved-accuracy
-performance. The next bounded implementation work should prefer one of these
-remaining gaps, in order:
+performance. Before any corpus or performance row can close, the AVBD PR must
+remediate runtime identity: explicitly select AVBD in every intended scene and
+benchmark, fail closed when it is unavailable, keep deliberately Variational
+fixtures labeled as Variational, and regenerate current-schema packets from the
+executed configuration. After that non-negotiable gate, bounded implementation
+work should prefer one of these remaining gaps, in order:
 
 1. **Articulated multibody AVBD extraction** — the private extractor now
    classifies free rigid-body endpoints separately from multibody links, and
@@ -1202,20 +1275,22 @@ remaining gaps, in order:
    plus packets,
    plus `avbd_articulated_high_ratio_chain` and
    `BM_AvbdArticulatedHighRatioChainStep` exposing a narrow five-link 200:1
-   high mass-ratio variational-chain smoke scene and dashboard row, with
+   high mass-ratio Variational-chain smoke scene and dashboard row, with
    [`avbd-articulated-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-articulated-high-ratio-chain-packet.json)
-   recording focused visual/benchmark evidence. The high-ratio scene is only
-   paper-gap evidence; the companion `PaperScaleHighRatioChainStaysFiniteAndResets`
-   regression covers a 50-link/50,000:1 finite/reset smoke through configured
+   recording only legacy unbound capture hashes and timing metadata. The source
+   media is unavailable and has no semantic visual review. These historically named
+   surfaces explicitly run the Variational multibody integrator and are not
+   AVBD evidence. The companion `PaperScaleHighRatioChainStaysFiniteAndResets`
+   regression covers a 50-link/50,000:1 Variational finite/reset smoke through configured
    `World::step()` solve-budget fields, and
-   `BM_AvbdPaperScaleHighRatioChainStep` exposes the matching paper-scale CPU
-   dashboard row with a visual/benchmark packet, but this is still not a
-   same-hardware comparison. The companion
-   `BM_AvbdPaperScaleHighRatioChainIterationSweep` row adds first
+   `BM_AvbdPaperScaleHighRatioChainStep` exposes the matching Variational CPU
+   dashboard row with a legacy unbound capture-hash/timing packet. The companion
+   `BM_AvbdPaperScaleHighRatioChainIterationSweep` row adds
    dashboard-selected iteration-budget coverage over 25/50/100/200 max
-   iterations with finite replay counters, a tracked benchmark/stability packet,
-   and a rendered SVG plot, still without a same-hardware paper-number
-   comparison or GPU parity.
+   iterations for that Variational fixture, with finite replay counters, a
+   tracked benchmark/stability packet, and a rendered SVG plot. Actual AVBD
+   articulated execution, a same-hardware paper-number comparison, and GPU
+   parity remain missing.
    Direct private movable-pair fixed/revolute/prismatic and current-pose
    movable-pair fixed/revolute/prismatic break/reset regressions now verify
    broken rows stay skipped under opposing endpoint forces and re-enter with an
@@ -1267,7 +1342,8 @@ remaining gaps, in order:
    break/reset, spherical reset, and movable-pair plus direct world-link
    save/load/reset checks remains open.
    Same-multibody finite endpoint pairs, bounded free-axis velocity motors, and
-   physical finite-plus-motor break-force accounting are now covered narrowly.
+   the current dimensionally mixed finite-plus-motor break-threshold convention
+   are now covered narrowly; physical-unit fracture accounting remains open.
    Broaden fracture lifecycle/corpus coverage beyond that articulated contract,
    the narrow hard point-joint threshold, the private fixed-row/world-fixed
    reset, and the 2D Fracture/3D Breakable source-demo fixed-joint rows; also
@@ -1384,6 +1460,47 @@ remaining gaps, in order:
    private CUDA boundary only after the shared CUDA substrate and row inventory
    can preserve warm-started dual/stiffness state deterministically.
 
+### Deferred maintenance
+
+These items remain valid but do not outrank the missing paper mechanisms. They
+were relocated here from the `avbd_solver` dev-task tracker so they survive
+that folder's removal; schedule them inside whichever completion PR touches the
+owning code, never as standalone doc or cleanup PRs.
+
+- Hoist the duplicated `makeCollisionPairKey` logic into one shared `detail`
+  header.
+- Upgrade the Spring / Spring Ratio packets from legacy schema version 1 to
+  the current solver-identity contract.
+- Consolidate the duplicated pair-constraint mask/basis/orientation math into
+  one owner (drift is currently pinned by a kernel `static_assert` and the
+  `RigidPairConstraintNeutralHelpers` equivalence test) and route the
+  Sequential Impulse finite-stiffness admission rule through a solver-neutral
+  accessor.
+- Revisit two recorded Sequential Impulse conventions: kinematic joint
+  endpoints are treated as zero-velocity (shared with the contact path, so a
+  kinematic-driven jointed body lags), and joint post-stabilization runs after
+  contact position correction, so it can re-introduce shallow penetration that
+  the wall oracles budget.
+- Consolidate Sequential Impulse per-step joint-view walks, skip SI container
+  reserves for non-SI families, and record post-stabilization work in the
+  step-iteration diagnostic.
+- Size the projected-Newton triplet reserve from the baked sparse pattern
+  instead of `144 x selfSurfaceCandidateCapacity`: only pairs present in the
+  baked pattern can be assembled (late pairs fall back without allocating),
+  so the current term over-provisions by the candidate reserve budget.
+- Split evidence-tool identity from scene-affecting source identity: the
+  capture and benchmark scripts sit inside `CAPTURE_SOURCE_ROOTS`, so any
+  tooling edit invalidates every sealed capture and benchmark. Keep the
+  current conservative behaviour until a separate tool digest with its own
+  compatibility rule is designed.
+- Remove the duplicate per-step rigid collision query: the rigid contact
+  stage queries contacts in `preflight` (atomic capacity and warm-start
+  checks) and again in `execute`, and `World::updateCollisionQueryCache` has
+  no per-frame memoization, so both rebuild the broad and narrow phase
+  (measured at roughly a quarter of a 201-box step). Memoize against a
+  world state version or let `execute` consume the preflight span once no
+  intervening stage can move a body.
+
 ## Acceptance Criteria
 
 VBD-parity progress is not complete until the implementation:
@@ -1410,6 +1527,11 @@ VBD-parity progress is not complete until the implementation:
 
 AVBD parity additionally requires:
 
+- every demo, test, benchmark, and packet used as AVBD evidence to fail closed
+  on solver selection and machine-record the runtime-resolved AVBD identity;
+  an `avbd_` filename, `BM_Avbd` symbol, requested option, legacy packet, API
+  operation, empty World, SI step, or Variational multibody step is not AVBD
+  evidence;
 - every algorithm and feature in `avbd-2025`, the project page, videos, and the
   `avbd-demo2d`/`avbd-demo3d` sources to be implemented, including hard
   constraints, bounded inequalities, friction cones, finite-stiffness ramping,
@@ -1428,7 +1550,44 @@ AVBD parity additionally requires:
 
 Relocated from the dashboard on 2026-07-03; newest first.
 
-On 2026-08-01, one strict quiet-host five-repeat Figure 13 run was accepted
+On 2026-08-31, the zero-trust foundation review repaired several mechanisms
+without promoting a parity row: rigid contact normal/tangent rows gained a real
+step-start Taylor `C`/Jacobian cache used by direct and indexed primal/dual
+paths; rigid and deformable friction gained persistent validated material-point
+anchors, augmented-trial cone projection, live coupled-normal limits, and
+inactive/mismatched continuation cleanup; fixed-penalty VBD clears all AVBD
+continuation on every entry/exit path; replay restores derivative validity,
+diagnostics, contact forces, and friction sidecars; and bounded collision/row
+capacities now fail closed and replay deterministically. Focused regressions are
+present for each boundary, but aggregate CPU/CUDA validation and current-source
+evidence resealing remain separate gates. All 176 rows remain incomplete, with
+AVBD Equations 20-21, adaptive initialization, angular Hessians,
+source-equivalent fracture loads, deformable profile closure, GPU, full corpus,
+and achieved-accuracy performance still open.
+
+On 2026-08-31, a zero-trust audit replaced label-based evidence with two
+machine-checked 88-row contracts and reclassified every implementation,
+demo, benchmark, and packet by the solver that actually executes. VBD has 38
+partial and 50 missing rows; AVBD has 64 partial and 24 missing rows; neither
+has a complete row. The predecessor Figure 13 reconstruction bound capture-source
+digest
+`ce6b6be09bc06b23b7932a88e2c89dd6dafbeb54828a1c92212aaaa7af47e30a`,
+benchmark translation-unit digest
+`cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834`,
+and raw benchmark JSON SHA-256
+`75ae6f9223d5d2db3d99290e1aca38125953f67cb7051c8f79b0c8f561548bd9`.
+Its historical median CPU costs/CVs were 8.044504 ms/1.77% AVBD,
+7.683010 ms/0.41% VBD, and 13.058432 ms/0.52% Sequential Impulse. These are
+absolute checkpoint costs for intentionally different outcomes, not parity or
+speedup evidence. Six 1280x720 captures and three two-second videos cover only
+the reconstructed 120-frame checkpoint; they do not establish source-exact or
+long-horizon stability. The middle projectile leaves the finite ground/camera
+domain and the wall oracle does not adjudicate its later trajectory. Exact
+source constants, XPBD, source-matched four-method evidence, CUDA,
+achieved-accuracy performance, and the remaining VBD/AVBD mechanisms and
+corpus rows stay open.
+
+On 2026-08-01, one then-current strict quiet-host five-repeat Figure 13 run was accepted
 after merging `origin/main` at `ef10cb2633b` and rejecting noisy,
 contaminated, or source-stale candidates. It binds
 capture-source digest
@@ -1437,7 +1596,7 @@ benchmark translation-unit digest
 `f7a0d76a19f0966f630ccb5223a6b5421c4c4b54dd1b0591ff65510eaa10b370`.
 Median CPU costs/CVs are 9.515544 ms/0.49% AVBD, 9.292560 ms/0.18% VBD, and
 15.651049 ms/0.34% Sequential Impulse. The AVBD -> VBD -> SI packet chain was
-regenerated from the one raw JSON. The resealed current head passes all 192
+regenerated from the one raw JSON. That historical head passed all 192
 focused tests, the 58-packet corpus checker, the 176-row parity checker, and the
 18-row allocation matrix. Its uncached default `test-all` passes all six phases,
 including 229/229 core C++ tests and all 81 runnable simulation tests plus two
@@ -1524,8 +1683,9 @@ The packet makes no reference speedup claim and keeps Figure 13 plus video row
 12 partial because exact source constants, the other three method rows, CUDA,
 and comparable performance were open at that slice.
 
-On 2026-07-30, the articulated finite-fracture packet closed the narrow CPU
-load-accounting gap left by the finite-motor slice. Accepted finite-row forces
+On 2026-07-30, the articulated finite-fracture packet implemented the narrow
+DART-specific CPU load-accounting slice left by the finite-motor work. It did
+not close source-equivalent fracture-load semantics. Accepted finite-row forces
 use the same stiffness/residual values as the variational solve, while hard and
 bounded-motor position-projection loads are converted to public force/torque
 units by dividing by `dt^2`; all rows owned by one joint contribute to one L2
@@ -1544,8 +1704,8 @@ keeps the four linked method rows partial: the paper wall, broad fracture and
 joint corpus, unified rigid/soft rows, CUDA, and source/paper achieved-accuracy
 performance remain open.
 
-On 2026-07-30, the articulated finite-motor packet closed two adjacent CPU
-extraction gaps: passive finite spherical/revolute/prismatic masks now support
+On 2026-07-30, the articulated finite-motor packet implemented two adjacent CPU
+extraction slices: passive finite spherical/revolute/prismatic masks now support
 same-multibody movable-link pairs, and finite revolute/prismatic `Velocity`
 joints add one bounded motor-only projection row on the free coordinate while
 their constrained coordinates remain compliant. Non-cardinal off-origin C++
@@ -1580,13 +1740,14 @@ keeps `avbd.method.joints_and_attachments` and
 `avbd.method.finite_stiffness_ramping` partial: finite one-DOF motor coupling,
 same-multibody finite pairs, fracture accounting, unified soft/rigid rows,
 CUDA, and source/paper achieved-accuracy performance were left open by that
-packet; the adjacent finite-motor packet above closes the first two only.
+packet; the adjacent finite-motor packet above implements the first two only
+within DART's current CPU bridge and does not close either canonical row.
 
 On 2026-07-30, the bounded AVBD Section 4 packet added a deterministic
 post-primal CPU dual/stiffness pass for the currently promoted deformable and
 private free-rigid row inventories. The serial primal/color order is unchanged;
 inventories at or below 8,192 rows stay inline, while larger independent
-contact, attachment, spring, tet-material, self-contact, angular, and paired
+contact, attachment, spring, self-contact, angular, and paired
 friction inventories use allocation-stable persistent-worker ranges.
 Bitwise serial/2-worker/4-worker state tests cover every promoted row family,
 invalid-row no-ops, and non-finite propagation. Production `World` tests prove
@@ -1669,11 +1830,14 @@ kernel/driver, a combined serial mass-spring AVBD row driver for those row
 families plus bounded friction tangents, self-contact normal rows, and
 self-contact friction rows, and narrow internal World opt-ins in the
 supported static-contact mass-spring, self-contact mass-spring, and
-pure-tetrahedral envelopes. Pure-tetrahedral finite-stiffness scenes can now
-also opt into AVBD self-contact normal rows and matching self-contact
-friction rows in the same serial tet solve, with explicit
-fallback coverage for unsupported topology mixes, unrequested self-contact
-AVBD rows, Chebyshev, Rayleigh-damped, parallel, and unsupported-row requests;
+pure-tetrahedral envelopes. Pure-tetrahedral scenes retain their full
+Neo-Hookean material and can opt into AVBD self-contact normal rows plus
+matching self-contact friction rows in the same serial tet solve. The
+finite-stiffness option fails closed for tetrahedral topology because no
+independently rampable Equation-16 material-row formulation is implemented.
+Explicit fallback
+coverage remains for unrequested self-contact AVBD rows, Chebyshev,
+Rayleigh-damped, parallel, and unsupported spring-row requests;
 adjacent friction tangent pairs now use lagged-dual static/dynamic switching
 and pairwise circular-cone projection, including supported World generation
 for self-contact friction rows. Static box obstacle row keys now distinguish
@@ -1897,35 +2061,35 @@ coverage after reset. A narrow
 `avbd_articulated_high_ratio_chain` py-demo,
 `BM_AvbdArticulatedHighRatioChainStep` dashboard row, and
 [`avbd-articulated-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-articulated-high-ratio-chain-packet.json)
-now also cover a five-link variational-chain smoke with a 200:1 heavy tip,
+cover a five-link Variational-chain smoke with a 200:1 heavy tip,
 and `avbd_paper_scale_high_ratio_chain`,
 `PaperScaleHighRatioChainStaysFiniteAndResets`, plus
-`BM_AvbdPaperScaleHighRatioChainStep` cover a 50-link/50,000:1 finite/reset
-and visual/CPU benchmark smoke through configured `World::step()` solve-budget
-fields with
+`BM_AvbdPaperScaleHighRatioChainStep` cover a 50-link/50,000:1 Variational
+finite/reset and visual/CPU benchmark smoke through configured `World::step()`
+solve-budget fields with
 [`avbd-paper-scale-high-ratio-chain-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-chain-packet.json)
-visual/benchmark evidence, while
+legacy unbound capture-hash/timing metadata with unavailable source media and
+no semantic visual review, while
 `BM_AvbdPaperScaleHighRatioChainIterationSweep` adds dashboard-selected
-25/50/100/200 max-iteration sweep coverage for that same paper-scale fixture
+25/50/100/200 max-iteration sweep coverage for that same Variational fixture
 with finite replay counters, tracked benchmark/stability evidence in
 [`avbd-paper-scale-high-ratio-iteration-sweep-packet.json`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-packet.json),
 and a rendered
 [`avbd-paper-scale-high-ratio-iteration-sweep-plot.svg`](104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg).
-The same-hardware comparison and GPU gates remain open. Solver-identity
-relabel (PLAN-091 WP-091.1): the checked-in historical
-`avbd-demo2d`/`avbd-demo3d` packets predate explicit public AVBD selection, so
-their rigid contacts ran DART's default sequential-impulse path at capture
-time. Their native-runner timing ratios remain historical whole-pipeline
-`World::step` comparisons, not AVBD-contact-solver comparisons: pure-contact
-rows timed no AVBD rows; joint-plus-contact rows timed AVBD
-point-joint/motor/spring rows while ordinary contacts ran sequential impulse;
-and incidental chain contacts also ran sequential impulse. Seven current
-source-row scenes now explicitly select public AVBD; that fail-closed runtime
-change does not retroactively reclassify the old packets. Refreshed AVBD
-evidence packets must machine-record `resolved_solver_identity` and
-`rigid_contact_selection` at current schema version 4, enforced by
-`pixi run check-avbd-packets`. Public
-empty-scene corpus baseline coverage is now visible through
+Their `Avbd` names are historical; none of these high-ratio surfaces runs AVBD,
+and their packets cannot close AVBD correctness, parameter, or performance
+rows. Actual AVBD articulated execution, the same-hardware comparison, and GPU
+gates remain open. The runtime-identity
+audit at the start of this section supersedes the earlier PLAN-091 relabel:
+legacy source-demo packets remain historical SI/whole-pipeline artifacts, and
+the historically named articulated/high-ratio rows are Variational rather than
+AVBD. Refreshed AVBD evidence must machine-record
+`resolved_solver_identity` and `rigid_contact_selection` at current schema
+version 6, enforced by `pixi run check-avbd-packets`. The repeated source-demo
+ledger below preserves historical SI whole-pipeline measurements only; no
+faster/slower ratio or former fixture-local closure statement is an AVBD
+performance result. Public empty-scene corpus baseline coverage is now visible
+through
 `avbd_empty_baseline`, a focused Python smoke that checks source revisions,
 default source parameters, and the `sceneEmpty` zero-count invariant, and
 `BM_AvbdEmptyWorldStep`; the tracked
@@ -1939,7 +2103,7 @@ body, one collision shape, no joints, and no dynamic bodies, plus
 JSON, and native source timing; after skipping static-only contact queries,
 no-op rigid dynamics stages, clean frame-cache graph execution, and the clean
 no-work default step pipeline with a cheap scratch reset, it records DART
-about 1.51x faster than the native static Ground runner on this host, closing
+about 1.51x faster than the native static Ground runner on this host, historically meeting
 that narrow CPU-win gate. The
 first one-DOF motor source-demo row is now visible through
 `avbd_demo2d_motor`, which matches the
@@ -1975,14 +2139,15 @@ revision, scene index, 11 chain links, two dynamic supports, 15 falling
 blocks, 10 breakable fixed joints, and 29 collision shapes, plus
 `BM_AvbdDemo2dFractureStep`. Focused integration coverage now also verifies
 that the source-configured fixed joints eventually fracture under DART's
-combined-row load contract, reset at a high break force, stay unbroken, and
+combined solver-row metric contract, reset at a high threshold, stay unbroken,
+and
 reduce their anchor residuals again. It does not claim parity with the
 source's torque-arm-scaled angular-dual fracture predicate or timing. The
 tracked
 `avbd-demo2d-fracture-packet.json` adds headless visual capture, DART
 benchmark JSON, and native source timing; after a refreshed same-source
 timing run, it records DART about 1.20x faster than the native Fracture
-runner on this host, closing only that narrow source-row CPU gate. Later
+runner on this host, historically meeting only that narrow source-row CPU gate. Later
 local cleanup replaces the contact stage's duplicate prepare-time collision
 query with collision-shape-count constraint prewarm and aligns live
 constrained-pair filtering with the native solver, and that refreshed packet
@@ -1994,7 +2159,7 @@ coefficients from 5.0 down to 0.0, a static ground, and 12 collision shapes,
 plus `BM_AvbdDemo2dDynamicFrictionStep`. The tracked
 `avbd-demo2d-dynamic-friction-packet.json` adds headless visual capture,
 DART benchmark JSON, and native source timing; it records DART about 1.83x
-faster than the native Dynamic Friction runner on this host, closing that
+faster than the native Dynamic Friction runner on this host, historically meeting that
 narrow CPU-win gate while leaving broad friction scenes and GPU packets open.
 The next `avbd-demo2d` source row is now visible through
 `avbd_demo2d_static_friction`, which matches the `avbd-demo2d` Static
@@ -2003,7 +2168,7 @@ rotated dynamic boxes, uniform source friction 1.0, and 12 collision shapes,
 plus `BM_AvbdDemo2dStaticFrictionStep`. The tracked
 `avbd-demo2d-static-friction-packet.json` adds headless visual capture, DART
 benchmark JSON, and native source timing; it records DART about 2.68x faster
-than the native Static Friction runner on this host, closing that narrow
+than the native Static Friction runner on this host, historically meeting that narrow
 CPU-win gate while leaving broad friction scenes and GPU packets open.
 The next `avbd-demo2d` source row is now visible through
 `avbd_demo2d_pyramid`, which matches the `avbd-demo2d` Pyramid source
@@ -2012,21 +2177,21 @@ pyramid layout, and 211 collision shapes, plus
 `BM_AvbdDemo2dPyramidStep`. The tracked
 `avbd-demo2d-pyramid-packet.json` adds headless visual capture, DART benchmark
 JSON, and native source timing; it records DART about 9.84x faster than the
-10,000-step native Pyramid runner on this host, closing that narrow row only.
+10,000-step native Pyramid runner on this host, historically meeting that narrow row only.
 The next `avbd-demo2d` source row is now visible through
 `avbd_demo2d_stack`, which matches the `avbd-demo2d` Stack source revision,
 scene index, 20 vertical dynamic boxes over static ground, and 21 collision
 shapes, plus `BM_AvbdDemo2dStackStep`. The tracked
 `avbd-demo2d-stack-packet.json` adds headless visual capture, DART benchmark
 JSON, and native source timing; it records DART about 2.17x faster than the
-native Stack runner on this host, closing that narrow row only.
+native Stack runner on this host, historically meeting that narrow row only.
 The next `avbd-demo2d` source row is now visible through
 `avbd_demo2d_stack_ratio`, which matches the `avbd-demo2d` Stack Ratio
 source revision, scene index, six geometric-size dynamic boxes over static
 ground, and 7 collision shapes, plus `BM_AvbdDemo2dStackRatioStep`. The
 tracked `avbd-demo2d-stack-ratio-packet.json` adds headless visual capture,
 DART benchmark JSON, and native source timing; it records DART about 2.22x
-faster than the native Stack Ratio runner on this host, closing that narrow
+faster than the native Stack Ratio runner on this host, historically meeting that narrow
 row only.
 The next `avbd-demo2d` source row is now visible through
 `avbd_demo2d_rod`, which matches the `avbd-demo2d` Rod source revision,
@@ -2129,14 +2294,14 @@ rigid box, 2 rigid bodies, and 2 collision shapes, plus
 `BM_AvbdDemo3dGroundStep`. The tracked `avbd-demo3d-ground-packet.json` adds
 headless visual capture, DART benchmark JSON, and native source timing; it
 records DART about 1.11x faster than the native Ground runner on this host,
-closing that narrow row only. The next non-empty source row after that is
+historically meeting that narrow row only. The next non-empty source row after that is
 visible through `avbd_demo3d_dynamic_friction`, which matches the
 `avbd-demo3d` Dynamic Friction source revision, scene index, 11 sliding rigid
 boxes, a static floor, and 12 collision shapes, plus
 `BM_AvbdDemo3dDynamicFrictionStep`. The tracked
 `avbd-demo3d-dynamic-friction-packet.json` adds headless visual capture, DART
 benchmark JSON, and native source timing; it records DART about 1.41x faster
-than the native Dynamic Friction runner on this host, closing that narrow row
+than the native Dynamic Friction runner on this host, historically meeting that narrow row
 only. The next non-empty source row after that is visible through
 `avbd_demo3d_static_friction`, which matches the
 `avbd-demo3d` Static Friction source revision, scene index, a static floor,
@@ -2144,7 +2309,7 @@ inclined static ramp, 11 sliding rigid boxes, and 13 collision shapes, plus
 `BM_AvbdDemo3dStaticFrictionStep`. The tracked
 `avbd-demo3d-static-friction-packet.json` adds headless visual capture, DART
 benchmark JSON, and native source timing; it records DART about 1.08x faster
-than the native Static Friction runner on this host, closing that narrow
+than the native Static Friction runner on this host, historically meeting that narrow
 CPU-win gate. The next non-empty source row after that is visible through
 `avbd_demo3d_pyramid`, which matches the `avbd-demo3d` Pyramid source
 revision, scene index, a static ground, 136 dynamic boxes in the triangular
@@ -2152,7 +2317,7 @@ pile layout, and 137 collision shapes, plus
 `BM_AvbdDemo3dPyramidStep`. The tracked `avbd-demo3d-pyramid-packet.json`
 adds headless visual capture, DART benchmark JSON, and native source timing;
 it records DART about 2.83x faster than the native Pyramid runner on this
-host, closing that narrow row only. The next non-empty source row after that
+host, historically meeting that narrow row only. The next non-empty source row after that
 is visible through `avbd_demo3d_rope`, which matches the `avbd-demo3d` Rope
 source revision, scene index, 20 rigid links, 19 anchored linear-only point
 joints, and 21 collision shapes, plus `BM_AvbdDemo3dRopeStep`. The tracked
@@ -2173,14 +2338,14 @@ source revision, scene index, 10 vertical dynamic boxes over static ground,
 and 11 collision shapes, plus `BM_AvbdDemo3dStackStep`. The tracked
 `avbd-demo3d-stack-packet.json` adds headless visual capture, DART benchmark
 JSON, and native source timing; it records DART about 1.80x faster than the
-native Stack runner on this host, closing that narrow row only. The next
+native Stack runner on this host, historically meeting that narrow row only. The next
 non-empty source row after that is visible through
 `avbd_demo3d_stack_ratio`, which matches the `avbd-demo3d` Stack Ratio source
 revision, scene index, four geometric-size dynamic boxes over static ground,
 and 5 collision shapes, plus `BM_AvbdDemo3dStackRatioStep`. The tracked
 `avbd-demo3d-stack-ratio-packet.json` adds headless visual capture, DART
 benchmark JSON, and native source timing; it records DART about 2.32x faster
-than the native Stack Ratio runner on this host, closing that narrow row only.
+than the native Stack Ratio runner on this host, historically meeting that narrow row only.
 The next non-empty source row after that is visible through
 `avbd_demo3d_soft_body`, which matches the `avbd-demo3d` Soft Body source
 revision, scene index, three 4x4x4 dynamic rigid-box lattices, 432
@@ -2188,7 +2353,7 @@ finite-stiffness all-axis fixed joints, 648 diagonal ignored collision pairs,
 and 193 collision shapes, plus `BM_AvbdDemo3dSoftBodyStep`. The tracked
 `avbd-demo3d-soft-body-packet.json` adds headless visual capture, DART
 benchmark JSON, and native source timing; it records DART about 1.21x faster
-than the native Soft Body runner on this host, closing that narrow CPU row
+than the native Soft Body runner on this host, historically meeting that narrow CPU row
 only. Stable same-order AVBD row inventories now warm-start in place and row
 ordinal counters now use reserved endpoint-pair hash maps. The rigid row
 append paths seed fallback snapshot body-index cache entries, and the rigid
@@ -2213,20 +2378,23 @@ scene index, 40 planks, 50 load boxes, 78 paired linear-only point joints,
 and 91 collision shapes, plus `BM_AvbdDemo3dBridgeStep`. The tracked
 `avbd-demo3d-bridge-packet.json` adds headless visual capture, DART benchmark
 JSON, and native source timing; it records DART about 1.61x faster than the
-native Bridge runner on this host, closing that narrow row only. The next
+native Bridge runner on this host, historically meeting that narrow row only. The next
 non-empty source row after that is visible through
 `avbd_demo3d_breakable`, which matches the
 `avbd-demo3d` Breakable source revision, scene index, 19 rigid bodies, 10
 breakable fixed joints, and 19 collision shapes, plus
 `BM_AvbdDemo3dBreakableStep`. Focused integration coverage now also verifies
 that the source-configured fixed joints eventually fracture under DART's
-combined-row load contract, reset at a high break force, stay unbroken, and
+combined solver-row metric contract, reset at a high threshold, stay unbroken,
+and
 reduce their anchor residuals again. It does not claim parity with the
 source's torque-arm-scaled angular-dual fracture predicate or timing. The
 tracked
 `avbd-demo3d-breakable-packet.json` adds headless visual capture, DART
-benchmark JSON, and native source timing; it records DART about 1.42x faster
-than the native Breakable runner on this host. The next `avbd-demo3d` source
+benchmark JSON, and native source timing; it historically records DART about
+1.42x faster than the native Breakable runner on that host, meeting only the
+narrow non-AVBD whole-pipeline CPU row and closing no AVBD or source-fracture
+performance gate. The next `avbd-demo3d` source
 rows are now visible through `avbd_demo3d_spring` and
 `avbd_demo3d_spring_ratio`, which match the `avbd-demo3d` Spring and Spring
 Ratio source rows over public free-rigid distance springs, plus
@@ -2305,14 +2473,14 @@ stiffness facade binary persistence plus direct C++/dartpy validation of
 articulated stiffness defaults, finite setters, invalid setter rejection, and
 C++/dartpy endpoint-ownership rejection for same-link/cross-multibody/cross-world
 articulated point-joint requests,
-a narrow five-link 200:1 high mass-ratio
-articulated-chain smoke py-demo plus dashboard row, a focused 50-link/50,000:1
-finite/reset stability smoke and matching
-`BM_AvbdPaperScaleHighRatioChainStep` dashboard row plus benchmark packet
-through configured `World::step()` solve-budget fields, the new
-`BM_AvbdPaperScaleHighRatioChainIterationSweep` dashboard-selected
-25/50/100/200 max-iteration sweep row plus benchmark/stability packet and
-rendered SVG plot,
+a narrow five-link 200:1 high mass-ratio Variational-chain smoke py-demo plus
+dashboard row, a focused 50-link/50,000:1 Variational finite/reset stability
+smoke and historically named `BM_AvbdPaperScaleHighRatioChainStep` dashboard
+row plus legacy benchmark packet through configured `World::step()`
+solve-budget fields, and the historically named
+`BM_AvbdPaperScaleHighRatioChainIterationSweep` 25/50/100/200 Variational
+max-iteration sweep row plus legacy benchmark/stability packet and rendered
+SVG plot (none of those high-ratio surfaces runs AVBD or closes an AVBD row),
 world-anchor coverage, and a
 per-multibody link-index cache in the
 articulated point-joint extractor so same-multibody/world-link AVBD private
