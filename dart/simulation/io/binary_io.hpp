@@ -139,7 +139,23 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      differentiable physical-parameter registrations, and the rigid-body
 //      solver enum gains the AVBD value.
 //   30: The rigid-body solver enum gains the fixed-penalty VBD value.
-constexpr std::uint32_t kBinaryFormatVersion = 30;
+//   31: comps.DeformableVbdConfig is registered as a serializable component,
+//      preserving public fail-closed VBD selection and every internal VBD/AVBD
+//      tuning field across World binary round trips.
+//   32: comps.DeformableNodeState gains persistent world-space attachment
+//      targets for model-fixed AVBD nodes. Older records initialize the
+//      targets from the loaded positions.
+//   33: comps.DeformableContactConfig stores each body's construction-time
+//      combined surface-contact candidate capacity policy.
+//   34: World stores rigid IPC's adaptive barrier-stiffness lower bound after
+//      the rigid contact-stage iteration budget so a checkpoint preserves the
+//      solver's continuation state. comps.DeformableObstacleNoCcdTag is also
+//      registered as a serializable tag.
+//   35: comps.RigidAvbdContactConfig, the compatibility-only per-body AVBD
+//      contact opt-in, is registered as a serializable property component so
+//      binary round trips preserve the same rigid-contact selection that
+//      replay recording already captured.
+constexpr std::uint32_t kBinaryFormatVersion = 35;
 
 //==============================================================================
 // Low-level Binary I/O for POD types
@@ -307,7 +323,8 @@ void DART_SIMULATION_API writeFormatHeader(std::ostream& out);
 
 // Read and validate format header
 // Returns the format version number
-// Throws std::runtime_error if magic number is invalid or version incompatible
+// Throws dart::simulation::InvalidArgumentException (a std::runtime_error) if
+// the magic number is invalid or the file version is newer than supported
 std::uint32_t DART_SIMULATION_API readFormatHeader(std::istream& in);
 
 } // namespace dart::simulation::io
