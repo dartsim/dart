@@ -37,6 +37,7 @@
 #include <dart/simulation/detail/deformable_contact/candidate_set.hpp>
 #include <dart/simulation/detail/deformable_contact/tangent_stencil.hpp>
 #include <dart/simulation/detail/deformable_vbd/avbd_constraint.hpp>
+#include <dart/simulation/detail/deformable_vbd/quasi_newton_hessian.hpp>
 #include <dart/simulation/detail/deformable_vbd/vertex_block_kernel.hpp>
 
 #include <dart/common/stl_allocator.hpp>
@@ -77,10 +78,10 @@ struct SelfContactEntry
 /// three triangle nodes; each edge-edge candidate to its four edge nodes.
 struct SelfContactAdjacency
 {
-  using IncidentVector = std::
+  using EntryVector = std::
       vector<SelfContactEntry, ::dart::common::StlAllocator<SelfContactEntry>>;
-  using IncidentVectorAllocator = ::dart::common::StlAllocator<IncidentVector>;
-  using IncidentRows = std::vector<IncidentVector, IncidentVectorAllocator>;
+  using CountVector
+      = std::vector<std::size_t, ::dart::common::StlAllocator<std::size_t>>;
 
   SelfContactAdjacency()
     : SelfContactAdjacency(::dart::common::MemoryAllocator::GetDefault())
@@ -89,31 +90,73 @@ struct SelfContactAdjacency
   }
 
   explicit SelfContactAdjacency(::dart::common::MemoryAllocator& allocator)
-    : incident(IncidentVectorAllocator{allocator}), m_allocator(&allocator)
+    : m_entries(::dart::common::StlAllocator<SelfContactEntry>{allocator}),
+      m_incidentCounts(::dart::common::StlAllocator<std::size_t>{allocator}),
+      m_offsets(::dart::common::StlAllocator<std::size_t>{allocator}),
+      m_writeOffsets(::dart::common::StlAllocator<std::size_t>{allocator})
   {
     // Intentionally empty.
   }
 
-  IncidentRows incident;
   double squaredActivationDistance = 0.0;
   double stiffness = 0.0;
 
   [[nodiscard]] bool active() const
   {
     return stiffness > 0.0 && squaredActivationDistance > 0.0
-           && !incident.empty();
+           && m_vertexCount != 0u;
+  }
+
+  [[nodiscard]] std::size_t vertexCount() const
+  {
+    return m_vertexCount;
+  }
+
+  [[nodiscard]] std::span<const SelfContactEntry> entriesFor(
+      std::size_t vertex) const
+  {
+    if (vertex >= m_vertexCount) {
+      return {};
+    }
+    const std::size_t begin = m_offsets[vertex];
+    const std::size_t count = m_offsets[vertex + 1u] - begin;
+    if (count == 0u) {
+      return {};
+    }
+    return {m_entries.data() + begin, count};
+  }
+
+  [[nodiscard]] const EntryVector& entries() const
+  {
+    return m_entries;
+  }
+
+  void clear()
+  {
+    m_entries.clear();
+    m_incidentCounts.clear();
+    m_offsets.clear();
+    m_writeOffsets.clear();
+    m_vertexCount = 0u;
+    squaredActivationDistance = 0.0;
+    stiffness = 0.0;
   }
 
   void reserve(std::size_t vertexCount, std::size_t candidateCapacity)
   {
-    resizeIncidentRows(vertexCount);
-    const std::size_t entryCapacity
-        = vertexCount == 0
-              ? 0
-              : (4 * candidateCapacity + vertexCount - 1) / vertexCount;
-    for (auto& entries : incident) {
-      entries.reserve(entryCapacity);
-    }
+    DART_SIMULATION_THROW_T_IF(
+        candidateCapacity
+            > std::numeric_limits<std::size_t>::max() / std::size_t{4},
+        InvalidOperationException,
+        "Self-contact adjacency capacity overflows size_t");
+    m_entries.reserve(4u * candidateCapacity);
+    m_incidentCounts.reserve(vertexCount);
+    DART_SIMULATION_THROW_T_IF(
+        vertexCount == std::numeric_limits<std::size_t>::max(),
+        InvalidOperationException,
+        "Self-contact adjacency vertex count overflows size_t");
+    m_offsets.reserve(vertexCount + 1u);
+    m_writeOffsets.reserve(vertexCount);
   }
 
   void rebuild(
@@ -125,24 +168,72 @@ struct SelfContactAdjacency
   {
     this->squaredActivationDistance = squaredActivationDistance;
     this->stiffness = stiffness;
-    resizeIncidentRows(vertexCount);
-    for (auto& entries : incident) {
-      entries.clear();
+    m_vertexCount = vertexCount;
+
+    // Count and scatter into one CSR buffer. World preparation reserves this
+    // buffer from the resolved combined candidate cap, so a later active-set
+    // change cannot allocate one vector per vertex during the warmed solve.
+    m_incidentCounts.assign(vertexCount, 0u);
+    const auto countNodes = [&](const std::array<std::uint32_t, 4>& nodes) {
+      for (const std::uint32_t node : nodes) {
+        if (node < vertexCount) {
+          ++m_incidentCounts[node];
+        }
+      }
+    };
+    for (const auto& candidate : candidates.pointTriangleCandidates) {
+      if (candidate.triangle >= triangles.size()) {
+        continue;
+      }
+      const auto& triangle = triangles[candidate.triangle];
+      countNodes(
+          {static_cast<std::uint32_t>(candidate.point),
+           static_cast<std::uint32_t>(triangle.nodeA),
+           static_cast<std::uint32_t>(triangle.nodeB),
+           static_cast<std::uint32_t>(triangle.nodeC)});
     }
+    for (const auto& candidate : candidates.edgeEdgeCandidates) {
+      if (candidate.edgeA >= candidates.surfaceEdges.size()
+          || candidate.edgeB >= candidates.surfaceEdges.size()) {
+        continue;
+      }
+      const auto& edgeA = candidates.surfaceEdges[candidate.edgeA];
+      const auto& edgeB = candidates.surfaceEdges[candidate.edgeB];
+      countNodes(
+          {static_cast<std::uint32_t>(edgeA.nodeA),
+           static_cast<std::uint32_t>(edgeA.nodeB),
+           static_cast<std::uint32_t>(edgeB.nodeA),
+           static_cast<std::uint32_t>(edgeB.nodeB)});
+    }
+    m_offsets.resize(vertexCount + 1u);
+    m_offsets[0] = 0u;
+    for (std::size_t vertex = 0; vertex < vertexCount; ++vertex) {
+      DART_SIMULATION_THROW_T_IF(
+          m_incidentCounts[vertex]
+              > std::numeric_limits<std::size_t>::max() - m_offsets[vertex],
+          InvalidOperationException,
+          "Self-contact adjacency entry count overflows size_t");
+      m_offsets[vertex + 1u] = m_offsets[vertex] + m_incidentCounts[vertex];
+    }
+    m_entries.resize(m_offsets.back());
+    m_writeOffsets.assign(m_offsets.begin(), m_offsets.end() - 1);
 
     const auto scatter = [&](const std::array<std::uint32_t, 4>& nodes,
                              bool isEdgeEdge,
                              std::uint32_t constraint) {
       for (std::uint8_t k = 0; k < 4; ++k) {
         if (nodes[k] < vertexCount) {
-          incident[nodes[k]].push_back(
-              SelfContactEntry{nodes, k, isEdgeEdge, constraint});
+          m_entries[m_writeOffsets[nodes[k]]++]
+              = SelfContactEntry{nodes, k, isEdgeEdge, constraint};
         }
       }
     };
 
     std::uint32_t constraint = 0;
     for (const auto& candidate : candidates.pointTriangleCandidates) {
+      if (candidate.triangle >= triangles.size()) {
+        continue;
+      }
       const auto& triangle = triangles[candidate.triangle];
       scatter(
           {static_cast<std::uint32_t>(candidate.point),
@@ -153,6 +244,10 @@ struct SelfContactAdjacency
           constraint++);
     }
     for (const auto& candidate : candidates.edgeEdgeCandidates) {
+      if (candidate.edgeA >= candidates.surfaceEdges.size()
+          || candidate.edgeB >= candidates.surfaceEdges.size()) {
+        continue;
+      }
       const auto& edgeA = candidates.surfaceEdges[candidate.edgeA];
       const auto& edgeB = candidates.surfaceEdges[candidate.edgeB];
       scatter(
@@ -175,6 +270,16 @@ struct SelfContactAdjacency
       = ::dart::common::MemoryAllocator::GetDefault())
   {
     SelfContactAdjacency adjacency(allocator);
+    DART_SIMULATION_THROW_T_IF(
+        candidates.pointTriangleCandidates.size()
+            > std::numeric_limits<std::size_t>::max()
+                  - candidates.edgeEdgeCandidates.size(),
+        InvalidOperationException,
+        "Self-contact candidate count overflows size_t");
+    adjacency.reserve(
+        vertexCount,
+        candidates.pointTriangleCandidates.size()
+            + candidates.edgeEdgeCandidates.size());
     adjacency.rebuild(
         vertexCount,
         candidates,
@@ -185,20 +290,11 @@ struct SelfContactAdjacency
   }
 
 private:
-  void resizeIncidentRows(std::size_t vertexCount)
-  {
-    if (vertexCount < incident.size()) {
-      incident.resize(vertexCount);
-      return;
-    }
-    incident.reserve(vertexCount);
-    while (incident.size() < vertexCount) {
-      incident.emplace_back(
-          ::dart::common::StlAllocator<SelfContactEntry>{*m_allocator});
-    }
-  }
-
-  ::dart::common::MemoryAllocator* m_allocator;
+  EntryVector m_entries;
+  CountVector m_incidentCounts;
+  CountVector m_offsets;
+  CountVector m_writeOffsets;
+  std::size_t m_vertexCount = 0u;
 };
 
 /// One active AVBD self-contact normal row for a point-triangle or edge-edge
@@ -224,8 +320,10 @@ struct AvbdSelfContactNormalOptions
 };
 
 /// One active AVBD self-contact friction tangent row for a point-triangle or
-/// edge-edge primitive pair. Rows are generated from the lagged primitive
-/// stencil. Two adjacent rows with axes 0 and 1 form one Coulomb-cone pair.
+/// edge-edge primitive pair. Rows use the current step's lagged primitive
+/// stencil plus a persistent sticking displacement transported from the prior
+/// stencil. Two adjacent rows with axes 0 and 1 form one live Coulomb-cone
+/// pair coupled to its owning normal row.
 struct AvbdSelfContactFrictionRow
 {
   std::array<std::uint32_t, 4> nodes{0, 0, 0, 0};
@@ -239,6 +337,18 @@ struct AvbdSelfContactFrictionRow
   AvbdScalarRowState state;
   double previousConstraintValue = 0.0;
   AvbdScalarRowBounds bounds;
+  /// Relative tangential motion accumulated while the primitive pair sticks,
+  /// transported from the prior tangent stencil into this row's world-space
+  /// tangent plane when the contact is rebuilt.
+  Eigen::Vector3d accumulatedTangentialDisplacement = Eigen::Vector3d::Zero();
+  std::size_t normalRow = std::numeric_limits<std::size_t>::max();
+  double frictionCoefficient = 0.0;
+  bool sticking = false;
+  /// True only while the owning normal primitive is inside the active band
+  /// but has no safe differential (for example, at the barrier safety floor).
+  /// The complete normal/tangent continuation is then preserved and the row
+  /// emits no primal or dual contribution until the primitive is valid again.
+  bool differentialSuspended = false;
 };
 
 /// Per-sweep AVBD self-contact friction update parameters.
@@ -247,7 +357,9 @@ struct AvbdSelfContactFrictionOptions
   double alpha = 0.0;
   double beta = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
-  double staticFrictionTolerance = 1e-12;
+  /// Tangential-displacement threshold for retaining a sticking anchor. This
+  /// matches the maintained 3D AVBD reference implementation.
+  double staticFrictionTolerance = 1e-5;
 };
 
 //==============================================================================
@@ -308,6 +420,24 @@ inline contact::Matrix2x12d avbdSelfContactFrictionProjection(
 }
 
 //==============================================================================
+inline contact::Matrix3x2d avbdSelfContactFrictionBasis(
+    const AvbdSelfContactFrictionRow& row)
+{
+  return row.isEdgeEdge ? contact::edgeEdgeTangentStencil(
+                              row.stepStartPositions[0],
+                              row.stepStartPositions[1],
+                              row.stepStartPositions[2],
+                              row.stepStartPositions[3])
+                              .basis
+                        : contact::pointTriangleTangentStencil(
+                              row.stepStartPositions[0],
+                              row.stepStartPositions[1],
+                              row.stepStartPositions[2],
+                              row.stepStartPositions[3])
+                              .basis;
+}
+
+//==============================================================================
 inline contact::Vector12d avbdSelfContactFrictionDisplacement(
     const AvbdSelfContactFrictionRow& row,
     std::span<const Eigen::Vector3d> positions)
@@ -331,10 +461,26 @@ inline double avbdSelfContactFrictionConstraintValue(
     std::span<const Eigen::Vector3d> positions)
 {
   const std::uint8_t axis = row.axis < 2u ? row.axis : 0u;
+  const contact::Matrix3x2d basis = avbdSelfContactFrictionBasis(row);
   const contact::Matrix2x12d projection
       = avbdSelfContactFrictionProjection(row);
-  return -projection.row(axis).dot(
-      avbdSelfContactFrictionDisplacement(row, positions));
+  const Eigen::Vector2d incrementalCoordinates
+      = projection * avbdSelfContactFrictionDisplacement(row, positions);
+  const Eigen::Vector3d totalDisplacement
+      = row.accumulatedTangentialDisplacement + basis * incrementalCoordinates;
+  return -basis.col(axis).dot(totalDisplacement);
+}
+
+//==============================================================================
+inline Eigen::Vector3d avbdSelfContactFrictionTotalTangentialDisplacement(
+    const AvbdSelfContactFrictionRow& row,
+    std::span<const Eigen::Vector3d> positions)
+{
+  const contact::Matrix3x2d basis = avbdSelfContactFrictionBasis(row);
+  return row.accumulatedTangentialDisplacement
+         + basis
+               * (avbdSelfContactFrictionProjection(row)
+                  * avbdSelfContactFrictionDisplacement(row, positions));
 }
 
 //==============================================================================
@@ -427,18 +573,50 @@ inline Eigen::Vector2d projectAvbdSelfContactFrictionDualToTangentPair(
 //==============================================================================
 inline bool avbdSelfContactFrictionPreviousDualInsideCone(
     const AvbdSelfContactFrictionRow& first,
-    const AvbdSelfContactFrictionRow& second,
-    double staticFrictionTolerance = 1e-12)
+    const AvbdSelfContactFrictionRow& second)
 {
   const double limit = avbdSelfContactFrictionPairForceLimit(first, second);
   if (!std::isfinite(limit)) {
     return true;
   }
 
-  const double tolerance = std::max(0.0, staticFrictionTolerance);
   const double previousNorm
       = std::hypot(first.state.lambda, second.state.lambda);
-  return previousNorm < std::max(0.0, limit - tolerance);
+  return previousNorm <= limit;
+}
+
+//==============================================================================
+inline void setAvbdSelfContactFrictionTangentPairForceLimit(
+    AvbdSelfContactFrictionRow& first,
+    AvbdSelfContactFrictionRow& second,
+    double forceLimit)
+{
+  const double limit
+      = std::isfinite(forceLimit) && forceLimit > 0.0 ? forceLimit : 0.0;
+  first.bounds = avbdFrictionTangentBounds(limit);
+  second.bounds = first.bounds;
+
+  if (!(limit > 0.0)) {
+    // With no admissible normal load there is no tangent constraint to retain.
+    // Cold-clear the material-point continuation while preserving the learned
+    // stiffness for a later, genuinely active contact.
+    first.state.lambda = 0.0;
+    second.state.lambda = 0.0;
+    first.sticking = false;
+    second.sticking = false;
+    first.accumulatedTangentialDisplacement.setZero();
+    second.accumulatedTangentialDisplacement.setZero();
+    return;
+  }
+
+  const double norm = std::hypot(first.state.lambda, second.state.lambda);
+  if (norm > limit && norm > 0.0) {
+    const double scale = limit / norm;
+    first.state.lambda *= scale;
+    second.state.lambda *= scale;
+    first.sticking = false;
+    second.sticking = false;
+  }
 }
 
 //==============================================================================
@@ -447,16 +625,23 @@ inline Eigen::Vector2d avbdSelfContactFrictionTangentPairForce(
     const AvbdSelfContactFrictionRow& second,
     std::span<const Eigen::Vector3d> positions,
     const AvbdSelfContactFrictionOptions& options,
-    bool* clamped = nullptr)
+    bool* clamped = nullptr,
+    bool* valid = nullptr)
 {
   if (clamped != nullptr) {
     *clamped = false;
   }
+  if (valid != nullptr) {
+    *valid = true;
+  }
 
   const double limit = avbdSelfContactFrictionPairForceLimit(first, second);
-  if (limit <= 0.0) {
-    if (clamped != nullptr) {
-      *clamped = true;
+  if (!(limit > 0.0)) {
+    return Eigen::Vector2d::Zero();
+  }
+  if (!std::isfinite(limit)) {
+    if (valid != nullptr) {
+      *valid = false;
     }
     return Eigen::Vector2d::Zero();
   }
@@ -464,35 +649,54 @@ inline Eigen::Vector2d avbdSelfContactFrictionTangentPairForce(
   const Eigen::Vector2d constraintValues
       = avbdSelfContactFrictionConstraintValues(
           first, second, positions, options.alpha);
-  const bool staticMode = avbdSelfContactFrictionPreviousDualInsideCone(
-      first, second, options.staticFrictionTolerance);
-  if (!staticMode && std::isfinite(limit)) {
-    const double tangentError = constraintValues.norm();
-    if (tangentError > std::max(1e-12, options.staticFrictionTolerance)) {
-      if (clamped != nullptr) {
-        *clamped = true;
-      }
-      return (limit / tangentError) * constraintValues;
-    }
-  }
-
+  // Equation 13 first forms the augmented-Lagrangian trial force k*C+lambda.
+  // Project that trial to the live Coulomb cone only when it exceeds the cone;
+  // a prior dual on the boundary may return to the interior instead of
+  // discarding lambda and choosing a direction from C alone.
   Eigen::Vector2d force(
       first.state.stiffness * constraintValues.x() + first.state.lambda,
       second.state.stiffness * constraintValues.y() + second.state.lambda);
-  if (std::isfinite(limit)) {
-    const double norm = force.norm();
-    if (norm > limit && norm > 0.0) {
-      if (clamped != nullptr) {
-        *clamped = true;
-      }
-      force *= limit / norm;
+  if (!force.allFinite()) {
+    if (valid != nullptr) {
+      *valid = false;
     }
+    return Eigen::Vector2d::Zero();
+  }
+  const double norm = force.norm();
+  if (!std::isfinite(norm)) {
+    if (valid != nullptr) {
+      *valid = false;
+    }
+    return Eigen::Vector2d::Zero();
+  }
+  if (norm > limit && norm > 0.0) {
+    if (clamped != nullptr) {
+      *clamped = true;
+    }
+    force *= limit / norm;
   }
   return force;
 }
 
 //==============================================================================
-inline contact::PrimitiveBarrierResult evaluateAvbdSelfContactPrimitive(
+struct AvbdSelfContactPrimitiveResult
+{
+  contact::Vector12d distanceGradient = contact::Vector12d::Zero();
+  contact::Matrix12d constraintHessian = contact::Matrix12d::Zero();
+  double squaredDistance = 0.0;
+  double safeSquaredDistance = 0.0;
+  double squaredActivationDistance = 0.0;
+  bool active = false;
+  /// False when the distance is outside the active band, invalid, or below
+  /// the barrier safety floor.  In the under-floor case the clamped barrier
+  /// value remains finite, but differentiating it as if it were the raw
+  /// distance would be mathematically inconsistent, so AVBD emits no row.
+  bool differentialValid = false;
+  bool clampedToSafetyFloor = false;
+};
+
+//==============================================================================
+inline AvbdSelfContactPrimitiveResult evaluateAvbdSelfContactPrimitive(
     const AvbdSelfContactNormalRow& row,
     std::span<const Eigen::Vector3d> positions)
 {
@@ -509,26 +713,86 @@ inline contact::PrimitiveBarrierResult evaluateAvbdSelfContactPrimitive(
     return {};
   }
 
-  constexpr double kUnitBarrierStiffness = 1.0;
-  return row.isEdgeEdge ? contact::edgeEdgeBarrier(
-                              positions[n[0]],
-                              positions[n[1]],
-                              positions[n[2]],
-                              positions[n[3]],
-                              row.squaredActivationDistance,
-                              kUnitBarrierStiffness)
-                        : contact::pointTriangleBarrier(
-                              positions[n[0]],
-                              positions[n[1]],
-                              positions[n[2]],
-                              positions[n[3]],
-                              row.squaredActivationDistance,
-                              kUnitBarrierStiffness);
+  AvbdSelfContactPrimitiveResult result;
+  result.squaredActivationDistance = row.squaredActivationDistance;
+  result.squaredDistance = row.isEdgeEdge
+                               ? contact::edgeEdgeSquaredDistance(
+                                     positions[n[0]],
+                                     positions[n[1]],
+                                     positions[n[2]],
+                                     positions[n[3]])
+                                     .squaredDistance
+                               : contact::pointTriangleSquaredDistance(
+                                     positions[n[0]],
+                                     positions[n[1]],
+                                     positions[n[2]],
+                                     positions[n[3]])
+                                     .squaredDistance;
+  const auto barrier = contact::c2ClampedLogBarrier(
+      result.squaredDistance, row.squaredActivationDistance);
+  result.safeSquaredDistance = barrier.safeSquaredDistance;
+  result.active = barrier.active;
+  if (!result.active || !(result.safeSquaredDistance > 0.0)) {
+    return result;
+  }
+  const double safetyFloor = contact::detail::safeSquaredBarrierDistance(
+      0.0, row.squaredActivationDistance);
+  // Constructing a primitive at sqrt(safetyFloor) may round its re-squared
+  // distance one representable value above the stored floor. Treat that
+  // boundary value as clamped too; no exact differential exists at the max()
+  // transition, and the one-ULP fail-closed band is deterministic.
+  const double inclusiveSafetyFloor
+      = std::nextafter(safetyFloor, std::numeric_limits<double>::infinity());
+  if (result.squaredDistance <= inclusiveSafetyFloor) {
+    result.active = false;
+    result.clampedToSafetyFloor = true;
+    return result;
+  }
+
+  const contact::Vector12d squaredDistanceGradient
+      = row.isEdgeEdge ? contact::edgeEdgeSquaredDistanceGradient(
+                             positions[n[0]],
+                             positions[n[1]],
+                             positions[n[2]],
+                             positions[n[3]])
+                       : contact::pointTriangleSquaredDistanceGradient(
+                             positions[n[0]],
+                             positions[n[1]],
+                             positions[n[2]],
+                             positions[n[3]]);
+  const contact::Matrix12d squaredDistanceHessian
+      = row.isEdgeEdge ? contact::edgeEdgeSquaredDistanceHessian(
+                             positions[n[0]],
+                             positions[n[1]],
+                             positions[n[2]],
+                             positions[n[3]])
+                       : contact::pointTriangleSquaredDistanceHessian(
+                             positions[n[0]],
+                             positions[n[1]],
+                             positions[n[2]],
+                             positions[n[3]]);
+  const double distance = std::sqrt(result.safeSquaredDistance);
+  const double inverseTwoDistance = 0.5 / distance;
+  result.distanceGradient = inverseTwoDistance * squaredDistanceGradient;
+  const contact::Matrix12d distanceHessian
+      = inverseTwoDistance * squaredDistanceHessian
+        - (0.25 / (distance * distance * distance))
+              * (squaredDistanceGradient * squaredDistanceGradient.transpose());
+  result.constraintHessian = -distanceHessian;
+  if (!result.distanceGradient.allFinite()
+      || !result.constraintHessian.allFinite()) {
+    result.active = false;
+    result.distanceGradient.setZero();
+    result.constraintHessian.setZero();
+    return result;
+  }
+  result.differentialValid = true;
+  return result;
 }
 
 //==============================================================================
 inline double avbdSelfContactNormalConstraintValue(
-    const contact::PrimitiveBarrierResult& primitive)
+    const AvbdSelfContactPrimitiveResult& primitive)
 {
   if (!primitive.active || !(primitive.squaredActivationDistance > 0.0)
       || !std::isfinite(primitive.safeSquaredDistance)
@@ -556,29 +820,33 @@ inline double avbdSelfContactNormalConstraintValue(
 }
 
 //==============================================================================
-inline Eigen::Vector3d avbdSelfContactLocalNormal(
-    const contact::PrimitiveBarrierResult& primitive, std::uint8_t localVertex)
+inline contact::Vector12d avbdSelfContactGeneralizedNormalDirection(
+    const AvbdSelfContactPrimitiveResult& primitive)
 {
-  if (!primitive.active || localVertex >= 4u) {
-    return Eigen::Vector3d::Zero();
+  if (!primitive.active || !primitive.distanceGradient.allFinite()) {
+    return contact::Vector12d::Zero();
   }
+  return primitive.distanceGradient;
+}
 
-  Eigen::Vector3d normal
-      = -primitive.gradient.segment<3>(3 * static_cast<int>(localVertex));
-  const double normalNorm = normal.norm();
-  if (!(normalNorm > 0.0) || !std::isfinite(normalNorm)) {
+//==============================================================================
+inline Eigen::Vector3d avbdSelfContactLocalNormal(
+    const AvbdSelfContactPrimitiveResult& primitive, std::uint8_t localVertex)
+{
+  if (localVertex >= 4u) {
     return Eigen::Vector3d::Zero();
   }
-  normal /= normalNorm;
-  return normal;
+  return avbdSelfContactGeneralizedNormalDirection(primitive).segment<3>(
+      3 * static_cast<int>(localVertex));
 }
 
 //==============================================================================
 /// Stamp one active AVBD self-contact normal row into a VBD vertex block. The
-/// scalar constraint is the activation-band depth `d_hat - d`, and the normal
-/// axis is taken from the IPC barrier force direction for this local primitive
-/// vertex. The row keeps a rank-1 positive-semidefinite Hessian block while the
-/// primitive is active, matching the other hard AVBD normal rows.
+/// scalar constraint is the activation-band depth `d_hat - d`, and each local
+/// direction is the corresponding block of `grad(d)`, including the shared
+/// primitive's barycentric/segment weight. The local Hessian combines the
+/// rank-one penalty block with AVBD Section 3.5's column-norm diagonal for the
+/// force-scaled geometric constraint Hessian.
 inline double addAvbdSelfContactNormal(
     VertexBlock& block,
     std::span<const Eigen::Vector3d> positions,
@@ -586,7 +854,7 @@ inline double addAvbdSelfContactNormal(
     std::uint8_t localVertex,
     double alpha)
 {
-  const contact::PrimitiveBarrierResult primitive
+  const AvbdSelfContactPrimitiveResult primitive
       = evaluateAvbdSelfContactPrimitive(row, positions);
   if (!primitive.active) {
     return 0.0;
@@ -607,6 +875,13 @@ inline double addAvbdSelfContactNormal(
   block.force.noalias() += forceMagnitude * normal;
   block.hessian.noalias()
       += row.state.stiffness * (normal * normal.transpose());
+  const Eigen::Matrix3d geometricStiffness
+      = forceMagnitude
+        * primitive.constraintHessian.block<3, 3>(
+            3 * static_cast<int>(localVertex),
+            3 * static_cast<int>(localVertex));
+  block.hessian.diagonal()
+      += avbdQuasiNewtonGeometricDiagonal(geometricStiffness);
   return forceMagnitude;
 }
 
@@ -617,25 +892,60 @@ inline AvbdScalarRowState updateAvbdSelfContactNormalRow(
     const AvbdSelfContactNormalRow& row,
     const AvbdSelfContactNormalOptions& options)
 {
-  const contact::PrimitiveBarrierResult primitive
+  const AvbdSelfContactPrimitiveResult primitive
       = evaluateAvbdSelfContactPrimitive(row, positions);
-  if (!primitive.active) {
-    return state;
+  double currentConstraintValue = 0.0;
+  if (primitive.active) {
+    currentConstraintValue = avbdSelfContactNormalConstraintValue(primitive);
+  } else {
+    // Primal barrier derivatives remain an inactive no-op outside d_hat, but
+    // the fixed candidate row still has a well-defined separating scalar gap.
+    // Apply Eq. 13 to that negative C so a positive normal dual decays/clamps
+    // instead of surviving separation and being re-injected on re-entry.
+    // Under-floor primitives deliberately remain fail-closed: their clamped
+    // scalar has no matching exact differential, so preserve the row state.
+    if (primitive.clampedToSafetyFloor
+        || !(primitive.squaredActivationDistance > 0.0)
+        || !std::isfinite(primitive.squaredActivationDistance)
+        || !std::isfinite(primitive.squaredDistance)
+        || primitive.squaredDistance < primitive.squaredActivationDistance) {
+      return state;
+    }
+    currentConstraintValue = std::sqrt(primitive.squaredActivationDistance)
+                             - std::sqrt(primitive.squaredDistance);
   }
 
   const double constraintValue = regularizeAvbdConstraintValue(
-      avbdSelfContactNormalConstraintValue(primitive),
-      row.previousConstraintValue,
-      options.alpha);
+      currentConstraintValue, row.previousConstraintValue, options.alpha);
   return updateAvbdHardConstraintRow(
       state, constraintValue, options.beta, row.bounds, options.maxStiffness);
 }
 
 //==============================================================================
+inline double avbdSelfContactNormalTrialForce(
+    const AvbdSelfContactNormalRow& row,
+    std::span<const Eigen::Vector3d> positions,
+    double alpha)
+{
+  const AvbdSelfContactPrimitiveResult primitive
+      = evaluateAvbdSelfContactPrimitive(row, positions);
+  if (!primitive.active) {
+    return 0.0;
+  }
+
+  const double constraintValue = regularizeAvbdConstraintValue(
+      avbdSelfContactNormalConstraintValue(primitive),
+      row.previousConstraintValue,
+      alpha);
+  return computeAvbdHardConstraintForce(row.state, constraintValue, row.bounds);
+}
+
+//==============================================================================
 /// Stamp one active AVBD self-contact friction tangent row into a VBD vertex
-/// block. The row constrains the lagged tangent-stencil displacement from the
-/// start of the step, so the force opposes relative tangential slip across the
-/// primitive pair.
+/// block. The row constrains persistent accumulated tangent motion plus the
+/// current lagged-stencil displacement, so sticking does not reset and creep
+/// at every timestep. A zero live cone is an inactive row and contributes
+/// neither force nor Hessian.
 inline double addAvbdSelfContactFrictionTangent(
     VertexBlock& block,
     std::span<const Eigen::Vector3d> positions,
@@ -643,6 +953,12 @@ inline double addAvbdSelfContactFrictionTangent(
     std::uint8_t localVertex,
     double alpha)
 {
+  if (row.differentialSuspended) {
+    return 0.0;
+  }
+  if (!(avbdSelfContactFrictionForceLimit(row) > 0.0)) {
+    return 0.0;
+  }
   const Eigen::Vector3d direction
       = avbdSelfContactFrictionLocalDirection(row, localVertex);
   if (direction.squaredNorm() == 0.0) {
@@ -663,10 +979,9 @@ inline double addAvbdSelfContactFrictionTangent(
 
 //==============================================================================
 /// Stamp the two self-contact tangent rows for one primitive as one
-/// Coulomb-cone pair. If the previous tangential dual lies inside the cone,
-/// the pair acts as static friction. Once the lagged dual reaches the cone
-/// edge, the pair switches to dynamic friction and keeps the force on the
-/// circular Coulomb bound opposite the current slip.
+/// Coulomb-cone pair. The augmented-Lagrangian trial is projected radially only
+/// when it exceeds the live circular Coulomb bound; equality is accepted. A
+/// zero live cone is an inactive row and contributes neither force nor Hessian.
 inline Eigen::Vector2d addAvbdSelfContactFrictionTangentPair(
     VertexBlock& block,
     std::span<const Eigen::Vector3d> positions,
@@ -675,8 +990,18 @@ inline Eigen::Vector2d addAvbdSelfContactFrictionTangentPair(
     std::uint8_t localVertex,
     const AvbdSelfContactFrictionOptions& options)
 {
+  if (first.differentialSuspended || second.differentialSuspended) {
+    return Eigen::Vector2d::Zero();
+  }
+  if (!(avbdSelfContactFrictionPairForceLimit(first, second) > 0.0)) {
+    return Eigen::Vector2d::Zero();
+  }
+  bool valid = false;
   const Eigen::Vector2d force = avbdSelfContactFrictionTangentPairForce(
-      first, second, positions, options);
+      first, second, positions, options, nullptr, &valid);
+  if (!valid) {
+    return Eigen::Vector2d::Zero();
+  }
   const Eigen::Vector3d direction0
       = avbdSelfContactFrictionLocalDirection(first, localVertex);
   const Eigen::Vector3d direction1
@@ -696,6 +1021,13 @@ inline AvbdScalarRowState updateAvbdSelfContactFrictionTangentRow(
     const AvbdSelfContactFrictionRow& row,
     const AvbdSelfContactFrictionOptions& options)
 {
+  if (row.differentialSuspended) {
+    return state;
+  }
+  if (!(avbdSelfContactFrictionForceLimit(row) > 0.0)) {
+    state.lambda = 0.0;
+    return state;
+  }
   const double constraintValue = regularizeAvbdConstraintValue(
       avbdSelfContactFrictionConstraintValue(row, positions),
       row.previousConstraintValue,
@@ -711,15 +1043,40 @@ inline void updateAvbdSelfContactFrictionTangentPair(
     std::span<const Eigen::Vector3d> positions,
     const AvbdSelfContactFrictionOptions& options)
 {
+  if (first.differentialSuspended || second.differentialSuspended) {
+    return;
+  }
+  if (!(avbdSelfContactFrictionPairForceLimit(first, second) > 0.0)) {
+    first.state.lambda = 0.0;
+    second.state.lambda = 0.0;
+    first.sticking = false;
+    second.sticking = false;
+    return;
+  }
   bool clamped = false;
+  bool valid = false;
   const Eigen::Vector2d force = avbdSelfContactFrictionTangentPairForce(
-      first, second, positions, options, &clamped);
+      first, second, positions, options, &clamped, &valid);
+  if (!valid) {
+    first.state.lambda = 0.0;
+    second.state.lambda = 0.0;
+    first.sticking = false;
+    second.sticking = false;
+    first.accumulatedTangentialDisplacement.setZero();
+    second.accumulatedTangentialDisplacement.setZero();
+    return;
+  }
   const Eigen::Vector2d constraintValues
       = avbdSelfContactFrictionConstraintValues(
           first, second, positions, options.alpha);
 
   first.state.lambda = force.x();
   second.state.lambda = force.y();
+  const bool sticking = !clamped
+                        && constraintValues.norm()
+                               < std::max(0.0, options.staticFrictionTolerance);
+  first.sticking = sticking;
+  second.sticking = sticking;
   if (!clamped) {
     first.state.stiffness = std::min(
         options.maxStiffness,
@@ -744,10 +1101,10 @@ inline void addSelfContactTerms(
     const SelfContactAdjacency& selfContact,
     std::span<const Eigen::Vector3d> positions)
 {
-  if (!selfContact.active() || vertex >= selfContact.incident.size()) {
+  if (!selfContact.active() || vertex >= selfContact.vertexCount()) {
     return;
   }
-  for (const SelfContactEntry& entry : selfContact.incident[vertex]) {
+  for (const SelfContactEntry& entry : selfContact.entriesFor(vertex)) {
     const auto& n = entry.nodes;
     const contact::PrimitiveBarrierResult result
         = entry.isEdgeEdge ? contact::edgeEdgeBarrier(

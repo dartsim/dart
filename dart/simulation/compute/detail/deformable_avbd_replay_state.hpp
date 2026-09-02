@@ -50,12 +50,21 @@ namespace dvbd = dart::simulation::detail::deformable_vbd;
 /// Replay snapshot of the AVBD deformable warm-start continuation state.
 ///
 /// The live scratch component remains private to the deformable dynamics stage;
-/// replay only needs the persistent row inventories whose lambda/stiffness
-/// values affect the next AVBD solve.
+/// replay preserves both scalar row state and the per-friction-pair tangent
+/// anchors whose transported reference geometry affects the next AVBD solve.
 struct DeformableAvbdWarmStartReplayState
 {
   using RowAllocator = dart::common::StlAllocator<dvbd::AvbdScalarRowRecord>;
   using RowVector = std::vector<dvbd::AvbdScalarRowRecord, RowAllocator>;
+  using HalfSpaceAnchorAllocator
+      = dart::common::StlAllocator<dvbd::AvbdHalfSpaceTangentAnchorState>;
+  using HalfSpaceAnchorVector = std::
+      vector<dvbd::AvbdHalfSpaceTangentAnchorState, HalfSpaceAnchorAllocator>;
+  using SelfContactAnchorAllocator
+      = dart::common::StlAllocator<dvbd::AvbdSelfContactTangentAnchorState>;
+  using SelfContactAnchorVector = std::vector<
+      dvbd::AvbdSelfContactTangentAnchorState,
+      SelfContactAnchorAllocator>;
 
   DeformableAvbdWarmStartReplayState() = default;
 
@@ -63,11 +72,12 @@ struct DeformableAvbdWarmStartReplayState
       dart::common::MemoryAllocator& allocator)
     : contactRows(RowAllocator{allocator}),
       frictionRows(RowAllocator{allocator}),
+      frictionAnchors(HalfSpaceAnchorAllocator{allocator}),
       selfContactRows(RowAllocator{allocator}),
       selfContactFrictionRows(RowAllocator{allocator}),
+      selfContactFrictionAnchors(SelfContactAnchorAllocator{allocator}),
       attachmentRows(RowAllocator{allocator}),
-      springRows(RowAllocator{allocator}),
-      tetRows(RowAllocator{allocator})
+      springRows(RowAllocator{allocator})
   {
     // Empty.
   }
@@ -75,21 +85,31 @@ struct DeformableAvbdWarmStartReplayState
   entt::entity entity = entt::null;
   RowVector contactRows;
   RowVector frictionRows;
+  HalfSpaceAnchorVector frictionAnchors;
   RowVector selfContactRows;
   RowVector selfContactFrictionRows;
+  SelfContactAnchorVector selfContactFrictionAnchors;
   RowVector attachmentRows;
   RowVector springRows;
-  RowVector tetRows;
 };
 
 /// Replay snapshot of the rigid AVBD warm-start continuation state.
 ///
 /// The live inventories belong to `RigidBodyContactStage`; replay preserves
-/// only the row records whose lambda/stiffness values affect the next solve.
+/// the scalar row records plus contact-only material identities and tangent
+/// anchors whose payload affects the next solve.
 struct RigidAvbdWarmStartReplayState
 {
   using RowAllocator = dart::common::StlAllocator<dvbd::AvbdScalarRowRecord>;
   using RowVector = std::vector<dvbd::AvbdScalarRowRecord, RowAllocator>;
+  using ContactIdentityAllocator
+      = dart::common::StlAllocator<dvbd::AvbdRigidContactIdentityState>;
+  using ContactIdentityVector = std::
+      vector<dvbd::AvbdRigidContactIdentityState, ContactIdentityAllocator>;
+  using ContactAnchorAllocator
+      = dart::common::StlAllocator<dvbd::AvbdContactTangentAnchorState>;
+  using ContactAnchorVector = std::
+      vector<dvbd::AvbdContactTangentAnchorState, ContactAnchorAllocator>;
 
   RigidAvbdWarmStartReplayState() = default;
 
@@ -97,6 +117,8 @@ struct RigidAvbdWarmStartReplayState
       dart::common::MemoryAllocator& allocator)
     : normalRows(RowAllocator{allocator}),
       frictionRows(RowAllocator{allocator}),
+      contactIdentities(ContactIdentityAllocator{allocator}),
+      contactTangentAnchors(ContactAnchorAllocator{allocator}),
       jointLinearRows(RowAllocator{allocator}),
       jointAngularRows(RowAllocator{allocator}),
       motorRows(RowAllocator{allocator}),
@@ -107,6 +129,8 @@ struct RigidAvbdWarmStartReplayState
 
   RowVector normalRows;
   RowVector frictionRows;
+  ContactIdentityVector contactIdentities;
+  ContactAnchorVector contactTangentAnchors;
   RowVector jointLinearRows;
   RowVector jointAngularRows;
   RowVector motorRows;
@@ -118,6 +142,15 @@ using DeformableAvbdWarmStartReplayStates
 using AllocatedDeformableAvbdWarmStartReplayStates = std::vector<
     DeformableAvbdWarmStartReplayState,
     dart::common::StlAllocator<DeformableAvbdWarmStartReplayState>>;
+
+/// Whether any private deformable AVBD row inventory currently carries
+/// continuation state that binary serialization does not encode.
+///
+/// This query is allocation-free and is used to fail closed before writing a
+/// mid-trajectory binary checkpoint that could not resume exactly.
+[[nodiscard]] DART_SIMULATION_API bool
+hasDeformableAvbdWarmStartContinuationState(
+    const detail::WorldRegistry& registry) noexcept;
 
 [[nodiscard]] DART_SIMULATION_API DeformableAvbdWarmStartReplayStates
 captureDeformableAvbdWarmStartReplayState(
@@ -131,5 +164,22 @@ captureDeformableAvbdWarmStartReplayState(
 DART_SIMULATION_API void restoreDeformableAvbdWarmStartReplayState(
     detail::WorldRegistry& registry,
     std::span<const DeformableAvbdWarmStartReplayState> replayStates);
+
+DART_SIMULATION_API void restoreDeformableAvbdWarmStartReplayState(
+    detail::WorldRegistry& registry,
+    std::span<const DeformableAvbdWarmStartReplayState> replayStates,
+    dart::common::MemoryAllocator& allocator);
+
+/// Consume a previously captured live-state snapshot during replay rollback.
+///
+/// Every referenced scratch component existed when the snapshot was captured,
+/// and normal replay restoration never removes those components. Moving the
+/// allocator-backed row payloads back into that retained storage therefore
+/// restores continuation state without consulting the allocator. This is the
+/// failure path used after a replay restore has already mutated live state, so
+/// it must remain allocation-free and non-throwing.
+DART_SIMULATION_API void restoreDeformableAvbdWarmStartReplayStateNoAlloc(
+    detail::WorldRegistry& registry,
+    std::span<DeformableAvbdWarmStartReplayState> replayStates) noexcept;
 
 } // namespace dart::simulation::compute::avbd_replay

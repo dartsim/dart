@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/compute/detail/deformable_avbd_replay_state.hpp>
 #include <dart/simulation/detail/deformable_vbd/block_descent.hpp>
 #include <dart/simulation/detail/deformable_vbd/contact_kernel.hpp>
 
@@ -39,13 +40,17 @@
 #include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
+#include <array>
 #include <functional>
+#include <limits>
 #include <vector>
 
 #include <cmath>
 #include <cstdint>
 
 namespace vbd = dart::simulation::detail::deformable_vbd;
+namespace dc = dart::simulation::detail::deformable_contact;
+namespace sim = dart::simulation;
 namespace common = dart::common;
 
 namespace {
@@ -111,17 +116,65 @@ TEST(VbdContact, SelfContactAdjacencyUsesProvidedAllocator)
   const auto allocationsBefore = allocator.getAllocationCount();
 
   vbd::SelfContactAdjacency adjacency(allocator);
-  adjacency.reserve(/*vertexCount=*/4, /*candidateCapacity=*/8);
+  adjacency.reserve(/*vertexCount=*/4, /*candidateCapacity=*/2);
 
   EXPECT_GT(allocator.getAllocationCount(), allocationsBefore);
-  ASSERT_EQ(adjacency.incident.size(), 4u);
   EXPECT_EQ(
-      adjacency.incident.get_allocator(),
-      common::StlAllocator<vbd::SelfContactAdjacency::IncidentVector>{
-          allocator});
-  EXPECT_EQ(
-      adjacency.incident[0].get_allocator(),
+      adjacency.entries().get_allocator(),
       common::StlAllocator<vbd::SelfContactEntry>{allocator});
+  EXPECT_GE(adjacency.entries().capacity(), 8u);
+}
+
+//==============================================================================
+TEST(VbdContact, SelfContactAdjacencyUsesBoundedCsrStorage)
+{
+  constexpr std::size_t vertexCount = 1000u;
+  dc::ContactCandidateSet candidates;
+  candidates.pointTriangleCandidates.push_back({0u, 0u, 0.0});
+  const std::vector<sim::DeformableSurfaceTriangle> triangles = {{1u, 2u, 3u}};
+
+  vbd::SelfContactAdjacency adjacency;
+  adjacency.reserve(vertexCount, /*candidateCapacity=*/1u);
+  adjacency.rebuild(
+      vertexCount,
+      candidates,
+      triangles,
+      /*squaredActivationDistance=*/1e-4,
+      /*stiffness=*/1e5);
+
+  ASSERT_EQ(adjacency.vertexCount(), vertexCount);
+  EXPECT_EQ(adjacency.entries().size(), 4u);
+  EXPECT_GE(adjacency.entries().capacity(), 4u);
+  EXPECT_LT(adjacency.entries().capacity(), vertexCount);
+  for (std::size_t vertex = 0u; vertex < 4u; ++vertex) {
+    ASSERT_EQ(adjacency.entriesFor(vertex).size(), 1u);
+  }
+  for (std::size_t vertex = 4u; vertex < vertexCount; ++vertex) {
+    EXPECT_TRUE(adjacency.entriesFor(vertex).empty());
+  }
+}
+
+//==============================================================================
+TEST(VbdContact, SelfContactAdjacencyDoesNotAllocateWithinPreparedCapacity)
+{
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeListAllocator();
+  vbd::SelfContactAdjacency adjacency(allocator);
+  adjacency.reserve(/*vertexCount=*/8u, /*candidateCapacity=*/2u);
+  const std::size_t allocatedAfterReserve = allocator.getAllocatedSize();
+  const std::size_t allocationsAfterReserve = allocator.getAllocationCount();
+
+  dc::ContactCandidateSet candidates;
+  candidates.pointTriangleCandidates.push_back({0u, 0u, 0.0});
+  const std::vector<sim::DeformableSurfaceTriangle> triangles
+      = {{1u, 2u, 3u}, {5u, 6u, 7u}};
+  adjacency.rebuild(8u, candidates, triangles, 1e-4, 1e5);
+
+  candidates.pointTriangleCandidates.push_back({4u, 1u, 0.0});
+  adjacency.rebuild(8u, candidates, triangles, 1e-4, 1e5);
+  EXPECT_EQ(adjacency.entries().size(), 8u);
+  EXPECT_EQ(allocator.getAllocatedSize(), allocatedAfterReserve);
+  EXPECT_EQ(allocator.getAllocationCount(), allocationsAfterReserve);
 }
 
 //==============================================================================
@@ -248,7 +301,7 @@ TEST(VbdContact, AvbdFrictionTangentPairProjectsStaticForceToCone)
 }
 
 //==============================================================================
-TEST(VbdContact, AvbdFrictionTangentPairSwitchesToDynamicSlipDirection)
+TEST(VbdContact, AvbdFrictionTangentPairProjectsAugmentedTrialFromBoundary)
 {
   vbd::AvbdHalfSpaceFrictionRow rowX;
   rowX.vertex = 0;
@@ -270,18 +323,229 @@ TEST(VbdContact, AvbdFrictionTangentPairSwitchesToDynamicSlipDirection)
   options.alpha = 0.0;
   options.beta = 100.0;
 
-  ASSERT_FALSE(vbd::avbdFrictionPreviousDualInsideCone(rowX, rowY));
-  const Eigen::Vector2d force = vbd::avbdHalfSpaceFrictionTangentPairForce(
-      Vec3(0.0, 2.0, 0.0), rowX, rowY, options);
-  EXPECT_NEAR(force.x(), 0.0, 1e-12);
-  EXPECT_NEAR(force.y(), -5.0, 1e-12);
+  ASSERT_TRUE(vbd::avbdFrictionPreviousDualInsideCone(rowX, rowY));
+  const Vec3 position(0.0, 2.0, 0.0);
+  const Eigen::Vector2d constraintValues
+      = vbd::avbdHalfSpaceFrictionConstraintValues(
+          position, rowX, rowY, options.alpha);
+  const Eigen::Vector2d trial(
+      rowX.state.stiffness * constraintValues.x() + rowX.state.lambda,
+      rowY.state.stiffness * constraintValues.y() + rowY.state.lambda);
+  ASSERT_GT(trial.norm(), 5.0);
 
-  vbd::updateAvbdHalfSpaceFrictionTangentPair(
-      rowX, rowY, Vec3(0.0, 2.0, 0.0), options);
-  EXPECT_NEAR(rowX.state.lambda, 0.0, 1e-12);
-  EXPECT_NEAR(rowY.state.lambda, -5.0, 1e-12);
+  bool clamped = false;
+  const Eigen::Vector2d force = vbd::avbdHalfSpaceFrictionTangentPairForce(
+      position, rowX, rowY, options, &clamped);
+  const Eigen::Vector2d expected = 5.0 * trial.normalized();
+  EXPECT_TRUE(clamped);
+  EXPECT_TRUE(force.isApprox(expected, 1e-12));
+  EXPECT_NE(force.x(), 0.0);
+
+  vbd::updateAvbdHalfSpaceFrictionTangentPair(rowX, rowY, position, options);
+  EXPECT_NEAR(rowX.state.lambda, expected.x(), 1e-12);
+  EXPECT_NEAR(rowY.state.lambda, expected.y(), 1e-12);
   EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
   EXPECT_DOUBLE_EQ(rowY.state.stiffness, 20.0);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionBoundaryCanReturnAndRestick)
+{
+  vbd::AvbdHalfSpaceFrictionRow rowX;
+  rowX.vertex = 0;
+  rowX.stepStartPosition = Vec3::Zero();
+  rowX.axis = Vec3::UnitX();
+  rowX.state.stiffness = 10.0;
+  rowX.state.lambda = 5.0;
+  rowX.bounds = vbd::avbdFrictionTangentBounds(5.0);
+
+  vbd::AvbdHalfSpaceFrictionRow rowY = rowX;
+  rowY.axis = Vec3::UnitY();
+  rowY.state.stiffness = 20.0;
+  rowY.state.lambda = 0.0;
+
+  vbd::AvbdHalfSpaceFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 100.0;
+
+  ASSERT_TRUE(vbd::avbdFrictionPreviousDualInsideCone(rowX, rowY));
+  bool clamped = true;
+  const Eigen::Vector2d boundaryForce
+      = vbd::avbdHalfSpaceFrictionTangentPairForce(
+          Vec3::Zero(), rowX, rowY, options, &clamped);
+  EXPECT_FALSE(clamped);
+  EXPECT_NEAR(boundaryForce.norm(), 5.0, 1e-12);
+
+  const Vec3 subThresholdPosition(5e-7, 0.0, 0.0);
+  const Eigen::Vector2d returnedForce
+      = vbd::avbdHalfSpaceFrictionTangentPairForce(
+          subThresholdPosition, rowX, rowY, options, &clamped);
+  EXPECT_FALSE(clamped);
+  EXPECT_LT(returnedForce.norm(), 5.0);
+
+  vbd::updateAvbdHalfSpaceFrictionTangentPair(
+      rowX, rowY, subThresholdPosition, options);
+  EXPECT_TRUE(rowX.sticking);
+  EXPECT_TRUE(rowY.sticking);
+  EXPECT_GT(rowX.state.stiffness, 10.0);
+
+  rowX.state.stiffness = 10.0;
+  rowX.state.lambda = 5.0;
+  rowX.sticking = true;
+  rowY.state.stiffness = 20.0;
+  rowY.state.lambda = 0.0;
+  rowY.sticking = true;
+  const Vec3 residualSlipPosition(0.01, 0.0, 0.0);
+  const Eigen::Vector2d residualForce
+      = vbd::avbdHalfSpaceFrictionTangentPairForce(
+          residualSlipPosition, rowX, rowY, options, &clamped);
+  EXPECT_FALSE(clamped);
+  EXPECT_LT(residualForce.norm(), 5.0);
+
+  vbd::updateAvbdHalfSpaceFrictionTangentPair(
+      rowX, rowY, residualSlipPosition, options);
+  EXPECT_FALSE(rowX.sticking);
+  EXPECT_FALSE(rowY.sticking);
+  EXPECT_GT(rowX.state.stiffness, 10.0);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdShrunkLiveConeResetsPersistedHalfSpaceAnchor)
+{
+  vbd::AvbdScalarRowState first;
+  first.lambda = 3.0;
+  vbd::AvbdScalarRowState second;
+  second.lambda = 4.0;
+  vbd::AvbdHalfSpaceTangentAnchorState anchor;
+  anchor.key = {1u, 2u, 3u, 4u, 5u};
+  anchor.accumulatedDisplacement = Vec3(0.25, 0.0, -0.5);
+  anchor.basis = {Vec3::UnitX(), Vec3::UnitZ()};
+  anchor.vertex = 7u;
+  anchor.valid = true;
+  anchor.sticking = true;
+  const auto key = anchor.key;
+
+  EXPECT_TRUE(
+      vbd::projectAvbdHalfSpaceFrictionWarmStartToLiveCone(
+          first, second, anchor, /*forceLimit=*/2.0));
+  EXPECT_NEAR(first.lambda, 1.2, 1e-12);
+  EXPECT_NEAR(second.lambda, 1.6, 1e-12);
+  EXPECT_NEAR(std::hypot(first.lambda, second.lambda), 2.0, 1e-12);
+  EXPECT_FALSE(anchor.sticking);
+  EXPECT_TRUE(anchor.accumulatedDisplacement.isZero(0.0));
+  EXPECT_TRUE(anchor.valid);
+  EXPECT_EQ(anchor.key, key);
+  EXPECT_EQ(anchor.vertex, 7u);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionZeroConeIsInactive)
+{
+  vbd::AvbdHalfSpaceFrictionRow rowX;
+  rowX.stepStartPosition = Vec3::Zero();
+  rowX.axis = Vec3::UnitX();
+  rowX.state.stiffness = 10.0;
+  rowX.bounds = vbd::avbdFrictionTangentBounds(0.0);
+  vbd::AvbdHalfSpaceFrictionRow rowY = rowX;
+  rowY.axis = Vec3::UnitY();
+  vbd::AvbdHalfSpaceFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 2.0;
+
+  const auto setCancellingDual = [&](const Vec3& position) {
+    const Eigen::Vector2d residual = vbd::avbdHalfSpaceFrictionConstraintValues(
+        position, rowX, rowY, options.alpha);
+    rowX.state.lambda = -rowX.state.stiffness * residual.x();
+    rowY.state.lambda = -rowY.state.stiffness * residual.y();
+    return residual;
+  };
+
+  const Vec3 slidingPosition(0.1, 0.0, 0.0);
+  const Eigen::Vector2d slidingResidual = setCancellingDual(slidingPosition);
+  ASSERT_GT(slidingResidual.norm(), options.staticFrictionTolerance);
+  bool clamped = true;
+  const Eigen::Vector2d force = vbd::avbdHalfSpaceFrictionTangentPairForce(
+      slidingPosition, rowX, rowY, options, &clamped);
+  EXPECT_FALSE(clamped);
+  EXPECT_TRUE(force.isZero(0.0));
+  vbd::VertexBlock slidingBlock;
+  EXPECT_TRUE(
+      vbd::addAvbdHalfSpaceFrictionTangentPair(
+          slidingBlock, slidingPosition, rowX, rowY, options)
+          .isZero(0.0));
+  EXPECT_TRUE(slidingBlock.force.isZero(0.0));
+  EXPECT_TRUE(slidingBlock.hessian.isZero(0.0));
+  vbd::updateAvbdHalfSpaceFrictionTangentPair(
+      rowX, rowY, slidingPosition, options);
+  EXPECT_FALSE(rowX.sticking);
+  EXPECT_FALSE(rowY.sticking);
+  EXPECT_DOUBLE_EQ(rowX.state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(rowY.state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, 10.0);
+
+  rowX.state.stiffness = 10.0;
+  rowY.state.stiffness = 10.0;
+  const Vec3 stickingPosition(1e-6, 0.0, 0.0);
+  const Eigen::Vector2d stickingResidual = setCancellingDual(stickingPosition);
+  ASSERT_LT(stickingResidual.norm(), options.staticFrictionTolerance);
+  vbd::updateAvbdHalfSpaceFrictionTangentPair(
+      rowX, rowY, stickingPosition, options);
+  EXPECT_FALSE(rowX.sticking);
+  EXPECT_FALSE(rowY.sticking);
+  EXPECT_DOUBLE_EQ(rowX.state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(rowY.state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, 10.0);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionRejectsNonfiniteConeAndAugmentedTrial)
+{
+  vbd::AvbdHalfSpaceFrictionRow rowX;
+  rowX.axis = Vec3::UnitX();
+  rowX.state = {/*stiffness=*/10.0, /*lambda=*/3.0};
+  rowX.bounds = {-5.0, 5.0};
+  rowX.accumulatedTangentialDisplacement = Vec3(0.25, 0.5, 0.0);
+  rowX.sticking = true;
+  vbd::AvbdHalfSpaceFrictionRow rowY = rowX;
+  rowY.axis = Vec3::UnitY();
+  rowY.state.lambda = -4.0;
+
+  vbd::setAvbdHalfSpaceFrictionTangentPairForceLimit(
+      rowX, rowY, std::numeric_limits<double>::infinity());
+  for (const auto* row : {&rowX, &rowY}) {
+    EXPECT_DOUBLE_EQ(row->bounds.lower, 0.0);
+    EXPECT_DOUBLE_EQ(row->bounds.upper, 0.0);
+    EXPECT_DOUBLE_EQ(row->state.lambda, 0.0);
+    EXPECT_FALSE(row->sticking);
+    EXPECT_TRUE(row->accumulatedTangentialDisplacement.isZero(0.0));
+  }
+
+  rowX.bounds = {-5.0, 5.0};
+  rowY.bounds = rowX.bounds;
+  rowX.state.lambda = std::numeric_limits<double>::infinity();
+  bool valid = true;
+  const vbd::AvbdHalfSpaceFrictionOptions options;
+  EXPECT_TRUE(
+      vbd::avbdHalfSpaceFrictionTangentPairForce(
+          Vec3::Zero(), rowX, rowY, options, nullptr, &valid)
+          .isZero(0.0));
+  EXPECT_FALSE(valid);
+
+  vbd::VertexBlock block;
+  EXPECT_TRUE(
+      vbd::addAvbdHalfSpaceFrictionTangentPair(
+          block, Vec3::Zero(), rowX, rowY, options)
+          .isZero(0.0));
+  EXPECT_TRUE(block.force.isZero(0.0));
+  EXPECT_TRUE(block.hessian.isZero(0.0));
+  vbd::updateAvbdHalfSpaceFrictionTangentPair(
+      rowX, rowY, Vec3::Zero(), options);
+  EXPECT_DOUBLE_EQ(rowX.state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(rowY.state.lambda, 0.0);
+  EXPECT_FALSE(rowX.sticking);
+  EXPECT_FALSE(rowY.sticking);
 }
 
 //==============================================================================
@@ -521,6 +785,199 @@ TEST(VbdContact, AvbdFrictionDualProjectionPreservesWorldImpulse)
 }
 
 //==============================================================================
+TEST(VbdContact, AvbdFrictionConstraintKeepsPersistentStickingAnchor)
+{
+  vbd::AvbdHalfSpaceFrictionRow row;
+  row.stepStartPosition = Vec3(10.0, 0.0, 0.0);
+  row.axis = Vec3::UnitX();
+  row.accumulatedTangentialDisplacement = Vec3(0.25, 0.0, 0.0);
+
+  EXPECT_NEAR(
+      vbd::avbdHalfSpaceFrictionConstraintValue(
+          row.stepStartPosition,
+          row.stepStartPosition,
+          row.axis,
+          row.accumulatedTangentialDisplacement),
+      -0.25,
+      1e-12);
+  EXPECT_NEAR(
+      vbd::avbdHalfSpaceFrictionConstraintValue(
+          row.stepStartPosition + Vec3(0.05, 0.0, 0.0),
+          row.stepStartPosition,
+          row.axis,
+          row.accumulatedTangentialDisplacement),
+      -0.30,
+      1e-12);
+}
+
+//==============================================================================
+TEST(VbdContact, DeformableFrictionAnchorSurvivesInventoryReplayAndSync)
+{
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeListAllocator();
+  std::array<vbd::AvbdScalarRowDescriptor, 2> descriptors;
+  for (std::uint8_t axis = 0u; axis < 2u; ++axis) {
+    descriptors[axis].key.role = vbd::AvbdScalarRowRole::FrictionTangent;
+    descriptors[axis].key.objectA = 1u;
+    descriptors[axis].key.objectB = 2u;
+    descriptors[axis].key.featureA = 7u;
+    descriptors[axis].key.featureB = 9u;
+    descriptors[axis].key.axis = axis;
+    descriptors[axis].kind = vbd::AvbdScalarRowKind::HardConstraint;
+    descriptors[axis].bounds = vbd::avbdFrictionTangentBounds(10.0);
+    descriptors[axis].startStiffness = 100.0;
+  }
+
+  vbd::AvbdScalarRowInventory live(allocator);
+  vbd::AvbdRowWarmStartOptions options;
+  live.syncActiveRows(descriptors, options);
+  live[0].state.lambda = 3.0;
+  live[1].state.lambda = -4.0;
+
+  vbd::AvbdHalfSpaceTangentAnchorInventory liveAnchors(allocator);
+  const vbd::AvbdDeformableTangentAnchorKey key
+      = vbd::makeAvbdDeformableTangentAnchorKey(descriptors[0].key);
+  const std::array<vbd::AvbdDeformableTangentAnchorKey, 1> keys{key};
+  liveAnchors.syncActiveKeys(keys);
+  liveAnchors[0].valid = true;
+  liveAnchors[0].sticking = true;
+  liveAnchors[0].vertex = 7u;
+  liveAnchors[0].accumulatedDisplacement = Vec3(0.125, 0.0, -0.25);
+  liveAnchors[0].basis = {Vec3::UnitX(), Vec3::UnitZ()};
+
+  using ReplayState = dart::simulation::compute::avbd_replay::
+      DeformableAvbdWarmStartReplayState;
+  ReplayState replay(allocator);
+  replay.frictionRows.assign(live.records().begin(), live.records().end());
+  replay.frictionAnchors.assign(
+      liveAnchors.records().begin(), liveAnchors.records().end());
+  EXPECT_EQ(
+      replay.frictionAnchors.get_allocator(),
+      ReplayState::HalfSpaceAnchorAllocator{allocator});
+  ASSERT_EQ(replay.frictionRows.size(), 2u);
+  ASSERT_EQ(replay.frictionAnchors.size(), 1u);
+  EXPECT_DOUBLE_EQ(replay.frictionRows[0].state.lambda, 3.0);
+  EXPECT_DOUBLE_EQ(replay.frictionRows[1].state.lambda, -4.0);
+
+  // Replay restore copies the scalar rows and the pair sidecar independently.
+  // A same-identity sync preserves the anchor exactly rather than reverting
+  // the sticking reference to x^t.
+  vbd::AvbdScalarRowInventory restored(allocator);
+  restored.records().assign(
+      replay.frictionRows.begin(), replay.frictionRows.end());
+  restored.syncActiveRows(descriptors, options);
+  vbd::AvbdHalfSpaceTangentAnchorInventory restoredAnchors(allocator);
+  restoredAnchors.records().assign(
+      replay.frictionAnchors.begin(), replay.frictionAnchors.end());
+  restoredAnchors.syncActiveKeys(keys);
+
+  const auto& anchor = restoredAnchors[0];
+  EXPECT_TRUE(anchor.valid);
+  EXPECT_TRUE(anchor.sticking);
+  EXPECT_EQ(anchor.vertex, 7u);
+  EXPECT_NEAR(
+      (anchor.accumulatedDisplacement - Vec3(0.125, 0.0, -0.25)).norm(),
+      0.0,
+      1e-12);
+  EXPECT_TRUE((anchor.basis[0] - Vec3::UnitX()).isZero(0.0));
+  EXPECT_TRUE((anchor.basis[1] - Vec3::UnitZ()).isZero(0.0));
+
+  // Losing pair identity must cold-start both scalar duals and the sidecar.
+  auto changedDescriptors = descriptors;
+  changedDescriptors[0].key.featureB += 1u;
+  changedDescriptors[1].key.featureB += 1u;
+  restored.syncActiveRows(changedDescriptors, options);
+  const std::array<vbd::AvbdDeformableTangentAnchorKey, 1> changedKeys{
+      vbd::makeAvbdDeformableTangentAnchorKey(changedDescriptors[0].key)};
+  restoredAnchors.syncActiveKeys(changedKeys);
+  EXPECT_DOUBLE_EQ(restored[0].state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(restored[1].state.lambda, 0.0);
+  EXPECT_FALSE(restoredAnchors[0].valid);
+  EXPECT_EQ(restoredAnchors[0].key, changedKeys[0]);
+}
+
+//==============================================================================
+TEST(VbdContact, SelfContactPairAnchorReplayPreservesStencilExactly)
+{
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeListAllocator();
+  using ReplayState = dart::simulation::compute::avbd_replay::
+      DeformableAvbdWarmStartReplayState;
+  ReplayState replay(allocator);
+
+  vbd::AvbdSelfContactTangentAnchorState source;
+  source.key = {3u, 3u, 11u, 17u, 1u};
+  source.accumulatedDisplacement = Vec3(0.25, -0.5, 0.75);
+  source.basis = {Vec3::UnitY(), Vec3::UnitZ()};
+  source.referencePositions
+      = {Vec3(-0.7, 0.0, 0.01),
+         Vec3(0.3, 0.0, 0.01),
+         Vec3(0.0, -0.2, 0.0),
+         Vec3(0.0, 0.8, 0.0)};
+  source.nodes = {7u, 8u, 19u, 23u};
+  source.isEdgeEdge = true;
+  source.valid = true;
+  source.sticking = true;
+  replay.selfContactFrictionAnchors.push_back(source);
+
+  vbd::AvbdSelfContactTangentAnchorInventory restored(allocator);
+  restored.records().assign(
+      replay.selfContactFrictionAnchors.begin(),
+      replay.selfContactFrictionAnchors.end());
+  const std::array<vbd::AvbdDeformableTangentAnchorKey, 1> keys{source.key};
+  restored.syncActiveKeys(keys);
+
+  ASSERT_EQ(restored.size(), 1u);
+  const auto& anchor = restored[0];
+  EXPECT_EQ(anchor.key, source.key);
+  EXPECT_EQ(anchor.nodes, source.nodes);
+  for (std::size_t i = 0u; i < anchor.referencePositions.size(); ++i) {
+    EXPECT_TRUE((anchor.referencePositions[i] - source.referencePositions[i])
+                    .isZero(0.0));
+  }
+  for (std::size_t i = 0u; i < anchor.basis.size(); ++i) {
+    EXPECT_TRUE((anchor.basis[i] - source.basis[i]).isZero(0.0));
+  }
+  EXPECT_TRUE((anchor.accumulatedDisplacement - source.accumulatedDisplacement)
+                  .isZero(0.0));
+  EXPECT_EQ(anchor.isEdgeEdge, source.isEdgeEdge);
+  EXPECT_EQ(anchor.valid, source.valid);
+  EXPECT_EQ(anchor.sticking, source.sticking);
+  EXPECT_EQ(
+      replay.selfContactFrictionAnchors.get_allocator(),
+      ReplayState::SelfContactAnchorAllocator{allocator});
+  EXPECT_EQ(
+      restored.records().get_allocator(),
+      common::StlAllocator<vbd::AvbdSelfContactTangentAnchorState>{allocator});
+}
+
+//==============================================================================
+TEST(VbdContact, DeformablePairAnchorsDoNotBloatEveryScalarRow)
+{
+  // Leave modest room for scalar-row metadata growth while rejecting the
+  // former ~200-byte deformable PT/EE payload on every row family and tangent
+  // axis. Contact-owned anchors belong in pair sidecars.
+  static_assert(sizeof(vbd::AvbdScalarRowRecord) <= 320u);
+  EXPECT_LE(sizeof(vbd::AvbdScalarRowRecord), 320u);
+
+  constexpr std::size_t pairCount = 4096u;
+  common::MemoryManager memoryManager;
+  auto& allocator = memoryManager.getFreeListAllocator();
+  vbd::AvbdHalfSpaceTangentAnchorInventory anchors(allocator);
+  anchors.reserve(pairCount);
+  anchors.syncActiveKeysByIndex(pairCount, [](std::size_t pair) {
+    return vbd::AvbdDeformableTangentAnchorKey{1u, 2u, pair, pair + 1u, 0u};
+  });
+
+  EXPECT_EQ(anchors.size(), pairCount);
+  EXPECT_GE(anchors.records().capacity(), pairCount);
+  EXPECT_EQ(
+      anchors.records().get_allocator(),
+      common::StlAllocator<vbd::AvbdHalfSpaceTangentAnchorState>{allocator});
+  EXPECT_EQ(2u * anchors.size(), 8192u);
+}
+
+//==============================================================================
 TEST(VbdContact, InactiveAbovePlaneAndHessianIsPsd)
 {
   vbd::ContactPlane plane;
@@ -717,6 +1174,171 @@ TEST(VbdContact, AvbdFrictionTangentRowsReduceTangentialMotionDuringSolve)
   EXPECT_LT(positions[0].x(), 0.6);
   EXPECT_LT(frictionRows[0].state.lambda, 0.0);
   EXPECT_GT(frictionRows[0].state.stiffness, 200.0);
+}
+
+//==============================================================================
+TEST(VbdContact, AvbdFrictionUsesCurrentNormalForceOnFirstImpactStep)
+{
+  std::vector<Vec3> positions = {Vec3(0.0, -0.05, 0.0)};
+  const std::vector<double> masses = {1.0};
+  const std::vector<std::uint8_t> fixed = {0u};
+  const std::vector<Vec3> inertialTargets = {Vec3(0.5, -0.05, 0.0)};
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(1u, springs);
+  const auto adjacency = vbd::SpringAdjacency::build(1u, springs);
+
+  vbd::AvbdHalfSpaceContactRow normal;
+  normal.vertex = 0u;
+  normal.plane.normal = Vec3::UnitY();
+  normal.plane.stiffness = 1000.0;
+  normal.state.stiffness = 1000.0;
+  normal.state.lambda = 0.0;
+  std::vector<vbd::AvbdHalfSpaceContactRow> normalRows = {normal};
+  std::vector<vbd::AvbdPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdSpringFiniteStiffnessRow> springRows;
+
+  vbd::AvbdHalfSpaceFrictionRow tangentX;
+  tangentX.vertex = 0u;
+  tangentX.stepStartPosition = positions[0];
+  tangentX.axis = Vec3::UnitX();
+  tangentX.state.stiffness = 200.0;
+  tangentX.bounds = vbd::avbdFrictionTangentBounds(0.0);
+  tangentX.normalRow = 0u;
+  tangentX.frictionCoefficient = 0.5;
+  vbd::AvbdHalfSpaceFrictionRow tangentZ = tangentX;
+  tangentZ.axis = Vec3::UnitZ();
+  std::vector<vbd::AvbdHalfSpaceFrictionRow> frictionRows
+      = {tangentX, tangentZ};
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 1u;
+  vbd::AvbdHalfSpaceContactOptions contactOptions;
+  contactOptions.alpha = 0.0;
+  contactOptions.beta = 1.0;
+  vbd::AvbdPointAttachmentOptions attachmentOptions;
+  vbd::AvbdSpringFiniteStiffnessOptions springOptions;
+  vbd::AvbdHalfSpaceFrictionOptions frictionOptions;
+  frictionOptions.alpha = 0.0;
+  frictionOptions.beta = 1.0;
+
+  vbd::blockDescentMassSpringAvbdRows(
+      positions,
+      masses,
+      fixed,
+      inertialTargets,
+      springs,
+      0.0,
+      0.1,
+      normalRows,
+      attachments,
+      springRows,
+      coloring,
+      adjacency,
+      options,
+      contactOptions,
+      attachmentOptions,
+      springOptions,
+      &frictionRows,
+      &frictionOptions);
+
+  const double tangentForce
+      = std::hypot(frictionRows[0].state.lambda, frictionRows[1].state.lambda);
+  ASSERT_GT(normalRows[0].state.lambda, 0.0);
+  EXPECT_GT(
+      vbd::avbdFrictionTangentPairForceLimit(frictionRows[0], frictionRows[1]),
+      0.0);
+  EXPECT_GT(tangentForce, 0.0);
+  EXPECT_LE(
+      tangentForce,
+      0.5 * normalRows[0].state.lambda
+          + 64.0 * std::numeric_limits<double>::epsilon());
+}
+
+//==============================================================================
+TEST(VbdContact, PersistentAnchorPreventsLongHorizonSubCoulombCreep)
+{
+  std::vector<Vec3> positions = {Vec3(0.0, -0.05, 0.0)};
+  const std::vector<double> masses = {1.0};
+  const std::vector<std::uint8_t> fixed = {0u};
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(1u, springs);
+  const auto adjacency = vbd::SpringAdjacency::build(1u, springs);
+
+  vbd::AvbdHalfSpaceContactRow normal;
+  normal.vertex = 0u;
+  normal.plane.normal = Vec3::UnitY();
+  normal.plane.stiffness = 1000.0;
+  normal.state.stiffness = 1000.0;
+  std::vector<vbd::AvbdHalfSpaceContactRow> normalRows = {normal};
+  std::vector<vbd::AvbdPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdSpringFiniteStiffnessRow> springRows;
+
+  vbd::AvbdHalfSpaceFrictionRow tangentX;
+  tangentX.vertex = 0u;
+  tangentX.axis = Vec3::UnitX();
+  tangentX.state.stiffness = 500.0;
+  tangentX.normalRow = 0u;
+  tangentX.frictionCoefficient = 0.8;
+  vbd::AvbdHalfSpaceFrictionRow tangentZ = tangentX;
+  tangentZ.axis = Vec3::UnitZ();
+  std::vector<vbd::AvbdHalfSpaceFrictionRow> frictionRows
+      = {tangentX, tangentZ};
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 8u;
+  vbd::AvbdHalfSpaceContactOptions contactOptions;
+  contactOptions.alpha = 0.0;
+  contactOptions.beta = 10.0;
+  vbd::AvbdPointAttachmentOptions attachmentOptions;
+  vbd::AvbdSpringFiniteStiffnessOptions springOptions;
+  vbd::AvbdHalfSpaceFrictionOptions frictionOptions;
+  frictionOptions.alpha = 0.0;
+  frictionOptions.beta = 10.0;
+  // This test drives each step by 1e-4, so use an explicitly larger sticking
+  // displacement threshold while exercising the anchor over 512 steps.
+  frictionOptions.staticFrictionTolerance = 1e-3;
+
+  Eigen::Vector3d accumulated = Eigen::Vector3d::Zero();
+  for (std::size_t step = 0u; step < 512u; ++step) {
+    const Vec3 start = positions[0];
+    const std::vector<Vec3> inertialTargets
+        = {Vec3(start.x() + 1e-4, -0.05, start.z())};
+    for (auto& row : frictionRows) {
+      row.stepStartPosition = start;
+      row.accumulatedTangentialDisplacement = accumulated;
+      row.previousConstraintValue = vbd::avbdHalfSpaceFrictionConstraintValue(
+          start, start, row.axis, accumulated);
+    }
+
+    vbd::blockDescentMassSpringAvbdRows(
+        positions,
+        masses,
+        fixed,
+        inertialTargets,
+        springs,
+        0.0,
+        0.1,
+        normalRows,
+        attachments,
+        springRows,
+        coloring,
+        adjacency,
+        options,
+        contactOptions,
+        attachmentOptions,
+        springOptions,
+        &frictionRows,
+        &frictionOptions);
+
+    accumulated = frictionRows[0].sticking
+                      ? vbd::avbdHalfSpaceFrictionTotalTangentialDisplacement(
+                            frictionRows[0], positions[0])
+                      : Eigen::Vector3d::Zero();
+  }
+
+  EXPECT_LT(std::abs(positions[0].x()), 2e-3);
+  EXPECT_TRUE(frictionRows[0].sticking);
+  EXPECT_TRUE(frictionRows[1].sticking);
 }
 
 //==============================================================================

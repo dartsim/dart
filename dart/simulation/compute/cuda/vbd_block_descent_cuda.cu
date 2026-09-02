@@ -62,14 +62,26 @@ __device__ inline void solveSym3(
     T& dy,
     T& dz)
 {
+  dx = T(0);
+  dy = T(0);
+  dz = T(0);
+  if (!isfinite(h00) || !isfinite(h01) || !isfinite(h02) || !isfinite(h11)
+      || !isfinite(h12) || !isfinite(h22) || !isfinite(fx) || !isfinite(fy)
+      || !isfinite(fz)) {
+    return;
+  }
+
   const T c00 = h11 * h22 - h12 * h12;
   const T c01 = h02 * h12 - h01 * h22;
   const T c02 = h01 * h12 - h02 * h11;
+  const T leading2 = h00 * h11 - h01 * h01;
   const T det = h00 * c00 + h01 * c01 + h02 * c02;
-  if (!(det > T(0))) {
-    dx = T(0);
-    dy = T(0);
-    dz = T(0);
+  // Sylvester's criterion: determinant sign alone is insufficient because a
+  // symmetric matrix with two negative eigenvalues also has positive
+  // determinant. Requiring every leading principal minor to be finite and
+  // positive matches the CPU block solve's positive-definite policy.
+  if (!(h00 > T(0)) || !(leading2 > T(0)) || !(det > T(0))
+      || !isfinite(leading2) || !isfinite(det)) {
     return;
   }
   const T c11 = h00 * h22 - h02 * h02;
@@ -79,6 +91,32 @@ __device__ inline void solveSym3(
   dx = inv * (c00 * fx + c01 * fy + c02 * fz);
   dy = inv * (c01 * fx + c11 * fy + c12 * fz);
   dz = inv * (c02 * fx + c12 * fy + c22 * fz);
+  if (!isfinite(dx) || !isfinite(dy) || !isfinite(dz)) {
+    dx = T(0);
+    dy = T(0);
+    dz = T(0);
+  }
+}
+
+//==============================================================================
+// One-thread diagnostic kernel for mutation-sensitive tests of solveSym3.
+template <typename T>
+__global__ void solveSym3ForTestingKernel(
+    const T* hessian, const T* force, T* solution)
+{
+  solveSym3<T>(
+      hessian[0],
+      hessian[1],
+      hessian[2],
+      hessian[3],
+      hessian[4],
+      hessian[5],
+      force[0],
+      force[1],
+      force[2],
+      solution[0],
+      solution[1],
+      solution[2]);
 }
 
 //==============================================================================
@@ -322,8 +360,13 @@ __device__ inline void accumulateNeoHookeanTet(
   const DVec3<T> cof1 = cross3(c2, c0);
   const DVec3<T> cof2 = cross3(c0, c1);
   const T j = dot3(c0, cof0);
-  const T a = T(1) + mu / lambda;
-  const T jlambda = lambda * (j - a);
+  // Here mu/lambda are the no-log Smith coefficients muHat/lambdaHat.
+  // This is algebraically identical to
+  // lambdaHat * (j - (1 + muHat / lambdaHat)) for nonzero lambdaHat, but also
+  // provides the finite continuation at a raw lambdaHat of zero and avoids an
+  // overflowing muHat/lambdaHat intermediate. Engineering nu == 0 instead
+  // maps to lambdaHat == muHat.
+  const T jlambda = fma(lambda, j - T(1), -mu);
 
   const DVec3<T> p0 = mu * c0 + jlambda * cof0;
   const DVec3<T> p1 = mu * c1 + jlambda * cof1;
@@ -841,6 +884,46 @@ void vbdRolloutTetMeshCuda(VbdCudaTetRolloutProblem& problem)
   } else {
     rolloutTetMeshImpl<double>(problem);
   }
+}
+
+namespace {
+
+template <typename T>
+std::array<double, 3> solveSym3ForTestingImpl(
+    const std::array<double, 6>& hessian, const std::array<double, 3>& force)
+{
+  const std::vector<T> hostHessian(hessian.begin(), hessian.end());
+  const std::vector<T> hostForce(force.begin(), force.end());
+  std::vector<T> hostSolution(3, T(0));
+  DeviceBuffer<T> deviceHessian(hostHessian);
+  DeviceBuffer<T> deviceForce(hostForce);
+  DeviceBuffer<T> deviceSolution(hostSolution);
+
+  solveSym3ForTestingKernel<T><<<1, 1>>>(
+      deviceHessian.data(), deviceForce.data(), deviceSolution.data());
+  checkLastError("VBD symmetric 3x3 diagnostic kernel");
+  throwIfCudaError(
+      cudaDeviceSynchronize(), "VBD symmetric 3x3 diagnostic synchronize");
+  deviceSolution.copyFromDevice(
+      hostSolution, "VBD symmetric 3x3 diagnostic download");
+  return {
+      static_cast<double>(hostSolution[0]),
+      static_cast<double>(hostSolution[1]),
+      static_cast<double>(hostSolution[2])};
+}
+
+} // namespace
+
+//==============================================================================
+std::array<double, 3> solveVbdSymmetric3CudaForTesting(
+    const std::array<double, 6>& hessian,
+    const std::array<double, 3>& force,
+    bool useSinglePrecision)
+{
+  if (useSinglePrecision) {
+    return solveSym3ForTestingImpl<float>(hessian, force);
+  }
+  return solveSym3ForTestingImpl<double>(hessian, force);
 }
 
 } // namespace dart::simulation::compute::cuda

@@ -35,6 +35,8 @@
 
 #include <array>
 #include <functional>
+#include <limits>
+#include <stdexcept>
 
 #include <cmath>
 
@@ -43,6 +45,81 @@ namespace fem = dart::simulation::detail::deformable_elasticity;
 namespace {
 
 using Nodes = std::array<Eigen::Vector3d, 4>;
+
+struct PhysicalLameParameters
+{
+  double mu;
+  double lambda;
+};
+
+//==============================================================================
+// Independent engineering conversion used by the small-strain Hooke oracle.
+PhysicalLameParameters physicalLame(double youngsModulus, double poissonRatio)
+{
+  return {
+      youngsModulus / (2.0 * (1.0 + poissonRatio)),
+      youngsModulus * poissonRatio
+          / ((1.0 + poissonRatio) * (1.0 - 2.0 * poissonRatio))};
+}
+
+//==============================================================================
+std::array<Eigen::Matrix3d, 6> symmetricStrainBasis()
+{
+  std::array<Eigen::Matrix3d, 6> basis;
+  for (auto& direction : basis) {
+    direction.setZero();
+  }
+  basis[0](0, 0) = 1.0;
+  basis[1](1, 1) = 1.0;
+  basis[2](2, 2) = 1.0;
+  basis[3](0, 1) = basis[3](1, 0) = 0.5;
+  basis[4](0, 2) = basis[4](2, 0) = 0.5;
+  basis[5](1, 2) = basis[5](2, 1) = 0.5;
+  return basis;
+}
+
+//==============================================================================
+double hookeTangent(
+    const PhysicalLameParameters& physical,
+    const Eigen::Matrix3d& a,
+    const Eigen::Matrix3d& b)
+{
+  return 2.0 * physical.mu * (a.array() * b.array()).sum()
+         + physical.lambda * a.trace() * b.trace();
+}
+
+//==============================================================================
+double finiteMaterialEnergyHessian(
+    const Eigen::Matrix3d& a,
+    const Eigen::Matrix3d& b,
+    const fem::LameParameters& model)
+{
+  // The rest-zeroed log-barrier energy is assembled from O(h) terms that
+  // cancel to O(h^2). A 1e-4 step keeps that roundoff below the truncation
+  // error while remaining firmly in the infinitesimal regime.
+  constexpr double h = 1e-4;
+  const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
+  const auto energy = [&](const Eigen::Matrix3d& direction) {
+    return fem::stableNeoHookeanEnergyDensity(identity + h * direction, model);
+  };
+  return (energy(a + b) - energy(a - b) - energy(-a + b) + energy(-a - b))
+         / (4.0 * h * h);
+}
+
+//==============================================================================
+double finiteMaterialStressTangent(
+    const Eigen::Matrix3d& a,
+    const Eigen::Matrix3d& b,
+    const fem::LameParameters& model,
+    const double h = 1e-6)
+{
+  const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
+  const Eigen::Matrix3d tangent
+      = (fem::stableNeoHookeanFirstPiola(identity + h * b, model)
+         - fem::stableNeoHookeanFirstPiola(identity - h * b, model))
+        / (2.0 * h);
+  return (a.array() * tangent.array()).sum();
+}
 
 //==============================================================================
 // The canonical rest tetrahedron (det Dm = 1, rest volume 1/6).
@@ -132,11 +209,232 @@ Nodes deformedTetrahedron()
 } // namespace
 
 //==============================================================================
-TEST(FemTetElement, LameParametersMatchClosedForm)
+TEST(FemTetElement, LameParametersRemainStandardPhysicalPair)
 {
-  const fem::LameParameters lame = fem::lameParameters(1.0e5, 0.3);
-  EXPECT_NEAR(lame.mu, 1.0e5 / (2.0 * 1.3), 1e-6);
-  EXPECT_NEAR(lame.lambda, 1.0e5 * 0.3 / (1.3 * 0.4), 1e-6);
+  constexpr double youngsModulus = 1.0e5;
+  for (const double poissonRatio : {-0.5, 0.0, 0.3}) {
+    SCOPED_TRACE(poissonRatio);
+    const PhysicalLameParameters expected
+        = physicalLame(youngsModulus, poissonRatio);
+    const fem::LameParameters actual
+        = fem::lameParameters(youngsModulus, poissonRatio);
+    EXPECT_NEAR(actual.mu, expected.mu, 1e-12 * expected.mu);
+    EXPECT_NEAR(
+        actual.lambda,
+        expected.lambda,
+        1e-12 * (1.0 + std::abs(expected.lambda)));
+  }
+}
+
+//==============================================================================
+TEST(FemTetElement, StableNeoHookeanCoefficientConversionMatchesFormulas)
+{
+  constexpr double youngsModulus = 1.0e5;
+  for (const double poissonRatio : {0.0, 0.3}) {
+    SCOPED_TRACE(poissonRatio);
+    const PhysicalLameParameters physical
+        = physicalLame(youngsModulus, poissonRatio);
+    const fem::LameParameters model
+        = fem::stableNeoHookeanParameters(youngsModulus, poissonRatio);
+    EXPECT_NEAR(model.mu, (4.0 / 3.0) * physical.mu, 1e-12 * model.mu);
+    EXPECT_NEAR(
+        model.lambda,
+        physical.lambda + (5.0 / 6.0) * physical.mu,
+        1e-12 * (1.0 + std::abs(model.lambda)));
+  }
+}
+
+//==============================================================================
+TEST(FemTetElement, PublicNonlinearTetSelectorRejectsAuxeticMaterials)
+{
+  for (const double poissonRatio : {-0.9, -0.5, -1e-12}) {
+    SCOPED_TRACE(poissonRatio);
+    EXPECT_FALSE(fem::isTetMaterialPoissonRatioSupported(poissonRatio));
+    EXPECT_THROW(
+        static_cast<void>(fem::stableNeoHookeanParameters(1.0e5, poissonRatio)),
+        std::invalid_argument);
+    EXPECT_THROW(
+        static_cast<void>(fem::tetMaterialParameters(
+            1.0e5,
+            poissonRatio,
+            /*useFixedCorotational=*/false)),
+        std::invalid_argument);
+    EXPECT_THROW(
+        static_cast<void>(fem::tetMaterialParameters(
+            1.0e5,
+            poissonRatio,
+            /*useFixedCorotational=*/true)),
+        std::invalid_argument);
+  }
+  for (const double poissonRatio :
+       {0.5, std::numeric_limits<double>::quiet_NaN()}) {
+    SCOPED_TRACE(poissonRatio);
+    EXPECT_FALSE(fem::isTetMaterialPoissonRatioSupported(poissonRatio));
+    EXPECT_THROW(
+        static_cast<void>(fem::tetMaterialParameters(
+            1.0e5,
+            poissonRatio,
+            /*useFixedCorotational=*/false)),
+        std::invalid_argument);
+  }
+}
+
+//==============================================================================
+TEST(FemTetElement, TetMaterialParameterSelectorUsesModelSpecificConversion)
+{
+  constexpr double youngsModulus = 1.0e5;
+  for (const double poissonRatio : {0.0, 0.3}) {
+    SCOPED_TRACE(poissonRatio);
+    const fem::LameParameters physical
+        = fem::lameParameters(youngsModulus, poissonRatio);
+    const fem::LameParameters stable
+        = fem::stableNeoHookeanParameters(youngsModulus, poissonRatio);
+    const fem::LameParameters selectedFixed = fem::tetMaterialParameters(
+        youngsModulus, poissonRatio, /*useFixedCorotational=*/true);
+    const fem::LameParameters selectedStable = fem::tetMaterialParameters(
+        youngsModulus, poissonRatio, /*useFixedCorotational=*/false);
+    EXPECT_DOUBLE_EQ(selectedFixed.mu, physical.mu);
+    EXPECT_DOUBLE_EQ(selectedFixed.lambda, physical.lambda);
+    EXPECT_DOUBLE_EQ(selectedStable.mu, stable.mu);
+    EXPECT_DOUBLE_EQ(selectedStable.lambda, stable.lambda);
+  }
+}
+
+//==============================================================================
+// The strongly auxetic Smith log model is locally Hookean but develops a lower
+// compressed well. This pins the physical reason for the conservative public
+// rejection rather than treating it as an arbitrary input-range choice.
+TEST(FemTetElement, StronglyAuxeticLogMappingWouldCreateLowerEnergyWell)
+{
+  constexpr double youngsModulus = 6000.0;
+  constexpr double poissonRatio = -0.9;
+  const PhysicalLameParameters physical
+      = physicalLame(youngsModulus, poissonRatio);
+  const fem::LameParameters wouldBeModel{
+      (4.0 / 3.0) * physical.mu,
+      std::fma(5.0 / 6.0, physical.mu, physical.lambda)};
+  constexpr double compressedScale = 0.6;
+  const double restEnergy = fem::stableNeoHookeanEnergyDensity(
+      Eigen::Matrix3d::Identity(), wouldBeModel);
+  const double compressedEnergy = fem::stableNeoHookeanEnergyDensity(
+      compressedScale * Eigen::Matrix3d::Identity(), wouldBeModel);
+  EXPECT_DOUBLE_EQ(restEnergy, 0.0);
+  EXPECT_LT(compressedEnergy, restEnergy);
+}
+
+//==============================================================================
+TEST(FemTetElement, SupportedLogUniformScaleEnergyLandscapeIsNonnegative)
+{
+  for (const double poissonRatio : {0.0, 0.3}) {
+    SCOPED_TRACE(poissonRatio);
+    const fem::LameParameters model
+        = fem::stableNeoHookeanParameters(6000.0, poissonRatio);
+    for (const double scale : {0.0, 0.2, 0.6, 1.0, 1.4, 2.0}) {
+      SCOPED_TRACE(scale);
+      const double energy = fem::stableNeoHookeanEnergyDensity(
+          scale * Eigen::Matrix3d::Identity(), model);
+      EXPECT_GE(energy, -1e-12 * model.mu);
+      if (scale != 1.0) {
+        EXPECT_GT(energy, 0.0);
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST(FemTetElement, StableNeoHookeanExtremeFiniteInputsStayFinite)
+{
+  const double poissonRatio = std::numeric_limits<double>::denorm_min();
+  const fem::LameParameters model
+      = fem::stableNeoHookeanParameters(1e100, poissonRatio);
+  ASSERT_TRUE(std::isfinite(model.mu));
+  ASSERT_TRUE(std::isfinite(model.lambda));
+  ASSERT_GT(model.mu, 0.0);
+  ASSERT_GT(model.lambda, 0.0);
+
+  Eigen::Matrix3d f = Eigen::Matrix3d::Identity();
+  f(0, 0) = 1.1;
+  f(1, 1) = 0.9;
+  f(0, 1) = 0.05;
+  EXPECT_TRUE(std::isfinite(fem::stableNeoHookeanEnergyDensity(f, model)));
+  EXPECT_TRUE(fem::stableNeoHookeanFirstPiola(f, model).allFinite());
+  EXPECT_TRUE(fem::stableNeoHookeanEnergyHessian(f, model).allFinite());
+}
+
+//==============================================================================
+// Near nu=0.5, lambdaHat is many orders of magnitude larger than muHat. The
+// determinant coefficient must be evaluated from J-1: forming
+// lambdaHat*J-(lambdaHat+3*muHat/4) drops the muHat term and leaves nonzero
+// rest stress. A trace-free shear also isolates that term in both the analytic
+// and finite-difference Hooke tangents.
+TEST(FemTetElement, NearIncompressibleRestAndShearTangentAvoidCancellation)
+{
+  constexpr double youngsModulus = 1.0;
+  const double poissonRatio = std::nextafter(0.5, 0.0);
+  const PhysicalLameParameters physical
+      = physicalLame(youngsModulus, poissonRatio);
+  const fem::LameParameters model
+      = fem::stableNeoHookeanParameters(youngsModulus, poissonRatio);
+  ASSERT_TRUE(std::isfinite(model.mu));
+  ASSERT_TRUE(std::isfinite(model.lambda));
+  ASSERT_GT(model.lambda / model.mu, 1e14);
+
+  const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
+  EXPECT_DOUBLE_EQ(fem::stableNeoHookeanEnergyDensity(identity, model), 0.0);
+  EXPECT_DOUBLE_EQ(
+      fem::stableNeoHookeanFirstPiola(identity, model).squaredNorm(), 0.0);
+
+  Eigen::Matrix3d shear = Eigen::Matrix3d::Zero();
+  shear(0, 1) = shear(1, 0) = 0.5;
+  const Eigen::Map<const fem::Vector9d> shearDirection(shear.data());
+  const fem::Matrix9d analytic
+      = fem::stableNeoHookeanEnergyHessian(identity, model);
+  const double expected = hookeTangent(physical, shear, shear);
+  const double analyticTangent = shearDirection.dot(analytic * shearDirection);
+  const double finiteDifferenceTangent
+      = finiteMaterialStressTangent(shear, shear, model, 1e-10);
+  EXPECT_NEAR(analyticTangent, expected, 1e-12 * expected);
+  EXPECT_NEAR(finiteDifferenceTangent, expected, 1e-3 * expected);
+}
+
+//==============================================================================
+// The expected entries come directly from engineering Hooke elasticity. The
+// numerical energy/stress derivatives and the kernel's analytic 9x9 Hessian
+// are three separate routes, so this catches an internally self-consistent but
+// physically mis-parameterized stable Neo-Hookean implementation.
+TEST(FemTetElement, StableNeoHookeanSmallStrainTangentMatchesHookeLaw)
+{
+  constexpr double youngsModulus = 12345.0;
+  const auto basis = symmetricStrainBasis();
+  for (const double poissonRatio : {0.0, 0.3}) {
+    SCOPED_TRACE(poissonRatio);
+    const PhysicalLameParameters physical
+        = physicalLame(youngsModulus, poissonRatio);
+    const fem::LameParameters model
+        = fem::stableNeoHookeanParameters(youngsModulus, poissonRatio);
+    const fem::Matrix9d analytic = fem::stableNeoHookeanEnergyHessian(
+        Eigen::Matrix3d::Identity(), model);
+    for (std::size_t row = 0; row < basis.size(); ++row) {
+      const Eigen::Map<const fem::Vector9d> rowDirection(basis[row].data());
+      for (std::size_t col = 0; col < basis.size(); ++col) {
+        SCOPED_TRACE(::testing::Message() << "row=" << row << " col=" << col);
+        const Eigen::Map<const fem::Vector9d> colDirection(basis[col].data());
+        const double expected = hookeTangent(physical, basis[row], basis[col]);
+        const double energyHessian
+            = finiteMaterialEnergyHessian(basis[row], basis[col], model);
+        const double stressTangent
+            = finiteMaterialStressTangent(basis[row], basis[col], model);
+        const double analyticHessian
+            = rowDirection.dot(analytic * colDirection);
+        const double finiteDifferenceTolerance
+            = 5e-5 + 2e-5 * std::abs(expected);
+        EXPECT_NEAR(energyHessian, expected, finiteDifferenceTolerance);
+        EXPECT_NEAR(stressTangent, expected, finiteDifferenceTolerance);
+        EXPECT_NEAR(
+            analyticHessian, expected, 1e-11 * (1.0 + std::abs(expected)));
+      }
+    }
+  }
 }
 
 //==============================================================================
@@ -168,7 +466,7 @@ TEST(FemTetElement, DegenerateRestShapeIsInvalid)
       Eigen::Vector3d(0.0, 1.0, 0.0),
       Eigen::Vector3d(1.0, 1.0, 0.0),
       shape,
-      fem::lameParameters(1.0e3, 0.3));
+      fem::stableNeoHookeanParameters(1.0e3, 0.3));
   EXPECT_FALSE(result.valid);
   EXPECT_EQ(result.energy, 0.0);
 }
@@ -179,7 +477,7 @@ TEST(FemTetElement, RestStateHasZeroEnergyAndForce)
   const Nodes rest = restTetrahedron();
   const fem::TetRestShape shape
       = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
-  const fem::LameParameters lame = fem::lameParameters(1.0e4, 0.3);
+  const fem::LameParameters lame = fem::stableNeoHookeanParameters(1.0e4, 0.3);
   const fem::TetElementResult result = fem::evaluateStableNeoHookeanTet(
       rest[0], rest[1], rest[2], rest[3], shape, lame);
   ASSERT_TRUE(result.valid);
@@ -194,14 +492,17 @@ TEST(FemTetElement, GradientMatchesFiniteDifference)
   const Nodes x = deformedTetrahedron();
   const fem::TetRestShape shape
       = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
-  const fem::LameParameters lame = fem::lameParameters(1.0e3, 0.3);
+  for (const double poissonRatio : {0.0, 0.3}) {
+    SCOPED_TRACE(poissonRatio);
+    const fem::LameParameters model
+        = fem::stableNeoHookeanParameters(1.0e3, poissonRatio);
+    const fem::TetElementResult result = fem::evaluateStableNeoHookeanTet(
+        x[0], x[1], x[2], x[3], shape, model);
+    const fem::Vector12d numeric = finiteGradient(x, shape, model);
 
-  const fem::TetElementResult result
-      = fem::evaluateStableNeoHookeanTet(x[0], x[1], x[2], x[3], shape, lame);
-  const fem::Vector12d numeric = finiteGradient(x, shape, lame);
-
-  const double tol = 1e-5 * (1.0 + numeric.cwiseAbs().maxCoeff());
-  EXPECT_LT((result.gradient - numeric).cwiseAbs().maxCoeff(), tol);
+    const double tolerance = 1e-5 * (1.0 + numeric.cwiseAbs().maxCoeff());
+    EXPECT_LT((result.gradient - numeric).cwiseAbs().maxCoeff(), tolerance);
+  }
 }
 
 //==============================================================================
@@ -211,18 +512,21 @@ TEST(FemTetElement, HessianMatchesFiniteDifference)
   const Nodes x = deformedTetrahedron();
   const fem::TetRestShape shape
       = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
-  const fem::LameParameters lame = fem::lameParameters(1.0e3, 0.3);
+  for (const double poissonRatio : {0.0, 0.3}) {
+    SCOPED_TRACE(poissonRatio);
+    const fem::LameParameters model
+        = fem::stableNeoHookeanParameters(1.0e3, poissonRatio);
+    const fem::TetElementResult result = fem::evaluateStableNeoHookeanTet(
+        x[0], x[1], x[2], x[3], shape, model);
+    const fem::Matrix12d numeric = finiteHessian(x, shape, model);
 
-  const fem::TetElementResult result
-      = fem::evaluateStableNeoHookeanTet(x[0], x[1], x[2], x[3], shape, lame);
-  const fem::Matrix12d numeric = finiteHessian(x, shape, lame);
-
-  const double tol = 1e-4 * (1.0 + numeric.cwiseAbs().maxCoeff());
-  EXPECT_LT((result.hessian - numeric).cwiseAbs().maxCoeff(), tol);
-  // The Hessian must be symmetric.
-  EXPECT_LT(
-      (result.hessian - result.hessian.transpose()).cwiseAbs().maxCoeff(),
-      1e-9 * (1.0 + result.hessian.cwiseAbs().maxCoeff()));
+    const double tolerance = 1e-4 * (1.0 + numeric.cwiseAbs().maxCoeff());
+    EXPECT_LT((result.hessian - numeric).cwiseAbs().maxCoeff(), tolerance);
+    // The Hessian must be symmetric.
+    EXPECT_LT(
+        (result.hessian - result.hessian.transpose()).cwiseAbs().maxCoeff(),
+        1e-9 * (1.0 + result.hessian.cwiseAbs().maxCoeff()));
+  }
 }
 
 //==============================================================================
@@ -231,7 +535,7 @@ TEST(FemTetElement, EnergyIncreasesUnderStretch)
   const Nodes rest = restTetrahedron();
   const fem::TetRestShape shape
       = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
-  const fem::LameParameters lame = fem::lameParameters(1.0e4, 0.3);
+  const fem::LameParameters lame = fem::stableNeoHookeanParameters(1.0e4, 0.3);
 
   double previous = -1.0;
   for (const double scale : {1.0, 1.1, 1.5, 2.0}) {
@@ -254,7 +558,7 @@ TEST(FemTetElement, InvertedElementStaysFinite)
   const Nodes rest = restTetrahedron();
   const fem::TetRestShape shape
       = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
-  const fem::LameParameters lame = fem::lameParameters(1.0e4, 0.3);
+  const fem::LameParameters lame = fem::stableNeoHookeanParameters(1.0e4, 0.3);
 
   // Reflect the fourth node below the base plane so det F < 0 (inverted).
   Nodes inverted = rest;
@@ -277,15 +581,15 @@ TEST(FemTetElement, InvertedElementStaysFinite)
 }
 
 //==============================================================================
-TEST(FemTetElement, ZeroPoissonRatioStaysFinite)
+TEST(FemTetElement, EngineeringZeroPoissonRatioStaysFinite)
 {
-  // lambda -> 0; the kernel must not divide by lambda (alpha would diverge).
+  // Smith's model coefficients remain finite and nonzero at engineering nu=0.
   const Nodes rest = restTetrahedron();
   const Nodes x = deformedTetrahedron();
   const fem::TetRestShape shape
       = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
-  const fem::LameParameters lame = fem::lameParameters(1.0e3, 0.0);
-  EXPECT_NEAR(lame.lambda, 0.0, 1e-12);
+  const fem::LameParameters lame = fem::stableNeoHookeanParameters(1.0e3, 0.0);
+  EXPECT_GT(lame.lambda, 0.0);
 
   const fem::TetElementResult result
       = fem::evaluateStableNeoHookeanTet(x[0], x[1], x[2], x[3], shape, lame);
@@ -294,6 +598,27 @@ TEST(FemTetElement, ZeroPoissonRatioStaysFinite)
   const fem::Vector12d numeric = finiteGradient(x, shape, lame);
   const double tol = 1e-5 * (1.0 + numeric.cwiseAbs().maxCoeff());
   EXPECT_LT((result.gradient - numeric).cwiseAbs().maxCoeff(), tol);
+}
+
+//==============================================================================
+TEST(FemTetElement, RawZeroModelLambdaStaysFinite)
+{
+  // This does not represent engineering nu=0, but the kernel's algebraic
+  // continuation at a raw lambdaHat of zero remains a supported safety edge.
+  const Nodes rest = restTetrahedron();
+  const Nodes x = deformedTetrahedron();
+  const fem::TetRestShape shape
+      = fem::makeTetRestShape(rest[0], rest[1], rest[2], rest[3]);
+  const fem::LameParameters model{1000.0, 0.0};
+  const fem::TetElementResult result
+      = fem::evaluateStableNeoHookeanTet(x[0], x[1], x[2], x[3], shape, model);
+  ASSERT_TRUE(result.valid);
+  EXPECT_TRUE(std::isfinite(result.energy));
+  EXPECT_TRUE(result.gradient.allFinite());
+  EXPECT_TRUE(result.hessian.allFinite());
+  const fem::Vector12d numeric = finiteGradient(x, shape, model);
+  const double tolerance = 1e-5 * (1.0 + numeric.cwiseAbs().maxCoeff());
+  EXPECT_LT((result.gradient - numeric).cwiseAbs().maxCoeff(), tolerance);
 }
 
 //==============================================================================

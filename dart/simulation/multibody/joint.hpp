@@ -79,7 +79,7 @@ enum class ActuatorType
 /// when a finite stiffness is configured.
 struct JointConstraintProjectionPolicy
 {
-  /// Starting projection stiffness. Infinity keeps the hard-start projection.
+  /// Starting penalty for finite-material rows. Hard-material rows ignore it.
   double startStiffness = 1.0;
 
   /// Linear projection material stiffness. Infinity keeps hard rows.
@@ -367,10 +367,13 @@ public:
   /// Set the point-joint break-force threshold.
   ///
   /// A finite non-negative value is required. The default value, 0, disables
-  /// automatic breakage. The threshold is the L2 norm of the joint's physical
-  /// row forces/torques, including finite-stiffness and bounded motor rows.
-  /// When that load reaches the threshold, the joint is marked broken and
-  /// excluded from later point-joint extraction until resetBreakage().
+  /// automatic breakage. The threshold is the L2 norm of the joint's active
+  /// solver-row load coordinates, including finite-stiffness and bounded motor
+  /// rows. Linear-force and angular-torque coordinates are combined without a
+  /// characteristic-length normalization, so this is a solver diagnostic and
+  /// not a dimensionally invariant physical wrench norm. When that metric
+  /// reaches the threshold, the joint is marked broken and excluded from later
+  /// point-joint extraction until resetBreakage().
   void setBreakForce(double breakForce);
 
   /// Get the point-joint break-force threshold.

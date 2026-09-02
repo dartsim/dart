@@ -72,6 +72,8 @@ sx::JointConstraintProjectionPolicy makeConstraintProjectionPolicy(
       .angularStiffness = angularStiffness};
 }
 
+sx::Link addFloatingBody(sx::World& world, double mass);
+
 // Returns the (single) multibody structure component in the world.
 const sx::comps::MultibodyStructure& structureOf(sx::World& world)
 {
@@ -2561,6 +2563,8 @@ TEST(VariationalIntegration, AvbdCompliantPointJointConfigPullsLinkEndpoint)
       config.localAnchorB = Eigen::Vector3d::Zero();
       config.targetRelativeOrientation = Eigen::Quaterniond::Identity();
       config.startStiffness = 1000.0;
+      config.linearMaterialStiffness = 1000.0;
+      config.angularMaterialStiffness = 1000.0;
       config.maxStiffness = 1000.0;
     }
 
@@ -2627,6 +2631,8 @@ TEST(
   config.localAnchorB = Eigen::Vector3d::Zero();
   config.targetRelativeOrientation = Eigen::Quaterniond::Identity();
   config.startStiffness = 1000.0;
+  config.linearMaterialStiffness = 1000.0;
+  config.angularMaterialStiffness = 1000.0;
   config.maxStiffness = 1000.0;
 
   world.enterSimulationMode();
@@ -2698,6 +2704,8 @@ TEST(
     config.localAnchorB = Eigen::Vector3d::Zero();
     config.targetRelativeOrientation = Eigen::Quaterniond::Identity();
     config.startStiffness = startStiffness;
+    config.linearMaterialStiffness = maxStiffness;
+    config.angularMaterialStiffness = maxStiffness;
     config.maxStiffness = maxStiffness;
 
     world.enterSimulationMode();
@@ -2830,6 +2838,70 @@ TEST(
       /*driveAngular=*/true);
   EXPECT_GT(softAngular.maxYaw, 1e-3);
   EXPECT_LT(stiffAngular.maxYaw, 0.7 * softAngular.maxYaw);
+}
+
+// PLAN-104 AVBD articulated row staging: material stiffness, not the penalty
+// warm-start range, owns the hard-versus-finite decision. A finite start value
+// must not soften infinity-material rows, and mixed linear/angular material
+// policies must retain the infinity family in the hard projection.
+TEST(
+    VariationalIntegration,
+    AvbdArticulatedPointJointStagesHardAndFiniteMaterialRolesIndependently)
+{
+  struct Residual
+  {
+    double linear = 0.0;
+    double angular = 0.0;
+  };
+
+  const auto rollout = [](double linearStiffness, double angularStiffness) {
+    sx::World world;
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setMultibodyOptions(
+        {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
+    world.setTimeStep(0.005);
+
+    auto body = addFloatingBody(world, /*mass=*/2.0);
+    body.setInertia(Eigen::Vector3d(0.2, 0.25, 0.3).asDiagonal());
+    sx::Joint joint = world.addJoint(
+        body, makeJointSpec("mixed_material", sx::JointType::Fixed));
+    joint.setConstraintProjectionPolicy(makeConstraintProjectionPolicy(
+        /*startStiffness=*/2.0, linearStiffness, angularStiffness));
+
+    world.enterSimulationMode();
+    auto& registry = dart::simulation::detail::registryOf(world);
+    const entt::entity jointEntity
+        = sx::detail::toRegistryEntity(joint.getEntity());
+    auto& config
+        = registry.get<dvbd::AvbdRigidWorldPointJointConfig>(jointEntity);
+    config.localAnchorA += Eigen::Vector3d::UnitX();
+    config.targetRelativeOrientation
+        = Eigen::Quaterniond(Eigen::AngleAxisd(0.5, Eigen::Vector3d::UnitZ()));
+
+    world.step();
+
+    const Eigen::Isometry3d transform = body.getWorldTransform();
+    const Eigen::Vector3d anchorB = transform * config.localAnchorB;
+    const Eigen::Quaterniond actual(transform.linear());
+    const Eigen::Quaterniond target
+        = config.targetRelativeOrientation.normalized();
+    return Residual{
+        .linear = (anchorB - config.localAnchorA).norm(),
+        .angular = Eigen::AngleAxisd(target.conjugate() * actual).angle()};
+  };
+
+  const double inf = std::numeric_limits<double>::infinity();
+  const Residual allHard = rollout(inf, inf);
+  EXPECT_LT(allHard.linear, 1e-3);
+  EXPECT_LT(allHard.angular, 1e-3);
+
+  const Residual finiteLinear = rollout(/*linearStiffness=*/2.0, inf);
+  EXPECT_GT(finiteLinear.linear, 0.5);
+  EXPECT_LT(finiteLinear.angular, 1e-3);
+
+  const Residual finiteAngular = rollout(inf, /*angularStiffness=*/2.0);
+  EXPECT_LT(finiteAngular.linear, 1e-3);
+  EXPECT_GT(finiteAngular.angular, 0.1);
 }
 
 // PLAN-104 AVBD articulated finite-stiffness bridge: passive public spherical,

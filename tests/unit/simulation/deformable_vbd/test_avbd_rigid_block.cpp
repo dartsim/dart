@@ -87,12 +87,14 @@ public:
   void* allocate(std::size_t bytes) noexcept override
   {
     ++allocations;
+    allocatedBytes += bytes;
     return common::MemoryAllocator::GetDefault().allocate(bytes);
   }
 
   void* allocate(std::size_t bytes, std::size_t alignment) noexcept override
   {
     ++allocations;
+    allocatedBytes += bytes;
     return common::MemoryAllocator::GetDefault().allocate(bytes, alignment);
   }
 
@@ -108,6 +110,7 @@ public:
   }
 
   std::size_t allocations = 0u;
+  std::size_t allocatedBytes = 0u;
 };
 
 //==============================================================================
@@ -138,6 +141,51 @@ std::size_t findEntityIndex(const EntityVector& entities, entt::entity entity)
 }
 
 } // namespace
+
+//==============================================================================
+TEST(AvbdRigidBlock, ScalarRowRecordExcludesContactAnchorPayload)
+{
+  const auto alignUp = [](std::size_t size, std::size_t alignment) {
+    return ((size + alignment - 1u) / alignment) * alignment;
+  };
+  std::size_t expectedSize = sizeof(vbd::AvbdScalarRowDescriptor);
+  expectedSize = alignUp(expectedSize, alignof(vbd::AvbdScalarRowState))
+                 + sizeof(vbd::AvbdScalarRowState);
+  expectedSize = alignUp(expectedSize, alignof(Eigen::Vector3d))
+                 + sizeof(Eigen::Vector3d);
+  expectedSize = alignUp(expectedSize, alignof(vbd::AvbdScalarRowRecord));
+
+  EXPECT_EQ(sizeof(vbd::AvbdScalarRowRecord), expectedSize);
+
+  CountingMemoryAllocator allocator;
+  vbd::AvbdScalarRowInventory genericRows(allocator);
+  vbd::AvbdRigidContactManifoldRowScratch contactScratch(allocator);
+  constexpr std::size_t kGenericRowCapacity = 4096u;
+  constexpr std::size_t kContactPairCapacity = 37u;
+
+  const std::size_t bytesBeforeGenericRows = allocator.allocatedBytes;
+  genericRows.reserve(kGenericRowCapacity);
+  const std::size_t genericRowBytes
+      = allocator.allocatedBytes - bytesBeforeGenericRows;
+  EXPECT_EQ(contactScratch.contactTangentAnchors.capacity(), 0u)
+      << "generic scalar rows must not materialize rigid-contact anchors";
+  EXPECT_GE(
+      genericRowBytes,
+      2u * kGenericRowCapacity * sizeof(vbd::AvbdScalarRowRecord));
+
+  const std::size_t bytesBeforeContactAnchors = allocator.allocatedBytes;
+  contactScratch.contactTangentAnchors.reserve(kContactPairCapacity);
+  const std::size_t anchorBytes
+      = allocator.allocatedBytes - bytesBeforeContactAnchors;
+  EXPECT_GE(
+      contactScratch.contactTangentAnchors.capacity(), kContactPairCapacity);
+  EXPECT_EQ(
+      anchorBytes,
+      contactScratch.contactTangentAnchors.capacity()
+          * sizeof(vbd::AvbdContactTangentAnchorState));
+  EXPECT_LT(anchorBytes, genericRowBytes)
+      << "anchor storage must scale with contact pairs, not generic rows";
+}
 
 //==============================================================================
 TEST(AvbdRigidBlock, NormalizeRigidOrientationKeepsUnitAndRejectsInvalid)
@@ -502,12 +550,13 @@ TEST(AvbdRigidBlock, TaylorLinearizedContactOmitsPointCurvature)
 
   vbd::AvbdScalarRowState rowState;
   rowState.stiffness = 25.0;
-  const vbd::AvbdRigidPointPairRow row = vbd::makeAvbdRigidContactNormalRow(
+  vbd::AvbdRigidPointPairRow row = vbd::makeAvbdRigidContactNormalRow(
       Vec3::UnitY(),
       Vec3::Zero(),
       Vec3::UnitX(),
       /*targetDistance=*/0.0,
       rowState);
+  vbd::initializeAvbdRigidPointPairTaylorLinearization(row, stateA, stateB);
 
   vbd::AvbdRigidBodyBlock blockA;
   vbd::AvbdRigidBodyBlock blockB;
@@ -532,6 +581,101 @@ TEST(AvbdRigidBlock, TaylorLinearizedContactOmitsPointCurvature)
           .norm(),
       0.0,
       1e-12);
+}
+
+//==============================================================================
+TEST(
+    AvbdRigidBlock,
+    TaylorLinearizedContactCachesStepStartValueAndJacobianAcrossFiniteRotation)
+{
+  vbd::AvbdRigidBodyState stepStartA;
+  vbd::AvbdRigidBodyState stepStartB;
+  stepStartB.position = Vec3::UnitX();
+
+  vbd::AvbdScalarRowState rowState;
+  rowState.stiffness = 25.0;
+  vbd::AvbdRigidPointPairRow row = vbd::makeAvbdRigidContactNormalRow(
+      Vec3::UnitY(),
+      Vec3::Zero(),
+      Vec3::UnitX(),
+      /*targetDistance=*/0.2,
+      rowState);
+  vbd::initializeAvbdRigidPointPairTaylorLinearization(
+      row, stepStartA, stepStartB);
+
+  ASSERT_TRUE(row.taylorLinearization.valid);
+  EXPECT_NEAR(row.taylorLinearization.stepStartConstraintValue, 1.2, 1e-12);
+  EXPECT_NEAR(row.previousConstraintValue, 1.2, 1e-12);
+  const vbd::Vector6d cachedDirectionA
+      = vbd::avbdRigidPointPairDirectionA(stepStartA, row);
+  const vbd::Vector6d cachedDirectionB
+      = vbd::avbdRigidPointPairDirectionB(stepStartB, row);
+
+  vbd::AvbdRigidBodyState currentA = stepStartA;
+  currentA.orientation = rotationZ(0.5 * vbd::kAvbdRigidPi);
+  const double linearizedRaw = 1.2 + 0.5 * vbd::kAvbdRigidPi;
+  EXPECT_NEAR(
+      vbd::avbdRigidPointPairConstraintValue(currentA, stepStartB, row),
+      linearizedRaw,
+      1e-12);
+  EXPECT_EQ(vbd::avbdRigidPointPairDirectionA(currentA, row), cachedDirectionA);
+  EXPECT_EQ(
+      vbd::avbdRigidPointPairDirectionB(stepStartB, row), cachedDirectionB);
+
+  const double exactRotatedAnchorValue
+      = row.offset
+        + row.axis.dot(
+            vbd::avbdRigidPointPairRelativePosition(currentA, stepStartB, row));
+  EXPECT_GT(std::abs(linearizedRaw - exactRotatedAnchorValue), 0.5)
+      << "the regression must distinguish the cached Taylor model from an "
+         "exact rotated-anchor reevaluation";
+  const vbd::Vector6d exactCurrentDirectionA
+      = vbd::avbdRigidWorldPointDirection(
+          currentA,
+          vbd::avbdRigidBodyWorldPoint(currentA, row.localPointA),
+          row.axis);
+  EXPECT_GT((cachedDirectionA - exactCurrentDirectionA).norm(), 0.9);
+
+  constexpr double alpha = 0.5;
+  const double expectedConstraint
+      = (1.0 - alpha) * 1.2 + 0.5 * vbd::kAvbdRigidPi;
+  vbd::AvbdRigidBodyBlock blockA;
+  vbd::AvbdRigidBodyBlock blockB;
+  const double force = vbd::addAvbdRigidPointPair(
+      blockA, blockB, currentA, stepStartB, row, alpha);
+  EXPECT_NEAR(force, rowState.stiffness * expectedConstraint, 1e-12);
+  EXPECT_NEAR((blockA.force - force * cachedDirectionA).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((blockB.force - force * cachedDirectionB).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (blockA.hessian
+       - rowState.stiffness * cachedDirectionA * cachedDirectionA.transpose())
+          .norm(),
+      0.0,
+      1e-12);
+
+  vbd::AvbdRigidPointPairRow tangent
+      = vbd::makeAvbdRigidContactFrictionTangentRow(
+          Vec3::UnitY(),
+          Vec3::Zero(),
+          Vec3::UnitZ(),
+          Vec3::Zero(),
+          /*forceLimit=*/100.0,
+          rowState);
+  vbd::initializeAvbdRigidPointPairTaylorLinearization(
+      tangent, stepStartA, stepStartB);
+  vbd::AvbdRigidBodyState tangentCurrentA = stepStartA;
+  tangentCurrentA.orientation = rotationX(0.5 * vbd::kAvbdRigidPi);
+  EXPECT_NEAR(
+      vbd::avbdRigidPointPairConstraintValue(
+          tangentCurrentA, stepStartB, tangent),
+      -0.5 * vbd::kAvbdRigidPi,
+      1e-12);
+  const double exactTangentValue
+      = tangent.offset
+        + tangent.axis.dot(
+            vbd::avbdRigidPointPairRelativePosition(
+                tangentCurrentA, stepStartB, tangent));
+  EXPECT_GT(std::abs(exactTangentValue + 0.5 * vbd::kAvbdRigidPi), 0.5);
 }
 
 //==============================================================================
@@ -1055,6 +1199,10 @@ TEST(AvbdRigidBlock, ContactFrictionPointPairUsesLaggedRelativeOffset)
 //==============================================================================
 TEST(AvbdRigidBlock, ContactFrictionPointPairProjectsStaticForceToCone)
 {
+  EXPECT_DOUBLE_EQ(
+      vbd::AvbdRigidPointPairFrictionOptions{}.staticFrictionTolerance,
+      vbd::kAvbdRigidStaticFrictionTolerance);
+
   vbd::AvbdRigidBodyState stateA;
 
   vbd::AvbdRigidBodyState stateB;
@@ -1108,12 +1256,12 @@ TEST(AvbdRigidBlock, ContactFrictionPointPairProjectsStaticForceToCone)
       (blockB.force.head<3>() + Vec3(force.x(), force.y(), 0.0)).norm(),
       0.0,
       1e-12);
-  EXPECT_GE(
-      blockA.hessian.selfadjointView<Eigen::Lower>().eigenvalues().minCoeff(),
-      -1e-12);
-  EXPECT_GE(
-      blockB.hessian.selfadjointView<Eigen::Lower>().eigenvalues().minCoeff(),
-      -1e-12);
+  Eigen::Matrix<double, 6, 6> expectedHessian
+      = Eigen::Matrix<double, 6, 6>::Zero();
+  expectedHessian(0, 0) = 10.0;
+  expectedHessian(1, 1) = 10.0;
+  EXPECT_NEAR((blockA.hessian - expectedHessian).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((blockB.hessian - expectedHessian).norm(), 0.0, 1e-12);
 
   vbd::updateAvbdRigidPointPairFrictionTangentPair(
       rowX, rowY, stateA, stateB, options);
@@ -1123,7 +1271,64 @@ TEST(AvbdRigidBlock, ContactFrictionPointPairProjectsStaticForceToCone)
 }
 
 //==============================================================================
-TEST(AvbdRigidBlock, ContactFrictionPointPairSwitchesToDynamicSlipDirection)
+TEST(
+    AvbdRigidBlock,
+    ContactFrictionPointPairKeepsOffOriginPenaltyHessianWhenConeClamped)
+{
+  vbd::AvbdRigidBodyState stateA;
+
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = Vec3(1.0, 1.0, 0.0);
+
+  vbd::AvbdScalarRowState firstState;
+  firstState.stiffness = 10.0;
+  vbd::AvbdScalarRowState secondState;
+  secondState.stiffness = 20.0;
+  const Vec3 localPoint(0.0, 0.0, 1.0);
+  const vbd::AvbdRigidPointPairRow rowX
+      = vbd::makeAvbdRigidContactFrictionTangentRow(
+          localPoint,
+          localPoint,
+          Vec3::UnitX(),
+          Vec3::Zero(),
+          /*forceLimit=*/5.0,
+          firstState);
+  const vbd::AvbdRigidPointPairRow rowY
+      = vbd::makeAvbdRigidContactFrictionTangentRow(
+          localPoint,
+          localPoint,
+          Vec3::UnitY(),
+          Vec3::Zero(),
+          /*forceLimit=*/5.0,
+          secondState);
+
+  vbd::AvbdRigidPointPairFrictionOptions options;
+  options.alpha = 0.0;
+  bool clamped = false;
+  const Eigen::Vector2d projectedForce
+      = vbd::avbdRigidPointPairFrictionTangentPairForce(
+          stateA, stateB, rowX, rowY, options, &clamped);
+  ASSERT_TRUE(clamped);
+  EXPECT_NEAR(projectedForce.norm(), 5.0, 1e-12);
+
+  vbd::AvbdRigidBodyBlock blockA;
+  vbd::AvbdRigidBodyBlock blockB;
+  (void)vbd::addAvbdRigidPointPairFrictionTangentPair(
+      blockA, blockB, stateA, stateB, rowX, rowY, options);
+
+  vbd::Vector6d directionX;
+  directionX << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0;
+  vbd::Vector6d directionY;
+  directionY << 0.0, 1.0, 0.0, -1.0, 0.0, 0.0;
+  const vbd::Matrix6d expectedHessian
+      = firstState.stiffness * directionX * directionX.transpose()
+        + secondState.stiffness * directionY * directionY.transpose();
+  EXPECT_NEAR((blockA.hessian - expectedHessian).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((blockB.hessian - expectedHessian).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, ContactFrictionPointPairProjectsAugmentedTrialToCone)
 {
   vbd::AvbdRigidBodyState stateA;
 
@@ -1155,19 +1360,210 @@ TEST(AvbdRigidBlock, ContactFrictionPointPairSwitchesToDynamicSlipDirection)
   options.alpha = 0.0;
   options.beta = 100.0;
 
-  ASSERT_FALSE(
+  ASSERT_TRUE(
       vbd::avbdRigidPointPairFrictionPreviousDualInsideCone(rowX, rowY));
+  bool clamped = false;
+  const Eigen::Vector2d trial(5.0, 40.0);
   const Eigen::Vector2d force = vbd::avbdRigidPointPairFrictionTangentPairForce(
-      stateA, stateB, rowX, rowY, options);
-  EXPECT_NEAR(force.x(), 0.0, 1e-12);
-  EXPECT_NEAR(force.y(), 5.0, 1e-12);
+      stateA, stateB, rowX, rowY, options, &clamped);
+  ASSERT_TRUE(clamped);
+  EXPECT_NEAR((force - 5.0 * trial.normalized()).norm(), 0.0, 1e-12);
 
   vbd::updateAvbdRigidPointPairFrictionTangentPair(
       rowX, rowY, stateA, stateB, options);
-  EXPECT_NEAR(rowX.state.lambda, 0.0, 1e-12);
-  EXPECT_NEAR(rowY.state.lambda, 5.0, 1e-12);
+  EXPECT_NEAR(rowX.state.lambda, force.x(), 1e-12);
+  EXPECT_NEAR(rowY.state.lambda, force.y(), 1e-12);
   EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
   EXPECT_DOUBLE_EQ(rowY.state.stiffness, 20.0);
+
+  // An accepted trial on the cone remains an interior-or-boundary solution;
+  // zero residual slip can therefore regain a persistent static anchor. The
+  // primal assembly retains the paper's unclamped penalty Hessian throughout.
+  stateB.position = Vec3::Zero();
+  bool boundaryClamped = true;
+  const Eigen::Vector2d boundaryForce
+      = vbd::avbdRigidPointPairFrictionTangentPairForce(
+          stateA, stateB, rowX, rowY, options, &boundaryClamped);
+  EXPECT_FALSE(boundaryClamped);
+  EXPECT_NEAR(boundaryForce.norm(), 5.0, 1e-12);
+  vbd::AvbdRigidBodyBlock blockA;
+  vbd::AvbdRigidBodyBlock blockB;
+  (void)vbd::addAvbdRigidPointPairFrictionTangentPair(
+      blockA, blockB, stateA, stateB, rowX, rowY, options);
+  Eigen::Matrix<double, 6, 6> expectedHessian
+      = Eigen::Matrix<double, 6, 6>::Zero();
+  expectedHessian(0, 0) = 10.0;
+  expectedHessian(1, 1) = 20.0;
+  EXPECT_NEAR((blockA.hessian - expectedHessian).norm(), 0.0, 1e-12);
+  EXPECT_NEAR((blockB.hessian - expectedHessian).norm(), 0.0, 1e-12);
+  EXPECT_TRUE(
+      vbd::updateAvbdRigidPointPairFrictionTangentPairForLimit(
+          rowX, rowY, stateA, stateB, options, /*forceLimit=*/5.0));
+  EXPECT_DOUBLE_EQ(rowX.state.stiffness, 10.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, 20.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, ContactFrictionTrialCanReturnInsideConeWithoutReversing)
+{
+  vbd::AvbdScalarRowState rowStateX;
+  rowStateX.stiffness = 10.0;
+  rowStateX.lambda = 5.0;
+  const vbd::AvbdRigidPointPairRow rowX
+      = vbd::makeAvbdRigidContactFrictionTangentRow(
+          Vec3::Zero(),
+          Vec3::Zero(),
+          Vec3::UnitX(),
+          Vec3::Zero(),
+          /*forceLimit=*/5.0,
+          rowStateX);
+  vbd::AvbdScalarRowState rowStateY;
+  rowStateY.stiffness = 20.0;
+  const vbd::AvbdRigidPointPairRow rowY
+      = vbd::makeAvbdRigidContactFrictionTangentRow(
+          Vec3::Zero(),
+          Vec3::Zero(),
+          Vec3::UnitY(),
+          Vec3::Zero(),
+          /*forceLimit=*/5.0,
+          rowStateY);
+
+  bool clamped = true;
+  const Eigen::Vector2d force
+      = vbd::avbdRigidPointPairFrictionTangentPairForceFromConstraintValues(
+          Eigen::Vector2d(-0.01, 0.0), rowX, rowY, &clamped);
+
+  EXPECT_FALSE(clamped);
+  EXPECT_NEAR(force.x(), 4.9, 1e-12);
+  EXPECT_NEAR(force.y(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, ContactFrictionDualUpdateTracksStickSlipAndZeroCone)
+{
+  vbd::AvbdRigidBodyState stateA;
+  vbd::AvbdRigidBodyState stateB;
+  stateB.position = 0.1 * Vec3::UnitY();
+
+  vbd::AvbdScalarRowState rowState;
+  rowState.stiffness = 10.0;
+  vbd::AvbdRigidPointPairRow rowY = vbd::makeAvbdRigidContactFrictionTangentRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Vec3::UnitY(),
+      Vec3::Zero(),
+      /*forceLimit=*/100.0,
+      rowState);
+  vbd::AvbdRigidPointPairRow rowZ = vbd::makeAvbdRigidContactFrictionTangentRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Vec3::UnitZ(),
+      Vec3::Zero(),
+      /*forceLimit=*/100.0,
+      rowState);
+
+  vbd::AvbdRigidPointPairFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 2.0;
+
+  // The sub-Coulomb trial is accepted and grows stiffness, but its residual
+  // tangential displacement is too large to retain a static anchor.
+  EXPECT_FALSE(
+      vbd::updateAvbdRigidPointPairFrictionTangentPairForLimit(
+          rowY, rowZ, stateA, stateB, options, /*forceLimit=*/5.0));
+  EXPECT_NEAR(rowY.state.lambda, 1.0, 1e-12);
+  EXPECT_NEAR(rowZ.state.lambda, 0.0, 1e-12);
+  EXPECT_NEAR(rowY.state.stiffness, 10.2, 1e-12);
+  EXPECT_DOUBLE_EQ(rowZ.state.stiffness, 10.0);
+
+  // Once the in-cone residual falls below the reference threshold, the
+  // contact can re-stick without confusing that decision with cone clamping.
+  stateB.position = 1e-6 * Vec3::UnitY();
+  EXPECT_TRUE(
+      vbd::updateAvbdRigidPointPairFrictionTangentPairForLimit(
+          rowY, rowZ, stateA, stateB, options, /*forceLimit=*/5.0));
+  EXPECT_GT(rowY.state.stiffness, 10.2);
+  const double restickingStiffness = rowY.state.stiffness;
+
+  stateB.position = Vec3::UnitY();
+  EXPECT_FALSE(
+      vbd::updateAvbdRigidPointPairFrictionTangentPairForLimit(
+          rowY, rowZ, stateA, stateB, options, /*forceLimit=*/5.0));
+  EXPECT_NEAR(std::hypot(rowY.state.lambda, rowZ.state.lambda), 5.0, 1e-12);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, restickingStiffness);
+  EXPECT_DOUBLE_EQ(rowZ.state.stiffness, 10.0);
+
+  EXPECT_FALSE(
+      vbd::updateAvbdRigidPointPairFrictionTangentPairForLimit(
+          rowY, rowZ, stateA, stateB, options, /*forceLimit=*/0.0));
+  EXPECT_DOUBLE_EQ(rowY.state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(rowZ.state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(rowY.bounds.lower, 0.0);
+  EXPECT_DOUBLE_EQ(rowY.bounds.upper, 0.0);
+  EXPECT_DOUBLE_EQ(rowY.state.stiffness, restickingStiffness);
+  EXPECT_DOUBLE_EQ(rowZ.state.stiffness, 10.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, ContactFrictionZeroConeAcceptsExactZeroTrial)
+{
+  vbd::AvbdRigidBodyState stateA;
+  vbd::AvbdRigidBodyState stateB;
+  vbd::AvbdScalarRowState rowState;
+  rowState.stiffness = 10.0;
+  vbd::AvbdRigidPointPairRow rowY = vbd::makeAvbdRigidContactFrictionTangentRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Vec3::UnitY(),
+      Vec3::Zero(),
+      /*forceLimit=*/0.0,
+      rowState);
+  vbd::AvbdRigidPointPairRow rowZ = vbd::makeAvbdRigidContactFrictionTangentRow(
+      Vec3::Zero(),
+      Vec3::Zero(),
+      Vec3::UnitZ(),
+      Vec3::Zero(),
+      /*forceLimit=*/0.0,
+      rowState);
+  vbd::AvbdRigidPointPairFrictionOptions options;
+  options.alpha = 0.0;
+  options.beta = 2.0;
+
+  const auto setCancellingDual = [&] {
+    const Eigen::Vector2d residual = vbd::avbdRigidPointPairConstraintValues(
+        stateA, stateB, rowY, rowZ, options.alpha);
+    rowY.state.lambda = -rowY.state.stiffness * residual.x();
+    rowZ.state.lambda = -rowZ.state.stiffness * residual.y();
+    return residual;
+  };
+
+  stateB.position = 0.1 * Vec3::UnitY();
+  const Eigen::Vector2d slidingResidual = setCancellingDual();
+  ASSERT_GT(slidingResidual.norm(), options.staticFrictionTolerance);
+  bool clamped = true;
+  const Eigen::Vector2d force
+      = vbd::avbdRigidPointPairFrictionTangentPairForceFromConstraintValues(
+          slidingResidual, rowY, rowZ, &clamped);
+  EXPECT_FALSE(clamped);
+  EXPECT_TRUE(force.isZero(0.0));
+  EXPECT_FALSE(
+      vbd::updateAvbdRigidPointPairFrictionTangentPairForLimit(
+          rowY, rowZ, stateA, stateB, options, /*forceLimit=*/0.0));
+  EXPECT_DOUBLE_EQ(rowY.state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(rowZ.state.lambda, 0.0);
+  EXPECT_GT(rowY.state.stiffness, 10.0);
+
+  rowY.state.stiffness = 10.0;
+  rowZ.state.stiffness = 10.0;
+  stateB.position = 1e-6 * Vec3::UnitY();
+  const Eigen::Vector2d stickingResidual = setCancellingDual();
+  ASSERT_LT(stickingResidual.norm(), options.staticFrictionTolerance);
+  EXPECT_TRUE(
+      vbd::updateAvbdRigidPointPairFrictionTangentPairForLimit(
+          rowY, rowZ, stateA, stateB, options, /*forceLimit=*/0.0));
+  EXPECT_DOUBLE_EQ(rowY.state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(rowZ.state.lambda, 0.0);
+  EXPECT_GT(rowY.state.stiffness, 10.0);
 }
 
 //==============================================================================
@@ -1236,6 +1632,320 @@ TEST(AvbdRigidBlock, RigidRowDriverSeparatesContactPair)
   EXPECT_NEAR(states[0].position.norm(), 0.0, 1e-12);
   EXPECT_GT(states[1].position.x(), 0.9);
   EXPECT_GT(pointPairs[0].row.state.lambda, 0.0);
+}
+
+//==============================================================================
+TEST(
+    AvbdRigidBlock,
+    TaylorLinearizedNormalAndTangentRowsMatchDirectAndIndexedFiniteRotation)
+{
+  std::vector<vbd::AvbdRigidBodyState> initialStates(2);
+  initialStates[1].position = Vec3::UnitX();
+  std::vector<vbd::AvbdRigidBodyState> inertialTargets = initialStates;
+  inertialTargets[0].orientation
+      = vbd::avbdRigidOrientationDelta(Vec3(0.4, 0.0, 0.8));
+  const std::vector<double> masses = {1.0, 1.0};
+  const std::vector<Eigen::Matrix3d> inertias{
+      Eigen::Matrix3d::Identity(), Eigen::Matrix3d::Identity()};
+  const std::vector<std::uint8_t> fixed = {0u, 0u};
+
+  const Vec3 localPointA = Vec3::UnitY();
+  const Vec3 localPointB(-1.0, 1.0, 0.0);
+  vbd::AvbdScalarRowState normalState;
+  normalState.stiffness = 2.0;
+  vbd::AvbdRigidBodyPointPairRow normal;
+  normal.bodyA = 0u;
+  normal.bodyB = 1u;
+  normal.row = vbd::makeAvbdRigidContactNormalRow(
+      localPointA,
+      localPointB,
+      Vec3::UnitZ(),
+      /*targetDistance=*/0.2,
+      normalState);
+
+  vbd::AvbdScalarRowState tangentState;
+  tangentState.stiffness = 3.0;
+  vbd::AvbdRigidBodyPointPairFrictionRows friction;
+  friction.bodyA = 0u;
+  friction.bodyB = 1u;
+  friction.first = vbd::makeAvbdRigidContactFrictionTangentRow(
+      localPointA,
+      localPointB,
+      Vec3::UnitX(),
+      Vec3::Zero(),
+      /*forceLimit=*/100.0,
+      tangentState);
+  friction.second = vbd::makeAvbdRigidContactFrictionTangentRow(
+      localPointA,
+      localPointB,
+      Vec3::UnitY(),
+      Vec3::Zero(),
+      /*forceLimit=*/100.0,
+      tangentState);
+
+  vbd::AvbdRigidBlockDescentOptions descent;
+  descent.iterations = 1u;
+  descent.regularization = 1e-12;
+  vbd::AvbdRigidPointAttachmentOptions rowOptions;
+  rowOptions.alpha = 0.4;
+  rowOptions.beta = 0.0;
+  vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+  frictionOptions.alpha = 0.4;
+  frictionOptions.beta = 0.0;
+
+  std::vector<vbd::AvbdRigidBodyState> directStates = initialStates;
+  vbd::initializeAvbdRigidPointPairTaylorLinearization(
+      normal.row, initialStates[0], initialStates[1]);
+  vbd::initializeAvbdRigidPointPairTaylorLinearization(
+      friction.first, initialStates[0], initialStates[1]);
+  vbd::initializeAvbdRigidPointPairTaylorLinearization(
+      friction.second, initialStates[0], initialStates[1]);
+  const auto applyDirectBody = [&](std::size_t body) {
+    vbd::AvbdRigidBodyBlock block;
+    vbd::addAvbdRigidBodyInertiaTerm(
+        block,
+        masses[body],
+        inertias[body],
+        /*timeStep=*/1.0,
+        directStates[body],
+        inertialTargets[body]);
+
+    vbd::AvbdRigidBodyBlock normalBlockA;
+    vbd::AvbdRigidBodyBlock normalBlockB;
+    (void)vbd::addAvbdRigidPointPair(
+        normalBlockA,
+        normalBlockB,
+        directStates[0],
+        directStates[1],
+        normal.row,
+        rowOptions.alpha);
+    vbd::AvbdRigidBodyBlock frictionBlockA;
+    vbd::AvbdRigidBodyBlock frictionBlockB;
+    (void)vbd::addAvbdRigidPointPairFrictionTangentPair(
+        frictionBlockA,
+        frictionBlockB,
+        directStates[0],
+        directStates[1],
+        friction.first,
+        friction.second,
+        frictionOptions);
+    const vbd::AvbdRigidBodyBlock& normalBlock
+        = body == 0u ? normalBlockA : normalBlockB;
+    const vbd::AvbdRigidBodyBlock& frictionBlock
+        = body == 0u ? frictionBlockA : frictionBlockB;
+    block.force += normalBlock.force + frictionBlock.force;
+    block.hessian += normalBlock.hessian + frictionBlock.hessian;
+    vbd::applyAvbdRigidBodyStep(
+        directStates[body],
+        vbd::solveAvbdRigidBodyBlock(block, descent.regularization));
+  };
+  applyDirectBody(0u);
+  const double directAngularStep
+      = vbd::avbdRigidBodyOrientationError(
+            directStates[0].orientation, initialStates[0].orientation)
+            .norm();
+  ASSERT_GT(directAngularStep, 0.05)
+      << "the parity scenario must exercise a finite off-center rotation";
+  const double linearizedAfterFirstBody
+      = vbd::avbdRigidPointPairConstraintValue(
+          directStates[0], directStates[1], normal.row);
+  const double exactAfterFirstBody
+      = normal.row.offset
+        + normal.row.axis.dot(
+            vbd::avbdRigidPointPairRelativePosition(
+                directStates[0], directStates[1], normal.row));
+  ASSERT_GT(std::abs(linearizedAfterFirstBody - exactAfterFirstBody), 1e-4);
+  const double linearizedTangentAfterFirstBody
+      = vbd::avbdRigidPointPairConstraintValue(
+          directStates[0], directStates[1], friction.first);
+  const double exactTangentAfterFirstBody
+      = friction.first.offset
+        + friction.first.axis.dot(
+            vbd::avbdRigidPointPairRelativePosition(
+                directStates[0], directStates[1], friction.first));
+  ASSERT_GT(std::abs(linearizedTangentAfterFirstBody), 0.05);
+  ASSERT_GT(
+      std::abs(linearizedTangentAfterFirstBody - exactTangentAfterFirstBody),
+      1e-4);
+  applyDirectBody(1u);
+
+  normal.row.state = vbd::updateAvbdRigidPointPairRow(
+      normal.row.state,
+      directStates[0],
+      directStates[1],
+      normal.row,
+      rowOptions);
+  (void)vbd::updateAvbdRigidPointPairFrictionTangentPairForLimit(
+      friction.first,
+      friction.second,
+      directStates[0],
+      directStates[1],
+      frictionOptions,
+      /*forceLimit=*/100.0);
+
+  std::vector<vbd::AvbdRigidBodyState> indexedStates = initialStates;
+  std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> pointPairs(1, normal);
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularPairs;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionPairs(
+      1, friction);
+  // The indexed path must establish its own x_t cache before any body update.
+  pointPairs[0].row.taylorLinearization = {};
+  frictionPairs[0].first.taylorLinearization = {};
+  frictionPairs[0].second.taylorLinearization = {};
+  pointPairs[0].row.state = normalState;
+  frictionPairs[0].first.state = tangentState;
+  frictionPairs[0].second.state = tangentState;
+  vbd::AvbdRigidBodyRowIndexScratch rowIndexScratch;
+  const vbd::AvbdRigidBlockDescentStats stats
+      = vbd::blockDescentRigidBodiesAvbdRows(
+          indexedStates,
+          masses,
+          inertias,
+          fixed,
+          inertialTargets,
+          /*timeStep=*/1.0,
+          attachments,
+          pointPairs,
+          angularPairs,
+          frictionPairs,
+          descent,
+          rowOptions,
+          frictionOptions,
+          &rowIndexScratch);
+
+  ASSERT_EQ(stats.iterations, 1u);
+  ASSERT_EQ(stats.bodyUpdates, 2u);
+  for (std::size_t body = 0u; body < directStates.size(); ++body) {
+    EXPECT_NEAR(
+        (indexedStates[body].position - directStates[body].position).norm(),
+        0.0,
+        1e-12)
+        << "body=" << body;
+    EXPECT_NEAR(
+        (indexedStates[body].orientation.coeffs()
+         - directStates[body].orientation.coeffs())
+            .norm(),
+        0.0,
+        1e-12)
+        << "body=" << body;
+  }
+  EXPECT_NEAR(pointPairs[0].row.state.lambda, normal.row.state.lambda, 1e-12);
+  EXPECT_NEAR(
+      frictionPairs[0].first.state.lambda, friction.first.state.lambda, 1e-12);
+  EXPECT_NEAR(
+      frictionPairs[0].second.state.lambda,
+      friction.second.state.lambda,
+      1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidRowDriverUsesLiveNormalForceForFrictionCone)
+{
+  struct Result
+  {
+    double tangentDisplacement = 0.0;
+    double tangentDualNorm = 0.0;
+    bool anchorSticking = true;
+  };
+
+  const auto run = [](double normalLambda, double tangentPosition = 1.0) {
+    std::vector<vbd::AvbdRigidBodyState> states(2);
+    states[1].position = tangentPosition * Vec3::UnitY();
+    const std::vector<vbd::AvbdRigidBodyState> inertialTargets = states;
+    const std::vector<double> masses = {100.0, 100.0};
+    const std::vector<Eigen::Matrix3d> inertias{
+        100.0 * Eigen::Matrix3d::Identity(),
+        100.0 * Eigen::Matrix3d::Identity()};
+    const std::vector<std::uint8_t> fixed = {1u, 0u};
+
+    vbd::AvbdScalarRowState normalState;
+    normalState.stiffness = 0.0;
+    normalState.lambda = normalLambda;
+    std::vector<vbd::AvbdRigidBodyPointPairRow> pointPairs(1);
+    pointPairs[0].bodyA = 0;
+    pointPairs[0].bodyB = 1;
+    pointPairs[0].row = vbd::makeAvbdRigidContactNormalRow(
+        Vec3::Zero(),
+        Vec3::Zero(),
+        Vec3::UnitX(),
+        /*targetDistance=*/0.0,
+        normalState);
+
+    vbd::AvbdScalarRowState tangentState;
+    tangentState.stiffness = 10.0;
+    std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionPairs(1);
+    auto& friction = frictionPairs[0];
+    friction.bodyA = 0;
+    friction.bodyB = 1;
+    friction.normalRowIndex = 0u;
+    friction.frictionCoefficient = 0.5;
+    friction.first = vbd::makeAvbdRigidContactFrictionTangentRow(
+        Vec3::Zero(),
+        Vec3::Zero(),
+        Vec3::UnitY(),
+        Vec3::Zero(),
+        /*forceLimit=*/100.0,
+        tangentState);
+    friction.second = vbd::makeAvbdRigidContactFrictionTangentRow(
+        Vec3::Zero(),
+        Vec3::Zero(),
+        Vec3::UnitZ(),
+        Vec3::Zero(),
+        /*forceLimit=*/100.0,
+        tangentState);
+    vbd::AvbdContactTangentAnchorState anchor;
+    anchor.valid = true;
+    anchor.sticking = false;
+    friction.persistentAnchor = &anchor;
+
+    std::vector<vbd::AvbdRigidBodyPointAttachmentRow> attachments;
+    std::vector<vbd::AvbdRigidBodyAngularPairRow> angularPairs;
+    vbd::AvbdRigidBlockDescentOptions descent;
+    descent.iterations = 1;
+    vbd::AvbdRigidPointAttachmentOptions rowOptions;
+    rowOptions.beta = 0.0;
+    vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+    frictionOptions.beta = 0.0;
+    vbd::AvbdRigidBodyRowIndexScratch rowIndexScratch;
+
+    (void)vbd::blockDescentRigidBodiesAvbdRows(
+        states,
+        masses,
+        inertias,
+        fixed,
+        inertialTargets,
+        /*timeStep=*/1.0,
+        attachments,
+        pointPairs,
+        angularPairs,
+        frictionPairs,
+        descent,
+        rowOptions,
+        frictionOptions,
+        &rowIndexScratch);
+
+    Result result;
+    result.tangentDisplacement = tangentPosition - states[1].position.y();
+    result.tangentDualNorm
+        = std::hypot(friction.first.state.lambda, friction.second.state.lambda);
+    result.anchorSticking = anchor.sticking;
+    return result;
+  };
+
+  const Result lowNormal = run(2.0);
+  const Result highNormal = run(8.0);
+  const Result staticContact = run(8.0, 1e-6);
+  EXPECT_NEAR(lowNormal.tangentDualNorm, 1.0, 1e-12);
+  EXPECT_NEAR(highNormal.tangentDualNorm, 4.0, 1e-12);
+  EXPECT_NEAR(
+      highNormal.tangentDisplacement,
+      4.0 * lowNormal.tangentDisplacement,
+      1e-12);
+  EXPECT_FALSE(lowNormal.anchorSticking);
+  EXPECT_FALSE(highNormal.anchorSticking);
+  EXPECT_LT(staticContact.tangentDualNorm, 4.0);
+  EXPECT_TRUE(staticContact.anchorSticking);
 }
 
 //==============================================================================
@@ -1423,7 +2133,7 @@ TEST(AvbdRigidBlock, RigidRowDriverAppliesFrictionPair)
   EXPECT_EQ(stats.iterations, 1u);
   EXPECT_EQ(stats.bodyUpdates, 1u);
   EXPECT_NEAR(states[1].position.x(), 0.0, 1e-12);
-  EXPECT_LT(states[1].position.y(), 1.0);
+  EXPECT_NEAR(states[1].position.y(), 1.0 - 5.0 / 11.0, 1e-12);
   EXPECT_NEAR(frictionPairs[0].first.state.lambda, 0.0, 1e-12);
   EXPECT_NEAR(frictionPairs[0].second.state.lambda, 5.0, 1e-12);
 }
@@ -1729,6 +2439,7 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
   vbd::AvbdScalarRowInventory frictionInventory;
   std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
   std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
   vbd::AvbdRowWarmStartOptions warmStart;
   warmStart.alpha = 1.0;
   warmStart.gamma = 1.0;
@@ -1740,6 +2451,7 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), 1u);
@@ -1769,6 +2481,7 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
 
   ASSERT_EQ(frictionRows.size(), 1u);
@@ -1817,7 +2530,201 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderCreatesWarmStartedRows)
 }
 
 //==============================================================================
-TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsZeroLimitFrictionRows)
+TEST(
+    AvbdRigidBlock,
+    PersistentTangentAnchorRegularizesItsNonzeroStepStartConstraint)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(1);
+  contacts[0].bodyA = 0u;
+  contacts[0].bodyB = 1u;
+  contacts[0].endpointA
+      = {10u,
+         vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 1u)};
+  contacts[0].endpointB = {
+      20u,
+      vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Vertex, 2u)};
+  contacts[0].point = Vec3::Zero();
+  contacts[0].normalFromAtoB = Vec3::UnitZ();
+  contacts[0].depth = 0.1;
+  contacts[0].frictionCoefficient = 1.0;
+  contacts[0].startStiffness = 10.0;
+  contacts[0].maxStiffness = 100.0;
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  const auto build = [&] {
+    vbd::buildAvbdRigidContactManifoldRows(
+        states,
+        contacts,
+        normalInventory,
+        frictionInventory,
+        normalRows,
+        frictionRows,
+        scratch,
+        warmStart);
+  };
+  build();
+  ASSERT_EQ(frictionRows.size(), 1u);
+  ASSERT_EQ(scratch.contactTangentAnchors.size(), 1u);
+  scratch.contactTangentAnchors[0].sticking = true;
+  const Vec3 persistentTangent = frictionRows[0].first.axis;
+
+  // The collision detector reports a fresh coincident point, but a sticking
+  // contact keeps the prior material anchors. Their tangential separation is
+  // therefore the nonzero C*(x_t) that Equation 18 must regularize.
+  states[1].position = 0.4 * persistentTangent;
+  build();
+  ASSERT_EQ(frictionRows.size(), 1u);
+  ASSERT_TRUE(scratch.contactTangentAnchors[0].sticking);
+  const auto& persistentRows = frictionRows[0];
+  const double firstC0
+      = persistentRows.first.taylorLinearization.stepStartConstraintValue;
+  const double secondC0
+      = persistentRows.second.taylorLinearization.stepStartConstraintValue;
+  EXPECT_NEAR(firstC0, 0.4, 1e-12);
+  EXPECT_NEAR(secondC0, 0.0, 1e-12);
+  EXPECT_NEAR(persistentRows.first.previousConstraintValue, firstC0, 1e-12);
+  EXPECT_NEAR(persistentRows.second.previousConstraintValue, secondC0, 1e-12);
+
+  constexpr double alpha = 0.95;
+  const Eigen::Vector2d constraintValues
+      = vbd::avbdRigidPointPairConstraintValues(
+          states[0],
+          states[1],
+          persistentRows.first,
+          persistentRows.second,
+          alpha);
+  EXPECT_NEAR(constraintValues.x(), (1.0 - alpha) * firstC0, 1e-12);
+  EXPECT_NEAR(constraintValues.y(), (1.0 - alpha) * secondC0, 1e-12);
+
+  vbd::AvbdRigidPointPairRow dualFirst = persistentRows.first;
+  vbd::AvbdRigidPointPairRow dualSecond = persistentRows.second;
+  dualFirst.state = {.stiffness = 10.0, .lambda = 0.0};
+  dualSecond.state = {.stiffness = 10.0, .lambda = 0.0};
+  vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+  frictionOptions.alpha = alpha;
+  frictionOptions.beta = 0.0;
+  (void)vbd::updateAvbdRigidPointPairFrictionTangentPairForLimit(
+      dualFirst,
+      dualSecond,
+      states[0],
+      states[1],
+      frictionOptions,
+      /*forceLimit=*/100.0);
+  EXPECT_NEAR(dualFirst.state.lambda, 10.0 * constraintValues.x(), 1e-12);
+  EXPECT_NEAR(dualSecond.state.lambda, 10.0 * constraintValues.y(), 1e-12);
+
+  // Sliding/fresh anchors reset to the detected coincident material points,
+  // so their tangential C*(x_t) remains zero.
+  scratch.contactTangentAnchors[0].sticking = false;
+  build();
+  ASSERT_EQ(frictionRows.size(), 1u);
+  EXPECT_NEAR(
+      frictionRows[0].first.taylorLinearization.stepStartConstraintValue,
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      frictionRows[0].second.taylorLinearization.stepStartConstraintValue,
+      0.0,
+      1e-12);
+}
+
+//==============================================================================
+// The convenience overload cannot retain the detected material-point identity
+// that validates scalar continuation. It must therefore reject even apparently
+// matching keys instead of letting a repeated or lower-rank call inherit them.
+TEST(AvbdRigidBlock, RigidContactManifoldOneShotOverloadAlwaysColdStarts)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  const vbd::AvbdContactEndpointId endpointA{
+      11u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 3)};
+  const vbd::AvbdContactEndpointId endpointB{
+      22u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 7)};
+  const auto makeContact = [&](double x, std::uint32_t row) {
+    vbd::AvbdRigidContactManifoldPoint contact;
+    contact.bodyA = 0u;
+    contact.bodyB = 1u;
+    contact.endpointA = endpointA;
+    contact.endpointB = endpointB;
+    contact.point = Vec3(x, 0.0, 0.0);
+    contact.normalFromAtoB = Vec3::UnitZ();
+    contact.depth = 0.1;
+    contact.frictionCoefficient = 0.5;
+    contact.startStiffness = 10.0;
+    contact.maxStiffness = 1.0e4;
+    contact.row = row;
+    return contact;
+  };
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts{
+      makeContact(-1.0, 0u), makeContact(1.0, 1u)};
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  const auto buildOneShot = [&](const auto& activeContacts) {
+    vbd::buildAvbdRigidContactManifoldRows(
+        states,
+        activeContacts,
+        normalInventory,
+        frictionInventory,
+        normalRows,
+        frictionRows,
+        warmStart);
+  };
+  const auto expectCold = [&] {
+    for (const auto& record : normalInventory.records()) {
+      EXPECT_DOUBLE_EQ(record.state.lambda, 0.0);
+    }
+    for (const auto& record : frictionInventory.records()) {
+      EXPECT_DOUBLE_EQ(record.state.lambda, 0.0);
+    }
+    for (const auto& rows : frictionRows) {
+      EXPECT_EQ(rows.persistentAnchor, nullptr)
+          << "one-shot rows must not point into ephemeral anchor scratch";
+    }
+  };
+
+  buildOneShot(contacts);
+  ASSERT_EQ(normalInventory.size(), 2u);
+  ASSERT_EQ(frictionInventory.size(), 4u);
+  ASSERT_EQ(frictionRows.size(), 2u);
+  normalInventory[0].state.lambda = 11.0;
+  normalInventory[1].state.lambda = 22.0;
+  frictionInventory[0].state.lambda = 3.0;
+  frictionInventory[1].state.lambda = -4.0;
+
+  buildOneShot(contacts);
+  ASSERT_EQ(normalInventory.size(), 2u);
+  ASSERT_EQ(frictionInventory.size(), 4u);
+  ASSERT_EQ(frictionRows.size(), 2u);
+  expectCold();
+
+  normalInventory[0].state.lambda = 33.0;
+  frictionInventory[0].state.lambda = 5.0;
+  std::vector<vbd::AvbdRigidContactManifoldPoint> rightOnly{contacts[1]};
+  rightOnly[0].row = 0u;
+  buildOneShot(rightOnly);
+  ASSERT_EQ(normalInventory.size(), 1u);
+  ASSERT_EQ(frictionInventory.size(), 2u);
+  ASSERT_EQ(frictionRows.size(), 1u);
+  expectCold();
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidContactManifoldKeepsPositiveFrictionAtZeroNormalForce)
 {
   std::vector<vbd::AvbdRigidBodyState> states(2);
 
@@ -1840,6 +2747,7 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsZeroLimitFrictionRows)
   vbd::AvbdScalarRowInventory frictionInventory;
   std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
   std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
   vbd::AvbdRowWarmStartOptions warmStart;
   warmStart.alpha = 1.0;
   warmStart.gamma = 1.0;
@@ -1851,8 +2759,11 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsZeroLimitFrictionRows)
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
   ASSERT_EQ(normalInventory.size(), 1u);
+  ASSERT_EQ(frictionInventory.size(), 2u);
+  ASSERT_EQ(frictionRows.size(), 1u);
   normalInventory[0].state.lambda = 8.0;
 
   vbd::buildAvbdRigidContactManifoldRows(
@@ -1862,6 +2773,7 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsZeroLimitFrictionRows)
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
   ASSERT_EQ(frictionInventory.size(), 2u);
   ASSERT_EQ(frictionRows.size(), 1u);
@@ -1875,12 +2787,33 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsZeroLimitFrictionRows)
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), 1u);
   ASSERT_EQ(normalRows.size(), 1u);
-  EXPECT_TRUE(frictionInventory.records().empty());
-  EXPECT_TRUE(frictionRows.empty());
+  ASSERT_EQ(frictionInventory.size(), 2u);
+  ASSERT_EQ(frictionRows.size(), 1u);
+  EXPECT_DOUBLE_EQ(frictionRows[0].first.bounds.lower, 0.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].first.bounds.upper, 0.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].second.bounds.lower, 0.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].second.bounds.upper, 0.0);
+
+  vbd::AvbdRigidBodyBlock blockA;
+  vbd::AvbdRigidBodyBlock blockB;
+  vbd::AvbdRigidPointPairFrictionOptions frictionOptions;
+  const Eigen::Vector2d zeroForce
+      = vbd::addAvbdRigidPointPairFrictionTangentPair(
+          blockA,
+          blockB,
+          states[0],
+          states[1],
+          frictionRows[0].first,
+          frictionRows[0].second,
+          frictionOptions);
+  EXPECT_NEAR(zeroForce.norm(), 0.0, 1e-12);
+  EXPECT_GT(blockA.hessian.norm(), 0.0);
+  EXPECT_GT(blockB.hessian.norm(), 0.0);
 
   normalInventory[0].state.lambda = 8.0;
   contacts[0].startStiffness = 80.0;
@@ -1891,6 +2824,7 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsZeroLimitFrictionRows)
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
   ASSERT_EQ(frictionInventory.size(), 2u);
   ASSERT_EQ(frictionRows.size(), 1u);
@@ -1903,12 +2837,85 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderSkipsZeroLimitFrictionRows)
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), 1u);
   ASSERT_EQ(normalRows.size(), 1u);
   EXPECT_TRUE(frictionInventory.records().empty());
   EXPECT_TRUE(frictionRows.empty());
+}
+
+//==============================================================================
+// A positive-friction manifold elsewhere in the batch must not materialize
+// zero-bound tangent rows for a frictionless contact. Such rows carry no force
+// but their penalty Hessian would otherwise suppress free tangential motion.
+TEST(AvbdRigidBlock, RigidContactManifoldSkipsZeroFrictionInMixedBatch)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(2);
+  for (std::size_t index = 0; index < contacts.size(); ++index) {
+    auto& contact = contacts[index];
+    contact.bodyA = 0;
+    contact.bodyB = 1;
+    contact.endpointA
+        = {42,
+           vbd::packAvbdContactFeatureId(
+               vbd::AvbdContactFeatureKind::Vertex, 4 + index)};
+    contact.endpointB
+        = {7,
+           vbd::packAvbdContactFeatureId(
+               vbd::AvbdContactFeatureKind::Face, 2 + index)};
+    contact.point = Vec3(0.1, 0.2 + 0.1 * static_cast<double>(index), -0.15);
+    contact.normalFromAtoB = Vec3::UnitX();
+    contact.depth = 0.2;
+    contact.startStiffness = 80.0;
+    contact.maxStiffness = 400.0;
+    contact.row = static_cast<std::uint32_t>(index);
+  }
+  contacts[0].frictionCoefficient = 0.0;
+  contacts[1].frictionCoefficient = 0.5;
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+  ASSERT_EQ(normalInventory.size(), 2u);
+  normalInventory[0].state.lambda = 8.0;
+  normalInventory[1].state.lambda = 8.0;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(frictionInventory.size(), 2u);
+  EXPECT_EQ(frictionInventory[0].descriptor.key.row, contacts[1].row);
+  EXPECT_EQ(frictionInventory[1].descriptor.key.row, contacts[1].row);
+  ASSERT_EQ(frictionRows.size(), 1u);
+  EXPECT_DOUBLE_EQ(frictionRows[0].first.bounds.lower, -4.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].first.bounds.upper, 4.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].second.bounds.lower, -4.0);
+  EXPECT_DOUBLE_EQ(frictionRows[0].second.bounds.upper, 4.0);
 }
 
 //==============================================================================
@@ -1936,6 +2943,7 @@ TEST(
   vbd::AvbdScalarRowInventory frictionInventory;
   std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
   std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
   vbd::AvbdRowWarmStartOptions warmStart;
   warmStart.alpha = 1.0;
   warmStart.gamma = 1.0;
@@ -1947,6 +2955,7 @@ TEST(
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
   ASSERT_EQ(normalInventory.size(), 1u);
   normalInventory[0].state.lambda = 10.0;
@@ -1958,8 +2967,13 @@ TEST(
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
   ASSERT_EQ(frictionInventory.size(), 2u);
+  ASSERT_EQ(scratch.contactTangentAnchors.size(), 1u);
+  scratch.contactTangentAnchors[0].sticking = true;
+  const Vec3 persistentLocalA = scratch.contactTangentAnchors[0].localPointA;
+  const Vec3 persistentLocalB = scratch.contactTangentAnchors[0].localPointB;
   frictionInventory[0].state.lambda = 3.0;
   frictionInventory[1].state.lambda = 4.0;
   const Vec3 previousFirstAxis = frictionInventory[0].direction;
@@ -1968,13 +2982,19 @@ TEST(
   contacts[0].normalFromAtoB = Vec3(1.0, 0.0, 1.0).normalized();
   const Eigen::Matrix<double, 3, 2> currentBasis
       = vbd::avbdRigidContactTangentBasis(contacts[0].normalFromAtoB);
+  const double canonicalDirectionSign
+      = contacts[0].endpointB < contacts[0].endpointA ? -1.0 : 1.0;
+  const Vec3 currentCanonicalFirst
+      = canonicalDirectionSign * currentBasis.col(0);
+  const Vec3 currentCanonicalSecond
+      = canonicalDirectionSign * currentBasis.col(1);
   const Eigen::Vector2d expected = vbd::projectAvbdFrictionDualToTangentPair(
       3.0,
       4.0,
       previousFirstAxis,
       previousSecondAxis,
-      currentBasis.col(0),
-      currentBasis.col(1));
+      currentCanonicalFirst,
+      currentCanonicalSecond);
   ASSERT_GT((expected - Eigen::Vector2d(3.0, 4.0)).norm(), 1e-6);
 
   vbd::buildAvbdRigidContactManifoldRows(
@@ -1984,22 +3004,333 @@ TEST(
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
 
   ASSERT_EQ(frictionInventory.size(), 2u);
   EXPECT_NEAR(frictionInventory[0].state.lambda, expected.x(), 1e-12);
   EXPECT_NEAR(frictionInventory[1].state.lambda, expected.y(), 1e-12);
   EXPECT_NEAR(
-      (frictionInventory[0].direction - currentBasis.col(0)).norm(),
+      (frictionInventory[0].direction - currentCanonicalFirst).norm(),
       0.0,
       1e-12);
   EXPECT_NEAR(
-      (frictionInventory[1].direction - currentBasis.col(1)).norm(),
+      (frictionInventory[1].direction - currentCanonicalSecond).norm(),
       0.0,
       1e-12);
   ASSERT_EQ(frictionRows.size(), 1u);
   EXPECT_NEAR(frictionRows[0].first.state.lambda, expected.x(), 1e-12);
   EXPECT_NEAR(frictionRows[0].second.state.lambda, expected.y(), 1e-12);
+  ASSERT_EQ(scratch.contactTangentAnchors.size(), 1u);
+  EXPECT_TRUE(scratch.contactTangentAnchors[0].sticking);
+  EXPECT_EQ(scratch.contactTangentAnchors[0].localPointA, persistentLocalA);
+  EXPECT_EQ(scratch.contactTangentAnchors[0].localPointB, persistentLocalB);
+}
+
+//==============================================================================
+TEST(
+    AvbdRigidBlock,
+    RigidContactManifoldShrunkConeRadiallyProjectsAndResetsStickingAnchor)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(1);
+  auto& contact = contacts[0];
+  contact.bodyA = 0u;
+  contact.bodyB = 1u;
+  contact.endpointA = {
+      42u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 4)};
+  contact.endpointB = {
+      7u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 2)};
+  contact.point = Vec3(0.1, -0.2, 0.0);
+  contact.normalFromAtoB = Vec3::UnitZ();
+  contact.depth = 0.2;
+  contact.frictionCoefficient = 1.0;
+  contact.startStiffness = 80.0;
+  contact.maxStiffness = 400.0;
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+  const auto build = [&] {
+    vbd::buildAvbdRigidContactManifoldRows(
+        states,
+        contacts,
+        normalInventory,
+        frictionInventory,
+        normalRows,
+        frictionRows,
+        scratch,
+        warmStart);
+  };
+
+  build();
+  ASSERT_EQ(normalInventory.size(), 1u);
+  normalInventory[0].state.lambda = 10.0;
+  build();
+  ASSERT_EQ(frictionInventory.size(), 2u);
+  ASSERT_EQ(scratch.contactTangentAnchors.size(), 1u);
+
+  scratch.contactTangentAnchors[0].sticking = true;
+  const Vec3 oldLocalA = scratch.contactTangentAnchors[0].localPointA;
+  const Vec3 oldLocalB = scratch.contactTangentAnchors[0].localPointB;
+  frictionInventory[0].state.lambda = 3.0;
+  frictionInventory[1].state.lambda = 4.0;
+
+  contact.point += Vec3(0.3, 0.4, 0.0);
+  const Vec3 detectedLocalA
+      = vbd::avbdRigidBodyLocalPoint(states[0], contact.point);
+  const Vec3 detectedLocalB
+      = vbd::avbdRigidBodyLocalPoint(states[1], contact.point);
+  ASSERT_GT((detectedLocalA - oldLocalA).norm(), 0.1);
+  ASSERT_GT((detectedLocalB - oldLocalB).norm(), 0.1);
+  normalInventory[0].state.lambda = 2.0;
+  build();
+
+  ASSERT_EQ(frictionInventory.size(), 2u);
+  EXPECT_NEAR(frictionInventory[0].state.lambda, 1.2, 1e-12);
+  EXPECT_NEAR(frictionInventory[1].state.lambda, 1.6, 1e-12);
+  EXPECT_NEAR(
+      std::hypot(
+          frictionInventory[0].state.lambda, frictionInventory[1].state.lambda),
+      2.0,
+      1e-12);
+  ASSERT_EQ(frictionRows.size(), 1u);
+  EXPECT_NEAR(frictionRows[0].first.state.lambda, 1.2, 1e-12);
+  EXPECT_NEAR(frictionRows[0].second.state.lambda, 1.6, 1e-12);
+  ASSERT_NE(frictionRows[0].persistentAnchor, nullptr);
+  EXPECT_FALSE(frictionRows[0].persistentAnchor->sticking);
+  EXPECT_NEAR(
+      (frictionRows[0].persistentAnchor->localPointA - detectedLocalA).norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].persistentAnchor->localPointB - detectedLocalB).norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].first.localPointA - detectedLocalA).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].first.localPointB - detectedLocalB).norm(), 0.0, 1e-12);
+}
+
+//==============================================================================
+TEST(
+    AvbdRigidBlock,
+    RigidContactManifoldPersistsOnlyStickingCanonicalFeatureAnchors)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[0].position = Vec3(0.5, -0.25, 0.1);
+  states[1].position = Vec3(-0.4, 0.3, -0.2);
+
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(2);
+  for (std::size_t index = 0; index < contacts.size(); ++index) {
+    auto& contact = contacts[index];
+    contact.bodyA = 0;
+    contact.bodyB = 1;
+    contact.endpointA
+        = {42,
+           vbd::packAvbdContactFeatureId(
+               vbd::AvbdContactFeatureKind::Vertex, 4 + index)};
+    contact.endpointB
+        = {7,
+           vbd::packAvbdContactFeatureId(
+               vbd::AvbdContactFeatureKind::Face, 2 + index)};
+    contact.point = Vec3(0.1, 0.2 + 0.2 * static_cast<double>(index), -0.15);
+    contact.normalFromAtoB = Vec3::UnitZ();
+    contact.depth = 0.2;
+    contact.frictionCoefficient = 0.5;
+    contact.startStiffness = 80.0;
+    contact.maxStiffness = 400.0;
+    contact.row = static_cast<std::uint32_t>(10u + index);
+  }
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(frictionRows.size(), 2u);
+  const Vec3 stickingLocalA = frictionRows[0].first.localPointA;
+  const Vec3 stickingLocalB = frictionRows[0].first.localPointB;
+  ASSERT_EQ(scratch.contactTangentAnchors.size(), 2u);
+  const auto firstAnchor = std::find_if(
+      scratch.contactTangentAnchors.begin(),
+      scratch.contactTangentAnchors.end(),
+      [&](const auto& anchor) { return anchor.key.row == contacts[0].row; });
+  const auto secondAnchor = std::find_if(
+      scratch.contactTangentAnchors.begin(),
+      scratch.contactTangentAnchors.end(),
+      [&](const auto& anchor) { return anchor.key.row == contacts[1].row; });
+  ASSERT_NE(firstAnchor, scratch.contactTangentAnchors.end());
+  ASSERT_NE(secondAnchor, scratch.contactTangentAnchors.end());
+  ASSERT_NE(frictionRows[0].persistentAnchor, nullptr);
+  ASSERT_NE(frictionRows[1].persistentAnchor, nullptr);
+  EXPECT_EQ(frictionRows[0].persistentAnchor, &*firstAnchor);
+  EXPECT_EQ(frictionRows[1].persistentAnchor, &*secondAnchor);
+  EXPECT_NE(frictionRows[0].persistentAnchor, frictionRows[1].persistentAnchor)
+      << "each contact pair must own a distinct sidecar anchor";
+  firstAnchor->sticking = true;
+  secondAnchor->sticking = false;
+
+  contacts[0].point += Vec3(0.3, -0.1, 0.0);
+  contacts[1].point += Vec3(-0.2, 0.15, 0.0);
+  const Vec3 resetLocalA
+      = vbd::avbdRigidBodyLocalPoint(states[0], contacts[1].point);
+  const Vec3 resetLocalB
+      = vbd::avbdRigidBodyLocalPoint(states[1], contacts[1].point);
+  std::swap(contacts[0], contacts[1]);
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(frictionRows.size(), 2u);
+  // Descriptor/contact order changed: row 11 is first and must reset because
+  // it was sliding, while row 10 remains attached to its prior feature points.
+  EXPECT_EQ(frictionInventory[0].descriptor.key.row, 11u);
+  EXPECT_NEAR(
+      (frictionRows[0].first.localPointA - resetLocalA).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (frictionRows[0].first.localPointB - resetLocalB).norm(), 0.0, 1e-12);
+  EXPECT_EQ(frictionInventory[2].descriptor.key.row, 10u);
+  EXPECT_NEAR(
+      (frictionRows[1].first.localPointA - stickingLocalA).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (frictionRows[1].first.localPointB - stickingLocalB).norm(), 0.0, 1e-12);
+
+  const auto movedStickingAnchor = std::find_if(
+      scratch.contactTangentAnchors.begin(),
+      scratch.contactTangentAnchors.end(),
+      [](const auto& anchor) { return anchor.key.row == 10u; });
+  const auto movedStickingIdentity = std::find_if(
+      scratch.contactIdentities.begin(),
+      scratch.contactIdentities.end(),
+      [](const auto& identity) { return identity.key.row == 10u; });
+  ASSERT_NE(movedStickingAnchor, scratch.contactTangentAnchors.end());
+  ASSERT_NE(movedStickingIdentity, scratch.contactIdentities.end());
+  const auto& movedStickingContact = contacts[1];
+  const Vec3 movedDetectedA = vbd::avbdRigidBodyLocalPoint(
+      states[movedStickingContact.bodyA], movedStickingContact.point);
+  const Vec3 movedDetectedB = vbd::avbdRigidBodyLocalPoint(
+      states[movedStickingContact.bodyB], movedStickingContact.point);
+  const bool movedEndpointsReversed
+      = movedStickingContact.endpointB < movedStickingContact.endpointA;
+  const Vec3 movedCanonicalA
+      = movedEndpointsReversed ? movedDetectedB : movedDetectedA;
+  const Vec3 movedCanonicalB
+      = movedEndpointsReversed ? movedDetectedA : movedDetectedB;
+  EXPECT_NEAR(
+      (movedStickingIdentity->localPointA - movedCanonicalA).norm(),
+      0.0,
+      1e-12);
+  EXPECT_NEAR(
+      (movedStickingIdentity->localPointB - movedCanonicalB).norm(),
+      0.0,
+      1e-12);
+  EXPECT_GT(
+      (movedStickingIdentity->localPointA - movedStickingAnchor->localPointA)
+              .norm()
+          + (movedStickingIdentity->localPointB
+             - movedStickingAnchor->localPointB)
+                .norm(),
+      1e-6)
+      << "detected-current identity must advance independently of the older "
+         "sticking anchor";
+
+  ASSERT_EQ(scratch.contactTangentAnchors.size(), 2u);
+  for (const auto& anchor : scratch.contactTangentAnchors) {
+    EXPECT_TRUE(anchor.valid);
+    const auto firstRecordForContact = std::find_if(
+        frictionInventory.records().begin(),
+        frictionInventory.records().end(),
+        [&](const auto& record) {
+          return record.descriptor.key.row == anchor.key.row
+                 && record.descriptor.key.axis == 0u;
+        });
+    ASSERT_NE(firstRecordForContact, frictionInventory.records().end());
+    EXPECT_EQ(
+        anchor.key,
+        vbd::makeAvbdContactTangentAnchorKey(
+            firstRecordForContact->descriptor.key));
+  }
+
+  // Reverse the runtime endpoint/body order for the sticking contact. The
+  // canonical owner is unchanged, while the body-local anchors swap back into
+  // the transient A/B order used by the row solve. A nonzero warm dual is
+  // stored as force on the canonical first endpoint and must keep that world
+  // force when the transient endpoint order flips.
+  Vec3 canonicalForceBefore = Vec3::Zero();
+  std::size_t warmDualRowCount = 0u;
+  for (auto& record : frictionInventory.records()) {
+    if (record.descriptor.key.row != contacts[1].row) {
+      continue;
+    }
+    record.state.lambda = record.descriptor.key.axis == 0u ? 2.0 : -1.0;
+    canonicalForceBefore.noalias() += record.state.lambda * record.direction;
+    ++warmDualRowCount;
+  }
+  ASSERT_EQ(warmDualRowCount, 2u);
+
+  auto& reversed = contacts[1];
+  std::swap(reversed.bodyA, reversed.bodyB);
+  std::swap(reversed.endpointA, reversed.endpointB);
+  reversed.normalFromAtoB = -reversed.normalFromAtoB;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+
+  ASSERT_EQ(frictionRows.size(), 2u);
+  EXPECT_NEAR(
+      (frictionRows[1].first.localPointA - stickingLocalB).norm(), 0.0, 1e-12);
+  EXPECT_NEAR(
+      (frictionRows[1].first.localPointB - stickingLocalA).norm(), 0.0, 1e-12);
+  Vec3 canonicalForceAfter = Vec3::Zero();
+  for (const auto& record : frictionInventory.records()) {
+    if (record.descriptor.key.row == reversed.row) {
+      canonicalForceAfter.noalias() += record.state.lambda * record.direction;
+    }
+  }
+  const auto reversedAnchor = std::find_if(
+      scratch.contactTangentAnchors.begin(),
+      scratch.contactTangentAnchors.end(),
+      [&](const auto& anchor) { return anchor.key.row == reversed.row; });
+  ASSERT_NE(reversedAnchor, scratch.contactTangentAnchors.end());
+  EXPECT_TRUE(reversedAnchor->sticking);
+  EXPECT_EQ(
+      reversedAnchor->key,
+      vbd::makeAvbdContactTangentAnchorKey(
+          reversed.endpointA, reversed.endpointB, reversed.row));
+  EXPECT_NEAR((canonicalForceAfter - canonicalForceBefore).norm(), 0.0, 1e-12);
 }
 
 //==============================================================================
@@ -2099,11 +3430,18 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderUsesScratchForLargeManifolds)
     contact.row = static_cast<std::uint32_t>(i);
   }
 
-  vbd::AvbdScalarRowInventory normalInventory;
-  vbd::AvbdScalarRowInventory frictionInventory;
-  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
-  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
-  vbd::AvbdRigidContactManifoldRowScratch scratch;
+  CountingMemoryAllocator allocator;
+  vbd::AvbdScalarRowInventory normalInventory(allocator);
+  vbd::AvbdScalarRowInventory frictionInventory(allocator);
+  using NormalRowAllocator
+      = common::StlAllocator<vbd::AvbdRigidBodyPointPairRow>;
+  using FrictionRowAllocator
+      = common::StlAllocator<vbd::AvbdRigidBodyPointPairFrictionRows>;
+  std::vector<vbd::AvbdRigidBodyPointPairRow, NormalRowAllocator> normalRows{
+      NormalRowAllocator{allocator}};
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows, FrictionRowAllocator>
+      frictionRows{FrictionRowAllocator{allocator}};
+  vbd::AvbdRigidContactManifoldRowScratch scratch(allocator);
   vbd::AvbdRowWarmStartOptions warmStart;
   warmStart.alpha = 1.0;
   warmStart.gamma = 1.0;
@@ -2120,11 +3458,34 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderUsesScratchForLargeManifolds)
 
   ASSERT_EQ(normalInventory.size(), kActiveContacts);
   ASSERT_EQ(normalRows.size(), kActiveContacts);
+  ASSERT_EQ(frictionInventory.size(), 2u * kActiveContacts);
+  ASSERT_EQ(frictionRows.size(), kActiveContacts);
   EXPECT_EQ(scratch.activeContacts.size(), kActiveContacts);
   EXPECT_EQ(scratch.contactLocalPoints.size(), kActiveContacts);
+  EXPECT_EQ(scratch.contactIdentities.size(), kActiveContacts);
+  EXPECT_EQ(scratch.contactTangentAnchors.size(), kActiveContacts);
   EXPECT_NEAR((normalRows[0].row.axis + Vec3::UnitZ()).norm(), 0.0, 1e-12);
-  EXPECT_DOUBLE_EQ(
-      normalRows.back().row.previousConstraintValue, contacts.back().depth);
+  EXPECT_NEAR(
+      normalRows.back().row.previousConstraintValue,
+      contacts.back().depth,
+      1e-12);
+  const auto* const frictionRecordStorage = frictionInventory.records().data();
+  const auto* const contactAnchorStorage = scratch.contactTangentAnchors.data();
+  const auto expectStablePointerGraph = [&] {
+    EXPECT_EQ(frictionInventory.records().data(), frictionRecordStorage);
+    EXPECT_EQ(scratch.contactTangentAnchors.data(), contactAnchorStorage);
+    for (std::size_t i = 0u; i < frictionRows.size(); ++i) {
+      EXPECT_EQ(
+          frictionRows[i].persistentFirstRecord,
+          frictionRecordStorage + 2u * i);
+      EXPECT_EQ(
+          frictionRows[i].persistentSecondRecord,
+          frictionRecordStorage + 2u * i + 1u);
+      EXPECT_EQ(frictionRows[i].persistentAnchor, contactAnchorStorage + i);
+    }
+  };
+  expectStablePointerGraph();
+  const std::size_t allocationsAfterFirstBuild = allocator.allocations;
 
   for (std::size_t i = 0; i < normalInventory.size(); ++i) {
     normalInventory[i].state.lambda = 8.0;
@@ -2139,8 +3500,11 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderUsesScratchForLargeManifolds)
       scratch,
       warmStart);
 
+  EXPECT_EQ(allocator.allocations, allocationsAfterFirstBuild)
+      << "reserved large-manifold staging must not allocate on a warm frame";
   ASSERT_EQ(frictionInventory.size(), 2u * kActiveContacts);
   ASSERT_EQ(frictionRows.size(), kActiveContacts);
+  expectStablePointerGraph();
   frictionInventory[0].state.lambda = 3.0;
   frictionInventory[1].state.lambda = 4.0;
   const Vec3 previousFirstAxis = frictionInventory[0].direction;
@@ -2149,13 +3513,23 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderUsesScratchForLargeManifolds)
   contacts[0].normalFromAtoB = Vec3(1.0, 0.0, 1.0).normalized();
   const Eigen::Matrix<double, 3, 2> currentBasis
       = vbd::avbdRigidContactTangentBasis(contacts[0].normalFromAtoB);
-  const Eigen::Vector2d expected = vbd::projectAvbdFrictionDualToTangentPair(
+  const double canonicalDirectionSign
+      = contacts[0].endpointB < contacts[0].endpointA ? -1.0 : 1.0;
+  const Vec3 currentCanonicalFirst
+      = canonicalDirectionSign * currentBasis.col(0);
+  const Vec3 currentCanonicalSecond
+      = canonicalDirectionSign * currentBasis.col(1);
+  Eigen::Vector2d expected = vbd::projectAvbdFrictionDualToTangentPair(
       3.0,
       4.0,
       previousFirstAxis,
       previousSecondAxis,
-      currentBasis.col(0),
-      currentBasis.col(1));
+      currentCanonicalFirst,
+      currentCanonicalSecond);
+  constexpr double kLiveForceLimit = 4.0;
+  if (expected.norm() > kLiveForceLimit) {
+    expected *= kLiveForceLimit / expected.norm();
+  }
 
   vbd::buildAvbdRigidContactManifoldRows(
       states,
@@ -2167,8 +3541,11 @@ TEST(AvbdRigidBlock, RigidContactManifoldBuilderUsesScratchForLargeManifolds)
       scratch,
       warmStart);
 
+  EXPECT_EQ(allocator.allocations, allocationsAfterFirstBuild)
+      << "basis projection and persistent anchors must reuse reserved scratch";
   ASSERT_EQ(frictionInventory.size(), 2u * kActiveContacts);
   ASSERT_EQ(frictionRows.size(), kActiveContacts);
+  expectStablePointerGraph();
   EXPECT_NEAR(frictionInventory[0].state.lambda, expected.x(), 1e-12);
   EXPECT_NEAR(frictionInventory[1].state.lambda, expected.y(), 1e-12);
   EXPECT_NEAR(
@@ -2500,7 +3877,7 @@ TEST(AvbdRigidBlock, RigidAngularMotorBuilderCreatesBoundedRows)
   ASSERT_EQ(motorRows.size(), 1u);
 
   const auto& descriptor = motorInventory[0].descriptor;
-  EXPECT_EQ(descriptor.key.role, vbd::AvbdScalarRowRole::Motor);
+  EXPECT_EQ(descriptor.key.role, vbd::AvbdScalarRowRole::MotorAngular);
   EXPECT_EQ(descriptor.key.row, 6u);
   EXPECT_EQ(descriptor.key.axis, 0u);
   EXPECT_DOUBLE_EQ(descriptor.bounds.lower, -4.0);
@@ -2578,7 +3955,7 @@ TEST(AvbdRigidBlock, RigidLinearMotorBuilderCreatesBoundedRows)
   EXPECT_TRUE(angularMotorRows.empty());
 
   const auto& descriptor = motorInventory[0].descriptor;
-  EXPECT_EQ(descriptor.key.role, vbd::AvbdScalarRowRole::Motor);
+  EXPECT_EQ(descriptor.key.role, vbd::AvbdScalarRowRole::MotorLinear);
   EXPECT_EQ(descriptor.key.row, 3u);
   EXPECT_DOUBLE_EQ(descriptor.bounds.lower, -6.0);
   EXPECT_DOUBLE_EQ(descriptor.bounds.upper, 6.0);
@@ -2596,6 +3973,113 @@ TEST(AvbdRigidBlock, RigidLinearMotorBuilderCreatesBoundedRows)
       1e-12);
   EXPECT_DOUBLE_EQ(linearMotorRows[0].row.bounds.lower, -6.0);
   EXPECT_DOUBLE_EQ(linearMotorRows[0].row.bounds.upper, 6.0);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, LinearAndAngularMotorsNeverAliasWarmStartState)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  const vbd::AvbdContactEndpointId endpointA{
+      5, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const vbd::AvbdContactEndpointId endpointB{
+      7, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Body, 0)};
+  const std::vector<vbd::AvbdRigidLinearMotor> linearMotors{
+      vbd::makeAvbdRigidLinearMotor(
+          0,
+          1,
+          endpointA,
+          endpointB,
+          Vec3::Zero(),
+          Vec3::Zero(),
+          Vec3::UnitX(),
+          0.25,
+          6.0,
+          50.0,
+          400.0,
+          /*row=*/3)};
+  const std::vector<vbd::AvbdRigidAngularMotor> angularMotors{
+      vbd::makeAvbdRigidAngularMotor(
+          0,
+          1,
+          endpointA,
+          endpointB,
+          Eigen::Quaterniond::Identity(),
+          Vec3::UnitZ(),
+          0.5,
+          4.0,
+          70.0,
+          500.0,
+          /*row=*/3)};
+
+  vbd::AvbdScalarRowInventory inventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> linearRows;
+  std::vector<vbd::AvbdRigidBodyAngularPairRow> angularRows;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  vbd::buildAvbdRigidMotorRows(
+      states,
+      linearMotors,
+      std::span<const vbd::AvbdRigidAngularMotor>(),
+      inventory,
+      linearRows,
+      angularRows,
+      /*timeStep=*/0.2,
+      warmStart);
+  ASSERT_EQ(inventory.size(), 1u);
+  inventory[0].state.lambda = 3.0;
+  inventory[0].state.stiffness = 222.0;
+
+  // Reusing the same endpoint/row coordinates for another motor kind is a new
+  // constraint, so force and stiffness must cold-start.
+  vbd::buildAvbdRigidMotorRows(
+      states,
+      std::span<const vbd::AvbdRigidLinearMotor>(),
+      angularMotors,
+      inventory,
+      linearRows,
+      angularRows,
+      /*timeStep=*/0.2,
+      warmStart);
+  ASSERT_EQ(inventory.size(), 1u);
+  EXPECT_EQ(
+      inventory[0].descriptor.key.role, vbd::AvbdScalarRowRole::MotorAngular);
+  EXPECT_DOUBLE_EQ(inventory[0].state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(inventory[0].state.stiffness, 70.0);
+
+  vbd::buildAvbdRigidMotorRows(
+      states,
+      linearMotors,
+      angularMotors,
+      inventory,
+      linearRows,
+      angularRows,
+      /*timeStep=*/0.2,
+      warmStart);
+  ASSERT_EQ(inventory.size(), 2u);
+  ASSERT_EQ(
+      inventory[0].descriptor.key.role, vbd::AvbdScalarRowRole::MotorLinear);
+  ASSERT_EQ(
+      inventory[1].descriptor.key.role, vbd::AvbdScalarRowRole::MotorAngular);
+  inventory[0].state = {.stiffness = 111.0, .lambda = 11.0};
+  inventory[1].state = {.stiffness = 222.0, .lambda = 2.0};
+
+  // Removing one kind preserves only the surviving kind's matching state.
+  vbd::buildAvbdRigidMotorRows(
+      states,
+      std::span<const vbd::AvbdRigidLinearMotor>(),
+      angularMotors,
+      inventory,
+      linearRows,
+      angularRows,
+      /*timeStep=*/0.2,
+      warmStart);
+  ASSERT_EQ(inventory.size(), 1u);
+  EXPECT_EQ(
+      inventory[0].descriptor.key.role, vbd::AvbdScalarRowRole::MotorAngular);
+  EXPECT_DOUBLE_EQ(inventory[0].state.lambda, 2.0);
+  EXPECT_DOUBLE_EQ(inventory[0].state.stiffness, 222.0);
 }
 
 //==============================================================================
@@ -3172,6 +4656,71 @@ TEST(AvbdRigidBlock, RigidAngularPairTargetUsesParentLocalOrientation)
           .norm(),
       0.0,
       1e-12);
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, RigidAngularPairDirectionsMatchGenericFiniteDifferences)
+{
+  vbd::AvbdRigidBodyState stateA;
+  stateA.orientation = rotationZ(0.45) * rotationX(-0.3);
+
+  vbd::AvbdRigidAngularPairRow row;
+  row.targetRelativeOrientation = rotationY(0.35) * rotationZ(-0.2);
+  row.axis = Vec3(0.2, 0.7, -0.4).normalized();
+  row.offset = 0.17;
+
+  const Eigen::Quaterniond targetB
+      = vbd::avbdRigidAngularPairTargetOrientationB(stateA, row);
+  const std::array<Vec3, 2> errors{
+      Vec3(0.4, -0.3, 0.2),
+      3.0 * Vec3(-0.2, 0.7, 0.5).normalized(),
+  };
+  constexpr double epsilon = 1e-7;
+
+  for (const Vec3& expectedError : errors) {
+    vbd::AvbdRigidBodyState stateB;
+    stateB.orientation
+        = vbd::avbdRigidOrientationDelta(expectedError) * targetB;
+    const Vec3 orientationError = vbd::avbdRigidBodyOrientationError(
+        stateB.orientation,
+        vbd::avbdRigidAngularPairTargetOrientationB(stateA, row));
+    const vbd::Vector6d pairDirectionA
+        = vbd::avbdRigidAngularPairDirectionA(orientationError, row);
+    const vbd::Vector6d pairDirectionB
+        = vbd::avbdRigidAngularPairDirectionB(orientationError, row);
+
+    for (Eigen::Index axis = 0; axis < 3; ++axis) {
+      Vec3 step = Vec3::Zero();
+      step[axis] = epsilon;
+
+      vbd::AvbdRigidBodyState plusA = stateA;
+      vbd::AvbdRigidBodyState minusA = stateA;
+      plusA.orientation
+          = vbd::avbdRigidOrientationDelta(step) * stateA.orientation;
+      minusA.orientation
+          = vbd::avbdRigidOrientationDelta(-step) * stateA.orientation;
+      const double derivativeA
+          = (vbd::avbdRigidAngularPairConstraintValue(plusA, stateB, row)
+             - vbd::avbdRigidAngularPairConstraintValue(minusA, stateB, row))
+            / (2.0 * epsilon);
+
+      vbd::AvbdRigidBodyState plusB = stateB;
+      vbd::AvbdRigidBodyState minusB = stateB;
+      plusB.orientation
+          = vbd::avbdRigidOrientationDelta(step) * stateB.orientation;
+      minusB.orientation
+          = vbd::avbdRigidOrientationDelta(-step) * stateB.orientation;
+      const double derivativeB
+          = (vbd::avbdRigidAngularPairConstraintValue(stateA, plusB, row)
+             - vbd::avbdRigidAngularPairConstraintValue(stateA, minusB, row))
+            / (2.0 * epsilon);
+
+      EXPECT_NEAR(derivativeA, -pairDirectionA[axis + 3], 2e-7)
+          << "error=" << expectedError.transpose() << " axis=" << axis;
+      EXPECT_NEAR(derivativeB, -pairDirectionB[axis + 3], 2e-7)
+          << "error=" << expectedError.transpose() << " axis=" << axis;
+    }
+  }
 }
 
 //==============================================================================
@@ -4404,6 +5953,7 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotRowsIgnoreContactOrder)
   vbd::AvbdScalarRowInventory frictionInventory;
   std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
   std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
   vbd::AvbdRowWarmStartOptions warmStart;
   warmStart.alpha = 1.0;
   warmStart.gamma = 1.0;
@@ -4414,6 +5964,7 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
   ASSERT_EQ(normalInventory.size(), 2u);
   for (std::size_t i = 0; i < normalInventory.size(); ++i) {
@@ -4428,6 +5979,7 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
   ASSERT_EQ(normalInventory.size(), 2u);
   ASSERT_EQ(normalRows.size(), 2u);
@@ -4436,6 +5988,174 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotRowsIgnoreContactOrder)
         = 10.0 + static_cast<double>(normalInventory[i].descriptor.key.row);
     EXPECT_DOUBLE_EQ(normalInventory[i].state.lambda, expectedLambda);
     EXPECT_DOUBLE_EQ(normalRows[i].row.state.lambda, expectedLambda);
+  }
+}
+
+//==============================================================================
+// Spatial manifold ranks are stable only while the complete set of detected
+// material points is unchanged. A survivor must not inherit the normal dual or
+// sticking anchor of a lower-ranked point that disappeared, and growing the
+// manifold again must likewise cold-start the ambiguous group.
+TEST(AvbdRigidBlock, RigidContactRowsColdStartOnRankSetMutation)
+{
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  states[0].position = Vec3::Zero();
+  states[1].position = Vec3::Zero();
+  const vbd::AvbdContactEndpointId endpointA{
+      11u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 3)};
+  const vbd::AvbdContactEndpointId endpointB{
+      22u, vbd::packAvbdContactFeatureId(vbd::AvbdContactFeatureKind::Face, 7)};
+
+  const auto makeContact = [&](double x, std::uint32_t row) {
+    vbd::AvbdRigidContactManifoldPoint contact;
+    contact.bodyA = 0u;
+    contact.bodyB = 1u;
+    contact.endpointA = endpointA;
+    contact.endpointB = endpointB;
+    contact.point = Vec3(x, 0.0, 0.0);
+    contact.normalFromAtoB = Vec3::UnitZ();
+    contact.depth = 0.1;
+    contact.frictionCoefficient = 0.5;
+    contact.startStiffness = 10.0;
+    contact.maxStiffness = 1.0e4;
+    contact.row = row;
+    return contact;
+  };
+
+  const vbd::AvbdRigidContactManifoldPoint left = makeContact(-1.0, 0u);
+  const vbd::AvbdRigidContactManifoldPoint right = makeContact(1.0, 1u);
+  std::vector<vbd::AvbdRigidContactManifoldPoint> two{left, right};
+  std::vector<vbd::AvbdRigidContactManifoldPoint> rightOnly{
+      makeContact(1.0, 0u)};
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      two,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+  ASSERT_EQ(normalInventory.size(), 2u);
+  ASSERT_EQ(frictionInventory.size(), 4u);
+  normalInventory[0].state.lambda = 11.0;
+  normalInventory[1].state.lambda = 22.0;
+  frictionInventory[0].state.lambda = 3.0;
+  frictionInventory[1].state.lambda = -4.0;
+  ASSERT_EQ(scratch.contactTangentAnchors.size(), 2u);
+  scratch.contactTangentAnchors[0].sticking = true;
+
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      rightOnly,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+  ASSERT_EQ(normalInventory.size(), 1u);
+  ASSERT_EQ(frictionInventory.size(), 2u);
+  EXPECT_DOUBLE_EQ(normalInventory[0].state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(frictionInventory[0].state.lambda, 0.0);
+  EXPECT_DOUBLE_EQ(frictionInventory[1].state.lambda, 0.0);
+  ASSERT_EQ(scratch.contactTangentAnchors.size(), 1u);
+  ASSERT_TRUE(scratch.contactTangentAnchors[0].valid);
+  EXPECT_FALSE(scratch.contactTangentAnchors[0].sticking);
+  EXPECT_TRUE(scratch.contactTangentAnchors[0].localPointA.isApprox(
+      Vec3(1.0, 0.0, 0.0), 0.0));
+
+  normalInventory[0].state.lambda = 33.0;
+  frictionInventory[0].state.lambda = 5.0;
+  scratch.contactTangentAnchors[0].sticking = true;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      two,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+  ASSERT_EQ(normalInventory.size(), 2u);
+  ASSERT_EQ(frictionInventory.size(), 4u);
+  for (const auto& record : normalInventory.records()) {
+    EXPECT_DOUBLE_EQ(record.state.lambda, 0.0);
+  }
+  for (const auto& record : frictionInventory.records()) {
+    EXPECT_DOUBLE_EQ(record.state.lambda, 0.0);
+  }
+
+  normalInventory[0].state.lambda = 44.0;
+  auto replaced = two;
+  replaced[0].point.x() = -0.75;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      replaced,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+  for (const auto& record : normalInventory.records()) {
+    EXPECT_DOUBLE_EQ(record.state.lambda, 0.0);
+  }
+
+  auto duplicateA = makeContact(0.0, 0u);
+  duplicateA.normalFromAtoB = Vec3::UnitZ();
+  duplicateA.depth = 0.1;
+  auto duplicateB = makeContact(0.0, 1u);
+  duplicateB.normalFromAtoB = Vec3::UnitX();
+  duplicateB.depth = 0.2;
+  std::vector<vbd::AvbdRigidContactManifoldPoint> duplicates{
+      duplicateA, duplicateB};
+  normalInventory.records().clear();
+  frictionInventory.records().clear();
+  scratch.clearContinuationState();
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      duplicates,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+  ASSERT_EQ(normalInventory.size(), 2u);
+  normalInventory[0].state.lambda = 55.0;
+  normalInventory[1].state.lambda = 66.0;
+  frictionInventory[0].state.lambda = 7.0;
+  ASSERT_EQ(scratch.contactTangentAnchors.size(), 2u);
+  scratch.contactTangentAnchors[0].sticking = true;
+
+  duplicateB.row = 0u;
+  duplicateA.row = 1u;
+  duplicates = {duplicateB, duplicateA};
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      duplicates,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+  for (const auto& record : normalInventory.records()) {
+    EXPECT_DOUBLE_EQ(record.state.lambda, 0.0);
+  }
+  for (const auto& record : frictionInventory.records()) {
+    EXPECT_DOUBLE_EQ(record.state.lambda, 0.0);
   }
 }
 
@@ -4544,6 +6264,7 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotRowsIgnoreEndpointOrder)
   vbd::AvbdScalarRowInventory frictionInventory;
   std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
   std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
   vbd::AvbdRowWarmStartOptions warmStart;
   warmStart.alpha = 1.0;
   warmStart.gamma = 1.0;
@@ -4554,6 +6275,7 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotRowsIgnoreEndpointOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
   ASSERT_EQ(normalInventory.size(), 2u);
   for (std::size_t i = 0; i < normalInventory.size(); ++i) {
@@ -4568,6 +6290,7 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotRowsIgnoreEndpointOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      scratch,
       warmStart);
   ASSERT_EQ(normalInventory.size(), 2u);
   ASSERT_EQ(normalRows.size(), 2u);
@@ -4836,6 +6559,16 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotUsesCapsuleFeatureIds)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, RigidWorldSolveDefaultsUseOneAlphaPerRowFamily)
+{
+  const vbd::AvbdRigidWorldContactSolveOptions options;
+
+  EXPECT_DOUBLE_EQ(options.row.alpha, options.warmStart.alpha);
+  EXPECT_DOUBLE_EQ(options.friction.alpha, options.warmStart.alpha);
+  EXPECT_DOUBLE_EQ(options.contactRow.alpha, options.contactWarmStart.alpha);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldSnapshotSolvesPointJointRows)
 {
   sx::World world;
@@ -4878,6 +6611,8 @@ TEST(AvbdRigidBlock, RigidWorldSnapshotSolvesPointJointRows)
   const double initialLinkX = snapshot.states[linkIndex].position.x();
 
   vbd::AvbdRigidWorldContactSolveOptions solveOptions;
+  solveOptions.warmStart.alpha = 0.0;
+  solveOptions.row.alpha = 0.0;
   solveOptions.descent.iterations = 8;
   solveOptions.descent.regularization = 1e-12;
   solveOptions.row.beta = 1000.0;
@@ -4997,6 +6732,8 @@ TEST(AvbdRigidBlock, RigidWorldContactStepSolvesPointJointRows)
   joints[0].maxStiffness = 1000.0;
 
   vbd::AvbdRigidWorldContactStepOptions stepOptions;
+  stepOptions.solve.warmStart.alpha = 0.0;
+  stepOptions.solve.row.alpha = 0.0;
   stepOptions.solve.descent.iterations = 8;
   stepOptions.solve.descent.regularization = 1e-12;
   stepOptions.solve.row.beta = 1000.0;
@@ -5885,7 +7622,8 @@ TEST(AvbdRigidBlock, RigidWorldRevoluteVelocityActuatorBuildsMotorRows)
   EXPECT_EQ(result.apply.bodies, 1u);
   ASSERT_EQ(motorInventory.size(), 1u);
   EXPECT_EQ(
-      motorInventory[0].descriptor.key.role, vbd::AvbdScalarRowRole::Motor);
+      motorInventory[0].descriptor.key.role,
+      vbd::AvbdScalarRowRole::MotorAngular);
   EXPECT_DOUBLE_EQ(motorInventory[0].descriptor.bounds.lower, -500.0);
   EXPECT_DOUBLE_EQ(motorInventory[0].descriptor.bounds.upper, 500.0);
 
@@ -6029,7 +7767,8 @@ TEST(AvbdRigidBlock, RigidWorldPrismaticVelocityActuatorBuildsLinearMotorRows)
   EXPECT_EQ(result.apply.bodies, 1u);
   ASSERT_EQ(motorInventory.size(), 1u);
   EXPECT_EQ(
-      motorInventory[0].descriptor.key.role, vbd::AvbdScalarRowRole::Motor);
+      motorInventory[0].descriptor.key.role,
+      vbd::AvbdScalarRowRole::MotorLinear);
   EXPECT_DOUBLE_EQ(motorInventory[0].descriptor.bounds.lower, -400.0);
   EXPECT_DOUBLE_EQ(motorInventory[0].descriptor.bounds.upper, 400.0);
 
@@ -6149,6 +7888,8 @@ TEST(AvbdRigidBlock, RigidWorldExtractsFixedJointInputs)
   EXPECT_NEAR(localOnlyJoints[0].anchorB.norm(), 0.0, 1e-12);
 
   vbd::AvbdRigidWorldContactStepOptions stepOptions;
+  stepOptions.solve.warmStart.alpha = 0.0;
+  stepOptions.solve.row.alpha = 0.0;
   stepOptions.solve.descent.iterations = 8;
   stepOptions.solve.descent.regularization = 1e-12;
   stepOptions.solve.row.beta = 1000.0;
@@ -6606,6 +8347,36 @@ TEST(AvbdRigidBlock, RigidWorldContactSnapshotSolveMovesDynamicBody)
 }
 
 //==============================================================================
+TEST(AvbdRigidBlock, Paper2025ParameterProfileConfiguresEveryRigidRowFamily)
+{
+  vbd::AvbdRigidWorldContactSolveOptions options;
+  const auto defaults = options;
+  constexpr auto profile = vbd::kAvbdRigidPaper2025Profile;
+
+  vbd::applyAvbdRigidParameterProfile(options, profile);
+
+  EXPECT_DOUBLE_EQ(profile.alpha, 0.95);
+  EXPECT_DOUBLE_EQ(profile.beta, 10.0);
+  EXPECT_DOUBLE_EQ(profile.gamma, 0.99);
+  EXPECT_DOUBLE_EQ(options.warmStart.alpha, profile.alpha);
+  EXPECT_DOUBLE_EQ(options.warmStart.gamma, profile.gamma);
+  EXPECT_DOUBLE_EQ(options.row.alpha, profile.alpha);
+  EXPECT_DOUBLE_EQ(options.row.beta, profile.beta);
+  EXPECT_DOUBLE_EQ(options.distanceSpring.beta, profile.beta);
+  EXPECT_DOUBLE_EQ(options.contactWarmStart.alpha, profile.alpha);
+  EXPECT_DOUBLE_EQ(options.contactWarmStart.gamma, profile.gamma);
+  EXPECT_DOUBLE_EQ(options.contactRow.alpha, profile.alpha);
+  EXPECT_DOUBLE_EQ(options.contactRow.beta, profile.beta);
+  EXPECT_DOUBLE_EQ(options.friction.alpha, profile.alpha);
+  EXPECT_DOUBLE_EQ(options.friction.beta, profile.beta);
+
+  // Applying the AVBD profile does not select the formulation. Public VBD can
+  // therefore keep its fixed-penalty choice and the untouched defaults.
+  EXPECT_EQ(options.formulation, defaults.formulation);
+  EXPECT_EQ(options.descent.iterations, defaults.descent.iterations);
+}
+
+//==============================================================================
 TEST(AvbdRigidBlock, RigidWorldFixedPenaltyClearsAugmentedNormalState)
 {
   sx::World world;
@@ -6775,6 +8546,8 @@ TEST(AvbdRigidBlock, RigidWorldFixedPenaltyClearsAugmentedFrictionState)
       solveOptions);
   ASSERT_GT(augmentedResult.frictionRows, 0u);
   ASSERT_FALSE(frictionInventory.empty());
+  ASSERT_FALSE(solveScratch.contactRows.contactIdentities.empty());
+  ASSERT_FALSE(solveScratch.contactRows.contactTangentAnchors.empty());
   for (std::size_t i = 0; i < frictionInventory.size(); ++i) {
     frictionInventory[i].state.lambda = i % 2u == 0u ? 3.0 : -4.0;
     frictionInventory[i].state.stiffness = 900.0;
@@ -6797,8 +8570,13 @@ TEST(AvbdRigidBlock, RigidWorldFixedPenaltyClearsAugmentedFrictionState)
   ASSERT_GT(switchedResult.frictionRows, 0u);
   EXPECT_TRUE(normalInventory.empty());
   EXPECT_TRUE(frictionInventory.empty());
+  EXPECT_TRUE(solveScratch.contactRows.contactIdentities.empty());
+  EXPECT_TRUE(solveScratch.contactRows.contactTangentAnchors.empty());
   ASSERT_EQ(2u * solveScratch.frictionRows.size(), switchedResult.frictionRows);
   for (const auto& rowPair : solveScratch.frictionRows) {
+    EXPECT_EQ(rowPair.persistentFirstRecord, nullptr);
+    EXPECT_EQ(rowPair.persistentSecondRecord, nullptr);
+    EXPECT_EQ(rowPair.persistentAnchor, nullptr);
     EXPECT_DOUBLE_EQ(rowPair.first.state.stiffness, 200.0);
     EXPECT_DOUBLE_EQ(rowPair.first.state.lambda, 0.0);
     EXPECT_DOUBLE_EQ(rowPair.second.state.stiffness, 200.0);
@@ -6820,8 +8598,13 @@ TEST(AvbdRigidBlock, RigidWorldFixedPenaltyClearsAugmentedFrictionState)
   ASSERT_EQ(repeatedResult.frictionRows, switchedResult.frictionRows);
   EXPECT_TRUE(normalInventory.empty());
   EXPECT_TRUE(frictionInventory.empty());
+  EXPECT_TRUE(solveScratch.contactRows.contactIdentities.empty());
+  EXPECT_TRUE(solveScratch.contactRows.contactTangentAnchors.empty());
   ASSERT_EQ(2u * solveScratch.frictionRows.size(), repeatedResult.frictionRows);
   for (const auto& rowPair : solveScratch.frictionRows) {
+    EXPECT_EQ(rowPair.persistentFirstRecord, nullptr);
+    EXPECT_EQ(rowPair.persistentSecondRecord, nullptr);
+    EXPECT_EQ(rowPair.persistentAnchor, nullptr);
     EXPECT_DOUBLE_EQ(rowPair.first.state.stiffness, 200.0);
     EXPECT_DOUBLE_EQ(rowPair.first.state.lambda, 0.0);
     EXPECT_DOUBLE_EQ(rowPair.second.state.stiffness, 200.0);
@@ -6997,11 +8780,15 @@ TEST(AvbdRigidBlock, RigidWorldFixedPenaltyRejectsHardJointRows)
   sx::RigidBodyOptions baseOptions;
   baseOptions.isStatic = true;
   auto base = world.addRigidBody("base", baseOptions);
+  base.setCollisionShape(sx::CollisionShape::makeSphere(1.0));
   sx::RigidBodyOptions linkOptions;
   linkOptions.mass = 1.0;
   linkOptions.position = Vec3::UnitX();
   auto link = world.addRigidBody("link", linkOptions);
+  link.setCollisionShape(sx::CollisionShape::makeSphere(1.0));
 
+  const auto contacts = world.collide();
+  ASSERT_FALSE(contacts.empty());
   auto& registry = dart::simulation::detail::registryOf(world);
   const entt::entity jointEntity = registry.create();
   auto& jointModel = registry.emplace<sx::comps::JointModel>(jointEntity);
@@ -7019,8 +8806,7 @@ TEST(AvbdRigidBlock, RigidWorldFixedPenaltyRejectsHardJointRows)
   joint.linearMaterialStiffness = std::numeric_limits<double>::infinity();
   joint.maxStiffness = 100.0;
 
-  auto snapshot = vbd::buildAvbdRigidWorldContactSnapshot(
-      registry, std::span<const sx::Contact>());
+  auto snapshot = vbd::buildAvbdRigidWorldContactSnapshot(registry, contacts);
   ASSERT_EQ(
       vbd::appendAvbdRigidWorldPointJoints(
           registry,
@@ -7035,14 +8821,110 @@ TEST(AvbdRigidBlock, RigidWorldFixedPenaltyRejectsHardJointRows)
       = vbd::AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty;
   vbd::AvbdScalarRowInventory normalInventory;
   vbd::AvbdScalarRowInventory frictionInventory;
+  vbd::AvbdScalarRowInventory jointLinearInventory;
+  vbd::AvbdScalarRowInventory jointAngularInventory;
+  vbd::AvbdScalarRowInventory motorInventory;
+  vbd::AvbdScalarRowInventory distanceSpringInventory;
+  vbd::AvbdRigidWorldContactSolveScratch scratch;
   EXPECT_THROW(
       (void)vbd::solveAvbdRigidWorldContactSnapshot(
           snapshot,
           normalInventory,
           frictionInventory,
+          jointLinearInventory,
+          jointAngularInventory,
+          motorInventory,
+          distanceSpringInventory,
           /*timeStep=*/1.0,
+          scratch,
           options),
       sx::InvalidOperationException);
+  EXPECT_TRUE(normalInventory.empty());
+  EXPECT_TRUE(frictionInventory.empty());
+  EXPECT_TRUE(jointLinearInventory.empty());
+  EXPECT_TRUE(jointAngularInventory.empty());
+  EXPECT_TRUE(motorInventory.empty());
+  EXPECT_TRUE(distanceSpringInventory.empty());
+  EXPECT_TRUE(scratch.contactRows.contactIdentities.empty());
+  EXPECT_TRUE(scratch.contactRows.previousContactIdentities.empty());
+  EXPECT_TRUE(scratch.contactRows.contactTangentAnchors.empty());
+  EXPECT_TRUE(scratch.contactRows.previousContactTangentAnchors.empty());
+  for (const auto& rows : scratch.frictionRows) {
+    EXPECT_EQ(rows.persistentFirstRecord, nullptr);
+    EXPECT_EQ(rows.persistentSecondRecord, nullptr);
+    EXPECT_EQ(rows.persistentAnchor, nullptr);
+  }
+}
+
+//==============================================================================
+TEST(AvbdRigidBlock, EmptyFixedPenaltySolveClearsAllContinuationState)
+{
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  vbd::AvbdScalarRowInventory jointLinearInventory;
+  vbd::AvbdScalarRowInventory jointAngularInventory;
+  vbd::AvbdScalarRowInventory motorInventory;
+  vbd::AvbdScalarRowInventory distanceSpringInventory;
+  const auto seed = [](vbd::AvbdScalarRowInventory& inventory,
+                       vbd::AvbdScalarRowRole role,
+                       std::uint32_t row) {
+    vbd::AvbdScalarRowDescriptor descriptor;
+    descriptor.key.role = role;
+    descriptor.key.row = row;
+    inventory.syncActiveRows(
+        std::span<const vbd::AvbdScalarRowDescriptor>{&descriptor, 1u}, {});
+    inventory[0].state.lambda = 42.0;
+  };
+  seed(normalInventory, vbd::AvbdScalarRowRole::ContactNormal, 0u);
+  seed(frictionInventory, vbd::AvbdScalarRowRole::FrictionTangent, 1u);
+  seed(jointLinearInventory, vbd::AvbdScalarRowRole::JointLinear, 2u);
+  seed(jointAngularInventory, vbd::AvbdScalarRowRole::JointAngular, 3u);
+  seed(motorInventory, vbd::AvbdScalarRowRole::MotorLinear, 4u);
+  seed(
+      distanceSpringInventory, vbd::AvbdScalarRowRole::RigidDistanceSpring, 5u);
+
+  vbd::AvbdRigidWorldContactSolveScratch scratch;
+  scratch.contactRows.contactIdentities.push_back({});
+  scratch.contactRows.previousContactIdentities.push_back({});
+  scratch.contactRows.contactTangentAnchors.push_back({});
+  scratch.contactRows.previousContactTangentAnchors.push_back({});
+  scratch.frictionRows.push_back({});
+  scratch.frictionRows.back().persistentFirstRecord = &frictionInventory[0];
+  scratch.frictionRows.back().persistentSecondRecord = &frictionInventory[0];
+  scratch.frictionRows.back().persistentAnchor
+      = &scratch.contactRows.contactTangentAnchors[0];
+
+  vbd::AvbdRigidWorldContactSnapshot emptySnapshot;
+  vbd::AvbdRigidWorldContactSolveOptions options;
+  options.formulation
+      = vbd::AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty;
+  const auto result = vbd::solveAvbdRigidWorldContactSnapshot(
+      emptySnapshot,
+      normalInventory,
+      frictionInventory,
+      jointLinearInventory,
+      jointAngularInventory,
+      motorInventory,
+      distanceSpringInventory,
+      /*timeStep=*/1.0,
+      scratch,
+      options);
+
+  EXPECT_EQ(result.normalRows, 0u);
+  EXPECT_TRUE(normalInventory.empty());
+  EXPECT_TRUE(frictionInventory.empty());
+  EXPECT_TRUE(jointLinearInventory.empty());
+  EXPECT_TRUE(jointAngularInventory.empty());
+  EXPECT_TRUE(motorInventory.empty());
+  EXPECT_TRUE(distanceSpringInventory.empty());
+  EXPECT_TRUE(scratch.contactRows.contactIdentities.empty());
+  EXPECT_TRUE(scratch.contactRows.previousContactIdentities.empty());
+  EXPECT_TRUE(scratch.contactRows.contactTangentAnchors.empty());
+  EXPECT_TRUE(scratch.contactRows.previousContactTangentAnchors.empty());
+  ASSERT_EQ(scratch.frictionRows.size(), 1u);
+  EXPECT_EQ(scratch.frictionRows[0].persistentFirstRecord, nullptr);
+  EXPECT_EQ(scratch.frictionRows[0].persistentSecondRecord, nullptr);
+  EXPECT_EQ(scratch.frictionRows[0].persistentAnchor, nullptr);
 }
 
 //==============================================================================

@@ -49,10 +49,12 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <span>
 #include <utility>
 #include <vector>
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 
@@ -185,6 +187,137 @@ struct BlockDescentOptions
   /// Neo-Hookean. Ignored when `useFemTetKernel` is false.
   bool useFixedCorotationalTets = false;
 };
+
+//==============================================================================
+/// Refresh adjacent deformable/static tangent pairs from their owning normal
+/// row.  `useTrialNormalForce` is used before a primal sweep so a newly active
+/// contact receives friction from the normal force stamped in that same sweep;
+/// after the normal dual update, the current lambda is already that trial
+/// force and is used directly.
+template <typename PositionVector, typename ContactRows, typename FrictionRows>
+inline void refreshAvbdHalfSpaceFrictionCones(
+    const PositionVector& positions,
+    const ContactRows& normalRows,
+    FrictionRows& frictionRows,
+    double alpha,
+    bool useTrialNormalForce)
+{
+  for (std::size_t i = 0; i + 1 < frictionRows.size(); i += 2) {
+    AvbdHalfSpaceFrictionRow& first = frictionRows[i];
+    AvbdHalfSpaceFrictionRow& second = frictionRows[i + 1];
+    if (first.normalRow == std::numeric_limits<std::size_t>::max()
+        && second.normalRow == std::numeric_limits<std::size_t>::max()) {
+      continue;
+    }
+    const bool validPair
+        = first.vertex == second.vertex && first.normalRow == second.normalRow
+          && first.normalRow < normalRows.size()
+          && first.vertex < positions.size()
+          && normalRows[first.normalRow].vertex == first.vertex
+          && first.frictionCoefficient == second.frictionCoefficient
+          && std::isfinite(first.frictionCoefficient)
+          && first.frictionCoefficient >= 0.0;
+    if (!validPair) {
+      first.state.lambda = 0.0;
+      second.state.lambda = 0.0;
+      first.sticking = false;
+      second.sticking = false;
+      setAvbdHalfSpaceFrictionTangentPairForceLimit(first, second, 0.0);
+      continue;
+    }
+
+    const AvbdHalfSpaceContactRow& normal = normalRows[first.normalRow];
+    const double normalForce = useTrialNormalForce
+                                   ? avbdHalfSpaceContactNormalTrialForce(
+                                         normal, positions[first.vertex], alpha)
+                                   : normal.state.lambda;
+    setAvbdHalfSpaceFrictionTangentPairForceLimit(
+        first, second, first.frictionCoefficient * std::max(0.0, normalForce));
+  }
+}
+
+//==============================================================================
+template <typename PositionVector, typename NormalRows>
+inline void refreshAvbdSelfContactFrictionCone(
+    const PositionVector& positions,
+    const NormalRows& normalRows,
+    AvbdSelfContactFrictionRow& first,
+    AvbdSelfContactFrictionRow& second,
+    double alpha,
+    bool useTrialNormalForce)
+{
+  if (first.normalRow == std::numeric_limits<std::size_t>::max()
+      && second.normalRow == std::numeric_limits<std::size_t>::max()) {
+    return;
+  }
+  const bool validPair
+      = avbdSelfContactSameFrictionPrimitive(first, second) && first.axis == 0u
+        && second.axis == 1u && first.normalRow == second.normalRow
+        && first.normalRow < normalRows.size()
+        && normalRows[first.normalRow].nodes == first.nodes
+        && normalRows[first.normalRow].isEdgeEdge == first.isEdgeEdge
+        && first.frictionCoefficient == second.frictionCoefficient
+        && std::isfinite(first.frictionCoefficient)
+        && first.frictionCoefficient >= 0.0;
+  if (!validPair) {
+    first.state.lambda = 0.0;
+    second.state.lambda = 0.0;
+    first.sticking = false;
+    second.sticking = false;
+    first.differentialSuspended = false;
+    second.differentialSuspended = false;
+    setAvbdSelfContactFrictionTangentPairForceLimit(first, second, 0.0);
+    return;
+  }
+
+  const AvbdSelfContactNormalRow& normal = normalRows[first.normalRow];
+  const AvbdSelfContactPrimitiveResult primitive
+      = evaluateAvbdSelfContactPrimitive(normal, positions);
+  const bool invalidActiveBandDifferential
+      = primitive.clampedToSafetyFloor
+        || (!primitive.active && primitive.squaredActivationDistance > 0.0
+            && std::isfinite(primitive.squaredActivationDistance)
+            && (!std::isfinite(primitive.squaredDistance)
+                || primitive.squaredDistance
+                       < primitive.squaredActivationDistance));
+  first.differentialSuspended = invalidActiveBandDifferential;
+  second.differentialSuspended = invalidActiveBandDifferential;
+  if (invalidActiveBandDifferential) {
+    // The normal row deliberately preserves its continuation when an active-
+    // band primitive has no safe differential. Preserve the coupled tangent
+    // rows as well: shrinking their cone, stamping them, or updating their
+    // stiffness here would split one contact primitive into contradictory
+    // normal and friction states.
+    return;
+  }
+
+  const double normalForce
+      = useTrialNormalForce
+            ? avbdSelfContactNormalTrialForce(normal, positions, alpha)
+            : normal.state.lambda;
+  setAvbdSelfContactFrictionTangentPairForceLimit(
+      first, second, first.frictionCoefficient * std::max(0.0, normalForce));
+}
+
+//==============================================================================
+template <typename PositionVector, typename NormalRows, typename FrictionRows>
+inline void refreshAvbdSelfContactFrictionCones(
+    const PositionVector& positions,
+    const NormalRows& normalRows,
+    FrictionRows& frictionRows,
+    double alpha,
+    bool useTrialNormalForce)
+{
+  for (std::size_t i = 0; i + 1 < frictionRows.size(); i += 2) {
+    refreshAvbdSelfContactFrictionCone(
+        positions,
+        normalRows,
+        frictionRows[i],
+        frictionRows[i + 1],
+        alpha,
+        useTrialNormalForce);
+  }
+}
 
 /// Outcome of a block-descent solve.
 struct BlockDescentStats
@@ -369,26 +502,6 @@ inline const AvbdSpringFiniteStiffnessRow* findAvbdSpringFiniteStiffnessRow(
 }
 
 //==============================================================================
-/// Find the finite-stiffness material row for `tetIndex`. Rows generated from a
-/// tetrahedral mesh are normally stored in tet order, but tests and future row
-/// generation can pass sparse or reordered arrays.
-template <typename TetRows>
-inline const AvbdTetMaterialFiniteStiffnessRow*
-findAvbdTetMaterialFiniteStiffnessRow(
-    const TetRows& rows, std::uint32_t tetIndex)
-{
-  if (tetIndex < rows.size() && rows[tetIndex].tet == tetIndex) {
-    return &rows[tetIndex];
-  }
-
-  const auto it
-      = std::find_if(rows.begin(), rows.end(), [tetIndex](const auto& row) {
-          return row.tet == tetIndex;
-        });
-  return it == rows.end() ? nullptr : &(*it);
-}
-
-//==============================================================================
 /// Mass-spring block descent with AVBD finite-stiffness spring rows. Each
 /// spring uses its row's current effective stiffness during the primal sweep,
 /// then the row stiffness is increased toward the material stiffness after the
@@ -507,10 +620,11 @@ inline BlockDescentStats blockDescentMassSpringAvbdFiniteStiffness(
 /// pairs retain the exact serial order. Optional self-contact normal rows share
 /// one scalar row per point-triangle / edge-edge primitive and stamp each
 /// incident local vertex through the lagged self-contact adjacency. Friction
-/// tangent rows generated as adjacent pairs use the lagged tangential dual to
-/// switch between static and dynamic Coulomb modes. Full contact-manifold
-/// friction persistence, broader self-contact friction envelopes, tetrahedral
-/// row mixing, and accelerator scheduling remain later slices.
+/// tangent rows generated as adjacent pairs retain transported sticking
+/// anchors, use the tangential dual to switch between static and dynamic
+/// Coulomb modes, and refresh their cone from the matching normal force before
+/// and after every sweep. Broader self-contact friction envelopes,
+/// tetrahedral row mixing, and accelerator scheduling remain later slices.
 template <
     typename PositionVector,
     typename FixedMask,
@@ -620,8 +734,8 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     }
     if (selfContactRows != nullptr && selfContact != nullptr
         && selfContactOptions != nullptr
-        && vertex < selfContact->incident.size()) {
-      for (const SelfContactEntry& entry : selfContact->incident[vertex]) {
+        && vertex < selfContact->vertexCount()) {
+      for (const SelfContactEntry& entry : selfContact->entriesFor(vertex)) {
         if (entry.constraint >= selfContactRows->size()) {
           continue;
         }
@@ -636,18 +750,33 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     if (selfContactFrictionRows != nullptr
         && selfContactFrictionOptions != nullptr) {
       for (std::size_t i = 0; i < selfContactFrictionRows->size();) {
-        const AvbdSelfContactFrictionRow& row = (*selfContactFrictionRows)[i];
+        AvbdSelfContactFrictionRow& row = (*selfContactFrictionRows)[i];
         const std::uint8_t localVertex
             = avbdSelfContactLocalVertex(row, vertex);
         if (localVertex < 4u) {
           if (i + 1 < selfContactFrictionRows->size()
               && avbdSelfContactSameFrictionPrimitive(
                   row, (*selfContactFrictionRows)[i + 1])) {
+            AvbdSelfContactFrictionRow& second
+                = (*selfContactFrictionRows)[i + 1];
+            if (selfContactRows != nullptr && selfContactOptions != nullptr) {
+              // A self-contact normal depends on all four stencil nodes. An
+              // earlier Gauss-Seidel block can therefore change this pair's
+              // live cone within the same sweep; refresh immediately before
+              // stamping each incident block.
+              refreshAvbdSelfContactFrictionCone(
+                  positions,
+                  *selfContactRows,
+                  row,
+                  second,
+                  selfContactOptions->alpha,
+                  /*useTrialNormalForce=*/true);
+            }
             addAvbdSelfContactFrictionTangentPair(
                 block,
                 positions,
                 row,
-                (*selfContactFrictionRows)[i + 1],
+                second,
                 localVertex,
                 *selfContactFrictionOptions);
             i += 2;
@@ -709,6 +838,24 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
       = options.convergenceDisplacement * options.convergenceDisplacement;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
+    if (frictionRows != nullptr && frictionOptions != nullptr) {
+      refreshAvbdHalfSpaceFrictionCones(
+          positions,
+          contactRows,
+          *frictionRows,
+          contactOptions.alpha,
+          /*useTrialNormalForce=*/true);
+    }
+    if (selfContactRows != nullptr && selfContactOptions != nullptr
+        && selfContactFrictionRows != nullptr
+        && selfContactFrictionOptions != nullptr) {
+      refreshAvbdSelfContactFrictionCones(
+          positions,
+          *selfContactRows,
+          *selfContactFrictionRows,
+          selfContactOptions->alpha,
+          /*useTrialNormalForce=*/true);
+    }
     double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
       for (const std::uint32_t vertex : group) {
@@ -778,6 +925,12 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
           }
         });
     if (frictionRows != nullptr && frictionOptions != nullptr) {
+      refreshAvbdHalfSpaceFrictionCones(
+          positions,
+          contactRows,
+          *frictionRows,
+          contactOptions.alpha,
+          /*useTrialNormalForce=*/false);
       if (frictionRowsArePaired) {
         forEachAvbdRowUpdateRange(
             rowUpdateExecutor,
@@ -845,6 +998,14 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     }
     if (selfContactFrictionRows != nullptr
         && selfContactFrictionOptions != nullptr) {
+      if (selfContactRows != nullptr && selfContactOptions != nullptr) {
+        refreshAvbdSelfContactFrictionCones(
+            positions,
+            *selfContactRows,
+            *selfContactFrictionRows,
+            selfContactOptions->alpha,
+            /*useTrialNormalForce=*/false);
+      }
       if (selfContactFrictionRowsArePaired) {
         forEachAvbdRowUpdateRange(
             rowUpdateExecutor,
@@ -1172,23 +1333,22 @@ inline BlockDescentStats blockDescentTetMesh(
 }
 
 //==============================================================================
-/// Tetrahedral block descent with AVBD finite-stiffness material rows. Each
-/// tet uses its row's current effective stiffness as a scale on the body Lamé
-/// parameters during the primal sweep, then the scale ramps toward 1.0 from the
-/// observed deformation-gradient error after each sweep. Optional AVBD
-/// self-contact rows let pure-tet scenes share the same hard normal/friction
-/// row path as the mass-spring envelope; when they are absent, the existing
-/// lagged VBD self-contact penalty remains available. The primal sweep stays
-/// serial and deterministic; an optional `rowUpdateExecutor` dispatches the
-/// independent post-sweep material and self-contact row updates over
-/// deterministic contiguous ranges.
+/// Tetrahedral block descent with optional AVBD self-contact rows. The
+/// hyperelastic tetrahedra retain their full material coefficients while hard
+/// self-contact normal/friction rows use the AVBD update path. A known
+/// two-constraint no-log Neo-Hookean factorization has nonzero rest constraints
+/// whose forces cancel only at coupled stiffness, so AVBD's independent
+/// Equation-16 growth would break rest equilibrium. Material finite-stiffness
+/// ramping is deliberately not part of this driver.
+/// The primal sweep stays serial and deterministic; an optional
+/// `rowUpdateExecutor` dispatches the independent post-sweep self-contact row
+/// updates over deterministic contiguous ranges.
 template <
     typename PositionVector,
     typename FixedMask,
-    typename TetRows = std::vector<AvbdTetMaterialFiniteStiffnessRow>,
     typename SelfContactRows = std::vector<AvbdSelfContactNormalRow>,
     typename SelfContactFrictionRows = std::vector<AvbdSelfContactFrictionRow>>
-inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
+inline BlockDescentStats blockDescentTetMeshAvbdSelfContact(
     PositionVector& positions,
     std::span<const double> masses,
     const FixedMask& fixed,
@@ -1197,11 +1357,9 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
     double mu,
     double lambda,
     double timeStep,
-    TetRows& tetRows,
     const VertexColoring& coloring,
     const TetAdjacency& adjacency,
     const BlockDescentOptions& options,
-    const AvbdTetMaterialFiniteStiffnessOptions& avbdOptions,
     const SelfContactAdjacency* selfContact = nullptr,
     SelfContactRows* selfContactRows = nullptr,
     const AvbdSelfContactNormalOptions* selfContactOptions = nullptr,
@@ -1254,16 +1412,11 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
              positions[tet.vertices[1]],
              positions[tet.vertices[2]],
              positions[tet.vertices[3]]};
-      double effectiveMu = mu;
-      double effectiveLambda = lambda;
-      const AvbdTetMaterialFiniteStiffnessRow* row
-          = findAvbdTetMaterialFiniteStiffnessRow(tetRows, tetIndex);
-      if (row != nullptr) {
-        const LameParameters scaled = avbdScaledTetMaterial(mu, lambda, *row);
-        effectiveMu = scaled.mu;
-        effectiveLambda = scaled.lambda;
-      }
-      if (!(effectiveMu > 0.0) || !(effectiveLambda > 0.0)) {
+      // The public selector currently admits lambda >= 0, but this low-level
+      // coefficient kernel remains defined for finite lambda supplied by an
+      // internal constitutive model. Require positive shear without silently
+      // deleting a finite volumetric term.
+      if (!(mu > 0.0) || !std::isfinite(mu) || !std::isfinite(lambda)) {
         continue;
       }
       if (options.useFemTetKernel) {
@@ -1272,23 +1425,18 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
             localVertex,
             tet.rest,
             tetPositions,
-            effectiveMu,
-            effectiveLambda,
+            mu,
+            lambda,
             options.useFixedCorotationalTets);
       } else {
         addNeoHookeanTetTerm(
-            block,
-            localVertex,
-            tet.rest,
-            tetPositions,
-            effectiveMu,
-            effectiveLambda);
+            block, localVertex, tet.rest, tetPositions, mu, lambda);
       }
     }
     if (selfContactRows != nullptr && selfContact != nullptr
         && selfContactOptions != nullptr
-        && vertex < selfContact->incident.size()) {
-      for (const SelfContactEntry& entry : selfContact->incident[vertex]) {
+        && vertex < selfContact->vertexCount()) {
+      for (const SelfContactEntry& entry : selfContact->entriesFor(vertex)) {
         if (entry.constraint >= selfContactRows->size()) {
           continue;
         }
@@ -1305,18 +1453,32 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
     if (selfContactFrictionRows != nullptr
         && selfContactFrictionOptions != nullptr) {
       for (std::size_t i = 0; i < selfContactFrictionRows->size();) {
-        const AvbdSelfContactFrictionRow& row = (*selfContactFrictionRows)[i];
+        AvbdSelfContactFrictionRow& row = (*selfContactFrictionRows)[i];
         const std::uint8_t localVertex
             = avbdSelfContactLocalVertex(row, vertex);
         if (localVertex < 4u) {
           if (i + 1 < selfContactFrictionRows->size()
               && avbdSelfContactSameFrictionPrimitive(
                   row, (*selfContactFrictionRows)[i + 1])) {
+            AvbdSelfContactFrictionRow& second
+                = (*selfContactFrictionRows)[i + 1];
+            if (selfContactRows != nullptr && selfContactOptions != nullptr) {
+              // The coupled normal trial changes as any earlier stencil block
+              // moves. Recompute the live Coulomb cone at this exact GS state
+              // instead of retaining the iteration-start load.
+              refreshAvbdSelfContactFrictionCone(
+                  positions,
+                  *selfContactRows,
+                  row,
+                  second,
+                  selfContactOptions->alpha,
+                  /*useTrialNormalForce=*/true);
+            }
             addAvbdSelfContactFrictionTangentPair(
                 block,
                 positions,
                 row,
-                (*selfContactFrictionRows)[i + 1],
+                second,
                 localVertex,
                 *selfContactFrictionOptions);
             i += 2;
@@ -1339,6 +1501,16 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
       = options.convergenceDisplacement * options.convergenceDisplacement;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
+    if (selfContactRows != nullptr && selfContactOptions != nullptr
+        && selfContactFrictionRows != nullptr
+        && selfContactFrictionOptions != nullptr) {
+      refreshAvbdSelfContactFrictionCones(
+          positions,
+          *selfContactRows,
+          *selfContactFrictionRows,
+          selfContactOptions->alpha,
+          /*useTrialNormalForce=*/true);
+    }
     double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
       for (const std::uint32_t vertex : group) {
@@ -1354,36 +1526,6 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
       }
     }
 
-    forEachAvbdRowUpdateRange(
-        rowUpdateExecutor,
-        tetRows.size(),
-        [&](std::size_t begin, std::size_t end) {
-          for (std::size_t i = begin; i < end; ++i) {
-            AvbdTetMaterialFiniteStiffnessRow& row = tetRows[i];
-            if (row.tet >= tets.size()) {
-              continue;
-            }
-            const TetMeshElement& tet = tets[row.tet];
-            const std::array<std::uint32_t, 4>& vertices = tet.vertices;
-            if (vertices[0] >= vertexCount || vertices[1] >= vertexCount
-                || vertices[2] >= vertexCount || vertices[3] >= vertexCount) {
-              continue;
-            }
-            if (fixed[vertices[0]] != 0u && fixed[vertices[1]] != 0u
-                && fixed[vertices[2]] != 0u && fixed[vertices[3]] != 0u) {
-              continue;
-            }
-            const std::array<Eigen::Vector3d, 4> tetPositions
-                = {positions[vertices[0]],
-                   positions[vertices[1]],
-                   positions[vertices[2]],
-                   positions[vertices[3]]};
-            const double constraintValue
-                = avbdTetMaterialConstraintValue(tet.rest, tetPositions);
-            row.state = updateAvbdTetMaterialFiniteStiffnessRow(
-                row.state, constraintValue, row, avbdOptions);
-          }
-        });
     if (selfContactRows != nullptr && selfContactOptions != nullptr) {
       forEachAvbdRowUpdateRange(
           rowUpdateExecutor,
@@ -1408,6 +1550,14 @@ inline BlockDescentStats blockDescentTetMeshAvbdFiniteStiffness(
     }
     if (selfContactFrictionRows != nullptr
         && selfContactFrictionOptions != nullptr) {
+      if (selfContactRows != nullptr && selfContactOptions != nullptr) {
+        refreshAvbdSelfContactFrictionCones(
+            positions,
+            *selfContactRows,
+            *selfContactFrictionRows,
+            selfContactOptions->alpha,
+            /*useTrialNormalForce=*/false);
+      }
       if (selfContactFrictionRowsArePaired) {
         forEachAvbdRowUpdateRange(
             rowUpdateExecutor,
@@ -1726,10 +1876,9 @@ inline BlockDescentStats blockDescentDeformable(
   double omega = 1.0;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
-    if (options.useChebyshev) {
+    if (options.useChebyshev || convergenceSquared > 0.0) {
       beforeSweep.assign(positions.begin(), positions.end());
     }
-    double maxDeltaSquared = 0.0;
     for (const auto& group : coloring.groups) {
       for (const std::uint32_t vertex : group) {
         if (vertex >= vertexCount || fixed[vertex] != 0u) {
@@ -1739,7 +1888,6 @@ inline BlockDescentStats blockDescentDeformable(
         const Eigen::Vector3d delta
             = solveVertexBlock(block, options.regularization);
         positions[vertex] += delta;
-        maxDeltaSquared = std::max(maxDeltaSquared, delta.squaredNorm());
         ++stats.vertexUpdates;
       }
     }
@@ -1754,8 +1902,18 @@ inline BlockDescentStats blockDescentDeformable(
       }
       twoStepsBack.assign(beforeSweep.begin(), beforeSweep.end());
     }
-    if (convergenceSquared > 0.0 && maxDeltaSquared <= convergenceSquared) {
-      break;
+    if (convergenceSquared > 0.0) {
+      double maxDeltaSquared = 0.0;
+      for (std::size_t vertex = 0; vertex < vertexCount; ++vertex) {
+        if (fixed[vertex] == 0u) {
+          maxDeltaSquared = std::max(
+              maxDeltaSquared,
+              (positions[vertex] - beforeSweep[vertex]).squaredNorm());
+        }
+      }
+      if (maxDeltaSquared <= convergenceSquared) {
+        break;
+      }
     }
   }
 

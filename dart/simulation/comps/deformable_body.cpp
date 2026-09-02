@@ -31,11 +31,75 @@
 
 #include "deformable_body.hpp"
 
+#include "dart/simulation/common/exceptions.hpp"
 #include "dart/simulation/io/binary_io.hpp"
 #include "dart/simulation/io/category_serializer.hpp"
 #include "dart/simulation/io/serializer.hpp"
 
+#include <cmath>
+
 namespace dart::simulation::comps {
+
+//==============================================================================
+void validateDeformableVbdConfig(const DeformableVbdConfig& config)
+{
+  DART_SIMULATION_THROW_T_IF(
+      config.iterations == 0u,
+      InvalidArgumentException,
+      "DeformableVbdConfig.iterations must be positive");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(config.convergenceDisplacement)
+          || config.convergenceDisplacement < 0.0,
+      InvalidArgumentException,
+      "DeformableVbdConfig.convergenceDisplacement must be finite and "
+      "non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(config.chebyshevRho) || config.chebyshevRho <= 0.0
+          || config.chebyshevRho >= 1.0,
+      InvalidArgumentException,
+      "DeformableVbdConfig.chebyshevRho must be finite and strictly between "
+      "0 and 1");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(config.rayleighDamping) || config.rayleighDamping < 0.0,
+      InvalidArgumentException,
+      "DeformableVbdConfig.rayleighDamping must be finite and non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(config.contactStiffness) || config.contactStiffness < 0.0,
+      InvalidArgumentException,
+      "DeformableVbdConfig.contactStiffness must be finite and non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(config.avbdAttachmentStiffness)
+          || config.avbdAttachmentStiffness < 0.0,
+      InvalidArgumentException,
+      "DeformableVbdConfig.avbdAttachmentStiffness must be finite and "
+      "non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(config.avbdFiniteStiffnessStart)
+          || config.avbdFiniteStiffnessStart < 0.0,
+      InvalidArgumentException,
+      "DeformableVbdConfig.avbdFiniteStiffnessStart must be finite and "
+      "non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(config.avbdAlpha) || config.avbdAlpha < 0.0
+          || config.avbdAlpha > 1.0,
+      InvalidArgumentException,
+      "DeformableVbdConfig.avbdAlpha must be finite and between 0 and 1");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(config.avbdBeta) || config.avbdBeta < 0.0,
+      InvalidArgumentException,
+      "DeformableVbdConfig.avbdBeta must be finite and non-negative");
+  DART_SIMULATION_THROW_T_IF(
+      !std::isfinite(config.avbdGamma) || config.avbdGamma < 0.0
+          || config.avbdGamma > 1.0,
+      InvalidArgumentException,
+      "DeformableVbdConfig.avbdGamma must be finite and between 0 and 1");
+  DART_SIMULATION_THROW_T_IF(
+      std::isnan(config.avbdMaxStiffness) || config.avbdMaxStiffness < 0.0,
+      InvalidArgumentException,
+      "DeformableVbdConfig.avbdMaxStiffness must be non-negative or positive "
+      "infinity");
+}
+
 namespace {
 
 //==============================================================================
@@ -125,10 +189,19 @@ private:
     writeVector(output, component.positions, writeVector3);
     writeVector(output, component.previousPositions, writeVector3);
     writeVector(output, component.velocities, writeVector3);
+    writeVector(output, component.attachmentTargets, writeVector3);
   }
 
   void loadComponent(
       std::istream& input, DeformableNodeState& component) const override
+  {
+    loadComponent(input, component, io::kBinaryFormatVersion);
+  }
+
+  void loadComponent(
+      std::istream& input,
+      DeformableNodeState& component,
+      std::uint32_t formatVersion) const override
   {
     const auto readVector3 = [&](Eigen::Vector3d& value) {
       io::readVector3d(input, value);
@@ -137,6 +210,11 @@ private:
     readVector(input, component.positions, readVector3);
     readVector(input, component.previousPositions, readVector3);
     readVector(input, component.velocities, readVector3);
+    if (formatVersion >= 32u) {
+      readVector(input, component.attachmentTargets, readVector3);
+    } else {
+      component.attachmentTargets = component.positions;
+    }
   }
 };
 
@@ -303,6 +381,104 @@ private:
 };
 
 //==============================================================================
+class DeformableContactConfigSerializer final
+  : public io::TypedComponentSerializer<DeformableContactConfig>
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return DeformableContactConfig::getTypeName();
+  }
+
+private:
+  void saveComponent(
+      std::ostream& output,
+      const DeformableContactConfig& component,
+      const io::EntityMap&) const override
+  {
+    io::writePOD(output, component.surfaceCandidateCapacity);
+  }
+
+  void loadComponent(
+      std::istream& input, DeformableContactConfig& component) const override
+  {
+    io::readPOD(input, component.surfaceCandidateCapacity);
+    DART_SIMULATION_THROW_T_IF(
+        !input,
+        InvalidArgumentException,
+        "Truncated comps.DeformableContactConfig component payload");
+  }
+};
+
+//==============================================================================
+class DeformableVbdConfigSerializer final
+  : public io::TypedComponentSerializer<DeformableVbdConfig>
+{
+public:
+  [[nodiscard]] std::string_view getTypeName() const override
+  {
+    return "comps.DeformableVbdConfig";
+  }
+
+private:
+  void saveComponent(
+      std::ostream& output,
+      const DeformableVbdConfig& component,
+      const io::EntityMap&) const override
+  {
+    validateDeformableVbdConfig(component);
+
+    io::writePOD(output, component.enabled);
+    io::writePOD(output, component.iterations);
+    io::writePOD(output, component.convergenceDisplacement);
+    io::writePOD(output, component.useChebyshev);
+    io::writePOD(output, component.chebyshevRho);
+    io::writePOD(output, component.rayleighDamping);
+    io::writePOD(output, component.contactStiffness);
+    io::writePOD(output, component.requireVbdExecution);
+    io::writePOD(output, component.useAvbdContactNormalRows);
+    io::writePOD(output, component.useAvbdSelfContactNormalRows);
+    io::writePOD(output, component.useAvbdAttachmentRows);
+    io::writePOD(output, component.avbdAttachmentStiffness);
+    io::writePOD(output, component.useAvbdFiniteStiffnessRows);
+    io::writePOD(output, component.avbdFiniteStiffnessStart);
+    io::writePOD(output, component.avbdAlpha);
+    io::writePOD(output, component.avbdBeta);
+    io::writePOD(output, component.avbdGamma);
+    io::writePOD(output, component.avbdMaxStiffness);
+  }
+
+  void loadComponent(
+      std::istream& input, DeformableVbdConfig& component) const override
+  {
+    io::readPOD(input, component.enabled);
+    io::readPOD(input, component.iterations);
+    io::readPOD(input, component.convergenceDisplacement);
+    io::readPOD(input, component.useChebyshev);
+    io::readPOD(input, component.chebyshevRho);
+    io::readPOD(input, component.rayleighDamping);
+    io::readPOD(input, component.contactStiffness);
+    io::readPOD(input, component.requireVbdExecution);
+    io::readPOD(input, component.useAvbdContactNormalRows);
+    io::readPOD(input, component.useAvbdSelfContactNormalRows);
+    io::readPOD(input, component.useAvbdAttachmentRows);
+    io::readPOD(input, component.avbdAttachmentStiffness);
+    io::readPOD(input, component.useAvbdFiniteStiffnessRows);
+    io::readPOD(input, component.avbdFiniteStiffnessStart);
+    io::readPOD(input, component.avbdAlpha);
+    io::readPOD(input, component.avbdBeta);
+    io::readPOD(input, component.avbdGamma);
+    io::readPOD(input, component.avbdMaxStiffness);
+
+    DART_SIMULATION_THROW_T_IF(
+        !input,
+        InvalidArgumentException,
+        "Truncated comps.DeformableVbdConfig component payload");
+    validateDeformableVbdConfig(component);
+  }
+};
+
+//==============================================================================
 class DeformableBoundaryConditionsSerializer final
   : public io::TypedComponentSerializer<DeformableBoundaryConditions>
 {
@@ -401,6 +577,8 @@ void registerDeformableBodySerializers(io::SerializerRegistry& registry)
   registerSerializerIfNeeded<DeformableSpringModelSerializer>(registry);
   registerSerializerIfNeeded<DeformableMeshTopologySerializer>(registry);
   registerSerializerIfNeeded<DeformableMaterialSerializer>(registry);
+  registerSerializerIfNeeded<DeformableContactConfigSerializer>(registry);
+  registerSerializerIfNeeded<DeformableVbdConfigSerializer>(registry);
   registerSerializerIfNeeded<DeformableBoundaryConditionsSerializer>(registry);
 }
 

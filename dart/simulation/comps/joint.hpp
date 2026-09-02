@@ -227,7 +227,11 @@ struct JointModel
   /// (per generalized coordinate).
   JointVector coulombFriction;
 
-  /// Maximum physical solver-row load norm before the joint is marked broken.
+  /// Maximum solver-row load metric before the joint is marked broken.
+  ///
+  /// The metric combines active linear-force and angular-torque row
+  /// coordinates without a characteristic-length normalization. It is a
+  /// solver diagnostic, not a dimensionally invariant physical wrench norm.
   /// A value of 0 disables automatic breakage.
   double breakForce = 0.0;
 

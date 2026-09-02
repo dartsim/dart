@@ -92,12 +92,16 @@ struct KinematicBodyStepTrace
 ///
 /// This component is intentionally not surfaced through the public `World`
 /// facade. `RigidBodySolver::Vbd` and `RigidBodySolver::Avbd` select their
-/// block-descent formulations globally and use these values only as internal
-/// per-body contact refinements. Compatibility tests may also attach enabled
-/// configs while another public family is selected; that private path remains
-/// AVBD-only and may fall back to sequential impulse.
+/// block-descent formulations and one solver-wide contact configuration
+/// globally; they ignore this compatibility-only component. Tests may attach
+/// enabled configs while another public family is selected, but every config
+/// in one active contact envelope must be valid and identical. That private
+/// path remains AVBD-only and may fall back to sequential impulse.
 struct RigidAvbdContactConfig
 {
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      RigidAvbdContactConfig, "comps.RigidAvbdContactConfig");
+
   bool enabled = true;
   double startStiffness = 1e5;
   double alpha = 0.0;

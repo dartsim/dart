@@ -62,6 +62,11 @@ public:
 
   [[nodiscard]] virtual std::string_view getName() const noexcept = 0;
   [[nodiscard]] virtual ComputeStageMetadata getMetadata() const noexcept;
+  /// Validate every condition that can make this stage reject the current
+  /// step before any stage mutates externally observable simulation state.
+  /// Implementations may refresh idempotent validation caches, but must not
+  /// consume continuation state. The default is a no-op.
+  virtual void preflight(World& world);
   virtual void execute(World& world, ComputeExecutor& executor) = 0;
 
   /// Optional pre-step preparation hook. The default is a no-op; a stage that
@@ -98,6 +103,10 @@ public:
   [[nodiscard]] bool isEmpty() const noexcept;
   [[nodiscard]] WorldStepStage& getStage(std::size_t index) const;
 
+  /// Run every stage's read-only rejection checks in pipeline order. World
+  /// invokes this before clearing diagnostics, allocating frame scratch, or
+  /// executing any mutating stage.
+  void preflight(World& world);
   void execute(World& world, ComputeExecutor& executor);
   [[nodiscard]] WorldStepProfile executeProfiled(
       World& world, ComputeExecutor& executor);

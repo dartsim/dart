@@ -36,6 +36,7 @@
 #include <dart/simulation/comps/deformable_body.hpp>
 #include <dart/simulation/compute/detail/world_step_stages.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
+#include <dart/simulation/detail/world_registry_access.hpp>
 #include <dart/simulation/io/binary_io.hpp>
 #include <dart/simulation/world.hpp>
 
@@ -426,6 +427,164 @@ bool isOutsideBox(
 {
   const Eigen::Vector3d local = orientation.conjugate() * (point - center);
   return (local.array().abs() > halfExtents.array()).any();
+}
+
+//==============================================================================
+// Legacy binary-format emulation for the two `SerializationLoadsLegacyV*`
+// tests below.
+//
+// `World::saveBinary` only ever writes the current format version, so a legacy
+// stream has to be synthesized. Stamping an old version number onto current
+// bytes is not enough: the loader's version gates then read fewer bytes than
+// the writer produced and the entity table desynchronizes. These helpers
+// rewrite a current-version stream into the byte layout a genuine stream of
+// the emulated vintage carried, so `loadBinary` exercises its real
+// compatibility branches.
+//
+// MAINTENANCE: on every `kBinaryFormatVersion` bump that appends a field to a
+// component record or the World metadata tail, or that introduces a new
+// component record, extend `makeLegacyDeformableWorldBinary` below. It is the
+// single place these tests depend on the format's shape.
+
+//==============================================================================
+// Offset of one component record's payload, i.e. just past its type-name
+// string. The type name is stored as a length-prefixed string, so the length
+// prefix is verified to reject an incidental match inside binary payload.
+std::size_t findComponentRecordDataOffset(
+    const std::string& bytes, std::string_view typeName)
+{
+  for (std::size_t offset = bytes.find(typeName); offset != std::string::npos;
+       offset = bytes.find(typeName, offset + 1u)) {
+    if (offset < sizeof(std::size_t)) {
+      continue;
+    }
+    std::size_t declaredSize = 0u;
+    std::memcpy(
+        &declaredSize,
+        bytes.data() + offset - sizeof(std::size_t),
+        sizeof(declaredSize));
+    if (declaredSize == typeName.size()) {
+      return offset + typeName.size();
+    }
+  }
+  ADD_FAILURE() << "component record not found: " << typeName;
+  return std::string::npos;
+}
+
+//==============================================================================
+// Byte length of one `writeVector(..., writeVector3d)` block: a `std::size_t`
+// element count followed by that many 3-component doubles.
+std::size_t vector3dBlockBytes(const std::string& bytes, std::size_t offset)
+{
+  std::size_t count = 0u;
+  EXPECT_LE(offset + sizeof(count), bytes.size());
+  std::memcpy(&count, bytes.data() + offset, sizeof(count));
+  return sizeof(count) + count * 3u * sizeof(double);
+}
+
+//==============================================================================
+// Byte length of the World metadata tail the current format writes for a world
+// with no ignored collision pairs and no differentiable parameter
+// registrations. Measured from an empty world rather than tracked as a
+// constant table so it stays correct across format bumps on its own.
+std::size_t currentWorldMetadataTailBytes()
+{
+  sx::World empty;
+  std::stringstream stream;
+  empty.saveBinary(stream);
+  const std::string bytes = stream.str();
+  constexpr std::size_t kPrefixBytes
+      = 2u * sizeof(std::uint32_t) + sizeof(std::size_t);
+  EXPECT_GE(bytes.size(), kPrefixBytes);
+  std::size_t entityCount = 1u;
+  std::memcpy(
+      &entityCount,
+      bytes.data() + 2u * sizeof(std::uint32_t),
+      sizeof(entityCount));
+  EXPECT_EQ(entityCount, 0u)
+      << "an empty world serialized named entities; the metadata tail length "
+         "can no longer be measured this way";
+  return bytes.size() - kPrefixBytes;
+}
+
+//==============================================================================
+// Byte length of the World metadata tail a format version 8 or 9 stream
+// carried: the simulation-mode flag; the free-frame, fixed-frame, multibody,
+// rigid-body, link and joint counters; the time step, the time and the frame
+// counter; the gravity vector (version 2); the deformable-body counter; and
+// the differentiable flag (version 6). Solver-family metadata and everything
+// after it arrived in version 15 or later. Frozen history, so this is a
+// constant rather than a measurement.
+constexpr std::size_t kLegacyV8WorldMetadataTailBytes
+    = sizeof(std::uint8_t)       // simulation-mode flag
+      + 6u * sizeof(std::size_t) // free/fixed frame, multibody, rigid, link,
+                                 // joint counters
+      + 2u * sizeof(double)      // time step, time
+      + sizeof(std::size_t)      // frame counter
+      + 3u * sizeof(double)      // gravity (version 2)
+      + sizeof(std::size_t)      // deformable-body counter
+      + sizeof(std::uint8_t);    // differentiable flag (version 6)
+
+//==============================================================================
+// Rewrite `currentBytes` (a stream just written by `World::saveBinary` for a
+// world holding exactly one deformable body and nothing else) into the layout
+// a genuine `legacyVersion` stream carried. `legacyVersion` must be 8 or 9;
+// version 9 only added a Link record field, and these worlds have no links, so
+// both map to the same deformable-body layout.
+std::string makeLegacyDeformableWorldBinary(
+    std::string bytes, std::uint32_t legacyVersion)
+{
+  EXPECT_TRUE(legacyVersion == 8u || legacyVersion == 9u);
+  EXPECT_GE(bytes.size(), 2u * sizeof(std::uint32_t));
+
+  // Component records that did not exist at all before the emulated version
+  // cannot be rewritten into it; the loader rejects them by name. Callers drop
+  // them from the registry before saving. Fail loudly if a new one appears.
+  for (const std::string_view laterRecord :
+       {std::string_view("comps.DeformableVbdConfig"),      // version 31
+        std::string_view("comps.DeformableContactConfig")}) // version 33
+  {
+    EXPECT_EQ(bytes.find(laterRecord), std::string::npos)
+        << "remove " << laterRecord
+        << " before saving; it postdates binary format version "
+        << legacyVersion;
+  }
+  // Version 9 is the only Link-record change in this range, and it is not
+  // emulated here because these worlds carry no links.
+  EXPECT_EQ(bytes.find("comps.LinkModel"), std::string::npos);
+
+  // Version 32 appended per-node world-space attachment targets to
+  // comps.DeformableNodeState, after positions, previous positions and
+  // velocities.
+  {
+    std::size_t offset = findComponentRecordDataOffset(
+        bytes, comps::DeformableNodeState::getTypeName());
+    offset += vector3dBlockBytes(bytes, offset); // positions
+    offset += vector3dBlockBytes(bytes, offset); // previous positions
+    offset += vector3dBlockBytes(bytes, offset); // velocities
+    bytes.erase(offset, vector3dBlockBytes(bytes, offset));
+  }
+
+  // Version 10 appended `useMatrixFreeLinearSolver` to comps.DeformableMaterial
+  // after four doubles and four earlier flags.
+  {
+    const std::size_t offset = findComponentRecordDataOffset(
+        bytes, comps::DeformableMaterial::getTypeName());
+    bytes.erase(offset + 4u * sizeof(double) + 4u * sizeof(bool), sizeof(bool));
+  }
+
+  // Drop every World metadata field appended after the emulated version.
+  const std::size_t metadataTailBytes = currentWorldMetadataTailBytes();
+  EXPECT_GE(bytes.size(), metadataTailBytes);
+  EXPECT_GE(metadataTailBytes, kLegacyV8WorldMetadataTailBytes);
+  bytes.resize(
+      bytes.size() - metadataTailBytes + kLegacyV8WorldMetadataTailBytes);
+
+  std::memcpy(
+      bytes.data() + sizeof(std::uint32_t),
+      &legacyVersion,
+      sizeof(legacyVersion));
+  return bytes;
 }
 
 } // namespace
@@ -2910,27 +3069,15 @@ TEST(DeformableBody, SerializationLoadsLegacyV8Material)
   options.material.useIterativeLinearSolver = true;
   options.material.useMatrixFreeLinearSolver = true;
   world1.addDeformableBody("legacy_v8_material", options);
+  auto& legacyRegistry = sx::detail::registryOf(world1);
+  const entt::entity legacyEntity
+      = *legacyRegistry.view<comps::DeformableBodyTag>().begin();
+  legacyRegistry.remove<comps::DeformableContactConfig>(legacyEntity);
 
   std::stringstream currentStream;
   world1.saveBinary(currentStream);
-  std::string legacyBytes = currentStream.str();
-
-  const std::uint32_t legacyVersion = 8u;
-  ASSERT_GE(legacyBytes.size(), 2u * sizeof(std::uint32_t));
-  std::memcpy(
-      legacyBytes.data() + sizeof(std::uint32_t),
-      &legacyVersion,
-      sizeof(legacyVersion));
-
-  const std::string materialTypeName(comps::DeformableMaterial::getTypeName());
-  const auto materialTypeOffset = legacyBytes.find(materialTypeName);
-  ASSERT_NE(materialTypeOffset, std::string::npos);
-
-  const auto materialDataOffset = materialTypeOffset + materialTypeName.size();
-  const auto matrixFreeFlagOffset
-      = materialDataOffset + 4u * sizeof(double) + 4u * sizeof(bool);
-  ASSERT_LT(matrixFreeFlagOffset, legacyBytes.size());
-  legacyBytes.erase(matrixFreeFlagOffset, sizeof(bool));
+  const std::string legacyBytes
+      = makeLegacyDeformableWorldBinary(currentStream.str(), 8u);
 
   std::stringstream legacyStream(legacyBytes);
   sx::World world2;
@@ -2965,27 +3112,15 @@ TEST(DeformableBody, SerializationLoadsLegacyV9MaterialWithoutMatrixFreeFlag)
   options.material.useIterativeLinearSolver = true;
   options.material.useMatrixFreeLinearSolver = true;
   world1.addDeformableBody("legacy_v9_material", options);
+  auto& legacyRegistry = sx::detail::registryOf(world1);
+  const entt::entity legacyEntity
+      = *legacyRegistry.view<comps::DeformableBodyTag>().begin();
+  legacyRegistry.remove<comps::DeformableContactConfig>(legacyEntity);
 
   std::stringstream currentStream;
   world1.saveBinary(currentStream);
-  std::string legacyBytes = currentStream.str();
-
-  const std::uint32_t legacyVersion = 9u;
-  ASSERT_GE(legacyBytes.size(), 2u * sizeof(std::uint32_t));
-  std::memcpy(
-      legacyBytes.data() + sizeof(std::uint32_t),
-      &legacyVersion,
-      sizeof(legacyVersion));
-
-  const std::string materialTypeName(comps::DeformableMaterial::getTypeName());
-  const auto materialTypeOffset = legacyBytes.find(materialTypeName);
-  ASSERT_NE(materialTypeOffset, std::string::npos);
-
-  const auto materialDataOffset = materialTypeOffset + materialTypeName.size();
-  const auto matrixFreeFlagOffset
-      = materialDataOffset + 4u * sizeof(double) + 4u * sizeof(bool);
-  ASSERT_LT(matrixFreeFlagOffset, legacyBytes.size());
-  legacyBytes.erase(matrixFreeFlagOffset, sizeof(bool));
+  const std::string legacyBytes
+      = makeLegacyDeformableWorldBinary(currentStream.str(), 9u);
 
   std::stringstream legacyStream(legacyBytes);
   sx::World world2;

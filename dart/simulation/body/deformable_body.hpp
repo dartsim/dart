@@ -75,6 +75,9 @@ public:
       std::size_t tetrahedron) const;
   [[nodiscard]] double getTetrahedronRestVolume(std::size_t tetrahedron) const;
   [[nodiscard]] DeformableMaterialProperties getMaterialProperties() const;
+  /// Return the construction-time surface-contact candidate capacity policy.
+  /// Zero means the World resolves a deterministic automatic cap at bake.
+  [[nodiscard]] std::size_t getSurfaceContactCandidateCapacity() const;
 
 private:
   friend class World;

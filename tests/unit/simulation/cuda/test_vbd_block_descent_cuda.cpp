@@ -37,6 +37,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <stdexcept>
 #include <vector>
 
 namespace vbd = dart::simulation::detail::deformable_vbd;
@@ -145,6 +146,88 @@ cuda::VbdCudaMassSpringProblem makeProblem(
 }
 
 } // namespace
+
+//==============================================================================
+// The device solve must reject every non-SPD eigenvalue pattern even when the
+// determinant is positive. The old determinant-only predicate accepted both
+// two-negative cases below and applied an invalid Newton step.
+TEST(CudaVbdBlockDescent, SymmetricSolveRejectsIndefiniteMatrices)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "no CUDA device available";
+  }
+
+  const std::array<std::array<double, 6>, 3> indefinite{{
+      {-1.0, 0.0, 0.0, -1.0, 0.0, 1.0},
+      {1.0, 0.0, 0.0, -1.0, 0.0, -1.0},
+      {-1.0, 0.0, 0.0, 1.0, 0.0, 1.0},
+  }};
+  const std::array<double, 3> force{1.0, -2.0, 3.0};
+
+  for (const bool singlePrecision : {false, true}) {
+    for (const auto& hessian : indefinite) {
+      const auto solution = cuda::solveVbdSymmetric3CudaForTesting(
+          hessian, force, singlePrecision);
+      EXPECT_DOUBLE_EQ(solution[0], 0.0);
+      EXPECT_DOUBLE_EQ(solution[1], 0.0);
+      EXPECT_DOUBLE_EQ(solution[2], 0.0);
+    }
+  }
+}
+
+//==============================================================================
+// Strict positive definiteness, rather than an arbitrary absolute determinant
+// threshold, is the acceptance contract: an ill-conditioned but finite SPD
+// block remains solvable, while the singular boundary returns the zero step.
+TEST(CudaVbdBlockDescent, SymmetricSolveHandlesNearSingularSpdBoundary)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "no CUDA device available";
+  }
+
+  constexpr double epsilon = 1e-12;
+  const std::array<double, 6> nearSingularSpd{epsilon, 0.0, 0.0, 2.0, 0.0, 3.0};
+  const std::array<double, 3> force{epsilon, -4.0, 9.0};
+  const std::array<double, 6> singular{0.0, 0.0, 0.0, 2.0, 0.0, 3.0};
+
+  for (const bool singlePrecision : {false, true}) {
+    const double tolerance = singlePrecision ? 1e-5 : 1e-12;
+    const auto solution = cuda::solveVbdSymmetric3CudaForTesting(
+        nearSingularSpd, force, singlePrecision);
+    EXPECT_NEAR(solution[0], 1.0, tolerance);
+    EXPECT_NEAR(solution[1], -2.0, tolerance);
+    EXPECT_NEAR(solution[2], 3.0, tolerance);
+
+    const auto rejected = cuda::solveVbdSymmetric3CudaForTesting(
+        singular, force, singlePrecision);
+    EXPECT_DOUBLE_EQ(rejected[0], 0.0);
+    EXPECT_DOUBLE_EQ(rejected[1], 0.0);
+    EXPECT_DOUBLE_EQ(rejected[2], 0.0);
+  }
+}
+
+//==============================================================================
+// A coupled, well-conditioned SPD block still recovers its known Newton step
+// in both scalar modes after strengthening the acceptance predicate.
+TEST(CudaVbdBlockDescent, SymmetricSolveAcceptsBenignSpdMatrix)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "no CUDA device available";
+  }
+
+  const std::array<double, 6> hessian{4.0, 1.0, 0.5, 3.0, 0.2, 5.0};
+  const std::array<double, 3> force{2.25, -4.9, 2.6};
+  const std::array<double, 3> expected{1.0, -2.0, 0.5};
+
+  for (const bool singlePrecision : {false, true}) {
+    const double tolerance = singlePrecision ? 1e-5 : 1e-12;
+    const auto solution = cuda::solveVbdSymmetric3CudaForTesting(
+        hessian, force, singlePrecision);
+    for (std::size_t i = 0; i < solution.size(); ++i) {
+      EXPECT_NEAR(solution[i], expected[i], tolerance) << "component " << i;
+    }
+  }
+}
 
 //==============================================================================
 TEST(CudaVbdBlockDescent, MatchesCpuBlockDescent)
@@ -337,6 +420,8 @@ struct TetScene
   std::vector<std::uint8_t> fixed;
   std::vector<Vec3> inertialTargets;
   std::vector<vbd::TetMeshElement> tets;
+  // No-log Smith coefficients (muHat, lambdaHat), matching the CPU kernel and
+  // VbdCudaTetProblem contract.
   double mu = 3000.0;
   double lambda = 6000.0;
   double timeStep = 0.01;
@@ -634,6 +719,95 @@ TEST(CudaVbdBlockDescent, TetRolloutMatchesCpu)
         problem.positions[3 * i],
         problem.positions[3 * i + 1],
         problem.positions[3 * i + 2]);
+    EXPECT_NEAR((gpu - cpu[i]).norm(), 0.0, 1e-5) << "vertex " << i;
+  }
+}
+
+//==============================================================================
+// Exercise every supported engineering-domain boundary represented in this
+// focused CUDA suite. Auxetic materials are rejected before backend dispatch
+// because the no-log Smith model develops a collapsed lower-energy well.
+TEST(CudaVbdBlockDescent, SupportedEngineeringMaterialTetRolloutsMatchCpu)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "no CUDA device available";
+  }
+
+  for (const double poissonRatio : {0.0, 0.3}) {
+    SCOPED_TRACE(poissonRatio);
+    TetScene scene = makeTetBar(4);
+    const vbd::LameParameters model
+        = vbd::lameFromYoungPoisson(6000.0, poissonRatio);
+    ASSERT_GT(model.mu, 0.0);
+    ASSERT_GT(model.lambda, 0.0);
+    if (poissonRatio == 0.0) {
+      ASSERT_DOUBLE_EQ(model.mu, 3000.0);
+      ASSERT_DOUBLE_EQ(model.lambda, model.mu);
+    }
+    scene.mu = model.mu;
+    scene.lambda = model.lambda;
+    const std::size_t n = scene.positions.size();
+    const auto coloring = vbd::colorTetMesh(n, scene.tets);
+    const auto adjacency = vbd::TetAdjacency::build(n, scene.tets);
+    const Vec3 gravity(0.0, -9.81, 0.0);
+    constexpr std::size_t steps = 20;
+    constexpr std::size_t iterations = 40;
+
+    const std::vector<Vec3> cpu
+        = cpuTetRollout(scene, coloring, adjacency, gravity, iterations, steps);
+    cuda::VbdCudaTetRolloutProblem problem = makeTetRolloutProblem(
+        scene, coloring, adjacency, gravity, iterations, steps, false);
+    cuda::vbdRolloutTetMeshCuda(problem);
+
+    for (std::size_t i = 0; i < n; ++i) {
+      const Vec3 gpu(
+          problem.positions[3 * i],
+          problem.positions[3 * i + 1],
+          problem.positions[3 * i + 2]);
+      EXPECT_TRUE(gpu.allFinite()) << "vertex " << i;
+      EXPECT_NEAR((gpu - cpu[i]).norm(), 0.0, 1e-5) << "vertex " << i;
+    }
+  }
+}
+
+//==============================================================================
+TEST(CudaVbdBlockDescent, AuxeticEngineeringMaterialIsRejectedBeforeDispatch)
+{
+  EXPECT_THROW(
+      static_cast<void>(vbd::lameFromYoungPoisson(6000.0, -0.5)),
+      std::invalid_argument);
+}
+
+//==============================================================================
+// Keep the kernel's raw lambdaHat==0 continuation covered separately. This is
+// a low-level safety edge, not the coefficient mapping for engineering nu=0.
+TEST(CudaVbdBlockDescent, RawZeroModelLambdaTetRolloutMatchesCpu)
+{
+  if (!cuda::isCudaRuntimeAvailable()) {
+    GTEST_SKIP() << "no CUDA device available";
+  }
+
+  TetScene scene = makeTetBar(4);
+  scene.lambda = 0.0;
+  const std::size_t n = scene.positions.size();
+  const auto coloring = vbd::colorTetMesh(n, scene.tets);
+  const auto adjacency = vbd::TetAdjacency::build(n, scene.tets);
+  const Vec3 gravity(0.0, -9.81, 0.0);
+  constexpr std::size_t steps = 20;
+  constexpr std::size_t iterations = 40;
+
+  const std::vector<Vec3> cpu
+      = cpuTetRollout(scene, coloring, adjacency, gravity, iterations, steps);
+  cuda::VbdCudaTetRolloutProblem problem = makeTetRolloutProblem(
+      scene, coloring, adjacency, gravity, iterations, steps, false);
+  cuda::vbdRolloutTetMeshCuda(problem);
+
+  for (std::size_t i = 0; i < n; ++i) {
+    const Vec3 gpu(
+        problem.positions[3 * i],
+        problem.positions[3 * i + 1],
+        problem.positions[3 * i + 2]);
+    EXPECT_TRUE(gpu.allFinite()) << "vertex " << i;
     EXPECT_NEAR((gpu - cpu[i]).norm(), 0.0, 1e-5) << "vertex " << i;
   }
 }

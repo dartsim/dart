@@ -39,23 +39,58 @@
 #include <Eigen/LU>
 
 #include <array>
+#include <stdexcept>
+
+#include <cmath>
 
 namespace dart::simulation::detail::deformable_vbd {
 
-/// Lame parameters derived from Young's modulus `E` and Poisson ratio `nu`.
+/// Smith-model coefficients derived from Young's modulus `E` and Poisson ratio
+/// `nu`.
+///
+/// The field names follow the reference implementation, but these are the
+/// model coefficients `(muHat, lambdaHat)`, not the physical Lame pair. The
+/// no-log Smith energy below recovers the requested infinitesimal Hooke law
+/// when `muHat = mu_L` and `lambdaHat = lambda_L + mu_L`.
 struct LameParameters
 {
   double mu = 0.0;
   double lambda = 0.0;
 };
 
-/// Convert (Young's modulus, Poisson ratio) to Lame parameters.
+/// Whether the no-log Smith model has a globally rest-stable engineering
+/// parameterization for @p poisson.
+///
+/// At uniform collapse its rest-zeroed energy is
+/// `Psi(0) = (lambdaHat - muHat)/2 = lambda_L/2`, so every auxetic engineering
+/// material (`nu < 0`) introduces a state below the rest energy. Engineering
+/// `nu == 0` is the nonnegative boundary: after minimizing `Ic` at fixed `J`,
+/// its uniform-scale energy factors as
+/// `muHat c^2 (c-1)^2 (c^2+2c+3)/2`. Positive `nu` adds the nonnegative term
+/// `(lambdaHat-muHat)(c^3-1)^2/2`, making rest unique. Auxetic nonlinear FEM
+/// therefore requires a different, globally rest-stable constitutive model.
+inline constexpr bool isSupportedPoissonRatio(double poisson) noexcept
+{
+  return poisson >= 0.0 && poisson < 0.5;
+}
+
+/// Convert engineering material parameters to the no-log Smith coefficients.
+/// Throws when @p poisson is outside the globally nonnegative model domain
+/// `0 <= poisson < 0.5`.
 inline LameParameters lameFromYoungPoisson(double youngsModulus, double poisson)
 {
+  if (!isSupportedPoissonRatio(poisson)) {
+    throw std::invalid_argument(
+        "no-log stable Neo-Hookean requires 0 <= Poisson ratio < 0.5");
+  }
+
   LameParameters lame;
+  // muHat = mu_L, where mu_L is the physical shear modulus.
   lame.mu = youngsModulus / (2.0 * (1.0 + poisson));
-  lame.lambda
-      = youngsModulus * poisson / ((1.0 + poisson) * (1.0 - 2.0 * poisson));
+  // lambdaHat = lambda_L + mu_L = mu_L / (1 - 2 nu). Computing the
+  // algebraically reduced form avoids cancellation at the nu == 0 boundary
+  // and maps it to lambdaHat == muHat, not zero.
+  lame.lambda = lame.mu / (1.0 - 2.0 * poisson);
   return lame;
 }
 
@@ -99,24 +134,40 @@ inline Eigen::Matrix3d deformationGradient(
 }
 
 //==============================================================================
-/// Stable Neo-Hookean energy density (Smith et al. 2018 form used by the
-/// reference): `Psi = (mu/2)(||F||_F^2 - 3) + (lambda/2)(det F - a)^2` with the
-/// rest-stabilizing offset `a = 1 + mu/lambda`. There is no log term, so the
-/// energy stays finite and smooth under element inversion (`det F <= 0`).
+/// Stable Neo-Hookean energy density (the no-log Smith form used by the VBD
+/// reference), normalized to zero at rest:
+/// `Psi = (muHat/2)(||F||_F^2 - 3) - muHat(J - 1)
+///      + (lambdaHat/2)(J - 1)^2`.
+///
+/// For nonzero `lambdaHat`, this differs from
+/// `(muHat/2)(||F||_F^2 - 3) + (lambdaHat/2)(J - a)^2`, with
+/// `a = 1 + muHat/lambdaHat`, only by the deformation-independent constant
+/// `muHat^2/(2 lambdaHat)`. Removing that constant preserves the stress and
+/// Hessian while providing their finite continuation at a raw model
+/// `lambdaHat == 0` and avoiding `muHat/lambdaHat` overflow. There is no log
+/// term, so the energy stays finite and smooth under element inversion
+/// (`J <= 0`).
+///
+/// Its small-strain expansion is
+/// `muHat tr(epsilon^2) + (lambdaHat - muHat)/2 tr(epsilon)^2`;
+/// `lameFromYoungPoisson()` therefore applies the Smith reparameterization
+/// needed to reproduce the engineering material's physical Lame pair.
 inline double stableNeoHookeanEnergyDensity(
     const Eigen::Matrix3d& F, double mu, double lambda)
 {
   const double iC = F.squaredNorm();
   const double j = F.determinant();
-  const double a = 1.0 + mu / lambda;
-  return 0.5 * mu * (iC - 3.0) + 0.5 * lambda * (j - a) * (j - a);
+  const double jMinusOne = j - 1.0;
+  const double volumetricEnergy
+      = std::fma(0.5 * lambda * jMinusOne, jMinusOne, -mu * jMinusOne);
+  return std::fma(0.5 * mu, iC - 3.0, volumetricEnergy);
 }
 
 //==============================================================================
 /// First Piola-Kirchhoff stress `P = dPsi/dF` of the stable Neo-Hookean energy:
-/// `P = mu F + lambda (det F - a) cof(F)`, where `cof(F)` (the column-wise
-/// cross-product cofactor) equals `dJ/dF`. At rest (`F = I`) the stress is
-/// zero, so the rest state is a force equilibrium.
+/// `P = muHat F + (lambdaHat (J - 1) - muHat) cof(F)`, where `cof(F)` (the
+/// column-wise cross-product cofactor) equals `dJ/dF`. At rest (`F = I`) the
+/// stress is zero, so the rest state is a force equilibrium.
 inline Eigen::Matrix3d stableNeoHookeanStress(
     const Eigen::Matrix3d& F, double mu, double lambda)
 {
@@ -129,8 +180,8 @@ inline Eigen::Matrix3d stableNeoHookeanStress(
   cofactor.col(2) = f0.cross(f1);
 
   const double j = F.determinant();
-  const double a = 1.0 + mu / lambda;
-  return mu * F + lambda * (j - a) * cofactor;
+  const double volumetricCoefficient = std::fma(lambda, j - 1.0, -mu);
+  return mu * F + volumetricCoefficient * cofactor;
 }
 
 //==============================================================================
@@ -177,8 +228,8 @@ inline void addNeoHookeanTetTerm(
   cofactor.col(2) = f0.cross(f1);
 
   const double j = F.determinant();
-  const double a = 1.0 + mu / lambda;
-  const Eigen::Matrix3d stress = mu * F + lambda * (j - a) * cofactor;
+  const double volumetricCoefficient = std::fma(lambda, j - 1.0, -mu);
+  const Eigen::Matrix3d stress = mu * F + volumetricCoefficient * cofactor;
 
   const Eigen::Vector3d gi = g[localVertex];
   const double volume = rest.restVolume;
@@ -203,8 +254,8 @@ inline void addNeoHookeanTetTerm(
     dCofactor.col(1) = df2.cross(f0) + f2.cross(df0);
     dCofactor.col(2) = df0.cross(f1) + f0.cross(df1);
 
-    const Eigen::Matrix3d dStress
-        = mu * dF + lambda * (dJ * cofactor + (j - a) * dCofactor);
+    const Eigen::Matrix3d dStress = mu * dF + (lambda * dJ) * cofactor
+                                    + volumetricCoefficient * dCofactor;
     block.hessian.col(d).noalias() += volume * (dStress * gi);
   }
 }

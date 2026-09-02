@@ -12,21 +12,22 @@
  *   * Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above
- *     copyright notice and this list of conditions in the documentation
- *     and/or other materials provided with the distribution.
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
- *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *   POSSIBILITY OF SUCH DAMAGE.
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS
+ *   BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+ *   OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ *   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ *   OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+ *   USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+ *   DAMAGE.
  */
 
 #include <dart/simulation/compute/parallel_executor.hpp>
@@ -36,9 +37,12 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <limits>
 #include <vector>
+
+#include <cstdint>
 
 namespace vbd = dart::simulation::detail::deformable_vbd;
 namespace compute = dart::simulation::compute;
@@ -53,17 +57,6 @@ vbd::AvbdSpringFiniteStiffnessRow makeSpringRow(
 {
   vbd::AvbdSpringFiniteStiffnessRow row;
   row.spring = 0;
-  row.state.stiffness = stiffness;
-  row.materialStiffness = materialStiffness;
-  return row;
-}
-
-//==============================================================================
-vbd::AvbdTetMaterialFiniteStiffnessRow makeTetRow(
-    double stiffness, double materialStiffness)
-{
-  vbd::AvbdTetMaterialFiniteStiffnessRow row;
-  row.tet = 0;
   row.state.stiffness = stiffness;
   row.materialStiffness = materialStiffness;
   return row;
@@ -132,22 +125,6 @@ TEST(VbdFiniteStiffness, ProjectedQuasiNewtonDiagonalPropagatesNonfiniteInputs)
 }
 
 //==============================================================================
-TEST(VbdFiniteStiffness, TetMaterialConstraintValueIsStrainNorm)
-{
-  const std::array<Vec3, 4> rest
-      = {Vec3(0.0, 0.0, 0.0),
-         Vec3(1.0, 0.0, 0.0),
-         Vec3(0.0, 1.0, 0.0),
-         Vec3(0.0, 0.0, 1.0)};
-  const vbd::TetRestShape restShape = vbd::makeTetRestShape(rest);
-  EXPECT_DOUBLE_EQ(vbd::avbdTetMaterialConstraintValue(restShape, rest), 0.0);
-
-  std::array<Vec3, 4> deformed = rest;
-  deformed[3].z() = 1.25;
-  EXPECT_GT(vbd::avbdTetMaterialConstraintValue(restShape, deformed), 0.0);
-}
-
-//==============================================================================
 TEST(VbdFiniteStiffness, RowUpdateRampsAndCapsAtMaterialStiffness)
 {
   vbd::AvbdSpringFiniteStiffnessRow row = makeSpringRow(5.0, 20.0);
@@ -163,25 +140,6 @@ TEST(VbdFiniteStiffness, RowUpdateRampsAndCapsAtMaterialStiffness)
   updated
       = vbd::updateAvbdSpringFiniteStiffnessRow(row.state, 0.25, row, options);
   EXPECT_DOUBLE_EQ(updated.stiffness, 20.0);
-}
-
-//==============================================================================
-TEST(VbdFiniteStiffness, TetMaterialRowUpdateRampsAndCapsAtUnitScale)
-{
-  vbd::AvbdTetMaterialFiniteStiffnessRow row = makeTetRow(0.1, 1.0);
-  vbd::AvbdTetMaterialFiniteStiffnessOptions options;
-  options.beta = 2.0;
-
-  vbd::AvbdScalarRowState updated
-      = vbd::updateAvbdTetMaterialFiniteStiffnessRow(
-          row.state, 0.25, row, options);
-  EXPECT_DOUBLE_EQ(updated.lambda, 0.0);
-  EXPECT_DOUBLE_EQ(updated.stiffness, 0.6);
-
-  row.state.stiffness = 0.9;
-  updated = vbd::updateAvbdTetMaterialFiniteStiffnessRow(
-      row.state, 0.25, row, options);
-  EXPECT_DOUBLE_EQ(updated.stiffness, 1.0);
 }
 
 //==============================================================================
@@ -246,67 +204,7 @@ TEST(VbdFiniteStiffness, BlockDescentRowsUpdateEffectiveSpringStiffness)
 }
 
 //==============================================================================
-TEST(VbdFiniteStiffness, BlockDescentRowsUpdateEffectiveTetMaterialStiffness)
-{
-  std::vector<Vec3> positions
-      = {Vec3(0.0, 0.0, 0.0),
-         Vec3(1.0, 0.0, 0.0),
-         Vec3(0.0, 1.0, 0.0),
-         Vec3(0.0, 0.0, 1.3)};
-  const std::vector<Vec3> restPositions
-      = {Vec3(0.0, 0.0, 0.0),
-         Vec3(1.0, 0.0, 0.0),
-         Vec3(0.0, 1.0, 0.0),
-         Vec3(0.0, 0.0, 1.0)};
-  const std::vector<double> masses(positions.size(), 1.0);
-  const std::vector<std::uint8_t> fixed = {1u, 1u, 1u, 0u};
-  const std::vector<Vec3> inertialTargets = positions;
-  const std::array<std::uint32_t, 4> vertices = {0, 1, 2, 3};
-  const std::vector<vbd::TetMeshElement> tets
-      = {{vertices,
-          vbd::makeTetRestShape(
-              {restPositions[0],
-               restPositions[1],
-               restPositions[2],
-               restPositions[3]})}};
-  const auto coloring = vbd::colorTetMesh(positions.size(), tets);
-  const auto adjacency = vbd::TetAdjacency::build(positions.size(), tets);
-
-  std::vector<vbd::AvbdTetMaterialFiniteStiffnessRow> rows
-      = {makeTetRow(0.05, 1.0)};
-
-  vbd::BlockDescentOptions options;
-  options.iterations = 4;
-  vbd::AvbdTetMaterialFiniteStiffnessOptions avbdOptions;
-  avbdOptions.beta = 1.5;
-
-  const vbd::BlockDescentStats stats
-      = vbd::blockDescentTetMeshAvbdFiniteStiffness(
-          positions,
-          masses,
-          fixed,
-          inertialTargets,
-          tets,
-          800.0,
-          1200.0,
-          0.1,
-          rows,
-          coloring,
-          adjacency,
-          options,
-          avbdOptions);
-
-  EXPECT_EQ(stats.iterations, 4u);
-  EXPECT_LT(positions[3].z(), 1.3);
-  EXPECT_GT(rows[0].state.stiffness, 0.05);
-  EXPECT_LE(rows[0].state.stiffness, rows[0].materialStiffness);
-  EXPECT_DOUBLE_EQ(rows[0].state.lambda, 0.0);
-}
-
-//==============================================================================
-TEST(
-    VbdFiniteStiffness,
-    TetAndSelfContactDualUpdatesAreBitwiseDeterministicAcrossWorkers)
+TEST(VbdFiniteStiffness, SelfContactDualUpdatesAreDeterministicAcrossWorkers)
 {
   constexpr std::size_t rowCount = 8193u;
   constexpr std::size_t frictionPairCount = 8193u;
@@ -314,7 +212,6 @@ TEST(
   struct SolveResult
   {
     std::vector<Vec3> positions;
-    std::vector<vbd::AvbdTetMaterialFiniteStiffnessRow> tetRows;
     std::vector<vbd::AvbdSelfContactNormalRow> selfContactRows;
     std::vector<vbd::AvbdSelfContactFrictionRow> frictionRows;
     vbd::BlockDescentStats stats;
@@ -354,24 +251,15 @@ TEST(
     const auto adjacency
         = vbd::TetAdjacency::build(result.positions.size(), tets);
 
-    result.tetRows.reserve(rowCount);
     result.selfContactRows.reserve(rowCount);
     for (std::size_t i = 0u; i < rowCount; ++i) {
       const double index = static_cast<double>(i);
-
-      vbd::AvbdTetMaterialFiniteStiffnessRow tetRow;
-      tetRow.tet = 0u;
-      tetRow.state.stiffness = 0.05 + 0.0005 * index;
-      tetRow.state.lambda = 10.0 + index;
-      tetRow.materialStiffness = 0.8 + 0.001 * index;
-      result.tetRows.push_back(tetRow);
-
-      vbd::AvbdSelfContactNormalRow selfContactRow;
-      selfContactRow.nodes = {0u, 1u, 2u, 3u};
-      selfContactRow.state.stiffness = 10.0 + 0.01 * index;
-      selfContactRow.state.lambda = 0.0005 * index;
-      selfContactRow.squaredActivationDistance = 4e-4;
-      result.selfContactRows.push_back(selfContactRow);
+      vbd::AvbdSelfContactNormalRow row;
+      row.nodes = {0u, 1u, 2u, 3u};
+      row.state.stiffness = 10.0 + 0.01 * index;
+      row.state.lambda = 0.0005 * index;
+      row.squaredActivationDistance = 4e-4;
+      result.selfContactRows.push_back(row);
     }
 
     result.frictionRows.reserve(2u * frictionPairCount);
@@ -391,7 +279,6 @@ TEST(
       result.frictionRows.push_back(first);
       result.frictionRows.push_back(second);
     }
-    result.tetRows.back().tet = 99u;
     result.selfContactRows.back().nodes = {99u, 100u, 101u, 102u};
     result.frictionRows[result.frictionRows.size() - 2u].nodes
         = {99u, 100u, 101u, 102u};
@@ -400,9 +287,6 @@ TEST(
     vbd::BlockDescentOptions options;
     options.iterations = 2u;
     options.regularization = 1e-12;
-    vbd::AvbdTetMaterialFiniteStiffnessOptions tetOptions;
-    tetOptions.beta = 0.25;
-    tetOptions.maxStiffness = 1.0;
     vbd::AvbdSelfContactNormalOptions selfContactOptions;
     selfContactOptions.beta = 3.0;
     selfContactOptions.maxStiffness = 1000.0;
@@ -411,7 +295,7 @@ TEST(
     frictionOptions.maxStiffness = 1000.0;
 
     compute::ParallelExecutor executor(std::max<std::size_t>(1u, workerCount));
-    result.stats = vbd::blockDescentTetMeshAvbdFiniteStiffness(
+    result.stats = vbd::blockDescentTetMeshAvbdSelfContact(
         result.positions,
         masses,
         fixed,
@@ -420,11 +304,9 @@ TEST(
         /*mu=*/500.0,
         /*lambda=*/800.0,
         /*timeStep=*/0.02,
-        result.tetRows,
         coloring,
         adjacency,
         options,
-        tetOptions,
         nullptr,
         &result.selfContactRows,
         &selfContactOptions,
@@ -436,7 +318,6 @@ TEST(
 
   const SolveResult serial = solve(0u);
   const double lastIndex = static_cast<double>(rowCount - 1u);
-  EXPECT_EQ(serial.tetRows.back().state.lambda, 10.0 + lastIndex);
   EXPECT_EQ(serial.selfContactRows.back().state.lambda, 0.0005 * lastIndex);
   EXPECT_EQ(
       serial.frictionRows[serial.frictionRows.size() - 2u].state.lambda,
@@ -464,7 +345,6 @@ TEST(
             << "row=" << i;
       }
     };
-    expectStates(parallel.tetRows, serial.tetRows);
     expectStates(parallel.selfContactRows, serial.selfContactRows);
     expectStates(parallel.frictionRows, serial.frictionRows);
   };

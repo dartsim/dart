@@ -6661,9 +6661,8 @@ TEST(AvbdContact, PenetratingRigidBodyProjectsVelocity)
 }
 
 //==============================================================================
-// Fixed-joint rows are still private AVBD detail, but the contact-stage opt-in
-// should append them to the same rigid World projection when they link rigid
-// body entities.
+// Fixed-joint rows should join the public AVBD contact projection without a
+// private per-body compatibility opt-in.
 TEST(AvbdContact, FixedJointRowsParticipateInProjection)
 {
   auto avbd = buildDropScene(sx::ContactSolverMethod::SequentialImpulse, 0.49);
@@ -6681,8 +6680,6 @@ TEST(AvbdContact, FixedJointRowsParticipateInProjection)
 
   auto& registry = dart::simulation::detail::registryOf(*avbd);
   const auto& toReg = dart::simulation::detail::toRegistryEntity;
-  registry.emplace_or_replace<sx::comps::RigidAvbdContactConfig>(
-      toReg(sphere->getEntity()));
 
   const entt::entity jointEntity = registry.create();
   auto& joint = registry.emplace<sx::comps::JointModel>(jointEntity);

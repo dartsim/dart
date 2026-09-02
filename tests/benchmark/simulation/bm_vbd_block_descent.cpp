@@ -33,6 +33,7 @@
 #include <dart/simulation/compute/parallel_executor.hpp>
 #include <dart/simulation/detail/deformable_vbd/block_descent.hpp>
 #include <dart/simulation/detail/deformable_vbd/parallel_block_descent.hpp>
+#include <dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp>
 
 #include <Eigen/Core>
 #include <benchmark/benchmark.h>
@@ -266,11 +267,12 @@ BENCHMARK(BM_VbdTetMeshStep)->Arg(4)->Arg(16)->Arg(64);
 
 namespace {
 
-// The TinyVBD reference default scene: a 20-vertex strand tilted 30 degrees,
-// pinned at vertex 0, with structural springs (i, i+1) and skip springs
-// (i, i+2), a 1:1000 tip mass ratio, and 100 iterations per step. Matched here
-// for a per-step CPU comparison against the TinyVBD reference implementation
-// (same vertex/spring/iteration counts and the same per-vertex VBD update).
+// A TinyVBD-inspired 20-vertex strand smoke. This is not a matched-reference
+// benchmark: DART currently applies one stiffness to structural and skip
+// springs, uses uniform tip spacing, and enables its PSD Hessian clamp, whereas
+// pinned TinyVBD uses 1e8 structural versus 100 skip stiffness, a doubled final
+// segment, and its raw spring Hessian with a QR solve. Do not compare timings
+// from this row against TinyVBD until a source-equivalent profile exists.
 struct StrandScene
 {
   std::vector<Vec3> positions;
@@ -325,8 +327,7 @@ StrandScene makeTiltedStrand(int numVerts)
 } // namespace
 
 //==============================================================================
-// One step (100 sweeps) on the TinyVBD reference tilted-strand scene, for a
-// per-step CPU comparison against the TinyVBD reference implementation.
+// One step (100 sweeps) on the TinyVBD-inspired, currently unmatched strand.
 static void BM_VbdTinyStrandStep(benchmark::State& state)
 {
   const StrandScene base = makeTiltedStrand(static_cast<int>(state.range(0)));
@@ -390,5 +391,71 @@ static void BM_VbdParallelGridStep(benchmark::State& state)
   state.counters["vertices"] = static_cast<double>(side * side);
 }
 BENCHMARK(BM_VbdParallelGridStep)->Arg(1)->Arg(2)->Arg(4)->Arg(8);
+
+//==============================================================================
+// Persistent rigid-contact identity validation must scale with sorting and
+// per-group lookup, not all-pairs comparisons across unrelated manifolds.
+// Every contact here belongs to a distinct feature group, making accidental
+// whole-envelope quadratic work visible at 1k/2k rows.
+static void BM_AvbdRigidContactIdentitySync(benchmark::State& state)
+{
+  const auto contactCount = static_cast<std::size_t>(state.range(0));
+  std::vector<vbd::AvbdRigidBodyState> states(2);
+  std::vector<vbd::AvbdRigidContactManifoldPoint> contacts(contactCount);
+  for (std::size_t i = 0; i < contactCount; ++i) {
+    auto& contact = contacts[i];
+    contact.bodyA = 0u;
+    contact.bodyB = 1u;
+    contact.endpointA = {
+        static_cast<std::uint64_t>(2u * i + 1u),
+        vbd::packAvbdContactFeatureId(
+            vbd::AvbdContactFeatureKind::Face, static_cast<std::uint32_t>(i))};
+    contact.endpointB = {
+        static_cast<std::uint64_t>(2u * i + 2u),
+        vbd::packAvbdContactFeatureId(
+            vbd::AvbdContactFeatureKind::Face, static_cast<std::uint32_t>(i))};
+    contact.point = Vec3(1.0e-4 * static_cast<double>(i), 0.0, 0.0);
+    contact.normalFromAtoB = Vec3::UnitZ();
+    contact.depth = 0.01;
+    contact.frictionCoefficient = 0.0;
+    contact.startStiffness = 10.0;
+    contact.maxStiffness = 100.0;
+  }
+
+  vbd::AvbdScalarRowInventory normalInventory;
+  vbd::AvbdScalarRowInventory frictionInventory;
+  std::vector<vbd::AvbdRigidBodyPointPairRow> normalRows;
+  std::vector<vbd::AvbdRigidBodyPointPairFrictionRows> frictionRows;
+  vbd::AvbdRigidContactManifoldRowScratch scratch;
+  vbd::AvbdRowWarmStartOptions warmStart;
+  warmStart.alpha = 1.0;
+  warmStart.gamma = 1.0;
+  vbd::buildAvbdRigidContactManifoldRows(
+      states,
+      contacts,
+      normalInventory,
+      frictionInventory,
+      normalRows,
+      frictionRows,
+      scratch,
+      warmStart);
+
+  for (auto _ : state) {
+    vbd::buildAvbdRigidContactManifoldRows(
+        states,
+        contacts,
+        normalInventory,
+        frictionInventory,
+        normalRows,
+        frictionRows,
+        scratch,
+        warmStart);
+    benchmark::DoNotOptimize(normalInventory.records().data());
+    benchmark::ClobberMemory();
+  }
+  state.counters["contacts"] = static_cast<double>(contactCount);
+  state.counters["normal_rows"] = static_cast<double>(normalInventory.size());
+}
+BENCHMARK(BM_AvbdRigidContactIdentitySync)->Arg(1000)->Arg(2000);
 
 BENCHMARK_MAIN();

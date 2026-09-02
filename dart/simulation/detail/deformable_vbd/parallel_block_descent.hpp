@@ -56,9 +56,9 @@ namespace dart::simulation::detail::deformable_vbd {
 /// identical to the serial `blockDescentMassSpring` for the same iteration
 /// count.
 ///
-/// A single-worker executor falls back to the serial driver. Early termination
-/// is not applied on the parallel path (it would need a deterministic chunked
-/// reduction), so the full `options.iterations` budget runs.
+/// A single-worker executor falls back to the serial driver. The parallel path
+/// reduces per-sweep displacement in vertex-index order after all color
+/// barriers, so early termination is deterministic across worker counts.
 inline BlockDescentStats parallelBlockDescentMassSpring(
     std::vector<Eigen::Vector3d>& positions,
     std::span<const double> masses,
@@ -74,8 +74,6 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
 {
   const std::size_t workerCount = executor.getWorkerCount();
   if (workerCount <= 1u) {
-    BlockDescentOptions serialOptions = options;
-    serialOptions.convergenceDisplacement = 0.0;
     return blockDescentMassSpring(
         positions,
         masses,
@@ -86,11 +84,19 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
         timeStep,
         coloring,
         adjacency,
-        serialOptions);
+        options);
   }
 
+  BlockDescentStats stats;
   const std::size_t vertexCount = positions.size();
+  const double convergenceSquared
+      = options.convergenceDisplacement * options.convergenceDisplacement;
+  std::vector<Eigen::Vector3d> beforeSweep;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    if (convergenceSquared > 0.0) {
+      beforeSweep.assign(positions.begin(), positions.end());
+    }
     for (const auto& group : coloring.groups) {
       const std::size_t groupSize = group.size();
       const std::size_t chunkSize
@@ -117,16 +123,28 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
             }
           });
     }
+    if (convergenceSquared > 0.0) {
+      double maxDeltaSquared = 0.0;
+      for (std::size_t vertex = 0; vertex < vertexCount; ++vertex) {
+        if (fixed[vertex] == 0u) {
+          maxDeltaSquared = std::max(
+              maxDeltaSquared,
+              (positions[vertex] - beforeSweep[vertex]).squaredNorm());
+        }
+      }
+      if (maxDeltaSquared <= convergenceSquared) {
+        break;
+      }
+    }
   }
 
-  BlockDescentStats stats;
-  stats.iterations = options.iterations;
+  std::size_t freeVertexCount = 0u;
   double residualNormSquared = 0.0;
   for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
     if (fixed[vertex] != 0u) {
       continue;
     }
-    ++stats.vertexUpdates;
+    ++freeVertexCount;
     const VertexBlock block = detail::assembleVertexBlock(
         vertex,
         positions,
@@ -139,7 +157,7 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
         options.clampSpringHessian);
     residualNormSquared += block.force.squaredNorm();
   }
-  stats.vertexUpdates *= options.iterations;
+  stats.vertexUpdates = freeVertexCount * stats.iterations;
   stats.finalResidualNormSquared = residualNormSquared;
   return stats;
 }
@@ -153,12 +171,11 @@ inline BlockDescentStats parallelBlockDescentMassSpring(
 /// serial driver for the same iteration count.
 ///
 /// Optional Rayleigh damping is honored via `stepStartPositions`. Chebyshev
-/// over-relaxation and residual early termination are NOT applied on the
-/// parallel path (they need chunk reductions / a global extrapolation); a
-/// single-worker executor falls back to the full-featured serial
-/// blockDescentDeformable, which does honor them. Active self-contact also
-/// falls back to the serial driver because the lagged VT/EE contact stencils
-/// are not part of the cached spring/tet coloring.
+/// extrapolation is parallel per vertex, and convergence is reduced in
+/// vertex-index order after extrapolation, making both controls deterministic
+/// across worker counts. Active self-contact falls back to the serial driver
+/// because the lagged VT/EE contact stencils are not part of the cached
+/// spring/tet coloring.
 template <
     typename PositionVector,
     typename FixedMask,
@@ -265,7 +282,27 @@ inline BlockDescentStats parallelBlockDescentDeformable(
     return block;
   };
 
+  const double convergenceSquared
+      = options.convergenceDisplacement * options.convergenceDisplacement;
+  ChebyshevTwoStepsBackVector localTwoStepsBack;
+  ChebyshevBeforeSweepVector localBeforeSweep;
+  ChebyshevTwoStepsBackVector& twoStepsBack
+      = chebyshevTwoStepsBackScratch != nullptr ? *chebyshevTwoStepsBackScratch
+                                                : localTwoStepsBack;
+  ChebyshevBeforeSweepVector& beforeSweep
+      = chebyshevBeforeSweepScratch != nullptr ? *chebyshevBeforeSweepScratch
+                                               : localBeforeSweep;
+  if (options.useChebyshev) {
+    twoStepsBack.assign(positions.begin(), positions.end());
+  }
+
+  BlockDescentStats stats;
+  double omega = 1.0;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
+    ++stats.iterations;
+    if (options.useChebyshev || convergenceSquared > 0.0) {
+      beforeSweep.assign(positions.begin(), positions.end());
+    }
     for (const auto& group : coloring.groups) {
       const std::size_t groupSize = group.size();
       const std::size_t chunkSize
@@ -282,19 +319,48 @@ inline BlockDescentStats parallelBlockDescentDeformable(
             }
           });
     }
+    if (options.useChebyshev) {
+      omega = chebyshevOmega(iteration + 1, options.chebyshevRho, omega);
+      if (omega > 1.0 && vertexCount > 0u) {
+        const std::size_t chunkSize
+            = (vertexCount + workerCount - 1u) / workerCount;
+        executor.parallelFor(
+            vertexCount, chunkSize, [&](std::size_t begin, std::size_t end) {
+              for (std::size_t vertex = begin; vertex < end; ++vertex) {
+                if (fixed[vertex] == 0u) {
+                  positions[vertex] = applyChebyshev(
+                      omega, positions[vertex], twoStepsBack[vertex]);
+                }
+              }
+            });
+      }
+      twoStepsBack.assign(beforeSweep.begin(), beforeSweep.end());
+    }
+    if (convergenceSquared > 0.0) {
+      double maxDeltaSquared = 0.0;
+      for (std::size_t vertex = 0; vertex < vertexCount; ++vertex) {
+        if (fixed[vertex] == 0u) {
+          maxDeltaSquared = std::max(
+              maxDeltaSquared,
+              (positions[vertex] - beforeSweep[vertex]).squaredNorm());
+        }
+      }
+      if (maxDeltaSquared <= convergenceSquared) {
+        break;
+      }
+    }
   }
 
-  BlockDescentStats stats;
-  stats.iterations = options.iterations;
+  std::size_t freeVertexCount = 0u;
   double residualNormSquared = 0.0;
   for (std::uint32_t vertex = 0; vertex < vertexCount; ++vertex) {
     if (fixed[vertex] != 0u) {
       continue;
     }
-    ++stats.vertexUpdates;
+    ++freeVertexCount;
     residualNormSquared += assemble(vertex).force.squaredNorm();
   }
-  stats.vertexUpdates *= options.iterations;
+  stats.vertexUpdates = freeVertexCount * stats.iterations;
   stats.finalResidualNormSquared = residualNormSquared;
   return stats;
 }

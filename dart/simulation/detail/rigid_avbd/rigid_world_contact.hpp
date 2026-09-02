@@ -49,6 +49,7 @@
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
 
+#include <entt/container/dense_map.hpp>
 #include <entt/entt.hpp>
 
 #include <algorithm>
@@ -56,7 +57,6 @@
 #include <limits>
 #include <span>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -158,7 +158,7 @@ struct AvbdRigidWorldContactSnapshot
   using EntityBodyIndexPair = std::pair<const entt::entity, std::uint32_t>;
   using EntityBodyIndexAllocator
       = ::dart::common::StlAllocator<EntityBodyIndexPair>;
-  using EntityBodyIndexMap = std::unordered_map<
+  using EntityBodyIndexMap = entt::dense_map<
       entt::entity,
       std::uint32_t,
       std::hash<entt::entity>,
@@ -293,15 +293,48 @@ struct AvbdRigidWorldContactSolveOptions
   // present. Contact stages may opt into the contact-family override below
   // without retuning disconnected joint, motor, or spring rows.
   AvbdRowWarmStartOptions warmStart;
-  AvbdRigidPointAttachmentOptions row;
+  AvbdRigidPointAttachmentOptions row{.alpha = AvbdRowWarmStartOptions{}.alpha};
   AvbdRigidPointPairDistanceSpringOptions distanceSpring;
   bool hasContactFamilyOverride = false;
   AvbdRowWarmStartOptions contactWarmStart;
-  AvbdRigidPointAttachmentOptions contactRow;
-  AvbdRigidPointPairFrictionOptions friction;
+  AvbdRigidPointAttachmentOptions contactRow{
+      .alpha = AvbdRowWarmStartOptions{}.alpha};
+  AvbdRigidPointPairFrictionOptions friction{
+      .alpha = AvbdRowWarmStartOptions{}.alpha};
   AvbdRigidBlockDescentOptions descent;
   Formulation formulation = Formulation::AugmentedLagrangian;
 };
+
+/// Source-defined solver-wide AVBD parameters from Table 2 of Giles, Diaz,
+/// and Yuksel (SIGGRAPH 2025). Start/material/max stiffness remain properties
+/// of each constraint descriptor; this profile only owns Equations 12, 18,
+/// and 19 and must be applied coherently to every active row family.
+struct AvbdRigidParameterProfile
+{
+  double beta = 10.0;
+  double alpha = 0.95;
+  double gamma = 0.99;
+};
+
+inline constexpr AvbdRigidParameterProfile kAvbdRigidPaper2025Profile{};
+
+//==============================================================================
+inline void applyAvbdRigidParameterProfile(
+    AvbdRigidWorldContactSolveOptions& options,
+    const AvbdRigidParameterProfile& profile)
+{
+  options.warmStart.alpha = profile.alpha;
+  options.warmStart.gamma = profile.gamma;
+  options.row.alpha = profile.alpha;
+  options.row.beta = profile.beta;
+  options.distanceSpring.beta = profile.beta;
+  options.contactWarmStart.alpha = profile.alpha;
+  options.contactWarmStart.gamma = profile.gamma;
+  options.contactRow.alpha = profile.alpha;
+  options.contactRow.beta = profile.beta;
+  options.friction.alpha = profile.alpha;
+  options.friction.beta = profile.beta;
+}
 
 struct AvbdRigidWorldContactSolveResult
 {
@@ -481,6 +514,16 @@ struct AvbdRigidWorldContactSolveScratch
     // any family whose body layout changed and clears absent families.
   }
 
+  void clearContinuationState() noexcept
+  {
+    for (AvbdRigidBodyPointPairFrictionRows& row : frictionRows) {
+      row.persistentFirstRecord = nullptr;
+      row.persistentSecondRecord = nullptr;
+      row.persistentAnchor = nullptr;
+    }
+    contactRows.clearContinuationState();
+  }
+
   AvbdRigidContactManifoldRowScratch contactRows;
   AvbdRigidPointJointRowScratch jointLinearRowsScratch;
   AvbdRigidPointJointRowScratch jointAngularRowsScratch;
@@ -537,9 +580,14 @@ inline void reserveAvbdRigidWorldContactSolveScratch(
     std::size_t distanceSpringCapacity = 0)
 {
   scratch.contactRows.activeContacts.reserve(contactCapacity);
+  scratch.contactRows.contactLocalPoints.reserve(contactCapacity);
   scratch.contactRows.normalDescriptors.reserve(contactCapacity);
   scratch.contactRows.frictionDescriptors.reserve(2u * contactCapacity);
   scratch.contactRows.previousFrictionDirections.reserve(2u * contactCapacity);
+  scratch.contactRows.contactIdentities.reserve(contactCapacity);
+  scratch.contactRows.previousContactIdentities.reserve(2u * contactCapacity);
+  scratch.contactRows.contactTangentAnchors.reserve(contactCapacity);
+  scratch.contactRows.previousContactTangentAnchors.reserve(contactCapacity);
   scratch.jointLinearRowsScratch.activeRows.reserve(3u * jointCapacity);
   scratch.jointLinearRowsScratch.descriptors.reserve(3u * jointCapacity);
   scratch.jointAngularRowsScratch.activeRows.reserve(3u * jointCapacity);
@@ -2242,26 +2290,43 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     const AvbdRigidWorldContactSolveOptions& options = {},
     compute::ComputeExecutor* rowUpdateExecutor = nullptr)
 {
-  AvbdRigidWorldContactSolveResult result{
-      AvbdRigidWorldContactSolveResult::SizeAllocator{
-          scratch.normalRows.get_allocator()}};
-  if (snapshot.states.empty()) {
-    return result;
-  }
-
   const bool fixedPenalty
       = options.formulation
         == AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty;
-  if (fixedPenalty) {
-    // VBD has no persistent dual or progressive stiffness state. Reset every
-    // row inventory before descriptor synchronization so runtime family
-    // changes cannot leak AVBD state into the fixed-penalty solve.
+  const auto clearFixedPenaltyContinuation = [&]() noexcept {
     normalInventory.clear();
     frictionInventory.clear();
     jointLinearInventory.clear();
     jointAngularInventory.clear();
     motorInventory.clear();
     distanceSpringInventory.clear();
+    scratch.clearContinuationState();
+  };
+  struct FixedPenaltyContinuationGuard
+  {
+    bool active;
+    decltype(clearFixedPenaltyContinuation)& clear;
+
+    ~FixedPenaltyContinuationGuard()
+    {
+      if (active) {
+        clear();
+      }
+    }
+  } continuationGuard{fixedPenalty, clearFixedPenaltyContinuation};
+
+  if (fixedPenalty) {
+    // VBD owns no persistent dual, progressive stiffness, contact identity, or
+    // tangent-anchor state. Clear before every exit path, including an empty
+    // snapshot or an exception during descriptor materialization.
+    clearFixedPenaltyContinuation();
+  }
+
+  AvbdRigidWorldContactSolveResult result{
+      AvbdRigidWorldContactSolveResult::SizeAllocator{
+          scratch.normalRows.get_allocator()}};
+  if (snapshot.states.empty()) {
+    return result;
   }
 
   scratch.clear();
@@ -2694,18 +2759,6 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     angularCursor += angularRowsForJoint;
   }
   result.fracturedJoints = result.fracturedJointIndices.size();
-
-  if (fixedPenalty) {
-    // Fixed-penalty VBD owns no cross-step row state. Leaving the material
-    // stiffness written above in these shared inventories would let a later
-    // AVBD solve warm-start from VBD state after a runtime family switch.
-    normalInventory.clear();
-    frictionInventory.clear();
-    jointLinearInventory.clear();
-    jointAngularInventory.clear();
-    motorInventory.clear();
-    distanceSpringInventory.clear();
-  }
 
   return result;
 }

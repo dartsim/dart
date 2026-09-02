@@ -129,6 +129,15 @@ struct DeformableSolverStats
   // evaluation), matching the cumulative semantics of solverIterations; it is
   // not the active-set size of a single iteration.
   std::size_t selfContactBarrierActiveContacts = 0;
+  // Maximum construction policy, baked resolved cap, and emitted combined
+  // PT/EE active-set size across deformable bodies/builds in this step.
+  std::size_t surfaceContactCandidateCapacityRequested = 0;
+  std::size_t surfaceContactCandidateCapacityResolved = 0;
+  std::size_t surfaceContactCandidateCountPeak = 0;
+  // Candidates emitted beyond a resolved capacity by builds that were allowed
+  // to grow (automatic policy above the reserve budget). Zero for every
+  // fail-closed build.
+  std::size_t surfaceContactCandidateOverflowCount = 0;
   std::size_t projectedNewtonSteps = 0;
   std::size_t projectedNewtonFallbacks = 0;
   // Sparse-direct factorization accounting retained for diagnostics
@@ -194,7 +203,6 @@ struct DeformableSolverStats
   std::size_t vbdAvbdFrictionTangentRows = 0;
   std::size_t vbdAvbdAttachmentRows = 0;
   std::size_t vbdAvbdFiniteStiffnessRows = 0;
-  std::size_t vbdAvbdFiniteStiffnessTetRows = 0;
   double vbdResidualNormSquared = 0.0;
   // Contact closest-approach diagnostic at the converged iterate, folded across
   // the step's deformable bodies. minActiveContactDistance is the smallest
@@ -402,6 +410,7 @@ public:
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void preflight(World& world) override;
   void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
 
@@ -415,6 +424,12 @@ private:
   captureAvbdWarmStartReplayState(common::MemoryAllocator& allocator) const;
   void restoreAvbdWarmStartReplayState(
       const avbd_replay::RigidAvbdWarmStartReplayState& replayState);
+  void clearAvbdWarmStartContinuationState() noexcept;
+  void clearSequentialImpulseOwnedAvbdWarmStartContinuationState() noexcept;
+  [[nodiscard]] bool hasAnyAvbdWarmStartContinuationState() const noexcept;
+  [[nodiscard]] bool hasAvbdContactWarmStartContinuationState() const noexcept;
+  [[nodiscard]] bool hasAvbdDistanceSpringWarmStartContinuationState()
+      const noexcept;
 
   struct AvbdScratch;
   struct ContactScratch;
@@ -607,6 +622,7 @@ public:
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void preflight(World& world) override;
   /// Pre-reserve per-body deformable solver scratch before baked steps.
   void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
