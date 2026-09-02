@@ -420,15 +420,18 @@ contracts therefore remain 88 incomplete VBD rows plus 88 incomplete AVBD rows.
 
 The publication-shaped `avbd_paper_breakable_wall` scene exercises that public
 path at the paper's 1/60 s step and 20-iteration budget with 252 staggered
-bricks, 712 breakable attachments, and three impacts. Its deterministic
-frame-120 oracle records 154 broken and 558 retained attachments, displaced
-brick counts `[11, 14, 11]` around the three targets, 99.43% retention outside
-the impact bands, and 99.21% total retention. Frames 60 and 120 record one
-stable broken-joint identity digest; `[18, 44, 13]` identities start inside the
-three selected impact regions and 79 start outside, so this row claims
-localized displacement damage rather than localized broken topology. The 558
-surviving rows stay below 0.772 mm linear and 0.000317 rad angular residual at
-frame 120. The frame-60 capture remains an explicit pre-evaluation state. In
+bricks, 712 breakable attachments, and three impacts. Under the immutable
+paper profile (alpha 0.95 on contact rows too) the balls lodge in the wall and
+the anchored wall transmits the impulse to the ground, so its deterministic
+frame-120 oracle records 36 broken and 676 retained attachments, no displaced
+brick around the three targets, and 100% outside and total retention. Frames
+60, 120, and 600 record one stable broken-joint identity digest; `[5, 5, 5]`
+identities start inside the three selected impact regions and 21 start
+outside, so this row claims three localized joint-break clusters on a standing
+wall rather than the broken-open wall of Figure 13(d), and its semantic review
+records visual agreement with that panel as not proven. The 676 surviving rows
+stay below 1.63 mm linear and 0.00119 rad angular residual at frame 120. The
+frame-60 capture remains an explicit pre-evaluation state. In
 the now-historical predecessor packet, both engine ViewReports passed, the
 runtime scene and benchmark shared fingerprint `8ca3fbfa00c3dce9`, and six
 captures bound source digest
@@ -1679,9 +1682,10 @@ configuration, and is covered through C++/dartpy construction, mutation,
 schedule, serialization, replay, and first-post-bake allocation gates. The
 new `avbd_paper_breakable_wall` scene and
 `BM_AvbdPaperBreakableWallStep` reproduce the published Figure 13 shape at
-1/60 s and 20 iterations: three high-momentum balls fracture a 252-brick,
+1/60 s and 20 iterations: three high-momentum balls strike a 252-brick,
 712-attachment staggered wall while the deterministic frame-120 oracle keeps
-damage in all three impact bands and substantial outside/total retention. The assessed
+at least four broken attachments in each impact region and substantial
+outside/total retention. The assessed
 impact/outcome renders and five-repeat Release benchmark are sealed in
 [`avbd-paper-breakable-wall-packet.json`](104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json).
 The packet makes no reference speedup claim and keeps Figure 13 plus video row

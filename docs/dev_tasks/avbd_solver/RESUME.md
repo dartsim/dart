@@ -352,9 +352,11 @@ solver-identity contract.
 - The SI frame-14 image cannot identify the five broken constraints, and the
   front-oblique VBD bend is subtle. Counts, residuals, and bend magnitude come
   from the text oracle; do not inflate image-only claims.
-- AVBD has 79 of 154 broken identities outside the selected impact regions.
-  Claim localized displacement damage and tightly satisfied retained rows,
-  not localized broken topology.
+- AVBD has 21 of 36 broken identities outside the selected impact regions and
+  no displaced brick. Claim three localized joint-break clusters on a standing
+  wall and tightly satisfied retained rows, not the broken-open wall of
+  Figure 13(d); the review records that panel's visual agreement as not
+  proven.
 - Candidate-only articulated finite-row timings compare work that the exact
   parent skipped. Do not manufacture before/after speedups from them.
 - Finite one-DOF motor load is position-level and must be converted by

@@ -575,7 +575,7 @@ a paper/reference performance win.
 adds the first publication-shaped Figure 13 row through the public AVBD
 world-family selector. The 252-brick, 712-attachment, three-impact scene runs
 at 1/60 s with 20 contact/joint projection sweeps. A deterministic frame-120
-oracle requires damage in all three impact bands, bounded fracture, retained
+oracle requires at least four broken attachments in each impact region, bounded fracture, retained
 outside and total wall fractions, finite state, and the exact public solver identity;
 frame-60/frame-120 renders passed machine pixel-integrity and native semantic
 review against the pinned paper page. The five-repeat Release benchmark is

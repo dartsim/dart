@@ -389,15 +389,20 @@ All linked canonical method rows remain partial.
   persistence, resolved-family reporting, and fail-closed rejection of
   unsupported or incompatible configuration.
 - **Scene/oracle:** 252 staggered bricks, 712 breakable fixed attachments,
-  three 40 kg balls launched at 24 m/s, 1/60 s, and 20 projection sweeps. At
-  frame 120, the deterministic oracle records 154 broken and 558 unbroken
-  attachments, displaced-brick counts `[11, 14, 11]`, 99.43% outside-wall
-  retention, and 99.21% total retention. The same broken-identity digest is
-  recorded at frames 60 and 120. Of those identities, `[18, 44, 13]` have
-  initial anchors within the three selected 1.15 m impact regions and 79 lie
-  outside; this packet therefore claims localized displacement damage, not
-  localized broken topology. The 558 surviving rows stay below 0.772 mm
-  linear and 0.000317 rad angular residual at frame 120. Frame 60 remains
+  three 40 kg balls launched at 24 m/s, 1/60 s, and 20 projection sweeps.
+  Under the immutable paper profile (alpha 0.95 on contact rows as well) the
+  balls lodge in the wall instead of rebounding and the anchored wall
+  transmits the impulse to the ground, so at frame 120 the deterministic
+  oracle records 36 broken and 676 unbroken attachments, no brick displaced
+  beyond the 0.1 m damage threshold, and 100% outside-wall and total
+  retention. The same broken-identity digest is recorded at frames 60, 120,
+  and 600. Of those identities, `[5, 5, 5]` have initial anchors within the
+  three selected 1.15 m impact regions and 21 lie outside; this packet
+  therefore claims three localized joint-break clusters and a standing wall,
+  not the broken-open wall of Figure 13(d), and its semantic review records
+  visual agreement with that panel as not proven. The 676 surviving rows stay
+  below 1.63 mm linear and 0.00119 rad angular residual at frame 120 (the
+  regularized rows still relax the impact deformation). Frame 60 remains
   explicitly pre-evaluation even though its `[13, 14, 12]` three-band checks
   already pass; the registered AVBD claim checkpoint is frame 120.
 - **Predecessor runtime evidence:** the public AVBD
