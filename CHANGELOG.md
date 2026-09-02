@@ -515,7 +515,9 @@ compatibility remains on the active DART 6 LTS branch._
 - Routed Claude Code work to Claude Fable 5.1 and made `docs/ai/README.md`
   § "Model Routing" the only AI-infra surface that names models, enforced by
   new `check-ai-infra` gates; `docs/onboarding/ai-tools.md` records the tested
-  versions and comparison-lane mechanics.
+  versions and comparison-lane mechanics, and a harness-wide refresh fixed
+  outdated, duplicated, and over-constrained AI guidance at its owners.
+  ([#3473](https://github.com/dartsim/dart/pull/3473))
 - Fixed the trajectory recorder so its `--factory module:callable` path works
   instead of tripping its own scene/factory exclusivity guard.
   ([#3416](https://github.com/dartsim/dart/pull/3416))
