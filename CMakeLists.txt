@@ -251,14 +251,10 @@ dart_option(
   "Build Debug dartpy/nanobind binding objects with debug symbols" OFF
   CATEGORY performance
 )
-set(_dart_default_gui OFF)
-if(
-  CMAKE_SYSTEM_NAME STREQUAL "Linux"
-  AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$"
-)
-  set(_dart_default_gui ON)
-endif()
-dart_option(DART_BUILD_GUI "Build the Filament-backed GUI library" ${_dart_default_gui} CATEGORY build)
+# The configure fails when the GUI is enabled but Filament (or another GUI
+# dependency) is unavailable; choose the Filament provider with
+# DART_USE_SYSTEM_FILAMENT and disable the GUI explicitly for headless builds.
+dart_option(DART_BUILD_GUI "Build the Filament-backed GUI library" ON CATEGORY build)
 # OpenUSD (pxr) scene loader for dart-io. Defaults OFF because OpenUSD is not a
 # default dependency; enable only in an environment that provides pxr.
 dart_option(DART_BUILD_IO_USD "Build the OpenUSD (pxr) scene loader in dart-io" OFF CATEGORY build)
@@ -292,6 +288,23 @@ unset(DART_USE_SYSTEM_RAYLIB CACHE)
 unset(DART_RAYLIB_GIT_TAG CACHE)
 set(DART_BUILD_GUI_RAYLIB OFF)
 unset(_dart_user_set_build_gui_raylib)
+# DART_FETCH_FILAMENT and DART_FILAMENT_VERSION have been folded into
+# DART_USE_SYSTEM_FILAMENT (OFF fetches the pinned upstream archive). Warn
+# instead of erroring so build directories that still cache the retired options
+# self-heal on reconfigure, and clear the stale cache entries.
+foreach(_dart_removed_filament_option DART_FETCH_FILAMENT DART_FILAMENT_VERSION)
+  if(DEFINED ${_dart_removed_filament_option})
+    message(
+      WARNING
+      "${_dart_removed_filament_option} has been removed and is ignored. "
+      "Use DART_USE_SYSTEM_FILAMENT instead: ON discovers a packaged Filament "
+      "install (e.g. the conda-forge `filament` package, or Filament_ROOT); "
+      "OFF fetches the pinned upstream archive."
+    )
+    unset(${_dart_removed_filament_option} CACHE)
+  endif()
+endforeach()
+unset(_dart_removed_filament_option)
 dart_option(DART_STRICT_SYMBOL_VISIBILITY
   "Build shared libraries with hidden default symbol visibility so exported public ABI must use component *_API macros" OFF
   CATEGORY build
@@ -398,27 +411,8 @@ dart_option(DART_USE_SYSTEM_IMGUI
   "Use system-installed ImGui instead of fetching from GitHub (recommended for package distributions)" OFF CATEGORY system
 )
 dart_option(DART_USE_SYSTEM_FILAMENT
-  "Use system-installed Filament instead of an explicit fetched copy (recommended for package distributions)" ON CATEGORY system
+  "Use a packaged Filament install (e.g. conda-forge filament, or Filament_ROOT) instead of fetching the pinned upstream archive" ON CATEGORY system
 )
-set(_dart_fetch_filament_default OFF)
-if(
-  CMAKE_SYSTEM_NAME STREQUAL "Linux"
-  AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64)$"
-)
-  set(_dart_fetch_filament_default ON)
-endif()
-dart_option(DART_FETCH_FILAMENT
-  "Fetch the pinned Filament archive when a packaged Filament install is unavailable" ${_dart_fetch_filament_default} CATEGORY system
-)
-unset(_dart_default_gui)
-unset(_dart_fetch_filament_default)
-set(
-  DART_FILAMENT_VERSION
-  "1.71.3"
-  CACHE STRING
-  "Filament version for future explicit fetch support"
-)
-mark_as_advanced(DART_FILAMENT_VERSION)
 dart_option(DART_USE_SYSTEM_FMT
   "Use system-installed fmt instead of building it from source (set OFF only when system fmt is unavailable or broken)" ON CATEGORY system
 )

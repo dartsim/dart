@@ -11,9 +11,7 @@ Start with:
 3. `docs/information-architecture.md`
 4. The local folder `README.md` or `AGENTS.md` for the surface you are editing
 
-For AI-infra docs, also read `docs/ai/principles.md`,
-`docs/ai/terminology.md`, `docs/ai/verification.md`, and
-`docs/ai/components.md`.
+For AI-infra docs, follow the read order in `docs/ai/README.md`.
 
 ## Bucket Map
 

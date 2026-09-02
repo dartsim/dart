@@ -12,10 +12,9 @@ description: "DART CI: GitHub Actions, cache debugging, and platform-specific fa
 
 Load this skill when debugging CI failures or working with GitHub Actions.
 
-When the failing claim depends on model/scene structure, physics behavior, or
-GUI/rendering output, also load `dart-verify-sim` and reproduce it with a text
-oracle plus assessed visual evidence. Document a visual exception when that
-renderer is unavailable or not applicable in the failing environment.
+When the failing claim depends on 3D structure or behavior, also load
+`dart-verify-sim` and reproduce it with a text oracle plus assessed visual
+evidence, or record why that renderer is unavailable in the failing environment.
 
 ## Quick Commands
 
@@ -55,6 +54,9 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 
 ## Workflow Architecture
 
+The CI gates that a PR check name maps to (full 18-workflow table with
+triggers: `docs/onboarding/ci-cd.md` § "Workflow Architecture"):
+
 | Workflow            | Purpose                 | Platforms  |
 | ------------------- | ----------------------- | ---------- |
 | `ci_lint.yml`       | Formatting              | Ubuntu     |
@@ -62,7 +64,10 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 | `ci_macos.yml`      | Build + test            | macOS      |
 | `ci_windows.yml`    | Build + test            | Windows    |
 | `ci_freebsd.yml`    | Build + test (VM)       | FreeBSD    |
+| `ci_altlinux.yml`   | Build + test (Docker)   | Alt Linux  |
+| `ci_simd.yml`       | SIMD build + test       | Multi-arch |
 | `ci_gz_physics.yml` | Gazebo integration      | Ubuntu     |
+| `ci_gz_dart6.yml`   | DART 6 Gazebo canary    | Ubuntu     |
 | `ci_cuda.yml`       | CUDA compile + smoke    | Ubuntu/GPU |
 
 ## CUDA Runner Policy

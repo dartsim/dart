@@ -25,17 +25,11 @@ Discuss or update DART living plans: $ARGUMENTS
 2. Inspect current evidence before changing plan state. Use repo docs, code,
    tests, CI evidence, issue/PR state, benchmark data, or explicit maintainer
    direction.
-   - For new solver/paper implementation plans, preserve the full
-     paper-complete bar in `docs/ai/verification.md`: all algorithms/features,
-     CPU and GPU paths, paper/site/video demos, benchmark JSON that beats
-     reference and paper numbers, and clean long-term API/pipeline work.
-   - For active multi-session solver/paper work, update the plan or dev-task
-     resume surface with both the completed slice and the next missing
-     paper-parity gap; do not let focused tests narrow the recorded objective.
-     If the user names source demos, videos, or project pages, keep the corpus
-     matrix explicit: which scenes/experiments are represented by tests,
-     `py-demos`, visual artifacts, benchmark JSON, CPU reference comparisons,
-     and GPU parity, and which rows remain missing.
+   - For solver/paper implementation plans, hold the plan to
+     `docs/ai/verification.md` § "Research Paper Implementation Evidence",
+     record the completed slice and the next missing paper-parity gap, and
+     keep the corpus matrix (tests, `py-demos`, visual artifacts, benchmark
+     JSON, CPU reference comparisons, GPU parity) explicit about missing rows.
 3. Keep the plan manageable:
    - revise an existing initiative before adding a duplicate;
    - use stable initiative IDs when renaming, splitting, consolidating, or

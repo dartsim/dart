@@ -456,6 +456,33 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Modernized the pixi workspace for current pixi: declared workspace
+  license/repository/documentation metadata and a `requires-pixi = ">=0.78"`
+  floor, unified the default/collision-reference/cuda environments in one
+  solve group, kept `pixi.lock` out of `pixi run clean`, consolidated the six
+  Unix-family `config*` task bodies into `scripts/cmake_config.py`
+  (behavior-preserving and contract-tested), aligned CI on
+  `setup-pixi@v0.10.2`, and pinned the wheel-publishing pixi version.
+  ([#3469](https://github.com/dartsim/dart/pull/3469))
+- The pixi cuda environment now resolves against a `linux-64-cuda` platform
+  declaring the `__cuda=13` virtual package, so solves are GPU-aware;
+  driverless machines warn but keep working (`CONDA_OVERRIDE_CUDA=13`
+  silences the warning). Checkouts with a previously installed cuda
+  environment must remove it once: `rm -rf .pixi/envs/cuda`.
+  ([#3469](https://github.com/dartsim/dart/pull/3469))
+- Made the conda-forge `filament` package (1.76.x) the default Filament
+  provider on every workspace platform: the Pixi environments install it
+  directly, and `DART_BUILD_GUI` now defaults to `ON` everywhere, failing the
+  configure when GUI dependencies are missing. `DART_USE_SYSTEM_FILAMENT=OFF`
+  fetches the pinned upstream 1.76.x archive (imgui-style provider toggle,
+  replacing `DART_FETCH_FILAMENT` and `DART_FILAMENT_VERSION`); official
+  dartpy wheels and plain `pip install` source builds use that fetched
+  archive, whose static libraries load GL lazily — the conda-forge shared
+  build's eager libglvnd linkage cannot be vendored into manylinux wheels.
+  Removed the workarounds the default libc++ archive fetch used to require —
+  the linux-64 libc++ pins and the CUDA host-compiler/glibc override — so
+  CUDA builds use the conda toolchain end to end.
+  ([#3463](https://github.com/dartsim/dart/pull/3463))
 - Refreshed the DART 7 README and Read the Docs package guidance so the
   published install, dartpy smoke-test, and Python example paths match the
   current `package.xml`, wheel workflow, and `dart::simulation::World` API
@@ -494,6 +521,21 @@ compatibility remains on the active DART 6 LTS branch._
   and the simulation image-review guidance names image-capable targets
   capability-neutrally across both lanes.
   ([#3416](https://github.com/dartsim/dart/pull/3416))
+- Audited and refreshed the AI harness so its guidance matches the current
+  repository, model, and tool state: corrected module test locations, dartpy
+  construction guidance, archived-plan examples, milestone wording, and the
+  CI workflow table; scoped the dual-use-safety note to Claude Fable 5 with
+  current model ids and refreshed tested-version stamps; and converged the
+  shared pre-commit guard with `release-6.20` (CRLF-safe whitespace checks,
+  one managed-hook version, worktree-aware resolution, agent-CLI versions in
+  `ai-doctor`, and an unknown-capability scan over workflow sources).
+  ([#3457](https://github.com/dartsim/dart/pull/3457))
+- Routed Claude Code work to Claude Fable 5.1 and made `docs/ai/README.md`
+  § "Model Routing" the only AI-infra surface that names models, enforced by
+  new `check-ai-infra` gates; `docs/onboarding/ai-tools.md` records the tested
+  versions and comparison-lane mechanics, and a harness-wide refresh fixed
+  outdated, duplicated, and over-constrained AI guidance at its owners.
+  ([#3473](https://github.com/dartsim/dart/pull/3473))
 - Fixed the trajectory recorder so its `--factory module:callable` path works
   instead of tripping its own scene/factory exclusivity guard.
   ([#3416](https://github.com/dartsim/dart/pull/3416))
@@ -628,6 +670,10 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Tests, Benchmarks, and Quality Gates
 
+- Stabilized strict native/reference collision performance gates with sustained
+  warm measurements and randomly interleaved repetitions, reducing CPU
+  frequency and benchmark-order bias without relaxing comparison thresholds.
+  ([#3456](https://github.com/dartsim/dart/pull/3456))
 - Reorganized tests and CI coverage around DART 7 components, with focused unit,
   integration, benchmark, rendering, CUDA-smoke, collision, and simulation
   gates replacing broad stale test targets.

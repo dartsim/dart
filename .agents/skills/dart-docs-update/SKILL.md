@@ -45,7 +45,7 @@ Update documentation: $ARGUMENTS
    - Regular docs: `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`,
      and `CHANGELOG.md` when `dart-changelog` requires a release-note entry
    - AI source files: `.claude/commands/**`, `.claude/skills/**`
-3. For AI workflow changes, run `pixi run sync-ai-commands`; do not hand-edit generated `.opencode/` or `.codex/` files
+3. For AI workflow changes, edit `.claude/` sources and run `pixi run sync-ai-commands`; do not hand-edit generated `.agents/skills/` or `.opencode/command/` files (`.codex/` is a maintained source)
 4. Classify new or moved docs by lifecycle first, then audience, then topic,
    using `docs/information-architecture.md`. For AI docs, keep always-loaded
    entrypoints compact: improve owner placement or pointers instead of

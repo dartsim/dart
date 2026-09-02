@@ -111,9 +111,8 @@ autonomous project-home loop.
 4. **Create or refresh the tracking surface** - Populate the project home with
    value, north star, deliverable, scope, non-goals, assumptions, risks,
    acceptance evidence, gates, dependencies, milestone, next actions, and
-   blockers. Claim-dependent physics/simulation, collision/contact, model, GUI,
-   and visual-example work routes through `dart-verify-sim`: require a text
-   oracle plus assessed visual/debug evidence, or a justified replacement.
+   blockers. Claim-dependent 3D structure or behavior work routes through
+   `dart-verify-sim`.
    Keep `RESUME.md` as the handoff; add `decisions.md`, `verification.md`,
    and `progress-log.md` sidecars when they improve resumability or evidence.
 5. **Set the goal contract** - Express done-when as verifiable outcomes
@@ -127,10 +126,12 @@ autonomous project-home loop.
    NEXT STEP.
 6. **Decompose and route** - Cut work packets per `docs/ai/orchestration.md`
    and route by `docs/ai/README.md`. Execute serially by default. When the user
-   explicitly requested delegation, use `dart_scout` for read-only territory
-   mapping, bounded workers or `dart-execute-packet` for implementation,
-   `dart_reviewer` for acceptance review, and `dart_release_auditor` for branch
-   adaptation. Use parallel writers only with explicit disjoint ownership.
+   explicitly requested delegation, use a read-only scout for territory
+   mapping, bounded workers or `dart-execute-packet` for implementation, an
+   independent reviewer for acceptance review, and a release auditor for
+   branch adaptation; Codex supplies these roles as the `.codex/agents/`
+   profiles and other tools use separate sessions. Use parallel writers only
+   with explicit disjoint ownership.
 7. **Run the autonomous work/review cycle** - For each meaningful chunk: plan,
    execute, verify, then run an independent/specialized review lane. Treat
    review findings as hypotheses: investigate, fix or record no-fix evidence,

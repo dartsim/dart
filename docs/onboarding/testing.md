@@ -408,6 +408,19 @@ policy work until the production registry allocator path consistently beats the
 selected baselines. Use `--only-entt-registry` for focused registry allocator
 optimization loops without rerunning the broader allocator benchmark set.
 
+The strict native/reference collision performance gate runs with:
+
+```bash
+pixi run -e collision-reference bm-collision-check
+```
+
+`scripts/check_collision_benchmarks.py` owns the sampling protocol: sustained
+one-second measurements, a short warmup, three repetitions, aggregate-only
+reporting, and random interleaving to reduce benchmark-order, thermal, and CPU
+frequency bias. Individual Pixi tasks own only their benchmark filter and ratio
+threshold; use the checker's named sampling options for a deliberate local
+override instead of passing Google Benchmark timing flags through `--`.
+
 ### DART 7 Simulation-Loop Allocation Gates
 
 For DART 7 `World::step()` work, the no-allocation contract is "after bake":

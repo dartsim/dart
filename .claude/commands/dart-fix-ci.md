@@ -14,10 +14,9 @@ Fix CI failure: $ARGUMENTS
 
 ## Workflow
 
-For a failure involving model/scene structure, physics behavior, or GUI output,
-use `dart-verify-sim` to reproduce the claim with text and assessed visual
-evidence. Document a visual exception when the relevant renderer is unavailable
-or not applicable.
+For a failure that depends on 3D structure or behavior, use `dart-verify-sim`
+to reproduce the claim with text and assessed visual evidence, or record why
+the renderer is unavailable.
 
 1. Identify the base branch. Default to `main`; use `base=<branch>` from
    `$ARGUMENTS` or the PR's own base when it is a `release-*` branch. For a

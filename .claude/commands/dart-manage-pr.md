@@ -13,7 +13,7 @@ mutations: $ARGUMENTS
 @docs/onboarding/contributing.md
 @docs/onboarding/ci-cd.md
 @docs/onboarding/testing.md
-@docs/onboarding/ai-tools.md
+@docs/onboarding/ai-reviews.md
 
 ## Modes
 
@@ -67,27 +67,24 @@ gh pr checks <PR_NUMBER>
 1. Confirm scope and policy:
    - Check that the base branch, title, and PR template are correct.
    - Verify the milestone is set before merge: `DART 7.0` for a `main` base, the
-     branch-matching DART 6.x patch milestone for a `release-*` base. If it is
+     branch-matching DART 6.x release milestone for a `release-*` base. If it is
      missing, set it only after explicit maintainer/user approval.
    - For bug fixes, verify the required DART 6 LTS + `main` dual-PR flow.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
-   - Confirm the PR body follows template order: Summary, Motivation / Problem,
-     Changes / Key Changes, optional Before / After, Testing, Breaking Changes,
-     and Related Issues / PRs. Keep Summary first as the skimmable outcome; fold
-     leading problem context into Summary and keep the fuller why in Motivation.
-   - When the PR has user-facing API, workflow, behavior, or performance impact,
-     confirm a concise Before / After section compares old and new surfaces; for
-     performance claims make the baseline explicit (CPU path, parent commit,
-     `main`, or prior implementation) plus workload, metric, and limitations.
+   - Confirm the PR body follows the template order in
+     `docs/onboarding/contributing.md`, with Summary first as the skimmable
+     outcome, the optional Before / After section that `dart-pr` describes for
+     user-facing impact, and an explicit baseline for any performance claim.
    - Ensure transient visual evidence (screenshots, headless renders, GIFs,
-     videos) is hosted as GitHub PR/issue attachments rather than committed to
-     the branch; if committed only for the PR body, replace it with an
-     attachment URL or ask a maintainer to upload.
+     videos) is hosted as GitHub attachments rather than committed to the
+     branch; `pixi run evidence-publish` renders the section and its upload
+     placeholders (`docs/onboarding/agent-sim-verification.md`).
    - When the claim depends on 3D structure or behavior, accept an optional
-     `Visual verification` subsection after Testing and verify it agrees with
-     the text oracle, covers explicit claims, names what is not proved and any
-     limitations, records view/debug layers, and includes reproduce commands.
+     `Visual verification` subsection after Testing produced through
+     `dart-verify-sim`, and verify it agrees with the text oracle, covers
+     explicit claims, names what is not proved and any limitations, records
+     view/debug layers, and includes reproduce commands.
    - Inspect local state before editing:
      ```bash
      git status --short --branch
@@ -117,11 +114,11 @@ gh pr checks <PR_NUMBER>
      branch history).
    - Merge the latest base branch into the PR branch before any push, and follow
      the base-merge, automated-review, and bot no-reply rules in
-     `docs/onboarding/ai-tools.md`; each push, PR comment, review re-trigger, or
+     `docs/onboarding/ai-reviews.md`; each push, PR comment, review re-trigger, or
      thread resolution needs explicit maintainer/user approval.
 4. Address reviews:
    - Use the `dart-review-pr` workflow for substantive review feedback and the
-     automated-review handling in `docs/onboarding/ai-tools.md` (no inline bot
+     automated-review handling in `docs/onboarding/ai-reviews.md` (no inline bot
      replies; verify claims locally; apply AI-review fixes silently).
    - For human reviewers, reply only when a response is useful after a fix or
      when a question needs clarification.
@@ -130,15 +127,16 @@ gh pr checks <PR_NUMBER>
      needs explicit maintainer/user approval and must not duplicate an active
      trigger.
    - For substantive code PRs, an independent review session (a human, or a
-     separate agent session running `/dart-review-pr`) must record findings
-     before merge approval; docs-only and mechanical changes are exempt.
+     separate agent session running the `dart-review-pr` workflow via
+     `/dart-review-pr` or `$dart-review-pr`) must record its outcome —
+     findings, or an explicitly clean result — before merge approval;
+     docs-only and mechanical changes are exempt.
 5. Mark ready or merge only when appropriate:
    - Confirm review requirements are satisfied and local validation matches the
      intended transition.
-   - If the PR is draft, mark it ready after explicit approval once Codex is
-     clean and local validation passed on the current head: default
-     `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux hosts with a
-     visible NVIDIA CUDA runtime. Hosted CI may still be pending.
+   - If the PR is draft, mark it ready after explicit approval per the
+     draft-ready criteria in `docs/onboarding/ai-reviews.md`; hosted CI may
+     still be pending.
    - Use the current head SHA when merging so a moved branch cannot be merged
      accidentally. Prefer squash/rebase over merge commits per repository
      settings; recent DART `main` PRs use single-parent PR-title commits.
@@ -147,7 +145,9 @@ gh pr checks <PR_NUMBER>
    `pixi run test-all` and, on Linux hosts with a visible NVIDIA CUDA runtime,
    `pixi run -e cuda test-all`; do not substitute the default run for the CUDA
    run, and record a skip or blocker explicitly. Merge only after CI and review
-   are green, the milestone is set, an independent review recorded findings, the
+   are green, the milestone is set, an independent review recorded a clean
+   result on the current post-fix head (after findings, a clean re-review;
+   the step 4 docs-only/mechanical exemption also satisfies this), the
    PR is not draft, GitHub reports it mergeable, and explicit merge approval is
    given. PR comments, review re-triggers, thread resolution, reviewer requests,
    ready-for-review transitions, merges, and branch deletion are external

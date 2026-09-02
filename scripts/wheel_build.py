@@ -69,8 +69,13 @@ def main(argv: list[str]) -> int:
         "-DDART_BUILD_TUTORIALS=OFF",
         "-DBUILD_SHARED_LIBS=OFF",
         f"-DDART_USE_SYSTEM_IMGUI={use_system_imgui}",
+        # Wheels use the pinned upstream Filament archive (static, lazy GL via
+        # bluegl dlopen), not the conda-forge shared build: conda libbackend
+        # carries eager DT_NEEDED entries on the libglvnd stack, and manylinux
+        # whitelists libGL.so.1 but not libEGL/libGLdispatch, so auditwheel
+        # grafts half of glvnd into the wheel and `import dartpy` crashes in
+        # __glDispatchInit when the grafted and host/env glvnd copies mix.
         "-DDART_USE_SYSTEM_FILAMENT=OFF",
-        "-DDART_FETCH_FILAMENT=ON",
         f"-DDART_DISABLE_COMPILER_CACHE={disable_compiler_cache}",
     ]
     cmake_args.extend(cmake_host_linker_flags())

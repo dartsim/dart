@@ -45,7 +45,7 @@ runs:
   using: composite
   steps:
     - name: Setup pixi
-      uses: prefix-dev/setup-pixi@v0.9.6
+      uses: prefix-dev/setup-pixi@v0.10.2
       with:
         pixi-version: ${{ inputs.pixi-version }}
         cache: ${{ inputs.cache == 'true' && startsWith(runner.name, 'GitHub Actions') }}

@@ -1633,6 +1633,9 @@ active-friction diagnostics from the opt-in runtime stage.
 
 ## Current Branch
 
+> Correction (2026-08-31): `feature/rigid-ipc-paper-parity` is no longer
+> present on `origin`; treat this checkpoint as historical state.
+
 CURRENT (2026-05-30): `feature/rigid-ipc-paper-parity`, branched off `main`,
 pushed to `origin/feature/rigid-ipc-paper-parity`. All earlier rigid IPC manifest
 
@@ -1914,7 +1917,7 @@ remain open fallback slices.
 ## How To Resume
 
 ```bash
-cd /home/js/dev/dartsim/dart/task_6
+cd <your DART checkout>
 # Latest work is on this branch (off main); main has everything through #2777.
 git checkout feature/rigid-ipc-paper-parity   # or: git checkout main
 git status && git log -8 --oneline

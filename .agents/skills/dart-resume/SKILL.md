@@ -77,8 +77,8 @@ modifiers. Interpret arguments in this order:
 Examples:
 
 ```text
-$dart-resume docs/dev_tasks/dart7_core_dynamics_perf_forwardport
-$dart-resume docs/dev_tasks/dart7_core_dynamics_perf_forwardport --slice
+$dart-resume docs/dev_tasks/rigid_ipc_solver
+$dart-resume docs/dev_tasks/rigid_ipc_solver --slice
 $dart-resume PR 2991
 ```
 
@@ -142,11 +142,9 @@ Before editing, write explicit pass/fail criteria for the resumed task:
   candidate comparison when possible, and only then choose the implementation
   path. If the existing verification is weak, improve the check or debugging
   surface before trusting the result.
-- For model/scene, simulation, dynamics, collision/contact, GUI, or visual
-  behavior, route through `dart-verify-sim`: establish a text correctness
-  oracle first, then capture assessed claim-tied images/debug layers or record
-  an unavailable/not-applicable reason. Verify the expected pass path and a
-  failure-sensitive condition when practical; a screenshot alone is not proof.
+- For 3D structure or behavior claims, route through `dart-verify-sim`: text
+  oracle first, then assessed claim-tied visual evidence or a recorded
+  exception; a screenshot alone is not proof.
 - When the decision depends on behavior outside the repository, search the
   relevant upstream docs, papers, issues, standards, or release notes and record
   the source-backed conclusion in the task docs, durable owner doc, or PR
@@ -162,9 +160,9 @@ Before editing, write explicit pass/fail criteria for the resumed task:
   durable owner doc after meaningful progress. If the current session cannot
   finish because of context, environment, approval, or a real blocker, leave the
   next session with exact current reality, remaining work, blockers, and gates.
-- For active solver/paper implementations, keep the plan or dev-task resume
-  surface explicit about the completed slice, the next missing paper-parity
-  gap, and why focused green tests are not a full paper-completion claim.
+- For active solver/paper implementations, keep the resume surface explicit
+  about the completed slice and the next missing paper-parity gap
+  (`docs/ai/verification.md` owns the completion bar).
 - Run a completion audit before finalizing a dev-task target:
   identify the exact `docs/dev_tasks/<task>/` folder, inspect it for remaining
   plans/evidence/decisions, promote any durable dashboard, evidence matrix, API
@@ -191,11 +189,10 @@ Before editing, write explicit pass/fail criteria for the resumed task:
 - Do not call a dev task complete while `docs/dev_tasks/<task>/` still exists.
   If implementation is done but the folder remains, the remaining work is the
   durable-doc promotion plus folder cleanup.
-- Run `pixi run lint` before committing. Run relevant tests; use
-  `pixi run test-all` before done when feasible, and also
-  `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA runtime.
+- Run `pixi run lint` before committing and the task-type gate set from
+  `docs/ai/verification.md`; use `pixi run test-all` before done when feasible.
 - Merge the latest base branch into any published PR branch before pushing, and
-  follow the base-merge rules in `docs/onboarding/ai-tools.md`. Push with
+  follow the base-merge rules in `docs/onboarding/ai-reviews.md`. Push with
   `git push -u origin HEAD` and create or update the PR only after explicit
   maintainer/user approval, preferring additive follow-up commits.
 

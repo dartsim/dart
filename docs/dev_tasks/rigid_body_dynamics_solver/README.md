@@ -49,13 +49,20 @@ solver** under a multi-solver, multi-physics architecture.
 
 ### DART 7 B2 gate — rigid open-chain dynamics parity
 
-- [x] World-parity harness:
-      `tests/unit/simulation/world/test_world_parity.cpp` compares
-      classic `dart::simulation::World` vs
-      `dart::simulation::World` on shared open-chain scenes
+> Current Reality (2026-09-01): the parity harness cited below
+> (`tests/unit/simulation/experimental/world/test_world_parity.cpp`) was
+> removed when the experimental World was promoted in PR #2932, and nothing
+> replaced it. The checkbox records the gate as it passed in June 2026 (the
+> harness landed via PR #2842). Because `main` may not carry classic-World
+> references, the gate is re-claimed from a `release-6.*` parity run rather
+> than a new harness in this tree.
+
+- [x] World-parity harness (historical, see the note above):
+      `test_world_parity.cpp` compared the classic DART 6 world against the
+      then-experimental DART 7 world on shared open-chain scenes
       (gravity free-fall, pendulum/double-pendulum integration, 1e4-step drift,
-      and a held-torque controlled scene), within documented tolerances. Runs
-      under `pixi run test-simulation`. All open-chain scenarios
+      and a held-torque controlled scene), within documented tolerances. It ran
+      under the then-existing simulation label. All open-chain scenarios
       reach parity on `main` to machine epsilon; contact/constraint parity (B3)
       is deferred to the unified solver (PR #2838). See `RESUME.md` for the
       per-scenario table and deferred items.
@@ -79,7 +86,7 @@ solvers, couplers, ECS storage, or execution backends.
   default-step switch.
 - Direct file loading remains outside this task; compose through maintained
   `dart::io` readers and the DART 7 skeleton/world conversion bridges.
-- Do not modify `/home/js/multiphysics-api-design.md` (external user doc).
+- Do not modify the maintainer's external multiphysics API design notes (an untracked personal document).
 - Do not name solvers/presets/examples after other engines; use method/approach
   names. Do not reference specific external engines by name in core code or
   docs.
@@ -105,17 +112,19 @@ solvers, couplers, ECS storage, or execution backends.
 1. Treat the model-loading and unified contact/constraint line as landed on
    `main` via PR #2838; do not look for the retired
    `feature/experimental-model-loader` branch as the active publication path.
-2. Continue Subsystem A polish from `RESUME.md`: warm starting, friction-cone
-   iteration, and other scaling work around the unified contact solve.
+2. The next step is owned by the PLAN-080 entry in `docs/plans/dashboard.md`
+   (Subsystem A polish around the unified contact solve).
 3. Keep richer model-loading diagnostics, visual/material import, actuator,
    mimic/coupler, loop-closure, integrator, and COM-Jacobian work as separate
    deferred slices unless the active solver-polish work directly requires them.
 
 ## Relationship To The API-Design Dev Task
 
-`docs/dev_tasks/simulation_api_design/` tracks the public _facade
-shape_ (handles, naming, Pythonic dartpy). This task tracks the _dynamics
-implementation_ behind that facade. Keep facade changes in that task; keep
+PLAN-041 and PLAN-042 (`docs/plans/041-official-simulation-api-promotion.md`,
+`docs/plans/042-dart7-public-api-and-source-layout.md`) own the public _facade
+shape_ (handles, naming, Pythonic dartpy); the former
+`docs/dev_tasks/simulation_api_design/` folder is retired. This task tracks the
+_dynamics implementation_ behind that facade. Keep facade changes there; keep
 solver/dynamics changes here. When this task completes, promote durable
 decisions into `docs/onboarding/` and the design docs, then delete this folder
 in the completing PR.

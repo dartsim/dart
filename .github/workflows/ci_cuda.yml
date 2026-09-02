@@ -71,6 +71,11 @@ jobs:
       DART_PARALLEL_JOBS: "8"
       CTEST_PARALLEL_LEVEL: "8"
       DART_CUDA_ARCHITECTURES: "75"
+      # The cuda environment declares the __cuda=13 virtual package
+      # (pixi.toml linux-64-cuda platform). Assume it explicitly so the
+      # GPU-less fork-PR fallback runner installs without warnings; on the
+      # GPU runner this matches the driver and is inert.
+      CONDA_OVERRIDE_CUDA: "13"
     steps:
       - name: Clean stale Linux workspace
         if: runner.os == 'Linux'

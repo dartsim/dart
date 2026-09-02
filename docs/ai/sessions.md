@@ -31,13 +31,9 @@ or explicitly autonomous work. It still uses `docs/dev_tasks/<task>/` as the
 project home for both DART 7 and DART 6 maintenance work; do not create a
 parallel project-home tree unless a task-specific owner doc requires it.
 
-For autonomous projects, the dev-task folder may add these sidecars:
-
-| File              | Purpose                                                                 |
-| ----------------- | ----------------------------------------------------------------------- |
-| `decisions.md`    | Dated decisions, alternatives considered, evidence, tradeoffs, revisit  |
-| `verification.md` | Checks, review passes, GUI/demo evidence when relevant, gaps, follow-up |
-| `progress-log.md` | Chronological record of meaningful work completed                       |
+For autonomous projects, the dev-task folder may add the `decisions.md`,
+`verification.md`, and `progress-log.md` sidecars whose required contents
+`docs/dev_tasks/README.md` owns.
 
 Keep `README.md` as the combined overview and plan: north star, final
 deliverable, acceptance criteria, scope, non-goals, constraints, risks, current

@@ -301,6 +301,24 @@ def test_staged_whitespace_failure_blocks_before_infrastructure_check(
     assert "staged diff check failed" in capsys.readouterr().out
 
 
+def test_staged_whitespace_gate_accepts_crlf_but_rejects_trailing_space(
+    tmp_path, monkeypatch, capsys
+):
+    root = _repo(tmp_path)
+    crlf = root / "legacy.txt"
+    crlf.write_bytes(b"updated\r\n")
+    subprocess.run(["git", "-C", str(root), "add", "legacy.txt"], check=True)
+    monkeypatch.setattr(hook, "parse_args", lambda: _args(root))
+
+    assert hook.main() == 0
+
+    crlf.write_bytes(b"updated \r\n")
+    subprocess.run(["git", "-C", str(root), "add", "legacy.txt"], check=True)
+
+    assert hook.main() == 1
+    assert "staged diff check failed" in capsys.readouterr().out
+
+
 def test_staged_paths_are_sorted_and_nul_safe(tmp_path):
     root = _repo(tmp_path)
     _stage(root, "z file.md", "z\n")

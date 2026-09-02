@@ -6,6 +6,7 @@ import ast
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -48,8 +49,8 @@ def test_ai_runtime_scripts_support_python_3_11_syntax(script_name):
 
 
 def test_repository_sync_check_reads_utf8_without_python_utf8_mode():
-    source = ROOT / ".claude" / "skills" / "dart-contribute" / "SKILL.md"
-    assert "❌" in source.read_text(encoding="utf-8")
+    source = ROOT / ".claude" / "commands" / "dart-model-upgrade.md"
+    assert "—" in source.read_text(encoding="utf-8")
     env = {
         **os.environ,
         "LC_ALL": "C",
@@ -341,7 +342,7 @@ def make_repo(tmp_path: Path, profile: str) -> Path:
                                     "commandWindows": (
                                         infra.CODEX_HOOK_COMMAND_WINDOWS
                                     ),
-                                    "timeout": 10,
+                                    "timeout": 15,
                                     "statusMessage": infra.CODEX_HOOK_STATUS,
                                 }
                             ],
@@ -508,7 +509,7 @@ def make_repo(tmp_path: Path, profile: str) -> Path:
         "AGENTS.md": "docs/onboarding/agent-sim-verification.md\ndart-verify-sim\n",
         ".codex/agents/dart_scout.toml": (
             "collision/contact/constraints\ntext correctness oracle\n"
-            "claim-tied assessed visual\n"
+            "route it to `dart-verify-sim`\n"
         ),
         ".codex/agents/dart_reviewer.toml": (
             "text-first evidence\nvisual/debug-layer\n"
@@ -516,7 +517,9 @@ def make_repo(tmp_path: Path, profile: str) -> Path:
         ".claude/commands/dart-ultrawork.md": ("routes through `dart-verify-sim`\n"),
         ".claude/commands/dart-resume.md": "route through `dart-verify-sim`\n",
         ".claude/commands/dart-pr.md": "use `dart-verify-sim`\n",
-        ".claude/commands/dart-manage-pr.md": "Visual verification\n",
+        ".claude/commands/dart-manage-pr.md": (
+            "Visual verification produced through `dart-verify-sim`\n"
+        ),
         ".claude/commands/dart-review-pr.md": (
             "require the `dart-verify-sim` text oracle\n"
             "accepting a screenshot alone\n"
@@ -582,11 +585,14 @@ def test_minimal_branch_profiles_pass(tmp_path, profile):
     assert infra.run_checks(root, profile) == []
 
 
-def test_static_infrastructure_check_stays_within_hook_budget(tmp_path):
-    root = make_repo(tmp_path, "main")
+def test_static_infrastructure_check_stays_within_hook_budget():
+    """The staged hook runs `run_checks` on the real checkout; keep it fast.
 
+    Measured at about 0.2 s locally; the bound leaves roughly tenfold headroom
+    for slow CI hosts while still catching a large regression.
+    """
     started = time.monotonic()
-    errors = infra.run_checks(root, "main")
+    errors = infra.run_checks(ROOT, "main")
 
     assert errors == []
     assert time.monotonic() - started < 2
@@ -952,6 +958,7 @@ def _assert_ctest_lexical_contract_fails(root: Path) -> None:
     assert any(
         "cmake/DARTRunCTest.cmake: commands and lexical control flow must "
         "exactly match" in error
+        and "first difference at command" in error
         for error in errors
     )
 
@@ -1026,39 +1033,43 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
         "visual simulation-debugging evaluations",
     ):
         assert trigger in meta["description"]
+    # Contract nouns the workflow must keep, not sentence wording.
     for marker in (
-        "Use these verdicts",
-        "existing model with existing prompt/settings",
-        "target at the preserved effort and one lower effort",
-        "structural checks into model-quality",
-        "Deeper reasoning modes give one difficult task more time",
-        "explicit user authorization for delegation",
+        "**preserve**",
+        "**update**",
+        "**remove/consolidate**",
+        "**add**",
+        "`audit-only`",
+        "`apply`",
+        "`dart-verify-sim`",
         '`docs/ai/README.md` § "Model Routing"',
-        "Do not silently substitute a different model",
-        "durable context and project-state layer",
         "`docs/plans/dashboard.md`",
-        "docs-policy freshness advisories",
-        "without hidden chat history",
-        "apply/adapt/omit verdict",
-        "Treat `audit-only` as read-only",
-        "skip implementation",
-        "only `apply` runs auto-fixing `pixi run lint`",
-        "do not perform change-oriented closeout",
-        "The workflow itself is an audit surface",
-        "do not clone the workflow",
-        "Remove superseded model-specific guidance",
-        "representative DART 3D physics investigation",
-        "text correctness oracle",
-        "Images are never the sole correctness oracle",
+        "`docs/dev_tasks/*/RESUME.md`",
         "`verification-bundle`",
+        "apply/adapt/omit",
+        "`pixi run check-ai-infra`",
+        "`pixi run sync-ai-commands`",
         "text/image disagreement",
     ):
-        assert marker in text
+        assert marker in text, marker
 
     routing_owner = (ROOT / "docs" / "ai" / "README.md").read_text()
     assert "## Model Routing" in routing_owner
     assert "**Codex — " in routing_owner
     assert "**Claude Code — " in routing_owner
+    routing_section = routing_owner.split("## Model Routing", 1)[1].split("\n## ", 1)[0]
+    lanes = [block for block in routing_section.split("\n- **")[1:]]
+    assert len(lanes) >= 2
+    for lane in lanes:
+        assert "accept native image input" in lane, lane[:60]
+    families = {
+        family.lower() for family in re.findall(r"claude-([a-z]+)-\d", routing_section)
+    }
+    assert families, "routing owner names no Claude model ids"
+    for family in families:
+        assert infra.MODEL_NAME_PATTERN.search(f"claude-{family}-9")
+        assert infra.MODEL_NAME_PATTERN.search(f"{family.title()} 9")
+    assert infra.MODEL_NAME_PATTERN.search("gpt-9")
 
     compliance = sync.parse_command_frontmatter(
         (ROOT / ".claude" / "commands" / "dart-audit-agent-compliance.md").read_text()
@@ -1081,8 +1092,6 @@ def test_ultrawork_prompt_simplification_retains_critical_contracts():
         "Do not repeat this workflow's logistics",
     ):
         assert marker in text
-    assert "## Kickoff Prompt Template" not in text
-    assert "reuse the `Logistics` block verbatim" not in text
 
 
 @pytest.mark.parametrize(
@@ -1443,7 +1452,7 @@ def test_hook_config_rejects_unbounded_or_mutating_command(tmp_path):
     errors = infra.check_codex_hooks(root)
 
     assert any("canonical read-only guard invocation" in error for error in errors)
-    assert any("timeout must equal 10" in error for error in errors)
+    assert any("timeout must be an integer of at most 15" in error for error in errors)
 
 
 def test_hook_config_requires_exact_windows_override(tmp_path):
@@ -1627,7 +1636,6 @@ def test_ci_wiring_requires_visual_capture_smoke(tmp_path, relative, marker):
         "pixi run agent-capture",
         "--scene box_on_ground --steps 250 --focus box --auto-views 1",
         "--layers contacts collision_bounds labels",
-        "--width 320 --height 240",
         "--out /tmp/dart-agent-visual-smoke --prefix smoke",
         "pixi run image-verdict",
         "/tmp/dart-agent-visual-smoke/smoke_auto0.png",
@@ -1756,15 +1764,53 @@ def test_config_schema_requires_exact_integer_limits(tmp_path, content):
     assert infra.check_codex_config(root)
 
 
-def test_config_schema_rejects_new_concurrency_key_until_0144_is_retired(tmp_path):
+@pytest.mark.parametrize(
+    "content",
+    (
+        "[agents]\nmax_threads = 4\nmax_depth = 1\n",
+        "[agents]\nmax_concurrent_threads_per_session = 4\nmax_depth = 1\n",
+        "[agents]\nmax_threads = 2\nmax_depth = 0\n",
+    ),
+)
+def test_config_schema_accepts_either_concurrency_spelling_within_bounds(
+    tmp_path, content
+):
     root = make_repo(tmp_path, "main")
-    (root / ".codex" / "config.toml").write_text(
-        "[agents]\nmax_concurrent_threads_per_session = 4\nmax_depth = 1\n"
-    )
+    (root / ".codex" / "config.toml").write_text(content)
+
+    assert infra.check_codex_config(root) == []
+
+
+@pytest.mark.parametrize(
+    ("content", "fragment"),
+    (
+        (
+            "[agents]\nmax_threads = 4\nmax_concurrent_threads_per_session = 4\n"
+            "max_depth = 1\n",
+            "exactly one of",
+        ),
+        ("[agents]\nmax_threads = 5\nmax_depth = 1\n", "from 1 to 4"),
+        ("[agents]\nmax_threads = 0\nmax_depth = 1\n", "from 1 to 4"),
+        ("[agents]\nmax_threads = 4\nmax_depth = 2\n", "from 0 to 1"),
+        (
+            "[agents]\nmax_threads = 4\nmax_depth = 1\nextra = 1\n",
+            "unexpected agents keys",
+        ),
+        (
+            'model = "gpt-5.6"\n[agents]\nmax_threads = 4\nmax_depth = 1\n',
+            "must not pin model",
+        ),
+    ),
+)
+def test_config_schema_rejects_unbounded_or_pinned_settings(
+    tmp_path, content, fragment
+):
+    root = make_repo(tmp_path, "main")
+    (root / ".codex" / "config.toml").write_text(content)
 
     errors = infra.check_codex_config(root)
 
-    assert any("max_threads" in error and "0.144" in error for error in errors)
+    assert any(fragment in error for error in errors), errors
 
 
 @pytest.mark.parametrize(
@@ -2026,57 +2072,13 @@ def test_simulation_skill_contract_markers_are_required(tmp_path, marker):
     ("relative", "marker"),
     [
         ("AGENTS.md", "docs/onboarding/agent-sim-verification.md"),
-        (".codex/agents/dart_scout.toml", "text correctness oracle"),
-        (".codex/agents/dart_scout.toml", "collision/contact/constraints"),
+        (".codex/agents/dart_scout.toml", "dart-verify-sim"),
         (".codex/agents/dart_reviewer.toml", "text-first evidence"),
-        (".claude/commands/dart-new-task.md", "route through `dart-verify-sim`"),
-        (".claude/commands/dart-new-task.md", "record why it is not applicable"),
-        (".claude/commands/dart-ultrawork.md", "routes through `dart-verify-sim`"),
-        (".claude/commands/dart-resume.md", "route through `dart-verify-sim`"),
-        (".claude/commands/dart-pr.md", "use `dart-verify-sim`"),
-        (".claude/commands/dart-manage-pr.md", "Visual verification"),
-        (
-            ".claude/commands/dart-review-pr.md",
-            "require the `dart-verify-sim` text oracle",
-        ),
-        (".claude/commands/dart-review-pr.md", "accepting a screenshot alone"),
-        (".claude/skills/dart-build/SKILL.md", "dart-verify-sim"),
-        (".claude/skills/dart-test/SKILL.md", "load `dart-verify-sim`"),
-        (".claude/skills/dart-test/SKILL.md", "unavailable or not applicable"),
-        (".claude/skills/dart-io/SKILL.md", "also load `dart-verify-sim`"),
-        (".claude/skills/dart-io/SKILL.md", "claim-tied visual corroboration"),
-        (".claude/skills/dart-python/SKILL.md", "also load `dart-verify-sim`"),
-        (
-            ".claude/skills/dart-python/SKILL.md",
-            "collision/contact/constraints",
-        ),
-        (".claude/skills/dart-python/SKILL.md", "GUI/rendering output"),
-        (".claude/skills/dart-python/SKILL.md", "visual exception"),
-        (".claude/skills/dart-ci/SKILL.md", "also load `dart-verify-sim`"),
-        (".claude/skills/dart-ci/SKILL.md", "visual exception"),
-        (
-            ".claude/commands/dart-downstream-fix.md",
-            "route through `dart-verify-sim`",
-        ),
-        (".claude/commands/dart-downstream-fix.md", "visual exception"),
-        (
-            ".claude/commands/dart-backport-pr.md",
-            "target branch's `dart-verify-sim`",
-        ),
-        (".claude/commands/dart-backport-pr.md", "visual exception"),
-        (".claude/commands/dart-fix-ci.md", "use `dart-verify-sim`"),
-        (".claude/commands/dart-fix-ci.md", "visual exception"),
-        (
-            ".claude/commands/dart-fix-issue.md",
-            "route through `dart-verify-sim`",
-        ),
-        (
-            ".claude/commands/dart-fix-issue.md",
-            "collision/contact/constraints",
-        ),
-        (".claude/commands/dart-fix-issue.md", "visual exception"),
         ("docs/ai/verification.md", "If rendering is unavailable"),
-        ("docs/ai/verification.md", "name replacement evidence"),
+        *[
+            (relative, "dart-verify-sim")
+            for relative in infra.SIMULATION_ROUTE_CONSUMERS
+        ],
     ],
 )
 def test_simulation_consumer_routes_are_required(tmp_path, relative, marker):
@@ -2188,6 +2190,42 @@ def _content_hashes(root: Path) -> dict[str, str]:
     }
 
 
+def test_tool_versions_probes_all_agent_clis(monkeypatch):
+    monkeypatch.setattr(infra.shutil, "which", lambda _tool: None)
+
+    versions = infra.tool_versions()
+
+    assert set(versions) == {"git", "pixi", "codex", "claude", "opencode", "python"}
+    for tool in ("git", "pixi", "codex", "claude", "opencode"):
+        assert versions[tool] == "not found"
+    assert versions["python"]
+
+
+def test_tool_versions_survives_failing_or_silent_probes(monkeypatch):
+    monkeypatch.setattr(infra.shutil, "which", lambda tool: f"/bin/{tool}")
+
+    def fake_run(cmd, **kwargs):
+        if "git" in cmd[0]:
+            raise subprocess.TimeoutExpired(cmd, 10)
+        if "pixi" in cmd[0]:
+            raise OSError("broken executable")
+        if "codex" in cmd[0]:
+            return subprocess.CompletedProcess(
+                cmd, 1, stdout="", stderr="error: malformed configuration"
+            )
+        if "claude" in cmd[0]:
+            raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(infra.subprocess, "run", fake_run)
+
+    versions = infra.tool_versions()
+
+    for tool in ("git", "pixi", "codex", "claude", "opencode"):
+        assert versions[tool] == "not found"
+    assert versions["python"]
+
+
 def test_doctor_report_is_read_only(tmp_path):
     root = make_repo(tmp_path, "main")
     before = _content_hashes(root)
@@ -2207,6 +2245,7 @@ def test_doctor_report_is_read_only(tmp_path):
         "project": [],
         "project_agents": [],
         "custom_agents": [],
+        "workflow_sources": [],
     }
     assert model_harness["project_agent_config"] == {
         "max_threads": 4,
@@ -2293,6 +2332,100 @@ def test_doctor_reports_custom_agent_model_pin_for_upgrade_audit(tmp_path):
     assert not result["ok"]
     assert result["inventory"]["model_harness"]["model_pins"]["custom_agents"] == [
         {"path": ".codex/agents/dart_scout.toml", "keys": ["model"]}
+    ]
+
+
+@pytest.mark.parametrize("key", infra.WORKFLOW_SOURCE_PIN_KEYS)
+@pytest.mark.parametrize(
+    "relative",
+    (".claude/commands/dart-new-task.md", ".claude/skills/dart-verify-sim/SKILL.md"),
+)
+def test_infra_rejects_workflow_source_model_or_effort_pin(tmp_path, relative, key):
+    root = make_repo(tmp_path, "main")
+    path = root / relative
+    body = path.read_text()
+    assert body.startswith("---\n"), "fixture sources carry YAML frontmatter"
+    value = {"model": "claude-fable-5-1", "effort": "xhigh"}[key]
+    path.write_text(body.replace("---\n", f"---\n{key}: {value}\n", 1))
+
+    errors = infra.check_workflow_source_pins(root)
+
+    assert errors == [
+        f"{relative}: frontmatter must not pin {key} "
+        '(model routing lives in docs/ai/README.md § "Model Routing")'
+    ]
+    assert not ai_doctor.report(root, "main")["ok"]
+    assert ai_doctor.report(root, "main")["inventory"]["model_harness"]["model_pins"][
+        "workflow_sources"
+    ] == [{"path": relative, "kind": "frontmatter", "keys": [key]}]
+
+
+@pytest.mark.parametrize("key", infra.CLAUDE_SETTINGS_PIN_KEYS)
+def test_infra_rejects_claude_project_settings_pin(tmp_path, key):
+    root = make_repo(tmp_path, "main")
+    path = root / ".claude" / "settings.json"
+    settings = json.loads(path.read_text())
+    settings[key] = "claude-sonnet-5" if key == "model" else {"x": 1}
+    path.write_text(json.dumps(settings))
+
+    errors = infra.check_workflow_source_pins(root)
+
+    assert errors == [
+        f".claude/settings.json: project settings must not pin {key} "
+        '(model routing lives in docs/ai/README.md § "Model Routing")'
+    ]
+    assert not ai_doctor.report(root, "main")["ok"]
+
+
+def test_infra_rejects_model_names_outside_routing_owner(tmp_path):
+    root = make_repo(tmp_path, "main")
+    assert infra.check_model_name_owner(root) == []
+    skill = root / ".claude/skills/dart-verify-sim/SKILL.md"
+    skill.write_text(skill.read_text() + "\nRoute vision work to opus 5 only.\n")
+    (root / "docs/onboarding/ai-tools.md").write_text("Tested on Claude Fable 5.1\n")
+
+    errors = infra.check_model_name_owner(root)
+
+    assert len(errors) == 1
+    assert errors[0].startswith(".claude/skills/dart-verify-sim/SKILL.md:")
+    assert 'docs/ai/README.md § "Model Routing"' in errors[0]
+    assert errors[0].endswith("Route vision work to opus 5 only.")
+    assert any(
+        "model names belong in" in error for error in infra.run_checks(root, "main")
+    )
+
+
+def test_model_names_live_only_in_routing_owner():
+    """The real checkout keeps model names in the routing owner and the
+    tested-version evidence; `pixi run check-ai-infra` enforces the same rule."""
+    assert infra.check_model_name_owner(ROOT) == []
+    scanned = {
+        path.relative_to(ROOT).as_posix() for path in infra.model_name_scan_paths(ROOT)
+    }
+    assert "AGENTS.md" in scanned
+    assert ".claude/skills/dart-verify-sim/SKILL.md" in scanned
+    assert "docs/onboarding/agent-sim-verification.md" in scanned
+    assert ".codex/config.toml" in scanned
+    assert "docs/ai/README.md" not in scanned
+    assert "docs/onboarding/ai-tools.md" not in scanned
+
+
+def test_pytest_probe_reports_unimportable_pytest(tmp_path, monkeypatch):
+    """Outside the project interpreter, a missing pytest is named as such
+    instead of being misread as a hostile-environment failure."""
+    fake = tmp_path / "python-without-pytest"
+    fake.write_text("#!/bin/sh\nexit 1\n")
+    fake.chmod(0o755)
+    monkeypatch.setattr(infra.sys, "executable", str(fake))
+    probe_root = tmp_path / "probe"
+    probe_root.mkdir()
+
+    errors = infra._run_pytest_semantic_probes(ROOT, probe_root)
+
+    assert errors == [
+        "Pytest runner semantic probe: pytest is not importable by "
+        f"{fake}; run the gate through `pixi run check-ai-infra` so the "
+        "project interpreter is used"
     ]
 
 

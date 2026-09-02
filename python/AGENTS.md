@@ -22,7 +22,7 @@ import dartpy as dart
 
 # Core modules (snake_case API)
 dart.World()
-dart.Skeleton.create()
+dart.Skeleton("name")
 dart.io.read_skeleton()  # Unified loader
 dart.gui                 # Backend-hidden GUI descriptors and helpers
 ```
@@ -31,7 +31,7 @@ dart.gui                 # Backend-hidden GUI descriptors and helpers
 
 - Eigen ↔ NumPy automatic conversion
 - Use `dart.io.read_skeleton()` for model loading
-- Factory methods: `Skeleton.create()`, `World.create()`
+- Construct directly: `dart.Skeleton()` / `dart.Skeleton("name")` and `dart.World()` (dartpy exposes no `create()` factories; C++ `World` is a value type while `Skeleton` stays shared-pointer-managed, and new classic world-factory usages are gated by `pixi run check-dart7-world-promotion-blockers`)
 - Keep dartpy GUI APIs aligned with DART-owned C++ concepts.
   `dartpy.gui` exposes the constrained descriptor, debug, picking, and run-loop
   bridge.

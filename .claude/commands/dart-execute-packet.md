@@ -19,14 +19,15 @@ Read these files first:
 
 `$ARGUMENTS` is optional and takes one of three forms:
 
-- `WP-<plan>.<n>` (for example `WP-091.13`) — execute exactly that packet.
-- `PLAN-NNN` (for example `PLAN-091`) — select the first available packet in
+- `WP-<plan>.<n>` (for example `WP-122.1`) — execute exactly that packet.
+- `PLAN-NNN` (for example `PLAN-122`) — select the first available packet in
   that plan.
 - empty — auto-select: walk `docs/plans/dashboard.md` top to bottom (document
   order is priority); for each `Active` entry whose owner doc is a numbered
-  plan file containing `#### WP-` packet headings, take the first available
-  packet by the availability rules below. State which packet was selected and
-  why before starting.
+  plan file containing `### WP-` packet headings (the discovery rule in
+  `docs/ai/orchestration.md`), take the first available packet by the
+  availability rules below. State which packet was selected and why before
+  starting.
 
 If nothing resolves to an available packet, report what was checked (plans
 walked, packets skipped and the blocking signal for each) and stop; do not
@@ -51,7 +52,7 @@ is available only when ALL of these hold:
 4. **Branch/PR signals** — no one else is already working it:
    `git ls-remote --heads origin` shows no branch embedding the packet ID in
    the documented form (`wp-<plan>-<n>-<slug>`, for example
-   `wp-091-13-contact-assembly`), and `gh pr list --state open --search
+   `wp-122-1-harness-manifest`), and `gh pr list --state open --search
 "WP-<plan>.<n>"` returns no open PR carrying the ID in its title. These are
    read-only queries that mutate nothing; any push, PR creation, or other
    GitHub mutation still requires explicit maintainer/user approval.
@@ -74,11 +75,11 @@ specification intake required by `docs/ai/orchestration.md`:
 - gates; and
 - dependencies.
 
-If objective, scope, non-goals, acceptance evidence, gates, or dependencies are
-missing or too vague to verify, report that the packet is not executable and
-stop. For older packets that lack an explicit value or assumptions field,
-proceed only when the owner docs make the value and assumptions unambiguous,
-and state those inferred fields before editing. If an unresolved decision would
+If objective, scope, acceptance evidence, gates, or dependencies are missing or
+too vague to verify, report that the packet is not executable and stop
+(dependencies gate availability and are never inferred). When value,
+non-goals, or assumptions are absent, infer them from the owner docs and state
+the inferred fields before editing. If an unresolved decision would
 materially change public API, release compatibility, numerical correctness,
 benchmark claims, or roadmap scope, stop and ask the orchestrator to record an
 owner-local `Decision needed` block.

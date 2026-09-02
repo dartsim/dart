@@ -359,8 +359,20 @@ Scope it honestly:
   `metal`/`webgpu` are intentionally rejected (`render_context.cpp` `parseBackend`);
   the build defaults to OpenGL. Consequence: **macOS has no Metal material path**
   and runs via OpenGL (Apple-deprecated) or MoltenVK-Vulkan. The packaged macOS
-  story (and the pinned-Filament-archive-vs-`Filament_ROOT` split across
-  platforms) needs an explicit owner before mode 3 is promoted as cross-platform.
+  story needs an explicit owner before mode 3 is promoted as cross-platform.
+- **Update (2026-08-31): Filament provider defaults to conda-forge.** The
+  `filament` package (1.76.x, all five workspace platforms, shared libs +
+  `matc` + CMake package config) is the default provider
+  (`DART_USE_SYSTEM_FILAMENT=ON`), installed by the Pixi environments; the
+  linux-64 libc++ pins and the CUDA host-compiler workaround it obsoleted were
+  removed. Wheels stay on the fetched static archive: the conda shared
+  build's eager libglvnd linkage cannot be vendored into manylinux wheels.
+  `DART_USE_SYSTEM_FILAMENT=OFF` fetches the pinned upstream 1.76.x archive
+  (imgui-style provider toggle, replacing `DART_FETCH_FILAMENT`), keeping
+  non-conda source builds and sdist `pip install` self-sufficient;
+  `Filament_ROOT` remains the bring-your-own-tree escape hatch.
+  `DART_BUILD_GUI` now defaults to `ON` on every platform and fails the
+  configure when GUI dependencies are missing.
 - **Keep the binary lean.** This is a standing advantage of ImGui and a reason
   not to adopt Qt without a trigger (Qt adds bundling weight; manageable via
   conda shared libs, but real).

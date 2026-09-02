@@ -7,7 +7,7 @@ from drifting.
 
 ## Work Packet
 
-#### WP-103.1 Rigid-body visual verification workflow
+### WP-103.1 Rigid-body visual verification workflow
 
 - Objective: the Python `py-demos` rigid-body category is a curated DART 7
   visual-verification workflow with reviewable screenshots, row guidance,

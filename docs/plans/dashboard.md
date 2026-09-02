@@ -129,7 +129,7 @@ its own line so status updates remain git-history friendly.
 - Horizon: Now
 - Dimension: Algorithm extensibility
 - Next step: Implement the full mesh-backed IPC-class follow-up from the PLAN-081
-  paper/repository gap audit: open a dedicated `docs/dev_tasks/` folder and work
+  paper/repository gap audit in `docs/dev_tasks/ipc_deformable_solver/` and work
   through mesh/material state, scene loading, BE/Newmark integration, PT/EE
   distance derivatives, conservative CCD line search, projected Newton, friction,
   diagnostics, and the upstream example/test/benchmark/visual corpus. Track
@@ -165,7 +165,8 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Continue the active rigid-IPC dev task toward production: curved
+- Next step: Continue the active rigid-IPC dev task
+  (`docs/dev_tasks/rigid_ipc_solver/`) toward production: curved
   CCD/residual/subdivision, local/scene barrier assembly and conservative line
   search, the opt-in runtime rigid-IPC stage and same-domain `World` solver
   selection, friction potentials and lagged passes, and remaining
