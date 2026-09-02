@@ -80,10 +80,10 @@ struct DeformableNodeModel
 };
 
 /// Internal per-node **State** for a deformable body: the per-step node
-/// positions, previous positions, and velocities advanced by the solver every
-/// step. Per the Model/State/Control/Contracts contract (WP-091.20), this holds
-/// only mutable per-step data; the per-node mass and pinning mask live in
-/// `DeformableNodeModel`.
+/// positions, previous positions, velocities, and persistent point-attachment
+/// targets advanced by explicit state/control changes. Per the
+/// Model/State/Control/Contracts contract (WP-091.20), this holds only mutable
+/// state; the per-node mass and pinning mask live in `DeformableNodeModel`.
 struct DeformableNodeState
 {
   DART_SIMULATION_PROPERTY_COMPONENT(
@@ -96,13 +96,18 @@ struct DeformableNodeState
   explicit DeformableNodeState(dart::common::MemoryAllocator& allocator)
     : positions(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
       previousPositions(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
-      velocities(dart::common::StlAllocator<Eigen::Vector3d>{allocator})
+      velocities(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      attachmentTargets(dart::common::StlAllocator<Eigen::Vector3d>{allocator})
   {
   }
 
   Vector3Vector positions;
   Vector3Vector previousPositions;
   Vector3Vector velocities;
+  /// Persistent world-space targets for model-fixed AVBD attachment rows.
+  /// Explicit position edits and scripted Dirichlet controls move these
+  /// targets; ordinary simulation steps do not make them follow the node.
+  Vector3Vector attachmentTargets;
 };
 
 /// Internal spring edge connecting two deformable nodes.
@@ -209,6 +214,21 @@ struct DeformableMaterial
   bool useMatrixFreeLinearSolver = false;
 };
 
+/// Design-frozen deformable surface-contact capacity policy.
+///
+/// The zero value is retained as construction policy across serialization and
+/// replay; the solver scratch owns the deterministic capacity resolved at
+/// bake (the exact valid-pair bound, or the reserve budget with growth allowed
+/// when that bound exceeds the budget). A nonzero value is the exact combined
+/// PT/EE candidate limit and always fails closed.
+struct DeformableContactConfig
+{
+  DART_SIMULATION_PROPERTY_COMPONENT(
+      DeformableContactConfig, "comps.DeformableContactConfig");
+
+  std::size_t surfaceCandidateCapacity = 0u;
+};
+
 /// Time-ranged scripted Dirichlet boundary region for deformable nodes.
 struct DeformableDirichletBoundary
 {
@@ -276,11 +296,9 @@ struct DeformableBoundaryConditions
 /// Internal opt-in configuration selecting the Vertex Block Descent (VBD) inner
 /// solver for a deformable body.
 ///
-/// This component is intentionally not serialized and is not exposed through
-/// the public facade: the public deformable stage stays algorithm-neutral, and
-/// which inner solver runs is an internal/explicit-opt-in decision rather than
-/// a leaked solver registry. When absent or `enabled == false`, the default
-/// gradient-descent solver runs.
+/// The public facade maps solver-agnostic `DeformableSolverOptions` into this
+/// component, while internal experiments may still attach it directly. When
+/// absent or `enabled == false`, the default projected-Newton solver runs.
 struct DeformableVbdConfig
 {
   bool enabled = false;
@@ -300,6 +318,10 @@ struct DeformableVbdConfig
   /// a positive value the VBD solve keeps the body resting on the ground
   /// barrier set instead of routing the body to the default solver.
   double contactStiffness = 0.0;
+  /// Public selections must execute VBD or fail closed instead of silently
+  /// substituting the default solver for an unsupported obstacle family.
+  /// Internal experiments default to the legacy fallback behavior.
+  bool requireVbdExecution = false;
   /// Internal AVBD slice flag: use warm-started augmented-Lagrangian
   /// contact-normal rows for static half-space contact when the current scene
   /// is inside the supported CPU mass-spring envelope. Unsupported cases fall
@@ -321,10 +343,9 @@ struct DeformableVbdConfig
   /// Internal AVBD slice flag: use progressive finite-stiffness rows for
   /// deformable springs in the supported CPU mass-spring envelope.
   bool useAvbdFiniteStiffnessRows = false;
-  /// Starting stiffness for AVBD finite-stiffness deformable rows. Spring rows
-  /// use this in material stiffness units; tetrahedral material rows use it as
-  /// a dimensionless multiplier on the Lamé parameters and cap at 1.0 unless
-  /// avbdMaxStiffness is lower.
+  /// Starting stiffness for AVBD finite-stiffness spring rows, in material
+  /// stiffness units. Tetrahedral materials have no implemented independently
+  /// rampable Equation-16 row formulation and are rejected in this mode.
   double avbdFiniteStiffnessStart = 1.0;
   /// AVBD alpha regularization for pre-existing contact error.
   double avbdAlpha = 0.99;
@@ -335,6 +356,17 @@ struct DeformableVbdConfig
   /// Hard cap for AVBD row stiffness.
   double avbdMaxStiffness = std::numeric_limits<double>::infinity();
 };
+
+/// Validate the numerical invariants required by the VBD and AVBD kernels.
+///
+/// This is the single validation entry point for direct component attachment,
+/// world preparation, replay restoration, and serialization. Positive infinity
+/// is accepted only for `avbdMaxStiffness`, where it means no hard cap.
+///
+/// @throws InvalidArgumentException if any field is outside its supported
+/// range.
+DART_SIMULATION_API void validateDeformableVbdConfig(
+    const DeformableVbdConfig& config);
 
 /// Transient scratch buffers reused by the default deformable solver.
 ///
@@ -357,6 +389,14 @@ struct DeformableSolverScratch
       candidate(dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
       previousStepPositions(
           dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      previousAttachmentTargets(
+          dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      stepStartPositions(
+          dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      stepStartVelocities(
+          dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
+      stepAttachmentTargets(
+          dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
       externalAccelerations(
           dart::common::StlAllocator<Eigen::Vector3d>{allocator}),
       activeFixed(dart::common::StlAllocator<std::uint8_t>{allocator}),
@@ -372,6 +412,12 @@ struct DeformableSolverScratch
   Vector3Vector direction;
   Vector3Vector candidate;
   Vector3Vector previousStepPositions;
+  Vector3Vector previousAttachmentTargets;
+  /// Transactional step-start state after scripted controls. These retained
+  /// buffers let every deformable body solve before any live state commits.
+  Vector3Vector stepStartPositions;
+  Vector3Vector stepStartVelocities;
+  Vector3Vector stepAttachmentTargets;
   Vector3Vector externalAccelerations;
   MaskVector activeFixed;
   MaskVector activeDirichlet;

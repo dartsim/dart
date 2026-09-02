@@ -104,6 +104,34 @@ struct RigidConstraintOptions
   std::size_t iterations = 8;
 };
 
+/// Construction-time bounds for the baked rigid collision/contact query.
+///
+/// The two limits are intentionally independent: a broad-phase candidate does
+/// not necessarily emit a contact, while one primitive pair may emit a
+/// manifold containing several contacts. A zero value selects a conservative
+/// automatic bound derived from the collision shapes present when the World
+/// enters simulation mode. The resolved limits lock after a successful bake.
+/// A nonzero value is an exact user-selected limit; exceeding it fails before
+/// the built-in step mutates World state. Explicit limits also size the
+/// baked storage exactly, so steps within them never allocate. Automatic
+/// bounds are rejection thresholds: because the complete shape-pair envelope
+/// grows quadratically with the shape count, bake reserves at most a fixed
+/// budget (65,536 candidate pairs, 16,384 contacts) and the buffers grow,
+/// allocating, between the budget and the envelope.
+struct RigidCollisionCapacityOptions
+{
+  /// Maximum broad-phase candidate shape pairs retained by one rigid query.
+  /// Zero derives the complete unordered-pair bound from the baked shape
+  /// count.
+  std::size_t candidatePairCapacity = 0;
+
+  /// Maximum aggregate narrow-phase contacts emitted by one rigid query.
+  /// Zero derives a conservative shape-pair bound at bake time. A nonzero
+  /// value must also leave room to represent the two tangent rows derived for
+  /// every rigid AVBD contact.
+  std::size_t contactCapacity = 0;
+};
+
 /// Selects how the differentiable contact stage produces its BACKWARD-pass
 /// gradient. This is an opt-in refinement knob for DART 7
 /// differentiable simulation (PLAN-110 WS5): it affects ONLY the gradient
@@ -219,6 +247,11 @@ struct WorldOptions
 
   /// Tuning for the built-in rigid constraint stage.
   RigidConstraintOptions rigidConstraintOptions;
+
+  /// Baked rigid collision candidate/contact capacity policy. These limits do
+  /// not govern deformable surface-contact candidate sets, which have a
+  /// separate solver-owned capacity boundary.
+  RigidCollisionCapacityOptions rigidCollisionCapacityOptions;
 
   /// Multibody domain method-family options used by the built-in
   /// `World::step()` schedule. Defaults to semi-implicit integration.

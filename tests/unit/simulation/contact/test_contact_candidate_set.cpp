@@ -38,10 +38,13 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <span>
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include <cstdint>
 
 namespace common = dart::common;
 namespace sx = dart::simulation;
@@ -1340,4 +1343,115 @@ TEST(IpcContactCandidateSet, MotionAwareSweepScratchClearsStaleState)
   EXPECT_GE(scratch.pointItems.capacity(), pointCapacity);
   EXPECT_GE(scratch.triangleItems.capacity(), triangleCapacity);
   EXPECT_GE(scratch.edgeItems.capacity(), edgeCapacity);
+}
+
+//==============================================================================
+TEST(
+    IpcContactCandidateSet,
+    CombinedCandidateCapacityAcceptsCapAndRejectsCapPlusOne)
+{
+  const std::vector<Eigen::Vector3d> positions = {
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+  };
+  const std::vector<sx::DeformableSurfaceTriangle> triangles
+      = {{0u, 1u, 2u}, {3u, 4u, 5u}};
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.0;
+  options.exactDistanceFilter = false;
+  options.candidateCapacity = 15u;
+  const auto atCap
+      = dc::buildContactCandidatesBruteForce(positions, triangles, options);
+  EXPECT_EQ(atCap.pointTriangleCandidates.size(), 6u);
+  EXPECT_EQ(atCap.edgeEdgeCandidates.size(), 9u);
+
+  options.candidateCapacity = 14u;
+  EXPECT_THROW(
+      dc::buildContactCandidatesBruteForce(positions, triangles, options),
+      sx::InvalidOperationException);
+  EXPECT_THROW(
+      dc::buildMotionAwareContactCandidatesSweep(
+          positions, positions, triangles, options),
+      sx::InvalidOperationException);
+}
+
+//==============================================================================
+// Growth is an explicit opt-in used only by the automatic World policy above
+// its reserve budget: the build keeps every candidate, counts the excess, and
+// the strict default still fails closed on the same inputs.
+TEST(IpcContactCandidateSet, CapacityGrowthKeepsCandidatesAndCountsOverflow)
+{
+  const std::vector<Eigen::Vector3d> positions = {
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+  };
+  const std::vector<sx::DeformableSurfaceTriangle> triangles
+      = {{0u, 1u, 2u}, {3u, 4u, 5u}};
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.0;
+  options.exactDistanceFilter = false;
+  options.candidateCapacity = 10u;
+  options.allowCapacityGrowth = true;
+
+  const auto grown
+      = dc::buildContactCandidatesBruteForce(positions, triangles, options);
+  EXPECT_EQ(grown.pointTriangleCandidates.size(), 6u);
+  EXPECT_EQ(grown.edgeEdgeCandidates.size(), 9u);
+  EXPECT_EQ(grown.stats.capacityOverflowCount, 5u);
+
+  const auto sweptGrown = dc::buildMotionAwareContactCandidatesSweep(
+      positions, positions, triangles, options);
+  EXPECT_EQ(
+      sweptGrown.pointTriangleCandidates.size()
+          + sweptGrown.edgeEdgeCandidates.size(),
+      15u);
+  EXPECT_EQ(sweptGrown.stats.capacityOverflowCount, 5u);
+
+  options.candidateCapacity = 15u;
+  const auto withinCapacity
+      = dc::buildContactCandidatesBruteForce(positions, triangles, options);
+  EXPECT_EQ(withinCapacity.stats.capacityOverflowCount, 0u);
+
+  options.candidateCapacity = 10u;
+  options.allowCapacityGrowth = false;
+  EXPECT_THROW(
+      dc::buildContactCandidatesBruteForce(positions, triangles, options),
+      sx::InvalidOperationException);
+}
+
+//==============================================================================
+TEST(IpcContactCandidateSet, PointMaskDoesNotConsumeCandidateCapacity)
+{
+  const std::vector<Eigen::Vector3d> positions = {
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+      {0.0, 0.0, 0.0},
+      {1.0, 0.0, 0.0},
+      {0.0, 1.0, 0.0},
+  };
+  const std::vector<sx::DeformableSurfaceTriangle> triangles
+      = {{0u, 1u, 2u}, {3u, 4u, 5u}};
+  const std::array<std::uint8_t, 6> pointMask{1u, 0u, 0u, 0u, 0u, 0u};
+
+  dc::ContactCandidateOptions options;
+  options.activationDistance = 0.0;
+  options.exactDistanceFilter = false;
+  options.pointMask = pointMask;
+  options.candidateCapacity = 10u;
+  const auto candidates
+      = dc::buildContactCandidatesBruteForce(positions, triangles, options);
+  ASSERT_EQ(candidates.pointTriangleCandidates.size(), 1u);
+  EXPECT_EQ(candidates.pointTriangleCandidates[0].point, 0u);
+  EXPECT_EQ(candidates.edgeEdgeCandidates.size(), 9u);
 }

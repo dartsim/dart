@@ -73,6 +73,11 @@ public:
 
   void reserveObjects(std::size_t count);
 
+  /// Reserve the internal broad-phase snapshot cache for a bounded query.
+  /// Call this before the allocation-sensitive query window; it never shrinks
+  /// an existing reservation.
+  void reserveBroadPhasePairCapacity(std::size_t count);
+
   [[nodiscard]] std::size_t updateAll();
 
   [[nodiscard]] std::size_t updateAll(
@@ -94,6 +99,20 @@ public:
 
   void buildBroadPhaseSnapshot(
       BroadPhaseSnapshot& out, const BatchSettings& settings) const;
+
+  /// Build a complete broad-phase snapshot only when it fits in
+  /// ``maxPairs``. Returns false and clears ``out.pairs`` on overflow.
+  ///
+  /// The default AABB-tree path traverses directly into the caller's bounded
+  /// buffer. Reserve both ``out.pairs`` and the CollisionWorld cache with
+  /// ``maxPairs`` elements before an allocation-sensitive query.
+  [[nodiscard]] bool buildBroadPhaseSnapshotBounded(
+      BroadPhaseSnapshot& out, std::size_t maxPairs) const;
+
+  [[nodiscard]] bool buildBroadPhaseSnapshotBounded(
+      BroadPhaseSnapshot& out,
+      std::size_t maxPairs,
+      const BatchSettings& settings) const;
 
   [[nodiscard]] BroadPhaseDebugSnapshot buildBroadPhaseDebugSnapshot() const;
 

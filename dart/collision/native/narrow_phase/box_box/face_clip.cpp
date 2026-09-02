@@ -34,7 +34,7 @@
 
 #include <algorithm>
 #include <array>
-#include <functional>
+#include <stdexcept>
 
 #include <cmath>
 
@@ -55,6 +55,43 @@ struct FaceBasis
   Eigen::Vector3d tangent2 = Eigen::Vector3d::UnitY();
   double halfExtent1 = 0.0;
   double halfExtent2 = 0.0;
+};
+
+struct FixedPolygon
+{
+  static constexpr std::size_t kCapacity = FixedContactCandidates::kCapacity;
+
+  void pushBack(const Eigen::Vector3d& point)
+  {
+    if (count >= values.size()) {
+      throw std::overflow_error(
+          "Box-box face clipping exceeded its geometric vertex bound");
+    }
+    values[count++] = point;
+  }
+
+  [[nodiscard]] bool empty() const noexcept
+  {
+    return count == 0u;
+  }
+
+  [[nodiscard]] const Eigen::Vector3d& back() const noexcept
+  {
+    return values[count - 1u];
+  }
+
+  [[nodiscard]] const Eigen::Vector3d* begin() const noexcept
+  {
+    return values.data();
+  }
+
+  [[nodiscard]] const Eigen::Vector3d* end() const noexcept
+  {
+    return values.data() + count;
+  }
+
+  std::array<Eigen::Vector3d, kCapacity> values{};
+  std::size_t count = 0u;
 };
 
 [[nodiscard]] FaceBasis makeFaceBasis(
@@ -91,30 +128,32 @@ struct FaceBasis
   return makeFaceBasis(box, axis, outwardNormal);
 }
 
-[[nodiscard]] std::vector<Eigen::Vector3d> makeFaceVertices(
-    const FaceBasis& face)
+[[nodiscard]] FixedPolygon makeFaceVertices(const FaceBasis& face)
 {
-  return {
+  FixedPolygon polygon;
+  polygon.pushBack(
       face.center - face.halfExtent1 * face.tangent1
-          - face.halfExtent2 * face.tangent2,
+      - face.halfExtent2 * face.tangent2);
+  polygon.pushBack(
       face.center + face.halfExtent1 * face.tangent1
-          - face.halfExtent2 * face.tangent2,
+      - face.halfExtent2 * face.tangent2);
+  polygon.pushBack(
       face.center + face.halfExtent1 * face.tangent1
-          + face.halfExtent2 * face.tangent2,
+      + face.halfExtent2 * face.tangent2);
+  polygon.pushBack(
       face.center - face.halfExtent1 * face.tangent1
-          + face.halfExtent2 * face.tangent2};
+      + face.halfExtent2 * face.tangent2);
+  return polygon;
 }
 
-void clipPolygon(
-    std::vector<Eigen::Vector3d>& polygon,
-    const std::function<double(const Eigen::Vector3d&)>& signedDistance)
+template <typename SignedDistance>
+void clipPolygon(FixedPolygon& polygon, SignedDistance&& signedDistance)
 {
   if (polygon.empty()) {
     return;
   }
 
-  std::vector<Eigen::Vector3d> clipped;
-  clipped.reserve(polygon.size() + 1);
+  FixedPolygon clipped;
 
   Eigen::Vector3d previous = polygon.back();
   double previousDistance = signedDistance(previous);
@@ -128,12 +167,12 @@ void clipPolygon(
       const double denominator = previousDistance - currentDistance;
       if (std::abs(denominator) > kClipTolerance) {
         const double t = previousDistance / denominator;
-        clipped.push_back(previous + t * (current - previous));
+        clipped.pushBack(previous + t * (current - previous));
       }
     }
 
     if (currentInside) {
-      clipped.push_back(current);
+      clipped.pushBack(current);
     }
 
     previous = current;
@@ -141,11 +180,10 @@ void clipPolygon(
     previousInside = currentInside;
   }
 
-  polygon = std::move(clipped);
+  polygon = clipped;
 }
 
-void clipToReferenceFace(
-    std::vector<Eigen::Vector3d>& polygon, const FaceBasis& reference)
+void clipToReferenceFace(FixedPolygon& polygon, const FaceBasis& reference)
 {
   clipPolygon(polygon, [&](const Eigen::Vector3d& point) {
     const double coordinate
@@ -214,7 +252,7 @@ void clipToReferenceFace(
       sat.penetration};
 }
 
-[[nodiscard]] std::vector<ContactCandidate> computeFaceContactCandidates(
+[[nodiscard]] FixedContactCandidates computeFaceContactCandidates(
     const BoxData& box1, const BoxData& box2, const SatResult& sat)
 {
   if (sat.referenceBox < 0 || sat.referenceAxis < 0) {
@@ -232,11 +270,10 @@ void clipToReferenceFace(
   const FaceBasis incidentFace
       = makeBestFaceBasis(incident, -referenceFace.normal);
 
-  std::vector<Eigen::Vector3d> polygon = makeFaceVertices(incidentFace);
+  FixedPolygon polygon = makeFaceVertices(incidentFace);
   clipToReferenceFace(polygon, referenceFace);
 
-  std::vector<ContactCandidate> candidates;
-  candidates.reserve(polygon.size());
+  FixedContactCandidates candidates;
   for (const auto& point : polygon) {
     const double signedDistance
         = referenceFace.normal.dot(point - referenceFace.center);
@@ -244,9 +281,13 @@ void clipToReferenceFace(
       continue;
     }
 
-    candidates.push_back(
-        {point - 0.5 * signedDistance * referenceFace.normal,
-         std::max(0.0, sat.penetration)});
+    if (candidates.count >= candidates.values.size()) {
+      throw std::overflow_error(
+          "Box-box contact candidates exceeded their geometric bound");
+    }
+    candidates.values[candidates.count++]
+        = {point - 0.5 * signedDistance * referenceFace.normal,
+           std::max(0.0, sat.penetration)};
   }
 
   return candidates;
@@ -254,14 +295,24 @@ void clipToReferenceFace(
 
 } // namespace
 
-std::vector<ContactCandidate> computeBoxBoxContactCandidates(
+FixedContactCandidates computeBoxBoxContactCandidatesFixed(
     const BoxData& box1, const BoxData& box2, const SatResult& sat)
 {
   if (sat.axisType == SatAxisType::Face) {
     return computeFaceContactCandidates(box1, box2, sat);
   }
 
-  return {computeSupportContactCandidate(box1, box2, sat)};
+  FixedContactCandidates candidates;
+  candidates.values[0] = computeSupportContactCandidate(box1, box2, sat);
+  candidates.count = 1u;
+  return candidates;
+}
+
+std::vector<ContactCandidate> computeBoxBoxContactCandidates(
+    const BoxData& box1, const BoxData& box2, const SatResult& sat)
+{
+  const auto fixed = computeBoxBoxContactCandidatesFixed(box1, box2, sat);
+  return {fixed.begin(), fixed.end()};
 }
 
 } // namespace dart::collision::native::box_box

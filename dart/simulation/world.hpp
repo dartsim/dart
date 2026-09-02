@@ -52,6 +52,7 @@
 
 #include <Eigen/Geometry>
 
+#include <functional>
 #include <iosfwd>
 #include <memory>
 #include <optional>
@@ -101,6 +102,12 @@ struct DeformableSolverDiagnostics
   /// Total deformable node and (mass-spring) edge counts.
   std::size_t nodeCount = 0;
   std::size_t edgeCount = 0;
+  /// Bodies that actually executed the VBD inner solver, cumulative VBD
+  /// sweeps, and vertex block updates in the most recent World step. These
+  /// remain zero when every body resolved to projected Newton.
+  std::size_t vbdBodyCount = 0;
+  std::size_t vbdSweeps = 0;
+  std::size_t vbdVertexUpdates = 0;
   /// Cumulative projected-Newton iterations over the step (summed per body).
   std::size_t solverIterations = 0;
   /// Objective (energy/gradient) evaluations and line-search trials.
@@ -135,6 +142,18 @@ struct DeformableSolverDiagnostics
   double projectedNewtonIterativeMaxError = 0.0;
   /// Self-contact barrier active contacts summed over every solver iteration.
   std::size_t selfContactBarrierActiveContacts = 0;
+  /// Largest explicit per-body candidate-cap policy, largest baked resolved
+  /// cap, and peak combined PT/EE candidate count emitted by one build.
+  /// Requested is zero when every body uses automatic capacity resolution.
+  std::size_t surfaceContactCandidateCapacityRequested = 0;
+  std::size_t surfaceContactCandidateCapacityResolved = 0;
+  std::size_t surfaceContactCandidateCountPeak = 0;
+  /// Candidates emitted beyond a resolved capacity during this step by builds
+  /// that were allowed to grow: only the automatic policy of a topology whose
+  /// exact valid-pair bound exceeds the reserve budget grows (allocating);
+  /// explicit capacities and in-budget automatic capacities fail closed, so
+  /// this stays zero for them.
+  std::size_t surfaceContactCandidateOverflowCount = 0;
   /// Runtime self-surface contact candidate and CCD activity produced inside
   /// the default deformable ``World::step`` line search. Candidate counts are
   /// cumulative over line-search trials for the most recent step. Pair capacity
@@ -402,6 +421,32 @@ public:
   [[nodiscard]] const RigidConstraintOptions& getRigidConstraintOptions()
       const noexcept;
 
+  /// Return the construction-time rigid collision capacity policy.
+  [[nodiscard]] const RigidCollisionCapacityOptions&
+  getRigidCollisionCapacityOptions() const noexcept;
+
+  /// Return the currently resolved candidate-pair bound. Before the first
+  /// collision query/preparation, an automatic (zero) policy reports zero;
+  /// after a successful simulation bake this is the locked complete-pair
+  /// bound. Explicit limits are reported before and after bake unchanged.
+  [[nodiscard]] std::size_t getRigidCollisionCandidatePairCapacity()
+      const noexcept;
+
+  /// Return the currently resolved aggregate contact bound. Before the first
+  /// collision query/preparation, an automatic (zero) policy reports zero;
+  /// after a successful simulation bake this is the locked conservative
+  /// shape-pair bound. Explicit limits are reported before and after bake
+  /// unchanged.
+  [[nodiscard]] std::size_t getRigidCollisionContactCapacity() const noexcept;
+
+  /// Return the contact storage actually reserved at bake. Equal to the
+  /// resolved contact capacity for explicit limits; for the automatic policy
+  /// it is the smaller of the resolved envelope and a fixed reserve budget,
+  /// because the complete shape-pair envelope is quadratic in the shape count
+  /// and serves only as the rejection threshold. Baked steps whose live
+  /// contact count stays within the reserve do not allocate.
+  [[nodiscard]] std::size_t getRigidCollisionContactReserve() const noexcept;
+
   void setTimeStep(double timeStep);
   [[nodiscard]] double getTimeStep() const noexcept;
 
@@ -652,13 +697,42 @@ public:
   void step(std::size_t count);
   void step(compute::ComputeExecutor& executor);
   void step(std::size_t count, compute::ComputeExecutor& executor);
+
+  /// Advance with the built-in pipeline followed by a caller-owned final stage.
+  ///
+  /// @throws InvalidOperationException if replay recording is enabled or any
+  ///         body requires public deformable VBD execution. Opaque stages can
+  ///         mutate construction after the atomic preflight; these modes must
+  ///         use the built-in step overload. A successful caller-owned-stage
+  ///         step also makes binary checkpointing fail closed until the World
+  ///         is cleared or successfully replaced by `loadBinary`, because the
+  ///         external stage may retain continuation state the World cannot
+  ///         serialize.
   void step(compute::ComputeExecutor& executor, compute::WorldStepStage& stage);
   void step(
       std::size_t count,
       compute::ComputeExecutor& executor,
       compute::WorldStepStage& stage);
+
+  /// Advance with an entirely caller-owned pipeline.
+  ///
+  /// The caller owns every supplied stage's preparation, cache invalidation,
+  /// diagnostics, and lifetime. `World::step()` refreshes only World-owned
+  /// built-in caches; call each stage's `prepare(world)` as required before
+  /// passing the pipeline.
+  ///
+  /// @throws InvalidOperationException if replay recording is enabled, any
+  ///         body requires public deformable VBD execution, or either explicit
+  ///         rigid collision capacity is nonzero. Use a built-in step overload
+  ///         so DART can preserve atomic validation and recording. A successful
+  ///         caller-owned-pipeline step makes binary checkpointing fail closed
+  ///         until the World is cleared or successfully loaded.
   void step(
       compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
+
+  /// Repeated caller-owned-pipeline form; it has the same required-VBD,
+  /// explicit rigid-capacity, and replay-recording restrictions as the
+  /// single-step overload.
   void step(
       std::size_t count,
       compute::ComputeExecutor& executor,
@@ -675,7 +749,11 @@ public:
   /// timestep completed by the built-in or user-supplied step pipeline.
   /// Restoring a recorded frame writes the saved state back into the existing
   /// world entities, so public handles remain valid and no physics step is
-  /// re-run.
+  /// re-run. A recording session freezes exact rigid-body construction and the
+  /// exact deformable construction layout (model, topology, material, and
+  /// scripted boundary data); recording, stepping, and restoring fail before
+  /// mutating replay state when that construction changes. Disable recording
+  /// and enable it again to start a new session after an intentional edit.
   void setReplayRecordingEnabled(bool enabled);
 
   /// Whether this world is currently appending replay frames after steps.
@@ -709,6 +787,10 @@ public:
   /// recording is enabled and the caller subsequently steps from the restored
   /// frame, frames after the cursor are discarded before the new branch is
   /// appended.
+  ///
+  /// Rigid and deformable construction must still match the session snapshot
+  /// exactly; rigid transforms/velocities, deformable node kinematics, and
+  /// VBD/AVBD configuration remain per-frame replay state.
   ///
   /// @throws InvalidArgumentException if `index` is out of range.
   void restoreReplayFrame(std::size_t index);
@@ -877,7 +959,29 @@ public:
   //--------------------------------------------------------------------------
   // Serialization
   //--------------------------------------------------------------------------
+  /// Save this World to a binary snapshot.
+  ///
+  /// Binary snapshots do not encode continuation-sensitive AVBD warm-start
+  /// inventories. If any active rigid or deformable AVBD path has populated
+  /// such state, this throws before writing the format header. Use replay for
+  /// exact continuation, or save before AVBD rows execute. Configuration-only
+  /// worlds and active plain VBD worlds remain serializable. Saving also fails
+  /// after a caller-owned stage or pipeline has stepped the World, since its
+  /// external continuation state is opaque; `clear()` or a successful
+  /// `loadBinary()` establishes a known checkpointable state again. The
+  /// construction-time rigid collision capacity policy is intentionally not
+  /// serialized: it is a destination memory policy, like the allocator.
   void saveBinary(std::ostream& output) const;
+
+  /// Replace this World from a binary snapshot.
+  ///
+  /// Loading is transactional: parsing, configuration validation, kinematics,
+  /// and built-in stage preparation complete against staged World-owned
+  /// storage before the previous state is released. If loading throws, all
+  /// existing entities, handles, replay history, and runtime metadata remain
+  /// unchanged. A loaded simulation snapshot must fit the destination World's
+  /// rigid candidate/contact capacities; those construction-time limits are
+  /// preserved rather than replaced by source data.
   void loadBinary(std::istream& input);
 
   //--------------------------------------------------------------------------
@@ -947,6 +1051,8 @@ private:
   static StepPipelineCachePtr makeStepPipelineCache(
       common::MemoryManager& memoryManager,
       std::size_t rigidConstraintIterations);
+  void applyPreparedConfigurationTransactionally(
+      std::function<void()> apply, std::function<void()> rollback);
   struct ReplayState;
   struct ReplayStateDeleter
   {
@@ -997,7 +1103,11 @@ private:
   [[nodiscard]] std::uint64_t getFrameTopologyRevision() const noexcept;
   void reserveRegistryStorageForSimulation();
   void prepareStepPipelineCacheForCurrentConfiguration();
+  void ensureStepPipelineCacheCurrent();
   void prepareDifferentiableContactFreeScratchForCurrentConfiguration();
+  [[nodiscard]] compute::ResolvedSolverConfiguration buildResolvedConfiguration(
+      bool deformablePsdAcceleratedResolved) const;
+  void preflightStrictSolverResolution() const;
   void recordResolvedConfiguration();
   void resetCountersFromRegistry();
   bool tryStepCleanNoWorkDefaultPipeline();
@@ -1008,6 +1118,7 @@ private:
   void stepPipelineOnce(
       compute::ComputeExecutor& executor, compute::WorldStepPipeline& pipeline);
   [[nodiscard]] bool captureContactFreeStepDerivativesForFirstMultibody();
+  void validateReplayConstruction() const;
   void recordReplayFrame();
   void resetFrameScratchForStep();
   [[nodiscard]] bool isDeactivationActiveForStep() const noexcept;
@@ -1053,6 +1164,7 @@ private:
   Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
   RigidBodySolver m_rigidBodySolver{RigidBodySolver::SequentialImpulse};
   RigidConstraintOptions m_rigidConstraintOptions;
+  RigidCollisionCapacityOptions m_rigidCollisionCapacityOptions;
   double m_timeStep{0.001};
   bool m_differentiable{false};
   ContactSolverMethod m_contactSolverMethod{
@@ -1098,6 +1210,7 @@ private:
   std::size_t m_deformableBodyCounter{0};
   std::size_t m_linkCounter{0};
   std::size_t m_jointCounter{0};
+  bool m_callerOwnedPipelineContinuationStateMayBeLive{false};
   mutable CollisionQueryCachePtr m_collisionQueryCache;
   StepPipelineCachePtr m_stepPipelineCache;
   ReplayStatePtr m_replay;

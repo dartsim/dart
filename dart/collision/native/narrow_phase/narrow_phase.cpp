@@ -65,25 +65,9 @@ bool collideWithFlippedNormals(
     return false;
   }
 
-  CollisionOption localOption = option;
-  if (option.enableContact) {
-    localOption.maxNumContacts = option.maxNumContacts - existingContacts;
-  }
-
-  CollisionResult localResult;
-  const bool hit = collideFn(localResult, localOption);
-  if (!hit) {
-    return false;
-  }
-
-  const auto numContacts = localResult.numContacts();
-  for (std::size_t i = 0; i < numContacts; ++i) {
-    ContactPoint contact = localResult.getContact(i);
-    contact.normal = -contact.normal;
-    result.addContact(contact);
-  }
-
-  return true;
+  const bool hit = collideFn(result, option);
+  result.flipContactNormalsFrom(existingContacts);
+  return hit;
 }
 
 bool collideShapes(

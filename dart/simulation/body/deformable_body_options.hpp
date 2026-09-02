@@ -71,19 +71,23 @@ struct DeformableTetrahedron
 
 /// Material properties stored with a deformable body.
 ///
-/// This mesh-state slice validates and serializes all fields, but only density
-/// is used today, and only to assemble default lumped masses for tetrahedral
-/// bodies when explicit masses are omitted. Elastic material models are added
-/// in later PLAN-081 slices.
+/// The World validates and serializes every field. Density assembles default
+/// lumped tetrahedral masses when explicit masses are omitted;
+/// ``youngsModulus`` and ``poissonRatio`` parameterize the opt-in tetrahedral
+/// FEM kernels; friction and the remaining flags select the documented
+/// contact/linear-solver behavior below.
 struct DeformableMaterialProperties
 {
   /// Volumetric density used for default tetrahedral mass assembly.
   double density = 1.0;
 
-  /// Young's modulus reserved for future elastic material models.
+  /// Young's modulus used by opt-in tetrahedral FEM elasticity.
   double youngsModulus = 1.0e5;
 
-  /// Poisson ratio reserved for future elastic material models.
+  /// Poisson ratio used by opt-in tetrahedral FEM elasticity. The current
+  /// nonlinear stable-Neo-Hookean and fixed-corotational kernels require
+  /// ``0 <= poissonRatio < 0.5``. Auxetic nonlinear FEM is deferred until a
+  /// constitutive model with a globally rest-stable energy is available.
   double poissonRatio = 0.3;
 
   /// Coulomb friction coefficient for contact against static ground barriers.
@@ -99,7 +103,8 @@ struct DeformableMaterialProperties
 
   /// When ``useFiniteElementElasticity`` is enabled, use the fixed-corotational
   /// material (the IPC paper's other isotropic model) instead of the default
-  /// stable neo-Hookean kernel. Ignored when finite-element elasticity is off.
+  /// stable neo-Hookean kernel. Ignored when finite-element elasticity is off;
+  /// both current nonlinear kernels require a non-negative ``poissonRatio``.
   bool useFixedCorotationalElasticity = false;
 
   /// Opt in to IPC-style adaptive barrier stiffness for this body's
@@ -173,12 +178,11 @@ struct DeformableNeumannBoundaryCondition
 
 /// Options for creating a DeformableBody.
 ///
-/// This experimental model currently steps point-mass nodes joined by distance
-/// springs. Optional surface/tetrahedral topology and material properties are
-/// stored as mesh-state scaffolding for later deformable solvers; they do not
-/// enable FEM elasticity, mesh contact, CCD, projected Newton, or friction.
-/// Contact and barrier tuning are solver internals owned by the World step
-/// pipeline, not public body options.
+/// This experimental model steps point-mass nodes using distance springs or
+/// opt-in tetrahedral FEM elasticity. Surface/tetrahedral topology participates
+/// in the maintained deformable contact, CCD, and solver paths as documented
+/// by the individual fields. Contact and barrier tuning remain solver concerns
+/// owned by the World step pipeline rather than body-creation options.
 struct DeformableBodyOptions
 {
   /// Initial world-space node positions. Must be non-empty and finite.
@@ -225,6 +229,21 @@ struct DeformableBodyOptions
 
   /// Simple velocity damping coefficient. Must be finite and non-negative.
   double damping = 0.0;
+
+  /// Maximum combined point-triangle and edge-edge surface-contact candidates
+  /// accepted by any one candidate build for this body. A nonzero value is a
+  /// strict reproducible runtime cap that fails closed when exceeded. Zero
+  /// resolves at World bake to the exact valid-pair bound of the frozen
+  /// topology (self pairs, or the largest inter-surface pair count across
+  /// frozen obstacles), so in-budget scenes can never overflow and step
+  /// without allocating. When that bound exceeds the automatic reserve budget
+  /// (65,536 candidates), bake reserves the budget instead and builds may
+  /// grow beyond it, allocating and counting the excess in
+  /// `DeformableSolverDiagnostics::surfaceContactCandidateOverflowCount`; set
+  /// an explicit capacity to keep such scenes strictly bounded. A topology with
+  /// no valid pair receives a one-candidate storage floor; builders remain
+  /// no-op.
+  std::size_t surfaceContactCandidateCapacity = 0u;
 };
 
 /// Public, solver-agnostic configuration for the experimental deformable inner

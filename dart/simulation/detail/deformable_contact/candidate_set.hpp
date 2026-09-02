@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/body/deformable_body_options.hpp>
+#include <dart/simulation/common/exceptions.hpp>
 #include <dart/simulation/detail/deformable_contact/primitive_distance.hpp>
 
 #include <dart/common/stl_allocator.hpp>
@@ -48,6 +49,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::simulation::detail::deformable_contact {
 
@@ -105,6 +107,22 @@ struct ContactCandidateOptions
   bool exactDistanceFilter = true;
   bool excludeIncidentPointTriangles = true;
   bool excludeAdjacentEdges = true;
+  /// Optional point participation mask. An empty span enables every point;
+  /// otherwise only in-range nonzero entries may emit point-triangle pairs.
+  /// This lets volumetric bodies enforce a cap over their actual surface
+  /// candidates instead of transiently counting masked interior vertices.
+  std::span<const std::uint8_t> pointMask{};
+  /// Maximum combined point-triangle and edge-edge candidates produced by one
+  /// build. The default preserves the unbounded standalone helper contract;
+  /// World-owned deformable solves always provide a baked finite capacity.
+  std::size_t candidateCapacity = std::numeric_limits<std::size_t>::max();
+  /// When true, a build that reaches `candidateCapacity` keeps emitting and
+  /// counts every extra candidate in
+  /// `ContactCandidateStats::capacityOverflowCount` instead of failing.
+  /// World-owned solves enable this only for the automatic capacity policy of a
+  /// topology whose exact valid-pair bound exceeds the reserve budget; explicit
+  /// capacities always fail closed.
+  bool allowCapacityGrowth = false;
 };
 
 struct ContactCandidateStats
@@ -118,6 +136,9 @@ struct ContactCandidateStats
   std::size_t adjacentEdgeEdgeRejectCount = 0;
   std::size_t pointTriangleCandidateCount = 0;
   std::size_t edgeEdgeCandidateCount = 0;
+  /// Candidates emitted beyond `ContactCandidateOptions::candidateCapacity`
+  /// while `allowCapacityGrowth` was set. Zero for every fail-closed build.
+  std::size_t capacityOverflowCount = 0;
 };
 
 struct ContactCandidateSet
@@ -243,6 +264,37 @@ inline void clearContactCandidateSet(ContactCandidateSet& candidates)
   candidates.pointTriangleCandidates.clear();
   candidates.edgeEdgeCandidates.clear();
   candidates.stats = ContactCandidateStats{};
+}
+
+//==============================================================================
+inline void requireContactCandidateCapacity(
+    ContactCandidateSet& candidates, const ContactCandidateOptions& options)
+{
+  const std::size_t pointTriangleCount
+      = candidates.pointTriangleCandidates.size();
+  const std::size_t edgeEdgeCount = candidates.edgeEdgeCandidates.size();
+  const bool countOverflow
+      = pointTriangleCount
+        > std::numeric_limits<std::size_t>::max() - edgeEdgeCount;
+  const std::size_t emittedCount = countOverflow
+                                       ? std::numeric_limits<std::size_t>::max()
+                                       : pointTriangleCount + edgeEdgeCount;
+  const std::size_t requestedCount
+      = emittedCount == std::numeric_limits<std::size_t>::max()
+            ? emittedCount
+            : emittedCount + 1u;
+  if (!countOverflow && emittedCount >= options.candidateCapacity
+      && options.allowCapacityGrowth) {
+    ++candidates.stats.capacityOverflowCount;
+    return;
+  }
+  DART_SIMULATION_THROW_T_IF(
+      countOverflow || emittedCount >= options.candidateCapacity,
+      InvalidOperationException,
+      "Deformable surface contact candidate capacity {} exceeded by "
+      "requested count {}",
+      options.candidateCapacity,
+      requestedCount);
 }
 
 //==============================================================================
@@ -493,6 +545,11 @@ inline void maybeAddPointTriangleCandidate(
     const std::size_t triangleIndex,
     const ContactCandidateOptions& options)
 {
+  if (!options.pointMask.empty()
+      && (point >= options.pointMask.size()
+          || options.pointMask[point] == 0u)) {
+    return;
+  }
   const auto& triangle = triangles[triangleIndex];
   if (options.excludeIncidentPointTriangles
       && pointIsIncidentToTriangle(point, triangle)) {
@@ -514,6 +571,7 @@ inline void maybeAddPointTriangleCandidate(
     }
   }
 
+  requireContactCandidateCapacity(candidates, options);
   candidates.pointTriangleCandidates.push_back(
       PointTriangleCandidate{point, triangleIndex, squaredDistance});
 }
@@ -552,6 +610,11 @@ inline void maybeAddMotionAwarePointTriangleCandidate(
     const std::size_t triangleIndex,
     const ContactCandidateOptions& options)
 {
+  if (!options.pointMask.empty()
+      && (point >= options.pointMask.size()
+          || options.pointMask[point] == 0u)) {
+    return;
+  }
   const auto& triangle = triangles[triangleIndex];
   if (options.excludeIncidentPointTriangles
       && pointIsIncidentToTriangle(point, triangle)) {
@@ -563,6 +626,7 @@ inline void maybeAddMotionAwarePointTriangleCandidate(
       positionsStart, positionsEnd, triangles, point, triangleIndex);
   candidates.stats.exactDistanceCheckCount += 2;
 
+  requireContactCandidateCapacity(candidates, options);
   candidates.pointTriangleCandidates.push_back(
       PointTriangleCandidate{point, triangleIndex, squaredDistance});
 }
@@ -600,6 +664,7 @@ inline void maybeAddEdgeEdgeCandidate(
     }
   }
 
+  requireContactCandidateCapacity(candidates, options);
   candidates.edgeEdgeCandidates.push_back(
       EdgeEdgeCandidate{edgeA, edgeB, squaredDistance});
 }
@@ -653,6 +718,7 @@ inline void maybeAddMotionAwareEdgeEdgeCandidate(
       positionsStart, positionsEnd, candidates.surfaceEdges, edgeA, edgeB);
   candidates.stats.exactDistanceCheckCount += 2;
 
+  requireContactCandidateCapacity(candidates, options);
   candidates.edgeEdgeCandidates.push_back(
       EdgeEdgeCandidate{edgeA, edgeB, squaredDistance});
 }
@@ -676,7 +742,12 @@ inline void buildUniqueSurfaceEdges(
     std::span<const DeformableSurfaceTriangle> triangles, EdgeVector& edges)
 {
   edges.clear();
-  edges.reserve(3 * triangles.size());
+  DART_SIMULATION_THROW_T_IF(
+      triangles.size()
+          > std::numeric_limits<std::size_t>::max() / std::size_t{3},
+      InvalidArgumentException,
+      "Deformable surface edge capacity overflows size_t");
+  edges.reserve(3u * triangles.size());
 
   for (const auto& triangle : triangles) {
     edges.push_back(detail::makeSurfaceEdge(triangle.nodeA, triangle.nodeB));

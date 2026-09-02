@@ -232,9 +232,9 @@ namespace {
   const std::size_t manifoldContactLimit
       = std::min(remainingContacts, ContactManifold::kMaxContacts);
   const auto candidates
-      = box_box::computeBoxBoxContactCandidates(box1, box2, sat);
+      = box_box::computeBoxBoxContactCandidatesFixed(box1, box2, sat);
   const auto contacts
-      = box_box::reduceContactCandidates(candidates, manifoldContactLimit);
+      = box_box::reduceContactCandidatesFixed(candidates, manifoldContactLimit);
   if (contacts.empty()) {
     return false;
   }

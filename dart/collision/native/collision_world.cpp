@@ -90,25 +90,9 @@ bool collideWithFlippedNormals(
     return false;
   }
 
-  CollisionOption localOption = option;
-  if (option.enableContact) {
-    localOption.maxNumContacts = option.maxNumContacts - existingContacts;
-  }
-
-  CollisionResult localResult;
-  const bool hit = collideFn(localResult, localOption);
-  if (!hit) {
-    return false;
-  }
-
-  const auto numContacts = localResult.numContacts();
-  for (std::size_t i = 0; i < numContacts; ++i) {
-    ContactPoint contact = localResult.getContact(i);
-    contact.normal = -contact.normal;
-    result.addContact(contact);
-  }
-
-  return true;
+  const bool hit = collideFn(result, option);
+  result.flipContactNormalsFrom(existingContacts);
+  return hit;
 }
 
 bool collideShapePair(
@@ -382,6 +366,11 @@ void CollisionWorld::reserveObjects(std::size_t count)
   }
 }
 
+void CollisionWorld::reserveBroadPhasePairCapacity(std::size_t count)
+{
+  m_cachedSnapshot.pairs.reserve(count);
+}
+
 void CollisionWorld::prepareQueryObjectCache()
 {
   m_queryObjectCache.clear();
@@ -546,6 +535,61 @@ void CollisionWorld::buildBroadPhaseSnapshot(
   m_cachedSnapshot = out;
   m_snapshotDirty = false;
   m_cachedDeterministic = settings.deterministic;
+}
+
+bool CollisionWorld::buildBroadPhaseSnapshotBounded(
+    BroadPhaseSnapshot& out, std::size_t maxPairs) const
+{
+  BatchSettings settings;
+  return buildBroadPhaseSnapshotBounded(out, maxPairs, settings);
+}
+
+bool CollisionWorld::buildBroadPhaseSnapshotBounded(
+    BroadPhaseSnapshot& out,
+    std::size_t maxPairs,
+    const BatchSettings& settings) const
+{
+  out.numObjects = m_broadPhase->size();
+  if (!m_snapshotDirty && m_cachedDeterministic == settings.deterministic) {
+    if (m_cachedSnapshot.pairs.size() > maxPairs) {
+      out.pairs.clear();
+      return false;
+    }
+    out = m_cachedSnapshot;
+    return true;
+  }
+
+  bool complete = true;
+  if (m_broadPhaseType == BroadPhaseType::AabbTree) {
+    complete = static_cast<const AabbTreeBroadPhase*>(m_broadPhase.get())
+                   ->queryPairsBounded(out.pairs, maxPairs);
+  } else {
+    out.pairs.clear();
+    complete = m_broadPhase->visitPairs([&](std::size_t first,
+                                            std::size_t second) {
+      if (out.pairs.size() >= maxPairs) {
+        return false;
+      }
+      out.pairs.emplace_back(std::min(first, second), std::max(first, second));
+      return true;
+    });
+  }
+
+  if (!complete) {
+    out.pairs.clear();
+    return false;
+  }
+
+  if (settings.deterministic && out.pairs.size() > 1u) {
+    std::sort(out.pairs.begin(), out.pairs.end());
+    out.pairs.erase(
+        std::unique(out.pairs.begin(), out.pairs.end()), out.pairs.end());
+  }
+
+  m_cachedSnapshot = out;
+  m_snapshotDirty = false;
+  m_cachedDeterministic = settings.deterministic;
+  return true;
 }
 
 BroadPhaseDebugSnapshot CollisionWorld::buildBroadPhaseDebugSnapshot() const

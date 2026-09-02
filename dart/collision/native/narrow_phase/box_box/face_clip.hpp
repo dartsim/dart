@@ -37,7 +37,10 @@
 
 #include <Eigen/Core>
 
+#include <array>
 #include <vector>
+
+#include <cstddef>
 
 namespace dart::collision::native::box_box {
 
@@ -46,6 +49,48 @@ struct ContactCandidate
   Eigen::Vector3d position = Eigen::Vector3d::Zero();
   double depth = 0.0;
 };
+
+/// Stack-bounded candidate buffer for the intersection of two box faces.
+/// Clipping a four-vertex convex face against the five reference-face
+/// half-spaces produces at most nine vertices; the larger bound leaves a
+/// defensive margin without putting heap storage on the collision hot path.
+struct FixedContactCandidates
+{
+  static constexpr std::size_t kCapacity = 12u;
+
+  [[nodiscard]] bool empty() const noexcept
+  {
+    return count == 0u;
+  }
+
+  [[nodiscard]] std::size_t size() const noexcept
+  {
+    return count;
+  }
+
+  [[nodiscard]] const ContactCandidate* begin() const noexcept
+  {
+    return values.data();
+  }
+
+  [[nodiscard]] const ContactCandidate* end() const noexcept
+  {
+    return values.data() + count;
+  }
+
+  [[nodiscard]] const ContactCandidate& operator[](
+      std::size_t index) const noexcept
+  {
+    return values[index];
+  }
+
+  std::array<ContactCandidate, kCapacity> values{};
+  std::size_t count = 0u;
+};
+
+[[nodiscard]] DART_COLLISION_NATIVE_API FixedContactCandidates
+computeBoxBoxContactCandidatesFixed(
+    const BoxData& box1, const BoxData& box2, const SatResult& sat);
 
 [[nodiscard]] DART_COLLISION_NATIVE_API std::vector<ContactCandidate>
 computeBoxBoxContactCandidates(

@@ -37,6 +37,7 @@
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/common/exceptions.hpp>
 #include <dart/simulation/comps/collision_geometry.hpp>
+#include <dart/simulation/comps/contact_material.hpp>
 #include <dart/simulation/comps/deformable_body.hpp>
 #include <dart/simulation/comps/dynamics.hpp>
 #include <dart/simulation/comps/frame_types.hpp>
@@ -71,6 +72,9 @@
 #include <dart/simulation/version.hpp>
 #include <dart/simulation/world.hpp>
 
+#include <dart/collision/native/narrow_phase/narrow_phase.hpp>
+#include <dart/collision/native/shapes/shape.hpp>
+
 #include <dart/dynamics/body_node.hpp>
 #include <dart/dynamics/inertia.hpp>
 #include <dart/dynamics/revolute_joint.hpp>
@@ -90,6 +94,7 @@
 #include <cerrno>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #if defined(_WIN32)
   #include <malloc.h>
 #endif
@@ -614,6 +619,37 @@ public:
   }
 };
 
+class MutatingThrowingWorldStage final
+  : public dart::simulation::compute::WorldStepStage
+{
+public:
+  explicit MutatingThrowingWorldStage(dart::simulation::RigidBody& body)
+    : m_body(&body)
+  {
+  }
+
+  [[nodiscard]] std::string_view getName() const noexcept override
+  {
+    return "mutating_throwing";
+  }
+
+  void execute(
+      dart::simulation::World&,
+      dart::simulation::compute::ComputeExecutor&) override
+  {
+    ++executionCount;
+    Eigen::Isometry3d transform = m_body->getTransform();
+    transform.translation().x() += 1.0;
+    m_body->setTransform(transform);
+    throw std::runtime_error("mutating throwing stage");
+  }
+
+  int executionCount{0};
+
+private:
+  dart::simulation::RigidBody* m_body;
+};
+
 class AllocatingWorldStage final
   : public dart::simulation::compute::WorldStepStage
 {
@@ -828,6 +864,149 @@ public:
   std::size_t alignedAllocationCount{0};
   std::size_t deallocationCount{0};
   std::size_t alignedDeallocationCount{0};
+};
+
+class FailOnceMemoryAllocator final : public dart::common::MemoryAllocator
+{
+public:
+  [[nodiscard]] std::string_view getType() const override
+  {
+    return "FailOnceMemoryAllocator";
+  }
+
+  [[nodiscard]] void* allocate(std::size_t bytes) noexcept override
+  {
+    return allocateImpl(bytes, __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+  }
+
+  [[nodiscard]] void* allocate(
+      std::size_t bytes, std::size_t alignment) noexcept override
+  {
+    return allocateImpl(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, std::size_t /*bytes*/) override
+  {
+    ::operator delete(pointer);
+  }
+
+  void deallocate(
+      void* pointer, std::size_t /*bytes*/, std::size_t alignment) override
+  {
+    if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+      ::operator delete(pointer);
+      return;
+    }
+    ::operator delete(pointer, std::align_val_t(alignment));
+  }
+
+  void failNextAllocation() noexcept
+  {
+    m_failNext = true;
+  }
+
+  [[nodiscard]] std::size_t failureCount() const noexcept
+  {
+    return m_failureCount;
+  }
+
+private:
+  [[nodiscard]] void* allocateImpl(
+      std::size_t bytes, std::size_t alignment) noexcept
+  {
+    if (bytes == 0u || alignment == 0u
+        || (alignment & (alignment - 1u)) != 0u) {
+      return nullptr;
+    }
+    if (m_failNext) {
+      m_failNext = false;
+      ++m_failureCount;
+      return nullptr;
+    }
+    if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+      return ::operator new(bytes, std::nothrow);
+    }
+    return ::operator new(bytes, std::align_val_t(alignment), std::nothrow);
+  }
+
+  bool m_failNext{false};
+  std::size_t m_failureCount{0u};
+};
+
+class FailFromNowOnMemoryAllocator final : public dart::common::MemoryAllocator
+{
+public:
+  [[nodiscard]] std::string_view getType() const override
+  {
+    return "FailFromNowOnMemoryAllocator";
+  }
+
+  [[nodiscard]] void* allocate(std::size_t bytes) noexcept override
+  {
+    return allocateImpl(bytes, __STDCPP_DEFAULT_NEW_ALIGNMENT__);
+  }
+
+  [[nodiscard]] void* allocate(
+      std::size_t bytes, std::size_t alignment) noexcept override
+  {
+    return allocateImpl(bytes, alignment);
+  }
+
+  void deallocate(void* pointer, std::size_t /*bytes*/) override
+  {
+    ::operator delete(pointer);
+  }
+
+  void deallocate(
+      void* pointer, std::size_t /*bytes*/, std::size_t alignment) override
+  {
+    if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+      ::operator delete(pointer);
+      return;
+    }
+    ::operator delete(pointer, std::align_val_t(alignment));
+  }
+
+  void failFromNowOn() noexcept
+  {
+    m_fail = true;
+  }
+
+  void allowAllocations() noexcept
+  {
+    m_fail = false;
+  }
+
+  [[nodiscard]] std::size_t failureCount() const noexcept
+  {
+    return m_failureCount;
+  }
+
+  [[nodiscard]] bool isFailing() const noexcept
+  {
+    return m_fail;
+  }
+
+private:
+  [[nodiscard]] void* allocateImpl(
+      std::size_t bytes, std::size_t alignment) noexcept
+  {
+    if (bytes == 0u || alignment == 0u
+        || (alignment & (alignment - 1u)) != 0u) {
+      return nullptr;
+    }
+    if (m_fail) {
+      ++m_failureCount;
+      return nullptr;
+    }
+    if (alignment <= __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+      return ::operator new(bytes, std::nothrow);
+    }
+    return ::operator new(bytes, std::align_val_t(alignment), std::nothrow);
+  }
+
+  bool m_fail{false};
+  std::size_t m_failureCount{0u};
 };
 
 // The frame-scratch reset tally and running peak are step-path instrumentation
@@ -3478,6 +3657,69 @@ void configureVbdChebyshevSelfContactGridScene(dart::simulation::World& world)
   }
 }
 
+void configureVbdConvergenceScratchScene(dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d::Zero(), Eigen::Vector3d(0.8, 0.6, 0.0)};
+  options.masses = {1.0, 1.0};
+  options.fixedNodes = {0u};
+  options.edges = {sx::DeformableEdge{0u, 1u, 0.5}};
+  options.edgeStiffness = 1000.0;
+  world.addDeformableBody("vbd_convergence_scratch", options);
+
+  sx::DeformableSolverOptions solverOptions;
+  solverOptions.iterations = 8u;
+  solverOptions.useAcceleration = false;
+  solverOptions.convergenceTolerance = 1.0e-12;
+  world.configureDeformableSolver("vbd_convergence_scratch", solverOptions);
+}
+
+void configurePublicZeroContactVbdIgnoredRigidObstaclesScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions capsuleOptions;
+  capsuleOptions.isStatic = true;
+  capsuleOptions.position = Eigen::Vector3d(5.0, 0.0, 0.0);
+  auto capsule = world.addRigidBody("ignored_static_capsule", capsuleOptions);
+  capsule.setCollisionShape(sx::CollisionShape::makeCapsule(0.2, 0.5));
+  capsule.setDeformableObstaclePolicy(
+      {.surfaceObstacle = true, .barrierOnly = true});
+
+  sx::RigidBodyOptions movingOptions;
+  movingOptions.position = Eigen::Vector3d(-5.0, 0.0, 0.0);
+  movingOptions.linearVelocity = Eigen::Vector3d(0.1, 0.0, 0.0);
+  auto movingBox = world.addRigidBody("ignored_moving_box", movingOptions);
+  movingBox.setKinematic(true);
+  movingBox.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d::Constant(0.25)));
+  movingBox.setDeformableObstaclePolicy({.surfaceObstacle = true});
+
+  sx::DeformableBodyOptions bodyOptions;
+  bodyOptions.positions
+      = {Eigen::Vector3d::Zero(), Eigen::Vector3d(0.8, 0.6, 0.0)};
+  bodyOptions.masses = {1.0, 1.0};
+  bodyOptions.fixedNodes = {0u};
+  bodyOptions.edges = {sx::DeformableEdge{0u, 1u, 0.5}};
+  bodyOptions.edgeStiffness = 1000.0;
+  world.addDeformableBody("zero_contact_vbd", bodyOptions);
+
+  sx::DeformableSolverOptions solverOptions;
+  solverOptions.iterations = 8u;
+  solverOptions.useAcceleration = false;
+  solverOptions.groundContactStiffness = 0.0;
+  world.configureDeformableSolver("zero_contact_vbd", solverOptions);
+}
+
 void configureAvbdGroundFrictionRowsScene(dart::simulation::World& world)
 {
   namespace sx = dart::simulation;
@@ -3593,6 +3835,30 @@ void configurePublicRigidAvbdContactAndBreakableJointRowsScene(
 {
   configurePublicRigidBlockDescentContactAndBreakableJointRowsScene(
       world, dart::simulation::RigidBodySolver::Avbd, "avbd");
+}
+
+void configurePublicRigidAvbdDenseContactRowsScene(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  constexpr std::size_t kBodyCount = 20u;
+  world.setRigidBodySolver(sx::RigidBodySolver::Avbd);
+  world.setRigidConstraintOptions({.iterations = 1u});
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1.0e-5);
+
+  for (std::size_t index = 0; index < kBodyCount; ++index) {
+    sx::RigidBodyOptions options;
+    options.mass = 1.0;
+    options.position = Eigen::Vector3d(
+        0.01 * static_cast<double>(index % 5u),
+        0.01 * static_cast<double>((index / 5u) % 2u),
+        0.01 * static_cast<double>(index / 10u));
+    auto body
+        = world.addRigidBody(std::format("dense_avbd_body_{}", index), options);
+    body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  }
 }
 
 void configurePublicRigidVbdContactAndBreakableJointRowsScene(
@@ -4202,6 +4468,9 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
           state.velocities.data(),
           state.velocities.size() * sizeof(Eigen::Vector3d)));
       EXPECT_TRUE(hasAllocated(
+          state.attachmentTargets.data(),
+          state.attachmentTargets.size() * sizeof(Eigen::Vector3d)));
+      EXPECT_TRUE(hasAllocated(
           model.masses.data(), model.masses.size() * sizeof(double)));
       EXPECT_TRUE(hasAllocated(
           model.fixed.data(), model.fixed.size() * sizeof(std::uint8_t)));
@@ -4308,6 +4577,7 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
       expectWorldAllocator(loadedDeformableWorld, state.positions);
       expectWorldAllocator(loadedDeformableWorld, state.previousPositions);
       expectWorldAllocator(loadedDeformableWorld, state.velocities);
+      expectWorldAllocator(loadedDeformableWorld, state.attachmentTargets);
       expectWorldAllocator(loadedDeformableWorld, model.masses);
       expectWorldAllocator(loadedDeformableWorld, model.fixed);
       expectWorldAllocator(loadedDeformableWorld, spring.edges);
@@ -4388,6 +4658,231 @@ TEST(World, WorldPersistentStorageUsesWorldFreeAllocator)
   EXPECT_TRUE(memoryManager.hasAllocated(
       rebuiltStorage, sizeof(sx::detail::WorldStorage)));
 #endif
+}
+
+TEST(World, PublicRequiredVbdReplayLifecycleUsesWorldAllocator)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto obstacle
+      = world.addRigidBody("allocator_required_vbd_ground", obstacleOptions);
+  obstacle.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  obstacle.setDeformableObstaclePolicy({.groundBarrier = true});
+
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, -0.002),
+         Eigen::Vector3d(0.0, 1.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, 1.0)};
+  options.masses.assign(options.positions.size(), 1.0);
+  options.surfaceTriangles = {sx::DeformableSurfaceTriangle{0u, 1u, 2u}};
+  options.tetrahedra = {sx::DeformableTetrahedron{0u, 1u, 2u, 3u}};
+  options.material.useFiniteElementElasticity = true;
+
+  sx::DeformableDirichletBoundaryCondition dirichlet;
+  dirichlet.nodes = {0u};
+  dirichlet.linearVelocity = Eigen::Vector3d(0.1, 0.0, 0.0);
+  dirichlet.endTime = 1.0;
+  options.dirichletBoundaryConditions.push_back(dirichlet);
+
+  sx::DeformableNeumannBoundaryCondition neumann;
+  neumann.nodes = {1u};
+  neumann.acceleration = Eigen::Vector3d(0.0, 0.0, -0.25);
+  neumann.endTime = 1.0;
+  options.neumannBoundaryConditions.push_back(neumann);
+
+  auto body = world.addDeformableBody("allocator_required_vbd", options);
+  sx::DeformableSolverOptions solverOptions;
+  solverOptions.iterations = 2u;
+  solverOptions.groundContactStiffness = 1000.0;
+  world.configureDeformableSolver("allocator_required_vbd", solverOptions);
+
+  auto& registry = sx::detail::registryOf(world);
+  const auto deformableBodies = registry.view<sx::comps::DeformableBodyTag>();
+  ASSERT_EQ(deformableBodies.size(), 1u);
+  const entt::entity entity = *deformableBodies.begin();
+  ASSERT_TRUE(registry.all_of<sx::comps::DeformableVbdConfig>(entity));
+  const auto& config = registry.get<sx::comps::DeformableVbdConfig>(entity);
+  ASSERT_TRUE(config.enabled);
+  ASSERT_TRUE(config.requireVbdExecution);
+  const auto& topology
+      = registry.get<sx::comps::DeformableMeshTopology>(entity);
+  ASSERT_EQ(topology.surfaceTriangles.size(), 1u);
+  ASSERT_EQ(topology.tetrahedra.size(), 1u);
+  const auto& boundaries
+      = registry.get<sx::comps::DeformableBoundaryConditions>(entity);
+  ASSERT_EQ(boundaries.dirichlet.size(), 1u);
+  ASSERT_EQ(boundaries.dirichlet.front().nodes.size(), 1u);
+  ASSERT_EQ(boundaries.neumann.size(), 1u);
+  ASSERT_EQ(boundaries.neumann.front().nodes.size(), 1u);
+
+  // Prepare the public pipeline but deliberately do not prewarm a step: the
+  // measured operation is the first positive-contact VBD solve after entering
+  // simulation mode, followed by its replay capture.
+  world.enterSimulationMode();
+  const std::size_t replayStartFrame = world.getFrame();
+  const Eigen::Vector3d replayStartPosition = body.getPosition(0u);
+  const Eigen::Vector3d replayStartContactPosition = body.getPosition(1u);
+
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    world.setReplayRecordingEnabled(true);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "public required VBD replay enable and initial capture should use "
+           "the World allocator";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  ASSERT_TRUE(world.isReplayRecordingEnabled());
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  ASSERT_EQ(world.getReplayCursor(), std::optional<std::size_t>(0u));
+
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    world.step();
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "the first positive-contact public required VBD step and replay "
+           "capture should not allocate from the global heap";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+  ASSERT_EQ(world.getReplayCursor(), std::optional<std::size_t>(1u));
+  EXPECT_EQ(world.getFrame(), replayStartFrame + 1u);
+  EXPECT_FALSE(body.getPosition(0u).isApprox(replayStartPosition, 0.0));
+  EXPECT_GT(body.getPosition(1u).z(), replayStartContactPosition.z());
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.vbdBodyCount, 1u);
+  EXPECT_GT(diagnostics.vbdSweeps, 0u);
+  EXPECT_GT(diagnostics.vbdVertexUpdates, 0u);
+
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    world.restoreReplayFrame(0u);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "public required VBD replay restore and validation scratch should "
+           "use the World allocator";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  EXPECT_EQ(world.getFrame(), replayStartFrame);
+  EXPECT_TRUE(body.getPosition(0u).isApprox(replayStartPosition, 0.0));
+
+  // General binary serialization still owns unrelated default-heap temporaries;
+  // exercise its public-VBD preflight functionally outside the replay allocator
+  // counter.
+  std::stringstream buffer;
+  ASSERT_NO_THROW(world.saveBinary(buffer));
+  EXPECT_FALSE(buffer.str().empty());
+
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    world.clearReplayRecording();
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "public required VBD replay clear and replacement capture should "
+           "use the World allocator";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+  EXPECT_TRUE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), std::optional<std::size_t>(0u));
+  EXPECT_EQ(world.getReplaySimulationFrame(0u), replayStartFrame);
+}
+
+TEST(World, DeformableAvbdReplayRestoreCreatesScratchWithWorldAllocator)
+{
+  namespace sx = dart::simulation;
+
+  const auto configureSpring = [](sx::World& world) {
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.02);
+
+    sx::DeformableBodyOptions options;
+    options.positions
+        = {Eigen::Vector3d::Zero(), Eigen::Vector3d(0.0, 0.0, -1.5)};
+    options.masses = {1.0, 1.0};
+    options.fixedNodes = {0u};
+    options.edges = {sx::DeformableEdge{0u, 1u, 1.0}};
+    options.edgeStiffness = 1000.0;
+    world.addDeformableBody("allocator_avbd_spring", options);
+
+    auto& registry = sx::detail::registryOf(world);
+    const auto bodies = registry.view<sx::comps::DeformableBodyTag>();
+    EXPECT_EQ(bodies.size(), 1u);
+    const entt::entity entity = *bodies.begin();
+    sx::comps::DeformableVbdConfig config;
+    config.enabled = true;
+    config.iterations = 1u;
+    config.useAvbdFiniteStiffnessRows = true;
+    config.avbdFiniteStiffnessStart = 1.0;
+    config.avbdBeta = 100.0;
+    config.avbdGamma = 1.0;
+    config.avbdMaxStiffness = 1000.0;
+    registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(entity, config);
+    return entity;
+  };
+
+  sx::World source;
+  const entt::entity sourceEntity = configureSpring(source);
+  source.enterSimulationMode();
+  source.step();
+  auto& sourceRegistry = sx::detail::registryOf(source);
+  auto& sourceAllocator = source.getMemoryManager().getFreeAllocator();
+  const auto sourceStates
+      = sx::compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
+          sourceRegistry, sourceAllocator);
+  ASSERT_EQ(sourceStates.size(), 1u);
+  ASSERT_EQ(sourceStates.front().entity, sourceEntity);
+  ASSERT_EQ(sourceStates.front().springRows.size(), 1u);
+
+  sx::World target;
+  const entt::entity targetEntity = configureSpring(target);
+  ASSERT_EQ(targetEntity, sourceEntity);
+  ASSERT_FALSE(target.isSimulationMode());
+  auto& targetRegistry = sx::detail::registryOf(target);
+  auto& targetAllocator = target.getMemoryManager().getFreeAllocator();
+
+  {
+    ScopedHeapAllocationCounter heapCounter;
+    sx::compute::avbd_replay::restoreDeformableAvbdWarmStartReplayState(
+        targetRegistry, sourceStates, targetAllocator);
+    heapCounter.stop();
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "restoring AVBD warm state into an unprepared registry should "
+           "create scratch and assign rows through the target World allocator";
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  }
+
+  const auto targetStates
+      = sx::compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
+          targetRegistry, targetAllocator);
+  ASSERT_EQ(targetStates.size(), 1u);
+  ASSERT_EQ(targetStates.front().entity, targetEntity);
+  ASSERT_EQ(targetStates.front().springRows.size(), 1u);
+  const auto& expected = sourceStates.front().springRows.front();
+  const auto& actual = targetStates.front().springRows.front();
+  EXPECT_EQ(actual.descriptor.key, expected.descriptor.key);
+  EXPECT_EQ(actual.descriptor.kind, expected.descriptor.kind);
+  EXPECT_DOUBLE_EQ(
+      actual.descriptor.startStiffness, expected.descriptor.startStiffness);
+  EXPECT_DOUBLE_EQ(
+      actual.descriptor.materialStiffness,
+      expected.descriptor.materialStiffness);
+  EXPECT_DOUBLE_EQ(
+      actual.descriptor.maxStiffness, expected.descriptor.maxStiffness);
+  EXPECT_DOUBLE_EQ(actual.state.stiffness, expected.state.stiffness);
+  EXPECT_DOUBLE_EQ(actual.state.lambda, expected.state.lambda);
 }
 
 TEST(World, ClearReleasesStorageBeforeFixedCapacityReplacement)
@@ -4660,6 +5155,67 @@ TEST(World, PureMultibodyContributesToWorldStateVector)
   control << -1.2;
   world.setControlVector(control);
   EXPECT_NEAR(slider.getForce()[0], -1.2, 1e-12);
+}
+
+TEST(World, RequiredVbdLargeSurfacePrepareMemoryScalesWithTopology)
+{
+#if defined(DART_CODECOV)
+  GTEST_SKIP()
+      << "The 10k-node preparation memory gate is covered by normal Release "
+         "and Debug CI; gcov instrumentation makes the topology bake too "
+         "slow.";
+#else
+  namespace sx = dart::simulation;
+
+  constexpr std::size_t kSide = 101u;
+  constexpr std::size_t kNodeCount = kSide * kSide;
+  constexpr std::size_t kTriangleCount = 2u * (kSide - 1u) * (kSide - 1u);
+  constexpr std::size_t kPrepareByteLimit = 100u * 1024u * 1024u;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions worldOptions;
+  worldOptions.baseAllocator = &allocator;
+  sx::World world(worldOptions);
+
+  sx::DeformableBodyOptions bodyOptions;
+  bodyOptions.positions.reserve(kNodeCount);
+  bodyOptions.masses.assign(kNodeCount, 1.0);
+  bodyOptions.surfaceTriangles.reserve(kTriangleCount);
+  const auto nodeIndex = [](std::size_t row, std::size_t col) {
+    return row * kSide + col;
+  };
+  for (std::size_t row = 0u; row < kSide; ++row) {
+    for (std::size_t col = 0u; col < kSide; ++col) {
+      bodyOptions.positions.emplace_back(
+          static_cast<double>(col), static_cast<double>(row), 0.0);
+    }
+  }
+  for (std::size_t row = 0u; row + 1u < kSide; ++row) {
+    for (std::size_t col = 0u; col + 1u < kSide; ++col) {
+      const std::size_t a = nodeIndex(row, col);
+      const std::size_t b = nodeIndex(row, col + 1u);
+      const std::size_t c = nodeIndex(row + 1u, col + 1u);
+      const std::size_t d = nodeIndex(row + 1u, col);
+      bodyOptions.surfaceTriangles.push_back(
+          sx::DeformableSurfaceTriangle{a, b, c});
+      bodyOptions.surfaceTriangles.push_back(
+          sx::DeformableSurfaceTriangle{a, c, d});
+    }
+  }
+  ASSERT_EQ(bodyOptions.positions.size(), kNodeCount);
+  ASSERT_EQ(bodyOptions.surfaceTriangles.size(), kTriangleCount);
+
+  world.addDeformableBody("large_required_vbd_surface", bodyOptions);
+  world.configureDeformableSolver("large_required_vbd_surface", {});
+  auto& freeList = world.getMemoryManager().getFreeListAllocator();
+  const std::size_t bytesBeforePrepare = freeList.getAllocatedSize();
+
+  ASSERT_NO_THROW(world.enterSimulationMode());
+  const std::size_t bytesAfterPrepare = freeList.getAllocatedSize();
+  ASSERT_GE(bytesAfterPrepare, bytesBeforePrepare);
+  EXPECT_LT(bytesAfterPrepare - bytesBeforePrepare, kPrepareByteLimit);
+  EXPECT_TRUE(world.isSimulationMode());
+#endif
 }
 
 #ifdef DART_HAS_DIFF
@@ -6106,6 +6662,72 @@ TEST(World, PublicAvbdFamilyProjectsContactsWithoutPrivateBodyConfigs)
   EXPECT_GT(sphere.getTranslation().z(), initialPosition.z());
 }
 
+TEST(World, PublicRigidBlockFamiliesIgnorePrivateCompatibilityContactConfig)
+{
+  namespace sx = dart::simulation;
+
+  struct Outcome
+  {
+    Eigen::Isometry3d transform;
+    Eigen::Vector3d linearVelocity;
+    Eigen::Vector3d angularVelocity;
+  };
+  const auto run = [](sx::RigidBodySolver solver, bool addPrivateConfig) {
+    sx::WorldOptions options;
+    options.gravity = Eigen::Vector3d::Zero();
+    options.timeStep = 0.05;
+    options.rigidBodySolver = solver;
+    options.rigidConstraintOptions.iterations = 4;
+    sx::World world(options);
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+    auto ground = world.addRigidBody("owned_family_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.mass = 1.0;
+    sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.4);
+    auto sphere = world.addRigidBody("owned_family_sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    if (addPrivateConfig) {
+      auto& config = sx::detail::registryOf(world)
+                         .emplace<sx::comps::RigidAvbdContactConfig>(
+                             sx::detail::toRegistryEntity(sphere.getEntity()));
+      config.startStiffness = 1.0;
+      config.alpha = 0.0;
+      config.beta = 0.0;
+      config.gamma = 0.0;
+      config.maxStiffness = 1.0;
+    }
+
+    world.step();
+    return Outcome{
+        sphere.getTransform(),
+        sphere.getLinearVelocity(),
+        sphere.getAngularVelocity()};
+  };
+
+  for (const sx::RigidBodySolver solver :
+       {sx::RigidBodySolver::Vbd, sx::RigidBodySolver::Avbd}) {
+    SCOPED_TRACE(static_cast<int>(solver));
+    const Outcome clean = run(solver, false);
+    const Outcome staleConfig = run(solver, true);
+    EXPECT_TRUE((clean.transform.matrix().array()
+                 == staleConfig.transform.matrix().array())
+                    .all());
+    EXPECT_TRUE(
+        (clean.linearVelocity.array() == staleConfig.linearVelocity.array())
+            .all());
+    EXPECT_TRUE(
+        (clean.angularVelocity.array() == staleConfig.angularVelocity.array())
+            .all());
+  }
+}
+
 TEST(World, PublicVbdFamilyProjectsContactsWithoutPrivateBodyConfigs)
 {
   namespace sx = dart::simulation;
@@ -6290,6 +6912,116 @@ TEST(World, PublicVbdFamilyRejectsMultibodyWorlds)
   EXPECT_EQ(
       multibodyFirst.getRigidBodySolver(),
       sx::RigidBodySolver::SequentialImpulse);
+}
+
+TEST(World, PublicFemRejectsAuxeticPoissonRatio)
+{
+  namespace sx = dart::simulation;
+
+  const auto makeAuxeticTet = [] {
+    sx::DeformableBodyOptions options;
+    options.positions
+        = {Eigen::Vector3d::Zero(),
+           Eigen::Vector3d::UnitX(),
+           Eigen::Vector3d::UnitY(),
+           Eigen::Vector3d::UnitZ()};
+    options.masses.assign(options.positions.size(), 1.0);
+    options.tetrahedra = {sx::DeformableTetrahedron{0u, 1u, 2u, 3u}};
+    options.material.useFiniteElementElasticity = true;
+    options.material.poissonRatio = -0.25;
+    return options;
+  };
+
+  sx::World addWorld;
+  auto invalidOptions = makeAuxeticTet();
+  EXPECT_THROW(
+      addWorld.addDeformableBody("invalid_auxetic_fem", invalidOptions),
+      sx::InvalidArgumentException);
+  EXPECT_EQ(addWorld.getDeformableBodyCount(), 0u);
+
+  // Non-FEM materials retain the physical Lamé conversion domain. Mutating an
+  // accepted body to auxetic FEM through the internal registry must still be
+  // rejected atomically at the required public-VBD execution boundary.
+  sx::World requiredWorld;
+  auto nonFemOptions = makeAuxeticTet();
+  nonFemOptions.material.useFiniteElementElasticity = false;
+  EXPECT_NO_THROW(
+      requiredWorld.addDeformableBody("auxetic_non_fem", nonFemOptions));
+  auto& registry = sx::detail::registryOf(requiredWorld);
+  auto materialView = registry.view<sx::comps::DeformableMaterial>();
+  ASSERT_EQ(materialView.size(), 1u);
+  const entt::entity entity = *materialView.begin();
+  registry.get<sx::comps::DeformableMaterial>(entity).useFiniteElementElasticity
+      = true;
+  requiredWorld.configureDeformableSolver("auxetic_non_fem", {});
+
+  EXPECT_THROW(
+      requiredWorld.enterSimulationMode(), sx::InvalidArgumentException);
+  EXPECT_FALSE(requiredWorld.isSimulationMode());
+  EXPECT_DOUBLE_EQ(requiredWorld.getTime(), 0.0);
+  EXPECT_EQ(requiredWorld.getFrame(), 0u);
+  EXPECT_FALSE(requiredWorld.isReplayRecordingEnabled());
+  EXPECT_EQ(requiredWorld.getReplayFrameCount(), 0u);
+}
+
+TEST(World, AvbdFiniteStiffnessTetRejectsBeforeSimulationMutation)
+{
+  namespace sx = dart::simulation;
+
+  sx::World tetWorld;
+  tetWorld.setGravity(Eigen::Vector3d::Zero());
+  sx::DeformableBodyOptions tetOptions;
+  tetOptions.positions
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ()};
+  tetOptions.masses.assign(tetOptions.positions.size(), 1.0);
+  tetOptions.tetrahedra = {sx::DeformableTetrahedron{0u, 1u, 2u, 3u}};
+  tetOptions.material.useFiniteElementElasticity = true;
+  auto tet = tetWorld.addDeformableBody("avbd_finite_tet", tetOptions);
+  tetWorld.configureDeformableSolver("avbd_finite_tet", {});
+
+  auto& tetRegistry = sx::detail::registryOf(tetWorld);
+  auto configView = tetRegistry.view<sx::comps::DeformableVbdConfig>();
+  ASSERT_EQ(configView.size(), 1u);
+  auto& config
+      = configView.get<sx::comps::DeformableVbdConfig>(*configView.begin());
+  config.useAvbdFiniteStiffnessRows = true;
+  const Eigen::Vector3d initialPosition = tet.getPosition(1u);
+
+  EXPECT_THROW(
+      tetWorld.setReplayRecordingEnabled(true), sx::InvalidArgumentException);
+  EXPECT_FALSE(tetWorld.isReplayRecordingEnabled());
+  EXPECT_EQ(tetWorld.getReplayFrameCount(), 0u);
+
+  EXPECT_THROW(tetWorld.enterSimulationMode(), sx::InvalidArgumentException);
+  EXPECT_FALSE(tetWorld.isSimulationMode());
+  EXPECT_DOUBLE_EQ(tetWorld.getTime(), 0.0);
+  EXPECT_EQ(tetWorld.getFrame(), 0u);
+  EXPECT_TRUE(tet.getPosition(1u).isApprox(initialPosition, 0.0));
+
+  std::ostringstream output;
+  output << "existing-output";
+  const std::string beforeSave = output.str();
+  EXPECT_THROW(tetWorld.saveBinary(output), sx::InvalidArgumentException);
+  EXPECT_EQ(output.str(), beforeSave);
+
+  sx::World springWorld;
+  sx::DeformableBodyOptions springOptions;
+  springOptions.positions
+      = {Eigen::Vector3d::Zero(), Eigen::Vector3d(1.2, 0.0, 0.0)};
+  springOptions.masses = {1.0, 1.0};
+  springOptions.fixedNodes = {0u};
+  springOptions.edges = {sx::DeformableEdge{0u, 1u, 1.0}};
+  springWorld.addDeformableBody("avbd_finite_spring", springOptions);
+  springWorld.configureDeformableSolver("avbd_finite_spring", {});
+  auto& springRegistry = sx::detail::registryOf(springWorld);
+  auto springConfigs = springRegistry.view<sx::comps::DeformableVbdConfig>();
+  ASSERT_EQ(springConfigs.size(), 1u);
+  springConfigs.get<sx::comps::DeformableVbdConfig>(*springConfigs.begin())
+      .useAvbdFiniteStiffnessRows = true;
+  EXPECT_NO_THROW(springWorld.enterSimulationMode());
 }
 
 TEST(World, SetContactSolverMethodUpdatesPolicy)
@@ -7740,6 +8472,99 @@ void expectVariationalLoopClosureScratchBaked(
   EXPECT_EQ(scratchCount, 1u);
 }
 
+TEST(World, MultibodyFamilyTransitionsColdStartVariationalContinuation)
+{
+  namespace sx = dart::simulation;
+
+  sx::World warm;
+  configureVariationalSliderScene(warm);
+  warm.enterSimulationMode();
+  warm.step(2u);
+
+  auto& registry = sx::detail::registryOf(warm);
+  auto structures = registry.view<sx::comps::MultibodyStructure>();
+  ASSERT_EQ(structures.size(), 1u);
+  const entt::entity multibodyEntity = *structures.begin();
+  auto& variationalState
+      = registry.get<sx::compute::MultibodyVariationalState>(multibodyEntity);
+  ASSERT_TRUE(variationalState.bootstrapped);
+  ASSERT_FALSE(variationalState.previousDeltaTransform.empty());
+  ASSERT_FALSE(variationalState.previousMomentum.empty());
+
+  for (Eigen::Isometry3d& transform : variationalState.previousDeltaTransform) {
+    transform.translation() = Eigen::Vector3d(3.0, 4.0, 5.0);
+  }
+  for (auto& momentum : variationalState.previousMomentum) {
+    momentum.setConstant(7.0);
+  }
+  using DualState = sx::comps::VariationalContactDualState;
+  auto& allocator = warm.getMemoryManager().getFreeAllocator();
+  DualState dual{
+      DualState::DualVector{dart::common::StlAllocator<double>{allocator}},
+      29u};
+  dual.duals = {8.0, 9.0};
+  registry.emplace_or_replace<DualState>(multibodyEntity, std::move(dual));
+
+  // Iteration/tolerance changes within the same family retain valid warm-start
+  // state. Only a family discontinuity is a cold-start boundary.
+  warm.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational,
+       .variationalMaxIterations = 64u,
+       .variationalTolerance = 1.0e-9});
+  EXPECT_TRUE(variationalState.bootstrapped);
+  EXPECT_TRUE(
+      variationalState.previousDeltaTransform.front().translation().isApprox(
+          Eigen::Vector3d(3.0, 4.0, 5.0), 0.0));
+  EXPECT_TRUE((variationalState.previousMomentum.front().array() == 7.0).all());
+  const auto& retainedDual = registry.get<DualState>(multibodyEntity);
+  EXPECT_EQ(retainedDual.stepsSinceDualUpdate, 29u);
+  ASSERT_EQ(retainedDual.duals.size(), 2u);
+  EXPECT_DOUBLE_EQ(retainedDual.duals[0], 8.0);
+  EXPECT_DOUBLE_EQ(retainedDual.duals[1], 9.0);
+
+  warm.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::SemiImplicit});
+  EXPECT_FALSE(variationalState.bootstrapped);
+  for (const Eigen::Isometry3d& transform :
+       variationalState.previousDeltaTransform) {
+    EXPECT_TRUE(transform.matrix().isApprox(
+        Eigen::Isometry3d::Identity().matrix(), 0.0));
+  }
+  for (const auto& momentum : variationalState.previousMomentum) {
+    EXPECT_TRUE(momentum.isZero(0.0));
+  }
+  const auto& clearedDual = registry.get<DualState>(multibodyEntity);
+  EXPECT_EQ(clearedDual.stepsSinceDualUpdate, 0u);
+  EXPECT_TRUE(std::ranges::all_of(clearedDual.duals, [](double value) {
+    return value == 0.0;
+  }));
+
+  // Advance through the inactive family, checkpoint it, and prove that both
+  // the live world and the loaded control cold-bootstrap the same next
+  // variational step rather than resurrecting pre-gap history.
+  warm.step();
+  std::stringstream checkpoint;
+  warm.saveBinary(checkpoint);
+  sx::World control;
+  control.loadBinary(checkpoint);
+
+  warm.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
+  control.setMultibodyOptions(
+      {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
+  warm.step();
+  control.step();
+
+  const auto warmRobot = warm.getMultibody("slider").value();
+  const auto controlRobot = control.getMultibody("slider").value();
+  const auto warmJoint = warmRobot.getJoint("rail").value();
+  const auto controlJoint = controlRobot.getJoint("rail").value();
+  EXPECT_TRUE(
+      warmJoint.getPosition().isApprox(controlJoint.getPosition(), 0.0));
+  EXPECT_TRUE(
+      warmJoint.getVelocity().isApprox(controlJoint.getVelocity(), 0.0));
+}
+
 TEST(World, EnterSimulationModeReservesContactHeavyVariationalDualState)
 {
   namespace common = dart::common;
@@ -8696,6 +9521,10 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
       configurePublicRigidAvbdContactAndBreakableJointRowsScene,
       true);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "public rigid AVBD dense contact rows",
+      configurePublicRigidAvbdDenseContactRowsScene,
+      true);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "public rigid VBD contact and breakable-joint rows",
       configurePublicRigidVbdContactAndBreakableJointRowsScene,
       true);
@@ -8936,6 +9765,12 @@ TEST(World, BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths)
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable VBD Chebyshev self-contact grid",
       configureVbdChebyshevSelfContactGridScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "deformable VBD convergence scratch",
+      configureVbdConvergenceScratchScene);
+  expectNoWorldBaseAllocatorActivityDuringBakedSteps(
+      "public zero-contact VBD ignored rigid obstacles",
+      configurePublicZeroContactVbdIgnoredRigidObstaclesScene);
   expectNoWorldBaseAllocatorActivityDuringBakedSteps(
       "deformable AVBD ground friction rows",
       configureAvbdGroundFrictionRowsScene);
@@ -9238,6 +10073,65 @@ TEST(World, DeformableSelfContactFrictionLateActiveDirectGridIsActive)
       configureDeformableSelfContactFrictionLateActiveGridScene,
       2u * 11u * 11u,
       false);
+}
+
+TEST(World, SparseProjectedNewtonLateContactFallsBackWithoutAllocation)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions worldOptions;
+  worldOptions.baseAllocator = &allocator;
+  sx::World world(worldOptions);
+  configureDeformableSelfContactFrictionGridSceneWithShapeAndMotion(
+      world,
+      5u,
+      5u,
+      "late_sparse_pattern",
+      0.05,
+      Eigen::Vector3d::Zero(),
+      false);
+  auto body = world.getDeformableBody("late_sparse_pattern");
+  ASSERT_TRUE(body.has_value());
+  ASSERT_EQ(body->getNodeCount(), 50u);
+
+  world.enterSimulationMode();
+  for (std::size_t node = 25u; node < 50u; ++node) {
+    Eigen::Vector3d position = body->getPosition(node);
+    position.z() = 0.012;
+    body->setPosition(node, position);
+  }
+
+  const auto baseAllocations = allocator.allocationCount;
+  const auto baseDeallocations = allocator.deallocationCount;
+  const auto baseAlignedAllocations = allocator.alignedAllocationCount;
+  const auto baseAlignedDeallocations = allocator.alignedDeallocationCount;
+  ScopedHeapAllocationCounter heapCounter;
+  ScopedRawHeapAllocationCounter rawCounter;
+  ASSERT_NO_THROW(world.step());
+  rawCounter.stop();
+  heapCounter.stop();
+
+  EXPECT_EQ(allocator.allocationCount, baseAllocations);
+  EXPECT_EQ(allocator.deallocationCount, baseDeallocations);
+  EXPECT_EQ(allocator.alignedAllocationCount, baseAlignedAllocations);
+  EXPECT_EQ(allocator.alignedDeallocationCount, baseAlignedDeallocations);
+  EXPECT_EQ(heapCounter.allocationCount(), 0u);
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+  EXPECT_EQ(rawCounter.allocationCount(), 0u);
+  EXPECT_EQ(rawCounter.allocationBytes(), 0u);
+
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.nodeCount, 50u);
+  EXPECT_GT(diagnostics.selfContactBarrierActiveContacts, 0u);
+  EXPECT_GT(diagnostics.projectedNewtonFallbacks, 0u);
+  EXPECT_EQ(diagnostics.projectedNewtonIterativeSolves, 0u);
+  EXPECT_DOUBLE_EQ(world.getTime(), world.getTimeStep());
+  EXPECT_EQ(world.getFrame(), 1u);
+  for (std::size_t node = 0u; node < body->getNodeCount(); ++node) {
+    EXPECT_TRUE(body->getPosition(node).allFinite()) << "node " << node;
+    EXPECT_LT(body->getPosition(node).norm(), 1.0e6) << "node " << node;
+  }
 }
 
 TEST(
@@ -10981,6 +11875,12 @@ TEST(World, BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap)
       "deformable VBD Chebyshev self-contact grid",
       configureVbdChebyshevSelfContactGridScene);
   expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "deformable VBD convergence scratch",
+      configureVbdConvergenceScratchScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
+      "public zero-contact VBD ignored rigid obstacles",
+      configurePublicZeroContactVbdIgnoredRigidObstaclesScene);
+  expectNoGlobalHeapAllocationsDuringBakedSteps(
       "deformable AVBD ground friction rows",
       configureAvbdGroundFrictionRowsScene);
 
@@ -11157,9 +12057,42 @@ TEST(World, BakedAvbdVbdRowsDoNotMallocOnHeap)
       "deformable VBD Chebyshev self-contact grid",
       configureVbdChebyshevSelfContactGridScene);
   expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "deformable VBD convergence scratch",
+      configureVbdConvergenceScratchScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
+      "public zero-contact VBD ignored rigid obstacles",
+      configurePublicZeroContactVbdIgnoredRigidObstaclesScene);
+  expectNoRawHeapAllocationsDuringFirstPostBakeSteps(
       "deformable AVBD ground friction rows",
       configureAvbdGroundFrictionRowsScene);
 #endif
+}
+
+TEST(World, BakedVbdConvergenceParallelStepsDoNotGrowWorldBaseAllocator)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions worldOptions;
+  worldOptions.baseAllocator = &allocator;
+  sx::World world(worldOptions);
+  configureVbdConvergenceScratchScene(world);
+  world.enterSimulationMode();
+  sx::compute::ParallelExecutor executor(4u);
+
+  const auto allocationsAfterBake = allocator.allocationCount;
+  const auto deallocationsAfterBake = allocator.deallocationCount;
+  const auto alignedAllocationsAfterBake = allocator.alignedAllocationCount;
+  const auto alignedDeallocationsAfterBake = allocator.alignedDeallocationCount;
+  for (int step = 0; step < 4; ++step) {
+    world.step(executor);
+  }
+
+  EXPECT_EQ(allocator.allocationCount, allocationsAfterBake);
+  EXPECT_EQ(allocator.deallocationCount, deallocationsAfterBake);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsAfterBake);
+  EXPECT_EQ(allocator.alignedDeallocationCount, alignedDeallocationsAfterBake);
+  EXPECT_EQ(world.getLastDeformableSolverDiagnostics().vbdBodyCount, 1u);
 }
 
 TEST(World, WarmedParallelAvbdDualUpdatePassIsAllocationStable)
@@ -11719,9 +12652,19 @@ TEST(World, IpcBakeDoesNotPrewarmRigidBodyContactQuery)
   EXPECT_LE(
       ipcUnsupportedGeometry.allocationCount,
       ipcSupportedGeometry.allocationCount);
+  // The bake materializes one native collision shape per body, and that object
+  // is bigger for a plane than for a box. That fixed difference is the
+  // geometry's own storage, not prewarm work, so charge it explicitly instead
+  // of comparing raw byte totals across two different shape types. Any real
+  // contact-query prewarm still exceeds this bound. (The sibling
+  // SequentialImpulseBakeDoesNotPrewarmRigidIpcCollisionSurfaces guard
+  // sidesteps the same asymmetry by comparing allocation counts only.)
+  const std::size_t nativeShapeStorageDelta
+      = sizeof(dart::collision::native::PlaneShape)
+        - sizeof(dart::collision::native::BoxShape);
   EXPECT_LE(
       ipcUnsupportedGeometry.allocationBytes,
-      ipcSupportedGeometry.allocationBytes);
+      ipcSupportedGeometry.allocationBytes + nativeShapeStorageDelta);
 }
 
 TEST(World, RigidIpcContactStagePrepareReusesSupportedDynamicSurfaceBuffers)
@@ -15343,6 +16286,828 @@ TEST(World, CollisionQueryReportsContacts)
   EXPECT_TRUE(world.collide().empty());
 }
 
+TEST(World, RigidCollisionCapacitiesAcceptExactAndRejectCapPlusOne)
+{
+  namespace sx = dart::simulation;
+
+  const auto populateThreeContacts = [](sx::World& world) {
+    for (int i = 0; i < 3; ++i) {
+      sx::RigidBodyOptions bodyOptions;
+      bodyOptions.position
+          = Eigen::Vector3d(0.25 * static_cast<double>(i), 0.0, 0.0);
+      auto body = world.addRigidBody(
+          "bounded_sphere_" + std::to_string(i), bodyOptions);
+      body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    }
+  };
+
+  {
+    sx::WorldOptions options;
+    options.gravity = Eigen::Vector3d::Zero();
+    options.rigidCollisionCapacityOptions.candidatePairCapacity = 3u;
+    options.rigidCollisionCapacityOptions.contactCapacity = 3u;
+    sx::World world(options);
+    populateThreeContacts(world);
+
+    ASSERT_NO_THROW(world.enterSimulationMode());
+    EXPECT_EQ(world.getRigidCollisionCandidatePairCapacity(), 3u);
+    EXPECT_EQ(world.getRigidCollisionContactCapacity(), 3u);
+    EXPECT_EQ(world.collide().size(), 3u);
+  }
+
+  const auto expectRejectedAtEntry = [&](std::size_t candidateCapacity,
+                                         std::size_t contactCapacity) {
+    sx::WorldOptions options;
+    options.gravity = Eigen::Vector3d::Zero();
+    options.rigidCollisionCapacityOptions.candidatePairCapacity
+        = candidateCapacity;
+    options.rigidCollisionCapacityOptions.contactCapacity = contactCapacity;
+    sx::World world(options);
+    populateThreeContacts(world);
+
+    EXPECT_THROW(world.enterSimulationMode(), sx::InvalidOperationException);
+    EXPECT_FALSE(world.isSimulationMode());
+    EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+    EXPECT_EQ(world.getFrame(), 0u);
+  };
+
+  expectRejectedAtEntry(/*candidateCapacity=*/2u, /*contactCapacity=*/3u);
+  expectRejectedAtEntry(/*candidateCapacity=*/3u, /*contactCapacity=*/2u);
+}
+
+TEST(World, RigidCollisionContactCapacityProbesWholeBoxManifold)
+{
+  namespace sx = dart::simulation;
+
+  const auto populateFaceContact = [](sx::World& world) {
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    auto ground = world.addRigidBody("bounded_manifold_ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.75);
+    auto box = world.addRigidBody("bounded_manifold_box", boxOptions);
+    box.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+  };
+
+  sx::WorldOptions exactOptions;
+  exactOptions.gravity = Eigen::Vector3d::Zero();
+  exactOptions.rigidCollisionCapacityOptions.candidatePairCapacity = 1u;
+  exactOptions.rigidCollisionCapacityOptions.contactCapacity = 4u;
+  sx::World exactWorld(exactOptions);
+  populateFaceContact(exactWorld);
+  ASSERT_NO_THROW(exactWorld.enterSimulationMode());
+  EXPECT_EQ(exactWorld.collide().size(), 4u);
+
+  sx::WorldOptions overflowOptions = exactOptions;
+  overflowOptions.rigidCollisionCapacityOptions.contactCapacity = 3u;
+  sx::World overflowWorld(overflowOptions);
+  populateFaceContact(overflowWorld);
+  EXPECT_THROW(
+      overflowWorld.enterSimulationMode(), sx::InvalidOperationException);
+  EXPECT_FALSE(overflowWorld.isSimulationMode());
+  EXPECT_DOUBLE_EQ(overflowWorld.getTime(), 0.0);
+  EXPECT_EQ(overflowWorld.getFrame(), 0u);
+}
+
+TEST(World, RigidMeshContactCapacityUsesCapPlusOneOverflowProbe)
+{
+  namespace sx = dart::simulation;
+
+  constexpr std::size_t kLegacyMeshContactBudget = 1000u;
+  constexpr std::size_t kOverflowingMeshContactCount
+      = kLegacyMeshContactBudget + 1u;
+
+  const auto populateIndependentMeshContacts = [](sx::World& world,
+                                                  std::size_t triangleCount) {
+    constexpr std::size_t kColumns = 32u;
+    constexpr double kSpacing = 0.03;
+    constexpr double kTriangleSize = 0.01;
+
+    std::vector<Eigen::Vector3d> vertices;
+    std::vector<Eigen::Vector3i> triangles;
+    vertices.reserve(3u * triangleCount);
+    triangles.reserve(triangleCount);
+    for (std::size_t triangleIndex = 0u; triangleIndex < triangleCount;
+         ++triangleIndex) {
+      const double x = kSpacing * static_cast<double>(triangleIndex % kColumns);
+      const double y = kSpacing * static_cast<double>(triangleIndex / kColumns);
+      const auto firstVertex = static_cast<int>(vertices.size());
+      vertices.emplace_back(x, y, 0.0);
+      vertices.emplace_back(x + kTriangleSize, y, 0.0);
+      vertices.emplace_back(x, y + kTriangleSize, 0.0);
+      triangles.emplace_back(firstVertex, firstVertex + 1, firstVertex + 2);
+    }
+
+    sx::RigidBodyOptions staticOptions;
+    staticOptions.isStatic = true;
+    auto sphere = world.addRigidBody("mesh_probe_static_sphere", staticOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(2.0));
+    auto mesh = world.addRigidBody("mesh_probe_static_mesh", staticOptions);
+    mesh.setCollisionShape(
+        sx::CollisionShape::makeMesh(
+            std::move(vertices), std::move(triangles)));
+  };
+
+  const auto makeOptions = [](std::size_t contactCapacity) {
+    sx::WorldOptions options;
+    options.gravity = Eigen::Vector3d::Zero();
+    options.rigidCollisionCapacityOptions.candidatePairCapacity = 1u;
+    options.rigidCollisionCapacityOptions.contactCapacity = contactCapacity;
+    return options;
+  };
+
+  // An exact 1000-contact mesh pair must still fit the historical budget.
+  {
+    sx::World world(makeOptions(kLegacyMeshContactBudget));
+    populateIndependentMeshContacts(world, kLegacyMeshContactBudget);
+    ASSERT_NO_THROW(world.enterSimulationMode());
+    EXPECT_EQ(world.collide().size(), kLegacyMeshContactBudget);
+  }
+
+  // The same budget must reject a 1001st contact before crossing the public
+  // simulation-mode boundary. Query truncation must never masquerade as an
+  // exact-cap success.
+  {
+    sx::World world(makeOptions(kLegacyMeshContactBudget));
+    populateIndependentMeshContacts(world, kOverflowingMeshContactCount);
+    EXPECT_THROW(world.enterSimulationMode(), sx::InvalidOperationException);
+    EXPECT_FALSE(world.isSimulationMode());
+    EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+    EXPECT_EQ(world.getFrame(), 0u);
+    EXPECT_EQ(
+        world.getRigidCollisionContactCapacity(), kLegacyMeshContactBudget);
+  }
+
+  // Raising the baked bound to the complete contact count accepts the same
+  // geometry, proving the overflow rejection is a capacity result rather than
+  // a mesh-collision failure.
+  {
+    sx::World world(makeOptions(kOverflowingMeshContactCount));
+    populateIndependentMeshContacts(world, kOverflowingMeshContactCount);
+    ASSERT_NO_THROW(world.enterSimulationMode());
+    EXPECT_EQ(world.collide().size(), kOverflowingMeshContactCount);
+  }
+
+  // A zero policy currently derives the conservative 1000-contact mesh-pair
+  // budget. It must fail closed on the same 1001-contact scene as well, then
+  // roll the attempted automatic bake back to the unresolved design value.
+  {
+    sx::WorldOptions automaticOptions;
+    automaticOptions.gravity = Eigen::Vector3d::Zero();
+    sx::World world(automaticOptions);
+    populateIndependentMeshContacts(world, kOverflowingMeshContactCount);
+    EXPECT_THROW(world.enterSimulationMode(), sx::InvalidOperationException);
+    EXPECT_FALSE(world.isSimulationMode());
+    EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+    EXPECT_EQ(world.getFrame(), 0u);
+    EXPECT_EQ(world.getRigidCollisionContactCapacity(), 0u);
+  }
+}
+
+TEST(World, RigidCollisionContactCapacityRejectsUnrepresentableDerivedRows)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions automaticOptions;
+  automaticOptions.gravity = Eigen::Vector3d::Zero();
+  automaticOptions.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  sx::World automaticWorld(automaticOptions);
+  auto automaticFirst = automaticWorld.addRigidBody("automatic_avbd_first");
+  automaticFirst.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sx::RigidBodyOptions automaticSecondOptions;
+  automaticSecondOptions.position = Eigen::Vector3d(3.0, 0.0, 0.0);
+  auto automaticSecond = automaticWorld.addRigidBody(
+      "automatic_avbd_second", automaticSecondOptions);
+  automaticSecond.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  ASSERT_NO_THROW(automaticWorld.enterSimulationMode());
+  EXPECT_EQ(automaticWorld.getRigidCollisionCandidatePairCapacity(), 1u);
+  EXPECT_EQ(automaticWorld.getRigidCollisionContactCapacity(), 4u);
+
+  // The contact-response stage is skipped when every candidate is prescribed,
+  // but the public collision-query policy must still resolve and lock at bake.
+  sx::World allStaticWorld;
+  sx::RigidBodyOptions staticOptions;
+  staticOptions.isStatic = true;
+  auto staticFirst
+      = allStaticWorld.addRigidBody("automatic_static_first", staticOptions);
+  staticFirst.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  staticOptions.position = Eigen::Vector3d(3.0, 0.0, 0.0);
+  auto staticSecond
+      = allStaticWorld.addRigidBody("automatic_static_second", staticOptions);
+  staticSecond.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  ASSERT_NO_THROW(allStaticWorld.enterSimulationMode());
+  EXPECT_EQ(allStaticWorld.getRigidCollisionCandidatePairCapacity(), 1u);
+  EXPECT_EQ(allStaticWorld.getRigidCollisionContactCapacity(), 4u);
+
+  constexpr std::size_t kFirstUnrepresentableContactCapacity
+      = std::numeric_limits<std::size_t>::max() / 2u + 1u;
+  for (const std::size_t contactCapacity :
+       {kFirstUnrepresentableContactCapacity,
+        std::numeric_limits<std::size_t>::max()}) {
+    sx::WorldOptions overflowOptions;
+    overflowOptions.rigidBodySolver = sx::RigidBodySolver::Avbd;
+    overflowOptions.rigidCollisionCapacityOptions.contactCapacity
+        = contactCapacity;
+    EXPECT_THROW(
+        {
+          sx::World rejectedWorld(overflowOptions);
+          static_cast<void>(rejectedWorld);
+        },
+        sx::InvalidArgumentException);
+  }
+}
+
+TEST(World, DelayedTwentySphereCapacityOverflowIsAtomic)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  constexpr std::size_t kSphereCount = 20u;
+  constexpr std::size_t kDensePairCount
+      = kSphereCount * (kSphereCount - 1u) / 2u;
+
+  const auto populateSeparatedSpheres = [](sx::World& world) {
+    std::vector<sx::RigidBody> bodies;
+    bodies.reserve(kSphereCount);
+    for (std::size_t i = 0u; i < kSphereCount; ++i) {
+      sx::RigidBodyOptions bodyOptions;
+      bodyOptions.position
+          = Eigen::Vector3d(3.0 * static_cast<double>(i), 0.0, 0.0);
+      auto body = world.addRigidBody(
+          "delayed_sphere_" + std::to_string(i), bodyOptions);
+      body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+      bodies.push_back(body);
+    }
+    return bodies;
+  };
+
+  const auto activateDenseEnvelope = [](std::vector<sx::RigidBody>& bodies) {
+    for (std::size_t i = 0u; i < bodies.size(); ++i) {
+      Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+      transform.translation() = Eigen::Vector3d::Zero();
+      bodies[i].setTransform(transform);
+      bodies[i].setLinearVelocity(
+          Eigen::Vector3d(0.01 * static_cast<double>(i + 1u), 0.0, 0.0));
+      bodies[i].setAngularVelocity(
+          Eigen::Vector3d(0.0, 0.02 * static_cast<double>(i + 1u), 0.0));
+      bodies[i].setForce(
+          Eigen::Vector3d(0.0, 0.0, 0.03 * static_cast<double>(i + 1u)));
+      bodies[i].setTorque(
+          Eigen::Vector3d(0.04 * static_cast<double>(i + 1u), 0.0, 0.0));
+    }
+  };
+
+  {
+    sx::WorldOptions options;
+    options.gravity = Eigen::Vector3d::Zero();
+    options.rigidCollisionCapacityOptions.candidatePairCapacity
+        = kDensePairCount;
+    options.rigidCollisionCapacityOptions.contactCapacity = kDensePairCount;
+    sx::World world(options);
+    auto bodies = populateSeparatedSpheres(world);
+    world.enterSimulationMode();
+    activateDenseEnvelope(bodies);
+    EXPECT_EQ(world.collide().size(), kDensePairCount);
+  }
+
+  struct RigidState
+  {
+    Eigen::Isometry3d transform;
+    Eigen::Vector3d linearVelocity;
+    Eigen::Vector3d angularVelocity;
+    Eigen::Vector3d force;
+    Eigen::Vector3d torque;
+  };
+
+  const auto expectOverflowIsAtomic = [&](std::size_t candidateCapacity,
+                                          std::size_t contactCapacity) {
+    sx::WorldOptions options;
+    options.gravity = Eigen::Vector3d::Zero();
+    options.rigidCollisionCapacityOptions.candidatePairCapacity
+        = candidateCapacity;
+    options.rigidCollisionCapacityOptions.contactCapacity = contactCapacity;
+    sx::World world(options);
+    auto bodies = populateSeparatedSpheres(world);
+    world.enterSimulationMode();
+
+    // `getLastContactForces()` records only nonzero solved impulses, and the
+    // Sequential Impulse family corrects a resting overlap at the position
+    // level with no impulse at all. Overlap the first two spheres along +X and
+    // drive the second into the first so the normal row solves a real impulse
+    // and the recorded force count below is a meaningful baseline.
+    Eigen::Isometry3d seedContact = Eigen::Isometry3d::Identity();
+    bodies[0].setTransform(seedContact);
+    seedContact.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
+    bodies[1].setTransform(seedContact);
+    bodies[1].setLinearVelocity(Eigen::Vector3d(-1.0, 0.0, 0.0));
+    world.step();
+    ASSERT_FALSE(world.getLastContactForces().empty());
+
+    activateDenseEnvelope(bodies);
+
+    std::vector<RigidState> expected;
+    expected.reserve(bodies.size());
+    for (const auto& body : bodies) {
+      expected.push_back(
+          RigidState{
+              body.getTransform(),
+              body.getLinearVelocity(),
+              body.getAngularVelocity(),
+              body.getForce(),
+              body.getTorque()});
+    }
+    const double expectedTime = world.getTime();
+    const std::size_t expectedFrame = world.getFrame();
+    const std::size_t expectedContactForceCount
+        = world.getLastContactForces().size();
+
+    compute::SequentialExecutor executor;
+    CountingKinematicsStage finalStage;
+    EXPECT_THROW(
+        world.step(executor, finalStage), sx::InvalidOperationException);
+    EXPECT_EQ(finalStage.executionCount, 0);
+    EXPECT_DOUBLE_EQ(world.getTime(), expectedTime);
+    EXPECT_EQ(world.getFrame(), expectedFrame);
+    EXPECT_EQ(world.getLastContactForces().size(), expectedContactForceCount);
+    for (std::size_t i = 0u; i < bodies.size(); ++i) {
+      EXPECT_TRUE(
+          bodies[i].getTransform().isApprox(expected[i].transform, 0.0));
+      EXPECT_TRUE(
+          bodies[i].getLinearVelocity().isApprox(
+              expected[i].linearVelocity, 0.0));
+      EXPECT_TRUE(
+          bodies[i].getAngularVelocity().isApprox(
+              expected[i].angularVelocity, 0.0));
+      EXPECT_TRUE(bodies[i].getForce().isApprox(expected[i].force, 0.0));
+      EXPECT_TRUE(bodies[i].getTorque().isApprox(expected[i].torque, 0.0));
+    }
+  };
+
+  expectOverflowIsAtomic(
+      /*candidateCapacity=*/kDensePairCount - 1u,
+      /*contactCapacity=*/kDensePairCount);
+  expectOverflowIsAtomic(
+      /*candidateCapacity=*/kDensePairCount,
+      /*contactCapacity=*/kDensePairCount - 1u);
+}
+
+TEST(World, DelayedRotatedBoxContactReusesBakedCapacity)
+{
+  namespace sx = dart::simulation;
+
+  CountingMemoryAllocator allocator;
+  sx::WorldOptions options;
+  options.baseAllocator = &allocator;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.rigidCollisionCapacityOptions.candidatePairCapacity = 1u;
+  options.rigidCollisionCapacityOptions.contactCapacity = 4u;
+  sx::World world(options);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("bounded_box_ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.5)));
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 3.0);
+  auto box = world.addRigidBody("bounded_rotated_box", boxOptions);
+  box.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.4, 0.5)));
+
+  world.enterSimulationMode();
+  ASSERT_TRUE(world.collide().empty());
+
+  Eigen::Isometry3d contactTransform = Eigen::Isometry3d::Identity();
+  contactTransform.linear()
+      = (Eigen::AngleAxisd(0.31, Eigen::Vector3d::UnitZ())
+         * Eigen::AngleAxisd(0.17, Eigen::Vector3d::UnitX()))
+            .toRotationMatrix();
+  contactTransform.translation() = Eigen::Vector3d(0.0, 0.0, 0.4);
+  box.setTransform(contactTransform);
+  // A resting overlap is corrected at the position level with no impulse, so
+  // `getLastContactForces()` would stay empty and could not witness that the
+  // delayed contact actually reached the velocity solve. The box overlaps the
+  // ground from above, so a downward velocity approaches along the contact
+  // normal and the normal row solves a real impulse.
+  box.setLinearVelocity(Eigen::Vector3d(0.0, 0.0, -1.0));
+
+  const auto allocationsBefore = allocator.allocationCount;
+  const auto alignedAllocationsBefore = allocator.alignedAllocationCount;
+  ScopedHeapAllocationCounter heapCounter;
+  ScopedRawHeapAllocationCounter rawHeapCounter;
+  world.step();
+  rawHeapCounter.stop();
+  heapCounter.stop();
+
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated by delayed box contact: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+#if !defined(DART_CODECOV) && defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  EXPECT_EQ(rawHeapCounter.allocationCount(), 0u)
+      << "raw heap bytes allocated by delayed box contact: "
+      << rawHeapCounter.allocationBytes();
+  EXPECT_EQ(rawHeapCounter.allocationBytes(), 0u);
+#endif
+  EXPECT_EQ(allocator.allocationCount, allocationsBefore);
+  EXPECT_EQ(allocator.alignedAllocationCount, alignedAllocationsBefore);
+  EXPECT_FALSE(world.getLastContactForces().empty());
+}
+
+TEST(World, BakedPrimitivePairEnvelopeHandlesDelayedContactWithoutHeapGrowth)
+{
+  namespace sx = dart::simulation;
+
+  struct PrimitivePairCase
+  {
+    std::string_view name;
+    sx::CollisionShape first;
+    sx::CollisionShape second;
+  };
+
+  const auto sphere = sx::CollisionShape::makeSphere(0.5);
+  const auto box = sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.4, 0.45));
+  const auto capsule = sx::CollisionShape::makeCapsule(0.3, 0.8);
+  const auto cylinder = sx::CollisionShape::makeCylinder(0.35, 0.8);
+  const auto plane
+      = sx::CollisionShape::makePlane(Eigen::Vector3d::UnitZ(), 0.0);
+  const std::array cases{
+      PrimitivePairCase{"sphere-sphere", sphere, sphere},
+      PrimitivePairCase{"sphere-box", sphere, box},
+      PrimitivePairCase{"sphere-capsule", sphere, capsule},
+      PrimitivePairCase{"sphere-cylinder", sphere, cylinder},
+      PrimitivePairCase{"sphere-plane", sphere, plane},
+      PrimitivePairCase{"box-box", box, box},
+      PrimitivePairCase{"box-capsule", box, capsule},
+      PrimitivePairCase{"box-plane", box, plane},
+      PrimitivePairCase{"capsule-capsule", capsule, capsule},
+      PrimitivePairCase{"capsule-cylinder", capsule, cylinder},
+      PrimitivePairCase{"capsule-plane", capsule, plane},
+      PrimitivePairCase{"cylinder-cylinder", cylinder, cylinder},
+      PrimitivePairCase{"cylinder-plane", cylinder, plane},
+  };
+
+  const auto runOrdering = [](std::string_view name,
+                              const sx::CollisionShape& firstShape,
+                              const sx::CollisionShape& secondShape) {
+    SCOPED_TRACE(name);
+    sx::WorldOptions options;
+    options.gravity = Eigen::Vector3d::Zero();
+    options.rigidCollisionCapacityOptions.candidatePairCapacity = 1u;
+    options.rigidCollisionCapacityOptions.contactCapacity = 4u;
+
+    // Exactly one of the pair is dynamic; it starts far away and is moved onto
+    // the static one below to make the contact appear after the bake.
+    const bool firstIsStatic
+        = firstShape.type == sx::CollisionShapeType::Plane
+          || secondShape.type != sx::CollisionShapeType::Plane;
+    const bool secondIsStatic
+        = secondShape.type == sx::CollisionShapeType::Plane;
+    const auto populate = [&](sx::World& world) {
+      sx::RigidBodyOptions firstOptions;
+      firstOptions.isStatic = firstIsStatic;
+      firstOptions.position = firstIsStatic ? Eigen::Vector3d::Zero()
+                                            : Eigen::Vector3d(5.0, 0.0, 2.0);
+      auto first = world.addRigidBody("primitive_first", firstOptions);
+      first.setCollisionShape(firstShape);
+
+      sx::RigidBodyOptions secondOptions;
+      secondOptions.isStatic = secondIsStatic;
+      secondOptions.position = secondIsStatic ? Eigen::Vector3d::Zero()
+                                              : Eigen::Vector3d(5.0, 0.0, 2.0);
+      auto second = world.addRigidBody("primitive_second", secondOptions);
+      second.setCollisionShape(secondShape);
+      return firstIsStatic ? second : first;
+    };
+    const std::string_view movingName
+        = firstIsStatic ? "primitive_second" : "primitive_first";
+    const Eigen::Isometry3d contactTransform = Eigen::Isometry3d::Identity();
+
+    // A resting overlap is corrected at the position level with no impulse, so
+    // the contact-force check at the end would be vacuous unless the pair is
+    // approaching. The delayed contact's normal depends on the primitive pair,
+    // so read it from a throwaway copy of the scene: querying the measured
+    // world here would exercise its collision caches before the guarded step
+    // and could absorb an allocation that step is supposed to be free of.
+    Eigen::Vector3d approach = Eigen::Vector3d::Zero();
+    {
+      sx::World probe(options);
+      auto probeMoving = populate(probe);
+      probe.enterSimulationMode();
+      probe.step();
+      probeMoving.setTransform(contactTransform);
+      const auto probeContacts = probe.collide();
+      ASSERT_FALSE(probeContacts.empty());
+      for (const auto& contact : probeContacts) {
+        // The normal points from `bodyA` toward `bodyB` and the solver's
+        // approach speed is `(v_B - v_A) . normal`, so the moving body has to
+        // travel along the normal when it is `bodyA` and against it when it is
+        // `bodyB`.
+        approach += contact.bodyA.getName() == movingName ? contact.normal
+                                                          : -contact.normal;
+      }
+      ASSERT_GT(approach.squaredNorm(), 0.0);
+      approach.normalize();
+    }
+
+    sx::World world(options);
+    auto moving = populate(world);
+
+    world.enterSimulationMode();
+    ASSERT_TRUE(world.collide().empty());
+    world.step();
+    ASSERT_TRUE(world.collide().empty());
+
+    moving.setTransform(contactTransform);
+    moving.setLinearVelocity(approach);
+
+    ScopedHeapAllocationCounter heapCounter;
+    ScopedRawHeapAllocationCounter rawHeapCounter;
+    world.step();
+    rawHeapCounter.stop();
+    heapCounter.stop();
+
+    EXPECT_EQ(heapCounter.allocationCount(), 0u)
+        << "global heap bytes allocated: " << heapCounter.allocationBytes();
+    EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+#if !defined(DART_CODECOV) && defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+    EXPECT_EQ(rawHeapCounter.allocationCount(), 0u)
+        << "raw heap bytes allocated: " << rawHeapCounter.allocationBytes();
+    EXPECT_EQ(rawHeapCounter.allocationBytes(), 0u);
+#endif
+    EXPECT_FALSE(world.getLastContactForces().empty());
+  };
+
+  for (const auto& pair : cases) {
+    runOrdering(pair.name, pair.first, pair.second);
+    if (pair.first.type != pair.second.type) {
+      const std::string reversedName = std::string(pair.name) + " reversed";
+      runOrdering(reversedName, pair.second, pair.first);
+    }
+  }
+}
+
+TEST(World, NativePlanePlaneNoOpReusesReservedCollisionResult)
+{
+  namespace native = dart::collision::native;
+
+  const native::PlaneShape firstPlane(Eigen::Vector3d::UnitZ(), 0.0);
+  const native::PlaneShape secondPlane(Eigen::Vector3d::UnitX(), 0.0);
+  const Eigen::Isometry3d identity = Eigen::Isometry3d::Identity();
+  const native::CollisionOption option
+      = native::CollisionOption::fullContacts(4u);
+  native::CollisionResult result;
+  result.reserveContacts(4u);
+
+  const auto refillReservedResult = [&]() {
+    for (std::size_t contactIndex = 0u; contactIndex < 4u; ++contactIndex) {
+      native::ContactPoint contact;
+      contact.position.x() = static_cast<double>(contactIndex);
+      result.addContact(contact);
+    }
+    static_cast<void>(result.getManifolds());
+    static_cast<void>(result.getContact(3u));
+  };
+
+  // Materialize both retained result views before measuring their reuse.
+  refillReservedResult();
+  result.clear();
+
+  bool hit = false;
+  ScopedHeapAllocationCounter heapCounter;
+  ScopedRawHeapAllocationCounter rawHeapCounter;
+  for (std::size_t iteration = 0u; iteration < 4u; ++iteration) {
+    hit |= native::NarrowPhase::collide(
+        &firstPlane, identity, &secondPlane, identity, option, result);
+    result.clear();
+    hit |= native::NarrowPhase::collide(
+        &secondPlane, identity, &firstPlane, identity, option, result);
+    result.clear();
+
+    // A no-op pair must not discard or shrink the caller's reserved result
+    // storage: refill every retained manifold and view without heap growth.
+    refillReservedResult();
+    result.clear();
+  }
+  rawHeapCounter.stop();
+  heapCounter.stop();
+
+  EXPECT_FALSE(hit);
+  EXPECT_EQ(result.numContacts(), 0u);
+  EXPECT_EQ(heapCounter.allocationCount(), 0u)
+      << "global heap bytes allocated by Plane-Plane query/reuse: "
+      << heapCounter.allocationBytes();
+  EXPECT_EQ(heapCounter.allocationBytes(), 0u);
+#if !defined(DART_CODECOV) && defined(DART_TEST_HAS_RAW_MALLOC_INTERPOSE)
+  EXPECT_EQ(rawHeapCounter.allocationCount(), 0u)
+      << "raw heap bytes allocated by Plane-Plane query/reuse: "
+      << rawHeapCounter.allocationBytes();
+  EXPECT_EQ(rawHeapCounter.allocationBytes(), 0u);
+#endif
+}
+
+TEST(World, ReplayRestoreRetainsConstructionTimeRigidCollisionCapacities)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.rigidCollisionCapacityOptions.candidatePairCapacity = 1u;
+  options.rigidCollisionCapacityOptions.contactCapacity = 4u;
+  sx::World world(options);
+
+  auto first = world.addRigidBody("replay_capacity_first");
+  first.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sx::RigidBodyOptions secondOptions;
+  secondOptions.position = Eigen::Vector3d(3.0, 0.0, 0.0);
+  auto second = world.addRigidBody("replay_capacity_second", secondOptions);
+  second.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.setReplayRecordingEnabled(true);
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+  ASSERT_TRUE(world.isSimulationMode());
+
+  world.restoreReplayFrame(0u);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_EQ(world.getRigidCollisionCandidatePairCapacity(), 1u);
+  EXPECT_EQ(world.getRigidCollisionContactCapacity(), 4u);
+
+  world.restoreReplayFrame(1u);
+  EXPECT_TRUE(world.isSimulationMode());
+  EXPECT_EQ(world.getRigidCollisionCandidatePairCapacity(), 1u);
+  EXPECT_EQ(world.getRigidCollisionContactCapacity(), 4u);
+  EXPECT_EQ(world.getRigidCollisionCapacityOptions().candidatePairCapacity, 1u);
+  EXPECT_EQ(world.getRigidCollisionCapacityOptions().contactCapacity, 4u);
+
+  world.clear();
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_EQ(world.getRigidCollisionCandidatePairCapacity(), 1u);
+  EXPECT_EQ(world.getRigidCollisionContactCapacity(), 4u);
+}
+
+TEST(World, ReplayRestoreRebakesAutomaticRigidCollisionCapacities)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto first = world.addRigidBody("replay_automatic_capacity_first");
+  first.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  sx::RigidBodyOptions secondOptions;
+  secondOptions.position = Eigen::Vector3d(3.0, 0.0, 0.0);
+  auto second
+      = world.addRigidBody("replay_automatic_capacity_second", secondOptions);
+  second.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.setReplayRecordingEnabled(true);
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+  ASSERT_TRUE(world.isSimulationMode());
+  ASSERT_EQ(world.getRigidCollisionCandidatePairCapacity(), 1u);
+  ASSERT_EQ(world.getRigidCollisionContactCapacity(), 4u);
+
+  // Restore the current simulation frame directly. The solver schedule is
+  // unchanged, but replay discarded the pose-dependent native cache; the
+  // automatic policy must be eagerly rebuilt and relocked rather than report
+  // unresolved zero until a later step/query.
+  world.restoreReplayFrame(1u);
+  EXPECT_TRUE(world.isSimulationMode());
+  EXPECT_EQ(world.getRigidCollisionCandidatePairCapacity(), 1u);
+  EXPECT_EQ(world.getRigidCollisionContactCapacity(), 4u);
+}
+
+TEST(World, RigidContactConfigurationFailureIsAtomic)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions firstOptions;
+  firstOptions.position = Eigen::Vector3d(-0.4, 0.0, 0.0);
+  auto first = world.addRigidBody("invalid_config_first", firstOptions);
+  first.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  sx::RigidBodyOptions secondOptions;
+  secondOptions.position = Eigen::Vector3d(0.4, 0.0, 0.0);
+  auto second = world.addRigidBody("invalid_config_second", secondOptions);
+  second.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  auto& registry = sx::detail::registryOf(world);
+  const entt::entity configEntity
+      = sx::detail::toRegistryEntity(first.getEntity());
+  auto& config
+      = registry.emplace<sx::comps::RigidAvbdContactConfig>(configEntity);
+  config.startStiffness = 200.0;
+  config.maxStiffness = 200.0;
+  world.enterSimulationMode();
+  ASSERT_EQ(world.collide().size(), 1u);
+  world.step();
+  // The per-body config routes this envelope through the private AVBD contact
+  // compatibility path, which never records public contact forces. Its
+  // truthful witness that the contact was solved is the contact-stage envelope
+  // diagnostic, which every rigid family records before selecting a solver.
+  ASSERT_EQ(world.computeStepMetrics().activeContactCount, 1u);
+
+  Eigen::Isometry3d firstContactTransform = Eigen::Isometry3d::Identity();
+  firstContactTransform.translation() = Eigen::Vector3d(-0.4, 0.0, 0.0);
+  first.setTransform(firstContactTransform);
+  Eigen::Isometry3d secondContactTransform = Eigen::Isometry3d::Identity();
+  secondContactTransform.translation() = Eigen::Vector3d(0.4, 0.0, 0.0);
+  second.setTransform(secondContactTransform);
+
+  first.setLinearVelocity(Eigen::Vector3d(1.0, 2.0, 3.0));
+  first.setAngularVelocity(Eigen::Vector3d(4.0, 5.0, 6.0));
+  first.setForce(Eigen::Vector3d(7.0, 8.0, 9.0));
+  first.setTorque(Eigen::Vector3d(10.0, 11.0, 12.0));
+  const Eigen::Isometry3d expectedFirstTransform = first.getTransform();
+  const Eigen::Isometry3d expectedSecondTransform = second.getTransform();
+  const Eigen::Vector3d expectedLinearVelocity = first.getLinearVelocity();
+  const Eigen::Vector3d expectedAngularVelocity = first.getAngularVelocity();
+  const Eigen::Vector3d expectedForce = first.getForce();
+  const Eigen::Vector3d expectedTorque = first.getTorque();
+  const double expectedTime = world.getTime();
+  const std::size_t expectedFrame = world.getFrame();
+  const std::size_t expectedContactForceCount
+      = world.getLastContactForces().size();
+  const std::size_t expectedActiveContactCount
+      = world.computeStepMetrics().activeContactCount;
+
+  registry.get<sx::comps::RigidAvbdContactConfig>(configEntity).alpha = 2.0;
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+
+  EXPECT_TRUE(first.getTransform().isApprox(expectedFirstTransform, 0.0));
+  EXPECT_TRUE(second.getTransform().isApprox(expectedSecondTransform, 0.0));
+  EXPECT_TRUE(first.getLinearVelocity().isApprox(expectedLinearVelocity, 0.0));
+  EXPECT_TRUE(
+      first.getAngularVelocity().isApprox(expectedAngularVelocity, 0.0));
+  EXPECT_TRUE(first.getForce().isApprox(expectedForce, 0.0));
+  EXPECT_TRUE(first.getTorque().isApprox(expectedTorque, 0.0));
+  EXPECT_DOUBLE_EQ(world.getTime(), expectedTime);
+  EXPECT_EQ(world.getFrame(), expectedFrame);
+  EXPECT_EQ(world.getLastContactForces().size(), expectedContactForceCount);
+  // The rejected step records its contact envelope before validating the
+  // configuration, so the restore has to roll the diagnostic back too.
+  EXPECT_EQ(
+      world.computeStepMetrics().activeContactCount,
+      expectedActiveContactCount);
+}
+
+TEST(World, BoundedCollisionContactOrderIsDeterministicAfterUpdates)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.rigidCollisionCapacityOptions.candidatePairCapacity = 10u;
+  options.rigidCollisionCapacityOptions.contactCapacity = 10u;
+  sx::World world(options);
+
+  std::vector<sx::RigidBody> bodies;
+  for (int i = 0; i < 5; ++i) {
+    sx::RigidBodyOptions bodyOptions;
+    bodyOptions.position
+        = Eigen::Vector3d(0.1 * static_cast<double>(i), 0.0, 0.0);
+    auto body = world.addRigidBody(
+        "ordered_sphere_" + std::to_string(i), bodyOptions);
+    body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    bodies.push_back(body);
+  }
+  world.enterSimulationMode();
+
+  const auto contactSignature = [](const std::vector<sx::Contact>& contacts) {
+    std::vector<std::string> signature;
+    signature.reserve(contacts.size());
+    for (const auto& contact : contacts) {
+      signature.push_back(
+          std::string(contact.bodyA.getName()) + "/"
+          + std::string(contact.bodyB.getName()) + "/"
+          + std::to_string(contact.shapeIndexA) + "/"
+          + std::to_string(contact.shapeIndexB));
+    }
+    return signature;
+  };
+
+  const auto expected = contactSignature(world.collide());
+  ASSERT_EQ(expected.size(), 10u);
+
+  Eigen::Isometry3d farTransform = Eigen::Isometry3d::Identity();
+  farTransform.translation() = Eigen::Vector3d(100.0, 0.0, 0.0);
+  bodies[2].setTransform(farTransform);
+  EXPECT_LT(world.collide().size(), expected.size());
+
+  Eigen::Isometry3d restoredTransform = Eigen::Isometry3d::Identity();
+  restoredTransform.translation() = Eigen::Vector3d(0.2, 0.0, 0.0);
+  bodies[2].setTransform(restoredTransform);
+  EXPECT_EQ(contactSignature(world.collide()), expected);
+}
+
 // Test that CollisionShape local transforms offset the native collision object
 // relative to its owning body.
 TEST(World, CollisionQueryUsesShapeLocalTransform)
@@ -16212,7 +17977,7 @@ TEST(World, CollisionQuerySkipsLiveRigidBodyJointPairs)
   }
 }
 
-TEST(World, CollisionQueryCacheScratchUsesWorldAllocator)
+TEST(World, CollisionQueryCacheBakesCapacityBeforeDelayedContacts)
 {
   namespace sx = dart::simulation;
 
@@ -16239,9 +18004,9 @@ TEST(World, CollisionQueryCacheScratchUsesWorldAllocator)
   const auto allocationsBeforeContactResults = freeList.getAllocationCount();
   const auto contacts = world.collide();
   ASSERT_FALSE(contacts.empty());
-  EXPECT_GT(freeList.getAllocationCount(), allocationsBeforeContactResults)
-      << "cached collision contact results should reserve from the World "
-         "free allocator when contacts first appear for a warmed shape set";
+  EXPECT_EQ(freeList.getAllocationCount(), allocationsBeforeContactResults)
+      << "the collision bake should reserve aggregate contact storage before "
+         "a separated shape set first becomes active";
 
   const auto allocationsAfterPopulate = freeList.getAllocationCount();
   const auto warmedContacts = world.collide();
@@ -21762,6 +23527,61 @@ TEST(World, RigidIpcAdaptiveStiffnessPersistsAcrossSingleStepCalls)
       batchedCall.linearVelocity, 1e-10));
 }
 
+TEST(World, RigidIpcSolverTransitionsColdStartAdaptiveStiffness)
+{
+  namespace sx = dart::simulation;
+
+  const auto serializedIpcLowerBound = [](const sx::World& value) {
+    std::stringstream output;
+    value.saveBinary(output);
+    const std::string bytes = output.str();
+    EXPECT_GE(bytes.size(), sizeof(double));
+    double lowerBound = 0.0;
+    if (bytes.size() >= sizeof(double)) {
+      std::memcpy(
+          &lowerBound,
+          bytes.data() + bytes.size() - sizeof(double),
+          sizeof(double));
+    }
+    return lowerBound;
+  };
+
+  sx::World world;
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.25}));
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.258);
+  boxOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto box = world.addRigidBody("box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
+
+  world.step(2u);
+  const double warmLowerBound = serializedIpcLowerBound(world);
+  ASSERT_GT(warmLowerBound, 1.0)
+      << "the transition scene must exercise adaptive IPC continuation";
+
+  EXPECT_THROW(
+      world.setRigidBodySolver(static_cast<sx::RigidBodySolver>(99)),
+      sx::InvalidArgumentException);
+  EXPECT_DOUBLE_EQ(serializedIpcLowerBound(world), warmLowerBound)
+      << "a rejected transition must preserve the live IPC continuation";
+
+  world.setRigidBodySolver(sx::RigidBodySolver::SequentialImpulse);
+  EXPECT_DOUBLE_EQ(serializedIpcLowerBound(world), 1.0);
+
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  EXPECT_DOUBLE_EQ(serializedIpcLowerBound(world), 1.0);
+}
+
 // Test that lagged friction in the opt-in rigid IPC stage produces an
 // observable runtime effect: at an activated contact a tangential slide is
 // braked relative to the frictionless solve, without reversing direction.
@@ -24115,6 +25935,133 @@ TEST(World, StepAcceptsCustomStage)
       child.getTransform().isApprox(updatedParentTransform * childOffset));
 }
 
+TEST(World, ReplayRecordingRejectsCallerOwnedStagesBeforeExecution)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  sx::World world;
+  auto body = world.addRigidBody("body");
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  compute::SequentialExecutor executor;
+  CountingKinematicsStage stage;
+  const Eigen::Isometry3d transform = body.getTransform();
+  const double time = world.getTime();
+  const std::size_t frame = world.getFrame();
+  const auto cursor = world.getReplayCursor();
+
+  EXPECT_THROW(world.step(executor, stage), sx::InvalidOperationException);
+  EXPECT_EQ(stage.executionCount, 0);
+
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(stage);
+  EXPECT_THROW(world.step(executor, pipeline), sx::InvalidOperationException);
+  EXPECT_EQ(stage.executionCount, 0);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), time);
+  EXPECT_EQ(world.getFrame(), frame);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), cursor);
+  EXPECT_TRUE(body.getTransform().isApprox(transform, 0.0));
+}
+
+TEST(World, BinarySaveRejectsOpaqueCallerOwnedContinuationState)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  sx::World clean;
+  std::stringstream cleanSnapshot;
+  ASSERT_NO_THROW(clean.saveBinary(cleanSnapshot));
+  const std::string cleanBytes = cleanSnapshot.str();
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  sx::World finalStageWorld(options);
+  compute::SequentialExecutor executor;
+  NoOpWorldStage finalStage;
+  ASSERT_NO_THROW(finalStageWorld.step(executor, finalStage));
+
+  std::ostringstream rejectedFinalStageOutput;
+  EXPECT_THROW(
+      finalStageWorld.saveBinary(rejectedFinalStageOutput),
+      sx::InvalidOperationException);
+  EXPECT_TRUE(rejectedFinalStageOutput.str().empty());
+
+  std::istringstream malformed("not-a-world");
+  EXPECT_THROW(
+      finalStageWorld.loadBinary(malformed), sx::InvalidArgumentException);
+  std::ostringstream rejectedAfterFailedLoad;
+  EXPECT_THROW(
+      finalStageWorld.saveBinary(rejectedAfterFailedLoad),
+      sx::InvalidOperationException);
+  EXPECT_TRUE(rejectedAfterFailedLoad.str().empty());
+
+  std::istringstream valid(cleanBytes);
+  ASSERT_NO_THROW(finalStageWorld.loadBinary(valid));
+  std::ostringstream acceptedAfterLoad;
+  EXPECT_NO_THROW(finalStageWorld.saveBinary(acceptedAfterLoad));
+  EXPECT_FALSE(acceptedAfterLoad.str().empty());
+
+  sx::World pipelineWorld(options);
+  NoOpWorldStage pipelineStage;
+  compute::WorldStepPipeline pipeline;
+  pipeline.addStage(pipelineStage);
+  ASSERT_NO_THROW(pipelineWorld.step(executor, pipeline));
+  std::ostringstream rejectedPipelineOutput;
+  EXPECT_THROW(
+      pipelineWorld.saveBinary(rejectedPipelineOutput),
+      sx::InvalidOperationException);
+  EXPECT_TRUE(rejectedPipelineOutput.str().empty());
+
+  pipelineWorld.clear();
+  std::ostringstream acceptedAfterClear;
+  EXPECT_NO_THROW(pipelineWorld.saveBinary(acceptedAfterClear));
+  EXPECT_FALSE(acceptedAfterClear.str().empty());
+}
+
+TEST(World, PublicRequiredVbdRejectsCallerOwnedFinalStageAtomically)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  auto obstacle = world.addRigidBody("obstacle", obstacleOptions);
+  obstacle.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d::Constant(0.5)));
+  obstacle.setDeformableObstaclePolicy({.surfaceObstacle = true});
+
+  sx::DeformableBodyOptions bodyOptions;
+  bodyOptions.positions
+      = {Eigen::Vector3d::Zero(), Eigen::Vector3d(0.5, 0.0, 0.0)};
+  bodyOptions.masses = {1.0, 1.0};
+  bodyOptions.fixedNodes = {0u};
+  bodyOptions.edges = {sx::DeformableEdge{0u, 1u, 0.5}};
+  auto body = world.addDeformableBody("vbd_body", bodyOptions);
+  sx::DeformableSolverOptions solverOptions;
+  solverOptions.groundContactStiffness = 1000.0;
+  world.configureDeformableSolver("vbd_body", solverOptions);
+
+  compute::SequentialExecutor executor;
+  MutatingThrowingWorldStage stage(obstacle);
+  const Eigen::Isometry3d obstacleTransform = obstacle.getTransform();
+  const Eigen::Vector3d bodyPosition = body.getPosition(1u);
+
+  EXPECT_THROW(world.step(executor, stage), sx::InvalidOperationException);
+  EXPECT_EQ(stage.executionCount, 0);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_TRUE(obstacle.getTransform().isApprox(obstacleTransform, 0.0));
+  EXPECT_TRUE(body.getPosition(1u).isApprox(bodyPosition, 0.0));
+}
+
 TEST(World, StepRebuildsCachedKinematicsAfterFrameReparenting)
 {
   namespace sx = dart::simulation;
@@ -25516,6 +27463,546 @@ TEST(World, ReplayRecordingRestoresRigidBodyState)
   EXPECT_EQ(world.getReplayFrameCount(), 1u);
 }
 
+TEST(World, ReplayRestoreWorksWhileRecordingIsDisabled)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.1);
+
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(0.0, 0.0, 1.0);
+  options.linearVelocity = Eigen::Vector3d::UnitX();
+  sx::RigidBody body = world.addRigidBody("body", options);
+
+  world.setReplayRecordingEnabled(true);
+  world.step(2u);
+  ASSERT_EQ(world.getReplayFrameCount(), 3u);
+  ASSERT_EQ(world.getReplayCursor(), 2u);
+
+  world.setReplayRecordingEnabled(false);
+  world.step();
+  ASSERT_FALSE(world.isReplayRecordingEnabled());
+  ASSERT_EQ(world.getReplayFrameCount(), 3u);
+  ASSERT_EQ(world.getReplayCursor(), 2u);
+  ASSERT_EQ(world.getFrame(), 3u);
+  ASSERT_NEAR(body.getTranslation().x(), 0.3, 1e-12);
+
+  ASSERT_NO_THROW(world.restoreReplayFrame(0u));
+  EXPECT_FALSE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 3u);
+  ASSERT_EQ(world.getReplayCursor(), 0u);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_TRUE(body.getTranslation().isApprox(options.position, 0.0));
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(options.linearVelocity, 0.0));
+}
+
+#ifdef DART_HAS_DIFF
+TEST(World, ReplayRecordingRestoresStepDerivativeValidity)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.differentiable = true;
+  sx::World world(options);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("replay_derivative_chain");
+  auto base = robot.addLink("base");
+  sx::JointSpec jointSpec;
+  jointSpec.name = "hinge";
+  jointSpec.type = sx::JointType::Revolute;
+  jointSpec.axis = Eigen::Vector3d::UnitY();
+  auto link = robot.addLink("link", base, jointSpec);
+  link.setMass(1.0);
+
+  world.enterSimulationMode();
+  const auto& bakedStorage = sx::detail::storageOf(world);
+  ASSERT_TRUE(bakedStorage.stepDerivatives.has_value());
+  ASSERT_FALSE(bakedStorage.stepDerivativesValid);
+  EXPECT_THROW(
+      static_cast<void>(world.getStepDerivatives()),
+      sx::InvalidOperationException);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+  EXPECT_NO_THROW(static_cast<void>(world.getStepDerivatives()));
+  ASSERT_TRUE(sx::detail::storageOf(world).stepDerivativesValid);
+
+  world.restoreReplayFrame(0u);
+  EXPECT_FALSE(sx::detail::storageOf(world).stepDerivativesValid);
+  EXPECT_THROW(
+      static_cast<void>(world.getStepDerivatives()),
+      sx::InvalidOperationException)
+      << "a replay frame captured after bake but before step must not publish "
+         "bake-time derivative scratch as a valid result";
+
+  world.restoreReplayFrame(1u);
+  EXPECT_TRUE(sx::detail::storageOf(world).stepDerivativesValid);
+  EXPECT_NO_THROW(static_cast<void>(world.getStepDerivatives()));
+}
+#endif
+
+TEST(World, ReplayRecordingRestoresLastStepContactDiagnosticsAndForces)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(1e-3);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+  sx::RigidBodyOptions sphereOptions;
+  sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.45);
+  sphereOptions.linearVelocity = -Eigen::Vector3d::UnitZ();
+  auto sphere = world.addRigidBody("sphere", sphereOptions);
+  sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+  world.enterSimulationMode();
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_TRUE(world.getLastContactForces().empty());
+  EXPECT_EQ(world.computeStepMetrics().activeContactCount, 0u);
+
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+  const sx::compute::StepMetrics contactMetrics = world.computeStepMetrics();
+  const std::vector<sx::ContactForce> contactForces
+      = world.getLastContactForces();
+  ASSERT_GT(contactMetrics.activeContactCount, 0u);
+  ASSERT_GT(contactMetrics.lastStepIterations, 0u);
+  ASSERT_FALSE(contactForces.empty());
+
+  Eigen::Isometry3d separated = Eigen::Isometry3d::Identity();
+  separated.translation() = Eigen::Vector3d(0.0, 0.0, 3.0);
+  sphere.setTransform(separated);
+  sphere.setLinearVelocity(Eigen::Vector3d::Zero());
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 3u);
+  EXPECT_EQ(world.computeStepMetrics().activeContactCount, 0u);
+  EXPECT_TRUE(world.getLastContactForces().empty());
+
+  world.restoreReplayFrame(1u);
+  const sx::compute::StepMetrics restoredMetrics = world.computeStepMetrics();
+  EXPECT_EQ(
+      restoredMetrics.activeContactCount, contactMetrics.activeContactCount);
+  EXPECT_DOUBLE_EQ(
+      restoredMetrics.maxPenetrationDepth, contactMetrics.maxPenetrationDepth);
+  EXPECT_EQ(
+      restoredMetrics.lastStepIterations, contactMetrics.lastStepIterations);
+  EXPECT_DOUBLE_EQ(
+      restoredMetrics.lastStepResidual, contactMetrics.lastStepResidual);
+  ASSERT_EQ(world.getLastContactForces().size(), contactForces.size());
+  for (std::size_t index = 0u; index < contactForces.size(); ++index) {
+    const sx::ContactForce& actual = world.getLastContactForces()[index];
+    const sx::ContactForce& expected = contactForces[index];
+    EXPECT_TRUE(actual.point.isApprox(expected.point, 0.0));
+    EXPECT_TRUE(actual.force.isApprox(expected.force, 0.0));
+    EXPECT_EQ(actual.bodyA.getEntity(), expected.bodyA.getEntity());
+    EXPECT_EQ(actual.bodyB.getEntity(), expected.bodyB.getEntity());
+  }
+
+  world.restoreReplayFrame(0u);
+  const sx::compute::StepMetrics restoredInitial = world.computeStepMetrics();
+  EXPECT_EQ(restoredInitial.activeContactCount, 0u);
+  EXPECT_DOUBLE_EQ(restoredInitial.maxPenetrationDepth, 0.0);
+  EXPECT_EQ(restoredInitial.lastStepIterations, 0u);
+  EXPECT_DOUBLE_EQ(restoredInitial.lastStepResidual, 0.0);
+  EXPECT_TRUE(world.getLastContactForces().empty());
+}
+
+TEST(World, ReplayRecordingRestoresPublicVbdAvbdLastStepDiagnostics)
+{
+  namespace sx = dart::simulation;
+
+  for (const sx::RigidBodySolver solver :
+       {sx::RigidBodySolver::Vbd, sx::RigidBodySolver::Avbd}) {
+    sx::WorldOptions options;
+    options.rigidBodySolver = solver;
+    options.rigidConstraintOptions.iterations = 7u;
+    sx::World world(options);
+    world.setGravity(Eigen::Vector3d::Zero());
+
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(5.0, 5.0, 0.5)));
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.45);
+    auto sphere = world.addRigidBody("sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+
+    world.enterSimulationMode();
+    world.setReplayRecordingEnabled(true);
+    world.step();
+    ASSERT_EQ(world.getReplayFrameCount(), 2u);
+    const sx::compute::StepMetrics stepped = world.computeStepMetrics();
+    ASSERT_GT(stepped.activeContactCount, 0u);
+    ASSERT_EQ(stepped.lastStepIterations, 7u);
+
+    world.restoreReplayFrame(0u);
+    const sx::compute::StepMetrics initial = world.computeStepMetrics();
+    EXPECT_EQ(initial.activeContactCount, 0u);
+    EXPECT_DOUBLE_EQ(initial.maxPenetrationDepth, 0.0);
+    EXPECT_EQ(initial.lastStepIterations, 0u);
+    EXPECT_DOUBLE_EQ(initial.lastStepResidual, 0.0);
+
+    world.restoreReplayFrame(1u);
+    const sx::compute::StepMetrics restored = world.computeStepMetrics();
+    EXPECT_EQ(restored.activeContactCount, stepped.activeContactCount);
+    EXPECT_DOUBLE_EQ(restored.maxPenetrationDepth, stepped.maxPenetrationDepth);
+    EXPECT_EQ(restored.lastStepIterations, stepped.lastStepIterations);
+    EXPECT_DOUBLE_EQ(restored.lastStepResidual, stepped.lastStepResidual);
+  }
+}
+
+TEST(World, ReplayRestoreRollsBackAfterAllocatorFailure)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  FailOnceMemoryAllocator allocator;
+  sx::WorldOptions worldOptions;
+  worldOptions.baseAllocator = &allocator;
+  worldOptions.freeListInitialAllocation = 4096u;
+  worldOptions.frameScratchInitialCapacity = 4096u;
+  sx::World world(worldOptions);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("robot");
+  robot.addLink("base");
+  const entt::entity robotEntity
+      = sx::detail::toRegistryEntity(robot.getEntity());
+
+  constexpr std::size_t kNodeCount = 64u;
+  sx::DeformableBodyOptions bodyOptions;
+  bodyOptions.positions.reserve(kNodeCount);
+  bodyOptions.masses.assign(kNodeCount, 1.0);
+  for (std::size_t node = 0u; node < kNodeCount; ++node) {
+    bodyOptions.positions.emplace_back(
+        0.01 * static_cast<double>(node), 0.0, 0.0);
+  }
+  auto body = world.addDeformableBody("body", bodyOptions);
+  const Eigen::Vector3d recordedPosition = body.getPosition(0u);
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& replayAllocator = world.getMemoryManager().getFreeAllocator();
+  compute::MultibodyVariationalState targetState{
+      true,
+      compute::MultibodyVariationalState::DeltaTransformVector{
+          dart::common::StlAllocator<Eigen::Isometry3d>{replayAllocator}},
+      compute::MultibodyVariationalState::MomentumVector{
+          dart::common::StlAllocator<Eigen::Matrix<double, 6, 1>>{
+              replayAllocator}}};
+  constexpr std::size_t kTransientStateSize = 4096u;
+  targetState.previousDeltaTransform.assign(
+      kTransientStateSize, Eigen::Isometry3d::Identity());
+  targetState.previousMomentum.assign(
+      kTransientStateSize, Eigen::Matrix<double, 6, 1>::Ones());
+  registry.emplace<compute::MultibodyVariationalState>(
+      robotEntity, std::move(targetState));
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  // Prime the temporary rollback-frame capacity so the injected allocation
+  // failure occurs while restoring the allocator-bearing transient state,
+  // after the deformable node payload has already been written.
+  ASSERT_NO_THROW(world.restoreReplayFrame(0u));
+  registry.remove<compute::MultibodyVariationalState>(robotEntity);
+  const Eigen::Vector3d livePosition(9.0, 8.0, 7.0);
+  body.setPosition(0u, livePosition);
+
+  {
+    // Retain every free-list block large enough for the first target transient
+    // vector. The one deliberately failed probe leaves smaller scratch space
+    // available, but guarantees the next same-sized restore request reaches
+    // the base allocator after deformable nodes have already been overwritten.
+    std::vector<compute::MultibodyVariationalState::DeltaTransformVector>
+        transformHogs;
+    for (;;) {
+      allocator.failNextAllocation();
+      try {
+        compute::MultibodyVariationalState::DeltaTransformVector transformHog{
+            dart::common::StlAllocator<Eigen::Isometry3d>{replayAllocator}};
+        transformHog.assign(kTransientStateSize, Eigen::Isometry3d::Identity());
+        transformHogs.push_back(std::move(transformHog));
+      } catch (const std::bad_alloc&) {
+        break;
+      }
+    }
+    ASSERT_FALSE(transformHogs.empty());
+
+    const std::size_t failureCountBefore = allocator.failureCount();
+    allocator.failNextAllocation();
+    EXPECT_THROW(world.restoreReplayFrame(0u), std::bad_alloc);
+    EXPECT_EQ(allocator.failureCount(), failureCountBefore + 1u);
+    EXPECT_TRUE(body.getPosition(0u).isApprox(livePosition, 0.0));
+    EXPECT_FALSE(
+        registry.all_of<compute::MultibodyVariationalState>(robotEntity));
+    EXPECT_FALSE(world.isSimulationMode());
+    EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+    EXPECT_EQ(world.getFrame(), 0u);
+    EXPECT_EQ(world.getReplayFrameCount(), 1u);
+    ASSERT_TRUE(world.getReplayCursor().has_value());
+    EXPECT_EQ(*world.getReplayCursor(), 0u);
+  }
+
+  ASSERT_NO_THROW(world.restoreReplayFrame(0u));
+  EXPECT_TRUE(body.getPosition(0u).isApprox(recordedPosition, 0.0));
+  const auto& restoredState
+      = registry.get<compute::MultibodyVariationalState>(robotEntity);
+  EXPECT_TRUE(restoredState.bootstrapped);
+  EXPECT_EQ(restoredState.previousDeltaTransform.size(), kTransientStateSize);
+  EXPECT_EQ(restoredState.previousMomentum.size(), kTransientStateSize);
+}
+
+TEST(World, ReplayRestorePersistentAllocatorFailureIsAtomic)
+{
+  namespace sx = dart::simulation;
+  namespace compute = dart::simulation::compute;
+
+  FailFromNowOnMemoryAllocator allocator;
+  sx::WorldOptions worldOptions;
+  worldOptions.baseAllocator = &allocator;
+  worldOptions.freeListInitialAllocation = 4096u;
+  worldOptions.frameScratchInitialCapacity = 4096u;
+  sx::World world(worldOptions);
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  auto robot = world.addMultibody("persistent_failure_robot");
+  const auto baseLink = robot.addLink("base");
+  const entt::entity robotEntity
+      = sx::detail::toRegistryEntity(robot.getEntity());
+
+  constexpr std::size_t kNodeCount = 64u;
+  sx::DeformableBodyOptions bodyOptions;
+  bodyOptions.positions.reserve(kNodeCount);
+  bodyOptions.masses.assign(kNodeCount, 1.0);
+  for (std::size_t node = 0u; node < kNodeCount; ++node) {
+    bodyOptions.positions.emplace_back(
+        0.01 * static_cast<double>(node), 0.0, 0.0);
+  }
+  auto body = world.addDeformableBody("persistent_failure_body", bodyOptions);
+  const Eigen::Vector3d recordedPosition = body.getPosition(0u);
+
+  Eigen::Isometry3d firstParentOffset = Eigen::Isometry3d::Identity();
+  firstParentOffset.linear()
+      = Eigen::AngleAxisd(0.37, Eigen::Vector3d(1.0, 2.0, 3.0).normalized())
+            .toRotationMatrix();
+  firstParentOffset.translation() = Eigen::Vector3d(0.4, -0.2, 0.7);
+  auto firstParent
+      = world.addFreeFrame("persistent_failure_parent_a", sx::Frame::world());
+  firstParent.setLocalTransform(firstParentOffset);
+  Eigen::Isometry3d secondParentOffset = Eigen::Isometry3d::Identity();
+  secondParentOffset.linear()
+      = Eigen::AngleAxisd(-0.29, Eigen::Vector3d(-2.0, 1.0, 0.5).normalized())
+            .toRotationMatrix();
+  secondParentOffset.translation() = Eigen::Vector3d(-0.3, 0.8, 0.1);
+  const auto secondParent = world.addFixedFrame(
+      "persistent_failure_parent_b", firstParent, secondParentOffset);
+  auto nestedRigidBody = world.addRigidBody("persistent_failure_nested_rigid");
+  nestedRigidBody.setParentFrame(secondParent);
+  Eigen::Isometry3d recordedRigidWorldTransform = Eigen::Isometry3d::Identity();
+  recordedRigidWorldTransform.linear()
+      = Eigen::AngleAxisd(0.43, Eigen::Vector3d(0.5, -1.0, 2.0).normalized())
+            .toRotationMatrix();
+  recordedRigidWorldTransform.translation() = Eigen::Vector3d(1.2, -0.6, 0.9);
+  nestedRigidBody.setTransform(recordedRigidWorldTransform);
+  const Eigen::Matrix4d recordedRigidLocalTransform
+      = nestedRigidBody.getLocalTransform().matrix();
+
+  auto& registry = sx::detail::registryOf(world);
+  auto& replayAllocator = world.getMemoryManager().getFreeAllocator();
+  compute::MultibodyVariationalState targetState{
+      true,
+      compute::MultibodyVariationalState::DeltaTransformVector{
+          dart::common::StlAllocator<Eigen::Isometry3d>{replayAllocator}},
+      compute::MultibodyVariationalState::MomentumVector{
+          dart::common::StlAllocator<Eigen::Matrix<double, 6, 1>>{
+              replayAllocator}}};
+  constexpr std::size_t kTransientStateSize = 4096u;
+  targetState.previousDeltaTransform.assign(
+      kTransientStateSize, Eigen::Isometry3d::Identity());
+  targetState.previousMomentum.assign(
+      kTransientStateSize, Eigen::Matrix<double, 6, 1>::Ones());
+  registry.emplace<compute::MultibodyVariationalState>(
+      robotEntity, std::move(targetState));
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  ASSERT_NO_THROW(world.restoreReplayFrame(0u));
+  registry.remove<compute::MultibodyVariationalState>(robotEntity);
+
+  const Eigen::Vector3d livePosition(9.0, 8.0, 7.0);
+  body.setPosition(0u, livePosition);
+  Eigen::Isometry3d liveRigidWorldTransform = Eigen::Isometry3d::Identity();
+  liveRigidWorldTransform.linear()
+      = Eigen::AngleAxisd(-0.51, Eigen::Vector3d(3.0, 1.0, -2.0).normalized())
+            .toRotationMatrix();
+  liveRigidWorldTransform.translation() = Eigen::Vector3d(-0.7, 1.4, 0.2);
+  nestedRigidBody.setTransform(liveRigidWorldTransform);
+  static_cast<void>(nestedRigidBody.getTransform());
+  const Eigen::Matrix4d liveRigidLocalTransform
+      = nestedRigidBody.getLocalTransform().matrix();
+  const entt::entity nestedRigidEntity
+      = sx::detail::toRegistryEntity(nestedRigidBody.getEntity());
+  const sx::comps::FrameCache liveRigidFrameCache
+      = registry.get<sx::comps::FrameCache>(nestedRigidEntity);
+  const Eigen::Vector3d liveGravity(1.0, 2.0, 3.0);
+  world.setGravity(liveGravity);
+  world.setTimeStep(0.02);
+  world.setRigidBodySolver(sx::RigidBodySolver::SequentialImpulse);
+  world.setContactGradientMode(sx::ContactGradientMode::PreContactSurrogate);
+  world.setComputeAcceleratorPolicy(
+      sx::ComputeAcceleratorPolicy::PreferAccelerated);
+
+  auto& liveStorage = sx::detail::storageOf(world);
+  liveStorage.lastStepDiagnostics.activeContactCount = 1u;
+  liveStorage.lastStepDiagnostics.maxPenetrationDepth = 0.125;
+  liveStorage.lastStepDiagnostics.lastStepIterations = 11u;
+  liveStorage.lastStepDiagnostics.lastStepResidual = 0.03125;
+  sx::ContactForce liveContactForce;
+  liveContactForce.point = Eigen::Vector3d(1.0, 2.0, 3.0);
+  liveContactForce.force = Eigen::Vector3d(4.0, 5.0, 6.0);
+  liveContactForce.bodyA = sx::CollisionBody(baseLink.getEntity(), &world);
+  liveContactForce.bodyB = sx::CollisionBody(baseLink.getEntity(), &world);
+  liveStorage.lastContactForces.push_back(liveContactForce);
+
+  const std::string liveResolvedConfiguration
+      = world.getResolvedConfiguration().toSummaryText();
+  const auto liveRigidConstraintOptions = world.getRigidConstraintOptions();
+  const sx::compute::StepMetrics liveMetrics = world.computeStepMetrics();
+  const std::vector<sx::ContactForce> liveContactForces
+      = world.getLastContactForces();
+  const double liveReplayTime = world.getReplayFrameTime(0u);
+  const std::size_t liveReplaySimulationFrame
+      = world.getReplaySimulationFrame(0u);
+
+  {
+    std::vector<compute::MultibodyVariationalState::DeltaTransformVector>
+        transformHogs;
+    for (;;) {
+      allocator.failFromNowOn();
+      try {
+        compute::MultibodyVariationalState::DeltaTransformVector transformHog{
+            dart::common::StlAllocator<Eigen::Isometry3d>{replayAllocator}};
+        transformHog.assign(kTransientStateSize, Eigen::Isometry3d::Identity());
+        transformHogs.push_back(std::move(transformHog));
+      } catch (const std::bad_alloc&) {
+        allocator.allowAllocations();
+        break;
+      }
+    }
+    ASSERT_FALSE(transformHogs.empty());
+
+    const std::size_t failureCountBefore = allocator.failureCount();
+    allocator.failFromNowOn();
+    EXPECT_THROW(world.restoreReplayFrame(0u), std::bad_alloc);
+    const std::size_t failureCountAfter = allocator.failureCount();
+    EXPECT_TRUE(allocator.isFailing());
+    EXPECT_EQ(failureCountAfter, failureCountBefore + 1u);
+
+    EXPECT_TRUE(body.getPosition(0u).isApprox(livePosition, 0.0));
+    EXPECT_FALSE(
+        registry.all_of<compute::MultibodyVariationalState>(robotEntity));
+    EXPECT_TRUE((nestedRigidBody.getLocalTransform().matrix().array()
+                 == liveRigidLocalTransform.array())
+                    .all());
+    const auto& actualRigidFrameCache
+        = registry.get<sx::comps::FrameCache>(nestedRigidEntity);
+    EXPECT_EQ(
+        actualRigidFrameCache.needTransformUpdate,
+        liveRigidFrameCache.needTransformUpdate);
+    EXPECT_TRUE((actualRigidFrameCache.worldTransform.matrix().array()
+                 == liveRigidFrameCache.worldTransform.matrix().array())
+                    .all());
+    EXPECT_FALSE(world.isSimulationMode());
+    EXPECT_TRUE(world.getGravity().isApprox(liveGravity, 0.0));
+    EXPECT_DOUBLE_EQ(world.getTimeStep(), 0.02);
+    EXPECT_EQ(
+        world.getRigidBodySolver(), sx::RigidBodySolver::SequentialImpulse);
+    EXPECT_EQ(
+        world.getRigidConstraintOptions().iterations,
+        liveRigidConstraintOptions.iterations);
+    EXPECT_EQ(
+        world.getContactGradientMode(),
+        sx::ContactGradientMode::PreContactSurrogate);
+    EXPECT_EQ(
+        world.getComputeAcceleratorPolicy(),
+        sx::ComputeAcceleratorPolicy::PreferAccelerated);
+    EXPECT_EQ(
+        world.getResolvedConfiguration().toSummaryText(),
+        liveResolvedConfiguration);
+    EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+    EXPECT_EQ(world.getFrame(), 0u);
+
+    const sx::compute::StepMetrics actualMetrics = world.computeStepMetrics();
+    EXPECT_DOUBLE_EQ(actualMetrics.kineticEnergy, liveMetrics.kineticEnergy);
+    EXPECT_DOUBLE_EQ(
+        actualMetrics.potentialEnergy, liveMetrics.potentialEnergy);
+    EXPECT_DOUBLE_EQ(actualMetrics.totalEnergy, liveMetrics.totalEnergy);
+    EXPECT_TRUE(
+        actualMetrics.linearMomentum.isApprox(liveMetrics.linearMomentum, 0.0));
+    EXPECT_TRUE(actualMetrics.angularMomentum.isApprox(
+        liveMetrics.angularMomentum, 0.0));
+    EXPECT_EQ(actualMetrics.activeContactCount, liveMetrics.activeContactCount);
+    EXPECT_DOUBLE_EQ(
+        actualMetrics.maxPenetrationDepth, liveMetrics.maxPenetrationDepth);
+    EXPECT_EQ(actualMetrics.lastStepIterations, liveMetrics.lastStepIterations);
+    EXPECT_DOUBLE_EQ(
+        actualMetrics.lastStepResidual, liveMetrics.lastStepResidual);
+    ASSERT_EQ(world.getLastContactForces().size(), liveContactForces.size());
+    for (std::size_t index = 0u; index < liveContactForces.size(); ++index) {
+      const sx::ContactForce& actual = world.getLastContactForces()[index];
+      const sx::ContactForce& expected = liveContactForces[index];
+      EXPECT_TRUE(actual.point.isApprox(expected.point, 0.0));
+      EXPECT_TRUE(actual.force.isApprox(expected.force, 0.0));
+      EXPECT_EQ(actual.bodyA.getEntity(), expected.bodyA.getEntity());
+      EXPECT_EQ(actual.bodyA.getWorld(), expected.bodyA.getWorld());
+      EXPECT_EQ(actual.bodyB.getEntity(), expected.bodyB.getEntity());
+      EXPECT_EQ(actual.bodyB.getWorld(), expected.bodyB.getWorld());
+    }
+
+    EXPECT_TRUE(world.isReplayRecordingEnabled());
+    EXPECT_EQ(world.getReplayFrameCount(), 1u);
+    ASSERT_TRUE(world.getReplayCursor().has_value());
+    EXPECT_EQ(*world.getReplayCursor(), 0u);
+    EXPECT_DOUBLE_EQ(world.getReplayFrameTime(0u), liveReplayTime);
+    EXPECT_EQ(world.getReplaySimulationFrame(0u), liveReplaySimulationFrame);
+
+    // The allocator remains in persistent-failure mode, but rollback itself
+    // made no fallback request to the failing base allocator.
+    EXPECT_TRUE(allocator.isFailing());
+    EXPECT_EQ(allocator.failureCount(), failureCountAfter);
+  }
+
+  allocator.allowAllocations();
+  ASSERT_NO_THROW(world.restoreReplayFrame(0u));
+  EXPECT_TRUE(body.getPosition(0u).isApprox(recordedPosition, 0.0));
+  const auto& restoredState
+      = registry.get<compute::MultibodyVariationalState>(robotEntity);
+  EXPECT_TRUE(restoredState.bootstrapped);
+  EXPECT_EQ(restoredState.previousDeltaTransform.size(), kTransientStateSize);
+  EXPECT_EQ(restoredState.previousMomentum.size(), kTransientStateSize);
+  EXPECT_TRUE((nestedRigidBody.getLocalTransform().matrix().array()
+               == recordedRigidLocalTransform.array())
+                  .all());
+  ASSERT_NO_THROW(world.step());
+}
+
 // Test replay restores World-level solver-family and policy metadata before
 // continuing from a simulation-mode frame.
 TEST(World, ReplayRecordingRestoresSolverOptions)
@@ -25636,6 +28123,81 @@ TEST(World, ReplayRecordingRestoresRigidAvbdWarmStartState)
       child.getLinearVelocity().isApprox(expectedLinearVelocity, 1e-12));
   EXPECT_TRUE(
       child.getAngularVelocity().isApprox(expectedAngularVelocity, 1e-12));
+}
+
+// A rigid friction contact carries two continuation surfaces beyond its scalar
+// rows: detected material-point identities protect spatial-rank warm starts,
+// and one contact-owned tangent anchor preserves static friction. Restore an
+// earlier sticking-contact frame after a later no-contact frame has cleared
+// both sidecars, then require the resumed step to match an uninterrupted world.
+TEST(World, ReplayRecordingRestoresRigidAvbdFrictionContactSidecars)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
+  options.timeStep = 0.01;
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidConstraintOptions.iterations = 12u;
+
+  const auto addScene = [](sx::World& world) {
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(8.0, 8.0, 0.5)));
+    ground.setFriction(1.0);
+
+    sx::RigidBodyOptions sphereOptions;
+    sphereOptions.mass = 1.0;
+    sphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.495);
+    sphereOptions.linearVelocity = Eigen::Vector3d(0.08, -0.03, 0.0);
+    auto sphere = world.addRigidBody("sphere", sphereOptions);
+    sphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    sphere.setFriction(1.0);
+    return sphere;
+  };
+
+  sx::World uninterrupted(options);
+  auto uninterruptedBody = addScene(uninterrupted);
+  ASSERT_FALSE(uninterrupted.collide().empty());
+  uninterrupted.step();
+  ASSERT_FALSE(uninterrupted.collide().empty())
+      << "the branch step must rebuild the same persistent contact";
+  uninterrupted.step();
+  const Eigen::Isometry3d expectedTransform = uninterruptedBody.getTransform();
+  const Eigen::Vector3d expectedLinearVelocity
+      = uninterruptedBody.getLinearVelocity();
+  const Eigen::Vector3d expectedAngularVelocity
+      = uninterruptedBody.getAngularVelocity();
+
+  sx::World replay(options);
+  auto replayBody = addScene(replay);
+  ASSERT_FALSE(replay.collide().empty());
+  replay.setReplayRecordingEnabled(true);
+  replay.step();
+  ASSERT_EQ(replay.getReplayFrameCount(), 2u);
+  ASSERT_FALSE(replay.collide().empty())
+      << "the recorded frame must retain an active contact for continuation";
+
+  Eigen::Isometry3d separated = replayBody.getTransform();
+  separated.translation().z() = 5.0;
+  replayBody.setTransform(separated);
+  replayBody.setLinearVelocity(Eigen::Vector3d::Zero());
+  replayBody.setAngularVelocity(Eigen::Vector3d::Zero());
+  replay.step();
+  ASSERT_EQ(replay.getReplayFrameCount(), 3u);
+  ASSERT_TRUE(replay.collide().empty());
+
+  replay.restoreReplayFrame(1u);
+  replay.step();
+
+  EXPECT_TRUE(replayBody.getTransform().isApprox(expectedTransform, 1e-12));
+  EXPECT_TRUE(
+      replayBody.getLinearVelocity().isApprox(expectedLinearVelocity, 1e-12));
+  EXPECT_TRUE(
+      replayBody.getAngularVelocity().isApprox(expectedAngularVelocity, 1e-12));
 }
 
 // Crossing through Sequential Impulse invalidates AVBD's point-joint
@@ -25783,18 +28345,6 @@ TEST(
   SceneBodies warmBodies = addScene(warm);
   SceneBodies coldBodies = addScene(cold);
 
-  const auto configureAvbdContact
-      = [](sx::World& world, const sx::RigidBody& body) {
-          auto& registry = sx::detail::registryOf(world);
-          auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
-              sx::detail::toRegistryEntity(body.getEntity()));
-          config.startStiffness = 10000.0;
-          config.alpha = 0.95;
-          config.gamma = 1.0;
-          config.maxStiffness = 10000.0;
-        };
-  configureAvbdContact(warm, warmBodies.contact);
-
   warm.enterSimulationMode();
   cold.enterSimulationMode();
 
@@ -25822,14 +28372,9 @@ TEST(
   cold.step();
 
   // The intervening SI step starts from bit-identical public state. AVBD
-  // scratch must not affect SI, so both worlds synchronize exactly. Remove
-  // the private compatibility opt-in first so this contact actually falls
-  // through to SI; the unrelated hard joint keeps AVBD scratch allocated.
-  auto& warmRegistry = sx::detail::registryOf(warm);
-  ASSERT_EQ(
-      warmRegistry.remove<sx::comps::RigidAvbdContactConfig>(
-          sx::detail::toRegistryEntity(warmBodies.contact.getEntity())),
-      1u);
+  // scratch must not affect SI, so both worlds synchronize exactly. The
+  // unrelated hard joint keeps AVBD scratch allocated across the family
+  // switch.
   warm.setRigidBodySolver(sx::RigidBodySolver::SequentialImpulse);
   setCommonInput(warmBodies);
   setCommonInput(coldBodies);
@@ -25855,8 +28400,131 @@ TEST(
   setCommonInput(coldBodies);
   ASSERT_FALSE(warm.collide().empty());
   ASSERT_FALSE(cold.collide().empty());
-  configureAvbdContact(warm, warmBodies.contact);
-  configureAvbdContact(cold, coldBodies.contact);
+  warm.setRigidBodySolver(sx::RigidBodySolver::Avbd);
+  cold.setRigidBodySolver(sx::RigidBodySolver::Avbd);
+  warm.step();
+  cold.step();
+
+  EXPECT_TRUE(warmBodies.contact.getTransform().matrix().isApprox(
+      coldBodies.contact.getTransform().matrix(), 1e-12));
+  EXPECT_TRUE(warmBodies.contact.getLinearVelocity().isApprox(
+      coldBodies.contact.getLinearVelocity(), 1e-12));
+  EXPECT_TRUE(warmBodies.contact.getAngularVelocity().isApprox(
+      coldBodies.contact.getAngularVelocity(), 1e-12));
+  EXPECT_TRUE(warmBodies.jointChild.getTransform().matrix().isApprox(
+      coldBodies.jointChild.getTransform().matrix(), 1e-12));
+  EXPECT_TRUE(warmBodies.jointChild.getLinearVelocity().isApprox(
+      coldBodies.jointChild.getLinearVelocity(), 1e-12));
+  EXPECT_TRUE(warmBodies.jointChild.getAngularVelocity().isApprox(
+      coldBodies.jointChild.getAngularVelocity(), 1e-12));
+}
+
+// VBD owns fixed-penalty rows and must never retain AVBD's dual, progressive
+// stiffness, contact-identity, or tangent-anchor continuation. In particular,
+// a VBD step that rejects a default hard joint after assembling a live contact
+// must still invalidate every prior AVBD continuation surface. Once the joint
+// is made finite, the next AVBD step must match a world that never owned that
+// warm state.
+TEST(World, FailedVbdStepInvalidatesPriorAvbdContactAndJointWarmStart)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions avbdOptions;
+  avbdOptions.gravity = Eigen::Vector3d::Zero();
+  avbdOptions.timeStep = 0.05;
+  avbdOptions.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  avbdOptions.rigidConstraintOptions.iterations = 1u;
+  sx::World warm(avbdOptions);
+
+  sx::WorldOptions coldOptions = avbdOptions;
+  coldOptions.rigidBodySolver = sx::RigidBodySolver::SequentialImpulse;
+  sx::World cold(coldOptions);
+
+  struct SceneBodies
+  {
+    sx::RigidBody contact;
+    sx::RigidBody jointChild;
+    sx::Joint joint;
+  };
+
+  const auto addScene = [](sx::World& world) {
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+
+    sx::RigidBodyOptions contactOptions;
+    contactOptions.mass = 1.0;
+    contactOptions.position = Eigen::Vector3d(0.0, 0.0, 0.4);
+    auto contact = world.addRigidBody("contact", contactOptions);
+    contact.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    contact.setFriction(0.8);
+
+    sx::RigidBodyOptions parentOptions;
+    parentOptions.isStatic = true;
+    parentOptions.position = Eigen::Vector3d(3.0, 0.0, 0.0);
+    auto parent = world.addRigidBody("joint_parent", parentOptions);
+
+    sx::RigidBodyOptions childOptions;
+    childOptions.mass = 1.0;
+    childOptions.position = Eigen::Vector3d(4.0, 0.0, 0.0);
+    auto jointChild = world.addRigidBody("joint_child", childOptions);
+    auto joint = world.addJoint(
+        parent,
+        jointChild,
+        sx::JointSpec{.name = "fixed", .type = sx::JointType::Fixed});
+    return SceneBodies{contact, jointChild, joint};
+  };
+
+  SceneBodies warmBodies = addScene(warm);
+  SceneBodies coldBodies = addScene(cold);
+  warm.enterSimulationMode();
+  cold.enterSimulationMode();
+
+  const auto setCommonInput = [](SceneBodies& bodies) {
+    Eigen::Isometry3d contactPose = Eigen::Isometry3d::Identity();
+    contactPose.translation() = Eigen::Vector3d(0.0, 0.0, 0.4);
+    bodies.contact.setTransform(contactPose);
+    bodies.contact.setLinearVelocity(Eigen::Vector3d(0.6, 0.2, -1.0));
+    bodies.contact.setAngularVelocity(Eigen::Vector3d(0.0, 0.4, 0.2));
+
+    Eigen::Isometry3d jointPose = Eigen::Isometry3d::Identity();
+    jointPose.translation() = Eigen::Vector3d(4.3, 0.2, 0.0);
+    bodies.jointChild.setTransform(jointPose);
+    bodies.jointChild.setLinearVelocity(Eigen::Vector3d(0.4, -0.3, 0.0));
+    bodies.jointChild.setAngularVelocity(Eigen::Vector3d(0.0, 0.0, 0.5));
+  };
+
+  // Only the warm world accumulates AVBD contact and hard-joint continuation.
+  setCommonInput(warmBodies);
+  setCommonInput(coldBodies);
+  ASSERT_FALSE(warm.collide().empty());
+  ASSERT_FALSE(cold.collide().empty());
+  warm.step();
+  cold.step();
+
+  // Enter VBD through a valid finite policy, then restore the hard policy so
+  // validation fails from step(). That exercises the failed-step cleanup path
+  // rather than the transactional solver-setter rejection path.
+  setCommonInput(warmBodies);
+  setCommonInput(coldBodies);
+  const auto hardPolicy = warmBodies.joint.getConstraintProjectionPolicy();
+  const auto finitePolicy = makeConstraintProjectionPolicy(1.0, 200.0, 200.0);
+  warmBodies.joint.setConstraintProjectionPolicy(finitePolicy);
+  coldBodies.joint.setConstraintProjectionPolicy(finitePolicy);
+  warm.setRigidBodySolver(sx::RigidBodySolver::Vbd);
+  cold.setRigidBodySolver(sx::RigidBodySolver::Vbd);
+  warmBodies.joint.setConstraintProjectionPolicy(hardPolicy);
+  coldBodies.joint.setConstraintProjectionPolicy(hardPolicy);
+  EXPECT_THROW(warm.step(), sx::InvalidOperationException);
+  EXPECT_THROW(cold.step(), sx::InvalidOperationException);
+
+  warmBodies.joint.setConstraintProjectionPolicy(finitePolicy);
+  coldBodies.joint.setConstraintProjectionPolicy(finitePolicy);
+  setCommonInput(warmBodies);
+  setCommonInput(coldBodies);
   warm.setRigidBodySolver(sx::RigidBodySolver::Avbd);
   cold.setRigidBodySolver(sx::RigidBodySolver::Avbd);
   warm.step();
@@ -26082,6 +28750,227 @@ TEST(World, ReplayRecordingRestoresDeformableAvbdWarmStartState)
 
   world.restoreReplayFrame(1);
   EXPECT_DOUBLE_EQ(springRowStiffness(), frame1Stiffness);
+
+  // Exercise the paired tangent-anchor sidecar as well as the scalar row
+  // inventories. A sticking contact must resume from the exact accumulated
+  // displacement and tangent basis captured by the restored frame.
+  sx::World frictionWorld;
+  configureAvbdGroundFrictionRowsScene(frictionWorld);
+  auto frictionBody = frictionWorld.getDeformableBody("avbd_ground_friction");
+  ASSERT_TRUE(frictionBody.has_value());
+  frictionBody->setVelocity(0u, Eigen::Vector3d(0.01, 0.0, 0.0));
+  auto& frictionRegistry = sx::detail::registryOf(frictionWorld);
+
+  frictionWorld.setReplayRecordingEnabled(true);
+  frictionWorld.step();
+  ASSERT_EQ(frictionWorld.getReplayFrameCount(), 2u);
+  const auto frame1Friction
+      = compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
+          frictionRegistry);
+  ASSERT_EQ(frame1Friction.size(), 1u);
+  ASSERT_EQ(frame1Friction[0].frictionRows.size(), 2u);
+  ASSERT_EQ(frame1Friction[0].frictionAnchors.size(), 1u);
+  const auto& frame1Anchor = frame1Friction[0].frictionAnchors[0];
+  ASSERT_TRUE(frame1Anchor.valid);
+  ASSERT_TRUE(frame1Anchor.sticking);
+  EXPECT_GT(frame1Anchor.accumulatedDisplacement.norm(), 0.0);
+
+  frictionBody->setVelocity(0u, Eigen::Vector3d(1.0, 0.0, 0.0));
+  frictionWorld.step();
+  ASSERT_EQ(frictionWorld.getReplayFrameCount(), 3u);
+
+  frictionWorld.restoreReplayFrame(1);
+  const auto restoredFriction
+      = compute::avbd_replay::captureDeformableAvbdWarmStartReplayState(
+          frictionRegistry);
+  ASSERT_EQ(restoredFriction.size(), 1u);
+  ASSERT_EQ(restoredFriction[0].frictionRows.size(), 2u);
+  ASSERT_EQ(restoredFriction[0].frictionAnchors.size(), 1u);
+  for (std::size_t row = 0u; row < 2u; ++row) {
+    EXPECT_EQ(
+        restoredFriction[0].frictionRows[row].descriptor.key,
+        frame1Friction[0].frictionRows[row].descriptor.key);
+    EXPECT_DOUBLE_EQ(
+        restoredFriction[0].frictionRows[row].state.lambda,
+        frame1Friction[0].frictionRows[row].state.lambda);
+    EXPECT_DOUBLE_EQ(
+        restoredFriction[0].frictionRows[row].state.stiffness,
+        frame1Friction[0].frictionRows[row].state.stiffness);
+  }
+  const auto& restoredAnchor = restoredFriction[0].frictionAnchors[0];
+  EXPECT_EQ(restoredAnchor.key, frame1Anchor.key);
+  EXPECT_EQ(restoredAnchor.vertex, frame1Anchor.vertex);
+  EXPECT_EQ(restoredAnchor.valid, frame1Anchor.valid);
+  EXPECT_EQ(restoredAnchor.sticking, frame1Anchor.sticking);
+  EXPECT_TRUE(restoredAnchor.accumulatedDisplacement.isApprox(
+      frame1Anchor.accumulatedDisplacement, 0.0));
+  for (std::size_t axis = 0u; axis < restoredAnchor.basis.size(); ++axis) {
+    EXPECT_TRUE(
+        restoredAnchor.basis[axis].isApprox(frame1Anchor.basis[axis], 0.0));
+  }
+}
+
+// Test that replay treats each deformable body's optional inner-solver
+// configuration as frame state, including restoring every tuning field and
+// removing a configuration that was absent in the recorded frame.
+TEST(World, ReplayRecordingRestoresOptionalDeformableVbdConfigs)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  const auto addSpring = [&](std::string_view name, double xOffset) {
+    sx::DeformableBodyOptions options;
+    options.positions
+        = {Eigen::Vector3d(xOffset, 0.0, 0.0),
+           Eigen::Vector3d(xOffset + 0.8, 0.6, 0.0)};
+    options.masses = {1.0, 1.0};
+    options.fixedNodes = {0};
+    options.edges = {sx::DeformableEdge{0, 1, 0.5}};
+    options.edgeStiffness = 500.0;
+    world.addDeformableBody(name, options);
+  };
+
+  addSpring("replay_vbd", 0.0);
+  auto& registry = sx::detail::registryOf(world);
+  entt::entity configuredEntity = entt::null;
+  for (const entt::entity entity :
+       registry.view<sx::comps::DeformableBodyTag>()) {
+    configuredEntity = entity;
+  }
+  ASSERT_TRUE(configuredEntity != entt::null);
+
+  addSpring("replay_default", 3.0);
+  entt::entity defaultEntity = entt::null;
+  for (const entt::entity entity :
+       registry.view<sx::comps::DeformableBodyTag>()) {
+    if (entity != configuredEntity) {
+      defaultEntity = entity;
+    }
+  }
+  ASSERT_TRUE(defaultEntity != entt::null);
+
+  sx::DeformableSolverOptions options;
+  options.iterations = 37u;
+  options.convergenceTolerance = 1.25e-12;
+  options.useAcceleration = true;
+  options.accelerationSpectralRadius = 0.73;
+  options.stiffnessDamping = 0.042;
+  options.groundContactStiffness = 321.0;
+  world.configureDeformableSolver("replay_vbd", options);
+
+  auto& configured
+      = registry.get<sx::comps::DeformableVbdConfig>(configuredEntity);
+  configured.useAvbdContactNormalRows = true;
+  configured.useAvbdSelfContactNormalRows = true;
+  configured.useAvbdAttachmentRows = true;
+  configured.avbdAttachmentStiffness = 42.5;
+  configured.useAvbdFiniteStiffnessRows = true;
+  configured.avbdFiniteStiffnessStart = 0.25;
+  configured.avbdAlpha = 0.81;
+  configured.avbdBeta = 2.5;
+  configured.avbdGamma = 0.67;
+  configured.avbdMaxStiffness = 9876.0;
+  const sx::comps::DeformableVbdConfig expected = configured;
+  ASSERT_FALSE(registry.all_of<sx::comps::DeformableVbdConfig>(defaultEntity));
+
+  const auto expectConfigEquals =
+      [](const sx::comps::DeformableVbdConfig& actual,
+         const sx::comps::DeformableVbdConfig& expectedConfig) {
+        EXPECT_EQ(actual.enabled, expectedConfig.enabled);
+        EXPECT_EQ(actual.iterations, expectedConfig.iterations);
+        EXPECT_DOUBLE_EQ(
+            actual.convergenceDisplacement,
+            expectedConfig.convergenceDisplacement);
+        EXPECT_EQ(actual.useChebyshev, expectedConfig.useChebyshev);
+        EXPECT_DOUBLE_EQ(actual.chebyshevRho, expectedConfig.chebyshevRho);
+        EXPECT_DOUBLE_EQ(
+            actual.rayleighDamping, expectedConfig.rayleighDamping);
+        EXPECT_DOUBLE_EQ(
+            actual.contactStiffness, expectedConfig.contactStiffness);
+        EXPECT_EQ(
+            actual.requireVbdExecution, expectedConfig.requireVbdExecution);
+        EXPECT_EQ(
+            actual.useAvbdContactNormalRows,
+            expectedConfig.useAvbdContactNormalRows);
+        EXPECT_EQ(
+            actual.useAvbdSelfContactNormalRows,
+            expectedConfig.useAvbdSelfContactNormalRows);
+        EXPECT_EQ(
+            actual.useAvbdAttachmentRows, expectedConfig.useAvbdAttachmentRows);
+        EXPECT_DOUBLE_EQ(
+            actual.avbdAttachmentStiffness,
+            expectedConfig.avbdAttachmentStiffness);
+        EXPECT_EQ(
+            actual.useAvbdFiniteStiffnessRows,
+            expectedConfig.useAvbdFiniteStiffnessRows);
+        EXPECT_DOUBLE_EQ(
+            actual.avbdFiniteStiffnessStart,
+            expectedConfig.avbdFiniteStiffnessStart);
+        EXPECT_DOUBLE_EQ(actual.avbdAlpha, expectedConfig.avbdAlpha);
+        EXPECT_DOUBLE_EQ(actual.avbdBeta, expectedConfig.avbdBeta);
+        EXPECT_DOUBLE_EQ(actual.avbdGamma, expectedConfig.avbdGamma);
+        EXPECT_DOUBLE_EQ(
+            actual.avbdMaxStiffness, expectedConfig.avbdMaxStiffness);
+      };
+
+  world.setReplayRecordingEnabled(true);
+  world.step();
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+
+  sx::comps::DeformableVbdConfig alternate;
+  alternate.enabled = false;
+  alternate.iterations = 9u;
+  alternate.convergenceDisplacement = 0.002;
+  alternate.useChebyshev = false;
+  alternate.chebyshevRho = 0.61;
+  alternate.rayleighDamping = 0.01;
+  alternate.contactStiffness = 17.0;
+  alternate.requireVbdExecution = false;
+  alternate.useAvbdContactNormalRows = false;
+  alternate.useAvbdSelfContactNormalRows = false;
+  alternate.useAvbdAttachmentRows = false;
+  alternate.avbdAttachmentStiffness = 99.0;
+  alternate.useAvbdFiniteStiffnessRows = false;
+  alternate.avbdFiniteStiffnessStart = 0.5;
+  alternate.avbdAlpha = 0.75;
+  alternate.avbdBeta = 3.5;
+  alternate.avbdGamma = 0.55;
+  alternate.avbdMaxStiffness = 5000.0;
+  registry.emplace_or_replace<sx::comps::DeformableVbdConfig>(
+      configuredEntity, alternate);
+  registry.emplace<sx::comps::DeformableVbdConfig>(defaultEntity, alternate);
+
+  // Refresh the derived solver cache from the deliberately different live
+  // configuration. Restore must refresh it again even though no public World
+  // policy changes between this state and the recorded frame.
+  world.setComputeAcceleratorPolicy(world.getComputeAcceleratorPolicy());
+  EXPECT_NE(
+      world.getResolvedConfiguration().toSummaryText().find(
+          "deformable-inner-solver: projected-newton -> "
+          "projected-newton"),
+      std::string::npos);
+
+  world.restoreReplayFrame(1);
+
+  ASSERT_TRUE(
+      registry.all_of<sx::comps::DeformableVbdConfig>(configuredEntity));
+  expectConfigEquals(
+      registry.get<sx::comps::DeformableVbdConfig>(configuredEntity), expected);
+  EXPECT_FALSE(registry.all_of<sx::comps::DeformableVbdConfig>(defaultEntity));
+  EXPECT_NE(
+      world.getResolvedConfiguration().toSummaryText().find(
+          "deformable-inner-solver: per-body mixed -> per-body mixed"),
+      std::string::npos);
+
+  world.step();
+  const auto& diagnostics = world.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 2u);
+  EXPECT_EQ(diagnostics.vbdBodyCount, 1u);
+  EXPECT_GT(diagnostics.vbdSweeps, 0u);
+  EXPECT_GT(diagnostics.vbdVertexUpdates, 0u);
 }
 
 // Test that replay restores transient variational solver-history components to
@@ -26444,6 +29333,178 @@ TEST(World, ReplayRecordingRejectsInvalidQueriesAndClears)
   EXPECT_FALSE(world.getReplayCursor().has_value());
 }
 
+// Public required VBD makes unsupported runtime obstacle edits fail closed.
+// Replay clearing and binary saving must run that preflight before destroying
+// existing history or writing even a partial stream image.
+TEST(World, RequiredVbdDesignBoundariesRejectUnsupportedObstacleAtomically)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.position = Eigen::Vector3d(3.0, 0.0, 0.0);
+  auto obstacle = world.addRigidBody("unsupported_capsule", obstacleOptions);
+  obstacle.setCollisionShape(sx::CollisionShape::makeCapsule(0.25, 0.5));
+  obstacle.setDeformableObstaclePolicy({.surfaceObstacle = true});
+
+  sx::DeformableBodyOptions bodyOptions;
+  bodyOptions.positions
+      = {Eigen::Vector3d::Zero(), Eigen::Vector3d(0.8, 0.6, 0.0)};
+  bodyOptions.masses = {1.0, 1.0};
+  bodyOptions.fixedNodes = {0u};
+  bodyOptions.edges = {sx::DeformableEdge{0u, 1u, 0.5}};
+  auto body = world.addDeformableBody("required_vbd", bodyOptions);
+  sx::DeformableSolverOptions solverOptions;
+  solverOptions.groundContactStiffness = 1000.0;
+  world.configureDeformableSolver("required_vbd", solverOptions);
+
+  const Eigen::Vector3d livePosition = body.getPosition(1u);
+  EXPECT_THROW(
+      world.setReplayRecordingEnabled(true), sx::InvalidArgumentException);
+  EXPECT_FALSE(world.isReplayRecordingEnabled());
+  EXPECT_EQ(world.getReplayFrameCount(), 0u);
+
+  std::ostringstream output;
+  output << "existing-output";
+  const std::string beforeSave = output.str();
+  EXPECT_THROW(world.saveBinary(output), sx::InvalidArgumentException);
+  EXPECT_EQ(output.str(), beforeSave);
+
+  EXPECT_THROW(world.enterSimulationMode(), sx::InvalidArgumentException);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_TRUE(body.getPosition(1u).isApprox(livePosition, 0.0));
+}
+
+TEST(World, ZeroContactRequiredVbdDesignBoundariesIgnoreRigidObstacles)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  configurePublicZeroContactVbdIgnoredRigidObstaclesScene(world);
+
+  EXPECT_NO_THROW(world.setReplayRecordingEnabled(true));
+  ASSERT_TRUE(world.isReplayRecordingEnabled());
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  std::ostringstream output;
+  EXPECT_NO_THROW(world.saveBinary(output));
+  EXPECT_FALSE(output.str().empty());
+  EXPECT_NO_THROW(world.enterSimulationMode());
+  EXPECT_TRUE(world.isSimulationMode());
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+}
+
+TEST(World, VbdReplayClearAndSaveRejectInvalidSnapshotAtomically)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.position = Eigen::Vector3d(4.0, 0.0, 0.0);
+  auto obstacle = world.addRigidBody("vbd_replay_obstacle", obstacleOptions);
+  obstacle.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d::Constant(0.5)));
+  obstacle.setDeformableObstaclePolicy({.surfaceObstacle = true});
+
+  sx::DeformableBodyOptions bodyOptions;
+  bodyOptions.positions
+      = {Eigen::Vector3d::Zero(), Eigen::Vector3d(0.5, 0.0, 0.0)};
+  bodyOptions.masses = {1.0, 1.0};
+  bodyOptions.fixedNodes = {0u};
+  bodyOptions.edges = {sx::DeformableEdge{0u, 1u, 0.5}};
+  world.addDeformableBody("vbd_replay_body", bodyOptions);
+
+  sx::DeformableSolverOptions solverOptions;
+  solverOptions.groundContactStiffness = 1000.0;
+  world.configureDeformableSolver("vbd_replay_body", solverOptions);
+  world.setReplayRecordingEnabled(true);
+  world.step();
+  ASSERT_TRUE(world.isSimulationMode());
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+  ASSERT_EQ(world.getReplayCursor(), std::optional<std::size_t>(1u));
+
+  obstacle.setKinematic(true);
+  const std::size_t recordedCount = world.getReplayFrameCount();
+  const auto recordedCursor = world.getReplayCursor();
+  const double firstFrameTime = world.getReplayFrameTime(0u);
+  const double lastFrameTime = world.getReplayFrameTime(recordedCount - 1u);
+
+  EXPECT_THROW(world.clearReplayRecording(), sx::InvalidArgumentException);
+  EXPECT_EQ(world.getReplayFrameCount(), recordedCount);
+  EXPECT_EQ(world.getReplayCursor(), recordedCursor);
+  EXPECT_DOUBLE_EQ(world.getReplayFrameTime(0u), firstFrameTime);
+  EXPECT_DOUBLE_EQ(world.getReplayFrameTime(recordedCount - 1u), lastFrameTime);
+
+  std::ostringstream output;
+  output << "existing-output";
+  const std::string beforeSave = output.str();
+  EXPECT_THROW(world.saveBinary(output), sx::InvalidArgumentException);
+  EXPECT_EQ(output.str(), beforeSave);
+}
+
+TEST(World, VbdReplayRejectsValidObstacleShapeEditBeforeStepOrHistoryMutation)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions obstacleOptions;
+  obstacleOptions.isStatic = true;
+  obstacleOptions.position = Eigen::Vector3d(4.0, 0.0, 0.0);
+  auto obstacle = world.addRigidBody("vbd_replay_obstacle", obstacleOptions);
+  obstacle.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d::Constant(0.5)));
+  obstacle.setDeformableObstaclePolicy({.surfaceObstacle = true});
+
+  sx::DeformableBodyOptions bodyOptions;
+  bodyOptions.positions
+      = {Eigen::Vector3d::Zero(), Eigen::Vector3d(0.5, 0.0, 0.0)};
+  bodyOptions.masses = {1.0, 1.0};
+  bodyOptions.fixedNodes = {0u};
+  bodyOptions.edges = {sx::DeformableEdge{0u, 1u, 0.5}};
+  auto body = world.addDeformableBody("vbd_replay_body", bodyOptions);
+
+  sx::DeformableSolverOptions solverOptions;
+  solverOptions.groundContactStiffness = 1000.0;
+  world.configureDeformableSolver("vbd_replay_body", solverOptions);
+  world.setReplayRecordingEnabled(true);
+  world.step();
+  ASSERT_TRUE(world.isSimulationMode());
+  ASSERT_EQ(world.getReplayFrameCount(), 2u);
+
+  // Sphere remains inside the public VBD obstacle envelope. The rejection is
+  // specifically the immutable replay-session construction contract, not the
+  // required-VBD shape-family validator.
+  obstacle.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  const std::size_t recordedCount = world.getReplayFrameCount();
+  const auto recordedCursor = world.getReplayCursor();
+  const double recordedTime = world.getTime();
+  const std::size_t recordedFrame = world.getFrame();
+  const Eigen::Vector3d livePosition = body.getPosition(1u);
+
+  EXPECT_THROW(world.clearReplayRecording(), sx::InvalidOperationException);
+  EXPECT_EQ(world.getReplayFrameCount(), recordedCount);
+  EXPECT_EQ(world.getReplayCursor(), recordedCursor);
+
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+  EXPECT_DOUBLE_EQ(world.getTime(), recordedTime);
+  EXPECT_EQ(world.getFrame(), recordedFrame);
+  EXPECT_EQ(world.getReplayFrameCount(), recordedCount);
+  EXPECT_EQ(world.getReplayCursor(), recordedCursor);
+  EXPECT_TRUE(body.getPosition(1u).isApprox(livePosition, 0.0));
+}
+
 // Test that replay restore rejects topology/layout changes instead of trying
 // partial best-effort replay.
 TEST(World, ReplayRecordingRejectsRigidBodyLayoutChanges)
@@ -26629,9 +29690,32 @@ TEST(World, ReplayRecordingRejectsJointRuntimeVectorSizeChanges)
   const entt::entity jointEntity
       = sx::detail::toRegistryEntity(joint.getEntity());
   auto& jointState = registry.get<sx::comps::JointState>(jointEntity);
-  jointState.position = sx::comps::makeJointVector(1, 0.0);
+  auto& jointActuation = registry.get<sx::comps::JointActuation>(jointEntity);
+  jointState.position = sx::comps::makeJointVector(1, 0.1);
+  jointState.velocity = sx::comps::makeJointVector(1, 0.2);
+  jointState.acceleration = sx::comps::makeJointVector(1, 0.3);
+  jointActuation.torque = sx::comps::makeJointVector(1, 0.4);
+  jointActuation.commandVelocity = sx::comps::makeJointVector(1, 0.5);
+  jointActuation.commandAcceleration = sx::comps::makeJointVector(1, 0.6);
+
+  const auto replayCursor = world.getReplayCursor();
+  EXPECT_THROW(world.clearReplayRecording(), sx::InvalidOperationException);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), replayCursor);
 
   EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), replayCursor);
+  EXPECT_EQ(jointState.position.size(), 1);
+  EXPECT_EQ(jointState.velocity.size(), 1);
+  EXPECT_EQ(jointState.acceleration.size(), 1);
+  EXPECT_EQ(jointActuation.torque.size(), 1);
+  EXPECT_EQ(jointActuation.commandVelocity.size(), 1);
+  EXPECT_EQ(jointActuation.commandAcceleration.size(), 1);
 }
 
 // Test that replay restore rejects internally corrupted deformable payload
@@ -26664,6 +29748,423 @@ TEST(World, ReplayRecordingRejectsDeformableNodeVectorSizeChanges)
   ASSERT_EQ(deformableNodeStateCount, 1u);
 
   EXPECT_THROW(world.restoreReplayFrame(0), sx::InvalidOperationException);
+}
+
+// A replay session freezes deformable construction independently of the
+// per-frame node state. Same-count topology edits must therefore fail before a
+// restore writes the recorded positions, and before a step crosses the
+// design-mode boundary or advances time.
+TEST(
+    World, ReplayRecordingRejectsSameCountDeformableConstructionEditsAtomically)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  sx::DeformableBodyOptions options;
+  options.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(1.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 1.0, 0.0)};
+  options.velocities.assign(options.positions.size(), Eigen::Vector3d::Zero());
+  options.masses.assign(options.positions.size(), 1.0);
+  options.edges
+      = {sx::DeformableEdge{0u, 1u, 1.0},
+         sx::DeformableEdge{1u, 2u, std::sqrt(2.0)}};
+  world.addDeformableBody("deformable", options);
+
+  auto& registry = sx::detail::registryOf(world);
+  auto view = registry.view<
+      sx::comps::DeformableBodyTag,
+      sx::comps::DeformableNodeState,
+      sx::comps::DeformableSpringModel>();
+  ASSERT_EQ(view.size_hint(), 1u);
+  const entt::entity entity = *view.begin();
+  auto& nodeState = view.get<sx::comps::DeformableNodeState>(entity);
+  auto& springModel = view.get<sx::comps::DeformableSpringModel>(entity);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  ASSERT_EQ(world.getReplayCursor(), std::optional<std::size_t>(0u));
+
+  const Eigen::Vector3d livePosition(4.0, 5.0, 6.0);
+  nodeState.positions[0] = livePosition;
+  ASSERT_EQ(springModel.edges.size(), 2u);
+  springModel.edges[0].nodeB = 2u;
+
+  EXPECT_THROW(world.restoreReplayFrame(0u), sx::InvalidOperationException);
+  EXPECT_TRUE(nodeState.positions[0].isApprox(livePosition, 0.0));
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), std::optional<std::size_t>(0u));
+
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+  EXPECT_TRUE(nodeState.positions[0].isApprox(livePosition, 0.0));
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), std::optional<std::size_t>(0u));
+}
+
+TEST(World, ReplayRecordingRejectsCoherentDeformableStateResizeBeforeMutation)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d::Zero(), Eigen::Vector3d::UnitX()};
+  options.masses = {1.0, 1.0};
+  options.edges = {sx::DeformableEdge{0u, 1u, 1.0}};
+  world.addDeformableBody("deformable", options);
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+
+  auto& registry = sx::detail::registryOf(world);
+  const auto stateView = registry.view<sx::comps::DeformableNodeState>();
+  ASSERT_EQ(stateView.size(), 1u);
+  auto& state
+      = registry.get<sx::comps::DeformableNodeState>(*stateView.begin());
+  state.positions.push_back(Eigen::Vector3d(2.0, 0.0, 0.0));
+  state.previousPositions.push_back(Eigen::Vector3d(2.0, 0.0, 0.0));
+  state.velocities.push_back(Eigen::Vector3d::Zero());
+  state.attachmentTargets.push_back(Eigen::Vector3d(2.0, 0.0, 0.0));
+  ASSERT_EQ(state.positions.size(), 3u);
+  ASSERT_EQ(state.previousPositions.size(), 3u);
+  ASSERT_EQ(state.velocities.size(), 3u);
+  ASSERT_EQ(state.attachmentTargets.size(), 3u);
+
+  const auto recordedCursor = world.getReplayCursor();
+  EXPECT_THROW(world.clearReplayRecording(), sx::InvalidOperationException);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), recordedCursor);
+
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), recordedCursor);
+  EXPECT_EQ(state.positions.size(), 3u);
+  EXPECT_EQ(state.previousPositions.size(), 3u);
+  EXPECT_EQ(state.velocities.size(), 3u);
+  EXPECT_EQ(state.attachmentTargets.size(), 3u);
+}
+
+TEST(World, ReplayRecordingRejectsJointConstructionEditBeforeMutation)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  sx::JointSpec spec;
+  spec.name = "joint";
+  spec.type = sx::JointType::Revolute;
+  auto link = robot.addLink("link", base, spec);
+  auto joint = link.getParentJoint();
+  joint.setSpringStiffness(Eigen::VectorXd::Constant(1, 1.0));
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  joint.setPosition(Eigen::VectorXd::Constant(1, 0.25));
+  joint.setSpringStiffness(Eigen::VectorXd::Constant(1, 2.0));
+
+  const Eigen::VectorXd livePosition = joint.getPosition();
+  const auto recordedCursor = world.getReplayCursor();
+  EXPECT_THROW(world.clearReplayRecording(), sx::InvalidOperationException);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), recordedCursor);
+  EXPECT_TRUE(joint.getPosition().isApprox(livePosition, 0.0));
+
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), recordedCursor);
+  EXPECT_TRUE(joint.getPosition().isApprox(livePosition, 0.0));
+}
+
+TEST(World, ReplayRecordingRejectsRigidDistanceSpringEditBeforeMutation)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  world.setGravity(Eigen::Vector3d::Zero());
+
+  sx::RigidBodyOptions baseOptions;
+  baseOptions.isStatic = true;
+  auto base = world.addRigidBody("spring_base", baseOptions);
+
+  sx::RigidBodyOptions bodyOptions;
+  bodyOptions.position = Eigen::Vector3d(2.0, 0.0, 0.0);
+  auto body = world.addRigidBody("spring_body", bodyOptions);
+  world.addRigidBodyDistanceSpring(
+      "replay_distance_spring", base, body, 1.0, 200.0);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  ASSERT_EQ(world.getReplayCursor(), std::optional<std::size_t>(0u));
+
+  world.setRigidBodyDistanceSpringParameters(
+      "replay_distance_spring", 1.25, 350.0);
+  EXPECT_EQ(
+      world.getRigidBodyDistanceSpringParameters("replay_distance_spring"),
+      std::pair(1.25, 350.0));
+
+  const Eigen::Isometry3d liveTransform = body.getTransform();
+  const auto replayCursor = world.getReplayCursor();
+  EXPECT_THROW(world.clearReplayRecording(), sx::InvalidOperationException);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), replayCursor);
+
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), replayCursor);
+  EXPECT_TRUE(body.getTransform().isApprox(liveTransform, 0.0));
+}
+
+TEST(World, ReplayRecordingRejectsRigidAvbdContactConfigEdit)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto body = world.addRigidBody("rigid_avbd_config_body");
+  auto& registry = sx::detail::registryOf(world);
+  const entt::entity entity = sx::detail::toRegistryEntity(body.getEntity());
+  auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(entity);
+  config.startStiffness = 1000.0;
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  config.beta = 123.0;
+
+  EXPECT_THROW(world.clearReplayRecording(), sx::InvalidOperationException);
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+}
+
+TEST(World, ReplayRecordingRejectsAvbdPointJointConfigEdit)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto parent = world.addRigidBody("point_joint_parent");
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  auto child = world.addRigidBody("point_joint_child", childOptions);
+  auto joint = world.addJoint(
+      parent,
+      child,
+      sx::JointSpec{.name = "point_joint", .type = sx::JointType::Fixed});
+  auto& registry = sx::detail::registryOf(world);
+  const entt::entity jointEntity
+      = sx::detail::toRegistryEntity(joint.getEntity());
+  auto& config
+      = registry
+            .get<sx::detail::deformable_vbd::AvbdRigidWorldPointJointConfig>(
+                jointEntity);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  config.angularAxisMask = 0u;
+
+  EXPECT_THROW(world.clearReplayRecording(), sx::InvalidOperationException);
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+}
+
+TEST(World, ReplayRecordingRejectsMultibodyMembershipReordering)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  robot.addLink(
+      "child",
+      base,
+      sx::JointSpec{.name = "joint", .type = sx::JointType::Revolute});
+
+  auto& registry = sx::detail::registryOf(world);
+  const auto structures = registry.view<sx::comps::MultibodyStructure>();
+  ASSERT_EQ(structures.size(), 1u);
+  auto& structure
+      = structures.get<sx::comps::MultibodyStructure>(*structures.begin());
+  ASSERT_EQ(structure.links.size(), 2u);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  std::ranges::reverse(structure.links);
+
+  EXPECT_THROW(world.clearReplayRecording(), sx::InvalidOperationException);
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+}
+
+TEST(World, ReplayRecordingRejectsVariationalContactConstructionChanges)
+{
+  namespace sx = dart::simulation;
+
+  enum class Mutation
+  {
+    AddComponent,
+    ChangeScalars,
+    AddPoint,
+  };
+  const auto expectRejected = [](Mutation mutation) {
+    sx::World world;
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+    if (mutation != Mutation::AddComponent) {
+      robot.setGroundContact(
+          Eigen::Vector3d::UnitZ(),
+          Eigen::Vector3d::Zero(),
+          1000.0,
+          0.4,
+          1.0e-4,
+          2.0,
+          3u);
+    }
+
+    auto& registry = sx::detail::registryOf(world);
+    const entt::entity baseEntity
+        = sx::detail::toRegistryEntity(base.getEntity());
+    auto& baseState = registry.get<sx::comps::LinkState>(baseEntity);
+
+    world.setReplayRecordingEnabled(true);
+    ASSERT_EQ(world.getReplayFrameCount(), 1u);
+    switch (mutation) {
+      case Mutation::AddComponent:
+        robot.setGroundContact(
+            Eigen::Vector3d::UnitZ(), Eigen::Vector3d::Zero(), 1000.0);
+        break;
+      case Mutation::ChangeScalars:
+        robot.setGroundContact(
+            Eigen::Vector3d::UnitY(),
+            Eigen::Vector3d(0.0, 0.5, 0.0),
+            2000.0,
+            0.7,
+            2.0e-4,
+            4.0,
+            5u);
+        break;
+      case Mutation::AddPoint:
+        robot.addGroundContactPoint(base, Eigen::Vector3d(0.1, 0.2, 0.3));
+        break;
+    }
+    baseState.worldTransform.translation() = Eigen::Vector3d(4.0, 5.0, 6.0);
+    const Eigen::Isometry3d liveTransform = baseState.worldTransform;
+    const auto cursor = world.getReplayCursor();
+
+    EXPECT_THROW(world.clearReplayRecording(), sx::InvalidOperationException);
+    EXPECT_THROW(world.step(), sx::InvalidOperationException);
+    EXPECT_TRUE(baseState.worldTransform.isApprox(liveTransform, 0.0));
+    EXPECT_FALSE(world.isSimulationMode());
+    EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+    EXPECT_EQ(world.getFrame(), 0u);
+    EXPECT_EQ(world.getReplayFrameCount(), 1u);
+    EXPECT_EQ(world.getReplayCursor(), cursor);
+  };
+
+  expectRejected(Mutation::AddComponent);
+  expectRejected(Mutation::ChangeScalars);
+  expectRejected(Mutation::AddPoint);
+}
+
+TEST(World, ReplayRecordingRejectsLinkTopologyEditBeforeMutation)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world;
+  auto robot = world.addMultibody("robot");
+  auto base = robot.addLink("base");
+  auto child = robot.addLink(
+      "child",
+      base,
+      sx::JointSpec{.name = "joint", .type = sx::JointType::Revolute});
+
+  auto& registry = sx::detail::registryOf(world);
+  const entt::entity childEntity
+      = sx::detail::toRegistryEntity(child.getEntity());
+  auto& childModel = registry.get<sx::comps::LinkModel>(childEntity);
+  auto& childState = registry.get<sx::comps::LinkState>(childEntity);
+
+  world.setReplayRecordingEnabled(true);
+  ASSERT_EQ(world.getReplayFrameCount(), 1u);
+  childModel.transformFromParentJoint.translation().x() += 0.25;
+  childState.worldTransform.translation() = Eigen::Vector3d(4.0, 5.0, 6.0);
+  const Eigen::Isometry3d liveTransform = childState.worldTransform;
+  const auto cursor = world.getReplayCursor();
+
+  EXPECT_THROW(world.clearReplayRecording(), sx::InvalidOperationException);
+  EXPECT_THROW(world.step(), sx::InvalidOperationException);
+  EXPECT_TRUE(childState.worldTransform.isApprox(liveTransform, 0.0));
+  EXPECT_FALSE(world.isSimulationMode());
+  EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+  EXPECT_EQ(world.getFrame(), 0u);
+  EXPECT_EQ(world.getReplayFrameCount(), 1u);
+  EXPECT_EQ(world.getReplayCursor(), cursor);
+}
+
+TEST(World, ReplayRecordingRejectsLinkContactMaterialChangesBeforeMutation)
+{
+  namespace sx = dart::simulation;
+
+  const auto expectRejected = [](bool removeMaterial) {
+    sx::World world;
+    auto robot = world.addMultibody("robot");
+    auto base = robot.addLink("base");
+    auto child = robot.addLink(
+        "child",
+        base,
+        sx::JointSpec{.name = "joint", .type = sx::JointType::Revolute});
+
+    auto& registry = sx::detail::registryOf(world);
+    const entt::entity childEntity
+        = sx::detail::toRegistryEntity(child.getEntity());
+    registry.emplace<sx::comps::ContactMaterial>(
+        childEntity,
+        sx::comps::ContactMaterial{.restitution = 0.2, .friction = 0.8});
+    auto& childState = registry.get<sx::comps::LinkState>(childEntity);
+
+    world.setReplayRecordingEnabled(true);
+    ASSERT_EQ(world.getReplayFrameCount(), 1u);
+    if (removeMaterial) {
+      registry.remove<sx::comps::ContactMaterial>(childEntity);
+    } else {
+      registry.get<sx::comps::ContactMaterial>(childEntity).friction = 0.25;
+    }
+    childState.worldTransform.translation() = Eigen::Vector3d(4.0, 5.0, 6.0);
+    const Eigen::Isometry3d liveTransform = childState.worldTransform;
+    const auto cursor = world.getReplayCursor();
+
+    EXPECT_THROW(world.clearReplayRecording(), sx::InvalidOperationException);
+    EXPECT_THROW(world.step(), sx::InvalidOperationException);
+    EXPECT_TRUE(childState.worldTransform.isApprox(liveTransform, 0.0));
+    EXPECT_FALSE(world.isSimulationMode());
+    EXPECT_DOUBLE_EQ(world.getTime(), 0.0);
+    EXPECT_EQ(world.getFrame(), 0u);
+    EXPECT_EQ(world.getReplayFrameCount(), 1u);
+    EXPECT_EQ(world.getReplayCursor(), cursor);
+  };
+
+  expectRejected(false);
+  expectRejected(true);
 }
 
 // Test that replay restore rejects link physical/collision layout edits that
@@ -27085,4 +30586,76 @@ TEST(World, ComputeStepMetricsPotentialEnergyConvergesWithTimeStep)
   const double ratio = fine / coarse;
   EXPECT_GT(ratio, 0.05) << "convergence ratio " << ratio;
   EXPECT_LT(ratio, 0.7) << "convergence ratio " << ratio;
+}
+
+//==============================================================================
+// Automatic rigid collision envelopes are rejection thresholds; the storage
+// reserved at bake is capped by a fixed budget so large scenes never reserve
+// the quadratic envelope. Explicit limits reserve exactly.
+TEST(World, AutomaticRigidCollisionReserveIsBudgeted)
+{
+  namespace sx = dart::simulation;
+  {
+    sx::World world;
+    for (int i = 0; i < 100; ++i) {
+      sx::RigidBodyOptions options;
+      options.position = Eigen::Vector3d(3.0 * i, 0.0, 0.0);
+      auto body
+          = world.addRigidBody("reserve_sphere_" + std::to_string(i), options);
+      body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    }
+    world.enterSimulationMode();
+    // C(100, 2) unordered pairs, four contacts per primitive pair.
+    EXPECT_EQ(world.getRigidCollisionCandidatePairCapacity(), 4950u);
+    EXPECT_EQ(world.getRigidCollisionContactCapacity(), 19800u);
+    EXPECT_EQ(world.getRigidCollisionContactReserve(), 16384u);
+    EXPECT_NO_THROW(world.step());
+  }
+  {
+    sx::WorldOptions options;
+    options.rigidCollisionCapacityOptions.contactCapacity = 96u;
+    sx::World world(options);
+    for (int i = 0; i < 2; ++i) {
+      sx::RigidBodyOptions bodyOptions;
+      bodyOptions.position = Eigen::Vector3d(3.0 * i, 0.0, 0.0);
+      auto body = world.addRigidBody(
+          "explicit_sphere_" + std::to_string(i), bodyOptions);
+      body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+    }
+    world.enterSimulationMode();
+    EXPECT_EQ(world.getRigidCollisionContactCapacity(), 96u);
+    EXPECT_EQ(world.getRigidCollisionContactReserve(), 96u);
+  }
+}
+
+//==============================================================================
+// One hundred small meshes resolve to a 4,950,000-contact envelope. Reserving
+// that eagerly cost about 12 GB of address space; the budgeted reserve keeps
+// the envelope as the rejection threshold and still steps.
+TEST(World, AutomaticRigidCollisionEnvelopeDoesNotReserveQuadraticMeshMemory)
+{
+  namespace sx = dart::simulation;
+  const std::vector<Eigen::Vector3d> vertices
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(0.1, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 0.1, 0.0),
+         Eigen::Vector3d(0.0, 0.0, 0.1)};
+  const std::vector<Eigen::Vector3i> triangles
+      = {Eigen::Vector3i(0, 1, 2),
+         Eigen::Vector3i(0, 1, 3),
+         Eigen::Vector3i(0, 2, 3),
+         Eigen::Vector3i(1, 2, 3)};
+  sx::World world;
+  for (int i = 0; i < 100; ++i) {
+    sx::RigidBodyOptions options;
+    options.position = Eigen::Vector3d(3.0 * i, 0.0, 0.0);
+    auto body
+        = world.addRigidBody("reserve_mesh_" + std::to_string(i), options);
+    body.setCollisionShape(sx::CollisionShape::makeMesh(vertices, triangles));
+  }
+  world.enterSimulationMode();
+  EXPECT_EQ(world.getRigidCollisionCandidatePairCapacity(), 4950u);
+  EXPECT_EQ(world.getRigidCollisionContactCapacity(), 4950000u);
+  EXPECT_EQ(world.getRigidCollisionContactReserve(), 16384u);
+  EXPECT_NO_THROW(world.step());
 }

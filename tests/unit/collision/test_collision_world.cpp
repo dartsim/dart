@@ -1373,3 +1373,25 @@ TEST(CollisionWorldBroadPhase, BuildSnapshotWithSettingsReusableBuffer)
   EXPECT_EQ(snapshot.pairs[0].first, 0u);
   EXPECT_LT(snapshot.pairs[0].first, snapshot.pairs[0].second);
 }
+
+TEST(CollisionWorldBroadPhase, BoundedSnapshotFailsClosedAtCapPlusOne)
+{
+  CollisionWorld world(BroadPhaseType::AabbTree);
+  for (std::size_t i = 0; i < 4u; ++i) {
+    world.createObject(
+        std::make_unique<SphereShape>(1.0), Eigen::Isometry3d::Identity());
+  }
+
+  BroadPhaseSnapshot snapshot;
+  snapshot.pairs.reserve(6u);
+  world.reserveBroadPhasePairCapacity(6u);
+  ASSERT_TRUE(world.buildBroadPhaseSnapshotBounded(snapshot, 6u));
+  ASSERT_EQ(snapshot.pairs.size(), 6u);
+  EXPECT_TRUE(std::is_sorted(snapshot.pairs.begin(), snapshot.pairs.end()));
+
+  const auto reservedCapacity = snapshot.pairs.capacity();
+  EXPECT_FALSE(world.buildBroadPhaseSnapshotBounded(snapshot, 5u));
+  EXPECT_TRUE(snapshot.pairs.empty());
+  EXPECT_EQ(snapshot.numObjects, 4u);
+  EXPECT_EQ(snapshot.pairs.capacity(), reservedCapacity);
+}
