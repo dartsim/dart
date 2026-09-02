@@ -39,12 +39,10 @@ Read these files first:
      DART 6 LTS `origin/release-6.*` branch first, then cherry-pick or reapply
      to `main`
 4. **Implement** - Keep commits focused, follow code style
-5. **Verify** - Run `pixi run lint` before committing, then
-   `pixi run test-all`; on Linux hosts with a visible NVIDIA CUDA runtime, also
-   run `pixi run -e cuda test-all`. If the claim depends on scene structure,
-   simulation, dynamics, collision/contact, GUI output, or a visual example,
-   route through `dart-verify-sim`: prove correctness with text first, then add
-   assessed headless/debug-layer evidence or record why it is not applicable.
+5. **Verify** - Run `pixi run lint` before committing, then the gate set for
+   this task type from `docs/ai/verification.md`. If the claim depends on 3D
+   structure or behavior, route through `dart-verify-sim`: text oracle first,
+   then assessed claim-tied visual evidence, or record why it is not applicable.
 6. **PR** - After explicit maintainer/user approval, `git push -u origin HEAD`
    then `gh pr create --draft --base <target-branch> --milestone "<milestone>"`
    (`DART 7.0` for `main`, branch-matching DART 6.x release milestone for the
@@ -61,22 +59,10 @@ Read these files first:
 - **Bugfix**: Requires PRs to BOTH the active DART 6 LTS branch AND `main`
 - **Refactor**: No behavior changes
 - **Feature**: Add tests + docs
-- **New solver/paper implementation**: Before any implementation starts,
-  record the full solver-family intake checklist in
-  `docs/plans/solver-family-intake.md` — including its solver-contract
-  conformance and solver-identity/metrics items; the standing rule in
-  `docs/design/dart7_architecture_assessment.md` applies, and new families
-  must not bypass the standing solver-contract rules (PLAN-091 is archived; current routing runs through `docs/plans/dashboard.md`, the intake checklist, and the owner docs named in the assessment). Derive an evidence matrix from the
-  paper, project page, reference source, videos, and demos. Do not call the task
-  complete until DART implements all algorithms/features on required CPU and GPU
-  backends, ports all experiments/demos into tests/benchmarks/py-demos, records
-  benchmark JSON proving DART beats reference and paper numbers for every
-  claimed case (with the resolved solver configuration machine-recorded in
-  every packet), and performs any clean API/pipeline refactor needed for the
-  long-term DART 7/8 architecture. For multi-session work, keep the active
-  `docs/dev_tasks/<task>/README.md` and `RESUME.md` explicit about the latest
-  completed slice, the next missing paper-parity gap, and why focused green
-  tests are not a full solver/paper completion claim.
+- **New solver/paper implementation**: record the intake checklist in
+  `docs/plans/solver-family-intake.md` first and hold the task to the
+  paper-complete bar in `docs/ai/verification.md` § "Research Paper
+  Implementation Evidence"; the task is not complete until that bar is met.
 
 ## Output
 

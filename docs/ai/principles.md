@@ -57,8 +57,8 @@ procedures, and compatibility detail to the owner docs above.
    without a specific AI tool.
 9. **Shared state needs approval.** Local inspection, edits, and verification
    are allowed when the task calls for them. Pushes, PR updates, comments,
-   review-thread changes, CI re-triggers, and merges require explicit
-   maintainer/user approval.
+   review-thread changes, CI re-triggers, merges, and branch deletion require
+   explicit maintainer/user approval.
 10. **Failures get root-caused, not hidden.** For unexpected in-scope failures,
     reproduce the smallest failing case and fix the cause with regression
     coverage. Preserve the real invariant at the right owner doc or module

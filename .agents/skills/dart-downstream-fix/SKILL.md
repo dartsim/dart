@@ -39,10 +39,9 @@ Use for downstream issues in gz-physics, Gazebo, or gz-sim that trace back to DA
 
 ## Workflow
 
-If the downstream symptom depends on scene/model structure, simulation,
-collision/contact, or GUI output, route through `dart-verify-sim`: establish a
-text oracle, add assessed claim-tied visual evidence, or document a
-visual exception when rendering is unavailable or not applicable.
+If the downstream symptom depends on 3D structure or behavior, route through
+`dart-verify-sim`: text oracle plus assessed visual evidence, or a recorded
+exception.
 
 1. Read the downstream issue, logs, stack traces, and reproduction steps.
 2. Identify the DART API, component, and invalid usage pattern involved.
@@ -55,9 +54,7 @@ visual exception when rendering is unavailable or not applicable.
      `fix/<downstream-project>-<issue-number>-<brief-description>-6-lts`
    - add a regression test that reproduces the downstream symptom
    - keep the fix minimal; no unrelated refactors
-6. Run `pixi run lint` and relevant tests; use `pixi run test-all` when
-   feasible, and also `pixi run -e cuda test-all` on Linux hosts with a visible
-   NVIDIA CUDA runtime.
+6. Run `pixi run lint` and the relevant tests per `docs/ai/verification.md`.
 7. Ask for explicit maintainer/user approval before pushing or creating PRs.
    After approval, create the release-branch PR with the branch-matching DART
    6.x release milestone and reference the downstream issue.

@@ -1,5 +1,17 @@
 # Resume: Rigid-Body Dynamics Solver
 
+## Current Reality (2026-09-01)
+
+The three actuator modes described in the 2026-07-04 block below have merged
+to `main`: `Locked` (PR #3251), `Servo` (PR #3258), and `Acceleration`
+(PR #3276); nothing from that block is unpushed. The B2 parity harness named
+under "B2 Gate" was removed with the World promotion in PR #2932 and has no
+replacement yet; because `main` may not carry classic-World references, the
+gate is re-claimed from a `release-6.*` parity run rather than a new harness
+in this tree. The next step is owned by the PLAN-080 entry in
+`docs/plans/dashboard.md`; older sections below that list candidate next
+steps are historical.
+
 ## Current Reality (2026-07-04)
 
 Landed locally on `main` (verified, not yet pushed as a PR): the **`Locked`
@@ -69,10 +81,8 @@ history, but references to `feature/experimental-model-loader`, unpublished
 local commits, "DONE locally" slices, and publish/push instructions are
 historical handoff notes, not current branch state. The default semi-implicit
 path now routes rigid-rigid and articulated link contacts through the unified
-boxed-LCP stage when multibody structures are present; remaining PLAN-080 work is
-the Subsystem A polish called out in `README.md` and the dashboard: warm
-starting, friction-cone iteration, scaling around the unified solve, and
-separate deferred model-loading/actuator/mimic/loop-closure slices.
+boxed-LCP stage when multibody structures are present; the remaining PLAN-080
+work is owned by that plan's entry in `docs/plans/dashboard.md`.
 
 ## B2 Gate — Rigid Open-Chain Dynamics Parity Harness (2026-06-01)
 
@@ -80,13 +90,14 @@ Status of the DART 7 "Rigid dynamics parity" checkable gate (PLAN-080 B2):
 "Shared open-chain scenes match the classic DART 6 path within documented
 tolerances for gravity, integration, drift, and controls."
 
-The dedicated world-parity suite lives in
-`tests/unit/simulation/world/test_world_parity.cpp`. It builds the
-same scene in both `dart::simulation::World` (classic DART 6 path) and
-`dart::simulation::World`, steps both with matched dt, and asserts
-state agreement within named tolerance constants. It runs under the
-`simulation-experimental` ctest label, i.e. `pixi run
-test-simulation` (or focused `ctest -R test_world_parity`).
+The dedicated world-parity suite lived in
+`tests/unit/simulation/experimental/world/test_world_parity.cpp` (removed in
+PR #2932; see the 2026-09-01 note). It built the same scene in both the
+classic DART 6 world and the then-experimental DART 7 world, stepped both with
+matched dt, and asserted
+state agreement within named tolerance constants. It ran under the
+then-existing `simulation-experimental` ctest label (since folded into
+`pixi run test-simulation`).
 
 This is the **start of the B2 evidence**, scoped to OPEN-CHAIN (no-contact)
 rigid dynamics, which does not depend on the unified contact/constraint solver
@@ -824,11 +835,9 @@ demos). The blocker described in earlier sessions is resolved.
 screw, universal, planar, ball, free) with a floating base via a `Free` joint,
 including the config-dependent-subspace `cJ` term and SO(3)/SE(3) manifold
 integration. **Subsystem B (model loading) and the Subsystem A unified contact
-solve are both on `main`** — see below. The immediate next step is a smaller
-follow-up slice such as visual geometry/material loading, richer load
-diagnostics, or warm-starting/friction-cone polish; for the current Subsystem A
-headline, prefer warm-start/friction-cone scaling polish around the unified
-constraint solve.
+solve are both on `main`** — see below. The next step is owned by the
+PLAN-080 entry in `docs/plans/dashboard.md`; visual geometry/material loading
+and richer load diagnostics are deferred slices there.
 
 ### Subsystem A — full constraint solver / boxed-LCP (two-sided contacts)
 
@@ -1037,7 +1046,7 @@ the normal `DART 7.0` PR milestone and validation gates.
   `docs/design/simulation_solver_architecture.md`. Keep that the source of
   truth; do not duplicate it.
 - User constraints: do NOT name Genesis (or other engines) in core code/docs;
-  use method/approach names. Do not modify `/home/js/multiphysics-api-design.md`.
+  use method/approach names. Do not modify the maintainer's external multiphysics API design notes.
 - The legacy DART 6 dynamics live in `dart/dynamics/` (Featherstone ABA in
   `detail/articulated_dynamics_algorithms.hpp`, `Skeleton::computeForwardDynamics`)
   and `dart/constraint/` (`BoxedLcpConstraintSolver`, `ContactConstraint`). The
@@ -1053,7 +1062,7 @@ the normal `DART 7.0` PR milestone and validation gates.
 ## How To Resume
 
 ```bash
-cd /home/js/dev/dartsim/dart/task_1
+cd <your DART checkout>
 git status -sb && git log -3 --oneline
 ```
 

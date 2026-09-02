@@ -3,6 +3,7 @@ description: run a retrospective and capture durable lessons
 argument-hint: "<what-was-completed>"
 agent: build
 ---
+
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-retro.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
@@ -54,10 +55,7 @@ command as the hindsight workflow; do not duplicate the routing table here.
 8. If adding a workflow command or skill, edit `.claude/` source files and run
    `pixi run sync-ai-commands`.
 9. Run `pixi run lint` before committing. For AI docs or adapter changes, also
-   run the verification gates from `docs/ai/verification.md`: `pixi run
-lint-md`, `pixi run check-lint-md`, `pixi run sync-ai-commands`, `pixi run
-check-ai-commands`, `pixi run check-docs-policy`, and `pixi run
-check-lint-spell`.
+   run the AI docs/adapters gate set from `docs/ai/verification.md`.
 
 ## Output
 

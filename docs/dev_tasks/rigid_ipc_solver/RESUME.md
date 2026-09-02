@@ -1917,7 +1917,7 @@ remain open fallback slices.
 ## How To Resume
 
 ```bash
-cd /home/js/dev/dartsim/dart/task_6
+cd <your DART checkout>
 # Latest work is on this branch (off main); main has everything through #2777.
 git checkout feature/rigid-ipc-paper-parity   # or: git checkout main
 git status && git log -8 --oneline

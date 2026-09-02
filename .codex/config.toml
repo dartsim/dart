@@ -1,4 +1,4 @@
 [agents]
-# Documented alias for agents.max_concurrent_threads_per_session; both spellings load on the tested 0.151.0 client.
+# Codex documents max_threads as an alias for max_concurrent_threads_per_session; both spellings loaded on the tested 0.151.0 client and check-ai-infra accepts either.
 max_threads = 4
 max_depth = 1

@@ -37,6 +37,8 @@ import sys
 from pathlib import Path
 
 SENTINEL = "DART-MANAGED-HOOK"
+# `.claude/hooks/pre-commit-guard.sh` greps for the exact "<SENTINEL> v<VERSION>"
+# sentinel line to recognize its own installed hook; bump both together.
 HOOK_VERSION = "7"
 
 # POSIX sh hook body. Kept dependency-free. It prefers the repository Pixi

@@ -44,8 +44,7 @@ Perform mechanical refactor: $ARGUMENTS
    - `pixi run lint`
    - `pixi run build`
    - `pixi run test-unit`
-   - `pixi run test-all` when feasible
-   - `pixi run -e cuda test-all` when feasible on Linux CUDA hosts
+   - the task-type gate set from `docs/ai/verification.md`
 7. Ask for explicit maintainer/user approval before pushing or opening a PR.
    After approval, open a PR with a clear scope statement and no
    behavior-change claim unless tested.

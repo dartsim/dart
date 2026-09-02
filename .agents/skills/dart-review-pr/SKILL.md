@@ -31,7 +31,7 @@ Review or respond to PR: $ARGUMENTS
 
 @AGENTS.md
 @docs/onboarding/code-style.md
-@docs/onboarding/ai-tools.md (for AI-generated review handling)
+@docs/onboarding/ai-reviews.md
 @docs/ai/verification.md
 
 ## Workflow
@@ -45,9 +45,8 @@ gh pr view $1 && gh pr diff $1
 ```
 
 Check code style, tests, docs, and focused commits. When a claim depends on 3D
-structure or behavior, require the `dart-verify-sim` text oracle and
-claim-relevant assessed visual/debug-layer evidence (or a justified
-replacement), and inspect both rather than accepting a screenshot alone.
+structure or behavior, require the `dart-verify-sim` text oracle and assessed
+visual/debug evidence rather than accepting a screenshot alone.
 Record findings as read-only output; do not push, comment, resolve threads, or re-trigger review
 without explicit maintainer/user approval for that external mutation.
 
@@ -66,7 +65,7 @@ clear reason exists (removing sensitive content, repairing branch history).
    including `pixi run lint` before any commit.
 2. Merge the latest base branch into the PR branch before any push, and follow
    the base-merge, automated-review, and bot no-reply rules in
-   `docs/onboarding/ai-tools.md`. If the push is rejected because the remote
+   `docs/onboarding/ai-reviews.md`. If the push is rejected because the remote
    head moved, fetch and compare it before retrying and validate an equivalent
    remote fix instead of pushing a duplicate.
 3. Ask for explicit maintainer/user approval before any push, PR comment, thread
@@ -78,10 +77,9 @@ clear reason exists (removing sensitive content, repairing branch history).
    do not re-trigger Codex solely for non-Codex bot findings unless Codex
    comments were also addressed.
 5. Monitor CI (`gh pr checks $1`) and repeat until no actionable comments remain.
-   For draft PRs, mark ready after explicit approval once Codex is clean and
-   local validation passes on the current head (default `pixi run test-all`,
-   plus `pixi run -e cuda test-all` on Linux hosts with a visible NVIDIA CUDA
-   runtime); merge still waits for required hosted checks.
+   For draft PRs, mark ready after explicit approval per the draft-ready
+   criteria in `docs/onboarding/ai-reviews.md`; merge still waits for required
+   hosted checks.
 
 ## Output
 

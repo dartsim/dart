@@ -20,14 +20,11 @@ A resume session re-audited this task against current `main`
   separate `pixi.toml` lane — plus the unresolved macOS pytest abort for Phase 4.
   See the README "Blocker / Approval boundary" and "Open Decisions" sections;
   a maintainer decision is needed before implementation continues.
-- **Local build-tree caveat:** `build/default/cpp/Release` is stale (configured
-  2026-06-19 with system `/usr/bin/c++`) and its incremental relink now fails
-  against the updated conda toolchain (`@GLIBC_PRIVATE` symbol mismatches and a
-  stale libcurl link interface). This is an environment-drift issue unrelated to
-  the USD code. The OFF-path guard was therefore verified by code inspection plus
-  the fact that #3109 passed CI's clean OFF-path build at merge; a clean local
-  reconfigure (`rm -rf build/default/cpp/Release && pixi run config && pixi run
-build`) is needed before any local build/test will pass again.
+- **Local build-tree caveat (2026-07-04, resolved 2026-09-01):** the July
+  `build/default/cpp/Release` tree was configured against an older toolchain
+  and could not relink; verify the build tree is current before relying on
+  local gates instead of assuming the July state. The OFF-path guard was
+  verified by code inspection plus #3109's clean OFF-path CI build at merge.
 
 ## Immediate Next Step
 
@@ -97,8 +94,7 @@ git checkout main
 git pull --ff-only origin main
 git status && git log -3 --oneline
 
-# Default (toggle OFF) gates — must stay green (needs a clean local reconfigure
-# first; see Current Reality):
+# Default (toggle OFF) gates — must stay green:
 pixi run lint
 pixi run build
 pixi run test-unit
