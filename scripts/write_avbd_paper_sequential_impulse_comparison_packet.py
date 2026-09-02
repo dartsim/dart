@@ -708,6 +708,9 @@ def _validate_capture(
         expected_scene_id=SCENE_ID,
         height=height,
         width=width,
+        assessed_frames=tuple(
+            int(frame) for frame in OUTCOME_ORACLE["joint_evidence_frames"]
+        ),
     )
     for checkpoint_frame in sorted(CHECKPOINTS):
         if checkpoint_frame > expected_frame:
@@ -854,8 +857,10 @@ def _validate_benchmark(
                 "library_version",
                 "mhz_per_cpu",
                 "num_cpus",
+                "date",
                 "dart_benchmark_executable_path",
                 "dart_benchmark_source_sha256",
+                "dart_build_configuration_digest",
                 "dart_capture_source_git_head",
                 "dart_capture_source_provenance_digest",
                 "dart_cmake_build_type",

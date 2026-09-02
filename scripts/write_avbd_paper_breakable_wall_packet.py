@@ -21,7 +21,9 @@ if str(SCRIPT_DIR) not in sys.path:
 from avbd_packet_schema import (  # noqa: E402
     AVBD_PACKET_SCHEMA_VERSION,
     PAPER_PACKET_SOURCE_PATHS,
+    evidence_definition_matches,
     make_resolved_solver_identity,
+    stable_counter_stddev_is_noise,
 )
 from capture_source_provenance import (  # noqa: E402
     CAPTURE_ARTIFACT_PROVENANCE_ALGORITHM,
@@ -699,6 +701,16 @@ def _validate_capture_provenance(
         raise AvbdPaperBreakableWallPacketError(
             "capture source provenance git_head must be a lowercase Git object ID"
         )
+    if recorded_source.get("working_tree_clean") is not True:
+        raise AvbdPaperBreakableWallPacketError(
+            "capture source provenance working_tree_clean must be true; a dirty "
+            "capture tree cannot be reproduced from git_head"
+        )
+    if recorded_source.get("ignored_paths") != []:
+        raise AvbdPaperBreakableWallPacketError(
+            "capture source provenance ignored_paths must be empty; an ignored "
+            "file inside a sealed root cannot be reproduced from git_head"
+        )
     try:
         current_source = compute_capture_source_provenance(REPO_ROOT)
     except CaptureSourceProvenanceError as exc:
@@ -811,7 +823,9 @@ def _validate_capture_provenance(
         "digest": recorded_digest,
         "file_count": recorded_file_count,
         "git_head": recorded_head,
+        "ignored_paths": [],
         "roots": list(CAPTURE_SOURCE_ROOTS),
+        "working_tree_clean": True,
     }
     return source_provenance, runtime_provenance, expected_artifacts
 
@@ -857,11 +871,11 @@ def _validate_build_configuration(
         name, expected = definition.split("=", maxsplit=1)
         if name not in BUILD_CONFIGURATION_KEYS:
             continue
-        _require_exact(
-            values.get(name),
-            expected,
-            f"benchmark build configuration {name}",
-        )
+        if not evidence_definition_matches(name, expected, values.get(name)):
+            raise AvbdPaperBreakableWallPacketError(
+                f"benchmark build configuration {name} must be {expected!r}, "
+                f"got {values.get(name)!r}"
+            )
     _require_exact(
         values.get("CMAKE_GENERATOR"),
         "Ninja",
@@ -1355,6 +1369,8 @@ def _validate_benchmark_run_evidence(
         "benchmark_context_date",
         "benchmark_policy",
         "build_identity",
+        "capture_ignored_paths",
+        "capture_working_tree_clean",
         "digest",
         "host_identity",
         "host_token",
@@ -1391,6 +1407,18 @@ def _validate_benchmark_run_evidence(
         "report_aggregates_only": True,
     }
     _require_exact(policy, expected_policy, "benchmark evidence policy")
+    # The recorded Git HEAD only describes the evidence if the capture roots
+    # were clean and no ignored file inside them escaped the digest.
+    _require_exact(
+        evidence.get("capture_working_tree_clean"),
+        True,
+        "benchmark evidence capture_working_tree_clean",
+    )
+    _require_exact(
+        evidence.get("capture_ignored_paths"),
+        [],
+        "benchmark evidence capture_ignored_paths",
+    )
     context_date = context.get("date")
     if not isinstance(context_date, str) or not context_date:
         raise AvbdPaperBreakableWallPacketError(
@@ -1939,7 +1967,14 @@ def _read_scene_metric_events(
     width: int,
     expected_focus: tuple[str, ...] = VIEW_FOCUS,
     expected_scene_id: str = SCENE_ID,
+    assessed_frames: tuple[int, ...] | None = None,
 ) -> list[dict[str, Any]]:
+    # The scene runs the engine view assessment only at its capture
+    # checkpoint frames; every other event records `view_report: null`.
+    if assessed_frames is None:
+        assessed_frames = tuple(
+            int(frame) for frame in OUTCOME_ORACLE["joint_evidence_frames"]
+        )
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except FileNotFoundError as exc:
@@ -2006,12 +2041,15 @@ def _read_scene_metric_events(
             True,
             f"{path}:{line_number} effective scene contract",
         )
-        _validate_view_report(
-            metrics,
-            expected_focus=expected_focus,
-            width=width,
-            height=height,
-        )
+        if metrics.get("view_report") is not None or event.get("frame") in set(
+            assessed_frames
+        ):
+            _validate_view_report(
+                metrics,
+                expected_focus=expected_focus,
+                width=width,
+                height=height,
+            )
         current_invariants = {key: metrics.get(key) for key in invariant_keys}
         if invariant_metrics is None:
             invariant_metrics = current_invariants
@@ -2689,13 +2727,24 @@ def _require_zero_stddev_counters(
     row: dict[str, Any],
     keys: tuple[str, ...],
     benchmark_run: str,
+    *,
+    reference_row: dict[str, Any],
 ) -> None:
-    """Prove that repetition-invariant benchmark counters did not drift."""
+    """Prove that repetition-invariant benchmark counters did not drift.
+
+    Boolean and small counters must show an exact zero spread; 32-bit
+    fingerprint words are compared against the double-precision aggregation
+    noise bound documented on `stable_counter_stddev_is_noise`.
+    """
     for key in keys:
         value = _finite_number(row.get(key), f"{benchmark_run} stddev {key}")
-        if value != 0.0:
+        reference = _finite_number(
+            reference_row.get(key), f"{benchmark_run} median {key}"
+        )
+        if not stable_counter_stddev_is_noise(key, value, reference):
             raise AvbdPaperBreakableWallPacketError(
-                f"{benchmark_run}: stddev {key} must be 0 to prove identical "
+                f"{benchmark_run}: stddev {key} must be 0 (fingerprint words: "
+                "within double-precision aggregation noise) to prove identical "
                 "configuration across benchmark repetitions"
             )
 
@@ -2796,7 +2845,10 @@ def _validate_benchmark(
     }
     stable_counter_keys = tuple((*counters, *fingerprint_counters))
     _require_zero_stddev_counters(
-        by_aggregate["stddev"], stable_counter_keys, BENCHMARK_RUN
+        by_aggregate["stddev"],
+        stable_counter_keys,
+        BENCHMARK_RUN,
+        reference_row=by_aggregate["median"],
     )
     packet_rows = []
     for aggregate in ("mean", "median", "stddev", "cv"):
@@ -2937,6 +2989,7 @@ def _validate_benchmark(
                 "library_version",
                 "mhz_per_cpu",
                 "num_cpus",
+                "date",
                 "dart_benchmark_executable_path",
                 "dart_benchmark_source_sha256",
                 "dart_build_configuration_digest",

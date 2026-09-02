@@ -349,9 +349,13 @@ def _write_capture(
         "".join(json.dumps(event) + "\n" for event in events),
         encoding="utf-8",
     )
-    capture_source = module.shared.compute_capture_source_provenance(
-        module.shared.REPO_ROOT
-    )
+    # The fixture models a sealed capture taken from a clean tree; the live
+    # test checkout may be dirty, so the recorded flags are forced here.
+    capture_source = {
+        **module.shared.compute_capture_source_provenance(module.shared.REPO_ROOT),
+        "ignored_paths": [],
+        "working_tree_clean": True,
+    }
     build_configuration_digest = _build_configuration(module)["digest"]
     runtime_library = tmp_path / "libdart-simulation.so"
     runtime_library.write_bytes(b"capture DART shared library")
@@ -737,6 +741,8 @@ def _write_benchmark(module, tmp_path: Path) -> tuple[Path, dict[str, Any]]:
         },
         "quiet_host": {**gate_common, "duration_seconds": 120.0},
         "run_token": "123e4567-e89b-42d3-a456-426614174000",
+        "capture_ignored_paths": [],
+        "capture_working_tree_clean": True,
         "watchdog": {
             **gate_common,
             "elapsed_seconds": 3.0,
@@ -1304,7 +1310,11 @@ def test_sequential_impulse_benchmark_rejects_nonzero_invariant_stddev(
         for row in data["benchmarks"]
         if row["run_name"] == run and row["aggregate_name"] == "stddev"
     )
-    stddev[counter] = 1.0
+    # Fingerprint words tolerate double-precision aggregation noise, so the
+    # injected drift must exceed that bound; every other counter is exact.
+    stddev[counter] = (
+        1.0e6 if counter.endswith(("_fingerprint_hi", "_fingerprint_lo")) else 1.0
+    )
     benchmark_path.write_text(json.dumps(data), encoding="utf-8")
 
     with pytest.raises(

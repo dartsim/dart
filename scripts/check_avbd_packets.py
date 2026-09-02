@@ -37,9 +37,11 @@ from avbd_packet_schema import (  # noqa: E402
     PLAN104_CLAIMS_MIN_SCHEMA_VERSION,
     SOLVER_CONFIGURATION_MIN_SCHEMA_VERSION,
     SOURCE_PROVENANCE_ALGORITHM,
+    evidence_definition_matches,
     packet_schema_version_errors,
     plan104_claims_errors,
     resolved_solver_identity_errors,
+    stable_counter_stddev_is_noise,
 )
 
 __all__ = [
@@ -1536,7 +1538,7 @@ def _paper_build_configuration_errors(value: object, label: str) -> list[str]:
         name, expected = definition.split("=", maxsplit=1)
         if name not in BUILD_CONFIGURATION_KEYS:
             continue
-        if values.get(name) != expected:
+        if not evidence_definition_matches(name, expected, values.get(name)):
             errors.append(f"{label}.values.{name} must be {expected!r}")
     if values.get("CMAKE_GENERATOR") != "Ninja":
         errors.append(f"{label}.values.CMAKE_GENERATOR must be 'Ninja'")
@@ -1802,6 +1804,8 @@ def _paper_benchmark_run_evidence_errors(
         "benchmark_context_date",
         "benchmark_policy",
         "build_identity",
+        "capture_ignored_paths",
+        "capture_working_tree_clean",
         "digest",
         "host_identity",
         "host_token",
@@ -1830,6 +1834,16 @@ def _paper_benchmark_run_evidence_errors(
     }
     if not _json_values_equal_exact(evidence.get("benchmark_policy"), expected_policy):
         errors.append(f"{label}.benchmark_policy must match Figure 13 policy")
+    if evidence.get("capture_working_tree_clean") is not True:
+        errors.append(
+            f"{label}.capture_working_tree_clean must be true; a dirty capture "
+            "source tree makes the recorded Git HEAD unverifiable"
+        )
+    if evidence.get("capture_ignored_paths") != []:
+        errors.append(
+            f"{label}.capture_ignored_paths must be empty; an ignored file inside "
+            "a capture root is unhashed benchmark input"
+        )
     if evidence.get("benchmark_context_date") != context.get("date") or not isinstance(
         context.get("date"), str
     ):
@@ -2848,6 +2862,17 @@ def _numbers_match(actual: object, expected: object) -> bool:
     return math.isclose(actual_number, expected_number, rel_tol=1e-12, abs_tol=1e-12)
 
 
+def _numbers_close(actual: object, expected: object) -> bool:
+    """Exact for integers; a 1e-12 relative bound for real-valued counters."""
+    actual_number = _finite_number(actual)
+    expected_number = _finite_number(expected)
+    if actual_number is None or expected_number is None:
+        return False
+    if float(expected_number).is_integer():
+        return actual_number == expected_number
+    return math.isclose(actual_number, expected_number, rel_tol=1e-12, abs_tol=0.0)
+
+
 def _numbers_equal(actual: object, expected: object) -> bool:
     actual_number = _finite_number(actual)
     expected_number = _finite_number(expected)
@@ -3490,8 +3515,22 @@ def _paper_capture_consistency_errors(
                     "semi-implicit",
                     default_reason,
                 ),
+                "deformable-inner-solver": (
+                    "inactive",
+                    "inactive",
+                    "no deformable bodies configured",
+                ),
                 "deformable-psd": ("cpu", "cpu", default_reason),
             }
+            if spec["capture_solver"] == "avbd":
+                # World.step records the immutable public AVBD parameter
+                # profile whenever the rigid solver family is AVBD.
+                expected_notes["rigid-avbd-parameter-profile"] = (
+                    "paper-2025-table-2",
+                    "paper-2025-table-2",
+                    "immutable public AVBD parameters: "
+                    "alpha=0.95, beta=10, gamma=0.99",
+                )
             if len(resolved) != len(expected_notes):
                 errors.append(
                     f"{label}.scene_metrics.resolved_configuration must contain "
@@ -4701,7 +4740,11 @@ def _paper_benchmark_evidence(
                         }
                     )
                 for key, expected in expected_counters.items():
-                    if not _numbers_equal(row.get(key), expected):
+                    # Google Benchmark averages repetition counters in double
+                    # precision, so the mean of five identical 0.95 values is
+                    # 0.9500000000000001; integer-valued counters and the
+                    # median stay exact.
+                    if not _numbers_close(row.get(key), expected):
                         errors.append(
                             f"{row_label}.{key} must be {expected!r} for the "
                             "filename-specific runtime contract"
@@ -4743,11 +4786,17 @@ def _paper_benchmark_evidence(
                                 "filename-specific runtime solver identity"
                             )
             elif aggregate == "stddev" and requires_solver_configuration:
+                median_row = by_aggregate.get("median", {})
                 for key in sorted(stable_counter_keys):
-                    if not _numbers_equal(row.get(key), 0.0):
+                    if not stable_counter_stddev_is_noise(
+                        key,
+                        _finite_number(row.get(key)),
+                        _finite_number(median_row.get(key)),
+                    ):
                         errors.append(
-                            f"{row_label}.{key} must be 0 to prove identical "
-                            "configuration across benchmark repetitions"
+                            f"{row_label}.{key} must be 0 (fingerprint words: "
+                            "within double-precision aggregation noise) to prove "
+                            "identical configuration across benchmark repetitions"
                         )
         mean = by_aggregate["mean"]
         median = by_aggregate["median"]

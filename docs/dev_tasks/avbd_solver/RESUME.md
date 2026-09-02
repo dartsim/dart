@@ -9,15 +9,25 @@ This file owns only the exact branch/session stop point and takeover sequence.
 
 ## Stop Point
 
-> **Current Reality (2026-09-01, takeover session):** the zero-trust audit
-> slice is now committed locally in seven path-grouped commits and the branch
-> is merged with `origin/main` (merge commit after `d62594a3b4f`; nothing
-> pushed). A takeover found the dirty tree did not compile its tests and had
-> 47 failing focused C++ tests plus regressions of PLAN-122 rows; fixes are in
-> progress (deformable/rigid capacity reserve policies, projected-Newton
-> pattern, serialization v35, evidence-pipeline hardening) with reviewer and
-> debugger packets tracked in the session plan. Treat everything below this
-> note as the pre-takeover historical stop point.
+> **Current Reality (2026-09-02, takeover session):** the branch now carries
+> the takeover chain `cde14ad788c` (rigid AVBD packet, evidence pipeline,
+> legacy packet pins, scale packets), `e1b0aa1fe6b` (capture harness accepts
+> its own lazily mapped modules), `e5224b016c7` (AVBD Figure 13 oracle
+> re-derived for the paper-profile outcome), `7d340dc7c4e`, `12bfa9a1796`,
+> `e8b02fcfcdb`, `c549b9f24de` (evidence-runner fixes: retired Filament
+> option, project-appended link flag, settle before the quiet gate), followed
+> by the evidence commit that reseals the three Figure 13 packets on
+> `c549b9f24de`. The sealed Figure 13 evidence binds capture-source digest
+> `115a185b7ae0f2d122f227503091da5236990716160ad9263595a6f880671a43`; the
+> quiet-host five-repeat run records 16.050815 ms/0.99% AVBD,
+> 13.973706 ms/0.65% VBD, and 14.499464 ms/0.28% SI median CPU cost per step
+> (descriptive same-host costs). Under the immutable paper profile the AVBD
+> wall keeps standing with 36 broken attachments ([5, 5, 5] in the impact
+> regions plus 21 outside) and no displaced brick, so its review records visual
+> agreement with Figure 13(d) as not proven. Nothing is pushed. Treat
+> everything below this note as the pre-takeover historical stop point; the
+> session ledger with decisions D1-D9 and the D3 root cause lives outside the
+> tree.
 
 At the 2026-08-31 zero-trust checkpoint, draft PR #3432 remains the shared
 foundation only. The live branch is

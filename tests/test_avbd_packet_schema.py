@@ -823,3 +823,41 @@ def test_plan104_claim_same_content_order_mutations_are_rejected(mutation):
 
     assert errors, packet
     assert any("order" in error for error in errors), errors
+
+
+def test_evidence_project_appended_flags_match_the_benchmark_runner():
+    schema = _load_module()
+    runner_spec = importlib.util.spec_from_file_location(
+        "run_figure13_benchmark", SCRIPT.parent / "run_figure13_benchmark.py"
+    )
+    assert runner_spec is not None and runner_spec.loader is not None
+    runner = importlib.util.module_from_spec(runner_spec)
+    runner_spec.loader.exec_module(runner)
+    assert set(schema.EVIDENCE_PROJECT_APPENDED_FLAGS) == set(
+        runner.PROJECT_APPENDED_FLAG_KEYS
+    )
+    for name, tokens in schema.EVIDENCE_PROJECT_APPENDED_FLAGS.items():
+        assert tokens == runner.PROJECT_APPENDED_FLAG_TOKENS
+    assert schema.evidence_definition_matches(
+        "CMAKE_SHARED_LINKER_FLAGS", "", " -Wl,--no-undefined"
+    )
+    assert not schema.evidence_definition_matches(
+        "CMAKE_SHARED_LINKER_FLAGS", "", "-Wl,-O2"
+    )
+    assert not schema.evidence_definition_matches("CMAKE_CXX_FLAGS", "", " -O0")
+
+
+def test_stable_counter_stddev_noise_bound_separates_float_artifacts_from_drift():
+    schema = _load_module()
+    word = "solver_configuration_fingerprint_hi"
+    # Five identical 32-bit fingerprint words aggregated in double precision.
+    assert schema.stable_counter_stddev_is_noise(word, 17.88854381999832, 1260079489.0)
+    assert schema.stable_counter_stddev_is_noise(word, 0.0, 4160164591.0)
+    # Anything beyond the rounding bound is a real fingerprint change.
+    assert not schema.stable_counter_stddev_is_noise(word, 1.0e3, 1260079489.0)
+    assert not schema.stable_counter_stddev_is_noise(word, 1.0e6, 1260079489.0)
+    # Every other invariant counter must not drift at all.
+    assert not schema.stable_counter_stddev_is_noise("public_avbd_family", 0.5, 1.0)
+    assert not schema.stable_counter_stddev_is_noise("rigid_avbd_beta", 1.0, 10.0)
+    assert schema.stable_counter_stddev_is_noise("rigid_avbd_beta", 0.0, 10.0)
+    assert not schema.stable_counter_stddev_is_noise(word, None, 1.0)

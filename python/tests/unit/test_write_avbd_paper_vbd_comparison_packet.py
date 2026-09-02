@@ -394,9 +394,13 @@ def _write_capture(
         "".join(json.dumps(event) + "\n" for event in events),
         encoding="utf-8",
     )
-    capture_source = module.shared.compute_capture_source_provenance(
-        module.shared.REPO_ROOT
-    )
+    # The fixture models a sealed capture taken from a clean tree; the live
+    # test checkout may be dirty, so the recorded flags are forced here.
+    capture_source = {
+        **module.shared.compute_capture_source_provenance(module.shared.REPO_ROOT),
+        "ignored_paths": [],
+        "working_tree_clean": True,
+    }
     build_configuration_digest = _build_configuration(module)["digest"]
     runtime_library = tmp_path / "libdart-simulation.so"
     runtime_library.write_bytes(b"capture DART shared library")
@@ -781,6 +785,8 @@ def _write_benchmark(module, tmp_path: Path) -> Path:
         },
         "quiet_host": {**gate_common, "duration_seconds": 120.0},
         "run_token": "123e4567-e89b-42d3-a456-426614174000",
+        "capture_ignored_paths": [],
+        "capture_working_tree_clean": True,
         "watchdog": {
             **gate_common,
             "elapsed_seconds": 3.0,
@@ -1216,7 +1222,11 @@ def test_benchmark_rows_reject_nonzero_invariant_stddev(
         for row in data["benchmarks"]
         if row["run_name"] == run and row["aggregate_name"] == "stddev"
     )
-    stddev[counter] = 1.0
+    # Fingerprint words tolerate double-precision aggregation noise, so the
+    # injected drift must exceed that bound; every other counter is exact.
+    stddev[counter] = (
+        1.0e6 if counter.endswith(("_fingerprint_hi", "_fingerprint_lo")) else 1.0
+    )
 
     with pytest.raises(
         module.AvbdPaperVbdComparisonPacketError,
@@ -1227,6 +1237,33 @@ def test_benchmark_rows_reject_nonzero_invariant_stddev(
             solver_key=solver_key,
             expected_fingerprint="0123456789abcdef",
         )
+
+
+def test_benchmark_rows_accept_fingerprint_word_aggregation_noise(
+    tmp_path: Path,
+) -> None:
+    module = _load_packet_module()
+    benchmark_path = _write_benchmark(module, tmp_path)
+    data = json.loads(benchmark_path.read_text())
+    run = module.BENCHMARK_RUNS["avbd"]
+    stddev = next(
+        row
+        for row in data["benchmarks"]
+        if row["run_name"] == run and row["aggregate_name"] == "stddev"
+    )
+    # google-benchmark aggregates counters in double precision, so a ~1e9
+    # fingerprint word carries tens of stddev noise without any drift.
+    stddev["solver_configuration_fingerprint_hi"] = 17.88854381999832
+
+    rows = module._benchmark_rows(
+        data,
+        solver_key="avbd",
+        expected_fingerprint="0123456789abcdef",
+    )
+
+    assert rows["solver_configuration_fingerprint"] == "fedcba9876543210"
+    recorded = next(row for row in rows["rows"] if row["aggregate_name"] == "stddev")
+    assert recorded["solver_configuration_fingerprint_hi"] == 17.88854381999832
 
 
 @pytest.mark.parametrize(

@@ -37,6 +37,73 @@ from typing import Any
 AVBD_PACKET_SCHEMA_VERSION = 6
 PLAN104_CLAIMS_MIN_SCHEMA_VERSION = 5
 
+# Google Benchmark aggregates repetition counters in double precision. A
+# 32-bit fingerprint word stored as a counter is ~1e9, so its squared terms
+# (~1e18) exceed the exactly representable integer range and the stddev of five
+# identical values can come out as tens instead of zero. A genuinely different
+# fingerprint in one repetition moves the stddev by a large fraction of the
+# word itself, so a relative bound separates the two by many orders.
+# The squared term of a word `v` carries an absolute rounding error of about
+# ulp(v^2) = v^2 * 2^-52, so the reported spread of identical words is bounded
+# by roughly v * 2^-26 (about 19 for v ~ 1.26e9). Twice that bound still sits
+# six orders below any real fingerprint change.
+FINGERPRINT_WORD_STDDEV_RELATIVE_BOUND = 2.0 * 2.0**-26
+FINGERPRINT_WORD_COUNTER_SUFFIXES = ("_fingerprint_hi", "_fingerprint_lo")
+
+
+def stable_counter_stddev_is_noise(key: str, stddev: object, reference: object) -> bool:
+    """Whether a repetition-invariant counter's stddev proves no drift.
+
+    Every counter except the 32-bit fingerprint words must report an exact
+    zero spread; the fingerprint words may carry the double-precision
+    aggregation noise documented above, scaled by their median value.
+    """
+    if not isinstance(stddev, (int, float)) or isinstance(stddev, bool):
+        return False
+    if not math.isfinite(stddev):
+        return False
+    if stddev == 0.0:
+        return True
+    if not key.endswith(FINGERPRINT_WORD_COUNTER_SUFFIXES):
+        return False
+    if not isinstance(reference, (int, float)) or isinstance(reference, bool):
+        return False
+    if not math.isfinite(reference):
+        return False
+    return abs(float(stddev)) <= FINGERPRINT_WORD_STDDEV_RELATIVE_BOUND * abs(
+        float(reference)
+    )
+
+
+# Flag variables the project extends in scope after the caller's cache value,
+# and the only tokens it appends. `run_figure13_benchmark.py` pins the same
+# table (it is a sealed capture root, so the runner keeps its own copy) and
+# `tests/test_avbd_packet_schema.py` keeps the two in step.
+EVIDENCE_PROJECT_APPENDED_FLAGS: dict[str, frozenset[str]] = {
+    "CMAKE_SHARED_LINKER_FLAGS": frozenset({"-Wl,--no-undefined"}),
+}
+
+
+def evidence_definition_matches(name: str, expected: str, compiled: object) -> bool:
+    """Whether a compiled build-configuration value satisfies an evidence pin.
+
+    The cache proves the caller injected no flags; the project itself appends
+    link options in scope (`-Wl,--no-undefined` for shared libraries), which
+    the compiled record keeps verbatim because its digest binds the exact
+    flags the benchmark was built with. Only that project-appended suffix is
+    accepted on top of the pinned value.
+    """
+    if compiled == expected:
+        return True
+    tokens = EVIDENCE_PROJECT_APPENDED_FLAGS.get(name)
+    if tokens is None or not isinstance(compiled, str):
+        return False
+    if not compiled.startswith(expected):
+        return False
+    suffix = compiled[len(expected) :].split()
+    return bool(suffix) and set(suffix) <= tokens
+
+
 # Packet-level source seal: an ordered list of repository files whose bytes the
 # packet was produced from. `check_avbd_packets.py` recomputes every digest, so
 # any drift in a bound file invalidates the packet until it is regenerated.

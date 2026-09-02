@@ -4785,7 +4785,7 @@
   "schema_version": 6,
   "source_provenance": {
     "algorithm": "sha256-length-prefixed-path-and-content-v1",
-    "digest": "6a7f678b4fbcfdfb32b1bb5cca6a0bb2ec0a61e1fda408637119446d0c2760db",
+    "digest": "b47eb2506899d714edd80072fae1bc41c87b56135731d362aaa32236f1423193",
     "files": [
       {
         "path": "dart/simulation/world.cpp",
@@ -4817,7 +4817,7 @@
       },
       {
         "path": "scripts/avbd_packet_schema.py",
-        "sha256": "9e8a7bd31fcdcf75b559c9a32634ebc27e438724fcaeeb2199ac66392274c2e9"
+        "sha256": "4796e8846a1cb9a49991e2ee3d460b4d0e5eed2e0db6915da6ff3bea6ffe98a2"
       },
       {
         "path": "scripts/write_avbd_breakable_joint_scale_packet.py",

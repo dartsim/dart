@@ -54,26 +54,27 @@ This folder is the temporary working surface; the durable owner is the plan.
   The contracts contain 88 VBD and 88 AVBD requirements; all 176 remain
   incomplete until their recorded correctness, solver-identity, CPU/CUDA,
   visual, and comparable-performance predicates pass.
-- **Latest predecessor packet chain (current-source reseal required):**
+- **Current packet chain (schema 6, sealed on the final source bytes):**
   [`../../plans/104-vertex-block-descent-solver/avbd-paper-sequential-impulse-comparison-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-sequential-impulse-comparison-packet.json)
-  links the predecessor matched AVBD/VBD packet to an independently assessed
-  Sequential Impulse frame-14 fracture and frame-120 collapse oracle. Exact
-  joint identities and retained-row residuals are recorded at both
-  checkpoints. Six predecessor captures and semantic reviews were sealed to
-  capture-source digest
-  `ce6b6be09bc06b23b7932a88e2c89dd6dafbeb54828a1c92212aaaa7af47e30a`.
-  One then-uncontaminated quiet-host five-repeat Release run recorded median CPU
-  costs of 8.044504 ms AVBD, 7.683010 ms VBD, and 13.058432 ms Sequential
-  Impulse, with CPU CVs of 1.77%, 0.41%, and 0.52%, respectively. Its raw JSON
-  SHA-256 is
-  `75ae6f9223d5d2db3d99290e1aca38125953f67cb7051c8f79b0c8f561548bd9`.
-  Those schema-5 packets remain readable historical evidence, but cannot close
-  a current row. Schema 6, the final implementation bytes, new long-horizon
-  captures/reviews, and a fresh benchmark must be sealed together. Packet
-  hashes are validated transitively by `check-avbd-packets`; this tracker
-  intentionally does not duplicate those mutable values.
-  The same-host ratios are descriptive costs, not speedup or
-  achieved-accuracy equivalence claims.
+  links the matched AVBD/VBD packet to an independently assessed Sequential
+  Impulse frame-14 fracture and frame-120 collapse oracle. Exact joint
+  identities and retained-row residuals are recorded at every checkpoint.
+  Nine captures (three per method, including one 600-frame long-horizon
+  still/video each) and their semantic reviews are sealed to capture-source
+  digest
+  `115a185b7ae0f2d122f227503091da5236990716160ad9263595a6f880671a43`
+  with the embedded Git HEAD of the sealed source commit. One quiet-host
+  five-repeat Release run through `scripts/run_figure13_benchmark.py`
+  recorded median CPU costs of 16.050815 ms AVBD, 13.973706 ms VBD,
+  and 14.499464 ms Sequential Impulse, with CPU CVs of 0.99%,
+  0.65%, and 0.28%, respectively. Packet hashes are
+  validated transitively by `check-avbd-packets`; this tracker intentionally
+  does not duplicate those mutable values. The same-host ratios are
+  descriptive costs, not speedup or achieved-accuracy equivalence claims.
+  The AVBD row's outcome changed under the immutable paper profile (see its
+  packet section below): the wall stays standing with three localized
+  joint-break clusters, so its semantic review records visual agreement with
+  Figure 13(d) as not proven.
   Figure 13 and video row 12 remain partial: exact source constants, XPBD, a
   source-matched four-method edit, CUDA, and achieved-accuracy reference
   performance are open.
@@ -86,18 +87,15 @@ This folder is the temporary working surface; the durable owner is the plan.
   - #3022 — bounded regression coverage: rigid-contact tangent-basis contract,
     articulated break→reset→break re-arm lifecycle, row-inventory replaced-key
     cold-start (`65ba05113c6`).
-- **Current local gates:** the 2026-08-31 zero-trust audit expanded and hardened
-  the evidence validators, invalidating the previously reported 192-test and
-  aggregate-gate acceptance record. The latest focused validator run passed 155
-  tests with the two live-corpus cases intentionally excluded while the three
-  Figure 13 packets are resealed. The latest uncached default `test-all` passed
-  lint, both builds, 229/229 core C++ tests, and all 81 runnable simulation
-  tests, then stopped during Python collection on an import-order defect in a
-  new plot test; that defect is fixed, but the whole CPU gate must still be
-  rerun. The whole CUDA gate must also be rerun. Prior CPU/CUDA green results
-  are historical evidence only and do not establish acceptance for the current
-  bytes. A green CUDA environment gate still would not close the missing
-  solver-specific VBD/AVBD GPU-parity predicates.
+- **Current local gates:** on the sealed source bytes the Release C++ suite
+  passes 310/310 `ctest` entries (including `test_boxed_lcp_contact` 133/133,
+  `test_avbd_rigid_block` 141/141, `test_world` 504/504,
+  `test_world_resolved_configuration` 37/37), the evidence-script unit tests
+  pass, and `tests/test_check_avbd_packets.py` passes once the three Figure 13
+  packets are regenerated. The full default `pixi run test-all` and the CUDA
+  `pixi run -e cuda test-all` gates are recorded in the RESUME stop point
+  when they have run on the final bytes; a green CUDA environment gate still
+  would not close the missing solver-specific VBD/AVBD GPU-parity predicates.
 
 ## Foundation PR Exit Criteria
 
@@ -184,10 +182,11 @@ numbers.
 
 ## Immediate Next Steps
 
-Verify that the SI closeout at `37178193ccf` is followed by merges
-`37a02b4d2c7` and `52173fba3aa`, then the final evidence-refresh commit. If the
-foundation PR is still open, manage only that PR through current-head CI and
-review; do not extend its branch into the remaining parity program. After
+The foundation head is the takeover commit chain recorded in
+[`RESUME.md`](RESUME.md) (rigid packet, evidence pipeline, re-derived AVBD
+oracle, evidence-runner fixes, then the evidence commit). If the foundation PR
+is still open, manage only that PR through current-head CI and review; do not
+extend its branch into the remaining parity program. After
 maintainer approval and landing, complete all 88 VBD predicates in one VBD PR
 from updated `main`, including an honest public XPBD comparator, the VBD
 CPU/CUDA and corpus gaps, achieved-accuracy performance, and PR-hosted images,
@@ -378,7 +377,7 @@ The durable evidence is
 [`../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-articulated-compliant-fracture-packet.json).
 All linked canonical method rows remain partial.
 
-## Historical Packet: Public AVBD Figure 13 Wall (Reseal Required)
+## Current-Source Packet: Public AVBD Figure 13 Wall
 
 - **Value:** make supported free-rigid AVBD contact and pair constraints an
   explicit public `World` family, then use that exact family for the first
@@ -403,22 +402,23 @@ All linked canonical method rows remain partial.
   visual agreement with that panel as not proven. The 676 surviving rows stay
   below 1.63 mm linear and 0.00119 rad angular residual at frame 120 (the
   regularized rows still relax the impact deformation). Frame 60 remains
-  explicitly pre-evaluation even though its `[13, 14, 12]` three-band checks
-  already pass; the registered AVBD claim checkpoint is frame 120.
-- **Predecessor runtime evidence:** the public AVBD
-  contact-plus-breakable-row fixture passed world-base, global-`new`, and
-  raw-malloc first-post-bake gates. The frame-60 and frame-120 software
-  captures bound the exact front camera and passed engine ViewReports, pixel
-  integrity, and image-capable semantic review against the pinned paper page.
-  The scene and benchmark shared fingerprint
-  `8ca3fbfa00c3dce9`. Capture manifests bind their capture-time source tree,
-  screenshot, and scene-metrics log; the benchmark JSON binds the same source
-  tree plus its benchmark translation unit.
-- **Performance boundary:** the predecessor five-repeat Release benchmark
-  recorded an 8.044504 ms median CPU cost per step with 1.77% CPU CV. It is
-  source-stale and cannot close a current row. Even after reseal this remains
-  an absolute DART timing only; the paper and source publish no directly
-  comparable timing for this scene.
+  explicitly pre-evaluation even though every threshold check already
+  passes there; the registered AVBD claim checkpoint is frame 120.
+- **Runtime evidence:** the public AVBD contact-plus-breakable-row fixture
+  passes world-base, global-`new`, and raw-malloc first-post-bake gates. The
+  frame-60, frame-120, and 600-frame software captures bind the exact front
+  camera and pass engine ViewReports, pixel integrity, and image-capable
+  semantic review against the pinned paper page; the long-horizon video
+  decodes to 600 frames at 60 fps. The scene and benchmark share fingerprint
+  `8ca3fbfa00c3dce9`. Capture manifests bind the sealed capture-source
+  digest and embedded Git HEAD, the loaded runtime images, the screenshot,
+  and the scene-metrics log; the benchmark JSON binds the same source tree,
+  its benchmark translation unit, the evidence build configuration, the
+  quiet-host gate, and the in-run watchdog.
+- **Performance boundary:** the five-repeat Release benchmark on the sealed
+  bytes records a 16.050815 ms median CPU cost per step with
+  0.99% CPU CV. This is an absolute DART timing only; the paper
+  and source publish no directly comparable timing for this scene.
 - **Non-goals:** exact replay of unpublished source constants, the XPBD
   comparison row, source-matched video edit, broad fracture corpus, unified
   rows, and CUDA. The matched VBD and Sequential Impulse rows are tracked
@@ -428,7 +428,7 @@ The durable evidence is
 [`../../plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json).
 Figure 13 and official-video row 12 remain partial.
 
-## Historical Packet: Matched Public VBD / AVBD Figure 13 Rows (Reseal Required)
+## Current-Source Packet: Matched Public VBD / AVBD Figure 13 Rows
 
 - **Value:** expose an honest public fixed-penalty VBD family over the same
   DART-owned rigid 6-DOF block infrastructure, then compare it with public AVBD
@@ -441,18 +441,18 @@ Figure 13 and official-video row 12 remain partial.
   stiffness, zero dual state, and no progressive stiffness update.
 - **Matched outcome evidence:** both demos and benchmark share fingerprint
   `8ca3fbfa00c3dce9`, 252 bricks, 712 attachments, three balls, 1/60 s, and 20
-  sweeps. VBD records no fracture, 0.132 m peak wall-normal and 0.062 m RMS
-  displacement with 120 bricks beyond 0.05 m at frame 18, then 100% retained
-  attachments at frame 120. All 712 retained rows stay below 16.39 mm and
-  0.01328 rad at frame 18, then 11.10 mm and 0.001310 rad at frame 120. Both
-  predecessor VBD captures passed their engine ViewReports, pixel-integrity
-  checks, and paper-grounded semantic review.
-- **Performance boundary:** the source-stale predecessor five-repeat medians
-  were
-  7.683010 ms VBD and 8.044504 ms AVBD, with 0.41% and 1.77% CPU CV. The
-  VBD/AVBD median CPU-cost ratio is 0.9551x and is descriptive only: the
-  outcomes intentionally differ, and no source achieved-accuracy or
-  same-hardware denominator exists.
+  sweeps. VBD records no fracture, 0.133 m peak wall-normal and 0.063 m RMS
+  displacement with 123 bricks beyond 0.05 m at frame 18, then 100% retained
+  attachments at frames 120 and 600. All 712 retained rows stay below
+  16.90 mm and 0.01342 rad at frame 18, then 11.10 mm and 0.001310 rad at
+  frame 120. All three VBD captures pass their engine ViewReports,
+  pixel-integrity checks, and paper-grounded semantic review.
+- **Performance boundary:** the five-repeat medians on the sealed bytes are
+  13.973706 ms VBD and 16.050815 ms AVBD, with 0.65% and
+  0.99% CPU CV. The VBD/AVBD median CPU-cost ratio is
+  0.8706x and is descriptive only: the outcomes intentionally
+  differ, and no source achieved-accuracy or same-hardware denominator
+  exists.
 - **Remaining boundary:** exact unpublished constants, honest XPBD, a
   source-matched four-method edit, CUDA, broad
   fracture/unified rows, and reference-performance parity remain open.
@@ -461,7 +461,7 @@ The durable evidence is
 [`../../plans/104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json).
 Figure 13 and official-video row 12 remain partial.
 
-## Historical Packet: Matched SI / VBD / AVBD Figure 13 Rows (Reseal Required)
+## Current-Source Packet: Matched SI / VBD / AVBD Figure 13 Rows
 
 - **Value:** replace the default contact-only label with solver-owned public
   hard pair rows and use that actual Sequential Impulse family for the third
@@ -480,11 +480,14 @@ Figure 13 and official-video row 12 remain partial.
   impact regions reach 0.06346 m maximum / 0.02076 m RMS linear residual and
   0.7270 rad maximum / 0.2164 rad RMS angular residual. Only 27.27% outside
   the impact bands and 19.05% overall remain placed, with 2.878 m maximum
-  wall-normal displacement. Both predecessor images matched the paper's initial
-  fracture followed by retained-row failure and collapse.
-- **Performance boundary:** the source-stale predecessor five-repeat median CPU
-  costs were 13.058432 ms SI, 7.683010 ms VBD, and 8.044504 ms AVBD, with 0.52%,
-  0.41%, and 1.77% CPU CV. SI/AVBD is 1.6233x and SI/VBD is 1.6997x. These are
+  wall-normal displacement, and the 600-frame capture keeps the collapsed
+  wall. All three SI captures match the paper's initial fracture followed by
+  retained-row failure and collapse.
+- **Performance boundary:** the five-repeat median CPU costs on the sealed
+  bytes are 14.499464 ms SI, 13.973706 ms VBD, and 16.050815 ms
+  AVBD, with 0.28%, 0.65%, and 0.99% CPU
+  CV. SI/AVBD is 0.9033x and SI/VBD is 1.0376x.
+  These are
   descriptive costs for intentionally different outcomes, not paper speedups
   or achieved-accuracy comparisons. Frame 120 is the only shared quantitative
   checkpoint across the three rows; the earlier frame-14/18/60 checkpoints

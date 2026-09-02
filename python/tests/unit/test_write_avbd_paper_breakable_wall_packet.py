@@ -494,7 +494,13 @@ def _write_capture(module, tmp_path: Path, frame: int, label: str) -> tuple[Path
         "".join(json.dumps(event) + "\n" for event in events),
         encoding="utf-8",
     )
-    capture_source = module.compute_capture_source_provenance(module.REPO_ROOT)
+    # The fixture models a sealed capture taken from a clean tree; the live
+    # test checkout may be dirty, so the recorded flags are forced here.
+    capture_source = {
+        **module.compute_capture_source_provenance(module.REPO_ROOT),
+        "ignored_paths": [],
+        "working_tree_clean": True,
+    }
     build_configuration_digest = _build_configuration(module)["digest"]
     runtime_library = tmp_path / "libdart-simulation.so"
     runtime_library.write_bytes(b"capture DART shared library")
@@ -868,6 +874,8 @@ def _write_benchmark(module, tmp_path: Path) -> Path:
         },
         "quiet_host": {**gate_common, "duration_seconds": 120.0},
         "run_token": "123e4567-e89b-42d3-a456-426614174000",
+        "capture_ignored_paths": [],
+        "capture_working_tree_clean": True,
         "watchdog": {
             **gate_common,
             "elapsed_seconds": 3.0,
@@ -1147,7 +1155,9 @@ def test_benchmark_rejects_nonzero_invariant_stddev_with_equal_mean_and_median(
     )
     # Equal mean/median words can hide symmetric per-repetition drift; the
     # nonzero dispersion is the independent fail-closed signal.
-    stddev[counter] = 1.0
+    # Fingerprint words may carry double-precision aggregation noise (tens on
+    # a ~1e9 word), so inject a drift far above that bound for them.
+    stddev[counter] = 1.0e6 if counter.endswith(("_fingerprint_hi", "_fingerprint_lo")) else 1.0
     benchmark_path.write_text(json.dumps(data), encoding="utf-8")
 
     with pytest.raises(
@@ -1165,6 +1175,8 @@ def test_benchmark_rejects_nonzero_invariant_stddev_with_equal_mean_and_median(
     [
         ("camera", "serialized camera"),
         ("capture_source", "capture source provenance digest"),
+        ("capture_dirty_tree", "working_tree_clean must be true"),
+        ("capture_ignored_paths", "ignored_paths must be empty"),
         ("capture_artifact", "capture artifact screenshot_sha256"),
         ("artifact_manifest_digest", "capture artifact provenance"),
         ("png_manifest_count", "capture artifact provenance"),
@@ -1266,6 +1278,16 @@ def test_make_packet_fails_closed_on_mismatched_evidence(
         path = inputs["impact_capture_manifest"]
         data = json.loads(path.read_text())
         data["capture_source_provenance"]["digest"] = "0" * 64
+        path.write_text(json.dumps(data), encoding="utf-8")
+    elif mutation == "capture_dirty_tree":
+        path = inputs["impact_capture_manifest"]
+        data = json.loads(path.read_text())
+        data["capture_source_provenance"]["working_tree_clean"] = False
+        path.write_text(json.dumps(data), encoding="utf-8")
+    elif mutation == "capture_ignored_paths":
+        path = inputs["impact_capture_manifest"]
+        data = json.loads(path.read_text())
+        data["capture_source_provenance"]["ignored_paths"] = ["dart/local.hpp"]
         path.write_text(json.dumps(data), encoding="utf-8")
     elif mutation == "capture_artifact":
         path = inputs["impact_capture_manifest"]

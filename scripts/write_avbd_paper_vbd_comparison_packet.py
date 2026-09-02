@@ -21,6 +21,7 @@ from avbd_packet_schema import (  # noqa: E402
     AVBD_PACKET_SCHEMA_VERSION,
     PAPER_PACKET_SOURCE_PATHS,
     make_resolved_solver_identity,
+    stable_counter_stddev_is_noise,
 )
 
 DEFAULT_OUTPUT = Path(
@@ -598,6 +599,9 @@ def _validate_capture(
         expected_scene_id=SCENE_ID,
         height=height,
         width=width,
+        assessed_frames=tuple(
+            int(frame) for frame in OUTCOME_ORACLE["joint_evidence_frames"]
+        ),
     )
     for checkpoint_frame in sorted(CHECKPOINTS):
         if checkpoint_frame > expected_frame:
@@ -776,9 +780,14 @@ def _benchmark_rows(
             by_aggregate["stddev"].get(key),
             f"{benchmark_run} stddev {key}",
         )
-        if value != 0.0:
+        reference = shared._finite_number(
+            by_aggregate["median"].get(key),
+            f"{benchmark_run} median {key}",
+        )
+        if not stable_counter_stddev_is_noise(key, value, reference):
             raise AvbdPaperVbdComparisonPacketError(
-                f"{benchmark_run}: stddev {key} must be 0 to prove identical "
+                f"{benchmark_run}: stddev {key} must be 0 (fingerprint words: "
+                "within double-precision aggregation noise) to prove identical "
                 "configuration across benchmark repetitions"
             )
     packet_rows = []
@@ -939,8 +948,10 @@ def _validate_benchmark(
                 "library_version",
                 "mhz_per_cpu",
                 "num_cpus",
+                "date",
                 "dart_benchmark_executable_path",
                 "dart_benchmark_source_sha256",
+                "dart_build_configuration_digest",
                 "dart_capture_source_git_head",
                 "dart_capture_source_provenance_digest",
                 "dart_cmake_build_type",

@@ -1988,6 +1988,8 @@ def _synthetic_benchmark_run_evidence(module, build_identity):
         },
         "quiet_host": {**gate, "duration_seconds": 120.0},
         "run_token": "123e4567-e89b-42d3-a456-426614174000",
+        "capture_ignored_paths": [],
+        "capture_working_tree_clean": True,
         "watchdog": {
             **gate,
             "elapsed_seconds": 3.0,
@@ -2147,6 +2149,20 @@ def _with_synthetic_figure13_artifact_provenance(module, packet, packet_name):
         }
         provenance["digest"] = module._capture_artifact_manifest_digest(provenance)
         capture["artifact_provenance"] = provenance
+        # A sealed semantic review binds the long-horizon MP4 bytes; keep it
+        # bound to the synthetic video that replaced them.
+        semantic_review = packet["visual_evidence"].get("semantic_review")
+        if isinstance(semantic_review, dict):
+            for entry in semantic_review.get("inspected_videos", []):
+                if entry.get("role") == f"{role}_video_{frame_count}":
+                    entry.update(
+                        {
+                            "decoded_frame_count": frame_count,
+                            "duration_seconds": video["duration_seconds"],
+                            "file": video["file"],
+                            "sha256": video_sha256,
+                        }
+                    )
         capture["scene_metrics_events"]["prefix_sha256"] = {
             str(frame): hashlib.sha256(
                 f"{packet_name}:event-prefix:{frame}".encode()
@@ -2618,7 +2634,11 @@ def test_schema6_paper_benchmark_gate_rejects_nonzero_invariant_stddev(solver, c
     stddev = next(row for row in rows if row["aggregate_name"] == "stddev")
     # Mean and median remain equal, so this models symmetric repetition drift
     # that the old two-aggregate check could not observe.
-    stddev[counter] = 1.0
+    # Fingerprint words may carry double-precision aggregation noise (tens on
+    # a ~1e9 word), so inject a drift far above that bound for them.
+    stddev[counter] = (
+        1.0e6 if counter.endswith(("_fingerprint_hi", "_fingerprint_lo")) else 1.0
+    )
 
     errors = module._paper_benchmark_timing_errors(packet, _TIMING_GATE_PACKET_NAME)
 
@@ -2846,6 +2866,65 @@ def test_figure13_rejects_duplicate_contradictory_resolved_note():
     errors = module._paper_figure13_consistency_errors(packet, _TIMING_GATE_PACKET_NAME)
 
     assert any("exactly one rigid-body" in error for error in errors), errors
+
+
+def test_figure13_requires_inactive_deformable_inner_solver_note():
+    module = _load_module()
+    packet = _timing_gate_packet()
+    metrics = packet["visual_evidence"]["bend"]["scene_metrics"]
+    metrics["resolved_configuration"] = [
+        note
+        for note in metrics["resolved_configuration"]
+        if note["domain"] != "deformable-inner-solver"
+    ]
+
+    errors = module._paper_figure13_consistency_errors(packet, _TIMING_GATE_PACKET_NAME)
+
+    assert any(
+        "exactly one deformable-inner-solver inactive->inactive note" in error
+        for error in errors
+    ), errors
+
+
+def test_figure13_requires_avbd_parameter_profile_note_under_avbd_family():
+    module = _load_module()
+    packet_name = "avbd-paper-breakable-wall-packet.json"
+    packet = json.loads((PACKET_DIR / packet_name).read_text())
+    resolved = packet["visual_evidence"]["impact"]["scene_metrics"][
+        "resolved_configuration"
+    ]
+    profile = next(
+        note for note in resolved if note["domain"] == "rigid-avbd-parameter-profile"
+    )
+    assert profile["reason"].endswith("alpha=0.95, beta=10, gamma=0.99")
+    profile["reason"] = "immutable public AVBD parameters: alpha=0, beta=10, gamma=0.99"
+
+    errors = module._paper_figure13_consistency_errors(packet, packet_name)
+
+    assert any(
+        "exactly one rigid-avbd-parameter-profile" in error for error in errors
+    ), errors
+
+
+def test_figure13_rejects_avbd_parameter_profile_note_outside_avbd_family():
+    module = _load_module()
+    packet = _timing_gate_packet()
+    resolved = packet["visual_evidence"]["bend"]["scene_metrics"][
+        "resolved_configuration"
+    ]
+    resolved.append(
+        {
+            "domain": "rigid-avbd-parameter-profile",
+            "reason": "immutable public AVBD parameters: alpha=0.95, beta=10, gamma=0.99",
+            "requested": "paper-2025-table-2",
+            "resolved": "paper-2025-table-2",
+        }
+    )
+
+    errors = module._paper_figure13_consistency_errors(packet, _TIMING_GATE_PACKET_NAME)
+
+    assert any("filename-specific notes" in error for error in errors), errors
+    assert any("unexpected notes" in error for error in errors), errors
 
 
 def test_figure13_rejects_fractional_fingerprint_counter_drift():

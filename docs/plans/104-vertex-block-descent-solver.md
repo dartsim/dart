@@ -431,32 +431,30 @@ outside, so this row claims three localized joint-break clusters on a standing
 wall rather than the broken-open wall of Figure 13(d), and its semantic review
 records visual agreement with that panel as not proven. The 676 surviving rows
 stay below 1.63 mm linear and 0.00119 rad angular residual at frame 120. The
-frame-60 capture remains an explicit pre-evaluation state. In
-the now-historical predecessor packet, both engine ViewReports passed, the
-runtime scene and benchmark shared fingerprint `8ca3fbfa00c3dce9`, and six
-captures bound source digest
-`ce6b6be09bc06b23b7932a88e2c89dd6dafbeb54828a1c92212aaaa7af47e30a`.
-Capture manifests bind the capture-time source tree and artifacts; an accepted
-benchmark binds that same source tree plus its translation unit. That
-predecessor quiet-host five-repeat Release run recorded 8.044504 ms median CPU
-cost per step with 1.77% CPU CV; its raw JSON SHA-256 was
-`75ae6f9223d5d2db3d99290e1aca38125953f67cb7051c8f79b0c8f561548bd9`.
-It is readable historical evidence but cannot close a current row; schema 6
-and the final source must be recaptured, re-reviewed, and rebenchmarked. The
-predecessor packet is stored in
+frame-60 capture remains an explicit pre-evaluation state. All three AVBD
+engine ViewReports pass, the runtime scene and benchmark share fingerprint
+`8ca3fbfa00c3dce9`, and the nine sealed captures (three per method, each with
+a 600-frame long-horizon still and video) bind capture-source digest
+`115a185b7ae0f2d122f227503091da5236990716160ad9263595a6f880671a43` and the
+embedded Git HEAD of the sealed source commit. Capture manifests bind the
+sealed source tree, the loaded runtime images, and their artifacts; the
+benchmark binds that same source tree, its translation unit, the evidence build
+configuration, the quiet-host gate, and the in-run watchdog. The sealed
+quiet-host five-repeat Release run recorded 16.050815 ms median CPU cost per
+step with 0.99% CPU CV. The schema-6 packet is stored in
 [`avbd-paper-breakable-wall-packet.json`](104-vertex-block-descent-solver/avbd-paper-breakable-wall-packet.json).
 The matched `vbd_paper_breakable_wall` row reuses that exact scene fingerprint
 and projection budget with fixed finite-penalty rows, no dual accumulation or
 progressive stiffness. Its frame-18 oracle records 0 broken and 712 retained
-attachments, 0.132 m peak wall-normal and 0.062 m RMS displacement, and 120
-bricks beyond 0.05 m; its frame-120 oracle retains the full connected wall.
-All 712 retained VBD rows stay below 16.39 mm and 0.01328 rad at frame 18,
-then 11.10 mm and 0.001310 rad at frame 120. Both predecessor VBD renders
-passed. The same historical benchmark recorded 7.683010 ms VBD and 8.044504 ms AVBD
-median CPU cost per step with 0.41% and 1.77% CPU CV. Its 0.9551x VBD/AVBD
-ratio is descriptive only because the methods produce different physical
-outcomes and there is no achieved-accuracy reference denominator. The
-historical cross-linked evidence is stored in
+attachments, 0.133 m peak wall-normal and 0.063 m RMS displacement, and 123
+bricks beyond 0.05 m; its frame-120 and frame-600 oracles retain the full
+connected wall. All 712 retained VBD rows stay below 16.90 mm and 0.01342 rad
+at frame 18, then 11.10 mm and 0.001310 rad at frame 120. All three VBD
+renders pass. The same sealed benchmark recorded 13.973706 ms VBD and
+16.050815 ms AVBD median CPU cost per step with 0.65% and 0.99% CPU CV. Its
+0.8706x VBD/AVBD ratio is descriptive only because the methods produce
+different physical outcomes and there is no achieved-accuracy reference
+denominator. The cross-linked evidence is stored in
 [`avbd-paper-vbd-comparison-packet.json`](104-vertex-block-descent-solver/avbd-paper-vbd-comparison-packet.json).
 The matched `sequential_impulse_paper_breakable_wall` row records exactly five
 frame-14 broken identities, distributed `[2, 1, 2]` across the three impact
@@ -465,9 +463,9 @@ the broken-identity digest is unchanged, but the 484 retained rows outside all
 impact regions reach 0.06346 m maximum / 0.02076 m RMS linear residual and
 0.7270 rad maximum / 0.2164 rad RMS angular residual. Only 27.27% of bricks
 outside impact bands and 19.05% overall remain placed, with 2.878 m maximum
-wall-normal displacement. Both predecessor SI renders passed. The same
-historical benchmark recorded 13.058432 ms SI median CPU cost per step with
-0.52% CPU CV. Its
+wall-normal displacement, and the 600-frame capture keeps the collapsed wall.
+All three SI renders pass. The same sealed benchmark recorded 14.499464 ms SI
+median CPU cost per step with 0.28% CPU CV. Its
 1.6233x SI/AVBD and 1.6997x SI/VBD ratios are descriptive only. Frame 120 is
 the only shared quantitative
 checkpoint across the three method rows; the earlier frame-14, frame-18, and
@@ -1576,21 +1574,22 @@ On 2026-08-31, a zero-trust audit replaced label-based evidence with two
 machine-checked 88-row contracts and reclassified every implementation,
 demo, benchmark, and packet by the solver that actually executes. VBD has 38
 partial and 50 missing rows; AVBD has 64 partial and 24 missing rows; neither
-has a complete row. The predecessor Figure 13 reconstruction bound capture-source
+has a complete row. The sealed Figure 13 reconstruction binds capture-source
 digest
-`ce6b6be09bc06b23b7932a88e2c89dd6dafbeb54828a1c92212aaaa7af47e30a`,
-benchmark translation-unit digest
-`cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834`,
-and raw benchmark JSON SHA-256
-`75ae6f9223d5d2db3d99290e1aca38125953f67cb7051c8f79b0c8f561548bd9`.
-Its historical median CPU costs/CVs were 8.044504 ms/1.77% AVBD,
-7.683010 ms/0.41% VBD, and 13.058432 ms/0.52% Sequential Impulse. These are
-absolute checkpoint costs for intentionally different outcomes, not parity or
-speedup evidence. Six 1280x720 captures and three two-second videos cover only
-the reconstructed 120-frame checkpoint; they do not establish source-exact or
-long-horizon stability. The middle projectile leaves the finite ground/camera
-domain and the wall oracle does not adjudicate its later trajectory. Exact
-source constants, XPBD, source-matched four-method evidence, CUDA,
+`115a185b7ae0f2d122f227503091da5236990716160ad9263595a6f880671a43` and the
+embedded Git HEAD of the sealed source commit; the packets validate the
+benchmark translation-unit digest, the evidence build configuration, and the
+benchmark JSON transitively. Its median CPU costs/CVs are 16.050815 ms/0.99%
+AVBD, 13.973706 ms/0.65% VBD, and 14.499464 ms/0.28% Sequential Impulse.
+These are absolute checkpoint costs for intentionally different outcomes, not
+parity or speedup evidence. Nine 1280x720 captures, including one 600-frame
+(10 s) long-horizon still and video per method, cover the reconstructed
+checkpoints and the long-horizon retention/collapse behaviour; they do not
+establish source-exact behaviour. Under the immutable paper profile the AVBD
+balls lodge in the wall and drift back instead of leaving the domain, and the
+AVBD wall keeps standing with three localized joint-break clusters, so its
+semantic review records visual agreement with Figure 13(d) as not proven.
+Exact source constants, XPBD, source-matched four-method evidence, CUDA,
 achieved-accuracy performance, and the remaining VBD/AVBD mechanisms and
 corpus rows stay open.
 
