@@ -70,7 +70,17 @@ jobs:
     env:
       DART_PARALLEL_JOBS: "8"
       CTEST_PARALLEL_LEVEL: "8"
-      DART_CUDA_ARCHITECTURES: "75"
+      # On the GPU runner this stays empty so the cuda config auto-detects the
+      # runner GPU's compute capability and builds real SASS for it: the conda
+      # CUDA toolkit can be newer than the runner driver, and then the driver
+      # rejects PTX JIT ("the provided PTX was compiled with an unsupported
+      # toolchain"), so a stale hard-coded arch fails every runtime test after
+      # a runner GPU or driver change. The GitHub-hosted fork fallback has no
+      # GPU to detect, so its compile-only lane keeps a fixed arch.
+      DART_CUDA_ARCHITECTURES: >-
+        ${{ (github.event_name == 'pull_request' &&
+             github.event.pull_request.head.repo.full_name != github.repository)
+            && '75' || '' }}
       # The cuda environment declares the __cuda=13 virtual package
       # (pixi.toml linux-64-cuda platform). Assume it explicitly so the
       # GPU-less fork-PR fallback runner installs without warnings; on the
