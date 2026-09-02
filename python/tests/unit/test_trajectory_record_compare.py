@@ -7,6 +7,8 @@ import math
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
@@ -153,6 +155,39 @@ def test_combined_trajectory_and_contact_recording_shares_runner() -> None:
     assert trajectory_frames
     assert contact_frames
     assert contact_frames <= trajectory_frames
+
+
+def test_load_factory_accepts_python_file_path(tmp_path) -> None:
+    scene = tmp_path / "scratch_scene.py"
+    scene.write_text(
+        "class Scenes:\n"
+        "    @staticmethod\n"
+        "    def make_world():\n"
+        "        return 'scratch-world'\n"
+        "\n"
+        "def make_world():\n"
+        "    return 'scratch-world'\n",
+        encoding="utf-8",
+    )
+
+    assert trajectory_record._load_factory(f"{scene}:make_world")() == "scratch-world"
+    nested = trajectory_record._load_factory(f"{scene}:Scenes.make_world")
+    assert nested() == "scratch-world"
+
+    # A scratch file named like a package it imports must not shadow that
+    # package while it executes (it is registered under a prefixed name).
+    shadowing = tmp_path / "json.py"
+    shadowing.write_text(
+        "import json\n\ndef make_world():\n    return json.dumps({'ok': 1})\n",
+        encoding="utf-8",
+    )
+    assert trajectory_record._load_factory(f"{shadowing}:make_world")() == '{"ok": 1}'
+    assert sys.modules["json"].__file__ != str(shadowing)
+
+    with pytest.raises(FileNotFoundError):
+        trajectory_record._load_factory(f"{tmp_path / 'missing.py'}:make_world")
+    with pytest.raises(ValueError, match="path/to/file.py:callable"):
+        trajectory_record._load_factory("no_callable_separator")
 
 
 def test_main_factory_alone_does_not_trip_scene_exclusivity_guard(

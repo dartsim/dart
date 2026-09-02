@@ -19,7 +19,17 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
 - **Step metrics** — `world.compute_step_metrics()` returns a `StepMetrics`
   with kinetic/potential/total energy, linear/angular momentum, active contact
   count, max penetration depth, iterations, and residual. Watch energy and
-  momentum for conservation, penetration for contact health.
+  momentum for conservation, penetration for contact health. The contact
+  count and penetration cover solved pairs only: a contact whose two bodies
+  are both static or kinematic is skipped, so a fixture sunk into the ground
+  reports zero penetration. Check fixture geometry with `world.collide()`
+  (which reports those pairs), the scene dump, or `scene-diff`.
+- **Rest and settling claims** — state the criterion before grading, for
+  example a support-gap band with no drift over a window, or a velocity
+  bound. Deactivation is opt-in (`DeactivationOptions`, off by default), and
+  a box resting on a flat face can keep a small residual rocking velocity on
+  the default contact solver, so `is_sleeping` and a bare velocity threshold
+  are not rest oracles.
 - **Scene dump** — `dartpy.dump_scene_json(world)` / `dump_scene_text(world)`
   answer "what is in this world?": a glTF/USD-flavored hierarchy (header with
   gravity, time step, units, solver rest tolerance; bodies with mass/inertia/
@@ -33,6 +43,10 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
   runs with a bit-exact checksum mode (determinism) or a per-column tolerance
   mode, reporting the first divergence. Derive an empirical drift band from
   DART's own runs rather than importing a threshold — no engine publishes one.
+  Both recorders take a built-in `--scene` or `--factory module:callable`;
+  pass a scratch scene as `--factory path/to/scene.py:callable`, because the
+  Pixi task replaces `PYTHONPATH` and a module outside `python/` or `scripts/`
+  is not importable by name.
 - **Scene diff** — `pixi run scene-diff` compares two
   `dump_scene_json` outputs structurally, with numeric tolerance and a
   machine-readable verdict. Use it when the question is "did the scene I built
@@ -100,7 +114,8 @@ debug=(...layers...))` draws world-derived overlay layers through the same
   `docs/design/agent_sim_verification.md` and `dart/gui/AGENTS.md`.
 - **Agent capture harness** — `pixi run agent-capture` renders deterministic
   stills/turntables/motion sequences (optional MP4) from the built-in scene
-  registry or a `module:callable` world factory, with explicit or
+  registry or a `module:callable` / `path/to/file.py:callable` world factory,
+  with explicit or
   auto-selected cameras, debug layers, and a sidecar JSON recording camera
   parameters, layers, view reports, and the exact reproduction command. Its
   review contract enumerates every selected still plus representative

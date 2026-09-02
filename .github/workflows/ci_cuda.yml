@@ -70,7 +70,23 @@ jobs:
     env:
       DART_PARALLEL_JOBS: "8"
       CTEST_PARALLEL_LEVEL: "8"
-      DART_CUDA_ARCHITECTURES: "75"
+      # The kernels must carry native SASS for the runner GPU. That runner is
+      # an RTX 5000 Ada (sm_89), so building sm_75 left no native SASS for the
+      # device and the driver fell back to JIT-compiling the embedded
+      # compute_75 PTX — which fails, because pixi ships nvcc 13.3 while the
+      # runner's driver (595.84) only supports up to CUDA 13.2:
+      #   "the provided PTX was compiled with an unsupported toolchain"
+      # Leaving this empty on the GPU lane makes the cuda config auto-detect the
+      # runner's compute capability (via nvidia-smi, which the "Show GPU" step
+      # below proves is available) and emit SASS for it, so the toolkit-vs-driver
+      # gap never matters and a runner GPU swap cannot silently re-stale the
+      # value the way the previous hard-coded arch did. The GPU-less fork-PR
+      # fallback has nothing to detect and only compiles, so it keeps an
+      # explicit arch.
+      DART_CUDA_ARCHITECTURES: >-
+        ${{ (github.event_name == 'pull_request' &&
+             github.event.pull_request.head.repo.full_name != github.repository)
+            && '89' || '' }}
       # The cuda environment declares the __cuda=13 virtual package
       # (pixi.toml linux-64-cuda platform). Assume it explicitly so the
       # GPU-less fork-PR fallback runner installs without warnings; on the

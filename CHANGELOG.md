@@ -541,6 +541,13 @@ compatibility remains on the active DART 6 LTS branch._
   versions and comparison-lane mechanics, and a harness-wide refresh fixed
   outdated, duplicated, and over-constrained AI guidance at its owners.
   ([#3473](https://github.com/dartsim/dart/pull/3473))
+- Let `pixi run trajectory-record` and `pixi run agent-capture` load a scratch
+  scene with `--factory path/to/file.py:callable`, because the Pixi task
+  environment replaces `PYTHONPATH` and a module outside the task path was not
+  importable by name; the simulation-verification guide now also states that
+  step-metrics contact count and penetration skip static/kinematic-only pairs
+  and that rest claims need an explicit criterion.
+  ([#3476](https://github.com/dartsim/dart/pull/3476))
 - Fixed the trajectory recorder so its `--factory module:callable` path works
   instead of tripping its own scene/factory exclusivity guard.
   ([#3416](https://github.com/dartsim/dart/pull/3416))
