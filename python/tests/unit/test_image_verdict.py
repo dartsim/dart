@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+from hashlib import sha256
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -12,7 +13,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 import image_verdict
-from _image_tools import ImageData, read_image, write_png
+from _image_tools import ImageData, read_image, write_png, write_ppm
 
 
 def _contrast_pixels(width: int = 100, height: int = 100) -> bytes:
@@ -115,7 +116,18 @@ def test_verdict_schema_contrast_and_metadata_round_trip(tmp_path: Path) -> None
     loaded = json.loads(json.dumps(verdict))
     assert loaded["schema_version"] == "dart.image_verdict/v1"
     assert loaded["image"]["width"] == 100
+    assert loaded["image"]["sha256"] == sha256(image.read_bytes()).hexdigest()
     assert loaded["reasons"] == []
+
+
+def test_ppm_verdict_hashes_the_analyzed_source_bytes(tmp_path: Path) -> None:
+    image = tmp_path / "capture.ppm"
+    write_ppm(image, 100, 100, _contrast_pixels())
+
+    verdict = image_verdict.build_verdict(image)
+
+    assert verdict["pass"] is True
+    assert verdict["image"]["sha256"] == sha256(image.read_bytes()).hexdigest()
 
 
 def test_blank_image_fails_non_blank_and_contrast(tmp_path: Path) -> None:
@@ -179,6 +191,10 @@ def test_diff_catches_seeded_render_regression(tmp_path: Path) -> None:
     assert verdict["machine_scope"] == "pixel-integrity-and-reference-diff"
     assert verdict["checks"]["diff"]["pass"] is False
     assert verdict["checks"]["diff"]["pct_pixels_over_threshold"] > 1.0
+    assert verdict["image"]["sha256"] == sha256(capture.read_bytes()).hexdigest()
+    assert verdict["reference"]["sha256"] == sha256(
+        golden.read_bytes()
+    ).hexdigest()
     assert any("diff pixels over threshold" in reason for reason in verdict["reasons"])
 
 

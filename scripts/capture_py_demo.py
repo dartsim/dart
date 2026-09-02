@@ -24,8 +24,13 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from capture_source_provenance import (  # noqa: E402
+    CAPTURE_LOADER_ENVIRONMENT_PREFIXES,
+    CaptureSourceProvenanceError,
+    _capture_loader_environment_policy,
     capture_artifact_provenance,
+    capture_runtime_provenance,
     compute_capture_source_provenance,
+    encode_capture_video,
 )
 
 
@@ -1097,6 +1102,29 @@ def _assignment_dict(values: list[str], option_name: str) -> dict[str, str]:
     return assignments
 
 
+def _scene_environment_dict(values: list[str]) -> dict[str, str]:
+    """Parse ``--env`` assignments, rejecting loader-control variables.
+
+    The manifest attests that no loader-control environment variable was set
+    while the demo ran, so ``--env`` must never be able to inject one behind
+    that attestation. Rejecting at parse time keeps the failure ahead of any
+    demo process, output directory, or manifest write.
+    """
+
+    assignments = _assignment_dict(values, "--env")
+    forbidden = sorted(
+        key
+        for key in assignments
+        if key.startswith(CAPTURE_LOADER_ENVIRONMENT_PREFIXES)
+    )
+    if forbidden:
+        raise SystemExit(
+            "--env forbids loader-control environment variables with prefixes "
+            f"{list(CAPTURE_LOADER_ENVIRONMENT_PREFIXES)!r}: {forbidden!r}"
+        )
+    return assignments
+
+
 def _json_object(value: str, option_name: str) -> dict[str, object] | None:
     if not value:
         return None
@@ -1113,6 +1141,18 @@ def _run_demo_with_env(demo_args: list[str], scene_env: dict[str, str]) -> int:
     previous: dict[str, str | None] = {key: os.environ.get(key) for key in scene_env}
     try:
         os.environ.update(scene_env)
+        # Sample the loader policy inside the window the demo actually runs in.
+        # ``capture_runtime_provenance`` samples it outside this window, so a
+        # loader-control variable that is only live here -- from ``--env`` or
+        # from any other route -- would otherwise be attested away as absent.
+        try:
+            _capture_loader_environment_policy(_repo_root())
+        except CaptureSourceProvenanceError as exc:
+            raise SystemExit(
+                "loader-control environment variables are live for the demo "
+                "run; the capture cannot attest an empty loader environment: "
+                f"{exc}"
+            ) from exc
         return _run_demo(demo_args)
     finally:
         for key, value in previous.items():
@@ -1559,24 +1599,9 @@ def _run_demo(demo_args: list[str]) -> int:
 
 
 def _encode_video(frames: pathlib.Path, output: pathlib.Path, fps: int) -> bool:
-    ffmpeg = _ffmpeg_path()
-    if ffmpeg is None:
+    if _ffmpeg_path() is None:
         return False
-    output.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
-        [
-            ffmpeg,
-            "-y",
-            "-framerate",
-            str(fps),
-            "-i",
-            str(frames / "frame_%06d.ppm"),
-            "-pix_fmt",
-            "yuv420p",
-            str(output),
-        ],
-        check=True,
-    )
+    encode_capture_video(sorted(frames.glob("frame_*.png")), output, fps)
     return True
 
 
@@ -4169,32 +4194,229 @@ def _run_multi_view_capture(
     frames_dir: pathlib.Path,
     camera: dict,
 ) -> int:
-    """Capture multiple camera views/turntable frames in one viewer process.
+    """Capture and provenance-bind multiple views from one viewer process."""
 
-    Produces one PPM per view (``<stem>_<view>.ppm`` /
-    ``<stem>_turnNNN.ppm``) and verifies each is written and non-blank. The
-    single-file PNG/video/manifest pipeline is intentionally skipped: a
-    multi-view/turntable request is an evidence sweep of per-angle stills, not a
-    single labeled capture.
-    """
-
-    scene_env = _assignment_dict(args.env, "--env")
+    screenshot_png = screenshot_ppm.with_suffix(".png")
+    video = screenshot_ppm.with_suffix(".mp4")
+    manifest = output_dir / "manifest.json"
+    events = output_dir / "events.jsonl"
+    scene_metrics_events = output_dir / "scene_metrics.jsonl"
+    png_frames_dir = output_dir / "png_frames"
+    scene_env = _scene_environment_dict(args.env)
+    metadata = _assignment_dict(args.metadata, "--metadata")
+    scene_state = _json_object(args.scene_state_json, "--scene-state-json")
     outputs = _camera_view_output_paths(screenshot_ppm, camera)
-    for path in outputs:
+    if not outputs:
+        raise SystemExit("multi-view capture requires at least one output view")
+    if len(outputs) != len(set(outputs)):
+        raise SystemExit("multi-view capture output views must be unique")
+    for path in (frames_dir, png_frames_dir):
+        if path.exists():
+            shutil.rmtree(path)
+    for path in (
+        screenshot_ppm,
+        screenshot_png,
+        video,
+        manifest,
+        events,
+        scene_metrics_events,
+        *outputs,
+    ):
         if path.exists():
             path.unlink()
+
+    has_force_drag = bool(args.force_drag_target) or args.force_drag_pixel is not None
+    needs_event_log = bool(args.switch_scene or has_force_drag)
+    if needs_event_log:
+        args.event_log = events
+    args.capture_metrics_event_log = scene_metrics_events
+    capture_source_provenance = compute_capture_source_provenance(_repo_root())
+    initial_runtime_provenance = capture_runtime_provenance(_repo_root())
+    capture_source_provenance["git_head"] = initial_runtime_provenance[
+        "source_git_head"
+    ]
+    start_time = time.monotonic()
+    view_tokens = _camera_view_tokens(camera)
+    capture_metadata: dict[str, object] = {
+        "capture_mode": "multi-view",
+        "converted_frames": 0,
+        "height": args.height,
+        "requested_frames": args.frames,
+        "view_count": len(outputs),
+        "view_tokens": view_tokens,
+        "width": args.width,
+    }
+    artifacts: dict[str, object] = {
+        "events": str(events) if needs_event_log else None,
+        "frames": str(png_frames_dir),
+        "scene_metrics_events": None,
+        "screenshot": str(screenshot_png),
+        "video": None,
+        "views": [],
+    }
+    visual_evidence: dict[str, object] = {
+        "screenshot": None,
+        "views": [],
+    }
+    manifest_payload: dict[str, object] = {
+        "schema_version": 1,
+        "scene": args.scene,
+        "switch_scene": args.switch_scene or None,
+        "switch_frame": args.switch_frame if args.switch_scene else None,
+        "force_drag": (
+            {
+                "delta": list(args.force_drag_delta),
+                "duration_frames": args.force_drag_frames,
+                "start_frame": args.force_drag_frame,
+                "target": args.force_drag_target,
+            }
+            if args.force_drag_target
+            else (
+                {
+                    "delta_pixels": list(args.force_drag_delta_pixels),
+                    "duration_frames": args.force_drag_frames,
+                    "pixel": list(args.force_drag_pixel),
+                    "start_frame": args.force_drag_frame,
+                }
+                if args.force_drag_pixel is not None
+                else None
+            )
+        ),
+        "artifacts": artifacts,
+        "camera": camera,
+        "capture": capture_metadata,
+        "capture_artifact_provenance": None,
+        "capture_runtime_provenance": initial_runtime_provenance,
+        "capture_source_provenance": capture_source_provenance,
+        "resolved_solver_identity": None,
+        "scene_metrics": None,
+        "scene_metadata": None,
+        "show_ui": args.show_ui,
+        "metadata": metadata,
+        "capture_label": _capture_label(args),
+        "scene_state": scene_state,
+        "scene_environment": scene_env,
+        "ui_ready": None,
+        "visual_evidence": visual_evidence,
+        "workflow_guidance": _rigid_workflow_guidance_by_scene().get(args.scene),
+    }
+    _write_json(manifest, manifest_payload)
     demo_args = build_demo_args(args, screenshot_ppm, frames_dir)
     rc = _run_demo_with_env(demo_args, scene_env)
+    if needs_event_log:
+        _append_event(events, start_time, "capture_run_finished", return_code=rc)
     if rc != 0:
         return rc
+    require_docked_ui = args.show_ui and not args.allow_noop
     for path in outputs:
         if not path.is_file():
             raise SystemExit(f"demo did not write {path}")
         if not ppm_has_nonzero_pixels(path):
             raise SystemExit(f"{path} contains only zero-valued pixels")
+        if require_docked_ui and not ppm_has_docked_workspace_regions(path):
+            raise SystemExit(f"{path} does not show the docked ImGui workspace")
+
+    convert_ppm_to_png(outputs[0], screenshot_png)
+    png_frames_dir.mkdir(parents=True, exist_ok=True)
+    png_frame_paths: list[pathlib.Path] = []
+    view_artifacts: list[dict[str, object]] = []
+    view_evidence: list[dict[str, object]] = []
+    for index, (token, ppm) in enumerate(zip(view_tokens, outputs), start=1):
+        png = png_frames_dir / f"frame_{index:06d}.png"
+        convert_ppm_to_png(ppm, png)
+        png_frame_paths.append(png)
+        view_artifacts.append(
+            {
+                "file": str(png),
+                "index": index,
+                "token": token,
+            }
+        )
+        view_evidence.append(
+            {
+                "image": ppm_image_evidence(ppm),
+                "index": index,
+                "token": token,
+            }
+        )
+    capture_metadata["converted_frames"] = len(png_frame_paths)
+    artifacts["views"] = view_artifacts
+    visual_evidence["screenshot"] = ppm_image_evidence(outputs[0])
+    visual_evidence["views"] = view_evidence
+
+    scene_metrics_summary = _read_scene_metrics_summary(scene_metrics_events)
+    manifest_payload["scene_metrics"] = scene_metrics_summary
+    manifest_payload["resolved_solver_identity"] = (
+        scene_metrics_summary.get("resolved_solver_identity")
+        if isinstance(scene_metrics_summary, dict)
+        else None
+    )
+    manifest_payload["scene_metadata"] = _read_scene_metadata(scene_metrics_events)
+    if scene_metrics_events.is_file():
+        artifacts["scene_metrics_events"] = str(scene_metrics_events)
+    manifest_payload["ui_ready"] = {
+        "dropped_warmup_frames": 0,
+        "required": require_docked_ui,
+    }
+
+    encoded_video: pathlib.Path | None = None
+    if args.video:
+        if _encode_video(png_frames_dir, video, args.fps):
+            encoded_video = video
+            artifacts["video"] = str(video)
+        else:
+            raise SystemExit("--video requires ffmpeg in the active environment")
+
+    if needs_event_log:
+        _append_event(
+            events,
+            start_time,
+            "artifacts_written",
+            converted_frames=len(png_frame_paths),
+            screenshot=str(screenshot_png),
+        )
+        print(f"events: {events}")
+    final_capture_source_provenance = compute_capture_source_provenance(_repo_root())
+    if final_capture_source_provenance["digest"] != capture_source_provenance["digest"]:
+        raise SystemExit(
+            "capture source state changed while the demo was running; "
+            "discarding the evidence"
+        )
+    final_runtime_provenance = capture_runtime_provenance(_repo_root())
+    if final_runtime_provenance != initial_runtime_provenance:
+        raise SystemExit(
+            "capture runtime binaries changed while the demo was running; "
+            "discarding the evidence"
+        )
+    # The source digest proves current byte equality. Record the compiled
+    # extension's HEAD so evidence-only commits after the build are harmless
+    # while manifest/binary commit substitution remains impossible.
+    final_capture_source_provenance["git_head"] = final_runtime_provenance[
+        "source_git_head"
+    ]
+    manifest_payload["capture_source_provenance"] = final_capture_source_provenance
+    manifest_payload["capture_runtime_provenance"] = final_runtime_provenance
+    manifest_payload["capture_artifact_provenance"] = capture_artifact_provenance(
+        scene_metrics_events=(
+            scene_metrics_events if scene_metrics_events.is_file() else None
+        ),
+        screenshot=screenshot_png,
+        png_frames=png_frame_paths,
+        video=encoded_video,
+        video_fps=args.fps if encoded_video is not None else None,
+        video_width=args.width if encoded_video is not None else None,
+        video_height=args.height if encoded_video is not None else None,
+        screenshot_png_frame_index=1,
+    )
+    _write_json(manifest, manifest_payload)
+
     print(f"multi-view capture wrote {len(outputs)} views to {output_dir}:")
-    for path in outputs:
-        print(f"  {path}")
+    for artifact in view_artifacts:
+        print(f"  {artifact['token']}: {artifact['file']}")
+    print(f"screenshot: {screenshot_png}")
+    print(f"manifest: {manifest}")
+    if encoded_video is not None:
+        print(f"video: {encoded_video}")
     return 0
 
 
@@ -4253,14 +4475,15 @@ def main(argv: list[str] | None = None) -> int:
             "--frames must be greater than --force-drag-frame + --force-drag-frames"
         )
 
+    scene_env = _scene_environment_dict(args.env)
     output_dir = _single_capture_output_dir(args)
     output_dir.mkdir(parents=True, exist_ok=True)
-    scene_env = _assignment_dict(args.env, "--env")
     metadata = _assignment_dict(args.metadata, "--metadata")
     scene_state = _json_object(args.scene_state_json, "--scene-state-json")
     capture_stem = _capture_stem(args)
     screenshot_ppm = output_dir / f"{capture_stem}.ppm"
     screenshot_png = output_dir / f"{capture_stem}.png"
+    video = output_dir / f"{capture_stem}.mp4"
     frames_dir = output_dir / "frames"
     png_frames_dir = output_dir / "png_frames"
     camera_options = _camera_args_from_namespace(args)
@@ -4277,6 +4500,7 @@ def main(argv: list[str] | None = None) -> int:
     for path in (
         screenshot_ppm,
         screenshot_png,
+        video,
         manifest,
         events,
         scene_metrics_events,
@@ -4297,6 +4521,10 @@ def main(argv: list[str] | None = None) -> int:
         "height": args.height,
     }
     capture_source_provenance = compute_capture_source_provenance(_repo_root())
+    initial_runtime_provenance = capture_runtime_provenance(_repo_root())
+    capture_source_provenance["git_head"] = initial_runtime_provenance[
+        "source_git_head"
+    ]
     workflow_guidance = _rigid_workflow_guidance_by_scene().get(args.scene)
     visual_evidence: dict[str, object] = {
         "first_frame": None,
@@ -4336,6 +4564,7 @@ def main(argv: list[str] | None = None) -> int:
         "camera": camera_options,
         "capture": capture_metadata,
         "capture_artifact_provenance": None,
+        "capture_runtime_provenance": initial_runtime_provenance,
         "capture_source_provenance": capture_source_provenance,
         "resolved_solver_identity": None,
         "scene_metrics": None,
@@ -4368,10 +4597,13 @@ def main(argv: list[str] | None = None) -> int:
         frames_dir, require_docked_ui
     )
     converted_frames = 0
+    png_frame_paths: list[pathlib.Path] = []
     for ppm in frame_paths:
         if not ppm_has_nonzero_pixels(ppm):
             raise SystemExit(f"{ppm} contains only zero-valued pixels")
-        convert_ppm_to_png(ppm, png_frames_dir / f"{ppm.stem}.png")
+        png_frame = png_frames_dir / f"{ppm.stem}.png"
+        convert_ppm_to_png(ppm, png_frame)
+        png_frame_paths.append(png_frame)
         converted_frames += 1
     capture_metadata["converted_frames"] = converted_frames
     visual_evidence["screenshot"] = ppm_image_evidence(screenshot_ppm)
@@ -4393,23 +4625,13 @@ def main(argv: list[str] | None = None) -> int:
         "dropped_warmup_frames": dropped_warmup_frames,
         "required": require_docked_ui,
     }
-    final_capture_source_provenance = compute_capture_source_provenance(_repo_root())
-    if final_capture_source_provenance["digest"] != capture_source_provenance["digest"]:
-        raise SystemExit(
-            "capture source state changed while the demo was running; "
-            "discarding the evidence"
-        )
-    manifest_payload["capture_artifact_provenance"] = capture_artifact_provenance(
-        scene_metrics_events=(
-            scene_metrics_events if scene_metrics_events.is_file() else None
-        ),
-        screenshot=screenshot_png,
-    )
-    _write_json(manifest, manifest_payload)
-
-    print(f"screenshot: {screenshot_png}")
-    if converted_frames:
-        print(f"frames: {png_frames_dir} ({converted_frames} PNG files)")
+    encoded_video: pathlib.Path | None = None
+    if args.video:
+        if _encode_video(png_frames_dir, video, args.fps):
+            encoded_video = video
+            manifest_payload["artifacts"]["video"] = str(video)
+        else:
+            raise SystemExit("--video requires ffmpeg in the active environment")
     if needs_event_log:
         _append_event(
             events,
@@ -4419,15 +4641,46 @@ def main(argv: list[str] | None = None) -> int:
             screenshot=str(screenshot_png),
         )
         print(f"events: {events}")
+    final_capture_source_provenance = compute_capture_source_provenance(_repo_root())
+    if final_capture_source_provenance["digest"] != capture_source_provenance["digest"]:
+        raise SystemExit(
+            "capture source state changed while the demo was running; "
+            "discarding the evidence"
+        )
+    final_runtime_provenance = capture_runtime_provenance(_repo_root())
+    if final_runtime_provenance != initial_runtime_provenance:
+        raise SystemExit(
+            "capture runtime binaries changed while the demo was running; "
+            "discarding the evidence"
+        )
+    # The source digest proves current byte equality. Record the compiled
+    # extension's HEAD so evidence-only commits after the build are harmless
+    # while manifest/binary commit substitution remains impossible.
+    final_capture_source_provenance["git_head"] = final_runtime_provenance[
+        "source_git_head"
+    ]
+    manifest_payload["capture_source_provenance"] = final_capture_source_provenance
+    manifest_payload["capture_runtime_provenance"] = final_runtime_provenance
+    manifest_payload["capture_artifact_provenance"] = capture_artifact_provenance(
+        scene_metrics_events=(
+            scene_metrics_events if scene_metrics_events.is_file() else None
+        ),
+        screenshot=screenshot_png,
+        png_frames=png_frame_paths,
+        video=encoded_video,
+        video_fps=args.fps if encoded_video is not None else None,
+        video_width=args.width if encoded_video is not None else None,
+        video_height=args.height if encoded_video is not None else None,
+        screenshot_png_frame_index=len(png_frame_paths),
+    )
+    _write_json(manifest, manifest_payload)
+
+    print(f"screenshot: {screenshot_png}")
+    if converted_frames:
+        print(f"frames: {png_frames_dir} ({converted_frames} PNG files)")
     print(f"manifest: {manifest}")
-    if args.video:
-        video = output_dir / f"{capture_stem}.mp4"
-        if _encode_video(frames_dir, video, args.fps):
-            manifest_payload["artifacts"]["video"] = str(video)
-            _write_json(manifest, manifest_payload)
-            print(f"video: {video}")
-        else:
-            print("video: skipped (ffmpeg not found)")
+    if encoded_video is not None:
+        print(f"video: {encoded_video}")
     return 0
 
 

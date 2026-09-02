@@ -42,6 +42,7 @@ set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_MODULE_PATH "${DART_SOURCE_DIR}/cmake")
 
 include(dart_defs)
+include(dart_capture_source_provenance)
 include(compiler_cache)
 include(local_build_perf)
 

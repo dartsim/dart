@@ -6,13 +6,14 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _image_tools import ImageData, read_image
+from _image_tools import PNG_SIGNATURE, ImageData, read_png_bytes, read_ppm_bytes
 
 SCHEMA_VERSION = "dart.image_verdict/v1"
 DEFAULT_FAIL = 0.016
@@ -31,7 +32,7 @@ def build_verdict(
     include_ssim: bool = True,
     require_contrast: bool = False,
 ) -> dict[str, Any]:
-    image = read_image(image_path)
+    image, image_sha256 = _read_image_with_sha256(image_path)
     reasons: list[str] = []
     checks: dict[str, Any] = {
         "non_blank": analyze_non_blank(image),
@@ -52,6 +53,7 @@ def build_verdict(
         "schema_version": SCHEMA_VERSION,
         "image": {
             "path": str(image_path),
+            "sha256": image_sha256,
             "width": image.width,
             "height": image.height,
         },
@@ -86,9 +88,10 @@ def build_verdict(
     }
 
     if reference_path is not None:
-        reference = read_image(reference_path)
+        reference, reference_sha256 = _read_image_with_sha256(reference_path)
         verdict["reference"] = {
             "path": str(reference_path),
+            "sha256": reference_sha256,
             "width": reference.width,
             "height": reference.height,
         }
@@ -109,6 +112,21 @@ def build_verdict(
     verdict["pass"] = not reasons
     verdict["reasons"] = reasons
     return verdict
+
+
+def _read_image_with_sha256(path: Path) -> tuple[ImageData, str]:
+    """Read one immutable byte snapshot for both analysis and provenance."""
+    payload = path.read_bytes()
+    if payload.startswith(b"P6"):
+        width, height, pixels = read_ppm_bytes(payload, path)
+    elif payload.startswith(PNG_SIGNATURE):
+        width, height, pixels = read_png_bytes(payload, path)
+    else:
+        raise ValueError(f"{path}: expected a binary PPM or PNG image")
+    return (
+        ImageData(path=path, width=width, height=height, pixels=pixels),
+        sha256(payload).hexdigest(),
+    )
 
 
 def analyze_non_blank(image: ImageData) -> dict[str, Any]:

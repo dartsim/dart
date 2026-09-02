@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import argparse
 import html
-from html.parser import HTMLParser
-from hashlib import sha256
 import importlib.util
 import json
-import pathlib
 import os
+import pathlib
+import runpy
+import sys
+from hashlib import sha256
+from html.parser import HTMLParser
 
 import pytest
 
@@ -21,14 +23,91 @@ capture_py_demo = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(capture_py_demo)
 
 
+@pytest.fixture(autouse=True)
+def _stable_native_runtime_and_video_probe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = {
+        "algorithm": "sha256-imported-dartpy-runtime-v3",
+        "dart_library_linkage": "shared",
+        "digest": "1" * 64,
+        "loaded_dart_libraries": [
+            {
+                "build_identity": {
+                    "algorithm": (
+                        "compiled-dart-shared-library-source-and-build-identity-v2"
+                    ),
+                    "build_configuration_digest": "5" * 64,
+                    "build_target": "dart-simulation",
+                    "cmake_build_type": "Release",
+                    "compiler_id": "GNU",
+                    "compiler_version": "15.2.0",
+                    "digest": "6" * 64,
+                    "ndebug": True,
+                    "optimization_enabled": True,
+                    "source_git_head": "3" * 40,
+                    "source_provenance_digest": "4" * 64,
+                },
+                "file": "libdart-simulation.so",
+                "path": "/fixture/libdart-simulation.so",
+                "sha256": "7" * 64,
+                "size_bytes": 1,
+            }
+        ],
+        "native_extension": {
+            "build_configuration_digest": "5" * 64,
+            "file": "_dartpy.so",
+            "module": "dartpy._dartpy",
+            "path": "/fixture/_dartpy.so",
+            "sha256": "2" * 64,
+            "size_bytes": 1,
+            "source_git_head": "3" * 40,
+            "source_provenance_digest": "4" * 64,
+        },
+        "source_git_head": "3" * 40,
+        "source_provenance_digest": "4" * 64,
+    }
+    monkeypatch.setattr(
+        capture_py_demo,
+        "capture_runtime_provenance",
+        lambda _root: runtime,
+    )
+    capture_module = sys.modules[
+        capture_py_demo.capture_artifact_provenance.__module__
+    ]
+
+    def fake_probe(video, **kwargs):
+        frame_count = kwargs["expected_frame_count"]
+        fps = kwargs["expected_fps"]
+        return {
+            "codec_name": "h264",
+            "content_correspondence": {
+                "algorithm": (
+                    capture_module.CAPTURE_VIDEO_CONTENT_CORRESPONDENCE_ALGORITHM
+                ),
+                "encoder": dict(capture_module.CAPTURE_VIDEO_ENCODER),
+                "expected_reencoded_sha256": capture_module.sha256_file(video),
+                "passed": True,
+                "source_png_sequence_digest": kwargs["png_sequence_digest"],
+            },
+            "decoded_frame_count": frame_count,
+            "duration_seconds": f"{frame_count}/{fps}",
+            "fps": f"{fps}/1",
+            "height": kwargs["expected_height"],
+            "pixel_format": "yuv420p",
+            "probe_algorithm": capture_module.CAPTURE_VIDEO_PROBE_ALGORITHM,
+            "width": kwargs["expected_width"],
+        }
+
+    monkeypatch.setattr(capture_module, "probe_decoded_video", fake_probe)
+
+
 class _ReviewAssetParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
         self.assets: list[str] = []
 
-    def handle_starttag(
-        self, _tag: str, attrs: list[tuple[str, str | None]]
-    ) -> None:
+    def handle_starttag(self, _tag: str, attrs: list[tuple[str, str | None]]) -> None:
         for name, value in attrs:
             if name in {"href", "src"} and value:
                 self.assets.append(value)
@@ -134,6 +213,46 @@ def test_ppm_image_evidence_reports_machine_checkable_stats(
     assert evidence["docked_workspace"] is False
 
 
+def test_capture_artifact_provenance_streams_files_and_rejects_unsafe_paths(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    screenshot = tmp_path / "screenshot.png"
+    frame = tmp_path / "frame_000001.png"
+    metrics = tmp_path / "scene_metrics.jsonl"
+    source_ppm = tmp_path / "source.ppm"
+    _write_ppm(source_ppm, bytes([20, 40, 60, 80, 100, 120]))
+    capture_py_demo.convert_ppm_to_png(source_ppm, screenshot)
+    capture_py_demo.convert_ppm_to_png(source_ppm, frame)
+    metrics.write_bytes(b"metrics\n")
+
+    def fail_read_bytes(_path: pathlib.Path) -> bytes:
+        raise AssertionError("artifact provenance must hash files incrementally")
+
+    monkeypatch.setattr(pathlib.Path, "read_bytes", fail_read_bytes)
+
+    provenance = capture_py_demo.capture_artifact_provenance(
+        scene_metrics_events=metrics,
+        screenshot=screenshot,
+        png_frames=[frame],
+        video=None,
+        video_fps=None,
+        screenshot_png_frame_index=1,
+    )
+
+    assert provenance["video"] is None
+    assert provenance["png_frames"]["files"][0]["size_bytes"] == frame.stat().st_size
+    for unsafe in (pathlib.Path("bad\x00.png"), pathlib.Path("bad\ud800.png")):
+        with pytest.raises(capture_py_demo.CaptureSourceProvenanceError):
+            capture_py_demo.capture_artifact_provenance(
+                scene_metrics_events=None,
+                screenshot=unsafe,
+                png_frames=[frame],
+                video=None,
+                video_fps=None,
+                screenshot_png_frame_index=1,
+            )
+
+
 def test_show_ui_detector_rejects_scene_only_frames(
     tmp_path: pathlib.Path,
 ) -> None:
@@ -201,9 +320,7 @@ def test_visual_capture_manifest_records_image_evidence(
     }
 
     def fake_run_demo(demo_args: list[str]) -> int:
-        screenshot = pathlib.Path(
-            demo_args[demo_args.index("--screenshot") + 1]
-        )
+        screenshot = pathlib.Path(demo_args[demo_args.index("--screenshot") + 1])
         frames = pathlib.Path(demo_args[demo_args.index("--out") + 1])
         scene_metrics = pathlib.Path(
             demo_args[demo_args.index("--capture-metrics-event-log") + 1]
@@ -342,16 +459,39 @@ def test_visual_capture_manifest_records_image_evidence(
     assert source_provenance["file_count"] > 0
     assert len(source_provenance["digest"]) == 64
     artifact_provenance = manifest["capture_artifact_provenance"]
-    assert artifact_provenance["algorithm"] == "sha256-v1"
-    assert artifact_provenance["screenshot_sha256"] == sha256(
-        pathlib.Path(manifest["artifacts"]["screenshot"]).read_bytes()
-    ).hexdigest()
-    assert artifact_provenance["scene_metrics_events_sha256"] == sha256(
-        pathlib.Path(
-            manifest["artifacts"]["scene_metrics_events"]
-        ).read_bytes()
-    ).hexdigest()
-    assert len(list((output / "png_frames").glob("frame_*.png"))) == 2
+    assert artifact_provenance["algorithm"] == (
+        "sha256-canonical-capture-artifact-manifest-v3"
+    )
+    assert len(artifact_provenance["digest"]) == 64
+    assert artifact_provenance["artifact_count"] == 4
+    assert (
+        artifact_provenance["screenshot_sha256"]
+        == sha256(
+            pathlib.Path(manifest["artifacts"]["screenshot"]).read_bytes()
+        ).hexdigest()
+    )
+    assert (
+        artifact_provenance["scene_metrics_events_sha256"]
+        == sha256(
+            pathlib.Path(manifest["artifacts"]["scene_metrics_events"]).read_bytes()
+        ).hexdigest()
+    )
+    png_frames = sorted((output / "png_frames").glob("frame_*.png"))
+    assert len(png_frames) == 2
+    frame_provenance = artifact_provenance["png_frames"]
+    assert frame_provenance["algorithm"] == (
+        "sha256-length-prefixed-decoded-ordered-png-manifest-v2"
+    )
+    assert frame_provenance["count"] == 2
+    assert len(frame_provenance["digest"]) == 64
+    assert [entry["file"] for entry in frame_provenance["files"]] == [
+        path.name for path in png_frames
+    ]
+    assert [entry["index"] for entry in frame_provenance["files"]] == [1, 2]
+    for entry, frame in zip(frame_provenance["files"], png_frames):
+        assert entry["size_bytes"] == frame.stat().st_size
+        assert entry["sha256"] == sha256(frame.read_bytes()).hexdigest()
+    assert artifact_provenance["video"] is None
     assert manifest["resolved_solver_identity"] == {
         "executor": "Sequential",
         "solver": "sequential_impulse",
@@ -362,12 +502,12 @@ def test_visual_capture_manifest_records_image_evidence(
         "first": {
             "event": "scene_capture_metrics",
             "frame": 1,
-                "metrics": {
-                    "contact_count": 0,
-                    "executor": "Sequential",
-                    "solver": "sequential_impulse",
-                    "status": "settling",
-                    "step_ms": 1.2,
+            "metrics": {
+                "contact_count": 0,
+                "executor": "Sequential",
+                "solver": "sequential_impulse",
+                "status": "settling",
+                "step_ms": 1.2,
             },
             "scene": "rigid_body",
             "source": "py-demo-scene",
@@ -375,11 +515,11 @@ def test_visual_capture_manifest_records_image_evidence(
         "latest": {
             "event": "scene_capture_metrics",
             "frame": 3,
-                "metrics": {
-                    "executor": "Sequential",
-                    "solver": "sequential_impulse",
-                    "status": "standing",
-                    "step_ms": 2.4,
+            "metrics": {
+                "executor": "Sequential",
+                "solver": "sequential_impulse",
+                "status": "standing",
+                "step_ms": 2.4,
             },
             "scene": "rigid_body",
             "source": "py-demo-scene",
@@ -456,10 +596,8 @@ def test_visual_capture_manifest_records_video_artifact(
         scene_metrics.write_text("")
         return 0
 
-    def fake_encode_video(
-        frames: pathlib.Path, video: pathlib.Path, fps: int
-    ) -> bool:
-        assert frames == output / "frames"
+    def fake_encode_video(frames: pathlib.Path, video: pathlib.Path, fps: int) -> bool:
+        assert frames == output / "png_frames"
         assert fps == 12
         video.write_bytes(b"fake-mp4")
         return True
@@ -490,6 +628,161 @@ def test_visual_capture_manifest_records_video_artifact(
     video = pathlib.Path(manifest["artifacts"]["video"])
     assert video == output / "rigid_body.mp4"
     assert video.read_bytes() == b"fake-mp4"
+    artifact_provenance = manifest["capture_artifact_provenance"]
+    assert artifact_provenance["artifact_count"] == 4
+    assert artifact_provenance["png_frames"]["count"] == 1
+    video_provenance = artifact_provenance["video"]
+    assert video_provenance["file"] == "rigid_body.mp4"
+    assert video_provenance["fps"] == "12/1"
+    assert video_provenance["decoded_frame_count"] == 1
+    assert video_provenance["sha256"] == sha256(b"fake-mp4").hexdigest()
+    assert video_provenance["size_bytes"] == len(b"fake-mp4")
+
+    video.write_bytes(b"mutated-mp4")
+    recomputed = capture_py_demo.capture_artifact_provenance(
+        scene_metrics_events=pathlib.Path(
+            manifest["artifacts"]["scene_metrics_events"]
+        ),
+        screenshot=pathlib.Path(manifest["artifacts"]["screenshot"]),
+        png_frames=sorted((output / "png_frames").glob("frame_*.png")),
+        video=video,
+        video_fps=12,
+        video_width=width,
+        video_height=height,
+        screenshot_png_frame_index=1,
+    )
+    assert recomputed["digest"] != artifact_provenance["digest"]
+    assert recomputed["video"]["sha256"] != artifact_provenance["video"]["sha256"]
+
+
+def test_multi_view_capture_records_ordered_media_provenance(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "multi-view"
+    width, height = 2, 1
+
+    def fake_run_demo(demo_args: list[str]) -> int:
+        screenshot = pathlib.Path(demo_args[demo_args.index("--screenshot") + 1])
+        frames = pathlib.Path(demo_args[demo_args.index("--out") + 1])
+        scene_metrics = pathlib.Path(
+            demo_args[demo_args.index("--capture-metrics-event-log") + 1]
+        )
+        frames.mkdir(parents=True)
+        _write_ppm(
+            screenshot.with_name(f"{screenshot.stem}_side.ppm"),
+            bytes([255, 0, 0, 0, 255, 0]),
+            width,
+            height,
+        )
+        _write_ppm(
+            screenshot.with_name(f"{screenshot.stem}_front.ppm"),
+            bytes([0, 0, 255, 255, 255, 0]),
+            width,
+            height,
+        )
+        scene_metrics.write_text(
+            json.dumps(
+                {
+                    "event": "scene_capture_metrics",
+                    "frame": 2,
+                    "metrics": {
+                        "executor": "Sequential",
+                        "solver": "sequential_impulse",
+                    },
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+        return 0
+
+    def fake_encode_video(frames: pathlib.Path, video: pathlib.Path, fps: int) -> bool:
+        assert fps == 15
+        assert [path.name for path in sorted(frames.glob("frame_*.png"))] == [
+            "frame_000001.png",
+            "frame_000002.png",
+        ]
+        video.write_bytes(b"multi-view-mp4")
+        return True
+
+    monkeypatch.setattr(capture_py_demo, "_run_demo", fake_run_demo)
+    monkeypatch.setattr(capture_py_demo, "_encode_video", fake_encode_video)
+
+    rc = capture_py_demo.main(
+        [
+            "--scene",
+            "rigid_body",
+            "--frames",
+            "2",
+            "--width",
+            str(width),
+            "--height",
+            str(height),
+            "--views",
+            "side,front",
+            "--video",
+            "--fps",
+            "15",
+            "--output-dir",
+            str(output),
+        ]
+    )
+
+    assert rc == 0
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["capture"] == {
+        "capture_mode": "multi-view",
+        "converted_frames": 2,
+        "height": height,
+        "requested_frames": 2,
+        "view_count": 2,
+        "view_tokens": ["side", "front"],
+        "width": width,
+    }
+    assert [entry["token"] for entry in manifest["artifacts"]["views"]] == [
+        "side",
+        "front",
+    ]
+    png_frames = sorted((output / "png_frames").glob("frame_*.png"))
+    provenance = manifest["capture_artifact_provenance"]
+    assert provenance["artifact_count"] == 5
+    assert provenance["png_frames"]["count"] == 2
+    assert [entry["file"] for entry in provenance["png_frames"]["files"]] == [
+        "frame_000001.png",
+        "frame_000002.png",
+    ]
+    video_provenance = provenance["video"]
+    assert video_provenance["file"] == "rigid_body.mp4"
+    assert video_provenance["fps"] == "15/1"
+    assert video_provenance["decoded_frame_count"] == 2
+    assert video_provenance["sha256"] == sha256(b"multi-view-mp4").hexdigest()
+    assert video_provenance["size_bytes"] == len(b"multi-view-mp4")
+    assert manifest["resolved_solver_identity"] == {
+        "executor": "Sequential",
+        "solver": "sequential_impulse",
+        "source": "scene_capture_metrics.latest.metrics",
+    }
+
+    mutation_ppm = tmp_path / "mutation.ppm"
+    _write_ppm(mutation_ppm, bytes([10, 20, 30, 40, 50, 60]), width, height)
+    capture_py_demo.convert_ppm_to_png(mutation_ppm, png_frames[1])
+    recomputed = capture_py_demo.capture_artifact_provenance(
+        scene_metrics_events=pathlib.Path(
+            manifest["artifacts"]["scene_metrics_events"]
+        ),
+        screenshot=pathlib.Path(manifest["artifacts"]["screenshot"]),
+        png_frames=png_frames,
+        video=pathlib.Path(manifest["artifacts"]["video"]),
+        video_fps=15,
+        video_width=width,
+        video_height=height,
+        screenshot_png_frame_index=1,
+    )
+    assert recomputed["digest"] != provenance["digest"]
+    assert (
+        recomputed["png_frames"]["files"][1]["sha256"]
+        != provenance["png_frames"]["files"][1]["sha256"]
+    )
 
 
 def test_rigid_workflow_dry_run_writes_capture_plan(
@@ -593,17 +886,13 @@ def test_rigid_workflow_dry_run_writes_capture_plan(
         manifest["captures"][0]["workflow_phase"]
         == "1. Foundations: state, frames, and loads"
     )
-    assert (
-        manifest["captures"][0]["focus_axis"]
-        == "DART 7 World rigid-body baseline"
-    )
+    assert manifest["captures"][0]["focus_axis"] == "DART 7 World rigid-body baseline"
     assert (
         manifest["captures"][0]["user_question"]
         == "What is the baseline DART 7 World rigid-body path?"
     )
     assert (
-        "Fixed Sequential Impulse solver context"
-        in manifest["captures"][0]["inspect"]
+        "Fixed Sequential Impulse solver context" in manifest["captures"][0]["inspect"]
     )
     assert (
         "Material/contact controls, energy, step timing"
@@ -717,24 +1006,13 @@ def test_rigid_workflow_dry_run_can_capture_avbd_showcase_only(
         "--workflow-start-row 1 --workflow-end-row 1 --output-dir "
         f"{output}/reruns/01_avbd_rigid_fixed_joint_contact"
     )
-    assert (
-        manifest["captures"][0]["workflow_label"]
-        == "AVBD constraint showcase"
-    )
-    assert (
-        manifest["captures"][0]["workflow_phase"]
-        == "M1 AVBD constraint showcase"
-    )
-    assert (
-        manifest["captures"][0]["focus_axis"]
-        == "AVBD rigid constraint track"
-    )
+    assert manifest["captures"][0]["workflow_label"] == "AVBD constraint showcase"
+    assert manifest["captures"][0]["workflow_phase"] == "M1 AVBD constraint showcase"
+    assert manifest["captures"][0]["focus_axis"] == "AVBD rigid constraint track"
     assert "fixed joint coherent" in manifest["captures"][0]["user_question"]
     assert "boxed-LCP baseline" in manifest["captures"][0]["scope"]
     assert manifest["captures"][1]["workflow_label"] == "AVBD constraint showcase"
-    assert manifest["captures"][1]["workflow_phase"] == (
-        "M1 AVBD constraint showcase"
-    )
+    assert manifest["captures"][1]["workflow_phase"] == ("M1 AVBD constraint showcase")
     assert manifest["captures"][1]["focus_axis"] == "AVBD rigid constraint track"
     assert "slider motor" in manifest["captures"][1]["user_question"]
     assert "slider travel" in manifest["captures"][1]["inspect"]
@@ -832,7 +1110,7 @@ def test_rigid_workflow_dry_run_can_capture_contact_baseline_only(
     assert "--capture-label boxed_lcp" in manifest["captures"][1]["command"]
     assert "--scene-state-json" not in manifest["captures"][0]["command"]
     assert (
-        "--scene-state-json '{\"controls\":{\"contact_method_index\":1}}'"
+        '--scene-state-json \'{"controls":{"contact_method_index":1}}\''
         in manifest["captures"][1]["command"]
     )
     assert (
@@ -849,7 +1127,7 @@ def test_rigid_workflow_dry_run_can_capture_contact_baseline_only(
     )
     assert "--scene-state-json" not in manifest["captures"][0]["viewer_command"]
     assert (
-        "--scene-state-json '{\"controls\":{\"contact_method_index\":1}}'"
+        '--scene-state-json \'{"controls":{"contact_method_index":1}}\''
         in manifest["captures"][1]["viewer_command"]
     )
     assert manifest["captures"][0]["workflow_label"] == "Contact baseline"
@@ -866,9 +1144,9 @@ def test_rigid_workflow_dry_run_can_capture_contact_baseline_only(
         == "Sequential Impulse vs boxed-LCP contact method"
     )
     assert "boxed-LCP contact baseline" in manifest["captures"][1]["user_question"]
-    assert "contact_solver_method=BOXED_LCP" in manifest["captures"][1][
-        "healthy_signal"
-    ]
+    assert (
+        "contact_solver_method=BOXED_LCP" in manifest["captures"][1]["healthy_signal"]
+    )
     assert manifest["workflow_phase_summary"] == [
         {
             "phase": "M1 contact-policy baseline",
@@ -970,11 +1248,11 @@ def test_rigid_workflow_dry_run_can_capture_material_examples_only(
     assert "--capture-label bounce_material" in manifest["captures"][2]["command"]
     assert "--scene-state-json" not in manifest["captures"][0]["command"]
     assert (
-        "--scene-state-json '{\"controls\":{\"material_preset\":\"Slide\"}}'"
+        '--scene-state-json \'{"controls":{"material_preset":"Slide"}}\''
         in manifest["captures"][1]["command"]
     )
     assert (
-        "--scene-state-json '{\"controls\":{\"material_preset\":\"Bounce\"}}'"
+        '--scene-state-json \'{"controls":{"material_preset":"Bounce"}}\''
         in manifest["captures"][2]["viewer_command"]
     )
     assert (
@@ -1210,10 +1488,7 @@ def test_rigid_workflow_dry_run_can_include_capture_first_packets(
     assert manifest["captures"][1]["workflow_label"] == "Related evidence"
     assert manifest["captures"][2]["workflow_label"] == "Rigid IPC shelf"
     assert manifest["captures"][3]["workflow_label"] == "Capture-first packet"
-    assert (
-        "four-box IPC stack"
-        in manifest["captures"][3]["user_question"]
-    )
+    assert "four-box IPC stack" in manifest["captures"][3]["user_question"]
     assert "benchmark pointer" in manifest["captures"][3]["inspect"]
     assert "solver-performance parity claim" in manifest["captures"][3]["scope"]
     assert manifest["captures"][3]["manifest"].endswith(
@@ -1304,8 +1579,7 @@ def test_rigid_workflow_dry_run_can_request_video_commands(
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["capture_count"] == 1
     assert (
-        manifest["command"]
-        == "pixi run py-demo-capture -- --rigid-workflow --dry-run "
+        manifest["command"] == "pixi run py-demo-capture -- --rigid-workflow --dry-run "
         "--backend opengl --video --fps 12 --output-dir "
         f"{output}"
     )
@@ -1560,7 +1834,9 @@ def test_rigid_workflow_dry_run_writes_deferred_api_caveats(
     assert "Deferred API Caveats" in review_html
     assert "<th>Row</th><th>Scene</th><th>Route</th><th>Caveat</th>" in review_html
     assert review_html.count("<dt>deferred API caveat</dt>") == 1
-    assert "No public sleep/wake/island activation API is exposed yet" not in review_html
+    assert (
+        "No public sleep/wake/island activation API is exposed yet" not in review_html
+    )
     assert (
         "No public loop-closure compliance/stiffness/damping API is exposed yet"
         in review_html
@@ -1655,8 +1931,7 @@ def test_rigid_workflow_run_aggregates_scene_manifests(
     assert manifest["dry_run"] is False
     assert manifest["status"] == "complete"
     assert manifest["command"] == (
-        "pixi run py-demo-capture -- --rigid-workflow --output-dir "
-        f"{output}"
+        "pixi run py-demo-capture -- --rigid-workflow --output-dir " f"{output}"
     )
     assert manifest["completed_count"] == len(specs)
     assert manifest["failed_count"] == 0
@@ -3137,9 +3412,7 @@ def test_rigid_workflow_fails_when_scene_manifest_is_missing(
             "manifest_exists": False,
             "manifest": str(output / "scenes" / "01_rigid_body" / "manifest.json"),
             "command": manifest["captures"][0]["command"],
-            "workflow_rerun_command": manifest["captures"][0][
-                "workflow_rerun_command"
-            ],
+            "workflow_rerun_command": manifest["captures"][0]["workflow_rerun_command"],
         }
     ]
     first_capture = manifest["captures"][0]
@@ -3206,9 +3479,9 @@ def test_rigid_workflow_can_continue_after_scene_failure(
     assert manifest["failed_rows"][0]["failure_reason"] == "return_code"
     assert manifest["failed_rows"][0]["return_code"] == 9
     assert manifest["failed_rows"][0]["manifest_exists"] is False
-    assert "--continue-on-failure" in manifest["failed_rows"][0][
-        "workflow_rerun_command"
-    ]
+    assert (
+        "--continue-on-failure" in manifest["failed_rows"][0]["workflow_rerun_command"]
+    )
     assert [capture["status"] for capture in manifest["captures"]] == [
         "failed",
         "captured",
@@ -3521,7 +3794,10 @@ def test_rigid_workflow_avbd_showcase_rejects_other_groups(
     ),
 )
 def test_rigid_workflow_row_selection_validates_bounds(
-    args: list[str], message: str, monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+    args: list[str],
+    message: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
 ) -> None:
     monkeypatch.setattr(
         capture_py_demo,
@@ -3561,10 +3837,13 @@ def test_linux_render_env_preserves_overrides(
 
 
 def test_visual_capture_default_scene_matches_py_demos_front_door() -> None:
-    from examples.demos.runner import DEFAULT_INITIAL_SCENE_ID
+    runner_globals = runpy.run_path(
+        str(_ROOT / "python" / "examples" / "demos" / "runner.py")
+    )
+    default_initial_scene_id = runner_globals["DEFAULT_INITIAL_SCENE_ID"]
 
-    assert capture_py_demo.parse_args([]).scene == DEFAULT_INITIAL_SCENE_ID
-    assert DEFAULT_INITIAL_SCENE_ID == "rigid_body"
+    assert capture_py_demo.parse_args([]).scene == default_initial_scene_id
+    assert default_initial_scene_id == "rigid_body"
 
 
 def test_visual_capture_label_uses_distinct_default_dir_and_artifacts(
@@ -3747,9 +4026,7 @@ def test_visual_capture_records_env_and_metadata(
     seen_env: dict[str, str | None] = {}
 
     def fake_run_demo(demo_args: list[str]) -> int:
-        seen_env["DART_TEST_CAPTURE_VALUE"] = os.environ.get(
-            "DART_TEST_CAPTURE_VALUE"
-        )
+        seen_env["DART_TEST_CAPTURE_VALUE"] = os.environ.get("DART_TEST_CAPTURE_VALUE")
         screenshot = pathlib.Path(demo_args[demo_args.index("--screenshot") + 1])
         frames = pathlib.Path(demo_args[demo_args.index("--out") + 1])
         frames.mkdir(parents=True)
@@ -3800,3 +4077,155 @@ def test_visual_capture_records_env_and_metadata(
         "elevation": 6.0,
         "target": [0.0, 0.0, 1.4],
     }
+
+
+@pytest.mark.parametrize(
+    "assignment",
+    (
+        "LD_PRELOAD=/tmp/shim.so",
+        "LD_LIBRARY_PATH=/tmp/shim",
+        "DYLD_INSERT_LIBRARIES=/tmp/shim.dylib",
+    ),
+)
+def test_scene_environment_rejects_loader_control_keys(assignment: str) -> None:
+    with pytest.raises(SystemExit) as excinfo:
+        capture_py_demo._scene_environment_dict([assignment])
+
+    message = str(excinfo.value)
+    assert "--env forbids loader-control environment variables" in message
+    assert assignment.partition("=")[0] in message
+    for prefix in capture_py_demo.CAPTURE_LOADER_ENVIRONMENT_PREFIXES:
+        assert prefix in message
+
+
+def test_scene_environment_accepts_non_loader_keys() -> None:
+    assignments = capture_py_demo._scene_environment_dict(
+        ["DART_TEST_CAPTURE_VALUE=new", "OLD_LD_PATH=/tmp/keep", "PATH_SUFFIX="]
+    )
+
+    assert assignments == {
+        "DART_TEST_CAPTURE_VALUE": "new",
+        "OLD_LD_PATH": "/tmp/keep",
+        "PATH_SUFFIX": "",
+    }
+
+
+def test_visual_capture_rejects_loader_control_env_before_running_demo(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fail_run_demo(demo_args: list[str]) -> int:
+        raise AssertionError("demo must not run for a loader-control --env")
+
+    monkeypatch.setattr(capture_py_demo, "_run_demo", fail_run_demo)
+    output = tmp_path / "capture"
+
+    with pytest.raises(SystemExit) as excinfo:
+        capture_py_demo.main(
+            [
+                "--scene",
+                "rigid_ipc_slide",
+                "--frames",
+                "1",
+                "--width",
+                "2",
+                "--height",
+                "1",
+                "--env",
+                "LD_PRELOAD=/tmp/shim.so",
+                "--output-dir",
+                str(output),
+            ]
+        )
+
+    message = str(excinfo.value)
+    assert "--env forbids loader-control environment variables" in message
+    assert "LD_PRELOAD" in message
+    assert not output.exists()
+    assert "LD_PRELOAD" not in os.environ
+
+
+def test_multi_view_capture_rejects_loader_control_env(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fail_run_demo(demo_args: list[str]) -> int:
+        raise AssertionError("demo must not run for a loader-control --env")
+
+    monkeypatch.setattr(capture_py_demo, "_run_demo", fail_run_demo)
+    output = tmp_path / "capture"
+    args = capture_py_demo.parse_args(
+        [
+            "--scene",
+            "rigid_ipc_slide",
+            "--frames",
+            "1",
+            "--views",
+            "front,side",
+            "--env",
+            "DYLD_INSERT_LIBRARIES=/tmp/shim.dylib",
+            "--output-dir",
+            str(output),
+        ]
+    )
+    camera = capture_py_demo._camera_args_from_namespace(args)
+    assert capture_py_demo._camera_is_multi(camera)
+
+    with pytest.raises(SystemExit) as excinfo:
+        capture_py_demo._run_multi_view_capture(
+            args,
+            output,
+            output / "capture.ppm",
+            output / "frames",
+            camera,
+        )
+
+    message = str(excinfo.value)
+    assert "--env forbids loader-control environment variables" in message
+    assert "DYLD_INSERT_LIBRARIES" in message
+    assert "DYLD_INSERT_LIBRARIES" not in os.environ
+
+
+def test_run_demo_with_env_fails_closed_on_live_loader_variable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_run_demo(demo_args: list[str]) -> int:
+        raise AssertionError("demo must not run with a live loader-control variable")
+
+    monkeypatch.setattr(capture_py_demo, "_run_demo", fail_run_demo)
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/tmp/injected")
+    monkeypatch.delenv("DART_TEST_CAPTURE_VALUE", raising=False)
+
+    with pytest.raises(SystemExit) as excinfo:
+        capture_py_demo._run_demo_with_env(
+            ["--demo"], {"DART_TEST_CAPTURE_VALUE": "new"}
+        )
+
+    message = str(excinfo.value)
+    assert "loader-control environment variables are live for the demo run" in message
+    assert "LD_LIBRARY_PATH" in message
+    assert "DART_TEST_CAPTURE_VALUE" not in os.environ
+    assert os.environ["LD_LIBRARY_PATH"] == "/tmp/injected"
+
+
+def test_run_demo_with_env_restores_previous_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, str | None] = {}
+
+    def fake_run_demo(demo_args: list[str]) -> int:
+        seen["existing"] = os.environ.get("DART_TEST_CAPTURE_EXISTING")
+        seen["added"] = os.environ.get("DART_TEST_CAPTURE_ADDED")
+        return 7
+
+    monkeypatch.setattr(capture_py_demo, "_run_demo", fake_run_demo)
+    monkeypatch.setenv("DART_TEST_CAPTURE_EXISTING", "old")
+    monkeypatch.delenv("DART_TEST_CAPTURE_ADDED", raising=False)
+
+    rc = capture_py_demo._run_demo_with_env(
+        ["--demo"],
+        {"DART_TEST_CAPTURE_EXISTING": "new", "DART_TEST_CAPTURE_ADDED": "new"},
+    )
+
+    assert rc == 7
+    assert seen == {"existing": "new", "added": "new"}
+    assert os.environ["DART_TEST_CAPTURE_EXISTING"] == "old"
+    assert "DART_TEST_CAPTURE_ADDED" not in os.environ

@@ -37,6 +37,7 @@ set_target_properties(
 )
 dart_apply_strict_symbol_visibility(${target_name})
 dart_maybe_apply_coverage_config(${target_name})
+dart_embed_capture_source_provenance(${target_name})
 
 target_include_directories(
   ${target_name}
