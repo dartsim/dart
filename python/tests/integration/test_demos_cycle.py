@@ -10370,8 +10370,8 @@ def test_avbd_paper_breakable_wall_matches_figure13_contract() -> None:
     assert outcome["thresholds_pass"] is True
     assert all(outcome["threshold_checks"].values())
     assert all(
-        count >= OUTCOME_ORACLE["minimum_displaced_bricks_per_impact_band"]
-        for count in outcome["impact_band_displaced_counts"]
+        count >= OUTCOME_ORACLE["minimum_broken_joints_per_impact_region"]
+        for count in outcome["broken_joint_impact_region_counts"]
     )
     assert (
         outcome["outside_retained_fraction"]

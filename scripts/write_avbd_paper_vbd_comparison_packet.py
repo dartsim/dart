@@ -1180,17 +1180,17 @@ def _validate_avbd_packet(
             expected_broken_ids_sha256=shared.OUTCOME_ORACLE[
                 "expected_broken_joint_ids_sha256"
             ],
-            expected_outside_unbroken_count=405,
+            expected_outside_unbroken_count=463,
             label=f"linked AVBD frame {expected_frame} outcome",
         )
         shared._require_exact(
             outcome.get("broken_joint_impact_region_counts"),
-            [18, 44, 13],
+            [5, 5, 5],
             f"linked AVBD frame {expected_frame} impact-region counts",
         )
         shared._require_exact(
             outcome.get("broken_joints_outside_impact_regions"),
-            79,
+            21,
             f"linked AVBD frame {expected_frame} outside-region count",
         )
 

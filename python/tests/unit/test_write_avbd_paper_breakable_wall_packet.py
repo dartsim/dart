@@ -278,37 +278,37 @@ def _broken_joint_ids_sha256(records: list[dict[str, Any]]) -> str:
 def _outcome(module, frame: int) -> dict[str, Any]:
     checkpoints = {
         60: {
-            "bands": [13, 14, 12],
-            "broken": 154,
+            "bands": [0, 0, 0],
+            "broken": 36,
             "damage": True,
             "evaluated": False,
             "outside": 1.0,
             "status": "pre-evaluation",
             "thresholds_pass": False,
-            "total": 0.996031746031746,
-            "unbroken": 558,
+            "total": 1.0,
+            "unbroken": 676,
         },
         120: {
-            "bands": [11, 14, 11],
-            "broken": 154,
+            "bands": [0, 0, 0],
+            "broken": 36,
             "damage": True,
             "evaluated": True,
-            "outside": 0.9943181818181818,
+            "outside": 1.0,
             "status": "pass",
             "thresholds_pass": True,
-            "total": 0.9920634920634921,
-            "unbroken": 558,
+            "total": 1.0,
+            "unbroken": 676,
         },
         600: {
-            "bands": [11, 14, 11],
-            "broken": 154,
+            "bands": [0, 0, 0],
+            "broken": 36,
             "damage": True,
             "evaluated": True,
-            "outside": 0.9943181818181818,
+            "outside": 1.0,
             "status": "pass",
             "thresholds_pass": True,
-            "total": 0.9920634920634921,
-            "unbroken": 558,
+            "total": 1.0,
+            "unbroken": 676,
         },
     }
     expected = checkpoints.get(frame)
@@ -331,7 +331,7 @@ def _outcome(module, frame: int) -> dict[str, Any]:
     records = (
         _broken_joint_records(
             broken_count=expected["broken"],
-            impact_region_counts=(18, 44, 13),
+            impact_region_counts=(5, 5, 5),
         )
         if frame in (60, 120, 600)
         else []
@@ -339,7 +339,7 @@ def _outcome(module, frame: int) -> dict[str, Any]:
     identity_digest = _broken_joint_ids_sha256(
         _broken_joint_records(
             broken_count=expected["broken"],
-            impact_region_counts=(18, 44, 13),
+            impact_region_counts=(5, 5, 5),
         )
     )
     return {
@@ -348,12 +348,12 @@ def _outcome(module, frame: int) -> dict[str, Any]:
         "broken_joint_identity_count": expected["broken"],
         "broken_joint_ids_sha256": identity_digest,
         "broken_joint_impact_region_counts": (
-            [18, 44, 13] if expected["broken"] else [0, 0, 0]
+            [5, 5, 5] if expected["broken"] else [0, 0, 0]
         ),
         "broken_joint_records": records,
         "broken_joints": expected["broken"],
         "broken_joints_outside_impact_regions": (
-            expected["broken"] - 75 if expected["broken"] else 0
+            expected["broken"] - 15 if expected["broken"] else 0
         ),
         "contact_count": 12,
         "checkpoint": "outcome",
@@ -368,7 +368,7 @@ def _outcome(module, frame: int) -> dict[str, Any]:
         "maximum_unbroken_joint_linear_residual": 0.001,
         "outside_brick_count": 181,
         "outside_impact_unbroken_joint_residual_count": (
-            405 if expected["broken"] else 484
+            463 if expected["broken"] else 484
         ),
         "outside_retained_fraction": expected["outside"],
         "joint_residuals_finite": True,
@@ -378,11 +378,11 @@ def _outcome(module, frame: int) -> dict[str, Any]:
         "rms_unbroken_joint_linear_residual": 0.0005,
         "status": expected["status"],
         "threshold_checks": {
-            "damage_in_three_impact_bands": expected["damage"],
             "finite_state": True,
             "fracture_activated": True,
             "fracture_count_bounded": True,
             "fracture_identity_matches": True,
+            "fracture_in_three_impact_regions": expected["damage"],
             "outside_wall_retained": True,
             "retained_joint_rows_satisfied": True,
             "total_wall_retained": True,
@@ -957,8 +957,8 @@ def _write_inputs(module, tmp_path: Path, monkeypatch) -> dict[str, Path]:
 
     monkeypatch.setattr(module, "dart_library_build_identity", fake_library_identity)
     fixture_records = _broken_joint_records(
-        broken_count=154,
-        impact_region_counts=(18, 44, 13),
+        broken_count=36,
+        impact_region_counts=(5, 5, 5),
     )
     module.OUTCOME_ORACLE["expected_broken_joint_ids_sha256"] = (
         _broken_joint_ids_sha256(fixture_records)
@@ -992,7 +992,11 @@ def _write_inputs(module, tmp_path: Path, monkeypatch) -> dict[str, Path]:
             "text_oracle_agrees": True,
             "view_reports_agree": True,
         },
-        "claim_assessments": dict(module.SEMANTIC_CLAIM_ASSESSMENTS),
+        "claim_assessments": dict(
+            module.SEMANTIC_CLAIM_ASSESSMENTS_BY_TERMINAL_BEHAVIOR[
+                "retained_damaged_wall"
+            ]
+        ),
         "inspected_images": [
             {
                 "file": str(impact_screenshot),

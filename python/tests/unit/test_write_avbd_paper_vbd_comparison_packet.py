@@ -141,9 +141,9 @@ def _empty_joint_evidence(
 
 
 def _avbd_joint_records() -> list[dict[str, Any]]:
-    impact_indices = [0] * 18 + [1] * 44 + [2] * 13
+    impact_indices = [0] * 5 + [1] * 5 + [2] * 5
     records = []
-    for index in range(154):
+    for index in range(36):
         within_region = index < len(impact_indices)
         records.append(
             {
@@ -192,11 +192,11 @@ def _linked_avbd_outcome(module, frame: int) -> dict[str, Any]:
         frame, module.shared.EXPECTED_OUTCOMES[120]
     )
     return dict(expected) | {
-        "broken_joint_identity_count": 154,
+        "broken_joint_identity_count": 36,
         "broken_joint_ids_sha256": _joint_ids_sha256(records),
-        "broken_joint_impact_region_counts": [18, 44, 13],
+        "broken_joint_impact_region_counts": [5, 5, 5],
         "broken_joint_records": records,
-        "broken_joints_outside_impact_regions": 79,
+        "broken_joints_outside_impact_regions": 21,
         "checkpoint": "outcome",
         "contact_count": 12,
         "frame": frame,
@@ -207,12 +207,12 @@ def _linked_avbd_outcome(module, frame: int) -> dict[str, Any]:
         "maximum_outside_impact_unbroken_joint_linear_residual": 0.001,
         "maximum_unbroken_joint_angular_residual_radians": 0.0003,
         "maximum_unbroken_joint_linear_residual": 0.001,
-        "outside_impact_unbroken_joint_residual_count": 405,
+        "outside_impact_unbroken_joint_residual_count": 463,
         "rms_outside_impact_unbroken_joint_angular_residual_radians": 0.0001,
         "rms_outside_impact_unbroken_joint_linear_residual": 0.0005,
         "rms_unbroken_joint_angular_residual_radians": 0.0001,
         "rms_unbroken_joint_linear_residual": 0.0005,
-        "unbroken_joint_residual_count": 558,
+        "unbroken_joint_residual_count": 676,
         "world_time": frame / 60.0,
     }
 

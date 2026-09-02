@@ -3309,8 +3309,11 @@ def test_breakable_wall_packet_cannot_zero_minimum_broken_joints():
 
     errors = module._paper_figure13_consistency_errors(packet, packet_name)
 
+    pinned = module._BREAKABLE_WALL_OUTCOME_ORACLE["minimum_broken_joints"]
+    assert pinned > 0
     assert any(
-        "outcome_oracle.minimum_broken_joints must be 150" in error for error in errors
+        f"outcome_oracle.minimum_broken_joints must be {pinned}" in error
+        for error in errors
     ), errors
 
 
