@@ -849,6 +849,17 @@ Rigid positional correction still runs after the unified velocity solve.
 **Missing:** remaining scaling/polish work (warm starting / friction-cone
 iteration).
 
+- **Observed resting baseline (2026-09-02, current `main`):** a 0.1 m
+  half-extent box (mass 0.5, restitution 0, `dt` 0.005) dropped 0.3 m onto a
+  static box settles to a 0.8–2 mm support gap within 0.5 s but from 1 s to
+  6 s keeps |v| ≈ 5e-3–1.3e-2 m/s and |ω| ≈ 4e-2–1e-1 rad/s with three
+  active contacts out of the four-point face manifold, and never reaches the
+  1e-3 deactivation thresholds even with `DeactivationOptions.enabled`. This
+  is the rank-deficient near-coplanar fallback described under the coupled
+  boxed-LCP increment; treat it as the baseline the warm-starting/manifold
+  polish must beat, and grade rest claims with an explicit gap/drift
+  criterion until then (`docs/onboarding/agent-sim-verification.md`).
+
 - **Pipeline ordering (done for semi-implicit):** the default semi-implicit
   `World::step` pipeline now runs `RigidBodyVelocityStage` →
   `MultibodyVelocityStage` → `UnifiedConstraintStage` →

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import importlib.util
 import json
 import sys
 from dataclasses import dataclass
@@ -156,10 +157,32 @@ _BUILTIN_SCENES: dict[str, Callable[[], Any]] = {
 
 
 def _load_factory(spec: str) -> Callable[[], Any]:
+    """Resolve ``module:callable`` or ``path/to/file.py:callable``.
+
+    The Pixi tasks that call this replace ``PYTHONPATH``, so a scratch scene
+    module is usually not importable by name; the file form loads it directly.
+    """
     if ":" not in spec:
-        raise ValueError("--factory must be in module:callable form")
-    module_name, attr_path = spec.split(":", 1)
-    target: Any = importlib.import_module(module_name)
+        raise ValueError(
+            "--factory must be in module:callable or path/to/file.py:callable form"
+        )
+    module_name, attr_path = spec.rsplit(":", 1)
+    if module_name.endswith(".py"):
+        path = Path(module_name)
+        if not path.is_file():
+            raise FileNotFoundError(f"--factory file {module_name!r} does not exist")
+        # Register under a prefixed name so a scratch file called, say,
+        # ``dartpy.py`` cannot shadow the package it imports while executing.
+        registered_name = f"_dart_world_factory_{path.stem}"
+        module_spec = importlib.util.spec_from_file_location(registered_name, path)
+        if module_spec is None or module_spec.loader is None:
+            raise ImportError(f"cannot load --factory file {module_name!r}")
+        module = importlib.util.module_from_spec(module_spec)
+        sys.modules[registered_name] = module
+        module_spec.loader.exec_module(module)
+        target: Any = module
+    else:
+        target = importlib.import_module(module_name)
     for name in attr_path.split("."):
         target = getattr(target, name)
     if not callable(target):
@@ -492,7 +515,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     source = parser.add_mutually_exclusive_group()
     source.add_argument("--scene", default="box_on_ground")
-    source.add_argument("--factory", help="importable world factory: module:callable")
+    source.add_argument(
+        "--factory",
+        help="world factory: module:callable or path/to/file.py:callable",
+    )
     parser.add_argument("--steps", type=int, required=True)
     parser.add_argument(
         "--body",

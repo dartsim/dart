@@ -488,7 +488,11 @@ def _reproduce_command(args: argparse.Namespace) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scene", default="box_on_ground")
-    parser.add_argument("--factory", default=None, help="module:callable world factory")
+    parser.add_argument(
+        "--factory",
+        default=None,
+        help="world factory: module:callable or path/to/file.py:callable",
+    )
     parser.add_argument("--steps", type=int, default=0, help="steps before capture")
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=960)

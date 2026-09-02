@@ -436,6 +436,15 @@ For more details on Python bindings architecture, see [python-bindings.md](pytho
 | `pixi run test`   | "100% tests passed" or all tests green     | Test failure summary with count    |
 | `cmake --build .` | No errors, successful compilation messages | Error messages with file:line info |
 
+**Stale build trees.** A build directory configured before a toolchain or
+dependency change (a `pixi.toml` compiler, Filament, or library update, or a
+tree older than the current lockfile) can fail at `pixi run config` — which
+also runs inside `pixi run lint` and `pixi run test-all` — or import a
+`dartpy` linked against a library version the environment no longer ships.
+Move the affected `build/<env>/cpp/<config>/` tree aside (or delete it) and
+reconfigure; the launcher from `cmake/compiler_cache.cmake` keeps the rebuild
+short when sccache or ccache is installed.
+
 ## See Also
 
 - [build-system.md](build-system.md) - Deep dive into DART's CMake architecture
