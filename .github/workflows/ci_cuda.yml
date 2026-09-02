@@ -70,7 +70,17 @@ jobs:
     env:
       DART_PARALLEL_JOBS: "8"
       CTEST_PARALLEL_LEVEL: "8"
-      DART_CUDA_ARCHITECTURES: "75"
+      # Must match the self-hosted GPU runner's compute capability. That runner
+      # is an RTX 5000 Ada (sm_89), so building sm_75 left the binaries with no
+      # native SASS for the device and the driver fell back to JIT-compiling the
+      # embedded compute_75 PTX — which fails, because pixi ships nvcc 13.3
+      # while the runner's driver (595.84) only supports up to CUDA 13.2:
+      #   "the provided PTX was compiled with an unsupported toolchain"
+      # Emitting sm_89 SASS directly removes the JIT step entirely, so the
+      # toolkit-vs-driver version gap no longer matters. Harmless on the
+      # GPU-less fork-PR fallback runner, which only compiles and never launches
+      # a kernel.
+      DART_CUDA_ARCHITECTURES: "89"
       # The cuda environment declares the __cuda=13 virtual package
       # (pixi.toml linux-64-cuda platform). Assume it explicitly so the
       # GPU-less fork-PR fallback runner installs without warnings; on the
