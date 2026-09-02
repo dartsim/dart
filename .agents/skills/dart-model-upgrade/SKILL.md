@@ -168,12 +168,13 @@ well it investigates simulation state with text-first and visual/debug evidence.
    Include a negative case that must retain the existing route, plus
    failure-sensitive checks for model pins, configuration aliases, generated
    parity, instruction discovery, and approval boundaries when touched. Include
-   a fresh-session case that must find current project state and the correct
+   a fresh-session case that must find current project state and the
    cross-session resume surface without hidden chat history. Include
    visual-debug failure cases for an unavailable renderer, a poor view,
    text/image disagreement, and a static geometry defect that visual-only
-   inspection must not pass. In `audit-only`, assess existing coverage and
-   report missing cases without adding them.
+   inspection must not pass and whose chosen text oracle is shown to observe
+   it. In `audit-only`, assess existing coverage and report missing cases
+   without adding them.
 9. **Verify and review.** Run focused checks, `pixi run check-ai-infra`,
    `pixi run exercise-agent-scenarios`, `pixi run test-ai-infra`, relevant
    docs/AI checks from `docs/ai/verification.md`, and
@@ -207,8 +208,7 @@ well it investigates simulation state with text-first and visual/debug evidence.
 - Comparison matrix with per-lane cost, turns, wall time, and isolation
   evidence; limitations, prompt/config changes, and unchanged choices
 - 3D physics investigation and visual/debug evaluation results, artifacts,
-  failure-boundary outcomes, and unavailable-evidence limitations
-- Direct, indirect, incomplete, non-trigger, and edge-case results
+  trigger and failure-boundary outcomes, and unavailable-evidence limitations
 - Mode, mutations performed (none for `audit-only`), gates, principle audit, two
   review passes, and blockers
 - For `audit-only`, recommendations and proposed change/validation scope; for

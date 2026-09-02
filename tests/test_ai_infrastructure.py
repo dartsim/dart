@@ -1019,10 +1019,15 @@ def test_ctest_contract_rejects_command_shadowing(tmp_path):
     _assert_ctest_lexical_contract_fails(root)
 
 
+def _flat(text: str) -> str:
+    """Collapse whitespace so Prettier line wrapping cannot split a marker."""
+    return " ".join(text.split())
+
+
 def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
     path = ROOT / ".claude" / "commands" / "dart-model-upgrade.md"
-    text = path.read_text()
-    meta = sync.parse_command_frontmatter(text)
+    text = _flat(path.read_text())
+    meta = sync.parse_command_frontmatter(path.read_text())
 
     for trigger in (
         "model or coding-agent upgrades",
@@ -1061,7 +1066,7 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
     lanes = [block for block in routing_section.split("\n- **")[1:]]
     assert len(lanes) >= 2
     for lane in lanes:
-        assert "accept native image input" in lane, lane[:60]
+        assert "accept native image input" in _flat(lane), lane[:60]
     families = {
         family.lower() for family in re.findall(r"claude-([a-z]+)-\d", routing_section)
     }
@@ -1078,7 +1083,7 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
 
 
 def test_ultrawork_prompt_simplification_retains_critical_contracts():
-    text = (ROOT / ".claude" / "commands" / "dart-ultrawork.md").read_text()
+    text = _flat((ROOT / ".claude" / "commands" / "dart-ultrawork.md").read_text())
 
     for marker in (
         "docs/dev_tasks/<task>/",

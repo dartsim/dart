@@ -72,12 +72,14 @@ and updates the owner, not this skill. Keep this loop capability-based.
 Text (primary):
 
 - `world.compute_step_metrics()` — energy/momentum/penetration/contacts/residual
+  (solved pairs only; static- or kinematic-only overlap needs `world.collide()`)
 - `dartpy.dump_scene_json(world)` / `dump_scene_text(world)` — "what is in this
   world?" (glTF/USD-flavored hierarchy + flat index)
 - `pixi run scene-diff` — structural JSON verdict for intended-vs-actual scene
   dumps
 - `pixi run trajectory-record` / `pixi run trajectory-compare` — per-body TSV +
-  contact JSONL; bit-exact or tolerance diff with first-divergence
+  contact JSONL; bit-exact or tolerance diff with first-divergence; scratch
+  scenes via `--factory path/to/scene.py:callable`
 
 Visual (corroboration):
 
