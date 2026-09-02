@@ -64,8 +64,9 @@ performs the acceptance check.
 Review is part of the work cycle, not a final courtesy pass. For every
 meaningful implementation chunk, the orchestrator runs an independent review
 lane after verification and again after any cleanup or fixes. A packet is done
-only after the current post-fix state has at least two clean review passes
-recorded in the owning plan, dev-task `verification.md`, or PR evidence.
+only when it meets the review-pass item of the completion audit in
+`docs/ai/verification.md`, recorded in the owning plan, dev-task
+`verification.md`, or PR evidence.
 
 Use the strongest available reviewer for the risk: `dart-review-pr` for PR
 shape and repo policy, `dart-analyze` for read-only design or regression
@@ -121,15 +122,9 @@ DART work. Before implementation starts, the owning surface must answer:
 - what acceptance evidence will prove the objective; and
 - which `pixi run ...` gates cover that evidence.
 
-When a claim depends on 3D structure or behavior — model/scene loading,
-dynamics, collision/contact/constraints, simulation stepping, GUI/rendering,
-or a visual example — route verification through `dart-verify-sim`. Acceptance
-evidence pairs a text correctness oracle (metrics, scene/trajectory/contact
-diff, or focused behavioral test) with an assessed headless capture using only
-the debug layers needed by the claim. A self-contained GUI or demos-app
-artifact remains the preferred durable user surface. If visual corroboration
-is unavailable or genuinely irrelevant, the task must say why and name the
-replacement evidence; a screenshot alone never proves correctness.
+When a claim depends on 3D structure or behavior, route verification through
+`dart-verify-sim` and record the evidence pairing that
+`docs/ai/verification.md` § "GUI And Demo Evidence" requires.
 
 For numbered plans, this information belongs in the work packet. For
 multi-session implementation tasks, it belongs in
@@ -210,9 +205,8 @@ orchestrator applies these rules when decomposing:
 3. The executor implements exactly that packet, runs its gates, records the
    acceptance evidence as an `Evidence:` bullet on the packet (or in the
    dev-task surface for multi-session packets), and reports completion with
-   the evidence. Local commits are part of execution; pushes, PR creation,
-   and any other GitHub mutation still require explicit maintainer/user
-   approval.
+   the evidence. Local commits are part of execution; GitHub mutations follow
+   the approval boundary in `docs/ai/principles.md`.
 4. The orchestrator reviews the result against the packet's acceptance
    evidence, then either replaces `[claimed]` with `[done — <evidence link>]`
    in the plan, returns the packet with findings, or splits follow-up work
@@ -225,7 +219,7 @@ orchestrator applies these rules when decomposing:
 
 How any session — human or agent — finds work and avoids collisions:
 
-- **Discovery.** Packets are `#### WP-<plan>.<n>` headings inside numbered
+- **Discovery.** Packets are `### WP-<plan>.<n>` headings inside numbered
   plan files. Plan priority is `docs/plans/dashboard.md` document order;
   within a plan, packets are taken in document order. A packet's own
   Dependencies line governs availability, and it must be satisfied in full —
@@ -240,9 +234,8 @@ How any session — human or agent — finds work and avoids collisions:
      state; the local marker covers sessions sharing a checkout.
   2. A remote branch named `wp-<plan>-<n>-<slug>` (for example
      `wp-122-1-harness-manifest`). Executors create this branch at claim
-     time; it becomes a cross-machine signal once pushed, and pushing —
-     like any GitHub mutation — happens only with explicit maintainer/user
-     approval.
+     time; it becomes a cross-machine signal once pushed, and pushing needs
+     explicit maintainer/user approval like any GitHub mutation.
   3. An open PR whose title starts with `WP-<plan>.<n>:` (searchable via the
      GitHub CLI; reading PR lists is read-only and needs no approval).
 - **Stale claims.** A `[claimed]` marker or packet branch with no recorded

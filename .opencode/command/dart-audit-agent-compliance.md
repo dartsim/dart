@@ -3,6 +3,7 @@ description: audit and fix gaps when agents miss or cannot discover documented r
 argument-hint: "[rule] [where-documented] [actual] [expected]"
 agent: build
 ---
+
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-audit-agent-compliance.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
@@ -45,13 +46,12 @@ Treat missing positional values as details to infer from the user request or ask
    - add cross-references from relevant commands or skills
 5. Run the principle audit from `docs/ai/principles.md` and use
    `docs/ai/verification.md` to map audit results to evidence.
-6. Run the relevant gate set from `docs/ai/verification.md`. For AI workflow
-   changes, that includes generated adapter sync/checks, docs policy, spell,
-   Markdown checks, and `pixi run lint`.
+6. Run the relevant gate set from `docs/ai/verification.md`.
 
 ## Output
 
 - Root cause for the missed rule
 - Files changed and why
 - Which audit items were proven by automation vs manual inspection
-- Confidence level that the recurrence risk is reduced
+- The check, test, or gate that would now catch a recurrence, or an explicit
+  statement that none exists

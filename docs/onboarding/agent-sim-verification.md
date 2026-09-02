@@ -44,10 +44,10 @@ dynamic failures (explosions, tunneling); use text to decide correctness.
 
 - **Native semantic review** — after view assessment and capture, an
   image-capable agent must actually open the selected image and describe the
-  visible evidence tied to the claim. All current routed targets are
-  image-capable (the GPT-5.6 family in Codex; all current Claude lanes in
-  Claude Code); use native image input and original detail when contacts, labels, bounds, or
-  frame axes are small; start with one focused ~1280 px view and add another
+  visible evidence tied to the claim. Every lane in the model-routing owner
+  (`docs/ai/README.md` § "Model Routing") is image-capable; use native image
+  input and original detail when contacts, labels, bounds, or frame axes are
+  small; start with one focused ~1280 px view and add another
   view or grid only for motion, occlusion, or ambiguity. `image-verdict`
   checks pixels and reference thresholds; its pass does not mean the scene
   was semantically inspected. Record five fields: **claim and expected

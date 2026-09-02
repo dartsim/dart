@@ -17,7 +17,6 @@ pixi run lint           # Format code/docs (auto-fixes)
 pixi run build          # Build C++ and Python
 pixi run test-unit      # Unit tests only (faster)
 pixi run test-py        # Python tests only
-pixi run -e cuda test-all # CUDA full validation on Linux CUDA hosts
 pixi run check-lint     # Check formatting without fixing
 pixi run ai-doctor      # Read-only agent/setup diagnosis
 pixi run check-ai-infra # AI discovery, drift, hook, and scenario checks
@@ -25,7 +24,9 @@ pixi run check-ai-infra # AI discovery, drift, hook, and scenario checks
 
 Success: "All tests passed!"
 
-If this fails, see `docs/onboarding/ci-cd.md` for troubleshooting.
+If this fails, see `docs/onboarding/building.md` and
+`docs/onboarding/testing.md` for local troubleshooting; `docs/onboarding/ci-cd.md`
+covers hosted CI.
 
 ## Context Loading (IMPORTANT)
 
@@ -36,7 +37,7 @@ portable source of truth.
 
 | Task Type                                | Load These Files                                                                                                                                                                                                 |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Any task**                             | This file (auto-loaded), `docs/ai/principles.md`                                                                                                                                                                 |
+| **Any task**                             | This file (loaded first by every tool chain), `docs/ai/principles.md`                                                                                                                                            |
 | Project direction                        | `docs/ai/north-star.md`                                                                                                                                                                                          |
 | Building                                 | `docs/onboarding/building.md`                                                                                                                                                                                    |
 | Testing                                  | `docs/onboarding/testing.md`                                                                                                                                                                                     |
@@ -54,9 +55,10 @@ portable source of truth.
 | Model loading                            | `docs/onboarding/io-parsing.md`                                                                                                                                                                                  |
 | Build system                             | `docs/onboarding/build-system.md`                                                                                                                                                                                |
 | Profiling / performance                  | `docs/onboarding/profiling.md`                                                                                                                                                                                   |
-| AI tools / infrastructure                | `docs/ai/README.md`, `docs/ai/principles.md`, `docs/ai/components.md`, `docs/ai/terminology.md`, `docs/ai/north-star.md`, `docs/onboarding/ai-tools.md`                                                          |
+| AI docs / instruction edits              | `docs/ai/README.md` read order: `docs/ai/principles.md`, `docs/ai/components.md`, `docs/ai/verification.md`; `docs/ai/terminology.md` when naming things                                                         |
+| Tool compatibility / adapters            | `docs/onboarding/ai-tools.md`, `docs/ai/components.md`                                                                                                                                                           |
 | Planning                                 | `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/plans/README.md`, `docs/plans/dashboard.md`, `docs/plans/north-star-roadmap.md`, `docs/ai/verification.md`                                               |
-| PR reviews                               | `docs/onboarding/ai-tools.md` (AI review handling rules)                                                                                                                                                         |
+| PR reviews                               | `docs/onboarding/ai-reviews.md` (automated review handling rules)                                                                                                                                                |
 | Release work                             | `docs/onboarding/release-management.md`                                                                                                                                                                          |
 | Changelog work                           | `docs/onboarding/changelog.md`, `docs/onboarding/release-roadmap.md`, `docs/onboarding/release-management.md`; use `/dart-changelog` or `$dart-changelog` for changelog decisions and entries                    |
 | Dev tasks                                | `docs/dev_tasks/README.md` (when to create, cleanup rules)                                                                                                                                                       |
@@ -83,12 +85,12 @@ sources, not generated adapters.
 
 - **Bug fixes**: Require PRs to BOTH the active DART 6 LTS branch (highest maintained `release-6.*`, currently `release-6.20`) AND `main`. See `docs/onboarding/contributing.md`.
 - **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. Promote durable artifacts before completion and delete the task folder in the completing PR. Relocate any deferred or hard-blocked remaining work to a durable home (design/plan/dashboard) and ask the human before retiring if it can't be completed. See `docs/dev_tasks/README.md` for criteria and cleanup rules.
-- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`, `github-actions[bot]`, `copilot[bot]`). No inline replies and no acknowledgment comments. Make local fixes silently. Pushes, PR comments, thread resolution, review re-triggers, and other GitHub mutations require explicit maintainer/user approval. See `docs/onboarding/ai-tools.md`.
+- **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`, `github-actions[bot]`, `copilot[bot]`). No inline replies and no acknowledgment comments. Make local fixes silently. Pushes, PR comments, thread resolution, review re-triggers, and other GitHub mutations require explicit maintainer/user approval. See `docs/onboarding/ai-reviews.md`.
 - **Commands**: Use `pixi run ...` tasks; don't invent new entry points.
 - **Formatting**: Run `pixi run lint` before committing (auto-fixes).
 - **Commit/PR titles**: Do not prefix commit messages or PR titles with agent tags like `[codex]`; use plain descriptive titles.
 - **PRs**: Use `.github/PULL_REQUEST_TEMPLATE.md` and set the milestone (`DART 7.0` for `main`, branch-matching DART 6.x release milestone for the active DART 6 LTS branch).
-- **PR pushes**: Before every push to a PR branch, first merge the latest base branch (usually `main`) into it — merge, never rebase a published PR branch. The local merge is routine; the push still needs approval. See `docs/onboarding/ai-tools.md`.
+- **PR pushes**: Before every push to a PR branch, first merge the latest base branch (usually `main`) into it — merge, never rebase a published PR branch. The local merge is routine; the push still needs approval. See `docs/onboarding/ai-reviews.md`.
 - **Subdirectories**: May have their own `AGENTS.md` for module-specific rules.
 
 ## Pre-Commit Checklist (MANDATORY)

@@ -65,8 +65,9 @@ conventions:
 - `SKILL.md` packages are Agent Skills: on-demand, progressively loaded
   capabilities with `name` and `description` metadata, optional scripts, and
   optional references.
-- Claude Code now treats custom command files and skills as slash-invoked
-  skills, while keeping `.claude/commands/` compatible.
+- Claude Code treats custom command files and skills as slash-invoked skills
+  while keeping `.claude/commands/` compatible (tested version recorded in
+  `docs/onboarding/ai-tools.md`).
 - OpenCode keeps custom commands and Agent Skills as separate surfaces.
 - Codex uses skills for repo workflows and reserves slash commands for built-in
   session controls.

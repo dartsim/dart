@@ -7,9 +7,8 @@ description: "DART IO: URDF, SDF, MJCF parsers, and dart::io loading"
 
 Load this skill when working with robot model files or parsers.
 
-When correctness depends on the loaded model's 3D hierarchy, transforms,
-collision geometry, or simulated behavior, also load `dart-verify-sim` for a
-text scene/behavior oracle plus claim-tied visual corroboration.
+When correctness depends on the loaded model's 3D structure or behavior, also
+load `dart-verify-sim` for a text oracle plus claim-tied visual corroboration.
 
 ## Quick Start
 
@@ -28,11 +27,8 @@ For module-specific details: `dart/io/AGENTS.md`
 
 ## Supported Formats
 
-| Format | Extension        | Use Case      |
-| ------ | ---------------- | ------------- |
-| URDF   | `.urdf`          | ROS robots    |
-| SDF    | `.sdf`, `.world` | Gazebo models |
-| MJCF   | `.xml`           | MuJoCo models |
+`docs/onboarding/io-parsing.md` owns the format list (URDF, SDF, MJCF, and
+opt-in OpenUSD behind `DART_BUILD_IO_USD=ON`).
 
 ## Common Patterns
 

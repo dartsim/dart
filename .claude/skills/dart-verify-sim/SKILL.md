@@ -38,11 +38,10 @@ report or `image-verdict` is not visual review.
 
 ## Image-capable review loop
 
-All current routed targets are image-capable (the GPT-5.6 family in Codex;
-all current Claude lanes — Fable 5, Opus 5, Sonnet 5, Haiku 4.5 — in Claude
-Code) and support native image input and original-detail inspection.
-Keep this loop capability-based so a future model-upgrade audit can replace the
-target-specific note without cloning the skill.
+Every lane in the model-routing owner (`docs/ai/README.md` § "Model
+Routing") is image-capable and supports native image input and
+original-detail inspection; a model-upgrade audit re-verifies that property
+and updates the owner, not this skill. Keep this loop capability-based.
 
 1. State one claim, its expected visible observation, and the text oracle that
    decides correctness.
@@ -125,7 +124,5 @@ for static geometry.
 
 ## DART 6 (release-6.20)
 
-Equivalent capture over OpenSceneGraph: `dart::gui::osg::setUpOffscreenViewer`
-/ `captureOffscreen` + dartpy bindings, `pixi run capture` (needs a real X
-server or Xvfb), the ported image tooling, and `pixi run bm-boxes-headless` for
-rendering-free determinism checksums.
+Use that branch's own `dart-verify-sim` skill; its OpenSceneGraph capture path
+and task names differ from `main`.

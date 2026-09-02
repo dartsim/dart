@@ -3,6 +3,7 @@ description: analyze or clean stale repository branches
 argument-hint: "[mode=analyze|action] [branch...]"
 agent: build
 ---
+
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-branch-cleanup.md -->
 <!-- Sync script: scripts/sync_ai_commands.py -->
@@ -49,7 +50,7 @@ Default to `analyze` if the requested mode is ambiguous.
 4. For each branch:
    ```bash
    git rev-list --left-right --count <TARGET>...<BRANCH>
-   git log --oneline <TARGET>..<BRANCH>
+   git log --format='%h %cs %s' <TARGET>..<BRANCH>
    git diff --stat <TARGET>..<BRANCH>
    git cherry -v <TARGET> <BRANCH>
    ```

@@ -53,7 +53,7 @@
   [`mukadam-2018-gpmp2`](../readthedocs/papers.md#mukadam-2018-gpmp2),
   and [`ames-2022-ikflow`](../readthedocs/papers.md#ames-2022-ikflow)
 - Future durable design doc, before implementation starts:
-  `docs/design/inverse_kinematics_motion.md`
+  `docs/design/inverse_kinematics_motion.md` (to be created)
 
 ## Scope
 

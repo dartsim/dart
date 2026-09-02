@@ -32,7 +32,7 @@ $ARGUMENTS
 
 @AGENTS.md
 @docs/onboarding/contributing.md
-@docs/onboarding/ai-tools.md
+@docs/onboarding/ai-reviews.md
 @docs/onboarding/changelog.md
 @.github/PULL_REQUEST_TEMPLATE.md
 
@@ -71,31 +71,14 @@ Use these practices:
 - In Testing, list exact commands, targets, or test names that ran. For CI,
   performance, or infrastructure work, include evidence such as CI observations,
   timing, reruns, benchmark output, or why a skipped check is expected.
-- For model/scene, dynamics, collision/contact, simulation, rendering, mesh,
-  texture, GUI, or visual-example changes, use `dart-verify-sim`: report the
-  text correctness oracle and include assessed, claim-relevant visual/debug
-  evidence when applicable (an image alone is not correctness proof):
-  - Prefer an existing headless example path (`--headless`, `--frames`,
-    `--width`, `--height`, `--screenshot`) over manual screenshots. Capture
-    before and after with the same camera, dimensions, frame count, and
-    renderer; restore the replaced sample/assets or use the base branch to
-    capture the before image. Inspect the images yourself and include the
-    commands and any software-rendering flags in the PR body.
-  - Upload transient comparison images, GIFs, and videos through the GitHub
-    PR/issue Markdown attachment flow so the body contains GitHub-hosted
-    `https://github.com/user-attachments/assets/...` URLs. Do not commit
-    transient visual evidence; commit visual files only when they are durable
-    documentation, fixtures, or source assets.
-  - The supported attachment flow is the web PR/issue editor; `gh pr edit`,
-    `gh pr comment`, and the REST API do not provide a generic upload, and any
-    command that edits or comments on a PR still requires explicit
-    maintainer/user approval. If the current tool cannot upload attachments,
-    keep the local artifact paths in the working note, ask a maintainer to
-    upload them, then update the PR body with the returned URL after explicit
-    maintainer/user approval. Do not fall back to committing evidence into
-    `docs/assets/`.
-  - If no headless path exists, add a narrowly scoped capture mode when it fits
-    the example or document why visual comparison is not practical.
+- For 3D structure or behavior changes (model/scene, dynamics,
+  collision/contact, simulation, rendering, GUI, visual examples), use
+  `dart-verify-sim`: report the text correctness oracle and assessed,
+  claim-relevant visual/debug evidence (an image alone is not proof), captured
+  before and after with the same camera, dimensions, and renderer, and include
+  the commands. Publish transient evidence with `pixi run evidence-publish`
+  (GitHub-hosted placeholders, or approved release assets) as described in
+  `docs/onboarding/agent-sim-verification.md`; never commit transient evidence.
 - Mark non-applicable checklist items as "N/A" with a short reason, and mention
   related PRs, issues, backports, and follow-ups explicitly, including "None".
 
@@ -125,7 +108,7 @@ Use these practices:
    ```
 7. Commit only intended files with a plain descriptive commit title.
 8. Merge the latest base branch into the PR branch before any push, and follow
-   the base-merge and automated-review rules in `docs/onboarding/ai-tools.md`
+   the base-merge and automated-review rules in `docs/onboarding/ai-reviews.md`
    (no inline bot replies; `@codex review` re-triggers are throttled to one per
    approved review-fix round). Ask for explicit maintainer/user approval before
    pushing or opening the draft PR. After approval:
