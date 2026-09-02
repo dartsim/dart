@@ -130,24 +130,33 @@ def _read_image_with_sha256(path: Path) -> tuple[ImageData, str]:
 
 
 def analyze_non_blank(image: ImageData) -> dict[str, Any]:
+    pixels = image.pixels
+    if len(pixels) % 3 != 0:
+        raise ValueError(
+            f"RGB payload has {len(pixels)} bytes, which is not a multiple of 3"
+        )
     nonzero_pixels = 0
-    unique_colors: set[bytes] = set()
-    for offset in range(0, len(image.pixels), 3):
-        pixel = image.pixels[offset : offset + 3]
-        if len(unique_colors) < 2:
-            unique_colors.add(pixel)
-        if any(pixel):
+    # Exact distinct-color count via a presence table indexed by the packed
+    # 24-bit RGB value: `unique_colors_seen` reports the true number of colors,
+    # not just "did we reach the blank-image threshold", and the table's cost is
+    # fixed regardless of how many colors the render actually contains.
+    seen_colors = bytearray(1 << 24)
+    for offset in range(0, len(pixels), 3):
+        red, green, blue = pixels[offset], pixels[offset + 1], pixels[offset + 2]
+        seen_colors[red << 16 | green << 8 | blue] = 1
+        if red or green or blue:
             nonzero_pixels += 1
+    unique_colors = seen_colors.count(1)
     reasons = []
     if nonzero_pixels == 0:
         reasons.append("image contains only zero-valued pixels")
-    if len(unique_colors) < 2:
+    if unique_colors < 2:
         reasons.append("image contains a single uniform color")
     passed = not reasons
     return {
         "pass": passed,
         "nonzero_pixels": nonzero_pixels,
-        "unique_colors_seen": len(unique_colors),
+        "unique_colors_seen": unique_colors,
         "total_pixels": image.pixel_count,
         "reasons": reasons,
     }

@@ -454,7 +454,7 @@ def test_visual_capture_manifest_records_image_evidence(
     assert pathlib.Path(manifest["artifacts"]["scene_metrics_events"]).is_file()
     source_provenance = manifest["capture_source_provenance"]
     assert source_provenance["algorithm"] == (
-        "sha256-length-prefixed-capture-source-tree-v1"
+        "sha256-length-prefixed-capture-source-tree-v2"
     )
     assert source_provenance["file_count"] > 0
     assert len(source_provenance["digest"]) == 64

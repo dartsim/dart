@@ -79,6 +79,7 @@
 #include <vector>
 
 #include <cmath>
+#include <cstdio>
 
 #ifndef DART_BOXED_LCP_CONTACT_ENABLE_EXPENSIVE_SCALING_TESTS
   #define DART_BOXED_LCP_CONTACT_ENABLE_EXPENSIVE_SCALING_TESTS 0
@@ -462,6 +463,7 @@ void expectSpherePrimitiveRowsPersistAcrossSmallPose(
     dvbd::AvbdContactFeatureKind expectedFeatureKind,
     std::uint64_t expectedFeatureLocalIndex)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   ASSERT_GE(referenceSphereCenters.size(), 2u);
   ASSERT_EQ(referenceSphereCenters.size(), nudgedSphereCenters.size());
 
@@ -599,6 +601,7 @@ void expectSpherePrimitiveRowsPersistAcrossSmallPose(
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reference.contacts.size());
@@ -611,7 +614,9 @@ void expectSpherePrimitiveRowsPersistAcrossSmallPose(
         + 5u * (key.featureB % 29u));
   };
   const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 19.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
   };
   const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
     return 5.0 + 0.5 * static_cast<double>(key.row)
@@ -673,6 +678,7 @@ void expectSpherePrimitiveRowsPersistAcrossSmallPose(
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), nudged.contacts.size());
@@ -720,6 +726,7 @@ void expectPlanePrimitiveRowsPersistAcrossSmallPose(
     double primitiveCenterZ,
     std::uint64_t expectedFeatureLocalIndex)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   sx::RigidBodyOptions planeOptions;
@@ -864,6 +871,7 @@ void expectPlanePrimitiveRowsPersistAcrossSmallPose(
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reference.contacts.size());
@@ -876,7 +884,9 @@ void expectPlanePrimitiveRowsPersistAcrossSmallPose(
         + 5u * (key.featureB % 29u));
   };
   const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 21.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
   };
   const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
     return 6.0 + 0.5 * static_cast<double>(key.row)
@@ -901,6 +911,7 @@ void expectPlanePrimitiveRowsPersistAcrossSmallPose(
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), nudged.contacts.size());
@@ -1030,7 +1041,7 @@ void expectPrimitiveEndpointRowsMatch(
     std::uint64_t expectedFeatureLocalIndex)
 {
   ASSERT_EQ(forward.contacts.size(), swapped.contacts.size());
-  ASSERT_GE(forward.contacts.size(), 2u);
+  ASSERT_GE(forward.contacts.size(), 1u);
 
   const std::vector<PrimitiveObservedRow> forwardRows = collectPrimitiveRows(
       forward, primitiveObject, expectedFeatureKind, expectedFeatureLocalIndex);
@@ -1076,7 +1087,11 @@ void expectPrimitiveEndpointRowsMatch(
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 1u);
+  if (forward.contacts.size() >= 2u) {
+    // A single replayed contact (one body pair touching one vertex) has no
+    // rank peer, so the multi-row group check only applies to larger sets.
+    EXPECT_GE(sameFeatureGroups, 1u);
+  }
 }
 
 //==============================================================================
@@ -1088,9 +1103,14 @@ double primitiveKeyFingerprint(const dvbd::AvbdScalarRowKey& key)
 }
 
 //==============================================================================
+// The normal duals keep every seeded tangent pair strictly inside its Coulomb
+// cone (0.4 * normal > |tangent pair|), so warm starts retain the pair
+// unscaled and the checks below observe pure direction projection.
 double primitiveExpectedNormalLambda(const dvbd::AvbdScalarRowKey& key)
 {
-  return 23.0 + static_cast<double>(key.row)
+  // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+  // keeps the pair inside its Coulomb cone unscaled.
+  return 45.0 + static_cast<double>(key.row)
          + 0.01 * primitiveKeyFingerprint(key);
 }
 
@@ -1159,6 +1179,7 @@ void expectPrimitiveEndpointWarmStarts(
     const dvbd::AvbdRigidWorldContactSnapshot& forward,
     const dvbd::AvbdRigidWorldContactSnapshot& swapped)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
   std::vector<dvbd::AvbdRigidBodyPointPairRow> normalRows;
@@ -1174,6 +1195,7 @@ void expectPrimitiveEndpointWarmStarts(
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), forward.contacts.size());
@@ -1202,6 +1224,7 @@ void expectPrimitiveEndpointWarmStarts(
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), swapped.contacts.size());
@@ -1491,7 +1514,7 @@ void expectMeshFeatureRowsIgnoreEndpointOrder(
     dvbd::AvbdContactFeatureKind expectedFeatureKind,
     std::uint64_t expectedFeatureLocalIndex)
 {
-  ASSERT_GE(sphereCenters.size(), 2u);
+  ASSERT_GE(sphereCenters.size(), 1u);
 
   sx::World world;
 
@@ -1556,6 +1579,7 @@ void expectMeshFeatureRowsPersistAcrossSmallPose(
     dvbd::AvbdContactFeatureKind expectedFeatureKind,
     std::uint64_t expectedFeatureLocalIndex)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   ASSERT_GE(referenceCenters.size(), 2u);
   ASSERT_EQ(referenceCenters.size(), nudgedCenters.size());
 
@@ -1699,6 +1723,7 @@ void expectMeshFeatureRowsPersistAcrossSmallPose(
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reference.contacts.size());
@@ -1711,7 +1736,9 @@ void expectMeshFeatureRowsPersistAcrossSmallPose(
         + 5u * (key.featureB % 29u));
   };
   const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 18.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
   };
   const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
     return 4.0 + 0.5 * static_cast<double>(key.row)
@@ -1773,6 +1800,7 @@ void expectMeshFeatureRowsPersistAcrossSmallPose(
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), nudged.contacts.size());
@@ -2264,6 +2292,7 @@ TEST(AvbdContact, WorldCollideSameFeatureRowsIgnoreContactOrder)
 // contact-order changes preserve warm-started tangent duals by row key.
 TEST(AvbdContact, WorldCollideFrictionRowsIgnoreContactOrder)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   sx::RigidBodyOptions planeOptions;
@@ -2322,6 +2351,7 @@ TEST(AvbdContact, WorldCollideFrictionRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), contacts.size());
@@ -2329,7 +2359,9 @@ TEST(AvbdContact, WorldCollideFrictionRowsIgnoreContactOrder)
   ASSERT_EQ(frictionRows.size(), contacts.size());
 
   const auto expectedNormalLambda = [](const dvbd::AvbdScalarRowKey& key) {
-    return 20.0 + static_cast<double>(key.row);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row);
   };
   const auto expectedFrictionLambda = [](const dvbd::AvbdScalarRowKey& key) {
     return 1.0 + 0.5 * static_cast<double>(key.row)
@@ -2354,6 +2386,7 @@ TEST(AvbdContact, WorldCollideFrictionRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), contacts.size());
@@ -2391,6 +2424,7 @@ TEST(AvbdContact, WorldCollideFrictionRowsIgnoreContactOrder)
 // scalars.
 TEST(AvbdContact, WorldCollideFrictionRowsProjectAcrossChangingPlaneNormal)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   sx::RigidBodyOptions planeOptions;
@@ -2463,6 +2497,7 @@ TEST(AvbdContact, WorldCollideFrictionRowsProjectAcrossChangingPlaneNormal)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), 1u);
@@ -2486,6 +2521,7 @@ TEST(AvbdContact, WorldCollideFrictionRowsProjectAcrossChangingPlaneNormal)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), 1u);
@@ -2597,6 +2633,7 @@ TEST(AvbdContact, WorldCollideMeshEdgeRowsPersistAcrossSmallPose)
 // coverage for mesh vertex endpoint features.
 TEST(AvbdContact, WorldCollideMeshVertexRowsIgnoreContactOrder)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   sx::RigidBodyOptions meshOptions;
@@ -2720,6 +2757,7 @@ TEST(AvbdContact, WorldCollideMeshVertexRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), forward.contacts.size());
@@ -2732,7 +2770,9 @@ TEST(AvbdContact, WorldCollideMeshVertexRowsIgnoreContactOrder)
         + 5u * (key.featureB % 29u));
   };
   const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 15.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
   };
   const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
     return 2.0 + 0.5 * static_cast<double>(key.row)
@@ -2757,6 +2797,7 @@ TEST(AvbdContact, WorldCollideMeshVertexRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reversed.contacts.size());
@@ -2799,17 +2840,20 @@ TEST(AvbdContact, WorldCollideMeshVertexRowsIgnoreContactOrder)
 // when the raw sphere/mesh endpoint order is swapped.
 TEST(AvbdContact, WorldCollideMeshVertexRowsIgnoreEndpointOrder)
 {
+  // One body pair yields exactly one contact per mesh vertex, so each vertex
+  // is replayed from a single sphere pose: two poses would report the same
+  // vertex point twice, and the row builder rejects such indistinguishable
+  // duplicates fail-closed instead of warm-starting them.
   expectMeshFeatureRowsIgnoreEndpointOrder(
-      {Eigen::Vector3d(-1.10, -1.10, 0.10),
-       Eigen::Vector3d(-1.12, -1.08, 0.10)},
+      {Eigen::Vector3d(-1.10, -1.10, 0.10)},
       dvbd::AvbdContactFeatureKind::Vertex,
       dvbd::kAvbdRigidWorldMeshContactFeatureIdOffset);
   expectMeshFeatureRowsIgnoreEndpointOrder(
-      {Eigen::Vector3d(1.10, -1.10, 0.10), Eigen::Vector3d(1.12, -1.08, 0.10)},
+      {Eigen::Vector3d(1.10, -1.10, 0.10)},
       dvbd::AvbdContactFeatureKind::Vertex,
       dvbd::kAvbdRigidWorldMeshContactFeatureIdOffset + 1u);
   expectMeshFeatureRowsIgnoreEndpointOrder(
-      {Eigen::Vector3d(0.0, 1.15, 0.10), Eigen::Vector3d(0.02, 1.14, 0.10)},
+      {Eigen::Vector3d(0.0, 1.15, 0.10)},
       dvbd::AvbdContactFeatureKind::Vertex,
       dvbd::kAvbdRigidWorldMeshContactFeatureIdOffset + 2u);
 }
@@ -2819,6 +2863,7 @@ TEST(AvbdContact, WorldCollideMeshVertexRowsIgnoreEndpointOrder)
 // pose changes that preserve the active vertex feature at each contact.
 TEST(AvbdContact, WorldCollideMeshVertexRowsPersistAcrossSmallPose)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   sx::RigidBodyOptions meshOptions;
@@ -2981,6 +3026,7 @@ TEST(AvbdContact, WorldCollideMeshVertexRowsPersistAcrossSmallPose)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reference.contacts.size());
@@ -2993,7 +3039,9 @@ TEST(AvbdContact, WorldCollideMeshVertexRowsPersistAcrossSmallPose)
         + 5u * (key.featureB % 29u));
   };
   const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 17.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
   };
   const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
     return 3.0 + 0.5 * static_cast<double>(key.row)
@@ -3055,6 +3103,7 @@ TEST(AvbdContact, WorldCollideMeshVertexRowsPersistAcrossSmallPose)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), nudged.contacts.size());
@@ -3628,6 +3677,7 @@ TEST(AvbdContact, WorldCollideLiveManifoldSameFeatureRowsIgnoreEndpointOrder)
 // with the endpoint order swapped.
 TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsIgnoreEndpointOrder)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   auto boxA = world.addRigidBody("box_a");
@@ -3726,6 +3776,7 @@ TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsIgnoreEndpointOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), forward.contacts.size());
@@ -3738,7 +3789,9 @@ TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsIgnoreEndpointOrder)
         + 5u * (key.featureB % 29u));
   };
   const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 25.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
   };
   const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
     return 1.5 + 0.5 * static_cast<double>(key.row)
@@ -3787,6 +3840,7 @@ TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsIgnoreEndpointOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), swapped.contacts.size());
@@ -3980,6 +4034,7 @@ TEST(AvbdContact, WorldCollideLiveManifoldSameFeatureRowsPersistAcrossSmallPose)
 // changes that preserve the contacting box faces.
 TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsPersistAcrossSmallPose)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   auto boxA = world.addRigidBody("box_a");
@@ -4078,6 +4133,7 @@ TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsPersistAcrossSmallPose)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reference.contacts.size());
@@ -4090,7 +4146,9 @@ TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsPersistAcrossSmallPose)
         + 5u * (key.featureB % 29u));
   };
   const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 20.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
   };
   const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
     return 1.0 + 0.5 * static_cast<double>(key.row)
@@ -4115,6 +4173,7 @@ TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsPersistAcrossSmallPose)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), perturbed.contacts.size());
@@ -4300,6 +4359,7 @@ TEST(AvbdContact, WorldCollideStackedManifoldsPersistRowsAcrossSmallPose)
 TEST(
     AvbdContact, WorldCollideStackedManifoldsFrictionRowsPersistAcrossSmallPose)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   sx::RigidBodyOptions groundOptions;
@@ -4418,6 +4478,7 @@ TEST(
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reference.contacts.size());
@@ -4430,7 +4491,9 @@ TEST(
         + 5u * (key.featureB % 29u));
   };
   const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 30.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
   };
   const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
     return 2.0 + 0.5 * static_cast<double>(key.row)
@@ -4455,6 +4518,7 @@ TEST(
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), perturbed.contacts.size());
@@ -4519,6 +4583,7 @@ TEST(
 // static/dynamic and dynamic/dynamic manifold combination.
 TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreContactOrder)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   sx::RigidBodyOptions groundOptions;
@@ -4656,6 +4721,7 @@ TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), forward.contacts.size());
@@ -4668,7 +4734,9 @@ TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreContactOrder)
         + 5u * (key.featureB % 29u));
   };
   const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 32.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
   };
   const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
     return 2.25 + 0.5 * static_cast<double>(key.row)
@@ -4711,6 +4779,7 @@ TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reversed.contacts.size());
@@ -4758,6 +4827,7 @@ TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreContactOrder)
 // supports and one top body spanning both dynamic supports.
 TEST(AvbdContact, WorldCollideBoxPileFrictionRowsPersistAcrossSmallPose)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   sx::RigidBodyOptions groundOptions;
@@ -4934,6 +5004,7 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsPersistAcrossSmallPose)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reference.contacts.size());
@@ -4946,7 +5017,9 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsPersistAcrossSmallPose)
         + 5u * (key.featureB % 29u));
   };
   const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 40.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
   };
   const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
     return 3.0 + 0.5 * static_cast<double>(key.row)
@@ -4971,6 +5044,7 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsPersistAcrossSmallPose)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), perturbed.contacts.size());
@@ -5036,6 +5110,7 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsPersistAcrossSmallPose)
 // the same live scene.
 TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsPersistAcrossSmallPose)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   constexpr double lowerXOffset = 0.55;
@@ -5229,6 +5304,7 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsPersistAcrossSmallPose)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reference.contacts.size());
@@ -5266,6 +5342,7 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsPersistAcrossSmallPose)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), perturbed.contacts.size());
@@ -5331,6 +5408,7 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsPersistAcrossSmallPose)
 // supports.
 TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreContactOrder)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   constexpr double lowerXOffset = 0.55;
@@ -5486,6 +5564,7 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), forward.contacts.size());
@@ -5541,6 +5620,7 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reversed.contacts.size());
@@ -5589,6 +5669,7 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreContactOrder)
 // basis.
 TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreEndpointOrder)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   constexpr double lowerXOffset = 0.55;
@@ -5725,6 +5806,7 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreEndpointOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), forward.contacts.size());
@@ -5804,6 +5886,7 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreEndpointOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), swapped.contacts.size());
@@ -5868,6 +5951,7 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreEndpointOrder)
 // simultaneous endpoint pairs and distinct per-pair friction bounds.
 TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreContactOrder)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   sx::RigidBodyOptions groundOptions;
@@ -6012,6 +6096,7 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), forward.contacts.size());
@@ -6067,6 +6152,7 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreContactOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), reversed.contacts.size());
@@ -6113,6 +6199,7 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreContactOrder)
 // two simultaneous endpoint pairs and distinct per-pair friction bounds.
 TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreEndpointOrder)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   sx::RigidBodyOptions groundOptions;
@@ -6238,6 +6325,7 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreEndpointOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), forward.contacts.size());
@@ -6317,6 +6405,7 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreEndpointOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), swapped.contacts.size());
@@ -6382,6 +6471,7 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreEndpointOrder)
 // static/dynamic and dynamic/dynamic manifold combination.
 TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreEndpointOrder)
 {
+  dvbd::AvbdRigidContactManifoldRowScratch rowScratch;
   sx::World world;
 
   sx::RigidBodyOptions groundOptions;
@@ -6500,6 +6590,7 @@ TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreEndpointOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), forward.contacts.size());
@@ -6512,7 +6603,9 @@ TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreEndpointOrder)
         + 5u * (key.featureB % 29u));
   };
   const auto expectedNormalLambda = [&](const dvbd::AvbdScalarRowKey& key) {
-    return 35.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
+    // 0.4 * normal exceeds every seeded tangent pair, so the warm start
+    // keeps the pair inside its Coulomb cone unscaled.
+    return 45.0 + static_cast<double>(key.row) + 0.01 * keyFingerprint(key);
   };
   const auto expectedFrictionLambda = [&](const dvbd::AvbdScalarRowKey& key) {
     return 2.5 + 0.5 * static_cast<double>(key.row)
@@ -6579,6 +6672,7 @@ TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreEndpointOrder)
       frictionInventory,
       normalRows,
       frictionRows,
+      rowScratch,
       warmStart);
 
   ASSERT_EQ(normalInventory.size(), swapped.contacts.size());
@@ -6661,6 +6755,29 @@ TEST(AvbdContact, PenetratingRigidBodyProjectsVelocity)
 }
 
 //==============================================================================
+// Eq. 18 oracle for the immutable paper profile. A hard joint row regularizes
+// C(x) = C*(x) - alpha * C*(x_t), so every step removes (1 - alpha) of the
+// violation present at the step start and the residual decays geometrically by
+// alpha per step. A solver that projected the whole error at once (alpha = 0)
+// or retained it (alpha = 1) fails this check.
+template <typename Residual>
+void expectPaperRegularizedJointDecay(
+    sx::World& world,
+    Residual residual,
+    const double initialResidual,
+    const int steps = 40)
+{
+  const double alpha = dvbd::kAvbdRigidPaper2025Profile.alpha;
+  ASSERT_NEAR(residual(), initialResidual, 1e-12);
+  double expected = initialResidual;
+  for (int step = 1; step <= steps; ++step) {
+    world.step();
+    expected *= alpha;
+    ASSERT_NEAR(residual(), expected, 1e-4 * initialResidual)
+        << "step " << step;
+  }
+}
+//==============================================================================
 // Fixed-joint rows should join the public AVBD contact projection without a
 // private per-body compatibility opt-in.
 TEST(AvbdContact, FixedJointRowsParticipateInProjection)
@@ -6697,13 +6814,22 @@ TEST(AvbdContact, FixedJointRowsParticipateInProjection)
   config.maxStiffness = 1e6;
 
   avbd->enterSimulationMode();
+  // The joint anchor and the ground contact agree on z = 0.5 and both
+  // regularize their 0.01 violation by alpha per step (Eq. 18 applies to
+  // contact rows too); only the joint acts along x, whose residual follows
+  // the same decay from the very first step.
+  const double alpha = dvbd::kAvbdRigidPaper2025Profile.alpha;
   avbd->step();
-
-  EXPECT_LT(std::abs(sphere->getTranslation().x()), 0.05);
   EXPECT_LT(sphere->getLinearVelocity().x(), 0.0);
-  EXPECT_GT(sphere->getTranslation().z(), 0.498);
+  EXPECT_NEAR(sphere->getTranslation().x(), 0.25 * alpha, 1e-4);
+  EXPECT_NEAR(sphere->getTranslation().z(), 0.5 - 0.01 * alpha, 1e-5);
+  expectPaperRegularizedJointDecay(
+      *avbd,
+      [&] { return std::abs(sphere->getTranslation().x()); },
+      std::abs(sphere->getTranslation().x()));
+  EXPECT_NEAR(
+      sphere->getTranslation().z(), 0.5 - 0.01 * std::pow(alpha, 41), 1e-4);
 }
-
 //==============================================================================
 // Private fixed-joint rows should also project rigid bodies when no contact
 // rows are present, so the World path does not depend on contact activation.
@@ -6740,13 +6866,11 @@ TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
   config.maxStiffness = 1e6;
 
   world.enterSimulationMode();
-  world.step();
-
-  EXPECT_LT(std::abs(link.getTranslation().x()), 0.05);
+  expectPaperRegularizedJointDecay(
+      world, [&] { return std::abs(link.getTranslation().x()); }, 1.0);
   EXPECT_LT(link.getLinearVelocity().x(), 0.0);
   EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
-
 //==============================================================================
 // Missing private fixed-joint configs should be initialized from the
 // design-time pose on opt-in rigid bodies when simulation mode starts, not
@@ -6792,14 +6916,11 @@ TEST(AvbdContact, FixedJointPoseBridgeCapturesSimulationEntryPose)
   Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
   driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
   link.setTransform(driftedPose);
-
-  world.step();
-
-  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
+  expectPaperRegularizedJointDecay(
+      world, [&] { return std::abs(link.getTranslation().x() - 1.0); }, 0.25);
   EXPECT_LT(link.getLinearVelocity().x(), 0.0);
   EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
-
 //==============================================================================
 // Private rigid-body revolute ECS joints should configure the same point-joint
 // primitive as fixed joints, but leave the configured hinge axis free.
@@ -6972,9 +7093,8 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
   link.setTransform(driftedPose);
 
   world.enterSimulationMode();
-  world.step();
-
-  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
+  expectPaperRegularizedJointDecay(
+      world, [&] { return std::abs(link.getTranslation().x() - 1.0); }, 0.25);
   EXPECT_LT(link.getLinearVelocity().x(), 0.0);
   EXPECT_THROW(
       world.addJoint(
@@ -7028,13 +7148,16 @@ TEST(AvbdContact, PublicRigidBodyRevoluteJointProjectsAnchor)
   link.setTransform(driftedPose);
 
   world.enterSimulationMode();
-  world.step();
-
-  EXPECT_LT(std::abs(link.getTranslation().x() - 1.0), 0.05);
-  EXPECT_LT(std::abs(link.getTranslation().y()), 0.05);
+  expectPaperRegularizedJointDecay(
+      world,
+      [&] { return (link.getTranslation() - Eigen::Vector3d::UnitX()).norm(); },
+      Eigen::Vector3d(0.25, 0.25, 0.0).norm());
+  // The hinge axis stays free: the anchor pull is a central force, so the
+  // rotation about it is neither corrected nor disturbed.
+  EXPECT_NEAR(
+      Eigen::AngleAxisd(link.getTransform().linear()).angle(), 0.5, 1e-6);
   EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
-
 //==============================================================================
 // The public prismatic facade should project drift orthogonal to the slide axis
 // while leaving translation along that axis unconstrained.
@@ -7071,13 +7194,12 @@ TEST(AvbdContact, PublicRigidBodyPrismaticJointProjectsOrthogonalDrift)
   link.setTransform(driftedPose);
 
   world.enterSimulationMode();
-  world.step();
-
-  EXPECT_LT(std::abs(link.getTranslation().x()), 0.05);
-  EXPECT_NEAR(link.getTranslation().z(), 1.5, 0.05);
+  expectPaperRegularizedJointDecay(
+      world, [&] { return std::abs(link.getTranslation().x()); }, 0.25);
+  // Translation along the slide axis is unconstrained and stays put.
+  EXPECT_NEAR(link.getTranslation().z(), 1.5, 1e-6);
   EXPECT_TRUE(base.getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
-
 //==============================================================================
 // Saving a public fixed joint before simulation should preserve the AVBD row
 // config and the joint-relative anchors captured at creation time.
@@ -7143,13 +7265,13 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
       (config.localAnchorA - Eigen::Vector3d::UnitX()).norm(), 0.0, 1e-12);
   EXPECT_NEAR(config.localAnchorB.norm(), 0.0, 1e-12);
 
-  restored.step();
-
-  EXPECT_LT(std::abs(restoredLink->getTranslation().x() - 1.0), 0.05);
+  expectPaperRegularizedJointDecay(
+      restored,
+      [&] { return std::abs(restoredLink->getTranslation().x() - 1.0); },
+      0.25);
   EXPECT_LT(restoredLink->getLinearVelocity().x(), 0.0);
   EXPECT_TRUE(restoredBase->getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
-
 //==============================================================================
 TEST(AvbdContact, PublicRigidBodyJointBreakStateSurvivesSaveLoad)
 {
@@ -7244,14 +7366,13 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSimulationModeSaveLoad)
   Eigen::Isometry3d driftedPose = Eigen::Isometry3d::Identity();
   driftedPose.translation() = Eigen::Vector3d(1.25, 0.0, 0.0);
   restoredLink->setTransform(driftedPose);
-
-  restored.step();
-
-  EXPECT_LT(std::abs(restoredLink->getTranslation().x() - 1.0), 0.05);
+  expectPaperRegularizedJointDecay(
+      restored,
+      [&] { return std::abs(restoredLink->getTranslation().x() - 1.0); },
+      0.25);
   EXPECT_LT(restoredLink->getLinearVelocity().x(), 0.0);
   EXPECT_TRUE(restoredBase->getTranslation().isApprox(Eigen::Vector3d::Zero()));
 }
-
 //==============================================================================
 // Sequential Impulse owns hard public pair rows alongside ordinary contact
 // rows. Its iteration-budgeted post stabilization reduces pre-existing pose
@@ -7666,10 +7787,10 @@ TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
   config.maxStiffness = 1e6;
 
   world.enterSimulationMode();
-  world.step();
-
-  const Eigen::AngleAxisd residual(link.getTransform().linear());
-  EXPECT_LT(std::abs(residual.angle()), 0.05);
+  expectPaperRegularizedJointDecay(
+      world,
+      [&] { return Eigen::AngleAxisd(link.getTransform().linear()).angle(); },
+      0.5);
   EXPECT_LT(link.getAngularVelocity().z(), 0.0);
   EXPECT_TRUE(
       base.getTransform().linear().isApprox(Eigen::Matrix3d::Identity()));
@@ -7713,13 +7834,11 @@ TEST(AvbdContact, FixedJointRowsProjectWithFallbackContacts)
   config.maxStiffness = 1e6;
 
   world->enterSimulationMode();
-  world->step();
-
-  EXPECT_LT(std::abs(link.getTranslation().x() - 10.0), 0.05);
+  expectPaperRegularizedJointDecay(
+      *world, [&] { return std::abs(link.getTranslation().x() - 10.0); }, 1.0);
   EXPECT_LT(link.getLinearVelocity().x(), 0.0);
   EXPECT_GT(sphere->getTranslation().z(), 0.49);
 }
-
 #endif // !defined(_MSC_VER)
 
 //==============================================================================

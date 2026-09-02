@@ -74,6 +74,17 @@
 #include <cmath>
 #include <cstdint>
 
+// Reaching the process environment is the only complete way to prove that no
+// BENCHMARK_* variable is steering this run; std::getenv can only answer for
+// names the guard already knows.
+#if defined(_WIN32)
+  #include <stdlib.h>
+#elif defined(__APPLE__)
+  #include <crt_externs.h>
+#else
+  #include <unistd.h>
+#endif
+
 namespace sx = dart::simulation;
 namespace vbd = dart::simulation::detail::deformable_vbd;
 
@@ -5617,6 +5628,41 @@ bool hasCallerInjectedContext(int argc, char** argv)
   return false;
 }
 
+char** processEnvironment()
+{
+#if defined(_WIN32)
+  return _environ;
+#elif defined(__APPLE__)
+  return *_NSGetEnviron();
+#else
+  return environ;
+#endif
+}
+
+// Google Benchmark reads every one of its flags from the matching uppercased
+// BENCHMARK_* environment variable, so BENCHMARK_CONTEXT alone can inject
+// arbitrary context entries into the emitted JSON. Refuse rather than trust the
+// caller to have sanitized the environment.
+std::optional<std::string> injectedBenchmarkEnvironmentVariable()
+{
+  static constexpr std::string_view benchmarkEnvironmentPrefix = "BENCHMARK_";
+  for (char** entry = processEnvironment();
+       entry != nullptr && *entry != nullptr;
+       ++entry) {
+    const std::string_view assignment(*entry);
+    const auto separator = assignment.find('=');
+    if (separator == std::string_view::npos) {
+      continue;
+    }
+    const std::string_view name = assignment.substr(0, separator);
+    if (name.starts_with(benchmarkEnvironmentPrefix)
+        && !assignment.substr(separator + 1).empty()) {
+      return std::string(name);
+    }
+  }
+  return std::nullopt;
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -5624,6 +5670,11 @@ int main(int argc, char** argv)
   benchmark::MaybeReenterWithoutASLR(argc, argv);
   if (hasCallerInjectedContext(argc, argv)) {
     std::cerr << "Caller-injected benchmark context is forbidden.\n";
+    return 1;
+  }
+  if (const auto injected = injectedBenchmarkEnvironmentVariable()) {
+    std::cerr << "Caller-injected benchmark environment is forbidden: "
+              << *injected << ".\n";
     return 1;
   }
 

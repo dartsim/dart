@@ -33,11 +33,15 @@ This folder is the temporary working surface; the durable owner is the plan.
   impulse-derived breakage, and non-velocity post-stabilization in the same
   projected Gauss-Seidel sweeps as contacts. Shared rigid-pair geometry and
   input extraction now have solver-neutral ownership, while SI and AVBD keep
-  separate row/dual state. Crossing through SI invalidates AVBD contact and
-  hard-joint continuation state while preserving independently active AVBD
-  distance-spring continuation. The regression
-  `World.SequentialImpulseFallbackPreservesAvbdDistanceSpringWarmStart`
-  protects that boundary, including the private-AVBD fallback under public SI.
+  separate row/dual state. The in-step private-AVBD fallback under public SI
+  invalidates AVBD contact and hard-joint continuation state while preserving
+  independently active AVBD distance-spring continuation (regression
+  `World.SequentialImpulseFallbackPreservesAvbdDistanceSpringWarmStart`).
+  A solver-family crossing through `setRigidBodySolver` likewise preserves
+  that spring continuation, and the springs ramp and warm-start on the same
+  paper-profile schedule under both families, so the step after a crossing is
+  the uninterrupted step (regression
+  `World.RigidAvbdDistanceSpringScheduleIsContinuousAcrossFamilyCrossing`).
   Finite-stiffness pair rows fail closed to VBD/AVBD. VBD uses
   fixed finite-penalty rows without dual accumulation or progressive
   stiffness; AVBD retains

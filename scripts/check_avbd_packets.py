@@ -36,6 +36,7 @@ from avbd_packet_schema import (  # noqa: E402
     PLAN104_CLAIMS_KEY,
     PLAN104_CLAIMS_MIN_SCHEMA_VERSION,
     SOLVER_CONFIGURATION_MIN_SCHEMA_VERSION,
+    SOURCE_PROVENANCE_ALGORITHM,
     packet_schema_version_errors,
     plan104_claims_errors,
     resolved_solver_identity_errors,
@@ -75,7 +76,6 @@ from run_figure13_benchmark import (  # noqa: E402
 REPO_ROOT = SCRIPT_DIR.parent
 DEFAULT_PACKET_DIR = REPO_ROOT / "docs" / "plans" / "104-vertex-block-descent-solver"
 PACKET_GLOB = "avbd-*-packet.json"
-SOURCE_PROVENANCE_ALGORITHM = "sha256-length-prefixed-path-and-content-v1"
 LINKED_PACKET_KEYS = ("linked_avbd_evidence", "linked_avbd_vbd_evidence")
 BENCHMARK_SOURCE_PATH = Path("tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp")
 FIGURE13_BENCHMARK_FILTER = (
@@ -964,9 +964,23 @@ def _paper_capture_source_binding_errors(
             errors.append(
                 f"{label}.algorithm must be " f"{CAPTURE_SOURCE_PROVENANCE_ALGORITHM!r}"
             )
-        for key in ("digest", "file_count", "roots"):
+        for key in ("digest", "file_count", "ignored_paths", "roots"):
             if provenance.get(key) != current[key]:
                 errors.append(f"{label}.{key} does not match current source state")
+        # A recorded Git HEAD describes the evidence only when nothing in the
+        # attested scopes was modified and no ignored file inside a capture root
+        # escaped the digest. Both are recorded by the producer; a row-closing
+        # packet must show both clean.
+        if provenance.get("working_tree_clean") is not True:
+            errors.append(
+                f"{label}.working_tree_clean must be true; a dirty capture "
+                "source tree makes the recorded Git HEAD unverifiable"
+            )
+        if provenance.get("ignored_paths") != []:
+            errors.append(
+                f"{label}.ignored_paths must be empty; an ignored file inside a "
+                "capture root is unhashed capture input"
+            )
         git_head = provenance.get("git_head")
         if (
             not isinstance(git_head, str)
@@ -1922,6 +1936,18 @@ def _image_verdict_binding_errors(
     covered = (
         {f"visual_evidence.{role}" for role in roles} if roles is not None else set()
     )
+    # Pinned legacy packets predate the `image_sha256` verdict field and never
+    # recorded the judged image digest. Their own evidence_boundary (validated
+    # by `_legacy_non_evidence_boundary_errors`) declares every capture they
+    # hold non-evidence, so there is no image claim left to bind here.
+    version = packet.get("schema_version")
+    if (
+        packet_name in LEGACY_NON_EVIDENCE_BOUNDARY_SCOPES
+        and isinstance(version, int)
+        and version < PLAN104_CLAIMS_MIN_SCHEMA_VERSION
+        and isinstance(packet.get("evidence_boundary"), Mapping)
+    ):
+        return []
     errors: list[str] = []
     for path, container in _iter_image_verdict_containers(packet, ""):
         if path in covered:
@@ -2723,9 +2749,33 @@ def _paper_capture_artifact_errors(
                     f"{correspondence_label} must contain exactly "
                     f"{sorted(correspondence_keys)!r}"
                 )
+            encoder = correspondence.get("encoder")
+            if not isinstance(encoder, Mapping) or set(encoder) != {
+                *CAPTURE_VIDEO_ENCODER,
+                "ffmpeg_version",
+                "libx264_version",
+            }:
+                errors.append(
+                    f"{correspondence_label}.encoder must record the pinned "
+                    "settings plus the ffmpeg and libx264 versions the bytes "
+                    "depend on"
+                )
+            else:
+                for key, expected in CAPTURE_VIDEO_ENCODER.items():
+                    if not _json_values_equal_exact(encoder.get(key), expected):
+                        errors.append(
+                            f"{correspondence_label}.encoder.{key} must be "
+                            f"{expected!r}"
+                        )
+                for key in ("ffmpeg_version", "libx264_version"):
+                    value = encoder.get(key)
+                    if not isinstance(value, str) or not value.strip():
+                        errors.append(
+                            f"{correspondence_label}.encoder.{key} must be a "
+                            "non-empty toolchain version"
+                        )
             for key, expected in (
                 ("algorithm", CAPTURE_VIDEO_CONTENT_CORRESPONDENCE_ALGORITHM),
-                ("encoder", CAPTURE_VIDEO_ENCODER),
                 ("expected_reencoded_sha256", video.get("sha256")),
                 ("passed", True),
                 (

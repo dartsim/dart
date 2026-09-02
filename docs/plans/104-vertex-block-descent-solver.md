@@ -385,12 +385,16 @@ set a positive `RigidConstraintOptions::iterations` /
 fixed/spherical/revolute/prismatic rigid pair rows, bounded velocity motors,
 impulse-derived fracture, and non-velocity post-stabilization in the same
 projected Gauss-Seidel sweeps as contacts; finite-stiffness pair rows fail
-closed to VBD/AVBD. Crossing through Sequential Impulse, including the
-private-AVBD compatibility fallback, invalidates AVBD contact and hard
-point-joint/motor continuation state while preserving independently active
-AVBD distance-spring continuation, guarded by the
+closed to VBD/AVBD. The in-step private-AVBD compatibility fallback under
+Sequential Impulse invalidates AVBD contact and hard point-joint/motor
+continuation state while preserving independently active AVBD distance-spring
+continuation, guarded by the
 `World.SequentialImpulseFallbackPreservesAvbdDistanceSpringWarmStart`
-regression. Fixed-penalty VBD now clears all AVBD row inventories, detected
+regression; a solver-family crossing through `setRigidBodySolver` preserves
+that spring continuation too, and the springs ramp and warm-start on the same
+paper-profile schedule under both families
+(`World.RigidAvbdDistanceSpringScheduleIsContinuousAcrossFamilyCrossing`).
+Fixed-penalty VBD now clears all AVBD row inventories, detected
 contact identities, tangent anchors, and borrowed row pointers on entry and on
 every exit, including an empty snapshot or a rejected hard row, so returning to
 AVBD after a failed VBD step matches a cold continuation state. Bounded native
@@ -1620,10 +1624,11 @@ bounded velocity motors interleave with contact rows across the configured PGS
 sweeps; accumulated impulse over `dt` drives breakage, broken rows remain
 excluded, and the configured non-velocity post-stabilization sweeps reduce
 pose drift.
-Finite-stiffness pair rows fail closed to VBD/AVBD. Crossing through SI,
-including the private-AVBD compatibility fallback, clears only the SI-owned
-AVBD contact and hard point-joint/motor continuation state and preserves
-independently active AVBD distance-spring continuation. Focused C++ regressions
+Finite-stiffness pair rows fail closed to VBD/AVBD. The in-step private-AVBD
+compatibility fallback under SI clears only the SI-owned AVBD contact and hard
+point-joint/motor continuation state and preserves independently active AVBD
+distance-spring continuation, and a family crossing through
+`setRigidBodySolver` keeps it on one paper-profile schedule. Focused C++ regressions
 cover no-contact stabilization without velocity injection, joint/contact
 co-convergence, impulse-derived breakage, finite-row rejection, public motors,
 AVBD compatibility, and fallback distance-spring warm-start preservation. The

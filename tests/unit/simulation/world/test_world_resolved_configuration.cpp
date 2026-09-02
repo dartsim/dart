@@ -50,8 +50,6 @@
 #include <dart/simulation/detail/entity_conversion.hpp>
 #include <dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp>
 #include <dart/simulation/detail/world_registry_access.hpp>
-#include <dart/simulation/frame/fixed_frame.hpp>
-#include <dart/simulation/frame/free_frame.hpp>
 #include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
 #include <dart/simulation/world_options.hpp>
@@ -1800,25 +1798,8 @@ TEST(
   options.gravity = Eigen::Vector3d::Zero();
   options.multibodyOptions.integrationFamily
       = sx::MultibodyIntegrationFamily::Variational;
-  // Entry runs the kinematics bake before it reaches the allocation failed
-  // below, and the frame caches it refreshes are part of the binary snapshot.
-  // Leaving a stale child cache behind therefore makes the byte-identical save
-  // after the failure genuinely witness the rollback instead of comparing a
-  // world entry never touched.
-  const auto addStaleFrameChain = [](sx::World& target) {
-    auto parent = target.addFreeFrame("entry_frame_parent");
-    Eigen::Isometry3d childOffset = Eigen::Isometry3d::Identity();
-    childOffset.translation() = Eigen::Vector3d(0.0, 1.0, 0.0);
-    static_cast<void>(
-        target.addFixedFrame("entry_frame_child", parent, childOffset));
-    Eigen::Isometry3d parentTransform = Eigen::Isometry3d::Identity();
-    parentTransform.translation() = Eigen::Vector3d(1.0, -2.0, 0.5);
-    parent.setLocalTransform(parentTransform);
-  };
-
   sx::World world(options);
   const PersistentEntryScene scene = addPersistentEntryScene(world);
-  addStaleFrameChain(world);
   auto& registry = sx::detail::registryOf(world);
 
   ASSERT_FALSE(registry.all_of<sx::compute::MultibodyVariationalState>(
@@ -1830,17 +1811,21 @@ TEST(
   std::ostringstream beforeEntry;
   ASSERT_NO_THROW(world.saveBinary(beforeEntry));
 
-  // Entry reaches its base allocator exactly once, when
+  // Entry reaches its base allocator exactly once, while
   // `reserveRegistryStorageForSimulation()` grows the world free list for the
   // multibody dynamics scratch. Everything the bake needs after that is served
   // from the block the free list already owns, so a trigger keyed on a lazily
-  // created persistent component (`DeformableContactConfig` is emplaced later,
-  // in the deformable stage's prepare) never fires and the entry succeeds.
-  // Fail the first request instead: it lands inside the entry try block, after
-  // the kinematics bake and the AVBD point-joint reconfiguration have already
-  // mutated the registry, so the rollback below is exercised rather than
-  // skipped. The sibling `LateEntryFailureRestoresExistingAndCreatedPersistent`
-  // `Components` test covers a rejection raised after those components exist.
+  // created persistent component never fires: `DeformableContactConfig` is
+  // emplaced later, in the deformable stage's prepare, and no base-allocator
+  // request follows it. Fail the first request instead.
+  //
+  // That request is the earliest point entry can fail, and entry is built so
+  // that "all allocation happens while the live World is still untouched": the
+  // persistent components below are materialized after it, so this case asserts
+  // that a mid-entry allocation failure leaves nothing behind, not that a
+  // populated rollback restores correctly. The rollback-with-work case belongs
+  // to `LateEntryFailureRestoresExistingAndCreatedPersistentComponents`, which
+  // is compiled only under `DART_HAS_DIFF`.
   allocator.failOnceWhen([] { return true; });
   EXPECT_THROW(world.enterSimulationMode(), std::bad_alloc);
   ASSERT_EQ(allocator.failureCount(), 1u);
@@ -1861,7 +1846,6 @@ TEST(
   control.setMultibodyOptions(
       {.integrationFamily = sx::MultibodyIntegrationFamily::Variational});
   static_cast<void>(addPersistentEntryScene(control));
-  addStaleFrameChain(control);
 
   ASSERT_NO_THROW(world.enterSimulationMode());
   ASSERT_NO_THROW(control.enterSimulationMode());

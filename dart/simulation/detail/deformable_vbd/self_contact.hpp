@@ -58,6 +58,57 @@ namespace dart::simulation::detail::deformable_vbd {
 
 namespace contact = ::dart::simulation::detail::deformable_contact;
 
+//==============================================================================
+/// The one indexing contract for self-contact primitives.
+///
+/// A candidate is admitted only when every index it dereferences resolves, and
+/// admitted candidates are numbered densely in candidate-set order: all
+/// admitted point-triangle candidates first, then all admitted edge-edge
+/// candidates. `SelfContactAdjacency::rebuild` stamps those numbers into
+/// `SelfContactEntry::constraint`, so any AVBD row array addressed through that
+/// field -- the World self-contact normal rows above all -- must admit and skip
+/// exactly the same candidates, or `constraint` will index the wrong row.
+[[nodiscard]] inline bool isSelfContactPointTriangleCandidateInRange(
+    const contact::PointTriangleCandidate& candidate,
+    std::size_t triangleCount) noexcept
+{
+  return candidate.triangle < triangleCount;
+}
+
+//==============================================================================
+/// Edge-edge half of the contract documented on
+/// `isSelfContactPointTriangleCandidateInRange`.
+[[nodiscard]] inline bool isSelfContactEdgeEdgeCandidateInRange(
+    const contact::EdgeEdgeCandidate& candidate,
+    std::size_t surfaceEdgeCount) noexcept
+{
+  return candidate.edgeA < surfaceEdgeCount
+         && candidate.edgeB < surfaceEdgeCount;
+}
+
+//==============================================================================
+/// Number of self-contact constraints the contract above admits from
+/// `candidates`. `SelfContactAdjacency::rebuild` numbers its entries
+/// `0 .. selfContactConstraintCount() - 1`, so this is exactly the length any
+/// row array addressed through `SelfContactEntry::constraint` must have.
+[[nodiscard]] inline std::size_t selfContactConstraintCount(
+    const contact::ContactCandidateSet& candidates, std::size_t triangleCount)
+{
+  std::size_t count = 0;
+  for (const auto& candidate : candidates.pointTriangleCandidates) {
+    if (isSelfContactPointTriangleCandidateInRange(candidate, triangleCount)) {
+      ++count;
+    }
+  }
+  for (const auto& candidate : candidates.edgeEdgeCandidates) {
+    if (isSelfContactEdgeEdgeCandidateInRange(
+            candidate, candidates.surfaceEdges.size())) {
+      ++count;
+    }
+  }
+  return count;
+}
+
 /// One incident self-contact constraint for a single vertex: the four nodes of
 /// the point-triangle or edge-edge primitive pair, this vertex's local index
 /// (0..3) within that stencil, which barrier (VT vs EE) to evaluate, and the
@@ -182,7 +233,8 @@ struct SelfContactAdjacency
       }
     };
     for (const auto& candidate : candidates.pointTriangleCandidates) {
-      if (candidate.triangle >= triangles.size()) {
+      if (!isSelfContactPointTriangleCandidateInRange(
+              candidate, triangles.size())) {
         continue;
       }
       const auto& triangle = triangles[candidate.triangle];
@@ -193,8 +245,8 @@ struct SelfContactAdjacency
            static_cast<std::uint32_t>(triangle.nodeC)});
     }
     for (const auto& candidate : candidates.edgeEdgeCandidates) {
-      if (candidate.edgeA >= candidates.surfaceEdges.size()
-          || candidate.edgeB >= candidates.surfaceEdges.size()) {
+      if (!isSelfContactEdgeEdgeCandidateInRange(
+              candidate, candidates.surfaceEdges.size())) {
         continue;
       }
       const auto& edgeA = candidates.surfaceEdges[candidate.edgeA];
@@ -231,7 +283,8 @@ struct SelfContactAdjacency
 
     std::uint32_t constraint = 0;
     for (const auto& candidate : candidates.pointTriangleCandidates) {
-      if (candidate.triangle >= triangles.size()) {
+      if (!isSelfContactPointTriangleCandidateInRange(
+              candidate, triangles.size())) {
         continue;
       }
       const auto& triangle = triangles[candidate.triangle];
@@ -244,8 +297,8 @@ struct SelfContactAdjacency
           constraint++);
     }
     for (const auto& candidate : candidates.edgeEdgeCandidates) {
-      if (candidate.edgeA >= candidates.surfaceEdges.size()
-          || candidate.edgeB >= candidates.surfaceEdges.size()) {
+      if (!isSelfContactEdgeEdgeCandidateInRange(
+              candidate, candidates.surfaceEdges.size())) {
         continue;
       }
       const auto& edgeA = candidates.surfaceEdges[candidate.edgeA];

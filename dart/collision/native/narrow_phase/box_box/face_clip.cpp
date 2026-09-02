@@ -34,8 +34,8 @@
 
 #include <algorithm>
 #include <array>
-#include <stdexcept>
 
+#include <cassert>
 #include <cmath>
 
 namespace dart::collision::native::box_box {
@@ -57,15 +57,25 @@ struct FaceBasis
   double halfExtent2 = 0.0;
 };
 
+/// A convex polygon crosses a plane at most twice, so one clip emits at most
+/// two crossing vertices. See `FixedContactCandidates` for the vertex-count
+/// proof this bound anchors.
+constexpr std::size_t kMaxClipCrossings = 2u;
+
 struct FixedPolygon
 {
   static constexpr std::size_t kCapacity = FixedContactCandidates::kCapacity;
 
-  void pushBack(const Eigen::Vector3d& point)
+  void pushBack(const Eigen::Vector3d& point) noexcept
   {
+    // Unreachable: `clipPolygon` holds the polygon to the proven bound of
+    // FixedContactCandidates::kMaxClippedFaceVertexCount, which is below
+    // kCapacity. This runs inside collision worker threads that have no
+    // handler, so a full buffer must never throw; it drops the vertex instead
+    // of writing past the array, and trips in a debug build.
+    assert(count < values.size());
     if (count >= values.size()) {
-      throw std::overflow_error(
-          "Box-box face clipping exceeded its geometric vertex bound");
+      return;
     }
     values[count++] = point;
   }
@@ -146,6 +156,15 @@ struct FixedPolygon
   return polygon;
 }
 
+/// Sutherland-Hodgman clip of a convex polygon against one half-space.
+///
+/// The emitted crossing count is capped at `kMaxClipCrossings` so the output
+/// size stays a theorem rather than a property inherited from exact arithmetic.
+/// A convex polygon really does change sign at most twice around its boundary,
+/// but the inside test carries a tolerance, so a face lying nearly in the clip
+/// plane can report extra sign changes from floating-point noise alone. Each
+/// spurious crossing would add a vertex, and enough of them would push the
+/// polygon past the bound `FixedContactCandidates` proves.
 template <typename SignedDistance>
 void clipPolygon(FixedPolygon& polygon, SignedDistance&& signedDistance)
 {
@@ -154,6 +173,7 @@ void clipPolygon(FixedPolygon& polygon, SignedDistance&& signedDistance)
   }
 
   FixedPolygon clipped;
+  std::size_t crossings = 0u;
 
   Eigen::Vector3d previous = polygon.back();
   double previousDistance = signedDistance(previous);
@@ -163,11 +183,12 @@ void clipPolygon(FixedPolygon& polygon, SignedDistance&& signedDistance)
     const double currentDistance = signedDistance(current);
     const bool currentInside = currentDistance >= -kClipTolerance;
 
-    if (currentInside != previousInside) {
+    if (currentInside != previousInside && crossings < kMaxClipCrossings) {
       const double denominator = previousDistance - currentDistance;
       if (std::abs(denominator) > kClipTolerance) {
         const double t = previousDistance / denominator;
         clipped.pushBack(previous + t * (current - previous));
+        ++crossings;
       }
     }
 
@@ -185,6 +206,11 @@ void clipPolygon(FixedPolygon& polygon, SignedDistance&& signedDistance)
 
 void clipToReferenceFace(FixedPolygon& polygon, const FaceBasis& reference)
 {
+  // Four side half-spaces plus the reference plane. The vertex-count proof on
+  // FixedContactCandidates is stated in terms of this count.
+  static_assert(
+      FixedContactCandidates::kClipPlaneCount == 5u,
+      "clipToReferenceFace applies five half-spaces");
   clipPolygon(polygon, [&](const Eigen::Vector3d& point) {
     const double coordinate
         = (point - reference.center).dot(reference.tangent1);
@@ -281,9 +307,14 @@ void clipToReferenceFace(FixedPolygon& polygon, const FaceBasis& reference)
       continue;
     }
 
+    // Unreachable: the clipped polygon is held to
+    // FixedContactCandidates::kMaxClippedFaceVertexCount, which is below
+    // kCapacity, and this loop keeps at most one candidate per polygon vertex.
+    // A collision worker thread has no handler, so a full buffer stops here
+    // rather than throwing.
+    assert(candidates.count < candidates.values.size());
     if (candidates.count >= candidates.values.size()) {
-      throw std::overflow_error(
-          "Box-box contact candidates exceeded their geometric bound");
+      break;
     }
     candidates.values[candidates.count++]
         = {point - 0.5 * signedDistance * referenceFace.normal,

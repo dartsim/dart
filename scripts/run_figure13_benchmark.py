@@ -22,6 +22,7 @@ from pathlib import Path
 from capture_source_provenance import (
     DART_LIBRARY_BUILD_IDENTITY_ALGORITHM,
     CaptureSourceProvenanceError,
+    compute_capture_source_provenance,
     dart_library_build_identity,
 )
 
@@ -30,7 +31,7 @@ TARGET = "bm_avbd_rigid_fixed_joint"
 FILTER = "^BM_(Avbd|Vbd|SequentialImpulse)PaperBreakableWallStep/iterations:120$"
 SCHEMA_VERSION = "dart.figure13_benchmark_run/v3"
 BUILD_IDENTITY_ALGORITHM = "sha256-canonical-compiled-benchmark-identity-v3"
-BUILD_CONFIGURATION_ALGORITHM = "sha256-cmake-build-configuration-record-v1"
+BUILD_CONFIGURATION_ALGORITHM = "sha256-cmake-build-configuration-record-v2"
 LOADER_POLICY_ALGORITHM = "empty-loader-control-environment-v1"
 RUNTIME_IMAGE_INVENTORY_ALGORITHM = "sha256-complete-mapped-elf-inventory-v1"
 DEFAULT_QUIET_SECONDS = 120.0
@@ -103,6 +104,7 @@ BUILD_CONFIGURATION_KEYS = (
     "CMAKE_CXX_COMPILER_TARGET",
     "CMAKE_CXX_COMPILER_EXTERNAL_TOOLCHAIN",
     "CMAKE_CXX_COMPILER_FRONTEND_VARIANT",
+    "CMAKE_CXX_COMPILER_LAUNCHER",
     "CMAKE_SYSTEM_NAME",
     "CMAKE_SYSTEM_VERSION",
     "CMAKE_SYSTEM_PROCESSOR",
@@ -118,6 +120,7 @@ BUILD_CONFIGURATION_KEYS = (
     "CMAKE_SHARED_LINKER_FLAGS_RELEASE",
     "CMAKE_MODULE_LINKER_FLAGS",
     "CMAKE_MODULE_LINKER_FLAGS_RELEASE",
+    "CMAKE_LINKER_TYPE",
     "CMAKE_INTERPROCEDURAL_OPTIMIZATION",
     "BUILD_SHARED_LIBS",
     "BUILD_TESTING",
@@ -136,6 +139,7 @@ BUILD_CONFIGURATION_KEYS = (
     "DART_BUILD_TUTORIALS",
     "DART_CODECOV",
     "DART_COLLISION_DEPRECATE_LEGACY_NAMES",
+    "DART_COMPILER_CACHE",
     "DART_ENABLE_ASAN",
     "DART_ENABLE_EXPERIMENTAL_CUDA",
     "DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS",
@@ -145,6 +149,7 @@ BUILD_CONFIGURATION_KEYS = (
     "DART_FETCH_FILAMENT",
     "DART_FIGURE13_EVIDENCE_BUILD",
     "DART_FORCE_COLORED_OUTPUT",
+    "DART_NORMALIZE_BUILD_PATHS",
     "DART_PROFILE_BUILTIN",
     "DART_PROFILE_TRACY",
     "DART_SIMD_FORCE_SCALAR",
@@ -174,7 +179,16 @@ BUILD_PROCESS_NAMES = {
     "ld.lld",
     "ninja",
 }
+BENCHMARK_ENVIRONMENT_PREFIXES = ("BENCHMARK_",)
 LOADER_ENVIRONMENT_PREFIXES = ("DYLD_", "LD_")
+UNRECORDED_BUILD_ENVIRONMENT_VARIABLES = (
+    "CCACHE_PREFIX",
+    "CMAKE_CXX_COMPILER_LAUNCHER",
+    "CMAKE_LINKER_TYPE",
+    "DART_COMPILER_CACHE",
+    "DART_NORMALIZE_BUILD_PATHS",
+    "GLIBC_TUNABLES",
+)
 REQUIRED_RUNTIME_IMAGE_ROLES = (
     "dynamic_loader",
     "google_benchmark",
@@ -202,6 +216,21 @@ def _canonical_digest(value: object) -> str:
             value, ensure_ascii=False, separators=(",", ":"), sort_keys=True
         ).encode("utf-8")
     ).hexdigest()
+
+
+def _reject_duplicate_json_keys(
+    pairs: list[tuple[str, object]],
+) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise Figure13BenchmarkError(f"benchmark JSON repeats object key {key!r}")
+        result[key] = value
+    return result
+
+
+def _strict_json_loads(payload: str) -> object:
+    return json.loads(payload, object_pairs_hook=_reject_duplicate_json_keys)
 
 
 def _utc_now() -> str:
@@ -238,10 +267,35 @@ def _reject_loader_injection_environment() -> dict[str, object]:
     }
 
 
+def _unrecorded_build_environment_variables(
+    environment: Mapping[str, str] | None = None,
+) -> list[str]:
+    values = os.environ if environment is None else environment
+    return sorted(
+        name
+        for name, value in values.items()
+        if value
+        and (
+            name in UNRECORDED_BUILD_ENVIRONMENT_VARIABLES
+            or name.startswith(BENCHMARK_ENVIRONMENT_PREFIXES)
+        )
+    )
+
+
+def _reject_unrecorded_build_environment() -> None:
+    present = _unrecorded_build_environment_variables()
+    if present:
+        raise Figure13BenchmarkError(
+            "Figure 13 evidence forbids environment variables the recorded "
+            f"build configuration does not describe: {present!r}"
+        )
+
+
 def _sanitized_subprocess_environment() -> dict[str, str]:
     environment = os.environ.copy()
+    prefixes = BENCHMARK_ENVIRONMENT_PREFIXES + LOADER_ENVIRONMENT_PREFIXES
     for name in list(environment):
-        if name.startswith(LOADER_ENVIRONMENT_PREFIXES):
+        if name.startswith(prefixes) or name in UNRECORDED_BUILD_ENVIRONMENT_VARIABLES:
             environment.pop(name)
     return environment
 
@@ -999,7 +1053,7 @@ def _write_evidence(
     build_configuration: dict[str, object],
     run_token: str,
 ) -> None:
-    data = json.loads(raw_output.read_text(encoding="utf-8"))
+    data = _strict_json_loads(raw_output.read_text(encoding="utf-8"))
     if not isinstance(data, dict) or not isinstance(data.get("context"), dict):
         raise Figure13BenchmarkError("benchmark output is missing its context object")
     context = data["context"]
@@ -1112,6 +1166,7 @@ def _write_evidence(
         **build_payload,
         "digest": _canonical_digest(build_payload),
     }
+    capture_source = compute_capture_source_provenance(REPO_ROOT)
     run_payload = {
         "benchmark_policy": {
             "filter": FILTER,
@@ -1121,6 +1176,11 @@ def _write_evidence(
         },
         "benchmark_context_date": context.get("date"),
         "build_identity": build_identity,
+        # The recorded Git HEAD only describes the evidence if nothing in the
+        # attested scopes was modified, and only if no ignored file inside a
+        # capture root escaped the digest.
+        "capture_ignored_paths": capture_source["ignored_paths"],
+        "capture_working_tree_clean": capture_source["working_tree_clean"],
         "host_identity": host_identity,
         "host_token": host_identity["host_token"],
         "loader_environment": loader_environment,
@@ -1170,6 +1230,7 @@ def parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]:
 def main(argv: list[str] | None = None) -> int:
     args, benchmark_args = parse_args(sys.argv[1:] if argv is None else argv)
     loader_environment = _reject_loader_injection_environment()
+    _reject_unrecorded_build_environment()
     if args.build_type != "Release":
         raise Figure13BenchmarkError("Figure 13 evidence requires --build-type=Release")
     if args.quiet_seconds < DEFAULT_QUIET_SECONDS:

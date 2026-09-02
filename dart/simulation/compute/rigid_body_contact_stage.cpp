@@ -267,6 +267,18 @@ dvbd::AvbdRigidWorldContactSolveOptions rigidAvbdWorldSolveOptions(
   options.formulation = formulation;
   if (ownedFamilyProfile != nullptr) {
     dvbd::applyAvbdRigidParameterProfile(options, *ownedFamilyProfile);
+  } else {
+    // Compatibility distance springs are AVBD rows under every rigid-body
+    // family and their continuation survives AVBD <-> Sequential Impulse
+    // crossings, so their warm start (Equation 19) and penalty ramp follow one
+    // schedule, the immutable paper profile, whichever family owns the
+    // contacts and hard joints. Sequential Impulse owns its joints and motors
+    // itself, so these values reach only the spring rows here.
+    const dvbd::AvbdRigidParameterProfile& profile
+        = dvbd::kAvbdRigidPaper2025Profile;
+    options.warmStart.alpha = profile.alpha;
+    options.warmStart.gamma = profile.gamma;
+    options.distanceSpring.beta = profile.beta;
   }
   // Equation 18 must use the same alpha that Equation 19 used to warm-start
   // the persistent row. Splitting these values changes the represented
@@ -2125,15 +2137,6 @@ void RigidBodyContactStage::clearAvbdWarmStartContinuationState() noexcept
 }
 
 //==============================================================================
-void RigidBodyContactStage::
-    clearSequentialImpulseOwnedAvbdWarmStartContinuationState() noexcept
-{
-  if (m_avbdScratch != nullptr) {
-    m_avbdScratch->clearSequentialImpulseOwnedWarmStart();
-  }
-}
-
-//==============================================================================
 void RigidBodyContactStage::restoreAvbdWarmStartReplayState(
     const avbd_replay::RigidAvbdWarmStartReplayState& replayState)
 {
@@ -2184,26 +2187,13 @@ bool RigidBodyContactStage::hasAnyAvbdWarmStartContinuationState()
 }
 
 //==============================================================================
-bool RigidBodyContactStage::hasAvbdContactWarmStartContinuationState()
-    const noexcept
+void RigidBodyContactStage::
+    clearSequentialImpulseOwnedAvbdWarmStartContinuationState() noexcept
 {
-  return m_avbdScratch != nullptr
-         && (!m_avbdScratch->normalInventory.records().empty()
-             || !m_avbdScratch->frictionInventory.records().empty()
-             || !m_avbdScratch->solveScratch.contactRows.contactIdentities
-                     .empty()
-             || !m_avbdScratch->solveScratch.contactRows.contactTangentAnchors
-                     .empty());
+  if (m_avbdScratch != nullptr) {
+    m_avbdScratch->clearSequentialImpulseOwnedWarmStart();
+  }
 }
-
-//==============================================================================
-bool RigidBodyContactStage::hasAvbdDistanceSpringWarmStartContinuationState()
-    const noexcept
-{
-  return m_avbdScratch != nullptr
-         && !m_avbdScratch->distanceSpringInventory.records().empty();
-}
-
 //==============================================================================
 void RigidBodyContactStage::setIterations(std::size_t iterations) noexcept
 {

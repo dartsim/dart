@@ -11108,6 +11108,105 @@ TEST(World, RigidAvbdDistanceSpringRowsAreActiveWithoutContacts)
   EXPECT_LT(link->getLinearVelocity().x(), 0.0);
 }
 
+//==============================================================================
+// Compatibility distance springs keep one schedule across a rigid-body solver
+// family crossing: the step after an AVBD <-> Sequential Impulse crossing is
+// the step an uninterrupted world takes, because the preserved spring
+// continuation ramps and warm-starts identically under both families. A fresh
+// world without that continuation steps differently, which proves the
+// preserved state is live rather than trivially equal.
+TEST(World, RigidAvbdDistanceSpringScheduleIsContinuousAcrossFamilyCrossing)
+{
+  namespace sx = dart::simulation;
+  // A hard compatibility spring (infinite material stiffness) carries the
+  // augmented-Lagrangian penalty ramp and multiplier whose schedule matters;
+  // the public soft spring has no such continuation.
+  const auto configureHardSpringScene = [](sx::World& world) {
+    world.setGravity(Eigen::Vector3d::Zero());
+    world.setTimeStep(0.005);
+    sx::RigidBodyOptions baseOptions;
+    baseOptions.isStatic = true;
+    auto base = world.addRigidBody("rigid_avbd_spring_base", baseOptions);
+    sx::RigidBodyOptions linkOptions;
+    linkOptions.position = 2.0 * Eigen::Vector3d::UnitX();
+    auto link = world.addRigidBody("rigid_avbd_spring_link", linkOptions);
+    link.setMass(1.0);
+    auto& registry = dart::simulation::detail::registryOf(world);
+    auto& config = registry.emplace<dart::simulation::detail::deformable_vbd::
+                                        AvbdRigidWorldDistanceSpringConfig>(
+        registry.create());
+    config.bodyA = dart::simulation::detail::toRegistryEntity(base.getEntity());
+    config.bodyB = dart::simulation::detail::toRegistryEntity(link.getEntity());
+    config.restLength = 1.0;
+    config.startStiffness = 100.0;
+    config.maxStiffness = 1.0e6;
+  };
+  struct LinkState
+  {
+    Eigen::Isometry3d pose;
+    Eigen::Vector3d linearVelocity;
+    Eigen::Vector3d angularVelocity;
+  };
+  const auto captureLink = [](const sx::RigidBody& link) {
+    return LinkState{
+        link.getTransform(),
+        link.getLinearVelocity(),
+        link.getAngularVelocity()};
+  };
+  const auto stepFresh
+      = [&](const LinkState& state, sx::RigidBodySolver family) {
+          sx::World world;
+          configureHardSpringScene(world);
+          world.setRigidBodySolver(family);
+          auto link = world.getRigidBody("rigid_avbd_spring_link");
+          EXPECT_TRUE(link.has_value());
+          link->setTransform(state.pose);
+          link->setLinearVelocity(state.linearVelocity);
+          link->setAngularVelocity(state.angularVelocity);
+          world.enterSimulationMode();
+          world.step();
+          return captureLink(*link);
+        };
+  for (const auto& [from, to] :
+       {std::pair{
+            sx::RigidBodySolver::Avbd, sx::RigidBodySolver::SequentialImpulse},
+        std::pair{
+            sx::RigidBodySolver::SequentialImpulse,
+            sx::RigidBodySolver::Avbd}}) {
+    SCOPED_TRACE(
+        from == sx::RigidBodySolver::Avbd ? "AVBD -> SI" : "SI -> AVBD");
+    sx::World crossing;
+    sx::World uninterrupted;
+    for (sx::World* world : {&crossing, &uninterrupted}) {
+      configureHardSpringScene(*world);
+      world->setRigidBodySolver(from);
+      world->enterSimulationMode();
+      for (int i = 0; i < 8; ++i) {
+        world->step();
+      }
+    }
+    auto crossingLink = crossing.getRigidBody("rigid_avbd_spring_link");
+    auto uninterruptedLink
+        = uninterrupted.getRigidBody("rigid_avbd_spring_link");
+    ASSERT_TRUE(crossingLink.has_value());
+    ASSERT_TRUE(uninterruptedLink.has_value());
+    const LinkState before = captureLink(*crossingLink);
+    crossing.setRigidBodySolver(to);
+    crossing.step();
+    uninterrupted.step();
+    const LinkState after = captureLink(*crossingLink);
+    const LinkState continued = captureLink(*uninterruptedLink);
+    EXPECT_NEAR(
+        (after.pose.translation() - continued.pose.translation()).norm(),
+        0.0,
+        1e-12);
+    EXPECT_NEAR(
+        (after.linearVelocity - continued.linearVelocity).norm(), 0.0, 1e-9);
+    const LinkState fresh = stepFresh(before, to);
+    EXPECT_GT(
+        (after.pose.translation() - fresh.pose.translation()).norm(), 1e-6);
+  }
+}
 TEST(World, RigidSequentialImpulseRevoluteMotorRowsAreActiveWithoutContacts)
 {
   namespace sx = dart::simulation;

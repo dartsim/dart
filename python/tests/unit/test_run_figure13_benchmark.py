@@ -344,6 +344,7 @@ def _write_valid_evidence_fixture(
     context_configuration_digest: str | None = None,
     library_configuration_digest: str | None = None,
     extra_unbound_dart_image: bool = False,
+    duplicate_context_key: bool = False,
 ) -> dict[str, object]:
     configuration = _build_configuration()
     configuration_digest = str(configuration["digest"])
@@ -366,7 +367,15 @@ def _write_valid_evidence_fixture(
         "dart_optimization_enabled": "1",
         "date": "2026-08-31T12:00:00Z",
     }
-    raw_output.write_text(json.dumps({"context": context}), encoding="utf-8")
+    context_payload = json.dumps(context)
+    if duplicate_context_key:
+        # BENCHMARK_CONTEXT can append a second entry for a key the benchmark
+        # already emitted; json.loads would silently keep the last one.
+        context_payload = (
+            '{"host_name": "measured-host", "host_name": "EVILHOST", '
+            + context_payload[1:]
+        )
+    raw_output.write_text('{"context": ' + context_payload + "}", encoding="utf-8")
     library = _write_elf(tmp_path / "libdart-simulation.so", b"library bytes")
     runtime_inventory = _runtime_image_fixture(tmp_path, binary=binary, library=library)
     if extra_unbound_dart_image:
@@ -511,3 +520,122 @@ def test_evidence_rejects_omitted_mapped_dart_library_identity(
         match="exactly cover every mapped libdart image",
     ):
         _write_valid_evidence_fixture(tmp_path, extra_unbound_dart_image=True)
+
+
+def test_sanitized_environment_strips_loader_variables(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LD_PRELOAD", "/tmp/fake-clock.so")
+    monkeypatch.setenv("DYLD_INSERT_LIBRARIES", "/tmp/fake-clock.dylib")
+    monkeypatch.setenv("DART_FIGURE13_UNRELATED_VARIABLE", "kept")
+
+    environment = runner._sanitized_subprocess_environment()
+
+    assert "LD_PRELOAD" not in environment
+    assert "DYLD_INSERT_LIBRARIES" not in environment
+    assert environment["DART_FIGURE13_UNRELATED_VARIABLE"] == "kept"
+
+
+def test_sanitized_environment_strips_benchmark_variables(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("BENCHMARK_CONTEXT", "host_name=EVILHOST")
+    monkeypatch.setenv("BENCHMARK_OUT", "/tmp/attacker-controlled.json")
+    monkeypatch.setenv("BENCHMARKING_NOTES", "kept")
+    monkeypatch.setenv("DART_FIGURE13_UNRELATED_VARIABLE", "kept")
+
+    environment = runner._sanitized_subprocess_environment()
+
+    assert "BENCHMARK_CONTEXT" not in environment
+    assert "BENCHMARK_OUT" not in environment
+    assert environment["BENCHMARKING_NOTES"] == "kept"
+    assert environment["DART_FIGURE13_UNRELATED_VARIABLE"] == "kept"
+
+
+def test_sanitized_environment_strips_unrecorded_build_knobs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in runner.UNRECORDED_BUILD_ENVIRONMENT_VARIABLES:
+        monkeypatch.setenv(name, "injected")
+    monkeypatch.setenv("DART_FIGURE13_UNRELATED_VARIABLE", "kept")
+
+    environment = runner._sanitized_subprocess_environment()
+
+    assert not [
+        name
+        for name in runner.UNRECORDED_BUILD_ENVIRONMENT_VARIABLES
+        if name in environment
+    ]
+    assert environment["DART_FIGURE13_UNRELATED_VARIABLE"] == "kept"
+
+
+def test_unrecorded_build_environment_pins_the_reviewed_knobs() -> None:
+    assert set(runner.UNRECORDED_BUILD_ENVIRONMENT_VARIABLES) == {
+        "CCACHE_PREFIX",
+        "CMAKE_CXX_COMPILER_LAUNCHER",
+        "CMAKE_LINKER_TYPE",
+        "DART_COMPILER_CACHE",
+        "DART_NORMALIZE_BUILD_PATHS",
+        "GLIBC_TUNABLES",
+    }
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "BENCHMARK_CONTEXT",
+        "CCACHE_PREFIX",
+        "CMAKE_CXX_COMPILER_LAUNCHER",
+        "CMAKE_LINKER_TYPE",
+        "DART_COMPILER_CACHE",
+        "DART_NORMALIZE_BUILD_PATHS",
+        "GLIBC_TUNABLES",
+    ],
+)
+def test_unrecorded_build_environment_is_rejected(
+    name: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(name, "injected")
+
+    with pytest.raises(
+        runner.Figure13BenchmarkError,
+        match=f"recorded build configuration does not describe.*{name}",
+    ):
+        runner._reject_unrecorded_build_environment()
+
+
+def test_unrecorded_build_environment_accepts_a_clean_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in runner.UNRECORDED_BUILD_ENVIRONMENT_VARIABLES:
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.delenv("BENCHMARK_CONTEXT", raising=False)
+    monkeypatch.setenv("BENCHMARKING_NOTES", "kept")
+
+    assert runner._reject_unrecorded_build_environment() is None
+
+
+def test_strict_json_loads_rejects_duplicate_object_keys() -> None:
+    with pytest.raises(
+        runner.Figure13BenchmarkError,
+        match="repeats object key 'host_name'",
+    ):
+        runner._strict_json_loads(
+            '{"context": {"host_name": "measured-host", "host_name": "EVILHOST"}}'
+        )
+
+
+def test_strict_json_loads_keeps_well_formed_benchmark_output() -> None:
+    assert runner._strict_json_loads(
+        '{"context": {"host_name": "measured-host"}, "benchmarks": []}'
+    ) == {"context": {"host_name": "measured-host"}, "benchmarks": []}
+
+
+def test_evidence_rejects_duplicate_benchmark_json_object_keys(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(
+        runner.Figure13BenchmarkError,
+        match="repeats object key 'host_name'",
+    ):
+        _write_valid_evidence_fixture(tmp_path, duplicate_context_key=True)

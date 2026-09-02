@@ -1514,3 +1514,144 @@ TEST(VbdContact, KineticFrictionStopsASlidingParticle)
   // Kinetic friction dissipates the tangential speed.
   EXPECT_LT(std::abs(velocity[0].x()), 0.1 * initialSpeed);
 }
+
+//==============================================================================
+// `SelfContactAdjacency::rebuild` drops candidates whose triangle or edge index
+// does not resolve and numbers `SelfContactEntry::constraint` densely over the
+// candidates it kept. Any AVBD row array addressed through that field has to
+// admit and skip exactly the same candidates; a builder that emitted one row
+// per raw candidate shifted every row after the first dropped candidate out
+// from under its entries.
+TEST(VbdContact, SelfContactRowIndexingContractSkipsOutOfRangeCandidates)
+{
+  constexpr std::size_t vertexCount = 8u;
+  const std::vector<sim::DeformableSurfaceTriangle> triangles
+      = {{1u, 2u, 3u}, {2u, 3u, 4u}};
+
+  dc::ContactCandidateSet candidates;
+  candidates.surfaceEdges.push_back({0u, 1u});
+  candidates.surfaceEdges.push_back({2u, 3u});
+  candidates.surfaceEdges.push_back({4u, 5u});
+  candidates.pointTriangleCandidates.push_back({/*point=*/0u, 0u, 0.0});
+  candidates.pointTriangleCandidates.push_back(
+      {/*point=*/0u, /*triangle=*/99u, 0.0}); // deliberately out of range
+  candidates.pointTriangleCandidates.push_back({/*point=*/5u, 1u, 0.0});
+  candidates.edgeEdgeCandidates.push_back({/*edgeA=*/0u, /*edgeB=*/1u, 0.0});
+  candidates.edgeEdgeCandidates.push_back(
+      {/*edgeA=*/0u, /*edgeB=*/99u, 0.0}); // deliberately out of range
+  candidates.edgeEdgeCandidates.push_back({/*edgeA=*/1u, /*edgeB=*/2u, 0.0});
+
+  const std::size_t rawCandidateCount
+      = candidates.pointTriangleCandidates.size()
+        + candidates.edgeEdgeCandidates.size();
+  const std::size_t admittedCount
+      = vbd::selfContactConstraintCount(candidates, triangles.size());
+  ASSERT_EQ(admittedCount, 4u);
+  ASSERT_LT(admittedCount, rawCandidateCount);
+
+  using Stencil = std::array<std::uint32_t, 4>;
+  struct RowStencil
+  {
+    Stencil nodes{0u, 0u, 0u, 0u};
+    bool isEdgeEdge = false;
+    bool resolved = false;
+  };
+
+  const auto pointTriangleStencil = [&](const dc::PointTriangleCandidate& c) {
+    const auto& triangle = triangles[c.triangle];
+    return Stencil{
+        static_cast<std::uint32_t>(c.point),
+        static_cast<std::uint32_t>(triangle.nodeA),
+        static_cast<std::uint32_t>(triangle.nodeB),
+        static_cast<std::uint32_t>(triangle.nodeC)};
+  };
+  const auto edgeEdgeStencil = [&](const dc::EdgeEdgeCandidate& c) {
+    const auto& edgeA = candidates.surfaceEdges[c.edgeA];
+    const auto& edgeB = candidates.surfaceEdges[c.edgeB];
+    return Stencil{
+        static_cast<std::uint32_t>(edgeA.nodeA),
+        static_cast<std::uint32_t>(edgeA.nodeB),
+        static_cast<std::uint32_t>(edgeB.nodeA),
+        static_cast<std::uint32_t>(edgeB.nodeB)};
+  };
+
+  // The row array the fixed builders produce: point-triangle first, then
+  // edge-edge, admitting exactly what the shared range predicates admit.
+  std::vector<RowStencil> contractRows;
+  for (const auto& candidate : candidates.pointTriangleCandidates) {
+    if (!vbd::isSelfContactPointTriangleCandidateInRange(
+            candidate, triangles.size())) {
+      continue;
+    }
+    contractRows.push_back({pointTriangleStencil(candidate), false, true});
+  }
+  for (const auto& candidate : candidates.edgeEdgeCandidates) {
+    if (!vbd::isSelfContactEdgeEdgeCandidateInRange(
+            candidate, candidates.surfaceEdges.size())) {
+      continue;
+    }
+    contractRows.push_back({edgeEdgeStencil(candidate), true, true});
+  }
+  ASSERT_EQ(contractRows.size(), admittedCount);
+
+  // The row array a builder that numbers every raw candidate produces. Its
+  // out-of-range entries cannot even resolve a stencil.
+  std::vector<RowStencil> unfilteredRows;
+  for (const auto& candidate : candidates.pointTriangleCandidates) {
+    if (!vbd::isSelfContactPointTriangleCandidateInRange(
+            candidate, triangles.size())) {
+      unfilteredRows.push_back({});
+      continue;
+    }
+    unfilteredRows.push_back({pointTriangleStencil(candidate), false, true});
+  }
+  for (const auto& candidate : candidates.edgeEdgeCandidates) {
+    if (!vbd::isSelfContactEdgeEdgeCandidateInRange(
+            candidate, candidates.surfaceEdges.size())) {
+      unfilteredRows.push_back({});
+      continue;
+    }
+    unfilteredRows.push_back({edgeEdgeStencil(candidate), true, true});
+  }
+  ASSERT_EQ(unfilteredRows.size(), rawCandidateCount);
+
+  vbd::SelfContactAdjacency adjacency;
+  adjacency.rebuild(
+      vertexCount,
+      candidates,
+      triangles,
+      /*squaredActivationDistance=*/1e-4,
+      /*stiffness=*/1e5);
+
+  std::vector<std::uint8_t> constraintSeen(admittedCount, 0u);
+  std::size_t entryCount = 0u;
+  std::size_t desynchronized = 0u;
+  for (std::size_t vertex = 0u; vertex < vertexCount; ++vertex) {
+    for (const vbd::SelfContactEntry& entry : adjacency.entriesFor(vertex)) {
+      ++entryCount;
+      ASSERT_LT(entry.constraint, contractRows.size());
+      constraintSeen[entry.constraint] = 1u;
+
+      const RowStencil& row = contractRows[entry.constraint];
+      EXPECT_TRUE(row.resolved);
+      EXPECT_EQ(row.isEdgeEdge, entry.isEdgeEdge);
+      EXPECT_EQ(row.nodes, entry.nodes);
+      EXPECT_EQ(entry.nodes[entry.localVertex], vertex);
+
+      const RowStencil& stale = unfilteredRows[entry.constraint];
+      if (!stale.resolved || stale.nodes != entry.nodes
+          || stale.isEdgeEdge != entry.isEdgeEdge) {
+        ++desynchronized;
+      }
+    }
+  }
+
+  EXPECT_EQ(entryCount, 4u * admittedCount);
+  for (std::size_t constraint = 0u; constraint < admittedCount; ++constraint) {
+    EXPECT_EQ(constraintSeen[constraint], 1u) << "constraint " << constraint;
+  }
+  // Every constraint numbered after the first dropped candidate lands on the
+  // wrong row under the one-row-per-raw-candidate numbering, which is exactly
+  // the desync this contract removes.
+  EXPECT_GT(desynchronized, 0u);
+}

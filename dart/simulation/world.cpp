@@ -8149,9 +8149,6 @@ void World::enterSimulationMode()
     }
   } catch (...) {
     const std::exception_ptr entryFailure = std::current_exception();
-    // TEMPORARY-ENTRY-ROLLBACK-BREAK
-    std::rethrow_exception(entryFailure);
-    // TEMPORARY-ENTRY-ROLLBACK-BREAK-END
 
     for (const entt::entity entity :
          m_storage->registry.view<comps::FrameTag>()) {
@@ -8337,8 +8334,8 @@ void World::setRigidBodySolver(RigidBodySolver solver)
   } else {
     // Crossing between public AVBD and Sequential Impulse invalidates ordinary
     // contact plus public joint and motor rows. Preserve only the explicitly
-    // active compatibility distance-spring continuation, which both schedules
-    // continue to project through this stage.
+    // active compatibility distance-spring continuation, which both families
+    // project through this stage on the same paper-profile schedule.
     m_stepPipelineCache->stages.rigidBodyContact
         .clearSequentialImpulseOwnedAvbdWarmStartContinuationState();
   }
@@ -9838,16 +9835,6 @@ void World::stepPipelineOnce(
   // scratch, waking/sleeping bodies, capturing derivative state, or executing
   // velocity/contact/position stages. Built-in rigid collision capacity and
   // contact-configuration failures are therefore observationally atomic.
-  // TEMPORARY-ATOMICITY-BREAK
-  m_storage->lastContactForces.clear();
-  m_storage->lastStepDiagnostics = {};
-  m_time += m_timeStep;
-  ++m_frame;
-  for (const entt::entity tmpEntity :
-       m_storage->registry.view<comps::Velocity>()) {
-    m_storage->registry.get<comps::Velocity>(tmpEntity).linear.x() += 1.0;
-  }
-  // TEMPORARY-ATOMICITY-BREAK-END
   pipeline.preflight(*this);
 
   resetFrameScratchForStep();

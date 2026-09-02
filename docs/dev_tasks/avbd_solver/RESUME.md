@@ -9,6 +9,16 @@ This file owns only the exact branch/session stop point and takeover sequence.
 
 ## Stop Point
 
+> **Current Reality (2026-09-01, takeover session):** the zero-trust audit
+> slice is now committed locally in seven path-grouped commits and the branch
+> is merged with `origin/main` (merge commit after `d62594a3b4f`; nothing
+> pushed). A takeover found the dirty tree did not compile its tests and had
+> 47 failing focused C++ tests plus regressions of PLAN-122 rows; fixes are in
+> progress (deformable/rigid capacity reserve policies, projected-Newton
+> pattern, serialization v35, evidence-pipeline hardening) with reviewer and
+> debugger packets tracked in the session plan. Treat everything below this
+> note as the pre-takeover historical stop point.
+
 At the 2026-08-31 zero-trust checkpoint, draft PR #3432 remains the shared
 foundation only. The live branch is
 `feature/vbd-avbd-paper-parity-contract`; obtain its exact head, fetched

@@ -88,7 +88,7 @@ def test_video_probe_fully_decodes_and_binds_exact_sequence(tmp_path: Path) -> N
         "codec_name": "h264",
         "content_correspondence": {
             "algorithm": provenance.CAPTURE_VIDEO_CONTENT_CORRESPONDENCE_ALGORITHM,
-            "encoder": provenance.CAPTURE_VIDEO_ENCODER,
+            "encoder": provenance.capture_video_encoder_record(video),
             "expected_reencoded_sha256": provenance.sha256_file(video),
             "passed": True,
             "source_png_sequence_digest": (
@@ -103,6 +103,15 @@ def test_video_probe_fully_decodes_and_binds_exact_sequence(tmp_path: Path) -> N
         "probe_algorithm": provenance.CAPTURE_VIDEO_PROBE_ALGORITHM,
         "width": 16,
     }
+    encoder = result["content_correspondence"]["encoder"]
+    assert encoder["ffmpeg_version"]
+    assert encoder["libx264_version"]
+    assert {
+        key: value
+        for key, value in encoder.items()
+        if key not in {"ffmpeg_version", "libx264_version"}
+    } == provenance.CAPTURE_VIDEO_ENCODER
+
 
 
 @pytest.mark.parametrize("mutation", ("corrupt", "truncated", "wrong_count"))

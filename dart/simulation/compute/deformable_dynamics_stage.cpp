@@ -6315,6 +6315,16 @@ void runVbdDeformableSolve(
           + vbdScratch.selfContactCandidates.edgeEdgeCandidates.size());
       for (const dc::PointTriangleCandidate& candidate :
            vbdScratch.selfContactCandidates.pointTriangleCandidates) {
+        // One indexing contract with SelfContactAdjacency::rebuild: it numbers
+        // SelfContactEntry::constraint densely over the candidates whose
+        // indices resolve, and those numbers address this row array. Admitting
+        // a candidate the adjacency skipped would shift every later row out
+        // from under its entries, and would dereference the out-of-range
+        // triangle when the row's stencil is assigned below.
+        if (!dvbd::isSelfContactPointTriangleCandidateInRange(
+                candidate, surfaceTriangles.size())) {
+          continue;
+        }
         dvbd::AvbdScalarRowDescriptor descriptor;
         descriptor.key.role = dvbd::AvbdScalarRowRole::SelfContactNormal;
         descriptor.key.objectA = bodyId;
@@ -6332,6 +6342,12 @@ void runVbdDeformableSolve(
       }
       for (const dc::EdgeEdgeCandidate& candidate :
            vbdScratch.selfContactCandidates.edgeEdgeCandidates) {
+        // Same one indexing contract as the point-triangle loop above.
+        if (!dvbd::isSelfContactEdgeEdgeCandidateInRange(
+                candidate,
+                vbdScratch.selfContactCandidates.surfaceEdges.size())) {
+          continue;
+        }
         dvbd::AvbdScalarRowDescriptor descriptor;
         descriptor.key.role = dvbd::AvbdScalarRowRole::SelfContactNormal;
         descriptor.key.objectA = bodyId;
@@ -6915,6 +6931,16 @@ void runVbdDeformableSolve(
           + vbdScratch.selfContactCandidates.edgeEdgeCandidates.size());
       for (const dc::PointTriangleCandidate& candidate :
            vbdScratch.selfContactCandidates.pointTriangleCandidates) {
+        // One indexing contract with SelfContactAdjacency::rebuild: it numbers
+        // SelfContactEntry::constraint densely over the candidates whose
+        // indices resolve, and those numbers address this row array. Admitting
+        // a candidate the adjacency skipped would shift every later row out
+        // from under its entries, and would dereference the out-of-range
+        // triangle when the row's stencil is assigned below.
+        if (!dvbd::isSelfContactPointTriangleCandidateInRange(
+                candidate, surfaceTriangles.size())) {
+          continue;
+        }
         dvbd::AvbdScalarRowDescriptor descriptor;
         descriptor.key.role = dvbd::AvbdScalarRowRole::SelfContactNormal;
         descriptor.key.objectA = bodyId;
@@ -6932,6 +6958,12 @@ void runVbdDeformableSolve(
       }
       for (const dc::EdgeEdgeCandidate& candidate :
            vbdScratch.selfContactCandidates.edgeEdgeCandidates) {
+        // Same one indexing contract as the point-triangle loop above.
+        if (!dvbd::isSelfContactEdgeEdgeCandidateInRange(
+                candidate,
+                vbdScratch.selfContactCandidates.surfaceEdges.size())) {
+          continue;
+        }
         dvbd::AvbdScalarRowDescriptor descriptor;
         descriptor.key.role = dvbd::AvbdScalarRowRole::SelfContactNormal;
         descriptor.key.objectA = bodyId;

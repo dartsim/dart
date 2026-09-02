@@ -76,7 +76,24 @@ public:
   /// Reserve the internal broad-phase snapshot cache for a bounded query.
   /// Call this before the allocation-sensitive query window; it never shrinks
   /// an existing reservation.
+  ///
+  /// This reserves the CollisionWorld cache only. Whether that is enough for an
+  /// allocation-free bounded query depends on the broad phase; ask
+  /// `hasAllocationBoundedSnapshot()`.
   void reserveBroadPhasePairCapacity(std::size_t count);
+
+  /// Whether `buildBroadPhaseSnapshotBounded` can rebuild a snapshot without
+  /// heap allocation once both the caller's buffer and this world's cache are
+  /// reserved.
+  ///
+  /// True only for the AABB-tree broad phase, which traverses directly into the
+  /// bounded buffer. The spatial-hash and sweep-and-prune broad phases build
+  /// their pair list inside the broad phase on every rebuild -- through
+  /// node-based sets and a freshly returned vector -- so they allocate per
+  /// rebuild no matter what the caller reserves, and the brute-force broad
+  /// phase does the same. Callers that must not allocate should select the
+  /// AABB-tree broad phase or accept the allocations.
+  [[nodiscard]] bool hasAllocationBoundedSnapshot() const;
 
   [[nodiscard]] std::size_t updateAll();
 
@@ -104,8 +121,13 @@ public:
   /// ``maxPairs``. Returns false and clears ``out.pairs`` on overflow.
   ///
   /// The default AABB-tree path traverses directly into the caller's bounded
-  /// buffer. Reserve both ``out.pairs`` and the CollisionWorld cache with
-  /// ``maxPairs`` elements before an allocation-sensitive query.
+  /// buffer: reserve both ``out.pairs`` and the CollisionWorld cache with
+  /// ``maxPairs`` elements and a rebuild then performs no heap allocation.
+  /// Every other broad phase materialises its pair list internally on each
+  /// rebuild and allocates regardless of what the caller reserved, so a
+  /// reservation bounds only the copies this class makes. Use
+  /// ``hasAllocationBoundedSnapshot()`` to tell the two apart rather than
+  /// assuming the reservation is sufficient.
   [[nodiscard]] bool buildBroadPhaseSnapshotBounded(
       BroadPhaseSnapshot& out, std::size_t maxPairs) const;
 

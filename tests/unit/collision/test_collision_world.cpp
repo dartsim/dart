@@ -1395,3 +1395,23 @@ TEST(CollisionWorldBroadPhase, BoundedSnapshotFailsClosedAtCapPlusOne)
   EXPECT_EQ(snapshot.numObjects, 4u);
   EXPECT_EQ(snapshot.pairs.capacity(), reservedCapacity);
 }
+
+//==============================================================================
+// Only the AABB-tree broad phase writes bounded snapshot pairs straight into
+// the caller's reserved buffer; every other broad phase materialises its pair
+// list internally and allocates per rebuild regardless of the reservation.
+// World-level allocation gates rely on this answer instead of assuming that a
+// reservation is sufficient.
+TEST(CollisionWorld, AllocationBoundedSnapshotIsOnlyTheAabbTreeBroadPhase)
+{
+  EXPECT_TRUE(
+      CollisionWorld(BroadPhaseType::AabbTree).hasAllocationBoundedSnapshot());
+  EXPECT_FALSE(CollisionWorld(BroadPhaseType::BruteForce)
+                   .hasAllocationBoundedSnapshot());
+  EXPECT_FALSE(CollisionWorld(BroadPhaseType::SpatialHash)
+                   .hasAllocationBoundedSnapshot());
+  EXPECT_FALSE(CollisionWorld(BroadPhaseType::SweepAndPrune)
+                   .hasAllocationBoundedSnapshot());
+  // The default broad phase is the bounded one.
+  EXPECT_TRUE(CollisionWorld().hasAllocationBoundedSnapshot());
+}

@@ -196,9 +196,14 @@ compatibility remains on the active DART 6 LTS branch._
   rigid-body solver families to the DART 7 `World` C++ and dartpy APIs, with
   typed constraints, state serialization/replay, fail-closed unsupported
   configurations, independently owned Sequential Impulse hard rigid
-  constraints, and publication-shaped Figure 13 evidence. Machine-checked
-  row-bound evidence contracts keep full CPU/CUDA paper parity explicitly open.
-  ([#3432](https://github.com/dartsim/dart/pull/3432))
+  constraints, and publication-shaped Figure 13 evidence. Public AVBD hard
+  joints follow the paper's regularized constraint schedule (5 % of a
+  pre-existing violation per step), warm-started rigid friction duals are
+  projected onto their Coulomb cone, multi-point contact manifolds keep their
+  continuation across small per-step motion, and compatibility distance
+  springs keep one paper-profile schedule across solver-family crossings.
+  Machine-checked row-bound evidence contracts keep full CPU/CUDA paper parity
+  explicitly open. ([#3432](https://github.com/dartsim/dart/pull/3432))
 - Added bounded, fail-closed DART 7 contact storage: `World` construction
   options cap the baked rigid collision candidate-pair and contact buffers
   (automatic limits reject at the complete shape-pair envelope while reserving

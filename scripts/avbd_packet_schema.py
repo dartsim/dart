@@ -18,9 +18,12 @@ in follow-up PLAN-091 packets.
 
 from __future__ import annotations
 
+import hashlib
 import math
 import re
-from collections.abc import Mapping
+import struct
+from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 # Current AVBD packet schema version. Packets written at this version or
@@ -33,6 +36,69 @@ from typing import Any
 # completion.
 AVBD_PACKET_SCHEMA_VERSION = 6
 PLAN104_CLAIMS_MIN_SCHEMA_VERSION = 5
+
+# Packet-level source seal: an ordered list of repository files whose bytes the
+# packet was produced from. `check_avbd_packets.py` recomputes every digest, so
+# any drift in a bound file invalidates the packet until it is regenerated.
+SOURCE_PROVENANCE_ALGORITHM = "sha256-length-prefixed-path-and-content-v1"
+
+
+def make_source_provenance(
+    repo_root: Path, relative_paths: Sequence[str]
+) -> dict[str, Any]:
+    """Seal `relative_paths` (repository-relative, in order) under `repo_root`."""
+    if not relative_paths:
+        raise ValueError("source provenance needs at least one bound file")
+    combined = hashlib.sha256()
+    files: list[dict[str, str]] = []
+    for relative_text in relative_paths:
+        relative = Path(relative_text)
+        try:
+            payload = (repo_root / relative).read_bytes()
+        except FileNotFoundError as exc:
+            raise ValueError(f"{relative_text}: source file not found") from exc
+        encoded_path = relative.as_posix().encode("utf-8")
+        combined.update(struct.pack("<Q", len(encoded_path)))
+        combined.update(encoded_path)
+        combined.update(struct.pack("<Q", len(payload)))
+        combined.update(payload)
+        files.append(
+            {
+                "path": relative.as_posix(),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        )
+    return {
+        "algorithm": SOURCE_PROVENANCE_ALGORITHM,
+        "digest": combined.hexdigest(),
+        "files": files,
+    }
+
+
+# Legacy packets pinned below the claims contract carry their own claim
+# boundary so downstream readers cannot promote a bare historical skeleton into
+# current AVBD evidence. `check_avbd_packets.py` compares these fields exactly.
+LEGACY_EVIDENCE_BOUNDARY_STATUS = "legacy_unbound"
+
+
+def legacy_evidence_boundary(supported_scope: str, *, reason: str) -> dict[str, Any]:
+    """Return the claim boundary of a legacy packet with unavailable inputs."""
+    return {
+        "artifact_status": LEGACY_EVIDENCE_BOUNDARY_STATUS,
+        "avbd_performance_claim_supported": False,
+        "avbd_solver_evidence": False,
+        "capture_artifacts_accessible": False,
+        "current_build_bound": False,
+        "historical_identifiers_retained": True,
+        "historical_measurements_preserved": True,
+        "measurement_runtime_identity_recorded": False,
+        "plan104_avbd_row_closure_supported": False,
+        "semantic_visual_review_recorded": False,
+        "reason": reason,
+        "supported_scope": supported_scope,
+    }
+
+
 MULTIBODY_IDENTITY_MIN_SCHEMA_VERSION = 6
 SOLVER_CONFIGURATION_MIN_SCHEMA_VERSION = 6
 

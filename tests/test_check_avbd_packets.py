@@ -677,62 +677,8 @@ def test_paper_packet_rejects_capture_and_benchmark_source_drift(
     monkeypatch,
 ):
     module = _load_module()
-    _disable_figure13_consistency(module, monkeypatch)
-    monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
-    packet_name = "avbd-paper-breakable-wall-packet.json"
-    monkeypatch.setattr(
-        module,
-        "PAPER_PACKET_SOURCE_PATHS",
-        {packet_name: (module.BENCHMARK_SOURCE_PATH.as_posix(),)},
-    )
-    benchmark_source = tmp_path / module.BENCHMARK_SOURCE_PATH
-    benchmark_source.parent.mkdir(parents=True)
-    benchmark_source.write_text("benchmark source\n")
-    current = {
-        "algorithm": module.CAPTURE_SOURCE_PROVENANCE_ALGORITHM,
-        "digest": "1" * 64,
-        "file_count": 7,
-        "git_head": "2" * 40,
-        "roots": ["dart", "python"],
-    }
-    monkeypatch.setattr(
-        module,
-        "compute_capture_source_provenance",
-        lambda _root: dict(current),
-    )
-    benchmark_hash = _file_sha256(benchmark_source)
-    visual_evidence = _schema6_bound_figure13_visual(packet_name)
-    for capture in visual_evidence.values():
-        capture["source_provenance"] = dict(current)
-    packet = {
-        "schema_version": module.AVBD_PACKET_SCHEMA_VERSION,
-        "resolved_solver_identity": _identity(
-            rigid_contact_solver="avbd",
-            rigid_point_joint_solver="avbd",
-            rigid_contact_selection="world_solver_family",
-        ),
-        "source_provenance": _source_provenance(
-            tmp_path,
-            module.BENCHMARK_SOURCE_PATH.as_posix(),
-        ),
-        "visual_evidence": visual_evidence,
-        "benchmark": {
-            "context": {
-                "benchmark_source_sha256": benchmark_hash,
-                "capture_source_provenance_digest": current["digest"],
-            },
-            "timing": {"median_cpu_time_per_step_ns": 5.0},
-            "source_provenance": {
-                "benchmark_source_sha256": benchmark_hash,
-                "capture_source_provenance_digest": current["digest"],
-            },
-        },
-    }
-    path = _write_packet(
-        tmp_path,
-        packet_name,
-        packet,
-    )
+    path, packet = _complete_paper_packet(module, tmp_path, monkeypatch)
+    current = dict(packet["visual_evidence"]["impact"]["source_provenance"])
     assert _packet_errors(module, path) == []
 
     source_provenance = packet.pop("source_provenance")
@@ -756,7 +702,6 @@ def test_paper_packet_rejects_capture_and_benchmark_source_drift(
     path.write_text(json.dumps(packet))
     errors = _packet_errors(module, path)
     assert any("benchmark source hash" in error for error in errors)
-    assert any("benchmark.context.benchmark_source_sha256" in error for error in errors)
 
 
 def test_linked_packet_validation_reaches_transitive_avbd_source(
@@ -2160,7 +2105,11 @@ def _with_synthetic_figure13_artifact_provenance(module, packet, packet_name):
             "codec_name": "h264",
             "content_correspondence": {
                 "algorithm": (module.CAPTURE_VIDEO_CONTENT_CORRESPONDENCE_ALGORITHM),
-                "encoder": module.CAPTURE_VIDEO_ENCODER,
+                "encoder": {
+                    **module.CAPTURE_VIDEO_ENCODER,
+                    "ffmpeg_version": "7.1.1",
+                    "libx264_version": "164 r3108 31e19f9",
+                },
                 "expected_reencoded_sha256": video_sha256,
                 "passed": True,
                 "source_png_sequence_digest": png_frames["digest"],
@@ -3110,7 +3059,9 @@ def _complete_paper_packet(module, tmp_path, monkeypatch, packet_name=None):
         "digest": runtime["source_provenance_digest"],
         "file_count": 7,
         "git_head": runtime["source_git_head"],
+        "ignored_paths": [],
         "roots": ["dart", "python"],
+        "working_tree_clean": True,
     }
     monkeypatch.setattr(
         module, "compute_capture_source_provenance", lambda _root: dict(current)

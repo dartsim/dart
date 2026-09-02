@@ -2590,6 +2590,26 @@ inline void buildAvbdRigidContactManifoldRows(
             = [](const Eigen::Vector3d& lhs, const Eigen::Vector3d& rhs) {
                 return (lhs.array() == rhs.array()).all();
               };
+        // Joint distance of a contact identity's two canonical local points.
+        const auto identityPointDistance
+            = [](const auto& lhs, const auto& rhs) {
+                return std::sqrt(
+                    (lhs.localPointA - rhs.localPointA).squaredNorm()
+                    + (lhs.localPointB - rhs.localPointB).squaredNorm());
+              };
+        // Smallest joint distance between two distinct identities of a group.
+        const auto groupPointSeparation
+            = [&](const auto groupBegin, std::size_t groupSize) {
+                double separation = std::numeric_limits<double>::infinity();
+                for (std::size_t i = 0u; i < groupSize; ++i) {
+                  for (std::size_t j = i + 1u; j < groupSize; ++j) {
+                    separation = std::min(
+                        separation,
+                        identityPointDistance(groupBegin[i], groupBegin[j]));
+                  }
+                }
+                return separation;
+              };
         const auto pointLess
             = [](const Eigen::Vector3d& lhs, const Eigen::Vector3d& rhs) {
                 for (Eigen::Index axis = 0; axis < 3; ++axis) {
@@ -2738,13 +2758,20 @@ inline void buildAvbdRigidContactManifoldRows(
               ambiguousContactIdentity
                   = !(previousBegin->key == currentBegin->key);
             } else {
+              // Same-rank points must stay within a tenth of the group's
+              // smallest point separation of their previous rank-mate. Settling
+              // and sliding move every material point by a small fraction of
+              // that separation per step, whereas a vanished point with a
+              // replacement moves at least one rank by a large fraction of it
+              // and must cold-start.
+              const double tolerance
+                  = 0.1 * groupPointSeparation(currentBegin, currentGroupSize);
               for (std::size_t offset = 0u; offset < currentGroupSize;
                    ++offset) {
                 const auto& previous = previousBegin[offset];
                 const auto& current = currentBegin[offset];
                 if (!(previous.key == current.key)
-                    || !exactPoint(previous.localPointA, current.localPointA)
-                    || !exactPoint(previous.localPointB, current.localPointB)) {
+                    || identityPointDistance(previous, current) > tolerance) {
                   ambiguousContactIdentity = true;
                   break;
                 }
@@ -3180,37 +3207,6 @@ inline void buildAvbdRigidContactManifoldRows(
 /// friction rows do not retain an anchor pointer. Multi-frame callers must
 /// retain and pass `AvbdRigidContactManifoldRowScratch` through the overload
 /// above.
-template <typename NormalRowVector, typename FrictionRowVector>
-inline void buildAvbdRigidContactManifoldRows(
-    std::span<const AvbdRigidBodyState> states,
-    std::span<const AvbdRigidContactManifoldPoint> contacts,
-    AvbdScalarRowInventory& normalInventory,
-    AvbdScalarRowInventory& frictionInventory,
-    NormalRowVector& normalRows,
-    FrictionRowVector& frictionRows,
-    const AvbdRowWarmStartOptions& warmStartOptions = {})
-{
-  // Remove outgoing pointers before invalidating their owner inventories, then
-  // force a true cold start because this overload cannot retain the contact
-  // identity sidecar needed to prove safe scalar continuation.
-  normalRows.clear();
-  frictionRows.clear();
-  normalInventory.clear();
-  frictionInventory.clear();
-  AvbdRigidContactManifoldRowScratch scratch;
-  buildAvbdRigidContactManifoldRows(
-      states,
-      contacts,
-      normalInventory,
-      frictionInventory,
-      normalRows,
-      frictionRows,
-      scratch,
-      warmStartOptions);
-  for (AvbdRigidBodyPointPairFrictionRows& frictionRow : frictionRows) {
-    frictionRow.persistentAnchor = nullptr;
-  }
-}
 
 //==============================================================================
 template <typename LinearRowVector>
@@ -4108,6 +4104,23 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
     }
   }
   for (AvbdRigidBodyPointPairFrictionRows& indexedRows : frictionPairRows) {
+    // Start the step with an empty Coulomb cone for every row that can derive
+    // one from its normal row. `liveFrictionForceLimit` then raises it to the
+    // largest normal force this contact transmits during the step and never
+    // lowers it again. Rows without a resolvable normal row keep the bounds
+    // their caller supplied.
+    if (indexedRows.normalRowIndex < pointPairRows.size()
+        && std::isfinite(indexedRows.frictionCoefficient)
+        && indexedRows.frictionCoefficient > 0.0) {
+      const AvbdRigidBodyPointPairRow& indexedNormal
+          = pointPairRows[indexedRows.normalRowIndex];
+      if (validBody(indexedNormal.bodyA) && validBody(indexedNormal.bodyB)
+          && indexedNormal.bodyA == indexedRows.bodyA
+          && indexedNormal.bodyB == indexedRows.bodyB) {
+        indexedRows.first.bounds = avbdFrictionTangentBounds(0.0);
+        indexedRows.second.bounds = indexedRows.first.bounds;
+      }
+    }
     if (validBody(indexedRows.bodyA) && validBody(indexedRows.bodyB)) {
       if (indexedRows.first.curvatureModel
           == AvbdRigidPointCurvatureModel::TaylorLinearized) {
@@ -4629,61 +4642,73 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
         }
       };
 
-  const auto liveFrictionForceLimit = [&](const auto& indexedRows,
-                                          bool afterNormalDualUpdate) {
-    const auto frozenLimit = [&]() {
-      return avbdRigidPointPairFrictionPairForceLimit(
-          indexedRows.first, indexedRows.second);
-    };
-    if (indexedRows.normalRowIndex >= pointPairRows.size()
-        || !std::isfinite(indexedRows.frictionCoefficient)
-        || indexedRows.frictionCoefficient <= 0.0) {
-      return frozenLimit();
-    }
+  // Coulomb limit for one tangent pair. The pair's `bounds` carry the cone for
+  // the current step: the descent prologue clears them for every row whose
+  // normal row is resolvable, and this helper only ever raises them.
+  //
+  // Two properties matter. First, the bound comes from the normal row's
+  // accepted dual, not from its penalty trial `k C + lambda`: on the first
+  // sweep of a step that trial still carries the whole step-start penetration
+  // and overstates the transmitted normal force by orders of magnitude.
+  // Second, the cone may not shrink inside a step. Coulomb bounds the friction
+  // impulse by mu times the normal impulse, whereas the instantaneous dual
+  // decays to zero once the regularized normal constraint is met. A cone that
+  // followed it down would silence a row that has already spent a tangential
+  // impulse under a wider cone -- typically the warm-started dual applied at
+  // `C = 0` -- and strand that displacement, because the augmented-Lagrangian
+  // trial that would undo it is exactly what the closing cone clamps away.
+  const auto liveFrictionForceLimit
+      = [&](AvbdRigidBodyPointPairFrictionRows& indexedRows) {
+          const auto stepLimit = [&]() {
+            return avbdRigidPointPairFrictionPairForceLimit(
+                indexedRows.first, indexedRows.second);
+          };
+          if (indexedRows.normalRowIndex >= pointPairRows.size()
+              || !std::isfinite(indexedRows.frictionCoefficient)
+              || indexedRows.frictionCoefficient <= 0.0) {
+            return stepLimit();
+          }
 
-    const AvbdRigidBodyPointPairRow& indexedNormal
-        = pointPairRows[indexedRows.normalRowIndex];
-    if (!validBody(indexedNormal.bodyA) || !validBody(indexedNormal.bodyB)
-        || indexedNormal.bodyA != indexedRows.bodyA
-        || indexedNormal.bodyB != indexedRows.bodyB) {
-      return frozenLimit();
-    }
+          const AvbdRigidBodyPointPairRow& indexedNormal
+              = pointPairRows[indexedRows.normalRowIndex];
+          if (!validBody(indexedNormal.bodyA) || !validBody(indexedNormal.bodyB)
+              || indexedNormal.bodyA != indexedRows.bodyA
+              || indexedNormal.bodyB != indexedRows.bodyB) {
+            return stepLimit();
+          }
 
-    const AvbdRigidPointPairRow& normal = indexedNormal.row;
-    double normalForce = 0.0;
-    if (afterNormalDualUpdate
-        && !avbdRigidRowUsesFiniteMaterial(normal.materialStiffness)) {
-      // Point-pair dual rows are updated before tangent rows. Their lambda is
-      // therefore the matching accepted normal force for this dual update.
-      normalForce = normal.state.lambda;
-    } else {
-      const double rawConstraintValue = avbdRigidPointPairConstraintValue(
-          states[indexedNormal.bodyA], states[indexedNormal.bodyB], normal);
-      const AvbdRigidPointAttachmentOptions& effectiveNormalOptions
-          = avbdRigidPointPairSolveOptions(indexedNormal, rowOptions);
-      const double constraintValue
-          = avbdRigidRowUsesFiniteMaterial(normal.materialStiffness)
-                ? rawConstraintValue
-                : regularizeAvbdConstraintValue(
-                      rawConstraintValue,
-                      normal.previousConstraintValue,
-                      effectiveNormalOptions.alpha);
-      normalForce = avbdRigidScalarRowForce(
-          normal.state,
-          constraintValue,
-          normal.bounds,
-          normal.materialStiffness);
-    }
+          const AvbdRigidPointPairRow& normal = indexedNormal.row;
+          double normalForce = 0.0;
+          if (avbdRigidRowUsesFiniteMaterial(normal.materialStiffness)) {
+            // A finite-material normal row carries no dual, so its penalty
+            // force is the force it transmits.
+            normalForce = avbdRigidScalarRowForce(
+                normal.state,
+                avbdRigidPointPairConstraintValue(
+                    states[indexedNormal.bodyA],
+                    states[indexedNormal.bodyB],
+                    normal),
+                normal.bounds,
+                normal.materialStiffness);
+          } else {
+            normalForce = normal.state.lambda;
+          }
 
-    if (std::isnan(normalForce)) {
-      return 0.0;
-    }
-    return indexedRows.frictionCoefficient * std::max(0.0, normalForce);
-  };
+          if (std::isnan(normalForce)) {
+            return stepLimit();
+          }
+          const double liveLimit
+              = indexedRows.frictionCoefficient * std::max(0.0, normalForce);
+          if (liveLimit > stepLimit()) {
+            indexedRows.first.bounds = avbdFrictionTangentBounds(liveLimit);
+            indexedRows.second.bounds = indexedRows.first.bounds;
+          }
+          return stepLimit();
+        };
 
   const auto addFrictionPairToBlock = [&](AvbdRigidBodyBlock& block,
                                           std::uint32_t body,
-                                          const AvbdRigidBodyPointPairFrictionRows&
+                                          AvbdRigidBodyPointPairFrictionRows&
                                               indexedRows) {
     const AvbdRigidBodyState& stateA = states[indexedRows.bodyA];
     const AvbdRigidBodyState& stateB = states[indexedRows.bodyB];
@@ -4693,7 +4718,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
         indexedRows.first,
         indexedRows.second,
         frictionOptions.alpha);
-    const double forceLimit = liveFrictionForceLimit(indexedRows, false);
+    const double forceLimit = liveFrictionForceLimit(indexedRows);
     const Eigen::Vector2d force
         = avbdRigidPointPairFrictionTangentPairForceFromConstraintValuesAndLimit(
             constraintValues,
@@ -4831,7 +4856,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
       for (std::size_t cursor = frictionPairRowOffsets[body];
            cursor < frictionPairRowOffsets[body + 1u];
            ++cursor) {
-        const AvbdRigidBodyPointPairFrictionRows& indexedRows
+        AvbdRigidBodyPointPairFrictionRows& indexedRows
             = frictionPairRows[frictionPairRowIndices[cursor]];
         addFrictionPairToBlock(block, body, indexedRows);
       }
@@ -4999,8 +5024,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
             AvbdRigidBodyPointPairFrictionRows& indexedRows
                 = frictionPairRows[i];
             if (validBody(indexedRows.bodyA) && validBody(indexedRows.bodyB)) {
-              const double forceLimit
-                  = liveFrictionForceLimit(indexedRows, true);
+              const double forceLimit = liveFrictionForceLimit(indexedRows);
               const bool sticking
                   = updateAvbdRigidPointPairFrictionTangentPairForLimit(
                       indexedRows.first,

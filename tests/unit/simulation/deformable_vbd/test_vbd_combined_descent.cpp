@@ -1612,10 +1612,19 @@ TEST(VbdCombinedDescent, AvbdSeparatedSelfContactFrictionIsNoOpAcrossFullSweep)
     ASSERT_EQ(separated.frictionRows.size(), 2u);
     EXPECT_DOUBLE_EQ(separated.frictionRows[0].state.stiffness, 500.0);
     EXPECT_DOUBLE_EQ(separated.frictionRows[1].state.stiffness, 700.0);
+    // The end-of-solve friction state is whatever the last dual update leaves;
+    // the residual pass no longer writes to solver rows, so it can no longer
+    // re-clear them from the exactly-zero trial force of a separated
+    // primitive. A separated normal row settles at half an eps of dual, which
+    // is the width of the tangent cone seen here: zero to machine precision,
+    // and still an exact no-op for the motion asserted above.
+    constexpr double kDualNoise = 4.0 * std::numeric_limits<double>::epsilon();
     for (const auto& row : separated.frictionRows) {
-      EXPECT_DOUBLE_EQ(row.state.lambda, 0.0);
-      EXPECT_DOUBLE_EQ(row.bounds.lower, 0.0);
-      EXPECT_DOUBLE_EQ(row.bounds.upper, 0.0);
+      EXPECT_NEAR(row.state.lambda, 0.0, kDualNoise);
+      EXPECT_LE(row.bounds.lower, 0.0);
+      EXPECT_GE(row.bounds.upper, 0.0);
+      EXPECT_NEAR(row.bounds.lower, 0.0, kDualNoise);
+      EXPECT_NEAR(row.bounds.upper, 0.0, kDualNoise);
       EXPECT_FALSE(row.sticking);
       EXPECT_FALSE(row.differentialSuspended);
       EXPECT_TRUE(row.accumulatedTangentialDisplacement.isZero(0.0));
@@ -2736,4 +2745,358 @@ TEST(VbdCombinedDescent, ParallelDualUpdatePreservesNonfiniteRowFailureBehavior)
     EXPECT_EQ(parallel[i].state.stiffness, serial[i].state.stiffness)
         << "row=" << i;
   }
+}
+
+//==============================================================================
+namespace {
+
+struct SelfContactFrictionPairFixture
+{
+  std::array<Vec3, 4> stepStart{
+      Vec3(0.2, 0.3, 0.5),
+      Vec3(0.0, 0.0, 0.0),
+      Vec3(1.0, 0.0, 0.0),
+      Vec3(0.0, 1.0, 0.0)};
+  std::vector<vbd::AvbdSelfContactNormalRow> normalRows;
+  std::vector<vbd::AvbdSelfContactFrictionRow> frictionRows;
+
+  SelfContactFrictionPairFixture()
+  {
+    vbd::AvbdSelfContactNormalRow normal;
+    normal.nodes = {0u, 1u, 2u, 3u};
+    normal.isEdgeEdge = false;
+    normal.state.stiffness = 1000.0;
+    normal.squaredActivationDistance = 4e-4;
+    normalRows = {normal};
+
+    vbd::AvbdSelfContactFrictionRow tangentX;
+    tangentX.nodes = normal.nodes;
+    tangentX.stepStartPositions = stepStart;
+    tangentX.isEdgeEdge = false;
+    tangentX.axis = 0u;
+    tangentX.state = {/*stiffness=*/500.0, /*lambda=*/0.75};
+    tangentX.bounds = vbd::avbdFrictionTangentBounds(5.0);
+    tangentX.accumulatedTangentialDisplacement = Vec3(0.25, -0.5, 0.125);
+    tangentX.normalRow = 0u;
+    tangentX.frictionCoefficient = 0.5;
+    tangentX.sticking = true;
+    vbd::AvbdSelfContactFrictionRow tangentY = tangentX;
+    tangentY.axis = 1u;
+    tangentY.state = {/*stiffness=*/700.0, /*lambda=*/-0.4};
+    frictionRows = {tangentX, tangentY};
+  }
+};
+
+void expectSelfContactFrictionRowUnchanged(
+    const vbd::AvbdSelfContactFrictionRow& actual,
+    const vbd::AvbdSelfContactFrictionRow& expected)
+{
+  EXPECT_EQ(actual.state.lambda, expected.state.lambda);
+  EXPECT_EQ(actual.state.stiffness, expected.state.stiffness);
+  EXPECT_EQ(actual.bounds.lower, expected.bounds.lower);
+  EXPECT_EQ(actual.bounds.upper, expected.bounds.upper);
+  EXPECT_EQ(actual.sticking, expected.sticking);
+  EXPECT_EQ(actual.differentialSuspended, expected.differentialSuspended);
+  EXPECT_EQ(actual.previousConstraintValue, expected.previousConstraintValue);
+  EXPECT_TRUE((actual.accumulatedTangentialDisplacement.array()
+               == expected.accumulatedTangentialDisplacement.array())
+                  .all());
+}
+
+} // namespace
+
+//==============================================================================
+// Residual evaluation must not write to persisted rows. The final residual pass
+// reuses the same per-vertex assembly as the primal sweep, so a cone refresh
+// hidden inside that assembly silently rewrote the friction duals, bounds and
+// sticking anchors of a body that ran zero sweeps.
+TEST(
+    VbdCombinedDescent,
+    AvbdSelfContactFrictionResidualEvaluationLeavesRowsUnchanged)
+{
+  SelfContactFrictionPairFixture fixture;
+  const std::vector<vbd::AvbdSelfContactFrictionRow> expected
+      = fixture.frictionRows;
+
+  std::vector<Vec3> positions(
+      fixture.stepStart.begin(), fixture.stepStart.end());
+  const std::vector<double> masses(positions.size(), 1.0);
+  const std::vector<std::uint8_t> fixed(positions.size(), 0u);
+  const std::vector<Vec3> inertialTargets = positions;
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(positions.size(), springs);
+  const auto adjacency = vbd::SpringAdjacency::build(positions.size(), springs);
+
+  std::vector<vbd::AvbdHalfSpaceContactRow> contacts;
+  std::vector<vbd::AvbdPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdSpringFiniteStiffnessRow> springRows;
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 0u;
+  vbd::AvbdHalfSpaceContactOptions contactOptions;
+  vbd::AvbdPointAttachmentOptions attachmentOptions;
+  vbd::AvbdSpringFiniteStiffnessOptions springOptions;
+  vbd::AvbdSelfContactNormalOptions selfContactOptions;
+  vbd::AvbdSelfContactFrictionOptions selfContactFrictionOptions;
+
+  vbd::blockDescentMassSpringAvbdRows(
+      positions,
+      masses,
+      fixed,
+      inertialTargets,
+      springs,
+      /*fallbackSpringStiffness=*/0.0,
+      /*timeStep=*/0.1,
+      contacts,
+      attachments,
+      springRows,
+      coloring,
+      adjacency,
+      options,
+      contactOptions,
+      attachmentOptions,
+      springOptions,
+      static_cast<std::vector<vbd::AvbdHalfSpaceFrictionRow>*>(nullptr),
+      nullptr,
+      &fixture.normalRows,
+      nullptr,
+      &selfContactOptions,
+      &fixture.frictionRows,
+      &selfContactFrictionOptions);
+
+  ASSERT_EQ(fixture.frictionRows.size(), expected.size());
+  for (std::size_t i = 0u; i < expected.size(); ++i) {
+    SCOPED_TRACE(i);
+    expectSelfContactFrictionRowUnchanged(fixture.frictionRows[i], expected[i]);
+  }
+}
+
+//==============================================================================
+TEST(
+    VbdCombinedDescent,
+    AvbdTetMeshSelfContactFrictionResidualEvaluationLeavesRowsUnchanged)
+{
+  SelfContactFrictionPairFixture fixture;
+  const std::vector<vbd::AvbdSelfContactFrictionRow> expected
+      = fixture.frictionRows;
+
+  std::vector<Vec3> positions(
+      fixture.stepStart.begin(), fixture.stepStart.end());
+  const std::vector<double> masses(positions.size(), 1.0);
+  const std::vector<std::uint8_t> fixed(positions.size(), 0u);
+  const std::vector<Vec3> inertialTargets = positions;
+
+  const std::array<std::uint32_t, 4> vertices{0u, 1u, 2u, 3u};
+  const std::vector<vbd::TetMeshElement> tets{
+      {vertices,
+       vbd::makeTetRestShape(
+           {positions[0], positions[1], positions[2], positions[3]})}};
+  const auto coloring = vbd::colorTetMesh(positions.size(), tets);
+  const auto adjacency = vbd::TetAdjacency::build(positions.size(), tets);
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 0u;
+  vbd::AvbdSelfContactNormalOptions selfContactOptions;
+  vbd::AvbdSelfContactFrictionOptions selfContactFrictionOptions;
+
+  vbd::blockDescentTetMeshAvbdSelfContact(
+      positions,
+      masses,
+      fixed,
+      inertialTargets,
+      tets,
+      /*mu=*/500.0,
+      /*lambda=*/800.0,
+      /*timeStep=*/0.02,
+      coloring,
+      adjacency,
+      options,
+      nullptr,
+      &fixture.normalRows,
+      &selfContactOptions,
+      &fixture.frictionRows,
+      &selfContactFrictionOptions);
+
+  ASSERT_EQ(fixture.frictionRows.size(), expected.size());
+  for (std::size_t i = 0u; i < expected.size(); ++i) {
+    SCOPED_TRACE(i);
+    expectSelfContactFrictionRowUnchanged(fixture.frictionRows[i], expected[i]);
+  }
+}
+
+//==============================================================================
+// The cone refresh is a pair walk. Layouts that the driver does not declare
+// paired must keep their own cones: pairing two rows that belong to different
+// primitives fails the validity check and used to zero both of their duals.
+TEST(
+    VbdCombinedDescent,
+    AvbdUnpairedSelfContactFrictionConeRefreshLeavesRowsUntouched)
+{
+  std::vector<Vec3> positions
+      = {Vec3(0.2, 0.3, 0.005),
+         Vec3(0.0, 0.0, 0.0),
+         Vec3(1.0, 0.0, 0.0),
+         Vec3(0.0, 1.0, 0.0),
+         Vec3(0.5, 0.5, -0.4)};
+  const std::array<Vec3, 4> firstStencil
+      = {positions[0], positions[1], positions[2], positions[3]};
+  const std::array<Vec3, 4> secondStencil
+      = {positions[1], positions[2], positions[3], positions[4]};
+  const std::vector<double> masses(positions.size(), 1.0);
+  const std::vector<std::uint8_t> fixed(positions.size(), 0u);
+  std::vector<Vec3> inertialTargets = positions;
+  inertialTargets[0] += Vec3(0.05, 0.0, 0.0);
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(positions.size(), springs);
+  const auto adjacency = vbd::SpringAdjacency::build(positions.size(), springs);
+
+  std::vector<vbd::AvbdSelfContactNormalRow> normalRows(2u);
+  normalRows[0].nodes = {0u, 1u, 2u, 3u};
+  normalRows[0].state.stiffness = 1000.0;
+  normalRows[0].squaredActivationDistance = 4e-4;
+  normalRows[1].nodes = {1u, 2u, 3u, 4u};
+  normalRows[1].state.stiffness = 1000.0;
+  normalRows[1].squaredActivationDistance = 4e-4;
+
+  // Two independent single-axis rows: neither the row array size nor the
+  // stencils declare an adjacent tangent pair.
+  vbd::AvbdSelfContactFrictionRow first;
+  first.nodes = normalRows[0].nodes;
+  first.stepStartPositions = firstStencil;
+  first.axis = 0u;
+  first.state = {/*stiffness=*/500.0, /*lambda=*/0.75};
+  first.bounds = vbd::avbdFrictionTangentBounds(5.0);
+  first.normalRow = 0u;
+  first.frictionCoefficient = 0.5;
+  vbd::AvbdSelfContactFrictionRow second = first;
+  second.nodes = normalRows[1].nodes;
+  second.stepStartPositions = secondStencil;
+  second.state = {/*stiffness=*/700.0, /*lambda=*/-0.4};
+  second.normalRow = 1u;
+  std::vector<vbd::AvbdSelfContactFrictionRow> frictionRows = {first, second};
+
+  std::vector<vbd::AvbdHalfSpaceContactRow> contacts;
+  std::vector<vbd::AvbdPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdSpringFiniteStiffnessRow> springRows;
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 1u;
+  vbd::AvbdHalfSpaceContactOptions contactOptions;
+  vbd::AvbdPointAttachmentOptions attachmentOptions;
+  vbd::AvbdSpringFiniteStiffnessOptions springOptions;
+  vbd::AvbdSelfContactNormalOptions selfContactOptions;
+  vbd::AvbdSelfContactFrictionOptions selfContactFrictionOptions;
+
+  vbd::blockDescentMassSpringAvbdRows(
+      positions,
+      masses,
+      fixed,
+      inertialTargets,
+      springs,
+      /*fallbackSpringStiffness=*/0.0,
+      /*timeStep=*/0.1,
+      contacts,
+      attachments,
+      springRows,
+      coloring,
+      adjacency,
+      options,
+      contactOptions,
+      attachmentOptions,
+      springOptions,
+      static_cast<std::vector<vbd::AvbdHalfSpaceFrictionRow>*>(nullptr),
+      nullptr,
+      &normalRows,
+      nullptr,
+      &selfContactOptions,
+      &frictionRows,
+      &selfContactFrictionOptions);
+
+  ASSERT_EQ(frictionRows.size(), 2u);
+  for (const auto& row : frictionRows) {
+    EXPECT_EQ(row.bounds.lower, first.bounds.lower);
+    EXPECT_EQ(row.bounds.upper, first.bounds.upper);
+  }
+  EXPECT_NE(
+      std::hypot(frictionRows[0].state.lambda, frictionRows[1].state.lambda),
+      0.0);
+}
+
+//==============================================================================
+TEST(
+    VbdCombinedDescent,
+    AvbdUnpairedHalfSpaceFrictionConeRefreshLeavesRowsUntouched)
+{
+  std::vector<Vec3> positions = {Vec3(0.0, 0.0, 0.01), Vec3(1.0, 0.0, 0.01)};
+  const std::vector<double> masses(positions.size(), 1.0);
+  const std::vector<std::uint8_t> fixed(positions.size(), 0u);
+  const std::vector<Vec3> inertialTargets
+      = {Vec3(0.2, 0.0, 0.01), Vec3(1.2, 0.0, 0.01)};
+  const std::vector<vbd::SpringElement> springs;
+  const auto coloring = vbd::colorSprings(positions.size(), springs);
+  const auto adjacency = vbd::SpringAdjacency::build(positions.size(), springs);
+
+  std::vector<vbd::AvbdHalfSpaceContactRow> contacts(2u);
+  for (std::size_t i = 0u; i < contacts.size(); ++i) {
+    contacts[i].vertex = static_cast<std::uint32_t>(i);
+    contacts[i].plane.normal = Vec3::UnitZ();
+    contacts[i].plane.offset = 0.0;
+    contacts[i].state.stiffness = 100.0;
+  }
+
+  // One tangent row per vertex: the driver does not declare this layout paired
+  // because the two rows do not share a vertex.
+  vbd::AvbdHalfSpaceFrictionRow first;
+  first.vertex = 0u;
+  first.stepStartPosition = positions[0];
+  first.axis = Vec3::UnitX();
+  first.state = {/*stiffness=*/500.0, /*lambda=*/3.0};
+  first.bounds = {-10.0, 10.0};
+  first.normalRow = 0u;
+  first.frictionCoefficient = 0.5;
+  vbd::AvbdHalfSpaceFrictionRow second = first;
+  second.vertex = 1u;
+  second.stepStartPosition = positions[1];
+  second.state = {/*stiffness=*/700.0, /*lambda=*/-4.0};
+  second.normalRow = 1u;
+  std::vector<vbd::AvbdHalfSpaceFrictionRow> frictionRows = {first, second};
+
+  std::vector<vbd::AvbdPointAttachmentRow> attachments;
+  std::vector<vbd::AvbdSpringFiniteStiffnessRow> springRows;
+
+  vbd::BlockDescentOptions options;
+  options.iterations = 1u;
+  vbd::AvbdHalfSpaceContactOptions contactOptions;
+  vbd::AvbdPointAttachmentOptions attachmentOptions;
+  vbd::AvbdSpringFiniteStiffnessOptions springOptions;
+  vbd::AvbdHalfSpaceFrictionOptions frictionOptions;
+
+  vbd::blockDescentMassSpringAvbdRows(
+      positions,
+      masses,
+      fixed,
+      inertialTargets,
+      springs,
+      /*fallbackSpringStiffness=*/0.0,
+      /*timeStep=*/0.1,
+      contacts,
+      attachments,
+      springRows,
+      coloring,
+      adjacency,
+      options,
+      contactOptions,
+      attachmentOptions,
+      springOptions,
+      &frictionRows,
+      &frictionOptions);
+
+  ASSERT_EQ(frictionRows.size(), 2u);
+  for (const auto& row : frictionRows) {
+    EXPECT_EQ(row.bounds.lower, -10.0);
+    EXPECT_EQ(row.bounds.upper, 10.0);
+  }
+  EXPECT_NE(
+      std::hypot(frictionRows[0].state.lambda, frictionRows[1].state.lambda),
+      0.0);
 }

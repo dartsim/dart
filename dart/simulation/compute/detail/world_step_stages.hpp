@@ -427,9 +427,6 @@ private:
   void clearAvbdWarmStartContinuationState() noexcept;
   void clearSequentialImpulseOwnedAvbdWarmStartContinuationState() noexcept;
   [[nodiscard]] bool hasAnyAvbdWarmStartContinuationState() const noexcept;
-  [[nodiscard]] bool hasAvbdContactWarmStartContinuationState() const noexcept;
-  [[nodiscard]] bool hasAvbdDistanceSpringWarmStartContinuationState()
-      const noexcept;
 
   struct AvbdScratch;
   struct ContactScratch;

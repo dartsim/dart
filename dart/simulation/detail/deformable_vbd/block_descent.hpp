@@ -194,6 +194,12 @@ struct BlockDescentOptions
 /// contact receives friction from the normal force stamped in that same sweep;
 /// after the normal dual update, the current lambda is already that trial
 /// force and is used directly.
+///
+/// This is a pair walk: it reads `frictionRows` as consecutive (axis 0, axis 1)
+/// tangent pairs of one normal row and cold-clears both duals of any adjacent
+/// couple that does not satisfy that contract. Call it only for layouts the
+/// caller has declared paired; a row-per-axis layout owns its own cones and
+/// would lose valid friction state here.
 template <typename PositionVector, typename ContactRows, typename FrictionRows>
 inline void refreshAvbdHalfSpaceFrictionCones(
     const PositionVector& positions,
@@ -300,6 +306,9 @@ inline void refreshAvbdSelfContactFrictionCone(
 }
 
 //==============================================================================
+/// Pair walk over the self-contact tangent rows: see
+/// `refreshAvbdHalfSpaceFrictionCones` for why this must only be called on a
+/// layout the caller has declared paired.
 template <typename PositionVector, typename NormalRows, typename FrictionRows>
 inline void refreshAvbdSelfContactFrictionCones(
     const PositionVector& positions,
@@ -702,7 +711,10 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     }
     return true;
   }();
-  const auto assemble = [&](std::uint32_t vertex) {
+  // `mutateRows` separates the primal sweep, which may refresh persisted
+  // friction state in place, from the final residual evaluation, which reuses
+  // this same assembly and must stay side-effect free.
+  const auto assemble = [&](std::uint32_t vertex, bool mutateRows) {
     VertexBlock block;
     addInertiaTerm(
         block,
@@ -759,26 +771,45 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
                   row, (*selfContactFrictionRows)[i + 1])) {
             AvbdSelfContactFrictionRow& second
                 = (*selfContactFrictionRows)[i + 1];
-            if (selfContactRows != nullptr && selfContactOptions != nullptr) {
-              // A self-contact normal depends on all four stencil nodes. An
-              // earlier Gauss-Seidel block can therefore change this pair's
-              // live cone within the same sweep; refresh immediately before
-              // stamping each incident block.
-              refreshAvbdSelfContactFrictionCone(
-                  positions,
-                  *selfContactRows,
-                  row,
-                  second,
-                  selfContactOptions->alpha,
-                  /*useTrialNormalForce=*/true);
+            // A self-contact normal depends on all four stencil nodes. An
+            // earlier Gauss-Seidel block can therefore change this pair's live
+            // cone within the same sweep; refresh immediately before stamping
+            // each incident block.
+            //
+            // The refresh rewrites the pair's bounds, rescales its tangential
+            // duals and can clear its sticking anchors, so it may only touch
+            // the persisted rows while the caller is sweeping. The residual
+            // pass reuses this assembly once the sweep budget is spent and
+            // stamps the very same live cone from throwaway copies, so
+            // evaluating a residual never edits solver state.
+            const auto stampFrictionPair
+                = [&](AvbdSelfContactFrictionRow& firstRow,
+                      AvbdSelfContactFrictionRow& secondRow) {
+                    if (selfContactRows != nullptr
+                        && selfContactOptions != nullptr) {
+                      refreshAvbdSelfContactFrictionCone(
+                          positions,
+                          *selfContactRows,
+                          firstRow,
+                          secondRow,
+                          selfContactOptions->alpha,
+                          /*useTrialNormalForce=*/true);
+                    }
+                    addAvbdSelfContactFrictionTangentPair(
+                        block,
+                        positions,
+                        firstRow,
+                        secondRow,
+                        localVertex,
+                        *selfContactFrictionOptions);
+                  };
+            if (mutateRows) {
+              stampFrictionPair(row, second);
+            } else {
+              AvbdSelfContactFrictionRow probeFirst = row;
+              AvbdSelfContactFrictionRow probeSecond = second;
+              stampFrictionPair(probeFirst, probeSecond);
             }
-            addAvbdSelfContactFrictionTangentPair(
-                block,
-                positions,
-                row,
-                second,
-                localVertex,
-                *selfContactFrictionOptions);
             i += 2;
             continue;
           }
@@ -838,7 +869,11 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
       = options.convergenceDisplacement * options.convergenceDisplacement;
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
-    if (frictionRows != nullptr && frictionOptions != nullptr) {
+    // The cone sweep is a pair walk: it reads each adjacent tangent pair as
+    // one Coulomb cone and cold-clears both duals when that pairing does not
+    // hold. Layouts the driver has not declared paired own their cones row by
+    // row, so pair-walking them would zero valid friction state.
+    if (frictionRowsArePaired) {
       refreshAvbdHalfSpaceFrictionCones(
           positions,
           contactRows,
@@ -847,8 +882,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
           /*useTrialNormalForce=*/true);
     }
     if (selfContactRows != nullptr && selfContactOptions != nullptr
-        && selfContactFrictionRows != nullptr
-        && selfContactFrictionOptions != nullptr) {
+        && selfContactFrictionRowsArePaired) {
       refreshAvbdSelfContactFrictionCones(
           positions,
           *selfContactRows,
@@ -862,7 +896,7 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
         if (vertex >= vertexCount || fixed[vertex] != 0u) {
           continue;
         }
-        const VertexBlock block = assemble(vertex);
+        const VertexBlock block = assemble(vertex, /*mutateRows=*/true);
         const Eigen::Vector3d delta
             = solveVertexBlock(block, options.regularization);
         positions[vertex] += delta;
@@ -925,13 +959,13 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
           }
         });
     if (frictionRows != nullptr && frictionOptions != nullptr) {
-      refreshAvbdHalfSpaceFrictionCones(
-          positions,
-          contactRows,
-          *frictionRows,
-          contactOptions.alpha,
-          /*useTrialNormalForce=*/false);
       if (frictionRowsArePaired) {
+        refreshAvbdHalfSpaceFrictionCones(
+            positions,
+            contactRows,
+            *frictionRows,
+            contactOptions.alpha,
+            /*useTrialNormalForce=*/false);
         forEachAvbdRowUpdateRange(
             rowUpdateExecutor,
             frictionRows->size() / 2u,
@@ -998,7 +1032,8 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     }
     if (selfContactFrictionRows != nullptr
         && selfContactFrictionOptions != nullptr) {
-      if (selfContactRows != nullptr && selfContactOptions != nullptr) {
+      if (selfContactRows != nullptr && selfContactOptions != nullptr
+          && selfContactFrictionRowsArePaired) {
         refreshAvbdSelfContactFrictionCones(
             positions,
             *selfContactRows,
@@ -1061,7 +1096,8 @@ inline BlockDescentStats blockDescentMassSpringAvbdRows(
     if (fixed[vertex] != 0u) {
       continue;
     }
-    residualNormSquared += assemble(vertex).force.squaredNorm();
+    residualNormSquared
+        += assemble(vertex, /*mutateRows=*/false).force.squaredNorm();
   }
   stats.finalResidualNormSquared = residualNormSquared;
   return stats;
@@ -1397,7 +1433,10 @@ inline BlockDescentStats blockDescentTetMeshAvbdSelfContact(
     }
     return true;
   }();
-  const auto assemble = [&](std::uint32_t vertex) {
+  // `mutateRows` separates the primal sweep, which may refresh persisted
+  // friction state in place, from the final residual evaluation, which reuses
+  // this same assembly and must stay side-effect free.
+  const auto assemble = [&](std::uint32_t vertex, bool mutateRows) {
     VertexBlock block;
     addInertiaTerm(
         block,
@@ -1462,25 +1501,44 @@ inline BlockDescentStats blockDescentTetMeshAvbdSelfContact(
                   row, (*selfContactFrictionRows)[i + 1])) {
             AvbdSelfContactFrictionRow& second
                 = (*selfContactFrictionRows)[i + 1];
-            if (selfContactRows != nullptr && selfContactOptions != nullptr) {
-              // The coupled normal trial changes as any earlier stencil block
-              // moves. Recompute the live Coulomb cone at this exact GS state
-              // instead of retaining the iteration-start load.
-              refreshAvbdSelfContactFrictionCone(
-                  positions,
-                  *selfContactRows,
-                  row,
-                  second,
-                  selfContactOptions->alpha,
-                  /*useTrialNormalForce=*/true);
+            // The coupled normal trial changes as any earlier stencil block
+            // moves. Recompute the live Coulomb cone at this exact GS state
+            // instead of retaining the iteration-start load.
+            //
+            // The refresh rewrites the pair's bounds, rescales its tangential
+            // duals and can clear its sticking anchors, so it may only touch
+            // the persisted rows while the caller is sweeping. The residual
+            // pass reuses this assembly once the sweep budget is spent and
+            // stamps the very same live cone from throwaway copies, so
+            // evaluating a residual never edits solver state.
+            const auto stampFrictionPair
+                = [&](AvbdSelfContactFrictionRow& firstRow,
+                      AvbdSelfContactFrictionRow& secondRow) {
+                    if (selfContactRows != nullptr
+                        && selfContactOptions != nullptr) {
+                      refreshAvbdSelfContactFrictionCone(
+                          positions,
+                          *selfContactRows,
+                          firstRow,
+                          secondRow,
+                          selfContactOptions->alpha,
+                          /*useTrialNormalForce=*/true);
+                    }
+                    addAvbdSelfContactFrictionTangentPair(
+                        block,
+                        positions,
+                        firstRow,
+                        secondRow,
+                        localVertex,
+                        *selfContactFrictionOptions);
+                  };
+            if (mutateRows) {
+              stampFrictionPair(row, second);
+            } else {
+              AvbdSelfContactFrictionRow probeFirst = row;
+              AvbdSelfContactFrictionRow probeSecond = second;
+              stampFrictionPair(probeFirst, probeSecond);
             }
-            addAvbdSelfContactFrictionTangentPair(
-                block,
-                positions,
-                row,
-                second,
-                localVertex,
-                *selfContactFrictionOptions);
             i += 2;
             continue;
           }
@@ -1502,8 +1560,7 @@ inline BlockDescentStats blockDescentTetMeshAvbdSelfContact(
   for (std::size_t iteration = 0; iteration < options.iterations; ++iteration) {
     ++stats.iterations;
     if (selfContactRows != nullptr && selfContactOptions != nullptr
-        && selfContactFrictionRows != nullptr
-        && selfContactFrictionOptions != nullptr) {
+        && selfContactFrictionRowsArePaired) {
       refreshAvbdSelfContactFrictionCones(
           positions,
           *selfContactRows,
@@ -1517,7 +1574,7 @@ inline BlockDescentStats blockDescentTetMeshAvbdSelfContact(
         if (vertex >= vertexCount || fixed[vertex] != 0u) {
           continue;
         }
-        const VertexBlock block = assemble(vertex);
+        const VertexBlock block = assemble(vertex, /*mutateRows=*/true);
         const Eigen::Vector3d delta
             = solveVertexBlock(block, options.regularization);
         positions[vertex] += delta;
@@ -1550,7 +1607,8 @@ inline BlockDescentStats blockDescentTetMeshAvbdSelfContact(
     }
     if (selfContactFrictionRows != nullptr
         && selfContactFrictionOptions != nullptr) {
-      if (selfContactRows != nullptr && selfContactOptions != nullptr) {
+      if (selfContactRows != nullptr && selfContactOptions != nullptr
+          && selfContactFrictionRowsArePaired) {
         refreshAvbdSelfContactFrictionCones(
             positions,
             *selfContactRows,
@@ -1613,7 +1671,8 @@ inline BlockDescentStats blockDescentTetMeshAvbdSelfContact(
     if (fixed[vertex] != 0u) {
       continue;
     }
-    residualNormSquared += assemble(vertex).force.squaredNorm();
+    residualNormSquared
+        += assemble(vertex, /*mutateRows=*/false).force.squaredNorm();
   }
   stats.finalResidualNormSquared = residualNormSquared;
   return stats;

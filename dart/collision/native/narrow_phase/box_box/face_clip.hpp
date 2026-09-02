@@ -51,12 +51,34 @@ struct ContactCandidate
 };
 
 /// Stack-bounded candidate buffer for the intersection of two box faces.
-/// Clipping a four-vertex convex face against the five reference-face
-/// half-spaces produces at most nine vertices; the larger bound leaves a
-/// defensive margin without putting heap storage on the collision hot path.
+///
+/// The size bound is a theorem, not a guess, because this buffer sits on the
+/// collision hot path and is filled from worker threads that cannot report a
+/// failure. Sutherland-Hodgman clipping of a convex n-gon against one
+/// half-space emits at most one crossing vertex per sign change; a convex
+/// polygon changes sign at most twice around its boundary, and two crossings
+/// require at least one vertex to fall outside, so the result has at most
+/// (n - 1) + 2 = n + 1 vertices. Starting from the four vertices of the
+/// incident box face and applying the five reference-face half-spaces in turn
+/// gives 4 -> 5 -> 6 -> 7 -> 8 -> 9. The capacity keeps a further margin above
+/// that bound without putting heap storage on the hot path.
 struct FixedContactCandidates
 {
+  /// The incident face of a box is a quadrilateral.
+  static constexpr std::size_t kIncidentFaceVertexCount = 4u;
+  /// The reference face contributes its four side half-spaces plus its own
+  /// plane.
+  static constexpr std::size_t kClipPlaneCount = 5u;
+  /// Proven maximum vertex count of the clipped incident face.
+  static constexpr std::size_t kMaxClippedFaceVertexCount
+      = kIncidentFaceVertexCount + kClipPlaneCount;
+
   static constexpr std::size_t kCapacity = 12u;
+
+  static_assert(
+      kMaxClippedFaceVertexCount <= kCapacity,
+      "Box-box face clipping must fit its proven vertex bound; raise kCapacity "
+      "if the clip plane count or incident face changes");
 
   [[nodiscard]] bool empty() const noexcept
   {

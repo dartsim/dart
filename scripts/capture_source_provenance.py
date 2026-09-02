@@ -8,6 +8,7 @@ import ctypes
 import importlib
 import json
 import os
+import re
 import shutil
 import struct
 import subprocess
@@ -19,7 +20,7 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
-CAPTURE_SOURCE_PROVENANCE_ALGORITHM = "sha256-length-prefixed-capture-source-tree-v1"
+CAPTURE_SOURCE_PROVENANCE_ALGORITHM = "sha256-length-prefixed-capture-source-tree-v2"
 CAPTURE_RUNTIME_PROVENANCE_ALGORITHM = "sha256-imported-dartpy-runtime-v4"
 CAPTURE_RUNTIME_IMAGE_INVENTORY_ALGORITHM = (
     "sha256-complete-capture-mapped-native-image-inventory-v1"
@@ -398,6 +399,86 @@ def _capture_source_paths(repo_root: Path) -> list[str]:
     return paths
 
 
+def _capture_attestation_scopes() -> tuple[str, ...]:
+    """Return the paths the clean-tree attestation must cover.
+
+    The capture roots decide the artifacts, and the paper packets additionally
+    pin sources outside those roots, so a dirty file in either place means the
+    recorded Git HEAD does not describe what actually produced the evidence.
+    """
+    scopes = set(CAPTURE_SOURCE_ROOTS)
+    try:
+        from avbd_packet_schema import PAPER_PACKET_SOURCE_PATHS
+    except ImportError as exc:
+        raise CaptureSourceProvenanceError(
+            f"cannot resolve the paper packet source paths: {exc}"
+        ) from exc
+    for paths in PAPER_PACKET_SOURCE_PATHS.values():
+        scopes.update(paths)
+    return tuple(sorted(scopes))
+
+
+def _capture_working_tree_status(repo_root: Path) -> tuple[bool, list[str]]:
+    """Report whether the capture-relevant working tree is clean.
+
+    ``git status --porcelain`` reports staged and unstaged modifications plus
+    untracked files; anything it names inside the attested scopes means the
+    recorded HEAD is not the state that produced the capture.
+    """
+    output = _run_git(
+        repo_root,
+        "status",
+        "--porcelain",
+        "--untracked-files=all",
+        "-z",
+        "--",
+        *_capture_attestation_scopes(),
+    )
+    entries = [os.fsdecode(chunk) for chunk in output.split(b"\0") if chunk]
+    dirty: list[str] = []
+    skip_next = False
+    for entry in entries:
+        if skip_next:
+            skip_next = False
+            continue
+        if len(entry) < 4:
+            continue
+        status, path = entry[:2], entry[3:]
+        # A rename entry is followed by its origin path in a second record.
+        if "R" in status or "C" in status:
+            skip_next = True
+        dirty.append(path)
+    return not dirty, sorted(set(dirty))
+
+
+def _capture_ignored_paths(repo_root: Path) -> list[str]:
+    """List ignored, non-cache files living inside the capture roots.
+
+    ``_capture_source_paths`` excludes ignored files, so anything ignored under
+    a capture root is unhashed input the digest cannot see. Byte-compiled Python
+    caches are excluded because they are derived from files that are hashed.
+    """
+    output = _run_git(
+        repo_root,
+        "ls-files",
+        "--others",
+        "--ignored",
+        "--exclude-standard",
+        "-z",
+        "--",
+        *CAPTURE_SOURCE_ROOTS,
+    )
+    paths = []
+    for encoded in output.split(b"\0"):
+        if not encoded:
+            continue
+        relative = os.fsdecode(encoded)
+        if "__pycache__/" in relative or relative.endswith(".pyc"):
+            continue
+        paths.append(relative)
+    return sorted(set(paths))
+
+
 def _path_payload(path: Path) -> tuple[bytes, bytes]:
     _validate_artifact_path(path, "capture source")
     if path.is_symlink():
@@ -463,12 +544,15 @@ def compute_capture_source_provenance(repo_root: Path) -> dict[str, Any]:
             f"git returned an invalid capture source revision: {head!r}"
         )
 
+    working_tree_clean, _dirty = _capture_working_tree_status(repo_root)
     return {
         "algorithm": CAPTURE_SOURCE_PROVENANCE_ALGORITHM,
         "digest": digest.hexdigest(),
         "file_count": len(paths),
         "git_head": head,
+        "ignored_paths": _capture_ignored_paths(repo_root),
         "roots": list(CAPTURE_SOURCE_ROOTS),
+        "working_tree_clean": working_tree_clean,
     }
 
 
@@ -1401,12 +1485,67 @@ def encode_capture_video(
             str(CAPTURE_VIDEO_ENCODER["threads"]),
             "-pix_fmt",
             str(CAPTURE_VIDEO_ENCODER["pixel_format"]),
+            # Suppress the muxer's writing-library tag and any inherited input
+            # metadata so the container bytes do not carry a toolchain version
+            # string. libx264 still stamps its core version into an SEI and its
+            # bitstream differs between releases, so the encoder identity is
+            # recorded alongside the digest rather than assumed away.
+            "-bitexact",
+            "-flags:v",
+            "+bitexact",
+            "-map_metadata",
+            "-1",
             "-movflags",
             "+faststart",
             str(output),
         ],
         "capture video encoding",
     )
+
+
+def _ffmpeg_version() -> str:
+    """Return the exact ffmpeg build string that encodes capture video."""
+    ffmpeg = _required_tool("ffmpeg")
+    result = _run_media_tool([ffmpeg, "-hide_banner", "-version"], "ffmpeg version")
+    first_line = result.stdout.splitlines()[0].strip() if result.stdout else ""
+    if not first_line.startswith("ffmpeg version "):
+        raise CaptureSourceProvenanceError(
+            f"ffmpeg did not report a usable version banner: {first_line!r}"
+        )
+    version = first_line.removeprefix("ffmpeg version ").split(" ", maxsplit=1)[0]
+    if not version:
+        raise CaptureSourceProvenanceError("ffmpeg reported an empty version")
+    return version
+
+
+def _libx264_version(video: Path) -> str:
+    """Read the libx264 core identity stamped into *video*.
+
+    Reading it back out of the encoded artifact records the encoder that
+    actually produced these bytes, rather than whichever library a later query
+    would resolve to.
+    """
+    try:
+        payload = Path(video).read_bytes()
+    except OSError as exc:
+        raise CaptureSourceProvenanceError(
+            f"cannot read encoded capture video {video}: {exc}"
+        ) from exc
+    match = re.search(rb"x264 - core ([0-9]+ r[0-9]+ [0-9a-f]+)", payload)
+    if match is None:
+        raise CaptureSourceProvenanceError(
+            "encoded capture video does not identify its libx264 core version"
+        )
+    return match.group(1).decode("ascii")
+
+
+def capture_video_encoder_record(video: Path) -> dict[str, Any]:
+    """Pin the encoder settings plus the toolchain the bytes depend on."""
+    return {
+        **CAPTURE_VIDEO_ENCODER,
+        "ffmpeg_version": _ffmpeg_version(),
+        "libx264_version": _libx264_version(video),
+    }
 
 
 def _video_content_correspondence(
@@ -1428,7 +1567,7 @@ def _video_content_correspondence(
         )
     return {
         "algorithm": CAPTURE_VIDEO_CONTENT_CORRESPONDENCE_ALGORITHM,
-        "encoder": dict(CAPTURE_VIDEO_ENCODER),
+        "encoder": capture_video_encoder_record(video),
         "expected_reencoded_sha256": expected_sha256,
         "passed": True,
         "source_png_sequence_digest": png_sequence_digest,
