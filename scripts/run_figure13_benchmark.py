@@ -39,16 +39,10 @@ DEFAULT_SAMPLE_INTERVAL_SECONDS = 1.0
 DEFAULT_MAX_NORMALIZED_LOAD = 0.25
 MIN_WARMUP_SECONDS = 1.0
 EVIDENCE_BUILD_MARKER = "DART_FIGURE13_EVIDENCE_BUILD:BOOL=ON"
-# Flag variables the project extends in scope after the caller's cache value;
-# the compiled record may carry those project-appended tokens.
-PROJECT_APPENDED_FLAG_KEYS = frozenset(
-    {
-        "CMAKE_CXX_FLAGS",
-        "CMAKE_EXE_LINKER_FLAGS",
-        "CMAKE_MODULE_LINKER_FLAGS",
-        "CMAKE_SHARED_LINKER_FLAGS",
-    }
-)
+# Flag variables the project extends in scope after the caller's cache value,
+# and the only tokens it appends; the compiled record may carry exactly those.
+PROJECT_APPENDED_FLAG_KEYS = frozenset({"CMAKE_SHARED_LINKER_FLAGS"})
+PROJECT_APPENDED_FLAG_TOKENS = frozenset({"-Wl,--no-undefined"})
 EVIDENCE_CMAKE_DEFINITIONS = (
     "BUILD_SHARED_LIBS=ON",
     "BUILD_TESTING=ON",
@@ -405,7 +399,8 @@ def _load_build_configuration(build_dir: Path) -> dict[str, object]:
             name in PROJECT_APPENDED_FLAG_KEYS
             and isinstance(compiled, str)
             and compiled.startswith(expected)
-            and compiled[len(expected) :].strip()
+            and compiled[len(expected) :].split()
+            and set(compiled[len(expected) :].split()) <= PROJECT_APPENDED_FLAG_TOKENS
         ):
             continue
         raise Figure13BenchmarkError(
