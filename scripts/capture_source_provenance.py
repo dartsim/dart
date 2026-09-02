@@ -15,6 +15,7 @@ import subprocess
 import sys
 import tempfile
 import zlib
+from collections.abc import Mapping
 from fractions import Fraction
 from hashlib import sha256
 from pathlib import Path
@@ -938,6 +939,52 @@ def dart_library_build_identity(
         **payload,
         "digest": _canonical_json_digest(payload),
     }
+
+
+def capture_runtime_provenance_drift(
+    initial: Mapping[str, Any], final: Mapping[str, Any]
+) -> list[str]:
+    """Describe evidence-relevant drift between two snapshots of one process.
+
+    The capture harness maps further trusted Python extension modules while it
+    converts frames, hashes artifacts and encodes video after the demo, so a
+    final runtime-image inventory that is a superset of the initial one with
+    byte-identical shared entries is not drift. Every other field, and every
+    image that was mapped initially, must be identical.
+    """
+    drift: list[str] = []
+    for key in sorted(set(initial) | set(final)):
+        if key in {"digest", "runtime_image_inventory"}:
+            continue
+        if initial.get(key) != final.get(key):
+            drift.append(f"{key} changed")
+    initial_inventory = initial.get("runtime_image_inventory")
+    final_inventory = final.get("runtime_image_inventory")
+    if initial_inventory is None and final_inventory is None:
+        return drift
+    if not isinstance(initial_inventory, Mapping) or not isinstance(
+        final_inventory, Mapping
+    ):
+        return drift + ["runtime_image_inventory missing"]
+    for key in sorted(set(initial_inventory) | set(final_inventory)):
+        if key in {"digest", "images"}:
+            continue
+        if initial_inventory.get(key) != final_inventory.get(key):
+            drift.append(f"runtime_image_inventory.{key} changed")
+    final_images = {
+        image["path"]: image
+        for image in final_inventory.get("images", [])
+        if isinstance(image, Mapping)
+    }
+    for image in initial_inventory.get("images", []):
+        if not isinstance(image, Mapping):
+            continue
+        path = image.get("path")
+        if path not in final_images:
+            drift.append(f"runtime image unmapped: {path}")
+        elif final_images[path] != image:
+            drift.append(f"runtime image changed: {path}")
+    return drift
 
 
 def capture_runtime_provenance(

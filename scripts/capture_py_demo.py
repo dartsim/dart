@@ -29,6 +29,7 @@ from capture_source_provenance import (  # noqa: E402
     _capture_loader_environment_policy,
     capture_artifact_provenance,
     capture_runtime_provenance,
+    capture_runtime_provenance_drift,
     compute_capture_source_provenance,
     encode_capture_video,
 )
@@ -4383,10 +4384,13 @@ def _run_multi_view_capture(
             "discarding the evidence"
         )
     final_runtime_provenance = capture_runtime_provenance(_repo_root())
-    if final_runtime_provenance != initial_runtime_provenance:
+    runtime_drift = capture_runtime_provenance_drift(
+        initial_runtime_provenance, final_runtime_provenance
+    )
+    if runtime_drift:
         raise SystemExit(
             "capture runtime binaries changed while the demo was running; "
-            "discarding the evidence"
+            "discarding the evidence: " + "; ".join(runtime_drift)
         )
     # The source digest proves current byte equality. Record the compiled
     # extension's HEAD so evidence-only commits after the build are harmless
@@ -4648,10 +4652,13 @@ def main(argv: list[str] | None = None) -> int:
             "discarding the evidence"
         )
     final_runtime_provenance = capture_runtime_provenance(_repo_root())
-    if final_runtime_provenance != initial_runtime_provenance:
+    runtime_drift = capture_runtime_provenance_drift(
+        initial_runtime_provenance, final_runtime_provenance
+    )
+    if runtime_drift:
         raise SystemExit(
             "capture runtime binaries changed while the demo was running; "
-            "discarding the evidence"
+            "discarding the evidence: " + "; ".join(runtime_drift)
         )
     # The source digest proves current byte equality. Record the compiled
     # extension's HEAD so evidence-only commits after the build are harmless

@@ -564,3 +564,49 @@ def test_shared_library_provenance_keeps_python_optional_for_cpp_only_configure(
     )
 
     assert result.returncode == 0, result.stdout
+
+
+def _runtime_snapshot(images: list[dict[str, object]]) -> dict[str, object]:
+    return {
+        "dart_library_linkage": "shared",
+        "loaded_dart_libraries": [{"path": "/lib/libdart.so", "sha256": "a" * 64}],
+        "native_extension": {"path": "/ext/_dartpy.so", "sha256": "b" * 64},
+        "runtime_image_inventory": {
+            "algorithm": "inventory-v1",
+            "digest": "c" * 64,
+            "images": images,
+            "required_images": {"dartpy_native_extension": "/ext/_dartpy.so"},
+        },
+        "source_git_head": "d" * 40,
+        "digest": "e" * 64,
+    }
+
+
+def test_runtime_provenance_drift_accepts_lazily_mapped_harness_modules() -> None:
+    ext = {"file": "_dartpy.so", "path": "/ext/_dartpy.so", "sha256": "b" * 64, "size_bytes": 1}
+    lib = {"file": "libdart.so", "path": "/lib/libdart.so", "sha256": "a" * 64, "size_bytes": 2}
+    later = {"file": "binascii.so", "path": "/py/binascii.so", "sha256": "f" * 64, "size_bytes": 3}
+    initial = _runtime_snapshot([ext, lib])
+    final = _runtime_snapshot([ext, lib, later])
+    final["digest"] = "0" * 64
+    final["runtime_image_inventory"]["digest"] = "1" * 64
+    assert provenance.capture_runtime_provenance_drift(initial, final) == []
+
+
+def test_runtime_provenance_drift_rejects_changed_or_unmapped_images() -> None:
+    ext = {"file": "_dartpy.so", "path": "/ext/_dartpy.so", "sha256": "b" * 64, "size_bytes": 1}
+    lib = {"file": "libdart.so", "path": "/lib/libdart.so", "sha256": "a" * 64, "size_bytes": 2}
+    initial = _runtime_snapshot([ext, lib])
+    relinked = _runtime_snapshot([ext, dict(lib, sha256="9" * 64)])
+    assert provenance.capture_runtime_provenance_drift(initial, relinked) == [
+        "runtime image changed: /lib/libdart.so"
+    ]
+    unmapped = _runtime_snapshot([ext])
+    assert provenance.capture_runtime_provenance_drift(initial, unmapped) == [
+        "runtime image unmapped: /lib/libdart.so"
+    ]
+    rebuilt = _runtime_snapshot([ext, lib])
+    rebuilt["source_git_head"] = "7" * 40
+    assert provenance.capture_runtime_provenance_drift(initial, rebuilt) == [
+        "source_git_head changed"
+    ]
