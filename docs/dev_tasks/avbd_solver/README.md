@@ -208,18 +208,21 @@ This folder is the temporary working surface; the durable owner is the plan.
     articulated break→reset→break re-arm lifecycle, row-inventory replaced-key
     cold-start (`65ba05113c6`).
 - **Current local gates:** on the sealed source bytes the Release C++ suite
-  passes 310/310 `ctest` entries (including `test_boxed_lcp_contact` 133/133,
-  `test_avbd_rigid_block` 142/142, `test_world` 509/509,
-  `test_world_resolved_configuration` 38/38, `test_serialization` 83/83),
-  the evidence-script unit tests pass, and `tests/test_check_avbd_packets.py`
-  passes on the regenerated Figure 13 packets. On the evidence head
-  `32ba93fb159` the full default `DART_DISABLE_COMPILER_CACHE=ON pixi run
-test-all` passed every phase (its Python phase: 2008 passed, 20 skipped,
-  no expected failures), and `pixi run -e cuda test-all` passed every
-  phase
-  (its Python selection does not include the demo-cycle rows). A
-  green CUDA environment gate still would not close the missing
-  solver-specific VBD/AVBD GPU-parity predicates.
+  passes every `ctest` entry (including `test_boxed_lcp_contact` 133/133,
+  `test_avbd_rigid_block` 142/142, `test_world` 510/510,
+  `test_world_resolved_configuration` 38/38, `test_serialization` 83/83,
+  `test_box_box` 34/34, `test_vbd_contact` 35/35), the evidence-script unit
+  tests pass (863 validator tests), and `tests/test_check_avbd_packets.py`
+  passes on the regenerated Figure 13 packets. On `29900ea732c` (the
+  evidence commit plus the regenerated box-on-ground default-step golden,
+  whose dropped box now settles 3 um lower under the per-vertex box
+  manifold) the full default `DART_DISABLE_COMPILER_CACHE=ON pixi run
+test-all` passed every phase (229 + 81 `ctest` entries; its Python phase:
+  2014 passed, 20 skipped, no expected failures), and `pixi run -e cuda
+test-all` passed every phase (213 + 80 + 8 `ctest` entries; its Python
+  selection does not include the demo-cycle rows). A green CUDA environment
+  gate still would not close the missing solver-specific VBD/AVBD
+  GPU-parity predicates.
 
 ## Foundation PR Exit Criteria
 
