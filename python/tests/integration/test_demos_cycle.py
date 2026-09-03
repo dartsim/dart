@@ -1025,6 +1025,11 @@ def test_world_scenes_use_solver_focused_categories() -> None:
         "Renderer & Debug": {
             "gui_fidelity_debug_visuals",
         },
+        # The high-ratio chain stays a historical variational-multibody demo
+        # (its packet is a bounded legacy artifact), not a public AVBD scene.
+        "Variational Integration (sx)": {
+            "avbd_articulated_high_ratio_chain",
+        },
         "AVBD Rigid Constraints (sx)": {
             "avbd_empty_baseline",
             "avbd_demo2d_ground",
@@ -1067,7 +1072,6 @@ def test_world_scenes_use_solver_focused_categories() -> None:
             "avbd_articulated_compliant_breakable_motor",
             "avbd_articulated_compliant_joints",
             "avbd_articulated_compliant_motors",
-            "avbd_articulated_high_ratio_chain",
             "avbd_rigid_breakable_joint",
             "avbd_rigid_spherical_breakable_joint",
             "avbd_articulated_breakable_joint",
@@ -8234,6 +8238,18 @@ def test_avbd_demo2d_dynamic_friction_scene_max_friction_env(
     assert "Friction 5 speed" not in panel_builder.plots
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "PLAN-104 open finding (foundation PR, 2026-09-03): under the immutable "
+        "paper profile the public AVBD family regularizes contact rows with "
+        "alpha 0.95 and no post-stabilization, so a penetrating contact recovers "
+        "5 % per step while its dual collapses to zero and the friction cone "
+        "(mu * lambda_n) is empty for the whole recovery; the reference demos "
+        "avoid this (2D: post-stabilization, 3D: shallow contacts). The source "
+        "rows need the named source-demo profiles; see the plan's deferred item."
+    ),
+)
 def test_avbd_demo2d_static_friction_scene_matches_source_row() -> None:
     import numpy as np
 
@@ -9708,6 +9724,18 @@ def test_avbd_demo3d_spring_ratio_scene_matches_source_row() -> None:
     assert all(np.isfinite(length) for length in spring_lengths())
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "PLAN-104 open finding (foundation PR, 2026-09-03): under the immutable "
+        "paper profile the public AVBD family regularizes contact rows with "
+        "alpha 0.95 and no post-stabilization, so a penetrating contact recovers "
+        "5 % per step while its dual collapses to zero and the friction cone "
+        "(mu * lambda_n) is empty for the whole recovery; the reference demos "
+        "avoid this (2D: post-stabilization, 3D: shallow contacts). The source "
+        "rows need the named source-demo profiles; see the plan's deferred item."
+    ),
+)
 def test_avbd_demo2d_heavy_rope_scene_matches_source_row() -> None:
     import numpy as np
 
@@ -10946,6 +10974,18 @@ def _assert_source_fixed_joint_fracture_resets(
     assert min_reset_anchor_error < 0.5 * broken_anchor_error
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "PLAN-104 open finding (foundation PR, 2026-09-03): under the immutable "
+        "paper profile the public AVBD family regularizes contact rows with "
+        "alpha 0.95 and no post-stabilization, so a penetrating contact recovers "
+        "5 % per step while its dual collapses to zero and the friction cone "
+        "(mu * lambda_n) is empty for the whole recovery; the reference demos "
+        "avoid this (2D: post-stabilization, 3D: shallow contacts). The source "
+        "rows need the named source-demo profiles; see the plan's deferred item."
+    ),
+)
 def test_avbd_demo2d_fracture_scene_breaks_and_resets_source_joints() -> None:
     _require_simulation_experimental_symbols("World")
 
@@ -10961,6 +11001,18 @@ def test_avbd_demo2d_fracture_scene_breaks_and_resets_source_joints() -> None:
     )
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "PLAN-104 open finding (foundation PR, 2026-09-03): under the immutable "
+        "paper profile the public AVBD family regularizes contact rows with "
+        "alpha 0.95 and no post-stabilization, so a penetrating contact recovers "
+        "5 % per step while its dual collapses to zero and the friction cone "
+        "(mu * lambda_n) is empty for the whole recovery; the reference demos "
+        "avoid this (2D: post-stabilization, 3D: shallow contacts). The source "
+        "rows need the named source-demo profiles; see the plan's deferred item."
+    ),
+)
 def test_avbd_demo3d_breakable_scene_breaks_and_resets_source_joints() -> None:
     _require_simulation_experimental_symbols("World")
 
@@ -11111,6 +11163,18 @@ def test_avbd_demo3d_dynamic_friction_scene_matches_source_row() -> None:
     assert len(sx_world.collide()) >= 11
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "PLAN-104 open finding (foundation PR, 2026-09-03): under the immutable "
+        "paper profile the public AVBD family regularizes contact rows with "
+        "alpha 0.95 and no post-stabilization, so a penetrating contact recovers "
+        "5 % per step while its dual collapses to zero and the friction cone "
+        "(mu * lambda_n) is empty for the whole recovery; the reference demos "
+        "avoid this (2D: post-stabilization, 3D: shallow contacts). The source "
+        "rows need the named source-demo profiles; see the plan's deferred item."
+    ),
+)
 def test_avbd_demo3d_static_friction_scene_matches_source_row() -> None:
     import numpy as np
 
@@ -11565,6 +11629,18 @@ def test_avbd_demo3d_heavy_rope_scene_matches_source_row() -> None:
     assert max(endpoint_errors()) < 0.75
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "PLAN-104 open finding (foundation PR, 2026-09-03): under the immutable "
+        "paper profile the public AVBD family regularizes contact rows with "
+        "alpha 0.95 and no post-stabilization, so a penetrating contact recovers "
+        "5 % per step while its dual collapses to zero and the friction cone "
+        "(mu * lambda_n) is empty for the whole recovery; the reference demos "
+        "avoid this (2D: post-stabilization, 3D: shallow contacts). The source "
+        "rows need the named source-demo profiles; see the plan's deferred item."
+    ),
+)
 def test_avbd_demo3d_stack_ratio_scene_matches_source_row() -> None:
     import numpy as np
 

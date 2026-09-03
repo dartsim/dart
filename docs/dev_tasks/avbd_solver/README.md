@@ -82,6 +82,19 @@ This folder is the temporary working surface; the durable owner is the plan.
   pre-audit head (Sequential Impulse unchanged); the sealed medians carry
   that overhead, and the attributed cause and follow-up are recorded under
   the deferred maintenance items below.
+- **Open P1 finding (exit criterion 2 not yet met):** under the immutable
+  paper profile the public AVBD family regularizes contact rows with
+  alpha 0.95 and no post-stabilization, so a penetrating contact recovers
+  only 5 % per step while its dual collapses to zero and the Coulomb cone
+  (`mu * lambda_n`, the reference's own rule) stays empty for the whole
+  recovery; bodies slide frictionlessly whatever their friction coefficient
+  and the Figure 13 balls stop inside the wall. The audit ladder introduced
+  it (the six AVBD source-row demo tests pass at `f0d08e92fe1` and fail at
+  `b252601f2c6`); the 2D reference demo avoids it with post-stabilization
+  and the 3D demo with shallow contacts, and the gap audit already names
+  those as distinct profiles. The six tests are parked as strict expected
+  failures that cite the finding; the fix is the named-profile item under
+  "Immediate Next Steps".
   Figure 13 and video row 12 remain partial: exact source constants, XPBD, a
   source-matched four-method edit, CUDA, and achieved-accuracy reference
   performance are open.
@@ -223,6 +236,16 @@ mechanism:
 - consolidate SI per-step joint-view walks, skip SI container reserves for
   non-SI families, and record post-stabilization work in the step-iteration
   diagnostic; and
+- add named AVBD parameter profiles to the public family: keep
+  `paper-2025-table-2` as the immutable default, add `source-demo-2d`
+  (alpha 0.99, beta 1e5, gamma 0.99, post-stabilization with the full
+  lambda warm start) and `source-demo-3d` (alpha 0.99, betaLin 1e4,
+  betaAng 100, gamma 0.999), implement post-stabilization in the kernel and
+  stage (one extra primal-only sweep with alpha 0 after the velocities are
+  taken), bind the selection into the replay and resolved-configuration
+  contracts and dartpy, switch the source-demo scenes to their source
+  profile, and re-derive the six parked source rows. This is the fix for the
+  open P1 finding above and is a public API decision;
 - memoize the rigid block kernel's per-body-visit world points, orientation
   errors, and SO(3) left-Jacobian inverse (all pure functions of the body
   state and row constants, so the result stays bitwise identical). The

@@ -1506,6 +1506,20 @@ owning code, never as standalone doc or cleanup PRs.
   (measured at roughly a quarter of a 201-box step). Memoize against a
   world state version or let `execute` consume the preflight span once no
   intervening stage can move a body.
+- Named AVBD parameter profiles (open P1 of the foundation PR): the public
+  family hard-codes the paper's Table 2 mode, under which a penetrating
+  contact recovers 5 % per step while its dual collapses and the Coulomb
+  cone (`mu * lambda_n`) stays empty, so bodies slide without friction until
+  the recovery ends; the audit ladder introduced it and the six AVBD
+  source-row demo tests are parked as strict expected failures. Add
+  `source-demo-2d` (alpha 0.99, beta 1e5, gamma 0.99, post-stabilization
+  with the full lambda warm start, as `avbd-demo2d` `74699a11f858`) and
+  `source-demo-3d` (alpha 0.99, betaLin 1e4, betaAng 100, gamma 0.999, as
+  `avbd-demo3d` `7701bd427d55`) beside the immutable `paper-2025-table-2`
+  default, implement post-stabilization (one primal-only sweep with alpha 0
+  after the velocities are taken), bind the selection into the replay and
+  resolved-configuration contracts and dartpy, switch the source-demo
+  scenes, and re-derive the six rows.
 - Memoize the rigid block kernel's per-body-visit world points, orientation
   errors, and SO(3) left-Jacobian inverse. The zero-trust audit ladder
   (`99c1f411d7f`..`2760f9bb496`) made the public AVBD and VBD Figure 13
@@ -1601,7 +1615,9 @@ parity or speedup evidence. Nine 1280x720 captures, including one 600-frame
 (10 s) long-horizon still and video per method, cover the reconstructed
 checkpoints and the long-horizon retention/collapse behaviour; they do not
 establish source-exact behaviour. Under the immutable paper profile the AVBD
-balls lodge in the wall and drift back instead of leaving the domain, and the
+balls lodge in the wall and drift back instead of leaving the domain (their
+impact penetration recovers 5 % per step with collapsed contact duals, the
+open finding recorded under deferred maintenance), and the
 AVBD wall keeps standing with three localized joint-break clusters, so its
 semantic review records visual agreement with Figure 13(d) as not proven.
 Exact source constants, XPBD, source-matched four-method evidence, CUDA,
