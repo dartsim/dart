@@ -23,23 +23,27 @@ This file owns only the exact branch/session stop point and takeover sequence.
 > the D5 contact-regularization finding, two label tests corrected),
 > `fe061587d5b` (packets resealed after the parking), `a1dfabc5fa9` (D5:
 > named AVBD parameter profiles with the reference demos' post-stabilization;
-> seven source rows re-parked under finding E), and `3d0ac5f1f0a` (evidence
-> resealed on the D5 head). The sealed Figure 13 evidence is captured from
-> `a1dfabc5fa9`, whose capture roots are byte-identical to the later commits
+> seven source rows re-parked under finding E), `3d0ac5f1f0a` (evidence
+> resealed on the D5 head), `f009859d8ce` (gate record), `9fc193dc4a6`
+> (the source profiles reproduce the pinned reference sources' solver rules,
+> verified against headless builds of those sources: PENALTY_MIN/MAX per
+> row, the Algorithm 1 adaptive initial guess, COLLISION_MARGIN, the joint
+> torqueArm scale, the sources' cone rules, feature-only manifold
+> continuation, 2D depth 1.0; all twelve source rows re-derived and
+> unparked; D6 and finding F documented), and the evidence reseal that
+> follows it. The sealed Figure 13 evidence is captured from `9fc193dc4a6`
 > (see the README for the current capture-source digest and medians). Under
 > the paper profile the AVBD wall keeps standing with 36 broken attachments
-> ([5, 5, 5] in the impact regions plus 21 outside) and no displaced brick, so
-> its review records visual agreement with Figure 13(d) as not proven.
-> Gates on `3d0ac5f1f0a`: `pixi run lint` green; the default
-> `DART_DISABLE_COMPILER_CACHE=ON pixi run test-all` passed every phase
-> (Python 2001 passed, 20 skipped, 7 expected failures for the parked rows);
-> `pixi run -e cuda test-all` passed every phase. Two open findings are
-> recorded in the README and the plan: finding E (the seven AVBD source-demo
-> rows still miss thresholds calibrated on the pre-audit private contact
-> configuration; the 3D ports start inside the ramp because `makeBox` takes
-> half extents) and the audit-ladder block-family slowdown (deferred). The
-> branch is pushed with the PR body and its attachments, and `@codex review`
-> is posted after each push; every later push, PR edit, and merge await
+> ([5, 5, 5] in the impact regions plus 21 outside) and no displaced brick,
+> so its review records visual agreement with Figure 13(d) as not proven;
+> that profile keeps DART's 1e5 row start stiffness and step-start sweep
+> origin (D6). Gates on the evidence head: see the README's current local
+> gates. Open items recorded in the README and the plan: D6 (the paper
+> profile's `beta`/`k_start` units, a maintainer decision), finding F (the
+> post-stabilized 2D profile's sliding friction is weaker than the source),
+> and the audit-ladder block-family slowdown (deferred). The branch is
+> pushed with the PR body and its attachments, and `@codex review` is posted
+> after each push; every later push, PR edit, and merge await
 > explicit approval. Treat everything below this note as the
 > pre-takeover historical stop point; the session ledger with decisions
 > D1-D5 lives outside the tree.
@@ -184,7 +188,7 @@ in AVBD -> VBD -> SI order.
   (SHA-256
   `75ae6f9223d5d2db3d99290e1aca38125953f67cb7051c8f79b0c8f561548bd9`).
   Median CPU costs/CVs were 8.044504 ms/1.77% AVBD,
-  7.683010 ms/0.41% VBD, and 13.058432 ms/0.52% SI.
+  7.683010 ms/0.46% VBD, and 13.058432 ms/0.52% SI.
 - The previously accepted forward-merge packet root
   `/tmp/plan104-figure13-fwd-merge.VfZPUI` is preserved but source-stale after
   merging `origin/main` at `ef10cb2633b`; its captures, benchmark, and packets
@@ -206,8 +210,8 @@ in AVBD -> VBD -> SI order.
     rejected before packet generation.
 
 Packet hashes are validated transitively from the committed files and are not
-duplicated in this mutable handoff. On the sealed `a1dfabc5fa9` evidence
-VBD/AVBD is 0.8791x, SI/AVBD is 0.9371x, and SI/VBD is 1.0660x (median CPU
+duplicated in this mutable handoff. On the sealed `9fc193dc4a6` evidence
+VBD/AVBD is 0.8651x, SI/AVBD is 0.9243x, and SI/VBD is 1.0684x (median CPU
 cost per step; the earlier 0.9551x / 1.6233x / 1.6997x figures were the
 pre-audit head's). Outcomes
 intentionally differ, and there is no source achieved-accuracy or

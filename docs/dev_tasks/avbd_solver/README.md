@@ -62,14 +62,14 @@ This folder is the temporary working surface; the durable owner is the plan.
   Nine captures (three per method, including one 600-frame long-horizon
   still/video each) and their semantic reviews are sealed to capture-source
   digest
-  `0c3aa8842e26edd869c31e036dffcfd2e0ea22b9b95fdc4a11b9702e0765cdb2`
+  `7657bb44353f802eed4be58bee5d6281827fd6bb4103bb87e1d64fdcc9396fba`
   and record the sealed source commit's Git HEAD (the validators recompute
   the digest; the recorded head is format-checked, not looked up in git).
   One quiet-host
   five-repeat Release run through `scripts/run_figure13_benchmark.py`
-  recorded median CPU costs of 14.795675 ms AVBD, 13.006470 ms VBD,
-  and 13.865269 ms Sequential Impulse, with CPU CVs of 0.41%,
-  0.50%, and 1.31%, respectively. Packet file hashes are
+  recorded median CPU costs of 15.069347 ms AVBD, 13.036209 ms VBD,
+  and 13.928065 ms Sequential Impulse, with CPU CVs of 0.46%,
+  0.17%, and 0.51%, respectively. Packet file hashes are
   validated transitively by `check-avbd-packets`; this tracker quotes only the
   capture-source seal digest above and does not duplicate the mutable packet
   hashes. The same-host ratios are
@@ -334,7 +334,7 @@ The fresh focused result is 115/115 rigid AVBD and 9/9 deformable
 finite-stiffness tests, plus all three post-bake allocation policies. The
 60-second source Spring oracle remains finite and settles within 0.00018 m of
 the expected static length. The current-build fixed-joint mechanism benchmark
-improves 1.02%; the 2D/3D Spring mechanisms cost 1.31%/1.90% more. These are
+improves 1.02%; the 2D/3D Spring mechanisms cost 0.51%/1.90% more. These are
 descriptive same-host costs, not paper/reference-performance claims. The
 120-frame software render passed pixel integrity and manual semantic review.
 
@@ -489,8 +489,8 @@ All linked canonical method rows remain partial.
   its benchmark translation unit, the evidence build configuration, the
   quiet-host gate, and the in-run watchdog.
 - **Performance boundary:** the five-repeat Release benchmark on the sealed
-  bytes records a 14.795675 ms median CPU cost per step with
-  0.41% CPU CV. This is an absolute DART timing only; the paper
+  bytes records a 15.069347 ms median CPU cost per step with
+  0.46% CPU CV. This is an absolute DART timing only; the paper
   and source publish no directly comparable timing for this scene.
 - **Non-goals:** exact replay of unpublished source constants, the XPBD
   comparison row, source-matched video edit, broad fracture corpus, unified
@@ -521,9 +521,9 @@ Figure 13 and official-video row 12 remain partial.
   frame 120. All three VBD captures pass their engine ViewReports,
   pixel-integrity checks, and paper-grounded semantic review.
 - **Performance boundary:** the five-repeat medians on the sealed bytes are
-  13.006470 ms VBD and 14.795675 ms AVBD, with 0.50% and
-  0.41% CPU CV. The VBD/AVBD median CPU-cost ratio is
-  0.8791x and is descriptive only: the outcomes intentionally
+  13.036209 ms VBD and 15.069347 ms AVBD, with 0.17% and
+  0.46% CPU CV. The VBD/AVBD median CPU-cost ratio is
+  0.8651x and is descriptive only: the outcomes intentionally
   differ, and no source achieved-accuracy or same-hardware denominator
   exists.
 - **Remaining boundary:** exact unpublished constants, honest XPBD, a
@@ -557,9 +557,9 @@ Figure 13 and official-video row 12 remain partial.
   wall. All three SI captures match the paper's initial fracture followed by
   retained-row failure and collapse.
 - **Performance boundary:** the five-repeat median CPU costs on the sealed
-  bytes are 13.865269 ms SI, 13.006470 ms VBD, and 14.795675 ms
-  AVBD, with 1.31%, 0.50%, and 0.41% CPU
-  CV. SI/AVBD is 0.9371x and SI/VBD is 1.0660x.
+  bytes are 13.928065 ms SI, 13.036209 ms VBD, and 15.069347 ms
+  AVBD, with 0.51%, 0.17%, and 0.46% CPU
+  CV. SI/AVBD is 0.9243x and SI/VBD is 1.0684x.
   These are
   descriptive costs for intentionally different outcomes, not paper speedups
   or achieved-accuracy comparisons. Frame 120 is the only shared quantitative
