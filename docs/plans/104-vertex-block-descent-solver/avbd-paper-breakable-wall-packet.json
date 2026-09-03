@@ -1448,7 +1448,7 @@
   "schema_version": 6,
   "source_provenance": {
     "algorithm": "sha256-length-prefixed-path-and-content-v1",
-    "digest": "ccad7c9833233d2002de265fba7a2607c847fbf1f33ce78ad8319facbe8e75cc",
+    "digest": "e5958589a18c255fb85860363a451a0170cbea82ffa5c988b67a1be448560f97",
     "files": [
       {
         "path": "dart/gui/view_quality.cpp",
@@ -1508,7 +1508,7 @@
       },
       {
         "path": "python/tests/integration/test_demos_cycle.py",
-        "sha256": "97f6268b401749bfc6c4c450b770a2d3c5b5485b3ae11d240763b9ca909710e8"
+        "sha256": "e8c3bfc96ed811f1c7b490c261dbf0823eb8cea0d5dc74b078abe61ec05f50f6"
       },
       {
         "path": "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",

@@ -1442,8 +1442,8 @@
       "rigid_contact_solver": "avbd",
       "rigid_point_joint_solver": "avbd"
     },
-    "nested_avbd_sha256": "47bb2d4e72d5321b385e24f34f112d23d6ffceb569ee445b6966d356269f08fe",
-    "nested_avbd_source_provenance_digest": "ccad7c9833233d2002de265fba7a2607c847fbf1f33ce78ad8319facbe8e75cc",
+    "nested_avbd_sha256": "4ccdc69ce68788f1d4de379e0fb3db4494fa4f49879e56940c72a11af31e410d",
+    "nested_avbd_source_provenance_digest": "e5958589a18c255fb85860363a451a0170cbea82ffa5c988b67a1be448560f97",
     "resolved_solver_identity": {
       "avbd_rigid_contact_config_emplaced": false,
       "multibody_integration_family": "none",
@@ -1453,8 +1453,8 @@
       "rigid_point_joint_solver": "vbd"
     },
     "scene_spec_fingerprint": "8ca3fbfa00c3dce9",
-    "sha256": "e51713f7609d066a224c73abe3cc76ebaeaeb70f671c8800e7c64f3c730f85f7",
-    "source_provenance_digest": "0dcfc03dc4f864b3a3e4b8ed3cf9c4927c1eef794093b23e0d05b7fcc26ac6d3",
+    "sha256": "62866dcc92ec986f4795f0e7f7500e33a5be4fb7220862fdae934f1216615d09",
+    "source_provenance_digest": "9841a12372b49d59a0578033cc53afb9ec2dbf6387da59f55366427ce9ae0af1",
     "visual_evidence": {
       "bend_screenshot": {
         "file": "vbd_paper_breakable_wall_bend.png",
@@ -1530,7 +1530,7 @@
   "schema_version": 6,
   "source_provenance": {
     "algorithm": "sha256-length-prefixed-path-and-content-v1",
-    "digest": "d430c96e9c8e734d0f1aeab3013d11032c54c5d367e8cc92f9fd38deb2b1904e",
+    "digest": "68fe9c004b1afad2afd2a9f973c450ef56959722f62a558ee3892b2239075e58",
     "files": [
       {
         "path": "dart/simulation/world.cpp",
@@ -1578,7 +1578,7 @@
       },
       {
         "path": "python/tests/integration/test_demos_cycle.py",
-        "sha256": "97f6268b401749bfc6c4c450b770a2d3c5b5485b3ae11d240763b9ca909710e8"
+        "sha256": "e8c3bfc96ed811f1c7b490c261dbf0823eb8cea0d5dc74b078abe61ec05f50f6"
       },
       {
         "path": "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
