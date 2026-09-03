@@ -29,8 +29,8 @@ This file owns only the exact branch/session stop point and takeover sequence.
 > per-key feature-only identity; the 2D ports lock their bodies to the plane
 > and every source-demo scene runs the sources' ten iterations; the rigid
 > block kernel memoized bitwise), `6e2f52ef216` (the benchmark's
-> parameterized fixtures pin the paper profile), and the evidence reseal that
-> follows it. The sealed Figure 13 evidence is captured from `6e2f52ef216`
+> parameterized fixtures pin the paper profile), and `68986c76679` (the
+> evidence reseal on `6e2f52ef216`). The sealed Figure 13 evidence is captured from `6e2f52ef216`
 > (see the README for the current capture-source digest and medians). Under
 > the paper profile the AVBD wall keeps standing with 36 broken attachments
 > ([5, 5, 5] in the impact regions plus 21 outside) and no displaced brick,
