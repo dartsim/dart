@@ -45,6 +45,7 @@ void defSimPartWorld(nb::module_& m)
              const nb::handle& gravity,
              bool differentiable,
              sim::RigidBodySolver rigidBodySolver,
+             sim::RigidAvbdParameterProfile rigidAvbdParameterProfile,
              const sim::RigidConstraintOptions& rigidConstraintOptions,
              std::size_t rigidCollisionCandidatePairCapacity,
              std::size_t rigidCollisionContactCapacity,
@@ -60,6 +61,7 @@ void defSimPartWorld(nb::module_& m)
             }
             options.differentiable = differentiable;
             options.rigidBodySolver = rigidBodySolver;
+            options.rigidAvbdParameterProfile = rigidAvbdParameterProfile;
             options.rigidConstraintOptions = rigidConstraintOptions;
             options.rigidCollisionCapacityOptions.candidatePairCapacity
                 = rigidCollisionCandidatePairCapacity;
@@ -78,6 +80,8 @@ void defSimPartWorld(nb::module_& m)
           nb::arg("differentiable") = false,
           nb::arg("rigid_body_solver")
           = sim::RigidBodySolver::SequentialImpulse,
+          nb::arg("rigid_avbd_parameter_profile")
+          = sim::RigidAvbdParameterProfile::Paper2025Table2,
           nb::arg("rigid_constraint_options") = sim::RigidConstraintOptions{},
           nb::arg("rigid_collision_candidate_pair_capacity") = 0,
           nb::arg("rigid_collision_contact_capacity") = 0,
@@ -605,6 +609,10 @@ void defSimPartWorld(nb::module_& m)
           "rigid_body_solver",
           &sim::World::getRigidBodySolver,
           &sim::World::setRigidBodySolver)
+      .def_prop_rw(
+          "rigid_avbd_parameter_profile",
+          &sim::World::getRigidAvbdParameterProfile,
+          &sim::World::setRigidAvbdParameterProfile)
       .def_prop_rw(
           "rigid_constraint_options",
           [](const sim::World& self) {

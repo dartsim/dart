@@ -408,6 +408,18 @@ public:
   /// Get the solver family used by the default rigid-body step pipeline.
   [[nodiscard]] RigidBodySolver getRigidBodySolver() const noexcept;
 
+  /// Select the named parameter profile of the `Avbd` rigid-body family.
+  ///
+  /// Changing the profile changes what the persisted AVBD duals and penalty
+  /// stiffnesses mean, so a change under the `Avbd` family cold-starts that
+  /// continuation once the transactional transition succeeds. The resolved
+  /// configuration records the selected profile by name.
+  void setRigidAvbdParameterProfile(RigidAvbdParameterProfile profile);
+
+  /// Get the named parameter profile of the `Avbd` rigid-body family.
+  [[nodiscard]] RigidAvbdParameterProfile getRigidAvbdParameterProfile()
+      const noexcept;
+
   /// Set domain-scoped tuning for the built-in rigid constraint stage.
   ///
   /// The iteration budget controls sequential-impulse contact sweeps and
@@ -1163,6 +1175,8 @@ private:
   bool m_simulationMode{false};
   Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
   RigidBodySolver m_rigidBodySolver{RigidBodySolver::SequentialImpulse};
+  RigidAvbdParameterProfile m_rigidAvbdParameterProfile{
+      RigidAvbdParameterProfile::Paper2025Table2};
   RigidConstraintOptions m_rigidConstraintOptions;
   RigidCollisionCapacityOptions m_rigidCollisionCapacityOptions;
   double m_timeStep{0.001};

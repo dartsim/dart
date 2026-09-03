@@ -11115,6 +11115,92 @@ TEST(World, RigidAvbdDistanceSpringRowsAreActiveWithoutContacts)
 // continuation ramps and warm-starts identically under both families. A fresh
 // world without that continuation steps differently, which proves the
 // preserved state is live rather than trivially equal.
+TEST(World, RigidAvbdParameterProfileSetterRoundTripsAndValidates)
+{
+  namespace sx = dart::simulation;
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  sx::World world(options);
+  EXPECT_EQ(
+      world.getRigidAvbdParameterProfile(),
+      sx::RigidAvbdParameterProfile::Paper2025Table2);
+  world.setRigidAvbdParameterProfile(
+      sx::RigidAvbdParameterProfile::SourceDemo3d);
+  EXPECT_EQ(
+      world.getRigidAvbdParameterProfile(),
+      sx::RigidAvbdParameterProfile::SourceDemo3d);
+  auto body = world.addRigidBody("body");
+  body.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+  world.enterSimulationMode();
+  ASSERT_NO_THROW(world.step());
+  // The transactional setter also works while simulating and the resolved
+  // configuration follows it.
+  ASSERT_NO_THROW(world.setRigidAvbdParameterProfile(
+      sx::RigidAvbdParameterProfile::SourceDemo2d));
+  EXPECT_EQ(
+      world.getRigidAvbdParameterProfile(),
+      sx::RigidAvbdParameterProfile::SourceDemo2d);
+  ASSERT_NO_THROW(world.step());
+  EXPECT_THROW(
+      world.setRigidAvbdParameterProfile(
+          static_cast<sx::RigidAvbdParameterProfile>(7)),
+      sx::InvalidArgumentException);
+  EXPECT_EQ(
+      world.getRigidAvbdParameterProfile(),
+      sx::RigidAvbdParameterProfile::SourceDemo2d);
+}
+
+//==============================================================================
+// The reference 2D demo's post-stabilization removes the pre-existing contact
+// penetration in one extra primal-only sweep after the step velocities are
+// taken, so a box that starts inside the ground surfaces without being
+// launched; the paper Table 2 mode keeps 95 % of the penetration per step.
+TEST(
+    World,
+    RigidAvbdSourceDemo2dPostStabilizationRemovesPenetrationWithoutMomentum)
+{
+  namespace sx = dart::simulation;
+  const auto run = [](sx::RigidAvbdParameterProfile profile) {
+    sx::WorldOptions options;
+    options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+    options.rigidAvbdParameterProfile = profile;
+    options.rigidConstraintOptions.iterations = 20;
+    options.timeStep = 1.0 / 60.0;
+    sx::World world(options);
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    // Half extents: a 1 m thick slab whose top face is z = 0.
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+    sx::RigidBodyOptions boxOptions;
+    // A unit box resting on z = 0 sits at z = 0.5; start it 5 cm deep.
+    boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.45);
+    auto box = world.addRigidBody("box", boxOptions);
+    box.setMass(1.0);
+    box.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+    EXPECT_FALSE(world.collide().empty());
+    world.step();
+    return std::pair{
+        box.getTransform().translation().z(), box.getLinearVelocity().norm()};
+  };
+  const auto [paperHeight, paperSpeed]
+      = run(sx::RigidAvbdParameterProfile::Paper2025Table2);
+  const auto [sourceHeight, sourceSpeed]
+      = run(sx::RigidAvbdParameterProfile::SourceDemo2d);
+  // Table 2: at most 5 % of the 5 cm penetration is corrected in one step.
+  EXPECT_LT(paperHeight, 0.46);
+  // Post-stabilization: the penetration is gone after one step ...
+  EXPECT_GT(sourceHeight, 0.495);
+  // ... and the correction injected no momentum (5 cm in 1/60 s would be
+  // 3 m/s); only the step's own contact response remains.
+  EXPECT_LT(sourceSpeed, 0.3);
+  EXPECT_LT(paperSpeed, 0.3);
+}
+
+//==============================================================================
 TEST(World, RigidAvbdDistanceSpringScheduleIsContinuousAcrossFamilyCrossing)
 {
   namespace sx = dart::simulation;
@@ -23640,7 +23726,8 @@ TEST(World, RigidIpcSolverTransitionsColdStartAdaptiveStiffness)
     if (bytes.size() >= sizeof(double)) {
       std::memcpy(
           &lowerBound,
-          bytes.data() + bytes.size() - sizeof(double),
+          // The rigid AVBD parameter profile byte trails the lower bound.
+          bytes.data() + bytes.size() - sizeof(std::uint8_t) - sizeof(double),
           sizeof(double));
     }
     return lowerBound;

@@ -445,6 +445,44 @@ TEST(ResolvedConfiguration, RecordsPublicAvbdFamilyAsRequested)
   EXPECT_EQ(iterations->resolved, "20");
 }
 
+TEST(ResolvedConfiguration, RecordsSelectedAvbdSourceDemoProfiles)
+{
+  const auto checkProfile = [](sx::RigidAvbdParameterProfile profile,
+                               const std::string& expectedName,
+                               const std::vector<std::string>& reasonParts) {
+    sx::WorldOptions options;
+    options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+    options.rigidAvbdParameterProfile = profile;
+    options.rigidConstraintOptions.iterations = 20;
+    sx::World world(options);
+    world.addRigidBody("body");
+    world.enterSimulationMode();
+    EXPECT_EQ(world.getRigidAvbdParameterProfile(), profile);
+    const auto& config = world.getResolvedConfiguration();
+    EXPECT_FALSE(config.hasSubstitution());
+    const auto* note = findNote(config, "rigid-avbd-parameter-profile");
+    ASSERT_NE(note, nullptr) << expectedName;
+    EXPECT_EQ(note->requested, expectedName);
+    EXPECT_EQ(note->resolved, expectedName);
+    for (const auto& part : reasonParts) {
+      EXPECT_NE(note->reason.find(part), std::string::npos)
+          << expectedName << ": " << note->reason;
+    }
+  };
+  checkProfile(
+      sx::RigidAvbdParameterProfile::Paper2025Table2,
+      "paper-2025-table-2",
+      {"alpha=0.95", "beta=10,", "gamma=0.99"});
+  checkProfile(
+      sx::RigidAvbdParameterProfile::SourceDemo2d,
+      "source-demo-2d",
+      {"alpha=0.99", "beta=100000", "gamma=0.99", "post-stabilization"});
+  checkProfile(
+      sx::RigidAvbdParameterProfile::SourceDemo3d,
+      "source-demo-3d",
+      {"alpha=0.99", "beta=10000,", "betaAngular=100", "gamma=0.999"});
+}
+
 TEST(ResolvedConfiguration, RecordsPublicVbdFamilyAsRequested)
 {
   sx::WorldOptions options;

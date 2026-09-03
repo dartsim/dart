@@ -259,7 +259,8 @@ dvbd::AvbdRigidWorldContactSolveOptions rigidAvbdWorldSolveOptions(
     dvbd::AvbdRigidWorldContactSolveOptions::Formulation formulation,
     const dvbd::AvbdRigidParameterProfile* ownedFamilyProfile = nullptr,
     const comps::RigidAvbdContactConfig* contactConfig = nullptr,
-    double contactMaxStiffness = std::numeric_limits<double>::infinity())
+    double contactMaxStiffness = std::numeric_limits<double>::infinity(),
+    const dvbd::AvbdRigidParameterProfile* springScheduleProfile = nullptr)
 {
   dvbd::AvbdRigidWorldContactSolveOptions options;
   options.descent.iterations = iterations;
@@ -279,9 +280,13 @@ dvbd::AvbdRigidWorldContactSolveOptions rigidAvbdWorldSolveOptions(
     // regularization and the ramp, and the fixed-penalty solve clears every
     // inventory before and after, so the values are inert there too.
     const dvbd::AvbdRigidParameterProfile& profile
-        = dvbd::kAvbdRigidPaper2025Profile;
-    options.warmStart.alpha = profile.alpha;
+        = springScheduleProfile != nullptr ? *springScheduleProfile
+                                           : dvbd::kAvbdRigidPaper2025Profile;
+    options.warmStart.alpha = profile.postStabilize ? 1.0 : profile.alpha;
     options.warmStart.gamma = profile.gamma;
+    options.warmStart.lambdaRetention
+        = profile.postStabilize ? 1.0
+                                : std::numeric_limits<double>::quiet_NaN();
     options.distanceSpring.beta = profile.beta;
   }
   // Equation 18 must use the same alpha that Equation 19 used to warm-start
@@ -1435,8 +1440,11 @@ void RigidBodyContactStage::preflight(World& world)
     return;
   }
 
+  const dvbd::AvbdRigidParameterProfile& selectedProfile
+      = dvbd::avbdRigidParameterProfileFor(
+          world.getRigidAvbdParameterProfile());
   const dvbd::AvbdRigidParameterProfile* ownedFamilyProfile
-      = useAvbdFamily ? &dvbd::kAvbdRigidPaper2025Profile : nullptr;
+      = useAvbdFamily ? &selectedProfile : nullptr;
   if (mayUseAvbdContactDetails) {
     // Validate compatibility configuration while the World is still entirely
     // at its pre-step state. Public VBD/AVBD own a solver-wide profile and
@@ -1569,8 +1577,11 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
             ? dvbd::AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty
             : dvbd::AvbdRigidWorldContactSolveOptions::Formulation::
                   AugmentedLagrangian;
+  const dvbd::AvbdRigidParameterProfile& selectedProfile
+      = dvbd::avbdRigidParameterProfileFor(
+          world.getRigidAvbdParameterProfile());
   const dvbd::AvbdRigidParameterProfile* ownedFamilyProfile
-      = useAvbdFamily ? &dvbd::kAvbdRigidPaper2025Profile : nullptr;
+      = useAvbdFamily ? &selectedProfile : nullptr;
   const std::string_view solverFamilyName = useVbdFamily ? "VBD" : "AVBD";
   const auto clearFixedPenaltyScratch = [&]() noexcept {
     if (m_avbdScratch != nullptr) {
@@ -1715,7 +1726,12 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
 
     const dvbd::AvbdRigidWorldContactSolveOptions solveOptions
         = rigidAvbdWorldSolveOptions(
-            m_iterations, formulation, ownedFamilyProfile);
+            m_iterations,
+            formulation,
+            ownedFamilyProfile,
+            nullptr,
+            std::numeric_limits<double>::infinity(),
+            &selectedProfile);
     const dvbd::AvbdRigidWorldContactSolveResult solveResult
         = dvbd::solveAvbdRigidWorldContactSnapshot(
             scratch.snapshot,
@@ -1741,6 +1757,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
     const dvbd::AvbdRigidWorldContactApplyResult projection
         = dvbd::applyAvbdRigidWorldContactVelocityProjection(
             registry, scratch.snapshot, timeStep);
+    (void)dvbd::applyAvbdRigidWorldContactPostStabilization(
+        registry, scratch.snapshot);
     return projection.bodies != 0u;
   };
 
@@ -1885,7 +1903,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
               formulation,
               ownedFamilyProfile,
               &*avbdConfig,
-              contactOptions.maxStiffness);
+              contactOptions.maxStiffness,
+              &selectedProfile);
 
       const dvbd::AvbdRigidWorldContactSolveResult solveResult
           = dvbd::solveAvbdRigidWorldContactSnapshot(
@@ -1910,6 +1929,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
         const dvbd::AvbdRigidWorldContactApplyResult projection
             = dvbd::applyAvbdRigidWorldContactVelocityProjection(
                 registry, scratch.snapshot, timeStep);
+        (void)dvbd::applyAvbdRigidWorldContactPostStabilization(
+            registry, scratch.snapshot);
         if (projection.bodies != 0u) {
           runSequentialImpulseJointSweeps();
           finalizeSequentialImpulseJoints();

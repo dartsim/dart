@@ -155,7 +155,11 @@ using EntityMap = std::unordered_map<entt::entity, entt::entity>;
 //      contact opt-in, is registered as a serializable property component so
 //      binary round trips preserve the same rigid-contact selection that
 //      replay recording already captured.
-constexpr std::uint32_t kBinaryFormatVersion = 35;
+//   36: World stores the named public AVBD parameter profile after the rigid
+//      IPC adaptive barrier-stiffness lower bound, so a checkpoint restores the
+//      same Equation 12/18/19 schedule and stabilization mode. Older streams
+//      load the paper Table 2 profile, the only profile they could have used.
+constexpr std::uint32_t kBinaryFormatVersion = 36;
 
 //==============================================================================
 // Low-level Binary I/O for POD types

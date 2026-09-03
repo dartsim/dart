@@ -230,6 +230,9 @@ struct AvbdRigidPointAttachmentOptions
 {
   double alpha = 0.0;
   double beta = 1.0;
+  /// Penalty ramp for angular rows; NaN follows `beta` (the reference 3D
+  /// source ramps angular rows a hundred times slower than linear rows).
+  double angularBeta = std::numeric_limits<double>::quiet_NaN();
   double maxStiffness = std::numeric_limits<double>::infinity();
 };
 
@@ -376,7 +379,23 @@ struct AvbdRigidBlockDescentOptions
   std::size_t iterations = 20;
   double regularization = 0.0;
   double convergenceDisplacement = 0.0;
+  /// False runs primal sweeps only: no dual, penalty, anchor, or cone update
+  /// follows a sweep. A post-stabilization pass uses it so the positional
+  /// correction leaves every persisted row state untouched.
+  bool updateRows = true;
+  /// Finite: every row's Equation 18 alpha is replaced by this value for the
+  /// call (a post-stabilization pass uses 0 so all pre-existing error is
+  /// removed). NaN: each row keeps its configured alpha.
+  double regularizationAlphaOverride = std::numeric_limits<double>::quiet_NaN();
 };
+
+//==============================================================================
+inline double avbdRigidAngularBeta(
+    const AvbdRigidPointAttachmentOptions& options) noexcept
+{
+  return std::isfinite(options.angularBeta) ? options.angularBeta
+                                            : options.beta;
+}
 
 struct AvbdRigidBlockDescentStats
 {
@@ -2199,7 +2218,8 @@ inline AvbdScalarRowState updateAvbdRigidAngularPairRow(
     state.lambda = 0.0;
     const double maxStiffness
         = std::min(row.materialStiffness, options.maxStiffness);
-    if (options.beta >= 0.0 && state.stiffness >= maxStiffness) {
+    if (avbdRigidAngularBeta(options) >= 0.0
+        && state.stiffness >= maxStiffness) {
       state.stiffness = maxStiffness;
       return state;
     }
@@ -2207,7 +2227,10 @@ inline AvbdScalarRowState updateAvbdRigidAngularPairRow(
     const double rawConstraintValue
         = avbdRigidAngularPairConstraintValue(stateA, stateB, row);
     state.stiffness = updateAvbdFiniteStiffness(
-        state.stiffness, rawConstraintValue, options.beta, maxStiffness);
+        state.stiffness,
+        rawConstraintValue,
+        avbdRigidAngularBeta(options),
+        maxStiffness);
     return state;
   }
 
@@ -2216,7 +2239,11 @@ inline AvbdScalarRowState updateAvbdRigidAngularPairRow(
   const double constraintValue = regularizeAvbdConstraintValue(
       rawConstraintValue, row.previousConstraintValue, options.alpha);
   return updateAvbdHardConstraintRow(
-      state, constraintValue, options.beta, row.bounds, options.maxStiffness);
+      state,
+      constraintValue,
+      avbdRigidAngularBeta(options),
+      row.bounds,
+      options.maxStiffness);
 }
 
 //==============================================================================
@@ -4086,6 +4113,11 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
 {
   AvbdRigidBlockDescentStats stats;
   const std::size_t bodyCount = states.size();
+  const auto alphaOf = [&options](double alpha) noexcept {
+    return std::isfinite(options.regularizationAlphaOverride)
+               ? options.regularizationAlphaOverride
+               : alpha;
+  };
   if (bodyCount == 0 || masses.size() != bodyCount
       || bodyInertias.size() != bodyCount || fixed.size() != bodyCount
       || inertialTargets.size() != bodyCount || timeStep <= 0.0) {
@@ -4493,7 +4525,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                   : regularizeAvbdConstraintValue(
                         rawConstraintValue,
                         row.previousConstraintValue,
-                        effectiveRowOptions.alpha);
+                        alphaOf(effectiveRowOptions.alpha));
         const double forceMagnitude = avbdRigidScalarRowForce(
             row.state, constraintValue, row.bounds, row.materialStiffness);
 
@@ -4627,7 +4659,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                   : regularizeAvbdConstraintValue(
                         rawConstraintValue,
                         row.previousConstraintValue,
-                        rowOptions.alpha);
+                        alphaOf(rowOptions.alpha));
         const double forceMagnitude = avbdRigidScalarRowForce(
             row.state, constraintValue, row.bounds, row.materialStiffness);
 
@@ -4726,7 +4758,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
         stateB,
         indexedRows.first,
         indexedRows.second,
-        frictionOptions.alpha);
+        alphaOf(frictionOptions.alpha));
     const double forceLimit = liveFrictionForceLimit(indexedRows);
     const Eigen::Vector2d force
         = avbdRigidPointPairFrictionTangentPairForceFromConstraintValuesAndLimit(
@@ -4831,7 +4863,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
         const AvbdRigidBodyPointAttachmentRow& indexedRow
             = attachmentRows[attachmentRowIndices[cursor]];
         addAvbdRigidPointAttachment(
-            block, states[body], indexedRow.row, rowOptions.alpha);
+            block, states[body], indexedRow.row, alphaOf(rowOptions.alpha));
       }
     }
     if (!pointPairRows.empty()) {
@@ -4889,6 +4921,12 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
       applyAvbdRigidBodyStep(states[body], step);
       maxStepSquared = std::max(maxStepSquared, step.squaredNorm());
       ++stats.bodyUpdates;
+    }
+    if (!options.updateRows) {
+      // Primal-only sweep (post-stabilization): the persisted duals,
+      // penalties, anchors, and cones stay exactly as the last full
+      // iteration left them.
+      continue;
     }
 
     forEachAvbdRowUpdateRange(
@@ -4948,7 +4986,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
               const double constraintValue = regularizeAvbdConstraintValue(
                   rawConstraintValue,
                   indexedRow.row.previousConstraintValue,
-                  effectiveRowOptions.alpha);
+                  alphaOf(effectiveRowOptions.alpha));
               indexedRow.row.state = updateAvbdHardConstraintRow(
                   indexedRow.row.state,
                   constraintValue,
@@ -4991,7 +5029,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
               indexedRow.row.state.lambda = 0.0;
               const double maxStiffness = std::min(
                   indexedRow.row.materialStiffness, rowOptions.maxStiffness);
-              if (rowOptions.beta >= 0.0
+              if (avbdRigidAngularBeta(rowOptions) >= 0.0
                   && indexedRow.row.state.stiffness >= maxStiffness) {
                 indexedRow.row.state.stiffness = maxStiffness;
                 continue;
@@ -5007,7 +5045,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
               indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
                   indexedRow.row.state.stiffness,
                   rawConstraintValue,
-                  rowOptions.beta,
+                  avbdRigidAngularBeta(rowOptions),
                   std::min(
                       indexedRow.row.materialStiffness,
                       rowOptions.maxStiffness));
@@ -5015,11 +5053,11 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
               const double constraintValue = regularizeAvbdConstraintValue(
                   rawConstraintValue,
                   indexedRow.row.previousConstraintValue,
-                  rowOptions.alpha);
+                  alphaOf(rowOptions.alpha));
               indexedRow.row.state = updateAvbdHardConstraintRow(
                   indexedRow.row.state,
                   constraintValue,
-                  rowOptions.beta,
+                  avbdRigidAngularBeta(rowOptions),
                   indexedRow.row.bounds,
                   rowOptions.maxStiffness);
             }
@@ -5034,13 +5072,16 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 = frictionPairRows[i];
             if (validBody(indexedRows.bodyA) && validBody(indexedRows.bodyB)) {
               const double forceLimit = liveFrictionForceLimit(indexedRows);
+              AvbdRigidPointPairFrictionOptions updateFrictionOptions
+                  = frictionOptions;
+              updateFrictionOptions.alpha = alphaOf(frictionOptions.alpha);
               const bool sticking
                   = updateAvbdRigidPointPairFrictionTangentPairForLimit(
                       indexedRows.first,
                       indexedRows.second,
                       states[indexedRows.bodyA],
                       states[indexedRows.bodyB],
-                      frictionOptions,
+                      updateFrictionOptions,
                       forceLimit);
               if (indexedRows.persistentFirstRecord != nullptr) {
                 indexedRows.persistentFirstRecord->state

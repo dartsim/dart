@@ -67,6 +67,29 @@ enum class RigidBodySolver
   Vbd,
 };
 
+/// Named, immutable parameter profiles for the `Avbd` rigid-body family.
+///
+/// A profile owns the solver-wide Equation 12/18/19 parameters (penalty ramp
+/// beta, error regularization alpha, warm-start gamma) and the stabilization
+/// mode. There is no per-value tuning, so recorded evidence always names one
+/// profile and can never mix them into an unlabeled hybrid.
+enum class RigidAvbdParameterProfile
+{
+  /// Table 2 of Giles, Diaz, and Yuksel (SIGGRAPH 2025): alpha 0.95, beta 10,
+  /// gamma 0.99, no post-stabilization. The default.
+  Paper2025Table2,
+  /// Defaults of the pinned `avbd-demo2d` reference source (74699a11f858):
+  /// alpha 0.99, beta 1e5, gamma 0.99, with post-stabilization. The main
+  /// sweeps ignore every pre-existing constraint error, one extra primal-only
+  /// sweep removes it after the step velocities are taken, and the full dual
+  /// is kept across steps.
+  SourceDemo2d,
+  /// Defaults of the pinned `avbd-demo3d` reference source (7701bd427d55):
+  /// alpha 0.99, beta 1e4 on linear rows and 100 on angular rows, gamma
+  /// 0.999, no post-stabilization.
+  SourceDemo3d,
+};
+
 /// Selects how the rigid-body contact stage resolves active contacts.
 ///
 /// This is an explicit, documented opt-in within the
@@ -244,6 +267,12 @@ struct WorldOptions
   /// opt-ins for free rigid-body contact and pair constraints; neither silently
   /// substitutes sequential impulse for unsupported contact envelopes.
   RigidBodySolver rigidBodySolver = RigidBodySolver::SequentialImpulse;
+
+  /// Named parameter profile for the `Avbd` family. Other families ignore it,
+  /// except that the compatibility distance springs follow its schedule so a
+  /// family crossing keeps one continuation.
+  RigidAvbdParameterProfile rigidAvbdParameterProfile
+      = RigidAvbdParameterProfile::Paper2025Table2;
 
   /// Tuning for the built-in rigid constraint stage.
   RigidConstraintOptions rigidConstraintOptions;

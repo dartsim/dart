@@ -854,6 +854,8 @@ struct World::ReplayState
     bool simulationMode = false;
     Eigen::Vector3d gravity{0.0, 0.0, -9.81};
     RigidBodySolver rigidBodySolver{RigidBodySolver::SequentialImpulse};
+    RigidAvbdParameterProfile rigidAvbdParameterProfile{
+        RigidAvbdParameterProfile::Paper2025Table2};
     std::size_t rigidConstraintIterations = 8;
     double timeStep = 0.001;
     bool differentiable = false;
@@ -3121,6 +3123,19 @@ bool isValidRigidBodySolver(RigidBodySolver solver)
 }
 
 //==============================================================================
+bool isValidRigidAvbdParameterProfile(RigidAvbdParameterProfile profile)
+{
+  switch (profile) {
+    case RigidAvbdParameterProfile::Paper2025Table2:
+    case RigidAvbdParameterProfile::SourceDemo2d:
+    case RigidAvbdParameterProfile::SourceDemo3d:
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
 bool isRigidBlockDescentSolver(RigidBodySolver solver)
 {
   return solver == RigidBodySolver::Vbd || solver == RigidBodySolver::Avbd;
@@ -3773,6 +3788,39 @@ std::uint8_t encodeRigidBodySolver(RigidBodySolver solver)
   DART_SIMULATION_THROW_T( // LCOV_EXCL_LINE
       InvalidArgumentException, "Rigid-body solver is invalid");
   return 0u;
+}
+
+//==============================================================================
+std::uint8_t encodeRigidAvbdParameterProfile(RigidAvbdParameterProfile profile)
+{
+  switch (profile) {
+    case RigidAvbdParameterProfile::Paper2025Table2:
+      return 0u;
+    case RigidAvbdParameterProfile::SourceDemo2d:
+      return 1u;
+    case RigidAvbdParameterProfile::SourceDemo3d:
+      return 2u;
+  }
+  DART_SIMULATION_THROW_T( // LCOV_EXCL_LINE
+      InvalidArgumentException, "Rigid AVBD parameter profile is invalid");
+  return 0u;
+}
+
+//==============================================================================
+RigidAvbdParameterProfile decodeRigidAvbdParameterProfile(std::uint8_t value)
+{
+  switch (value) {
+    case 0u:
+      return RigidAvbdParameterProfile::Paper2025Table2;
+    case 1u:
+      return RigidAvbdParameterProfile::SourceDemo2d;
+    case 2u:
+      return RigidAvbdParameterProfile::SourceDemo3d;
+  }
+  DART_SIMULATION_THROW_T(
+      InvalidArgumentException,
+      "Serialized World rigid AVBD parameter profile value is invalid");
+  return RigidAvbdParameterProfile::Paper2025Table2;
 }
 
 //==============================================================================
@@ -5891,6 +5939,7 @@ World::World(const WorldOptions& options)
     m_storage(makeWorldStorage(m_memoryManager)),
     m_gravity(options.gravity),
     m_rigidBodySolver(options.rigidBodySolver),
+    m_rigidAvbdParameterProfile(options.rigidAvbdParameterProfile),
     m_rigidConstraintOptions(options.rigidConstraintOptions),
     m_rigidCollisionCapacityOptions(options.rigidCollisionCapacityOptions),
     m_timeStep(options.timeStep),
@@ -6547,16 +6596,36 @@ compute::ResolvedSolverConfiguration World::buildResolvedConfiguration(
   resolvedConfiguration.notes.push_back(
       {"rigid-body", rigidSolver, rigidSolver, "as requested"});
   if (m_rigidBodySolver == RigidBodySolver::Avbd) {
-    const auto& profile = detail::deformable_vbd::kAvbdRigidPaper2025Profile;
+    const auto& profile = detail::deformable_vbd::avbdRigidParameterProfileFor(
+        m_rigidAvbdParameterProfile);
+    const char* profileName
+        = detail::deformable_vbd::avbdRigidParameterProfileName(
+            m_rigidAvbdParameterProfile);
     resolvedConfiguration.notes.push_back(
         {"rigid-avbd-parameter-profile",
-         "paper-2025-table-2",
-         "paper-2025-table-2",
-         std::format(
-             "immutable public AVBD parameters: alpha={}, beta={}, gamma={}",
-             profile.alpha,
-             profile.beta,
-             profile.gamma)});
+         profileName,
+         profileName,
+         profile.postStabilize
+             ? std::format(
+                   "immutable public AVBD parameters: alpha={:g}, beta={:g}, "
+                   "gamma={:g}, post-stabilization",
+                   profile.alpha,
+                   profile.beta,
+                   profile.gamma)
+         : profile.betaAngular != profile.beta
+             ? std::format(
+                   "immutable public AVBD parameters: alpha={:g}, beta={:g}, "
+                   "betaAngular={:g}, gamma={:g}",
+                   profile.alpha,
+                   profile.beta,
+                   profile.betaAngular,
+                   profile.gamma)
+             : std::format(
+                   "immutable public AVBD parameters: alpha={:g}, beta={:g}, "
+                   "gamma={:g}",
+                   profile.alpha,
+                   profile.beta,
+                   profile.gamma)});
   }
 
   const char* contactMethod = "unknown";
@@ -8345,6 +8414,38 @@ void World::setRigidBodySolver(RigidBodySolver solver)
 RigidBodySolver World::getRigidBodySolver() const noexcept
 {
   return m_rigidBodySolver;
+}
+
+//==============================================================================
+void World::setRigidAvbdParameterProfile(RigidAvbdParameterProfile profile)
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValidRigidAvbdParameterProfile(profile),
+      InvalidArgumentException,
+      "Rigid AVBD parameter profile is invalid");
+  if (m_rigidAvbdParameterProfile == profile) {
+    return;
+  }
+  const RigidAvbdParameterProfile previousProfile = m_rigidAvbdParameterProfile;
+  if (!m_simulationMode) {
+    m_rigidAvbdParameterProfile = profile;
+    return;
+  }
+  applyPreparedConfigurationTransactionally(
+      [&] { m_rigidAvbdParameterProfile = profile; },
+      [&] { m_rigidAvbdParameterProfile = previousProfile; });
+  // The persisted duals and penalty stiffnesses were produced under the
+  // previous profile's warm-start and ramp schedule, so no row may inherit
+  // them under the new one. Commit the infallible cold start only after the
+  // complete transition succeeds.
+  m_stepPipelineCache->stages.rigidBodyContact
+      .clearAvbdWarmStartContinuationState();
+}
+
+//==============================================================================
+RigidAvbdParameterProfile World::getRigidAvbdParameterProfile() const noexcept
+{
+  return m_rigidAvbdParameterProfile;
 }
 
 //==============================================================================
@@ -10955,6 +11056,7 @@ void World::restoreReplayFrame(std::size_t index)
     m_simulationMode = replayFrame.simulationMode;
     m_gravity = replayFrame.gravity;
     m_rigidBodySolver = replayFrame.rigidBodySolver;
+    m_rigidAvbdParameterProfile = replayFrame.rigidAvbdParameterProfile;
     m_rigidConstraintOptions = validateRigidConstraintOptions(
         RigidConstraintOptions{
             .iterations = replayFrame.rigidConstraintIterations,
@@ -11175,6 +11277,7 @@ void World::recordReplayFrame()
   replayFrame.simulationMode = m_simulationMode;
   replayFrame.gravity = m_gravity;
   replayFrame.rigidBodySolver = m_rigidBodySolver;
+  replayFrame.rigidAvbdParameterProfile = m_rigidAvbdParameterProfile;
   replayFrame.rigidConstraintIterations = m_rigidConstraintOptions.iterations;
   replayFrame.timeStep = m_timeStep;
   replayFrame.differentiable = m_differentiable;
@@ -11977,6 +12080,8 @@ void World::saveBinary(std::ostream& output) const
 
   io::writePOD(output, m_rigidConstraintOptions.iterations);
   io::writePOD(output, m_rigidIpcAdaptiveBarrierStiffnessLowerBound);
+  io::writePOD(
+      output, encodeRigidAvbdParameterProfile(m_rigidAvbdParameterProfile));
 }
 
 //==============================================================================
@@ -12301,6 +12406,17 @@ void World::loadBinary(std::istream& input)
             "bound is invalid");
         m_rigidIpcAdaptiveBarrierStiffnessLowerBound
             = rigidIpcAdaptiveBarrierStiffnessLowerBound;
+      }
+
+      if (formatVersion >= 36) {
+        std::uint8_t rigidAvbdParameterProfile = 0u;
+        readRequiredWorldMetadataPOD(
+            input, rigidAvbdParameterProfile, "rigid AVBD parameter profile");
+        m_rigidAvbdParameterProfile
+            = decodeRigidAvbdParameterProfile(rigidAvbdParameterProfile);
+      } else {
+        m_rigidAvbdParameterProfile
+            = RigidAvbdParameterProfile::Paper2025Table2;
       }
     }
 

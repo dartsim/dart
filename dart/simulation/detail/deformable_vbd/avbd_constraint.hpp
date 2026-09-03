@@ -81,10 +81,16 @@ inline AvbdScalarRowState warmStartAvbdHardConstraint(
     double startStiffness,
     double alpha,
     double gamma,
-    double maxStiffness = std::numeric_limits<double>::infinity())
+    double maxStiffness = std::numeric_limits<double>::infinity(),
+    double lambdaRetention = std::numeric_limits<double>::quiet_NaN())
 {
   AvbdScalarRowState next;
-  next.lambda = alpha * gamma * previous.lambda;
+  // Equation 19 decays the dual by alpha * gamma. A post-stabilized schedule
+  // keeps the full dual instead (the reference source's `postStabilize`
+  // branch), which callers express through a finite retention factor.
+  next.lambda
+      = (std::isfinite(lambdaRetention) ? lambdaRetention : alpha * gamma)
+        * previous.lambda;
   const double lower = std::min(startStiffness, maxStiffness);
   next.stiffness = std::clamp(gamma * previous.stiffness, lower, maxStiffness);
   return next;

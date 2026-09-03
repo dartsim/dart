@@ -45,6 +45,7 @@
 #include <dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp>
 #include <dart/simulation/detail/rigid_pair_constraint.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
+#include <dart/simulation/world_options.hpp>
 
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
@@ -247,6 +248,10 @@ struct AvbdRigidWorldContactSnapshot
   EntityBodyIndexMap entityBodyIndices;
   BodyStateVector states;
   BodyStateVector inertialTargets;
+  /// Poses after the last full iteration when a post-stabilization sweep
+  /// moved `states` afterwards; the step velocities are taken from these so
+  /// the positional correction injects no momentum. Empty otherwise.
+  BodyStateVector velocityStates;
   DoubleVector masses;
   MatrixVector bodyInertias;
   ByteVector fixed;
@@ -303,6 +308,11 @@ struct AvbdRigidWorldContactSolveOptions
       .alpha = AvbdRowWarmStartOptions{}.alpha};
   AvbdRigidBlockDescentOptions descent;
   Formulation formulation = Formulation::AugmentedLagrangian;
+  /// One extra primal-only sweep with alpha 0 after the step velocities are
+  /// taken, so the full pre-existing constraint error is removed from the
+  /// positions without injecting momentum (the reference source's
+  /// `postStabilize`).
+  bool postStabilize = false;
 };
 
 /// Source-defined solver-wide AVBD parameters from Table 2 of Giles, Diaz,
@@ -312,28 +322,92 @@ struct AvbdRigidWorldContactSolveOptions
 struct AvbdRigidParameterProfile
 {
   double beta = 10.0;
+  double betaAngular = 10.0;
   double alpha = 0.95;
   double gamma = 0.99;
+  bool postStabilize = false;
 };
 
 inline constexpr AvbdRigidParameterProfile kAvbdRigidPaper2025Profile{};
+
+/// Defaults of the pinned `avbd-demo2d` source (74699a11f858, `solver.cpp`):
+/// beta 1e5, alpha 0.99, gamma 0.99, post-stabilization on. With
+/// post-stabilization the source runs its main sweeps with alpha 1, keeps the
+/// full dual across steps, and removes the positional error in one extra
+/// primal-only sweep after the velocities are taken.
+inline constexpr AvbdRigidParameterProfile kAvbdRigidSourceDemo2dProfile{
+    .beta = 100000.0,
+    .betaAngular = 100000.0,
+    .alpha = 0.99,
+    .gamma = 0.99,
+    .postStabilize = true};
+
+/// Defaults of the pinned `avbd-demo3d` source (7701bd427d55, `solver.cpp`):
+/// betaLin 1e4, betaAng 100, alpha 0.99, gamma 0.999, no post-stabilization.
+inline constexpr AvbdRigidParameterProfile kAvbdRigidSourceDemo3dProfile{
+    .beta = 10000.0,
+    .betaAngular = 100.0,
+    .alpha = 0.99,
+    .gamma = 0.999,
+    .postStabilize = false};
+
+//==============================================================================
+inline const AvbdRigidParameterProfile& avbdRigidParameterProfileFor(
+    ::dart::simulation::RigidAvbdParameterProfile profile) noexcept
+{
+  switch (profile) {
+    case ::dart::simulation::RigidAvbdParameterProfile::SourceDemo2d:
+      return kAvbdRigidSourceDemo2dProfile;
+    case ::dart::simulation::RigidAvbdParameterProfile::SourceDemo3d:
+      return kAvbdRigidSourceDemo3dProfile;
+    case ::dart::simulation::RigidAvbdParameterProfile::Paper2025Table2:
+      break;
+  }
+  return kAvbdRigidPaper2025Profile;
+}
+
+//==============================================================================
+inline const char* avbdRigidParameterProfileName(
+    ::dart::simulation::RigidAvbdParameterProfile profile) noexcept
+{
+  switch (profile) {
+    case ::dart::simulation::RigidAvbdParameterProfile::SourceDemo2d:
+      return "source-demo-2d";
+    case ::dart::simulation::RigidAvbdParameterProfile::SourceDemo3d:
+      return "source-demo-3d";
+    case ::dart::simulation::RigidAvbdParameterProfile::Paper2025Table2:
+      break;
+  }
+  return "paper-2025-table-2";
+}
 
 //==============================================================================
 inline void applyAvbdRigidParameterProfile(
     AvbdRigidWorldContactSolveOptions& options,
     const AvbdRigidParameterProfile& profile)
 {
-  options.warmStart.alpha = profile.alpha;
+  // A post-stabilized schedule ignores every pre-existing constraint error in
+  // its main sweeps (alpha 1) and keeps the full dual across steps; the
+  // positional error is removed by the extra primal-only sweep instead.
+  const double sweepAlpha = profile.postStabilize ? 1.0 : profile.alpha;
+  const double lambdaRetention
+      = profile.postStabilize ? 1.0 : std::numeric_limits<double>::quiet_NaN();
+  options.warmStart.alpha = sweepAlpha;
   options.warmStart.gamma = profile.gamma;
-  options.row.alpha = profile.alpha;
+  options.warmStart.lambdaRetention = lambdaRetention;
+  options.row.alpha = sweepAlpha;
   options.row.beta = profile.beta;
+  options.row.angularBeta = profile.betaAngular;
   options.distanceSpring.beta = profile.beta;
-  options.contactWarmStart.alpha = profile.alpha;
+  options.contactWarmStart.alpha = sweepAlpha;
   options.contactWarmStart.gamma = profile.gamma;
-  options.contactRow.alpha = profile.alpha;
+  options.contactWarmStart.lambdaRetention = lambdaRetention;
+  options.contactRow.alpha = sweepAlpha;
   options.contactRow.beta = profile.beta;
-  options.friction.alpha = profile.alpha;
+  options.contactRow.angularBeta = profile.betaAngular;
+  options.friction.alpha = sweepAlpha;
   options.friction.beta = profile.beta;
+  options.postStabilize = profile.postStabilize;
 }
 
 struct AvbdRigidWorldContactSolveResult
@@ -2572,6 +2646,45 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       distanceSpringRows,
       options.distanceSpring,
       rowUpdateExecutor);
+  snapshot.velocityStates.clear();
+  if (options.postStabilize) {
+    // Reference `postStabilize`: the velocities come from the poses the full
+    // iterations produced; one more primal-only sweep with alpha 0 then
+    // removes the whole pre-existing constraint error from the positions
+    // without touching any persisted row state.
+    snapshot.velocityStates.assign(
+        snapshot.states.begin(), snapshot.states.end());
+    AvbdRigidBlockDescentOptions stabilizationDescent = options.descent;
+    stabilizationDescent.iterations = 1;
+    stabilizationDescent.convergenceDisplacement = 0.0;
+    stabilizationDescent.updateRows = false;
+    stabilizationDescent.regularizationAlphaOverride = 0.0;
+    const AvbdRigidBlockDescentStats stabilizationStats
+        = blockDescentRigidBodiesAvbdRows(
+            std::span<AvbdRigidBodyState>{
+                snapshot.states.data(), snapshot.states.size()},
+            std::span<const double>{
+                snapshot.masses.data(), snapshot.masses.size()},
+            std::span<const Eigen::Matrix3d>{
+                snapshot.bodyInertias.data(), snapshot.bodyInertias.size()},
+            std::span<const std::uint8_t>{
+                snapshot.fixed.data(), snapshot.fixed.size()},
+            inertialTargets,
+            timeStep,
+            attachmentRows,
+            *solvePointPairRows,
+            *solveAngularRows,
+            frictionRows,
+            stabilizationDescent,
+            options.row,
+            frictionOptions,
+            &scratch.rowIndexScratch,
+            distanceSpringRows,
+            options.distanceSpring,
+            rowUpdateExecutor);
+    result.stats.iterations += stabilizationStats.iterations;
+    result.stats.bodyUpdates += stabilizationStats.bodyUpdates;
+  }
 
   for (std::size_t i = 0; i < normalRowCount && i < normalInventory.size();
        ++i) {
@@ -2921,7 +3034,14 @@ applyAvbdRigidWorldContactVelocityProjection(
       continue;
     }
 
-    const AvbdRigidBodyState& state = snapshot.states[body];
+    // A post-stabilization sweep only corrects positions: the velocities are
+    // the BDF1 rates of the poses the full iterations produced.
+    const bool hasVelocityStates
+        = snapshot.velocityStates.size() == snapshot.states.size()
+          && snapshot.velocityStates[body].position.allFinite();
+    const AvbdRigidBodyState& state = hasVelocityStates
+                                          ? snapshot.velocityStates[body]
+                                          : snapshot.states[body];
     if (!state.position.allFinite()) {
       continue;
     }
@@ -2938,6 +3058,61 @@ applyAvbdRigidWorldContactVelocityProjection(
   }
 
   return result;
+}
+
+//==============================================================================
+/// Apply a post-stabilization sweep's positional correction directly to the
+/// body transforms, the way the Sequential Impulse family applies its
+/// non-velocity stabilization: the velocity projection above already took the
+/// step velocities from the pre-stabilization poses, and the position stage
+/// integrates those velocities on top of the corrected transforms, so the
+/// bodies end at the stabilized poses without any injected momentum.
+inline std::size_t applyAvbdRigidWorldContactPostStabilization(
+    ::dart::simulation::detail::WorldRegistry& registry,
+    const AvbdRigidWorldContactSnapshot& snapshot)
+{
+  if (snapshot.velocityStates.size() != snapshot.states.size()) {
+    return 0u;
+  }
+  std::size_t corrected = 0u;
+  const std::size_t bodyCount = std::min(
+      {snapshot.entities.size(),
+       snapshot.states.size(),
+       snapshot.fixed.size()});
+  for (std::size_t body = 0; body < bodyCount; ++body) {
+    if (snapshot.fixed[body] != 0u) {
+      continue;
+    }
+    const entt::entity entity = snapshot.entities[body];
+    if (entity == entt::null || !registry.valid(entity)) {
+      continue;
+    }
+    auto* transform = registry.try_get<comps::Transform>(entity);
+    if (transform == nullptr) {
+      continue;
+    }
+    const AvbdRigidBodyState& stabilized = snapshot.states[body];
+    const AvbdRigidBodyState& velocityState = snapshot.velocityStates[body];
+    if (!stabilized.position.allFinite()
+        || !velocityState.position.allFinite()) {
+      continue;
+    }
+    const Eigen::Vector3d displacement
+        = stabilized.position - velocityState.position;
+    const Eigen::Quaterniond rotation
+        = normalizeAvbdRigidOrientation(stabilized.orientation)
+          * normalizeAvbdRigidOrientation(velocityState.orientation)
+                .conjugate();
+    if (displacement.isZero(0.0)
+        && rotation.isApprox(Eigen::Quaterniond::Identity(), 0.0)) {
+      continue;
+    }
+    transform->position += displacement;
+    transform->orientation = normalizeAvbdRigidOrientation(
+        rotation * normalizeAvbdRigidOrientation(transform->orientation));
+    ++corrected;
+  }
+  return corrected;
 }
 
 //==============================================================================
@@ -3008,14 +3183,25 @@ applyAvbdRigidWorldContactSnapshotWithStack(
     const Eigen::Vector3d oldPosition = transform->position;
     const Eigen::Quaterniond newOrientation
         = normalizeAvbdRigidOrientation(state.orientation);
+    // A post-stabilization sweep only corrects positions: the velocities are
+    // the BDF1 rates of the poses the full iterations produced.
+    const bool hasVelocityStates
+        = snapshot.velocityStates.size() == snapshot.states.size()
+          && snapshot.velocityStates[body].position.allFinite();
+    const AvbdRigidBodyState& velocityState
+        = hasVelocityStates ? snapshot.velocityStates[body] : state;
+    const Eigen::Quaterniond velocityOrientation
+        = hasVelocityStates
+              ? normalizeAvbdRigidOrientation(velocityState.orientation)
+              : newOrientation;
 
     transform->position = state.position;
     transform->orientation = newOrientation;
     if (updateVelocity) {
-      velocity->linear = (state.position - oldPosition) / timeStep;
-      velocity->angular
-          = avbdRigidRotationVector(newOrientation * oldOrientation.conjugate())
-            / timeStep;
+      velocity->linear = (velocityState.position - oldPosition) / timeStep;
+      velocity->angular = avbdRigidRotationVector(
+                              velocityOrientation * oldOrientation.conjugate())
+                          / timeStep;
     }
 
     if (auto* props = registry.try_get<comps::FreeFrameProperties>(entity)) {

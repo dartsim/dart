@@ -1506,20 +1506,18 @@ owning code, never as standalone doc or cleanup PRs.
   (measured at roughly a quarter of a 201-box step). Memoize against a
   world state version or let `execute` consume the preflight span once no
   intervening stage can move a body.
-- Named AVBD parameter profiles (open P1 of the foundation PR): the public
-  family hard-codes the paper's Table 2 mode, under which a penetrating
-  contact recovers 5 % per step while its dual collapses and the Coulomb
-  cone (`mu * lambda_n`) stays empty, so bodies slide without friction until
-  the recovery ends; the audit ladder introduced it and the six AVBD
-  source-row demo tests are parked as strict expected failures. Add
-  `source-demo-2d` (alpha 0.99, beta 1e5, gamma 0.99, post-stabilization
-  with the full lambda warm start, as `avbd-demo2d` `74699a11f858`) and
-  `source-demo-3d` (alpha 0.99, betaLin 1e4, betaAng 100, gamma 0.999, as
-  `avbd-demo3d` `7701bd427d55`) beside the immutable `paper-2025-table-2`
-  default, implement post-stabilization (one primal-only sweep with alpha 0
-  after the velocities are taken), bind the selection into the replay and
-  resolved-configuration contracts and dartpy, switch the source-demo
-  scenes, and re-derive the six rows.
+- Re-derive the AVBD source-demo ports and rows (open finding E of the
+  foundation PR). The public family now selects a named parameter profile
+  (`paper-2025-table-2`, `source-demo-2d` with the reference's
+  post-stabilization, `source-demo-3d` with the split angular ramp) and the
+  31 source-demo scenes run their reference profile, which removed most of
+  the audit-ladder regression (heavy-rope endpoint error 0.40 -> 0.13 m) but
+  seven source-row tests still miss thresholds that were calibrated against
+  the pre-audit private contact configuration, and the 3D ports start their
+  boxes 0.13 m inside the ramp because `CollisionShape::makeBox` takes half
+  extents. Fix the placements, compare each row with the pinned reference
+  scene (`avbd-demo2d` 74699a11f858, `avbd-demo3d` 7701bd427d55), and
+  re-derive the seven parked thresholds from that comparison.
 - Memoize the rigid block kernel's per-body-visit world points, orientation
   errors, and SO(3) left-Jacobian inverse. The zero-trust audit ladder
   (`99c1f411d7f`..`2760f9bb496`) made the public AVBD and VBD Figure 13

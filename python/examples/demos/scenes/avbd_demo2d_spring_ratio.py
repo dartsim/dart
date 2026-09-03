@@ -143,6 +143,7 @@ def build() -> SceneSetup:
         time_step=_TIME_STEP,
         gravity=(0.0, _GRAVITY, 0.0),
         rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
     )
 
     links: list[sx.RigidBody] = []

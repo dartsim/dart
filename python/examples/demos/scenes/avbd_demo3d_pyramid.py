@@ -123,6 +123,7 @@ def build() -> SceneSetup:
         time_step=_TIME_STEP,
         gravity=(0.0, 0.0, _GRAVITY),
         rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_3D,
     )
 
     ground = _add_source_box(

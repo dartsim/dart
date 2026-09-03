@@ -197,12 +197,14 @@ constexpr std::size_t kComputeAcceleratorPolicyTailBytes = sizeof(std::uint8_t);
 constexpr std::size_t kDifferentiableParameterTailBytes = sizeof(std::size_t);
 constexpr std::size_t kRigidConstraintIterationTailBytes = sizeof(std::size_t);
 constexpr std::size_t kRigidIpcLowerBoundTailBytes = sizeof(double);
+constexpr std::size_t kRigidAvbdParameterProfileTailBytes
+    = sizeof(std::uint8_t);
 constexpr std::size_t kWorldOptionTailBytes
     = sizeof(std::uint8_t) + kSolverOptionTailBytes
       + kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
       + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes
       + kDifferentiableParameterTailBytes + kRigidConstraintIterationTailBytes
-      + kRigidIpcLowerBoundTailBytes;
+      + kRigidIpcLowerBoundTailBytes + kRigidAvbdParameterProfileTailBytes;
 
 dart::simulation::JointSpec makeJointSpec(
     std::string_view name,
@@ -718,7 +720,8 @@ TEST(Serialization, LoadBinaryRejectsInvalidWorldMetadataTransactionally)
 
   ASSERT_GE(sourceBytes.size(), sizeof(double));
   const std::size_t rigidIpcLowerBoundOffset
-      = sourceBytes.size() - sizeof(double);
+      = sourceBytes.size() - kRigidAvbdParameterProfileTailBytes
+        - sizeof(double);
   ASSERT_DOUBLE_EQ(
       readPODAt<double>(sourceBytes, rigidIpcLowerBoundOffset), 1.0);
   expectRejectedTransactionally(
@@ -2142,6 +2145,32 @@ TEST(Serialization, PreservesPublicAvbdSolverFamily)
   EXPECT_EQ(
       world2.getContactSolverMethod(),
       sx::ContactSolverMethod::SequentialImpulse);
+  EXPECT_EQ(
+      world2.getRigidAvbdParameterProfile(),
+      sx::RigidAvbdParameterProfile::Paper2025Table2);
+}
+
+//==============================================================================
+TEST(Serialization, RoundTripsSelectedRigidAvbdParameterProfile)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::SourceDemo3d;
+  sx::World world1(options);
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_EQ(world2.getRigidBodySolver(), sx::RigidBodySolver::Avbd);
+  EXPECT_EQ(
+      world2.getRigidAvbdParameterProfile(),
+      sx::RigidAvbdParameterProfile::SourceDemo3d);
 }
 
 TEST(Serialization, PreservesPublicVbdSolverFamily)
@@ -2180,7 +2209,7 @@ TEST(Serialization, RejectsMissingRigidConstraintIterationBudget)
       kRigidConstraintIterationTailBytes + kRigidIpcLowerBoundTailBytes);
   serialized.resize(
       serialized.size() - kRigidConstraintIterationTailBytes
-      - kRigidIpcLowerBoundTailBytes);
+      - kRigidIpcLowerBoundTailBytes - kRigidAvbdParameterProfileTailBytes);
   constexpr std::uint32_t rigidConstraintFormatVersion = 29u;
   std::memcpy(
       serialized.data() + sizeof(std::uint32_t),
@@ -2209,7 +2238,7 @@ TEST(Serialization, RejectsAvbdSolverInPreAvbdFormat)
           + kRigidIpcLowerBoundTailBytes);
   serialized.resize(
       serialized.size() - kRigidConstraintIterationTailBytes
-      - kRigidIpcLowerBoundTailBytes);
+      - kRigidIpcLowerBoundTailBytes - kRigidAvbdParameterProfileTailBytes);
   constexpr std::uint32_t legacyVersion = 28u;
   std::memcpy(
       serialized.data() + sizeof(std::uint32_t),
@@ -2260,7 +2289,8 @@ TEST(Serialization, RejectsNonDefaultRigidConstraintOptionsForIpc)
       kRigidConstraintIterationTailBytes + kRigidIpcLowerBoundTailBytes);
   const std::size_t nonDefaultIterations = 20u;
   std::memcpy(
-      serialized.data() + serialized.size() - kRigidIpcLowerBoundTailBytes
+      serialized.data() + serialized.size()
+          - kRigidAvbdParameterProfileTailBytes - kRigidIpcLowerBoundTailBytes
           - kRigidConstraintIterationTailBytes,
       &nonDefaultIterations,
       sizeof(nonDefaultIterations));
@@ -2284,7 +2314,7 @@ TEST(Serialization, RejectsAvbdSolverForLoadedMultibodyTopology)
       = kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
         + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes
         + kDifferentiableParameterTailBytes + kRigidConstraintIterationTailBytes
-        + kRigidIpcLowerBoundTailBytes;
+        + kRigidIpcLowerBoundTailBytes + kRigidAvbdParameterProfileTailBytes;
   ASSERT_GE(serialized.size(), solverSuffixBytes + kSolverOptionTailBytes);
   serialized[serialized.size() - solverSuffixBytes - kSolverOptionTailBytes]
       = static_cast<char>(2u);
@@ -2488,27 +2518,30 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
       = kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
         + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes
         + kDifferentiableParameterTailBytes + kRigidConstraintIterationTailBytes
-        + kRigidIpcLowerBoundTailBytes;
+        + kRigidIpcLowerBoundTailBytes + kRigidAvbdParameterProfileTailBytes;
   ASSERT_GE(validRecord.size(), solverSuffixBytes + kSolverOptionTailBytes);
   expectInvalidByte(solverSuffixBytes + 4u); // rigid-body solver
   expectInvalidByte(solverSuffixBytes + 3u); // contact solver method
   expectInvalidByte(solverSuffixBytes + 2u); // contact gradient mode
   expectInvalidByte(solverSuffixBytes + 1u); // multibody integration method
+  expectInvalidByte(1u);                     // rigid AVBD parameter profile
 
-  const auto expectInvalidTailField
-      = [&](std::size_t offsetFromStart, const void* value, std::size_t size) {
-          auto corruptRecord = validRecord;
-          std::memcpy(corruptRecord.data() + offsetFromStart, value, size);
+  const auto expectInvalidTailField =
+      [&](std::size_t offsetFromStart, const void* value, std::size_t size) {
+        SCOPED_TRACE("tail field at offset " + std::to_string(offsetFromStart));
+        auto corruptRecord = validRecord;
+        std::memcpy(corruptRecord.data() + offsetFromStart, value, size);
 
-          std::stringstream input(corruptRecord);
-          sx::World loaded;
-          EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
-        };
+        std::stringstream input(corruptRecord);
+        sx::World loaded;
+        EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
+      };
 
   const std::size_t deactivationOffset
-      = validRecord.size() - kRigidIpcLowerBoundTailBytes
-        - kRigidConstraintIterationTailBytes - kDifferentiableParameterTailBytes
-        - kComputeAcceleratorPolicyTailBytes - kDeactivationOptionTailBytes;
+      = validRecord.size() - kRigidAvbdParameterProfileTailBytes
+        - kRigidIpcLowerBoundTailBytes - kRigidConstraintIterationTailBytes
+        - kDifferentiableParameterTailBytes - kComputeAcceleratorPolicyTailBytes
+        - kDeactivationOptionTailBytes;
   const std::size_t toleranceOffset = deactivationOffset - sizeof(double);
   const std::size_t iterationOffset = toleranceOffset - sizeof(std::size_t);
   const std::size_t invalidIterations = 0u;
@@ -2519,8 +2552,9 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
       toleranceOffset, &invalidTolerance, sizeof(invalidTolerance));
 
   const std::size_t computePolicyOffset
-      = validRecord.size() - kRigidIpcLowerBoundTailBytes
-        - kRigidConstraintIterationTailBytes - kDifferentiableParameterTailBytes
+      = validRecord.size() - kRigidAvbdParameterProfileTailBytes
+        - kRigidIpcLowerBoundTailBytes - kRigidConstraintIterationTailBytes
+        - kDifferentiableParameterTailBytes
         - kComputeAcceleratorPolicyTailBytes;
   const std::uint8_t invalidComputePolicy = 99u;
   expectInvalidTailField(
@@ -2528,8 +2562,8 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
 
   const std::size_t invalidRigidConstraintIterations = 0u;
   expectInvalidTailField(
-      validRecord.size() - kRigidIpcLowerBoundTailBytes
-          - kRigidConstraintIterationTailBytes,
+      validRecord.size() - kRigidAvbdParameterProfileTailBytes
+          - kRigidIpcLowerBoundTailBytes - kRigidConstraintIterationTailBytes,
       &invalidRigidConstraintIterations,
       sizeof(invalidRigidConstraintIterations));
 }
@@ -4307,7 +4341,9 @@ TEST(Serialization, RigidIpcCheckpointPreservesAdaptiveContinuation)
   const std::string checkpointBytes = checkpoint.str();
   ASSERT_GE(checkpointBytes.size(), sizeof(double));
   const double serializedLowerBound = readPODAt<double>(
-      checkpointBytes, checkpointBytes.size() - sizeof(double));
+      checkpointBytes,
+      checkpointBytes.size() - kRigidAvbdParameterProfileTailBytes
+          - sizeof(double));
   ASSERT_TRUE(std::isfinite(serializedLowerBound));
   ASSERT_GT(serializedLowerBound, 1.0)
       << "the checkpoint scene must exercise adaptive IPC continuation";
@@ -4323,7 +4359,8 @@ TEST(Serialization, RigidIpcCheckpointPreservesAdaptiveContinuation)
   EXPECT_DOUBLE_EQ(
       readPODAt<double>(
           immediateRoundTripBytes,
-          immediateRoundTripBytes.size() - sizeof(double)),
+          immediateRoundTripBytes.size() - kRigidAvbdParameterProfileTailBytes
+              - sizeof(double)),
       serializedLowerBound);
 
   original.step();
@@ -4345,10 +4382,13 @@ TEST(Serialization, RigidIpcCheckpointPreservesAdaptiveContinuation)
   ASSERT_GE(loadedAfterStepBytes.size(), sizeof(double));
   EXPECT_DOUBLE_EQ(
       readPODAt<double>(
-          loadedAfterStepBytes, loadedAfterStepBytes.size() - sizeof(double)),
+          loadedAfterStepBytes,
+          loadedAfterStepBytes.size() - kRigidAvbdParameterProfileTailBytes
+              - sizeof(double)),
       readPODAt<double>(
           originalAfterStepBytes,
-          originalAfterStepBytes.size() - sizeof(double)));
+          originalAfterStepBytes.size() - kRigidAvbdParameterProfileTailBytes
+              - sizeof(double)));
 }
 
 //==============================================================================

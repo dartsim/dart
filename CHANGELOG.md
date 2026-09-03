@@ -202,8 +202,14 @@ compatibility remains on the active DART 6 LTS branch._
   projected onto their Coulomb cone, multi-point contact manifolds keep their
   continuation across small per-step motion, and compatibility distance
   springs keep one paper-profile schedule across solver-family crossings.
-  Machine-checked row-bound evidence contracts keep full CPU/CUDA paper parity
-  explicitly open. ([#3432](https://github.com/dartsim/dart/pull/3432))
+  The public AVBD family selects one named, immutable parameter profile
+  (`RigidAvbdParameterProfile`: the paper's Table 2 by default, or the pinned
+  2D/3D reference-demo defaults, the 2D one with the reference's
+  post-stabilization sweep), records it in the resolved configuration, and
+  binds it into replay and binary checkpoints (format 36); the source-demo
+  scenes select their own reference profile. Machine-checked row-bound
+  evidence contracts keep full CPU/CUDA paper parity explicitly open.
+  ([#3432](https://github.com/dartsim/dart/pull/3432))
 - Added bounded, fail-closed DART 7 contact storage: `World` construction
   options cap the baked rigid collision candidate-pair and contact buffers
   (automatic limits reject at the complete shape-pair envelope while reserving

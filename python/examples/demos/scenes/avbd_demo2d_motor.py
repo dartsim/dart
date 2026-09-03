@@ -90,6 +90,7 @@ def build() -> SceneSetup:
         time_step=_TIME_STEP,
         gravity=(0.0, _GRAVITY, 0.0),
         rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
     )
 
     ground = world.add_rigid_body("avbd_demo2d_motor_ground", position=tuple(_GROUND_POS))

@@ -280,6 +280,9 @@ struct AvbdRowWarmStartOptions
 {
   double alpha = 0.99;
   double gamma = 0.99;
+  /// Finite: the dual is scaled by this factor instead of alpha * gamma (a
+  /// post-stabilized schedule keeps it fully with 1.0). NaN: Equation 19.
+  double lambdaRetention = std::numeric_limits<double>::quiet_NaN();
   double maxStiffness = std::numeric_limits<double>::infinity();
 };
 
@@ -328,7 +331,8 @@ inline AvbdScalarRowState warmStartAvbdScalarRowState(
         descriptor.startStiffness,
         options.alpha,
         options.gamma,
-        maxStiffness);
+        maxStiffness,
+        options.lambdaRetention);
   }
 
   AvbdScalarRowState next;

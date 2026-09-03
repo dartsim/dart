@@ -6693,6 +6693,42 @@ def test_simulation_rigid_collision_capacity_options():
     assert automatic.rigid_collision_contact_capacity == 4
 
 
+def test_simulation_world_rigid_avbd_parameter_profile_selector():
+    sx = _simulation()
+
+    default = sx.World(rigid_body_solver=sx.RigidBodySolver.AVBD)
+    assert (
+        default.rigid_avbd_parameter_profile
+        == sx.RigidAvbdParameterProfile.PAPER_2025_TABLE_2
+    )
+
+    configured = sx.World(
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+    )
+    assert (
+        configured.rigid_avbd_parameter_profile
+        == sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D
+    )
+    configured.rigid_avbd_parameter_profile = (
+        sx.RigidAvbdParameterProfile.SOURCE_DEMO_3D
+    )
+    assert (
+        configured.rigid_avbd_parameter_profile
+        == sx.RigidAvbdParameterProfile.SOURCE_DEMO_3D
+    )
+    # The profile is a property of the world, not of the solver family, so a
+    # Sequential Impulse world keeps the selection for a later crossing.
+    crossing = sx.World(
+        rigid_body_solver=sx.RigidBodySolver.SEQUENTIAL_IMPULSE,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+    )
+    assert (
+        crossing.rigid_avbd_parameter_profile
+        == sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D
+    )
+
+
 def test_simulation_multibody_options_selector():
     sx = _simulation()
 
