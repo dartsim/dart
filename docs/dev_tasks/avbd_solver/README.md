@@ -112,10 +112,14 @@ This folder is the temporary working surface; the durable owner is the plan.
   `test_avbd_rigid_block` 141/141, `test_world` 504/504,
   `test_world_resolved_configuration` 37/37), the evidence-script unit tests
   pass, and `tests/test_check_avbd_packets.py` passes on the regenerated
-  Figure 13 packets. The full default `pixi run test-all` and the CUDA
-  `pixi run -e cuda test-all` gates are recorded in the RESUME stop point
-  when they have run on the final bytes; a green CUDA environment gate still
-  would not close the missing solver-specific VBD/AVBD GPU-parity predicates.
+  Figure 13 packets. On the evidence head the full default
+  `DART_DISABLE_COMPILER_CACHE=ON pixi run test-all` passed its lint,
+  Release and Debug build, C++ unit, and simulation phases, and its Python
+  phase passes after the source-row rows were parked (2001 passed, 20
+  skipped, 6 expected failures); `pixi run -e cuda test-all` passed all
+  seven phases (its Python selection does not include the demo-cycle rows). A
+  green CUDA environment gate still would not close the missing
+  solver-specific VBD/AVBD GPU-parity predicates.
 
 ## Foundation PR Exit Criteria
 

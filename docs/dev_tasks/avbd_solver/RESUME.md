@@ -15,19 +15,33 @@ This file owns only the exact branch/session stop point and takeover sequence.
 > its own lazily mapped modules), `e5224b016c7` (AVBD Figure 13 oracle
 > re-derived for the paper-profile outcome), `7d340dc7c4e`, `12bfa9a1796`,
 > `e8b02fcfcdb`, `c549b9f24de` (evidence-runner fixes: retired Filament
-> option, project-appended link flag, settle before the quiet gate), followed
-> by the evidence commit that reseals the three Figure 13 packets on
-> `3d2d543ecdf`. The sealed Figure 13 evidence binds capture-source digest
-> `d54b0460b9806b462307881053810c76e7acb92f03ea25e1c765402e2f86c9be`; the
-> quiet-host five-repeat run records 14.735410 ms/0.24% AVBD,
-> 12.438459 ms/2.00% VBD, and 13.349352 ms/2.32% SI median CPU cost per step
-> (descriptive same-host costs). Under the immutable paper profile the AVBD
-> wall keeps standing with 36 broken attachments ([5, 5, 5] in the impact
-> regions plus 21 outside) and no displaced brick, so its review records visual
-> agreement with Figure 13(d) as not proven. Nothing is pushed. Treat
-> everything below this note as the pre-takeover historical stop point; the
-> session ledger with decisions D1-D9 and the D3 root cause lives outside the
-> tree.
+> option, project-appended link flag, settle before the quiet gate),
+> `dadd1f0ce97` (first evidence reseal and validator fixes), `3d2d543ecdf`
+> (review wave 3: non-finite manifold points cold-start, bounded outside
+> breaks, legacy schema pins pruned), `caa26ec5473` (evidence resealed on
+> `3d2d543ecdf`), `f1a8093d474` (six AVBD source-row demo tests parked behind
+> the D5 contact-regularization finding, two label tests corrected), and the
+> packet reseal that follows it. The sealed Figure 13 evidence binds
+> capture-source digest
+> `d54b0460b9806b462307881053810c76e7acb92f03ea25e1c765402e2f86c9be` and the
+> head `3d2d543ecdf`; the quiet-host five-repeat run records
+> 14.735410 ms/0.24% AVBD, 12.438459 ms/2.00% VBD, and 13.349352 ms/2.32% SI
+> median CPU cost per step (descriptive same-host costs). Under the immutable
+> paper profile the AVBD wall keeps standing with 36 broken attachments
+> ([5, 5, 5] in the impact regions plus 21 outside) and no displaced brick, so
+> its review records visual agreement with Figure 13(d) as not proven.
+> Gates on the evidence head: `pixi run lint` green; the default
+> `DART_DISABLE_COMPILER_CACHE=ON pixi run test-all` passed lint, both
+> builds, and the C++ suites, and its Python phase passes after the parking
+> (2001 passed, 20 skipped, 6 expected failures); `pixi run -e cuda test-all`
+> passed all seven phases. Two open findings are recorded in the README and
+> the plan: the public AVBD contact regularization (open P1 against exit
+> criterion 2, fix = named parameter profiles with post-stabilization) and
+> the audit-ladder block-family slowdown (deferred). Nothing is pushed; the
+> push, the PR body with its attachments, and the `@codex review` trigger
+> await explicit approval. Treat everything below this note as the
+> pre-takeover historical stop point; the session ledger with decisions
+> D1-D5 lives outside the tree.
 
 At the 2026-08-31 zero-trust checkpoint, draft PR #3432 remains the shared
 foundation only. The live branch is
