@@ -1,26 +1,34 @@
 # VBD Paper / Reference Gap Audit
 
 This audit grounds PLAN-104 against the Vertex Block Descent paper and its
-reference implementations. It records what the method requires, what the DART
-DART 7 simulation world already provides, and what each phase must add. It is a
+reference implementations. It records what the method requires, what DART 7's
+simulation world already provides, and what each phase must add. It is a
 planning artifact; it does not itself claim implemented behavior.
+
+The authoritative, machine-checked parity inventory is
+[`vbd-paper-coverage-contract.json`](vbd-paper-coverage-contract.json), and its
+fail-closed completion semantics are defined by
+[`paper-parity-matrix.md`](paper-parity-matrix.md). This prose audit explains
+the method and gaps but cannot promote a contract row.
 
 ## Sources
 
-- Chen, A. H., Liu, T., Yang, Y., Kim, T., et al. "Vertex Block Descent."
+- Anka He Chen, Ziheng Liu, Yin Yang, and Cem Yuksel. "Vertex Block Descent."
   _ACM Transactions on Graphics (SIGGRAPH 2024)_.
   Paper PDF: <https://graphics.cs.utah.edu/research/projects/vbd/vbd-siggraph2024.pdf>
-  Project page: <https://ankachan.github.io/Projects/VertexBlockDescent/index.html>
+  Project page: <https://graphics.cs.utah.edu/research/projects/vbd/>
   Talk: <https://www.youtube.com/watch?v=2HCgKfKy3W8>
 - Reference implementations:
-  - `Gaia`: <https://github.com/AnkaChan/Gaia> (full research framework)
-  - `TinyVBD`: <https://github.com/AnkaChan/TinyVBD> (minimal reference)
+  - `Gaia`: <https://github.com/AnkaChan/Gaia> at
+    `c229692045465a76233f9fba9197fb22bbfb3694` (full research framework)
+  - `TinyVBD`: <https://github.com/AnkaChan/TinyVBD> at
+    `dcd011a5d945172e247ecced90a6c2c4b4313520` (minimal reference)
 
 The formulas and numbers below were verified against the arXiv full text
-(arXiv:2403.06321), the project page, and the `Gaia`/`TinyVBD` reference source.
-Code references are to those repositories' `main` branch. This is the durable
-method audit for PLAN-104; implementation status and remaining work are
-summarized in the parent plan and dashboard.
+(arXiv:2403.06321), the project page, and the pinned `Gaia`/`TinyVBD` reference
+source revisions above. This is the durable method audit for PLAN-104;
+implementation status and remaining work are summarized in the parent plan and
+dashboard.
 
 ## Verified Reference Details (load-bearing)
 
@@ -64,6 +72,67 @@ summarized in the parent plan and dashboard.
 Cross-check any further constant against the reference source before relying on
 it.
 
+### Zero-trust implementation finding: the public World material is different
+
+The current public-World VBD path does **not** yet evaluate the paper/Gaia
+Stable Neo-Hookean energy recorded above. The deformable dynamics stage forces
+`BlockDescentOptions::useFemTetKernel = true`, which routes tetrahedra through
+the shared DART FEM kernel. That kernel evaluates the Smith-style energy with
+an additional `-mu/2 * log((I_C + 1) / 4)` term and a different determinant
+term. The paper-shaped no-log kernel with `a = 1 + mu/lambda` exists in
+`detail/deformable_vbd/neo_hookean.hpp`, but the public World path bypasses it.
+
+Therefore, isolated tests of the paper-shaped kernel are not evidence that a
+World simulation uses the paper material. The
+`vbd.method.stable_neo_hookean` row must remain incomplete until a named paper
+profile routes the actual World solve through that kernel (or an independently
+reviewed replacement), and an end-to-end mutation test proves that switching
+back to the shared FEM material fails the paper trajectory/energy oracle.
+
+The public multithreaded World path also does not honor two configured solver
+controls. With more than one executor worker and no active self-contact,
+`parallelBlockDescentDeformable` always consumes the full iteration count and
+never applies Chebyshev extrapolation. The implementation states that
+`convergenceDisplacement` and `useChebyshev` are unsupported on that path, even
+though `World::configureDeformableSolver` accepts both without rejecting or
+reporting the downgrade. The existing World acceleration test uses the
+single-worker path, while the multithreaded parity test leaves both controls
+disabled. Completion therefore requires either implementation of the two
+controls in the colored parallel solver or an explicit fail-closed public
+capability contract, plus multithreaded World tests that prove early stopping
+and acceleration are active rather than silently ignored.
+
+Rigid contact selected as public fixed-penalty VBD is not the paper's rigid
+collision loop. DART queries discrete contacts at the current transforms before
+the later rigid position update, drops every nonpenetrating contact, and does
+not refresh collision candidates inside the block iterations. The fixed-penalty
+formulation also clears all row inventories before and after each solve. By
+contrast, paper Section 3.5 starts with DCD, periodically performs CCD during
+the solve, and retains detected force elements until the next detection. The
+existing public rigid VBD contact test begins already penetrating, so it cannot
+detect this mechanism gap. Completion requires separated high-speed and
+periodic-refresh mutation tests, persistent force-element diagnostics, and the
+paper rigid-chain/teapot trajectories on CPU and CUDA; absence of tunneling is
+not inferred merely from the current penetrating-contact smoke.
+
+The fixed-penalty implementation now enforces its intentionally stateless
+boundary on every control-flow path: it clears all AVBD scalar inventories,
+detected-contact identities, tangent anchors, and borrowed row pointers before
+solving and after normal, empty, or exceptional exits. A failed VBD hard-row
+step followed by AVBD must therefore match a cold AVBD continuation. Native
+collision candidate/contact capacities are also baked or configured explicitly,
+reject overflow atomically, and survive replay; replay restores last-step
+diagnostics and contact forces rather than leaving them from a later frame.
+These are lifecycle and evidence-integrity repairs, not the paper's persistent
+force-element mechanism, DCD/periodic-CCD loop, or rigid-scene closure.
+
+The standalone CUDA block solver now uses Sylvester's criterion rather than a
+determinant-only test, matching the CPU positive-definite acceptance policy.
+Device tests reject every diagonal eigenvalue-sign pattern with an indefinite
+block and exercise the near-singular SPD/singular boundary in both precisions.
+A reachable indefinite-element mutation regression and full paper-scene
+CPU/CUDA trajectory evidence are still required before CUDA parity closes.
+
 ## Method Summary
 
 VBD is a **block coordinate descent** minimizer for the variational form of
@@ -96,10 +165,11 @@ x_i <- x_i + H_i^{-1} f_i
 
 where `N(i)` is the set of elements (springs / tets / contacts) incident to
 vertex `i`. `H_i` is a single symmetric 3x3 matrix, so each block solve is a
-fixed-size SPD solve — no global sparse system. Robustness comes from keeping
-`H_i` SPD: the inertia term `(m_i/h^2) I_3` is always SPD, and each element block
-is PSD-projected (e.g. clamping indefinite geometric-stiffness terms) so the sum
-is SPD.
+fixed-size local solve — no global sparse system. In the reference default,
+element blocks are **not** PSD-projected. Robustness relies on the SPD inertia
+term and the stabilized local 3x3 solve described above; any DART projection or
+regularization is an explicitly tested descent-path choice rather than an
+unqualified paper-default claim.
 
 ### Parallelization by graph coloring
 
@@ -112,13 +182,16 @@ per timestep.
 
 ### Acceleration and initialization
 
-VBD reaches good accuracy in few iterations via (a) an **adaptive initial
-guess** that blends the inertial prediction with the previous step's
-acceleration, and (b) an optional **Chebyshev semi-iterative acceleration** of
-the block-descent sweeps. The exact blend rule and Chebyshev parameters are to
-be transcribed from the paper during Phase 5.
+VBD reaches good accuracy in few iterations via (a) the **adaptive initial
+guess** recorded in `Verified Reference Details` and (b) the optional
+**Chebyshev semi-iterative acceleration** recorded there. Those equations are
+transcribed and focused tests exist; the paper figures and full CPU/CUDA
+trajectory closure remain open in the coverage contract.
 
 ## Initial Component-by-Component Gap
+
+The table below is the historical pre-#2781 implementation baseline. Use the
+coverage contract, not this table, for current status.
 
 | VBD component                                             | DART 7 simulation world today                                                                                            | Phase that closes the gap         |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
@@ -126,7 +199,7 @@ be transcribed from the paper during Phase 5.
 | Inertial target `y` with gravity/damping/external accel   | Present: `world_step_stage.cpp` inertial-target setup (`dampingScale`, `gravityStep`, `externalAccelerations`)           | Phase 1/3 reuse                   |
 | Per-vertex force `f_i` (inertia + spring)                 | Partial: global gradient assembled, not per-vertex blocks                                                                | Phase 1                           |
 | Per-vertex SPD Hessian `H_i` (inertia + spring)           | Missing: no per-vertex Hessian assembly                                                                                  | Phase 1                           |
-| PD projection of element Hessian blocks                   | Missing                                                                                                                  | Phase 1 (spring), Phase 4 (FEM)   |
+| Stabilized local Hessian solve without default projection | Present in narrow kernels; reference-equivalent failure policy and full-scene evidence remain open                       | Coverage-contract method rows     |
 | 3x3 block Newton step                                     | Missing                                                                                                                  | Phase 1                           |
 | Vertex graph coloring                                     | Missing                                                                                                                  | Phase 2                           |
 | Block-descent sweep driver                                | Missing (current solver is global gradient descent)                                                                      | Phase 3                           |
@@ -146,24 +219,32 @@ be transcribed from the paper during Phase 5.
   `evaluateDeformableObjective`). Per-vertex Hessian block
   `H_aa = k[ n n^T + (1 - L/l)(I - n n^T) ]`, transverse factor clamped to
   `>= 0` for the SPD local Hessian.
-- **Stable Neo-Hookean** (Phase 4): the Smith et al. 2018 energy density used by
-  the reference, with Lame parameters derived from
-  `DeformableMaterial.youngsModulus` / `poissonRatio`, plus the per-tet,
-  per-vertex force and PD-projected Hessian block. Exact constants transcribed
-  during Phase 4.
+- **Stable Neo-Hookean** (Phase 4): the reference energy is
+  `Psi = (mu/2)(||F||_F^2 - 3) + (lambda/2)(det(F) - a)^2` with
+  `a = 1 + mu/lambda`, multiplied by rest volume. DART derives the Lamé
+  parameters from `DeformableMaterial.youngsModulus` / `poissonRatio`; any
+  stabilized Hessian treatment must stay explicitly distinguished from the
+  reference's default no-projection path.
 
 ## Reference Performance Targets ("beat the reference / paper")
 
 Paper Table 1 / figures (GPU = NVIDIA RTX 4090 unless noted) are the numbers to
 beat:
 
-| Scene               | Verts | Tets  | h     | Substeps | Iters | Time/frame (avg/max) |
-| ------------------- | ----- | ----- | ----- | -------- | ----- | -------------------- |
-| Twisting thin beams | 97K   | 266K  | 1/300 | —        | 100   | 60 / 78 ms           |
-| Squishy ball drops  | 230K  | 700K  | 1/120 | —        | 120   | 15 / 17 ms           |
-| 216 squishy balls   | 48M   | 151M  | 1/240 | 4        | 40    | 3.6 / 3.9 s          |
-| 10,368 models       | 36M   | 124M  | 1/120 | 2        | 60    | 4.2 / 4.7 s          |
-| Tearing cloth (CPU) | 2,500 | 4,800 | —     | —        | —     | 11.2 / 11.5 ms       |
+| Scene               | Verts | Tets  | h     | Substeps | Iters | Time/step (avg/max) |
+| ------------------- | ----- | ----- | ----- | -------- | ----- | ------------------- |
+| Twisting thin beams | 97K   | 266K  | 1/300 | —        | 100   | 60 / 78 ms          |
+| Squishy ball drops  | 230K  | 700K  | 1/120 | —        | 120   | 15 / 17 ms          |
+| 216 squishy balls   | 48M   | 151M  | 1/240 | 4        | 40    | 3.6 / 3.9 s         |
+| 10,368 models       | 36M   | 124M  | 1/120 | 2        | 60    | 4.2 / 4.7 s         |
+| Tearing cloth (CPU) | 2,500 | 4,800 | —     | —        | —     | 11.2 / 11.5 ms      |
+
+The primary source is internally inconsistent for its two largest rows. Table
+1 and the Figure 11/12 captions label 3.6/3.9 s and 4.2/4.7 s as per-step
+timings with four and two substeps respectively, while the Section 5.1 prose
+reports approximately 40 s and 25 s per frame. Paper-parity evidence must
+reproduce and label both interpretations unless the authors provide a
+correction; it must not silently relabel the table values as per-frame timing.
 
 Headline comparisons: ~10x faster than XPBD at matched settings and stable on
 high mass ratios (1:2000) where XPBD fails; far cheaper per iteration than
@@ -179,12 +260,15 @@ PLAN-104 gates, to be filled with controlled benchmark JSON:
   spring stiffness `1e8`, mass ratio 1:1000 (last vertex mass 1000), skip-spring
   stiffness 100, `h = 1/60`, 100 iterations, gravity `(0, -10, 0)`.
 - CPU per-step wall time on matched scenes vs `TinyVBD`/`Gaia` CPU (Phase 8).
-  **Done vs TinyVBD:** on the TinyVBD tilted-strand scene (100 iters/step,
-  single CPU thread, compute-only) across sizes, DART's VBD is ~2.7-3.0x faster
-  than TinyVBD at every size (20 verts 0.16 vs 0.49 ms; 100 verts 0.78 vs
-  2.33 ms; 400 verts 3.18 vs 8.67 ms). DART uses a double LDLT 3x3 solve + tight
-  assembly; TinyVBD a float `colPivHouseholderQr`. DART CPU wins robustly.
-  `Gaia` CPU remains.
+  **Not yet valid:** the historical DART/TinyVBD timing row was mislabeled as
+  matched. DART gave structural and skip springs stiffness `1e8`, while pinned
+  TinyVBD uses `1e8` and `100`; DART used uniform spacing, while TinyVBD doubles
+  the final segment; the DART demo added damping; and the DART kernel used its
+  PSD-clamped spring Hessian/LDLT policy instead of TinyVBD's raw Hessian/QR
+  solve. The reported ~2.7-3.0x numbers are withdrawn. A new packet must match
+  scene geometry, per-edge stiffness, precision, initialization, Hessian/solve
+  policy (or report both policies separately), achieved accuracy, and timing
+  boundary before claiming any TinyVBD or Gaia CPU result.
 - GPU per-step wall time / frame rate on the paper's high-resolution scenes vs
   `Gaia` GPU and the paper's reported numbers (Phase 9). **Partial:** DART's
   CUDA mass-spring kernel runs ~9-26x faster than its own single-threaded CPU on
@@ -196,8 +280,10 @@ runs; no full paper-parity claim is made.
 
 ## DART-Specific Constraints
 
-- Public API stays backend-neutral and DART-owned (no `vbd`/`Gaia` vocabulary in
-  user-facing solver selectors until a deliberate API slice).
+- Public API stays backend-neutral and DART-owned. The deliberate experimental
+  `RigidBodySolver::Vbd` selector is the method-family entry point; it must not
+  expose Gaia implementation types, backend kernels, or reference-repository
+  dependencies.
 - No runtime/vendored dependency on the reference repos.
 - Each slice keeps `pixi run lint`, the focused build, focused tests, and
   `pixi run check-api-boundaries` green, and records benchmark smoke separately

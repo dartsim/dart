@@ -5733,7 +5733,8 @@ def test_vbd_showcase_scenes_expose_solver_panels() -> None:
         setup.panels[0].build(builder, object())
 
         assert any(event.startswith(expected_plot) for event in builder.events)
-        assert any(event.startswith("text:solver iters:") for event in builder.events)
+        # Fixed-penalty VBD reports its sweep count, not dual iterations.
+        assert any(event.startswith("text:VBD sweeps:") for event in builder.events)
 
 
 def test_ipc_asset_and_scripted_scenes_expose_diagnostics_panels() -> None:

@@ -1,4 +1,9 @@
-"""AVBD articulated high mass-ratio chain smoke scene."""
+"""Variational articulated high mass-ratio chain smoke scenes.
+
+The historical scene IDs retain their ``avbd_`` prefix for compatibility, but
+these scenes select ``MultibodyIntegrationFamily.VARIATIONAL`` and do not run
+the public AVBD rigid-body solver.
+"""
 
 from __future__ import annotations
 
@@ -174,7 +179,7 @@ def _build_high_ratio_chain(
         tip_height_history.append(float(tip[2]))
         angle_history.append(max_angle)
 
-        builder.text("solver: AVBD articulated variational chain")
+        builder.text("solver: variational multibody integration (not AVBD)")
         builder.text(f"links: {num_links}")
         builder.text(f"mass ratio: {tip_link_mass / _LIGHT_LINK_MASS:.0f}:1")
         if variational_max_iterations is not None:
@@ -232,7 +237,7 @@ def _build_high_ratio_chain(
 def build() -> SceneSetup:
     return _build_high_ratio_chain(
         scene_id=_NARROW_SCENE_ID,
-        panel_title="AVBD Articulated High-Ratio Chain",
+        panel_title="Variational Articulated High-Ratio Chain",
         num_links=_NARROW_NUM_LINKS,
         tip_link_mass=_NARROW_TIP_LINK_MASS,
         auto_reset_seconds=_NARROW_AUTO_RESET_SECONDS,
@@ -242,7 +247,7 @@ def build() -> SceneSetup:
 def build_paper_scale() -> SceneSetup:
     return _build_high_ratio_chain(
         scene_id=_PAPER_SCALE_SCENE_ID,
-        panel_title="AVBD Paper-Scale High-Ratio Chain",
+        panel_title="Variational Paper-Scale High-Ratio Chain",
         num_links=_PAPER_SCALE_NUM_LINKS,
         tip_link_mass=_PAPER_SCALE_TIP_LINK_MASS,
         auto_reset_seconds=_PAPER_SCALE_AUTO_RESET_SECONDS,
@@ -253,18 +258,18 @@ def build_paper_scale() -> SceneSetup:
 
 SCENE = PythonDemoScene(
     id=_NARROW_SCENE_ID,
-    title="AVBD Articulated High-Ratio Chain (sx)",
-    category="AVBD Rigid Constraints (sx)",
-    summary="A five-link AVBD variational chain swings with a 200:1 heavy tip "
-    "as a narrow high mass-ratio articulated smoke case.",
+    title="Variational Articulated High-Ratio Chain (sx)",
+    category="Variational Integration (sx)",
+    summary="A five-link variational multibody chain swings with a 200:1 "
+    "heavy tip; its historical ID is not AVBD solver evidence.",
     build=build,
 )
 
 PAPER_SCALE_SCENE = PythonDemoScene(
     id=_PAPER_SCALE_SCENE_ID,
-    title="AVBD Paper-Scale High-Ratio Chain (sx)",
-    category="AVBD Rigid Constraints (sx)",
-    summary="A 50-link AVBD variational chain with a 50,000:1 heavy tip "
-    "for paper-scale high mass-ratio visual evidence.",
+    title="Variational Paper-Scale High-Ratio Chain (sx)",
+    category="Variational Integration (sx)",
+    summary="A 50-link variational multibody chain with a 50,000:1 heavy tip "
+    "for geometry/stability smoke evidence, not AVBD solver evidence.",
     build=build_paper_scale,
 )

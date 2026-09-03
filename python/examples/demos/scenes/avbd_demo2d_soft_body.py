@@ -10,6 +10,7 @@ import numpy as np
 import dartpy as dart
 import dartpy as sx
 
+from .._avbd_demo2d_plane import plane_locked_pre_step
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
@@ -27,7 +28,7 @@ _GRID_JOINTS = _GRID_STACKS * _GRID_JOINTS_PER_STACK
 _DIAGONAL_IGNORE_COLLISION_PAIRS = (
     _GRID_STACKS * 2 * (_GRID_WIDTH - 1) * (_GRID_HEIGHT - 1)
 )
-_THICKNESS = 0.2
+_THICKNESS = 1.0
 _GROUND_SIZE_2D = np.array([100.0, 0.5])
 _GROUND_SIZE = np.array([100.0, 0.5, _THICKNESS])
 _CELL_SIZE_2D = np.array([1.0, 1.0])
@@ -204,7 +205,15 @@ def _max_soft_body_pose_error(
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, _GRAVITY, 0.0))
+    world = sx.World(
+        time_step=_TIME_STEP,
+        gravity=(0.0, _GRAVITY, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+        rigid_constraint_options=sx.RigidConstraintOptions(
+            iterations=_SOURCE_ROW["solver_defaults"]["iterations"]
+        ),
+    )
 
     ground = _add_source_box(
         world,
@@ -333,11 +342,12 @@ def build() -> SceneSetup:
 
     return SceneSetup(
         world=bridge.render_world,
-        pre_step=bridge.pre_step,
+        pre_step=plane_locked_pre_step(bridge, cells),
         force_drag=bridge.force_drag,
         panels=[ScenePanel("AVBD Demo2D Soft Body", build_panel)],
         info={
             "sx_world": world,
+            "replay_live_step_is_stateless": True,
             "ground": ground,
             "cells": cells,
             "cell_grids": grids,

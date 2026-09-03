@@ -47,18 +47,76 @@ namespace dart::simulation {
 /// World step pipeline.
 enum class RigidBodySolver
 {
+  /// Velocity-level projected Gauss-Seidel for free-rigid contacts and hard
+  /// public rigid-body pair constraints, followed by non-velocity positional
+  /// stabilization. Breakable-joint loads are derived from the accumulated
+  /// constraint impulses over the step.
   SequentialImpulse,
   Ipc,
+  /// Augmented vertex block descent for free rigid-body contact and public
+  /// rigid-body pair constraints. This family uses the same split
+  /// velocity/contact/position schedule as sequential impulse, but the contact
+  /// stage resolves every supported active rigid contact through AVBD.
+  Avbd,
+  /// Fixed-penalty vertex block descent for free rigid-body contact and public
+  /// rigid-body pair constraints. Unlike `Avbd`, this family does not use an
+  /// augmented-Lagrangian dual update or progressive stiffness ramp: each
+  /// supported constraint remains at its configured finite penalty stiffness.
+  /// Active hard pair-joint rows are rejected until their public projection
+  /// policy explicitly configures finite stiffness.
+  Vbd,
+};
+
+/// Named, immutable parameter profiles for the `Avbd` rigid-body family.
+///
+/// A profile owns the solver-wide Equation 12/18/19 parameters (penalty ramp
+/// beta, error regularization alpha, warm-start gamma) and the stabilization
+/// mode. There is no per-value tuning, so recorded evidence always names one
+/// profile and can never mix them into an unlabeled hybrid.
+enum class RigidAvbdParameterProfile
+{
+  /// Table 2 of Giles, Diaz, and Yuksel (SIGGRAPH 2025): alpha 0.95, beta 10,
+  /// gamma 0.99, no post-stabilization. The paper leaves the initial row
+  /// stiffness `k_start` free, so this profile keeps DART's configured row
+  /// start stiffness (1e5) and ceilings. The default.
+  Paper2025Table2,
+  /// Defaults of the pinned `avbd-demo2d` reference source (74699a11f858):
+  /// alpha 0.99, beta 1e5, gamma 0.99, with post-stabilization, and the
+  /// source's PENALTY_MIN 1 / PENALTY_MAX 1e9 as the start stiffness and
+  /// ceiling of every public row (contacts, friction, joints, motors, and
+  /// springs; a joint's own projection-policy start stiffness is not used).
+  /// The main sweeps ignore every pre-existing constraint error, one extra
+  /// primal-only sweep removes it after the step velocities are taken, and
+  /// the full dual is kept across steps.
+  SourceDemo2d,
+  /// Defaults of the pinned `avbd-demo3d` reference source (7701bd427d55):
+  /// alpha 0.99, beta 1e4 on linear rows and 100 on angular rows, gamma
+  /// 0.999, no post-stabilization, and the source's PENALTY_MIN 1 /
+  /// PENALTY_MAX 1e10 as the start stiffness and ceiling of every public row.
+  SourceDemo3d,
+  /// The default: the `avbd-demo3d` reference source's rules and constants
+  /// with one change, a mass-scaled row start stiffness. The paper leaves
+  /// `k_start` free; a fixed value cannot serve every scale (the source's
+  /// PENALTY_MIN 1 lets a 1000 kg box sink 0.14 m before its penalty ramps,
+  /// while a fixed 1e5 stalls the block sweep of light hard-jointed bodies,
+  /// which then hover at 1 % of free fall). Every contact and joint row
+  /// instead starts at `startStiffnessMassScale * m_eff / dt^2`, with `m_eff`
+  /// the row's reduced mass, so the first-step penetration is a fixed
+  /// fraction of `g dt^2` for every mass and the sweep never stalls.
+  MassScaledReference,
 };
 
 /// Selects how the rigid-body contact stage resolves active contacts.
 ///
-/// This is an explicit, documented opt-in. It is independent of the
+/// This is an explicit, documented opt-in within the
+/// `RigidBodySolver::SequentialImpulse` family. It is independent of the
 /// differentiable flag: a non-differentiable world may use either method, and a
 /// differentiable world defaults to the same `SequentialImpulse` path as any
-/// other. The enum names the contact formulation, without exposing backend,
-/// registry, ECS storage, or concrete solver-object types, so it is safe on the
-/// public facade surface.
+/// other. The VBD and AVBD rigid-body families own their contact formulations
+/// and therefore cannot be combined with a non-default value here. The enum
+/// names the contact formulation without exposing backend, registry, ECS
+/// storage, or concrete solver-object types, so it is safe on the public facade
+/// surface.
 enum class ContactSolverMethod
 {
   /// Sequential-impulse (Gauss-Seidel) normal+friction solve. The default and
@@ -70,6 +128,47 @@ enum class ContactSolverMethod
   /// tangent rows per active rigid-body contact (`findex`-coupled box bounds).
   /// Mixed articulated scenes use the unified constraint/contact path.
   BoxedLcp,
+};
+
+/// Domain-scoped tuning for the built-in rigid constraint stage.
+///
+/// The positive iteration budget controls sequential-impulse contact and hard
+/// pair-constraint sweeps, plus VBD/AVBD rigid contact, joint, motor, and
+/// spring sweeps. Under Sequential Impulse the same budget additionally runs
+/// a separate non-velocity joint post-stabilization pass after contact
+/// position correction. The IPC family and mixed semi-implicit multibody
+/// worlds bypass this stage and therefore accept only the default options.
+struct RigidConstraintOptions
+{
+  std::size_t iterations = 8;
+};
+
+/// Construction-time bounds for the baked rigid collision/contact query.
+///
+/// The two limits are intentionally independent: a broad-phase candidate does
+/// not necessarily emit a contact, while one primitive pair may emit a
+/// manifold containing several contacts. A zero value selects a conservative
+/// automatic bound derived from the collision shapes present when the World
+/// enters simulation mode. The resolved limits lock after a successful bake.
+/// A nonzero value is an exact user-selected limit; exceeding it fails before
+/// the built-in step mutates World state. Explicit limits also size the
+/// baked storage exactly, so steps within them never allocate. Automatic
+/// bounds are rejection thresholds: because the complete shape-pair envelope
+/// grows quadratically with the shape count, bake reserves at most a fixed
+/// budget (65,536 candidate pairs, 16,384 contacts) and the buffers grow,
+/// allocating, between the budget and the envelope.
+struct RigidCollisionCapacityOptions
+{
+  /// Maximum broad-phase candidate shape pairs retained by one rigid query.
+  /// Zero derives the complete unordered-pair bound from the baked shape
+  /// count.
+  std::size_t candidatePairCapacity = 0;
+
+  /// Maximum aggregate narrow-phase contacts emitted by one rigid query.
+  /// Zero derives a conservative shape-pair bound at bake time. A nonzero
+  /// value must also leave room to represent the two tangent rows derived for
+  /// every rigid AVBD contact.
+  std::size_t contactCapacity = 0;
 };
 
 /// Selects how the differentiable contact stage produces its BACKWARD-pass
@@ -180,8 +279,24 @@ struct WorldOptions
   Eigen::Vector3d gravity{0.0, 0.0, -9.81};
 
   /// Free rigid-body solver family used by the built-in `World::step()`
-  /// schedule. Defaults to sequential impulse.
+  /// schedule. Defaults to sequential impulse. `Vbd` and `Avbd` are explicit
+  /// opt-ins for free rigid-body contact and pair constraints; neither silently
+  /// substitutes sequential impulse for unsupported contact envelopes.
   RigidBodySolver rigidBodySolver = RigidBodySolver::SequentialImpulse;
+
+  /// Named parameter profile for the `Avbd` family. Other families ignore it,
+  /// except that the compatibility distance springs follow its schedule so a
+  /// family crossing keeps one continuation.
+  RigidAvbdParameterProfile rigidAvbdParameterProfile
+      = RigidAvbdParameterProfile::MassScaledReference;
+
+  /// Tuning for the built-in rigid constraint stage.
+  RigidConstraintOptions rigidConstraintOptions;
+
+  /// Baked rigid collision candidate/contact capacity policy. These limits do
+  /// not govern deformable surface-contact candidate sets, which have a
+  /// separate solver-owned capacity boundary.
+  RigidCollisionCapacityOptions rigidCollisionCapacityOptions;
 
   /// Multibody domain method-family options used by the built-in
   /// `World::step()` schedule. Defaults to semi-implicit integration.

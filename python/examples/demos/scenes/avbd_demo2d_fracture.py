@@ -10,6 +10,7 @@ import numpy as np
 import dartpy as dart
 import dartpy as sx
 
+from .._avbd_demo2d_plane import lock_to_xy_plane
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
@@ -20,7 +21,7 @@ _BREAKABLE_JOINTS = _CHAIN_LINKS - 1
 _FALLING_BLOCKS = 15
 _SUPPORT_BLOCKS = 2
 _BREAK_FORCE = 500.0
-_THICKNESS = 0.2
+_THICKNESS = 1.0
 _GROUND_SIZE_2D = np.array([100.0, 0.5])
 _GROUND_SIZE = np.array([100.0, 0.5, _THICKNESS])
 _CHAIN_SIZE_2D = np.array([1.0, 0.5])
@@ -176,7 +177,15 @@ def _add_source_box(
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, _GRAVITY, 0.0))
+    world = sx.World(
+        time_step=_TIME_STEP,
+        gravity=(0.0, _GRAVITY, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+        rigid_constraint_options=sx.RigidConstraintOptions(
+            iterations=_SOURCE_ROW["solver_defaults"]["iterations"]
+        ),
+    )
 
     ground = _add_source_box(
         world,
@@ -206,11 +215,15 @@ def build() -> SceneSetup:
         joint = world.add_joint(
             parent,
             child,
-                        sx.JointSpec(
+            sx.JointSpec(
                 name=f"avbd_demo2d_fracture_joint_{index:02d}",
                 type=sx.JointType.FIXED,
             )
         )
+        # Preserve the source scene's numeric control. The source breaks only
+        # its torque-arm-scaled angular dual row, whereas DART's public
+        # break_force covers DART's combined fixed-joint solver-row metric. This
+        # is a source-shaped lifecycle row, not a source-trajectory oracle.
         joint.break_force = _BREAK_FORCE
         joints.append(joint)
 
@@ -311,6 +324,7 @@ def build() -> SceneSetup:
         sync_connectors()
 
     def pre_step() -> None:
+        lock_to_xy_plane((*chain, *supports, *falling_blocks))
         bridge.pre_step()
         sync_connectors()
 
@@ -340,7 +354,7 @@ def build() -> SceneSetup:
         builder.text(f"rigid bodies: {world.num_rigid_bodies}")
         builder.text(f"breakable joints: {len(joints)}")
         builder.text(f"broken joints: {broken}")
-        builder.text(f"break force: {_BREAK_FORCE:.1f} N")
+        builder.text(f"source numeric break threshold: {_BREAK_FORCE:.1f}")
         builder.text(f"world time: {world.time:.3f} s")
         builder.text(f"min chain y: {min(chain_y):.3f} m")
         builder.text(f"top block y: {max(falling_y):.3f} m")

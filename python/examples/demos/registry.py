@@ -45,8 +45,22 @@ from .scenes.avbd_demo3d_static_friction import SCENE as AVBD_DEMO3D_STATIC_FRIC
 from .scenes.avbd_demo3d_stack import SCENE as AVBD_DEMO3D_STACK
 from .scenes.avbd_demo3d_stack_ratio import SCENE as AVBD_DEMO3D_STACK_RATIO
 from .scenes.avbd_demo3d_soft_body import SCENE as AVBD_DEMO3D_SOFT_BODY
+from .scenes.avbd_paper_breakable_wall import SCENE as AVBD_PAPER_BREAKABLE_WALL
+from .scenes.sequential_impulse_paper_breakable_wall import (
+    SCENE as SEQUENTIAL_IMPULSE_PAPER_BREAKABLE_WALL,
+)
+from .scenes.vbd_paper_breakable_wall import SCENE as VBD_PAPER_BREAKABLE_WALL
 from .scenes.avbd_articulated_breakable_joint import (
     SCENE as AVBD_ARTICULATED_BREAKABLE_JOINT,
+)
+from .scenes.avbd_articulated_compliant_breakable_motor import (
+    SCENE as AVBD_ARTICULATED_COMPLIANT_BREAKABLE_MOTOR,
+)
+from .scenes.avbd_articulated_compliant_joints import (
+    SCENE as AVBD_ARTICULATED_COMPLIANT_JOINTS,
+)
+from .scenes.avbd_articulated_compliant_motors import (
+    SCENE as AVBD_ARTICULATED_COMPLIANT_MOTORS,
 )
 from .scenes.avbd_articulated_fixed_pair_breakable_joint import (
     SCENE as AVBD_ARTICULATED_FIXED_PAIR_BREAKABLE_JOINT,
@@ -299,6 +313,9 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         AVBD_DEMO3D_SOFT_BODY,
         AVBD_DEMO3D_BRIDGE,
         AVBD_DEMO3D_BREAKABLE,
+        AVBD_PAPER_BREAKABLE_WALL,
+        SEQUENTIAL_IMPULSE_PAPER_BREAKABLE_WALL,
+        VBD_PAPER_BREAKABLE_WALL,
         AVBD_RIGID_FIXED_JOINT_CONTACT,
         AVBD_RIGID_REVOLUTE_MOTOR,
         AVBD_RIGID_PRISMATIC_MOTOR,
@@ -308,6 +325,9 @@ def make_demo_scenes() -> list[PythonDemoScene]:
         AVBD_ARTICULATED_PRISMATIC_PAIR_MOTOR_BREAKABLE_JOINT,
         AVBD_ARTICULATED_PRISMATIC_MOTOR_BREAKABLE_JOINT,
         AVBD_ARTICULATED_WORLD_REVOLUTE_MOTOR_BREAKABLE_JOINT,
+        AVBD_ARTICULATED_COMPLIANT_BREAKABLE_MOTOR,
+        AVBD_ARTICULATED_COMPLIANT_JOINTS,
+        AVBD_ARTICULATED_COMPLIANT_MOTORS,
         AVBD_ARTICULATED_HIGH_RATIO_CHAIN,
         AVBD_PAPER_SCALE_HIGH_RATIO_CHAIN,
         AVBD_RIGID_BREAKABLE_JOINT,

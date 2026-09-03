@@ -1,0 +1,220 @@
+{
+  "schema_version": "dart.avbd_quasi_newton_evidence/v1",
+  "plan_id": "PLAN-104",
+  "contract_row": "avbd.method.quasi_newton_hessian",
+  "status": "partial",
+  "recorded_at": "2026-07-30",
+  "source": {
+    "paper": "Augmented Vertex Block Descent",
+    "paper_sha256": "7957d116b9130cfb0aa5a48ab7cd0d74a64ad79f75c99acd291bdece2be3f2d6",
+    "locator": "Section 3.5, Equations 15-17",
+    "avbd_demo2d_revision": "74699a11f8586d3ac34474c92b1ef8feb5f587de",
+    "avbd_demo3d_revision": "7701bd427d55ca5d03ea1fdf331912ded9169f4b",
+    "reference_source_observation": "The pinned 2D solver applies the Section 3.5 column-norm approximation generically, and the pinned 3D joint source applies it to nonlinear point curvature. The pinned 3D spring source stamps only the rank-one term. DART's distance-spring path therefore implements the paper mechanism and is not claimed as 3D source equivalence."
+  },
+  "build_identity": {
+    "base_commit": "710cbfc1152d3f7dd2a2dc8638560850fc5ba82f",
+    "build_type": "Release",
+    "compiler": "GNU 15.2.0",
+    "profile_enabled": true,
+    "solver_source_sha256": {
+      "dart/simulation/detail/deformable_vbd/quasi_newton_hessian.hpp": "acae6fabb2864c2d632e8362b12f58da8a801928d390f6b12a277765d2d81089",
+      "dart/simulation/detail/deformable_vbd/block_descent.hpp": "72fe53193a08eda485f056ddd3083e7601e37a031c3c7f6b6c379a72a4d4dc7e",
+      "dart/simulation/detail/deformable_vbd/finite_stiffness_kernel.hpp": "5081bf25a5e0aefb7502f32eebb39c1ac0db422c01632f01de4c70e7486c16fc",
+      "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp": "9ca360acabf905f87aefe8179c9e8df8e7564108696703242d64a85025e43416"
+    }
+  },
+  "implementation_scope": {
+    "covered_cpu_rows": [
+      "deformable finite-stiffness distance springs",
+      "rigid distance springs",
+      "rigid point attachments",
+      "nonlinear rigid point-pair joint and motor rows"
+    ],
+    "contact_policy": "Normal and friction contact rows remain Taylor-linearized and intentionally omit second-order point curvature.",
+    "allocation_policy": "All new local matrices and column-norm diagonals are fixed-size and use no dynamic allocation."
+  },
+  "correctness": {
+    "focused_tests": [
+      "VbdFiniteStiffness.CompressedSpringUsesQuasiNewtonColumnNorms",
+      "VbdFiniteStiffness.ProjectedQuasiNewtonDiagonalPropagatesNonfiniteInputs",
+      "AvbdRigidBlock.WorldPointGeometricStiffnessMatchesForceJacobian",
+      "AvbdRigidBlock.WorldPointQuasiNewtonDiagonalPropagatesNonfiniteForce",
+      "AvbdRigidBlock.PointAttachmentStampsQuasiNewtonHessian",
+      "AvbdRigidBlock.NonlinearPointPairStampsQuasiNewtonCurvature",
+      "AvbdRigidBlock.TaylorLinearizedContactOmitsPointCurvature",
+      "AvbdRigidBlock.DistanceSpringOriginAnchorUsesQuasiNewtonHessian",
+      "AvbdRigidBlock.DistanceSpringIncludesRotationalQuasiNewtonCurvature",
+      "AvbdRigidBlock.DistanceSpringQuasiNewtonDiagonalMatchesFiniteDifference",
+      "AvbdRigidBlock.PointPairDistanceSpringStepReducesStretch",
+      "AvbdRigidBlock.RigidRowDriverReducesDistanceSpringStretch"
+    ],
+    "focused_test_result": {
+      "rigid_avbd": "115 passed",
+      "deformable_finite_stiffness": "9 passed"
+    },
+    "full_validation": {
+      "build": "fresh uncached Release/profile build passed with dartpy and GUI enabled",
+      "selected_unit_suite": "168 passed",
+      "lint": "pixi run lint and pixi run check-lint passed",
+      "contract_checker": "176 canonical rows validated; VBD partial=40 missing=48; AVBD partial=69 missing=19",
+      "contract_checker_tests": "21 passed",
+      "avbd_packet_checker": "52 packets validated",
+      "plan122_checker": "18 rows validated; 14 closed"
+    },
+    "mutation_sensitivity": "The compressed-spring and off-center rigid expected-matrix tests fail if the geometric diagonal is removed or its force sign, body polarity, or contact policy is changed.",
+    "source_scene_text_oracle": {
+      "scene": "avbd_demo3d_spring",
+      "command": "PYTHONPATH=build/default/cpp/Release/python:python <python> -c <3600-step spring-length oracle>",
+      "steps": 3600,
+      "simulated_seconds": 60.0,
+      "initial_spring_length": 6.0,
+      "global_min_spring_length": 3.7055829703974634,
+      "global_max_spring_length": 6.0,
+      "tail_min_spring_length": 4.793842751652523,
+      "tail_mean_spring_length": 4.799822330652265,
+      "tail_max_spring_length": 4.805612232517255,
+      "expected_static_length": 4.8,
+      "tail_mean_static_length_error": 0.00017766934773444376,
+      "max_lateral_drift": 0.0,
+      "all_finite": true,
+      "verdict": "pass"
+    }
+  },
+  "allocation": {
+    "tests": [
+      "World.BakedStepsDoNotGrowWorldBaseAllocatorForReservedEcsPaths",
+      "World.BakedMultibodyAndDeformableStepsDoNotAllocateGlobalHeap",
+      "World.BakedAvbdVbdRowsDoNotMallocOnHeap"
+    ],
+    "added_scene": "deformable AVBD finite-stiffness rows",
+    "coverage": [
+      "world-base allocator stability",
+      "global operator-new stability",
+      "raw malloc-family stability"
+    ],
+    "result": "pass"
+  },
+  "performance": {
+    "claim_boundary": "Descriptive same-host before/after mechanism cost only; this is not a source-reference or paper-number comparison.",
+    "host": "mark26",
+    "cpu_pin": 18,
+    "cpu_reported_mhz": 5300,
+    "cpu_scaling_enabled": true,
+    "library": "Google Benchmark 1.9.5",
+    "baseline_commit": "710cbfc1152d3f7dd2a2dc8638560850fc5ba82f",
+    "baseline_binary_sha256": "9e885d0d75196a15306b75613432e0b17ee902c2fbc055b3d7699b395b870bc5",
+    "candidate_binary_sha256": "ed0620c7f8e57a9515997f458c66aa417e070c7a27f10cc715ac523a37aed1bc",
+    "protocol": "Exact-HEAD baseline and working-tree candidate were run baseline-candidate-baseline-candidate with identical filters, 0.05-second minimum time, five repetitions per run, and aggregate-only JSON.",
+    "command": "taskset -c 18 <binary> --benchmark_filter='BM_AvbdRigidFixedJointStep/32$|BM_AvbdDemo2dSpringStep$|BM_AvbdDemo3dSpringStep$' --benchmark_min_time=0.05s --benchmark_repetitions=5 --benchmark_report_aggregates_only=true --benchmark_out=<json> --benchmark_out_format=json",
+    "runs": [
+      {
+        "order": 1,
+        "kind": "baseline",
+        "json_sha256": "c2bdbb503ab375d4ad96df673b105208beba00aaf17aa771ac6ee08d9bdc6d7a",
+        "median_real_time_ns": {
+          "BM_AvbdRigidFixedJointStep/32": 373922.4555743712,
+          "BM_AvbdDemo2dSpringStep": 6561.910350388325,
+          "BM_AvbdDemo3dSpringStep": 7935.393019341876
+        }
+      },
+      {
+        "order": 2,
+        "kind": "candidate",
+        "json_sha256": "50c43957a04523a699f62aee61de89785961f177f8bb71d0a887a993dffe3b43",
+        "median_real_time_ns": {
+          "BM_AvbdRigidFixedJointStep/32": 369968.3770171674,
+          "BM_AvbdDemo2dSpringStep": 6715.277614827978,
+          "BM_AvbdDemo3dSpringStep": 8065.158527918522
+        }
+      },
+      {
+        "order": 3,
+        "kind": "baseline",
+        "json_sha256": "16c9cbc8d81debdd0f968601cfcee8d159175cfeb186d69292c5cee86b523452",
+        "median_real_time_ns": {
+          "BM_AvbdRigidFixedJointStep/32": 373919.47646971536,
+          "BM_AvbdDemo2dSpringStep": 6568.656915683515,
+          "BM_AvbdDemo3dSpringStep": 7931.283613344918
+        }
+      },
+      {
+        "order": 4,
+        "kind": "candidate",
+        "json_sha256": "37e4edc9a6e345d175b835ab6c1bbfe4c9b01250a5f84bfa9d71598951335926",
+        "median_real_time_ns": {
+          "BM_AvbdRigidFixedJointStep/32": 370213.6858900356,
+          "BM_AvbdDemo2dSpringStep": 6720.304535257326,
+          "BM_AvbdDemo3dSpringStep": 8103.35487577972
+        }
+      }
+    ],
+    "mean_of_paired_medians": {
+      "BM_AvbdRigidFixedJointStep/32": {
+        "baseline_real_time_ns": 373920.96602204326,
+        "candidate_real_time_ns": 370091.0314536015,
+        "delta_percent": -1.024263124153
+      },
+      "BM_AvbdDemo2dSpringStep": {
+        "baseline_real_time_ns": 6565.283633035921,
+        "candidate_real_time_ns": 6717.791075042653,
+        "delta_percent": 2.322937599212
+      },
+      "BM_AvbdDemo3dSpringStep": {
+        "baseline_real_time_ns": 7933.338316343397,
+        "candidate_real_time_ns": 8084.256701849121,
+        "delta_percent": 1.902331395534
+      }
+    },
+    "rejected_candidate": {
+      "reason": "The first generic fixed-matrix implementation was rejected before acceptance because it added avoidable local matrix work.",
+      "delta_percent": {
+        "BM_AvbdRigidFixedJointStep/32": 4.286910299,
+        "BM_AvbdDemo2dSpringStep": 26.243990177,
+        "BM_AvbdDemo3dSpringStep": 23.898732712
+      }
+    }
+  },
+  "visual": {
+    "scene": "avbd_demo3d_spring",
+    "capture_command": "LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe PYTHONPATH=build/default/cpp/Release/python:python BUILD_TYPE=Release <python> scripts/capture_py_demo.py --scene avbd_demo3d_spring --frames 120 --width 640 --height 480 --view three-quarter --camera-distance 20 --camera-target 0,0,7 --output-dir <capture-dir>",
+    "frames": 120,
+    "image_sha256": "1561475b45015991d04ee6c91c64bcd42f516cf37e24652dfbd0b6fd0e4da715",
+    "manifest_sha256": "5a29498c819200ade38054c7888959f4b873549afeb6cb41353d6373bad04f2e",
+    "image_verdict_sha256": "13915a06279b735a433b7b828b772784bcae63afb757b0511122e0a993711be9",
+    "machine_verdict": {
+      "scope": "pixel-integrity",
+      "non_blank": true,
+      "contrast": false,
+      "contrast_required": false,
+      "pass": true
+    },
+    "manual_semantic_review": {
+      "inspected_frames": [
+        {
+          "frame": 1,
+          "sha256": "d86812dc2c762f0e2c2ca63a5aebc672be4fd0bb6c7d95c7890570dab23326ee"
+        },
+        {
+          "frame": 60,
+          "sha256": "6eac03725e5e0537943269709a1ffce661edb2f44d8353c342835841eb20f159"
+        },
+        {
+          "frame": 120,
+          "sha256": "1561475b45015991d04ee6c91c64bcd42f516cf37e24652dfbd0b6fd0e4da715"
+        }
+      ],
+      "observations": "The dynamic orange block remains finite, centered directly below the static dark anchor, visibly moves through the sequence, and neither explodes nor penetrates the ground.",
+      "limitations": "The scene does not draw spring geometry, so attachment and equilibrium are established by the separate text oracle rather than inferred from the image. This is a narrow current-build behavior check, not source visual parity.",
+      "verdict": "pass"
+    }
+  },
+  "remaining_blockers": [
+    "Angular log-map row curvature is not implemented.",
+    "Other paper constraint families have not received row-specific Section 3.5 closure.",
+    "The pinned 3D spring reference omits the paper's geometric term, so source-demo equivalence needs an explicit adjudication and separate evidence.",
+    "The CUDA AVBD backend is missing.",
+    "No source-matched achieved-accuracy performance comparison or paper-number comparison is closed.",
+    "Dependent figures, videos, online demos, and project-page rows remain partial or missing."
+  ]
+}

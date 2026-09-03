@@ -34,8 +34,8 @@
 
 #include <algorithm>
 #include <array>
-#include <functional>
 
+#include <cassert>
 #include <cmath>
 
 namespace dart::collision::native::box_box {
@@ -43,6 +43,11 @@ namespace dart::collision::native::box_box {
 namespace {
 
 constexpr double kClipTolerance = 1e-10;
+/// Skin above the reference plane within which a clipped incident vertex is
+/// still a (zero-depth) contact candidate: a hundredth of the incident box's
+/// smallest half extent, at least 0.1 mm.
+constexpr double kContactSkinRelative = 1e-2;
+constexpr double kContactSkinAbsolute = 1e-4;
 constexpr double kSurfaceAxisEpsilon = 1e-8;
 
 struct FaceBasis
@@ -55,6 +60,53 @@ struct FaceBasis
   Eigen::Vector3d tangent2 = Eigen::Vector3d::UnitY();
   double halfExtent1 = 0.0;
   double halfExtent2 = 0.0;
+};
+
+/// A convex polygon crosses a plane at most twice, so one clip emits at most
+/// two crossing vertices. See `FixedContactCandidates` for the vertex-count
+/// proof this bound anchors.
+constexpr std::size_t kMaxClipCrossings = 2u;
+
+struct FixedPolygon
+{
+  static constexpr std::size_t kCapacity = FixedContactCandidates::kCapacity;
+
+  void pushBack(const Eigen::Vector3d& point) noexcept
+  {
+    // Unreachable: `clipPolygon` holds the polygon to the proven bound of
+    // FixedContactCandidates::kMaxClippedFaceVertexCount, which is below
+    // kCapacity. This runs inside collision worker threads that have no
+    // handler, so a full buffer must never throw; it drops the vertex instead
+    // of writing past the array, and trips in a debug build.
+    assert(count < values.size());
+    if (count >= values.size()) {
+      return;
+    }
+    values[count++] = point;
+  }
+
+  [[nodiscard]] bool empty() const noexcept
+  {
+    return count == 0u;
+  }
+
+  [[nodiscard]] const Eigen::Vector3d& back() const noexcept
+  {
+    return values[count - 1u];
+  }
+
+  [[nodiscard]] const Eigen::Vector3d* begin() const noexcept
+  {
+    return values.data();
+  }
+
+  [[nodiscard]] const Eigen::Vector3d* end() const noexcept
+  {
+    return values.data() + count;
+  }
+
+  std::array<Eigen::Vector3d, kCapacity> values{};
+  std::size_t count = 0u;
 };
 
 [[nodiscard]] FaceBasis makeFaceBasis(
@@ -91,30 +143,42 @@ struct FaceBasis
   return makeFaceBasis(box, axis, outwardNormal);
 }
 
-[[nodiscard]] std::vector<Eigen::Vector3d> makeFaceVertices(
-    const FaceBasis& face)
+[[nodiscard]] FixedPolygon makeFaceVertices(const FaceBasis& face)
 {
-  return {
+  FixedPolygon polygon;
+  polygon.pushBack(
       face.center - face.halfExtent1 * face.tangent1
-          - face.halfExtent2 * face.tangent2,
+      - face.halfExtent2 * face.tangent2);
+  polygon.pushBack(
       face.center + face.halfExtent1 * face.tangent1
-          - face.halfExtent2 * face.tangent2,
+      - face.halfExtent2 * face.tangent2);
+  polygon.pushBack(
       face.center + face.halfExtent1 * face.tangent1
-          + face.halfExtent2 * face.tangent2,
+      + face.halfExtent2 * face.tangent2);
+  polygon.pushBack(
       face.center - face.halfExtent1 * face.tangent1
-          + face.halfExtent2 * face.tangent2};
+      + face.halfExtent2 * face.tangent2);
+  return polygon;
 }
 
-void clipPolygon(
-    std::vector<Eigen::Vector3d>& polygon,
-    const std::function<double(const Eigen::Vector3d&)>& signedDistance)
+/// Sutherland-Hodgman clip of a convex polygon against one half-space.
+///
+/// The emitted crossing count is capped at `kMaxClipCrossings` so the output
+/// size stays a theorem rather than a property inherited from exact arithmetic.
+/// A convex polygon really does change sign at most twice around its boundary,
+/// but the inside test carries a tolerance, so a face lying nearly in the clip
+/// plane can report extra sign changes from floating-point noise alone. Each
+/// spurious crossing would add a vertex, and enough of them would push the
+/// polygon past the bound `FixedContactCandidates` proves.
+template <typename SignedDistance>
+void clipPolygon(FixedPolygon& polygon, SignedDistance&& signedDistance)
 {
   if (polygon.empty()) {
     return;
   }
 
-  std::vector<Eigen::Vector3d> clipped;
-  clipped.reserve(polygon.size() + 1);
+  FixedPolygon clipped;
+  std::size_t crossings = 0u;
 
   Eigen::Vector3d previous = polygon.back();
   double previousDistance = signedDistance(previous);
@@ -124,16 +188,17 @@ void clipPolygon(
     const double currentDistance = signedDistance(current);
     const bool currentInside = currentDistance >= -kClipTolerance;
 
-    if (currentInside != previousInside) {
+    if (currentInside != previousInside && crossings < kMaxClipCrossings) {
       const double denominator = previousDistance - currentDistance;
       if (std::abs(denominator) > kClipTolerance) {
         const double t = previousDistance / denominator;
-        clipped.push_back(previous + t * (current - previous));
+        clipped.pushBack(previous + t * (current - previous));
+        ++crossings;
       }
     }
 
     if (currentInside) {
-      clipped.push_back(current);
+      clipped.pushBack(current);
     }
 
     previous = current;
@@ -141,12 +206,19 @@ void clipPolygon(
     previousInside = currentInside;
   }
 
-  polygon = std::move(clipped);
+  polygon = clipped;
 }
 
-void clipToReferenceFace(
-    std::vector<Eigen::Vector3d>& polygon, const FaceBasis& reference)
+void clipToReferenceFace(FixedPolygon& polygon, const FaceBasis& reference)
 {
+  // The four side half-spaces of the reference face. The vertex-count proof
+  // on FixedContactCandidates is stated in terms of this count. The reference
+  // plane itself is applied per vertex by the candidate builder (a separated
+  // vertex is dropped, a penetrating one keeps its own depth), never as a
+  // clip plane: see FixedContactCandidates::kClipPlaneCount.
+  static_assert(
+      FixedContactCandidates::kClipPlaneCount == 4u,
+      "clipToReferenceFace applies four half-spaces");
   clipPolygon(polygon, [&](const Eigen::Vector3d& point) {
     const double coordinate
         = (point - reference.center).dot(reference.tangent1);
@@ -166,11 +238,6 @@ void clipToReferenceFace(
     const double coordinate
         = (point - reference.center).dot(reference.tangent2);
     return reference.halfExtent2 + coordinate;
-  });
-  clipPolygon(polygon, [&](const Eigen::Vector3d& point) {
-    const double signedDistance
-        = reference.normal.dot(point - reference.center);
-    return -signedDistance;
   });
 }
 
@@ -214,7 +281,7 @@ void clipToReferenceFace(
       sat.penetration};
 }
 
-[[nodiscard]] std::vector<ContactCandidate> computeFaceContactCandidates(
+[[nodiscard]] FixedContactCandidates computeFaceContactCandidates(
     const BoxData& box1, const BoxData& box2, const SatResult& sat)
 {
   if (sat.referenceBox < 0 || sat.referenceAxis < 0) {
@@ -232,21 +299,40 @@ void clipToReferenceFace(
   const FaceBasis incidentFace
       = makeBestFaceBasis(incident, -referenceFace.normal);
 
-  std::vector<Eigen::Vector3d> polygon = makeFaceVertices(incidentFace);
+  FixedPolygon polygon = makeFaceVertices(incidentFace);
   clipToReferenceFace(polygon, referenceFace);
 
-  std::vector<ContactCandidate> candidates;
-  candidates.reserve(polygon.size());
+  // Each clipped incident vertex is a candidate with its own depth below the
+  // reference plane (the separation the reference sources assign per point).
+  // A vertex within the skin above the plane is a touching candidate of zero
+  // depth, so a box resting flat keeps its whole face patch through the
+  // rounding-level rocking of a settled contact instead of dropping and
+  // re-detecting corners every step; a vertex further above the plane is
+  // separated and contributes nothing. The deepest candidate's depth is the
+  // SAT penetration of a face contact.
+  const double skin = std::max(
+      kContactSkinAbsolute,
+      kContactSkinRelative * incident.halfExtents.minCoeff());
+  FixedContactCandidates candidates;
   for (const auto& point : polygon) {
     const double signedDistance
         = referenceFace.normal.dot(point - referenceFace.center);
-    if (-signedDistance + kClipTolerance < 0.0) {
+    if (-signedDistance + skin < 0.0) {
       continue;
     }
 
-    candidates.push_back(
-        {point - 0.5 * signedDistance * referenceFace.normal,
-         std::max(0.0, sat.penetration)});
+    // Unreachable: the clipped polygon is held to
+    // FixedContactCandidates::kMaxClippedFaceVertexCount, which is below
+    // kCapacity, and this loop keeps at most one candidate per polygon vertex.
+    // A collision worker thread has no handler, so a full buffer stops here
+    // rather than throwing.
+    assert(candidates.count < candidates.values.size());
+    if (candidates.count >= candidates.values.size()) {
+      break;
+    }
+    candidates.values[candidates.count++]
+        = {point - 0.5 * signedDistance * referenceFace.normal,
+           std::max(0.0, -signedDistance)};
   }
 
   return candidates;
@@ -254,14 +340,24 @@ void clipToReferenceFace(
 
 } // namespace
 
-std::vector<ContactCandidate> computeBoxBoxContactCandidates(
+FixedContactCandidates computeBoxBoxContactCandidatesFixed(
     const BoxData& box1, const BoxData& box2, const SatResult& sat)
 {
   if (sat.axisType == SatAxisType::Face) {
     return computeFaceContactCandidates(box1, box2, sat);
   }
 
-  return {computeSupportContactCandidate(box1, box2, sat)};
+  FixedContactCandidates candidates;
+  candidates.values[0] = computeSupportContactCandidate(box1, box2, sat);
+  candidates.count = 1u;
+  return candidates;
+}
+
+std::vector<ContactCandidate> computeBoxBoxContactCandidates(
+    const BoxData& box1, const BoxData& box2, const SatResult& sat)
+{
+  const auto fixed = computeBoxBoxContactCandidatesFixed(box1, box2, sat);
+  return {fixed.begin(), fixed.end()};
 }
 
 } // namespace dart::collision::native::box_box

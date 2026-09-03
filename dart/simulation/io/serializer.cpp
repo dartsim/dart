@@ -438,6 +438,21 @@ void rejectUnsupportedComponentVersion(
         "Unsupported simulation binary format version: comps.JointActuation "
         "records from version 27 or older do not include commandAcceleration");
   }
+  if (formatVersion < 31u && typeName == "comps.DeformableVbdConfig") {
+    throw std::runtime_error(
+        "Unsupported simulation binary format version: "
+        "comps.DeformableVbdConfig records require version 31 or newer");
+  }
+  if (formatVersion < 33u && typeName == "comps.DeformableContactConfig") {
+    throw std::runtime_error(
+        "Unsupported simulation binary format version: "
+        "comps.DeformableContactConfig records require version 33 or newer");
+  }
+  if (formatVersion < 35u && typeName == "comps.RigidAvbdContactConfig") {
+    throw std::runtime_error(
+        "Unsupported simulation binary format version: "
+        "comps.RigidAvbdContactConfig records require version 35 or newer");
+  }
 }
 
 class CollisionGeometryComponentSerializer final
@@ -514,6 +529,7 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
   registerCollisionGeometrySerializer(registry);
   registerComponentIfNeeded<comps::DeformableGroundBarrierTag>(registry);
   registerComponentIfNeeded<comps::DeformableSurfaceCcdObstacleTag>(registry);
+  registerComponentIfNeeded<comps::DeformableObstacleNoCcdTag>(registry);
   registerComponentIfNeeded<comps::ContactMaterial>(registry);
   registerComponentIfNeeded<comps::DeformableBodyTag>(registry);
   comps::registerDeformableBodySerializers(registry);
@@ -542,6 +558,7 @@ void registerBuiltInSerializers(SerializerRegistry& registry)
   registerComponentIfNeeded<comps::AvbdJointStiffness>(registry);
   registerAvbdRigidWorldPointJointConfigSerializer(registry);
   registerAvbdRigidWorldDistanceSpringConfigSerializer(registry);
+  registerComponentIfNeeded<comps::RigidAvbdContactConfig>(registry);
 
   registerComponentIfNeeded<comps::Transform>(registry);
   registerComponentIfNeeded<comps::Velocity>(registry);

@@ -159,14 +159,38 @@ def test_avbd_paper_scale_high_ratio_chain_packet_records_benchmark_evidence(
     )
 
     packet = json.loads(output.read_text())
+    assert packet["schema_version"] == 1
     assert packet["packet"] == "avbd_paper_scale_high_ratio_chain"
+    assert "resolved_solver_identity" not in packet
+    assert "resolved_multibody_identity" not in packet
+    assert packet["evidence_boundary"] == {
+        "artifact_status": "legacy_unbound",
+        "avbd_performance_claim_supported": False,
+        "avbd_solver_evidence": False,
+        "capture_artifacts_accessible": False,
+        "current_build_bound": False,
+        "historical_identifiers_retained": True,
+        "historical_measurements_preserved": True,
+        "measurement_runtime_identity_recorded": False,
+        "plan104_avbd_row_closure_supported": False,
+        "semantic_visual_review_recorded": False,
+        "reason": (
+            "This legacy packet preserves historical hashes and timing metadata "
+            "whose source artifacts and runtime identity counters are unavailable. "
+            "The current fixture selects variational multibody integration, but "
+            "that source audit does not bind the historical measurement."
+        ),
+        "supported_scope": (
+            "historical_variational_multibody_capture_hash_and_cpu_metadata"
+        ),
+    }
     assert packet["scene"] == "avbd_paper_scale_high_ratio_chain"
     assert packet["target"] == {
         "complete_paper_reproduction": False,
         "paper_gap": "50-body pendulum with 50,000:1 mass ratio",
         "scope": (
-            "paper-scale 50-link articulated-chain visual/CPU benchmark smoke "
-            "with a 50,000:1 heavy tip"
+            "historical paper-scale 50-link variational-multibody visual/CPU "
+            "smoke with a 50,000:1 heavy tip; not AVBD solver evidence"
         ),
     }
     assert packet["scene_invariants"] == {
@@ -191,12 +215,10 @@ def test_avbd_paper_scale_high_ratio_chain_packet_records_benchmark_evidence(
         "time_step": 0.005,
         "tolerance": 1e-9,
     }
-    assert (
-        packet["visual_capture"]["scene"] == "avbd_paper_scale_high_ratio_chain"
-    )
+    assert packet["visual_capture"]["scene"] == "avbd_paper_scale_high_ratio_chain"
     assert packet["visual_capture"]["frames"]["count"] == 2
     assert (
-        "same-hardware paper-number comparison for the 50-link 50,000:1 chain"
+        "implement an actual AVBD 50-link 50,000:1 high-ratio fixture"
         in packet["remaining_gates"]
     )
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write a validated AVBD high-ratio iteration-sweep benchmark packet."""
+"""Write the historical variational-multibody iteration-sweep packet."""
 
 from __future__ import annotations
 
@@ -17,8 +17,10 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from avbd_packet_schema import (  # noqa: E402
-    AVBD_PACKET_SCHEMA_VERSION,
     make_resolved_solver_identity,
+)
+from write_avbd_articulated_high_ratio_chain_packet import (  # noqa: E402
+    _evidence_boundary,
 )
 
 DEFAULT_OUTPUT = Path(
@@ -36,11 +38,16 @@ REPLAY_STEPS = 32
 REPLAY_SECONDS = 0.16
 TOLERANCE = 1e-9
 EXPECTED_MAX_ITERATIONS = (25, 50, 100, 200)
+LEGACY_SCHEMA_VERSION = 3
 RESOLVED_SOLVER_IDENTITY = make_resolved_solver_identity(
     resolved_rigid_contact_family=None,
-    rigid_point_joint_solver="avbd",
+    rigid_point_joint_solver="none",
     avbd_rigid_contact_config_emplaced=False,
-    recorded_from="paper-scale high-ratio iteration benchmark row family",
+    recorded_from=(
+        "static current-source audit only; the historical benchmark does not "
+        "record runtime identity counters"
+    ),
+    multibody_integration_family="variational",
 )
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
@@ -281,15 +288,18 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
 
 def make_packet(benchmark_json: Path, plot_svg: Path | None = None) -> dict[str, Any]:
     packet = {
-        "schema_version": AVBD_PACKET_SCHEMA_VERSION,
+        "schema_version": LEGACY_SCHEMA_VERSION,
         "resolved_solver_identity": RESOLVED_SOLVER_IDENTITY,
+        "evidence_boundary": _evidence_boundary(
+            "historical_variational_multibody_cpu_metadata_and_plot"
+        ),
         "packet": "avbd_paper_scale_high_ratio_iteration_sweep",
         "scene": SCENE_ID,
         "target": {
             "paper_gap": "iteration-count sweep for the 50-link 50,000:1 chain",
             "scope": (
-                "benchmark-only max-iteration sweep over the paper-scale "
-                "50-link articulated chain"
+                "historical max-iteration sweep over the paper-scale 50-link "
+                "variational-multibody chain; not AVBD solver evidence"
             ),
             "complete_paper_reproduction": False,
         },
@@ -317,11 +327,11 @@ def make_packet(benchmark_json: Path, plot_svg: Path | None = None) -> dict[str,
     if plot_svg is not None:
         packet["rendered_plot"] = _validate_plot(plot_svg)
     remaining_gates = [
-        "same-hardware paper-number comparison for the 50-link 50,000:1 chain",
-        "two-heavy-ball chain visual and invariant",
-        "broad articulated hard-constraint stability coverage",
-        "GPU AVBD row parity and same-hardware benchmark packets",
-        "paper/site/video scene visual and performance packets",
+        "implement an actual AVBD 50-link 50,000:1 iteration sweep",
+        "record runtime-derived AVBD solver identity for the replacement",
+        "reproduce the exact paper trajectory and same-hardware comparison",
+        "verify actual AVBD CPU and GPU performance parity",
+        "capture paper/site/video evidence from the actual AVBD fixture",
     ]
     if plot_svg is None:
         remaining_gates.insert(
@@ -343,7 +353,10 @@ def main(argv: list[str]) -> int:
     except AvbdPaperScaleHighRatioIterationSweepPacketError as exc:
         raise SystemExit(str(exc)) from exc
     write_packet(args.output, packet)
-    print(f"Wrote AVBD paper-scale high-ratio iteration-sweep packet: {args.output}")
+    print(
+        "Wrote historical variational-multibody high-ratio iteration-sweep "
+        f"packet: {args.output}"
+    )
     return 0
 
 

@@ -73,6 +73,10 @@ def test_humanize_new_solver_surfaces():
         == "AVBD empty baseline step"
     )
     assert (
+        module.humanize_name("BM_VbdPaperBreakableWallStep")
+        == "VBD paper breakable-wall step"
+    )
+    assert (
         module.humanize_name("BM_AvbdRigidFixedJointStep/8")
         == "AVBD fixed-joint step · 8 links"
     )
@@ -210,57 +214,73 @@ def test_humanize_new_solver_surfaces():
     )
     assert (
         module.humanize_name("BM_AvbdArticulatedRevoluteMotorStep/8")
-        == "AVBD articulated revolute-motor step · 8 motors"
+        == "Variational articulated revolute-motor step · 8 motors"
     )
     assert (
         module.humanize_name("BM_AvbdArticulatedBreakableMotorStep/8")
-        == "AVBD articulated breakable-motor step · 8 breakable motors"
+        == "Variational articulated breakable-motor step · 8 breakable motors"
     )
     assert (
         module.humanize_name("BM_AvbdArticulatedPrismaticMotorStep/8")
-        == "AVBD articulated prismatic-motor step · 8 motors"
+        == "Variational articulated prismatic-motor step · 8 motors"
     )
     assert (
         module.humanize_name("BM_AvbdArticulatedPrismaticBreakableMotorStep/8")
-        == "AVBD articulated prismatic breakable-motor step · 8 breakable motors"
+        == "Variational articulated prismatic breakable-motor step · "
+        "8 breakable motors"
     )
     assert (
         module.humanize_name("BM_AvbdArticulatedWorldPrismaticBreakableMotorStep/8")
-        == "AVBD articulated world-prismatic breakable-motor step · 8 breakable motors"
+        == "Variational articulated world-prismatic breakable-motor step · "
+        "8 breakable motors"
     )
     assert (
         module.humanize_name("BM_AvbdArticulatedWorldRevoluteBreakableMotorStep/8")
-        == "AVBD articulated world-revolute breakable-motor step · 8 breakable motors"
+        == "Variational articulated world-revolute breakable-motor step · "
+        "8 breakable motors"
     )
     assert (
         module.humanize_name("BM_AvbdArticulatedBreakableJointStep/8")
-        == "AVBD articulated breakable-joint step · 8 breakable joints"
+        == "Variational articulated breakable-joint step · 8 breakable joints"
     )
     assert (
         module.humanize_name("BM_AvbdArticulatedWorldSphericalBreakableJointStep/8")
         == (
-            "AVBD articulated world-spherical breakable-joint step · "
+            "Variational articulated world-spherical breakable-joint step · "
             "8 breakable joints"
         )
     )
     assert (
         module.humanize_name("BM_AvbdArticulatedSphericalPairBreakableJointStep/8")
         == (
-            "AVBD articulated spherical-pair breakable-joint step · "
+            "Variational articulated spherical-pair breakable-joint step · "
             "8 breakable joints"
         )
     )
     assert (
+        module.humanize_name("BM_AvbdArticulatedCompliantJointStep/4")
+        == "Variational articulated compliant-joint step · 4 joint families"
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedCompliantMotorStep/4")
+        == "Variational articulated compliant-motor step · 4 motor families"
+    )
+    assert (
+        module.humanize_name("BM_AvbdArticulatedCompliantBreakableMotorStep/4")
+        == "Variational articulated compliant breakable-motor step · "
+        "4 motor families"
+    )
+    assert (
         module.humanize_name("BM_AvbdArticulatedHighRatioChainStep")
-        == "AVBD articulated high-ratio chain step"
+        == "Variational articulated high-ratio chain step"
     )
     assert (
         module.humanize_name("BM_AvbdPaperScaleHighRatioChainStep")
-        == "AVBD paper-scale high-ratio chain step"
+        == "Variational paper-scale high-ratio chain step"
     )
     assert (
         module.humanize_name("BM_AvbdPaperScaleHighRatioChainIterationSweep/100")
-        == "AVBD paper-scale high-ratio chain iteration sweep · "
+        == "Variational paper-scale high-ratio chain iteration sweep · "
         "100 max iterations"
     )
 
@@ -302,8 +322,11 @@ def test_family_grouping():
     assert module.family_of("BM_DeformableFemBarStep/2") == module.FAMILY_FEM
     assert module.family_of("BM_AvbdEmptyWorldStep") == module.FAMILY_AVBD
     assert (
+        module.family_of("BM_VbdPaperBreakableWallStep") == module.FAMILY_RIGID
+    )
+    assert (
         module.family_of("BM_AvbdPaperScaleHighRatioChainIterationSweep/100")
-        == module.FAMILY_AVBD
+        == module.FAMILY_VARIATIONAL
     )
     assert module.family_of("BM_AvbdDemo2dMotorStep") == module.FAMILY_AVBD
     assert module.family_of("BM_AvbdDemo2dHangingRopeStep") == module.FAMILY_AVBD
@@ -350,27 +373,27 @@ def test_family_grouping():
     assert module.family_of("BM_AvbdRigidFixedJointStep/1") == module.FAMILY_AVBD
     assert (
         module.family_of("BM_AvbdArticulatedRevoluteMotorStep/1")
-        == module.FAMILY_AVBD
+        == module.FAMILY_VARIATIONAL
     )
     assert (
         module.family_of("BM_AvbdArticulatedBreakableMotorStep/1")
-        == module.FAMILY_AVBD
+        == module.FAMILY_VARIATIONAL
     )
     assert (
         module.family_of("BM_AvbdArticulatedPrismaticBreakableMotorStep/1")
-        == module.FAMILY_AVBD
+        == module.FAMILY_VARIATIONAL
     )
     assert (
         module.family_of("BM_AvbdArticulatedWorldPrismaticBreakableMotorStep/1")
-        == module.FAMILY_AVBD
+        == module.FAMILY_VARIATIONAL
     )
     assert (
         module.family_of("BM_AvbdArticulatedWorldRevoluteBreakableMotorStep/1")
-        == module.FAMILY_AVBD
+        == module.FAMILY_VARIATIONAL
     )
     assert (
         module.family_of("BM_AvbdArticulatedBreakableJointStep/1")
-        == module.FAMILY_AVBD
+        == module.FAMILY_VARIATIONAL
     )
     assert (
         module.family_of("BM_AvbdRigidSphericalBreakableJointStep/1")
@@ -378,19 +401,31 @@ def test_family_grouping():
     )
     assert (
         module.family_of("BM_AvbdArticulatedWorldSphericalBreakableJointStep/1")
-        == module.FAMILY_AVBD
+        == module.FAMILY_VARIATIONAL
     )
     assert (
         module.family_of("BM_AvbdArticulatedSphericalPairBreakableJointStep/1")
-        == module.FAMILY_AVBD
+        == module.FAMILY_VARIATIONAL
+    )
+    assert (
+        module.family_of("BM_AvbdArticulatedCompliantJointStep/1")
+        == module.FAMILY_VARIATIONAL
+    )
+    assert (
+        module.family_of("BM_AvbdArticulatedCompliantMotorStep/1")
+        == module.FAMILY_VARIATIONAL
+    )
+    assert (
+        module.family_of("BM_AvbdArticulatedCompliantBreakableMotorStep/1")
+        == module.FAMILY_VARIATIONAL
     )
     assert (
         module.family_of("BM_AvbdArticulatedHighRatioChainStep")
-        == module.FAMILY_AVBD
+        == module.FAMILY_VARIATIONAL
     )
     assert (
         module.family_of("BM_AvbdPaperScaleHighRatioChainStep")
-        == module.FAMILY_AVBD
+        == module.FAMILY_VARIATIONAL
     )
     assert module.family_of("BM_Unmapped") == module.FAMILY_OTHER
 

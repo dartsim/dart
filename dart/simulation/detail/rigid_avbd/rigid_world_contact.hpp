@@ -33,6 +33,7 @@
 #pragma once
 
 #include <dart/simulation/body/contact.hpp>
+#include <dart/simulation/common/exceptions.hpp>
 #include <dart/simulation/comps/collision_geometry.hpp>
 #include <dart/simulation/comps/contact_material.hpp>
 #include <dart/simulation/comps/dynamics.hpp>
@@ -41,12 +42,16 @@
 #include <dart/simulation/comps/link.hpp>
 #include <dart/simulation/comps/rigid_body.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/projected_velocity_record.hpp>
 #include <dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp>
+#include <dart/simulation/detail/rigid_pair_constraint.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
+#include <dart/simulation/world_options.hpp>
 
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
 
+#include <entt/container/dense_map.hpp>
 #include <entt/entt.hpp>
 
 #include <algorithm>
@@ -54,7 +59,6 @@
 #include <limits>
 #include <span>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -64,10 +68,21 @@
 
 namespace dart::simulation::detail::deformable_vbd {
 
+static_assert(
+    kAvbdRigidJointAllAxesMask
+        == ::dart::simulation::detail::kRigidPairConstraintAllAxesMask,
+    "The AVBD kernel and solver-neutral rigid pair-constraint axis masks must "
+    "stay identical; consolidate before changing either");
+
 struct AvbdRigidWorldContactOptions
 {
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
+  /// Finite with a positive `timeStep`: each contact row starts at
+  /// `startStiffnessMassScale * m_eff / dt^2` instead of `startStiffness`
+  /// (see `AvbdRigidParameterProfile::startStiffnessMassScale`).
+  double startStiffnessMassScale = std::numeric_limits<double>::quiet_NaN();
+  double timeStep = std::numeric_limits<double>::quiet_NaN();
 };
 
 enum class AvbdRigidWorldEndpointKind
@@ -84,43 +99,16 @@ struct AvbdRigidWorldEndpoint
   bool canProjectAsRigidBody = false;
 };
 
-struct AvbdRigidWorldProjectableBodyView
-{
-  const comps::Transform* transform = nullptr;
-  const comps::MassProperties* mass = nullptr;
-  bool isStatic = false;
-
-  explicit operator bool() const noexcept
-  {
-    return transform != nullptr && mass != nullptr;
-  }
-};
+using AvbdRigidWorldProjectableBodyView
+    = ::dart::simulation::detail::RigidPairConstraintBodyView;
 
 struct AvbdRigidWorldPointJointInput
+  : ::dart::simulation::detail::RigidPairConstraintInput
 {
-  entt::entity joint = entt::null;
-  entt::entity bodyA = entt::null;
-  entt::entity bodyB = entt::null;
-  AvbdRigidWorldProjectableBodyView bodyAView;
-  AvbdRigidWorldProjectableBodyView bodyBView;
-  Eigen::Vector3d anchorA = Eigen::Vector3d::Zero();
-  Eigen::Vector3d anchorB = Eigen::Vector3d::Zero();
-  bool anchorsAreLocal = false;
-  Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
-  Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
-  Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
-  std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
-  std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
-  bool useLinearMotor = false;
-  bool useAngularMotor = false;
-  double motorTargetSpeed = 0.0;
-  double motorMaxForce = std::numeric_limits<double>::infinity();
-  double motorMaxTorque = std::numeric_limits<double>::infinity();
   double startStiffness = 1.0;
   double linearMaterialStiffness = std::numeric_limits<double>::infinity();
   double angularMaterialStiffness = std::numeric_limits<double>::infinity();
   double maxStiffness = std::numeric_limits<double>::infinity();
-  double fractureThreshold = 0.0;
 };
 
 struct AvbdRigidWorldDistanceSpringInput
@@ -147,8 +135,10 @@ struct AvbdRigidWorldPointJointConfig
   Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
   Eigen::Matrix3d linearAxes = Eigen::Matrix3d::Identity();
   Eigen::Matrix3d angularAxes = Eigen::Matrix3d::Identity();
-  std::uint8_t linearAxisMask = kAvbdRigidJointAllAxesMask;
-  std::uint8_t angularAxisMask = kAvbdRigidJointAllAxesMask;
+  std::uint8_t linearAxisMask
+      = ::dart::simulation::detail::kRigidPairConstraintAllAxesMask;
+  std::uint8_t angularAxisMask
+      = ::dart::simulation::detail::kRigidPairConstraintAllAxesMask;
   double startStiffness = 1.0;
   double linearMaterialStiffness = std::numeric_limits<double>::infinity();
   double angularMaterialStiffness = std::numeric_limits<double>::infinity();
@@ -175,7 +165,7 @@ struct AvbdRigidWorldContactSnapshot
   using EntityBodyIndexPair = std::pair<const entt::entity, std::uint32_t>;
   using EntityBodyIndexAllocator
       = ::dart::common::StlAllocator<EntityBodyIndexPair>;
-  using EntityBodyIndexMap = std::unordered_map<
+  using EntityBodyIndexMap = entt::dense_map<
       entt::entity,
       std::uint32_t,
       std::hash<entt::entity>,
@@ -264,6 +254,16 @@ struct AvbdRigidWorldContactSnapshot
   EntityBodyIndexMap entityBodyIndices;
   BodyStateVector states;
   BodyStateVector inertialTargets;
+  /// Poses after the last full iteration when a post-stabilization sweep
+  /// moved `states` afterwards; the step velocities are taken from these so
+  /// the positional correction injects no momentum. Empty otherwise.
+  BodyStateVector velocityStates;
+  /// Adaptive initial guess for the block-descent sweep (AVBD Algorithm 1
+  /// line 4, the reference sources' `accelWeight` warm start): the inertial
+  /// target minus the share of the gravity displacement the body did not
+  /// realize over the previous step. Empty when no guess was predicted; the
+  /// sweep then starts from `states`.
+  BodyStateVector initialGuessStates;
   DoubleVector masses;
   MatrixVector bodyInertias;
   ByteVector fixed;
@@ -285,6 +285,8 @@ inline void clearAvbdRigidWorldContactSnapshot(
   snapshot.entityBodyIndices.clear();
   snapshot.states.clear();
   snapshot.inertialTargets.clear();
+  snapshot.velocityStates.clear();
+  snapshot.initialGuessStates.clear();
   snapshot.masses.clear();
   snapshot.bodyInertias.clear();
   snapshot.fixed.clear();
@@ -300,12 +302,276 @@ inline void clearAvbdRigidWorldContactSnapshot(
 
 struct AvbdRigidWorldContactSolveOptions
 {
+  enum class Formulation
+  {
+    AugmentedLagrangian,
+    FixedPenalty,
+  };
+
+  // Constraint-family parameters stay independent of whether contact rows are
+  // present. Contact stages may opt into the contact-family override below
+  // without retuning disconnected joint, motor, or spring rows.
   AvbdRowWarmStartOptions warmStart;
-  AvbdRigidPointAttachmentOptions row;
-  AvbdRigidPointPairFrictionOptions friction;
+  AvbdRigidPointAttachmentOptions row{.alpha = AvbdRowWarmStartOptions{}.alpha};
   AvbdRigidPointPairDistanceSpringOptions distanceSpring;
+  bool hasContactFamilyOverride = false;
+  AvbdRowWarmStartOptions contactWarmStart;
+  AvbdRigidPointAttachmentOptions contactRow{
+      .alpha = AvbdRowWarmStartOptions{}.alpha};
+  AvbdRigidPointPairFrictionOptions friction{
+      .alpha = AvbdRowWarmStartOptions{}.alpha};
   AvbdRigidBlockDescentOptions descent;
+  Formulation formulation = Formulation::AugmentedLagrangian;
+  /// One extra primal-only sweep with alpha 0 after the step velocities are
+  /// taken, so the full pre-existing constraint error is removed from the
+  /// positions without injecting momentum (the reference source's
+  /// `postStabilize`).
+  bool postStabilize = false;
+  /// Rest penetration of every contact normal row (see
+  /// `AvbdRigidParameterProfile::contactMargin`).
+  double contactMargin = 0.0;
+  /// See `AvbdRigidParameterProfile::contactIdentityByFeatureOnly`.
+  bool contactIdentityByFeatureOnly = false;
 };
+
+/// Source-defined solver-wide AVBD parameters from Table 2 of Giles, Diaz,
+/// and Yuksel (SIGGRAPH 2025). Start/material/max stiffness remain properties
+/// of each constraint descriptor; this profile only owns Equations 12, 18,
+/// and 19 and must be applied coherently to every active row family.
+struct AvbdRigidParameterProfile
+{
+  double beta = 10.0;
+  double betaAngular = 10.0;
+  double alpha = 0.95;
+  double gamma = 0.99;
+  bool postStabilize = false;
+  /// Finite: k_start of AVBD Algorithm 1 line 6 for every public row
+  /// (contacts, friction, joints, motors, springs), replacing the configured
+  /// per-row start stiffness. NaN: keep the configured start stiffness (the
+  /// paper leaves k_start free; the paper profile keeps DART's 1e5).
+  double startStiffness = std::numeric_limits<double>::quiet_NaN();
+  /// Finite: the penalty ceiling of every public row (the reference sources'
+  /// PENALTY_MAX). NaN: keep the configured ceilings.
+  double maxStiffness = std::numeric_limits<double>::quiet_NaN();
+  /// Finite: every contact and joint row starts at this fraction of its
+  /// reduced mass over dt^2 (`scale * m_eff / dt^2`, the dynamic body's mass
+  /// against a fixed body), which makes the first-step penetration the same
+  /// fraction of `g dt^2` at every mass and keeps the block sweep of light
+  /// hard-jointed bodies from stalling. Overrides `startStiffness` and the
+  /// configured per-row start. NaN: not mass-scaled.
+  double startStiffnessMassScale = std::numeric_limits<double>::quiet_NaN();
+  /// Rest penetration of every contact normal row (the reference sources'
+  /// COLLISION_MARGIN): a resting contact keeps that overlap so its detection
+  /// never flickers. Zero: rows rest at zero penetration.
+  double contactMargin = 0.0;
+  /// Scale the angular joint rows by the reference sources' `torqueArm`
+  /// (|sizeA + sizeB|^2 of the bodies' collision extents), which puts their
+  /// penalty ramp in the linear rows' units.
+  bool angularRowsUseTorqueArm = false;
+  /// How each contact's Coulomb cone follows its normal row.
+  AvbdRigidFrictionConeRule frictionConeRule
+      = AvbdRigidFrictionConeRule::StepHighWaterDual;
+  /// Match a multi-point manifold's continuation by its contact feature keys
+  /// alone (the reference sources' manifold rule), so a contact sliding along
+  /// a face keeps its duals; DART's rule also bounds the points' motion.
+  bool contactIdentityByFeatureOnly = false;
+  /// When finite, a friction anchor keeps sticking while its dual stays
+  /// strictly inside the cone and the anchored points' tangential offset at
+  /// the step start is below this distance (the `avbd-demo2d` source's
+  /// STICK_THRESH rule; the post-stabilization sweep removes that offset
+  /// every step). NaN keeps the `avbd-demo3d` rule: the anchor sticks only
+  /// when the accepted step's tangential displacement is negligible.
+  double frictionStickOffsetThreshold
+      = std::numeric_limits<double>::quiet_NaN();
+};
+
+/// Regularization alpha of the main sweeps: a post-stabilized schedule
+/// ignores every pre-existing constraint error there (alpha 1) and removes
+/// it in the extra primal-only sweep instead.
+inline constexpr double avbdRigidParameterProfileSweepAlpha(
+    const AvbdRigidParameterProfile& profile) noexcept
+{
+  return profile.postStabilize ? 1.0 : profile.alpha;
+}
+
+inline constexpr AvbdRigidParameterProfile kAvbdRigidPaper2025Profile{};
+
+/// Defaults of the pinned `avbd-demo2d` source (74699a11f858, `solver.cpp`
+/// and `solver.h`): beta 1e5, alpha 0.99, gamma 0.99, post-stabilization on,
+/// PENALTY_MIN 1, PENALTY_MAX 1e9, COLLISION_MARGIN 5e-4, the joint
+/// `torqueArm` scale, and a cone from the latest normal dual. With
+/// post-stabilization the source runs its main sweeps with alpha 1, keeps the
+/// full dual across steps, and removes the positional error in one extra
+/// primal-only sweep after the velocities are taken. Every force starts at
+/// PENALTY_MIN; the source rows depend on that (a hard joint between equal
+/// light bodies stalls the block sweep at a large k_start, in the source
+/// exactly as here).
+inline constexpr AvbdRigidParameterProfile kAvbdRigidSourceDemo2dProfile{
+    .beta = 100000.0,
+    .betaAngular = 100000.0,
+    .alpha = 0.99,
+    .gamma = 0.99,
+    .postStabilize = true,
+    .startStiffness = 1.0,
+    .maxStiffness = 1.0e9,
+    .contactMargin = 0.0005,
+    .angularRowsUseTorqueArm = true,
+    .frictionConeRule = AvbdRigidFrictionConeRule::LatestDual,
+    .contactIdentityByFeatureOnly = true,
+    .frictionStickOffsetThreshold = 0.01};
+
+/// Defaults of the pinned `avbd-demo3d` source (7701bd427d55, `solver.cpp`
+/// and `solver.h`): betaLin 1e4, betaAng 100, alpha 0.99, gamma 0.999, no
+/// post-stabilization, PENALTY_MIN 1, PENALTY_MAX 1e10, COLLISION_MARGIN
+/// 1e-2, the joint `torqueArm` scale, and a cone from the normal trial force.
+inline constexpr AvbdRigidParameterProfile kAvbdRigidSourceDemo3dProfile{
+    .beta = 10000.0,
+    .betaAngular = 100.0,
+    .alpha = 0.99,
+    .gamma = 0.999,
+    .postStabilize = false,
+    .startStiffness = 1.0,
+    .maxStiffness = 1.0e10,
+    .contactMargin = 0.01,
+    .angularRowsUseTorqueArm = true,
+    .frictionConeRule = AvbdRigidFrictionConeRule::TrialForce,
+    .contactIdentityByFeatureOnly = true};
+
+/// The default profile: the `avbd-demo3d` source's rules and constants with
+/// the row start stiffness scaled by each row's reduced mass over dt^2
+/// (`RigidAvbdParameterProfile::MassScaledReference`).
+inline constexpr AvbdRigidParameterProfile kAvbdRigidMassScaledReferenceProfile{
+    .beta = 10000.0,
+    .betaAngular = 100.0,
+    .alpha = 0.99,
+    .gamma = 0.999,
+    .postStabilize = false,
+    .startStiffness = std::numeric_limits<double>::quiet_NaN(),
+    .maxStiffness = 1.0e10,
+    .startStiffnessMassScale = 1.0,
+    .contactMargin = 0.01,
+    .angularRowsUseTorqueArm = true,
+    .frictionConeRule = AvbdRigidFrictionConeRule::TrialForce,
+    .contactIdentityByFeatureOnly = true};
+
+/// Start stiffness of a row between two bodies under a mass-scaled profile:
+/// `scale * m_eff / dt^2` with `m_eff` the reduced mass (a non-positive or
+/// non-finite mass is a fixed body and drops out). Zero when neither mass is
+/// finite and positive or the inputs are invalid.
+inline double avbdRigidMassScaledStartStiffness(
+    double massA, double massB, double scale, double timeStep) noexcept
+{
+  if (!std::isfinite(scale) || scale <= 0.0 || !std::isfinite(timeStep)
+      || timeStep <= 0.0) {
+    return 0.0;
+  }
+  const bool dynamicA = std::isfinite(massA) && massA > 0.0;
+  const bool dynamicB = std::isfinite(massB) && massB > 0.0;
+  double reducedMass = 0.0;
+  if (dynamicA && dynamicB) {
+    reducedMass = massA * massB / (massA + massB);
+  } else if (dynamicA) {
+    reducedMass = massA;
+  } else if (dynamicB) {
+    reducedMass = massB;
+  } else {
+    return 0.0;
+  }
+  return scale * reducedMass / (timeStep * timeStep);
+}
+
+/// Mass of a snapshot body for the mass-scaled row start: infinite for a
+/// fixed (static or kinematic) body, whose stored mass is not its inertia in
+/// the sweep.
+inline double avbdRigidWorldRowBodyMass(
+    const AvbdRigidWorldContactSnapshot& snapshot, std::uint32_t body) noexcept
+{
+  if (body < snapshot.fixed.size() && snapshot.fixed[body] != 0u) {
+    return std::numeric_limits<double>::infinity();
+  }
+  return body < snapshot.masses.size()
+             ? snapshot.masses[body]
+             : std::numeric_limits<double>::infinity();
+}
+
+//==============================================================================
+inline const AvbdRigidParameterProfile& avbdRigidParameterProfileFor(
+    ::dart::simulation::RigidAvbdParameterProfile profile) noexcept
+{
+  switch (profile) {
+    case ::dart::simulation::RigidAvbdParameterProfile::SourceDemo2d:
+      return kAvbdRigidSourceDemo2dProfile;
+    case ::dart::simulation::RigidAvbdParameterProfile::SourceDemo3d:
+      return kAvbdRigidSourceDemo3dProfile;
+    case ::dart::simulation::RigidAvbdParameterProfile::MassScaledReference:
+      return kAvbdRigidMassScaledReferenceProfile;
+    case ::dart::simulation::RigidAvbdParameterProfile::Paper2025Table2:
+      break;
+  }
+  return kAvbdRigidPaper2025Profile;
+}
+
+//==============================================================================
+inline const char* avbdRigidParameterProfileName(
+    ::dart::simulation::RigidAvbdParameterProfile profile) noexcept
+{
+  switch (profile) {
+    case ::dart::simulation::RigidAvbdParameterProfile::SourceDemo2d:
+      return "source-demo-2d";
+    case ::dart::simulation::RigidAvbdParameterProfile::SourceDemo3d:
+      return "source-demo-3d";
+    case ::dart::simulation::RigidAvbdParameterProfile::MassScaledReference:
+      return "mass-scaled-reference";
+    case ::dart::simulation::RigidAvbdParameterProfile::Paper2025Table2:
+      break;
+  }
+  return "paper-2025-table-2";
+}
+
+//==============================================================================
+inline void applyAvbdRigidParameterProfile(
+    AvbdRigidWorldContactSolveOptions& options,
+    const AvbdRigidParameterProfile& profile)
+{
+  // A post-stabilized schedule ignores every pre-existing constraint error in
+  // its main sweeps (alpha 1) and keeps the full dual across steps; the
+  // positional error is removed by the extra primal-only sweep instead.
+  const double sweepAlpha = avbdRigidParameterProfileSweepAlpha(profile);
+  const double lambdaRetention
+      = profile.postStabilize ? 1.0 : std::numeric_limits<double>::quiet_NaN();
+  options.warmStart.alpha = sweepAlpha;
+  options.warmStart.gamma = profile.gamma;
+  options.warmStart.lambdaRetention = lambdaRetention;
+  options.warmStart.startStiffness = profile.startStiffness;
+  options.row.alpha = sweepAlpha;
+  options.row.beta = profile.beta;
+  options.row.angularBeta = profile.betaAngular;
+  options.distanceSpring.beta = profile.beta;
+  options.contactWarmStart.alpha = sweepAlpha;
+  options.contactWarmStart.gamma = profile.gamma;
+  options.contactWarmStart.lambdaRetention = lambdaRetention;
+  options.contactWarmStart.startStiffness = profile.startStiffness;
+  options.contactRow.alpha = sweepAlpha;
+  options.contactRow.beta = profile.beta;
+  options.contactRow.angularBeta = profile.betaAngular;
+  options.friction.alpha = sweepAlpha;
+  options.friction.beta = profile.beta;
+  options.friction.coneRule = profile.frictionConeRule;
+  options.friction.stickOffsetThreshold = profile.frictionStickOffsetThreshold;
+  options.contactMargin = profile.contactMargin;
+  options.contactIdentityByFeatureOnly = profile.contactIdentityByFeatureOnly;
+  if (std::isfinite(profile.maxStiffness)) {
+    // The reference sources' PENALTY_MAX bounds the warm start and the ramp
+    // of every row; finite material stiffness still caps below it.
+    options.warmStart.maxStiffness = profile.maxStiffness;
+    options.contactWarmStart.maxStiffness = profile.maxStiffness;
+    options.row.maxStiffness = profile.maxStiffness;
+    options.contactRow.maxStiffness = profile.maxStiffness;
+    options.friction.maxStiffness = profile.maxStiffness;
+    options.distanceSpring.maxStiffness = profile.maxStiffness;
+  }
+  options.postStabilize = profile.postStabilize;
+}
 
 struct AvbdRigidWorldContactSolveResult
 {
@@ -437,6 +703,7 @@ struct AvbdRigidWorldContactSolveScratch
       angularRows(AngularPairAllocator{allocator}),
       attachmentRows(AttachmentAllocator{allocator}),
       fallbackInertialTargets(BodyStateAllocator{allocator}),
+      stepStartStates(BodyStateAllocator{allocator}),
       rowIndexScratch(allocator)
   {
   }
@@ -462,6 +729,7 @@ struct AvbdRigidWorldContactSolveScratch
       angularRows(AngularPairAllocator{allocator}),
       attachmentRows(AttachmentAllocator{allocator}),
       fallbackInertialTargets(BodyStateAllocator{allocator}),
+      stepStartStates(BodyStateAllocator{allocator}),
       rowIndexScratch(allocator)
   {
   }
@@ -481,8 +749,19 @@ struct AvbdRigidWorldContactSolveScratch
     angularRows.clear();
     attachmentRows.clear();
     fallbackInertialTargets.clear();
+    stepStartStates.clear();
     // Keep row-index layout scratch warm across frames; blockDescent rebuilds
     // any family whose body layout changed and clears absent families.
+  }
+
+  void clearContinuationState() noexcept
+  {
+    for (AvbdRigidBodyPointPairFrictionRows& row : frictionRows) {
+      row.persistentFirstRecord = nullptr;
+      row.persistentSecondRecord = nullptr;
+      row.persistentAnchor = nullptr;
+    }
+    contactRows.clearContinuationState();
   }
 
   AvbdRigidContactManifoldRowScratch contactRows;
@@ -501,6 +780,9 @@ struct AvbdRigidWorldContactSolveScratch
   AngularPairVector angularRows;
   AttachmentVector attachmentRows;
   BodyStateVector fallbackInertialTargets;
+  /// Step-start poses handed to the main sweep when it starts from the
+  /// adaptive initial guess.
+  BodyStateVector stepStartStates;
   AvbdRigidBodyRowIndexScratch rowIndexScratch;
 };
 
@@ -519,6 +801,7 @@ inline void reserveAvbdRigidWorldContactSnapshot(
   }
   snapshot.states.reserve(bodyCapacity);
   snapshot.inertialTargets.reserve(bodyCapacity);
+  snapshot.initialGuessStates.reserve(bodyCapacity);
   snapshot.masses.reserve(bodyCapacity);
   snapshot.bodyInertias.reserve(bodyCapacity);
   snapshot.fixed.reserve(bodyCapacity);
@@ -541,9 +824,14 @@ inline void reserveAvbdRigidWorldContactSolveScratch(
     std::size_t distanceSpringCapacity = 0)
 {
   scratch.contactRows.activeContacts.reserve(contactCapacity);
+  scratch.contactRows.contactLocalPoints.reserve(contactCapacity);
   scratch.contactRows.normalDescriptors.reserve(contactCapacity);
   scratch.contactRows.frictionDescriptors.reserve(2u * contactCapacity);
   scratch.contactRows.previousFrictionDirections.reserve(2u * contactCapacity);
+  scratch.contactRows.contactIdentities.reserve(contactCapacity);
+  scratch.contactRows.previousContactIdentities.reserve(2u * contactCapacity);
+  scratch.contactRows.contactTangentAnchors.reserve(contactCapacity);
+  scratch.contactRows.previousContactTangentAnchors.reserve(contactCapacity);
   scratch.jointLinearRowsScratch.activeRows.reserve(3u * jointCapacity);
   scratch.jointLinearRowsScratch.descriptors.reserve(3u * jointCapacity);
   scratch.jointAngularRowsScratch.activeRows.reserve(3u * jointCapacity);
@@ -633,22 +921,7 @@ inline AvbdRigidWorldProjectableBodyView avbdRigidWorldProjectableBody(
     const ::dart::simulation::detail::WorldRegistry& registry,
     entt::entity entity)
 {
-  if (entity == entt::null || !registry.valid(entity)
-      || !registry.all_of<comps::RigidBodyTag>(entity)) {
-    return {};
-  }
-
-  const auto* transform = registry.try_get<comps::Transform>(entity);
-  const auto* mass = registry.try_get<comps::MassProperties>(entity);
-  if (transform == nullptr || mass == nullptr) {
-    return {};
-  }
-
-  return AvbdRigidWorldProjectableBodyView{
-      transform,
-      mass,
-      registry.all_of<comps::StaticBodyTag>(entity)
-          || registry.all_of<comps::KinematicBodyTag>(entity)};
+  return ::dart::simulation::detail::rigidPairConstraintBody(registry, entity);
 }
 
 //==============================================================================
@@ -724,9 +997,7 @@ inline Eigen::Isometry3d avbdRigidWorldContactToIsometry(
 //==============================================================================
 inline bool isAvbdRigidWorldPointJointType(comps::JointType type)
 {
-  return type == comps::JointType::Fixed || type == comps::JointType::Revolute
-         || type == comps::JointType::Prismatic
-         || type == comps::JointType::Spherical;
+  return ::dart::simulation::detail::isRigidPairConstraintType(type);
 }
 
 //==============================================================================
@@ -843,25 +1114,8 @@ inline bool computeAvbdRigidWorldPointJointDefaultStiffness(
 //==============================================================================
 inline double avbdRigidWorldSymmetricEffortLimit(const comps::JointModel& joint)
 {
-  if (joint.limits.effortLower.size() < 1 || joint.limits.effortUpper.size() < 1
-      || std::isnan(joint.limits.effortLower[0])
-      || std::isnan(joint.limits.effortUpper[0])) {
-    return std::numeric_limits<double>::infinity();
-  }
-
-  const double lower = joint.limits.effortLower[0];
-  const double upper = joint.limits.effortUpper[0];
-  if (lower > 0.0 || upper < 0.0 || lower > upper) {
-    return 0.0;
-  }
-
-  const double lowerMagnitude = std::isfinite(lower)
-                                    ? std::max(0.0, -lower)
-                                    : std::numeric_limits<double>::infinity();
-  const double upperMagnitude = std::isfinite(upper)
-                                    ? std::max(0.0, upper)
-                                    : std::numeric_limits<double>::infinity();
-  return std::min(lowerMagnitude, upperMagnitude);
+  return ::dart::simulation::detail::rigidPairConstraintSymmetricEffortLimit(
+      joint);
 }
 
 //==============================================================================
@@ -970,18 +1224,19 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
   Eigen::Vector3d localAnchorA = Eigen::Vector3d::Zero();
   Eigen::Vector3d localAnchorB = Eigen::Vector3d::Zero();
   Eigen::Quaterniond targetRelativeOrientation = Eigen::Quaterniond::Identity();
-  if (joint->hasRigidBodyFixedJointAnchors) {
-    if (!joint->rigidBodyFixedJointLocalAnchorParent.allFinite()
-        || !joint->rigidBodyFixedJointLocalAnchorChild.allFinite()
-        || !joint->rigidBodyFixedJointTargetRelativeOrientation.coeffs()
+  if (joint->hasRigidBodyPairConstraintGeometry) {
+    if (!joint->rigidBodyPairConstraintLocalAnchorParent.allFinite()
+        || !joint->rigidBodyPairConstraintLocalAnchorChild.allFinite()
+        || !joint->rigidBodyPairConstraintTargetRelativeOrientation.coeffs()
                 .allFinite()
-        || joint->rigidBodyFixedJointTargetRelativeOrientation.norm() == 0.0) {
+        || joint->rigidBodyPairConstraintTargetRelativeOrientation.norm()
+               == 0.0) {
       return false;
     }
-    localAnchorA = joint->rigidBodyFixedJointLocalAnchorParent;
-    localAnchorB = joint->rigidBodyFixedJointLocalAnchorChild;
+    localAnchorA = joint->rigidBodyPairConstraintLocalAnchorParent;
+    localAnchorB = joint->rigidBodyPairConstraintLocalAnchorChild;
     targetRelativeOrientation = normalizeAvbdRigidOrientation(
-        joint->rigidBodyFixedJointTargetRelativeOrientation);
+        joint->rigidBodyPairConstraintTargetRelativeOrientation);
   } else {
     const Eigen::Quaterniond orientationA = normalizeAvbdRigidOrientation(
         Eigen::Quaterniond(worldAFromEndpoint.linear()));
@@ -995,10 +1250,10 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
     targetRelativeOrientation = normalizeAvbdRigidOrientation(
         orientationA.conjugate() * orientationB);
 
-    joint->hasRigidBodyFixedJointAnchors = true;
-    joint->rigidBodyFixedJointLocalAnchorParent = localAnchorA;
-    joint->rigidBodyFixedJointLocalAnchorChild = localAnchorB;
-    joint->rigidBodyFixedJointTargetRelativeOrientation
+    joint->hasRigidBodyPairConstraintGeometry = true;
+    joint->rigidBodyPairConstraintLocalAnchorParent = localAnchorA;
+    joint->rigidBodyPairConstraintLocalAnchorChild = localAnchorB;
+    joint->rigidBodyPairConstraintTargetRelativeOrientation
         = targetRelativeOrientation;
   }
 
@@ -1016,14 +1271,19 @@ inline bool configureAvbdRigidWorldPointJointFromCurrentPose(
     }
 
     const Eigen::Matrix3d jointAxes
-        = avbdRigidJointAxesFromFreeAxis(joint->axis);
+        = ::dart::simulation::detail::rigidPairConstraintAxesFromFreeAxis(
+            joint->axis);
     if (joint->type == comps::JointType::Revolute) {
       angularAxes = jointAxes;
-      angularAxisMask = avbdRigidJointAllButAxisMask(/*freeAxis=*/2u);
+      angularAxisMask
+          = ::dart::simulation::detail::rigidPairConstraintAllButAxisMask(
+              /*freeAxis=*/2u);
     } else {
       linearAxes = jointAxes;
       angularAxes = jointAxes;
-      linearAxisMask = avbdRigidJointAllButAxisMask(/*freeAxis=*/2u);
+      linearAxisMask
+          = ::dart::simulation::detail::rigidPairConstraintAllButAxisMask(
+              /*freeAxis=*/2u);
     }
   }
 
@@ -1931,7 +2191,18 @@ inline void buildAvbdRigidWorldContactSnapshot(
         detail::avbdRigidWorldContactFriction(registry, entityA)
         * detail::avbdRigidWorldContactFriction(registry, entityB));
     manifoldPoint.startStiffness = options.startStiffness;
-    manifoldPoint.maxStiffness = options.maxStiffness;
+    if (std::isfinite(options.startStiffnessMassScale)) {
+      const double scaled = avbdRigidMassScaledStartStiffness(
+          avbdRigidWorldRowBodyMass(snapshot, bodyA),
+          avbdRigidWorldRowBodyMass(snapshot, bodyB),
+          options.startStiffnessMassScale,
+          options.timeStep);
+      if (scaled > 0.0) {
+        manifoldPoint.startStiffness = scaled;
+      }
+    }
+    manifoldPoint.maxStiffness
+        = std::max(manifoldPoint.startStiffness, options.maxStiffness);
     snapshot.contacts.push_back(manifoldPoint);
   }
   detail::assignAvbdRigidWorldContactRows(snapshot, scratch.contactRowOrder);
@@ -1963,11 +2234,73 @@ inline void buildAvbdRigidWorldContactSnapshotInto(
 }
 
 //==============================================================================
+/// Full collision extents of a body along its shape axes (the reference
+/// sources' `Rigid::size`): the largest per-axis extent over its shapes, a
+/// sphere or capsule counted by its diameter. Zero without collision shapes.
+inline Eigen::Vector3d avbdRigidWorldBodyCollisionExtents(
+    const ::dart::simulation::detail::WorldRegistry& registry,
+    entt::entity entity)
+{
+  Eigen::Vector3d extents = Eigen::Vector3d::Zero();
+  const auto* geometry = registry.try_get<comps::CollisionGeometry>(entity);
+  if (geometry == nullptr) {
+    return extents;
+  }
+  for (const CollisionShape& shape : geometry->shapes) {
+    Eigen::Vector3d shapeExtents = Eigen::Vector3d::Zero();
+    switch (shape.type) {
+      case CollisionShapeType::Box:
+        shapeExtents = 2.0 * shape.halfExtents;
+        break;
+      case CollisionShapeType::Sphere:
+        shapeExtents = Eigen::Vector3d::Constant(2.0 * shape.radius);
+        break;
+      case CollisionShapeType::Capsule:
+        shapeExtents = Eigen::Vector3d(
+            2.0 * shape.radius,
+            2.0 * shape.radius,
+            2.0 * (shape.halfExtents.z() + shape.radius));
+        break;
+      case CollisionShapeType::Cylinder:
+        shapeExtents = Eigen::Vector3d(
+            2.0 * shape.radius,
+            2.0 * shape.radius,
+            2.0 * shape.halfExtents.z());
+        break;
+      default:
+        break;
+    }
+    if (shapeExtents.allFinite()) {
+      extents = extents.cwiseMax(shapeExtents.cwiseAbs());
+    }
+  }
+  return extents;
+}
+
+//==============================================================================
+/// The reference sources' `torqueArm` of a joint: |sizeA + sizeB|^2 of the two
+/// bodies' collision extents, or 1 when neither body has finite extents.
+inline double avbdRigidWorldJointTorqueArm(
+    const ::dart::simulation::detail::WorldRegistry& registry,
+    entt::entity bodyA,
+    entt::entity bodyB)
+{
+  const Eigen::Vector3d extents
+      = avbdRigidWorldBodyCollisionExtents(registry, bodyA)
+        + avbdRigidWorldBodyCollisionExtents(registry, bodyB);
+  const double torqueArm = extents.squaredNorm();
+  return torqueArm > 0.0 && std::isfinite(torqueArm) ? torqueArm : 1.0;
+}
+
+//==============================================================================
 inline std::size_t appendAvbdRigidWorldPointJoints(
     const ::dart::simulation::detail::WorldRegistry& registry,
     std::span<const AvbdRigidWorldPointJointInput> inputs,
     AvbdRigidWorldContactSnapshot& snapshot,
-    AvbdRigidWorldContactBuildScratch& scratch)
+    AvbdRigidWorldContactBuildScratch& scratch,
+    bool angularRowsUseTorqueArm = false,
+    double startStiffnessMassScale = std::numeric_limits<double>::quiet_NaN(),
+    double timeStep = std::numeric_limits<double>::quiet_NaN())
 {
   if (!inputs.empty()) {
     const std::size_t maxNewBodies = 2u * inputs.size();
@@ -2048,10 +2381,24 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
     joint.linearAxisMask = input.linearAxisMask;
     joint.angularAxisMask = input.angularAxisMask;
     joint.startStiffness = std::max(0.0, input.startStiffness);
+    if (std::isfinite(startStiffnessMassScale)) {
+      const double scaled = avbdRigidMassScaledStartStiffness(
+          avbdRigidWorldRowBodyMass(snapshot, bodyA),
+          avbdRigidWorldRowBodyMass(snapshot, bodyB),
+          startStiffnessMassScale,
+          timeStep);
+      if (scaled > 0.0) {
+        joint.startStiffness = scaled;
+      }
+    }
     joint.linearMaterialStiffness = input.linearMaterialStiffness;
     joint.angularMaterialStiffness = input.angularMaterialStiffness;
     joint.maxStiffness = std::max(joint.startStiffness, input.maxStiffness);
     joint.fractureThreshold = input.fractureThreshold;
+    joint.angularScale
+        = angularRowsUseTorqueArm
+              ? avbdRigidWorldJointTorqueArm(registry, input.bodyA, input.bodyB)
+              : 1.0;
 
     const auto rowKey
         = canonicalizeAvbdContactEndpoints(joint.endpointA, joint.endpointB);
@@ -2201,10 +2548,20 @@ inline std::size_t appendAvbdRigidWorldDistanceSprings(
 inline std::size_t appendAvbdRigidWorldPointJoints(
     const ::dart::simulation::detail::WorldRegistry& registry,
     std::span<const AvbdRigidWorldPointJointInput> inputs,
-    AvbdRigidWorldContactSnapshot& snapshot)
+    AvbdRigidWorldContactSnapshot& snapshot,
+    bool angularRowsUseTorqueArm = false,
+    double startStiffnessMassScale = std::numeric_limits<double>::quiet_NaN(),
+    double timeStep = std::numeric_limits<double>::quiet_NaN())
 {
   AvbdRigidWorldContactBuildScratch scratch(snapshot.contacts.get_allocator());
-  return appendAvbdRigidWorldPointJoints(registry, inputs, snapshot, scratch);
+  return appendAvbdRigidWorldPointJoints(
+      registry,
+      inputs,
+      snapshot,
+      scratch,
+      angularRowsUseTorqueArm,
+      startStiffnessMassScale,
+      timeStep);
 }
 
 //==============================================================================
@@ -2261,6 +2618,152 @@ inline void predictAvbdRigidWorldContactInertialTargets(
 }
 
 //==============================================================================
+inline bool avbdRigidProjectedVelocityRecordPrecedes(
+    const AvbdRigidProjectedVelocityRecord& lhs,
+    const AvbdRigidProjectedVelocityRecord& rhs) noexcept
+{
+  return entt::to_integral(lhs.entity) < entt::to_integral(rhs.entity);
+}
+
+//==============================================================================
+/// Find the projected-velocity record of `entity` in a history sorted by
+/// `avbdRigidProjectedVelocityRecordPrecedes`, or nullptr.
+inline const AvbdRigidProjectedVelocityRecord*
+findAvbdRigidProjectedVelocityRecord(
+    std::span<const AvbdRigidProjectedVelocityRecord> history,
+    entt::entity entity) noexcept
+{
+  AvbdRigidProjectedVelocityRecord probe;
+  probe.entity = entity;
+  const auto it = std::lower_bound(
+      history.begin(),
+      history.end(),
+      probe,
+      avbdRigidProjectedVelocityRecordPrecedes);
+  if (it == history.end() || it->entity != entity) {
+    return nullptr;
+  }
+  return &*it;
+}
+
+//==============================================================================
+/// Weight of the gravity displacement in a body's adaptive initial guess: the
+/// realized acceleration along gravity over the previous step as a fraction of
+/// |g|, clamped to [0, 1] (the reference sources' `accelWeight`). Zero without
+/// two consecutive projections, for a non-finite history, or without gravity.
+inline double avbdRigidAdaptiveInitialGuessGravityWeight(
+    const AvbdRigidProjectedVelocityRecord* record,
+    const Eigen::Vector3d& gravity,
+    double timeStep) noexcept
+{
+  if (record == nullptr || timeStep <= 0.0 || !std::isfinite(timeStep)) {
+    return 0.0;
+  }
+  const double gravitySquared = gravity.squaredNorm();
+  if (!(gravitySquared > 0.0) || !std::isfinite(gravitySquared)) {
+    return 0.0;
+  }
+  if (!record->previousLinear.allFinite() || !record->linear.allFinite()) {
+    return 0.0;
+  }
+  const Eigen::Vector3d acceleration
+      = (record->linear - record->previousLinear) / timeStep;
+  const double weight = acceleration.dot(gravity) / gravitySquared;
+  if (!std::isfinite(weight)) {
+    return 0.0;
+  }
+  return std::clamp(weight, 0.0, 1.0);
+}
+
+//==============================================================================
+/// Predict the adaptive initial guess of every non-fixed body (AVBD Algorithm
+/// 1 line 4). Requires `predictAvbdRigidWorldContactInertialTargets` to have
+/// run: the guess is the inertial target with the unrealized share of the
+/// gravity displacement `(1 - w) g dt^2` removed, where `w` comes from the
+/// projected-velocity `history` of the previous owned steps. Fixed bodies keep
+/// their step-start state. Clears the guess (so the sweep starts from the
+/// step-start states) when the targets are unavailable.
+inline void predictAvbdRigidWorldContactInitialGuess(
+    AvbdRigidWorldContactSnapshot& snapshot,
+    double timeStep,
+    const Eigen::Vector3d& gravity,
+    std::span<const AvbdRigidProjectedVelocityRecord> history)
+{
+  snapshot.initialGuessStates.clear();
+  if (timeStep <= 0.0 || !std::isfinite(timeStep)
+      || snapshot.inertialTargets.size() != snapshot.states.size()
+      || !gravity.allFinite()) {
+    return;
+  }
+  snapshot.initialGuessStates.assign(
+      snapshot.inertialTargets.begin(), snapshot.inertialTargets.end());
+  const std::size_t bodyCount = std::min(
+      {snapshot.entities.size(),
+       snapshot.initialGuessStates.size(),
+       snapshot.fixed.size()});
+  const Eigen::Vector3d gravityDisplacement = gravity * (timeStep * timeStep);
+  for (std::size_t body = 0; body < bodyCount; ++body) {
+    AvbdRigidBodyState& guess = snapshot.initialGuessStates[body];
+    if (snapshot.fixed[body] != 0u) {
+      guess = snapshot.states[body];
+      continue;
+    }
+    const entt::entity entity = snapshot.entities[body];
+    const double weight = avbdRigidAdaptiveInitialGuessGravityWeight(
+        findAvbdRigidProjectedVelocityRecord(history, entity),
+        gravity,
+        timeStep);
+    guess.position -= (1.0 - weight) * gravityDisplacement;
+  }
+}
+
+//==============================================================================
+/// Record the linear velocities `applyAvbdRigidWorldContactVelocityProjection`
+/// just wrote for the snapshot's non-fixed bodies, shifting each body's
+/// previous record so the next step's adaptive initial guess can form
+/// `(v_t - v_{t-1}) / dt`. Bodies the stage did not project this step drop
+/// out of the history; a body without a record from the previous step starts
+/// with a NaN previous velocity (zero gravity weight next step).
+template <typename RecordVector>
+inline void recordAvbdRigidWorldContactProjectedVelocities(
+    const ::dart::simulation::detail::WorldRegistry& registry,
+    const AvbdRigidWorldContactSnapshot& snapshot,
+    RecordVector& history,
+    RecordVector& scratch)
+{
+  scratch.clear();
+  const std::size_t bodyCount
+      = std::min({snapshot.entities.size(), snapshot.fixed.size()});
+  scratch.reserve(bodyCount);
+  const std::span<const AvbdRigidProjectedVelocityRecord> previousHistory{
+      history.data(), history.size()};
+  for (std::size_t body = 0; body < bodyCount; ++body) {
+    if (snapshot.fixed[body] != 0u) {
+      continue;
+    }
+    const entt::entity entity = snapshot.entities[body];
+    if (entity == entt::null || !registry.valid(entity)) {
+      continue;
+    }
+    const auto* velocity = registry.try_get<comps::Velocity>(entity);
+    if (velocity == nullptr) {
+      continue;
+    }
+    AvbdRigidProjectedVelocityRecord record;
+    record.entity = entity;
+    if (const auto* previous
+        = findAvbdRigidProjectedVelocityRecord(previousHistory, entity)) {
+      record.previousLinear = previous->linear;
+    }
+    record.linear = velocity->linear;
+    scratch.push_back(record);
+  }
+  std::sort(
+      scratch.begin(), scratch.end(), avbdRigidProjectedVelocityRecordPrecedes);
+  history.swap(scratch);
+}
+
+//==============================================================================
 inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     AvbdRigidWorldContactSnapshot& snapshot,
     AvbdScalarRowInventory& normalInventory,
@@ -2271,8 +2774,41 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     AvbdScalarRowInventory& distanceSpringInventory,
     double timeStep,
     AvbdRigidWorldContactSolveScratch& scratch,
-    const AvbdRigidWorldContactSolveOptions& options = {})
+    const AvbdRigidWorldContactSolveOptions& options = {},
+    compute::ComputeExecutor* rowUpdateExecutor = nullptr)
 {
+  const bool fixedPenalty
+      = options.formulation
+        == AvbdRigidWorldContactSolveOptions::Formulation::FixedPenalty;
+  const auto clearFixedPenaltyContinuation = [&]() noexcept {
+    normalInventory.clear();
+    frictionInventory.clear();
+    jointLinearInventory.clear();
+    jointAngularInventory.clear();
+    motorInventory.clear();
+    distanceSpringInventory.clear();
+    scratch.clearContinuationState();
+  };
+  struct FixedPenaltyContinuationGuard
+  {
+    bool active;
+    decltype(clearFixedPenaltyContinuation)& clear;
+
+    ~FixedPenaltyContinuationGuard()
+    {
+      if (active) {
+        clear();
+      }
+    }
+  } continuationGuard{fixedPenalty, clearFixedPenaltyContinuation};
+
+  if (fixedPenalty) {
+    // VBD owns no persistent dual, progressive stiffness, contact identity, or
+    // tangent-anchor state. Clear before every exit path, including an empty
+    // snapshot or an exception during descriptor materialization.
+    clearFixedPenaltyContinuation();
+  }
+
   AvbdRigidWorldContactSolveResult result{
       AvbdRigidWorldContactSolveResult::SizeAllocator{
           scratch.normalRows.get_allocator()}};
@@ -2281,6 +2817,44 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
   }
 
   scratch.clear();
+  const auto applyFixedPenaltyRows = [&](auto& rows,
+                                         AvbdScalarRowInventory& inventory,
+                                         std::size_t inventoryOffset = 0u,
+                                         bool requireFiniteMaterial = false) {
+    if (!fixedPenalty) {
+      return;
+    }
+    for (std::size_t i = 0; i < rows.size(); ++i) {
+      DART_SIMULATION_THROW_T_IF(
+          inventoryOffset + i >= inventory.size(),
+          InvalidOperationException,
+          "VBD fixed-penalty row inventory drifted from assembled rows");
+      const AvbdScalarRowDescriptor& descriptor
+          = inventory[inventoryOffset + i].descriptor;
+      DART_SIMULATION_THROW_T_IF(
+          requireFiniteMaterial && !std::isfinite(descriptor.materialStiffness),
+          InvalidOperationException,
+          "VBD fixed-penalty joint rows require an explicitly configured "
+          "finite material stiffness; hard joint rows are not supported");
+      const double requestedStiffness
+          = std::isfinite(descriptor.materialStiffness)
+                ? descriptor.materialStiffness
+                : descriptor.startStiffness;
+      const double fixedStiffness
+          = std::min(requestedStiffness, descriptor.maxStiffness);
+      DART_SIMULATION_THROW_T_IF(
+          !std::isfinite(fixedStiffness) || fixedStiffness < 0.0,
+          InvalidOperationException,
+          "VBD requires every active penalty row to resolve a finite, "
+          "non-negative stiffness");
+      rows[i].row.state
+          = AvbdScalarRowState{.stiffness = fixedStiffness, .lambda = 0.0};
+      rows[i].row.materialStiffness = fixedStiffness;
+    }
+  };
+  const AvbdRowWarmStartOptions& contactWarmStart
+      = options.hasContactFamilyOverride ? options.contactWarmStart
+                                         : options.warmStart;
   auto& normalRows = scratch.normalRows;
   auto& frictionRows = scratch.frictionRows;
   buildAvbdRigidContactManifoldRows(
@@ -2293,7 +2867,44 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       normalRows,
       frictionRows,
       scratch.contactRows,
-      options.warmStart);
+      contactWarmStart,
+      options.contactMargin,
+      options.contactIdentityByFeatureOnly);
+  if (options.hasContactFamilyOverride) {
+    for (AvbdRigidBodyPointPairRow& row : normalRows) {
+      row.hasSolveOptionsOverride = true;
+      row.solveOptionsOverride = options.contactRow;
+    }
+  }
+  applyFixedPenaltyRows(normalRows, normalInventory);
+  if (fixedPenalty) {
+    for (std::size_t i = 0; i < frictionRows.size(); ++i) {
+      const std::size_t first = 2u * i;
+      const std::size_t second = first + 1u;
+      DART_SIMULATION_THROW_T_IF(
+          second >= frictionInventory.size(),
+          InvalidOperationException,
+          "VBD fixed-penalty friction inventory drifted from assembled rows");
+      const auto applyFrictionRow
+          = [&](AvbdRigidPointPairRow& row,
+                const AvbdScalarRowDescriptor& descriptor) {
+              const double fixedStiffness = std::min(
+                  descriptor.startStiffness, descriptor.maxStiffness);
+              DART_SIMULATION_THROW_T_IF(
+                  !std::isfinite(fixedStiffness) || fixedStiffness < 0.0,
+                  InvalidOperationException,
+                  "VBD requires every active friction penalty row to resolve a "
+                  "finite, non-negative stiffness");
+              row.state = AvbdScalarRowState{
+                  .stiffness = fixedStiffness, .lambda = 0.0};
+              row.materialStiffness = fixedStiffness;
+            };
+      applyFrictionRow(
+          frictionRows[i].first, frictionInventory[first].descriptor);
+      applyFrictionRow(
+          frictionRows[i].second, frictionInventory[second].descriptor);
+    }
+  }
   result.normalRows = normalRows.size();
   result.frictionRows = 2u * frictionRows.size();
 
@@ -2311,6 +2922,16 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       scratch.jointLinearRowsScratch,
       scratch.jointAngularRowsScratch,
       options.warmStart);
+  applyFixedPenaltyRows(
+      jointLinearRows,
+      jointLinearInventory,
+      /*inventoryOffset=*/0u,
+      /*requireFiniteMaterial=*/true);
+  applyFixedPenaltyRows(
+      jointAngularRows,
+      jointAngularInventory,
+      /*inventoryOffset=*/0u,
+      /*requireFiniteMaterial=*/true);
   result.jointLinearRows = jointLinearRows.size();
   result.jointAngularRows = jointAngularRows.size();
 
@@ -2329,6 +2950,8 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       timeStep,
       scratch.motorRowsScratch,
       options.warmStart);
+  applyFixedPenaltyRows(linearMotorRows, motorInventory);
+  applyFixedPenaltyRows(motorRows, motorInventory, linearMotorRows.size());
   result.motorRows = linearMotorRows.size() + motorRows.size();
 
   auto& distanceSpringRows = scratch.distanceSpringRows;
@@ -2339,6 +2962,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       distanceSpringRows,
       scratch.distanceSpringRowsScratch,
       options.warmStart);
+  applyFixedPenaltyRows(distanceSpringRows, distanceSpringInventory);
   result.distanceSpringRows = distanceSpringRows.size();
 
   const std::size_t normalRowCount = normalRows.size();
@@ -2414,6 +3038,31 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
     inertialTargets = std::span<const AvbdRigidBodyState>{
         fallbackInertialTargets.data(), fallbackInertialTargets.size()};
   }
+  AvbdRigidPointPairFrictionOptions frictionOptions = options.friction;
+  frictionOptions.fixedPenalty = fixedPenalty;
+  // AVBD Algorithm 1 line 4: every x_t-dependent quantity above (row warm
+  // starts, contact Taylor linearizations, Equation 18 intercepts) was
+  // evaluated at the step-start states; the sweep itself starts from the
+  // adaptive initial guess when the stage predicted one.
+  AvbdRigidBlockDescentOptions mainDescent = options.descent;
+  scratch.stepStartStates.clear();
+  if (snapshot.initialGuessStates.size() == snapshot.states.size()) {
+    scratch.stepStartStates.assign(
+        snapshot.states.begin(), snapshot.states.end());
+    mainDescent.stepStartStates = std::span<const AvbdRigidBodyState>{
+        scratch.stepStartStates.data(), scratch.stepStartStates.size()};
+    for (std::size_t body = 0; body < snapshot.states.size(); ++body) {
+      if (body < snapshot.fixed.size() && snapshot.fixed[body] != 0u) {
+        continue;
+      }
+      const AvbdRigidBodyState& guess = snapshot.initialGuessStates[body];
+      if (!guess.position.allFinite()
+          || !guess.orientation.coeffs().allFinite()) {
+        continue;
+      }
+      snapshot.states[body] = guess;
+    }
+  }
   result.stats = blockDescentRigidBodiesAvbdRows(
       std::span<AvbdRigidBodyState>{
           snapshot.states.data(), snapshot.states.size()},
@@ -2428,12 +3077,52 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       *solvePointPairRows,
       *solveAngularRows,
       frictionRows,
-      options.descent,
+      mainDescent,
       options.row,
-      options.friction,
+      frictionOptions,
       &scratch.rowIndexScratch,
       distanceSpringRows,
-      options.distanceSpring);
+      options.distanceSpring,
+      rowUpdateExecutor);
+  snapshot.velocityStates.clear();
+  if (options.postStabilize) {
+    // Reference `postStabilize`: the velocities come from the poses the full
+    // iterations produced; one more primal-only sweep with alpha 0 then
+    // removes the whole pre-existing constraint error from the positions
+    // without touching any persisted row state.
+    snapshot.velocityStates.assign(
+        snapshot.states.begin(), snapshot.states.end());
+    AvbdRigidBlockDescentOptions stabilizationDescent = options.descent;
+    stabilizationDescent.iterations = 1;
+    stabilizationDescent.convergenceDisplacement = 0.0;
+    stabilizationDescent.updateRows = false;
+    stabilizationDescent.regularizationAlphaOverride = 0.0;
+    const AvbdRigidBlockDescentStats stabilizationStats
+        = blockDescentRigidBodiesAvbdRows(
+            std::span<AvbdRigidBodyState>{
+                snapshot.states.data(), snapshot.states.size()},
+            std::span<const double>{
+                snapshot.masses.data(), snapshot.masses.size()},
+            std::span<const Eigen::Matrix3d>{
+                snapshot.bodyInertias.data(), snapshot.bodyInertias.size()},
+            std::span<const std::uint8_t>{
+                snapshot.fixed.data(), snapshot.fixed.size()},
+            inertialTargets,
+            timeStep,
+            attachmentRows,
+            *solvePointPairRows,
+            *solveAngularRows,
+            frictionRows,
+            stabilizationDescent,
+            options.row,
+            frictionOptions,
+            &scratch.rowIndexScratch,
+            distanceSpringRows,
+            options.distanceSpring,
+            rowUpdateExecutor);
+    result.stats.iterations += stabilizationStats.iterations;
+    result.stats.bodyUpdates += stabilizationStats.bodyUpdates;
+  }
 
   for (std::size_t i = 0; i < normalRowCount && i < normalInventory.size();
        ++i) {
@@ -2481,9 +3170,92 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
 
   std::size_t linearCursor = 0;
   std::size_t angularCursor = 0;
+  std::size_t linearMotorInputCursor = 0;
+  std::size_t angularMotorInputCursor = 0;
+  std::size_t linearMotorBuiltCursor = 0;
+  std::size_t angularMotorBuiltCursor = 0;
   for (std::size_t jointIndex = 0; jointIndex < snapshot.joints.size();
        ++jointIndex) {
     const AvbdRigidPointJoint& joint = snapshot.joints[jointIndex];
+
+    // Bounded one-DOF motor rows are stored as a separate row family but load
+    // the same physical joint, so their accepted force joins the masked
+    // linear/angular rows in the fracture norm. Motors were appended in joint
+    // order and identified by the owning joint's row id and endpoints; the
+    // cursors advance for every joint, valid or not, to stay aligned with
+    // that append order.
+    double motorForceSquared = 0.0;
+    while (linearMotorInputCursor < snapshot.linearMotors.size()) {
+      const AvbdRigidLinearMotor& motor
+          = snapshot.linearMotors[linearMotorInputCursor];
+      if (motor.row != joint.row
+          || motor.endpointA.object != joint.endpointA.object
+          || motor.endpointA.feature != joint.endpointA.feature
+          || motor.endpointB.object != joint.endpointB.object
+          || motor.endpointB.feature != joint.endpointB.feature) {
+        break;
+      }
+      ++linearMotorInputCursor;
+      if (!detail::isValidAvbdRigidLinearMotor(
+              motor, snapshot.states.size(), timeStep)) {
+        continue;
+      }
+      if (linearMotorBuiltCursor >= linearMotorRowCount) {
+        break;
+      }
+      const AvbdRigidBodyPointPairRow& indexedMotorRow
+          = (*solvePointPairRows)[linearMotorOffset + linearMotorBuiltCursor];
+      ++linearMotorBuiltCursor;
+      const AvbdRigidPointPairRow& motorRow = indexedMotorRow.row;
+      const double force
+          = avbdRigidRowUsesFiniteMaterial(motorRow.materialStiffness)
+                ? avbdRigidScalarRowForce(
+                      motorRow.state,
+                      avbdRigidPointPairConstraintValue(
+                          snapshot.states[indexedMotorRow.bodyA],
+                          snapshot.states[indexedMotorRow.bodyB],
+                          motorRow),
+                      motorRow.bounds,
+                      motorRow.materialStiffness)
+                : motorRow.state.lambda;
+      motorForceSquared += avbdRigidWorldJointRowLambdaSquared(force);
+    }
+    while (angularMotorInputCursor < snapshot.motors.size()) {
+      const AvbdRigidAngularMotor& motor
+          = snapshot.motors[angularMotorInputCursor];
+      if (motor.row != joint.row
+          || motor.endpointA.object != joint.endpointA.object
+          || motor.endpointA.feature != joint.endpointA.feature
+          || motor.endpointB.object != joint.endpointB.object
+          || motor.endpointB.feature != joint.endpointB.feature) {
+        break;
+      }
+      ++angularMotorInputCursor;
+      if (!detail::isValidAvbdRigidAngularMotor(
+              motor, snapshot.states.size(), timeStep)) {
+        continue;
+      }
+      if (angularMotorBuiltCursor >= angularMotorRowCount) {
+        break;
+      }
+      const AvbdRigidBodyAngularPairRow& indexedMotorRow
+          = (*solveAngularRows)[angularMotorOffset + angularMotorBuiltCursor];
+      ++angularMotorBuiltCursor;
+      const AvbdRigidAngularPairRow& motorRow = indexedMotorRow.row;
+      const double force
+          = avbdRigidRowUsesFiniteMaterial(motorRow.materialStiffness)
+                ? avbdRigidScalarRowForce(
+                      motorRow.state,
+                      avbdRigidAngularPairConstraintValue(
+                          snapshot.states[indexedMotorRow.bodyA],
+                          snapshot.states[indexedMotorRow.bodyB],
+                          motorRow),
+                      motorRow.bounds,
+                      motorRow.materialStiffness)
+                : motorRow.state.lambda;
+      motorForceSquared += avbdRigidWorldJointRowLambdaSquared(force);
+    }
+
     if (!detail::isValidAvbdRigidPointJoint(joint, snapshot.states.size())) {
       continue;
     }
@@ -2492,22 +3264,45 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
         = avbdRigidWorldActiveJointAxisCount(joint.linearAxisMask);
     const std::size_t angularRowsForJoint
         = avbdRigidWorldActiveJointAxisCount(joint.angularAxisMask);
-    double lambdaSquared = 0.0;
+    double forceSquared = motorForceSquared;
     for (std::size_t i = 0;
          i < linearRows && linearCursor + i < jointLinearRowCount;
          ++i) {
-      lambdaSquared += avbdRigidWorldJointRowLambdaSquared(
-          (*solvePointPairRows)[jointLinearOffset + linearCursor + i]
-              .row.state.lambda);
+      const AvbdRigidBodyPointPairRow& indexedRow
+          = (*solvePointPairRows)[jointLinearOffset + linearCursor + i];
+      const AvbdRigidPointPairRow& row = indexedRow.row;
+      const double force = avbdRigidRowUsesFiniteMaterial(row.materialStiffness)
+                               ? avbdRigidScalarRowForce(
+                                     row.state,
+                                     avbdRigidPointPairConstraintValue(
+                                         snapshot.states[indexedRow.bodyA],
+                                         snapshot.states[indexedRow.bodyB],
+                                         row),
+                                     row.bounds,
+                                     row.materialStiffness)
+                               : row.state.lambda;
+      forceSquared += avbdRigidWorldJointRowLambdaSquared(force);
     }
     for (std::size_t i = 0;
          i < angularRowsForJoint && angularCursor + i < jointAngularRowCount;
          ++i) {
-      lambdaSquared += avbdRigidWorldJointRowLambdaSquared(
-          (*solveAngularRows)[angularCursor + i].row.state.lambda);
+      const AvbdRigidBodyAngularPairRow& indexedRow
+          = (*solveAngularRows)[angularCursor + i];
+      const AvbdRigidAngularPairRow& row = indexedRow.row;
+      const double force = avbdRigidRowUsesFiniteMaterial(row.materialStiffness)
+                               ? avbdRigidScalarRowForce(
+                                     row.state,
+                                     avbdRigidAngularPairConstraintValue(
+                                         snapshot.states[indexedRow.bodyA],
+                                         snapshot.states[indexedRow.bodyB],
+                                         row),
+                                     row.bounds,
+                                     row.materialStiffness)
+                               : row.state.lambda;
+      forceSquared += avbdRigidWorldJointRowLambdaSquared(force);
     }
     if (joint.fractureThreshold > 0.0 && std::isfinite(joint.fractureThreshold)
-        && std::sqrt(lambdaSquared) >= joint.fractureThreshold) {
+        && std::sqrt(forceSquared) >= joint.fractureThreshold) {
       result.fracturedJointIndices.push_back(jointIndex);
     }
 
@@ -2677,7 +3472,14 @@ applyAvbdRigidWorldContactVelocityProjection(
       continue;
     }
 
-    const AvbdRigidBodyState& state = snapshot.states[body];
+    // A post-stabilization sweep only corrects positions: the velocities are
+    // the BDF1 rates of the poses the full iterations produced.
+    const bool hasVelocityStates
+        = snapshot.velocityStates.size() == snapshot.states.size()
+          && snapshot.velocityStates[body].position.allFinite();
+    const AvbdRigidBodyState& state = hasVelocityStates
+                                          ? snapshot.velocityStates[body]
+                                          : snapshot.states[body];
     if (!state.position.allFinite()) {
       continue;
     }
@@ -2694,6 +3496,61 @@ applyAvbdRigidWorldContactVelocityProjection(
   }
 
   return result;
+}
+
+//==============================================================================
+/// Apply a post-stabilization sweep's positional correction directly to the
+/// body transforms, the way the Sequential Impulse family applies its
+/// non-velocity stabilization: the velocity projection above already took the
+/// step velocities from the pre-stabilization poses, and the position stage
+/// integrates those velocities on top of the corrected transforms, so the
+/// bodies end at the stabilized poses without any injected momentum.
+inline std::size_t applyAvbdRigidWorldContactPostStabilization(
+    ::dart::simulation::detail::WorldRegistry& registry,
+    const AvbdRigidWorldContactSnapshot& snapshot)
+{
+  if (snapshot.velocityStates.size() != snapshot.states.size()) {
+    return 0u;
+  }
+  std::size_t corrected = 0u;
+  const std::size_t bodyCount = std::min(
+      {snapshot.entities.size(),
+       snapshot.states.size(),
+       snapshot.fixed.size()});
+  for (std::size_t body = 0; body < bodyCount; ++body) {
+    if (snapshot.fixed[body] != 0u) {
+      continue;
+    }
+    const entt::entity entity = snapshot.entities[body];
+    if (entity == entt::null || !registry.valid(entity)) {
+      continue;
+    }
+    auto* transform = registry.try_get<comps::Transform>(entity);
+    if (transform == nullptr) {
+      continue;
+    }
+    const AvbdRigidBodyState& stabilized = snapshot.states[body];
+    const AvbdRigidBodyState& velocityState = snapshot.velocityStates[body];
+    if (!stabilized.position.allFinite()
+        || !velocityState.position.allFinite()) {
+      continue;
+    }
+    const Eigen::Vector3d displacement
+        = stabilized.position - velocityState.position;
+    const Eigen::Quaterniond rotation
+        = normalizeAvbdRigidOrientation(stabilized.orientation)
+          * normalizeAvbdRigidOrientation(velocityState.orientation)
+                .conjugate();
+    if (displacement.isZero(0.0)
+        && rotation.isApprox(Eigen::Quaterniond::Identity(), 0.0)) {
+      continue;
+    }
+    transform->position += displacement;
+    transform->orientation = normalizeAvbdRigidOrientation(
+        rotation * normalizeAvbdRigidOrientation(transform->orientation));
+    ++corrected;
+  }
+  return corrected;
 }
 
 //==============================================================================
@@ -2764,14 +3621,25 @@ applyAvbdRigidWorldContactSnapshotWithStack(
     const Eigen::Vector3d oldPosition = transform->position;
     const Eigen::Quaterniond newOrientation
         = normalizeAvbdRigidOrientation(state.orientation);
+    // A post-stabilization sweep only corrects positions: the velocities are
+    // the BDF1 rates of the poses the full iterations produced.
+    const bool hasVelocityStates
+        = snapshot.velocityStates.size() == snapshot.states.size()
+          && snapshot.velocityStates[body].position.allFinite();
+    const AvbdRigidBodyState& velocityState
+        = hasVelocityStates ? snapshot.velocityStates[body] : state;
+    const Eigen::Quaterniond velocityOrientation
+        = hasVelocityStates
+              ? normalizeAvbdRigidOrientation(velocityState.orientation)
+              : newOrientation;
 
     transform->position = state.position;
     transform->orientation = newOrientation;
     if (updateVelocity) {
-      velocity->linear = (state.position - oldPosition) / timeStep;
-      velocity->angular
-          = avbdRigidRotationVector(newOrientation * oldOrientation.conjugate())
-            / timeStep;
+      velocity->linear = (velocityState.position - oldPosition) / timeStep;
+      velocity->angular = avbdRigidRotationVector(
+                              velocityOrientation * oldOrientation.conjugate())
+                          / timeStep;
     }
 
     if (auto* props = registry.try_get<comps::FreeFrameProperties>(entity)) {
@@ -2945,129 +3813,52 @@ inline void extractAvbdRigidWorldPointJointInputsInto(
     InputVector& inputs,
     bool includeWorldAnchors = true)
 {
-  const auto view
-      = registry.view<comps::JointModel, AvbdRigidWorldPointJointConfig>();
-  inputs.clear();
-  inputs.reserve(view.size_hint());
+  using Input = typename InputVector::value_type;
+  static_assert(std::is_same_v<Input, AvbdRigidWorldPointJointInput>);
 
-  for (const entt::entity entity : view) {
-    const auto& jointModel = view.get<comps::JointModel>(entity);
-    const auto& jointState = registry.get<comps::JointState>(entity);
-    const auto& jointActuation = registry.get<comps::JointActuation>(entity);
-    const auto& config = view.get<AvbdRigidWorldPointJointConfig>(entity);
-    if (!config.enabled || jointState.broken
-        || !isAvbdRigidWorldPointJointType(jointModel.type)) {
-      continue;
+  const auto geometryProvider
+      = [&registry](entt::entity entity, const comps::JointModel&)
+      -> std::optional<
+          ::dart::simulation::detail::RigidPairConstraintGeometry> {
+    const auto* config
+        = registry.try_get<AvbdRigidWorldPointJointConfig>(entity);
+    if (config == nullptr) {
+      return std::nullopt;
     }
 
-    if (jointModel.parentLink == entt::null
-        || jointModel.childLink == entt::null
-        || jointModel.parentLink == jointModel.childLink) {
-      continue;
-    }
+    ::dart::simulation::detail::RigidPairConstraintGeometry geometry;
+    geometry.enabled = config->enabled;
+    geometry.localAnchorA = config->localAnchorA;
+    geometry.localAnchorB = config->localAnchorB;
+    geometry.targetRelativeOrientation = config->targetRelativeOrientation;
+    geometry.linearAxes = config->linearAxes;
+    geometry.angularAxes = config->angularAxes;
+    geometry.linearAxisMask = config->linearAxisMask;
+    geometry.angularAxisMask = config->angularAxisMask;
+    return geometry;
+  };
+  const auto enrichInput
+      = [&registry](entt::entity entity, AvbdRigidWorldPointJointInput& input) {
+          const auto& config
+              = registry.get<AvbdRigidWorldPointJointConfig>(entity);
+          if (std::isnan(config.startStiffness) || config.startStiffness < 0.0
+              || std::isnan(config.linearMaterialStiffness)
+              || config.linearMaterialStiffness < 0.0
+              || std::isnan(config.angularMaterialStiffness)
+              || config.angularMaterialStiffness < 0.0
+              || std::isnan(config.maxStiffness)
+              || config.maxStiffness < config.startStiffness) {
+            return false;
+          }
 
-    const AvbdRigidWorldProjectableBodyView bodyA
-        = avbdRigidWorldProjectableBody(registry, jointModel.parentLink);
-    const AvbdRigidWorldProjectableBodyView bodyB
-        = avbdRigidWorldProjectableBody(registry, jointModel.childLink);
-    if (!bodyA || !bodyB || (bodyA.isStatic && bodyB.isStatic)) {
-      continue;
-    }
-    const auto* transformA = bodyA.transform;
-    const auto* transformB = bodyB.transform;
-
-    if (!config.localAnchorA.allFinite() || !config.localAnchorB.allFinite()
-        || !config.targetRelativeOrientation.coeffs().allFinite()
-        || !config.linearAxes.allFinite() || !config.angularAxes.allFinite()
-        || std::isnan(config.startStiffness) || config.startStiffness < 0.0
-        || std::isnan(config.linearMaterialStiffness)
-        || config.linearMaterialStiffness < 0.0
-        || std::isnan(config.angularMaterialStiffness)
-        || config.angularMaterialStiffness < 0.0
-        || std::isnan(config.maxStiffness)
-        || config.maxStiffness < config.startStiffness) {
-      continue;
-    }
-
-    if (!transformA->position.allFinite()
-        || !transformA->orientation.coeffs().allFinite()
-        || !transformB->position.allFinite()
-        || !transformB->orientation.coeffs().allFinite()) {
-      continue;
-    }
-
-    const bool hasAngularVelocityMotor
-        = jointModel.type == comps::JointType::Revolute
-          && jointActuation.actuatorType == comps::ActuatorType::Velocity
-          && jointActuation.commandVelocity.size() == 1
-          && jointActuation.commandVelocity.allFinite();
-    const bool hasLinearVelocityMotor
-        = jointModel.type == comps::JointType::Prismatic
-          && jointActuation.actuatorType == comps::ActuatorType::Velocity
-          && jointActuation.commandVelocity.size() == 1
-          && jointActuation.commandVelocity.allFinite();
-    const bool useStableFullLinearBasis
-        = !includeWorldAnchors
-          && config.linearAxisMask == kAvbdRigidJointAllAxesMask
-          && config.angularAxisMask == 0u && !hasAngularVelocityMotor
-          && !hasLinearVelocityMotor
-          && config.linearAxes.isApprox(Eigen::Matrix3d::Identity(), 0.0);
-    Eigen::Quaterniond orientationA = Eigen::Quaterniond::Identity();
-    Eigen::Matrix3d parentRotation = Eigen::Matrix3d::Identity();
-    if (!useStableFullLinearBasis || includeWorldAnchors) {
-      orientationA = normalizeAvbdRigidOrientation(transformA->orientation);
-      parentRotation = orientationA.toRotationMatrix();
-    }
-
-    AvbdRigidWorldPointJointInput input;
-    input.joint = entity;
-    input.bodyA = jointModel.parentLink;
-    input.bodyB = jointModel.childLink;
-    input.bodyAView = bodyA;
-    input.bodyBView = bodyB;
-    if (includeWorldAnchors) {
-      const Eigen::Quaterniond orientationB
-          = normalizeAvbdRigidOrientation(transformB->orientation);
-      input.anchorA = transformA->position + orientationA * config.localAnchorA;
-      input.anchorB = transformB->position + orientationB * config.localAnchorB;
-    } else {
-      input.anchorA = config.localAnchorA;
-      input.anchorB = config.localAnchorB;
-      input.anchorsAreLocal = true;
-    }
-    input.targetRelativeOrientation
-        = normalizeAvbdRigidOrientation(config.targetRelativeOrientation);
-    input.linearAxes = useStableFullLinearBasis
-                           ? config.linearAxes
-                           : parentRotation * config.linearAxes;
-    input.angularAxes = useStableFullLinearBasis
-                            ? config.angularAxes
-                            : parentRotation * config.angularAxes;
-    input.linearAxisMask = config.linearAxisMask;
-    input.angularAxisMask = config.angularAxisMask;
-    if (hasAngularVelocityMotor) {
-      const double maxTorque = avbdRigidWorldSymmetricEffortLimit(jointModel);
-      if (maxTorque > 0.0 && !std::isnan(maxTorque)) {
-        input.useAngularMotor = true;
-        input.motorTargetSpeed = jointActuation.commandVelocity[0];
-        input.motorMaxTorque = maxTorque;
-      }
-    }
-    if (hasLinearVelocityMotor) {
-      const double maxForce = avbdRigidWorldSymmetricEffortLimit(jointModel);
-      if (maxForce > 0.0 && !std::isnan(maxForce)) {
-        input.useLinearMotor = true;
-        input.motorTargetSpeed = jointActuation.commandVelocity[0];
-        input.motorMaxForce = maxForce;
-      }
-    }
-    input.startStiffness = config.startStiffness;
-    input.linearMaterialStiffness = config.linearMaterialStiffness;
-    input.angularMaterialStiffness = config.angularMaterialStiffness;
-    input.maxStiffness = config.maxStiffness;
-    input.fractureThreshold = jointModel.breakForce;
-    inputs.push_back(input);
-  }
+          input.startStiffness = config.startStiffness;
+          input.linearMaterialStiffness = config.linearMaterialStiffness;
+          input.angularMaterialStiffness = config.angularMaterialStiffness;
+          input.maxStiffness = config.maxStiffness;
+          return true;
+        };
+  ::dart::simulation::detail::extractRigidPairConstraintInputsInto(
+      registry, inputs, includeWorldAnchors, geometryProvider, enrichInput);
 }
 
 //==============================================================================

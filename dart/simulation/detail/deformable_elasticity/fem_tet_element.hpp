@@ -48,17 +48,27 @@
 // the FEM elasticity slice (PLAN-081), with fixed-corotational as a follow-up.
 //
 // Energy density (rest-state-zeroed so a tet at its rest shape stores no
-// energy; the constant is dropped in a lambda-stable form):
+// energy; the constant is dropped in a lambdaHat-stable form):
 //
-//   psi(F) = (mu/2)(Ic - 3) - (mu/2) ln((Ic + 1)/4)
-//          + (lambda/2)(J^2 - 1) - (lambda + 3*mu/4)(J - 1)
+//   psi(F) = (muHat/2)(Ic - 3) - (muHat/2) ln((Ic + 1)/4)
+//          + (lambdaHat/2)(J - 1)^2 - (3*muHat/4)(J - 1)
 //
 // with Ic = ||F||_F^2 = tr(F^T F) and J = det F. The rest-stability constant
-// alpha = 1 + 3*mu/(4*lambda) only ever appears as lambda*alpha = lambda +
-// 3*mu/4, so the kernel stays finite as lambda -> 0 (Poisson ratio -> 0).
+// alpha = 1 + 3*muHat/(4*lambdaHat) is eliminated by expanding around J=1.
+// This keeps the kernel finite for a raw model lambdaHat of zero and avoids
+// subtracting O(lambdaHat) terms near the incompressible limit. These
+// coefficients are not the physical Lame pair:
+// stableNeoHookeanParameters() applies the Smith reparameterization that makes
+// the energy's infinitesimal tangent match the requested Young's modulus and
+// Poisson ratio. The public nonlinear-FEM selector admits `0 <= nu < 0.5`;
+// auxetic elasticity is deferred to a constitutive model that is also globally
+// rest-stable.
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+
+#include <algorithm>
+#include <stdexcept>
 
 #include <cmath>
 
@@ -70,17 +80,25 @@ using Matrix9d = Eigen::Matrix<double, 9, 9>;
 using Matrix12d = Eigen::Matrix<double, 12, 12>;
 using Matrix9x12d = Eigen::Matrix<double, 9, 12>;
 
-/// Lame parameters (shear modulus mu, first Lame parameter lambda).
+/// A pair of isotropic material coefficients.
+///
+/// `lameParameters()` returns the standard physical Lame pair used by the
+/// fixed-corotational kernel. `stableNeoHookeanParameters()` returns the
+/// reparameterized Smith-model coefficients used by the stable Neo-Hookean
+/// kernel.
 struct LameParameters
 {
   double mu = 0.0;
   double lambda = 0.0;
 };
 
-/// Convert engineering (Young's modulus, Poisson ratio) to Lame parameters.
-/// Valid for poissonRatio in [0, 0.5); the near-incompressible limit
+/// Convert engineering (Young's modulus, Poisson ratio) to the standard
+/// physical Lame parameters used by fixed-corotational elasticity.
+/// Valid for poissonRatio in (-1, 0.5); the near-incompressible limit
 /// (poissonRatio -> 0.5) sends lambda -> +infinity, which the caller should
-/// clamp at the material level.
+/// clamp at the material level. This mathematical helper intentionally does
+/// not enforce the narrower public nonlinear-FEM domain; use
+/// `tetMaterialParameters()` for a World material.
 inline LameParameters lameParameters(
     const double youngsModulus, const double poissonRatio)
 {
@@ -91,6 +109,64 @@ inline LameParameters lameParameters(
   const double denom = (1.0 + nu) * (1.0 - 2.0 * nu);
   lame.lambda = (std::abs(denom) > 0.0) ? (e * nu / denom) : 0.0;
   return lame;
+}
+
+/// Whether the currently available nonlinear tetrahedral material models are
+/// admitted by the public FEM selector.
+///
+/// The physical Lame conversion remains mathematically defined for
+/// `-1 < nu < 0.5`, but the Smith energies used by DART are not globally
+/// rest-stable throughout that auxetic interval (the no-log variant develops a
+/// lower collapsed well for every `nu < 0`). Keep one conservative public
+/// domain for stable Neo-Hookean and fixed-corotational tetrahedra until a
+/// globally rest-stable auxetic constitutive model is available.
+inline constexpr bool isTetMaterialPoissonRatioSupported(
+    double poissonRatio) noexcept
+{
+  return poissonRatio >= 0.0 && poissonRatio < 0.5;
+}
+
+/// Convert engineering material parameters to the coefficients of the stable
+/// Neo-Hookean log-barrier model above.
+///
+/// Its small-strain energy is
+/// `3 muHat/4 tr(epsilon^2)
+///    + (lambdaHat - 5 muHat/8)/2 tr(epsilon)^2`.
+/// Therefore matching the physical Lame pair `(mu_L, lambda_L)` requires
+/// `muHat = 4 mu_L/3` and `lambdaHat = lambda_L + 5 mu_L/6`.
+/// The public nonlinear-FEM domain is `0 <= poissonRatio < 0.5`; auxetic
+/// materials are rejected as described by
+/// `isTetMaterialPoissonRatioSupported()`.
+inline LameParameters stableNeoHookeanParameters(
+    const double youngsModulus, const double poissonRatio)
+{
+  if (!isTetMaterialPoissonRatioSupported(poissonRatio)) {
+    throw std::invalid_argument(
+        "stable Neo-Hookean FEM requires 0 <= Poisson ratio < 0.5");
+  }
+
+  const LameParameters physical = lameParameters(youngsModulus, poissonRatio);
+  return {
+      (4.0 / 3.0) * physical.mu,
+      std::fma(5.0 / 6.0, physical.mu, physical.lambda)};
+}
+
+/// Select the coefficient conversion for the tetrahedral material kernel.
+/// Fixed-corotational elasticity consumes the physical Lame pair; the stable
+/// Neo-Hookean kernel consumes Smith's reparameterized coefficients.
+inline LameParameters tetMaterialParameters(
+    const double youngsModulus,
+    const double poissonRatio,
+    const bool useFixedCorotational)
+{
+  if (!isTetMaterialPoissonRatioSupported(poissonRatio)) {
+    throw std::invalid_argument(
+        "tetrahedral FEM requires 0 <= Poisson ratio < 0.5");
+  }
+
+  return useFixedCorotational
+             ? lameParameters(youngsModulus, poissonRatio)
+             : stableNeoHookeanParameters(youngsModulus, poissonRatio);
 }
 
 /// Rest configuration of a linear tetrahedron: the inverse of the rest edge
@@ -225,9 +301,11 @@ inline double stableNeoHookeanEnergyDensity(
 {
   const double ic = f.squaredNorm();
   const double j = f.determinant();
-  const double lambdaAlpha = lame.lambda + 0.75 * lame.mu;
+  const double jMinusOne = j - 1.0;
+  const double volumetricEnergy = std::fma(
+      0.5 * lame.lambda * jMinusOne, jMinusOne, -0.75 * lame.mu * jMinusOne);
   return 0.5 * lame.mu * (ic - 3.0) - 0.5 * lame.mu * std::log((ic + 1.0) / 4.0)
-         + 0.5 * lame.lambda * (j * j - 1.0) - lambdaAlpha * (j - 1.0);
+         + volumetricEnergy;
 }
 
 /// First Piola-Kirchhoff stress P = dpsi/dF (a 3x3 matrix).
@@ -236,10 +314,10 @@ inline Eigen::Matrix3d stableNeoHookeanFirstPiola(
 {
   const double ic = f.squaredNorm();
   const double j = f.determinant();
-  const double lambdaAlpha = lame.lambda + 0.75 * lame.mu;
+  const double determinantCoefficient
+      = std::fma(lame.lambda, j - 1.0, -0.75 * lame.mu);
   Eigen::Matrix3d p = lame.mu * (ic / (ic + 1.0)) * f;
-  p.noalias()
-      += (lame.lambda * j - lambdaAlpha) * detail::determinantGradient(f);
+  p.noalias() += determinantCoefficient * detail::determinantGradient(f);
   return p;
 }
 
@@ -252,7 +330,8 @@ inline Matrix9d stableNeoHookeanEnergyHessian(
 {
   const double ic = f.squaredNorm();
   const double j = f.determinant();
-  const double lambdaAlpha = lame.lambda + 0.75 * lame.mu;
+  const double determinantCoefficient
+      = std::fma(lame.lambda, j - 1.0, -0.75 * lame.mu);
   const double denom = ic + 1.0;
 
   const Eigen::Map<const Vector9d> vecF(f.data());
@@ -263,8 +342,7 @@ inline Matrix9d stableNeoHookeanEnergyHessian(
   h.diagonal().array() += lame.mu * (ic / denom);
   h.noalias() += (2.0 * lame.mu / (denom * denom)) * (vecF * vecF.transpose());
   h.noalias() += lame.lambda * (vecG * vecG.transpose());
-  h.noalias()
-      += (lame.lambda * j - lambdaAlpha) * detail::determinantHessian(f);
+  h.noalias() += determinantCoefficient * detail::determinantHessian(f);
   return h;
 }
 

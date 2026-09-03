@@ -35,6 +35,7 @@
 #include <dart/simulation/body/rigid_body.hpp>
 #include <dart/simulation/common/constants.hpp>
 #include <dart/simulation/comps/contact_material.hpp>
+#include <dart/simulation/comps/deformable_body.hpp>
 #include <dart/simulation/comps/dynamics.hpp>
 #include <dart/simulation/comps/frame_types.hpp>
 #include <dart/simulation/comps/joint.hpp>
@@ -64,6 +65,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <new>
 #include <optional>
@@ -76,6 +78,7 @@
 #include <typeinfo>
 #include <vector>
 
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 
@@ -192,11 +195,16 @@ constexpr std::size_t kVariationalOptionTailBytes
     = sizeof(std::size_t) + sizeof(double);
 constexpr std::size_t kComputeAcceleratorPolicyTailBytes = sizeof(std::uint8_t);
 constexpr std::size_t kDifferentiableParameterTailBytes = sizeof(std::size_t);
+constexpr std::size_t kRigidConstraintIterationTailBytes = sizeof(std::size_t);
+constexpr std::size_t kRigidIpcLowerBoundTailBytes = sizeof(double);
+constexpr std::size_t kRigidAvbdParameterProfileTailBytes
+    = sizeof(std::uint8_t);
 constexpr std::size_t kWorldOptionTailBytes
     = sizeof(std::uint8_t) + kSolverOptionTailBytes
       + kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
       + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes
-      + kDifferentiableParameterTailBytes;
+      + kDifferentiableParameterTailBytes + kRigidConstraintIterationTailBytes
+      + kRigidIpcLowerBoundTailBytes + kRigidAvbdParameterProfileTailBytes;
 
 dart::simulation::JointSpec makeJointSpec(
     std::string_view name,
@@ -520,7 +528,331 @@ void writeLegacyV15EmptyWorldWithSolverOptions(std::ostream& output)
   io::writePOD(output, multibodyIntegrationMethod);
 }
 
+template <typename T>
+T readPODAt(std::string_view bytes, std::size_t offset)
+{
+  if (offset > bytes.size() || sizeof(T) > bytes.size() - offset) {
+    throw std::out_of_range("serialized POD offset is outside the buffer");
+  }
+
+  T value{};
+  std::memcpy(&value, bytes.data() + offset, sizeof(T));
+  return value;
+}
+
+template <typename T>
+void overwritePODAt(std::string& bytes, std::size_t offset, const T& value)
+{
+  if (offset > bytes.size() || sizeof(T) > bytes.size() - offset) {
+    throw std::out_of_range("serialized POD offset is outside the buffer");
+  }
+
+  std::memcpy(bytes.data() + offset, &value, sizeof(T));
+}
+
 } // namespace
+
+TEST(Serialization, LoadBinaryMalformedHeaderPreservesPopulatedTarget)
+{
+  namespace sx = dart::simulation;
+
+  sx::World target;
+  target.setTimeStep(0.01);
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+  options.linearVelocity = Eigen::Vector3d(0.25, -0.5, 0.75);
+  auto body = target.addRigidBody("preserved_target", options);
+  target.setReplayRecordingEnabled(true);
+  target.step();
+
+  const Eigen::Vector3d expectedPosition = body.getTranslation();
+  const Eigen::Vector3d expectedVelocity = body.getLinearVelocity();
+  const double expectedTime = target.getTime();
+  const std::size_t expectedFrame = target.getFrame();
+  const std::size_t expectedReplayFrames = target.getReplayFrameCount();
+  const auto expectedReplayCursor = target.getReplayCursor();
+
+  std::stringstream malformed("not-a-dart-world");
+  EXPECT_ANY_THROW(target.loadBinary(malformed));
+
+  EXPECT_TRUE(body.isValid());
+  EXPECT_EQ(target.getRigidBodyCount(), 1u);
+  EXPECT_TRUE(body.getTranslation().isApprox(expectedPosition, 0.0));
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(expectedVelocity, 0.0));
+  EXPECT_DOUBLE_EQ(target.getTime(), expectedTime);
+  EXPECT_EQ(target.getFrame(), expectedFrame);
+  EXPECT_TRUE(target.isReplayRecordingEnabled());
+  EXPECT_EQ(target.getReplayFrameCount(), expectedReplayFrames);
+  EXPECT_EQ(target.getReplayCursor(), expectedReplayCursor);
+  EXPECT_NO_THROW(target.step());
+}
+
+TEST(Serialization, LoadBinaryRejectsInvalidWorldMetadataTransactionally)
+{
+  namespace sx = dart::simulation;
+
+  sx::World source;
+  std::ostringstream sourceOutput;
+  source.saveBinary(sourceOutput);
+  const std::string sourceBytes = sourceOutput.str();
+
+  constexpr std::size_t headerSize = 2u * sizeof(std::uint32_t);
+  constexpr std::size_t entityCountOffset = headerSize;
+  constexpr std::size_t simulationFlagOffset
+      = entityCountOffset + sizeof(std::size_t);
+  constexpr std::size_t timeStepOffset
+      = simulationFlagOffset + sizeof(std::uint8_t) + 6u * sizeof(std::size_t);
+  constexpr std::size_t timeOffset = timeStepOffset + sizeof(double);
+  constexpr std::size_t frameOffset = timeOffset + sizeof(double);
+  constexpr std::size_t gravityXOffset = frameOffset + sizeof(std::size_t);
+  constexpr std::size_t gravityYOffset = gravityXOffset + sizeof(double);
+  constexpr std::size_t gravityZOffset = gravityYOffset + sizeof(double);
+  constexpr std::size_t differentiableFlagOffset
+      = gravityZOffset + sizeof(double) + sizeof(std::size_t);
+  constexpr std::size_t ignoredPairCountOffset = differentiableFlagOffset
+                                                 + sizeof(std::uint8_t)
+                                                 + 4u * sizeof(std::uint8_t);
+  constexpr std::size_t variationalMaxIterationsOffset
+      = ignoredPairCountOffset + sizeof(std::size_t);
+  constexpr std::size_t variationalToleranceOffset
+      = variationalMaxIterationsOffset + sizeof(std::size_t);
+  constexpr std::size_t deactivationEnabledOffset
+      = variationalToleranceOffset + sizeof(double);
+
+  ASSERT_EQ(
+      readPODAt<std::uint32_t>(sourceBytes, sizeof(std::uint32_t)),
+      sx::io::kBinaryFormatVersion);
+  ASSERT_EQ(readPODAt<std::size_t>(sourceBytes, entityCountOffset), 0u);
+  ASSERT_EQ(readPODAt<std::uint8_t>(sourceBytes, simulationFlagOffset), 0u);
+  ASSERT_DOUBLE_EQ(
+      readPODAt<double>(sourceBytes, timeStepOffset), source.getTimeStep());
+  ASSERT_DOUBLE_EQ(
+      readPODAt<double>(sourceBytes, timeOffset), source.getTime());
+  ASSERT_TRUE(
+      readPODAt<double>(sourceBytes, gravityXOffset)
+      == source.getGravity().x());
+  ASSERT_TRUE(
+      readPODAt<double>(sourceBytes, gravityYOffset)
+      == source.getGravity().y());
+  ASSERT_TRUE(
+      readPODAt<double>(sourceBytes, gravityZOffset)
+      == source.getGravity().z());
+  ASSERT_EQ(readPODAt<std::uint8_t>(sourceBytes, differentiableFlagOffset), 0u);
+  ASSERT_EQ(
+      readPODAt<std::uint8_t>(sourceBytes, deactivationEnabledOffset), 0u);
+
+  sx::World target;
+  target.setTimeStep(0.01);
+  target.setGravity(Eigen::Vector3d(0.25, -1.5, -3.0));
+  target.setTime(2.5);
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(1.0, 2.0, 3.0);
+  options.linearVelocity = Eigen::Vector3d(0.25, -0.5, 0.75);
+  auto body = target.addRigidBody("preserved_metadata_target", options);
+  target.setReplayRecordingEnabled(true);
+  target.step();
+
+  std::ostringstream targetBeforeOutput;
+  target.saveBinary(targetBeforeOutput);
+  const std::string targetBeforeBytes = targetBeforeOutput.str();
+  const Eigen::Isometry3d expectedTransform = body.getTransform();
+  const Eigen::Vector3d expectedVelocity = body.getLinearVelocity();
+  const double expectedTime = target.getTime();
+  const std::size_t expectedFrame = target.getFrame();
+  const std::size_t expectedReplayFrames = target.getReplayFrameCount();
+  const auto expectedReplayCursor = target.getReplayCursor();
+  ASSERT_GT(expectedReplayFrames, 0u);
+  ASSERT_TRUE(expectedReplayCursor.has_value());
+
+  const auto expectRejectedBytesTransactionally
+      = [&](std::string_view fieldName, const std::string& rejectedBytes) {
+          SCOPED_TRACE(std::string(fieldName));
+          std::istringstream input(rejectedBytes);
+          EXPECT_THROW(target.loadBinary(input), sx::InvalidArgumentException);
+
+          std::ostringstream targetAfterOutput;
+          ASSERT_NO_THROW(target.saveBinary(targetAfterOutput));
+          EXPECT_EQ(targetAfterOutput.str(), targetBeforeBytes);
+          EXPECT_TRUE(body.isValid());
+          EXPECT_EQ(target.getRigidBodyCount(), 1u);
+          EXPECT_TRUE(body.getTransform().isApprox(expectedTransform, 0.0));
+          EXPECT_TRUE(body.getLinearVelocity().isApprox(expectedVelocity, 0.0));
+          EXPECT_DOUBLE_EQ(target.getTime(), expectedTime);
+          EXPECT_EQ(target.getFrame(), expectedFrame);
+          EXPECT_TRUE(target.isReplayRecordingEnabled());
+          EXPECT_EQ(target.getReplayFrameCount(), expectedReplayFrames);
+          EXPECT_EQ(target.getReplayCursor(), expectedReplayCursor);
+        };
+  const auto expectRejectedTransactionally
+      = [&](std::string_view fieldName, std::size_t offset, const auto& value) {
+          std::string corrupted = sourceBytes;
+          ASSERT_NO_THROW(overwritePODAt(corrupted, offset, value));
+          expectRejectedBytesTransactionally(fieldName, corrupted);
+        };
+
+  expectRejectedBytesTransactionally(
+      "missing current-format World metadata",
+      sourceBytes.substr(0u, simulationFlagOffset));
+
+  const std::uint8_t invalidFlag = 2u;
+  expectRejectedTransactionally(
+      "simulation flag", simulationFlagOffset, invalidFlag);
+  expectRejectedTransactionally(
+      "differentiable flag", differentiableFlagOffset, invalidFlag);
+  expectRejectedTransactionally(
+      "deactivation flag", deactivationEnabledOffset, invalidFlag);
+
+  const double zero = 0.0;
+  const double negative = -1.0;
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double infinity = std::numeric_limits<double>::infinity();
+  expectRejectedTransactionally("zero time step", timeStepOffset, zero);
+  expectRejectedTransactionally("negative time step", timeStepOffset, negative);
+  expectRejectedTransactionally("NaN time step", timeStepOffset, nan);
+  expectRejectedTransactionally("infinite time step", timeStepOffset, infinity);
+  expectRejectedTransactionally("negative time", timeOffset, negative);
+  expectRejectedTransactionally("NaN time", timeOffset, nan);
+  expectRejectedTransactionally("infinite time", timeOffset, infinity);
+  expectRejectedTransactionally("NaN gravity x", gravityXOffset, nan);
+  expectRejectedTransactionally("infinite gravity y", gravityYOffset, infinity);
+  expectRejectedTransactionally(
+      "negative-infinite gravity z", gravityZOffset, -infinity);
+
+  ASSERT_GE(sourceBytes.size(), sizeof(double));
+  const std::size_t rigidIpcLowerBoundOffset
+      = sourceBytes.size() - kRigidAvbdParameterProfileTailBytes
+        - sizeof(double);
+  ASSERT_DOUBLE_EQ(
+      readPODAt<double>(sourceBytes, rigidIpcLowerBoundOffset), 1.0);
+  expectRejectedTransactionally(
+      "zero rigid IPC lower bound", rigidIpcLowerBoundOffset, zero);
+  expectRejectedTransactionally(
+      "negative rigid IPC lower bound", rigidIpcLowerBoundOffset, negative);
+  expectRejectedTransactionally(
+      "NaN rigid IPC lower bound", rigidIpcLowerBoundOffset, nan);
+  expectRejectedTransactionally(
+      "infinite rigid IPC lower bound", rigidIpcLowerBoundOffset, infinity);
+  expectRejectedBytesTransactionally(
+      "missing rigid IPC lower bound",
+      sourceBytes.substr(0u, rigidIpcLowerBoundOffset));
+
+  ASSERT_NO_THROW(target.restoreReplayFrame(*expectedReplayCursor));
+  EXPECT_TRUE(body.isValid());
+  EXPECT_NO_THROW(target.step());
+}
+
+TEST(Serialization, LoadBinaryInvalidRequiredVbdPreservesPopulatedTarget)
+{
+  namespace sx = dart::simulation;
+
+  sx::World invalidSnapshot;
+  auto& invalidRegistry = sx::detail::registryOf(invalidSnapshot);
+  const entt::entity invalidEntity = invalidRegistry.create();
+  invalidRegistry.emplace<sx::comps::Name>(
+      invalidEntity, "orphan_required_vbd");
+  sx::comps::DeformableVbdConfig config;
+  config.enabled = true;
+  config.requireVbdExecution = true;
+  invalidRegistry.emplace<sx::comps::DeformableVbdConfig>(
+      invalidEntity, config);
+
+  std::stringstream invalidInput;
+  saveLegacyWorldWithCurrentEntities(
+      invalidInput, invalidSnapshot, sx::io::kBinaryFormatVersion);
+  invalidInput.seekg(0);
+
+  sx::World target;
+  target.setTimeStep(0.01);
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(-1.0, 0.5, 2.0);
+  options.linearVelocity = Eigen::Vector3d(0.5, 0.25, -0.125);
+  auto body = target.addRigidBody("preserved_vbd_target", options);
+  target.setReplayRecordingEnabled(true);
+  target.step();
+
+  const Eigen::Vector3d expectedPosition = body.getTranslation();
+  const Eigen::Vector3d expectedVelocity = body.getLinearVelocity();
+  const double expectedTime = target.getTime();
+  const std::size_t expectedFrame = target.getFrame();
+  const std::size_t expectedReplayFrames = target.getReplayFrameCount();
+  const auto expectedReplayCursor = target.getReplayCursor();
+
+  EXPECT_THROW(target.loadBinary(invalidInput), sx::InvalidArgumentException);
+
+  EXPECT_TRUE(body.isValid());
+  EXPECT_EQ(target.getRigidBodyCount(), 1u);
+  EXPECT_TRUE(body.getTranslation().isApprox(expectedPosition, 0.0));
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(expectedVelocity, 0.0));
+  EXPECT_DOUBLE_EQ(target.getTime(), expectedTime);
+  EXPECT_EQ(target.getFrame(), expectedFrame);
+  EXPECT_TRUE(target.isReplayRecordingEnabled());
+  EXPECT_EQ(target.getReplayFrameCount(), expectedReplayFrames);
+  EXPECT_EQ(target.getReplayCursor(), expectedReplayCursor);
+  EXPECT_NO_THROW(target.step());
+}
+
+TEST(Serialization, LoadBinaryAuxeticFemPreservesPopulatedTarget)
+{
+  namespace sx = dart::simulation;
+
+  sx::World invalidSnapshot;
+  sx::DeformableBodyOptions invalidOptions;
+  invalidOptions.positions
+      = {Eigen::Vector3d::Zero(),
+         Eigen::Vector3d::UnitX(),
+         Eigen::Vector3d::UnitY(),
+         Eigen::Vector3d::UnitZ()};
+  invalidOptions.masses.assign(invalidOptions.positions.size(), 1.0);
+  invalidOptions.tetrahedra = {sx::DeformableTetrahedron{0u, 1u, 2u, 3u}};
+  invalidOptions.material.poissonRatio = -0.25;
+  invalidSnapshot.addDeformableBody("invalid_auxetic_fem", invalidOptions);
+
+  auto& invalidRegistry = sx::detail::registryOf(invalidSnapshot);
+  auto materialView = invalidRegistry.view<sx::comps::DeformableMaterial>();
+  ASSERT_EQ(materialView.size(), 1u);
+  const entt::entity invalidEntity = *materialView.begin();
+  materialView.get<sx::comps::DeformableMaterial>(invalidEntity)
+      .useFiniteElementElasticity = true;
+  sx::comps::DeformableVbdConfig config;
+  config.enabled = true;
+  config.requireVbdExecution = true;
+  invalidRegistry.emplace<sx::comps::DeformableVbdConfig>(
+      invalidEntity, config);
+
+  std::stringstream invalidInput;
+  saveLegacyWorldWithCurrentEntities(
+      invalidInput, invalidSnapshot, sx::io::kBinaryFormatVersion);
+  invalidInput.seekg(0);
+
+  sx::World target;
+  target.setTimeStep(0.01);
+  sx::RigidBodyOptions options;
+  options.position = Eigen::Vector3d(0.5, -1.0, 2.0);
+  options.linearVelocity = Eigen::Vector3d(-0.25, 0.5, 0.125);
+  auto body = target.addRigidBody("preserved_auxetic_target", options);
+  target.setReplayRecordingEnabled(true);
+  target.step();
+
+  const Eigen::Vector3d expectedPosition = body.getTranslation();
+  const Eigen::Vector3d expectedVelocity = body.getLinearVelocity();
+  const double expectedTime = target.getTime();
+  const std::size_t expectedFrame = target.getFrame();
+  const std::size_t expectedReplayFrames = target.getReplayFrameCount();
+  const auto expectedReplayCursor = target.getReplayCursor();
+
+  EXPECT_THROW(target.loadBinary(invalidInput), sx::InvalidArgumentException);
+
+  EXPECT_TRUE(body.isValid());
+  EXPECT_EQ(target.getRigidBodyCount(), 1u);
+  EXPECT_TRUE(body.getTranslation().isApprox(expectedPosition, 0.0));
+  EXPECT_TRUE(body.getLinearVelocity().isApprox(expectedVelocity, 0.0));
+  EXPECT_DOUBLE_EQ(target.getTime(), expectedTime);
+  EXPECT_EQ(target.getFrame(), expectedFrame);
+  EXPECT_TRUE(target.isReplayRecordingEnabled());
+  EXPECT_EQ(target.getReplayFrameCount(), expectedReplayFrames);
+  EXPECT_EQ(target.getReplayCursor(), expectedReplayCursor);
+  EXPECT_NO_THROW(target.step());
+}
 
 // Test save/load empty world
 TEST(Serialization, EmptyWorld)
@@ -538,6 +870,68 @@ TEST(Serialization, EmptyWorld)
   EXPECT_EQ(world2.getMultibodyCount(), 0);
   EXPECT_EQ(world2.getRigidBodyCount(), 0);
   EXPECT_FALSE(world2.isSimulationMode());
+}
+
+TEST(Serialization, RigidCollisionCapacitiesRemainDestinationPolicy)
+{
+  namespace sx = dart::simulation;
+
+  sx::World source;
+  source.setGravity(Eigen::Vector3d::Zero());
+  for (int i = 0; i < 3; ++i) {
+    sx::RigidBodyOptions bodyOptions;
+    bodyOptions.position
+        = Eigen::Vector3d(0.25 * static_cast<double>(i), 0.0, 0.0);
+    auto body = source.addRigidBody(
+        "serialized_bounded_sphere_" + std::to_string(i), bodyOptions);
+    body.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  }
+  source.enterSimulationMode();
+  ASSERT_EQ(source.collide().size(), 3u);
+
+  std::stringstream snapshot;
+  source.saveBinary(snapshot);
+  const std::string snapshotBytes = snapshot.str();
+
+  const auto expectRejectedTransactionally = [&](std::size_t candidateCapacity,
+                                                 std::size_t contactCapacity) {
+    sx::WorldOptions insufficientOptions;
+    insufficientOptions.rigidCollisionCapacityOptions.candidatePairCapacity
+        = candidateCapacity;
+    insufficientOptions.rigidCollisionCapacityOptions.contactCapacity
+        = contactCapacity;
+    sx::World insufficientTarget(insufficientOptions);
+    auto preserved = insufficientTarget.addRigidBody("preserved_target");
+    const Eigen::Isometry3d preservedTransform = preserved.getTransform();
+
+    std::istringstream rejectedInput(snapshotBytes);
+    EXPECT_THROW(
+        insufficientTarget.loadBinary(rejectedInput),
+        sx::InvalidOperationException);
+    EXPECT_TRUE(preserved.isValid());
+    EXPECT_TRUE(preserved.getTransform().isApprox(preservedTransform, 0.0));
+    EXPECT_EQ(insufficientTarget.getRigidBodyCount(), 1u);
+    EXPECT_EQ(
+        insufficientTarget.getRigidCollisionCandidatePairCapacity(),
+        candidateCapacity);
+    EXPECT_EQ(
+        insufficientTarget.getRigidCollisionContactCapacity(), contactCapacity);
+  };
+  expectRejectedTransactionally(
+      /*candidateCapacity=*/2u, /*contactCapacity=*/3u);
+  expectRejectedTransactionally(
+      /*candidateCapacity=*/3u, /*contactCapacity=*/2u);
+
+  sx::WorldOptions exactOptions;
+  exactOptions.rigidCollisionCapacityOptions.candidatePairCapacity = 3u;
+  exactOptions.rigidCollisionCapacityOptions.contactCapacity = 3u;
+  sx::World exactTarget(exactOptions);
+  std::istringstream acceptedInput(snapshotBytes);
+  ASSERT_NO_THROW(exactTarget.loadBinary(acceptedInput));
+  EXPECT_TRUE(exactTarget.isSimulationMode());
+  EXPECT_EQ(exactTarget.getRigidCollisionCandidatePairCapacity(), 3u);
+  EXPECT_EQ(exactTarget.getRigidCollisionContactCapacity(), 3u);
+  EXPECT_EQ(exactTarget.collide().size(), 3u);
 }
 
 TEST(Serialization, IgnoredCollisionPairsRoundTrip)
@@ -620,6 +1014,660 @@ TEST(Serialization, DeformableSerializersAreRegisteredAfterRegistryClear)
   EXPECT_EQ(restored->getTetrahedronCount(), 1u);
   EXPECT_EQ(restored->getSurfaceTriangleCount(), 4u);
   EXPECT_DOUBLE_EQ(restored->getMass(0), 0.5);
+}
+
+namespace {
+
+using DeformableVbdConfig = dart::simulation::comps::DeformableVbdConfig;
+
+entt::entity configureDeformableVbdSerializationWorld(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  sx::DeformableBodyOptions bodyOptions;
+  bodyOptions.positions
+      = {Eigen::Vector3d(0.0, 0.0, 0.0),
+         Eigen::Vector3d(0.0, 0.0, -0.5),
+         Eigen::Vector3d(0.0, 0.0, -1.0)};
+  bodyOptions.masses = {1.0, 1.0, 1.0};
+  bodyOptions.edges
+      = {sx::DeformableEdge{0, 1, -1.0}, sx::DeformableEdge{1, 2, -1.0}};
+  bodyOptions.fixedNodes = {0};
+  bodyOptions.edgeStiffness = 500.0;
+  bodyOptions.surfaceContactCandidateCapacity = 17u;
+  [[maybe_unused]] const auto body
+      = world.addDeformableBody("vbd_chain", bodyOptions);
+
+  sx::DeformableSolverOptions solverOptions;
+  solverOptions.iterations = 37u;
+  solverOptions.convergenceTolerance = 1.25e-12;
+  solverOptions.useAcceleration = true;
+  solverOptions.accelerationSpectralRadius = 0.73;
+  solverOptions.stiffnessDamping = 0.042;
+  solverOptions.groundContactStiffness = 321.0;
+  world.configureDeformableSolver("vbd_chain", solverOptions);
+
+  auto& registry = sx::detail::registryOf(world);
+  const auto deformableView = registry.view<sx::comps::DeformableBodyTag>();
+  if (std::ranges::distance(deformableView) != 1) {
+    throw std::logic_error("Expected exactly one deformable body");
+  }
+  const entt::entity entity = *deformableView.begin();
+  auto& config = registry.get<DeformableVbdConfig>(entity);
+  config.useAvbdContactNormalRows = true;
+  config.useAvbdSelfContactNormalRows = true;
+  config.useAvbdAttachmentRows = true;
+  config.avbdAttachmentStiffness = 42.5;
+  config.useAvbdFiniteStiffnessRows = true;
+  config.avbdFiniteStiffnessStart = 0.25;
+  config.avbdAlpha = 0.81;
+  config.avbdBeta = 2.5;
+  config.avbdGamma = 0.67;
+  config.avbdMaxStiffness = 9876.0;
+  return entity;
+}
+
+void expectDeformableVbdConfigEquals(
+    const DeformableVbdConfig& actual, const DeformableVbdConfig& expected)
+{
+  EXPECT_EQ(actual.enabled, expected.enabled);
+  EXPECT_EQ(actual.iterations, expected.iterations);
+  EXPECT_DOUBLE_EQ(
+      actual.convergenceDisplacement, expected.convergenceDisplacement);
+  EXPECT_EQ(actual.useChebyshev, expected.useChebyshev);
+  EXPECT_DOUBLE_EQ(actual.chebyshevRho, expected.chebyshevRho);
+  EXPECT_DOUBLE_EQ(actual.rayleighDamping, expected.rayleighDamping);
+  EXPECT_DOUBLE_EQ(actual.contactStiffness, expected.contactStiffness);
+  EXPECT_EQ(actual.requireVbdExecution, expected.requireVbdExecution);
+  EXPECT_EQ(actual.useAvbdContactNormalRows, expected.useAvbdContactNormalRows);
+  EXPECT_EQ(
+      actual.useAvbdSelfContactNormalRows,
+      expected.useAvbdSelfContactNormalRows);
+  EXPECT_EQ(actual.useAvbdAttachmentRows, expected.useAvbdAttachmentRows);
+  EXPECT_DOUBLE_EQ(
+      actual.avbdAttachmentStiffness, expected.avbdAttachmentStiffness);
+  EXPECT_EQ(
+      actual.useAvbdFiniteStiffnessRows, expected.useAvbdFiniteStiffnessRows);
+  EXPECT_DOUBLE_EQ(
+      actual.avbdFiniteStiffnessStart, expected.avbdFiniteStiffnessStart);
+  EXPECT_DOUBLE_EQ(actual.avbdAlpha, expected.avbdAlpha);
+  EXPECT_DOUBLE_EQ(actual.avbdBeta, expected.avbdBeta);
+  EXPECT_DOUBLE_EQ(actual.avbdGamma, expected.avbdGamma);
+  EXPECT_DOUBLE_EQ(actual.avbdMaxStiffness, expected.avbdMaxStiffness);
+}
+
+void expectDeformableBodyStateEquals(
+    const dart::simulation::DeformableBody& actual,
+    const dart::simulation::DeformableBody& expected)
+{
+  ASSERT_EQ(actual.getNodeCount(), expected.getNodeCount());
+  EXPECT_EQ(actual.getEdgeCount(), expected.getEdgeCount());
+  EXPECT_EQ(
+      actual.getSurfaceContactCandidateCapacity(),
+      expected.getSurfaceContactCandidateCapacity());
+  for (std::size_t node = 0; node < expected.getNodeCount(); ++node) {
+    EXPECT_TRUE(
+        actual.getPosition(node).isApprox(expected.getPosition(node), 0.0));
+    EXPECT_TRUE(
+        actual.getVelocity(node).isApprox(expected.getVelocity(node), 0.0));
+    EXPECT_DOUBLE_EQ(actual.getMass(node), expected.getMass(node));
+    EXPECT_EQ(actual.isFixedNode(node), expected.isFixedNode(node));
+  }
+}
+
+} // namespace
+
+TEST(Serialization, DeformableVbdConfigRoundTripsAllFieldsAndExecutes)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+  const entt::entity entity1 = configureDeformableVbdSerializationWorld(world1);
+  auto& registry1 = sx::detail::registryOf(world1);
+  const auto& config1 = registry1.get<DeformableVbdConfig>(entity1);
+  ASSERT_TRUE(config1.enabled);
+  ASSERT_TRUE(config1.requireVbdExecution);
+  const DeformableVbdConfig expected = config1;
+
+  const auto* serializer = sx::io::SerializerRegistry::instance().getSerializer(
+      "comps.DeformableVbdConfig");
+  ASSERT_NE(serializer, nullptr);
+
+  std::stringstream stream;
+  world1.saveBinary(stream);
+
+  sx::World world2;
+  world2.loadBinary(stream);
+  ASSERT_TRUE(world2.getDeformableBody("vbd_chain").has_value());
+  EXPECT_EQ(
+      world2.getDeformableBody("vbd_chain")
+          ->getSurfaceContactCandidateCapacity(),
+      17u);
+
+  auto& registry2 = sx::detail::registryOf(world2);
+  const auto deformableView2 = registry2.view<sx::comps::DeformableBodyTag>();
+  ASSERT_EQ(std::ranges::distance(deformableView2), 1);
+  const entt::entity entity2 = *deformableView2.begin();
+  ASSERT_TRUE(registry2.all_of<DeformableVbdConfig>(entity2));
+  expectDeformableVbdConfigEquals(
+      registry2.get<DeformableVbdConfig>(entity2), expected);
+
+  ASSERT_NO_THROW(world2.step());
+  const auto& diagnostics = world2.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.vbdBodyCount, 1u);
+  EXPECT_GT(diagnostics.vbdSweeps, 0u);
+  EXPECT_GT(diagnostics.vbdVertexUpdates, 0u);
+}
+
+TEST(
+    Serialization,
+    SimulationModeDeformableVbdConfigRoundTripsAllFieldsAndExecutes)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+  const entt::entity entity1 = configureDeformableVbdSerializationWorld(world1);
+  ASSERT_NO_THROW(world1.enterSimulationMode());
+  ASSERT_TRUE(world1.isSimulationMode());
+
+  auto& registry1 = sx::detail::registryOf(world1);
+  const DeformableVbdConfig expectedConfig
+      = registry1.get<DeformableVbdConfig>(entity1);
+  const auto expectedBody = world1.getDeformableBody("vbd_chain");
+  ASSERT_TRUE(expectedBody.has_value());
+
+  std::stringstream stream;
+  ASSERT_NO_THROW(world1.saveBinary(stream));
+
+  sx::World world2;
+  ASSERT_NO_THROW(world2.loadBinary(stream));
+  ASSERT_TRUE(world2.isSimulationMode());
+
+  const auto restoredBody = world2.getDeformableBody("vbd_chain");
+  ASSERT_TRUE(restoredBody.has_value());
+  expectDeformableBodyStateEquals(*restoredBody, *expectedBody);
+
+  auto& registry2 = sx::detail::registryOf(world2);
+  const auto deformableView2 = registry2.view<sx::comps::DeformableBodyTag>();
+  ASSERT_EQ(std::ranges::distance(deformableView2), 1);
+  const entt::entity entity2 = *deformableView2.begin();
+  ASSERT_TRUE(registry2.all_of<DeformableVbdConfig>(entity2));
+  expectDeformableVbdConfigEquals(
+      registry2.get<DeformableVbdConfig>(entity2), expectedConfig);
+
+  const double timeBeforeStep = world2.getTime();
+  const std::size_t frameBeforeStep = world2.getFrame();
+  ASSERT_NO_THROW(world2.step());
+  EXPECT_DOUBLE_EQ(world2.getTime(), timeBeforeStep + world2.getTimeStep());
+  EXPECT_EQ(world2.getFrame(), frameBeforeStep + 1u);
+  const auto& diagnostics = world2.getLastDeformableSolverDiagnostics();
+  EXPECT_EQ(diagnostics.bodyCount, 1u);
+  EXPECT_EQ(diagnostics.vbdBodyCount, 1u);
+  EXPECT_GT(diagnostics.vbdSweeps, 0u);
+  EXPECT_GT(diagnostics.vbdVertexUpdates, 0u);
+}
+
+TEST(Serialization, AvbdFixedAttachmentTargetsReplayAndRoundTrip)
+{
+  namespace sx = dart::simulation;
+
+  sx::World source;
+  source.setGravity(Eigen::Vector3d::Zero());
+  source.setTimeStep(0.01);
+
+  sx::DeformableBodyOptions options;
+  options.positions = {Eigen::Vector3d::Zero(), Eigen::Vector3d(1.0, 0.0, 0.0)};
+  options.masses = {1.0, 1.0};
+  options.fixedNodes = {0u};
+  options.edges = {sx::DeformableEdge{0u, 1u, 1.0}};
+  options.edgeStiffness = 100.0;
+  auto body = source.addDeformableBody("attached", options);
+
+  sx::DeformableSolverOptions solverOptions;
+  // The relocated fixed node leaves the edge spring stretched, so the
+  // augmented-Lagrangian attachment row must drive a real constraint force to
+  // zero. Its dual/penalty update converges geometrically in the per-step
+  // sweep count, and the relative 1e-8 comparisons below need about nine
+  // digits. Measured residual after one step at this scene's attachment
+  // stiffness (1000) and beta (5000): 20 sweeps 2.4e-4, 60 sweeps 4.7e-6,
+  // 120 sweeps 1.2e-8, 160 sweeps 2.4e-10, against a 9.4e-9 bound.
+  solverOptions.iterations = 160u;
+  source.configureDeformableSolver("attached", solverOptions);
+  auto& sourceRegistry = sx::detail::registryOf(source);
+  auto configView = sourceRegistry.view<sx::comps::DeformableVbdConfig>();
+  ASSERT_EQ(configView.size(), 1u);
+  const entt::entity entity = *configView.begin();
+  auto& config = configView.get<sx::comps::DeformableVbdConfig>(entity);
+  config.useAvbdAttachmentRows = true;
+  config.avbdAttachmentStiffness = 1000.0;
+  config.avbdBeta = 5000.0;
+
+  const Eigen::Vector3d attachmentTarget(0.25, 0.75, -0.5);
+  body.setPosition(0u, attachmentTarget);
+  auto& sourceState
+      = sourceRegistry.get<sx::comps::DeformableNodeState>(entity);
+  ASSERT_TRUE(sourceState.attachmentTargets[0].isApprox(attachmentTarget, 0.0));
+
+  std::stringstream stream;
+  ASSERT_NO_THROW(source.saveBinary(stream));
+
+  sx::World loaded;
+  ASSERT_NO_THROW(loaded.loadBinary(stream));
+  auto loadedBody = loaded.getDeformableBody("attached");
+  ASSERT_TRUE(loadedBody.has_value());
+  auto& loadedRegistry = sx::detail::registryOf(loaded);
+  auto loadedStateView = loadedRegistry.view<sx::comps::DeformableNodeState>();
+  ASSERT_EQ(loadedStateView.size(), 1u);
+  auto& loadedState = loadedStateView.get<sx::comps::DeformableNodeState>(
+      *loadedStateView.begin());
+  ASSERT_TRUE(loadedState.attachmentTargets[0].isApprox(attachmentTarget, 0.0));
+  ASSERT_TRUE(loadedBody->getPosition(0u).isApprox(attachmentTarget, 0.0));
+
+  const Eigen::Vector3d displacedPosition
+      = attachmentTarget + Eigen::Vector3d(0.2, -0.1, 0.15);
+  loadedState.positions[0] = displacedPosition;
+  loadedState.previousPositions[0] = displacedPosition;
+  ASSERT_NO_THROW(loaded.step());
+  EXPECT_LT(
+      (loadedBody->getPosition(0u) - attachmentTarget).norm(),
+      (displacedPosition - attachmentTarget).norm());
+
+  source.setReplayRecordingEnabled(true);
+  ASSERT_NO_THROW(source.step());
+  EXPECT_TRUE(body.getPosition(0u).isApprox(attachmentTarget, 1e-8));
+
+  body.setPosition(0u, Eigen::Vector3d(3.0, -2.0, 1.0));
+  ASSERT_NO_THROW(source.restoreReplayFrame(0u));
+  EXPECT_TRUE(body.getPosition(0u).isApprox(attachmentTarget, 0.0));
+  EXPECT_TRUE(sourceState.attachmentTargets[0].isApprox(attachmentTarget, 0.0));
+  ASSERT_NO_THROW(source.step());
+  EXPECT_TRUE(body.getPosition(0u).isApprox(attachmentTarget, 1e-8));
+}
+
+TEST(Serialization, BinarySaveRejectsLiveDeformableAvbdContinuationState)
+{
+  namespace sx = dart::simulation;
+
+  const auto addConfiguredSpring = [](sx::World& world, bool attachmentRows) {
+    sx::DeformableBodyOptions options;
+    options.positions
+        = {Eigen::Vector3d::Zero(), Eigen::Vector3d(1.0, 0.0, 0.0)};
+    options.masses = {1.0, 1.0};
+    options.fixedNodes = {0u};
+    options.edges = {sx::DeformableEdge{0u, 1u, 1.0}};
+    world.addDeformableBody("spring", options);
+    world.configureDeformableSolver("spring", {});
+    auto& registry = sx::detail::registryOf(world);
+    auto configs = registry.view<sx::comps::DeformableVbdConfig>();
+    ASSERT_EQ(configs.size(), 1u);
+    auto& config
+        = configs.get<sx::comps::DeformableVbdConfig>(*configs.begin());
+    config.useAvbdAttachmentRows = attachmentRows;
+    config.avbdAttachmentStiffness = 1000.0;
+  };
+
+  sx::World configuredOnly;
+  addConfiguredSpring(configuredOnly, true);
+  std::ostringstream configuredOnlyOutput;
+  EXPECT_NO_THROW(configuredOnly.saveBinary(configuredOnlyOutput));
+  EXPECT_FALSE(configuredOnlyOutput.str().empty());
+
+  sx::World plainVbd;
+  addConfiguredSpring(plainVbd, false);
+  ASSERT_NO_THROW(plainVbd.step());
+  std::ostringstream plainVbdOutput;
+  EXPECT_NO_THROW(plainVbd.saveBinary(plainVbdOutput));
+  EXPECT_FALSE(plainVbdOutput.str().empty());
+
+  sx::World activeAvbd;
+  addConfiguredSpring(activeAvbd, true);
+  ASSERT_NO_THROW(activeAvbd.step());
+  std::ostringstream activeAvbdOutput;
+  EXPECT_THROW(
+      activeAvbd.saveBinary(activeAvbdOutput), sx::InvalidOperationException);
+  EXPECT_TRUE(activeAvbdOutput.str().empty());
+}
+
+TEST(Serialization, BinarySaveAcceptsRigidVbdAndRejectsRigidAvbdContinuation)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions vbdOptions;
+  vbdOptions.gravity = Eigen::Vector3d::Zero();
+  vbdOptions.rigidBodySolver = sx::RigidBodySolver::Vbd;
+  sx::World vbdWorld(vbdOptions);
+  sx::RigidBodyOptions vbdGroundOptions;
+  vbdGroundOptions.isStatic = true;
+  vbdGroundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto vbdGround = vbdWorld.addRigidBody("vbd_ground", vbdGroundOptions);
+  vbdGround.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(2.0, 2.0, 0.25)));
+  sx::RigidBodyOptions vbdSphereOptions;
+  vbdSphereOptions.position = Eigen::Vector3d(0.0, 0.0, 0.4);
+  auto vbdSphere = vbdWorld.addRigidBody("vbd_sphere", vbdSphereOptions);
+  vbdSphere.setCollisionShape(sx::CollisionShape::makeSphere(0.5));
+  ASSERT_EQ(vbdWorld.collide().size(), 1u);
+  ASSERT_NO_THROW(vbdWorld.step());
+  std::ostringstream vbdOutput;
+  EXPECT_NO_THROW(vbdWorld.saveBinary(vbdOutput));
+  EXPECT_FALSE(vbdOutput.str().empty());
+
+  sx::WorldOptions options;
+  options.gravity = Eigen::Vector3d::Zero();
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  sx::World world(options);
+
+  sx::RigidBodyOptions parentOptions;
+  parentOptions.isStatic = true;
+  auto parent = world.addRigidBody("parent", parentOptions);
+  sx::RigidBodyOptions childOptions;
+  childOptions.position = Eigen::Vector3d::UnitX();
+  auto child = world.addRigidBody("child", childOptions);
+  auto joint = world.addJoint(
+      parent,
+      child,
+      sx::JointSpec{.name = "fixed", .type = sx::JointType::Fixed});
+  // Fixed-penalty VBD rejects hard joint rows by design, so a hard fixed joint
+  // would make the family switch below throw instead of exercising this test's
+  // claim. Configure finite linear and angular projection stiffness so both
+  // AVBD and VBD accept the row and only the latent AVBD continuation state
+  // can reject the save.
+  joint.setConstraintProjectionPolicy(
+      sx::JointConstraintProjectionPolicy{
+          .startStiffness = 2.0,
+          .linearStiffness = 1.0e5,
+          .angularStiffness = 1.0e5});
+
+  ASSERT_NO_THROW(world.step());
+  std::ostringstream output;
+  EXPECT_THROW(world.saveBinary(output), sx::InvalidOperationException);
+  EXPECT_TRUE(output.str().empty());
+
+  // Leaving AVBD for fixed-penalty VBD cold-starts every AVBD warm-start
+  // inventory, because VBD must not inherit AVBD dual/stiffness continuation.
+  // Nothing the binary format cannot encode survives the switch, so the
+  // snapshot becomes saveable again.
+  ASSERT_NO_THROW(world.setRigidBodySolver(sx::RigidBodySolver::Vbd));
+  std::ostringstream afterFamilySwitchOutput;
+  EXPECT_NO_THROW(world.saveBinary(afterFamilySwitchOutput));
+  EXPECT_FALSE(afterFamilySwitchOutput.str().empty());
+
+  // The rejection tracks live continuation state, not the family label:
+  // stepping under AVBD again rebuilds the inventory and the save is refused.
+  ASSERT_NO_THROW(world.setRigidBodySolver(sx::RigidBodySolver::Avbd));
+  ASSERT_NO_THROW(world.step());
+  std::ostringstream rebuiltContinuationOutput;
+  EXPECT_THROW(
+      world.saveBinary(rebuiltContinuationOutput),
+      sx::InvalidOperationException);
+  EXPECT_TRUE(rebuiltContinuationOutput.str().empty());
+}
+
+namespace {
+
+void writeUncheckedDeformableVbdConfig(
+    std::ostream& output, const DeformableVbdConfig& config)
+{
+  namespace io = dart::simulation::io;
+
+  io::writePOD(output, config.enabled);
+  io::writePOD(output, config.iterations);
+  io::writePOD(output, config.convergenceDisplacement);
+  io::writePOD(output, config.useChebyshev);
+  io::writePOD(output, config.chebyshevRho);
+  io::writePOD(output, config.rayleighDamping);
+  io::writePOD(output, config.contactStiffness);
+  io::writePOD(output, config.requireVbdExecution);
+  io::writePOD(output, config.useAvbdContactNormalRows);
+  io::writePOD(output, config.useAvbdSelfContactNormalRows);
+  io::writePOD(output, config.useAvbdAttachmentRows);
+  io::writePOD(output, config.avbdAttachmentStiffness);
+  io::writePOD(output, config.useAvbdFiniteStiffnessRows);
+  io::writePOD(output, config.avbdFiniteStiffnessStart);
+  io::writePOD(output, config.avbdAlpha);
+  io::writePOD(output, config.avbdBeta);
+  io::writePOD(output, config.avbdGamma);
+  io::writePOD(output, config.avbdMaxStiffness);
+}
+
+std::vector<std::pair<std::string_view, DeformableVbdConfig>>
+makeInvalidDeformableVbdConfigs()
+{
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  const double infinity = std::numeric_limits<double>::infinity();
+  std::vector<std::pair<std::string_view, DeformableVbdConfig>> invalid;
+  const auto add = [&](std::string_view name, auto mutate) {
+    DeformableVbdConfig config;
+    config.enabled = true;
+    mutate(config);
+    invalid.emplace_back(name, config);
+  };
+
+  add("zero iterations", [](auto& config) { config.iterations = 0u; });
+  add("negative convergence displacement",
+      [](auto& config) { config.convergenceDisplacement = -1.0; });
+  add("NaN convergence displacement",
+      [nan](auto& config) { config.convergenceDisplacement = nan; });
+  add("infinite convergence displacement",
+      [infinity](auto& config) { config.convergenceDisplacement = infinity; });
+  add("zero Chebyshev spectral radius",
+      [](auto& config) { config.chebyshevRho = 0.0; });
+  add("unit Chebyshev spectral radius",
+      [](auto& config) { config.chebyshevRho = 1.0; });
+  add("negative Chebyshev spectral radius",
+      [](auto& config) { config.chebyshevRho = -0.5; });
+  add("NaN Chebyshev spectral radius",
+      [nan](auto& config) { config.chebyshevRho = nan; });
+  add("infinite Chebyshev spectral radius",
+      [infinity](auto& config) { config.chebyshevRho = infinity; });
+  add("negative Rayleigh damping",
+      [](auto& config) { config.rayleighDamping = -1.0; });
+  add("NaN Rayleigh damping",
+      [nan](auto& config) { config.rayleighDamping = nan; });
+  add("infinite Rayleigh damping",
+      [infinity](auto& config) { config.rayleighDamping = infinity; });
+  add("negative contact stiffness",
+      [](auto& config) { config.contactStiffness = -1.0; });
+  add("NaN contact stiffness",
+      [nan](auto& config) { config.contactStiffness = nan; });
+  add("infinite contact stiffness",
+      [infinity](auto& config) { config.contactStiffness = infinity; });
+  add("negative attachment start",
+      [](auto& config) { config.avbdAttachmentStiffness = -1.0; });
+  add("NaN attachment start",
+      [nan](auto& config) { config.avbdAttachmentStiffness = nan; });
+  add("infinite attachment start",
+      [infinity](auto& config) { config.avbdAttachmentStiffness = infinity; });
+  add("negative finite-stiffness start",
+      [](auto& config) { config.avbdFiniteStiffnessStart = -1.0; });
+  add("NaN finite-stiffness start",
+      [nan](auto& config) { config.avbdFiniteStiffnessStart = nan; });
+  add("infinite finite-stiffness start",
+      [infinity](auto& config) { config.avbdFiniteStiffnessStart = infinity; });
+  add("negative alpha", [](auto& config) { config.avbdAlpha = -0.1; });
+  add("alpha above one", [](auto& config) { config.avbdAlpha = 1.1; });
+  add("NaN alpha", [nan](auto& config) { config.avbdAlpha = nan; });
+  add("infinite alpha",
+      [infinity](auto& config) { config.avbdAlpha = infinity; });
+  add("negative beta", [](auto& config) { config.avbdBeta = -1.0; });
+  add("NaN beta", [nan](auto& config) { config.avbdBeta = nan; });
+  add("infinite beta",
+      [infinity](auto& config) { config.avbdBeta = infinity; });
+  add("negative gamma", [](auto& config) { config.avbdGamma = -0.1; });
+  add("gamma above one", [](auto& config) { config.avbdGamma = 1.1; });
+  add("NaN gamma", [nan](auto& config) { config.avbdGamma = nan; });
+  add("infinite gamma",
+      [infinity](auto& config) { config.avbdGamma = infinity; });
+  add("negative maximum stiffness",
+      [](auto& config) { config.avbdMaxStiffness = -1.0; });
+  add("NaN maximum stiffness",
+      [nan](auto& config) { config.avbdMaxStiffness = nan; });
+  add("negative-infinite maximum stiffness",
+      [infinity](auto& config) { config.avbdMaxStiffness = -infinity; });
+  return invalid;
+}
+
+} // namespace
+
+TEST(Serialization, DeformableVbdConfigValidationAcceptsSupportedBoundaries)
+{
+  namespace sx = dart::simulation;
+
+  sx::comps::DeformableVbdConfig defaults;
+  EXPECT_NO_THROW(sx::comps::validateDeformableVbdConfig(defaults));
+  EXPECT_EQ(defaults.avbdMaxStiffness, std::numeric_limits<double>::infinity());
+
+  sx::comps::DeformableVbdConfig boundaries;
+  boundaries.enabled = true;
+  boundaries.convergenceDisplacement = 0.0;
+  boundaries.chebyshevRho = 0.5;
+  boundaries.rayleighDamping = 0.0;
+  boundaries.contactStiffness = 0.0;
+  boundaries.useAvbdContactNormalRows = true;
+  boundaries.useAvbdAttachmentRows = true;
+  boundaries.avbdAttachmentStiffness = 0.0;
+  boundaries.useAvbdFiniteStiffnessRows = true;
+  boundaries.avbdFiniteStiffnessStart = 0.0;
+  boundaries.avbdAlpha = 0.0;
+  boundaries.avbdBeta = 0.0;
+  boundaries.avbdGamma = 1.0;
+  boundaries.avbdMaxStiffness = 0.0;
+  EXPECT_NO_THROW(sx::comps::validateDeformableVbdConfig(boundaries));
+
+  sx::comps::DeformableVbdConfig cappedStarts;
+  cappedStarts.contactStiffness = 4.0;
+  cappedStarts.useAvbdContactNormalRows = true;
+  cappedStarts.useAvbdAttachmentRows = true;
+  cappedStarts.avbdAttachmentStiffness = 3.0;
+  cappedStarts.useAvbdFiniteStiffnessRows = true;
+  cappedStarts.avbdFiniteStiffnessStart = 2.0;
+  cappedStarts.avbdMaxStiffness = 1.0;
+  EXPECT_NO_THROW(sx::comps::validateDeformableVbdConfig(cappedStarts));
+}
+
+TEST(Serialization, DeformableVbdConfigSerializerRejectsInvalidValuesOnSave)
+{
+  namespace sx = dart::simulation;
+
+  auto& serializers = sx::io::SerializerRegistry::instance();
+  sx::comps::registerDeformableBodySerializers(serializers);
+  const auto* serializer
+      = serializers.getSerializer("comps.DeformableVbdConfig");
+  ASSERT_NE(serializer, nullptr);
+
+  for (const auto& [name, config] : makeInvalidDeformableVbdConfigs()) {
+    SCOPED_TRACE(std::string(name));
+    EXPECT_THROW(
+        sx::comps::validateDeformableVbdConfig(config),
+        sx::InvalidArgumentException);
+
+    sx::detail::WorldRegistry registry;
+    const entt::entity entity = registry.create();
+    registry.emplace<sx::comps::DeformableVbdConfig>(entity, config);
+    sx::io::EntityMap entityMap;
+    entityMap.emplace(entity, entity);
+    std::stringstream stream;
+    EXPECT_THROW(
+        serializer->save(stream, entity, registry, entityMap),
+        sx::InvalidArgumentException);
+    EXPECT_TRUE(stream.str().empty());
+  }
+}
+
+TEST(Serialization, DeformableVbdConfigSerializerRejectsInvalidValuesOnLoad)
+{
+  namespace sx = dart::simulation;
+
+  auto& serializers = sx::io::SerializerRegistry::instance();
+  sx::comps::registerDeformableBodySerializers(serializers);
+  const auto* serializer
+      = serializers.getSerializer("comps.DeformableVbdConfig");
+  ASSERT_NE(serializer, nullptr);
+
+  for (const auto& [name, config] : makeInvalidDeformableVbdConfigs()) {
+    SCOPED_TRACE(std::string(name));
+    std::stringstream stream;
+    writeUncheckedDeformableVbdConfig(stream, config);
+
+    sx::detail::WorldRegistry registry;
+    const entt::entity entity = registry.create();
+    EXPECT_THROW(
+        serializer->load(stream, entity, registry),
+        sx::InvalidArgumentException);
+    EXPECT_FALSE(registry.all_of<sx::comps::DeformableVbdConfig>(entity));
+  }
+}
+
+TEST(Serialization, DeformableVbdConfigSerializerRejectsTruncatedPayloads)
+{
+  namespace sx = dart::simulation;
+
+  auto& serializers = sx::io::SerializerRegistry::instance();
+  sx::comps::registerDeformableBodySerializers(serializers);
+  const auto* serializer
+      = serializers.getSerializer("comps.DeformableVbdConfig");
+  ASSERT_NE(serializer, nullptr);
+
+  sx::detail::WorldRegistry sourceRegistry;
+  const entt::entity sourceEntity = sourceRegistry.create();
+  sourceRegistry.emplace<sx::comps::DeformableVbdConfig>(sourceEntity);
+  sx::io::EntityMap saveMap;
+  saveMap.emplace(sourceEntity, sourceEntity);
+  std::stringstream complete;
+  serializer->save(complete, sourceEntity, sourceRegistry, saveMap);
+  const std::string payload = complete.str();
+  ASSERT_FALSE(payload.empty());
+
+  for (std::size_t size = 0; size < payload.size(); ++size) {
+    SCOPED_TRACE(size);
+    std::stringstream truncated(payload.substr(0, size));
+    sx::detail::WorldRegistry targetRegistry;
+    const entt::entity targetEntity = targetRegistry.create();
+    EXPECT_THROW(
+        serializer->load(truncated, targetEntity, targetRegistry),
+        sx::InvalidArgumentException);
+    EXPECT_FALSE(
+        targetRegistry.all_of<sx::comps::DeformableVbdConfig>(targetEntity));
+  }
+}
+
+TEST(Serialization, DeformableContactConfigSerializerRejectsTruncatedPayloads)
+{
+  namespace sx = dart::simulation;
+
+  auto& serializers = sx::io::SerializerRegistry::instance();
+  sx::comps::registerDeformableBodySerializers(serializers);
+  const auto* serializer
+      = serializers.getSerializer("comps.DeformableContactConfig");
+  ASSERT_NE(serializer, nullptr);
+
+  sx::detail::WorldRegistry sourceRegistry;
+  const entt::entity sourceEntity = sourceRegistry.create();
+  sourceRegistry.emplace<sx::comps::DeformableContactConfig>(
+      sourceEntity, sx::comps::DeformableContactConfig{17u});
+  sx::io::EntityMap saveMap;
+  saveMap.emplace(sourceEntity, sourceEntity);
+  std::stringstream complete;
+  serializer->save(complete, sourceEntity, sourceRegistry, saveMap);
+  const std::string payload = complete.str();
+  ASSERT_EQ(payload.size(), sizeof(std::size_t));
+
+  for (std::size_t size = 0u; size < payload.size(); ++size) {
+    SCOPED_TRACE(size);
+    std::stringstream truncated(payload.substr(0u, size));
+    sx::detail::WorldRegistry targetRegistry;
+    const entt::entity targetEntity = targetRegistry.create();
+    EXPECT_THROW(
+        serializer->load(truncated, targetEntity, targetRegistry),
+        sx::InvalidArgumentException);
+    EXPECT_FALSE(targetRegistry.all_of<sx::comps::DeformableContactConfig>(
+        targetEntity));
+  }
 }
 
 // Test save/load world with single multibody (no links)
@@ -804,7 +1852,7 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
       = Eigen::Vector3d(0.25, -0.5, 0.75);
   ground.setCollisionShape(groundCollisionShape);
   ground.setDeformableObstaclePolicy(
-      {.groundBarrier = true, .surfaceObstacle = true});
+      {.groundBarrier = true, .surfaceObstacle = true, .barrierOnly = true});
 
   auto ball = world1.addRigidBody("ball");
   ball.setCollisionShape(sx::CollisionShape::makeSphere(0.3));
@@ -860,6 +1908,7 @@ TEST(Serialization, PreservesRigidBodyCollisionComponents)
   const auto groundPolicy = groundRestored->getDeformableObstaclePolicy();
   EXPECT_TRUE(groundPolicy.groundBarrier);
   EXPECT_TRUE(groundPolicy.surfaceObstacle);
+  EXPECT_TRUE(groundPolicy.barrierOnly);
 
   auto groundShape = groundRestored->getCollisionShape();
   ASSERT_TRUE(groundShape.has_value());
@@ -1060,6 +2109,7 @@ TEST(Serialization, PreservesWorldSolverOptions)
   world2.loadBinary(ss);
 
   EXPECT_EQ(world2.getRigidBodySolver(), sx::RigidBodySolver::Ipc);
+  EXPECT_EQ(world2.getRigidConstraintOptions().iterations, 8u);
   EXPECT_EQ(
       world2.getMultibodyOptions().integrationFamily,
       sx::MultibodyIntegrationFamily::Variational);
@@ -1073,6 +2123,207 @@ TEST(Serialization, PreservesWorldSolverOptions)
   EXPECT_EQ(
       world2.getComputeAcceleratorPolicy(),
       sx::ComputeAcceleratorPolicy::PreferAccelerated);
+}
+
+TEST(Serialization, PreservesPublicAvbdSolverFamily)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
+  options.rigidConstraintOptions.iterations = 20;
+  sx::World world1(options);
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_EQ(world2.getRigidBodySolver(), sx::RigidBodySolver::Avbd);
+  EXPECT_EQ(world2.getRigidConstraintOptions().iterations, 20u);
+  EXPECT_EQ(
+      world2.getContactSolverMethod(),
+      sx::ContactSolverMethod::SequentialImpulse);
+  EXPECT_EQ(
+      world2.getRigidAvbdParameterProfile(),
+      sx::RigidAvbdParameterProfile::Paper2025Table2);
+}
+
+//==============================================================================
+TEST(Serialization, RoundTripsSelectedRigidAvbdParameterProfile)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::SourceDemo3d;
+  sx::World world1(options);
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_EQ(world2.getRigidBodySolver(), sx::RigidBodySolver::Avbd);
+  EXPECT_EQ(
+      world2.getRigidAvbdParameterProfile(),
+      sx::RigidAvbdParameterProfile::SourceDemo3d);
+}
+
+TEST(Serialization, PreservesPublicVbdSolverFamily)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Vbd;
+  options.rigidConstraintOptions.iterations = 20;
+  sx::World world1(options);
+
+  std::stringstream ss;
+  world1.saveBinary(ss);
+
+  sx::World world2;
+  world2.loadBinary(ss);
+
+  EXPECT_EQ(world2.getRigidBodySolver(), sx::RigidBodySolver::Vbd);
+  EXPECT_EQ(world2.getRigidConstraintOptions().iterations, 20u);
+  EXPECT_EQ(
+      world2.getContactSolverMethod(),
+      sx::ContactSolverMethod::SequentialImpulse);
+}
+
+TEST(Serialization, RejectsMissingRigidConstraintIterationBudget)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+  std::stringstream output;
+  world1.saveBinary(output);
+
+  auto serialized = output.str();
+  ASSERT_GE(
+      serialized.size(),
+      kRigidConstraintIterationTailBytes + kRigidIpcLowerBoundTailBytes);
+  serialized.resize(
+      serialized.size() - kRigidConstraintIterationTailBytes
+      - kRigidIpcLowerBoundTailBytes - kRigidAvbdParameterProfileTailBytes);
+  constexpr std::uint32_t rigidConstraintFormatVersion = 29u;
+  std::memcpy(
+      serialized.data() + sizeof(std::uint32_t),
+      &rigidConstraintFormatVersion,
+      sizeof(rigidConstraintFormatVersion));
+  std::stringstream truncated(serialized);
+
+  sx::World world2;
+  EXPECT_THROW(world2.loadBinary(truncated), sx::InvalidArgumentException);
+}
+
+TEST(Serialization, RejectsAvbdSolverInPreAvbdFormat)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  sx::World world1(options);
+  std::stringstream output;
+  world1.saveBinary(output);
+
+  auto serialized = output.str();
+  ASSERT_GE(
+      serialized.size(),
+      2u * sizeof(std::uint32_t) + kRigidConstraintIterationTailBytes
+          + kRigidIpcLowerBoundTailBytes);
+  serialized.resize(
+      serialized.size() - kRigidConstraintIterationTailBytes
+      - kRigidIpcLowerBoundTailBytes - kRigidAvbdParameterProfileTailBytes);
+  constexpr std::uint32_t legacyVersion = 28u;
+  std::memcpy(
+      serialized.data() + sizeof(std::uint32_t),
+      &legacyVersion,
+      sizeof(legacyVersion));
+  std::stringstream downgraded(serialized);
+
+  sx::World world2;
+  EXPECT_THROW(world2.loadBinary(downgraded), sx::InvalidArgumentException);
+}
+
+TEST(Serialization, RejectsVbdSolverInPreVbdFormat)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Vbd;
+  sx::World world1(options);
+  std::stringstream output;
+  world1.saveBinary(output);
+
+  auto serialized = output.str();
+  ASSERT_GE(serialized.size(), 2u * sizeof(std::uint32_t));
+  constexpr std::uint32_t legacyVersion = 29u;
+  std::memcpy(
+      serialized.data() + sizeof(std::uint32_t),
+      &legacyVersion,
+      sizeof(legacyVersion));
+  std::stringstream downgraded(serialized);
+
+  sx::World world2;
+  EXPECT_THROW(world2.loadBinary(downgraded), sx::InvalidArgumentException);
+}
+
+TEST(Serialization, RejectsNonDefaultRigidConstraintOptionsForIpc)
+{
+  namespace sx = dart::simulation;
+
+  sx::WorldOptions options;
+  options.rigidBodySolver = sx::RigidBodySolver::Ipc;
+  sx::World world1(options);
+  std::stringstream output;
+  world1.saveBinary(output);
+
+  auto serialized = output.str();
+  ASSERT_GE(
+      serialized.size(),
+      kRigidConstraintIterationTailBytes + kRigidIpcLowerBoundTailBytes);
+  const std::size_t nonDefaultIterations = 20u;
+  std::memcpy(
+      serialized.data() + serialized.size()
+          - kRigidAvbdParameterProfileTailBytes - kRigidIpcLowerBoundTailBytes
+          - kRigidConstraintIterationTailBytes,
+      &nonDefaultIterations,
+      sizeof(nonDefaultIterations));
+  std::stringstream incompatible(serialized);
+
+  sx::World world2;
+  EXPECT_THROW(world2.loadBinary(incompatible), sx::InvalidArgumentException);
+}
+
+TEST(Serialization, RejectsAvbdSolverForLoadedMultibodyTopology)
+{
+  namespace sx = dart::simulation;
+
+  sx::World world1;
+  [[maybe_unused]] auto multibody = world1.addMultibody("robot");
+  std::stringstream output;
+  world1.saveBinary(output);
+
+  auto serialized = output.str();
+  const std::size_t solverSuffixBytes
+      = kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
+        + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes
+        + kDifferentiableParameterTailBytes + kRigidConstraintIterationTailBytes
+        + kRigidIpcLowerBoundTailBytes + kRigidAvbdParameterProfileTailBytes;
+  ASSERT_GE(serialized.size(), solverSuffixBytes + kSolverOptionTailBytes);
+  serialized[serialized.size() - solverSuffixBytes - kSolverOptionTailBytes]
+      = static_cast<char>(2u);
+  std::stringstream incompatible(serialized);
+
+  sx::World world2;
+  EXPECT_THROW(world2.loadBinary(incompatible), sx::InvalidOperationException);
 }
 
 TEST(Serialization, PreservesComplementarityAwareContactGradientMode)
@@ -1176,6 +2427,48 @@ TEST(Serialization, RejectsLegacyJointActuationComponentRecord)
       std::runtime_error);
 }
 
+TEST(Serialization, RejectsDeformableVbdConfigBeforeVersion31)
+{
+  namespace sx = dart::simulation;
+
+  std::stringstream stream;
+  const std::size_t entityCount = 1u;
+  sx::io::writePOD(stream, entityCount);
+  const std::uint32_t serializedId = 0u;
+  sx::io::writePOD(stream, serializedId);
+  const std::size_t componentCount = 1u;
+  sx::io::writePOD(stream, componentCount);
+  sx::io::writeString(stream, "comps.DeformableVbdConfig");
+
+  sx::detail::WorldRegistry registry;
+  sx::io::EntityMap entityMap;
+  EXPECT_THROW(
+      sx::io::SerializerRegistry::instance().loadAllEntities(
+          stream, registry, entityMap, 30u),
+      std::runtime_error);
+}
+
+TEST(Serialization, RejectsDeformableContactConfigBeforeVersion33)
+{
+  namespace sx = dart::simulation;
+
+  std::stringstream stream;
+  const std::size_t entityCount = 1u;
+  sx::io::writePOD(stream, entityCount);
+  const std::uint32_t serializedId = 0u;
+  sx::io::writePOD(stream, serializedId);
+  const std::size_t componentCount = 1u;
+  sx::io::writePOD(stream, componentCount);
+  sx::io::writeString(stream, "comps.DeformableContactConfig");
+
+  sx::detail::WorldRegistry registry;
+  sx::io::EntityMap entityMap;
+  EXPECT_THROW(
+      sx::io::SerializerRegistry::instance().loadAllEntities(
+          stream, registry, entityMap, 32u),
+      std::runtime_error);
+}
+
 TEST(Serialization, LegacyV15WorldSolverOptionsLoadBeforeIgnoredPairs)
 {
   namespace sx = dart::simulation;
@@ -1226,26 +2519,31 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
   const std::size_t solverSuffixBytes
       = kIgnoredCollisionPairTailBytes + kVariationalOptionTailBytes
         + kDeactivationOptionTailBytes + kComputeAcceleratorPolicyTailBytes
-        + kDifferentiableParameterTailBytes;
+        + kDifferentiableParameterTailBytes + kRigidConstraintIterationTailBytes
+        + kRigidIpcLowerBoundTailBytes + kRigidAvbdParameterProfileTailBytes;
   ASSERT_GE(validRecord.size(), solverSuffixBytes + kSolverOptionTailBytes);
   expectInvalidByte(solverSuffixBytes + 4u); // rigid-body solver
   expectInvalidByte(solverSuffixBytes + 3u); // contact solver method
   expectInvalidByte(solverSuffixBytes + 2u); // contact gradient mode
   expectInvalidByte(solverSuffixBytes + 1u); // multibody integration method
+  expectInvalidByte(1u);                     // rigid AVBD parameter profile
 
-  const auto expectInvalidTailField
-      = [&](std::size_t offsetFromStart, const void* value, std::size_t size) {
-          auto corruptRecord = validRecord;
-          std::memcpy(corruptRecord.data() + offsetFromStart, value, size);
+  const auto expectInvalidTailField =
+      [&](std::size_t offsetFromStart, const void* value, std::size_t size) {
+        SCOPED_TRACE("tail field at offset " + std::to_string(offsetFromStart));
+        auto corruptRecord = validRecord;
+        std::memcpy(corruptRecord.data() + offsetFromStart, value, size);
 
-          std::stringstream input(corruptRecord);
-          sx::World loaded;
-          EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
-        };
+        std::stringstream input(corruptRecord);
+        sx::World loaded;
+        EXPECT_THROW(loaded.loadBinary(input), sx::InvalidArgumentException);
+      };
 
   const std::size_t deactivationOffset
-      = validRecord.size() - kDifferentiableParameterTailBytes
-        - kComputeAcceleratorPolicyTailBytes - kDeactivationOptionTailBytes;
+      = validRecord.size() - kRigidAvbdParameterProfileTailBytes
+        - kRigidIpcLowerBoundTailBytes - kRigidConstraintIterationTailBytes
+        - kDifferentiableParameterTailBytes - kComputeAcceleratorPolicyTailBytes
+        - kDeactivationOptionTailBytes;
   const std::size_t toleranceOffset = deactivationOffset - sizeof(double);
   const std::size_t iterationOffset = toleranceOffset - sizeof(std::size_t);
   const std::size_t invalidIterations = 0u;
@@ -1255,12 +2553,21 @@ TEST(Serialization, RejectsInvalidWorldSolverOptionTail)
   expectInvalidTailField(
       toleranceOffset, &invalidTolerance, sizeof(invalidTolerance));
 
-  const std::size_t computePolicyOffset = validRecord.size()
-                                          - kDifferentiableParameterTailBytes
-                                          - kComputeAcceleratorPolicyTailBytes;
+  const std::size_t computePolicyOffset
+      = validRecord.size() - kRigidAvbdParameterProfileTailBytes
+        - kRigidIpcLowerBoundTailBytes - kRigidConstraintIterationTailBytes
+        - kDifferentiableParameterTailBytes
+        - kComputeAcceleratorPolicyTailBytes;
   const std::uint8_t invalidComputePolicy = 99u;
   expectInvalidTailField(
       computePolicyOffset, &invalidComputePolicy, sizeof(invalidComputePolicy));
+
+  const std::size_t invalidRigidConstraintIterations = 0u;
+  expectInvalidTailField(
+      validRecord.size() - kRigidAvbdParameterProfileTailBytes
+          - kRigidIpcLowerBoundTailBytes - kRigidConstraintIterationTailBytes,
+      &invalidRigidConstraintIterations,
+      sizeof(invalidRigidConstraintIterations));
 }
 
 // Test loadBinary resets solver-family and policy metadata when reading records
@@ -1956,6 +3263,7 @@ TEST(Serialization, RigidBodyJointAvbdStiffnessRoundTripsDesignMode)
   namespace sx = dart::simulation;
 
   sx::World world1;
+  world1.setRigidBodySolver(sx::RigidBodySolver::Avbd);
 
   sx::RigidBodyOptions parentOptions;
   parentOptions.isStatic = true;
@@ -2854,6 +4162,29 @@ void buildFallingBody(dart::simulation::World& world)
   world.addRigidBody("ball", options);
 }
 
+dart::simulation::RigidBody buildSlidingRigidIpcContact(
+    dart::simulation::World& world)
+{
+  namespace sx = dart::simulation;
+  world.setRigidBodySolver(sx::RigidBodySolver::Ipc);
+  world.setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world.setTimeStep(0.01);
+
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.25);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(sx::CollisionShape::makeBox({2.0, 2.0, 0.25}));
+
+  sx::RigidBodyOptions boxOptions;
+  boxOptions.mass = 1.0;
+  boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.258);
+  boxOptions.linearVelocity = Eigen::Vector3d(1.0, 0.0, 0.0);
+  auto box = world.addRigidBody("box", boxOptions);
+  box.setCollisionShape(sx::CollisionShape::makeBox({0.25, 0.25, 0.25}));
+  return box;
+}
+
 // Deterministic CPU integration of identical state should agree to round-off;
 // this tight tolerance guards against benign platform summation-order
 // differences without hiding a real divergence.
@@ -2999,6 +4330,69 @@ TEST(Serialization, RigidBodyCheckpointReloadContinuesIdentically)
   EXPECT_DOUBLE_EQ(worldB.getTime(), worldA.getTime());
 }
 
+TEST(Serialization, RigidIpcCheckpointPreservesAdaptiveContinuation)
+{
+  namespace sx = dart::simulation;
+
+  sx::World original;
+  auto originalBox = buildSlidingRigidIpcContact(original);
+  original.step(2u);
+
+  std::stringstream checkpoint;
+  original.saveBinary(checkpoint);
+  const std::string checkpointBytes = checkpoint.str();
+  ASSERT_GE(checkpointBytes.size(), sizeof(double));
+  const double serializedLowerBound = readPODAt<double>(
+      checkpointBytes,
+      checkpointBytes.size() - kRigidAvbdParameterProfileTailBytes
+          - sizeof(double));
+  ASSERT_TRUE(std::isfinite(serializedLowerBound));
+  ASSERT_GT(serializedLowerBound, 1.0)
+      << "the checkpoint scene must exercise adaptive IPC continuation";
+
+  sx::World loaded;
+  loaded.loadBinary(checkpoint);
+  auto loadedBox = loaded.getRigidBody("box").value();
+
+  std::stringstream immediateRoundTrip;
+  loaded.saveBinary(immediateRoundTrip);
+  const std::string immediateRoundTripBytes = immediateRoundTrip.str();
+  ASSERT_GE(immediateRoundTripBytes.size(), sizeof(double));
+  EXPECT_DOUBLE_EQ(
+      readPODAt<double>(
+          immediateRoundTripBytes,
+          immediateRoundTripBytes.size() - kRigidAvbdParameterProfileTailBytes
+              - sizeof(double)),
+      serializedLowerBound);
+
+  original.step();
+  loaded.step();
+  EXPECT_TRUE(loadedBox.getTransform().matrix().isApprox(
+      originalBox.getTransform().matrix(), 0.0));
+  EXPECT_TRUE(loadedBox.getLinearVelocity().isApprox(
+      originalBox.getLinearVelocity(), 0.0));
+  EXPECT_TRUE(loadedBox.getAngularVelocity().isApprox(
+      originalBox.getAngularVelocity(), 0.0));
+
+  std::stringstream originalAfterStep;
+  std::stringstream loadedAfterStep;
+  original.saveBinary(originalAfterStep);
+  loaded.saveBinary(loadedAfterStep);
+  const std::string originalAfterStepBytes = originalAfterStep.str();
+  const std::string loadedAfterStepBytes = loadedAfterStep.str();
+  ASSERT_GE(originalAfterStepBytes.size(), sizeof(double));
+  ASSERT_GE(loadedAfterStepBytes.size(), sizeof(double));
+  EXPECT_DOUBLE_EQ(
+      readPODAt<double>(
+          loadedAfterStepBytes,
+          loadedAfterStepBytes.size() - kRigidAvbdParameterProfileTailBytes
+              - sizeof(double)),
+      readPODAt<double>(
+          originalAfterStepBytes,
+          originalAfterStepBytes.size() - kRigidAvbdParameterProfileTailBytes
+              - sizeof(double)));
+}
+
 //==============================================================================
 // Stable serialization identity (WP-091.23)
 //
@@ -3135,4 +4529,42 @@ TEST(StableComponentIds, RoundTripIsKeyedByStableIdNotCppType)
   const auto& restored = registry2.get<comps::ContactMaterial>(entity2);
   EXPECT_DOUBLE_EQ(restored.friction, material.friction);
   EXPECT_DOUBLE_EQ(restored.restitution, material.restitution);
+}
+
+//==============================================================================
+// The compatibility-only per-body AVBD contact opt-in must survive a binary
+// round trip, otherwise a loaded world silently reports plain sequential
+// impulse where the source world resolved the AVBD contact path.
+TEST(Serialization, RigidAvbdContactConfigSurvivesBinaryRoundTrip)
+{
+  namespace sx = dart::simulation;
+  sx::World world;
+  auto body = world.addRigidBody("avbd_config_body");
+  body.setCollisionShape(sx::CollisionShape::makeSphere(0.25));
+  auto& registry = sx::detail::registryOf(world);
+  auto& config = registry.emplace<sx::comps::RigidAvbdContactConfig>(
+      sx::detail::toRegistryEntity(body.getEntity()));
+  config.enabled = true;
+  config.startStiffness = 123.0;
+  config.alpha = 0.25;
+  config.beta = 12.0;
+  config.gamma = 0.5;
+  config.maxStiffness = 4567.0;
+
+  std::stringstream stream;
+  world.saveBinary(stream);
+  sx::World loaded;
+  loaded.loadBinary(stream);
+
+  auto& loadedRegistry = sx::detail::registryOf(loaded);
+  const auto view = loadedRegistry.view<sx::comps::RigidAvbdContactConfig>();
+  ASSERT_EQ(view.size(), 1u);
+  const auto& loadedConfig
+      = view.get<sx::comps::RigidAvbdContactConfig>(*view.begin());
+  EXPECT_TRUE(loadedConfig.enabled);
+  EXPECT_DOUBLE_EQ(loadedConfig.startStiffness, 123.0);
+  EXPECT_DOUBLE_EQ(loadedConfig.alpha, 0.25);
+  EXPECT_DOUBLE_EQ(loadedConfig.beta, 12.0);
+  EXPECT_DOUBLE_EQ(loadedConfig.gamma, 0.5);
+  EXPECT_DOUBLE_EQ(loadedConfig.maxStiffness, 4567.0);
 }

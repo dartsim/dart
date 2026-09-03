@@ -17,6 +17,11 @@ import dartpy as sx
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
+# The net is spring-only and supplies no collision surface. Its valid-pair
+# bound is zero, so the explicit reproducible evidence cap uses the nonzero
+# empty-topology floor.
+_SURFACE_CONTACT_CANDIDATE_CAPACITY = 1
+
 
 def _make_net_options(columns: int, rows: int) -> "sx.DeformableBodyOptions":
     options = sx.DeformableBodyOptions()
@@ -67,6 +72,9 @@ def _make_net_options(columns: int, rows: int) -> "sx.DeformableBodyOptions":
     options.edges = edges
     options.edge_stiffness = 65.0
     options.damping = 1.1
+    options.surface_contact_candidate_capacity = (
+        _SURFACE_CONTACT_CANDIDATE_CAPACITY
+    )
     return options
 
 
@@ -123,7 +131,7 @@ def build() -> SceneSetup:
             builder.text(f"mean lateral speed: {lateral_speed:.3f} m/s")
         diagnostics = getattr(world, "last_deformable_solver_diagnostics", None)
         if diagnostics is not None:
-            builder.text(f"solver iters: {diagnostics.solver_iterations}")
+            builder.text(f"VBD sweeps: {diagnostics.vbd_sweeps}")
         if sag_history:
             builder.separator()
             builder.plot_lines("Net sag", list(sag_history))

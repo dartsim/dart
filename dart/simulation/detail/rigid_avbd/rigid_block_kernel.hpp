@@ -34,6 +34,8 @@
 
 #include <dart/simulation/detail/deformable_vbd/avbd_constraint.hpp>
 #include <dart/simulation/detail/deformable_vbd/contact_kernel.hpp>
+#include <dart/simulation/detail/deformable_vbd/parallel_row_update.hpp>
+#include <dart/simulation/detail/deformable_vbd/quasi_newton_hessian.hpp>
 
 #include <dart/common/memory_allocator.hpp>
 #include <dart/common/stl_allocator.hpp>
@@ -142,6 +144,37 @@ struct AvbdRigidBodyState
   Eigen::Quaterniond orientation = Eigen::Quaterniond::Identity();
 };
 
+/// Step-start first-order model for an AVBD rigid contact scalar row.
+///
+/// Contact directions are the negative constraint gradients used by the block
+/// solve. Their translational components are exactly `axis` and `-axis`, so
+/// only the angular components need separate storage. The two orientations and
+/// projected body-origin separation define the world-frame tangent coordinates
+/// `x - x_t` without duplicating both complete body states in every row.
+struct AvbdRigidPointPairTaylorLinearization
+{
+  Eigen::Quaterniond stepStartOrientationA = Eigen::Quaterniond::Identity();
+  Eigen::Quaterniond stepStartOrientationB = Eigen::Quaterniond::Identity();
+  Eigen::Vector3d angularDirectionA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d angularDirectionB = Eigen::Vector3d::Zero();
+  double stepStartAxisPositionDifference = 0.0;
+  double stepStartConstraintValue = 0.0;
+  bool valid = false;
+};
+
+/// Curvature model for a world-point scalar row.
+///
+/// General joints and motors recompute their nonlinear world points during the
+/// solve and use the AVBD Section 3.5 quasi-Newton geometric term. Contact rows
+/// cache C(x_t) and their Jacobian directions at the beginning of the step and
+/// use the paper's first-order Taylor contact energy; its second-order term is
+/// intentionally discarded.
+enum class AvbdRigidPointCurvatureModel : std::uint8_t
+{
+  QuasiNewton,
+  TaylorLinearized,
+};
+
 struct AvbdRigidPointAttachmentRow
 {
   Eigen::Vector3d localPoint = Eigen::Vector3d::Zero();
@@ -163,6 +196,9 @@ struct AvbdRigidPointPairRow
   AvbdScalarRowState state;
   double materialStiffness = std::numeric_limits<double>::infinity();
   double previousConstraintValue = 0.0;
+  AvbdRigidPointCurvatureModel curvatureModel
+      = AvbdRigidPointCurvatureModel::QuasiNewton;
+  AvbdRigidPointPairTaylorLinearization taylorLinearization;
   AvbdScalarRowBounds bounds{
       -std::numeric_limits<double>::infinity(),
       std::numeric_limits<double>::infinity()};
@@ -190,6 +226,16 @@ struct AvbdRigidAngularPairRow
       std::numeric_limits<double>::infinity()};
 };
 
+struct AvbdRigidPointAttachmentOptions
+{
+  double alpha = 0.0;
+  double beta = 1.0;
+  /// Penalty ramp for angular rows; NaN follows `beta` (the reference 3D
+  /// source ramps angular rows a hundred times slower than linear rows).
+  double angularBeta = std::numeric_limits<double>::quiet_NaN();
+  double maxStiffness = std::numeric_limits<double>::infinity();
+};
+
 struct AvbdRigidBodyPointAttachmentRow
 {
   std::uint32_t body = 0;
@@ -201,6 +247,8 @@ struct AvbdRigidBodyPointPairRow
   std::uint32_t bodyA = 0;
   std::uint32_t bodyB = 0;
   AvbdRigidPointPairRow row;
+  bool hasSolveOptionsOverride = false;
+  AvbdRigidPointAttachmentOptions solveOptionsOverride;
 };
 
 struct AvbdRigidBodyPointPairDistanceSpringRow
@@ -228,6 +276,16 @@ struct AvbdRigidBodyPointPairFrictionRows
   std::uint32_t bodyB = 0;
   AvbdRigidPointPairRow first;
   AvbdRigidPointPairRow second;
+  std::size_t normalRowIndex = std::numeric_limits<std::size_t>::max();
+  double frictionCoefficient = 0.0;
+  // Scalar dual/stiffness state remains in the row inventory while the
+  // axis-independent static-friction anchor is owned once per contact pair by
+  // `AvbdRigidContactManifoldRowScratch`. The builder finalizes both owner
+  // buffers before publishing these pointers; they remain valid until either
+  // inventory or the contact scratch is mutated by a later build/clear.
+  AvbdScalarRowRecord* persistentFirstRecord = nullptr;
+  AvbdScalarRowRecord* persistentSecondRecord = nullptr;
+  AvbdContactTangentAnchorState* persistentAnchor = nullptr;
 };
 
 struct AvbdRigidPointJoint
@@ -247,6 +305,10 @@ struct AvbdRigidPointJoint
   double linearMaterialStiffness = std::numeric_limits<double>::infinity();
   double angularMaterialStiffness = std::numeric_limits<double>::infinity();
   double maxStiffness = std::numeric_limits<double>::infinity();
+  /// Scale of the angular rows' constraint value and direction (the reference
+  /// sources' `torqueArm`, |sizeA + sizeB|^2, under the source profiles; 1
+  /// otherwise), which puts the angular penalty ramp in the linear rows' units.
+  double angularScale = 1.0;
   double fractureThreshold = 0.0;
   std::uint32_t row = 0;
 };
@@ -297,19 +359,38 @@ struct AvbdRigidContactManifoldPoint
   std::uint32_t row = 0;
 };
 
-struct AvbdRigidPointAttachmentOptions
+inline constexpr double kAvbdRigidStaticFrictionTolerance = 1e-5;
+
+/// How the Coulomb cone of a contact's friction rows follows its normal row.
+enum class AvbdRigidFrictionConeRule : std::uint8_t
 {
-  double alpha = 0.0;
-  double beta = 1.0;
-  double maxStiffness = std::numeric_limits<double>::infinity();
+  /// DART's step rule: the cone opens from zero to the largest normal dual the
+  /// contact transmits during the step and never narrows within the sweep.
+  StepHighWaterDual,
+  /// The pinned `avbd-demo2d` source: the cone is the current normal dual
+  /// times the friction coefficient, re-evaluated every body update.
+  LatestDual,
+  /// The pinned `avbd-demo3d` source: the cone is the normal row's trial
+  /// force (Equation 13, penalty plus dual) times the friction coefficient,
+  /// re-evaluated every body update.
+  TrialForce,
 };
 
 struct AvbdRigidPointPairFrictionOptions
 {
+  AvbdRigidFrictionConeRule coneRule
+      = AvbdRigidFrictionConeRule::StepHighWaterDual;
   double alpha = 0.0;
   double beta = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
-  double staticFrictionTolerance = 1e-12;
+  // Match the 3D AVBD reference implementation's tangential-displacement
+  // threshold for retaining a static-friction contact anchor.
+  double staticFrictionTolerance = kAvbdRigidStaticFrictionTolerance;
+  // When finite, use the 2D AVBD reference implementation's rule instead: the
+  // anchor sticks while the dual is strictly inside the cone and the anchored
+  // points' tangential offset at the step start is below this distance.
+  double stickOffsetThreshold = std::numeric_limits<double>::quiet_NaN();
+  bool fixedPenalty = false;
 };
 
 struct AvbdRigidPointPairDistanceSpringOptions
@@ -323,13 +404,42 @@ struct AvbdRigidBlockDescentOptions
   std::size_t iterations = 20;
   double regularization = 0.0;
   double convergenceDisplacement = 0.0;
+  /// False runs primal sweeps only: no dual, penalty, anchor, or cone update
+  /// follows a sweep. A post-stabilization pass uses it so the positional
+  /// correction leaves every persisted row state untouched.
+  bool updateRows = true;
+  /// Finite: every row's Equation 18 alpha is replaced by this value for the
+  /// call (a post-stabilization pass uses 0 so all pre-existing error is
+  /// removed). NaN: each row keeps its configured alpha.
+  double regularizationAlphaOverride = std::numeric_limits<double>::quiet_NaN();
+  /// Sized like the sweep's `states`: the step-start poses x_t that freeze
+  /// every contact row's first-order model and Equation 18 intercept when the
+  /// sweep itself starts from an adaptive initial guess (AVBD Algorithm 1
+  /// line 4). Empty: `states` is x_t on entry.
+  std::span<const AvbdRigidBodyState> stepStartStates{};
 };
+
+//==============================================================================
+inline double avbdRigidAngularBeta(
+    const AvbdRigidPointAttachmentOptions& options) noexcept
+{
+  return std::isfinite(options.angularBeta) ? options.angularBeta
+                                            : options.beta;
+}
 
 struct AvbdRigidBlockDescentStats
 {
   std::size_t iterations = 0;
   std::size_t bodyUpdates = 0;
 };
+
+//==============================================================================
+inline const AvbdRigidPointAttachmentOptions& avbdRigidPointPairSolveOptions(
+    const AvbdRigidBodyPointPairRow& row,
+    const AvbdRigidPointAttachmentOptions& fallback) noexcept
+{
+  return row.hasSolveOptionsOverride ? row.solveOptionsOverride : fallback;
+}
 
 struct AvbdRigidBodyRowIndexScratch
 {
@@ -742,6 +852,44 @@ inline Eigen::Vector3d avbdRigidBodyLocalPoint(
 }
 
 //==============================================================================
+inline void initializeAvbdRigidPointPairTaylorLinearization(
+    AvbdRigidPointPairRow& row,
+    const AvbdRigidBodyState& stepStartStateA,
+    const AvbdRigidBodyState& stepStartStateB)
+{
+  AvbdRigidPointPairTaylorLinearization& linearization
+      = row.taylorLinearization;
+  if (row.curvatureModel != AvbdRigidPointCurvatureModel::TaylorLinearized) {
+    linearization = AvbdRigidPointPairTaylorLinearization{};
+    return;
+  }
+
+  const Eigen::Vector3d worldPointA
+      = avbdRigidBodyWorldPoint(stepStartStateA, row.localPointA);
+  const Eigen::Vector3d worldPointB
+      = avbdRigidBodyWorldPoint(stepStartStateB, row.localPointB);
+  linearization.stepStartOrientationA
+      = normalizeAvbdRigidOrientation(stepStartStateA.orientation);
+  linearization.stepStartOrientationB
+      = normalizeAvbdRigidOrientation(stepStartStateB.orientation);
+  linearization.angularDirectionA
+      = (worldPointA - stepStartStateA.position).cross(row.axis);
+  linearization.angularDirectionB
+      = (worldPointB - stepStartStateB.position).cross(-row.axis);
+  linearization.stepStartAxisPositionDifference
+      = row.axis.dot(stepStartStateB.position - stepStartStateA.position);
+  linearization.stepStartConstraintValue
+      = row.offset + row.axis.dot(worldPointB - worldPointA);
+  linearization.valid = true;
+
+  // Equation 18 subtracts alpha times the unregularized step-start value.
+  // Keeping this intercept with the cached Taylor model is especially
+  // important for a persistent static-friction anchor, whose C(x_t) need not
+  // be zero after the bodies have moved tangentially during the prior frame.
+  row.previousConstraintValue = linearization.stepStartConstraintValue;
+}
+
+//==============================================================================
 inline AvbdRigidPointPairRow makeAvbdRigidContactNormalRow(
     const Eigen::Vector3d& localPointA,
     const Eigen::Vector3d& localPointB,
@@ -757,6 +905,7 @@ inline AvbdRigidPointPairRow makeAvbdRigidContactNormalRow(
   row.offset = targetDistance;
   row.state = state;
   row.previousConstraintValue = previousConstraintValue;
+  row.curvatureModel = AvbdRigidPointCurvatureModel::TaylorLinearized;
   row.bounds = avbdContactNormalBounds();
   return row;
 }
@@ -777,6 +926,35 @@ inline Eigen::Matrix<double, 3, 2> avbdRigidContactTangentBasis(
   basis.col(0) = normal.unitOrthogonal();
   basis.col(1) = normal.cross(basis.col(0)).normalized();
   return basis;
+}
+
+//==============================================================================
+inline AvbdContactTangentAnchorKey makeAvbdContactTangentAnchorKey(
+    AvbdContactEndpointId first,
+    AvbdContactEndpointId second,
+    std::uint32_t row = 0)
+{
+  const auto endpoints = canonicalizeAvbdContactEndpoints(first, second);
+  AvbdContactTangentAnchorKey key;
+  key.objectA = endpoints.first.object;
+  key.objectB = endpoints.second.object;
+  key.featureA = endpoints.first.feature;
+  key.featureB = endpoints.second.feature;
+  key.row = row;
+  return key;
+}
+
+//==============================================================================
+inline AvbdContactTangentAnchorKey makeAvbdContactTangentAnchorKey(
+    const AvbdScalarRowKey& key)
+{
+  AvbdContactTangentAnchorKey anchorKey;
+  anchorKey.objectA = key.objectA;
+  anchorKey.objectB = key.objectB;
+  anchorKey.featureA = key.featureA;
+  anchorKey.featureB = key.featureB;
+  anchorKey.row = key.row;
+  return anchorKey;
 }
 
 //==============================================================================
@@ -804,6 +982,7 @@ inline AvbdRigidPointPairRow makeAvbdRigidContactFrictionTangentRow(
   row.offset = -row.axis.dot(stepStartRelativePosition);
   row.state = state;
   row.previousConstraintValue = previousConstraintValue;
+  row.curvatureModel = AvbdRigidPointCurvatureModel::TaylorLinearized;
   row.bounds = avbdFrictionTangentBounds(forceLimit);
   return row;
 }
@@ -1180,7 +1359,7 @@ inline AvbdScalarRowDescriptor makeAvbdRigidAngularMotorRowDescriptor(
 {
   AvbdScalarRowDescriptor descriptor;
   descriptor.key = makeAvbdEndpointPairRowKey(
-      AvbdScalarRowRole::Motor, first, second, row, /*axis=*/0);
+      AvbdScalarRowRole::MotorAngular, first, second, row, /*axis=*/0);
   descriptor.kind = AvbdScalarRowKind::HardConstraint;
   descriptor.bounds = {-maxTorque, maxTorque};
   descriptor.startStiffness = startStiffness;
@@ -1199,7 +1378,7 @@ inline AvbdScalarRowDescriptor makeAvbdRigidLinearMotorRowDescriptor(
 {
   AvbdScalarRowDescriptor descriptor;
   descriptor.key = makeAvbdEndpointPairRowKey(
-      AvbdScalarRowRole::Motor, first, second, row, /*axis=*/0);
+      AvbdScalarRowRole::MotorLinear, first, second, row, /*axis=*/0);
   descriptor.kind = AvbdScalarRowKind::HardConstraint;
   descriptor.bounds = {-maxForce, maxForce};
   descriptor.startStiffness = startStiffness;
@@ -1239,41 +1418,25 @@ inline double avbdRigidPointPairConstraintValue(
     const AvbdRigidBodyState& stateB,
     const AvbdRigidPointPairRow& row)
 {
+  const AvbdRigidPointPairTaylorLinearization& linearization
+      = row.taylorLinearization;
+  if (row.curvatureModel == AvbdRigidPointCurvatureModel::TaylorLinearized
+      && linearization.valid) {
+    const double translationDelta
+        = row.axis.dot(stateB.position - stateA.position)
+          - linearization.stepStartAxisPositionDifference;
+    const Eigen::Vector3d angularDeltaA = avbdRigidBodyOrientationError(
+        stateA.orientation, linearization.stepStartOrientationA);
+    const Eigen::Vector3d angularDeltaB = avbdRigidBodyOrientationError(
+        stateB.orientation, linearization.stepStartOrientationB);
+    return linearization.stepStartConstraintValue + translationDelta
+           - linearization.angularDirectionA.dot(angularDeltaA)
+           - linearization.angularDirectionB.dot(angularDeltaB);
+  }
+
   return row.offset
          + row.axis.dot(
              avbdRigidPointPairRelativePosition(stateA, stateB, row));
-}
-
-//==============================================================================
-inline double avbdRigidPointPairConstraintValueAtWorldPoints(
-    const AvbdRigidPointPairRow& row,
-    const Eigen::Vector3d& worldPointA,
-    const Eigen::Vector3d& worldPointB)
-{
-  return row.offset + row.axis.dot(worldPointB - worldPointA);
-}
-
-//==============================================================================
-inline Eigen::Vector2d avbdRigidPointPairConstraintValuesAtWorldPoints(
-    const AvbdRigidPointPairRow& first,
-    const AvbdRigidPointPairRow& second,
-    const Eigen::Vector3d& firstWorldPointA,
-    const Eigen::Vector3d& firstWorldPointB,
-    const Eigen::Vector3d& secondWorldPointA,
-    const Eigen::Vector3d& secondWorldPointB,
-    double alpha)
-{
-  return Eigen::Vector2d(
-      regularizeAvbdConstraintValue(
-          avbdRigidPointPairConstraintValueAtWorldPoints(
-              first, firstWorldPointA, firstWorldPointB),
-          first.previousConstraintValue,
-          alpha),
-      regularizeAvbdConstraintValue(
-          avbdRigidPointPairConstraintValueAtWorldPoints(
-              second, secondWorldPointA, secondWorldPointB),
-          second.previousConstraintValue,
-          alpha));
 }
 
 //==============================================================================
@@ -1321,26 +1484,15 @@ inline Eigen::Vector2d avbdRigidPointPairConstraintValues(
     const AvbdRigidPointPairRow& second,
     double alpha)
 {
-  const Eigen::Vector3d firstWorldPointA
-      = avbdRigidBodyWorldPoint(stateA, first.localPointA);
-  const Eigen::Vector3d firstWorldPointB
-      = avbdRigidBodyWorldPoint(stateB, first.localPointB);
-  const bool sharedAnchors
-      = avbdRigidPointPairRowsShareLocalPoints(first, second);
-  const Eigen::Vector3d secondWorldPointA
-      = sharedAnchors ? firstWorldPointA
-                      : avbdRigidBodyWorldPoint(stateA, second.localPointA);
-  const Eigen::Vector3d secondWorldPointB
-      = sharedAnchors ? firstWorldPointB
-                      : avbdRigidBodyWorldPoint(stateB, second.localPointB);
-  return avbdRigidPointPairConstraintValuesAtWorldPoints(
-      first,
-      second,
-      firstWorldPointA,
-      firstWorldPointB,
-      secondWorldPointA,
-      secondWorldPointB,
-      alpha);
+  return Eigen::Vector2d(
+      regularizeAvbdConstraintValue(
+          avbdRigidPointPairConstraintValue(stateA, stateB, first),
+          first.previousConstraintValue,
+          alpha),
+      regularizeAvbdConstraintValue(
+          avbdRigidPointPairConstraintValue(stateA, stateB, second),
+          second.previousConstraintValue,
+          alpha));
 }
 
 //==============================================================================
@@ -1403,55 +1555,48 @@ inline void resetAvbdRigidAngularPairRowsAfterFracture(
 }
 
 //==============================================================================
-inline bool avbdRigidPointPairFrictionPreviousDualInsideCone(
+inline bool avbdRigidPointPairFrictionPreviousDualInsideConeForLimit(
     const AvbdRigidPointPairRow& first,
     const AvbdRigidPointPairRow& second,
-    double staticFrictionTolerance = 1e-12)
+    double forceLimit)
 {
-  const double limit = avbdRigidPointPairFrictionPairForceLimit(first, second);
+  const double limit = std::max(0.0, forceLimit);
   if (!std::isfinite(limit)) {
     return true;
   }
 
-  const double tolerance = std::max(0.0, staticFrictionTolerance);
   const double previousNorm
       = std::hypot(first.state.lambda, second.state.lambda);
-  return previousNorm < std::max(0.0, limit - tolerance);
+  return previousNorm <= limit;
+}
+
+//==============================================================================
+inline bool avbdRigidPointPairFrictionPreviousDualInsideCone(
+    const AvbdRigidPointPairRow& first, const AvbdRigidPointPairRow& second)
+{
+  return avbdRigidPointPairFrictionPreviousDualInsideConeForLimit(
+      first, second, avbdRigidPointPairFrictionPairForceLimit(first, second));
 }
 
 //==============================================================================
 inline Eigen::Vector2d
-avbdRigidPointPairFrictionTangentPairForceFromConstraintValues(
+avbdRigidPointPairFrictionTangentPairForceFromConstraintValuesAndLimit(
     const Eigen::Vector2d& constraintValues,
     const AvbdRigidPointPairRow& first,
     const AvbdRigidPointPairRow& second,
-    const AvbdRigidPointPairFrictionOptions& options,
+    double forceLimit,
     bool* clamped = nullptr)
 {
   if (clamped != nullptr) {
     *clamped = false;
   }
 
-  const double limit = avbdRigidPointPairFrictionPairForceLimit(first, second);
-  if (limit <= 0.0) {
-    if (clamped != nullptr) {
-      *clamped = true;
-    }
-    return Eigen::Vector2d::Zero();
-  }
+  const double limit = std::isnan(forceLimit) ? 0.0 : std::max(0.0, forceLimit);
 
-  const bool staticMode = avbdRigidPointPairFrictionPreviousDualInsideCone(
-      first, second, options.staticFrictionTolerance);
-  if (!staticMode && std::isfinite(limit)) {
-    const double tangentError = constraintValues.norm();
-    if (tangentError > std::max(1e-12, options.staticFrictionTolerance)) {
-      if (clamped != nullptr) {
-        *clamped = true;
-      }
-      return (limit / tangentError) * constraintValues;
-    }
-  }
-
+  // Equation 13 first forms the augmented-Lagrangian trial force k*C+lambda.
+  // Coulomb friction then projects that trial to the live cone. In particular,
+  // a previous dual on the cone can return to its interior; choosing a slip
+  // direction from C alone would discard lambda and can reverse the force.
   Eigen::Vector2d force(
       first.state.stiffness * constraintValues.x() + first.state.lambda,
       second.state.stiffness * constraintValues.y() + second.state.lambda);
@@ -1468,6 +1613,22 @@ avbdRigidPointPairFrictionTangentPairForceFromConstraintValues(
 }
 
 //==============================================================================
+inline Eigen::Vector2d
+avbdRigidPointPairFrictionTangentPairForceFromConstraintValues(
+    const Eigen::Vector2d& constraintValues,
+    const AvbdRigidPointPairRow& first,
+    const AvbdRigidPointPairRow& second,
+    bool* clamped = nullptr)
+{
+  return avbdRigidPointPairFrictionTangentPairForceFromConstraintValuesAndLimit(
+      constraintValues,
+      first,
+      second,
+      avbdRigidPointPairFrictionPairForceLimit(first, second),
+      clamped);
+}
+
+//==============================================================================
 inline Eigen::Vector2d avbdRigidPointPairFrictionTangentPairForce(
     const AvbdRigidBodyState& stateA,
     const AvbdRigidBodyState& stateB,
@@ -1481,7 +1642,6 @@ inline Eigen::Vector2d avbdRigidPointPairFrictionTangentPairForce(
           stateA, stateB, first, second, options.alpha),
       first,
       second,
-      options,
       clamped);
 }
 
@@ -1489,6 +1649,14 @@ inline Eigen::Vector2d avbdRigidPointPairFrictionTangentPairForce(
 inline Vector6d avbdRigidPointPairDirectionA(
     const AvbdRigidBodyState& stateA, const AvbdRigidPointPairRow& row)
 {
+  if (row.curvatureModel == AvbdRigidPointCurvatureModel::TaylorLinearized
+      && row.taylorLinearization.valid) {
+    Vector6d direction = Vector6d::Zero();
+    direction.head<3>() = row.axis;
+    direction.tail<3>() = row.taylorLinearization.angularDirectionA;
+    return direction;
+  }
+
   const Eigen::Vector3d worldPoint
       = avbdRigidBodyWorldPoint(stateA, row.localPointA);
   return avbdRigidWorldPointDirection(stateA, worldPoint, row.axis);
@@ -1498,6 +1666,14 @@ inline Vector6d avbdRigidPointPairDirectionA(
 inline Vector6d avbdRigidPointPairDirectionB(
     const AvbdRigidBodyState& stateB, const AvbdRigidPointPairRow& row)
 {
+  if (row.curvatureModel == AvbdRigidPointCurvatureModel::TaylorLinearized
+      && row.taylorLinearization.valid) {
+    Vector6d direction = Vector6d::Zero();
+    direction.head<3>() = -row.axis;
+    direction.tail<3>() = row.taylorLinearization.angularDirectionB;
+    return direction;
+  }
+
   const Eigen::Vector3d worldPoint
       = avbdRigidBodyWorldPoint(stateB, row.localPointB);
   return avbdRigidWorldPointDirection(stateB, worldPoint, -row.axis);
@@ -1565,6 +1741,53 @@ inline Matrix3x6d avbdRigidWorldPointJacobian(
 }
 
 //==============================================================================
+/// Return the force-scaled rotational curvature of a rigid world point.
+///
+/// With arm r and the actual world force w applied at the point, the negative
+/// Jacobian of the generalized torque r x w under DART's left exponential-map
+/// update is (r dot w) I - r w^T. This is the rigid-body form of the AVBD
+/// geometric-stiffness term before Section 3.5 diagonal lumping.
+inline Eigen::Matrix3d avbdRigidWorldPointGeometricStiffness(
+    const AvbdRigidBodyState& state,
+    const Eigen::Vector3d& worldPoint,
+    const Eigen::Vector3d& worldForce)
+{
+  const Eigen::Vector3d arm = worldPoint - state.position;
+  return arm.dot(worldForce) * Eigen::Matrix3d::Identity()
+         - arm * worldForce.transpose();
+}
+
+//==============================================================================
+inline void addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+    AvbdRigidBodyBlock& block,
+    const AvbdRigidBodyState& state,
+    const Eigen::Vector3d& worldPoint,
+    const Eigen::Vector3d& worldForce,
+    AvbdRigidPointCurvatureModel curvatureModel)
+{
+  if (curvatureModel == AvbdRigidPointCurvatureModel::TaylorLinearized) {
+    return;
+  }
+
+  const Eigen::Vector3d arm = worldPoint - state.position;
+  if (avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
+    return;
+  }
+
+  const double armForceDot = arm.dot(worldForce);
+  const double armSquaredNorm = arm.squaredNorm();
+  Eigen::Vector3d diagonal;
+  for (Eigen::Index column = 0; column < 3; ++column) {
+    const double squaredNorm
+        = armForceDot * armForceDot
+          - 2.0 * armForceDot * arm[column] * worldForce[column]
+          + armSquaredNorm * worldForce[column] * worldForce[column];
+    diagonal[column] = std::sqrt(std::max(squaredNorm, 0.0));
+  }
+  block.hessian.diagonal().tail<3>() += diagonal;
+}
+
+//==============================================================================
 inline Vector6d avbdRigidDistanceSpringDirectionAtWorldPoint(
     const AvbdRigidBodyState& state,
     const Eigen::Vector3d& worldPoint,
@@ -1581,30 +1804,36 @@ inline void addAvbdRigidDistanceSpringHessianAtWorldPoint(
     const Eigen::Vector3d& axis,
     double length,
     double restLength,
-    double stiffness,
-    bool clampToPsd)
+    double stiffness)
 {
   if (!axis.allFinite() || length <= kAvbdRigidMinDistanceSpringLength
       || !std::isfinite(stiffness)) {
     return;
   }
 
-  double transverse = 1.0 - restLength / length;
-  if (clampToPsd) {
-    transverse = std::max(0.0, transverse);
-  }
+  const double forceMagnitude = stiffness * (length - restLength);
+  const Vector6d direction
+      = avbdRigidWorldPointDirection(state, worldPoint, axis);
+  block.hessian.noalias() += stiffness * (direction * direction.transpose());
 
-  const Eigen::Matrix3d nnT = axis * axis.transpose();
-  const Eigen::Matrix3d pointHessian
-      = stiffness * (nnT + transverse * (Eigen::Matrix3d::Identity() - nnT));
   if (avbdRigidWorldPointIsBodyOrigin(state, worldPoint)) {
-    block.hessian.topLeftCorner<3, 3>().noalias() += pointHessian;
+    block.hessian.diagonal().head<3>()
+        += avbdQuasiNewtonProjectedDistanceDiagonal(
+            axis, forceMagnitude / length);
     return;
   }
 
+  const Eigen::Matrix3d constraintHessian
+      = (Eigen::Matrix3d::Identity() - axis * axis.transpose()) / length;
   const Matrix3x6d jacobian
       = avbdRigidWorldPointJacobianAtWorldPoint(state, worldPoint);
-  block.hessian.noalias() += jacobian.transpose() * pointHessian * jacobian;
+  Matrix6d geometricStiffness
+      = forceMagnitude * jacobian.transpose() * constraintHessian * jacobian;
+  geometricStiffness.bottomRightCorner<3, 3>()
+      += avbdRigidWorldPointGeometricStiffness(
+          state, worldPoint, forceMagnitude * axis);
+  block.hessian.diagonal()
+      += avbdQuasiNewtonGeometricDiagonal(geometricStiffness);
 }
 
 //==============================================================================
@@ -1615,8 +1844,7 @@ inline void addAvbdRigidDistanceSpringHessian(
     const Eigen::Vector3d& axis,
     double length,
     double restLength,
-    double stiffness,
-    bool clampToPsd)
+    double stiffness)
 {
   addAvbdRigidDistanceSpringHessianAtWorldPoint(
       block,
@@ -1625,25 +1853,58 @@ inline void addAvbdRigidDistanceSpringHessian(
       axis,
       length,
       restLength,
-      stiffness,
-      clampToPsd);
+      stiffness);
+}
+
+//==============================================================================
+inline Eigen::Matrix3d avbdRigidSo3LeftJacobianInverse(
+    const Eigen::Vector3d& rotationVector)
+{
+  const double angleSquared = rotationVector.squaredNorm();
+  if (!std::isfinite(angleSquared)) {
+    return Eigen::Matrix3d::Identity();
+  }
+
+  const Eigen::Matrix3d skew = avbdRigidSkewMatrix(rotationVector);
+  double quadraticCoefficient = 1.0 / 12.0;
+  if (angleSquared > 1e-12) {
+    const double angle = std::sqrt(angleSquared);
+    const double halfAngle = 0.5 * angle;
+    quadraticCoefficient
+        = 1.0 / angleSquared
+          - std::cos(halfAngle) / (2.0 * angle * std::sin(halfAngle));
+  } else {
+    // 1/theta^2 - cot(theta/2)/(2 theta)
+    // = 1/12 + theta^2/720 + O(theta^4).
+    quadraticCoefficient += angleSquared / 720.0;
+  }
+
+  return Eigen::Matrix3d::Identity() - 0.5 * skew
+         + quadraticCoefficient * (skew * skew);
 }
 
 //==============================================================================
 inline Vector6d avbdRigidAngularPairDirectionA(
-    const AvbdRigidAngularPairRow& row)
+    const Eigen::Vector3d& orientationError, const AvbdRigidAngularPairRow& row)
 {
   Vector6d direction = Vector6d::Zero();
-  direction.tail<3>() = row.axis;
+  // orientationError = Log(R_B (R_A R_target)^T). A world-frame left
+  // perturbation of A is a right perturbation of that relative rotation. The
+  // AVBD direction is the negative constraint gradient.
+  direction.tail<3>()
+      = avbdRigidSo3LeftJacobianInverse(orientationError) * row.axis;
   return direction;
 }
 
 //==============================================================================
 inline Vector6d avbdRigidAngularPairDirectionB(
-    const AvbdRigidAngularPairRow& row)
+    const Eigen::Vector3d& orientationError, const AvbdRigidAngularPairRow& row)
 {
   Vector6d direction = Vector6d::Zero();
-  direction.tail<3>() = -row.axis;
+  // A world-frame left perturbation of B is a left perturbation of the
+  // relative rotation. J_l(phi)^-T = J_l(-phi)^-1.
+  direction.tail<3>()
+      = -avbdRigidSo3LeftJacobianInverse(-orientationError) * row.axis;
   return direction;
 }
 
@@ -1667,6 +1928,12 @@ inline double addAvbdRigidPointAttachment(
   block.force.noalias() += forceMagnitude * direction;
   block.hessian.noalias()
       += row.state.stiffness * (direction * direction.transpose());
+  addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+      block,
+      state,
+      worldPoint,
+      forceMagnitude * row.axis,
+      AvbdRigidPointCurvatureModel::QuasiNewton);
   return forceMagnitude;
 }
 
@@ -1684,7 +1951,7 @@ inline double avbdRigidScalarRowForce(
     double materialStiffness)
 {
   if (avbdRigidRowUsesFiniteMaterial(materialStiffness)) {
-    return state.stiffness * constraintValue;
+    return clampAvbdRowForce(state.stiffness * constraintValue, bounds);
   }
 
   return computeAvbdHardConstraintForce(state, constraintValue, bounds);
@@ -1699,12 +1966,8 @@ inline double addAvbdRigidPointPair(
     const AvbdRigidPointPairRow& row,
     double alpha)
 {
-  const Eigen::Vector3d worldPointA
-      = avbdRigidBodyWorldPoint(stateA, row.localPointA);
-  const Eigen::Vector3d worldPointB
-      = avbdRigidBodyWorldPoint(stateB, row.localPointB);
   const double rawConstraintValue
-      = row.offset + row.axis.dot(worldPointB - worldPointA);
+      = avbdRigidPointPairConstraintValue(stateA, stateB, row);
   const double constraintValue
       = avbdRigidRowUsesFiniteMaterial(row.materialStiffness)
             ? rawConstraintValue
@@ -1712,10 +1975,8 @@ inline double addAvbdRigidPointPair(
                   rawConstraintValue, row.previousConstraintValue, alpha);
   const double forceMagnitude = avbdRigidScalarRowForce(
       row.state, constraintValue, row.bounds, row.materialStiffness);
-  const Vector6d firstDirection
-      = avbdRigidWorldPointDirection(stateA, worldPointA, row.axis);
-  const Vector6d secondDirection
-      = avbdRigidWorldPointDirection(stateB, worldPointB, -row.axis);
+  const Vector6d firstDirection = avbdRigidPointPairDirectionA(stateA, row);
+  const Vector6d secondDirection = avbdRigidPointPairDirectionB(stateB, row);
 
   // AVBD solves per-body blocks; coupling is carried by the shared scalar dual.
   blockA.force.noalias() += forceMagnitude * firstDirection;
@@ -1724,6 +1985,24 @@ inline double addAvbdRigidPointPair(
       += row.state.stiffness * (firstDirection * firstDirection.transpose());
   blockB.hessian.noalias()
       += row.state.stiffness * (secondDirection * secondDirection.transpose());
+  if (row.curvatureModel == AvbdRigidPointCurvatureModel::QuasiNewton) {
+    const Eigen::Vector3d worldPointA
+        = avbdRigidBodyWorldPoint(stateA, row.localPointA);
+    const Eigen::Vector3d worldPointB
+        = avbdRigidBodyWorldPoint(stateB, row.localPointB);
+    addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+        blockA,
+        stateA,
+        worldPointA,
+        forceMagnitude * row.axis,
+        row.curvatureModel);
+    addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+        blockB,
+        stateB,
+        worldPointB,
+        -forceMagnitude * row.axis,
+        row.curvatureModel);
+  }
   return forceMagnitude;
 }
 
@@ -1733,8 +2012,7 @@ inline double addAvbdRigidPointPairDistanceSpring(
     AvbdRigidBodyBlock& blockB,
     const AvbdRigidBodyState& stateA,
     const AvbdRigidBodyState& stateB,
-    const AvbdRigidPointPairDistanceSpringRow& row,
-    bool clampToPsd = true)
+    const AvbdRigidPointPairDistanceSpringRow& row)
 {
   const Eigen::Vector3d worldPointA
       = avbdRigidBodyWorldPoint(stateA, row.localPointA);
@@ -1763,17 +2041,15 @@ inline double addAvbdRigidPointPairDistanceSpring(
       axis,
       length,
       row.restLength,
-      row.state.stiffness,
-      clampToPsd);
+      row.state.stiffness);
   addAvbdRigidDistanceSpringHessianAtWorldPoint(
       blockB,
       stateB,
       worldPointB,
-      axis,
+      -axis,
       length,
       row.restLength,
-      row.state.stiffness,
-      clampToPsd);
+      row.state.stiffness);
   return forceMagnitude;
 }
 
@@ -1786,8 +2062,9 @@ inline double addAvbdRigidAngularPair(
     const AvbdRigidAngularPairRow& row,
     double alpha)
 {
-  const double rawConstraintValue
-      = avbdRigidAngularPairConstraintValue(stateA, stateB, row);
+  const Eigen::Vector3d orientationError = avbdRigidBodyOrientationError(
+      stateB.orientation, avbdRigidAngularPairTargetOrientationB(stateA, row));
+  const double rawConstraintValue = row.offset + row.axis.dot(orientationError);
   const double constraintValue
       = avbdRigidRowUsesFiniteMaterial(row.materialStiffness)
             ? rawConstraintValue
@@ -1795,8 +2072,10 @@ inline double addAvbdRigidAngularPair(
                   rawConstraintValue, row.previousConstraintValue, alpha);
   const double forceMagnitude = avbdRigidScalarRowForce(
       row.state, constraintValue, row.bounds, row.materialStiffness);
-  const Vector6d firstDirection = avbdRigidAngularPairDirectionA(row);
-  const Vector6d secondDirection = avbdRigidAngularPairDirectionB(row);
+  const Vector6d firstDirection
+      = avbdRigidAngularPairDirectionA(orientationError, row);
+  const Vector6d secondDirection
+      = avbdRigidAngularPairDirectionB(orientationError, row);
 
   blockA.force.noalias() += forceMagnitude * firstDirection;
   blockB.force.noalias() += forceMagnitude * secondDirection;
@@ -1817,43 +2096,24 @@ inline Eigen::Vector2d addAvbdRigidPointPairFrictionTangentPair(
     const AvbdRigidPointPairRow& second,
     const AvbdRigidPointPairFrictionOptions& options)
 {
-  const Eigen::Vector3d firstWorldPointA
-      = avbdRigidBodyWorldPoint(stateA, first.localPointA);
-  const Eigen::Vector3d firstWorldPointB
-      = avbdRigidBodyWorldPoint(stateB, first.localPointB);
-  const bool sharedAnchors
-      = avbdRigidPointPairRowsShareLocalPoints(first, second);
-  const Eigen::Vector3d secondWorldPointA
-      = sharedAnchors ? firstWorldPointA
-                      : avbdRigidBodyWorldPoint(stateA, second.localPointA);
-  const Eigen::Vector3d secondWorldPointB
-      = sharedAnchors ? firstWorldPointB
-                      : avbdRigidBodyWorldPoint(stateB, second.localPointB);
-  const Eigen::Vector2d constraintValues
-      = avbdRigidPointPairConstraintValuesAtWorldPoints(
-          first,
-          second,
-          firstWorldPointA,
-          firstWorldPointB,
-          secondWorldPointA,
-          secondWorldPointB,
-          options.alpha);
+  const Eigen::Vector2d constraintValues = avbdRigidPointPairConstraintValues(
+      stateA, stateB, first, second, options.alpha);
   const Eigen::Vector2d force
       = avbdRigidPointPairFrictionTangentPairForceFromConstraintValues(
-          constraintValues, first, second, options);
-  const Vector6d firstDirectionA
-      = avbdRigidWorldPointDirection(stateA, firstWorldPointA, first.axis);
-  const Vector6d firstDirectionB
-      = avbdRigidWorldPointDirection(stateB, firstWorldPointB, -first.axis);
+          constraintValues, first, second);
+  const Vector6d firstDirectionA = avbdRigidPointPairDirectionA(stateA, first);
+  const Vector6d firstDirectionB = avbdRigidPointPairDirectionB(stateB, first);
   const Vector6d secondDirectionA
-      = avbdRigidWorldPointDirection(stateA, secondWorldPointA, second.axis);
+      = avbdRigidPointPairDirectionA(stateA, second);
   const Vector6d secondDirectionB
-      = avbdRigidWorldPointDirection(stateB, secondWorldPointB, -second.axis);
+      = avbdRigidPointPairDirectionB(stateB, second);
 
   blockA.force.noalias()
       += force.x() * firstDirectionA + force.y() * secondDirectionA;
   blockB.force.noalias()
       += force.x() * firstDirectionB + force.y() * secondDirectionB;
+  // The AVBD friction force is cone-projected, but its quasi-Newton penalty
+  // Hessian is deliberately assembled without differentiating that clamp.
   blockA.hessian.noalias() += first.state.stiffness
                               * (firstDirectionA * firstDirectionA.transpose());
   blockA.hessian.noalias()
@@ -1864,6 +2124,45 @@ inline Eigen::Vector2d addAvbdRigidPointPairFrictionTangentPair(
   blockB.hessian.noalias()
       += second.state.stiffness
          * (secondDirectionB * secondDirectionB.transpose());
+  if (first.curvatureModel == AvbdRigidPointCurvatureModel::QuasiNewton
+      || second.curvatureModel == AvbdRigidPointCurvatureModel::QuasiNewton) {
+    const Eigen::Vector3d firstWorldPointA
+        = avbdRigidBodyWorldPoint(stateA, first.localPointA);
+    const Eigen::Vector3d firstWorldPointB
+        = avbdRigidBodyWorldPoint(stateB, first.localPointB);
+    const bool sharedAnchors
+        = avbdRigidPointPairRowsShareLocalPoints(first, second);
+    const Eigen::Vector3d secondWorldPointA
+        = sharedAnchors ? firstWorldPointA
+                        : avbdRigidBodyWorldPoint(stateA, second.localPointA);
+    const Eigen::Vector3d secondWorldPointB
+        = sharedAnchors ? firstWorldPointB
+                        : avbdRigidBodyWorldPoint(stateB, second.localPointB);
+    addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+        blockA,
+        stateA,
+        firstWorldPointA,
+        force.x() * first.axis,
+        first.curvatureModel);
+    addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+        blockA,
+        stateA,
+        secondWorldPointA,
+        force.y() * second.axis,
+        second.curvatureModel);
+    addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+        blockB,
+        stateB,
+        firstWorldPointB,
+        -force.x() * first.axis,
+        first.curvatureModel);
+    addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+        blockB,
+        stateB,
+        secondWorldPointB,
+        -force.y() * second.axis,
+        second.curvatureModel);
+  }
   return force;
 }
 
@@ -1949,7 +2248,8 @@ inline AvbdScalarRowState updateAvbdRigidAngularPairRow(
     state.lambda = 0.0;
     const double maxStiffness
         = std::min(row.materialStiffness, options.maxStiffness);
-    if (options.beta >= 0.0 && state.stiffness >= maxStiffness) {
+    if (avbdRigidAngularBeta(options) >= 0.0
+        && state.stiffness >= maxStiffness) {
       state.stiffness = maxStiffness;
       return state;
     }
@@ -1957,7 +2257,10 @@ inline AvbdScalarRowState updateAvbdRigidAngularPairRow(
     const double rawConstraintValue
         = avbdRigidAngularPairConstraintValue(stateA, stateB, row);
     state.stiffness = updateAvbdFiniteStiffness(
-        state.stiffness, rawConstraintValue, options.beta, maxStiffness);
+        state.stiffness,
+        rawConstraintValue,
+        avbdRigidAngularBeta(options),
+        maxStiffness);
     return state;
   }
 
@@ -1966,42 +2269,39 @@ inline AvbdScalarRowState updateAvbdRigidAngularPairRow(
   const double constraintValue = regularizeAvbdConstraintValue(
       rawConstraintValue, row.previousConstraintValue, options.alpha);
   return updateAvbdHardConstraintRow(
-      state, constraintValue, options.beta, row.bounds, options.maxStiffness);
+      state,
+      constraintValue,
+      avbdRigidAngularBeta(options),
+      row.bounds,
+      options.maxStiffness);
 }
 
 //==============================================================================
-inline void updateAvbdRigidPointPairFrictionTangentPair(
+inline bool updateAvbdRigidPointPairFrictionTangentPairForLimit(
     AvbdRigidPointPairRow& first,
     AvbdRigidPointPairRow& second,
     const AvbdRigidBodyState& stateA,
     const AvbdRigidBodyState& stateB,
-    const AvbdRigidPointPairFrictionOptions& options)
+    const AvbdRigidPointPairFrictionOptions& options,
+    double forceLimit)
 {
+  const double limit = std::isnan(forceLimit) ? 0.0 : std::max(0.0, forceLimit);
+  first.bounds = avbdFrictionTangentBounds(limit);
+  second.bounds = first.bounds;
+  if (options.fixedPenalty) {
+    // Fixed-penalty VBD recomputes k*C from the current configuration on the
+    // next block sweep. It has no friction dual and no stiffness evolution.
+    first.state.lambda = 0.0;
+    second.state.lambda = 0.0;
+    return false;
+  }
+
   bool clamped = false;
-  const Eigen::Vector3d firstWorldPointA
-      = avbdRigidBodyWorldPoint(stateA, first.localPointA);
-  const Eigen::Vector3d firstWorldPointB
-      = avbdRigidBodyWorldPoint(stateB, first.localPointB);
-  const bool sharedAnchors
-      = avbdRigidPointPairRowsShareLocalPoints(first, second);
-  const Eigen::Vector3d secondWorldPointA
-      = sharedAnchors ? firstWorldPointA
-                      : avbdRigidBodyWorldPoint(stateA, second.localPointA);
-  const Eigen::Vector3d secondWorldPointB
-      = sharedAnchors ? firstWorldPointB
-                      : avbdRigidBodyWorldPoint(stateB, second.localPointB);
-  const Eigen::Vector2d constraintValues
-      = avbdRigidPointPairConstraintValuesAtWorldPoints(
-          first,
-          second,
-          firstWorldPointA,
-          firstWorldPointB,
-          secondWorldPointA,
-          secondWorldPointB,
-          options.alpha);
+  const Eigen::Vector2d constraintValues = avbdRigidPointPairConstraintValues(
+      stateA, stateB, first, second, options.alpha);
   const Eigen::Vector2d force
-      = avbdRigidPointPairFrictionTangentPairForceFromConstraintValues(
-          constraintValues, first, second, options, &clamped);
+      = avbdRigidPointPairFrictionTangentPairForceFromConstraintValuesAndLimit(
+          constraintValues, first, second, limit, &clamped);
 
   first.state.lambda = force.x();
   second.state.lambda = force.y();
@@ -2013,6 +2313,40 @@ inline void updateAvbdRigidPointPairFrictionTangentPair(
         options.maxStiffness,
         second.state.stiffness + options.beta * std::abs(constraintValues.y()));
   }
+  if (std::isfinite(options.stickOffsetThreshold)) {
+    // `avbd-demo2d` (`Manifold::computeConstraint`): the contact sticks while
+    // its tangential dual is strictly inside the cone and the anchored points
+    // have not drifted apart by STICK_THRESH at the step start; the
+    // stabilization sweep removes that drift every step, so a resting
+    // contact keeps its anchor through the small per-step slip of the block
+    // sweep instead of re-anchoring (and creeping) every step.
+    const double anchorOffset = std::hypot(
+        first.previousConstraintValue, second.previousConstraintValue);
+    return !clamped && anchorOffset < options.stickOffsetThreshold;
+  }
+  // `avbd-demo3d` grows stiffness whenever the trial was accepted, but
+  // retains a static anchor only when the accepted solution also has
+  // negligible tangential displacement. These are distinct decisions.
+  return !clamped
+         && constraintValues.norm()
+                < std::max(0.0, options.staticFrictionTolerance);
+}
+
+//==============================================================================
+inline void updateAvbdRigidPointPairFrictionTangentPair(
+    AvbdRigidPointPairRow& first,
+    AvbdRigidPointPairRow& second,
+    const AvbdRigidBodyState& stateA,
+    const AvbdRigidBodyState& stateB,
+    const AvbdRigidPointPairFrictionOptions& options)
+{
+  (void)updateAvbdRigidPointPairFrictionTangentPairForLimit(
+      first,
+      second,
+      stateA,
+      stateB,
+      options,
+      avbdRigidPointPairFrictionPairForceLimit(first, second));
 }
 
 //==============================================================================
@@ -2050,6 +2384,13 @@ inline void applyAvbdRigidBodyStep(
 }
 
 //==============================================================================
+struct AvbdRigidPreviousFrictionState
+{
+  AvbdScalarRowKey key;
+  Eigen::Vector3d direction = Eigen::Vector3d::Zero();
+};
+
+//==============================================================================
 struct AvbdRigidContactManifoldRowScratch
 {
   using ContactAllocator
@@ -2058,10 +2399,21 @@ struct AvbdRigidContactManifoldRowScratch
       std::pair<Eigen::Vector3d, Eigen::Vector3d>>;
   using DescriptorAllocator
       = ::dart::common::StlAllocator<AvbdScalarRowDescriptor>;
-  using FrictionDirectionAllocator = ::dart::common::StlAllocator<
-      std::pair<AvbdScalarRowKey, Eigen::Vector3d>>;
+  using FrictionDirectionAllocator
+      = ::dart::common::StlAllocator<AvbdRigidPreviousFrictionState>;
+  using ContactIdentityAllocator
+      = ::dart::common::StlAllocator<AvbdRigidContactIdentityState>;
+  using ContactAnchorAllocator
+      = ::dart::common::StlAllocator<AvbdContactTangentAnchorState>;
 
   AvbdRigidContactManifoldRowScratch() = default;
+
+  /// Number of manifold builds that discarded every contact row's continuation
+  /// because a multi-point group's identity could not be proven (a rank moved
+  /// by more than a tenth of the group's point separation, a point was
+  /// replaced, or a local point was non-finite). Diagnostic only: the
+  /// cold-start itself is the fail-closed behaviour, this makes it auditable.
+  std::size_t contactIdentityColdStarts = 0;
 
   explicit AvbdRigidContactManifoldRowScratch(
       ::dart::common::MemoryAllocator& allocator)
@@ -2069,7 +2421,11 @@ struct AvbdRigidContactManifoldRowScratch
       contactLocalPoints(ContactLocalPointAllocator{allocator}),
       normalDescriptors(DescriptorAllocator{allocator}),
       frictionDescriptors(DescriptorAllocator{allocator}),
-      previousFrictionDirections(FrictionDirectionAllocator{allocator})
+      previousFrictionDirections(FrictionDirectionAllocator{allocator}),
+      contactIdentities(ContactIdentityAllocator{allocator}),
+      previousContactIdentities(ContactIdentityAllocator{allocator}),
+      contactTangentAnchors(ContactAnchorAllocator{allocator}),
+      previousContactTangentAnchors(ContactAnchorAllocator{allocator})
   {
   }
 
@@ -2082,8 +2438,21 @@ struct AvbdRigidContactManifoldRowScratch
       contactLocalPoints(ContactLocalPointAllocator{allocator}),
       normalDescriptors(DescriptorAllocator{allocator}),
       frictionDescriptors(DescriptorAllocator{allocator}),
-      previousFrictionDirections(FrictionDirectionAllocator{allocator})
+      previousFrictionDirections(FrictionDirectionAllocator{allocator}),
+      contactIdentities(ContactIdentityAllocator{allocator}),
+      previousContactIdentities(ContactIdentityAllocator{allocator}),
+      contactTangentAnchors(ContactAnchorAllocator{allocator}),
+      previousContactTangentAnchors(ContactAnchorAllocator{allocator})
   {
+  }
+
+  void clearContinuationState() noexcept
+  {
+    contactIdentities.clear();
+    previousContactIdentities.clear();
+    contactTangentAnchors.clear();
+    previousContactTangentAnchors.clear();
+    previousFrictionDirections.clear();
   }
 
   std::vector<AvbdRigidContactManifoldPoint, ContactAllocator> activeContacts;
@@ -2093,10 +2462,16 @@ struct AvbdRigidContactManifoldRowScratch
       contactLocalPoints;
   std::vector<AvbdScalarRowDescriptor, DescriptorAllocator> normalDescriptors;
   std::vector<AvbdScalarRowDescriptor, DescriptorAllocator> frictionDescriptors;
-  std::vector<
-      std::pair<AvbdScalarRowKey, Eigen::Vector3d>,
-      FrictionDirectionAllocator>
+  std::vector<AvbdRigidPreviousFrictionState, FrictionDirectionAllocator>
       previousFrictionDirections;
+  std::vector<AvbdRigidContactIdentityState, ContactIdentityAllocator>
+      contactIdentities;
+  std::vector<AvbdRigidContactIdentityState, ContactIdentityAllocator>
+      previousContactIdentities;
+  std::vector<AvbdContactTangentAnchorState, ContactAnchorAllocator>
+      contactTangentAnchors;
+  std::vector<AvbdContactTangentAnchorState, ContactAnchorAllocator>
+      previousContactTangentAnchors;
 };
 
 struct AvbdRigidPointJointActiveAxis
@@ -2245,25 +2620,270 @@ inline void buildAvbdRigidContactManifoldRows(
     NormalRowVector& normalRows,
     FrictionRowVector& frictionRows,
     AvbdRigidContactManifoldRowScratch& scratch,
-    const AvbdRowWarmStartOptions& warmStartOptions = {})
+    const AvbdRowWarmStartOptions& warmStartOptions = {},
+    double contactMargin = 0.0,
+    bool identityByFeatureOnly = false)
 {
+  // `identityByFeatureOnly` matches a multi-point manifold's continuation by
+  // its contact feature keys alone (the reference sources' manifold rule),
+  // so a contact that slides along a face keeps its duals; DART's rule also
+  // requires the ranked local points to stay within a tenth of their spacing.
+  // A positive margin (the reference sources' COLLISION_MARGIN) shifts every
+  // normal row's rest to that penetration depth, so a resting contact keeps
+  // its detected overlap instead of flickering at zero depth.
   const auto appendActiveRows =
       [&](std::span<const AvbdRigidContactManifoldPoint> activeContacts,
           std::span<const AvbdScalarRowDescriptor> normalDescriptors,
           std::span<std::pair<Eigen::Vector3d, Eigen::Vector3d>>
               contactLocalPoints,
           std::span<AvbdScalarRowDescriptor> frictionDescriptors,
-          std::span<std::pair<AvbdScalarRowKey, Eigen::Vector3d>>
+          std::span<AvbdRigidPreviousFrictionState>
               previousFrictionDirectionStorage) {
-        normalInventory.reserve(normalDescriptors.size());
-        normalInventory.syncActiveRows(normalDescriptors, warmStartOptions);
-
         for (std::size_t i = 0; i < activeContacts.size(); ++i) {
           const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
           contactLocalPoints[i]
               = {avbdRigidBodyLocalPoint(states[contact.bodyA], contact.point),
                  avbdRigidBodyLocalPoint(states[contact.bodyB], contact.point)};
         }
+
+        // A multi-point spatial rank is deterministic only while the same set
+        // of material contact points survives. If a lower-ranked point vanishes
+        // or a replacement appears, an unchanged scalar key can otherwise
+        // inherit another point's normal lambda and sticking anchor. Prove each
+        // multi-point feature group's correspondence against canonical local
+        // points before reusing either inventory; a singleton has no rank peer
+        // and may keep its anchor while its detected point moves.
+        const auto groupTuple = [](const AvbdScalarRowKey& key) {
+          return std::tuple{
+              key.objectA, key.objectB, key.featureA, key.featureB};
+        };
+        const auto canonicalDetectedAnchor = [](const auto& contact,
+                                                const auto& localPoints) {
+          AvbdContactTangentAnchorState anchor;
+          anchor.key = makeAvbdContactTangentAnchorKey(
+              contact.endpointA, contact.endpointB, contact.row);
+          const bool endpointsReversed = contact.endpointB < contact.endpointA;
+          anchor.localPointA
+              = endpointsReversed ? localPoints.second : localPoints.first;
+          anchor.localPointB
+              = endpointsReversed ? localPoints.first : localPoints.second;
+          anchor.valid = true;
+          return anchor;
+        };
+        const auto exactPoint
+            = [](const Eigen::Vector3d& lhs, const Eigen::Vector3d& rhs) {
+                return (lhs.array() == rhs.array()).all();
+              };
+        // Joint distance of a contact identity's two canonical local points.
+        const auto identityPointDistance
+            = [](const auto& lhs, const auto& rhs) {
+                return std::sqrt(
+                    (lhs.localPointA - rhs.localPointA).squaredNorm()
+                    + (lhs.localPointB - rhs.localPointB).squaredNorm());
+              };
+        // Smallest joint distance between two distinct identities of a group.
+        const auto groupPointSeparation
+            = [&](const auto groupBegin, std::size_t groupSize) {
+                double separation = std::numeric_limits<double>::infinity();
+                for (std::size_t i = 0u; i < groupSize; ++i) {
+                  for (std::size_t j = i + 1u; j < groupSize; ++j) {
+                    separation = std::min(
+                        separation,
+                        identityPointDistance(groupBegin[i], groupBegin[j]));
+                  }
+                }
+                return separation;
+              };
+        const auto pointLess
+            = [](const Eigen::Vector3d& lhs, const Eigen::Vector3d& rhs) {
+                for (Eigen::Index axis = 0; axis < 3; ++axis) {
+                  if (lhs[axis] < rhs[axis]) {
+                    return true;
+                  }
+                  if (rhs[axis] < lhs[axis]) {
+                    return false;
+                  }
+                }
+                return false;
+              };
+
+        const std::size_t previousNormalCount
+            = scratch.contactIdentities.size();
+        const std::size_t currentNormalCount = activeContacts.size();
+        const std::size_t identityCount
+            = previousNormalCount + currentNormalCount;
+        auto& identityOrder = scratch.previousContactIdentities;
+        identityOrder.clear();
+        const std::size_t reusableIdentityCapacity
+            = currentNormalCount <= std::numeric_limits<std::size_t>::max() / 2u
+                  ? 2u * currentNormalCount
+                  : identityCount;
+        identityOrder.reserve(
+            std::max(identityCount, reusableIdentityCapacity));
+        identityOrder.insert(
+            identityOrder.end(),
+            scratch.contactIdentities.begin(),
+            scratch.contactIdentities.end());
+
+        auto& currentIdentityState = scratch.contactIdentities;
+        currentIdentityState.resize(currentNormalCount);
+        identityOrder.resize(identityCount);
+        for (std::size_t i = 0u; i < currentNormalCount; ++i) {
+          const AvbdContactTangentAnchorState detected
+              = canonicalDetectedAnchor(
+                  activeContacts[i], contactLocalPoints[i]);
+          currentIdentityState[i] = AvbdRigidContactIdentityState{
+              normalDescriptors[i].key,
+              detected.localPointA,
+              detected.localPointB};
+          identityOrder[previousNormalCount + i] = currentIdentityState[i];
+        }
+        auto previousNormalIdentities
+            = std::span<AvbdRigidContactIdentityState>{identityOrder}.first(
+                previousNormalCount);
+        auto currentNormalIdentities
+            = std::span<AvbdRigidContactIdentityState>{identityOrder}.subspan(
+                previousNormalCount, currentNormalCount);
+
+        const auto identityPointLess = [&](const auto& lhs, const auto& rhs) {
+          const auto lhsGroup = groupTuple(lhs.key);
+          const auto rhsGroup = groupTuple(rhs.key);
+          if (lhsGroup != rhsGroup) {
+            return lhsGroup < rhsGroup;
+          }
+          if (pointLess(lhs.localPointA, rhs.localPointA)) {
+            return true;
+          }
+          if (pointLess(rhs.localPointA, lhs.localPointA)) {
+            return false;
+          }
+          if (pointLess(lhs.localPointB, rhs.localPointB)) {
+            return true;
+          }
+          if (pointLess(rhs.localPointB, lhs.localPointB)) {
+            return false;
+          }
+          return lhs.key < rhs.key;
+        };
+        std::sort(
+            previousNormalIdentities.begin(),
+            previousNormalIdentities.end(),
+            identityPointLess);
+        std::sort(
+            currentNormalIdentities.begin(),
+            currentNormalIdentities.end(),
+            identityPointLess);
+
+        bool ambiguousContactIdentity = false;
+        // Equal canonical points have no stable discriminator: the collision
+        // query's transient order is the final row-order tie breaker, so two
+        // duplicates may exchange distinct normals/depths between frames.
+        // Sort once and reject adjacent duplicates instead of comparing the
+        // entire global contact envelope quadratically.
+        const auto hasAdjacentDuplicate = [&](const auto identities) {
+          for (std::size_t i = 1u; i < identities.size(); ++i) {
+            const auto& first = identities[i - 1u];
+            const auto& second = identities[i];
+            if (groupTuple(first.key) == groupTuple(second.key)
+                && exactPoint(first.localPointA, second.localPointA)
+                && exactPoint(first.localPointB, second.localPointB)) {
+              return true;
+            }
+          }
+          return false;
+        };
+        ambiguousContactIdentity
+            = hasAdjacentDuplicate(currentNormalIdentities)
+              || hasAdjacentDuplicate(previousNormalIdentities);
+
+        // A lone feature-pair contact has no spatial-rank peer with which it
+        // can alias, so its detector point may move while the persistent
+        // static-friction anchor stays attached. Multi-point groups must match
+        // cardinality and every canonical material point exactly; otherwise a
+        // rank can silently inherit another point's dual and anchor. Under
+        // feature-only identity (the reference sources' manifold rule) every
+        // point carries its own feature key, so the inventories continue each
+        // persisting key on their own and cold-start only the new ones: a
+        // corner that lifts off a rocking box drops its row without resetting
+        // the corners that stay in contact.
+        for (std::size_t currentIndex = 0u;
+             !ambiguousContactIdentity && !identityByFeatureOnly
+             && currentIndex < currentNormalIdentities.size();) {
+          const auto group
+              = groupTuple(currentNormalIdentities[currentIndex].key);
+          const auto currentEnd = std::upper_bound(
+              currentNormalIdentities.begin() + currentIndex,
+              currentNormalIdentities.end(),
+              group,
+              [&](const auto& target, const auto& value) {
+                return target < groupTuple(value.key);
+              });
+          const auto previousBegin = std::lower_bound(
+              previousNormalIdentities.begin(),
+              previousNormalIdentities.end(),
+              group,
+              [&](const auto& value, const auto& target) {
+                return groupTuple(value.key) < target;
+              });
+          const auto previousEnd = std::upper_bound(
+              previousBegin,
+              previousNormalIdentities.end(),
+              group,
+              [&](const auto& target, const auto& value) {
+                return target < groupTuple(value.key);
+              });
+          const std::size_t currentGroupSize = static_cast<std::size_t>(
+              currentEnd - (currentNormalIdentities.begin() + currentIndex));
+          const std::size_t previousGroupSize
+              = static_cast<std::size_t>(previousEnd - previousBegin);
+          if (previousGroupSize != 0u) {
+            if (previousGroupSize != currentGroupSize) {
+              ambiguousContactIdentity = true;
+              break;
+            }
+            const auto currentBegin
+                = currentNormalIdentities.begin() + currentIndex;
+            if (currentGroupSize == 1u) {
+              ambiguousContactIdentity
+                  = !(previousBegin->key == currentBegin->key);
+            } else {
+              // Same-rank points must stay within a tenth of the group's
+              // smallest point separation of their previous rank-mate. Settling
+              // and sliding move every material point by a small fraction of
+              // that separation per step, whereas a vanished point with a
+              // replacement moves at least one rank by a large fraction of it
+              // and must cold-start. The comparison is written so that a
+              // non-finite tolerance (an all-NaN group leaves the separation
+              // at infinity) or a non-finite point distance also cold-starts:
+              // a poisoned identity never inherits continuation.
+              const double tolerance
+                  = 0.1 * groupPointSeparation(currentBegin, currentGroupSize);
+              for (std::size_t offset = 0u; offset < currentGroupSize;
+                   ++offset) {
+                const auto& previous = previousBegin[offset];
+                const auto& current = currentBegin[offset];
+                if (!(previous.key == current.key)
+                    || (!identityByFeatureOnly
+                        && (!std::isfinite(tolerance)
+                            || !(
+                                identityPointDistance(previous, current)
+                                <= tolerance)))) {
+                  ambiguousContactIdentity = true;
+                  break;
+                }
+              }
+            }
+          }
+          currentIndex += currentGroupSize;
+        }
+        if (ambiguousContactIdentity) {
+          ++scratch.contactIdentityColdStarts;
+          normalInventory.records().clear();
+          frictionInventory.records().clear();
+        }
+
+        normalInventory.reserve(normalDescriptors.size());
+        normalInventory.syncActiveRows(normalDescriptors, warmStartOptions);
 
         const auto frictionForceLimit = [&](std::size_t i) {
           const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
@@ -2279,41 +2899,60 @@ inline void buildAvbdRigidContactManifoldRows(
           }
           return std::max(0.0, contact.frictionCoefficient) * laggedNormalForce;
         };
-
-        bool hasPositiveFrictionLimit = false;
-        for (std::size_t i = 0; i < activeContacts.size(); ++i) {
-          hasPositiveFrictionLimit
-              = hasPositiveFrictionLimit || frictionForceLimit(i) > 0.0;
-        }
+        const auto hasFriction = [&](std::size_t i) {
+          const double coefficient = activeContacts[i].frictionCoefficient;
+          return std::isfinite(coefficient) && coefficient > 0.0;
+        };
 
         std::size_t frictionDescriptorCount = 0u;
-        if (hasPositiveFrictionLimit) {
-          for (std::size_t i = 0; i < activeContacts.size(); ++i) {
-            const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
-            const double forceLimit = frictionForceLimit(i);
-            frictionDescriptors[frictionDescriptorCount++]
-                = makeAvbdContactFrictionRowDescriptor(
-                    contact.endpointA,
-                    contact.endpointB,
-                    /*axis=*/0,
-                    forceLimit,
-                    contact.startStiffness,
-                    contact.maxStiffness,
-                    contact.row);
-            frictionDescriptors[frictionDescriptorCount++]
-                = makeAvbdContactFrictionRowDescriptor(
-                    contact.endpointA,
-                    contact.endpointB,
-                    /*axis=*/1,
-                    forceLimit,
-                    contact.startStiffness,
-                    contact.maxStiffness,
-                    contact.row);
+        for (std::size_t i = 0; i < activeContacts.size(); ++i) {
+          const AvbdRigidContactManifoldPoint& contact = activeContacts[i];
+          const double forceLimit = frictionForceLimit(i);
+          if (!hasFriction(i)) {
+            continue;
           }
+          frictionDescriptors[frictionDescriptorCount++]
+              = makeAvbdContactFrictionRowDescriptor(
+                  contact.endpointA,
+                  contact.endpointB,
+                  /*axis=*/0,
+                  forceLimit,
+                  contact.startStiffness,
+                  contact.maxStiffness,
+                  contact.row);
+          frictionDescriptors[frictionDescriptorCount++]
+              = makeAvbdContactFrictionRowDescriptor(
+                  contact.endpointA,
+                  contact.endpointB,
+                  /*axis=*/1,
+                  forceLimit,
+                  contact.startStiffness,
+                  contact.maxStiffness,
+                  contact.row);
         }
         const std::span<const AvbdScalarRowDescriptor>
             activeFrictionDescriptors{
                 frictionDescriptors.data(), frictionDescriptorCount};
+
+        auto& previousContactAnchors = scratch.previousContactTangentAnchors;
+        previousContactAnchors.clear();
+        previousContactAnchors.reserve(
+            std::max(
+                scratch.contactTangentAnchors.size(), activeContacts.size()));
+        previousContactAnchors.insert(
+            previousContactAnchors.end(),
+            scratch.contactTangentAnchors.begin(),
+            scratch.contactTangentAnchors.end());
+        std::sort(
+            previousContactAnchors.begin(),
+            previousContactAnchors.end(),
+            [](const auto& lhs, const auto& rhs) { return lhs.key < rhs.key; });
+        if (ambiguousContactIdentity) {
+          previousContactAnchors.clear();
+        }
+        auto& contactAnchors = scratch.contactTangentAnchors;
+        contactAnchors.clear();
+        contactAnchors.reserve(frictionDescriptorCount / 2u);
 
         normalRows.clear();
         normalRows.reserve(normalInventory.size());
@@ -2330,9 +2969,13 @@ inline void buildAvbdRigidContactManifoldRows(
               localPoints.first,
               localPoints.second,
               -contact.normalFromAtoB,
-              contact.depth,
+              contact.depth - contactMargin,
               record.state,
-              contact.depth);
+              contact.depth - contactMargin);
+          initializeAvbdRigidPointPairTaylorLinearization(
+              indexedRow.row,
+              states[indexedRow.bodyA],
+              states[indexedRow.bodyB]);
           normalRows.push_back(indexedRow);
         }
 
@@ -2343,75 +2986,91 @@ inline void buildAvbdRigidContactManifoldRows(
           return;
         }
 
-        std::span<std::pair<AvbdScalarRowKey, Eigen::Vector3d>>
-            previousFrictionDirections;
-        if (!previousFrictionDirectionStorage.empty()) {
-          std::size_t previousFrictionDirectionCount = 0u;
-          for (const AvbdScalarRowDescriptor& descriptor :
-               activeFrictionDescriptors) {
-            for (const AvbdScalarRowRecord& record :
-                 frictionInventory.records()) {
-              if (record.descriptor.key != descriptor.key
-                  || !isValidAvbdRigidContactFrictionDirection(
-                      record.direction)) {
-                continue;
-              }
-
-              previousFrictionDirectionStorage[previousFrictionDirectionCount++]
-                  = {record.descriptor.key, record.direction};
-              break;
-            }
+        std::span<AvbdRigidPreviousFrictionState> previousFrictionDirections;
+        const std::size_t previousFrictionCount = frictionInventory.size();
+        const auto capturePreviousFrictionState
+            = [](const AvbdScalarRowRecord& record) {
+                AvbdRigidPreviousFrictionState previous;
+                previous.key = record.descriptor.key;
+                previous.direction = record.direction;
+                return previous;
+              };
+        if (!previousFrictionDirectionStorage.empty()
+            && previousFrictionCount
+                   <= previousFrictionDirectionStorage.size()) {
+          for (std::size_t i = 0u; i < previousFrictionCount; ++i) {
+            previousFrictionDirectionStorage[i]
+                = capturePreviousFrictionState(frictionInventory[i]);
           }
-          previousFrictionDirections
-              = {previousFrictionDirectionStorage.data(),
-                 previousFrictionDirectionCount};
+          previousFrictionDirections = {
+              previousFrictionDirectionStorage.data(), previousFrictionCount};
         } else {
           auto& previousFrictionDirectionScratch
               = scratch.previousFrictionDirections;
           previousFrictionDirectionScratch.clear();
           previousFrictionDirectionScratch.reserve(
-              frictionInventory.records().size());
+              std::max(
+                  previousFrictionCount, activeFrictionDescriptors.size()));
           for (const AvbdScalarRowRecord& record :
                frictionInventory.records()) {
-            if (isValidAvbdRigidContactFrictionDirection(record.direction)) {
-              previousFrictionDirectionScratch.emplace_back(
-                  record.descriptor.key, record.direction);
-            }
+            previousFrictionDirectionScratch.push_back(
+                capturePreviousFrictionState(record));
           }
           previousFrictionDirections = previousFrictionDirectionScratch;
         }
         std::sort(
             previousFrictionDirections.begin(),
             previousFrictionDirections.end(),
-            [](const auto& lhs, const auto& rhs) {
-              return lhs.first < rhs.first;
-            });
-        const auto findPreviousFrictionDirection
-            = [&previousFrictionDirections](
-                  const AvbdScalarRowKey& key) -> const Eigen::Vector3d* {
+            [](const auto& lhs, const auto& rhs) { return lhs.key < rhs.key; });
+        const auto findPreviousFrictionState
+            = [&previousFrictionDirections](const AvbdScalarRowKey& key)
+            -> const AvbdRigidPreviousFrictionState* {
           const auto found = std::lower_bound(
               previousFrictionDirections.begin(),
               previousFrictionDirections.end(),
               key,
-              [](const auto& value, const AvbdScalarRowKey& target) {
-                return value.first < target;
+              [](const auto& value, const auto& target) {
+                return value.key < target;
               });
-          if (found == previousFrictionDirections.end()
-              || found->first != key) {
-            return nullptr;
-          }
-          return &found->second;
+          return found != previousFrictionDirections.end() && found->key == key
+                     ? &*found
+                     : nullptr;
+        };
+        const auto findPreviousContactAnchor
+            = [&previousContactAnchors](
+                  const AvbdContactTangentAnchorKey& anchorKey)
+            -> const AvbdContactTangentAnchorState* {
+          const auto found = std::lower_bound(
+              previousContactAnchors.begin(),
+              previousContactAnchors.end(),
+              anchorKey,
+              [](const auto& value, const auto& target) {
+                return value.key < target;
+              });
+          return found != previousContactAnchors.end() && found->valid
+                         && found->localPointA.allFinite()
+                         && found->localPointB.allFinite()
+                         && found->key == anchorKey
+                     ? &*found
+                     : nullptr;
         };
 
         frictionInventory.reserve(frictionDescriptorCount);
         frictionInventory.syncActiveRows(
             activeFrictionDescriptors, warmStartOptions);
 
+        // The inventory is now at its final size and contactAnchors reserved
+        // one slot per friction pair above. No capacity-changing operation on
+        // either owner occurs after their addresses escape into frictionRows.
+
         frictionRows.clear();
         frictionRows.reserve(activeContacts.size());
+        std::size_t firstRecordIndex = 0u;
         for (std::size_t contactIndex = 0; contactIndex < activeContacts.size();
              ++contactIndex) {
-          const std::size_t firstRecordIndex = 2 * contactIndex;
+          if (!hasFriction(contactIndex)) {
+            continue;
+          }
           const std::size_t secondRecordIndex = firstRecordIndex + 1;
           if (secondRecordIndex >= frictionInventory.size()) {
             break;
@@ -2423,59 +3082,134 @@ inline void buildAvbdRigidContactManifoldRows(
               = frictionInventory[firstRecordIndex];
           AvbdScalarRowRecord& secondRecord
               = frictionInventory[secondRecordIndex];
-          const auto& localPoints = contactLocalPoints[contactIndex];
+          const auto& detectedLocalPoints = contactLocalPoints[contactIndex];
           const Eigen::Vector3d stepStartRelativePosition
               = Eigen::Vector3d::Zero();
           const Eigen::Matrix<double, 3, 2> basis
               = avbdRigidContactTangentBasis(contact.normalFromAtoB);
-          if (const Eigen::Vector3d* previousFirst
-              = findPreviousFrictionDirection(firstRecord.descriptor.key)) {
-            if (const Eigen::Vector3d* previousSecond
-                = findPreviousFrictionDirection(secondRecord.descriptor.key)) {
-              const Eigen::Vector2d projected
-                  = projectAvbdFrictionDualToTangentPair(
-                      firstRecord.state.lambda,
-                      secondRecord.state.lambda,
-                      *previousFirst,
-                      *previousSecond,
-                      basis.col(0),
-                      basis.col(1));
-              firstRecord.state.lambda = clampAvbdRowForce(
-                  projected.x(), firstRecord.descriptor.bounds);
-              secondRecord.state.lambda = clampAvbdRowForce(
-                  projected.y(), secondRecord.descriptor.bounds);
-            }
-          }
-          firstRecord.direction = basis.col(0);
-          secondRecord.direction = basis.col(1);
+          const bool endpointsReversed = contact.endpointB < contact.endpointA;
+          // Scalar tangent lambda is the force on transient endpoint A. Store
+          // directions as force on the canonical first endpoint instead, so
+          // warm-start projection keeps the same physical force if collision
+          // detection reverses A/B (and therefore also reverses the normal).
+          const double canonicalDirectionSign = endpointsReversed ? -1.0 : 1.0;
+          const Eigen::Vector3d canonicalFirstDirection
+              = canonicalDirectionSign * basis.col(0);
+          const Eigen::Vector3d canonicalSecondDirection
+              = canonicalDirectionSign * basis.col(1);
           const auto forceLimitFromBounds = [](AvbdScalarRowBounds bounds) {
             const double lowerLimit = bounds.lower < 0.0 ? -bounds.lower : 0.0;
             const double upperLimit = bounds.upper > 0.0 ? bounds.upper : 0.0;
             return std::max(0.0, std::min(lowerLimit, upperLimit));
           };
+          const double forceLimit = std::min(
+              forceLimitFromBounds(firstRecord.descriptor.bounds),
+              forceLimitFromBounds(secondRecord.descriptor.bounds));
+          const AvbdRigidPreviousFrictionState* previousFirst
+              = findPreviousFrictionState(firstRecord.descriptor.key);
+          const AvbdRigidPreviousFrictionState* previousSecond
+              = findPreviousFrictionState(secondRecord.descriptor.key);
+          const AvbdContactTangentAnchorState* previousAnchor
+              = findPreviousContactAnchor(
+                  makeAvbdContactTangentAnchorKey(firstRecord.descriptor.key));
+          bool previousDualInsideCone = false;
+          if (previousFirst != nullptr && previousSecond != nullptr
+              && isValidAvbdRigidContactFrictionDirection(
+                  previousFirst->direction)
+              && isValidAvbdRigidContactFrictionDirection(
+                  previousSecond->direction)) {
+            const Eigen::Vector2d projected
+                = projectAvbdFrictionDualToTangentPair(
+                    firstRecord.state.lambda,
+                    secondRecord.state.lambda,
+                    previousFirst->direction,
+                    previousSecond->direction,
+                    canonicalFirstDirection,
+                    canonicalSecondDirection);
+            if (projected.allFinite()) {
+              const double projectedNorm = projected.norm();
+              previousDualInsideCone
+                  = !std::isfinite(forceLimit) || projectedNorm <= forceLimit;
+              const double radialScale
+                  = !previousDualInsideCone && projectedNorm > 0.0
+                        ? forceLimit / projectedNorm
+                        : 1.0;
+              firstRecord.state.lambda = clampAvbdRowForce(
+                  radialScale * projected.x(), firstRecord.descriptor.bounds);
+              secondRecord.state.lambda = clampAvbdRowForce(
+                  radialScale * projected.y(), secondRecord.descriptor.bounds);
+            } else {
+              firstRecord.state.lambda = 0.0;
+              secondRecord.state.lambda = 0.0;
+            }
+          } else {
+            firstRecord.state.lambda = 0.0;
+            secondRecord.state.lambda = 0.0;
+          }
+          firstRecord.direction = canonicalFirstDirection;
+          secondRecord.direction = canonicalSecondDirection;
+
+          const bool reusePreviousAnchor = previousAnchor != nullptr
+                                           && previousAnchor->sticking
+                                           && previousDualInsideCone;
+          Eigen::Vector3d localPointA = detectedLocalPoints.first;
+          Eigen::Vector3d localPointB = detectedLocalPoints.second;
+          if (reusePreviousAnchor) {
+            localPointA = endpointsReversed ? previousAnchor->localPointB
+                                            : previousAnchor->localPointA;
+            localPointB = endpointsReversed ? previousAnchor->localPointA
+                                            : previousAnchor->localPointB;
+          }
+
+          AvbdContactTangentAnchorState contactAnchor;
+          contactAnchor.key = makeAvbdContactTangentAnchorKey(
+              contact.endpointA, contact.endpointB, contact.row);
+          contactAnchor.localPointA
+              = endpointsReversed ? localPointB : localPointA;
+          contactAnchor.localPointB
+              = endpointsReversed ? localPointA : localPointB;
+          contactAnchor.valid = true;
+          // New and previously sliding contacts reset to the detected feature
+          // points. Only a solve can promote that fresh anchor to sticking.
+          contactAnchor.sticking = reusePreviousAnchor;
+          contactAnchors.push_back(contactAnchor);
 
           AvbdRigidBodyPointPairFrictionRows indexedRows;
           indexedRows.bodyA = contact.bodyA;
           indexedRows.bodyB = contact.bodyB;
+          indexedRows.normalRowIndex = contactIndex;
+          indexedRows.frictionCoefficient = contact.frictionCoefficient;
+          indexedRows.persistentFirstRecord = &firstRecord;
+          indexedRows.persistentSecondRecord = &secondRecord;
+          indexedRows.persistentAnchor = &contactAnchors.back();
           indexedRows.first = makeAvbdRigidContactFrictionTangentRow(
-              localPoints.first,
-              localPoints.second,
+              localPointA,
+              localPointB,
               basis.col(0),
               stepStartRelativePosition,
               forceLimitFromBounds(firstRecord.descriptor.bounds),
               firstRecord.state,
               0.0);
           indexedRows.first.bounds = firstRecord.descriptor.bounds;
+          initializeAvbdRigidPointPairTaylorLinearization(
+              indexedRows.first,
+              states[indexedRows.bodyA],
+              states[indexedRows.bodyB]);
           indexedRows.second = makeAvbdRigidContactFrictionTangentRow(
-              localPoints.first,
-              localPoints.second,
+              localPointA,
+              localPointB,
               basis.col(1),
               stepStartRelativePosition,
               forceLimitFromBounds(secondRecord.descriptor.bounds),
               secondRecord.state,
               0.0);
           indexedRows.second.bounds = secondRecord.descriptor.bounds;
+          initializeAvbdRigidPointPairTaylorLinearization(
+              indexedRows.second,
+              states[indexedRows.bodyA],
+              states[indexedRows.bodyB]);
           frictionRows.push_back(indexedRows);
+          firstRecordIndex += 2u;
         }
       };
 
@@ -2495,7 +3229,7 @@ inline void buildAvbdRigidContactManifoldRows(
         2u * detail::kAvbdRigidSmallRowStackCapacity>
         frictionDescriptors;
     std::array<
-        std::pair<AvbdScalarRowKey, Eigen::Vector3d>,
+        AvbdRigidPreviousFrictionState,
         2u * detail::kAvbdRigidSmallRowStackCapacity>
         previousFrictionDirections;
     std::size_t activeContactCount = 0u;
@@ -2525,7 +3259,7 @@ inline void buildAvbdRigidContactManifoldRows(
             contactLocalPoints.data(), activeContactCount},
         std::span<AvbdScalarRowDescriptor>{
             frictionDescriptors.data(), 2u * activeContactCount},
-        std::span<std::pair<AvbdScalarRowKey, Eigen::Vector3d>>{
+        std::span<AvbdRigidPreviousFrictionState>{
             previousFrictionDirections.data(),
             previousFrictionDirections.size()});
     return;
@@ -2561,29 +3295,6 @@ inline void buildAvbdRigidContactManifoldRows(
       contactLocalPoints,
       frictionDescriptors,
       {});
-}
-
-//==============================================================================
-template <typename NormalRowVector, typename FrictionRowVector>
-inline void buildAvbdRigidContactManifoldRows(
-    std::span<const AvbdRigidBodyState> states,
-    std::span<const AvbdRigidContactManifoldPoint> contacts,
-    AvbdScalarRowInventory& normalInventory,
-    AvbdScalarRowInventory& frictionInventory,
-    NormalRowVector& normalRows,
-    FrictionRowVector& frictionRows,
-    const AvbdRowWarmStartOptions& warmStartOptions = {})
-{
-  AvbdRigidContactManifoldRowScratch scratch;
-  buildAvbdRigidContactManifoldRows(
-      states,
-      contacts,
-      normalInventory,
-      frictionInventory,
-      normalRows,
-      frictionRows,
-      scratch,
-      warmStartOptions);
 }
 
 //==============================================================================
@@ -2750,6 +3461,7 @@ inline void buildAvbdRigidPointJointAngularRows(
           joint.targetRelativeOrientation,
           joint.angularAxes.col(axis),
           record.state);
+      indexedRow.row.axis *= joint.angularScale;
       indexedRow.row.materialStiffness = record.descriptor.materialStiffness;
       indexedRow.row.bounds = record.descriptor.bounds;
       if (!avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
@@ -3129,7 +3841,7 @@ inline void buildAvbdRigidMotorRows(
         if (index < activeLinearRows.size()) {
           const AvbdRigidLinearMotor& motor = *activeLinearRows[index];
           return makeAvbdEndpointPairRowKey(
-              AvbdScalarRowRole::Motor,
+              AvbdScalarRowRole::MotorLinear,
               motor.endpointA,
               motor.endpointB,
               motor.row,
@@ -3139,7 +3851,7 @@ inline void buildAvbdRigidMotorRows(
         const AvbdRigidAngularMotor& motor
             = *activeAngularRows[index - activeLinearRows.size()];
         return makeAvbdEndpointPairRowKey(
-            AvbdScalarRowRole::Motor,
+            AvbdScalarRowRole::MotorAngular,
             motor.endpointA,
             motor.endpointB,
             motor.row,
@@ -3427,6 +4139,12 @@ inline void avbdRigidRefreshRowIndexLayoutKeys(
 }
 
 //==============================================================================
+/// Run the rigid AVBD primal block sweep and persistent row-state update.
+///
+/// Body blocks retain deterministic serial order. When `rowUpdateExecutor` is
+/// provided, independent attachment, point-pair, distance, angular, and
+/// complete adjacent friction-pair updates use deterministic contiguous
+/// ranges; incomplete friction layouts preserve the serial fallback.
 template <
     typename AttachmentRowVector,
     typename PointPairRowVector,
@@ -3448,10 +4166,16 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
     const AvbdRigidPointPairFrictionOptions& frictionOptions,
     AvbdRigidBodyRowIndexScratch* rowIndexScratch = nullptr,
     std::span<AvbdRigidBodyPointPairDistanceSpringRow> distanceSpringRows = {},
-    const AvbdRigidPointPairDistanceSpringOptions& distanceSpringOptions = {})
+    const AvbdRigidPointPairDistanceSpringOptions& distanceSpringOptions = {},
+    compute::ComputeExecutor* rowUpdateExecutor = nullptr)
 {
   AvbdRigidBlockDescentStats stats;
   const std::size_t bodyCount = states.size();
+  const auto alphaOf = [&options](double alpha) noexcept {
+    return std::isfinite(options.regularizationAlphaOverride)
+               ? options.regularizationAlphaOverride
+               : alpha;
+  };
   if (bodyCount == 0 || masses.size() != bodyCount
       || bodyInertias.size() != bodyCount || fixed.size() != bodyCount
       || inertialTargets.size() != bodyCount || timeStep <= 0.0) {
@@ -3461,6 +4185,72 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
   const auto validBody = [bodyCount](std::uint32_t body) {
     return body < bodyCount;
   };
+
+  // Freeze every contact row's first-order model at the step-start poses
+  // before the first Gauss-Seidel body update mutates any pose: `states` is
+  // x_t on entry unless the caller started the sweep from an adaptive initial
+  // guess and handed x_t over as `options.stepStartStates`. Reinitializing
+  // here also makes manually assembled contact rows obey the same contract as
+  // rows produced by the world-contact builder.
+  const bool hasStepStartStates
+      = options.stepStartStates.size() == states.size();
+  const auto stepStartStateOf
+      = [&](std::uint32_t body) -> const AvbdRigidBodyState& {
+    return hasStepStartStates ? options.stepStartStates[body] : states[body];
+  };
+  for (AvbdRigidBodyPointPairRow& indexedRow : pointPairRows) {
+    if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)
+        && indexedRow.row.curvatureModel
+               == AvbdRigidPointCurvatureModel::TaylorLinearized) {
+      initializeAvbdRigidPointPairTaylorLinearization(
+          indexedRow.row,
+          stepStartStateOf(indexedRow.bodyA),
+          stepStartStateOf(indexedRow.bodyB));
+    }
+  }
+  for (AvbdRigidBodyPointPairFrictionRows& indexedRows : frictionPairRows) {
+    // Start the step with an empty Coulomb cone for every row that can derive
+    // one from its normal row. `liveFrictionForceLimit` then raises it to the
+    // largest normal force this contact transmits during the step and never
+    // lowers it again. Rows without a resolvable normal row keep the bounds
+    // their caller supplied.
+    if (indexedRows.normalRowIndex < pointPairRows.size()
+        && std::isfinite(indexedRows.frictionCoefficient)
+        && indexedRows.frictionCoefficient > 0.0) {
+      const AvbdRigidBodyPointPairRow& indexedNormal
+          = pointPairRows[indexedRows.normalRowIndex];
+      if (validBody(indexedNormal.bodyA) && validBody(indexedNormal.bodyB)
+          && indexedNormal.bodyA == indexedRows.bodyA
+          && indexedNormal.bodyB == indexedRows.bodyB) {
+        // The reference source rules open the step's cone from the normal
+        // row's warm-started dual; DART's step rule starts it empty.
+        const double initialLimit
+            = frictionOptions.coneRule
+                      == AvbdRigidFrictionConeRule::StepHighWaterDual
+                  ? 0.0
+                  : indexedRows.frictionCoefficient
+                        * std::max(0.0, indexedNormal.row.state.lambda);
+        indexedRows.first.bounds = avbdFrictionTangentBounds(initialLimit);
+        indexedRows.second.bounds = indexedRows.first.bounds;
+      }
+    }
+    if (validBody(indexedRows.bodyA) && validBody(indexedRows.bodyB)) {
+      if (indexedRows.first.curvatureModel
+          == AvbdRigidPointCurvatureModel::TaylorLinearized) {
+        initializeAvbdRigidPointPairTaylorLinearization(
+            indexedRows.first,
+            stepStartStateOf(indexedRows.bodyA),
+            stepStartStateOf(indexedRows.bodyB));
+      }
+      if (indexedRows.second.curvatureModel
+          == AvbdRigidPointCurvatureModel::TaylorLinearized) {
+        initializeAvbdRigidPointPairTaylorLinearization(
+            indexedRows.second,
+            stepStartStateOf(indexedRows.bodyA),
+            stepStartStateOf(indexedRows.bodyB));
+      }
+    }
+  }
 
   AvbdRigidBodyRowIndexScratch localRowIndexScratch;
   AvbdRigidBodyRowIndexScratch& rowIndexData
@@ -3799,37 +4589,70 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
           const AvbdRigidBodyPointPairRow& indexedRow,
           PointPairWorldPointCache& cache) {
         const AvbdRigidPointPairRow& row = indexedRow.row;
+        const AvbdRigidPointAttachmentOptions& effectiveRowOptions
+            = avbdRigidPointPairSolveOptions(indexedRow, rowOptions);
         const AvbdRigidBodyState& stateA = states[indexedRow.bodyA];
         const AvbdRigidBodyState& stateB = states[indexedRow.bodyB];
-        const PointPairWorldPointCache& points
-            = pointPairWorldPoints(indexedRow, cache);
-        const Eigen::Vector3d& worldPointA = points.worldPointA;
-        const Eigen::Vector3d& worldPointB = points.worldPointB;
+        // Rows without a frozen first-order model (joints, motors) recompute
+        // their world points per visit; the axis rows of one joint share
+        // them, so the cached points feed the value, the directions, and the
+        // geometric term with bitwise the numbers of the per-row helpers.
+        const bool usesTaylorModel
+            = row.curvatureModel
+                  == AvbdRigidPointCurvatureModel::TaylorLinearized
+              && row.taylorLinearization.valid;
+        const PointPairWorldPointCache* points
+            = usesTaylorModel ? nullptr
+                              : &pointPairWorldPoints(indexedRow, cache);
         const double rawConstraintValue
-            = row.offset + row.axis.dot(worldPointB - worldPointA);
+            = points != nullptr
+                  ? row.offset
+                        + row.axis.dot(
+                            points->worldPointB - points->worldPointA)
+                  : avbdRigidPointPairConstraintValue(stateA, stateB, row);
         const double constraintValue
             = avbdRigidRowUsesFiniteMaterial(row.materialStiffness)
                   ? rawConstraintValue
                   : regularizeAvbdConstraintValue(
                         rawConstraintValue,
                         row.previousConstraintValue,
-                        rowOptions.alpha);
+                        alphaOf(effectiveRowOptions.alpha));
         const double forceMagnitude = avbdRigidScalarRowForce(
             row.state, constraintValue, row.bounds, row.materialStiffness);
 
         if (indexedRow.bodyA == body) {
           const Vector6d direction
-              = avbdRigidWorldPointDirection(stateA, worldPointA, row.axis);
+              = points != nullptr ? avbdRigidWorldPointDirection(
+                                        stateA, points->worldPointA, row.axis)
+                                  : avbdRigidPointPairDirectionA(stateA, row);
           block.force.noalias() += forceMagnitude * direction;
           addAvbdRigidBlockHessianRankOneLowerTriangle(
               block, direction, row.state.stiffness);
+          if (row.curvatureModel == AvbdRigidPointCurvatureModel::QuasiNewton) {
+            addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+                block,
+                stateA,
+                points->worldPointA,
+                forceMagnitude * row.axis,
+                row.curvatureModel);
+          }
         }
         if (indexedRow.bodyB == body && indexedRow.bodyB != indexedRow.bodyA) {
           const Vector6d direction
-              = avbdRigidWorldPointDirection(stateB, worldPointB, -row.axis);
+              = points != nullptr ? avbdRigidWorldPointDirection(
+                                        stateB, points->worldPointB, -row.axis)
+                                  : avbdRigidPointPairDirectionB(stateB, row);
           block.force.noalias() += forceMagnitude * direction;
           addAvbdRigidBlockHessianRankOneLowerTriangle(
               block, direction, row.state.stiffness);
+          if (row.curvatureModel == AvbdRigidPointCurvatureModel::QuasiNewton) {
+            addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+                block,
+                stateB,
+                points->worldPointB,
+                -forceMagnitude * row.axis,
+                row.curvatureModel);
+          }
         }
       };
 
@@ -3866,8 +4689,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 axis,
                 length,
                 row.restLength,
-                row.state.stiffness,
-                /*clampToPsd=*/true);
+                row.state.stiffness);
           }
           if (indexedRow.bodyB == body) {
             const Vector6d direction
@@ -3878,11 +4700,10 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                 block,
                 stateB,
                 worldPointB,
-                axis,
+                -axis,
                 length,
                 row.restLength,
-                row.state.stiffness,
-                /*clampToPsd=*/true);
+                row.state.stiffness);
           }
         };
 
@@ -3894,6 +4715,12 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
     Eigen::Quaterniond targetRelativeOrientation
         = Eigen::Quaterniond::Identity();
     Eigen::Vector3d orientationError = Eigen::Vector3d::Zero();
+    // The SO(3) left-Jacobian inverses of +/- the orientation error are the
+    // same for every axis row of a joint, so they are built once per body
+    // visit (the values are bitwise those of the per-row helpers).
+    bool jacobiansValid = false;
+    Eigen::Matrix3d jacobianInverseA = Eigen::Matrix3d::Identity();
+    Eigen::Matrix3d jacobianInverseB = Eigen::Matrix3d::Identity();
   };
 
   const auto angularPairOrientationError
@@ -3905,6 +4732,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
         || !detail::avbdRigidQuaternionExactEqual(
             cache.targetRelativeOrientation, row.targetRelativeOrientation)) {
       cache.valid = true;
+      cache.jacobiansValid = false;
       cache.bodyA = indexedRow.bodyA;
       cache.bodyB = indexedRow.bodyB;
       cache.targetRelativeOrientation = row.targetRelativeOrientation;
@@ -3914,6 +4742,18 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
               states[indexedRow.bodyA], row));
     }
     return cache.orientationError;
+  };
+  const auto angularPairJacobians
+      = [&](const AvbdRigidBodyAngularPairRow& indexedRow,
+            AngularPairConstraintCache& cache) -> AngularPairConstraintCache& {
+    const Eigen::Vector3d& error
+        = angularPairOrientationError(indexedRow, cache);
+    if (!cache.jacobiansValid) {
+      cache.jacobiansValid = true;
+      cache.jacobianInverseA = avbdRigidSo3LeftJacobianInverse(error);
+      cache.jacobianInverseB = avbdRigidSo3LeftJacobianInverse(-error);
+    }
+    return cache;
   };
 
   const auto addAngularPairToBlock =
@@ -3931,85 +4771,216 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
                   : regularizeAvbdConstraintValue(
                         rawConstraintValue,
                         row.previousConstraintValue,
-                        rowOptions.alpha);
+                        alphaOf(rowOptions.alpha));
         const double forceMagnitude = avbdRigidScalarRowForce(
             row.state, constraintValue, row.bounds, row.materialStiffness);
 
         if (indexedRow.bodyA == body) {
-          const Vector6d direction = avbdRigidAngularPairDirectionA(row);
+          const AngularPairConstraintCache& jacobians
+              = angularPairJacobians(indexedRow, cache);
+          Vector6d direction = Vector6d::Zero();
+          direction.tail<3>() = jacobians.jacobianInverseA * row.axis;
           block.force.noalias() += forceMagnitude * direction;
           addAvbdRigidBlockHessianRankOneLowerTriangle(
               block, direction, row.state.stiffness);
         }
         if (indexedRow.bodyB == body && indexedRow.bodyB != indexedRow.bodyA) {
-          const Vector6d direction = avbdRigidAngularPairDirectionB(row);
+          const AngularPairConstraintCache& jacobians
+              = angularPairJacobians(indexedRow, cache);
+          Vector6d direction = Vector6d::Zero();
+          direction.tail<3>() = -jacobians.jacobianInverseB * row.axis;
           block.force.noalias() += forceMagnitude * direction;
           addAvbdRigidBlockHessianRankOneLowerTriangle(
               block, direction, row.state.stiffness);
         }
       };
 
-  const auto addFrictionPairToBlock
-      = [&](AvbdRigidBodyBlock& block,
-            std::uint32_t body,
-            const AvbdRigidBodyPointPairFrictionRows& indexedRows) {
-          const AvbdRigidBodyState& stateA = states[indexedRows.bodyA];
-          const AvbdRigidBodyState& stateB = states[indexedRows.bodyB];
-          const Eigen::Vector3d firstWorldPointA
-              = avbdRigidBodyWorldPoint(stateA, indexedRows.first.localPointA);
-          const Eigen::Vector3d firstWorldPointB
-              = avbdRigidBodyWorldPoint(stateB, indexedRows.first.localPointB);
-          const bool sharedAnchors = avbdRigidPointPairRowsShareLocalPoints(
-              indexedRows.first, indexedRows.second);
-          const Eigen::Vector3d secondWorldPointA
-              = sharedAnchors ? firstWorldPointA
-                              : avbdRigidBodyWorldPoint(
-                                    stateA, indexedRows.second.localPointA);
-          const Eigen::Vector3d secondWorldPointB
-              = sharedAnchors ? firstWorldPointB
-                              : avbdRigidBodyWorldPoint(
-                                    stateB, indexedRows.second.localPointB);
-          const Eigen::Vector2d constraintValues
-              = avbdRigidPointPairConstraintValuesAtWorldPoints(
-                  indexedRows.first,
-                  indexedRows.second,
-                  firstWorldPointA,
-                  firstWorldPointB,
-                  secondWorldPointA,
-                  secondWorldPointB,
-                  frictionOptions.alpha);
-          const Eigen::Vector2d force
-              = avbdRigidPointPairFrictionTangentPairForceFromConstraintValues(
-                  constraintValues,
-                  indexedRows.first,
-                  indexedRows.second,
-                  frictionOptions);
-          if (indexedRows.bodyA == body) {
-            const Vector6d firstDirection = avbdRigidWorldPointDirection(
-                stateA, firstWorldPointA, indexedRows.first.axis);
-            const Vector6d secondDirection = avbdRigidWorldPointDirection(
-                stateA, secondWorldPointA, indexedRows.second.axis);
-            block.force.noalias()
-                += force.x() * firstDirection + force.y() * secondDirection;
-            addAvbdRigidBlockHessianRankOneLowerTriangle(
-                block, firstDirection, indexedRows.first.state.stiffness);
-            addAvbdRigidBlockHessianRankOneLowerTriangle(
-                block, secondDirection, indexedRows.second.state.stiffness);
-          }
-          if (indexedRows.bodyB == body
-              && indexedRows.bodyB != indexedRows.bodyA) {
-            const Vector6d firstDirection = avbdRigidWorldPointDirection(
-                stateB, firstWorldPointB, -indexedRows.first.axis);
-            const Vector6d secondDirection = avbdRigidWorldPointDirection(
-                stateB, secondWorldPointB, -indexedRows.second.axis);
-            block.force.noalias()
-                += force.x() * firstDirection + force.y() * secondDirection;
-            addAvbdRigidBlockHessianRankOneLowerTriangle(
-                block, firstDirection, indexedRows.first.state.stiffness);
-            addAvbdRigidBlockHessianRankOneLowerTriangle(
-                block, secondDirection, indexedRows.second.state.stiffness);
-          }
-        };
+  // Coulomb limit for one tangent pair. The pair's `bounds` carry the cone for
+  // the current step: the descent prologue clears them for every row whose
+  // normal row is resolvable, and this helper only ever raises them.
+  //
+  // Two properties matter. First, the bound comes from the normal row's
+  // accepted dual, not from its penalty trial `k C + lambda`: on the first
+  // sweep of a step that trial still carries the whole step-start penetration
+  // and overstates the transmitted normal force by orders of magnitude.
+  // Second, the cone may not shrink inside a step. Coulomb bounds the friction
+  // impulse by mu times the normal impulse, whereas the instantaneous dual
+  // decays to zero once the regularized normal constraint is met. A cone that
+  // followed it down would silence a row that has already spent a tangential
+  // impulse under a wider cone -- typically the warm-started dual applied at
+  // `C = 0` -- and strand that displacement, because the augmented-Lagrangian
+  // trial that would undo it is exactly what the closing cone clamps away.
+  const auto liveFrictionForceLimit = [&](AvbdRigidBodyPointPairFrictionRows&
+                                              indexedRows) {
+    const auto stepLimit = [&]() {
+      return avbdRigidPointPairFrictionPairForceLimit(
+          indexedRows.first, indexedRows.second);
+    };
+    if (indexedRows.normalRowIndex >= pointPairRows.size()
+        || !std::isfinite(indexedRows.frictionCoefficient)
+        || indexedRows.frictionCoefficient <= 0.0) {
+      return stepLimit();
+    }
+
+    const AvbdRigidBodyPointPairRow& indexedNormal
+        = pointPairRows[indexedRows.normalRowIndex];
+    if (!validBody(indexedNormal.bodyA) || !validBody(indexedNormal.bodyB)
+        || indexedNormal.bodyA != indexedRows.bodyA
+        || indexedNormal.bodyB != indexedRows.bodyB) {
+      return stepLimit();
+    }
+
+    const AvbdRigidPointPairRow& normal = indexedNormal.row;
+    double normalForce = 0.0;
+    if (avbdRigidRowUsesFiniteMaterial(normal.materialStiffness)) {
+      // A finite-material normal row carries no dual, so its penalty
+      // force is the force it transmits.
+      normalForce = avbdRigidScalarRowForce(
+          normal.state,
+          avbdRigidPointPairConstraintValue(
+              states[indexedNormal.bodyA], states[indexedNormal.bodyB], normal),
+          normal.bounds,
+          normal.materialStiffness);
+    } else if (
+        frictionOptions.coneRule == AvbdRigidFrictionConeRule::TrialForce) {
+      // The 3D reference source bounds the cone by the normal row's
+      // trial force (Equation 13: penalty times the regularized value
+      // plus the dual), so the cone follows the penalty ramp within the
+      // step instead of waiting for the dual to accumulate.
+      const AvbdRigidPointAttachmentOptions& normalOptions
+          = avbdRigidPointPairSolveOptions(indexedNormal, rowOptions);
+      const double constraintValue = regularizeAvbdConstraintValue(
+          avbdRigidPointPairConstraintValue(
+              states[indexedNormal.bodyA], states[indexedNormal.bodyB], normal),
+          normal.previousConstraintValue,
+          alphaOf(normalOptions.alpha));
+      normalForce = computeAvbdHardConstraintForce(
+          normal.state, constraintValue, normal.bounds);
+    } else {
+      normalForce = normal.state.lambda;
+    }
+
+    if (std::isnan(normalForce)) {
+      // A NaN normal force marks a poisoned row whose own force is
+      // already non-finite. The cone stays at its step high-water mark
+      // because bounds never decrease within a sweep (the Hessian was
+      // assembled against them); it is not reopened or widened here.
+      return stepLimit();
+    }
+    const double liveLimit
+        = indexedRows.frictionCoefficient * std::max(0.0, normalForce);
+    if (frictionOptions.coneRule
+        != AvbdRigidFrictionConeRule::StepHighWaterDual) {
+      // The reference source rules re-evaluate the cone from the
+      // current normal force at every body update, narrowing it again
+      // when the normal force drops.
+      indexedRows.first.bounds = avbdFrictionTangentBounds(liveLimit);
+      indexedRows.second.bounds = indexedRows.first.bounds;
+      return stepLimit();
+    }
+    if (liveLimit > stepLimit()) {
+      indexedRows.first.bounds = avbdFrictionTangentBounds(liveLimit);
+      indexedRows.second.bounds = indexedRows.first.bounds;
+    }
+    return stepLimit();
+  };
+
+  const auto addFrictionPairToBlock = [&](AvbdRigidBodyBlock& block,
+                                          std::uint32_t body,
+                                          AvbdRigidBodyPointPairFrictionRows&
+                                              indexedRows) {
+    const AvbdRigidBodyState& stateA = states[indexedRows.bodyA];
+    const AvbdRigidBodyState& stateB = states[indexedRows.bodyB];
+    const Eigen::Vector2d constraintValues = avbdRigidPointPairConstraintValues(
+        stateA,
+        stateB,
+        indexedRows.first,
+        indexedRows.second,
+        alphaOf(frictionOptions.alpha));
+    const double forceLimit = liveFrictionForceLimit(indexedRows);
+    const Eigen::Vector2d force
+        = avbdRigidPointPairFrictionTangentPairForceFromConstraintValuesAndLimit(
+            constraintValues,
+            indexedRows.first,
+            indexedRows.second,
+            forceLimit);
+    if (indexedRows.bodyA == body) {
+      const Vector6d firstDirection
+          = avbdRigidPointPairDirectionA(stateA, indexedRows.first);
+      const Vector6d secondDirection
+          = avbdRigidPointPairDirectionA(stateA, indexedRows.second);
+      block.force.noalias()
+          += force.x() * firstDirection + force.y() * secondDirection;
+      // Match the AVBD paper's simple friction approximation: project the
+      // force to the Coulomb cone, but retain the unclamped penalty Hessian.
+      addAvbdRigidBlockHessianRankOneLowerTriangle(
+          block, firstDirection, indexedRows.first.state.stiffness);
+      addAvbdRigidBlockHessianRankOneLowerTriangle(
+          block, secondDirection, indexedRows.second.state.stiffness);
+      if (indexedRows.first.curvatureModel
+              == AvbdRigidPointCurvatureModel::QuasiNewton
+          || indexedRows.second.curvatureModel
+                 == AvbdRigidPointCurvatureModel::QuasiNewton) {
+        const Eigen::Vector3d firstWorldPointA
+            = avbdRigidBodyWorldPoint(stateA, indexedRows.first.localPointA);
+        const Eigen::Vector3d secondWorldPointA
+            = avbdRigidPointPairRowsShareLocalPoints(
+                  indexedRows.first, indexedRows.second)
+                  ? firstWorldPointA
+                  : avbdRigidBodyWorldPoint(
+                        stateA, indexedRows.second.localPointA);
+        addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+            block,
+            stateA,
+            firstWorldPointA,
+            force.x() * indexedRows.first.axis,
+            indexedRows.first.curvatureModel);
+        addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+            block,
+            stateA,
+            secondWorldPointA,
+            force.y() * indexedRows.second.axis,
+            indexedRows.second.curvatureModel);
+      }
+    }
+    if (indexedRows.bodyB == body && indexedRows.bodyB != indexedRows.bodyA) {
+      const Vector6d firstDirection
+          = avbdRigidPointPairDirectionB(stateB, indexedRows.first);
+      const Vector6d secondDirection
+          = avbdRigidPointPairDirectionB(stateB, indexedRows.second);
+      block.force.noalias()
+          += force.x() * firstDirection + force.y() * secondDirection;
+      addAvbdRigidBlockHessianRankOneLowerTriangle(
+          block, firstDirection, indexedRows.first.state.stiffness);
+      addAvbdRigidBlockHessianRankOneLowerTriangle(
+          block, secondDirection, indexedRows.second.state.stiffness);
+      if (indexedRows.first.curvatureModel
+              == AvbdRigidPointCurvatureModel::QuasiNewton
+          || indexedRows.second.curvatureModel
+                 == AvbdRigidPointCurvatureModel::QuasiNewton) {
+        const Eigen::Vector3d firstWorldPointB
+            = avbdRigidBodyWorldPoint(stateB, indexedRows.first.localPointB);
+        const Eigen::Vector3d secondWorldPointB
+            = avbdRigidPointPairRowsShareLocalPoints(
+                  indexedRows.first, indexedRows.second)
+                  ? firstWorldPointB
+                  : avbdRigidBodyWorldPoint(
+                        stateB, indexedRows.second.localPointB);
+        addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+            block,
+            stateB,
+            firstWorldPointB,
+            -force.x() * indexedRows.first.axis,
+            indexedRows.first.curvatureModel);
+        addAvbdRigidWorldPointQuasiNewtonGeometricDiagonal(
+            block,
+            stateB,
+            secondWorldPointB,
+            -force.y() * indexedRows.second.axis,
+            indexedRows.second.curvatureModel);
+      }
+    }
+  };
 
   const auto assemble = [&](std::uint32_t body) {
     AvbdRigidBodyBlock block;
@@ -4030,7 +5001,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
         const AvbdRigidBodyPointAttachmentRow& indexedRow
             = attachmentRows[attachmentRowIndices[cursor]];
         addAvbdRigidPointAttachment(
-            block, states[body], indexedRow.row, rowOptions.alpha);
+            block, states[body], indexedRow.row, alphaOf(rowOptions.alpha));
       }
     }
     if (!pointPairRows.empty()) {
@@ -4064,7 +5035,7 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
       for (std::size_t cursor = frictionPairRowOffsets[body];
            cursor < frictionPairRowOffsets[body + 1u];
            ++cursor) {
-        const AvbdRigidBodyPointPairFrictionRows& indexedRows
+        AvbdRigidBodyPointPairFrictionRows& indexedRows
             = frictionPairRows[frictionPairRowIndices[cursor]];
         addFrictionPairToBlock(block, body, indexedRows);
       }
@@ -4089,119 +5060,185 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
       maxStepSquared = std::max(maxStepSquared, step.squaredNorm());
       ++stats.bodyUpdates;
     }
-
-    for (AvbdRigidBodyPointAttachmentRow& indexedRow : attachmentRows) {
-      if (validBody(indexedRow.body)) {
-        indexedRow.row.state = updateAvbdRigidPointAttachmentRow(
-            indexedRow.row.state,
-            states[indexedRow.body],
-            indexedRow.row,
-            rowOptions);
-      }
+    if (!options.updateRows) {
+      // Primal-only sweep (post-stabilization): the persisted duals,
+      // penalties, anchors, and cones stay exactly as the last full
+      // iteration left them.
+      continue;
     }
-    PointPairWorldPointCache pointPairUpdateCache;
-    for (AvbdRigidBodyPointPairRow& indexedRow : pointPairRows) {
-      if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)) {
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          indexedRow.row.state.lambda = 0.0;
-          const double maxStiffness = std::min(
-              indexedRow.row.materialStiffness, rowOptions.maxStiffness);
-          if (rowOptions.beta >= 0.0
-              && indexedRow.row.state.stiffness >= maxStiffness) {
-            indexedRow.row.state.stiffness = maxStiffness;
-            continue;
+
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        attachmentRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointAttachmentRow& indexedRow = attachmentRows[i];
+            if (validBody(indexedRow.body)) {
+              indexedRow.row.state = updateAvbdRigidPointAttachmentRow(
+                  indexedRow.row.state,
+                  states[indexedRow.body],
+                  indexedRow.row,
+                  rowOptions);
+            }
           }
-        }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        pointPairRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointPairRow& indexedRow = pointPairRows[i];
+            if (!validBody(indexedRow.bodyA) || !validBody(indexedRow.bodyB)) {
+              continue;
+            }
+            const AvbdRigidPointAttachmentOptions& effectiveRowOptions
+                = avbdRigidPointPairSolveOptions(indexedRow, rowOptions);
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              indexedRow.row.state.lambda = 0.0;
+              const double maxStiffness = std::min(
+                  indexedRow.row.materialStiffness,
+                  effectiveRowOptions.maxStiffness);
+              if (effectiveRowOptions.beta >= 0.0
+                  && indexedRow.row.state.stiffness >= maxStiffness) {
+                indexedRow.row.state.stiffness = maxStiffness;
+                continue;
+              }
+            }
 
-        const PointPairWorldPointCache& points
-            = pointPairWorldPoints(indexedRow, pointPairUpdateCache);
-        const double rawConstraintValue
-            = indexedRow.row.offset
-              + indexedRow.row.axis.dot(
-                  points.worldPointB - points.worldPointA);
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          const double maxStiffness = std::min(
-              indexedRow.row.materialStiffness, rowOptions.maxStiffness);
-          indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
-              indexedRow.row.state.stiffness,
-              rawConstraintValue,
-              rowOptions.beta,
-              maxStiffness);
-        } else {
-          const double constraintValue = regularizeAvbdConstraintValue(
-              rawConstraintValue,
-              indexedRow.row.previousConstraintValue,
-              rowOptions.alpha);
-          indexedRow.row.state = updateAvbdHardConstraintRow(
-              indexedRow.row.state,
-              constraintValue,
-              rowOptions.beta,
-              indexedRow.row.bounds,
-              rowOptions.maxStiffness);
-        }
-      }
-    }
-    for (AvbdRigidBodyPointPairDistanceSpringRow& indexedRow :
-         distanceSpringRows) {
-      if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)
-          && indexedRow.bodyB != indexedRow.bodyA) {
-        indexedRow.row.state = updateAvbdRigidPointPairDistanceSpringRow(
-            indexedRow.row.state,
-            states[indexedRow.bodyA],
-            states[indexedRow.bodyB],
-            indexedRow.row,
-            distanceSpringOptions);
-      }
-    }
-    AngularPairConstraintCache angularPairUpdateCache;
-    for (AvbdRigidBodyAngularPairRow& indexedRow : angularPairRows) {
-      if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)) {
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          indexedRow.row.state.lambda = 0.0;
-          const double maxStiffness = std::min(
-              indexedRow.row.materialStiffness, rowOptions.maxStiffness);
-          if (rowOptions.beta >= 0.0
-              && indexedRow.row.state.stiffness >= maxStiffness) {
-            indexedRow.row.state.stiffness = maxStiffness;
-            continue;
+            const double rawConstraintValue = avbdRigidPointPairConstraintValue(
+                states[indexedRow.bodyA],
+                states[indexedRow.bodyB],
+                indexedRow.row);
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              const double maxStiffness = std::min(
+                  indexedRow.row.materialStiffness,
+                  effectiveRowOptions.maxStiffness);
+              indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
+                  indexedRow.row.state.stiffness,
+                  rawConstraintValue,
+                  effectiveRowOptions.beta,
+                  maxStiffness);
+            } else {
+              const double constraintValue = regularizeAvbdConstraintValue(
+                  rawConstraintValue,
+                  indexedRow.row.previousConstraintValue,
+                  alphaOf(effectiveRowOptions.alpha));
+              indexedRow.row.state = updateAvbdHardConstraintRow(
+                  indexedRow.row.state,
+                  constraintValue,
+                  effectiveRowOptions.beta,
+                  indexedRow.row.bounds,
+                  effectiveRowOptions.maxStiffness);
+            }
           }
-        }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        distanceSpringRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointPairDistanceSpringRow& indexedRow
+                = distanceSpringRows[i];
+            if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)
+                && indexedRow.bodyB != indexedRow.bodyA) {
+              indexedRow.row.state = updateAvbdRigidPointPairDistanceSpringRow(
+                  indexedRow.row.state,
+                  states[indexedRow.bodyA],
+                  states[indexedRow.bodyB],
+                  indexedRow.row,
+                  distanceSpringOptions);
+            }
+          }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        angularPairRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          AngularPairConstraintCache angularPairUpdateCache;
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyAngularPairRow& indexedRow = angularPairRows[i];
+            if (!validBody(indexedRow.bodyA) || !validBody(indexedRow.bodyB)) {
+              continue;
+            }
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              indexedRow.row.state.lambda = 0.0;
+              const double maxStiffness = std::min(
+                  indexedRow.row.materialStiffness, rowOptions.maxStiffness);
+              if (avbdRigidAngularBeta(rowOptions) >= 0.0
+                  && indexedRow.row.state.stiffness >= maxStiffness) {
+                indexedRow.row.state.stiffness = maxStiffness;
+                continue;
+              }
+            }
 
-        const double rawConstraintValue
-            = indexedRow.row.offset
-              + indexedRow.row.axis.dot(angularPairOrientationError(
-                  indexedRow, angularPairUpdateCache));
-        if (avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
-          indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
-              indexedRow.row.state.stiffness,
-              rawConstraintValue,
-              rowOptions.beta,
-              std::min(
-                  indexedRow.row.materialStiffness, rowOptions.maxStiffness));
-        } else {
-          const double constraintValue = regularizeAvbdConstraintValue(
-              rawConstraintValue,
-              indexedRow.row.previousConstraintValue,
-              rowOptions.alpha);
-          indexedRow.row.state = updateAvbdHardConstraintRow(
-              indexedRow.row.state,
-              constraintValue,
-              rowOptions.beta,
-              indexedRow.row.bounds,
-              rowOptions.maxStiffness);
-        }
-      }
-    }
-    for (AvbdRigidBodyPointPairFrictionRows& indexedRows : frictionPairRows) {
-      if (validBody(indexedRows.bodyA) && validBody(indexedRows.bodyB)) {
-        updateAvbdRigidPointPairFrictionTangentPair(
-            indexedRows.first,
-            indexedRows.second,
-            states[indexedRows.bodyA],
-            states[indexedRows.bodyB],
-            frictionOptions);
-      }
-    }
+            const double rawConstraintValue
+                = indexedRow.row.offset
+                  + indexedRow.row.axis.dot(angularPairOrientationError(
+                      indexedRow, angularPairUpdateCache));
+            if (avbdRigidRowUsesFiniteMaterial(
+                    indexedRow.row.materialStiffness)) {
+              indexedRow.row.state.stiffness = updateAvbdFiniteStiffness(
+                  indexedRow.row.state.stiffness,
+                  rawConstraintValue,
+                  avbdRigidAngularBeta(rowOptions),
+                  std::min(
+                      indexedRow.row.materialStiffness,
+                      rowOptions.maxStiffness));
+            } else {
+              const double constraintValue = regularizeAvbdConstraintValue(
+                  rawConstraintValue,
+                  indexedRow.row.previousConstraintValue,
+                  alphaOf(rowOptions.alpha));
+              indexedRow.row.state = updateAvbdHardConstraintRow(
+                  indexedRow.row.state,
+                  constraintValue,
+                  avbdRigidAngularBeta(rowOptions),
+                  indexedRow.row.bounds,
+                  rowOptions.maxStiffness);
+            }
+          }
+        });
+    forEachAvbdRowUpdateRange(
+        rowUpdateExecutor,
+        frictionPairRows.size(),
+        [&](std::size_t begin, std::size_t end) {
+          for (std::size_t i = begin; i < end; ++i) {
+            AvbdRigidBodyPointPairFrictionRows& indexedRows
+                = frictionPairRows[i];
+            if (validBody(indexedRows.bodyA) && validBody(indexedRows.bodyB)) {
+              const double forceLimit = liveFrictionForceLimit(indexedRows);
+              AvbdRigidPointPairFrictionOptions updateFrictionOptions
+                  = frictionOptions;
+              updateFrictionOptions.alpha = alphaOf(frictionOptions.alpha);
+              const bool sticking
+                  = updateAvbdRigidPointPairFrictionTangentPairForLimit(
+                      indexedRows.first,
+                      indexedRows.second,
+                      states[indexedRows.bodyA],
+                      states[indexedRows.bodyB],
+                      updateFrictionOptions,
+                      forceLimit);
+              if (indexedRows.persistentFirstRecord != nullptr) {
+                indexedRows.persistentFirstRecord->state
+                    = indexedRows.first.state;
+                indexedRows.persistentFirstRecord->descriptor.bounds
+                    = indexedRows.first.bounds;
+              }
+              if (indexedRows.persistentSecondRecord != nullptr) {
+                indexedRows.persistentSecondRecord->state
+                    = indexedRows.second.state;
+                indexedRows.persistentSecondRecord->descriptor.bounds
+                    = indexedRows.second.bounds;
+              }
+              if (indexedRows.persistentAnchor != nullptr) {
+                indexedRows.persistentAnchor->sticking = sticking;
+              }
+            }
+          }
+        });
 
     if (convergenceSquared > 0.0 && maxStepSquared <= convergenceSquared) {
       break;

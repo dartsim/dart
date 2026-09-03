@@ -20,6 +20,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from avbd_packet_schema import (  # noqa: E402
     AVBD_PACKET_SCHEMA_VERSION,
     make_resolved_solver_identity,
+    make_resolved_solver_identity_from_benchmark_row,
 )
 
 DEFAULT_OUTPUT = Path(
@@ -35,10 +36,11 @@ COLLISION_SHAPES = 12
 SOURCE_SCENE_INDEX = 2
 TIME_STEP = 1.0 / 60.0
 RESOLVED_SOLVER_IDENTITY = make_resolved_solver_identity(
-    resolved_rigid_contact_family="sequential-impulse",
+    resolved_rigid_contact_family="avbd",
     rigid_point_joint_solver="none",
     avbd_rigid_contact_config_emplaced=False,
-    recorded_from="friction coefficient sweep benchmark scene counters",
+    recorded_from="friction sweep benchmark runtime identity counters",
+    rigid_contact_selection="world_solver_family",
 )
 _AGGREGATE_SUFFIX_RE = re.compile(r"_(?:mean|median|stddev|cv)$")
 _REPEATS_SUFFIX_RE = re.compile(r"/repeats:\d+")
@@ -285,6 +287,17 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
     plot_data = []
     for friction_key in sorted(representative_by_key):
         timing_row = _timing_row(representative_by_key[friction_key])
+        try:
+            runtime_identity = make_resolved_solver_identity_from_benchmark_row(
+                timing_row,
+                recorded_from=RESOLVED_SOLVER_IDENTITY["recorded_from"],
+            )
+        except ValueError as exc:
+            raise AvbdFrictionCoefficientSweepPacketError(str(exc)) from exc
+        if runtime_identity != RESOLVED_SOLVER_IDENTITY:
+            raise AvbdFrictionCoefficientSweepPacketError(
+                f"{BENCHMARK_NAME}: runtime solver identity is not public AVBD"
+            )
         max_friction = expected_by_key[friction_key]
         plot_data.append(
             {

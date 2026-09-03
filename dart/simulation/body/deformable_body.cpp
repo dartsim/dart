@@ -128,13 +128,15 @@ void DeformableBody::setPosition(
   auto& state = detail::registryOf(*m_world).get<comps::DeformableNodeState>(
       detail::toRegistryEntity(m_entity));
   DART_SIMULATION_THROW_T_IF(
-      node >= state.positions.size(),
+      node >= state.positions.size() || node >= state.previousPositions.size()
+          || node >= state.attachmentTargets.size(),
       OutOfRangeException,
       "DeformableBody node index {} is out of range",
       node);
 
   state.positions[node] = position;
   state.previousPositions[node] = position;
+  state.attachmentTargets[node] = position;
 }
 
 //==============================================================================
@@ -341,6 +343,18 @@ DeformableMaterialProperties DeformableBody::getMaterialProperties() const
       material.useAdaptiveBarrierStiffness,
       material.useIterativeLinearSolver,
       material.useMatrixFreeLinearSolver};
+}
+
+//==============================================================================
+std::size_t DeformableBody::getSurfaceContactCandidateCapacity() const
+{
+  DART_SIMULATION_THROW_T_IF(
+      !isValid(), InvalidArgumentException, "Invalid deformable body handle");
+
+  const auto& registry = detail::registryOf(*m_world);
+  const auto* config = registry.try_get<comps::DeformableContactConfig>(
+      detail::toRegistryEntity(m_entity));
+  return config != nullptr ? config->surfaceCandidateCapacity : 0u;
 }
 
 } // namespace dart::simulation

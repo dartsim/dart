@@ -59,6 +59,13 @@ ComputeStageMetadata WorldStepStage::getMetadata() const noexcept
 }
 
 //==============================================================================
+void WorldStepStage::preflight(World& /*world*/)
+{
+  // Default no-op: stages without step-time rejection conditions need no
+  // preflight hook.
+}
+
+//==============================================================================
 void WorldStepStage::prepare(World& /*world*/)
 {
   // Default no-op: stateless stages need no per-step preparation.
@@ -124,6 +131,14 @@ WorldStepStage& WorldStepPipeline::getStage(std::size_t index) const
   }
 
   return *m_overflowStages[index - m_stages.size()];
+}
+
+//==============================================================================
+void WorldStepPipeline::preflight(World& world)
+{
+  for (std::size_t i = 0; i < m_stageCount; ++i) {
+    getStage(i).preflight(world);
+  }
 }
 
 //==============================================================================

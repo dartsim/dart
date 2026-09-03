@@ -9,8 +9,8 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#111827}
 .tick{font-size:11px;fill:#4b5563}
 </style>
 <rect width="720" height="420" fill="#ffffff"/>
-<text x="32" y="34" class="title">AVBD Paper-Scale High-Ratio Iteration Sweep</text>
-<text x="32" y="54" class="subtitle">50 links, 50,000:1 tip mass, 32-step replay envelope; lower CPU time is better, finite replay required.</text>
+<text x="32" y="34" class="title">Variational Multibody High-Ratio Iteration Sweep</text>
+<text x="32" y="54" class="subtitle">Historical DART measurement; not AVBD solver evidence. 50 links, 50,000:1 tip mass, 32-step replay.</text>
 <text x="76" y="56" class="panel-title">CPU time per step (ms)</text>
 <line x1="76" y1="198" x2="682" y2="198" class="axis"/>
 <line x1="76" y1="76" x2="76" y2="198" class="axis"/>
@@ -39,5 +39,5 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#111827}
 <text x="335.71" y="400" class="tick" text-anchor="middle">100</text>
 <circle cx="682.00" cy="265.04" r="5" fill="#16a34a"/>
 <text x="682.00" y="400" class="tick" text-anchor="middle">200</text>
-<text x="379" y="412" class="subtitle" text-anchor="middle">Max solver iterations</text>
+<text x="379" y="412" class="subtitle" text-anchor="middle">Max variational iterations</text>
 </svg>

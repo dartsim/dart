@@ -35,7 +35,9 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
+#include <utility>
 #include <vector>
 
 namespace vbd = dart::simulation::detail::deformable_vbd;
@@ -140,6 +142,20 @@ std::vector<Vec3> runParallel(
   return positions;
 }
 
+double maxFreeDisplacement(
+    const std::vector<Vec3>& from,
+    const std::vector<Vec3>& to,
+    const std::vector<std::uint8_t>& fixed)
+{
+  double maximum = 0.0;
+  for (std::size_t vertex = 0; vertex < from.size(); ++vertex) {
+    if (fixed[vertex] == 0u) {
+      maximum = std::max(maximum, (to[vertex] - from[vertex]).norm());
+    }
+  }
+  return maximum;
+}
+
 } // namespace
 
 //==============================================================================
@@ -192,6 +208,38 @@ TEST(VbdParallelBlockDescent, ConvergesToLowResidual)
       options,
       executor);
   EXPECT_LT(stats.finalResidualNormSquared, 1e-12);
+}
+
+//==============================================================================
+// convergenceDisplacement is a public solve control, so the parallel
+// mass-spring driver must not silently replace it with a full-budget solve.
+TEST(VbdParallelBlockDescent, MassSpringHonorsConvergenceControl)
+{
+  const GridScene scene = makeGrid(6);
+  const std::size_t freeVertexCount = static_cast<std::size_t>(
+      std::count(scene.fixed.begin(), scene.fixed.end(), std::uint8_t{0u}));
+  vbd::BlockDescentOptions options;
+  options.iterations = 9;
+  options.convergenceDisplacement = 1e100;
+
+  for (const unsigned int threads : {1u, 2u, 4u}) {
+    std::vector<Vec3> positions = scene.inertialTargets;
+    compute::ParallelExecutor executor(threads);
+    const vbd::BlockDescentStats stats = vbd::parallelBlockDescentMassSpring(
+        positions,
+        scene.masses,
+        scene.fixed,
+        scene.inertialTargets,
+        scene.springs,
+        scene.stiffness,
+        scene.timeStep,
+        scene.coloring,
+        scene.adjacency,
+        options,
+        executor);
+    EXPECT_EQ(stats.iterations, 1u) << "threads=" << threads;
+    EXPECT_EQ(stats.vertexUpdates, freeVertexCount) << "threads=" << threads;
+  }
 }
 
 //==============================================================================
@@ -288,6 +336,228 @@ TEST(VbdParallelBlockDescent, DeformableMatchesSerialExactly)
           << "threads=" << threads << " vertex=" << i;
     }
   }
+}
+
+//==============================================================================
+// The public convergence threshold must select the same stopping sweep for
+// serial and executor-parallel deformable solves.
+TEST(VbdParallelBlockDescent, DeformableHonorsConvergenceControl)
+{
+  const GridScene scene = makeGrid(6);
+  const std::vector<vbd::TetMeshElement> tets;
+  const vbd::TetAdjacency tetAdjacency
+      = vbd::TetAdjacency::build(scene.positions.size(), tets);
+  const vbd::VertexColoring coloring
+      = vbd::colorDeformable(scene.positions.size(), scene.springs, tets);
+  vbd::BlockDescentOptions options;
+  options.iterations = 9;
+  options.convergenceDisplacement = 1e100;
+
+  std::vector<Vec3> serial = scene.inertialTargets;
+  const vbd::BlockDescentStats serialStats = vbd::blockDescentDeformable(
+      serial,
+      scene.masses,
+      scene.fixed,
+      scene.inertialTargets,
+      scene.springs,
+      scene.stiffness,
+      scene.adjacency,
+      tets,
+      /*mu=*/0.0,
+      /*lambda=*/0.0,
+      tetAdjacency,
+      scene.timeStep,
+      coloring,
+      options);
+  ASSERT_EQ(serialStats.iterations, 1u);
+
+  for (const unsigned int threads : {2u, 4u}) {
+    std::vector<Vec3> parallel = scene.inertialTargets;
+    compute::ParallelExecutor executor(threads);
+    const vbd::BlockDescentStats parallelStats
+        = vbd::parallelBlockDescentDeformable(
+            parallel,
+            scene.masses,
+            scene.fixed,
+            scene.inertialTargets,
+            scene.springs,
+            scene.stiffness,
+            scene.adjacency,
+            tets,
+            /*mu=*/0.0,
+            /*lambda=*/0.0,
+            tetAdjacency,
+            scene.timeStep,
+            coloring,
+            options,
+            executor);
+    EXPECT_EQ(parallelStats.iterations, serialStats.iterations)
+        << "threads=" << threads;
+    EXPECT_EQ(parallelStats.vertexUpdates, serialStats.vertexUpdates)
+        << "threads=" << threads;
+    for (std::size_t vertex = 0; vertex < serial.size(); ++vertex) {
+      EXPECT_NEAR((parallel[vertex] - serial[vertex]).norm(), 0.0, 1e-12)
+          << "threads=" << threads << " vertex=" << vertex;
+    }
+  }
+}
+
+//==============================================================================
+// Chebyshev is part of BlockDescentOptions, so executor dispatch must preserve
+// both its numerical effect and exact sweep accounting.
+TEST(VbdParallelBlockDescent, DeformableHonorsChebyshevControl)
+{
+  const GridScene scene = makeGrid(6);
+  const std::vector<vbd::TetMeshElement> tets;
+  const vbd::TetAdjacency tetAdjacency
+      = vbd::TetAdjacency::build(scene.positions.size(), tets);
+  const vbd::VertexColoring coloring
+      = vbd::colorDeformable(scene.positions.size(), scene.springs, tets);
+  vbd::BlockDescentOptions options;
+  options.iterations = 4;
+  options.useChebyshev = true;
+  options.chebyshevRho = 0.8;
+
+  const auto runParallelDeformable = [&](unsigned int threads, bool chebyshev) {
+    std::vector<Vec3> positions = scene.inertialTargets;
+    compute::ParallelExecutor executor(threads);
+    vbd::BlockDescentOptions runOptions = options;
+    runOptions.useChebyshev = chebyshev;
+    const vbd::BlockDescentStats stats = vbd::parallelBlockDescentDeformable(
+        positions,
+        scene.masses,
+        scene.fixed,
+        scene.inertialTargets,
+        scene.springs,
+        scene.stiffness,
+        scene.adjacency,
+        tets,
+        /*mu=*/0.0,
+        /*lambda=*/0.0,
+        tetAdjacency,
+        scene.timeStep,
+        coloring,
+        runOptions,
+        executor);
+    return std::pair{positions, stats};
+  };
+
+  std::vector<Vec3> serial = scene.inertialTargets;
+  const vbd::BlockDescentStats serialStats = vbd::blockDescentDeformable(
+      serial,
+      scene.masses,
+      scene.fixed,
+      scene.inertialTargets,
+      scene.springs,
+      scene.stiffness,
+      scene.adjacency,
+      tets,
+      /*mu=*/0.0,
+      /*lambda=*/0.0,
+      tetAdjacency,
+      scene.timeStep,
+      coloring,
+      options);
+
+  for (const unsigned int threads : {2u, 4u}) {
+    const auto [parallel, parallelStats] = runParallelDeformable(threads, true);
+    EXPECT_EQ(parallelStats.iterations, serialStats.iterations)
+        << "threads=" << threads;
+    EXPECT_EQ(parallelStats.vertexUpdates, serialStats.vertexUpdates)
+        << "threads=" << threads;
+    for (std::size_t vertex = 0; vertex < serial.size(); ++vertex) {
+      EXPECT_NEAR((parallel[vertex] - serial[vertex]).norm(), 0.0, 1e-12)
+          << "threads=" << threads << " vertex=" << vertex;
+    }
+  }
+
+  const auto [plain, plainStats] = runParallelDeformable(4u, false);
+  EXPECT_EQ(plainStats.iterations, options.iterations);
+  EXPECT_GT(maxFreeDisplacement(plain, serial, scene.fixed), 1e-8);
+}
+
+//==============================================================================
+// Chebyshev can amplify a small raw block update into a larger final per-node
+// sweep displacement. Convergence must be evaluated after that extrapolation.
+TEST(VbdParallelBlockDescent, SerialConvergenceUsesPostChebyshevDisplacement)
+{
+  const GridScene scene = makeGrid(6);
+  const std::vector<vbd::TetMeshElement> tets;
+  const vbd::TetAdjacency tetAdjacency
+      = vbd::TetAdjacency::build(scene.positions.size(), tets);
+  const vbd::VertexColoring coloring
+      = vbd::colorDeformable(scene.positions.size(), scene.springs, tets);
+
+  const auto onePlainSweep = [&](const std::vector<Vec3>& initial) {
+    std::vector<Vec3> positions = initial;
+    vbd::BlockDescentOptions options;
+    options.iterations = 1;
+    vbd::blockDescentDeformable(
+        positions,
+        scene.masses,
+        scene.fixed,
+        scene.inertialTargets,
+        scene.springs,
+        scene.stiffness,
+        scene.adjacency,
+        tets,
+        /*mu=*/0.0,
+        /*lambda=*/0.0,
+        tetAdjacency,
+        scene.timeStep,
+        coloring,
+        options);
+    return positions;
+  };
+
+  const std::vector<Vec3> initial = scene.inertialTargets;
+  const std::vector<Vec3> first = onePlainSweep(initial);
+  const std::vector<Vec3> secondSwept = onePlainSweep(first);
+  std::vector<Vec3> secondAccelerated = secondSwept;
+  const double rho = 0.8;
+  const double omega = vbd::chebyshevOmega(2u, rho, 1.0);
+  for (std::size_t vertex = 0; vertex < secondAccelerated.size(); ++vertex) {
+    if (scene.fixed[vertex] == 0u) {
+      secondAccelerated[vertex]
+          = vbd::applyChebyshev(omega, secondSwept[vertex], initial[vertex]);
+    }
+  }
+
+  const double firstDisplacement
+      = maxFreeDisplacement(initial, first, scene.fixed);
+  const double rawSecondDisplacement
+      = maxFreeDisplacement(first, secondSwept, scene.fixed);
+  const double finalSecondDisplacement
+      = maxFreeDisplacement(first, secondAccelerated, scene.fixed);
+  const double continuingUpperBound
+      = std::min(firstDisplacement, finalSecondDisplacement);
+  ASSERT_LT(rawSecondDisplacement, continuingUpperBound);
+  const double convergenceDisplacement
+      = 0.5 * (rawSecondDisplacement + continuingUpperBound);
+
+  std::vector<Vec3> positions = initial;
+  vbd::BlockDescentOptions options;
+  options.iterations = 3;
+  options.convergenceDisplacement = convergenceDisplacement;
+  options.useChebyshev = true;
+  options.chebyshevRho = rho;
+  const vbd::BlockDescentStats stats = vbd::blockDescentDeformable(
+      positions,
+      scene.masses,
+      scene.fixed,
+      scene.inertialTargets,
+      scene.springs,
+      scene.stiffness,
+      scene.adjacency,
+      tets,
+      /*mu=*/0.0,
+      /*lambda=*/0.0,
+      tetAdjacency,
+      scene.timeStep,
+      coloring,
+      options);
+
+  EXPECT_EQ(stats.iterations, 3u);
 }
 
 //==============================================================================

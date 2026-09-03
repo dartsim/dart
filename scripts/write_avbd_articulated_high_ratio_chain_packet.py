@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write a validated AVBD articulated high-ratio chain evidence packet."""
+"""Write the historical variational-multibody high-ratio evidence packet."""
 
 from __future__ import annotations
 
@@ -36,6 +36,28 @@ TIP_LINK_MASS = 200.0
 MASS_RATIO = TIP_LINK_MASS / LIGHT_LINK_MASS
 TIME_STEP = 0.005
 REPLAY_SECONDS = 1.0
+
+
+def _evidence_boundary(supported_scope: str) -> dict[str, Any]:
+    return {
+        "artifact_status": "legacy_unbound",
+        "avbd_performance_claim_supported": False,
+        "avbd_solver_evidence": False,
+        "capture_artifacts_accessible": False,
+        "current_build_bound": False,
+        "historical_identifiers_retained": True,
+        "historical_measurements_preserved": True,
+        "measurement_runtime_identity_recorded": False,
+        "plan104_avbd_row_closure_supported": False,
+        "semantic_visual_review_recorded": False,
+        "reason": (
+            "This legacy packet preserves historical hashes and timing metadata "
+            "whose source artifacts and runtime identity counters are unavailable. "
+            "The current fixture selects variational multibody integration, but "
+            "that source audit does not bind the historical measurement."
+        ),
+        "supported_scope": supported_scope,
+    }
 
 
 class AvbdArticulatedHighRatioChainPacketError(RuntimeError):
@@ -234,12 +256,16 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
 def make_packet(capture_manifest: Path, benchmark_json: Path) -> dict[str, Any]:
     return {
         "schema_version": 1,
+        "evidence_boundary": _evidence_boundary(
+            "historical_variational_multibody_capture_hash_and_cpu_metadata"
+        ),
         "packet": "avbd_articulated_high_ratio_chain",
         "scene": SCENE_ID,
         "target": {
             "paper_gap": "50-body pendulum with 50,000:1 mass ratio",
             "scope": (
-                "narrow five-link articulated-chain smoke with a 200:1 heavy tip"
+                "historical five-link variational-multibody smoke with a 200:1 "
+                "heavy tip; not AVBD solver evidence"
             ),
             "complete_paper_reproduction": False,
         },
@@ -269,11 +295,11 @@ def make_packet(capture_manifest: Path, benchmark_json: Path) -> dict[str, Any]:
             ),
         },
         "remaining_gates": [
-            "paper-scale visual artifact and same-hardware comparison for the 50-link 50,000:1 chain",
-            "two-heavy-ball chain visual and invariant",
-            "broad articulated hard-constraint stability coverage",
-            "GPU AVBD row parity and same-hardware benchmark packets",
-            "paper/site/video scene visual and performance packets",
+            "implement an actual AVBD 50-link 50,000:1 high-ratio fixture",
+            "record runtime-derived AVBD solver identity for the replacement",
+            "reproduce the exact paper trajectory and same-hardware comparison",
+            "verify actual AVBD CPU and GPU performance parity",
+            "capture paper/site/video evidence from the actual AVBD fixture",
         ],
     }
 
@@ -290,7 +316,10 @@ def main(argv: list[str]) -> int:
     except AvbdArticulatedHighRatioChainPacketError as exc:
         raise SystemExit(str(exc)) from exc
     write_packet(args.output, packet)
-    print(f"Wrote AVBD articulated high-ratio chain packet: {args.output}")
+    print(
+        "Wrote historical variational-multibody articulated high-ratio "
+        f"chain packet: {args.output}"
+    )
     return 0
 
 

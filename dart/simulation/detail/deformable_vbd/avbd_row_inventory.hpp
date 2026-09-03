@@ -40,6 +40,7 @@
 #include <Eigen/Core>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <span>
 #include <tuple>
@@ -53,8 +54,8 @@ namespace dart::simulation::detail::deformable_vbd {
 
 /// Broad semantic role of one persistent AVBD scalar row. The role is part of
 /// the row key so finite-stiffness spring, contact-normal, self-contact normal,
-/// friction, attachment, finite-stiffness tetrahedral material, joint, motor,
-/// and fracture rows for the same bodies/features never alias each other.
+/// friction, attachment, joint, linear/angular motor, and fracture rows for the
+/// same bodies/features never alias each other.
 enum class AvbdScalarRowRole : std::uint8_t
 {
   Generic = 0,
@@ -62,12 +63,12 @@ enum class AvbdScalarRowRole : std::uint8_t
   ContactNormal,
   SelfContactNormal,
   DeformableSpring,
-  DeformableTet,
   FrictionTangent,
   JointLinear,
   JointAngular,
   RigidDistanceSpring,
-  Motor,
+  MotorLinear,
+  MotorAngular,
   Fracture,
 };
 
@@ -129,13 +130,174 @@ struct AvbdScalarRowDescriptor
   double maxStiffness = std::numeric_limits<double>::infinity();
 };
 
+/// Canonical identity for one persistent rigid-contact tangent anchor.
+///
+/// Unlike a scalar-row key, this identity deliberately excludes the row role
+/// and tangent-axis index. The two scalar tangent rows share one contact
+/// anchor, and changing the tangent basis must not create or duplicate anchor
+/// state.
+struct AvbdContactTangentAnchorKey
+{
+  std::uint64_t objectA = 0;
+  std::uint64_t objectB = 0;
+  std::uint64_t featureA = 0;
+  std::uint64_t featureB = 0;
+  std::uint32_t row = 0;
+};
+
+//==============================================================================
+inline auto avbdContactTangentAnchorKeyTuple(
+    const AvbdContactTangentAnchorKey& key)
+{
+  return std::tuple{
+      key.objectA, key.objectB, key.featureA, key.featureB, key.row};
+}
+
+//==============================================================================
+inline bool operator==(
+    const AvbdContactTangentAnchorKey& lhs,
+    const AvbdContactTangentAnchorKey& rhs)
+{
+  return avbdContactTangentAnchorKeyTuple(lhs)
+         == avbdContactTangentAnchorKeyTuple(rhs);
+}
+
+//==============================================================================
+inline bool operator<(
+    const AvbdContactTangentAnchorKey& lhs,
+    const AvbdContactTangentAnchorKey& rhs)
+{
+  return avbdContactTangentAnchorKeyTuple(lhs)
+         < avbdContactTangentAnchorKeyTuple(rhs);
+}
+
+/// One contact-owned pair of feature-local tangent anchors. The local points
+/// follow the canonical endpoint order encoded by `key`, not the transient
+/// body-A/body-B ordering supplied by collision detection.
+struct AvbdContactTangentAnchorState
+{
+  AvbdContactTangentAnchorKey key;
+  Eigen::Vector3d localPointA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localPointB = Eigen::Vector3d::Zero();
+  bool valid = false;
+  bool sticking = false;
+};
+
+/// Detected material-point identity for one rigid contact-normal row.
+///
+/// This is deliberately separate from `AvbdContactTangentAnchorState`: a
+/// sticking tangent anchor keeps its older feature-local points while the
+/// collision detector's current material point can move. Keeping both states
+/// distinct lets spatial-rank warm starts fail closed without resetting valid
+/// single-contact static-friction anchors.
+struct AvbdRigidContactIdentityState
+{
+  AvbdScalarRowKey key;
+  Eigen::Vector3d localPointA = Eigen::Vector3d::Zero();
+  Eigen::Vector3d localPointB = Eigen::Vector3d::Zero();
+};
+
+/// Axis-independent identity for one deformable friction pair. Static-contact
+/// and self-contact anchors live in separate inventories, so the fields match
+/// the corresponding tangent row key with only the tangent axis removed.
+struct AvbdDeformableTangentAnchorKey
+{
+  std::uint64_t objectA = 0;
+  std::uint64_t objectB = 0;
+  std::uint64_t featureA = 0;
+  std::uint64_t featureB = 0;
+  std::uint32_t row = 0;
+};
+
+//==============================================================================
+inline auto avbdDeformableTangentAnchorKeyTuple(
+    const AvbdDeformableTangentAnchorKey& key)
+{
+  return std::tuple{
+      key.objectA, key.objectB, key.featureA, key.featureB, key.row};
+}
+
+//==============================================================================
+inline bool operator<(
+    const AvbdDeformableTangentAnchorKey& lhs,
+    const AvbdDeformableTangentAnchorKey& rhs)
+{
+  return avbdDeformableTangentAnchorKeyTuple(lhs)
+         < avbdDeformableTangentAnchorKeyTuple(rhs);
+}
+
+//==============================================================================
+inline bool operator==(
+    const AvbdDeformableTangentAnchorKey& lhs,
+    const AvbdDeformableTangentAnchorKey& rhs)
+{
+  return avbdDeformableTangentAnchorKeyTuple(lhs)
+         == avbdDeformableTangentAnchorKeyTuple(rhs);
+}
+
+//==============================================================================
+inline AvbdDeformableTangentAnchorKey makeAvbdDeformableTangentAnchorKey(
+    const AvbdScalarRowKey& key)
+{
+  return AvbdDeformableTangentAnchorKey{
+      key.objectA, key.objectB, key.featureA, key.featureB, key.row};
+}
+
+/// Compact persistent state for one deformable/static friction pair.
+struct AvbdHalfSpaceTangentAnchorState
+{
+  AvbdDeformableTangentAnchorKey key;
+  Eigen::Vector3d accumulatedDisplacement = Eigen::Vector3d::Zero();
+  std::array<Eigen::Vector3d, 2> basis{
+      Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY()};
+  std::uint32_t vertex = 0;
+  bool valid = false;
+  bool sticking = false;
+};
+
+/// Persistent state for one point-triangle or edge-edge friction pair. The
+/// four reference positions reconstruct the prior generalized tangent stencil
+/// for exact dual transport after replay.
+struct AvbdSelfContactTangentAnchorState
+{
+  AvbdDeformableTangentAnchorKey key;
+  Eigen::Vector3d accumulatedDisplacement = Eigen::Vector3d::Zero();
+  std::array<Eigen::Vector3d, 2> basis{
+      Eigen::Vector3d::UnitX(), Eigen::Vector3d::UnitY()};
+  std::array<Eigen::Vector3d, 4> referencePositions{
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::Zero(),
+      Eigen::Vector3d::Zero()};
+  std::array<std::uint32_t, 4> nodes{0, 0, 0, 0};
+  bool isEdgeEdge = false;
+  bool valid = false;
+  bool sticking = false;
+};
+
 /// Warm-start parameters applied when an active row key persists across frames.
 struct AvbdRowWarmStartOptions
 {
   double alpha = 0.99;
   double gamma = 0.99;
+  /// Finite: the dual is scaled by this factor instead of alpha * gamma (a
+  /// post-stabilized schedule keeps it fully with 1.0). NaN: Equation 19.
+  double lambdaRetention = std::numeric_limits<double>::quiet_NaN();
   double maxStiffness = std::numeric_limits<double>::infinity();
+  /// Finite: the family's k_start (AVBD Algorithm 1 line 6) for every row,
+  /// replacing each descriptor's own start stiffness. NaN: the descriptor's.
+  double startStiffness = std::numeric_limits<double>::quiet_NaN();
 };
+
+/// Start stiffness of a row under `options`: the family override when it is
+/// finite, the descriptor's own value otherwise.
+inline double startAvbdDescriptorStiffness(
+    const AvbdScalarRowDescriptor& descriptor,
+    const AvbdRowWarmStartOptions& options)
+{
+  return std::isfinite(options.startStiffness) ? options.startStiffness
+                                               : descriptor.startStiffness;
+}
 
 /// One active row plus its persistent scalar state.
 struct AvbdScalarRowRecord
@@ -164,7 +326,7 @@ inline AvbdScalarRowState initialAvbdScalarRowState(
   AvbdScalarRowState state;
   state.lambda = 0.0;
   state.stiffness = std::min(
-      descriptor.startStiffness,
+      startAvbdDescriptorStiffness(descriptor, options),
       maxAvbdDescriptorStiffness(descriptor, options));
   return state;
 }
@@ -176,18 +338,21 @@ inline AvbdScalarRowState warmStartAvbdScalarRowState(
     const AvbdRowWarmStartOptions& options)
 {
   const double maxStiffness = maxAvbdDescriptorStiffness(descriptor, options);
+  const double startStiffness
+      = startAvbdDescriptorStiffness(descriptor, options);
   if (descriptor.kind == AvbdScalarRowKind::HardConstraint) {
     return warmStartAvbdHardConstraint(
         previous,
-        descriptor.startStiffness,
+        startStiffness,
         options.alpha,
         options.gamma,
-        maxStiffness);
+        maxStiffness,
+        options.lambdaRetention);
   }
 
   AvbdScalarRowState next;
   next.lambda = 0.0;
-  const double lower = std::min(descriptor.startStiffness, maxStiffness);
+  const double lower = std::min(startStiffness, maxStiffness);
   next.stiffness
       = std::clamp(options.gamma * previous.stiffness, lower, maxStiffness);
   return next;
@@ -253,7 +418,10 @@ public:
         for (std::size_t i = 0; i < descriptors.size(); ++i) {
           const AvbdScalarRowState state = warmStartAvbdScalarRowState(
               mRecords[i].state, descriptors[i], options);
-          mRecords[i] = AvbdScalarRowRecord{descriptors[i], state};
+          AvbdScalarRowRecord record;
+          record.descriptor = descriptors[i];
+          record.state = state;
+          mRecords[i] = record;
         }
         return;
       }
@@ -278,7 +446,10 @@ public:
         state
             = warmStartAvbdScalarRowState(previous->state, descriptor, options);
       }
-      mRecords.push_back(AvbdScalarRowRecord{descriptor, state});
+      AvbdScalarRowRecord record;
+      record.descriptor = descriptor;
+      record.state = state;
+      mRecords.push_back(record);
     }
   }
 
@@ -324,7 +495,10 @@ public:
           const AvbdScalarRowDescriptor descriptor = descriptorAt(i);
           const AvbdScalarRowState state = warmStartAvbdScalarRowState(
               mRecords[i].state, descriptor, options);
-          mRecords[i] = AvbdScalarRowRecord{descriptor, state};
+          AvbdScalarRowRecord record;
+          record.descriptor = descriptor;
+          record.state = state;
+          mRecords[i] = record;
         }
         return;
       }
@@ -436,5 +610,138 @@ private:
   RecordVector mPreviousRecords;
   DescriptorVector mDescriptorScratch;
 };
+
+/// Deterministic allocator-backed inventory for one deformable tangent anchor
+/// per two scalar friction rows. Anchor payloads stay out of the scalar row
+/// record because most AVBD row families never use them.
+template <typename Anchor>
+class AvbdDeformableTangentAnchorInventory
+{
+public:
+  using AnchorAllocator = ::dart::common::StlAllocator<Anchor>;
+  using AnchorVector = std::vector<Anchor, AnchorAllocator>;
+
+  AvbdDeformableTangentAnchorInventory() = default;
+
+  explicit AvbdDeformableTangentAnchorInventory(
+      ::dart::common::MemoryAllocator& allocator)
+    : mAnchors(AnchorAllocator{allocator}),
+      mPreviousAnchors(AnchorAllocator{allocator})
+  {
+  }
+
+  template <
+      typename Allocator,
+      typename
+      = std::enable_if_t<std::is_constructible_v<AnchorAllocator, Allocator>>>
+  explicit AvbdDeformableTangentAnchorInventory(const Allocator& allocator)
+    : mAnchors(AnchorAllocator{allocator}),
+      mPreviousAnchors(AnchorAllocator{allocator})
+  {
+  }
+
+  void syncActiveKeys(std::span<const AvbdDeformableTangentAnchorKey> keys)
+  {
+    syncActiveKeysByIndex(
+        keys.size(), [&](std::size_t index) { return keys[index]; });
+  }
+
+  template <typename KeyAt>
+  void syncActiveKeysByIndex(std::size_t keyCount, KeyAt keyAt)
+  {
+    if (keyCount == 0u) {
+      mAnchors.clear();
+      return;
+    }
+
+    if (mAnchors.size() == keyCount) {
+      bool sameOrder = true;
+      for (std::size_t i = 0; i < keyCount; ++i) {
+        if (!(mAnchors[i].key == keyAt(i))) {
+          sameOrder = false;
+          break;
+        }
+      }
+      if (sameOrder) {
+        return;
+      }
+    }
+
+    mPreviousAnchors.clear();
+    mPreviousAnchors.insert(
+        mPreviousAnchors.end(), mAnchors.begin(), mAnchors.end());
+    std::sort(
+        mPreviousAnchors.begin(),
+        mPreviousAnchors.end(),
+        [](const Anchor& lhs, const Anchor& rhs) { return lhs.key < rhs.key; });
+
+    mAnchors.clear();
+    mAnchors.reserve(keyCount);
+    for (std::size_t i = 0; i < keyCount; ++i) {
+      const AvbdDeformableTangentAnchorKey key = keyAt(i);
+      const auto match = std::lower_bound(
+          mPreviousAnchors.begin(),
+          mPreviousAnchors.end(),
+          key,
+          [](const Anchor& anchor,
+             const AvbdDeformableTangentAnchorKey& value) {
+            return anchor.key < value;
+          });
+      if (match != mPreviousAnchors.end() && match->key == key) {
+        mAnchors.push_back(*match);
+      } else {
+        Anchor anchor;
+        anchor.key = key;
+        mAnchors.push_back(anchor);
+      }
+    }
+  }
+
+  void reserve(std::size_t capacity)
+  {
+    mAnchors.reserve(capacity);
+    mPreviousAnchors.reserve(capacity);
+  }
+
+  void clear() noexcept
+  {
+    mAnchors.clear();
+    mPreviousAnchors.clear();
+  }
+
+  [[nodiscard]] std::size_t size() const noexcept
+  {
+    return mAnchors.size();
+  }
+
+  [[nodiscard]] Anchor& operator[](std::size_t index) noexcept
+  {
+    return mAnchors[index];
+  }
+
+  [[nodiscard]] const Anchor& operator[](std::size_t index) const noexcept
+  {
+    return mAnchors[index];
+  }
+
+  [[nodiscard]] AnchorVector& records() noexcept
+  {
+    return mAnchors;
+  }
+
+  [[nodiscard]] const AnchorVector& records() const noexcept
+  {
+    return mAnchors;
+  }
+
+private:
+  AnchorVector mAnchors;
+  AnchorVector mPreviousAnchors;
+};
+
+using AvbdHalfSpaceTangentAnchorInventory
+    = AvbdDeformableTangentAnchorInventory<AvbdHalfSpaceTangentAnchorState>;
+using AvbdSelfContactTangentAnchorInventory
+    = AvbdDeformableTangentAnchorInventory<AvbdSelfContactTangentAnchorState>;
 
 } // namespace dart::simulation::detail::deformable_vbd

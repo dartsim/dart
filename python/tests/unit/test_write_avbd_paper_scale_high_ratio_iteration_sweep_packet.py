@@ -9,9 +9,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = (
-    ROOT
-    / "scripts"
-    / "write_avbd_paper_scale_high_ratio_iteration_sweep_packet.py"
+    ROOT / "scripts" / "write_avbd_paper_scale_high_ratio_iteration_sweep_packet.py"
 )
 
 
@@ -59,9 +57,7 @@ def _benchmark_row(
         "tolerance": tolerance,
         "finite_replay": finite_replay,
         "max_abs_position": (
-            float(budget) * 0.001
-            if max_abs_position is None
-            else max_abs_position
+            float(budget) * 0.001 if max_abs_position is None else max_abs_position
         ),
     }
     if aggregate_name is not None:
@@ -129,21 +125,45 @@ def test_avbd_paper_scale_high_ratio_iteration_sweep_packet_records_plot_data(
     )
 
     packet = json.loads(output.read_text())
-    assert packet["schema_version"] == 2
+    assert packet["schema_version"] == module.LEGACY_SCHEMA_VERSION
     assert packet["packet"] == "avbd_paper_scale_high_ratio_iteration_sweep"
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,
-        "recorded_from": "paper-scale high-ratio iteration benchmark row family",
+        "multibody_integration_family": "variational",
+        "recorded_from": (
+            "static current-source audit only; the historical benchmark does not "
+            "record runtime identity counters"
+        ),
+        "rigid_contact_selection": "not_applicable",
         "rigid_contact_solver": "none",
-        "rigid_point_joint_solver": "avbd",
+        "rigid_point_joint_solver": "none",
+    }
+    assert packet["evidence_boundary"] == {
+        "artifact_status": "legacy_unbound",
+        "avbd_performance_claim_supported": False,
+        "avbd_solver_evidence": False,
+        "capture_artifacts_accessible": False,
+        "current_build_bound": False,
+        "historical_identifiers_retained": True,
+        "historical_measurements_preserved": True,
+        "measurement_runtime_identity_recorded": False,
+        "plan104_avbd_row_closure_supported": False,
+        "semantic_visual_review_recorded": False,
+        "reason": (
+            "This legacy packet preserves historical hashes and timing metadata "
+            "whose source artifacts and runtime identity counters are unavailable. "
+            "The current fixture selects variational multibody integration, but "
+            "that source audit does not bind the historical measurement."
+        ),
+        "supported_scope": "historical_variational_multibody_cpu_metadata_and_plot",
     }
     assert packet["scene"] == "avbd_paper_scale_high_ratio_chain"
     assert packet["target"] == {
         "complete_paper_reproduction": False,
         "paper_gap": "iteration-count sweep for the 50-link 50,000:1 chain",
         "scope": (
-            "benchmark-only max-iteration sweep over the paper-scale "
-            "50-link articulated chain"
+            "historical max-iteration sweep over the paper-scale 50-link "
+            "variational-multibody chain; not AVBD solver evidence"
         ),
     }
     assert packet["scene_invariants"] == {

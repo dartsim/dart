@@ -64,6 +64,16 @@ public:
   [[nodiscard]] std::size_t size() const override;
 
   void queryPairs(std::vector<BroadPhasePair>& out) const override;
+  /// Collect at most ``maxPairs`` overlapping pairs without allowing the
+  /// output vector to grow past that bound.
+  ///
+  /// Returns true only when the complete pair set fits. On overflow the
+  /// output is cleared so callers cannot accidentally consume a truncated
+  /// broad-phase result. Successful output is sorted by canonical object ID,
+  /// matching ``queryPairs()``. Callers that need an allocation-free query
+  /// must reserve ``maxPairs`` elements in ``out`` before calling.
+  [[nodiscard]] bool queryPairsBounded(
+      std::vector<BroadPhasePair>& out, std::size_t maxPairs) const;
   bool visitPairs(const BroadPhasePairVisitor& visitor) const override;
   void buildDebugSnapshot(BroadPhaseDebugSnapshot& out) const override;
 

@@ -34,6 +34,7 @@
 
 #include <dart/simulation/compute/cuda/cuda_runtime.cuh>
 
+#include <array>
 #include <vector>
 
 #include <cstddef>
@@ -128,7 +129,11 @@ void vbdRolloutMassSpringCuda(VbdCudaRolloutProblem& problem);
 /// A flattened tetrahedral Stable Neo-Hookean VBD problem for the GPU: SoA node
 /// state, per-tet topology and rest data, per-vertex incident-tet CSR, and the
 /// vertex-graph coloring. `tetRestShapeInverse` stores each tet's `Dm^{-1}` as
-/// 9 row-major doubles.
+/// 9 row-major doubles. `mu` and `lambda` are the no-log Smith model
+/// coefficients `(muHat, lambdaHat)` returned by
+/// `deformable_vbd::lameFromYoungPoisson()`, not the physical Lame pair. The
+/// engineering conversion rejects auxetic materials before backend dispatch
+/// because this constitutive model is not globally rest-stable for `nu < 0`.
 struct VbdCudaTetProblem
 {
   std::size_t nodeCount = 0;
@@ -148,8 +153,8 @@ struct VbdCudaTetProblem
   std::vector<std::uint32_t> colorOffsets;
   std::vector<std::uint32_t> colorVertices;
 
-  double mu = 0.0;
-  double lambda = 0.0;
+  double mu = 0.0;     ///< No-log Smith muHat.
+  double lambda = 0.0; ///< No-log Smith lambdaHat.
   double timeStep = 0.0;
   std::size_t iterations = 0;
 };
@@ -184,8 +189,8 @@ struct VbdCudaTetRolloutProblem
   std::vector<std::uint32_t> colorVertices;
 
   double gravity[3] = {0.0, 0.0, 0.0};
-  double mu = 0.0;
-  double lambda = 0.0;
+  double mu = 0.0;     ///< No-log Smith muHat.
+  double lambda = 0.0; ///< No-log Smith lambdaHat.
   double timeStep = 0.0;
   std::size_t iterations = 0; ///< Sweeps per step.
   std::size_t stepCount = 0;  ///< Implicit-Euler steps in the rollout.
@@ -201,5 +206,18 @@ struct VbdCudaTetRolloutProblem
 /// per-step pipeline on the GPU for `stepCount` steps, and downloads the final
 /// positions and velocities. Throws on a CUDA error.
 void vbdRolloutTetMeshCuda(VbdCudaTetRolloutProblem& problem);
+
+/// Exercise the VBD device-side symmetric 3x3 block solve directly.
+///
+/// This build-tree-only diagnostic is used by the CUDA regression suite to
+/// verify the exact positive-definite acceptance policy used inside the mass-
+/// spring and tetrahedral sweep kernels. @p hessian stores the symmetric
+/// entries in `(h00, h01, h02, h11, h12, h22)` order. The solve runs in float
+/// when @p useSinglePrecision is true and in double otherwise; its result is
+/// converted back to double for comparison by the host test.
+[[nodiscard]] std::array<double, 3> solveVbdSymmetric3CudaForTesting(
+    const std::array<double, 6>& hessian,
+    const std::array<double, 3>& force,
+    bool useSinglePrecision);
 
 } // namespace dart::simulation::compute::cuda

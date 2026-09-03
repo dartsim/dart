@@ -12,18 +12,35 @@ from pathlib import Path
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from avbd_packet_schema import (  # noqa: E402
     AVBD_PACKET_SCHEMA_VERSION,
-    make_resolved_solver_identity,
+    make_per_benchmark_row_solver_identity,
+    make_resolved_solver_identity_from_benchmark_row,
+    make_source_provenance,
 )
 from write_avbd_demo3d_static_friction_packet import (  # noqa: E402
     _canonical_name,
     _load_json,
     _row_name,
     _sha256,
+)
+
+# Source bytes this benchmark-only packet was produced from: the benchmark
+# fixture, the rigid AVBD row solver it drives, and this writer.
+SOURCE_PATHS = (
+    "dart/simulation/world.cpp",
+    "dart/simulation/world.hpp",
+    "dart/simulation/comps/joint.hpp",
+    "dart/simulation/compute/rigid_body_contact_stage.cpp",
+    "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp",
+    "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp",
+    "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
+    "scripts/avbd_packet_schema.py",
+    "scripts/write_avbd_breakable_joint_scale_packet.py",
 )
 
 DEFAULT_OUTPUT = Path(
@@ -34,11 +51,9 @@ BENCHMARK_ARGS = (1, 8, 32)
 BENCHMARK_TIME_STEP = 0.005
 BENCHMARK_GRAVITY_M_PER_S2 = (0.0, -9.81, 0.0)
 BENCHMARK_BREAK_FORCE_N = 1.0e12
-RESOLVED_SOLVER_IDENTITY = make_resolved_solver_identity(
-    resolved_rigid_contact_family=None,
-    rigid_point_joint_solver="avbd",
-    avbd_rigid_contact_config_emplaced=False,
-    recorded_from="breakable joint scale benchmark row family",
+ROW_IDENTITY_RECORDED_FROM = "breakable joint benchmark runtime identity counters"
+RESOLVED_SOLVER_IDENTITY = make_per_benchmark_row_solver_identity(
+    recorded_from=ROW_IDENTITY_RECORDED_FROM,
 )
 
 
@@ -48,6 +63,7 @@ class Variant:
     benchmark: str
     joint_anchor_scope: str
     row_family: str
+    runtime_family: str
 
 
 VARIANTS = (
@@ -56,24 +72,28 @@ VARIANTS = (
         benchmark="BM_AvbdRigidBreakableJointStep",
         joint_anchor_scope="rigid_body_chain",
         row_family="public free-rigid-body fixed point-joint break/reset",
+        runtime_family="public_avbd_rigid",
     ),
     Variant(
         key="rigid_spherical",
         benchmark="BM_AvbdRigidSphericalBreakableJointStep",
         joint_anchor_scope="rigid_body_chain",
         row_family="public free-rigid-body spherical point-joint break/reset",
+        runtime_family="public_avbd_rigid",
     ),
     Variant(
         key="articulated_fixed_pair",
         benchmark="BM_AvbdArticulatedBreakableJointStep",
         joint_anchor_scope="same_multibody_pair",
         row_family="public same-multibody articulated fixed point-joint break/reset",
+        runtime_family="variational_multibody",
     ),
     Variant(
         key="articulated_world_spherical",
         benchmark="BM_AvbdArticulatedWorldSphericalBreakableJointStep",
         joint_anchor_scope="world_link",
         row_family="public world-link articulated spherical point-joint break/reset",
+        runtime_family="variational_multibody",
     ),
     Variant(
         key="articulated_spherical_pair",
@@ -82,6 +102,7 @@ VARIANTS = (
         row_family=(
             "public same-multibody articulated spherical point-joint break/reset"
         ),
+        runtime_family="variational_multibody",
     ),
 )
 _VARIANT_BY_BENCHMARK = {variant.benchmark: variant for variant in VARIANTS}
@@ -228,6 +249,41 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
             "benchmark JSON missing breakable-joint scale rows: " + ", ".join(missing)
         )
 
+    identity_by_key: dict[tuple[str, int], dict[str, Any]] = {}
+    for variant in VARIANTS:
+        for arg in BENCHMARK_ARGS:
+            timing_row = _timing_row(representative_by_key[(variant.key, arg)])
+            try:
+                identity = make_resolved_solver_identity_from_benchmark_row(
+                    timing_row,
+                    recorded_from=ROW_IDENTITY_RECORDED_FROM,
+                )
+            except ValueError as exc:
+                raise AvbdBreakableJointScalePacketError(str(exc)) from exc
+            actual_family = (
+                "public_avbd_rigid"
+                if identity["rigid_contact_solver"] == "avbd"
+                else "variational_multibody"
+            )
+            if actual_family != variant.runtime_family:
+                raise AvbdBreakableJointScalePacketError(
+                    f"{variant.benchmark}/{arg}: runtime solver identity is "
+                    f"{actual_family}, expected {variant.runtime_family}"
+                )
+            identity_by_key[(variant.key, arg)] = identity
+
+    annotated_packet_rows = []
+    for row in packet_rows:
+        match = _match_variant_arg(row)
+        assert match is not None
+        variant, arg = match
+        annotated_packet_rows.append(
+            {
+                **row,
+                "resolved_solver_identity": identity_by_key[(variant.key, arg)],
+            }
+        )
+
     scale_data = []
     for variant in VARIANTS:
         for arg in BENCHMARK_ARGS:
@@ -238,6 +294,7 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
                     "benchmark": f"{variant.benchmark}/{arg}",
                     "breakable_joints": arg,
                     "joint_anchor_scope": variant.joint_anchor_scope,
+                    "resolved_solver_identity": identity_by_key[(variant.key, arg)],
                     "cpu_time_per_step_ns": _finite_counter(
                         timing_row, "cpu_time", variant.benchmark
                     ),
@@ -253,7 +310,7 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
         "benchmark": "avbd_breakable_joint_scale",
         "benchmarks": [variant.benchmark for variant in VARIANTS],
         "context": _context(data),
-        "rows": packet_rows,
+        "rows": annotated_packet_rows,
         "scale_data": scale_data,
         "invariants": {
             "breakable_joints": list(BENCHMARK_ARGS),
@@ -271,6 +328,7 @@ def make_packet(benchmark_json: Path) -> dict[str, Any]:
     return {
         "schema_version": AVBD_PACKET_SCHEMA_VERSION,
         "resolved_solver_identity": RESOLVED_SOLVER_IDENTITY,
+        "source_provenance": make_source_provenance(REPO_ROOT, SOURCE_PATHS),
         "packet": "avbd_breakable_joint_scale",
         "scene": "avbd_breakable_joint_scale",
         "target": {

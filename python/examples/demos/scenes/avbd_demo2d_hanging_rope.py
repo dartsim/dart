@@ -10,6 +10,7 @@ import numpy as np
 import dartpy as dart
 import dartpy as sx
 
+from .._avbd_demo2d_plane import plane_locked_pre_step
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
@@ -17,7 +18,7 @@ _TIME_STEP = 1.0 / 60.0
 _GRAVITY = -10.0
 _ROPE_LINKS = 50
 _ROPE_JOINTS = _ROPE_LINKS - 1
-_THICKNESS = 0.2
+_THICKNESS = 1.0
 _REGULAR_SIZE_2D = np.array([0.5, 1.0])
 _REGULAR_SIZE = np.array([0.5, 1.0, _THICKNESS])
 _HEAVY_SIZE = 10.0
@@ -161,7 +162,15 @@ def _anchor_world_position(body: sx.RigidBody, local_anchor: np.ndarray) -> np.n
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, _GRAVITY, 0.0))
+    world = sx.World(
+        time_step=_TIME_STEP,
+        gravity=(0.0, _GRAVITY, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+        rigid_constraint_options=sx.RigidConstraintOptions(
+            iterations=_SOURCE_ROW["solver_defaults"]["iterations"]
+        ),
+    )
 
     links: list[sx.RigidBody] = []
     link_sizes: list[np.ndarray] = []
@@ -252,11 +261,12 @@ def build() -> SceneSetup:
 
     return SceneSetup(
         world=bridge.render_world,
-        pre_step=bridge.pre_step,
+        pre_step=plane_locked_pre_step(bridge, links),
         force_drag=bridge.force_drag,
         panels=[ScenePanel("AVBD Demo2D Hanging Rope", build_panel)],
         info={
             "sx_world": world,
+            "replay_live_step_is_stateless": True,
             "links": links,
             "link_sizes": link_sizes,
             "joints": joints,

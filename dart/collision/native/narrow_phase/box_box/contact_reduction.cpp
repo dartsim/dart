@@ -41,6 +41,53 @@ namespace {
 
 constexpr double kDuplicateDistanceSq = 1e-14;
 
+[[nodiscard]] FixedContactCandidates uniqueCandidatesFixed(
+    const FixedContactCandidates& candidates)
+{
+  FixedContactCandidates unique;
+
+  for (const auto& candidate : candidates) {
+    bool duplicate = false;
+    for (std::size_t i = 0; i < unique.count; ++i) {
+      auto& accepted = unique.values[i];
+      if ((candidate.position - accepted.position).squaredNorm()
+          <= kDuplicateDistanceSq) {
+        accepted.depth = std::max(accepted.depth, candidate.depth);
+        duplicate = true;
+        break;
+      }
+    }
+
+    if (!duplicate) {
+      unique.values[unique.count++] = candidate;
+    }
+  }
+
+  return unique;
+}
+
+[[nodiscard]] std::size_t deepestCandidateIndexFixed(
+    const FixedContactCandidates& candidates)
+{
+  std::size_t index = 0;
+  double depth = -std::numeric_limits<double>::infinity();
+  for (std::size_t i = 0; i < candidates.count; ++i) {
+    if (candidates.values[i].depth > depth) {
+      depth = candidates.values[i].depth;
+      index = i;
+    }
+  }
+  return index;
+}
+
+void eraseCandidate(FixedContactCandidates& candidates, std::size_t index)
+{
+  for (std::size_t i = index + 1u; i < candidates.count; ++i) {
+    candidates.values[i - 1u] = candidates.values[i];
+  }
+  --candidates.count;
+}
+
 [[nodiscard]] std::vector<ContactCandidate> uniqueCandidates(
     const std::vector<ContactCandidate>& candidates)
 {
@@ -81,6 +128,52 @@ constexpr double kDuplicateDistanceSq = 1e-14;
 }
 
 } // namespace
+
+FixedContactCandidates reduceContactCandidatesFixed(
+    const FixedContactCandidates& candidates, std::size_t maxContacts)
+{
+  if (maxContacts == 0u || candidates.empty()) {
+    return {};
+  }
+
+  FixedContactCandidates remaining = uniqueCandidatesFixed(candidates);
+  if (remaining.size() <= maxContacts) {
+    return remaining;
+  }
+
+  FixedContactCandidates selected;
+  const std::size_t deepestIndex = deepestCandidateIndexFixed(remaining);
+  selected.values[selected.count++] = remaining.values[deepestIndex];
+  eraseCandidate(remaining, deepestIndex);
+
+  while (selected.size() < maxContacts && !remaining.empty()) {
+    std::size_t bestIndex = 0;
+    double bestDistanceSq = -1.0;
+    double bestDepth = -std::numeric_limits<double>::infinity();
+
+    for (std::size_t i = 0; i < remaining.count; ++i) {
+      double minDistanceSq = std::numeric_limits<double>::infinity();
+      for (const auto& accepted : selected) {
+        minDistanceSq = std::min(
+            minDistanceSq,
+            (remaining.values[i].position - accepted.position).squaredNorm());
+      }
+
+      if (minDistanceSq > bestDistanceSq
+          || (minDistanceSq == bestDistanceSq
+              && remaining.values[i].depth > bestDepth)) {
+        bestDistanceSq = minDistanceSq;
+        bestDepth = remaining.values[i].depth;
+        bestIndex = i;
+      }
+    }
+
+    selected.values[selected.count++] = remaining.values[bestIndex];
+    eraseCandidate(remaining, bestIndex);
+  }
+
+  return selected;
+}
 
 std::vector<ContactCandidate> reduceContactCandidates(
     const std::vector<ContactCandidate>& candidates, std::size_t maxContacts)

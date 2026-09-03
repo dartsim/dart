@@ -31,6 +31,7 @@
  */
 
 #include <dart/collision/native/narrow_phase/box_box.hpp>
+#include <dart/collision/native/narrow_phase/box_box/face_clip.hpp>
 #include <dart/collision/native/narrow_phase/box_box/sat.hpp>
 #include <dart/collision/native/shapes/shape.hpp>
 #include <dart/collision/native/types.hpp>
@@ -807,17 +808,24 @@ TEST(BoxBox, RotatedFacePatchReductionRespectsContactLimit)
           const char* label) {
         ASSERT_GE(result.numContacts(), 1u) << label;
         ASSERT_LE(result.numContacts(), option.maxNumContacts) << label;
+        // The tilted incident face meets the reference plane at an angle, so
+        // each clipped vertex carries its own depth; the deepest one is the
+        // separating-axis penetration.
+        double deepest = 0.0;
         for (std::size_t i = 0; i < result.numContacts(); ++i) {
           const auto& contact = result.getContact(i);
           EXPECT_TRUE(contact.normal.isApprox(expectedNormal, 1e-12))
               << label << " normal=" << contact.normal.transpose();
-          EXPECT_NEAR(contact.depth, depth, 1e-12) << label;
+          EXPECT_GE(contact.depth, 0.0) << label;
+          EXPECT_LE(contact.depth, depth + 1e-12) << label;
+          deepest = std::max(deepest, contact.depth);
           expectPointInsideBox(contact.position, boxA, 1e-2, label);
           expectPointInsideBox(contact.position, boxB, 1e-2, label);
           EXPECT_GE(contact.position.z(), expectedContactZ - 1e-12) << label;
           EXPECT_LE(contact.position.x(), halfExtent + 1e-12) << label;
           EXPECT_GE(contact.position.x(), -halfExtent - 1e-12) << label;
         }
+        EXPECT_NEAR(deepest, depth, 1e-12) << label;
       });
 }
 
@@ -1285,4 +1293,102 @@ TEST(BoxBoxBatch, boxbox_batch_determinism_vs_single)
         option));
     expectCollisionResultExactlyEqual(singleResult, batchResults[i]);
   }
+}
+
+//==============================================================================
+// The clipped incident face must stay inside the bound FixedContactCandidates
+// proves, across every relative pose. Overflowing that buffer used to throw,
+// and the buffer is filled from collision worker threads that have no handler,
+// so an overflow terminated the process instead of reporting a failure.
+TEST(BoxBox, FaceClipNeverExceedsItsProvenVertexBound)
+{
+  using box_box::BoxData;
+  using box_box::FixedContactCandidates;
+  using box_box::SatResult;
+
+  static_assert(
+      FixedContactCandidates::kMaxClippedFaceVertexCount
+      == FixedContactCandidates::kIncidentFaceVertexCount
+             + FixedContactCandidates::kClipPlaneCount);
+  static_assert(
+      FixedContactCandidates::kMaxClippedFaceVertexCount
+      <= FixedContactCandidates::kCapacity);
+
+  const auto candidateCount = [](const BoxData& box1, const BoxData& box2) {
+    SatResult sat;
+    if (!box_box::computeBoxBoxSat(box1, box2, sat)) {
+      return std::size_t{0};
+    }
+    return box_box::computeBoxBoxContactCandidatesFixed(box1, box2, sat).size();
+  };
+
+  std::size_t maxCandidates = 0;
+  std::size_t overlappingPoses = 0;
+
+  // Deeply interpenetrating cubes at every axis-aligned and diagonal
+  // orientation: every face of one box cuts the other, which is the case that
+  // drives the clipped polygon to its largest vertex count.
+  BoxData reference;
+  reference.halfExtents = Eigen::Vector3d(1.0, 1.0, 1.0);
+  constexpr double pi = std::numbers::pi_v<double>;
+  const std::array<Eigen::Vector3d, 4> axes{
+      Eigen::Vector3d::UnitX(),
+      Eigen::Vector3d::UnitY(),
+      Eigen::Vector3d::UnitZ(),
+      Eigen::Vector3d(1.0, 1.0, 1.0).normalized()};
+  for (const auto& axis : axes) {
+    for (int step = 0; step <= 32; ++step) {
+      const double angle = pi * static_cast<double>(step) / 32.0;
+      for (const double offset : {0.0, 0.05, 0.5, 1.2, 1.9}) {
+        BoxData incident;
+        incident.halfExtents = Eigen::Vector3d(1.1, 0.9, 1.3);
+        incident.rotation = Eigen::AngleAxisd(angle, axis).toRotationMatrix();
+        incident.center = Eigen::Vector3d(offset, 0.5 * offset, -0.3 * offset);
+        const std::size_t count = candidateCount(reference, incident);
+        if (count > 0) {
+          ++overlappingPoses;
+        }
+        maxCandidates = std::max(maxCandidates, count);
+      }
+    }
+  }
+
+  // Randomized poses, including near-tangent faces where the inside test's
+  // tolerance is what could report spurious plane crossings.
+  std::mt19937 rng(20260901u);
+  std::uniform_real_distribution<double> offsetDist(-2.2, 2.2);
+  std::uniform_real_distribution<double> angleDist(-pi, pi);
+  std::uniform_real_distribution<double> extentDist(0.2, 2.0);
+  for (int trial = 0; trial < 20000; ++trial) {
+    BoxData box1;
+    box1.halfExtents
+        = Eigen::Vector3d(extentDist(rng), extentDist(rng), extentDist(rng));
+    box1.rotation
+        = Eigen::AngleAxisd(
+              angleDist(rng),
+              Eigen::Vector3d(offsetDist(rng), offsetDist(rng), offsetDist(rng))
+                  .normalized())
+              .toRotationMatrix();
+
+    BoxData box2;
+    box2.halfExtents
+        = Eigen::Vector3d(extentDist(rng), extentDist(rng), extentDist(rng));
+    box2.rotation
+        = Eigen::AngleAxisd(
+              angleDist(rng),
+              Eigen::Vector3d(offsetDist(rng), offsetDist(rng), offsetDist(rng))
+                  .normalized())
+              .toRotationMatrix();
+    box2.center = Eigen::Vector3d(offsetDist(rng), offsetDist(rng), 0.0);
+
+    const std::size_t count = candidateCount(box1, box2);
+    if (count > 0) {
+      ++overlappingPoses;
+    }
+    maxCandidates = std::max(maxCandidates, count);
+  }
+
+  EXPECT_GT(overlappingPoses, 1000u);
+  EXPECT_LE(maxCandidates, FixedContactCandidates::kMaxClippedFaceVertexCount);
+  EXPECT_LE(maxCandidates, FixedContactCandidates::kCapacity);
 }

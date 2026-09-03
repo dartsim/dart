@@ -572,6 +572,55 @@ TEST(AabbTreeBroadPhase, QueryPairsWithOutput)
   EXPECT_EQ(out[0].second, 1);
 }
 
+TEST(AabbTreeBroadPhase, BoundedPairsAcceptExactCapacityAndRejectCapPlusOne)
+{
+  AabbTreeBroadPhase bp;
+  const Aabb shared(Eigen::Vector3d(-1, -1, -1), Eigen::Vector3d(1, 1, 1));
+  for (std::size_t id = 0; id < 4u; ++id) {
+    bp.add(id, shared);
+  }
+
+  std::vector<BroadPhasePair> out;
+  out.reserve(6u);
+  EXPECT_TRUE(bp.queryPairsBounded(out, 6u));
+  ASSERT_EQ(out.size(), 6u);
+  EXPECT_TRUE(std::is_sorted(out.begin(), out.end()));
+  EXPECT_EQ(out.front(), BroadPhasePair(0u, 1u));
+  EXPECT_EQ(out.back(), BroadPhasePair(2u, 3u));
+
+  const auto reservedCapacity = out.capacity();
+  EXPECT_FALSE(bp.queryPairsBounded(out, 5u));
+  EXPECT_TRUE(out.empty());
+  EXPECT_EQ(out.capacity(), reservedCapacity);
+}
+
+TEST(AabbTreeBroadPhase, BoundedPairsRemainDeterministicAfterTreeUpdates)
+{
+  AabbTreeBroadPhase bp;
+  const Aabb separated(
+      Eigen::Vector3d(10, 10, 10), Eigen::Vector3d(11, 11, 11));
+  const Aabb shared(Eigen::Vector3d(-1, -1, -1), Eigen::Vector3d(1, 1, 1));
+  for (std::size_t id = 0; id < 5u; ++id) {
+    bp.add(id, separated);
+  }
+
+  std::vector<BroadPhasePair> first;
+  std::vector<BroadPhasePair> second;
+  first.reserve(10u);
+  second.reserve(10u);
+  for (std::size_t id = 0; id < 5u; ++id) {
+    bp.update(id, shared);
+  }
+  ASSERT_TRUE(bp.queryPairsBounded(first, 10u));
+
+  for (std::size_t id = 0; id < 5u; ++id) {
+    bp.update(id, separated);
+    bp.update(id, shared);
+  }
+  ASSERT_TRUE(bp.queryPairsBounded(second, 10u));
+  EXPECT_EQ(second, first);
+}
+
 TEST(AabbTreeBroadPhase, VisitPairsCanStopEarly)
 {
   AabbTreeBroadPhase bp;

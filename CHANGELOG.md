@@ -192,6 +192,53 @@ compatibility remains on the active DART 6 LTS branch._
   parent) joint frame is identity. Guarded by an equivalence regression test.
 - Added and hardened DART 7 deformable, VBD, AVBD, FEM, IPC/barrier, and
   variational solver paths behind the `World` and executor model.
+- Added opt-in experimental fixed-penalty VBD and augmented-Lagrangian AVBD
+  rigid-body solver families to the DART 7 `World` C++ and dartpy APIs, with
+  typed constraints, state serialization/replay, fail-closed unsupported
+  configurations, independently owned Sequential Impulse hard rigid
+  constraints, and publication-shaped Figure 13 evidence. Public AVBD hard
+  joints follow the paper's regularized constraint schedule (5 % of a
+  pre-existing violation per step), warm-started rigid friction duals are
+  projected onto their Coulomb cone, multi-point contact manifolds keep their
+  continuation across small per-step motion, and compatibility distance
+  springs keep one paper-profile schedule across solver-family crossings.
+  The public AVBD family selects one named, immutable parameter profile
+  (`RigidAvbdParameterProfile`: the paper's Table 2 by default, or the pinned
+  2D/3D reference-demo defaults), records it in the resolved configuration,
+  and binds it into replay and binary checkpoints (format 36). The two
+  source profiles reproduce the pinned sources' rules, verified against
+  headless builds of those sources: PENALTY_MIN/PENALTY_MAX for every row,
+  the Algorithm 1 adaptive initial guess (with a projected-velocity history
+  in the warm-start replay state), the collision margin, the joint
+  `torqueArm` scale, the sources' Coulomb-cone rules, feature-only manifold
+  continuation, and the 2D source's post-stabilization sweep. The default
+  profile is `MassScaledReference`: the 3D source's rules with every contact
+  and joint row starting at its reduced mass over dt^2, so resting
+  penetration is mass-independent and light hard-jointed bodies fall freely;
+  `Paper2025Table2` keeps its Table 2 constants, DART's 1e5 row start, and the
+  step-start sweep origin, and the Figure 13 scenes select it explicitly.
+  The source-demo scenes select their own reference profile and the sources'
+  iteration count, the 2D ports lock their bodies to the plane, and their
+  rows are re-derived from the source runs. The box-box face clip keeps each
+  incident vertex within a skin of the reference plane with its own depth
+  instead of clipping against that plane (a resting box no longer emits a
+  crossing vertex that slides along its face edge every step), box contact
+  features keep corners and edges as corners and edges, and the 2D source's
+  static-friction anchor rule is a profile field, so stacked boxes on a slope
+  hold their static friction like the reference. Machine-checked row-bound
+  evidence contracts keep full CPU/CUDA paper parity explicitly open.
+  ([#3432](https://github.com/dartsim/dart/pull/3432))
+- Added bounded, fail-closed DART 7 contact storage: `World` construction
+  options cap the baked rigid collision candidate-pair and contact buffers
+  (automatic limits reject at the complete shape-pair envelope while reserving
+  storage only up to a fixed budget), and deformable bodies expose
+  `surfaceContactCandidateCapacity`. The automatic deformable
+  policy reserves the exact valid point-triangle/edge-edge pair bound of the
+  frozen topology, so in-budget scenes step without allocating; above the
+  65,536-candidate reserve budget it grows and reports
+  `DeformableSolverDiagnostics::surfaceContactCandidateOverflowCount`, while
+  explicit capacities always fail closed.
+  ([#3432](https://github.com/dartsim/dart/pull/3432))
 - Added compute-executor and backend-boundary work so CPU threading, optional
   CUDA experiments, and future accelerator sidecars do not leak into the default
   public API.

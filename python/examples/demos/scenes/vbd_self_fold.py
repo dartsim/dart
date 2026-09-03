@@ -26,6 +26,12 @@ _LAYER_SPACING = 0.09
 _BOTTOM_HEIGHT = 0.0
 _TOP_INITIAL_HEIGHT = 0.07
 
+# Strict all-pairs bound for both disconnected grid surfaces: 74 points, 104
+# triangles, and 176 unique edges produce 7,384 nonincident PT plus 14,682
+# nonadjacent EE pairs. The explicit cap therefore remains sufficient when the
+# initially separated layers form their delayed active set.
+_SURFACE_CONTACT_CANDIDATE_CAPACITY = 22_066
+
 
 def _add_layer(state, base, side, spacing, height, mass, is_fixed):
     """Append a `side`x`side` cloth grid (nodes, springs, surface triangles) to
@@ -101,6 +107,9 @@ def _make_two_layer_options():
     options.fixed_nodes = fixed
     options.edges = edges
     options.surface_triangles = triangles
+    options.surface_contact_candidate_capacity = (
+        _SURFACE_CONTACT_CANDIDATE_CAPACITY
+    )
     options.edge_stiffness = 300.0
     options.damping = 0.8
     return options
@@ -170,7 +179,7 @@ def build() -> SceneSetup:
         diagnostics = getattr(world, "last_deformable_solver_diagnostics", None)
         if diagnostics is not None:
             builder.text(
-                f"solver iters: {diagnostics.solver_iterations} | "
+                f"VBD sweeps: {diagnostics.vbd_sweeps} | "
                 f"self contacts: {diagnostics.self_contact_barrier_active_contacts}"
             )
             min_distance = float(diagnostics.min_active_contact_distance)

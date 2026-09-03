@@ -183,6 +183,31 @@ void validateInertia(const Eigen::Matrix3d& inertia)
       "RigidBody inertia must be symmetric positive definite");
 }
 
+//==============================================================================
+bool isImmobilePublicVbdObstacle(
+    const dart::simulation::detail::WorldRegistry& registry,
+    entt::entity entity)
+{
+  if (!registry.any_of<
+          dart::simulation::comps::DeformableGroundBarrierTag,
+          dart::simulation::comps::DeformableSurfaceCcdObstacleTag>(entity)) {
+    return false;
+  }
+
+  const auto configs
+      = registry.view<dart::simulation::comps::DeformableVbdConfig>();
+  for (const entt::entity configEntity : configs) {
+    const auto& config
+        = configs.get<dart::simulation::comps::DeformableVbdConfig>(
+            configEntity);
+    if (config.enabled && config.requireVbdExecution
+        && config.contactStiffness > 0.0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // namespace
 
 namespace dart::simulation {
@@ -228,10 +253,15 @@ void RigidBody::setTransform(const Eigen::Isometry3d& transform)
       "RigidBody transform rotation must be orthonormal");
 
   auto& registry = dart::simulation::detail::registryOf(*getWorld());
-  auto& freeFrame = registry.get<comps::FreeFrameProperties>(
-      detail::toRegistryEntity(getEntity()));
-  auto& rigidTransform
-      = registry.get<comps::Transform>(detail::toRegistryEntity(getEntity()));
+  const entt::entity entity = detail::toRegistryEntity(getEntity());
+  DART_SIMULATION_THROW_T_IF(
+      getWorld()->isSimulationMode()
+          && isImmobilePublicVbdObstacle(registry, entity)
+          && !getTransform().matrix().isApprox(transform.matrix(), 0.0),
+      InvalidOperationException,
+      "A public deformable VBD obstacle cannot move after simulation entry");
+  auto& freeFrame = registry.get<comps::FreeFrameProperties>(entity);
+  auto& rigidTransform = registry.get<comps::Transform>(entity);
 
   const Eigen::Isometry3d parentTransform = getParentFrame().getTransform();
   freeFrame.localTransform = parentTransform.inverse() * transform;
@@ -310,9 +340,13 @@ void RigidBody::setMass(double mass)
 
   validateMass(mass);
 
-  dart::simulation::detail::registryOf(*getWorld())
-      .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
-      .mass = mass;
+  auto& properties
+      = dart::simulation::detail::registryOf(*getWorld())
+            .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()));
+  if (properties.mass == mass) {
+    return;
+  }
+  properties.mass = mass;
   getWorld()->markModelChanged();
 }
 
@@ -335,9 +369,13 @@ void RigidBody::setInertia(const Eigen::Matrix3d& inertia)
 
   validateInertia(inertia);
 
-  dart::simulation::detail::registryOf(*getWorld())
-      .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()))
-      .inertia = inertia;
+  auto& properties
+      = dart::simulation::detail::registryOf(*getWorld())
+            .get<comps::MassProperties>(detail::toRegistryEntity(getEntity()));
+  if ((properties.inertia.array() == inertia.array()).all()) {
+    return;
+  }
+  properties.inertia = inertia;
   getWorld()->markModelChanged();
 }
 
@@ -563,6 +601,13 @@ void RigidBody::setStatic(bool isStatic)
 
   auto& registry = dart::simulation::detail::registryOf(*getWorld());
   const auto entity = detail::toRegistryEntity(getEntity());
+  const bool wasStatic = registry.all_of<comps::StaticBodyTag>(entity);
+  const bool wasKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
+  const bool changed = isStatic ? (!wasStatic || wasKinematic) : wasStatic;
+  if (!changed) {
+    return;
+  }
+
   if (isStatic) {
     registry.remove<comps::KinematicBodyTag>(entity);
     registry.emplace_or_replace<comps::StaticBodyTag>(entity);
@@ -590,6 +635,14 @@ void RigidBody::setKinematic(bool isKinematic)
 
   auto& registry = dart::simulation::detail::registryOf(*getWorld());
   const auto entity = detail::toRegistryEntity(getEntity());
+  const bool wasKinematic = registry.all_of<comps::KinematicBodyTag>(entity);
+  const bool wasStatic = registry.all_of<comps::StaticBodyTag>(entity);
+  const bool changed
+      = isKinematic ? (!wasKinematic || wasStatic) : wasKinematic;
+  if (!changed) {
+    return;
+  }
+
   if (isKinematic) {
     // Kinematic and static are mutually exclusive: a kinematic body is advanced
     // by its prescribed velocity, not held immovable.
@@ -598,6 +651,7 @@ void RigidBody::setKinematic(bool isKinematic)
   } else {
     registry.remove<comps::KinematicBodyTag>(entity);
   }
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================
@@ -703,6 +757,7 @@ void RigidBody::setCollisionShape(const CollisionShape& shape)
   geometry.revision = existing ? existing->revision + 1 : 1;
   registry.emplace_or_replace<comps::CollisionGeometry>(
       detail::toRegistryEntity(getEntity()), geometry);
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================
@@ -718,6 +773,7 @@ void RigidBody::addCollisionShape(const CollisionShape& shape)
       detail::toRegistryEntity(getEntity()));
   geometry.shapes.push_back(shape);
   ++geometry.revision;
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================
@@ -729,6 +785,18 @@ void RigidBody::setDeformableObstaclePolicy(
 
   auto& registry = dart::simulation::detail::registryOf(*getWorld());
   const auto entity = detail::toRegistryEntity(getEntity());
+  const DeformableObstaclePolicy current{
+      .groundBarrier
+      = registry.all_of<comps::DeformableGroundBarrierTag>(entity),
+      .surfaceObstacle
+      = registry.all_of<comps::DeformableSurfaceCcdObstacleTag>(entity),
+      .barrierOnly
+      = registry.all_of<comps::DeformableObstacleNoCcdTag>(entity)};
+  if (current.groundBarrier == policy.groundBarrier
+      && current.surfaceObstacle == policy.surfaceObstacle
+      && current.barrierOnly == policy.barrierOnly) {
+    return;
+  }
 
   if (policy.groundBarrier) {
     registry.get_or_emplace<comps::DeformableGroundBarrierTag>(entity);
@@ -747,6 +815,7 @@ void RigidBody::setDeformableObstaclePolicy(
   } else {
     registry.remove<comps::DeformableObstacleNoCcdTag>(entity);
   }
+  getWorld()->markModelChanged();
 }
 
 //==============================================================================

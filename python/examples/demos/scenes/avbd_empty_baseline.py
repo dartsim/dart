@@ -105,7 +105,12 @@ def _axis_transform(axis: np.ndarray) -> np.ndarray:
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_SOURCE_TIME_STEP, gravity=(0.0, 0.0, _SOURCE_GRAVITY))
+    world = sx.World(
+        time_step=_SOURCE_TIME_STEP,
+        gravity=(0.0, 0.0, _SOURCE_GRAVITY),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.PAPER_2025_TABLE_2,
+    )
     world.multibody_options = sx.MultibodyOptions(
         integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL
     )

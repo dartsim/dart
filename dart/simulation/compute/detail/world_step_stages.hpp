@@ -129,6 +129,15 @@ struct DeformableSolverStats
   // evaluation), matching the cumulative semantics of solverIterations; it is
   // not the active-set size of a single iteration.
   std::size_t selfContactBarrierActiveContacts = 0;
+  // Maximum construction policy, baked resolved cap, and emitted combined
+  // PT/EE active-set size across deformable bodies/builds in this step.
+  std::size_t surfaceContactCandidateCapacityRequested = 0;
+  std::size_t surfaceContactCandidateCapacityResolved = 0;
+  std::size_t surfaceContactCandidateCountPeak = 0;
+  // Candidates emitted beyond a resolved capacity by builds that were allowed
+  // to grow (automatic policy above the reserve budget). Zero for every
+  // fail-closed build.
+  std::size_t surfaceContactCandidateOverflowCount = 0;
   std::size_t projectedNewtonSteps = 0;
   std::size_t projectedNewtonFallbacks = 0;
   // Sparse-direct factorization accounting retained for diagnostics
@@ -194,7 +203,6 @@ struct DeformableSolverStats
   std::size_t vbdAvbdFrictionTangentRows = 0;
   std::size_t vbdAvbdAttachmentRows = 0;
   std::size_t vbdAvbdFiniteStiffnessRows = 0;
-  std::size_t vbdAvbdFiniteStiffnessTetRows = 0;
   double vbdResidualNormSquared = 0.0;
   // Contact closest-approach diagnostic at the converged iterate, folded across
   // the step's deformable bodies. minActiveContactDistance is the smallest
@@ -374,17 +382,24 @@ public:
 /// Resolves contacts between free rigid bodies. Static bodies (non-positive
 /// mass) act as immovable.
 ///
-/// Two solver paths are available, selected per-World via
-/// `WorldOptions::contactSolverMethod`:
+/// The selected `WorldOptions::rigidBodySolver` family owns the top-level
+/// contact formulation. `RigidBodySolver::Vbd` and `RigidBodySolver::Avbd`
+/// route every supported active free-rigid contact through fixed-penalty VBD
+/// and augmented VBD, respectively. Under the default
+/// `RigidBodySolver::SequentialImpulse` family, two contact-policy paths are
+/// available via `WorldOptions::contactSolverMethod`:
 ///   - `SequentialImpulse` (default): the long-standing sequential normal +
-///     friction impulse solve with positional correction.
+///     friction impulse solve, interleaved with solver-owned hard rigid
+///     pair-constraint rows, with positional correction/post-stabilization.
 ///   - `BoxedLcp`: an opt-in boxed-LCP normal/friction solve via the pivoting
-///     Dantzig solver. Articulated-link contacts are handled by the unified
-///     constraint/contact path, not by this free-rigid stage.
+///     Dantzig solver; hard rigid pair constraints still use their
+///     sequential-impulse rows. Articulated-link contacts are handled by the
+///     unified constraint/contact path, not by this free-rigid stage.
 ///
-/// Internal PLAN-104 AVBD work can also opt specific rigid bodies into the
-/// private `RigidAvbdContactConfig` row projection without exposing AVBD row
-/// storage or solver registries through the facade.
+/// Internal PLAN-104 compatibility tests may still opt specific rigid
+/// contacts and experimental distance springs into private AVBD projection
+/// while the public family remains sequential impulse. Public hard pair
+/// constraints never use that compatibility path.
 class DART_SIMULATION_API RigidBodyContactStage final : public WorldStepStage
 {
 public:
@@ -395,12 +410,24 @@ public:
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void preflight(World& world) override;
   void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;
 
+  void setIterations(std::size_t iterations) noexcept;
   [[nodiscard]] std::size_t getIterations() const noexcept;
 
 private:
+  friend class ::dart::simulation::World;
+
+  [[nodiscard]] avbd_replay::RigidAvbdWarmStartReplayState
+  captureAvbdWarmStartReplayState(common::MemoryAllocator& allocator) const;
+  void restoreAvbdWarmStartReplayState(
+      const avbd_replay::RigidAvbdWarmStartReplayState& replayState);
+  void clearAvbdWarmStartContinuationState() noexcept;
+  void clearSequentialImpulseOwnedAvbdWarmStartContinuationState() noexcept;
+  [[nodiscard]] bool hasAnyAvbdWarmStartContinuationState() const noexcept;
+
   struct AvbdScratch;
   struct ContactScratch;
   struct AvbdScratchDeleter
@@ -592,6 +619,7 @@ public:
 
   [[nodiscard]] std::string_view getName() const noexcept override;
   [[nodiscard]] ComputeStageMetadata getMetadata() const noexcept override;
+  void preflight(World& world) override;
   /// Pre-reserve per-body deformable solver scratch before baked steps.
   void prepare(World& world) override;
   void execute(World& world, ComputeExecutor& executor) override;

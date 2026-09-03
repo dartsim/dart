@@ -39,7 +39,7 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
 
     lines = result.stdout.strip().splitlines()
     # One bounded command per curated DART 7 World surface.
-    assert len(lines) == 6
+    assert len(lines) == 7
     assert all("scripts/run_cpp_benchmark.py" in line for line in lines)
     assert all("--benchmark_out_format=json" in line for line in lines)
     assert all("--benchmark_min_time=1ms" in line for line in lines)
@@ -102,16 +102,23 @@ def test_dashboard_surface_runner_dry_run_lists_bounded_specs(tmp_path):
     assert "BM_AvbdDemo3dSoftBodyStep$" in result.stdout
     assert "BM_AvbdDemo3dBridgeStep$" in result.stdout
     assert "BM_AvbdDemo3dBreakableStep$" in result.stdout
+    assert "dashboard_variational_world.json" in result.stdout
     assert "BM_AvbdArticulatedHighRatioChainStep$" in result.stdout
     assert "BM_AvbdPaperScaleHighRatioChainStep$" in result.stdout
     assert "BM_AvbdPaperScaleHighRatioChainIterationSweep/.*" in result.stdout
     assert (
-        "BM_Avbd(Rigid(FixedJoint|RevoluteMotor|PrismaticMotor|BreakableJoint"
-        "|SphericalBreakableJoint)"
-        "|Articulated((Revolute|World(Revolute|Prismatic)Breakable"
-        "|PrismaticBreakable|Prismatic|Breakable)Motor"
-        "|BreakableJoint|WorldSphericalBreakableJoint"
-        "|SphericalPairBreakableJoint))Step/.*"
+        "BM_AvbdRigid(FixedJoint|RevoluteMotor|PrismaticMotor|BreakableJoint"
+        "|SphericalBreakableJoint)Step/.*"
+        in result.stdout
+    )
+    assert (
+        "BM_AvbdArticulated("
+        "RevoluteMotor|BreakableMotor|PrismaticMotor|"
+        "PrismaticBreakableMotor|WorldPrismaticBreakableMotor|"
+        "WorldRevoluteBreakableMotor|BreakableJoint|"
+        "WorldSphericalBreakableJoint|SphericalPairBreakableJoint|"
+        "CompliantJoint|CompliantMotor|CompliantBreakableMotor"
+        ")Step/.*"
         in result.stdout
     )
     # Still excludes unrelated solver, SIMD, and robot-loader surfaces, and the

@@ -15,7 +15,7 @@ from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 _TIME_STEP = 1.0 / 60.0
 _GRAVITY = -10.0
 _FRICTION = 0.5
-_THICKNESS = 0.2
+_THICKNESS = 1.0
 _GROUND_SIZE_2D = np.array([100.0, 1.0])
 _GROUND_SIZE = np.array([100.0, 1.0, _THICKNESS])
 _SOURCE_ROW: dict[str, Any] = {
@@ -64,7 +64,15 @@ def _source_row() -> dict[str, Any]:
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, _GRAVITY, 0.0))
+    world = sx.World(
+        time_step=_TIME_STEP,
+        gravity=(0.0, _GRAVITY, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+        rigid_constraint_options=sx.RigidConstraintOptions(
+            iterations=_SOURCE_ROW["solver_defaults"]["iterations"]
+        ),
+    )
 
     ground = world.add_rigid_body("avbd_demo2d_ground_slab", position=(0.0, 0.0, 0.0))
     ground.is_static = True

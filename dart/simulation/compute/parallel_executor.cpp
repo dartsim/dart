@@ -48,7 +48,12 @@
 // clang-format on
 
 #include <algorithm>
+#include <atomic>
+#include <condition_variable>
+#include <exception>
 #include <memory>
+#include <mutex>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -58,6 +63,169 @@ namespace dart::simulation::compute {
 class ParallelExecutor::Impl
 {
 public:
+  class ParallelForWorkerPool final
+  {
+  public:
+    explicit ParallelForWorkerPool(std::size_t workerCount)
+    {
+      const std::size_t backgroundWorkerCount
+          = workerCount > 1u ? workerCount - 1u : 0u;
+      workers.reserve(backgroundWorkerCount);
+      try {
+        for (std::size_t worker = 0u; worker < backgroundWorkerCount;
+             ++worker) {
+          workers.emplace_back(
+              [this, chunk = worker + 1u]() { workerLoop(chunk); });
+        }
+      } catch (...) {
+        {
+          std::lock_guard lock(mutex);
+          stopping = true;
+          ++generation;
+        }
+        jobReady.notify_all();
+        for (std::thread& worker : workers) {
+          if (worker.joinable()) {
+            worker.join();
+          }
+        }
+        throw;
+      }
+    }
+
+    ~ParallelForWorkerPool()
+    {
+      {
+        std::lock_guard lock(mutex);
+        stopping = true;
+        ++generation;
+      }
+      jobReady.notify_all();
+      for (std::thread& worker : workers) {
+        if (worker.joinable()) {
+          worker.join();
+        }
+      }
+    }
+
+    ParallelForWorkerPool(const ParallelForWorkerPool&) = delete;
+    ParallelForWorkerPool& operator=(const ParallelForWorkerPool&) = delete;
+
+    void run(
+        std::size_t count,
+        std::size_t chunkSize,
+        std::size_t chunkCount,
+        const ComputeExecutor::ParallelForRange& function)
+    {
+      if (workers.empty()) {
+        function(0u, count);
+        return;
+      }
+
+      {
+        std::lock_guard lock(mutex);
+        jobFunction = &function;
+        jobCount = count;
+        jobChunkSize = chunkSize;
+        jobChunkCount = chunkCount;
+        jobException = nullptr;
+        pendingWorkers = workers.size();
+        ++generation;
+      }
+      jobReady.notify_all();
+
+      try {
+        runChunk(0u, count, chunkSize, chunkCount, function);
+      } catch (...) {
+        recordException(std::current_exception());
+      }
+
+      std::unique_lock lock(mutex);
+      jobComplete.wait(lock, [this]() { return pendingWorkers == 0u; });
+      jobFunction = nullptr;
+      jobCount = 0u;
+      jobChunkSize = 0u;
+      jobChunkCount = 0u;
+      std::exception_ptr exception = std::move(jobException);
+      lock.unlock();
+      if (exception != nullptr) {
+        std::rethrow_exception(exception);
+      }
+    }
+
+  private:
+    static void runChunk(
+        std::size_t chunk,
+        std::size_t count,
+        std::size_t chunkSize,
+        std::size_t chunkCount,
+        const ComputeExecutor::ParallelForRange& function)
+    {
+      if (chunk >= chunkCount) {
+        return;
+      }
+      const std::size_t begin = chunk * chunkSize;
+      const std::size_t end = std::min(begin + chunkSize, count);
+      if (begin < end) {
+        function(begin, end);
+      }
+    }
+
+    void recordException(std::exception_ptr exception)
+    {
+      std::lock_guard lock(mutex);
+      if (jobException == nullptr) {
+        jobException = std::move(exception);
+      }
+    }
+
+    void workerLoop(std::size_t chunk)
+    {
+      std::size_t observedGeneration = 0u;
+      for (;;) {
+        std::unique_lock lock(mutex);
+        jobReady.wait(lock, [this, observedGeneration]() {
+          return stopping || generation != observedGeneration;
+        });
+        if (stopping) {
+          return;
+        }
+
+        observedGeneration = generation;
+        const ComputeExecutor::ParallelForRange* const function = jobFunction;
+        const std::size_t count = jobCount;
+        const std::size_t chunkSize = jobChunkSize;
+        const std::size_t chunkCount = jobChunkCount;
+        lock.unlock();
+
+        try {
+          runChunk(chunk, count, chunkSize, chunkCount, *function);
+        } catch (...) {
+          recordException(std::current_exception());
+        }
+
+        lock.lock();
+        --pendingWorkers;
+        if (pendingWorkers == 0u) {
+          jobComplete.notify_one();
+        }
+      }
+    }
+
+    std::vector<std::thread> workers;
+    std::mutex mutex;
+    std::condition_variable jobReady;
+    std::condition_variable jobComplete;
+    const ComputeExecutor::ParallelForRange* jobFunction = nullptr;
+    std::size_t jobCount = 0u;
+    std::size_t jobChunkSize = 0u;
+    std::size_t jobChunkCount = 0u;
+    std::size_t pendingWorkers = 0u;
+    std::size_t generation = 0u;
+    std::exception_ptr jobException;
+    bool stopping = false;
+  };
+
   explicit Impl(std::size_t workerCount)
   {
     if (workerCount == 0) {
@@ -141,6 +309,8 @@ public:
   std::vector<ComputeNode*> cachedNodes;
   std::vector<ComputeEdge> cachedEdges;
   bool cacheValid = false;
+  std::unique_ptr<ParallelForWorkerPool> parallelForWorkerPool;
+  std::atomic_flag parallelForActive = ATOMIC_FLAG_INIT;
 #if DART_BUILD_PROFILE
   ComputeExecutionProfiler* activeProfiler = nullptr;
 #endif
@@ -245,22 +415,38 @@ void ParallelExecutor::parallelFor(
   }
 
   const std::size_t safeGrainSize = std::max<std::size_t>(1u, grainSize);
-  const std::size_t chunkCount = (count + safeGrainSize - 1u) / safeGrainSize;
-  if (chunkCount <= 1u || getWorkerCount() <= 1u) {
+  const std::size_t requestedChunkCount = 1u + (count - 1u) / safeGrainSize;
+  const std::size_t workerCount = getWorkerCount();
+  const std::size_t targetChunkCount
+      = std::min(requestedChunkCount, workerCount);
+  if (targetChunkCount <= 1u) {
     function(0u, count);
     return;
   }
 
-  tf::Taskflow taskflow;
-  for (std::size_t chunk = 0u; chunk < chunkCount; ++chunk) {
-    const std::size_t begin = chunk * safeGrainSize;
-    const std::size_t end = std::min(begin + safeGrainSize, count);
-    if (begin >= end) {
-      continue;
-    }
-    taskflow.emplace([begin, end, &function]() { function(begin, end); });
+  const std::size_t balancedChunkSize = 1u + (count - 1u) / targetChunkCount;
+  const std::size_t chunkSize = std::max(safeGrainSize, balancedChunkSize);
+  const std::size_t chunkCount = 1u + (count - 1u) / chunkSize;
+
+  // The first nontrivial range lazily creates N-1 persistent background
+  // workers; the caller supplies the Nth lane. Never block a worker waiting for
+  // that shared pool: a concurrent or recursively nested call runs inline.
+  if (m_impl->parallelForActive.test_and_set(std::memory_order_acquire)) {
+    function(0u, count);
+    return;
   }
-  m_impl->executor->run(taskflow).get();
+
+  try {
+    if (m_impl->parallelForWorkerPool == nullptr) {
+      m_impl->parallelForWorkerPool
+          = std::make_unique<Impl::ParallelForWorkerPool>(workerCount);
+    }
+    m_impl->parallelForWorkerPool->run(count, chunkSize, chunkCount, function);
+  } catch (...) {
+    m_impl->parallelForActive.clear(std::memory_order_release);
+    throw;
+  }
+  m_impl->parallelForActive.clear(std::memory_order_release);
 }
 
 //==============================================================================

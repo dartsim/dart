@@ -1,13 +1,12 @@
-"""VBD tilted strand: the TinyVBD reference stress scene, solved by VBD.
+"""VBD tilted strand: a TinyVBD-inspired stress smoke, solved by VBD.
 
-Reproduces the TinyVBD default benchmark scene -- a 20-vertex strand tilted 30
-degrees and pinned at one end, with very stiff springs (1e8), a 1:1000 mass
-ratio between the strand and its heavy free end, a 1/60 s step, and 100 VBD
-sweeps. It is the runnable, visible companion to the
-``bm_vbd_block_descent`` ``BM_VbdTinyStrandStep`` CPU benchmark: the same
-parameters the in-repo VBD solver is benchmarked against the TinyVBD reference
-on. The stiff springs plus the heavy free end are the stress that motivates
-VBD's per-vertex block solve.
+It keeps TinyVBD's 20 vertices, 30-degree tilt, structural stiffness 1e8,
+1:1000 tip mass ratio, 1/60 s step, and 100 sweeps, but is not source-matched.
+DART currently gives skip springs the structural stiffness instead of 100,
+uses uniform spacing instead of TinyVBD's doubled final segment, adds damping,
+and uses a different local Hessian/solve policy. It is the visible companion to
+the equally unmatched ``BM_VbdTinyStrandStep`` smoke and must not be used for a
+TinyVBD speedup or parity claim.
 """
 
 from __future__ import annotations
@@ -23,6 +22,9 @@ from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 _NUM_VERTS = 20
 _SPACING = 0.05
 _TAN_ANGLE = 0.57735  # 30 degrees
+# This spring-only stress scene has no surface triangles. Its valid-pair bound
+# is zero, so the explicit evidence cap is the documented nonzero floor.
+_SURFACE_CONTACT_CANDIDATE_CAPACITY = 1
 
 
 def _make_strand_options() -> "sx.DeformableBodyOptions":
@@ -47,6 +49,9 @@ def _make_strand_options() -> "sx.DeformableBodyOptions":
     options.edges = edges
     options.edge_stiffness = 1.0e8
     options.damping = 1.0
+    options.surface_contact_candidate_capacity = (
+        _SURFACE_CONTACT_CANDIDATE_CAPACITY
+    )
     return options
 
 
@@ -94,7 +99,7 @@ def build() -> SceneSetup:
             [body.node_velocity(i) for i in range(int(body.node_count))],
             dtype=float,
         )
-        builder.text("reference: TinyVBD tilted strand")
+        builder.text("inspired by TinyVBD tilted strand; not source-matched")
         builder.text(f"nodes: {_NUM_VERTS} | pins: 1 | mass ratio: 1:1000")
         builder.text("edge stiffness: 1.00e8 | VBD sweeps: 100")
         if positions.size:
@@ -116,7 +121,7 @@ def build() -> SceneSetup:
             builder.text(f"mean node speed: {mean_speed:.3f} m/s")
         diagnostics = getattr(world, "last_deformable_solver_diagnostics", None)
         if diagnostics is not None:
-            builder.text(f"solver iters: {diagnostics.solver_iterations}")
+            builder.text(f"VBD sweeps: {diagnostics.vbd_sweeps}")
         if tip_drop_history:
             builder.separator()
             builder.plot_lines("Free-end drop", list(tip_drop_history))
@@ -136,8 +141,8 @@ SCENE = PythonDemoScene(
     title="VBD Tilted Strand",
     category="Vertex Block Descent",
     summary=(
-        "The TinyVBD reference stress scene (stiff 20-vertex strand, 1:1000 "
-        "mass ratio), solved by VBD."
+        "A TinyVBD-inspired but unmatched stiff 20-vertex strand with a "
+        "1:1000 tip-mass ratio, solved by VBD."
     ),
     build=build,
 )

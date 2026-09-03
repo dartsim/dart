@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write a validated AVBD paper-scale high-ratio chain benchmark packet."""
+"""Write the historical paper-scale variational-multibody packet."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from write_avbd_articulated_high_ratio_chain_packet import (  # noqa: E402
     _artifact_label,
     _artifact_path,
     _canonical_name,
+    _evidence_boundary,
     _load_json,
     _png_dimensions,
     _row_name,
@@ -244,13 +245,16 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
 def make_packet(capture_manifest: Path, benchmark_json: Path) -> dict[str, Any]:
     return {
         "schema_version": 1,
+        "evidence_boundary": _evidence_boundary(
+            "historical_variational_multibody_capture_hash_and_cpu_metadata"
+        ),
         "packet": "avbd_paper_scale_high_ratio_chain",
         "scene": SCENE_ID,
         "target": {
             "paper_gap": "50-body pendulum with 50,000:1 mass ratio",
             "scope": (
-                "paper-scale 50-link articulated-chain visual/CPU benchmark smoke "
-                "with a 50,000:1 heavy tip"
+                "historical paper-scale 50-link variational-multibody visual/CPU "
+                "smoke with a 50,000:1 heavy tip; not AVBD solver evidence"
             ),
             "complete_paper_reproduction": False,
         },
@@ -283,11 +287,11 @@ def make_packet(capture_manifest: Path, benchmark_json: Path) -> dict[str, Any]:
             ),
         },
         "remaining_gates": [
-            "same-hardware paper-number comparison for the 50-link 50,000:1 chain",
-            "two-heavy-ball chain visual and invariant",
-            "broad articulated hard-constraint stability coverage",
-            "GPU AVBD row parity and same-hardware benchmark packets",
-            "paper/site/video scene visual and performance packets",
+            "implement an actual AVBD 50-link 50,000:1 high-ratio fixture",
+            "record runtime-derived AVBD solver identity for the replacement",
+            "reproduce the exact paper trajectory and same-hardware comparison",
+            "verify actual AVBD CPU and GPU performance parity",
+            "capture paper/site/video evidence from the actual AVBD fixture",
         ],
     }
 
@@ -304,7 +308,10 @@ def main(argv: list[str]) -> int:
     except AvbdPaperScaleHighRatioChainPacketError as exc:
         raise SystemExit(str(exc)) from exc
     write_packet(args.output, packet)
-    print(f"Wrote AVBD paper-scale high-ratio chain packet: {args.output}")
+    print(
+        "Wrote historical paper-scale variational-multibody high-ratio "
+        f"chain packet: {args.output}"
+    )
     return 0
 
 

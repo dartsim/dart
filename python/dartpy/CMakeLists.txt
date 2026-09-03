@@ -325,6 +325,9 @@ nanobind_add_module(dartpy
   ${dartpy_sources}
 )
 
+include(dart_capture_source_provenance)
+dart_enable_capture_source_provenance(dartpy REQUIRED)
+
 set(_dartpy_debug_compile_options)
 if(
   CMAKE_SYSTEM_NAME STREQUAL "Linux"

@@ -27,6 +27,10 @@ _GROUND_HALF = (2.0, 2.0, 0.5)
 _CLOTH_SIDE = 11
 _CLOTH_SPACING = 0.08
 _CLOTH_HEIGHT = _SPHERE_RADIUS * 2.0 + 0.15
+# The obstacle demo uses VBD's per-node analytic sphere/ground barriers and no
+# deformable surface triangles. Its surface-pair bound is therefore zero and
+# the explicit evidence contract uses the documented nonzero floor.
+_SURFACE_CONTACT_CANDIDATE_CAPACITY = 1
 
 
 def _make_cloth_options(side: int, spacing: float, height: float):
@@ -68,6 +72,9 @@ def _make_cloth_options(side: int, spacing: float, height: float):
     options.edges = edges
     options.edge_stiffness = 200.0
     options.damping = 0.6
+    options.surface_contact_candidate_capacity = (
+        _SURFACE_CONTACT_CANDIDATE_CAPACITY
+    )
     return options
 
 
@@ -174,7 +181,7 @@ def build() -> SceneSetup:
         diagnostics = getattr(world, "last_deformable_solver_diagnostics", None)
         if diagnostics is not None:
             builder.text(
-                f"solver iters: {diagnostics.solver_iterations} | "
+                f"VBD sweeps: {diagnostics.vbd_sweeps} | "
                 f"contacts: {diagnostics.converged_active_contact_count}"
             )
         if sphere_clearance_history:

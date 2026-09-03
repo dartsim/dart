@@ -134,6 +134,15 @@ public:
   }
 
   void addManifold(ContactManifold manifold);
+  /// Reserve reusable storage for any result containing at most
+  /// ``maxContacts`` contacts, including the worst case of one manifold per
+  /// contact. This also materializes the first manifold holder so a delayed
+  /// first manifold does not allocate inside an allocation-sensitive query.
+  void reserveContacts(std::size_t maxContacts);
+  /// Negate the normals of contacts at and after ``firstContact`` in insertion
+  /// order. Collision dispatch uses this to reuse caller-owned result storage
+  /// when a shape pair is implemented in the reverse argument order.
+  void flipContactNormalsFrom(std::size_t firstContact);
   void clear()
   {
     manifoldCount_ = 0;

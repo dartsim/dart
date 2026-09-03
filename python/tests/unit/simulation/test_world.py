@@ -1013,8 +1013,9 @@ def test_simulation_world_rigid_body_fixed_joint_projects_captured_pose():
     world.enter_simulation_mode()
     world.step()
 
+    assert world.rigid_body_solver == sx.RigidBodySolver.SEQUENTIAL_IMPULSE
     assert float(link.translation[0]) == pytest.approx(1.0, abs=0.05)
-    assert float(link.linear_velocity[0]) < 0.0
+    assert float(link.linear_velocity[0]) == pytest.approx(0.0, abs=1.0e-12)
     with pytest.raises(Exception, match="simulation mode"):
         world.add_joint(
             base,
@@ -6667,18 +6668,81 @@ def test_simulation_world_gravity():
         world.gravity = (float("nan"), 0.0, 0.0)
 
 
+def test_simulation_rigid_collision_capacity_options():
+    sx = _simulation()
+
+    configured = sx.World(
+        rigid_collision_candidate_pair_capacity=3,
+        rigid_collision_contact_capacity=7,
+    )
+    assert configured.rigid_collision_candidate_pair_capacity == 3
+    assert configured.rigid_collision_contact_capacity == 7
+
+    automatic = sx.World(gravity=(0.0, 0.0, 0.0))
+    first = automatic.add_rigid_body("capacity_first", position=(0.0, 0.0, 0.0))
+    first.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    second = automatic.add_rigid_body(
+        "capacity_second", position=(3.0, 0.0, 0.0)
+    )
+    second.set_collision_shape(sx.CollisionShape.sphere(0.5))
+    assert automatic.rigid_collision_candidate_pair_capacity == 0
+    assert automatic.rigid_collision_contact_capacity == 0
+
+    automatic.enter_simulation_mode()
+    assert automatic.rigid_collision_candidate_pair_capacity == 1
+    assert automatic.rigid_collision_contact_capacity == 4
+
+
+def test_simulation_world_rigid_avbd_parameter_profile_selector():
+    sx = _simulation()
+
+    default = sx.World(rigid_body_solver=sx.RigidBodySolver.AVBD)
+    assert (
+        default.rigid_avbd_parameter_profile
+        == sx.RigidAvbdParameterProfile.MASS_SCALED_REFERENCE
+    )
+
+    configured = sx.World(
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+    )
+    assert (
+        configured.rigid_avbd_parameter_profile
+        == sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D
+    )
+    configured.rigid_avbd_parameter_profile = (
+        sx.RigidAvbdParameterProfile.SOURCE_DEMO_3D
+    )
+    assert (
+        configured.rigid_avbd_parameter_profile
+        == sx.RigidAvbdParameterProfile.SOURCE_DEMO_3D
+    )
+    # The profile is a property of the world, not of the solver family, so a
+    # Sequential Impulse world keeps the selection for a later crossing.
+    crossing = sx.World(
+        rigid_body_solver=sx.RigidBodySolver.SEQUENTIAL_IMPULSE,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+    )
+    assert (
+        crossing.rigid_avbd_parameter_profile
+        == sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D
+    )
+
+
 def test_simulation_multibody_options_selector():
     sx = _simulation()
 
     configured = sx.World(
-        rigid_body_solver=sx.RigidBodySolver.IPC,
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_constraint_options=sx.RigidConstraintOptions(iterations=20),
         multibody_options=sx.MultibodyOptions(
             integration_family=sx.MultibodyIntegrationFamily.VARIATIONAL,
             variational_max_iterations=200,
             variational_tolerance=1.0e-9,
         ),
     )
-    assert configured.rigid_body_solver == sx.RigidBodySolver.IPC
+    assert configured.rigid_body_solver == sx.RigidBodySolver.AVBD
+    assert configured.rigid_constraint_options.iterations == 20
     assert configured.multibody_options.integration_family == sx.MultibodyIntegrationFamily.VARIATIONAL
     assert configured.multibody_options.variational_max_iterations == 200
     assert configured.multibody_options.variational_tolerance == pytest.approx(1.0e-9)
@@ -6716,6 +6780,18 @@ def test_simulation_multibody_options_selector():
         policy_configured.contact_gradient_mode = 99
     with pytest.raises(TypeError):
         policy_configured.compute_accelerator_policy = 99
+
+    configured.rigid_constraint_options = sx.RigidConstraintOptions(iterations=3)
+    assert configured.rigid_constraint_options.iterations == 3
+    with pytest.raises(Exception, match="positive"):
+        configured.rigid_constraint_options = sx.RigidConstraintOptions(iterations=0)
+    assert configured.rigid_constraint_options.iterations == 3
+
+    with pytest.raises(Exception, match="not applicable"):
+        sx.World(
+            rigid_body_solver=sx.RigidBodySolver.IPC,
+            rigid_constraint_options=sx.RigidConstraintOptions(iterations=20),
+        )
 
     with pytest.raises(Exception):
         sx.World(multibody_options=sx.MultibodyOptions(integration_family="nonsense"))
@@ -8559,6 +8635,68 @@ def test_simulation_contact_stops_approaching_bodies():
     assert body_b.linear_velocity.tolist()[0] == pytest.approx(0.0, abs=1e-9)
 
 
+def test_simulation_public_avbd_contact_family():
+    sx = _simulation()
+
+    world = sx.World(
+        time_step=0.05,
+        gravity=(0.0, 0.0, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_constraint_options=sx.RigidConstraintOptions(iterations=20),
+    )
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.25))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box((2.0, 2.0, 0.25)))
+    sphere = world.add_rigid_body("sphere", position=(0.0, 0.0, 0.4))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    assert world.rigid_body_solver == sx.RigidBodySolver.AVBD
+    assert len(world.collide()) == 1
+    world.step()
+
+    assert world.compute_step_metrics().last_step_iterations == 20
+    assert sphere.linear_velocity.tolist()[2] > 0.0
+    assert sphere.translation.tolist()[2] > 0.4
+
+    with pytest.raises(Exception, match="cannot be combined"):
+        world.contact_solver_method = sx.ContactSolverMethod.BOXED_LCP
+
+    avbd_only = sx.World(rigid_body_solver=sx.RigidBodySolver.AVBD)
+    with pytest.raises(Exception, match="Multibody"):
+        avbd_only.add_multibody("unsupported")
+
+
+def test_simulation_public_vbd_contact_family():
+    sx = _simulation()
+
+    world = sx.World(
+        time_step=0.05,
+        gravity=(0.0, 0.0, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.VBD,
+        rigid_constraint_options=sx.RigidConstraintOptions(iterations=20),
+    )
+    ground = world.add_rigid_body("ground", position=(0.0, 0.0, -0.25))
+    ground.is_static = True
+    ground.set_collision_shape(sx.CollisionShape.box((2.0, 2.0, 0.25)))
+    sphere = world.add_rigid_body("sphere", position=(0.0, 0.0, 0.4))
+    sphere.set_collision_shape(sx.CollisionShape.sphere(0.5))
+
+    assert world.rigid_body_solver == sx.RigidBodySolver.VBD
+    assert len(world.collide()) == 1
+    world.step()
+
+    assert world.compute_step_metrics().last_step_iterations == 20
+    assert sphere.linear_velocity.tolist()[2] > 0.0
+    assert sphere.translation.tolist()[2] > 0.4
+
+    with pytest.raises(Exception, match="cannot be combined"):
+        world.contact_solver_method = sx.ContactSolverMethod.BOXED_LCP
+
+    vbd_only = sx.World(rigid_body_solver=sx.RigidBodySolver.VBD)
+    with pytest.raises(Exception, match="Multibody"):
+        vbd_only.add_multibody("unsupported")
+
+
 def test_simulation_body_rests_on_static_ground():
     sx = _simulation()
 
@@ -8943,6 +9081,8 @@ def test_simulation_deformable_body_python_api():
     options.edges = [sx.DeformableEdge(0, 1, 1.0)]
     options.fixed_nodes = [0]
     options.edge_stiffness = 100.0
+    assert options.surface_contact_candidate_capacity == 0
+    options.surface_contact_candidate_capacity = 8
     material = sx.DeformableMaterialProperties()
     material.friction_coefficient = 0.5
     options.material = material
@@ -8952,6 +9092,7 @@ def test_simulation_deformable_body_python_api():
     assert body.name == "strand"
     assert body.node_count == 2
     assert body.edge_count == 1
+    assert body.surface_contact_candidate_capacity == 8
     assert world.num_deformable_bodies == 1
     assert world.has_deformable_body("strand")
     assert not world.has_deformable_body("missing")
@@ -8971,10 +9112,62 @@ def test_simulation_deformable_body_python_api():
     world.step()
     after_x = body.node_position(1)[0]
     assert after_x < before_x
+    diagnostics = world.last_deformable_solver_diagnostics
+    assert diagnostics.surface_contact_candidate_capacity_requested == 8
+    assert diagnostics.surface_contact_candidate_capacity_resolved == 8
+    assert diagnostics.surface_contact_candidate_count_peak == 0
 
     fetched = world.get_deformable_body("strand")
     assert fetched is not None
     assert fetched.node_count == 2
+
+
+def test_simulation_public_deformable_solver_validation_and_diagnostics():
+    sx = _simulation()
+    world = sx.World(time_step=0.01, gravity=(0.0, 0.0, 0.0))
+
+    body_options = sx.DeformableBodyOptions()
+    body_options.positions = [
+        np.array([0.0, 0.0, 0.0]),
+        np.array([1.2, 0.0, 0.0]),
+    ]
+    body_options.masses = [1.0, 1.0]
+    body_options.fixed_nodes = [0]
+    body_options.edges = [sx.DeformableEdge(0, 1, 1.0)]
+    world.add_deformable_body("vbd_strand", body_options)
+
+    invalid_values = (
+        ("iterations", 0),
+        ("convergence_tolerance", -1.0),
+        ("convergence_tolerance", float("nan")),
+        ("convergence_tolerance", float("inf")),
+        ("acceleration_spectral_radius", 0.0),
+        ("acceleration_spectral_radius", 1.0),
+        ("acceleration_spectral_radius", float("nan")),
+        ("stiffness_damping", -1.0),
+        ("stiffness_damping", float("inf")),
+        ("ground_contact_stiffness", -1.0),
+        ("ground_contact_stiffness", float("nan")),
+    )
+    for field, value in invalid_values:
+        solver_options = sx.DeformableSolverOptions()
+        setattr(solver_options, field, value)
+        with pytest.raises(Exception, match="DeformableSolverOptions"):
+            world.configure_deformable_solver("vbd_strand", solver_options)
+
+    solver_options = sx.DeformableSolverOptions()
+    solver_options.iterations = 6
+    world.configure_deformable_solver("vbd_strand", solver_options)
+    world.enter_simulation_mode()
+    world.step()
+
+    diagnostics = world.last_deformable_solver_diagnostics
+    assert diagnostics.vbd_body_count == 1
+    assert 0 < diagnostics.vbd_sweeps <= 6
+    assert diagnostics.vbd_vertex_updates > 0
+    assert diagnostics.solver_iterations == 0
+    with pytest.raises(Exception, match="simulation mode"):
+        world.configure_deformable_solver("vbd_strand", solver_options)
 
 
 def test_simulation_deformable_body_topology_python_api():

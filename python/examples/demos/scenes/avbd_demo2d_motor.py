@@ -10,6 +10,7 @@ import numpy as np
 import dartpy as dart
 import dartpy as sx
 
+from .._avbd_demo2d_plane import plane_locked_pre_step
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
@@ -86,7 +87,15 @@ def _source_row() -> dict[str, Any]:
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, _GRAVITY, 0.0))
+    world = sx.World(
+        time_step=_TIME_STEP,
+        gravity=(0.0, _GRAVITY, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+        rigid_constraint_options=sx.RigidConstraintOptions(
+            iterations=_SOURCE_ROW["solver_defaults"]["iterations"]
+        ),
+    )
 
     ground = world.add_rigid_body("avbd_demo2d_motor_ground", position=tuple(_GROUND_POS))
     ground.is_static = True
@@ -157,11 +166,12 @@ def build() -> SceneSetup:
 
     return SceneSetup(
         world=bridge.render_world,
-        pre_step=bridge.pre_step,
+        pre_step=plane_locked_pre_step(bridge, [bar]),
         force_drag=bridge.force_drag,
         panels=[ScenePanel("AVBD Demo2D Motor", build_panel)],
         info={
             "sx_world": world,
+            "replay_live_step_is_stateless": True,
             "ground": ground,
             "bar": bar,
             "joint": motor_joint,

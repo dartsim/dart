@@ -915,16 +915,30 @@ Capability selection is exposed through **domain-scoped value objects set as a
 whole**, not a setter/getter per capability, so new capability fields are added
 without growing the `World` method surface. The realized C++ shape is a
 world-level construction grouping for defaults and policies
-(`WorldOptions::rigidBodySolver`, `WorldOptions::multibodyOptions`,
-`WorldOptions::contactSolverMethod`, `WorldOptions::contactGradientMode`, and
-`WorldOptions::differentiable`) plus the existing interactive setters for the
-policies that are safe to switch after construction (`World::setRigidBodySolver`,
+(`WorldOptions::rigidBodySolver`, `WorldOptions::rigidConstraintOptions`,
+`WorldOptions::multibodyOptions`, `WorldOptions::contactSolverMethod`,
+`WorldOptions::contactGradientMode`, and `WorldOptions::differentiable`) plus
+the existing interactive setters for the policies that are safe to switch
+after construction (`World::setRigidBodySolver`,
+`World::setRigidConstraintOptions` / `getRigidConstraintOptions`,
 `World::setMultibodyOptions` / `getMultibodyOptions`, and
 `World::setContactGradientMode`). `MultibodyOptions {
 MultibodyIntegrationFamily integrationFamily; }` maps onto the "Integration
 family" matrix row. Selection is a typed enum mapped to an internal
 representation on construction or set, so the per-step path carries no
 configuration cost when a non-default family is not in use.
+
+`RigidBodySolver::Vbd` and `RigidBodySolver::Avbd` are the explicit
+experimental public families for supported free-rigid contact and pair
+constraints. VBD uses fixed finite-penalty rows without dual accumulation or
+progressive stiffness; AVBD uses augmented-Lagrangian dual/stiffness state.
+Each owns its contact formulation, uses the positive
+`RigidConstraintOptions::iterations` budget, and rejects an incompatible
+boxed-LCP contact-method selection instead of silently substituting another
+family.
+That budget applies only while the split rigid constraint stage is active.
+IPC and mixed semi-implicit multibody worlds bypass it, accept only the default
+options, and report the budget as not applicable.
 
 ## Future Capability Shapes
 

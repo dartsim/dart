@@ -88,12 +88,20 @@ def read_png_bytes(data: bytes, path: Path | None = None) -> tuple[int, int, byt
         kind = data[offset + 4 : offset + 8]
         payload_start = offset + 8
         payload_end = payload_start + length
-        if payload_end + 4 > len(data):
+        crc_end = payload_end + 4
+        if crc_end > len(data):
             raise ValueError(f"{label}: truncated PNG chunk payload")
         payload = data[payload_start:payload_end]
-        offset = payload_end + 4
+        # Every chunk is CRC-checked: a verdict must never be issued for bytes
+        # that failed the format's own integrity guard.
+        expected_crc = struct.unpack(">I", data[payload_end:crc_end])[0]
+        if zlib.crc32(kind + payload) & 0xFFFFFFFF != expected_crc:
+            raise ValueError(f"{label}: PNG chunk CRC mismatch in {kind!r} chunk")
+        offset = crc_end
 
         if kind == b"IHDR":
+            if width is not None:
+                raise ValueError(f"{label}: duplicate PNG IHDR chunk")
             if length != 13:
                 raise ValueError(f"{label}: invalid IHDR length")
             (
@@ -108,13 +116,19 @@ def read_png_bytes(data: bytes, path: Path | None = None) -> tuple[int, int, byt
             if compression != 0 or filter_method != 0:
                 raise ValueError(f"{label}: unsupported PNG compression/filter method")
         elif kind == b"IDAT":
+            if width is None:
+                raise ValueError(f"{label}: PNG IDAT chunk precedes IHDR")
             idat.extend(payload)
         elif kind == b"IEND":
+            if length != 0:
+                raise ValueError(f"{label}: invalid PNG IEND chunk length")
             saw_iend = True
             break
 
     if not saw_iend:
         raise ValueError(f"{label}: missing PNG IEND chunk")
+    if offset != len(data):
+        raise ValueError(f"{label}: trailing bytes after PNG IEND chunk")
     if width is None or height is None:
         raise ValueError(f"{label}: missing PNG IHDR chunk")
     if width <= 0 or height <= 0:
@@ -128,13 +142,20 @@ def read_png_bytes(data: bytes, path: Path | None = None) -> tuple[int, int, byt
 
     channels = {0: 1, 2: 3, 4: 2, 6: 4}[color_type]
     stride = width * channels
+    decompressor = zlib.decompressobj()
     try:
-        raw = zlib.decompress(bytes(idat))
+        raw = decompressor.decompress(bytes(idat)) + decompressor.flush()
     except zlib.error as exc:
         raise ValueError(f"{label}: invalid PNG image data") from exc
+    if not decompressor.eof or decompressor.unused_data or decompressor.unconsumed_tail:
+        raise ValueError(f"{label}: invalid PNG image data")
     expected = height * (1 + stride)
     if len(raw) < expected:
         raise ValueError(f"{label}: truncated PNG image data")
+    if len(raw) > expected:
+        raise ValueError(
+            f"{label}: PNG image data has {len(raw)} bytes, expected {expected}"
+        )
 
     rows: list[bytes] = []
     previous = bytearray(stride)

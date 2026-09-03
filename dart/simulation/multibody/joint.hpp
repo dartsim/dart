@@ -72,10 +72,14 @@ enum class ActuatorType
 ///
 /// The policy applies to public world-owned point-joint facades. A finite
 /// linear or angular stiffness makes the matching projected rows finite-
-/// stiffness rows; infinity keeps the default hard-constraint behavior.
+/// stiffness rows under the VBD and AVBD rigid-body families. Infinity keeps
+/// the default hard-constraint behavior under Sequential Impulse and AVBD;
+/// fixed-penalty VBD rejects active hard rows before the next step. The default
+/// Sequential Impulse family supports hard rows only and likewise fails closed
+/// when a finite stiffness is configured.
 struct JointConstraintProjectionPolicy
 {
-  /// Starting projection stiffness. Infinity keeps the hard-start projection.
+  /// Starting penalty for finite-material rows. Hard-material rows ignore it.
   double startStiffness = 1.0;
 
   /// Linear projection material stiffness. Infinity keeps hard rows.
@@ -363,9 +367,13 @@ public:
   /// Set the point-joint break-force threshold.
   ///
   /// A finite non-negative value is required. The default value, 0, disables
-  /// automatic breakage. When projected point-joint rows accumulate a
-  /// constraint load at or above this threshold, the joint is marked broken and
-  /// excluded from later point-joint extraction until resetBreakage().
+  /// automatic breakage. The threshold is the L2 norm of the joint's active
+  /// solver-row load coordinates, including finite-stiffness and bounded motor
+  /// rows. Linear-force and angular-torque coordinates are combined without a
+  /// characteristic-length normalization, so this is a solver diagnostic and
+  /// not a dimensionally invariant physical wrench norm. When that metric
+  /// reaches the threshold, the joint is marked broken and excluded from later
+  /// point-joint extraction until resetBreakage().
   void setBreakForce(double breakForce);
 
   /// Get the point-joint break-force threshold.

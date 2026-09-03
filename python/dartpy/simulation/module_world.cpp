@@ -45,6 +45,10 @@ void defSimPartWorld(nb::module_& m)
              const nb::handle& gravity,
              bool differentiable,
              sim::RigidBodySolver rigidBodySolver,
+             sim::RigidAvbdParameterProfile rigidAvbdParameterProfile,
+             const sim::RigidConstraintOptions& rigidConstraintOptions,
+             std::size_t rigidCollisionCandidatePairCapacity,
+             std::size_t rigidCollisionContactCapacity,
              const sim::MultibodyOptions& multibodyOptions,
              sim::ContactSolverMethod contactSolverMethod,
              sim::ContactGradientMode contactGradientMode,
@@ -57,6 +61,12 @@ void defSimPartWorld(nb::module_& m)
             }
             options.differentiable = differentiable;
             options.rigidBodySolver = rigidBodySolver;
+            options.rigidAvbdParameterProfile = rigidAvbdParameterProfile;
+            options.rigidConstraintOptions = rigidConstraintOptions;
+            options.rigidCollisionCapacityOptions.candidatePairCapacity
+                = rigidCollisionCandidatePairCapacity;
+            options.rigidCollisionCapacityOptions.contactCapacity
+                = rigidCollisionContactCapacity;
             options.multibodyOptions = multibodyOptions;
             options.contactSolverMethod = contactSolverMethod;
             options.contactGradientMode = contactGradientMode;
@@ -70,6 +80,11 @@ void defSimPartWorld(nb::module_& m)
           nb::arg("differentiable") = false,
           nb::arg("rigid_body_solver")
           = sim::RigidBodySolver::SequentialImpulse,
+          nb::arg("rigid_avbd_parameter_profile")
+          = sim::RigidAvbdParameterProfile::MassScaledReference,
+          nb::arg("rigid_constraint_options") = sim::RigidConstraintOptions{},
+          nb::arg("rigid_collision_candidate_pair_capacity") = 0,
+          nb::arg("rigid_collision_contact_capacity") = 0,
           nb::arg("multibody_options") = sim::MultibodyOptions{},
           nb::arg("contact_solver_method")
           = sim::ContactSolverMethod::SequentialImpulse,
@@ -571,6 +586,12 @@ void defSimPartWorld(nb::module_& m)
           "Per-stage wall-clock profile of the most recent step taken while "
           "step profiling was enabled (empty otherwise). Call .summary() for a "
           "compact text breakdown of where the step spent its time.")
+      .def_prop_ro(
+          "resolved_configuration",
+          &sim::World::getResolvedConfiguration,
+          nb::rv_policy::reference_internal,
+          "Solver families, pair-constraint method, and iteration policy "
+          "actually resolved by the built-in World step.")
       .def(
           "compute_step_metrics",
           &sim::World::computeStepMetrics,
@@ -588,6 +609,24 @@ void defSimPartWorld(nb::module_& m)
           "rigid_body_solver",
           &sim::World::getRigidBodySolver,
           &sim::World::setRigidBodySolver)
+      .def_prop_rw(
+          "rigid_avbd_parameter_profile",
+          &sim::World::getRigidAvbdParameterProfile,
+          &sim::World::setRigidAvbdParameterProfile)
+      .def_prop_rw(
+          "rigid_constraint_options",
+          [](const sim::World& self) {
+            return self.getRigidConstraintOptions();
+          },
+          [](sim::World& self, const sim::RigidConstraintOptions& options) {
+            self.setRigidConstraintOptions(options);
+          })
+      .def_prop_ro(
+          "rigid_collision_candidate_pair_capacity",
+          &sim::World::getRigidCollisionCandidatePairCapacity)
+      .def_prop_ro(
+          "rigid_collision_contact_capacity",
+          &sim::World::getRigidCollisionContactCapacity)
       .def_prop_rw(
           "multibody_options",
           &sim::World::getMultibodyOptions,

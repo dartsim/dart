@@ -33,6 +33,26 @@ BENCHMARKS = (
 BENCHMARK_ARGS = (1, 8, 32)
 
 
+VARIATIONAL_RUNTIME_COUNTERS = {
+    "runtime_identity_recorded": 1.0,
+    "runtime_identity_applicable": 1.0,
+    "runtime_identity_not_applicable": 0.0,
+    "runtime_identity_public_avbd_rigid": 0.0,
+    "runtime_identity_variational_multibody": 1.0,
+    "runtime_identity_contract_passed": 1.0,
+    "public_avbd_family": 0.0,
+    "public_sequential_impulse_family": 1.0,
+    "resolved_rigid_body_avbd": 0.0,
+    "resolved_rigid_contact_avbd": 0.0,
+    "resolved_rigid_body_sequential_impulse": 1.0,
+    "resolved_rigid_contact_sequential_impulse": 1.0,
+    "resolved_rigid_pair_constraint_sequential_impulse": 1.0,
+    "resolved_rigid_pair_constraint_not_applicable": 0.0,
+    "configured_multibody_variational": 1.0,
+    "resolved_multibody_variational": 1.0,
+}
+
+
 def _benchmark_row(
     benchmark: str,
     arg: int,
@@ -45,6 +65,7 @@ def _benchmark_row(
 ) -> dict[str, object]:
     name = f"{benchmark}/{arg}"
     row: dict[str, object] = {
+        **VARIATIONAL_RUNTIME_COUNTERS,
         "breakable_motors": float(
             arg if breakable_motors is None else breakable_motors
         ),
@@ -134,13 +155,15 @@ def test_avbd_breakable_motor_scale_packet_records_scale_data(
     )
 
     packet = json.loads(output.read_text())
-    assert packet["schema_version"] == 2
+    assert packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION
     assert packet["packet"] == "avbd_breakable_motor_scale"
     assert packet["resolved_solver_identity"] == {
         "avbd_rigid_contact_config_emplaced": False,
-        "recorded_from": "breakable motor scale benchmark row family",
-        "rigid_contact_solver": "none",
-        "rigid_point_joint_solver": "avbd",
+        "multibody_integration_family": "variational",
+        "recorded_from": "breakable motor benchmark runtime identity counters",
+        "rigid_contact_selection": "contact_solver_method",
+        "rigid_contact_solver": "sequential_impulse",
+        "rigid_point_joint_solver": "sequential_impulse",
     }
     assert packet["scene"] == "avbd_breakable_motor_scale"
     assert packet["target"]["broad_motor_lifecycle_complete"] is False

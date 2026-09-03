@@ -10,13 +10,14 @@ import numpy as np
 import dartpy as dart
 import dartpy as sx
 
+from .._avbd_demo2d_plane import plane_locked_pre_step
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
 _TIME_STEP = 1.0 / 60.0
 _GRAVITY = -10.0
 _FRICTION = 0.5
-_THICKNESS = 0.2
+_THICKNESS = 1.0
 _PYRAMID_SIZE = 20
 _BOX_COUNT = _PYRAMID_SIZE * (_PYRAMID_SIZE + 1) // 2
 _GROUND_SIZE_2D = np.array([100.0, 0.5])
@@ -125,7 +126,15 @@ def _add_source_box(
 
 
 def build() -> SceneSetup:
-    world = sx.World(time_step=_TIME_STEP, gravity=(0.0, _GRAVITY, 0.0))
+    world = sx.World(
+        time_step=_TIME_STEP,
+        gravity=(0.0, _GRAVITY, 0.0),
+        rigid_body_solver=sx.RigidBodySolver.AVBD,
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+        rigid_constraint_options=sx.RigidConstraintOptions(
+            iterations=_SOURCE_ROW["solver_defaults"]["iterations"]
+        ),
+    )
 
     ground = _add_source_box(
         world,
@@ -195,11 +204,12 @@ def build() -> SceneSetup:
 
     return SceneSetup(
         world=bridge.render_world,
-        pre_step=bridge.pre_step,
+        pre_step=plane_locked_pre_step(bridge, boxes),
         force_drag=bridge.force_drag,
         panels=[ScenePanel("AVBD Demo2D Pyramid", build_panel)],
         info={
             "sx_world": world,
+            "replay_live_step_is_stateless": True,
             "ground": ground,
             "boxes": boxes,
             "source_demo_row": "avbd-demo2d pyramid",

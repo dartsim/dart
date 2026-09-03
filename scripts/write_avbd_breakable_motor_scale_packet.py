@@ -12,18 +12,35 @@ from pathlib import Path
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from avbd_packet_schema import (  # noqa: E402
     AVBD_PACKET_SCHEMA_VERSION,
     make_resolved_solver_identity,
+    make_resolved_solver_identity_from_benchmark_row,
+    make_source_provenance,
 )
 from write_avbd_demo3d_static_friction_packet import (  # noqa: E402
     _canonical_name,
     _load_json,
     _row_name,
     _sha256,
+)
+
+# Source bytes this benchmark-only packet was produced from: the benchmark
+# fixture, the rigid AVBD row solver it drives, and this writer.
+SOURCE_PATHS = (
+    "dart/simulation/world.cpp",
+    "dart/simulation/world.hpp",
+    "dart/simulation/comps/joint.hpp",
+    "dart/simulation/compute/rigid_body_contact_stage.cpp",
+    "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp",
+    "dart/simulation/detail/rigid_avbd/rigid_world_contact.hpp",
+    "tests/benchmark/simulation/bm_avbd_rigid_fixed_joint.cpp",
+    "scripts/avbd_packet_schema.py",
+    "scripts/write_avbd_breakable_motor_scale_packet.py",
 )
 
 DEFAULT_OUTPUT = Path(
@@ -38,10 +55,11 @@ REVOLUTE_MAX_TORQUE_NM = 800.0
 PRISMATIC_TARGET_SPEED_M_PER_S = 0.35
 PRISMATIC_MAX_FORCE_N = 800.0
 RESOLVED_SOLVER_IDENTITY = make_resolved_solver_identity(
-    resolved_rigid_contact_family=None,
-    rigid_point_joint_solver="avbd",
+    resolved_rigid_contact_family="sequential-impulse",
+    rigid_point_joint_solver="sequential_impulse",
     avbd_rigid_contact_config_emplaced=False,
-    recorded_from="breakable motor scale benchmark row family",
+    recorded_from="breakable motor benchmark runtime identity counters",
+    multibody_integration_family="variational",
 )
 
 
@@ -233,6 +251,18 @@ def _validate_benchmark(benchmark_json: Path) -> dict[str, Any]:
     for variant in VARIANTS:
         for arg in BENCHMARK_ARGS:
             timing_row = _timing_row(representative_by_key[(variant.key, arg)])
+            try:
+                runtime_identity = make_resolved_solver_identity_from_benchmark_row(
+                    timing_row,
+                    recorded_from=RESOLVED_SOLVER_IDENTITY["recorded_from"],
+                )
+            except ValueError as exc:
+                raise AvbdBreakableMotorScalePacketError(str(exc)) from exc
+            if runtime_identity != RESOLVED_SOLVER_IDENTITY:
+                raise AvbdBreakableMotorScalePacketError(
+                    f"{variant.benchmark}/{arg}: runtime solver identity is not "
+                    "the Variational multibody packet identity"
+                )
             scale_data.append(
                 {
                     "variant": variant.key,
@@ -279,6 +309,7 @@ def make_packet(benchmark_json: Path) -> dict[str, Any]:
     return {
         "schema_version": AVBD_PACKET_SCHEMA_VERSION,
         "resolved_solver_identity": RESOLVED_SOLVER_IDENTITY,
+        "source_provenance": make_source_provenance(REPO_ROOT, SOURCE_PATHS),
         "packet": "avbd_breakable_motor_scale",
         "scene": "avbd_breakable_motor_scale",
         "target": {

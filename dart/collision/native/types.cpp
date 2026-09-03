@@ -53,6 +53,48 @@ void CollisionResult::addManifold(ContactManifold manifold)
   invalidateCache();
 }
 
+void CollisionResult::reserveContacts(std::size_t maxContacts)
+{
+  if (maxContacts == 0u) {
+    return;
+  }
+  if (firstManifold_ == nullptr) {
+    firstManifold_ = std::make_unique<ContactManifold>();
+  }
+  extraManifolds_.reserve(maxContacts - 1u);
+  manifoldsCache_.reserve(maxContacts);
+  flatContactsCache_.reserve(maxContacts);
+}
+
+void CollisionResult::flipContactNormalsFrom(std::size_t firstContact)
+{
+  std::size_t contactIndex = 0u;
+  const auto flip = [&](ContactPoint& contact) {
+    if (contactIndex++ >= firstContact) {
+      contact.normal = -contact.normal;
+    }
+  };
+
+  if (manifoldCount_ == 0u) {
+    return;
+  }
+  if (firstEntryIsContact_) {
+    flip(firstContact_);
+  } else {
+    for (std::size_t i = 0u; i < firstManifold_->numContacts_; ++i) {
+      flip(firstManifold_->contacts_[i]);
+    }
+  }
+  for (std::size_t manifoldIndex = 1u; manifoldIndex < manifoldCount_;
+       ++manifoldIndex) {
+    auto& manifold = extraManifolds_[manifoldIndex - 1u];
+    for (std::size_t i = 0u; i < manifold.numContacts_; ++i) {
+      flip(manifold.contacts_[i]);
+    }
+  }
+  invalidateCache();
+}
+
 const ContactManifold& CollisionResult::getManifold(std::size_t i) const
 {
   if (i >= manifoldCount_) {

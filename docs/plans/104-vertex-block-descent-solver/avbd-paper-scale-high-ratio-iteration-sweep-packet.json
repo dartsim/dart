@@ -694,18 +694,32 @@
       }
     ]
   },
+  "evidence_boundary": {
+    "artifact_status": "legacy_unbound",
+    "avbd_performance_claim_supported": false,
+    "avbd_solver_evidence": false,
+    "capture_artifacts_accessible": false,
+    "current_build_bound": false,
+    "historical_identifiers_retained": true,
+    "historical_measurements_preserved": true,
+    "measurement_runtime_identity_recorded": false,
+    "plan104_avbd_row_closure_supported": false,
+    "semantic_visual_review_recorded": false,
+    "reason": "This legacy packet preserves historical hashes and timing metadata whose source artifacts and runtime identity counters are unavailable. The current fixture selects variational multibody integration, but that source audit does not bind the historical measurement.",
+    "supported_scope": "historical_variational_multibody_cpu_metadata_and_plot"
+  },
   "packet": "avbd_paper_scale_high_ratio_iteration_sweep",
   "remaining_gates": [
-    "same-hardware paper-number comparison for the 50-link 50,000:1 chain",
-    "two-heavy-ball chain visual and invariant",
-    "broad articulated hard-constraint stability coverage",
-    "GPU AVBD row parity and same-hardware benchmark packets",
-    "paper/site/video scene visual and performance packets"
+    "implement an actual AVBD 50-link 50,000:1 iteration sweep",
+    "record runtime-derived AVBD solver identity for the replacement",
+    "reproduce the exact paper trajectory and same-hardware comparison",
+    "verify actual AVBD CPU and GPU performance parity",
+    "capture paper/site/video evidence from the actual AVBD fixture"
   ],
   "rendered_plot": {
     "file": "docs/plans/104-vertex-block-descent-solver/avbd-paper-scale-high-ratio-iteration-sweep-plot.svg",
     "height": 420.0,
-    "sha256": "8b0d884fcc0a740ffa6e928bc853679edaa9b25729e1d57d13f8fde6b7da5435",
+    "sha256": "e988ea75b9a9808a93d506e959c8ec7ecd18e5d7fdbabd1c91f000f628ff7550",
     "width": 720.0
   },
   "reproduction": {
@@ -713,9 +727,10 @@
   },
   "resolved_solver_identity": {
     "avbd_rigid_contact_config_emplaced": false,
-    "recorded_from": "paper-scale high-ratio iteration benchmark row family",
+    "recorded_from": "static current-source audit only; the historical benchmark does not record runtime identity counters",
+    "rigid_contact_selection": "not_applicable",
     "rigid_contact_solver": "none",
-    "rigid_point_joint_solver": "avbd"
+    "rigid_point_joint_solver": "none"
   },
   "scene": "avbd_paper_scale_high_ratio_chain",
   "scene_invariants": {
@@ -734,10 +749,10 @@
     "tip_link_mass": 50000.0,
     "tolerance": 1e-09
   },
-  "schema_version": 2,
+  "schema_version": 3,
   "target": {
     "complete_paper_reproduction": false,
     "paper_gap": "iteration-count sweep for the 50-link 50,000:1 chain",
-    "scope": "benchmark-only max-iteration sweep over the paper-scale 50-link articulated chain"
+    "scope": "historical max-iteration sweep over the paper-scale 50-link variational-multibody chain; not AVBD solver evidence"
   }
 }

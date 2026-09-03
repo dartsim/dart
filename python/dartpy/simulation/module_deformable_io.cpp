@@ -157,6 +157,9 @@ void defSimPartDeformableIo(nb::module_& m)
       .def_rw("fixed_nodes", &sim::DeformableBodyOptions::fixedNodes)
       .def_rw("edge_stiffness", &sim::DeformableBodyOptions::edgeStiffness)
       .def_rw("damping", &sim::DeformableBodyOptions::damping)
+      .def_rw(
+          "surface_contact_candidate_capacity",
+          &sim::DeformableBodyOptions::surfaceContactCandidateCapacity)
       .def_rw("material", &sim::DeformableBodyOptions::material);
 
   nb::class_<sim::DeformableSolverOptions>(m, "DeformableSolverOptions")
@@ -186,6 +189,9 @@ void defSimPartDeformableIo(nb::module_& m)
           &sim::DeformableBody::getSurfaceTriangleCount)
       .def_prop_ro(
           "tetrahedron_count", &sim::DeformableBody::getTetrahedronCount)
+      .def_prop_ro(
+          "surface_contact_candidate_capacity",
+          &sim::DeformableBody::getSurfaceContactCandidateCapacity)
       .def("node_position", &sim::DeformableBody::getPosition, nb::arg("node"))
       .def(
           "set_node_position",

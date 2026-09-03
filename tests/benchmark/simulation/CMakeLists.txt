@@ -98,6 +98,20 @@ if(DART_SIMULATION_BUILD_BENCHMARKS)
     bm_avbd_rigid_fixed_joint
     ${CMAKE_CURRENT_SOURCE_DIR}/bm_avbd_rigid_fixed_joint.cpp
   )
+  include(dart_capture_source_provenance)
+  dart_enable_capture_source_provenance(bm_avbd_rigid_fixed_joint REQUIRED)
+  target_compile_definitions(
+    bm_avbd_rigid_fixed_joint
+    PRIVATE
+      DART_FIGURE13_CMAKE_BUILD_TYPE="$<CONFIG>"
+      DART_FIGURE13_COMPILER_ID="${CMAKE_CXX_COMPILER_ID}"
+      DART_FIGURE13_COMPILER_VERSION="${CMAKE_CXX_COMPILER_VERSION}"
+  )
+
+  dart_add_simulation_benchmark(
+    bm_avbd_parallel_row_update
+    ${CMAKE_CURRENT_SOURCE_DIR}/bm_avbd_parallel_row_update.cpp
+  )
 
   dart_add_simulation_benchmark(
     bm_ecs_safety

@@ -32,6 +32,8 @@
 
 #include "dart/simulation/io/binary_io.hpp"
 
+#include "dart/simulation/common/exceptions.hpp"
+
 #include <span>
 #include <stdexcept>
 
@@ -187,7 +189,13 @@ std::uint32_t readFormatHeader(std::istream& in)
   std::uint32_t magic;
   readPOD(in, magic);
   if (magic != kMagicNumber) {
-    throw std::runtime_error(
+    // Malformed-stream rejection is part of the public `World::loadBinary`
+    // contract, so it reports the typed simulation exception every other
+    // caller-facing argument failure uses. `InvalidArgumentException` derives
+    // from `dart::simulation::Exception`, which derives from
+    // `std::runtime_error`, so callers catching the standard type still see it.
+    DART_SIMULATION_THROW_T(
+        InvalidArgumentException,
         "Invalid simulation binary format: magic number mismatch");
   }
 
@@ -197,11 +205,12 @@ std::uint32_t readFormatHeader(std::istream& in)
 
   // Check version compatibility
   if (version > kBinaryFormatVersion) {
-    throw std::runtime_error(
-        "Unsupported simulation binary format version: file "
-        "version "
-        + std::to_string(version) + " is newer than supported version "
-        + std::to_string(kBinaryFormatVersion));
+    DART_SIMULATION_THROW_T(
+        InvalidArgumentException,
+        "Unsupported simulation binary format version: file version {} is "
+        "newer than supported version {}",
+        version,
+        kBinaryFormatVersion);
   }
 
   return version;

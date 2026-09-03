@@ -49,6 +49,79 @@ This is a **query**: it reports contacts without integrating impulses or
 advancing time, so it pairs naturally with the kinematics-only workflow from
 {doc}`../concepts/world`.
 
+## Bounding baked rigid contact storage
+
+Scenes that need hard bounds on the baked rigid candidate and emitted-contact
+buffers can set independent limits when constructing the world:
+
+```python
+world = dart.World(
+    rigid_collision_candidate_pair_capacity=2048,
+    rigid_collision_contact_capacity=4096,
+)
+```
+
+The candidate limit counts overlapping shape-AABB pairs before body and joint
+filters. The contact limit counts the aggregate contact points emitted after
+filtering and narrow phase. A value of `0` (the default) asks DART to derive a
+conservative limit from the design-mode shape layout: every unordered shape
+pair is allowed as a candidate, with up to four contacts for a primitive pair
+and up to 1000 for a mesh-involving pair. The resolved values are available as
+`world.rigid_collision_candidate_pair_capacity` and
+`world.rigid_collision_contact_capacity` after the first collision bake.
+Explicit contact limits that cannot represent the solver's derived two tangent
+rows per contact are rejected when the World is constructed.
+
+The limits lock when simulation mode is entered. Explicit limits reserve
+their storage exactly, so a separated scene may become fully dense later
+without growing its collision/contact buffers. Automatic limits are rejection
+thresholds only: the complete shape-pair envelope grows quadratically with the
+shape count, so DART reserves at most a fixed budget (65,536 candidate pairs
+and 16,384 contacts) and lets the buffers grow, allocating, between the budget
+and the envelope. Set explicit limits when a large scene must step without
+allocating. If a limit is exceeded, `enter_simulation_mode()` or the
+built-in `step()` fails before velocities, forces, poses, diagnostics, time, or
+the frame counter are changed. The two limits are separate on purpose: a
+candidate need not collide, while one shape pair may produce a multi-point
+manifold.
+
+These limits are construction-time memory policy, not simulated state. Binary
+snapshots do not serialize them: loading uses the destination world's limits
+and is transactional if the snapshot does not fit. `world.clear()` also keeps
+the policy for the rebuilt contents, just as it keeps the world's allocator.
+Replay stays in the same world and retains its already locked policy.
+Deformable surface contact has a separate, per-deformable-body candidate
+boundary; these rigid limits do not cover it.
+
+### Allocation-safe primitive envelope
+
+After a successful bake, with the shape layout unchanged, the AABB candidate
+snapshot, aggregate contact buffer, reverse-order dispatch, and result
+manifolds reuse reserved storage. The following unordered native primitive
+pairs have fixed-size narrow-phase workspaces in either argument order:
+
+| First shape | Allocation-safe partners              |
+| ----------- | ------------------------------------- |
+| Sphere      | Sphere, Box, Capsule, Cylinder, Plane |
+| Box         | Box, Capsule, Plane                   |
+| Capsule     | Capsule, Cylinder, Plane              |
+| Cylinder    | Cylinder, Plane                       |
+| Plane       | Plane (always produces no contact)    |
+
+This includes rotated Box--Box contact, which uses fixed face-clipping and
+contact-reduction arrays. Box--Cylinder is intentionally not in the guaranteed
+set: some orientations fall back to convex GJK/EPA, whose support-function and
+polytope workspaces can allocate. Convex/GJK and mesh paths can also allocate
+internal temporary storage even though their emitted contacts remain bounded
+by the configured contact limit.
+
+The guarantee applies to the internal baked collision path, not to changing
+collision geometry after the bake or to the returned Python/C++ container from
+`world.collide()` (that public return value is a copy and may allocate). Other
+enabled simulation features must establish their own allocation contract; for
+example, this statement does not make a blanket no-allocation promise for a
+custom step pipeline or an independently configured deactivation solver.
+
 ## Friction and restitution
 
 Each body's surface material shapes the contact response. **Friction** resists

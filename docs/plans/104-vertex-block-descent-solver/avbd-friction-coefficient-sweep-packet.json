@@ -1172,6 +1172,7 @@
   "resolved_solver_identity": {
     "avbd_rigid_contact_config_emplaced": false,
     "recorded_from": "friction coefficient sweep benchmark scene counters",
+    "rigid_contact_selection": "contact_solver_method",
     "rigid_contact_solver": "sequential_impulse",
     "rigid_point_joint_solver": "none"
   },
@@ -1196,7 +1197,7 @@
     "source_demo": "avbd-demo2d",
     "time_step": 0.016666666666666666
   },
-  "schema_version": 2,
+  "schema_version": 3,
   "target": {
     "complete_paper_reproduction": false,
     "paper_gap": "friction coefficient comparison",
@@ -1351,5 +1352,19 @@
       }
     ],
     "scene": "avbd_demo2d_dynamic_friction"
+  },
+  "evidence_boundary": {
+    "artifact_status": "legacy_unbound",
+    "avbd_performance_claim_supported": false,
+    "avbd_solver_evidence": false,
+    "capture_artifacts_accessible": false,
+    "current_build_bound": false,
+    "historical_identifiers_retained": true,
+    "historical_measurements_preserved": true,
+    "measurement_runtime_identity_recorded": false,
+    "plan104_avbd_row_closure_supported": false,
+    "semantic_visual_review_recorded": false,
+    "reason": "This legacy packet preserves historical hashes and timing metadata whose source artifacts, writer inputs and runtime identity counters are unavailable. It stays pinned at its committed schema version and supports no current AVBD claim.",
+    "supported_scope": "historical_sequential_impulse_cpu_and_visual_metadata_only"
   }
 }

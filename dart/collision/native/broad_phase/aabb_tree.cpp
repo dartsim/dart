@@ -135,6 +135,33 @@ void AabbTreeBroadPhase::queryPairs(std::vector<BroadPhasePair>& out) const
   out.erase(std::unique(out.begin(), out.end()), out.end());
 }
 
+bool AabbTreeBroadPhase::queryPairsBounded(
+    std::vector<BroadPhasePair>& out, std::size_t maxPairs) const
+{
+  out.clear();
+
+  if (root_ == kNullNode) {
+    return true;
+  }
+
+  const bool complete
+      = visitPairsFast([&](std::size_t first, std::size_t second) {
+          if (out.size() >= maxPairs) {
+            return false;
+          }
+          out.emplace_back(std::min(first, second), std::max(first, second));
+          return true;
+        });
+  if (!complete) {
+    out.clear();
+    return false;
+  }
+
+  std::sort(out.begin(), out.end());
+  out.erase(std::unique(out.begin(), out.end()), out.end());
+  return true;
+}
+
 bool AabbTreeBroadPhase::visitPairs(const BroadPhasePairVisitor& visitor) const
 {
   if (root_ == kNullNode) {

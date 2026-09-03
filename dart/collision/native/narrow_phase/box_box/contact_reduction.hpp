@@ -41,6 +41,10 @@
 
 namespace dart::collision::native::box_box {
 
+[[nodiscard]] DART_COLLISION_NATIVE_API FixedContactCandidates
+reduceContactCandidatesFixed(
+    const FixedContactCandidates& candidates, std::size_t maxContacts);
+
 [[nodiscard]] DART_COLLISION_NATIVE_API std::vector<ContactCandidate>
 reduceContactCandidates(
     const std::vector<ContactCandidate>& candidates, std::size_t maxContacts);
