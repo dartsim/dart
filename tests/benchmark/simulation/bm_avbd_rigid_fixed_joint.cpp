@@ -2770,6 +2770,8 @@ PaperBreakableWallFixture makePaperBreakableWallWorld(
           kPaperBreakableWallImpactTargets[2][1])};
 
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, kPaperBreakableWallGravity);
   options.timeStep = kPaperBreakableWallTimeStep;
   options.rigidBodySolver = solver;
@@ -3147,6 +3149,8 @@ std::unique_ptr<sx::World> makeArticulatedRevoluteMotorWorld(
     std::size_t motorCount)
 {
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d::Zero();
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -3208,6 +3212,8 @@ std::unique_ptr<sx::World> makeArticulatedBreakableMotorWorld(
     std::size_t motorCount)
 {
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d::Zero();
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -3273,6 +3279,8 @@ std::unique_ptr<sx::World> makeArticulatedPrismaticMotorWorld(
     std::size_t motorCount)
 {
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d::Zero();
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -3334,6 +3342,8 @@ std::unique_ptr<sx::World> makeArticulatedPrismaticBreakableMotorWorld(
     std::size_t motorCount)
 {
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d::Zero();
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -3400,6 +3410,8 @@ std::unique_ptr<sx::World> makeArticulatedWorldPrismaticBreakableMotorWorld(
     std::size_t motorCount)
 {
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d::Zero();
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -3465,6 +3477,8 @@ std::unique_ptr<sx::World> makeArticulatedWorldRevoluteBreakableMotorWorld(
     std::size_t motorCount)
 {
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d::Zero();
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -3530,6 +3544,8 @@ std::unique_ptr<sx::World> makeArticulatedBreakableJointWorld(
     std::size_t jointCount)
 {
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -9.81, 0.0);
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -3585,6 +3601,8 @@ std::unique_ptr<sx::World> makeArticulatedWorldSphericalBreakableJointWorld(
     std::size_t jointCount)
 {
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -9.81, 0.0);
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -3643,6 +3661,8 @@ std::unique_ptr<sx::World> makeArticulatedSphericalPairBreakableJointWorld(
     std::size_t jointCount)
 {
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -9.81, 0.0);
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -3706,6 +3726,8 @@ std::unique_ptr<sx::World> makeArticulatedCompliantJointWorld(
   constexpr double kAngularStiffness = 1000.0;
 
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d::Zero();
   options.timeStep = 0.002;
   auto world = std::make_unique<sx::World>(options);
@@ -3782,6 +3804,8 @@ std::unique_ptr<sx::World> makeArticulatedCompliantMotorWorld(
   constexpr double kAngularStiffness = 2000.0;
 
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d::Zero();
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -3888,6 +3912,8 @@ ArticulatedHighRatioChainFixture makeArticulatedHighRatioChainWorld(
     double tolerance)
 {
   sx::WorldOptions options;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -9.81);
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
