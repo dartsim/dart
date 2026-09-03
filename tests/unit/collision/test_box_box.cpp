@@ -808,17 +808,24 @@ TEST(BoxBox, RotatedFacePatchReductionRespectsContactLimit)
           const char* label) {
         ASSERT_GE(result.numContacts(), 1u) << label;
         ASSERT_LE(result.numContacts(), option.maxNumContacts) << label;
+        // The tilted incident face meets the reference plane at an angle, so
+        // each clipped vertex carries its own depth; the deepest one is the
+        // separating-axis penetration.
+        double deepest = 0.0;
         for (std::size_t i = 0; i < result.numContacts(); ++i) {
           const auto& contact = result.getContact(i);
           EXPECT_TRUE(contact.normal.isApprox(expectedNormal, 1e-12))
               << label << " normal=" << contact.normal.transpose();
-          EXPECT_NEAR(contact.depth, depth, 1e-12) << label;
+          EXPECT_GE(contact.depth, 0.0) << label;
+          EXPECT_LE(contact.depth, depth + 1e-12) << label;
+          deepest = std::max(deepest, contact.depth);
           expectPointInsideBox(contact.position, boxA, 1e-2, label);
           expectPointInsideBox(contact.position, boxB, 1e-2, label);
           EXPECT_GE(contact.position.z(), expectedContactZ - 1e-12) << label;
           EXPECT_LE(contact.position.x(), halfExtent + 1e-12) << label;
           EXPECT_GE(contact.position.x(), -halfExtent - 1e-12) << label;
         }
+        EXPECT_NEAR(deepest, depth, 1e-12) << label;
       });
 }
 

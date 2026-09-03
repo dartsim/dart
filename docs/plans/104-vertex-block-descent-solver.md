@@ -1506,39 +1506,45 @@ owning code, never as standalone doc or cleanup PRs.
   (measured at roughly a quarter of a 201-box step). Memoize against a
   world state version or let `execute` consume the preflight span once no
   intervening stage can move a body.
-- Decide the paper profile's `beta`/`k_start` units (D6 of the foundation
-  PR) and close finding F. The source profiles (`source-demo-2d`,
-  `source-demo-3d`) now reproduce the pinned sources' rules (PENALTY_MIN 1
-  and PENALTY_MAX for every row, the Algorithm 1 line 4 adaptive initial
-  guess, COLLISION_MARGIN, the joint `torqueArm` scale, the sources' cone
-  rules, feature-only manifold continuation, 2D post-stabilization) and the
-  twelve re-derived source rows are verified against headless builds of
-  `avbd-demo2d` 74699a11f858 and `avbd-demo3d` 7701bd427d55. The paper
-  profile keeps DART's 1e5 start stiffness and its step-start sweep origin
-  because Table 2's `beta` of 10 cannot ramp hard joints from the sources'
-  PENALTY_MIN in SI units (chains tear) while the 1e5 start stalls the block
-  sweep of light hard-jointed pairs (about 1 % of free fall, as the sources
-  do at PENALTY_MIN 1e5) and makes the initial guess push landing structures
-  through their supports; the sealed Figure 13 outcome is unchanged under
-  it. Finding F: the post-stabilized 2D profile decelerates a sliding box at
-  a quarter of the source's rate because the port warm-starts a sliding
-  manifold's normal dual (which then decays below the weight) where the
-  source cold-starts and re-ramps it every step; the 2D friction rows bound
-  the port's values and cite the source's until that is resolved.
-- Memoize the rigid block kernel's per-body-visit world points, orientation
-  errors, and SO(3) left-Jacobian inverse. The zero-trust audit ladder
-  (`99c1f411d7f`..`2760f9bb496`) made the public AVBD and VBD Figure 13
-  steps about 1.75x and 1.5x slower than the pre-audit head while the
-  Sequential Impulse step is unchanged; callgrind shows the same 610k body
-  solves executing 24.0 G instead of 13.6 G instructions because
-  `avbdRigidSo3LeftJacobianInverse` is rebuilt for every axis row of a
-  joint and `avbdRigidBodyWorldPoint` / `normalizeAvbdRigidOrientation`
-  run 4.7x / 2x more often (value, direction, and quasi-Newton paths each
-  recompute them). All are pure functions of the body state and row
-  constants, so memoization is bitwise identical; the exact Jacobian
-  itself is a Newton-path correctness change and stays. Any kernel edit
-  changes a capture root, so the Figure 13 evidence must be resealed with
-  it.
+- D6 (decided in the foundation PR): the public AVBD default is
+  `RigidAvbdParameterProfile::MassScaledReference`, the `avbd-demo3d`
+  source's rules (Algorithm 1 line 4 adaptive initial guess, COLLISION_MARGIN,
+  joint `torqueArm` scale, trial-force cone, feature-only manifold
+  continuation, PENALTY_MAX 1e10) with every contact and joint row starting at
+  its reduced mass over dt^2, because no fixed `k_start` serves every scale
+  (PENALTY_MIN 1 sinks a 1000 kg box 0.14 m; a fixed 1e5 stalls light
+  hard-jointed pairs at 1 % of free fall). `Paper2025Table2` keeps its Table
+  2 constants, the 1e5 start, and the step-start sweep origin, and the Figure
+  13 scenes select it explicitly. The default keeps a one-time startup
+  residual for hard-jointed bodies released from rest (the adaptive guess
+  carries no gravity until two projections exist) and applies its row
+  construction to the AVBD family only. Finding F (weak sustained friction:
+  the 2D static-friction pile crept 2.3 m in three seconds where the source
+  holds within 3 cm) is closed at its four owners, verified row by row
+  against the headless reference runs: the 2D source's anchor rule (dual
+  strictly inside the cone and step-start tangential offset below
+  STICK_THRESH) is now a profile field; the box-box face clip no longer
+  applies the reference plane as a clip plane (a rocking box produced a
+  crossing vertex sliding along its face edge every step) and gives each
+  incident vertex within a skin its own depth; the box contact feature
+  classifier keeps corners and edges as corners and edges; and feature-only
+  identity continues each persisting key on its own instead of cold-starting
+  a manifold whose point count changed. The source-demo scenes also run the
+  sources' ten iterations (their worlds ran DART's default eight) and the
+  2D ports lock their bodies to the plane. Sliding friction stays bounded
+  rather than matched (the mu 5 box on the mu 0.5 ground reaches 5.3 m/s
+  after a second where the source reaches 1.59 m/s; the source cold-starts
+  the sliding manifold every step). Remaining follow-up: the
+  `Paper2025Table2` units, if that profile is ever to run with the adaptive
+  initial guess.
+- Memoized (foundation PR): the rigid block kernel builds the SO(3)
+  left-Jacobian inverses of a joint's orientation error once per body visit
+  and reuses the cached world points of a quasi-Newton point-pair row for
+  its value, direction, and geometric term. The values are bitwise those of
+  the per-row helpers (the Figure 13 wall and the source-demo state digests
+  are unchanged by the memoization alone); the exact Jacobian itself is a
+  Newton-path correctness change and stays. The benchmark ratio against the
+  pre-memoization head is recorded in the README's performance paragraph.
 
 ## Acceptance Criteria
 

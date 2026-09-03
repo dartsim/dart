@@ -81,7 +81,7 @@ void defSimPartWorld(nb::module_& m)
           nb::arg("rigid_body_solver")
           = sim::RigidBodySolver::SequentialImpulse,
           nb::arg("rigid_avbd_parameter_profile")
-          = sim::RigidAvbdParameterProfile::Paper2025Table2,
+          = sim::RigidAvbdParameterProfile::MassScaledReference,
           nb::arg("rigid_constraint_options") = sim::RigidConstraintOptions{},
           nb::arg("rigid_collision_candidate_pair_capacity") = 0,
           nb::arg("rigid_collision_contact_capacity") = 0,

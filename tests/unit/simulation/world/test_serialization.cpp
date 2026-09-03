@@ -2131,6 +2131,8 @@ TEST(Serialization, PreservesPublicAvbdSolverFamily)
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.rigidConstraintOptions.iterations = 20;
   sx::World world1(options);
 

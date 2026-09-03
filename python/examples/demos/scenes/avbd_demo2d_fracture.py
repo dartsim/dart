@@ -10,6 +10,7 @@ import numpy as np
 import dartpy as dart
 import dartpy as sx
 
+from .._avbd_demo2d_plane import lock_to_xy_plane
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
@@ -181,6 +182,9 @@ def build() -> SceneSetup:
         gravity=(0.0, _GRAVITY, 0.0),
         rigid_body_solver=sx.RigidBodySolver.AVBD,
         rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+        rigid_constraint_options=sx.RigidConstraintOptions(
+            iterations=_SOURCE_ROW["solver_defaults"]["iterations"]
+        ),
     )
 
     ground = _add_source_box(
@@ -320,6 +324,7 @@ def build() -> SceneSetup:
         sync_connectors()
 
     def pre_step() -> None:
+        lock_to_xy_plane((*chain, *supports, *falling_blocks))
         bridge.pre_step()
         sync_connectors()
 

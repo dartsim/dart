@@ -78,7 +78,10 @@ void defSimPartCore(nb::module_& m)
       .value(
           "PAPER_2025_TABLE_2", sim::RigidAvbdParameterProfile::Paper2025Table2)
       .value("SOURCE_DEMO_2D", sim::RigidAvbdParameterProfile::SourceDemo2d)
-      .value("SOURCE_DEMO_3D", sim::RigidAvbdParameterProfile::SourceDemo3d);
+      .value("SOURCE_DEMO_3D", sim::RigidAvbdParameterProfile::SourceDemo3d)
+      .value(
+          "MASS_SCALED_REFERENCE",
+          sim::RigidAvbdParameterProfile::MassScaledReference);
   nb::enum_<sim::ContactSolverMethod>(m, "ContactSolverMethod")
       .value("SEQUENTIAL_IMPULSE", sim::ContactSolverMethod::SequentialImpulse)
       .value("BOXED_LCP", sim::ContactSolverMethod::BoxedLcp);

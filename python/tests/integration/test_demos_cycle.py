@@ -4180,7 +4180,11 @@ def test_rigid_contact_solver_compare_records_coupled_contact_policy() -> None:
     assert methods[1].name == "BOXED_LCP"
     for case in controller.cases:
         metrics = controller._last_metrics[case.label]
-        assert float(metrics["contact_count"]) >= 2.0
+        # At frame 96 the plank is still tumbling end over end on one corner
+        # (the next corner of that edge sits 3 mm above the ground); the
+        # box-box manifold reports that corner alone now that it no longer
+        # emits crossing points where the tilted face meets the ground plane.
+        assert float(metrics["contact_count"]) >= 1.0
         assert float(metrics["max_depth"]) < 0.010
         assert abs(float(metrics["clearance"])) < 0.020
         assert np.isfinite(float(metrics["speed"]))

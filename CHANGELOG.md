@@ -211,11 +211,22 @@ compatibility remains on the active DART 6 LTS branch._
   the Algorithm 1 adaptive initial guess (with a projected-velocity history
   in the warm-start replay state), the collision margin, the joint
   `torqueArm` scale, the sources' Coulomb-cone rules, feature-only manifold
-  continuation, and the 2D source's post-stabilization sweep; the paper
-  profile keeps DART's row start stiffness and step-start sweep origin. The
-  source-demo scenes select their own reference profile and their rows are
-  re-derived from the source runs. Machine-checked row-bound evidence
-  contracts keep full CPU/CUDA paper parity explicitly open.
+  continuation, and the 2D source's post-stabilization sweep. The default
+  profile is `MassScaledReference`: the 3D source's rules with every contact
+  and joint row starting at its reduced mass over dt^2, so resting
+  penetration is mass-independent and light hard-jointed bodies fall freely;
+  `Paper2025Table2` keeps its Table 2 constants, DART's 1e5 row start, and the
+  step-start sweep origin, and the Figure 13 scenes select it explicitly.
+  The source-demo scenes select their own reference profile and the sources'
+  iteration count, the 2D ports lock their bodies to the plane, and their
+  rows are re-derived from the source runs. The box-box face clip keeps each
+  incident vertex within a skin of the reference plane with its own depth
+  instead of clipping against that plane (a resting box no longer emits a
+  crossing vertex that slides along its face edge every step), box contact
+  features keep corners and edges as corners and edges, and the 2D source's
+  static-friction anchor rule is a profile field, so stacked boxes on a slope
+  hold their static friction like the reference. Machine-checked row-bound
+  evidence contracts keep full CPU/CUDA paper parity explicitly open.
   ([#3432](https://github.com/dartsim/dart/pull/3432))
 - Added bounded, fail-closed DART 7 contact storage: `World` construction
   options cap the baked rigid collision candidate-pair and contact buffers

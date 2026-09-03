@@ -6699,7 +6699,7 @@ def test_simulation_world_rigid_avbd_parameter_profile_selector():
     default = sx.World(rigid_body_solver=sx.RigidBodySolver.AVBD)
     assert (
         default.rigid_avbd_parameter_profile
-        == sx.RigidAvbdParameterProfile.PAPER_2025_TABLE_2
+        == sx.RigidAvbdParameterProfile.MASS_SCALED_REFERENCE
     )
 
     configured = sx.World(

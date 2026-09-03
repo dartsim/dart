@@ -1176,7 +1176,7 @@ private:
   Eigen::Vector3d m_gravity{0.0, 0.0, -9.81};
   RigidBodySolver m_rigidBodySolver{RigidBodySolver::SequentialImpulse};
   RigidAvbdParameterProfile m_rigidAvbdParameterProfile{
-      RigidAvbdParameterProfile::Paper2025Table2};
+      RigidAvbdParameterProfile::MassScaledReference};
   RigidConstraintOptions m_rigidConstraintOptions;
   RigidCollisionCapacityOptions m_rigidCollisionCapacityOptions;
   double m_timeStep{0.001};

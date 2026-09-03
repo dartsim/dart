@@ -156,6 +156,9 @@ def build() -> SceneSetup:
         gravity=(0.0, 0.0, _GRAVITY),
         rigid_body_solver=sx.RigidBodySolver.AVBD,
         rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_3D,
+        rigid_constraint_options=sx.RigidConstraintOptions(
+            iterations=_SOURCE_ROW["solver_defaults"]["iterations"]
+        ),
     )
 
     ground = _add_source_box(

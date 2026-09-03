@@ -10,6 +10,7 @@ import numpy as np
 import dartpy as dart
 import dartpy as sx
 
+from .._avbd_demo2d_plane import plane_locked_pre_step
 from .._world_bridge import WorldRenderBridge
 from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 
@@ -182,6 +183,9 @@ def build() -> SceneSetup:
         gravity=(0.0, _GRAVITY, 0.0),
         rigid_body_solver=sx.RigidBodySolver.AVBD,
         rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+        rigid_constraint_options=sx.RigidConstraintOptions(
+            iterations=_SOURCE_ROW["solver_defaults"]["iterations"]
+        ),
     )
 
     grid: list[list[sx.RigidBody]] = []
@@ -280,11 +284,12 @@ def build() -> SceneSetup:
 
     return SceneSetup(
         world=bridge.render_world,
-        pre_step=bridge.pre_step,
+        pre_step=plane_locked_pre_step(bridge, cells),
         force_drag=bridge.force_drag,
         panels=[ScenePanel("AVBD Demo2D Joint Grid", build_panel)],
         info={
             "sx_world": world,
+            "replay_live_step_is_stateless": True,
             "cells": cells,
             "cell_grid": grid,
             "cell_size": np.array(_CELL_SIZE, copy=True),

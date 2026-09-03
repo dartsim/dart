@@ -421,11 +421,16 @@ TEST(ResolvedConfiguration, RecordsPublicAvbdFamilyAsRequested)
 
   const auto* profile = findNote(config, "rigid-avbd-parameter-profile");
   ASSERT_NE(profile, nullptr);
-  EXPECT_EQ(profile->requested, "paper-2025-table-2");
-  EXPECT_EQ(profile->resolved, "paper-2025-table-2");
-  EXPECT_NE(profile->reason.find("alpha=0.95"), std::string::npos);
-  EXPECT_NE(profile->reason.find("beta=10"), std::string::npos);
-  EXPECT_NE(profile->reason.find("gamma=0.99"), std::string::npos);
+  EXPECT_EQ(profile->requested, "mass-scaled-reference");
+  EXPECT_EQ(profile->resolved, "mass-scaled-reference");
+  EXPECT_NE(profile->reason.find("alpha=0.99"), std::string::npos);
+  EXPECT_NE(profile->reason.find("beta=10000"), std::string::npos);
+  EXPECT_NE(profile->reason.find("betaAngular=100"), std::string::npos);
+  EXPECT_NE(profile->reason.find("gamma=0.999"), std::string::npos);
+  EXPECT_NE(profile->reason.find("kStartScale=1,"), std::string::npos);
+  EXPECT_NE(profile->reason.find("kMax=1e+10"), std::string::npos);
+  EXPECT_NE(profile->reason.find("margin=0.01"), std::string::npos);
+  EXPECT_NE(profile->reason.find("torqueArm"), std::string::npos);
 
   const auto* contact = findNote(config, "rigid-contact");
   ASSERT_NE(contact, nullptr);
@@ -484,6 +489,7 @@ TEST(ResolvedConfiguration, RecordsSelectedAvbdSourceDemoProfiles)
        "margin=0.0005",
        "torqueArm",
        "cone=dual",
+       "stickOffset=0.01",
        "post-stabilization"});
   checkProfile(
       sx::RigidAvbdParameterProfile::SourceDemo3d,
@@ -494,6 +500,18 @@ TEST(ResolvedConfiguration, RecordsSelectedAvbdSourceDemoProfiles)
        "gamma=0.999",
        "kStart=1,",
        "kMax=1e+10",
+       "margin=0.01",
+       "torqueArm",
+       "cone=force"});
+  checkProfile(
+      sx::RigidAvbdParameterProfile::MassScaledReference,
+      "mass-scaled-reference",
+      {"alpha=0.99",
+       "beta=10000,",
+       "betaAngular=100",
+       "gamma=0.999",
+       "kMax=1e+10",
+       "kStartScale=1,",
        "margin=0.01",
        "torqueArm",
        "cone=force"});

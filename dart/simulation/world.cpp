@@ -3129,6 +3129,7 @@ bool isValidRigidAvbdParameterProfile(RigidAvbdParameterProfile profile)
     case RigidAvbdParameterProfile::Paper2025Table2:
     case RigidAvbdParameterProfile::SourceDemo2d:
     case RigidAvbdParameterProfile::SourceDemo3d:
+    case RigidAvbdParameterProfile::MassScaledReference:
       return true;
   }
 
@@ -3800,6 +3801,8 @@ std::uint8_t encodeRigidAvbdParameterProfile(RigidAvbdParameterProfile profile)
       return 1u;
     case RigidAvbdParameterProfile::SourceDemo3d:
       return 2u;
+    case RigidAvbdParameterProfile::MassScaledReference:
+      return 3u;
   }
   DART_SIMULATION_THROW_T( // LCOV_EXCL_LINE
       InvalidArgumentException, "Rigid AVBD parameter profile is invalid");
@@ -3816,6 +3819,8 @@ RigidAvbdParameterProfile decodeRigidAvbdParameterProfile(std::uint8_t value)
       return RigidAvbdParameterProfile::SourceDemo2d;
     case 2u:
       return RigidAvbdParameterProfile::SourceDemo3d;
+    case 3u:
+      return RigidAvbdParameterProfile::MassScaledReference;
   }
   DART_SIMULATION_THROW_T(
       InvalidArgumentException,
@@ -6612,6 +6617,10 @@ compute::ResolvedSolverConfiguration World::buildResolvedConfiguration(
     if (std::isfinite(profile.startStiffness)) {
       profileReason += std::format(", kStart={:g}", profile.startStiffness);
     }
+    if (std::isfinite(profile.startStiffnessMassScale)) {
+      profileReason
+          += std::format(", kStartScale={:g}", profile.startStiffnessMassScale);
+    }
     if (std::isfinite(profile.maxStiffness)) {
       profileReason += std::format(", kMax={:g}", profile.maxStiffness);
     }
@@ -6630,6 +6639,10 @@ compute::ResolvedSolverConfiguration World::buildResolvedConfiguration(
         break;
       case detail::deformable_vbd::AvbdRigidFrictionConeRule::StepHighWaterDual:
         break;
+    }
+    if (std::isfinite(profile.frictionStickOffsetThreshold)) {
+      profileReason += std::format(
+          ", stickOffset={:g}", profile.frictionStickOffsetThreshold);
     }
     if (profile.postStabilize) {
       profileReason += ", post-stabilization";

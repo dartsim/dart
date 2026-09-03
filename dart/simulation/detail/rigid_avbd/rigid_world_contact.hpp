@@ -78,6 +78,11 @@ struct AvbdRigidWorldContactOptions
 {
   double startStiffness = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
+  /// Finite with a positive `timeStep`: each contact row starts at
+  /// `startStiffnessMassScale * m_eff / dt^2` instead of `startStiffness`
+  /// (see `AvbdRigidParameterProfile::startStiffnessMassScale`).
+  double startStiffnessMassScale = std::numeric_limits<double>::quiet_NaN();
+  double timeStep = std::numeric_limits<double>::quiet_NaN();
 };
 
 enum class AvbdRigidWorldEndpointKind
@@ -348,6 +353,13 @@ struct AvbdRigidParameterProfile
   /// Finite: the penalty ceiling of every public row (the reference sources'
   /// PENALTY_MAX). NaN: keep the configured ceilings.
   double maxStiffness = std::numeric_limits<double>::quiet_NaN();
+  /// Finite: every contact and joint row starts at this fraction of its
+  /// reduced mass over dt^2 (`scale * m_eff / dt^2`, the dynamic body's mass
+  /// against a fixed body), which makes the first-step penetration the same
+  /// fraction of `g dt^2` at every mass and keeps the block sweep of light
+  /// hard-jointed bodies from stalling. Overrides `startStiffness` and the
+  /// configured per-row start. NaN: not mass-scaled.
+  double startStiffnessMassScale = std::numeric_limits<double>::quiet_NaN();
   /// Rest penetration of every contact normal row (the reference sources'
   /// COLLISION_MARGIN): a resting contact keeps that overlap so its detection
   /// never flickers. Zero: rows rest at zero penetration.
@@ -363,6 +375,14 @@ struct AvbdRigidParameterProfile
   /// alone (the reference sources' manifold rule), so a contact sliding along
   /// a face keeps its duals; DART's rule also bounds the points' motion.
   bool contactIdentityByFeatureOnly = false;
+  /// When finite, a friction anchor keeps sticking while its dual stays
+  /// strictly inside the cone and the anchored points' tangential offset at
+  /// the step start is below this distance (the `avbd-demo2d` source's
+  /// STICK_THRESH rule; the post-stabilization sweep removes that offset
+  /// every step). NaN keeps the `avbd-demo3d` rule: the anchor sticks only
+  /// when the accepted step's tangential displacement is negligible.
+  double frictionStickOffsetThreshold
+      = std::numeric_limits<double>::quiet_NaN();
 };
 
 /// Regularization alpha of the main sweeps: a post-stabilized schedule
@@ -397,7 +417,8 @@ inline constexpr AvbdRigidParameterProfile kAvbdRigidSourceDemo2dProfile{
     .contactMargin = 0.0005,
     .angularRowsUseTorqueArm = true,
     .frictionConeRule = AvbdRigidFrictionConeRule::LatestDual,
-    .contactIdentityByFeatureOnly = true};
+    .contactIdentityByFeatureOnly = true,
+    .frictionStickOffsetThreshold = 0.01};
 
 /// Defaults of the pinned `avbd-demo3d` source (7701bd427d55, `solver.cpp`
 /// and `solver.h`): betaLin 1e4, betaAng 100, alpha 0.99, gamma 0.999, no
@@ -416,6 +437,63 @@ inline constexpr AvbdRigidParameterProfile kAvbdRigidSourceDemo3dProfile{
     .frictionConeRule = AvbdRigidFrictionConeRule::TrialForce,
     .contactIdentityByFeatureOnly = true};
 
+/// The default profile: the `avbd-demo3d` source's rules and constants with
+/// the row start stiffness scaled by each row's reduced mass over dt^2
+/// (`RigidAvbdParameterProfile::MassScaledReference`).
+inline constexpr AvbdRigidParameterProfile kAvbdRigidMassScaledReferenceProfile{
+    .beta = 10000.0,
+    .betaAngular = 100.0,
+    .alpha = 0.99,
+    .gamma = 0.999,
+    .postStabilize = false,
+    .startStiffness = std::numeric_limits<double>::quiet_NaN(),
+    .maxStiffness = 1.0e10,
+    .startStiffnessMassScale = 1.0,
+    .contactMargin = 0.01,
+    .angularRowsUseTorqueArm = true,
+    .frictionConeRule = AvbdRigidFrictionConeRule::TrialForce,
+    .contactIdentityByFeatureOnly = true};
+
+/// Start stiffness of a row between two bodies under a mass-scaled profile:
+/// `scale * m_eff / dt^2` with `m_eff` the reduced mass (a non-positive or
+/// non-finite mass is a fixed body and drops out). Zero when neither mass is
+/// finite and positive or the inputs are invalid.
+inline double avbdRigidMassScaledStartStiffness(
+    double massA, double massB, double scale, double timeStep) noexcept
+{
+  if (!std::isfinite(scale) || scale <= 0.0 || !std::isfinite(timeStep)
+      || timeStep <= 0.0) {
+    return 0.0;
+  }
+  const bool dynamicA = std::isfinite(massA) && massA > 0.0;
+  const bool dynamicB = std::isfinite(massB) && massB > 0.0;
+  double reducedMass = 0.0;
+  if (dynamicA && dynamicB) {
+    reducedMass = massA * massB / (massA + massB);
+  } else if (dynamicA) {
+    reducedMass = massA;
+  } else if (dynamicB) {
+    reducedMass = massB;
+  } else {
+    return 0.0;
+  }
+  return scale * reducedMass / (timeStep * timeStep);
+}
+
+/// Mass of a snapshot body for the mass-scaled row start: infinite for a
+/// fixed (static or kinematic) body, whose stored mass is not its inertia in
+/// the sweep.
+inline double avbdRigidWorldRowBodyMass(
+    const AvbdRigidWorldContactSnapshot& snapshot, std::uint32_t body) noexcept
+{
+  if (body < snapshot.fixed.size() && snapshot.fixed[body] != 0u) {
+    return std::numeric_limits<double>::infinity();
+  }
+  return body < snapshot.masses.size()
+             ? snapshot.masses[body]
+             : std::numeric_limits<double>::infinity();
+}
+
 //==============================================================================
 inline const AvbdRigidParameterProfile& avbdRigidParameterProfileFor(
     ::dart::simulation::RigidAvbdParameterProfile profile) noexcept
@@ -425,6 +503,8 @@ inline const AvbdRigidParameterProfile& avbdRigidParameterProfileFor(
       return kAvbdRigidSourceDemo2dProfile;
     case ::dart::simulation::RigidAvbdParameterProfile::SourceDemo3d:
       return kAvbdRigidSourceDemo3dProfile;
+    case ::dart::simulation::RigidAvbdParameterProfile::MassScaledReference:
+      return kAvbdRigidMassScaledReferenceProfile;
     case ::dart::simulation::RigidAvbdParameterProfile::Paper2025Table2:
       break;
   }
@@ -440,6 +520,8 @@ inline const char* avbdRigidParameterProfileName(
       return "source-demo-2d";
     case ::dart::simulation::RigidAvbdParameterProfile::SourceDemo3d:
       return "source-demo-3d";
+    case ::dart::simulation::RigidAvbdParameterProfile::MassScaledReference:
+      return "mass-scaled-reference";
     case ::dart::simulation::RigidAvbdParameterProfile::Paper2025Table2:
       break;
   }
@@ -475,6 +557,7 @@ inline void applyAvbdRigidParameterProfile(
   options.friction.alpha = sweepAlpha;
   options.friction.beta = profile.beta;
   options.friction.coneRule = profile.frictionConeRule;
+  options.friction.stickOffsetThreshold = profile.frictionStickOffsetThreshold;
   options.contactMargin = profile.contactMargin;
   options.contactIdentityByFeatureOnly = profile.contactIdentityByFeatureOnly;
   if (std::isfinite(profile.maxStiffness)) {
@@ -2108,7 +2191,18 @@ inline void buildAvbdRigidWorldContactSnapshot(
         detail::avbdRigidWorldContactFriction(registry, entityA)
         * detail::avbdRigidWorldContactFriction(registry, entityB));
     manifoldPoint.startStiffness = options.startStiffness;
-    manifoldPoint.maxStiffness = options.maxStiffness;
+    if (std::isfinite(options.startStiffnessMassScale)) {
+      const double scaled = avbdRigidMassScaledStartStiffness(
+          avbdRigidWorldRowBodyMass(snapshot, bodyA),
+          avbdRigidWorldRowBodyMass(snapshot, bodyB),
+          options.startStiffnessMassScale,
+          options.timeStep);
+      if (scaled > 0.0) {
+        manifoldPoint.startStiffness = scaled;
+      }
+    }
+    manifoldPoint.maxStiffness
+        = std::max(manifoldPoint.startStiffness, options.maxStiffness);
     snapshot.contacts.push_back(manifoldPoint);
   }
   detail::assignAvbdRigidWorldContactRows(snapshot, scratch.contactRowOrder);
@@ -2204,7 +2298,9 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
     std::span<const AvbdRigidWorldPointJointInput> inputs,
     AvbdRigidWorldContactSnapshot& snapshot,
     AvbdRigidWorldContactBuildScratch& scratch,
-    bool angularRowsUseTorqueArm = false)
+    bool angularRowsUseTorqueArm = false,
+    double startStiffnessMassScale = std::numeric_limits<double>::quiet_NaN(),
+    double timeStep = std::numeric_limits<double>::quiet_NaN())
 {
   if (!inputs.empty()) {
     const std::size_t maxNewBodies = 2u * inputs.size();
@@ -2285,6 +2381,16 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
     joint.linearAxisMask = input.linearAxisMask;
     joint.angularAxisMask = input.angularAxisMask;
     joint.startStiffness = std::max(0.0, input.startStiffness);
+    if (std::isfinite(startStiffnessMassScale)) {
+      const double scaled = avbdRigidMassScaledStartStiffness(
+          avbdRigidWorldRowBodyMass(snapshot, bodyA),
+          avbdRigidWorldRowBodyMass(snapshot, bodyB),
+          startStiffnessMassScale,
+          timeStep);
+      if (scaled > 0.0) {
+        joint.startStiffness = scaled;
+      }
+    }
     joint.linearMaterialStiffness = input.linearMaterialStiffness;
     joint.angularMaterialStiffness = input.angularMaterialStiffness;
     joint.maxStiffness = std::max(joint.startStiffness, input.maxStiffness);
@@ -2443,11 +2549,19 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
     const ::dart::simulation::detail::WorldRegistry& registry,
     std::span<const AvbdRigidWorldPointJointInput> inputs,
     AvbdRigidWorldContactSnapshot& snapshot,
-    bool angularRowsUseTorqueArm = false)
+    bool angularRowsUseTorqueArm = false,
+    double startStiffnessMassScale = std::numeric_limits<double>::quiet_NaN(),
+    double timeStep = std::numeric_limits<double>::quiet_NaN())
 {
   AvbdRigidWorldContactBuildScratch scratch(snapshot.contacts.get_allocator());
   return appendAvbdRigidWorldPointJoints(
-      registry, inputs, snapshot, scratch, angularRowsUseTorqueArm);
+      registry,
+      inputs,
+      snapshot,
+      scratch,
+      angularRowsUseTorqueArm,
+      startStiffnessMassScale,
+      timeStep);
 }
 
 //==============================================================================

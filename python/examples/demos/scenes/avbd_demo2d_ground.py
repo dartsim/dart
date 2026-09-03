@@ -69,6 +69,9 @@ def build() -> SceneSetup:
         gravity=(0.0, _GRAVITY, 0.0),
         rigid_body_solver=sx.RigidBodySolver.AVBD,
         rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.SOURCE_DEMO_2D,
+        rigid_constraint_options=sx.RigidConstraintOptions(
+            iterations=_SOURCE_ROW["solver_defaults"]["iterations"]
+        ),
     )
 
     ground = world.add_rigid_body("avbd_demo2d_ground_slab", position=(0.0, 0.0, 0.0))

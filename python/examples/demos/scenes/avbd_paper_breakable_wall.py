@@ -1173,6 +1173,11 @@ def build_solver_variant(
         time_step=_TIME_STEP,
         gravity=(0.0, 0.0, _GRAVITY),
         rigid_body_solver=rigid_body_solver,
+        # The Figure 13 rows are the paper-profile evidence: every solver
+        # variant pins the immutable Table 2 profile explicitly so the sealed
+        # outcome does not follow the public default (the mass-scaled
+        # reference profile, see RigidAvbdParameterProfile).
+        rigid_avbd_parameter_profile=sx.RigidAvbdParameterProfile.PAPER_2025_TABLE_2,
         rigid_constraint_options=sx.RigidConstraintOptions(
             iterations=_RIGID_CONSTRAINT_ITERATIONS
         ),

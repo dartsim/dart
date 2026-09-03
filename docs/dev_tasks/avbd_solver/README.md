@@ -54,6 +54,13 @@ This folder is the temporary working surface; the durable owner is the plan.
   The contracts contain 88 VBD and 88 AVBD requirements; all 176 remain
   incomplete until their recorded correctness, solver-identity, CPU/CUDA,
   visual, and comparable-performance predicates pass.
+- **Checked-in evidence footprint:** the 71 JSON files under `docs/` (4.0
+  MB) are each named by a fail-closed validator, a writer test, or the plan
+  page that cites them; none is an orphan. The three Figure 13 packets are
+  0.47 to 0.55 MB each, a fifth of which is the per-frame PNG digest list
+  that makes them self-verifying against the capture roots. Slimming them
+  would mean binding those digests behind one root digest, a schema-7
+  contract decision rather than a cleanup, so the packets stay as sealed.
 - **Current packet chain (schema 6, sealed on the final source bytes):**
   [`../../plans/104-vertex-block-descent-solver/avbd-paper-sequential-impulse-comparison-packet.json`](../../plans/104-vertex-block-descent-solver/avbd-paper-sequential-impulse-comparison-packet.json)
   links the matched AVBD/VBD packet to an independently assessed Sequential
@@ -105,35 +112,83 @@ This folder is the temporary working surface; the durable owner is the plan.
   transforms after the velocities are taken). Free-falling hard-jointed
   pairs, the heavy rope, resting and penetrated boxes, and the rod now match
   the reference sources to three or four decimals under those profiles.
-- **Documented limitation D6 (paper profile):** the paper leaves the row
-  start stiffness `k_start` free and its Table 2 `beta` of 10 is unusable in
-  SI units with the sources' PENALTY_MIN of 1 (hard-jointed chains tear),
-  so the paper profile keeps DART's 1e5 start stiffness. At that stiffness
-  the block sweep of an equal-mass hard-jointed pair stalls (the pair hovers
-  at about 1 % of free fall; the reference sources at PENALTY_MIN 1e5 reach
-  only 92 % of it), and applying the adaptive initial guess makes a jointed
-  structure that lands on a support pass through it, so the paper profile
-  keeps its step-start sweep origin and its sealed Figure 13 outcome
-  (36 breaks, [5, 5, 5] inside the impact regions, 21 outside, unchanged
-  broken-joint identity digest). Choosing `beta`/`k_start` units for the
-  paper profile is a maintainer decision; `RigidAvbdJointedPairFallsLikeAFreeBody`
-  pins both behaviours.
-- **Finding E closed, finding F open (source rows):** all 31 source-demo
-  scenes run their reference profile with a 1.0 depth for the 2D ports (a
-  thinner port let the separating-axis test pick the out-of-plane axis for
-  the source scenes' spawn overlaps, sinking the 2D fracture pillars and the
-  stack-ratio boxes), and the twelve source rows whose thresholds had been
-  calibrated on the pre-audit private contact configuration are re-derived
-  from the headless reference runs (`tests/integration/test_demos_cycle.py`
-  cites the source numbers per row); none is parked. The 3D ramp placement
-  matches the source (its boxes start 0.13 m inside the ramp there too).
-  Finding F: under the post-stabilized 2D profile a box sliding at 10 m/s
-  with mu 5 on a mu 0.5 ground decelerates to 8.2 m/s in a second where the
-  source reaches 1.59 m/s (the port's warm-started normal duals decay below
-  the weight after the impact step while the source cold-starts a sliding
-  manifold every step and re-ramps within it), and the 2D static-friction
-  pile settles 8 cm lower and faster; the 3D friction rows match the source
-  within 10 %. The rows bound the port's values and cite the source's.
+- **D6 decided (default profile):** the paper leaves the row start
+  stiffness `k_start` free and no fixed value serves every scale: the
+  sources' PENALTY_MIN 1 lets a 1000 kg box sink 0.14 m before its penalty
+  ramps, while DART's former fixed 1e5 stalled the block sweep of light
+  hard-jointed bodies (a pair hovered at 1 % of free fall; the reference
+  sources at PENALTY_MIN 1e5 reach only 92 %). The public default is now
+  `RigidAvbdParameterProfile::MassScaledReference`: the `avbd-demo3d`
+  source's rules and constants with every contact and joint row starting at
+  its reduced mass over dt^2 (`kStartScale=1` in the resolved note; a fixed
+  body counts as infinite mass), which makes the first-step penetration and
+  the regularized approach to the 1 cm margin identical for 1 kg, 1000 kg,
+  and 10 t boxes (2.8 mm, creeping to 7.8 mm in two seconds) and keeps a
+  light jointed pair on the free-fall trajectory to 0.2 mm over a second.
+  `Paper2025Table2` stays available with its Table 2 constants, DART's 1e5
+  start, and its step-start sweep origin (Table 2's beta of 10 cannot ramp
+  hard joints from a small start in SI units, and the adaptive guess at a
+  1e5 start pushes landing structures through their supports); the Figure 13
+  wall and the empty baseline select it explicitly, so their sealed evidence
+  is unchanged (36 breaks, [5, 5, 5], 21 outside, same digest).
+  `RigidAvbdJointedPairFallsLikeAFreeBody` and
+  `RigidAvbdMassScaledStartRestsHeavyAndLightBoxesAlike` pin the behaviours.
+  Two boundaries of the default are recorded: the adaptive guess carries no
+  gravity until two projections exist (the sources' `accelWeight`), so a
+  hard-jointed pair released from rest keeps a one-time residual of 4e-4 m/s
+  and 6e-4 rad/s from its first two sweeps under the mass-scaled start
+  (1e-5 under the sources' PENALTY_MIN 1; nothing accrues afterwards), and
+  the profile-derived row construction (mass-scaled start, adaptive guess,
+  `torqueArm`) belongs to the AVBD family only: fixed-penalty VBD and the
+  per-body compatibility path under Sequential Impulse keep their configured
+  stiffness and their step-start sweep origin. The Eq. 18 decay contract
+  tests select `Paper2025Table2` explicitly.
+- **Finding E closed, finding F closed for sustained friction (source rows):** all 31 source-demo
+  scenes run their reference profile, the sources' ten solver iterations
+  (their row metadata recorded the number while the worlds ran DART's
+  default eight), and a 1.0 depth for the 2D ports (a thinner port let the
+  separating-axis test pick the out-of-plane axis for the source scenes'
+  spawn overlaps, sinking the 2D fracture pillars and the stack-ratio
+  boxes). The 2D ports lock their bodies to the plane before every step
+  (`examples/demos/_avbd_demo2d_plane.py`, declared
+  `replay_live_step_is_stateless`): the reference solver has no
+  out-of-plane degrees of freedom, and without the lock the 2D fracture and
+  static-friction piles tilted out of the plane after a second. The twelve
+  source rows whose thresholds had been calibrated on the pre-audit private
+  contact configuration are re-derived from the headless reference runs
+  (`tests/integration/test_demos_cycle.py` cites the source numbers per
+  row); none is parked. The 3D ramp placement matches the source (its boxes
+  start 0.13 m inside the ramp there too).
+  Finding F was the port's weak sustained friction: the 2D static-friction
+  pile crept 2.3 m down its 30 degree ramp in three seconds where the
+  reference holds within 3 cm. Row-level traces against the reference found
+  four causes, each fixed at its owner: the port applied the 3D source's
+  per-step slip threshold to the 2D profile, whose source keeps a friction
+  anchor while its dual is strictly inside the cone and the anchored points'
+  step-start tangential offset is below STICK_THRESH
+  (`frictionStickOffsetThreshold`, `stickOffset=0.01` in the resolved note);
+  the box-box face clip applied the reference plane as a fifth clip plane,
+  so a box rocking by microradians produced a crossing vertex that slid
+  along the face edge every step and churned the contact features; the
+  contact feature classifier mapped a corner to whichever of its three faces
+  rounding made nearest; and the AVBD identity rule cold-started a whole
+  manifold whenever its point count changed. The clipper now keeps each
+  incident vertex within a skin of the reference plane with its own depth
+  (the sources' per-point separation), the classifier keeps corners and
+  edges as corners and edges, and feature-only identity continues each
+  persisting key on its own. One, two, and three slabs now rest where the
+  reference rests them (`(-0.0079, 0.8609)`, `(-0.0114, 1.4356)`,
+  `(-0.0295, 2.0019)` against `(-0.0079, 0.8609)`, `(-0.0111, 1.4358)`,
+  `(-0.0362, 1.9981)`), the eleven-slab pile holds (its bottom slab drifts
+  1.5 cm in three seconds, the reference's 3.2 cm), and the source rows
+  still pass with their reference bounds. What stays open of finding F is
+  sliding friction: the 2D dynamic-friction box with mu 5 on the mu 0.5
+  ground now decelerates from 10 m/s to 5.3 m/s in a second (8.2 m/s
+  before these fixes) where the reference reaches 1.59 m/s; the reference
+  cold-starts a sliding manifold every step because its feature matching
+  fails there and re-ramps the rows within the step, while the port keeps
+  the warm-started rows, and that row bounds the port's values and cites the
+  source's.
 - **Recent slices merged to `main`** (see the PLAN-104 progress log and the PRs
   for detail; per-slice history lives in git, not in this file):
   - #2991 — source-row coverage + contact-precheck (`f6fecbc5bd5`).
@@ -276,20 +331,9 @@ mechanism:
 - consolidate SI per-step joint-view walks, skip SI container reserves for
   non-SI families, and record post-stabilization work in the step-iteration
   diagnostic; and
-- close finding F: make the post-stabilized 2D profile's sliding friction
-  match the reference source (cold-start or re-ramp the sliding manifold's
-  normal dual the way the source does) and re-tighten the 2D dynamic and
-  static friction rows to the source's numbers; and decide D6 (the paper
-  profile's `beta`/`k_start` units) so its jointed structures neither hover
-  nor pass through supports and the adaptive initial guess can run there;
-- memoize the rigid block kernel's per-body-visit world points, orientation
-  errors, and SO(3) left-Jacobian inverse (all pure functions of the body
-  state and row constants, so the result stays bitwise identical). The
-  zero-trust audit ladder made the public AVBD and VBD Figure 13 steps about
-  1.75x and 1.5x slower than the pre-audit head (callgrind: the same 610k
-  body solves execute 24.0 G instead of 13.6 G instructions, dominated by
-  those recomputations); Sequential Impulse is unchanged. Any kernel edit
-  changes a capture root, so this reseals the Figure 13 evidence.
+- revisit the `Paper2025Table2` profile's `beta`/`k_start` units if its
+  Table 2 constants are ever to run with the adaptive initial guess (the
+  default profile already does; see D6).
 
 ## Verified Local Packet: Section 3.5 Quasi-Newton Hessian
 

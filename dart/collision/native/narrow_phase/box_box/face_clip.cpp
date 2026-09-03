@@ -43,6 +43,11 @@ namespace dart::collision::native::box_box {
 namespace {
 
 constexpr double kClipTolerance = 1e-10;
+/// Skin above the reference plane within which a clipped incident vertex is
+/// still a (zero-depth) contact candidate: a hundredth of the incident box's
+/// smallest half extent, at least 0.1 mm.
+constexpr double kContactSkinRelative = 1e-2;
+constexpr double kContactSkinAbsolute = 1e-4;
 constexpr double kSurfaceAxisEpsilon = 1e-8;
 
 struct FaceBasis
@@ -206,11 +211,14 @@ void clipPolygon(FixedPolygon& polygon, SignedDistance&& signedDistance)
 
 void clipToReferenceFace(FixedPolygon& polygon, const FaceBasis& reference)
 {
-  // Four side half-spaces plus the reference plane. The vertex-count proof on
-  // FixedContactCandidates is stated in terms of this count.
+  // The four side half-spaces of the reference face. The vertex-count proof
+  // on FixedContactCandidates is stated in terms of this count. The reference
+  // plane itself is applied per vertex by the candidate builder (a separated
+  // vertex is dropped, a penetrating one keeps its own depth), never as a
+  // clip plane: see FixedContactCandidates::kClipPlaneCount.
   static_assert(
-      FixedContactCandidates::kClipPlaneCount == 5u,
-      "clipToReferenceFace applies five half-spaces");
+      FixedContactCandidates::kClipPlaneCount == 4u,
+      "clipToReferenceFace applies four half-spaces");
   clipPolygon(polygon, [&](const Eigen::Vector3d& point) {
     const double coordinate
         = (point - reference.center).dot(reference.tangent1);
@@ -230,11 +238,6 @@ void clipToReferenceFace(FixedPolygon& polygon, const FaceBasis& reference)
     const double coordinate
         = (point - reference.center).dot(reference.tangent2);
     return reference.halfExtent2 + coordinate;
-  });
-  clipPolygon(polygon, [&](const Eigen::Vector3d& point) {
-    const double signedDistance
-        = reference.normal.dot(point - reference.center);
-    return -signedDistance;
   });
 }
 
@@ -299,11 +302,22 @@ void clipToReferenceFace(FixedPolygon& polygon, const FaceBasis& reference)
   FixedPolygon polygon = makeFaceVertices(incidentFace);
   clipToReferenceFace(polygon, referenceFace);
 
+  // Each clipped incident vertex is a candidate with its own depth below the
+  // reference plane (the separation the reference sources assign per point).
+  // A vertex within the skin above the plane is a touching candidate of zero
+  // depth, so a box resting flat keeps its whole face patch through the
+  // rounding-level rocking of a settled contact instead of dropping and
+  // re-detecting corners every step; a vertex further above the plane is
+  // separated and contributes nothing. The deepest candidate's depth is the
+  // SAT penetration of a face contact.
+  const double skin = std::max(
+      kContactSkinAbsolute,
+      kContactSkinRelative * incident.halfExtents.minCoeff());
   FixedContactCandidates candidates;
   for (const auto& point : polygon) {
     const double signedDistance
         = referenceFace.normal.dot(point - referenceFace.center);
-    if (-signedDistance + kClipTolerance < 0.0) {
+    if (-signedDistance + skin < 0.0) {
       continue;
     }
 
@@ -318,7 +332,7 @@ void clipToReferenceFace(FixedPolygon& polygon, const FaceBasis& reference)
     }
     candidates.values[candidates.count++]
         = {point - 0.5 * signedDistance * referenceFace.normal,
-           std::max(0.0, sat.penetration)};
+           std::max(0.0, -signedDistance)};
   }
 
   return candidates;

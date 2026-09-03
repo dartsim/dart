@@ -279,6 +279,10 @@ std::unique_ptr<sx::World> makeAvbdEmptyWorld()
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -294,6 +298,10 @@ std::unique_ptr<sx::World> makeRigidFixedJointWorld(std::size_t linkCount)
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d::Zero();
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -325,6 +333,10 @@ std::unique_ptr<sx::World> makeRigidRevoluteMotorWorld(std::size_t motorCount)
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d::Zero();
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -374,6 +386,10 @@ std::unique_ptr<sx::World> makeRigidPrismaticMotorWorld(std::size_t motorCount)
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d::Zero();
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -423,6 +439,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dMotorWorld()
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -514,6 +534,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dGroundWorld()
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -536,6 +560,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dDynamicFrictionWorld(
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -577,6 +605,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dStaticFrictionWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -617,6 +649,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dPyramidWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -662,6 +698,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dCardsWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -750,6 +790,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dStackWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -783,6 +827,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dStackRatioWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -818,6 +866,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dRodWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -859,6 +911,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dJointGridWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -936,6 +992,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dSoftBodyWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1028,6 +1088,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dRopeWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1065,6 +1129,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dSpringWorld()
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1101,6 +1169,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dSpringRatioWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1146,6 +1218,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dNetWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1213,6 +1289,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dHeavyRopeWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1259,6 +1339,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dHangingRopeWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1307,6 +1391,10 @@ std::unique_ptr<sx::World> makeAvbdDemo2dFractureWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -10.0, 0.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1377,6 +1465,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dGroundWorld()
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1403,6 +1495,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dDynamicFrictionWorld()
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1444,6 +1540,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dStaticFrictionWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1492,6 +1592,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dPyramidWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1535,6 +1639,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dRopeWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1583,6 +1691,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dHeavyRopeWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1634,6 +1746,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dSpringWorld()
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1677,6 +1793,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dSpringRatioWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1727,6 +1847,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dStackWorld()
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1760,6 +1884,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dStackRatioWorld()
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1816,6 +1944,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dSoftBodyWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -1967,6 +2099,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dBridgeWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -2043,6 +2179,10 @@ std::unique_ptr<sx::World> makeAvbdDemo3dBreakableWorld()
 
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
   options.timeStep = 1.0 / 60.0;
   auto world = std::make_unique<sx::World>(options);
@@ -2915,6 +3055,10 @@ std::unique_ptr<sx::World> makeRigidBreakableJointWorld(std::size_t jointCount)
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -9.81, 0.0);
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);
@@ -2956,6 +3100,10 @@ std::unique_ptr<sx::World> makeRigidSphericalBreakableJointWorld(
 {
   sx::WorldOptions options;
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  // The sealed AVBD evidence runs the immutable Table 2 profile; keep the
+  // benchmarks on it rather than the public default.
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   options.gravity = Eigen::Vector3d(0.0, -9.81, 0.0);
   options.timeStep = 0.005;
   auto world = std::make_unique<sx::World>(options);

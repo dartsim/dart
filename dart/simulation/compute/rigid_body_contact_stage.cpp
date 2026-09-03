@@ -276,7 +276,17 @@ std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
 bool avbdAdaptiveInitialGuessEnabled(
     const dvbd::AvbdRigidParameterProfile& profile) noexcept
 {
-  return std::isfinite(profile.startStiffness);
+  return std::isfinite(profile.startStiffness)
+         || std::isfinite(profile.startStiffnessMassScale);
+}
+
+//==============================================================================
+/// The profile's mass-scaled row start (NaN when the profile is not
+/// mass-scaled).
+double avbdStartStiffnessMassScale(
+    const dvbd::AvbdRigidParameterProfile& profile) noexcept
+{
+  return profile.startStiffnessMassScale;
 }
 
 //==============================================================================
@@ -1623,6 +1633,17 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
           world.getRigidAvbdParameterProfile());
   const dvbd::AvbdRigidParameterProfile* ownedFamilyProfile
       = useAvbdFamily ? &selectedProfile : nullptr;
+  // Row construction derived from the profile belongs to the AVBD family
+  // only: fixed-penalty VBD holds every row at its configured stiffness, and
+  // the per-body compatibility path under another family keeps its explicit
+  // start stiffness and its step-start sweep origin.
+  const double rowStartStiffnessMassScale
+      = useAvbdFamily ? avbdStartStiffnessMassScale(selectedProfile)
+                      : std::numeric_limits<double>::quiet_NaN();
+  const bool adaptiveInitialGuess
+      = useAvbdFamily && avbdAdaptiveInitialGuessEnabled(selectedProfile);
+  const bool angularRowsUseTorqueArm
+      = useAvbdFamily && selectedProfile.angularRowsUseTorqueArm;
   const std::string_view solverFamilyName = useVbdFamily ? "VBD" : "AVBD";
   const auto clearFixedPenaltyScratch = [&]() noexcept {
     if (m_avbdScratch != nullptr) {
@@ -1743,14 +1764,15 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
 
     dvbd::clearAvbdRigidWorldContactSnapshot(scratch.snapshot);
     const std::size_t appendedJoints
-        = scratch.pointJoints.empty()
-              ? 0u
-              : dvbd::appendAvbdRigidWorldPointJoints(
-                    registry,
-                    scratch.pointJoints,
-                    scratch.snapshot,
-                    scratch.buildScratch,
-                    selectedProfile.angularRowsUseTorqueArm);
+        = scratch.pointJoints.empty() ? 0u
+                                      : dvbd::appendAvbdRigidWorldPointJoints(
+                                            registry,
+                                            scratch.pointJoints,
+                                            scratch.snapshot,
+                                            scratch.buildScratch,
+                                            angularRowsUseTorqueArm,
+                                            rowStartStiffnessMassScale,
+                                            world.getTimeStep());
     const std::size_t appendedDistanceSprings
         = scratch.distanceSprings.empty()
               ? 0u
@@ -1766,7 +1788,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
     const double timeStep = world.getTimeStep();
     dvbd::predictAvbdRigidWorldContactInertialTargets(
         registry, scratch.snapshot, timeStep);
-    if (avbdAdaptiveInitialGuessEnabled(selectedProfile)) {
+    if (adaptiveInitialGuess) {
       dvbd::predictAvbdRigidWorldContactInitialGuess(
           scratch.snapshot,
           timeStep,
@@ -1811,7 +1833,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
     const dvbd::AvbdRigidWorldContactApplyResult projection
         = dvbd::applyAvbdRigidWorldContactVelocityProjection(
             registry, scratch.snapshot, timeStep);
-    if (avbdAdaptiveInitialGuessEnabled(selectedProfile)) {
+    if (adaptiveInitialGuess) {
       dvbd::recordAvbdRigidWorldContactProjectedVelocities(
           registry,
           scratch.snapshot,
@@ -1895,6 +1917,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
     contactOptions.startStiffness = std::max(0.0, avbdConfig->startStiffness);
     contactOptions.maxStiffness
         = std::max(contactOptions.startStiffness, avbdConfig->maxStiffness);
+    contactOptions.startStiffnessMassScale = rowStartStiffnessMassScale;
+    contactOptions.timeStep = world.getTimeStep();
     dvbd::buildAvbdRigidWorldContactSnapshot(
         registry,
         contacts,
@@ -1935,7 +1959,9 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
             scratch.pointJoints,
             scratch.snapshot,
             scratch.buildScratch,
-            selectedProfile.angularRowsUseTorqueArm);
+            angularRowsUseTorqueArm,
+            rowStartStiffnessMassScale,
+            world.getTimeStep());
       }
     } else {
       scratch.pointJoints.clear();
@@ -1960,7 +1986,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
       const double timeStep = world.getTimeStep();
       dvbd::predictAvbdRigidWorldContactInertialTargets(
           registry, scratch.snapshot, timeStep);
-      if (avbdAdaptiveInitialGuessEnabled(selectedProfile)) {
+      if (adaptiveInitialGuess) {
         dvbd::predictAvbdRigidWorldContactInitialGuess(
             scratch.snapshot,
             timeStep,
@@ -2004,7 +2030,7 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
         const dvbd::AvbdRigidWorldContactApplyResult projection
             = dvbd::applyAvbdRigidWorldContactVelocityProjection(
                 registry, scratch.snapshot, timeStep);
-        if (avbdAdaptiveInitialGuessEnabled(selectedProfile)) {
+        if (adaptiveInitialGuess) {
           dvbd::recordAvbdRigidWorldContactProjectedVelocities(
               registry,
               scratch.snapshot,

@@ -94,6 +94,16 @@ enum class RigidAvbdParameterProfile
   /// 0.999, no post-stabilization, and the source's PENALTY_MIN 1 /
   /// PENALTY_MAX 1e10 as the start stiffness and ceiling of every public row.
   SourceDemo3d,
+  /// The default: the `avbd-demo3d` reference source's rules and constants
+  /// with one change, a mass-scaled row start stiffness. The paper leaves
+  /// `k_start` free; a fixed value cannot serve every scale (the source's
+  /// PENALTY_MIN 1 lets a 1000 kg box sink 0.14 m before its penalty ramps,
+  /// while a fixed 1e5 stalls the block sweep of light hard-jointed bodies,
+  /// which then hover at 1 % of free fall). Every contact and joint row
+  /// instead starts at `startStiffnessMassScale * m_eff / dt^2`, with `m_eff`
+  /// the row's reduced mass, so the first-step penetration is a fixed
+  /// fraction of `g dt^2` for every mass and the sweep never stalls.
+  MassScaledReference,
 };
 
 /// Selects how the rigid-body contact stage resolves active contacts.
@@ -278,7 +288,7 @@ struct WorldOptions
   /// except that the compatibility distance springs follow its schedule so a
   /// family crossing keeps one continuation.
   RigidAvbdParameterProfile rigidAvbdParameterProfile
-      = RigidAvbdParameterProfile::Paper2025Table2;
+      = RigidAvbdParameterProfile::MassScaledReference;
 
   /// Tuning for the built-in rigid constraint stage.
   RigidConstraintOptions rigidConstraintOptions;

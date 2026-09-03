@@ -171,27 +171,40 @@ inline AvbdScalarRowKey makeAvbdContactManifoldRowKey(
 }
 
 //==============================================================================
-/// Encode the closest box surface feature for AVBD static-obstacle contact row
+/// Relative and absolute width of the band inside a box face within which a
+/// contact point belongs to that face (see `avbdBoxContactFeatureCode`).
+inline constexpr double kAvbdBoxContactFeatureBandRelative = 0.05;
+inline constexpr double kAvbdBoxContactFeatureBandAbsolute = 1e-4;
+
+/// Encode the box surface feature of a contact point for AVBD contact row
 /// keys. The ternary per-axis code distinguishes the six faces, twelve edges,
-/// and eight corners; a point just inside a face maps to that face so rows warm
-/// start across small penetrations but reset when contact moves to another box
-/// feature.
+/// and eight corners. Along each axis the point is on the face at that extent
+/// when it lies within a band of the extent (a twentieth of the half extent,
+/// at least 0.1 mm): a mid-plane contact point sits half its depth inside its
+/// face and keeps that face, a point on the edge or at the corner of a box
+/// resting flat on another lies within the bands of two or three faces and
+/// keeps its edge or corner code instead of flipping between the faces that
+/// meet there whenever rounding changes which one is nearest. A point deeper
+/// than every band maps to its nearest face.
 inline std::uint64_t avbdBoxContactFeatureCode(
     const Eigen::Vector3d& localPosition, const Eigen::Vector3d& halfExtents)
 {
   std::array<int, 3> status{1, 1, 1};
-  bool outside = false;
+  bool onFeature = false;
   for (int axis = 0; axis < 3; ++axis) {
-    if (localPosition[axis] < -halfExtents[axis]) {
+    const double band = std::max(
+        kAvbdBoxContactFeatureBandAbsolute,
+        kAvbdBoxContactFeatureBandRelative * halfExtents[axis]);
+    if (localPosition[axis] <= -halfExtents[axis] + band) {
       status[axis] = 0;
-      outside = true;
-    } else if (localPosition[axis] > halfExtents[axis]) {
+      onFeature = true;
+    } else if (localPosition[axis] >= halfExtents[axis] - band) {
       status[axis] = 2;
-      outside = true;
+      onFeature = true;
     }
   }
 
-  if (!outside) {
+  if (!onFeature) {
     int nearestAxis = 0;
     double nearestMargin = std::numeric_limits<double>::infinity();
     for (int axis = 0; axis < 3; ++axis) {

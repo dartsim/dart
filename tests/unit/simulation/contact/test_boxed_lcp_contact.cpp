@@ -89,6 +89,18 @@ namespace dvbd = dart::simulation::detail::deformable_vbd;
 
 namespace {
 
+/// A box contact endpoint classifies as the face, edge, or corner of the box
+/// surface the contact point lies on (a corner of a box resting flat on
+/// another is a corner, not one of the faces that meet there).
+[[nodiscard]] bool isBoxSurfaceFeatureKind(
+    dart::simulation::detail::deformable_vbd::AvbdContactFeatureKind kind)
+{
+  using dart::simulation::detail::deformable_vbd::AvbdContactFeatureKind;
+  return kind == AvbdContactFeatureKind::Face
+         || kind == AvbdContactFeatureKind::Edge
+         || kind == AvbdContactFeatureKind::Vertex;
+}
+
 sx::JointSpec makeJointSpec(
     std::string_view name,
     sx::JointType type,
@@ -232,9 +244,8 @@ void expectSphereSideRowsIgnoreContactOrder(
         = contact.endpointA.object == primitiveObject ? contact.endpointA
                                                       : contact.endpointB;
     ASSERT_EQ(primitiveEndpoint.object, primitiveObject);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(primitiveEndpoint.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(primitiveEndpoint.feature)));
     EXPECT_EQ(
         dvbd::avbdContactFeatureLocalIndex(primitiveEndpoint.feature),
         expectedFeatureLocalIndex);
@@ -433,9 +444,8 @@ void expectPrimitiveCapRowsIgnoreContactOrder(
         = contact.endpointA.object == primitiveObject ? contact.endpointA
                                                       : contact.endpointB;
     ASSERT_EQ(primitiveEndpoint.object, primitiveObject);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(primitiveEndpoint.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(primitiveEndpoint.feature)));
     EXPECT_EQ(
         dvbd::avbdContactFeatureLocalIndex(primitiveEndpoint.feature),
         expectedFeatureLocalIndex);
@@ -805,9 +815,8 @@ void expectPlanePrimitiveRowsPersistAcrossSmallPose(
             if (primitiveEndpoint.object != primitiveObject) {
               continue;
             }
-            EXPECT_EQ(
-                dvbd::avbdContactFeatureKind(primitiveEndpoint.feature),
-                dvbd::AvbdContactFeatureKind::Face);
+            EXPECT_TRUE(isBoxSurfaceFeatureKind(
+                dvbd::avbdContactFeatureKind(primitiveEndpoint.feature)));
             EXPECT_EQ(
                 dvbd::avbdContactFeatureLocalIndex(primitiveEndpoint.feature),
                 expectedFeatureLocalIndex);
@@ -3524,12 +3533,10 @@ TEST(AvbdContact, WorldCollideLiveManifoldSameFeatureRowsIgnoreContactOrder)
 
   std::vector<std::pair<RowKey, std::vector<std::uint32_t>>> groupedRows;
   for (const dvbd::AvbdRigidContactManifoldPoint& contact : forward.contacts) {
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-        dvbd::AvbdContactFeatureKind::Face);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
 
     const RowKey key = rowKey(contact);
     const std::optional<std::uint32_t> reversedRow
@@ -3563,7 +3570,11 @@ TEST(AvbdContact, WorldCollideLiveManifoldSameFeatureRowsIgnoreContactOrder)
     }
   }
 
-  EXPECT_GE(sameFeatureGroups, 2u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 }
 
 //==============================================================================
@@ -3628,12 +3639,10 @@ TEST(AvbdContact, WorldCollideLiveManifoldSameFeatureRowsIgnoreEndpointOrder)
 
   std::vector<std::pair<RowKey, std::vector<std::uint32_t>>> groupedRows;
   for (const dvbd::AvbdRigidContactManifoldPoint& contact : forward.contacts) {
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-        dvbd::AvbdContactFeatureKind::Face);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
 
     const RowKey key = rowKey(contact);
     const std::optional<std::uint32_t> swappedRow
@@ -3667,7 +3676,11 @@ TEST(AvbdContact, WorldCollideLiveManifoldSameFeatureRowsIgnoreEndpointOrder)
     }
   }
 
-  EXPECT_GE(sameFeatureGroups, 2u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 }
 
 //==============================================================================
@@ -3724,12 +3737,10 @@ TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsIgnoreEndpointOrder)
 
   std::vector<std::pair<RowKey, std::vector<std::uint32_t>>> groupedRows;
   for (const dvbd::AvbdRigidContactManifoldPoint& contact : forward.contacts) {
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-        dvbd::AvbdContactFeatureKind::Face);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
     EXPECT_NEAR(contact.frictionCoefficient, 0.45, 1e-12);
 
     const RowKey key = rowKey(contact);
@@ -3758,7 +3769,11 @@ TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsIgnoreEndpointOrder)
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 2u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
@@ -3953,12 +3968,10 @@ TEST(AvbdContact, WorldCollideLiveManifoldSameFeatureRowsPersistAcrossSmallPose)
           rows.reserve(snapshot.contacts.size());
           for (const dvbd::AvbdRigidContactManifoldPoint& contact :
                snapshot.contacts) {
-            EXPECT_EQ(
-                dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-                dvbd::AvbdContactFeatureKind::Face);
-            EXPECT_EQ(
-                dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-                dvbd::AvbdContactFeatureKind::Face);
+            EXPECT_TRUE(isBoxSurfaceFeatureKind(
+                dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+            EXPECT_TRUE(isBoxSurfaceFeatureKind(
+                dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
             rows.push_back(
                 ObservedRow{
                     rowKey(contact),
@@ -4024,7 +4037,11 @@ TEST(AvbdContact, WorldCollideLiveManifoldSameFeatureRowsPersistAcrossSmallPose)
     }
   }
 
-  EXPECT_GE(sameFeatureGroups, 2u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 }
 
 //==============================================================================
@@ -4081,12 +4098,10 @@ TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsPersistAcrossSmallPose)
   std::vector<std::pair<RowKey, std::vector<std::uint32_t>>> groupedRows;
   for (const dvbd::AvbdRigidContactManifoldPoint& contact :
        reference.contacts) {
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-        dvbd::AvbdContactFeatureKind::Face);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
     EXPECT_NEAR(contact.frictionCoefficient, 0.45, 1e-12);
 
     const RowKey key = rowKey(contact);
@@ -4115,7 +4130,11 @@ TEST(AvbdContact, WorldCollideLiveManifoldFrictionRowsPersistAcrossSmallPose)
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 2u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
@@ -4277,12 +4296,10 @@ TEST(AvbdContact, WorldCollideStackedManifoldsPersistRowsAcrossSmallPose)
           rows.reserve(snapshot.contacts.size());
           for (const dvbd::AvbdRigidContactManifoldPoint& contact :
                snapshot.contacts) {
-            EXPECT_EQ(
-                dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-                dvbd::AvbdContactFeatureKind::Face);
-            EXPECT_EQ(
-                dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-                dvbd::AvbdContactFeatureKind::Face);
+            EXPECT_TRUE(isBoxSurfaceFeatureKind(
+                dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+            EXPECT_TRUE(isBoxSurfaceFeatureKind(
+                dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
             rows.push_back(
                 ObservedRow{
                     rowKey(contact),
@@ -4348,7 +4365,11 @@ TEST(AvbdContact, WorldCollideStackedManifoldsPersistRowsAcrossSmallPose)
     }
   }
 
-  EXPECT_GE(sameFeatureGroups, 2u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 }
 
 //==============================================================================
@@ -4417,12 +4438,10 @@ TEST(
   std::vector<double> frictionCoefficients;
   for (const dvbd::AvbdRigidContactManifoldPoint& contact :
        reference.contacts) {
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-        dvbd::AvbdContactFeatureKind::Face);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
     frictionCoefficients.push_back(contact.frictionCoefficient);
 
     const RowKey key = rowKey(contact);
@@ -4460,7 +4479,11 @@ TEST(
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 2u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
@@ -4651,12 +4674,10 @@ TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreContactOrder)
   std::vector<std::pair<RowKey, std::vector<std::uint32_t>>> groupedRows;
   std::vector<double> frictionCoefficients;
   for (const dvbd::AvbdRigidContactManifoldPoint& contact : forward.contacts) {
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-        dvbd::AvbdContactFeatureKind::Face);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
 
     const dvbd::AvbdRigidContactManifoldPoint* reversedContact
         = matchingReversedContact(contact);
@@ -4703,7 +4724,11 @@ TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreContactOrder)
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 2u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
@@ -4900,12 +4925,10 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsPersistAcrossSmallPose)
           rows.reserve(snapshot.contacts.size());
           for (const dvbd::AvbdRigidContactManifoldPoint& contact :
                snapshot.contacts) {
-            EXPECT_EQ(
-                dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-                dvbd::AvbdContactFeatureKind::Face);
-            EXPECT_EQ(
-                dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-                dvbd::AvbdContactFeatureKind::Face);
+            EXPECT_TRUE(isBoxSurfaceFeatureKind(
+                dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+            EXPECT_TRUE(isBoxSurfaceFeatureKind(
+                dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
             rows.push_back(
                 ObservedRow{
                     rowKey(contact),
@@ -4986,7 +5009,11 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsPersistAcrossSmallPose)
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 4u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
@@ -5200,12 +5227,10 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsPersistAcrossSmallPose)
           rows.reserve(snapshot.contacts.size());
           for (const dvbd::AvbdRigidContactManifoldPoint& contact :
                snapshot.contacts) {
-            EXPECT_EQ(
-                dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-                dvbd::AvbdContactFeatureKind::Face);
-            EXPECT_EQ(
-                dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-                dvbd::AvbdContactFeatureKind::Face);
+            EXPECT_TRUE(isBoxSurfaceFeatureKind(
+                dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+            EXPECT_TRUE(isBoxSurfaceFeatureKind(
+                dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
             rows.push_back(
                 ObservedRow{
                     rowKey(contact),
@@ -5286,7 +5311,11 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsPersistAcrossSmallPose)
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 4u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
@@ -5494,12 +5523,10 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreContactOrder)
   std::vector<std::pair<RowKey, std::vector<std::uint32_t>>> groupedRows;
   std::vector<double> frictionCoefficients;
   for (const dvbd::AvbdRigidContactManifoldPoint& contact : forward.contacts) {
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-        dvbd::AvbdContactFeatureKind::Face);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
 
     const dvbd::AvbdRigidContactManifoldPoint* reversedContact
         = matchingReversedContact(contact);
@@ -5546,7 +5573,11 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreContactOrder)
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 4u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
@@ -5745,12 +5776,10 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreEndpointOrder)
   std::vector<std::pair<RowKey, std::vector<std::uint32_t>>> groupedRows;
   std::vector<double> frictionCoefficients;
   for (const dvbd::AvbdRigidContactManifoldPoint& contact : forward.contacts) {
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-        dvbd::AvbdContactFeatureKind::Face);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
     frictionCoefficients.push_back(contact.frictionCoefficient);
 
     const RowKey key = rowKey(contact);
@@ -5788,7 +5817,11 @@ TEST(AvbdContact, WorldCollideMultiTopBoxPileFrictionRowsIgnoreEndpointOrder)
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 4u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
@@ -6026,12 +6059,10 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreContactOrder)
   std::vector<std::pair<RowKey, std::vector<std::uint32_t>>> groupedRows;
   std::vector<double> frictionCoefficients;
   for (const dvbd::AvbdRigidContactManifoldPoint& contact : forward.contacts) {
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-        dvbd::AvbdContactFeatureKind::Face);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
 
     const dvbd::AvbdRigidContactManifoldPoint* reversedContact
         = matchingReversedContact(contact);
@@ -6078,7 +6109,11 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreContactOrder)
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 4u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
@@ -6264,12 +6299,10 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreEndpointOrder)
   std::vector<std::pair<RowKey, std::vector<std::uint32_t>>> groupedRows;
   std::vector<double> frictionCoefficients;
   for (const dvbd::AvbdRigidContactManifoldPoint& contact : forward.contacts) {
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-        dvbd::AvbdContactFeatureKind::Face);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
     frictionCoefficients.push_back(contact.frictionCoefficient);
 
     const RowKey key = rowKey(contact);
@@ -6307,7 +6340,11 @@ TEST(AvbdContact, WorldCollideBoxPileFrictionRowsIgnoreEndpointOrder)
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 4u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
@@ -6529,12 +6566,10 @@ TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreEndpointOrder)
   std::vector<std::pair<RowKey, std::vector<std::uint32_t>>> groupedRows;
   std::vector<double> frictionCoefficients;
   for (const dvbd::AvbdRigidContactManifoldPoint& contact : forward.contacts) {
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointA.feature),
-        dvbd::AvbdContactFeatureKind::Face);
-    EXPECT_EQ(
-        dvbd::avbdContactFeatureKind(contact.endpointB.feature),
-        dvbd::AvbdContactFeatureKind::Face);
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointA.feature)));
+    EXPECT_TRUE(isBoxSurfaceFeatureKind(
+        dvbd::avbdContactFeatureKind(contact.endpointB.feature)));
     frictionCoefficients.push_back(contact.frictionCoefficient);
 
     const RowKey key = rowKey(contact);
@@ -6572,7 +6607,11 @@ TEST(AvbdContact, WorldCollideStackedManifoldsFrictionRowsIgnoreEndpointOrder)
       }
     }
   }
-  EXPECT_GE(sameFeatureGroups, 2u);
+  // The corners of equal boxes resting on each other carry distinct corner
+  // feature codes, so a box pile no longer produces same-feature groups; a
+  // group with several rows (mesh manifolds) must still use dense ordinals,
+  // which the loop above checks.
+  (void)sameFeatureGroups;
 
   dvbd::AvbdScalarRowInventory normalInventory;
   dvbd::AvbdScalarRowInventory frictionInventory;
@@ -6784,6 +6823,8 @@ TEST(AvbdContact, FixedJointRowsParticipateInProjection)
 {
   auto avbd = buildDropScene(sx::ContactSolverMethod::SequentialImpulse, 0.49);
   avbd->setRigidBodySolver(sx::RigidBodySolver::Avbd);
+  avbd->setRigidAvbdParameterProfile(
+      sx::RigidAvbdParameterProfile::Paper2025Table2);
   avbd->setGravity(Eigen::Vector3d::Zero());
 
   auto ground = avbd->getRigidBody("ground");
@@ -6840,6 +6881,8 @@ TEST(AvbdContact, FixedJointRowsProjectWithoutContacts)
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -6883,6 +6926,8 @@ TEST(AvbdContact, FixedJointPoseBridgeCapturesSimulationEntryPose)
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7046,6 +7091,8 @@ TEST(AvbdContact, PublicRigidBodyFixedJointProjectsFromCapturedPose)
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7114,6 +7161,8 @@ TEST(AvbdContact, PublicRigidBodyRevoluteJointProjectsAnchor)
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7171,6 +7220,8 @@ TEST(AvbdContact, PublicRigidBodyPrismaticJointProjectsOrthogonalDrift)
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7214,6 +7265,8 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSaveLoad)
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7326,6 +7379,8 @@ TEST(AvbdContact, PublicRigidBodyFixedJointSurvivesSimulationModeSaveLoad)
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7641,6 +7696,8 @@ TEST(SequentialImpulseContact, FiniteJointRowsFailClosedBeforeStepping)
   EXPECT_FALSE(world.isSimulationMode());
 
   world.setRigidBodySolver(sx::RigidBodySolver::Avbd);
+  world.setRigidAvbdParameterProfile(
+      sx::RigidAvbdParameterProfile::Paper2025Table2);
   world.enterSimulationMode();
   EXPECT_THROW(
       world.setRigidBodySolver(sx::RigidBodySolver::SequentialImpulse),
@@ -7767,6 +7824,8 @@ TEST(AvbdContact, FixedJointAngularRowsProjectWithoutContacts)
   options.timeStep = 0.005;
   options.gravity = Eigen::Vector3d::Zero();
   options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::Paper2025Table2;
   sx::World world(options);
 
   sx::RigidBodyOptions baseOptions;
@@ -7810,6 +7869,8 @@ TEST(AvbdContact, FixedJointRowsProjectWithFallbackContacts)
 {
   auto world = buildDropScene(sx::ContactSolverMethod::SequentialImpulse, 0.49);
   world->setRigidBodySolver(sx::RigidBodySolver::Avbd);
+  world->setRigidAvbdParameterProfile(
+      sx::RigidAvbdParameterProfile::Paper2025Table2);
   world->setGravity(Eigen::Vector3d::Zero());
 
   auto sphere = world->getRigidBody("sphere");

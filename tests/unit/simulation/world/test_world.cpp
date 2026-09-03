@@ -11123,6 +11123,11 @@ TEST(World, RigidAvbdParameterProfileSetterRoundTripsAndValidates)
   sx::World world(options);
   EXPECT_EQ(
       world.getRigidAvbdParameterProfile(),
+      sx::RigidAvbdParameterProfile::MassScaledReference);
+  world.setRigidAvbdParameterProfile(
+      sx::RigidAvbdParameterProfile::Paper2025Table2);
+  EXPECT_EQ(
+      world.getRigidAvbdParameterProfile(),
       sx::RigidAvbdParameterProfile::Paper2025Table2);
   world.setRigidAvbdParameterProfile(
       sx::RigidAvbdParameterProfile::SourceDemo3d);
@@ -11221,7 +11226,8 @@ TEST(World, RigidAvbdJointedPairFallsLikeAFreeBody)
   for (const sx::RigidAvbdParameterProfile profile :
        {sx::RigidAvbdParameterProfile::Paper2025Table2,
         sx::RigidAvbdParameterProfile::SourceDemo2d,
-        sx::RigidAvbdParameterProfile::SourceDemo3d}) {
+        sx::RigidAvbdParameterProfile::SourceDemo3d,
+        sx::RigidAvbdParameterProfile::MassScaledReference}) {
     SCOPED_TRACE(static_cast<int>(profile));
     sx::WorldOptions options;
     options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
@@ -11254,17 +11260,31 @@ TEST(World, RigidAvbdJointedPairFallsLikeAFreeBody)
         = profile != sx::RigidAvbdParameterProfile::Paper2025Table2;
     if (referenceStart) {
       // The source profiles start every row at the reference PENALTY_MIN and
-      // begin the sweep at the adaptive initial guess, so the pair stays on
-      // the free-fall trajectory exactly like the reference sources.
+      // the default profile at the row's reduced mass over dt^2; both begin
+      // the sweep at the adaptive initial guess, so the pair stays on the
+      // free-fall trajectory like the reference sources. The guess carries no
+      // gravity until two projections exist (the sources' accelWeight), so
+      // the first two sweeps start short of the inertial target; rows that
+      // start at the reduced mass over dt^2 then leave a one-time residual
+      // (4e-4 m/s, 6e-4 rad/s) that neither grows nor decays, while rows that
+      // start at PENALTY_MIN 1 leave 1e-5. Nothing accrues afterwards.
+      const bool massScaled
+          = profile == sx::RigidAvbdParameterProfile::MassScaledReference;
+      const double positionTolerance = massScaled ? 1e-3 : 1e-6;
       for (const auto& link : {first, second}) {
         const Eigen::Vector3d position = link.getTransform().translation();
-        EXPECT_NEAR(position.z(), freeFall.z(), 1e-6);
+        EXPECT_NEAR(position.z(), freeFall.z(), positionTolerance);
         EXPECT_NEAR(
-            link.getLinearVelocity().z(), free.getLinearVelocity().z(), 1e-6);
-        EXPECT_NEAR(link.getAngularVelocity().norm(), 0.0, 1e-5);
+            link.getLinearVelocity().z(),
+            free.getLinearVelocity().z(),
+            massScaled ? 1e-3 : 1e-6);
+        EXPECT_NEAR(
+            link.getAngularVelocity().norm(), 0.0, massScaled ? 1e-3 : 1e-4);
       }
-      EXPECT_NEAR(first.getTransform().translation().x(), 0.0, 1e-6);
-      EXPECT_NEAR(second.getTransform().translation().x(), 1.0, 1e-6);
+      EXPECT_NEAR(
+          first.getTransform().translation().x(), 0.0, positionTolerance);
+      EXPECT_NEAR(
+          second.getTransform().translation().x(), 1.0, positionTolerance);
     } else {
       // Documented limitation (PLAN-104 finding on Table 2 in SI units): the
       // paper profile keeps DART's 1e5 row start stiffness and the step-start
@@ -11296,7 +11316,8 @@ TEST(World, RigidAvbdAdaptiveInitialGuessKeepsRestingBoxAtRest)
   for (const sx::RigidAvbdParameterProfile profile :
        {sx::RigidAvbdParameterProfile::Paper2025Table2,
         sx::RigidAvbdParameterProfile::SourceDemo2d,
-        sx::RigidAvbdParameterProfile::SourceDemo3d}) {
+        sx::RigidAvbdParameterProfile::SourceDemo3d,
+        sx::RigidAvbdParameterProfile::MassScaledReference}) {
     SCOPED_TRACE(static_cast<int>(profile));
     sx::WorldOptions options;
     options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
@@ -11338,6 +11359,50 @@ TEST(World, RigidAvbdAdaptiveInitialGuessKeepsRestingBoxAtRest)
 // The projected-velocity history behind the adaptive initial guess is part
 // of the rigid AVBD warm-start replay state: restoring an earlier replay
 // frame and stepping again reproduces the recorded trajectory bit for bit.
+// The default profile starts every row at its reduced mass over dt^2, so the
+// first-step penetration and the regularized approach to the contact margin
+// are the same for a 1 kg box and a 1000 kg box (the source profiles' fixed
+// PENALTY_MIN lets the heavy box sink 0.14 m before its penalty ramps).
+TEST(World, RigidAvbdMassScaledStartRestsHeavyAndLightBoxesAlike)
+{
+  namespace sx = dart::simulation;
+  const auto sink = [](double mass) {
+    sx::WorldOptions options;
+    options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
+    options.timeStep = 1.0 / 60.0;
+    options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+    options.rigidAvbdParameterProfile
+        = sx::RigidAvbdParameterProfile::MassScaledReference;
+    sx::World world(options);
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(50.0, 50.0, 0.5)));
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+    auto box = world.addRigidBody("box", boxOptions);
+    box.setMass(mass);
+    box.setInertia(Eigen::Matrix3d::Identity() * (mass / 6.0));
+    box.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+    double deepest = 0.0;
+    for (std::size_t step = 0; step < 120u; ++step) {
+      world.step();
+      deepest = std::max(deepest, 0.5 - box.getTransform().translation().z());
+    }
+    return std::pair{deepest, 0.5 - box.getTransform().translation().z()};
+  };
+  const auto [lightDeepest, lightFinal] = sink(1.0);
+  const auto [heavyDeepest, heavyFinal] = sink(1000.0);
+  EXPECT_LT(lightDeepest, 0.01);
+  EXPECT_LT(heavyDeepest, 0.01);
+  EXPECT_NEAR(heavyDeepest, lightDeepest, 1e-4);
+  EXPECT_NEAR(heavyFinal, lightFinal, 1e-4);
+  EXPECT_GT(heavyFinal, 0.0);
+}
+
 TEST(World, RigidAvbdReplayRestoresAdaptiveInitialGuessHistory)
 {
   namespace sx = dart::simulation;
