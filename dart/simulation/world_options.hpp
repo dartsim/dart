@@ -76,17 +76,23 @@ enum class RigidBodySolver
 enum class RigidAvbdParameterProfile
 {
   /// Table 2 of Giles, Diaz, and Yuksel (SIGGRAPH 2025): alpha 0.95, beta 10,
-  /// gamma 0.99, no post-stabilization. The default.
+  /// gamma 0.99, no post-stabilization. The paper leaves the initial row
+  /// stiffness `k_start` free, so this profile keeps DART's configured row
+  /// start stiffness (1e5) and ceilings. The default.
   Paper2025Table2,
   /// Defaults of the pinned `avbd-demo2d` reference source (74699a11f858):
-  /// alpha 0.99, beta 1e5, gamma 0.99, with post-stabilization. The main
-  /// sweeps ignore every pre-existing constraint error, one extra primal-only
-  /// sweep removes it after the step velocities are taken, and the full dual
-  /// is kept across steps.
+  /// alpha 0.99, beta 1e5, gamma 0.99, with post-stabilization, and the
+  /// source's PENALTY_MIN 1 / PENALTY_MAX 1e9 as the start stiffness and
+  /// ceiling of every public row (contacts, friction, joints, motors, and
+  /// springs; a joint's own projection-policy start stiffness is not used).
+  /// The main sweeps ignore every pre-existing constraint error, one extra
+  /// primal-only sweep removes it after the step velocities are taken, and
+  /// the full dual is kept across steps.
   SourceDemo2d,
   /// Defaults of the pinned `avbd-demo3d` reference source (7701bd427d55):
   /// alpha 0.99, beta 1e4 on linear rows and 100 on angular rows, gamma
-  /// 0.999, no post-stabilization.
+  /// 0.999, no post-stabilization, and the source's PENALTY_MIN 1 /
+  /// PENALTY_MAX 1e10 as the start stiffness and ceiling of every public row.
   SourceDemo3d,
 };
 

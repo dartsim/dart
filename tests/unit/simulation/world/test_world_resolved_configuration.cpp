@@ -476,11 +476,27 @@ TEST(ResolvedConfiguration, RecordsSelectedAvbdSourceDemoProfiles)
   checkProfile(
       sx::RigidAvbdParameterProfile::SourceDemo2d,
       "source-demo-2d",
-      {"alpha=0.99", "beta=100000", "gamma=0.99", "post-stabilization"});
+      {"alpha=0.99",
+       "beta=100000",
+       "gamma=0.99",
+       "kStart=1,",
+       "kMax=1e+09",
+       "margin=0.0005",
+       "torqueArm",
+       "cone=dual",
+       "post-stabilization"});
   checkProfile(
       sx::RigidAvbdParameterProfile::SourceDemo3d,
       "source-demo-3d",
-      {"alpha=0.99", "beta=10000,", "betaAngular=100", "gamma=0.999"});
+      {"alpha=0.99",
+       "beta=10000,",
+       "betaAngular=100",
+       "gamma=0.999",
+       "kStart=1,",
+       "kMax=1e+10",
+       "margin=0.01",
+       "torqueArm",
+       "cone=force"});
 }
 
 TEST(ResolvedConfiguration, RecordsPublicVbdFamilyAsRequested)

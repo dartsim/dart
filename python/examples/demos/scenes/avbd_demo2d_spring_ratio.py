@@ -16,7 +16,7 @@ from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 _TIME_STEP = 1.0 / 60.0
 _GRAVITY = -10.0
 _FRICTION = 0.5
-_THICKNESS = 0.2
+_THICKNESS = 1.0
 _LINK_COUNT = 8
 _SPRING_COUNT = _LINK_COUNT - 1
 _LINK_SIZE_2D = np.array([1.0, 0.5])

@@ -1506,18 +1506,25 @@ owning code, never as standalone doc or cleanup PRs.
   (measured at roughly a quarter of a 201-box step). Memoize against a
   world state version or let `execute` consume the preflight span once no
   intervening stage can move a body.
-- Re-derive the AVBD source-demo ports and rows (open finding E of the
-  foundation PR). The public family now selects a named parameter profile
-  (`paper-2025-table-2`, `source-demo-2d` with the reference's
-  post-stabilization, `source-demo-3d` with the split angular ramp) and the
-  31 source-demo scenes run their reference profile, which removed most of
-  the audit-ladder regression (heavy-rope endpoint error 0.40 -> 0.13 m) but
-  seven source-row tests still miss thresholds that were calibrated against
-  the pre-audit private contact configuration, and the 3D ports start their
-  boxes 0.13 m inside the ramp because `CollisionShape::makeBox` takes half
-  extents. Fix the placements, compare each row with the pinned reference
-  scene (`avbd-demo2d` 74699a11f858, `avbd-demo3d` 7701bd427d55), and
-  re-derive the seven parked thresholds from that comparison.
+- Decide the paper profile's `beta`/`k_start` units (D6 of the foundation
+  PR) and close finding F. The source profiles (`source-demo-2d`,
+  `source-demo-3d`) now reproduce the pinned sources' rules (PENALTY_MIN 1
+  and PENALTY_MAX for every row, the Algorithm 1 line 4 adaptive initial
+  guess, COLLISION_MARGIN, the joint `torqueArm` scale, the sources' cone
+  rules, feature-only manifold continuation, 2D post-stabilization) and the
+  twelve re-derived source rows are verified against headless builds of
+  `avbd-demo2d` 74699a11f858 and `avbd-demo3d` 7701bd427d55. The paper
+  profile keeps DART's 1e5 start stiffness and its step-start sweep origin
+  because Table 2's `beta` of 10 cannot ramp hard joints from the sources'
+  PENALTY_MIN in SI units (chains tear) while the 1e5 start stalls the block
+  sweep of light hard-jointed pairs (about 1 % of free fall, as the sources
+  do at PENALTY_MIN 1e5) and makes the initial guess push landing structures
+  through their supports; the sealed Figure 13 outcome is unchanged under
+  it. Finding F: the post-stabilized 2D profile decelerates a sliding box at
+  a quarter of the source's rate because the port warm-starts a sliding
+  manifold's normal dual (which then decays below the weight) where the
+  source cold-starts and re-ramps it every step; the 2D friction rows bound
+  the port's values and cite the source's until that is resolved.
 - Memoize the rigid block kernel's per-body-visit world points, orientation
   errors, and SO(3) left-Jacobian inverse. The zero-trust audit ladder
   (`99c1f411d7f`..`2760f9bb496`) made the public AVBD and VBD Figure 13

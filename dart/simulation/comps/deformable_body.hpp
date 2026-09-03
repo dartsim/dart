@@ -425,7 +425,7 @@ struct DeformableSolverScratch
   MaskVector countedNeumann;
 };
 
-void registerDeformableBodySerializers(
+DART_SIMULATION_API void registerDeformableBodySerializers(
     dart::simulation::io::SerializerRegistry& registry);
 
 } // namespace dart::simulation::comps

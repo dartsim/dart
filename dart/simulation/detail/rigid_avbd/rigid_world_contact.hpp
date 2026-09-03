@@ -42,6 +42,7 @@
 #include <dart/simulation/comps/link.hpp>
 #include <dart/simulation/comps/rigid_body.hpp>
 #include <dart/simulation/detail/entity_conversion.hpp>
+#include <dart/simulation/detail/rigid_avbd/projected_velocity_record.hpp>
 #include <dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp>
 #include <dart/simulation/detail/rigid_pair_constraint.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
@@ -252,6 +253,12 @@ struct AvbdRigidWorldContactSnapshot
   /// moved `states` afterwards; the step velocities are taken from these so
   /// the positional correction injects no momentum. Empty otherwise.
   BodyStateVector velocityStates;
+  /// Adaptive initial guess for the block-descent sweep (AVBD Algorithm 1
+  /// line 4, the reference sources' `accelWeight` warm start): the inertial
+  /// target minus the share of the gravity displacement the body did not
+  /// realize over the previous step. Empty when no guess was predicted; the
+  /// sweep then starts from `states`.
+  BodyStateVector initialGuessStates;
   DoubleVector masses;
   MatrixVector bodyInertias;
   ByteVector fixed;
@@ -273,6 +280,8 @@ inline void clearAvbdRigidWorldContactSnapshot(
   snapshot.entityBodyIndices.clear();
   snapshot.states.clear();
   snapshot.inertialTargets.clear();
+  snapshot.velocityStates.clear();
+  snapshot.initialGuessStates.clear();
   snapshot.masses.clear();
   snapshot.bodyInertias.clear();
   snapshot.fixed.clear();
@@ -313,6 +322,11 @@ struct AvbdRigidWorldContactSolveOptions
   /// positions without injecting momentum (the reference source's
   /// `postStabilize`).
   bool postStabilize = false;
+  /// Rest penetration of every contact normal row (see
+  /// `AvbdRigidParameterProfile::contactMargin`).
+  double contactMargin = 0.0;
+  /// See `AvbdRigidParameterProfile::contactIdentityByFeatureOnly`.
+  bool contactIdentityByFeatureOnly = false;
 };
 
 /// Source-defined solver-wide AVBD parameters from Table 2 of Giles, Diaz,
@@ -326,30 +340,81 @@ struct AvbdRigidParameterProfile
   double alpha = 0.95;
   double gamma = 0.99;
   bool postStabilize = false;
+  /// Finite: k_start of AVBD Algorithm 1 line 6 for every public row
+  /// (contacts, friction, joints, motors, springs), replacing the configured
+  /// per-row start stiffness. NaN: keep the configured start stiffness (the
+  /// paper leaves k_start free; the paper profile keeps DART's 1e5).
+  double startStiffness = std::numeric_limits<double>::quiet_NaN();
+  /// Finite: the penalty ceiling of every public row (the reference sources'
+  /// PENALTY_MAX). NaN: keep the configured ceilings.
+  double maxStiffness = std::numeric_limits<double>::quiet_NaN();
+  /// Rest penetration of every contact normal row (the reference sources'
+  /// COLLISION_MARGIN): a resting contact keeps that overlap so its detection
+  /// never flickers. Zero: rows rest at zero penetration.
+  double contactMargin = 0.0;
+  /// Scale the angular joint rows by the reference sources' `torqueArm`
+  /// (|sizeA + sizeB|^2 of the bodies' collision extents), which puts their
+  /// penalty ramp in the linear rows' units.
+  bool angularRowsUseTorqueArm = false;
+  /// How each contact's Coulomb cone follows its normal row.
+  AvbdRigidFrictionConeRule frictionConeRule
+      = AvbdRigidFrictionConeRule::StepHighWaterDual;
+  /// Match a multi-point manifold's continuation by its contact feature keys
+  /// alone (the reference sources' manifold rule), so a contact sliding along
+  /// a face keeps its duals; DART's rule also bounds the points' motion.
+  bool contactIdentityByFeatureOnly = false;
 };
+
+/// Regularization alpha of the main sweeps: a post-stabilized schedule
+/// ignores every pre-existing constraint error there (alpha 1) and removes
+/// it in the extra primal-only sweep instead.
+inline constexpr double avbdRigidParameterProfileSweepAlpha(
+    const AvbdRigidParameterProfile& profile) noexcept
+{
+  return profile.postStabilize ? 1.0 : profile.alpha;
+}
 
 inline constexpr AvbdRigidParameterProfile kAvbdRigidPaper2025Profile{};
 
-/// Defaults of the pinned `avbd-demo2d` source (74699a11f858, `solver.cpp`):
-/// beta 1e5, alpha 0.99, gamma 0.99, post-stabilization on. With
+/// Defaults of the pinned `avbd-demo2d` source (74699a11f858, `solver.cpp`
+/// and `solver.h`): beta 1e5, alpha 0.99, gamma 0.99, post-stabilization on,
+/// PENALTY_MIN 1, PENALTY_MAX 1e9, COLLISION_MARGIN 5e-4, the joint
+/// `torqueArm` scale, and a cone from the latest normal dual. With
 /// post-stabilization the source runs its main sweeps with alpha 1, keeps the
 /// full dual across steps, and removes the positional error in one extra
-/// primal-only sweep after the velocities are taken.
+/// primal-only sweep after the velocities are taken. Every force starts at
+/// PENALTY_MIN; the source rows depend on that (a hard joint between equal
+/// light bodies stalls the block sweep at a large k_start, in the source
+/// exactly as here).
 inline constexpr AvbdRigidParameterProfile kAvbdRigidSourceDemo2dProfile{
     .beta = 100000.0,
     .betaAngular = 100000.0,
     .alpha = 0.99,
     .gamma = 0.99,
-    .postStabilize = true};
+    .postStabilize = true,
+    .startStiffness = 1.0,
+    .maxStiffness = 1.0e9,
+    .contactMargin = 0.0005,
+    .angularRowsUseTorqueArm = true,
+    .frictionConeRule = AvbdRigidFrictionConeRule::LatestDual,
+    .contactIdentityByFeatureOnly = true};
 
-/// Defaults of the pinned `avbd-demo3d` source (7701bd427d55, `solver.cpp`):
-/// betaLin 1e4, betaAng 100, alpha 0.99, gamma 0.999, no post-stabilization.
+/// Defaults of the pinned `avbd-demo3d` source (7701bd427d55, `solver.cpp`
+/// and `solver.h`): betaLin 1e4, betaAng 100, alpha 0.99, gamma 0.999, no
+/// post-stabilization, PENALTY_MIN 1, PENALTY_MAX 1e10, COLLISION_MARGIN
+/// 1e-2, the joint `torqueArm` scale, and a cone from the normal trial force.
 inline constexpr AvbdRigidParameterProfile kAvbdRigidSourceDemo3dProfile{
     .beta = 10000.0,
     .betaAngular = 100.0,
     .alpha = 0.99,
     .gamma = 0.999,
-    .postStabilize = false};
+    .postStabilize = false,
+    .startStiffness = 1.0,
+    .maxStiffness = 1.0e10,
+    .contactMargin = 0.01,
+    .angularRowsUseTorqueArm = true,
+    .frictionConeRule = AvbdRigidFrictionConeRule::TrialForce,
+    .contactIdentityByFeatureOnly = true};
 
 //==============================================================================
 inline const AvbdRigidParameterProfile& avbdRigidParameterProfileFor(
@@ -389,12 +454,13 @@ inline void applyAvbdRigidParameterProfile(
   // A post-stabilized schedule ignores every pre-existing constraint error in
   // its main sweeps (alpha 1) and keeps the full dual across steps; the
   // positional error is removed by the extra primal-only sweep instead.
-  const double sweepAlpha = profile.postStabilize ? 1.0 : profile.alpha;
+  const double sweepAlpha = avbdRigidParameterProfileSweepAlpha(profile);
   const double lambdaRetention
       = profile.postStabilize ? 1.0 : std::numeric_limits<double>::quiet_NaN();
   options.warmStart.alpha = sweepAlpha;
   options.warmStart.gamma = profile.gamma;
   options.warmStart.lambdaRetention = lambdaRetention;
+  options.warmStart.startStiffness = profile.startStiffness;
   options.row.alpha = sweepAlpha;
   options.row.beta = profile.beta;
   options.row.angularBeta = profile.betaAngular;
@@ -402,11 +468,25 @@ inline void applyAvbdRigidParameterProfile(
   options.contactWarmStart.alpha = sweepAlpha;
   options.contactWarmStart.gamma = profile.gamma;
   options.contactWarmStart.lambdaRetention = lambdaRetention;
+  options.contactWarmStart.startStiffness = profile.startStiffness;
   options.contactRow.alpha = sweepAlpha;
   options.contactRow.beta = profile.beta;
   options.contactRow.angularBeta = profile.betaAngular;
   options.friction.alpha = sweepAlpha;
   options.friction.beta = profile.beta;
+  options.friction.coneRule = profile.frictionConeRule;
+  options.contactMargin = profile.contactMargin;
+  options.contactIdentityByFeatureOnly = profile.contactIdentityByFeatureOnly;
+  if (std::isfinite(profile.maxStiffness)) {
+    // The reference sources' PENALTY_MAX bounds the warm start and the ramp
+    // of every row; finite material stiffness still caps below it.
+    options.warmStart.maxStiffness = profile.maxStiffness;
+    options.contactWarmStart.maxStiffness = profile.maxStiffness;
+    options.row.maxStiffness = profile.maxStiffness;
+    options.contactRow.maxStiffness = profile.maxStiffness;
+    options.friction.maxStiffness = profile.maxStiffness;
+    options.distanceSpring.maxStiffness = profile.maxStiffness;
+  }
   options.postStabilize = profile.postStabilize;
 }
 
@@ -540,6 +620,7 @@ struct AvbdRigidWorldContactSolveScratch
       angularRows(AngularPairAllocator{allocator}),
       attachmentRows(AttachmentAllocator{allocator}),
       fallbackInertialTargets(BodyStateAllocator{allocator}),
+      stepStartStates(BodyStateAllocator{allocator}),
       rowIndexScratch(allocator)
   {
   }
@@ -565,6 +646,7 @@ struct AvbdRigidWorldContactSolveScratch
       angularRows(AngularPairAllocator{allocator}),
       attachmentRows(AttachmentAllocator{allocator}),
       fallbackInertialTargets(BodyStateAllocator{allocator}),
+      stepStartStates(BodyStateAllocator{allocator}),
       rowIndexScratch(allocator)
   {
   }
@@ -584,6 +666,7 @@ struct AvbdRigidWorldContactSolveScratch
     angularRows.clear();
     attachmentRows.clear();
     fallbackInertialTargets.clear();
+    stepStartStates.clear();
     // Keep row-index layout scratch warm across frames; blockDescent rebuilds
     // any family whose body layout changed and clears absent families.
   }
@@ -614,6 +697,9 @@ struct AvbdRigidWorldContactSolveScratch
   AngularPairVector angularRows;
   AttachmentVector attachmentRows;
   BodyStateVector fallbackInertialTargets;
+  /// Step-start poses handed to the main sweep when it starts from the
+  /// adaptive initial guess.
+  BodyStateVector stepStartStates;
   AvbdRigidBodyRowIndexScratch rowIndexScratch;
 };
 
@@ -632,6 +718,7 @@ inline void reserveAvbdRigidWorldContactSnapshot(
   }
   snapshot.states.reserve(bodyCapacity);
   snapshot.inertialTargets.reserve(bodyCapacity);
+  snapshot.initialGuessStates.reserve(bodyCapacity);
   snapshot.masses.reserve(bodyCapacity);
   snapshot.bodyInertias.reserve(bodyCapacity);
   snapshot.fixed.reserve(bodyCapacity);
@@ -2053,11 +2140,71 @@ inline void buildAvbdRigidWorldContactSnapshotInto(
 }
 
 //==============================================================================
+/// Full collision extents of a body along its shape axes (the reference
+/// sources' `Rigid::size`): the largest per-axis extent over its shapes, a
+/// sphere or capsule counted by its diameter. Zero without collision shapes.
+inline Eigen::Vector3d avbdRigidWorldBodyCollisionExtents(
+    const ::dart::simulation::detail::WorldRegistry& registry,
+    entt::entity entity)
+{
+  Eigen::Vector3d extents = Eigen::Vector3d::Zero();
+  const auto* geometry = registry.try_get<comps::CollisionGeometry>(entity);
+  if (geometry == nullptr) {
+    return extents;
+  }
+  for (const CollisionShape& shape : geometry->shapes) {
+    Eigen::Vector3d shapeExtents = Eigen::Vector3d::Zero();
+    switch (shape.type) {
+      case CollisionShapeType::Box:
+        shapeExtents = 2.0 * shape.halfExtents;
+        break;
+      case CollisionShapeType::Sphere:
+        shapeExtents = Eigen::Vector3d::Constant(2.0 * shape.radius);
+        break;
+      case CollisionShapeType::Capsule:
+        shapeExtents = Eigen::Vector3d(
+            2.0 * shape.radius,
+            2.0 * shape.radius,
+            2.0 * (shape.halfExtents.z() + shape.radius));
+        break;
+      case CollisionShapeType::Cylinder:
+        shapeExtents = Eigen::Vector3d(
+            2.0 * shape.radius,
+            2.0 * shape.radius,
+            2.0 * shape.halfExtents.z());
+        break;
+      default:
+        break;
+    }
+    if (shapeExtents.allFinite()) {
+      extents = extents.cwiseMax(shapeExtents.cwiseAbs());
+    }
+  }
+  return extents;
+}
+
+//==============================================================================
+/// The reference sources' `torqueArm` of a joint: |sizeA + sizeB|^2 of the two
+/// bodies' collision extents, or 1 when neither body has finite extents.
+inline double avbdRigidWorldJointTorqueArm(
+    const ::dart::simulation::detail::WorldRegistry& registry,
+    entt::entity bodyA,
+    entt::entity bodyB)
+{
+  const Eigen::Vector3d extents
+      = avbdRigidWorldBodyCollisionExtents(registry, bodyA)
+        + avbdRigidWorldBodyCollisionExtents(registry, bodyB);
+  const double torqueArm = extents.squaredNorm();
+  return torqueArm > 0.0 && std::isfinite(torqueArm) ? torqueArm : 1.0;
+}
+
+//==============================================================================
 inline std::size_t appendAvbdRigidWorldPointJoints(
     const ::dart::simulation::detail::WorldRegistry& registry,
     std::span<const AvbdRigidWorldPointJointInput> inputs,
     AvbdRigidWorldContactSnapshot& snapshot,
-    AvbdRigidWorldContactBuildScratch& scratch)
+    AvbdRigidWorldContactBuildScratch& scratch,
+    bool angularRowsUseTorqueArm = false)
 {
   if (!inputs.empty()) {
     const std::size_t maxNewBodies = 2u * inputs.size();
@@ -2142,6 +2289,10 @@ inline std::size_t appendAvbdRigidWorldPointJoints(
     joint.angularMaterialStiffness = input.angularMaterialStiffness;
     joint.maxStiffness = std::max(joint.startStiffness, input.maxStiffness);
     joint.fractureThreshold = input.fractureThreshold;
+    joint.angularScale
+        = angularRowsUseTorqueArm
+              ? avbdRigidWorldJointTorqueArm(registry, input.bodyA, input.bodyB)
+              : 1.0;
 
     const auto rowKey
         = canonicalizeAvbdContactEndpoints(joint.endpointA, joint.endpointB);
@@ -2291,10 +2442,12 @@ inline std::size_t appendAvbdRigidWorldDistanceSprings(
 inline std::size_t appendAvbdRigidWorldPointJoints(
     const ::dart::simulation::detail::WorldRegistry& registry,
     std::span<const AvbdRigidWorldPointJointInput> inputs,
-    AvbdRigidWorldContactSnapshot& snapshot)
+    AvbdRigidWorldContactSnapshot& snapshot,
+    bool angularRowsUseTorqueArm = false)
 {
   AvbdRigidWorldContactBuildScratch scratch(snapshot.contacts.get_allocator());
-  return appendAvbdRigidWorldPointJoints(registry, inputs, snapshot, scratch);
+  return appendAvbdRigidWorldPointJoints(
+      registry, inputs, snapshot, scratch, angularRowsUseTorqueArm);
 }
 
 //==============================================================================
@@ -2348,6 +2501,152 @@ inline void predictAvbdRigidWorldContactInertialTargets(
           * target.orientation);
     }
   }
+}
+
+//==============================================================================
+inline bool avbdRigidProjectedVelocityRecordPrecedes(
+    const AvbdRigidProjectedVelocityRecord& lhs,
+    const AvbdRigidProjectedVelocityRecord& rhs) noexcept
+{
+  return entt::to_integral(lhs.entity) < entt::to_integral(rhs.entity);
+}
+
+//==============================================================================
+/// Find the projected-velocity record of `entity` in a history sorted by
+/// `avbdRigidProjectedVelocityRecordPrecedes`, or nullptr.
+inline const AvbdRigidProjectedVelocityRecord*
+findAvbdRigidProjectedVelocityRecord(
+    std::span<const AvbdRigidProjectedVelocityRecord> history,
+    entt::entity entity) noexcept
+{
+  AvbdRigidProjectedVelocityRecord probe;
+  probe.entity = entity;
+  const auto it = std::lower_bound(
+      history.begin(),
+      history.end(),
+      probe,
+      avbdRigidProjectedVelocityRecordPrecedes);
+  if (it == history.end() || it->entity != entity) {
+    return nullptr;
+  }
+  return &*it;
+}
+
+//==============================================================================
+/// Weight of the gravity displacement in a body's adaptive initial guess: the
+/// realized acceleration along gravity over the previous step as a fraction of
+/// |g|, clamped to [0, 1] (the reference sources' `accelWeight`). Zero without
+/// two consecutive projections, for a non-finite history, or without gravity.
+inline double avbdRigidAdaptiveInitialGuessGravityWeight(
+    const AvbdRigidProjectedVelocityRecord* record,
+    const Eigen::Vector3d& gravity,
+    double timeStep) noexcept
+{
+  if (record == nullptr || timeStep <= 0.0 || !std::isfinite(timeStep)) {
+    return 0.0;
+  }
+  const double gravitySquared = gravity.squaredNorm();
+  if (!(gravitySquared > 0.0) || !std::isfinite(gravitySquared)) {
+    return 0.0;
+  }
+  if (!record->previousLinear.allFinite() || !record->linear.allFinite()) {
+    return 0.0;
+  }
+  const Eigen::Vector3d acceleration
+      = (record->linear - record->previousLinear) / timeStep;
+  const double weight = acceleration.dot(gravity) / gravitySquared;
+  if (!std::isfinite(weight)) {
+    return 0.0;
+  }
+  return std::clamp(weight, 0.0, 1.0);
+}
+
+//==============================================================================
+/// Predict the adaptive initial guess of every non-fixed body (AVBD Algorithm
+/// 1 line 4). Requires `predictAvbdRigidWorldContactInertialTargets` to have
+/// run: the guess is the inertial target with the unrealized share of the
+/// gravity displacement `(1 - w) g dt^2` removed, where `w` comes from the
+/// projected-velocity `history` of the previous owned steps. Fixed bodies keep
+/// their step-start state. Clears the guess (so the sweep starts from the
+/// step-start states) when the targets are unavailable.
+inline void predictAvbdRigidWorldContactInitialGuess(
+    AvbdRigidWorldContactSnapshot& snapshot,
+    double timeStep,
+    const Eigen::Vector3d& gravity,
+    std::span<const AvbdRigidProjectedVelocityRecord> history)
+{
+  snapshot.initialGuessStates.clear();
+  if (timeStep <= 0.0 || !std::isfinite(timeStep)
+      || snapshot.inertialTargets.size() != snapshot.states.size()
+      || !gravity.allFinite()) {
+    return;
+  }
+  snapshot.initialGuessStates.assign(
+      snapshot.inertialTargets.begin(), snapshot.inertialTargets.end());
+  const std::size_t bodyCount = std::min(
+      {snapshot.entities.size(),
+       snapshot.initialGuessStates.size(),
+       snapshot.fixed.size()});
+  const Eigen::Vector3d gravityDisplacement = gravity * (timeStep * timeStep);
+  for (std::size_t body = 0; body < bodyCount; ++body) {
+    AvbdRigidBodyState& guess = snapshot.initialGuessStates[body];
+    if (snapshot.fixed[body] != 0u) {
+      guess = snapshot.states[body];
+      continue;
+    }
+    const entt::entity entity = snapshot.entities[body];
+    const double weight = avbdRigidAdaptiveInitialGuessGravityWeight(
+        findAvbdRigidProjectedVelocityRecord(history, entity),
+        gravity,
+        timeStep);
+    guess.position -= (1.0 - weight) * gravityDisplacement;
+  }
+}
+
+//==============================================================================
+/// Record the linear velocities `applyAvbdRigidWorldContactVelocityProjection`
+/// just wrote for the snapshot's non-fixed bodies, shifting each body's
+/// previous record so the next step's adaptive initial guess can form
+/// `(v_t - v_{t-1}) / dt`. Bodies the stage did not project this step drop
+/// out of the history; a body without a record from the previous step starts
+/// with a NaN previous velocity (zero gravity weight next step).
+template <typename RecordVector>
+inline void recordAvbdRigidWorldContactProjectedVelocities(
+    const ::dart::simulation::detail::WorldRegistry& registry,
+    const AvbdRigidWorldContactSnapshot& snapshot,
+    RecordVector& history,
+    RecordVector& scratch)
+{
+  scratch.clear();
+  const std::size_t bodyCount
+      = std::min({snapshot.entities.size(), snapshot.fixed.size()});
+  scratch.reserve(bodyCount);
+  const std::span<const AvbdRigidProjectedVelocityRecord> previousHistory{
+      history.data(), history.size()};
+  for (std::size_t body = 0; body < bodyCount; ++body) {
+    if (snapshot.fixed[body] != 0u) {
+      continue;
+    }
+    const entt::entity entity = snapshot.entities[body];
+    if (entity == entt::null || !registry.valid(entity)) {
+      continue;
+    }
+    const auto* velocity = registry.try_get<comps::Velocity>(entity);
+    if (velocity == nullptr) {
+      continue;
+    }
+    AvbdRigidProjectedVelocityRecord record;
+    record.entity = entity;
+    if (const auto* previous
+        = findAvbdRigidProjectedVelocityRecord(previousHistory, entity)) {
+      record.previousLinear = previous->linear;
+    }
+    record.linear = velocity->linear;
+    scratch.push_back(record);
+  }
+  std::sort(
+      scratch.begin(), scratch.end(), avbdRigidProjectedVelocityRecordPrecedes);
+  history.swap(scratch);
 }
 
 //==============================================================================
@@ -2454,7 +2753,9 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       normalRows,
       frictionRows,
       scratch.contactRows,
-      contactWarmStart);
+      contactWarmStart,
+      options.contactMargin,
+      options.contactIdentityByFeatureOnly);
   if (options.hasContactFamilyOverride) {
     for (AvbdRigidBodyPointPairRow& row : normalRows) {
       row.hasSolveOptionsOverride = true;
@@ -2625,6 +2926,29 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
   }
   AvbdRigidPointPairFrictionOptions frictionOptions = options.friction;
   frictionOptions.fixedPenalty = fixedPenalty;
+  // AVBD Algorithm 1 line 4: every x_t-dependent quantity above (row warm
+  // starts, contact Taylor linearizations, Equation 18 intercepts) was
+  // evaluated at the step-start states; the sweep itself starts from the
+  // adaptive initial guess when the stage predicted one.
+  AvbdRigidBlockDescentOptions mainDescent = options.descent;
+  scratch.stepStartStates.clear();
+  if (snapshot.initialGuessStates.size() == snapshot.states.size()) {
+    scratch.stepStartStates.assign(
+        snapshot.states.begin(), snapshot.states.end());
+    mainDescent.stepStartStates = std::span<const AvbdRigidBodyState>{
+        scratch.stepStartStates.data(), scratch.stepStartStates.size()};
+    for (std::size_t body = 0; body < snapshot.states.size(); ++body) {
+      if (body < snapshot.fixed.size() && snapshot.fixed[body] != 0u) {
+        continue;
+      }
+      const AvbdRigidBodyState& guess = snapshot.initialGuessStates[body];
+      if (!guess.position.allFinite()
+          || !guess.orientation.coeffs().allFinite()) {
+        continue;
+      }
+      snapshot.states[body] = guess;
+    }
+  }
   result.stats = blockDescentRigidBodiesAvbdRows(
       std::span<AvbdRigidBodyState>{
           snapshot.states.data(), snapshot.states.size()},
@@ -2639,7 +2963,7 @@ inline AvbdRigidWorldContactSolveResult solveAvbdRigidWorldContactSnapshot(
       *solvePointPairRows,
       *solveAngularRows,
       frictionRows,
-      options.descent,
+      mainDescent,
       options.row,
       frictionOptions,
       &scratch.rowIndexScratch,

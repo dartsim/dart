@@ -15,7 +15,7 @@ from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 _TIME_STEP = 1.0 / 60.0
 _GRAVITY = -10.0
 _FRICTION = 0.5
-_THICKNESS = 0.2
+_THICKNESS = 1.0
 _GROUND_SIZE_2D = np.array([100.0, 1.0])
 _GROUND_SIZE = np.array([100.0, 1.0, _THICKNESS])
 _SOURCE_ROW: dict[str, Any] = {

@@ -87,26 +87,53 @@ This folder is the temporary working surface; the durable owner is the plan.
   performance are open.
 - **Named AVBD parameter profiles (D5):** the public AVBD family selects
   one named, immutable profile (`RigidAvbdParameterProfile`): the paper's
-  Table 2 by default, or the pinned 2D/3D reference-demo defaults, the 2D
-  one with the reference's post-stabilization sweep (main sweeps with
-  alpha 1, full dual warm start, one extra primal-only sweep with alpha 0
-  applied to the transforms after the velocities are taken). The selection
-  is recorded in the resolved configuration and bound into replay and
-  binary checkpoints (format 36). The audit's finding that a Table 2
-  contact recovers only 5 % of its penetration per step while its dual
-  collapses and the Coulomb cone (`mu * lambda_n`) stays empty is the
-  documented behaviour of that mode and matches the reference solver's
-  rules; the Figure 13 rows keep it, so their evidence claims are unchanged.
-- **Open finding E (source rows):** the 31 source-demo scenes now run their
-  reference profile, which removes most but not all of the audit-ladder
-  regression: the heavy-rope endpoint error fell from 0.40 to 0.13 m, yet
-  seven AVBD source-row demo tests still miss their thresholds because the
-  3D ports start their boxes 0.13 m inside the ramp (`makeBox` takes half
-  extents), the 2D friction and fracture rows still deviate, and every
-  threshold was calibrated against the pre-audit private contact
-  configuration. Those seven tests are parked as strict expected failures
-  citing the finding; re-deriving the ports and rows against the reference
-  demos is the next-steps item below.
+  Table 2 by default, or the pinned 2D/3D reference-demo defaults. The
+  selection is recorded in the resolved configuration and bound into replay
+  and binary checkpoints (format 36). The two source profiles reproduce the
+  pinned sources' solver rules, each verified against a headless build of
+  the reference source itself: PENALTY_MIN 1 / PENALTY_MAX for every public
+  row (the `kStart`/`kMax` of the resolved note; a hard joint between equal
+  light bodies stalls the block sweep at a large start stiffness, in the
+  source exactly as here), the adaptive initial guess of Algorithm 1 line 4
+  (the sources' `accelWeight`, fed by a per-body projected-velocity history
+  that is part of the warm-start replay state), the sources' contact
+  `COLLISION_MARGIN` rest depth, the joint `torqueArm` scale of the angular
+  rows, the sources' Coulomb-cone rules (latest normal dual in 2D, normal
+  trial force in 3D), feature-only manifold continuation, and, for the 2D
+  source, post-stabilization (main sweeps with alpha 1 on every row, full
+  dual warm start, one extra primal-only sweep with alpha 0 applied to the
+  transforms after the velocities are taken). Free-falling hard-jointed
+  pairs, the heavy rope, resting and penetrated boxes, and the rod now match
+  the reference sources to three or four decimals under those profiles.
+- **Documented limitation D6 (paper profile):** the paper leaves the row
+  start stiffness `k_start` free and its Table 2 `beta` of 10 is unusable in
+  SI units with the sources' PENALTY_MIN of 1 (hard-jointed chains tear),
+  so the paper profile keeps DART's 1e5 start stiffness. At that stiffness
+  the block sweep of an equal-mass hard-jointed pair stalls (the pair hovers
+  at about 1 % of free fall; the reference sources at PENALTY_MIN 1e5 reach
+  only 92 % of it), and applying the adaptive initial guess makes a jointed
+  structure that lands on a support pass through it, so the paper profile
+  keeps its step-start sweep origin and its sealed Figure 13 outcome
+  (36 breaks, [5, 5, 5] inside the impact regions, 21 outside, unchanged
+  broken-joint identity digest). Choosing `beta`/`k_start` units for the
+  paper profile is a maintainer decision; `RigidAvbdJointedPairFallsLikeAFreeBody`
+  pins both behaviours.
+- **Finding E closed, finding F open (source rows):** all 31 source-demo
+  scenes run their reference profile with a 1.0 depth for the 2D ports (a
+  thinner port let the separating-axis test pick the out-of-plane axis for
+  the source scenes' spawn overlaps, sinking the 2D fracture pillars and the
+  stack-ratio boxes), and the twelve source rows whose thresholds had been
+  calibrated on the pre-audit private contact configuration are re-derived
+  from the headless reference runs (`tests/integration/test_demos_cycle.py`
+  cites the source numbers per row); none is parked. The 3D ramp placement
+  matches the source (its boxes start 0.13 m inside the ramp there too).
+  Finding F: under the post-stabilized 2D profile a box sliding at 10 m/s
+  with mu 5 on a mu 0.5 ground decelerates to 8.2 m/s in a second where the
+  source reaches 1.59 m/s (the port's warm-started normal duals decay below
+  the weight after the impact step while the source cold-starts a sliding
+  manifold every step and re-ramps within it), and the 2D static-friction
+  pile settles 8 cm lower and faster; the 3D friction rows match the source
+  within 10 %. The rows bound the port's values and cite the source's.
 - **Recent slices merged to `main`** (see the PLAN-104 progress log and the PRs
   for detail; per-slice history lives in git, not in this file):
   - #2991 — source-row coverage + contact-precheck (`f6fecbc5bd5`).
@@ -248,12 +275,12 @@ mechanism:
 - consolidate SI per-step joint-view walks, skip SI container reserves for
   non-SI families, and record post-stabilization work in the step-iteration
   diagnostic; and
-- re-derive the AVBD source-demo ports and rows against the reference
-  demos under their reference profiles (`source-demo-2d`, `source-demo-3d`):
-  fix the 3D placements that start 0.13 m inside the ramp (`makeBox` takes
-  half extents), compare each row's measured behaviour with the pinned
-  source scene, and re-derive the seven parked thresholds from that
-  comparison rather than from the pre-audit private contact configuration;
+- close finding F: make the post-stabilized 2D profile's sliding friction
+  match the reference source (cold-start or re-ramp the sliding manifold's
+  normal dual the way the source does) and re-tighten the 2D dynamic and
+  static friction rows to the source's numbers; and decide D6 (the paper
+  profile's `beta`/`k_start` units) so its jointed structures neither hover
+  nor pass through supports and the adaptive initial guess can run there;
 - memoize the rigid block kernel's per-body-visit world points, orientation
   errors, and SO(3) left-Jacobian inverse (all pure functions of the body
   state and row constants, so the result stays bitwise identical). The

@@ -32,6 +32,7 @@
 #pragma once
 
 #include <dart/simulation/detail/deformable_vbd/avbd_row_inventory.hpp>
+#include <dart/simulation/detail/rigid_avbd/projected_velocity_record.hpp>
 #include <dart/simulation/detail/world_registry_types.hpp>
 #include <dart/simulation/export.hpp>
 
@@ -110,6 +111,11 @@ struct RigidAvbdWarmStartReplayState
       = dart::common::StlAllocator<dvbd::AvbdContactTangentAnchorState>;
   using ContactAnchorVector = std::
       vector<dvbd::AvbdContactTangentAnchorState, ContactAnchorAllocator>;
+  using ProjectedVelocityAllocator
+      = dart::common::StlAllocator<dvbd::AvbdRigidProjectedVelocityRecord>;
+  using ProjectedVelocityVector = std::vector<
+      dvbd::AvbdRigidProjectedVelocityRecord,
+      ProjectedVelocityAllocator>;
 
   RigidAvbdWarmStartReplayState() = default;
 
@@ -122,7 +128,8 @@ struct RigidAvbdWarmStartReplayState
       jointLinearRows(RowAllocator{allocator}),
       jointAngularRows(RowAllocator{allocator}),
       motorRows(RowAllocator{allocator}),
-      distanceSpringRows(RowAllocator{allocator})
+      distanceSpringRows(RowAllocator{allocator}),
+      projectedVelocities(ProjectedVelocityAllocator{allocator})
   {
     // Empty.
   }
@@ -135,6 +142,9 @@ struct RigidAvbdWarmStartReplayState
   RowVector jointAngularRows;
   RowVector motorRows;
   RowVector distanceSpringRows;
+  /// Projected linear velocities of the last two owned steps that feed the
+  /// adaptive initial guess (AVBD Algorithm 1 line 4).
+  ProjectedVelocityVector projectedVelocities;
 };
 
 using DeformableAvbdWarmStartReplayStates

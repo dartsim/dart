@@ -11183,17 +11183,27 @@ TEST(
         sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
     EXPECT_FALSE(world.collide().empty());
     world.step();
-    return std::pair{
-        box.getTransform().translation().z(), box.getLinearVelocity().norm()};
+    const double heightAfterOneStep = box.getTransform().translation().z();
+    const double speedAfterOneStep = box.getLinearVelocity().norm();
+    world.step(9u);
+    return std::tuple{
+        heightAfterOneStep,
+        speedAfterOneStep,
+        box.getTransform().translation().z()};
   };
-  const auto [paperHeight, paperSpeed]
+  const auto [paperHeight, paperSpeed, paperHeightAfterTenSteps]
       = run(sx::RigidAvbdParameterProfile::Paper2025Table2);
-  const auto [sourceHeight, sourceSpeed]
+  const auto [sourceHeight, sourceSpeed, sourceHeightAfterTenSteps]
       = run(sx::RigidAvbdParameterProfile::SourceDemo2d);
   // Table 2: at most 5 % of the 5 cm penetration is corrected in one step.
   EXPECT_LT(paperHeight, 0.46);
-  // Post-stabilization: the penetration is gone after one step ...
-  EXPECT_GT(sourceHeight, 0.495);
+  EXPECT_LT(paperHeightAfterTenSteps, 0.48);
+  // Post-stabilization from the reference PENALTY_MIN: the extra primal-only
+  // sweep removes over a centimetre of the 5 cm in the first step (the
+  // reference source removes 1.85 cm) and the rest within ten steps (the
+  // reference source is within a millimetre by then) ...
+  EXPECT_GT(sourceHeight, 0.46);
+  EXPECT_GT(sourceHeightAfterTenSteps, 0.495);
   // ... and the correction injected no momentum (5 cm in 1/60 s would be
   // 3 m/s); only the step's own contact response remains.
   EXPECT_LT(sourceSpeed, 0.3);
@@ -11201,6 +11211,182 @@ TEST(
 }
 
 //==============================================================================
+// AVBD Algorithm 1 line 4 starts the sweep from the adaptive initial guess
+// (the reference sources' `accelWeight` warm start). Without it two
+// equal-mass bodies tied by a hard joint stall in the block sweep and hover
+// instead of falling: each body is pinned to the other's step-start pose.
+TEST(World, RigidAvbdJointedPairFallsLikeAFreeBody)
+{
+  namespace sx = dart::simulation;
+  for (const sx::RigidAvbdParameterProfile profile :
+       {sx::RigidAvbdParameterProfile::Paper2025Table2,
+        sx::RigidAvbdParameterProfile::SourceDemo2d,
+        sx::RigidAvbdParameterProfile::SourceDemo3d}) {
+    SCOPED_TRACE(static_cast<int>(profile));
+    sx::WorldOptions options;
+    options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
+    options.timeStep = 1.0 / 60.0;
+    options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+    options.rigidAvbdParameterProfile = profile;
+    sx::World world(options);
+    const auto addLink = [&](const char* name, double x) {
+      sx::RigidBodyOptions linkOptions;
+      linkOptions.position = Eigen::Vector3d(x, 0.0, 6.0);
+      auto link = world.addRigidBody(name, linkOptions);
+      link.setMass(0.5);
+      link.setInertia(Eigen::Vector3d(0.05, 0.05, 0.08).asDiagonal());
+      return link;
+    };
+    auto first = addLink("jointed_first", 0.0);
+    auto second = addLink("jointed_second", 1.0);
+    auto free = addLink("free_reference", 20.0);
+    world.addJoint(
+        first,
+        second,
+        sx::JointSpec{
+            .name = "pair_fixed_joint",
+            .type = sx::JointType::Fixed,
+        });
+    world.step(60u);
+    const Eigen::Vector3d freeFall = free.getTransform().translation();
+    EXPECT_LT(freeFall.z(), 6.0 - 4.9);
+    const bool referenceStart
+        = profile != sx::RigidAvbdParameterProfile::Paper2025Table2;
+    if (referenceStart) {
+      // The source profiles start every row at the reference PENALTY_MIN and
+      // begin the sweep at the adaptive initial guess, so the pair stays on
+      // the free-fall trajectory exactly like the reference sources.
+      for (const auto& link : {first, second}) {
+        const Eigen::Vector3d position = link.getTransform().translation();
+        EXPECT_NEAR(position.z(), freeFall.z(), 1e-6);
+        EXPECT_NEAR(
+            link.getLinearVelocity().z(), free.getLinearVelocity().z(), 1e-6);
+        EXPECT_NEAR(link.getAngularVelocity().norm(), 0.0, 1e-5);
+      }
+      EXPECT_NEAR(first.getTransform().translation().x(), 0.0, 1e-6);
+      EXPECT_NEAR(second.getTransform().translation().x(), 1.0, 1e-6);
+    } else {
+      // Documented limitation (PLAN-104 finding on Table 2 in SI units): the
+      // paper profile keeps DART's 1e5 row start stiffness and the step-start
+      // sweep origin. At that stiffness the block sweep of an equal-mass
+      // hard-jointed pair stalls (each body is pinned to the other's
+      // step-start pose), exactly as the reference sources do at
+      // PENALTY_MIN 1e5. The pair stays rigidly connected and hovers; this
+      // pin flips once the maintainer resolves the profile's k_start.
+      for (const auto& link : {first, second}) {
+        const Eigen::Vector3d position = link.getTransform().translation();
+        EXPECT_LT(6.0 - position.z(), 0.05 * (6.0 - freeFall.z()));
+        EXPECT_GT(6.0 - position.z(), 0.0);
+      }
+      const Eigen::Vector3d gap = second.getTransform().translation()
+                                  - first.getTransform().translation();
+      EXPECT_NEAR(gap.norm(), 1.0, 1e-5);
+    }
+  }
+}
+
+// The gravity weight of the adaptive initial guess is the realized
+// acceleration along gravity: a box that rests on the ground keeps a zero
+// weight, so the guess does not push it into the ground every step, and a
+// box that was falling keeps the full weight. Both must hold under every
+// named profile, including the post-stabilized source profile.
+TEST(World, RigidAvbdAdaptiveInitialGuessKeepsRestingBoxAtRest)
+{
+  namespace sx = dart::simulation;
+  for (const sx::RigidAvbdParameterProfile profile :
+       {sx::RigidAvbdParameterProfile::Paper2025Table2,
+        sx::RigidAvbdParameterProfile::SourceDemo2d,
+        sx::RigidAvbdParameterProfile::SourceDemo3d}) {
+    SCOPED_TRACE(static_cast<int>(profile));
+    sx::WorldOptions options;
+    options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
+    options.timeStep = 1.0 / 60.0;
+    options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+    options.rigidAvbdParameterProfile = profile;
+    sx::World world(options);
+    sx::RigidBodyOptions groundOptions;
+    groundOptions.isStatic = true;
+    groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+    auto ground = world.addRigidBody("ground", groundOptions);
+    ground.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+    sx::RigidBodyOptions boxOptions;
+    boxOptions.position = Eigen::Vector3d(0.0, 0.0, 0.5);
+    auto box = world.addRigidBody("box", boxOptions);
+    box.setMass(1.0);
+    box.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.5)));
+    world.step(120u);
+    const Eigen::Vector3d resting = box.getTransform().translation();
+    // The source-demo-3d profile rests its contacts at the reference's 1 cm
+    // COLLISION_MARGIN; the others rest within a few millimetres.
+    EXPECT_GT(resting.z(), 0.5 - 0.02);
+    EXPECT_LT(resting.z(), 0.5 + 1e-6);
+    EXPECT_LT(box.getLinearVelocity().norm(), 1e-2);
+    // Another 120 steps may only creep the box within the regularized
+    // approach to its rest depth (the reference sources creep by about a
+    // millimetre per second); the guess must not drive it into the ground.
+    world.step(120u);
+    const double later = box.getTransform().translation().z();
+    EXPECT_GT(later, resting.z() - 2e-3);
+    EXPECT_GT(later, 0.5 - 0.02);
+    EXPECT_LT(later, 0.5 + 1e-6);
+    EXPECT_LT(box.getLinearVelocity().norm(), 1e-2);
+  }
+}
+
+// The projected-velocity history behind the adaptive initial guess is part
+// of the rigid AVBD warm-start replay state: restoring an earlier replay
+// frame and stepping again reproduces the recorded trajectory bit for bit.
+TEST(World, RigidAvbdReplayRestoresAdaptiveInitialGuessHistory)
+{
+  namespace sx = dart::simulation;
+  sx::WorldOptions options;
+  options.gravity = Eigen::Vector3d(0.0, 0.0, -10.0);
+  options.timeStep = 1.0 / 60.0;
+  options.rigidBodySolver = sx::RigidBodySolver::Avbd;
+  options.rigidAvbdParameterProfile
+      = sx::RigidAvbdParameterProfile::SourceDemo3d;
+  sx::World world(options);
+  sx::RigidBodyOptions groundOptions;
+  groundOptions.isStatic = true;
+  groundOptions.position = Eigen::Vector3d(0.0, 0.0, -0.5);
+  auto ground = world.addRigidBody("ground", groundOptions);
+  ground.setCollisionShape(
+      sx::CollisionShape::makeBox(Eigen::Vector3d(10.0, 10.0, 0.5)));
+  const auto addLink = [&](const char* name, double x) {
+    sx::RigidBodyOptions linkOptions;
+    linkOptions.position = Eigen::Vector3d(x, 0.0, 1.5);
+    auto link = world.addRigidBody(name, linkOptions);
+    link.setMass(0.5);
+    link.setInertia(Eigen::Vector3d(0.05, 0.05, 0.08).asDiagonal());
+    link.setCollisionShape(
+        sx::CollisionShape::makeBox(Eigen::Vector3d(0.5, 0.5, 0.25)));
+    return link;
+  };
+  auto first = addLink("replay_first", 0.0);
+  auto second = addLink("replay_second", 1.0);
+  world.addJoint(
+      first,
+      second,
+      sx::JointSpec{
+          .name = "replay_fixed_joint",
+          .type = sx::JointType::Fixed,
+      });
+  world.setReplayRecordingEnabled(true);
+  world.step(6u);
+  ASSERT_EQ(world.getReplayFrameCount(), 7u);
+  world.step(6u);
+  const Eigen::Vector3d recordedFirst = first.getTransform().translation();
+  const Eigen::Vector3d recordedSecond = second.getTransform().translation();
+  const Eigen::Vector3d recordedVelocity = second.getLinearVelocity();
+  world.restoreReplayFrame(6u);
+  world.step(6u);
+  EXPECT_EQ(first.getTransform().translation(), recordedFirst);
+  EXPECT_EQ(second.getTransform().translation(), recordedSecond);
+  EXPECT_EQ(second.getLinearVelocity(), recordedVelocity);
+}
+
 TEST(World, RigidAvbdDistanceSpringScheduleIsContinuousAcrossFamilyCrossing)
 {
   namespace sx = dart::simulation;

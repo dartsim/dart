@@ -16,7 +16,7 @@ from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 _TIME_STEP = 1.0 / 60.0
 _GRAVITY = -10.0
 _FRICTION = 0.7
-_THICKNESS = 0.2
+_THICKNESS = 1.0
 _LEVELS = 5
 _CARD_COUNT = 40
 _HORIZONTAL_CARD_COUNT = 10

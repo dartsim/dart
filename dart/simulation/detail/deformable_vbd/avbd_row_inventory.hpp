@@ -284,7 +284,20 @@ struct AvbdRowWarmStartOptions
   /// post-stabilized schedule keeps it fully with 1.0). NaN: Equation 19.
   double lambdaRetention = std::numeric_limits<double>::quiet_NaN();
   double maxStiffness = std::numeric_limits<double>::infinity();
+  /// Finite: the family's k_start (AVBD Algorithm 1 line 6) for every row,
+  /// replacing each descriptor's own start stiffness. NaN: the descriptor's.
+  double startStiffness = std::numeric_limits<double>::quiet_NaN();
 };
+
+/// Start stiffness of a row under `options`: the family override when it is
+/// finite, the descriptor's own value otherwise.
+inline double startAvbdDescriptorStiffness(
+    const AvbdScalarRowDescriptor& descriptor,
+    const AvbdRowWarmStartOptions& options)
+{
+  return std::isfinite(options.startStiffness) ? options.startStiffness
+                                               : descriptor.startStiffness;
+}
 
 /// One active row plus its persistent scalar state.
 struct AvbdScalarRowRecord
@@ -313,7 +326,7 @@ inline AvbdScalarRowState initialAvbdScalarRowState(
   AvbdScalarRowState state;
   state.lambda = 0.0;
   state.stiffness = std::min(
-      descriptor.startStiffness,
+      startAvbdDescriptorStiffness(descriptor, options),
       maxAvbdDescriptorStiffness(descriptor, options));
   return state;
 }
@@ -325,10 +338,12 @@ inline AvbdScalarRowState warmStartAvbdScalarRowState(
     const AvbdRowWarmStartOptions& options)
 {
   const double maxStiffness = maxAvbdDescriptorStiffness(descriptor, options);
+  const double startStiffness
+      = startAvbdDescriptorStiffness(descriptor, options);
   if (descriptor.kind == AvbdScalarRowKind::HardConstraint) {
     return warmStartAvbdHardConstraint(
         previous,
-        descriptor.startStiffness,
+        startStiffness,
         options.alpha,
         options.gamma,
         maxStiffness,
@@ -337,7 +352,7 @@ inline AvbdScalarRowState warmStartAvbdScalarRowState(
 
   AvbdScalarRowState next;
   next.lambda = 0.0;
-  const double lower = std::min(descriptor.startStiffness, maxStiffness);
+  const double lower = std::min(startStiffness, maxStiffness);
   next.stiffness
       = std::clamp(options.gamma * previous.stiffness, lower, maxStiffness);
   return next;

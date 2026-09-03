@@ -6601,31 +6601,44 @@ compute::ResolvedSolverConfiguration World::buildResolvedConfiguration(
     const char* profileName
         = detail::deformable_vbd::avbdRigidParameterProfileName(
             m_rigidAvbdParameterProfile);
+    std::string profileReason = std::format(
+        "immutable public AVBD parameters: alpha={:g}, beta={:g}",
+        profile.alpha,
+        profile.beta);
+    if (profile.betaAngular != profile.beta) {
+      profileReason += std::format(", betaAngular={:g}", profile.betaAngular);
+    }
+    profileReason += std::format(", gamma={:g}", profile.gamma);
+    if (std::isfinite(profile.startStiffness)) {
+      profileReason += std::format(", kStart={:g}", profile.startStiffness);
+    }
+    if (std::isfinite(profile.maxStiffness)) {
+      profileReason += std::format(", kMax={:g}", profile.maxStiffness);
+    }
+    if (profile.contactMargin > 0.0) {
+      profileReason += std::format(", margin={:g}", profile.contactMargin);
+    }
+    if (profile.angularRowsUseTorqueArm) {
+      profileReason += ", torqueArm";
+    }
+    switch (profile.frictionConeRule) {
+      case detail::deformable_vbd::AvbdRigidFrictionConeRule::LatestDual:
+        profileReason += ", cone=dual";
+        break;
+      case detail::deformable_vbd::AvbdRigidFrictionConeRule::TrialForce:
+        profileReason += ", cone=force";
+        break;
+      case detail::deformable_vbd::AvbdRigidFrictionConeRule::StepHighWaterDual:
+        break;
+    }
+    if (profile.postStabilize) {
+      profileReason += ", post-stabilization";
+    }
     resolvedConfiguration.notes.push_back(
         {"rigid-avbd-parameter-profile",
          profileName,
          profileName,
-         profile.postStabilize
-             ? std::format(
-                   "immutable public AVBD parameters: alpha={:g}, beta={:g}, "
-                   "gamma={:g}, post-stabilization",
-                   profile.alpha,
-                   profile.beta,
-                   profile.gamma)
-         : profile.betaAngular != profile.beta
-             ? std::format(
-                   "immutable public AVBD parameters: alpha={:g}, beta={:g}, "
-                   "betaAngular={:g}, gamma={:g}",
-                   profile.alpha,
-                   profile.beta,
-                   profile.betaAngular,
-                   profile.gamma)
-             : std::format(
-                   "immutable public AVBD parameters: alpha={:g}, beta={:g}, "
-                   "gamma={:g}",
-                   profile.alpha,
-                   profile.beta,
-                   profile.gamma)});
+         std::move(profileReason)});
   }
 
   const char* contactMethod = "unknown";
@@ -10791,7 +10804,8 @@ void World::restoreReplayFrame(std::size_t index)
            && state.contactIdentities.empty()
            && state.contactTangentAnchors.empty()
            && state.jointLinearRows.empty() && state.jointAngularRows.empty()
-           && state.motorRows.empty() && state.distanceSpringRows.empty();
+           && state.motorRows.empty() && state.distanceSpringRows.empty()
+           && state.projectedVelocities.empty();
   };
   const bool frameTopologyWillChange
       = std::ranges::any_of(replayFrame.publicFrames, [&](const auto& state) {

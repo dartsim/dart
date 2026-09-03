@@ -305,6 +305,10 @@ struct AvbdRigidPointJoint
   double linearMaterialStiffness = std::numeric_limits<double>::infinity();
   double angularMaterialStiffness = std::numeric_limits<double>::infinity();
   double maxStiffness = std::numeric_limits<double>::infinity();
+  /// Scale of the angular rows' constraint value and direction (the reference
+  /// sources' `torqueArm`, |sizeA + sizeB|^2, under the source profiles; 1
+  /// otherwise), which puts the angular penalty ramp in the linear rows' units.
+  double angularScale = 1.0;
   double fractureThreshold = 0.0;
   std::uint32_t row = 0;
 };
@@ -357,8 +361,25 @@ struct AvbdRigidContactManifoldPoint
 
 inline constexpr double kAvbdRigidStaticFrictionTolerance = 1e-5;
 
+/// How the Coulomb cone of a contact's friction rows follows its normal row.
+enum class AvbdRigidFrictionConeRule : std::uint8_t
+{
+  /// DART's step rule: the cone opens from zero to the largest normal dual the
+  /// contact transmits during the step and never narrows within the sweep.
+  StepHighWaterDual,
+  /// The pinned `avbd-demo2d` source: the cone is the current normal dual
+  /// times the friction coefficient, re-evaluated every body update.
+  LatestDual,
+  /// The pinned `avbd-demo3d` source: the cone is the normal row's trial
+  /// force (Equation 13, penalty plus dual) times the friction coefficient,
+  /// re-evaluated every body update.
+  TrialForce,
+};
+
 struct AvbdRigidPointPairFrictionOptions
 {
+  AvbdRigidFrictionConeRule coneRule
+      = AvbdRigidFrictionConeRule::StepHighWaterDual;
   double alpha = 0.0;
   double beta = 1.0;
   double maxStiffness = std::numeric_limits<double>::infinity();
@@ -387,6 +408,11 @@ struct AvbdRigidBlockDescentOptions
   /// call (a post-stabilization pass uses 0 so all pre-existing error is
   /// removed). NaN: each row keeps its configured alpha.
   double regularizationAlphaOverride = std::numeric_limits<double>::quiet_NaN();
+  /// Sized like the sweep's `states`: the step-start poses x_t that freeze
+  /// every contact row's first-order model and Equation 18 intercept when the
+  /// sweep itself starts from an adaptive initial guess (AVBD Algorithm 1
+  /// line 4). Empty: `states` is x_t on entry.
+  std::span<const AvbdRigidBodyState> stepStartStates{};
 };
 
 //==============================================================================
@@ -2579,8 +2605,17 @@ inline void buildAvbdRigidContactManifoldRows(
     NormalRowVector& normalRows,
     FrictionRowVector& frictionRows,
     AvbdRigidContactManifoldRowScratch& scratch,
-    const AvbdRowWarmStartOptions& warmStartOptions = {})
+    const AvbdRowWarmStartOptions& warmStartOptions = {},
+    double contactMargin = 0.0,
+    bool identityByFeatureOnly = false)
 {
+  // `identityByFeatureOnly` matches a multi-point manifold's continuation by
+  // its contact feature keys alone (the reference sources' manifold rule),
+  // so a contact that slides along a face keeps its duals; DART's rule also
+  // requires the ranked local points to stay within a tenth of their spacing.
+  // A positive margin (the reference sources' COLLISION_MARGIN) shifts every
+  // normal row's rest to that penetration depth, so a resting contact keeps
+  // its detected overlap instead of flickering at zero depth.
   const auto appendActiveRows =
       [&](std::span<const AvbdRigidContactManifoldPoint> activeContacts,
           std::span<const AvbdScalarRowDescriptor> normalDescriptors,
@@ -2807,10 +2842,12 @@ inline void buildAvbdRigidContactManifoldRows(
                    ++offset) {
                 const auto& previous = previousBegin[offset];
                 const auto& current = currentBegin[offset];
-                if (!(previous.key == current.key) || !std::isfinite(tolerance)
-                    || !(
-                        identityPointDistance(previous, current)
-                        <= tolerance)) {
+                if (!(previous.key == current.key)
+                    || (!identityByFeatureOnly
+                        && (!std::isfinite(tolerance)
+                            || !(
+                                identityPointDistance(previous, current)
+                                <= tolerance)))) {
                   ambiguousContactIdentity = true;
                   break;
                 }
@@ -2912,9 +2949,9 @@ inline void buildAvbdRigidContactManifoldRows(
               localPoints.first,
               localPoints.second,
               -contact.normalFromAtoB,
-              contact.depth,
+              contact.depth - contactMargin,
               record.state,
-              contact.depth);
+              contact.depth - contactMargin);
           initializeAvbdRigidPointPairTaylorLinearization(
               indexedRow.row,
               states[indexedRow.bodyA],
@@ -3404,6 +3441,7 @@ inline void buildAvbdRigidPointJointAngularRows(
           joint.targetRelativeOrientation,
           joint.angularAxes.col(axis),
           record.state);
+      indexedRow.row.axis *= joint.angularScale;
       indexedRow.row.materialStiffness = record.descriptor.materialStiffness;
       indexedRow.row.bounds = record.descriptor.bounds;
       if (!avbdRigidRowUsesFiniteMaterial(indexedRow.row.materialStiffness)) {
@@ -4128,16 +4166,26 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
     return body < bodyCount;
   };
 
-  // `states` is x_t on entry. Freeze every contact row's first-order model
-  // before the first Gauss-Seidel body update mutates any pose. Reinitializing
+  // Freeze every contact row's first-order model at the step-start poses
+  // before the first Gauss-Seidel body update mutates any pose: `states` is
+  // x_t on entry unless the caller started the sweep from an adaptive initial
+  // guess and handed x_t over as `options.stepStartStates`. Reinitializing
   // here also makes manually assembled contact rows obey the same contract as
   // rows produced by the world-contact builder.
+  const bool hasStepStartStates
+      = options.stepStartStates.size() == states.size();
+  const auto stepStartStateOf
+      = [&](std::uint32_t body) -> const AvbdRigidBodyState& {
+    return hasStepStartStates ? options.stepStartStates[body] : states[body];
+  };
   for (AvbdRigidBodyPointPairRow& indexedRow : pointPairRows) {
     if (validBody(indexedRow.bodyA) && validBody(indexedRow.bodyB)
         && indexedRow.row.curvatureModel
                == AvbdRigidPointCurvatureModel::TaylorLinearized) {
       initializeAvbdRigidPointPairTaylorLinearization(
-          indexedRow.row, states[indexedRow.bodyA], states[indexedRow.bodyB]);
+          indexedRow.row,
+          stepStartStateOf(indexedRow.bodyA),
+          stepStartStateOf(indexedRow.bodyB));
     }
   }
   for (AvbdRigidBodyPointPairFrictionRows& indexedRows : frictionPairRows) {
@@ -4154,7 +4202,15 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
       if (validBody(indexedNormal.bodyA) && validBody(indexedNormal.bodyB)
           && indexedNormal.bodyA == indexedRows.bodyA
           && indexedNormal.bodyB == indexedRows.bodyB) {
-        indexedRows.first.bounds = avbdFrictionTangentBounds(0.0);
+        // The reference source rules open the step's cone from the normal
+        // row's warm-started dual; DART's step rule starts it empty.
+        const double initialLimit
+            = frictionOptions.coneRule
+                      == AvbdRigidFrictionConeRule::StepHighWaterDual
+                  ? 0.0
+                  : indexedRows.frictionCoefficient
+                        * std::max(0.0, indexedNormal.row.state.lambda);
+        indexedRows.first.bounds = avbdFrictionTangentBounds(initialLimit);
         indexedRows.second.bounds = indexedRows.first.bounds;
       }
     }
@@ -4163,15 +4219,15 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
           == AvbdRigidPointCurvatureModel::TaylorLinearized) {
         initializeAvbdRigidPointPairTaylorLinearization(
             indexedRows.first,
-            states[indexedRows.bodyA],
-            states[indexedRows.bodyB]);
+            stepStartStateOf(indexedRows.bodyA),
+            stepStartStateOf(indexedRows.bodyB));
       }
       if (indexedRows.second.curvatureModel
           == AvbdRigidPointCurvatureModel::TaylorLinearized) {
         initializeAvbdRigidPointPairTaylorLinearization(
             indexedRows.second,
-            states[indexedRows.bodyA],
-            states[indexedRows.bodyB]);
+            stepStartStateOf(indexedRows.bodyA),
+            stepStartStateOf(indexedRows.bodyB));
       }
     }
   }
@@ -4694,58 +4750,80 @@ inline AvbdRigidBlockDescentStats blockDescentRigidBodiesAvbdRows(
   // impulse under a wider cone -- typically the warm-started dual applied at
   // `C = 0` -- and strand that displacement, because the augmented-Lagrangian
   // trial that would undo it is exactly what the closing cone clamps away.
-  const auto liveFrictionForceLimit
-      = [&](AvbdRigidBodyPointPairFrictionRows& indexedRows) {
-          const auto stepLimit = [&]() {
-            return avbdRigidPointPairFrictionPairForceLimit(
-                indexedRows.first, indexedRows.second);
-          };
-          if (indexedRows.normalRowIndex >= pointPairRows.size()
-              || !std::isfinite(indexedRows.frictionCoefficient)
-              || indexedRows.frictionCoefficient <= 0.0) {
-            return stepLimit();
-          }
+  const auto liveFrictionForceLimit = [&](AvbdRigidBodyPointPairFrictionRows&
+                                              indexedRows) {
+    const auto stepLimit = [&]() {
+      return avbdRigidPointPairFrictionPairForceLimit(
+          indexedRows.first, indexedRows.second);
+    };
+    if (indexedRows.normalRowIndex >= pointPairRows.size()
+        || !std::isfinite(indexedRows.frictionCoefficient)
+        || indexedRows.frictionCoefficient <= 0.0) {
+      return stepLimit();
+    }
 
-          const AvbdRigidBodyPointPairRow& indexedNormal
-              = pointPairRows[indexedRows.normalRowIndex];
-          if (!validBody(indexedNormal.bodyA) || !validBody(indexedNormal.bodyB)
-              || indexedNormal.bodyA != indexedRows.bodyA
-              || indexedNormal.bodyB != indexedRows.bodyB) {
-            return stepLimit();
-          }
+    const AvbdRigidBodyPointPairRow& indexedNormal
+        = pointPairRows[indexedRows.normalRowIndex];
+    if (!validBody(indexedNormal.bodyA) || !validBody(indexedNormal.bodyB)
+        || indexedNormal.bodyA != indexedRows.bodyA
+        || indexedNormal.bodyB != indexedRows.bodyB) {
+      return stepLimit();
+    }
 
-          const AvbdRigidPointPairRow& normal = indexedNormal.row;
-          double normalForce = 0.0;
-          if (avbdRigidRowUsesFiniteMaterial(normal.materialStiffness)) {
-            // A finite-material normal row carries no dual, so its penalty
-            // force is the force it transmits.
-            normalForce = avbdRigidScalarRowForce(
-                normal.state,
-                avbdRigidPointPairConstraintValue(
-                    states[indexedNormal.bodyA],
-                    states[indexedNormal.bodyB],
-                    normal),
-                normal.bounds,
-                normal.materialStiffness);
-          } else {
-            normalForce = normal.state.lambda;
-          }
+    const AvbdRigidPointPairRow& normal = indexedNormal.row;
+    double normalForce = 0.0;
+    if (avbdRigidRowUsesFiniteMaterial(normal.materialStiffness)) {
+      // A finite-material normal row carries no dual, so its penalty
+      // force is the force it transmits.
+      normalForce = avbdRigidScalarRowForce(
+          normal.state,
+          avbdRigidPointPairConstraintValue(
+              states[indexedNormal.bodyA], states[indexedNormal.bodyB], normal),
+          normal.bounds,
+          normal.materialStiffness);
+    } else if (
+        frictionOptions.coneRule == AvbdRigidFrictionConeRule::TrialForce) {
+      // The 3D reference source bounds the cone by the normal row's
+      // trial force (Equation 13: penalty times the regularized value
+      // plus the dual), so the cone follows the penalty ramp within the
+      // step instead of waiting for the dual to accumulate.
+      const AvbdRigidPointAttachmentOptions& normalOptions
+          = avbdRigidPointPairSolveOptions(indexedNormal, rowOptions);
+      const double constraintValue = regularizeAvbdConstraintValue(
+          avbdRigidPointPairConstraintValue(
+              states[indexedNormal.bodyA], states[indexedNormal.bodyB], normal),
+          normal.previousConstraintValue,
+          alphaOf(normalOptions.alpha));
+      normalForce = computeAvbdHardConstraintForce(
+          normal.state, constraintValue, normal.bounds);
+    } else {
+      normalForce = normal.state.lambda;
+    }
 
-          if (std::isnan(normalForce)) {
-            // A NaN normal force marks a poisoned row whose own force is
-            // already non-finite. The cone stays at its step high-water mark
-            // because bounds never decrease within a sweep (the Hessian was
-            // assembled against them); it is not reopened or widened here.
-            return stepLimit();
-          }
-          const double liveLimit
-              = indexedRows.frictionCoefficient * std::max(0.0, normalForce);
-          if (liveLimit > stepLimit()) {
-            indexedRows.first.bounds = avbdFrictionTangentBounds(liveLimit);
-            indexedRows.second.bounds = indexedRows.first.bounds;
-          }
-          return stepLimit();
-        };
+    if (std::isnan(normalForce)) {
+      // A NaN normal force marks a poisoned row whose own force is
+      // already non-finite. The cone stays at its step high-water mark
+      // because bounds never decrease within a sweep (the Hessian was
+      // assembled against them); it is not reopened or widened here.
+      return stepLimit();
+    }
+    const double liveLimit
+        = indexedRows.frictionCoefficient * std::max(0.0, normalForce);
+    if (frictionOptions.coneRule
+        != AvbdRigidFrictionConeRule::StepHighWaterDual) {
+      // The reference source rules re-evaluate the cone from the
+      // current normal force at every body update, narrowing it again
+      // when the normal force drops.
+      indexedRows.first.bounds = avbdFrictionTangentBounds(liveLimit);
+      indexedRows.second.bounds = indexedRows.first.bounds;
+      return stepLimit();
+    }
+    if (liveLimit > stepLimit()) {
+      indexedRows.first.bounds = avbdFrictionTangentBounds(liveLimit);
+      indexedRows.second.bounds = indexedRows.first.bounds;
+    }
+    return stepLimit();
+  };
 
   const auto addFrictionPairToBlock = [&](AvbdRigidBodyBlock& block,
                                           std::uint32_t body,

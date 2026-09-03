@@ -16,7 +16,7 @@ from ..runner import PythonDemoScene, ScenePanel, SceneSetup
 _TIME_STEP = 1.0 / 60.0
 _GRAVITY = -10.0
 _FRICTION = 1.0
-_THICKNESS = 0.2
+_THICKNESS = 1.0
 _SOURCE_RAMP_ANGLE = 3.14159 / 6.0
 _GROUND_SIZE_2D = np.array([100.0, 1.0])
 _GROUND_SIZE = np.array([100.0, 1.0, _THICKNESS])

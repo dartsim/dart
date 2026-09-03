@@ -209,9 +209,19 @@ std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
   if (selectAllContacts) {
     uniformConfig.emplace();
     if (ownedFamilyProfile != nullptr) {
-      uniformConfig->alpha = ownedFamilyProfile->alpha;
+      // The main sweeps of a post-stabilized profile run with alpha 1 for
+      // contacts exactly as for joints (the reference source's currentAlpha).
+      uniformConfig->alpha
+          = dvbd::avbdRigidParameterProfileSweepAlpha(*ownedFamilyProfile);
       uniformConfig->beta = ownedFamilyProfile->beta;
       uniformConfig->gamma = ownedFamilyProfile->gamma;
+      if (std::isfinite(ownedFamilyProfile->startStiffness)) {
+        uniformConfig->startStiffness = ownedFamilyProfile->startStiffness;
+      }
+      if (std::isfinite(ownedFamilyProfile->maxStiffness)) {
+        uniformConfig->maxStiffness = std::max(
+            uniformConfig->startStiffness, ownedFamilyProfile->maxStiffness);
+      }
     }
     validateConfig(*uniformConfig);
     // Public VBD/AVBD own one solver-wide contact configuration. The private
@@ -251,6 +261,22 @@ std::optional<comps::RigidAvbdContactConfig> rigidAvbdContactStageConfig(
     }
   }
   return uniformConfig;
+}
+
+//==============================================================================
+/// Whether the block sweep starts from the adaptive initial guess of AVBD
+/// Algorithm 1 line 4. Only the profiles that also start every row at the
+/// reference sources' PENALTY_MIN do: with DART's configured 1e5 start
+/// stiffness the guess makes a hard-jointed structure that lands on a support
+/// pass through it (the stiff joints stall the sweep before the contact rows
+/// can lift the structure back out), while at the reference start the sweep
+/// reproduces the reference sources. The paper profile therefore keeps its
+/// step-start sweep origin and its sealed Figure 13 outcome; see the PLAN-104
+/// finding on Table 2's beta in SI units.
+bool avbdAdaptiveInitialGuessEnabled(
+    const dvbd::AvbdRigidParameterProfile& profile) noexcept
+{
+  return std::isfinite(profile.startStiffness);
 }
 
 //==============================================================================
@@ -1181,6 +1207,10 @@ struct RigidBodyContactStage::AvbdScratch
       = common::StlAllocator<dvbd::AvbdRigidWorldPointJointInput>;
   using DistanceSpringAllocator
       = common::StlAllocator<dvbd::AvbdRigidWorldDistanceSpringInput>;
+  using ProjectedVelocityVector
+      = avbd_replay::RigidAvbdWarmStartReplayState::ProjectedVelocityVector;
+  using ProjectedVelocityAllocator
+      = avbd_replay::RigidAvbdWarmStartReplayState::ProjectedVelocityAllocator;
 
   AvbdScratch() = default;
 
@@ -1195,13 +1225,17 @@ struct RigidBodyContactStage::AvbdScratch
       jointLinearInventory(allocator),
       jointAngularInventory(allocator),
       motorInventory(allocator),
-      distanceSpringInventory(allocator)
+      distanceSpringInventory(allocator),
+      projectedVelocities(ProjectedVelocityAllocator{allocator}),
+      projectedVelocityScratch(ProjectedVelocityAllocator{allocator})
   {
   }
 
   void clear()
   {
     dvbd::clearAvbdRigidWorldContactSnapshot(snapshot);
+    projectedVelocities.clear();
+    projectedVelocityScratch.clear();
     pointJoints.clear();
     distanceSprings.clear();
     buildScratch.rowCounters.clear();
@@ -1235,6 +1269,9 @@ struct RigidBodyContactStage::AvbdScratch
   {
     clearContactWarmStart();
     clearPointJointWarmStart();
+    // A step the block family did not own projected no velocities, so the
+    // adaptive initial guess restarts from a zero gravity weight.
+    projectedVelocities.clear();
   }
 
   void reserve(
@@ -1284,6 +1321,10 @@ struct RigidBodyContactStage::AvbdScratch
   dvbd::AvbdScalarRowInventory jointAngularInventory;
   dvbd::AvbdScalarRowInventory motorInventory;
   dvbd::AvbdScalarRowInventory distanceSpringInventory;
+  /// Projected linear velocities of the last two owned steps (adaptive
+  /// initial guess history) and its rebuild scratch.
+  ProjectedVelocityVector projectedVelocities;
+  ProjectedVelocityVector projectedVelocityScratch;
 };
 
 //==============================================================================
@@ -1702,12 +1743,14 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
 
     dvbd::clearAvbdRigidWorldContactSnapshot(scratch.snapshot);
     const std::size_t appendedJoints
-        = scratch.pointJoints.empty() ? 0u
-                                      : dvbd::appendAvbdRigidWorldPointJoints(
-                                            registry,
-                                            scratch.pointJoints,
-                                            scratch.snapshot,
-                                            scratch.buildScratch);
+        = scratch.pointJoints.empty()
+              ? 0u
+              : dvbd::appendAvbdRigidWorldPointJoints(
+                    registry,
+                    scratch.pointJoints,
+                    scratch.snapshot,
+                    scratch.buildScratch,
+                    selectedProfile.angularRowsUseTorqueArm);
     const std::size_t appendedDistanceSprings
         = scratch.distanceSprings.empty()
               ? 0u
@@ -1723,6 +1766,17 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
     const double timeStep = world.getTimeStep();
     dvbd::predictAvbdRigidWorldContactInertialTargets(
         registry, scratch.snapshot, timeStep);
+    if (avbdAdaptiveInitialGuessEnabled(selectedProfile)) {
+      dvbd::predictAvbdRigidWorldContactInitialGuess(
+          scratch.snapshot,
+          timeStep,
+          world.getGravity(),
+          std::span<const dvbd::AvbdRigidProjectedVelocityRecord>{
+              scratch.projectedVelocities.data(),
+              scratch.projectedVelocities.size()});
+    } else {
+      scratch.snapshot.initialGuessStates.clear();
+    }
 
     const dvbd::AvbdRigidWorldContactSolveOptions solveOptions
         = rigidAvbdWorldSolveOptions(
@@ -1757,6 +1811,15 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
     const dvbd::AvbdRigidWorldContactApplyResult projection
         = dvbd::applyAvbdRigidWorldContactVelocityProjection(
             registry, scratch.snapshot, timeStep);
+    if (avbdAdaptiveInitialGuessEnabled(selectedProfile)) {
+      dvbd::recordAvbdRigidWorldContactProjectedVelocities(
+          registry,
+          scratch.snapshot,
+          scratch.projectedVelocities,
+          scratch.projectedVelocityScratch);
+    } else {
+      scratch.projectedVelocities.clear();
+    }
     (void)dvbd::applyAvbdRigidWorldContactPostStabilization(
         registry, scratch.snapshot);
     return projection.bodies != 0u;
@@ -1871,7 +1934,8 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
             registry,
             scratch.pointJoints,
             scratch.snapshot,
-            scratch.buildScratch);
+            scratch.buildScratch,
+            selectedProfile.angularRowsUseTorqueArm);
       }
     } else {
       scratch.pointJoints.clear();
@@ -1896,6 +1960,17 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
       const double timeStep = world.getTimeStep();
       dvbd::predictAvbdRigidWorldContactInertialTargets(
           registry, scratch.snapshot, timeStep);
+      if (avbdAdaptiveInitialGuessEnabled(selectedProfile)) {
+        dvbd::predictAvbdRigidWorldContactInitialGuess(
+            scratch.snapshot,
+            timeStep,
+            world.getGravity(),
+            std::span<const dvbd::AvbdRigidProjectedVelocityRecord>{
+                scratch.projectedVelocities.data(),
+                scratch.projectedVelocities.size()});
+      } else {
+        scratch.snapshot.initialGuessStates.clear();
+      }
 
       const dvbd::AvbdRigidWorldContactSolveOptions solveOptions
           = rigidAvbdWorldSolveOptions(
@@ -1929,6 +2004,15 @@ void RigidBodyContactStage::execute(World& world, ComputeExecutor& executor)
         const dvbd::AvbdRigidWorldContactApplyResult projection
             = dvbd::applyAvbdRigidWorldContactVelocityProjection(
                 registry, scratch.snapshot, timeStep);
+        if (avbdAdaptiveInitialGuessEnabled(selectedProfile)) {
+          dvbd::recordAvbdRigidWorldContactProjectedVelocities(
+              registry,
+              scratch.snapshot,
+              scratch.projectedVelocities,
+              scratch.projectedVelocityScratch);
+        } else {
+          scratch.projectedVelocities.clear();
+        }
         (void)dvbd::applyAvbdRigidWorldContactPostStabilization(
             registry, scratch.snapshot);
         if (projection.bodies != 0u) {
@@ -2150,6 +2234,9 @@ RigidBodyContactStage::captureAvbdWarmStartReplayState(
   copyRecords(state.jointAngularRows, m_avbdScratch->jointAngularInventory);
   copyRecords(state.motorRows, m_avbdScratch->motorInventory);
   copyRecords(state.distanceSpringRows, m_avbdScratch->distanceSpringInventory);
+  state.projectedVelocities.assign(
+      m_avbdScratch->projectedVelocities.begin(),
+      m_avbdScratch->projectedVelocities.end());
   return state;
 }
 
@@ -2190,6 +2277,9 @@ void RigidBodyContactStage::restoreAvbdWarmStartReplayState(
   restoreRecords(m_avbdScratch->motorInventory, replayState.motorRows);
   restoreRecords(
       m_avbdScratch->distanceSpringInventory, replayState.distanceSpringRows);
+  m_avbdScratch->projectedVelocities.assign(
+      replayState.projectedVelocities.begin(),
+      replayState.projectedVelocities.end());
 }
 
 //==============================================================================
@@ -2208,7 +2298,8 @@ bool RigidBodyContactStage::hasAnyAvbdWarmStartContinuationState()
          || !m_avbdScratch->jointLinearInventory.records().empty()
          || !m_avbdScratch->jointAngularInventory.records().empty()
          || !m_avbdScratch->motorInventory.records().empty()
-         || !m_avbdScratch->distanceSpringInventory.records().empty();
+         || !m_avbdScratch->distanceSpringInventory.records().empty()
+         || !m_avbdScratch->projectedVelocities.empty();
 }
 
 //==============================================================================

@@ -204,11 +204,18 @@ compatibility remains on the active DART 6 LTS branch._
   springs keep one paper-profile schedule across solver-family crossings.
   The public AVBD family selects one named, immutable parameter profile
   (`RigidAvbdParameterProfile`: the paper's Table 2 by default, or the pinned
-  2D/3D reference-demo defaults, the 2D one with the reference's
-  post-stabilization sweep), records it in the resolved configuration, and
-  binds it into replay and binary checkpoints (format 36); the source-demo
-  scenes select their own reference profile. Machine-checked row-bound
-  evidence contracts keep full CPU/CUDA paper parity explicitly open.
+  2D/3D reference-demo defaults), records it in the resolved configuration,
+  and binds it into replay and binary checkpoints (format 36). The two
+  source profiles reproduce the pinned sources' rules, verified against
+  headless builds of those sources: PENALTY_MIN/PENALTY_MAX for every row,
+  the Algorithm 1 adaptive initial guess (with a projected-velocity history
+  in the warm-start replay state), the collision margin, the joint
+  `torqueArm` scale, the sources' Coulomb-cone rules, feature-only manifold
+  continuation, and the 2D source's post-stabilization sweep; the paper
+  profile keeps DART's row start stiffness and step-start sweep origin. The
+  source-demo scenes select their own reference profile and their rows are
+  re-derived from the source runs. Machine-checked row-bound evidence
+  contracts keep full CPU/CUDA paper parity explicitly open.
   ([#3432](https://github.com/dartsim/dart/pull/3432))
 - Added bounded, fail-closed DART 7 contact storage: `World` construction
   options cap the baked rigid collision candidate-pair and contact buffers
