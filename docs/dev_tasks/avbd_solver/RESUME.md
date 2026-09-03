@@ -20,14 +20,13 @@ This file owns only the exact branch/session stop point and takeover sequence.
 > (review wave 3: non-finite manifold points cold-start, bounded outside
 > breaks, legacy schema pins pruned), `caa26ec5473` (evidence resealed on
 > `3d2d543ecdf`), `f1a8093d474` (six AVBD source-row demo tests parked behind
-> the D5 contact-regularization finding, two label tests corrected), and the
-> packet reseal that follows it. The sealed Figure 13 evidence binds
-> capture-source digest
-> `d54b0460b9806b462307881053810c76e7acb92f03ea25e1c765402e2f86c9be` and the
-> head `3d2d543ecdf`; the quiet-host five-repeat run records
-> 14.735410 ms/0.24% AVBD, 12.438459 ms/2.00% VBD, and 13.349352 ms/2.32% SI
-> median CPU cost per step (descriptive same-host costs). Under the immutable
-> paper profile the AVBD wall keeps standing with 36 broken attachments
+> the D5 contact-regularization finding, two label tests corrected),
+> `fe061587d5b` (packets resealed after the parking), `a1dfabc5fa9` (D5:
+> named AVBD parameter profiles with the reference demos' post-stabilization;
+> seven source rows re-parked under finding E), and the evidence reseal that
+> follows it. The sealed Figure 13 evidence is captured from the D5 head
+> (see the README for the current capture-source digest and medians). Under
+> the paper profile the AVBD wall keeps standing with 36 broken attachments
 > ([5, 5, 5] in the impact regions plus 21 outside) and no displaced brick, so
 > its review records visual agreement with Figure 13(d) as not proven.
 > Gates on the evidence head: `pixi run lint` green; the default
@@ -205,8 +204,8 @@ in AVBD -> VBD -> SI order.
     rejected before packet generation.
 
 Packet hashes are validated transitively from the committed files and are not
-duplicated in this mutable handoff. On the sealed `3d2d543ecdf` evidence
-VBD/AVBD is 0.8441x, SI/AVBD is 0.9059x, and SI/VBD is 1.0732x (median CPU
+duplicated in this mutable handoff. On the sealed `a1dfabc5fa9` evidence
+VBD/AVBD is 0.8791x, SI/AVBD is 0.9371x, and SI/VBD is 1.0660x (median CPU
 cost per step; the earlier 0.9551x / 1.6233x / 1.6997x figures were the
 pre-audit head's). Outcomes
 intentionally differ, and there is no source achieved-accuracy or
