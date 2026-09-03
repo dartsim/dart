@@ -731,6 +731,12 @@ jobs:
 
       - name: Run Debug C++ tests
         run: |
+          # The Debug compile of the simulation test executables (the rigid
+          # AVBD kernel headers are instantiated in a dozen large TUs) peaks
+          # above the 16 GB hosted runner's memory at the default four jobs:
+          # the runner service was shut down mid-build in three consecutive
+          # runs. Two jobs keep the peak inside the limit.
+          export DART_PARALLEL_JOBS=2
           DART_VERBOSE=ON \
           BUILD_TYPE=Debug \
           pixi run test ON Debug
