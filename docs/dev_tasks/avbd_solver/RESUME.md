@@ -23,22 +23,24 @@ This file owns only the exact branch/session stop point and takeover sequence.
 > the D5 contact-regularization finding, two label tests corrected),
 > `fe061587d5b` (packets resealed after the parking), `a1dfabc5fa9` (D5:
 > named AVBD parameter profiles with the reference demos' post-stabilization;
-> seven source rows re-parked under finding E), and the evidence reseal that
-> follows it. The sealed Figure 13 evidence is captured from the D5 head
+> seven source rows re-parked under finding E), and `3d0ac5f1f0a` (evidence
+> resealed on the D5 head). The sealed Figure 13 evidence is captured from
+> `a1dfabc5fa9`, whose capture roots are byte-identical to the later commits
 > (see the README for the current capture-source digest and medians). Under
 > the paper profile the AVBD wall keeps standing with 36 broken attachments
 > ([5, 5, 5] in the impact regions plus 21 outside) and no displaced brick, so
 > its review records visual agreement with Figure 13(d) as not proven.
-> Gates on the evidence head: `pixi run lint` green; the default
-> `DART_DISABLE_COMPILER_CACHE=ON pixi run test-all` passed lint, both
-> builds, and the C++ suites, and its Python phase passes after the parking
-> (2001 passed, 20 skipped, 6 expected failures); `pixi run -e cuda test-all`
-> passed all seven phases. Two open findings are recorded in the README and
-> the plan: the public AVBD contact regularization (open P1 against exit
-> criterion 2, fix = named parameter profiles with post-stabilization) and
-> the audit-ladder block-family slowdown (deferred). Nothing is pushed; the
-> push, the PR body with its attachments, and the `@codex review` trigger
-> await explicit approval. Treat everything below this note as the
+> Gates on `3d0ac5f1f0a`: `pixi run lint` green; the default
+> `DART_DISABLE_COMPILER_CACHE=ON pixi run test-all` passed every phase
+> (Python 2001 passed, 20 skipped, 7 expected failures for the parked rows);
+> `pixi run -e cuda test-all` passed every phase. Two open findings are
+> recorded in the README and the plan: finding E (the seven AVBD source-demo
+> rows still miss thresholds calibrated on the pre-audit private contact
+> configuration; the 3D ports start inside the ramp because `makeBox` takes
+> half extents) and the audit-ladder block-family slowdown (deferred). The
+> branch is pushed with the PR body and its attachments, and `@codex review`
+> is posted after each push; every later push, PR edit, and merge await
+> explicit approval. Treat everything below this note as the
 > pre-takeover historical stop point; the session ledger with decisions
 > D1-D5 lives outside the tree.
 

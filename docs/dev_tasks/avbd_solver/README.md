@@ -118,15 +118,14 @@ This folder is the temporary working surface; the durable owner is the plan.
     cold-start (`65ba05113c6`).
 - **Current local gates:** on the sealed source bytes the Release C++ suite
   passes 310/310 `ctest` entries (including `test_boxed_lcp_contact` 133/133,
-  `test_avbd_rigid_block` 141/141, `test_world` 504/504,
-  `test_world_resolved_configuration` 37/37), the evidence-script unit tests
+  `test_avbd_rigid_block` 142/142, `test_world` 506/506,
+  `test_world_resolved_configuration` 38/38), the evidence-script unit tests
   pass, and `tests/test_check_avbd_packets.py` passes on the regenerated
-  Figure 13 packets. On the evidence head the full default
-  `DART_DISABLE_COMPILER_CACHE=ON pixi run test-all` passed its lint,
-  Release and Debug build, C++ unit, and simulation phases, and its Python
-  phase passes after the source-row rows were parked (2001 passed, 20
-  skipped, 6 expected failures); `pixi run -e cuda test-all` passed all
-  seven phases (its Python selection does not include the demo-cycle rows). A
+  Figure 13 packets. On the evidence head `3d0ac5f1f0a` the full default
+  `DART_DISABLE_COMPILER_CACHE=ON pixi run test-all` passed every phase
+  (its Python phase: 2001 passed, 20 skipped, 7 expected failures for the
+  parked source-demo rows), and `pixi run -e cuda test-all` passed every
+  phase (its Python selection does not include the demo-cycle rows). A
   green CUDA environment gate still would not close the missing
   solver-specific VBD/AVBD GPU-parity predicates.
 
