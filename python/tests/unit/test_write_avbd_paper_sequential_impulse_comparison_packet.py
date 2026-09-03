@@ -1241,7 +1241,7 @@ def test_make_packet_records_matched_three_method_evidence(
     )
     assert packet["visual_evidence"]["collapse"]["scene_metrics"]["outcome"][
         "total_retained_fraction"
-    ] == pytest.approx(0.19047619047619047)
+    ] == pytest.approx(0.1865079365079365)
     comparison = packet["benchmark"]["comparison"]
     assert comparison[
         "sequential_impulse_to_avbd_median_cpu_cost_ratio"

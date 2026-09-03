@@ -137,8 +137,8 @@ EXPECTED_OUTCOMES = {
     120: {
         "broken_joints": 5,
         "impact_band_displaced_counts": [13, 14, 13],
-        "outside_retained_fraction": 0.2727272727272727,
-        "total_retained_fraction": 0.19047619047619047,
+        "outside_retained_fraction": 0.26704545454545453,
+        "total_retained_fraction": 0.1865079365079365,
         "unbroken_joints": 707,
     },
 }

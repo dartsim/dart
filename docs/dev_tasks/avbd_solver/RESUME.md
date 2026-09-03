@@ -9,44 +9,39 @@ This file owns only the exact branch/session stop point and takeover sequence.
 
 ## Stop Point
 
-> **Current Reality (2026-09-02, takeover session):** the branch now carries
-> the takeover chain `cde14ad788c` (rigid AVBD packet, evidence pipeline,
-> legacy packet pins, scale packets), `e1b0aa1fe6b` (capture harness accepts
-> its own lazily mapped modules), `e5224b016c7` (AVBD Figure 13 oracle
-> re-derived for the paper-profile outcome), `7d340dc7c4e`, `12bfa9a1796`,
-> `e8b02fcfcdb`, `c549b9f24de` (evidence-runner fixes: retired Filament
-> option, project-appended link flag, settle before the quiet gate),
-> `dadd1f0ce97` (first evidence reseal and validator fixes), `3d2d543ecdf`
-> (review wave 3: non-finite manifold points cold-start, bounded outside
-> breaks, legacy schema pins pruned), `caa26ec5473` (evidence resealed on
-> `3d2d543ecdf`), `f1a8093d474` (six AVBD source-row demo tests parked behind
-> the D5 contact-regularization finding, two label tests corrected),
-> `fe061587d5b` (packets resealed after the parking), `a1dfabc5fa9` (D5:
-> named AVBD parameter profiles with the reference demos' post-stabilization;
-> seven source rows re-parked under finding E), `3d0ac5f1f0a` (evidence
-> resealed on the D5 head), `f009859d8ce` (gate record), `9fc193dc4a6`
-> (the source profiles reproduce the pinned reference sources' solver rules,
-> verified against headless builds of those sources: PENALTY_MIN/MAX per
-> row, the Algorithm 1 adaptive initial guess, COLLISION_MARGIN, the joint
-> torqueArm scale, the sources' cone rules, feature-only manifold
-> continuation, 2D depth 1.0; all twelve source rows re-derived and
-> unparked; D6 and finding F documented), and the evidence reseal that
-> follows it. The sealed Figure 13 evidence is captured from `9fc193dc4a6`
+> **Current Reality (2026-09-03, takeover session):** the branch carries the
+> takeover chain `cde14ad788c` (rigid AVBD packet, evidence pipeline, legacy
+> packet pins, scale packets), `e1b0aa1fe6b`, `e5224b016c7` (AVBD Figure 13
+> oracle re-derived for the paper-profile outcome), `7d340dc7c4e`,
+> `12bfa9a1796`, `e8b02fcfcdb`, `c549b9f24de` (evidence-runner fixes),
+> `dadd1f0ce97` (first reseal and validator fixes), `3d2d543ecdf` (review
+> wave 3), `caa26ec5473`, `f1a8093d474`, `fe061587d5b`, `a1dfabc5fa9` (D5:
+> named AVBD parameter profiles), `3d0ac5f1f0a`, `f009859d8ce`,
+> `9fc193dc4a6` (the source profiles reproduce the pinned reference sources'
+> solver rules, verified against headless builds of those sources),
+> `32ba93fb159` (reseal on `9fc193dc4a6`), `1bcc088fe6f`, `bd99b56aaec`,
+> `5838271f4d5` (gate record, arm64 row bound, Debug runner job cap),
+> `6da51e494f9` (D6: `MassScaledReference` is the public default; the
+> profile-derived rows belong to the AVBD family only; finding F closed for
+> sustained friction at its four owners: the 2D source's anchor rule as a
+> profile field, the box-box face clip without the reference-plane crossing
+> vertices and with per-vertex depths, corner/edge contact feature codes,
+> per-key feature-only identity; the 2D ports lock their bodies to the plane
+> and every source-demo scene runs the sources' ten iterations; the rigid
+> block kernel memoized bitwise), `6e2f52ef216` (the benchmark's
+> parameterized fixtures pin the paper profile), and the evidence reseal that
+> follows it. The sealed Figure 13 evidence is captured from `6e2f52ef216`
 > (see the README for the current capture-source digest and medians). Under
 > the paper profile the AVBD wall keeps standing with 36 broken attachments
 > ([5, 5, 5] in the impact regions plus 21 outside) and no displaced brick,
-> so its review records visual agreement with Figure 13(d) as not proven;
-> that profile keeps DART's 1e5 row start stiffness and step-start sweep
-> origin (D6). Gates on the evidence head: see the README's current local
-> gates. Open items recorded in the README and the plan: D6 (the paper
-> profile's `beta`/`k_start` units, a maintainer decision), finding F (the
-> post-stabilized 2D profile's sliding friction is weaker than the source),
-> and the audit-ladder block-family slowdown (deferred). The branch is
-> pushed with the PR body and its attachments, and `@codex review` is posted
-> after each push; every later push, PR edit, and merge await
-> explicit approval. Treat everything below this note as the
-> pre-takeover historical stop point; the session ledger with decisions
-> D1-D5 lives outside the tree.
+> so its review records visual agreement with Figure 13(d) as not proven.
+> Open items recorded in the README and the plan: the `Paper2025Table2`
+> `beta`/`k_start` units if that profile is ever to run with the adaptive
+> initial guess, and sliding friction under the 2D profile (bounded, not
+> matched). The branch is pushed with the PR body and its attachments; every
+> later push, PR edit, and merge await explicit approval. Treat everything
+> below this note as the pre-takeover historical stop point; the session
+> ledger with decisions D1-D6 lives outside the tree.
 
 At the 2026-08-31 zero-trust checkpoint, draft PR #3432 remains the shared
 foundation only. The live branch is
@@ -210,10 +205,11 @@ in AVBD -> VBD -> SI order.
     rejected before packet generation.
 
 Packet hashes are validated transitively from the committed files and are not
-duplicated in this mutable handoff. On the sealed `9fc193dc4a6` evidence
-VBD/AVBD is 0.8651x, SI/AVBD is 0.9243x, and SI/VBD is 1.0684x (median CPU
-cost per step; the earlier 0.9551x / 1.6233x / 1.6997x figures were the
-pre-audit head's). Outcomes
+duplicated in this mutable handoff. On the sealed `6e2f52ef216` evidence
+VBD/AVBD is 0.8503x, SI/AVBD is 1.1249x, and SI/VBD is 1.3228x (median CPU
+cost per step: 13.252252 / 11.268830 / 14.906923 ms AVBD / VBD / SI; the
+previous seal's were 0.8651x / 0.9243x / 1.0684x and the pre-audit head's
+0.9551x / 1.6233x / 1.6997x). Outcomes
 intentionally differ, and there is no source achieved-accuracy or
 same-hardware denominator for this reconstructed scene; no raw cost ratio is a
 speedup, parity, or quality claim.
