@@ -686,17 +686,17 @@ def test_checked_in_source_skill_tasks_and_paths_are_current():
     assert "## Expected CI Times" not in ci_skill
 
 
-def test_components_workflow_template_matches_enforced_structure():
+def test_components_authoring_guide_matches_enforced_structure():
     content = (ROOT / "docs" / "ai" / "components.md").read_text()
-    template = content.split("## Adding A Workflow", 1)[1].split(
+    guide = content.split("## Adding A Workflow", 1)[1].split(
         "## Adding A Domain Skill", 1
     )[0]
 
-    assert "argument-hint:" in template
-    assert "## Required Reading" in template
-    assert "## Workflow" in template
-    assert "## Output" in template
-    assert "agent: build" not in template
+    assert "`argument-hint`" in guide
+    assert "## Required Reading" in guide
+    assert "## Workflow" in guide
+    assert "## Output" in guide
+    assert "agent: build" not in guide
 
 
 def test_shared_agent_surfaces_override_global_ignore_rules():

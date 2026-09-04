@@ -11,18 +11,14 @@ skill files stay thin, generated, or compatibility-focused.
 
 ## Read Order
 
-For general DART agent work:
+Start with `AGENTS.md` and `docs/ai/principles.md`, then the task-specific
+owners listed in `AGENTS.md` or the selected skill. Use this index to find
+policy; load the relevant workflow-catalog row and verification section when
+routing work or choosing gates. Read `docs/ai/north-star.md` when project
+direction matters. Do not load the entire catalog, every linked owner, or
+already-read documents for each phase.
 
-1. `AGENTS.md`
-2. `docs/ai/principles.md`
-3. `docs/ai/README.md` (this file)
-4. `docs/ai/north-star.md`
-5. `docs/ai/workflows.md`
-6. `docs/ai/verification.md`
-7. The task-specific developer doc listed in `AGENTS.md`
-
-For multi-session work, also read `docs/ai/sessions.md` and
-`docs/dev_tasks/README.md`.
+For multi-session work, read `docs/dev_tasks/README.md`.
 
 For project planning, also read `docs/plans/README.md`,
 `docs/plans/dashboard.md`, and `docs/plans/north-star-roadmap.md`.
@@ -78,18 +74,18 @@ source owns its own procedure. Three entrypoints answer recurring questions:
 | Surface                         | Role                                                                                |
 | ------------------------------- | ----------------------------------------------------------------------------------- |
 | `AGENTS.md`                     | Root pointer board and mandatory high-level rules                                   |
-| `docs/ai/principles.md`         | AI-infra axioms and manual audit checklist                                          |
+| `docs/ai/principles.md`         | AI-infra axioms and principle audit                                                 |
 | `docs/ai/terminology.md`        | Canonical AI-facing terms and migration candidates                                  |
-| `docs/ai/`                      | Durable AI-native mission and session rules not owned by a row below                |
+| `docs/ai/`                      | Durable AI policy not owned by a row below                                          |
 | `docs/ai/workflows.md`          | Capability catalog: public paths, required docs, and minimum gates per workflow     |
 | `docs/ai/verification.md`       | Gate selection, completion audit, and evidence expectations                         |
 | `docs/ai/components.md`         | AI component mechanics, source surfaces, and the structural checks                  |
 | `docs/ai/capabilities.json`     | Machine-readable capability status, category, and gate profile                      |
 | `docs/ai/branch-profile.json`   | Machine-readable branch facts, required paths, exclusions, and AI-infra gates       |
-| `docs/ai/agent-scenarios.json`  | Eight deterministic fresh-session routing and verification contracts                |
+| `docs/ai/agent-scenarios.json`  | Deterministic routing and verification contracts                                    |
 | `docs/ai/orchestration.md`      | Orchestrator/executor roles and the work-packet contract                            |
 | `docs/plans/`                   | Living project priority, current state, next steps, and acceptance gates            |
-| `docs/dev_tasks/`               | Temporary branch/session handoff state for active multi-session work                |
+| `docs/dev_tasks/`               | Lifecycle owner (README) and temporary active task handoffs                         |
 | `docs/onboarding/ai-tools.md`   | Tool compatibility and adapter maintenance details                                  |
 | `docs/onboarding/ai-reviews.md` | Handling automated PR reviews and the review-fix loop                               |
 | `.claude/commands/`             | Editable workflow source for DART user-invoked workflow capabilities                |
@@ -108,25 +104,10 @@ like scripts rather than regenerated.
 
 ## Agent-Friendly Setup And Diagnosis
 
-Run `pixi run ai-setup` once in a checkout to synchronize adapters and install
-the cross-tool Git pre-commit guard. Run `pixi run ai-doctor` at session start
-or after a discovery/setup failure; it reports versions, project trust-sensitive
-surfaces, instruction chains, skills, agents, hooks, tasks, model pins, prompt
-and skill-metadata sizes, and recovery commands without modifying the checkout.
-
-Use `pixi run check-agent-hook` for the fast staged-file structural gate,
-`pixi run test-ai-infra` for focused infrastructure tests, and
-`pixi run check-ai-infra` for the aggregate non-mutating gate. The aggregate
-also exercises deterministic orientation, small-change, failure-diagnosis,
-documentation, model-upgrade, component, simulation-verification, and
-release-maintenance scenarios. Full build/test
-selection remains owned by `docs/ai/verification.md` and the task-specific
-developer docs.
-
-Codex loads project `.codex/` configuration and hooks only after the checkout
-is trusted. Review project hooks with `/hooks`; changed hook definitions require
-review again. A skipped Codex hook is not a correctness boundary: the installed
-Git hook and explicit pre-commit gates remain authoritative.
+Run `pixi run ai-setup` for checkout setup and `pixi run ai-doctor` for
+read-only diagnosis. [Tool compatibility](../onboarding/ai-tools.md) owns
+trust, hooks, and client-specific recovery; [components](components.md) owns
+adapter maintenance.
 
 ## Model Routing
 
@@ -144,36 +125,26 @@ Codex agent profiles, `.claude/settings.json`, and command or skill frontmatter
 bounded entry per validated lane, and every lane states that its models accept
 native image input because `dart-verify-sim` relies on it:
 
-- **Codex — GPT-5.6 family.** Use the Sol model for difficult ambiguous work,
-  Terra for everyday or read-heavy work, and Luna for clear repeatable work.
-  The Max reasoning mode gives one hard task more reasoning time; the Ultra
-  mode is for independently parallelizable work when the user explicitly
-  authorized delegation. Most tasks need neither mode. Sol, Terra, and Luna
-  accept native image input.
-- **Claude Code — current Claude models.** Use Fable 5.1 (`claude-fable-5-1`,
-  the Mythos-class tier above Opus) for the hardest ambiguous or long-horizon
-  work, or when Opus 5 at higher effort still falls short on the task; Opus 5
-  (`claude-opus-5`) as the everyday strong default for substantial engineering
-  work such as architecture, deep analysis, and agentic coding (Claude Code
-  fast mode, toggled with `/fast`, runs only on Opus 5/4.8); Sonnet 5
-  (`claude-sonnet-5`) for standard bounded work; and Haiku 4.5
-  (`claude-haiku-4-5-20251001`) for quick lookups. Fable 5 (`claude-fable-5`)
-  stays served as a legacy model; do not route new work to it. All four
-  current models accept native image input. Reasoning effort is a
-  session-level setting that defaults to `high`. On Fable 5.1, `medium`
-  roughly matches Fable 5 at lower cost, so step down for routine or
-  read-heavy turns; `xhigh` and `max` carry its largest gains but also its
-  longest thinking time, so reserve them for one capability-sensitive task
-  rather than a default. Fable 5.1 ships additional safety measures for
-  dual-use capabilities that can occasionally refuse dual-use content; treat
-  such a refusal as expected model behavior rather than a DART harness defect.
-  (Mythos 5.1 is the same underlying model with safeguards tuned for its
-  trusted-access program and is not generally available — do not try to
-  select it.)
-  If the refused task is legitimate DART work, restate it with its
-  physics/simulation context made explicit, ask "are there bugs in this
-  program?" rather than "does this compile?", keep base64 blobs out of tool
-  output, and surface it to a maintainer if it still refuses.
+- **Codex — GPT-6 Astra (`gpt-6-astra`).** The maintainer's selected workflow
+  uses only Astra with **Max** or **Ultra**. Astra sessions accept native image input.
+  Max gives one difficult task more reasoning time; prefer it for tightly
+  coupled planning and implementation. Ultra uses subagents for separable work;
+  prefer it for substantial planning with independent research questions, or
+  implementation with independent ownership scopes. Choose by task shape, not
+  by phase alone. During planning, recommend the mode and record the approved
+  delegation scope using `docs/ai/orchestration.md`; research/review approval
+  does not authorize parallel writers. Keep delegated sessions on Astra with
+  Max or Ultra and verify effective settings; inheritance alone does not prove
+  child effort. If the requested model, mode, or child settings are unavailable,
+  report the limitation without substituting another model or lower effort.
+  These are session choices, not project configuration pins.
+- **Claude Code — Fable 5.1 (`claude-fable-5-1`).** This frontier lane accepts
+  native image input. Select effort within the user's authorized set using
+  task evidence; effort names are not equivalent across model families.
+  Preserve complete task scope, concise progress updates, and current-state
+  handoffs. Current prompting/configuration guidance and dated runtime evidence
+  live in `docs/onboarding/ai-tools.md`. Re-evaluate changes that compensate for
+  an older model's behavior instead of carrying them forward automatically.
 
 A model-upgrade audit re-verifies native image input before adding or
 replacing a lane.
@@ -183,8 +154,9 @@ model.
 
 Treat this routing as versioned guidance, not a permanent model taxonomy. Run
 `dart-model-upgrade` for future model or Codex changes, keep task contracts
-lean, and select the lightest model and effort that passes representative DART
-checks.
+lean, and choose within the user's authorized model and effort set. An explicit
+restriction also bounds comparisons and delegated sessions; tool defaults do
+not expand it.
 
 Claude Code, OpenCode, Gemini CLI, future Codex models, and human contributors
 remain supported: roles are not products, authoring and review stay separate,
@@ -194,24 +166,11 @@ has a separately maintained compatibility-first catalog; never infer that a
 
 ## Safety Boundary
 
-AI agents may inspect files, make local edits requested by the user, and run
-local verification. GitHub mutations require explicit maintainer/user approval,
-including pushes, PR comments, review-thread resolution, reviewer requests,
-merges, and review re-triggers such as `@codex review`.
-
-For automated review comments from bot accounts, follow
-`docs/onboarding/ai-reviews.md`: never reply inline, verify each claim locally,
-and treat any push, comment, thread resolution, or re-trigger as an external
-mutation needing explicit maintainer/user approval.
+`docs/ai/principles.md` owns action/target/scope authorization.
+`docs/onboarding/ai-reviews.md` owns bot-comment handling and PR review actions.
 
 ## Required Gates
 
-Use `docs/ai/verification.md` to select the strongest gate that matches the
-work. AI-surface changes use its AI docs/adapters gate set.
-
-Before committing, DART still requires `pixi run lint`. Code changes require
-the build and test gates listed in `AGENTS.md` and the relevant developer docs.
-
-Substantial AI-infra changes also require the principle audit in
-`docs/ai/principles.md`; record the result in the final response or PR Testing
-section.
+`docs/ai/verification.md` owns gate selection and completion evidence, including
+the principle audit and review requirements. `AGENTS.md` requires full
+`pixi run lint` before every commit.

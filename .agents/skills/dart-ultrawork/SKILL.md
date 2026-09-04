@@ -33,9 +33,8 @@ Start a team-scale or autonomous DART task: $ARGUMENTS
 @docs/ai/principles.md
 @docs/ai/north-star.md
 @docs/ai/orchestration.md
-@docs/ai/sessions.md
-@docs/ai/verification.md
 @docs/dev_tasks/README.md
+@docs/ai/verification.md
 
 Load additional owners only when the matching phase needs them:
 
@@ -68,18 +67,12 @@ and the current surface permits it; otherwise execute packets serially. Use
 `dart-new-task` for bounded single-session work unless the user asked for the
 autonomous project-home loop.
 
-1. **Session start and current reality** - Locate the project home. For
-   DART autonomous projects this is `docs/dev_tasks/<task>/`, not a parallel
-   project directory. If it exists, read its `README.md`, `RESUME.md`, and any
-   autonomous sidecars such as `decisions.md`, `verification.md`, or
-   `progress-log.md`; then verify checkout state, current branch, and any
-   branch/PR evidence named by the docs. Run `pixi run ai-doctor` when setup,
-   discovery, instruction, agent, or hook state is uncertain. If the docs are
-   stale, update the handoff/current-reality note before relying on them. If no project home
-   exists and the task is multi-session, team-scale, design-heavy, risky, or
-   explicitly autonomous, create `docs/dev_tasks/<task>/` before
-   implementation. If prior work exists elsewhere, first absorb or summarize
-   it into the project home.
+1. **Session start and current reality** - Follow `docs/dev_tasks/README.md`'s
+   Session Start protocol for the `docs/dev_tasks/<task>/` project home:
+   current snapshot and next action first, history only as needed, then verify
+   live branch/PR/plan state before acting. Run `pixi run ai-doctor` when setup,
+   discovery, instruction, agent, or hook state is uncertain. Create or refresh
+   the project home before implementation when the session policy requires it.
 2. **Understand and scout** - Restate the north star, final deliverable,
    acceptance criteria, quality bar, non-goals, constraints, risks, and target
    branch line (DART 7 `main`, DART 6 LTS, or both). Scout the territory first
@@ -87,7 +80,8 @@ autonomous project-home loop.
    `dart_scout` profile, or focused reference review; draft a candidate
    decomposition privately before asking anything.
 3. **Interview decisions; self-resolve uncertainties** - Ask at most one
-   up-front batch of critical questions. Escalate before destructive
+   up-front batch of critical questions, only for choices or authority missing
+   from the brief and prior decisions. Escalate before destructive
    operations, history rewrites, irreversible migrations, meaningful cost,
    security/credential/secret handling, legal or privacy-sensitive decisions,
    major product-direction choices not covered by the brief, conflicts with
@@ -98,8 +92,8 @@ autonomous project-home loop.
    - **Maintainer decisions**: preference, scope, public API, release,
      quality-bar, or roadmap calls that evidence cannot settle. Ask the human
      now in one batched interview (focused questions with 2-4 concrete
-     options each, recommendation first). Do not start large work while a
-     consequential decision is open. Skip this discretionary interview when
+     options each, recommendation first). Defer work that depends on an open
+     decision; continue independent work already authorized. Skip this discretionary interview when
      `mode=brief`; also skip when `interview=skip` and the prompt already
      answers everything consequential. In both cases, still follow the
      escalation rules above.
@@ -116,9 +110,9 @@ autonomous project-home loop.
    Keep `RESUME.md` as the handoff; add `decisions.md`, `verification.md`,
    and `progress-log.md` sidecars when they improve resumability or evidence.
 5. **Set the goal contract** - Express done-when as verifiable outcomes
-   (files, tests, gates, artifacts). When the session supports a goal or
-   stop-hook mode (for example `/goal` in Claude Code), set it to this
-   contract so orchestration cannot stop early or loop forever. Stop once the
+   (files, tests, gates, artifacts). Activate a persistent goal or stop-hook
+   mode only when the user explicitly requests it and the tool supports it.
+   Stop once the
    acceptance criteria are satisfied, verification is recorded, docs are
    current, known gaps are documented, and unnecessary work has been removed or
    deferred. Every delegated packet gets its own contract: GOAL (one
@@ -131,7 +125,9 @@ autonomous project-home loop.
    independent reviewer for acceptance review, and a release auditor for
    branch adaptation; Codex supplies these roles as the `.codex/agents/`
    profiles and other tools use separate sessions. Use parallel writers only
-   with explicit disjoint ownership.
+   with user-approved implementation delegation and explicit disjoint ownership;
+   research/review approval alone is insufficient. Record the phase-specific
+   mode and delegation decision per `docs/ai/orchestration.md`.
 7. **Run the autonomous work/review cycle** - For each meaningful chunk: plan,
    execute, verify, then run an independent/specialized review lane. Treat
    review findings as hypotheses: investigate, fix or record no-fix evidence,
@@ -140,15 +136,13 @@ autonomous project-home loop.
 8. **Supervise and steer** - Monitor progress; unblock, reassign, or re-cut
    packets on scope mismatch. Workers return Task, Summary, Files changed,
    Evidence/tests, Risks, and Recommended next step. Use another tool, an
-   independent session, or the bounded specialist profiles when available;
-   fall back to role-separated local review only when unavailable. Root-cause
+   independent session, or the bounded specialist profiles within the approved
+   model/effort and delegation scope; use role-separated local review when an
+   independent route is unavailable under that scope. Root-cause
    failures and fold newly discovered unknowns back into step 3.
-9. **Update docs at each stopping point** - Every meaningful cycle updates the
-   project home: `README.md` for status/plan/risks, `RESUME.md` for the next
-   fresh-session handoff, `decisions.md` if decisions changed,
-   `verification.md` if checks ran or gaps were found, and `progress-log.md`
-   for completed chunks when that sidecar exists. Keep docs current enough for
-   a zero-context session to resume without hidden chat memory.
+9. **Update docs at each stopping point** - Follow `docs/dev_tasks/README.md`'s
+   Session End protocol. Keep the current snapshot sufficient for a fresh
+   session to resume without hidden chat memory or reading the entire history.
 10. **Version-control and closeout** - Keep commits and PRs coherent: separate
     feature work, bug fixes, refactors, docs, experiments, and AI-infra changes
     when practical; review the diff, remove unrelated changes, make the

@@ -11,11 +11,6 @@ AI-infra axioms. Canonical AI-facing terms live in
 generated surface checks live in `docs/ai/components.md`; tool compatibility
 lives in `docs/onboarding/ai-tools.md`.
 
-These principles are informed by common coding-agent and code-review failure
-modes: durable repo instructions, scoped context, verification loops,
-independent review, root-cause analysis, and whole-system code health. This is
-DART-owned wording and policy.
-
 Keep this file short. It spends always-loaded agent context, so move examples,
 procedures, and compatibility detail to the owner docs above.
 
@@ -35,7 +30,10 @@ procedures, and compatibility detail to the owner docs above.
    `docs/ai/orchestration.md` owns the methods for doing so.
 3. **Simplicity is a requirement.** Solve the current DART problem. Do not add
    speculative flexibility, hierarchy, abstraction, or configuration unless it
-   removes real complexity or matches an established DART pattern.
+   removes real complexity or matches an established DART pattern. Rely on
+   model/tool behavior shown to work; retain instructions for DART-specific
+   constraints or observed gaps. Removing instructions must preserve outcome
+   quality and task completeness; `docs/ai/components.md` owns the audit method.
 4. **Changes must be surgical.** Every changed line should trace to the user
    request, a documented rule, or a verification finding. Preserve unrelated
    user edits and clean up only what the current change created.
@@ -58,7 +56,10 @@ procedures, and compatibility detail to the owner docs above.
 9. **Shared state needs approval.** Local inspection, edits, and verification
    are allowed when the task calls for them. Pushes, PR updates, comments,
    review-thread changes, CI re-triggers, merges, and branch deletion require
-   explicit maintainer/user approval.
+   explicit maintainer/user approval. Authorization persists for its stated
+   action, target, and scope across workflow steps; ask only for missing or
+   changed authority. Approval for one action does not authorize adjacent
+   actions, other targets, or a broader scope.
 10. **Failures get root-caused, not hidden.** For unexpected in-scope failures,
     reproduce the smallest failing case and fix the cause with regression
     coverage. Preserve the real invariant at the right owner doc or module
@@ -68,30 +69,7 @@ procedures, and compatibility detail to the owner docs above.
 
 ## Principle Audit
 
-Before finalizing substantial AI-assisted work, check:
-
-- Objective: deliverables and non-goals are clear.
-- Context fit: substantial or consequential work names the north-star, owner
-  docs, affected modules/call paths, and plan state it used; tiny fixes kept
-  context proportionate.
-- Assumptions: consequential ambiguity was asked about or resolved from
-  evidence.
-- Unknowns: material unknowns were surfaced before large work (see
-  `docs/ai/orchestration.md`), not discovered mid-implementation.
-- Simplicity: the change is no larger than the current problem requires.
-- Durability: the solution fits the right long-term owner doc, module boundary,
-  and invariant instead of narrowing or hiding the problem.
-- Scope: touched files are necessary and unrelated edits are preserved.
-- Source of truth: mutable state has one owner; other surfaces point to it.
-- Decision evidence: consequential choices are backed by claim-appropriate
-  evidence such as code inspection, logs, tests, benchmarks, research, visual
-  evidence, or prototypes.
-- Root cause: any unexpected failure was reproduced and fixed at the cause with
-  regression coverage, or classified as external/pre-existing without weakening
-  gates.
-- Public path: workflow guidance maps to tracked docs and `pixi run ...` gates.
-- Evidence: checks, review results, artifacts, or blockers are recorded.
-- Shared-state safety: any external mutation was explicitly approved.
-
-Record the audit result in the final response or PR Testing section. Do not add
-a separate audit log unless the work already uses a dev-task folder.
+Before finalizing substantial work, check the change against these axioms and
+the completion audit in `docs/ai/verification.md`. Record the result and any
+unresolved exception in the final response or PR Testing section. Use existing
+task evidence; do not create a separate audit log.

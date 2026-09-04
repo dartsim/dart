@@ -31,14 +31,19 @@ Start a new task in DART: $ARGUMENTS
 
 Read these files first:
 @AGENTS.md
-@docs/onboarding/building.md
-@docs/onboarding/contributing.md
-@docs/onboarding/code-style.md
-@docs/dev_tasks/README.md
-@docs/information-architecture.md
-@docs/ai/sessions.md
 @docs/ai/principles.md
-@docs/ai/verification.md
+@docs/information-architecture.md
+
+Then load owners when the task needs them:
+
+- Multi-phase/session work: `docs/dev_tasks/README.md`
+  before creating or resuming the project home.
+- Branching or contribution: `docs/onboarding/contributing.md` before setup.
+- C++/Python/build changes: `docs/onboarding/building.md` and
+  `docs/onboarding/code-style.md` before implementation.
+- Docs edits: `docs/AGENTS.md` and `docs/README.md` before editing.
+- Acceptance and testing: the task's gate set in `docs/ai/verification.md`
+  before implementation; load detailed test guidance for the affected surface.
 
 ## Workflow
 

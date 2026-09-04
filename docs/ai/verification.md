@@ -107,16 +107,6 @@ or visual evidence is genuinely irrelevant, record why.
 Always name replacement evidence. Use `verification-bundle` when an
 image-capable reviewer is available.
 
-Linux CI runs an explicit settled-contact `agent-capture` under Xvfb with
-contacts, collision bounds, and labels, then requires `image-verdict` to accept
-the emitted frame. The same blocking step runs a focused A/B regression under
-Xvfb: it holds the world and camera fixed, compares a plain capture with the
-combined debug capture, then proves contacts, collision bounds, and labels each
-change pixels independently. The Python suite also asserts that a same-renderer
-debug overlay clears cleanly. Together these gates exercise view assessment,
-the Filament renderer, every claim-relevant debug layer, artifact writing, and
-image validation without relying on an optional display test.
-
 ## Review Evidence
 
 Review findings are extra input, not orders. For each substantive review
@@ -145,21 +135,14 @@ path into the DART 7 `World` pipeline.
 For substantial changes to AI-facing docs, commands, skills, generated
 adapters, planning workflows, or agent rules, run the principle audit in
 `docs/ai/principles.md` and record the result as evidence. This file owns gate
-selection and evidence mapping; `docs/ai/principles.md` owns the manual audit
-questions; `docs/ai/components.md` owns the exact structural checks performed
+selection and evidence mapping; `docs/ai/principles.md` owns the principle audit; `docs/ai/components.md` owns the exact structural checks performed
 by `pixi run check-ai-commands` and `pixi run check-ai-infra`.
 
-Use `pixi run ai-doctor` to diagnose discovery or setup failures without
-mutating the checkout. Use `pixi run check-agent-hook` for frequent hook-sized
-feedback only; it is intentionally not completion evidence. The focused
-`test-ai-infra` suite and aggregate `check-ai-infra` gate must pass in addition
-to generated-adapter sync. The aggregate gate validates canonical runner wiring
-and executes controlled pytest/CTest probes for hostile ambient selectors,
-actual test-body execution, zero-body rejection, and failure propagation. This
-is a shared, model-independent harness invariant; future model upgrades extend
-the comparison cases and the shared gate instead of creating a model-specific
-runner. Run `pixi run exercise-agent-scenarios` directly when changing routing
-fixtures or branch profiles so failures identify the specific scenario.
+The focused `test-ai-infra` suite and aggregate `check-ai-infra` gate must
+pass in addition to adapter sync. `docs/ai/components.md` owns their guarded
+runner and discovery invariants; the fast staged hook is not completion
+evidence. Run `pixi run exercise-agent-scenarios` directly for routing/profile
+changes so failures identify the affected case.
 
 When AI workflow changes derive implementation tasks, verify that the owning
 plan packet or `docs/dev_tasks/<task>/README.md` records the DART

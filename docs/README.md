@@ -14,18 +14,18 @@ contributor guidance.
 For placement rules, lifecycle boundaries, and future restructure criteria, see
 [information-architecture.md](information-architecture.md).
 
-| Directory                               | Owns                                                                                        |
-| --------------------------------------- | ------------------------------------------------------------------------------------------- |
-| [`ai/`](ai/README.md)                   | AI-native principles, terminology, branch/scenario profiles, workflows, sessions, and gates |
-| [`assets/`](assets/)                    | Source-controlled assets used by repository docs outside RTD static                         |
-| [`background/`](background/README.md)   | Theory and research foundations derived from preserved source PDFs                          |
-| [`design/`](design/README.md)           | Durable technical design proposals and decision rationale                                   |
-| [`dev_tasks/`](dev_tasks/README.md)     | Active multi-session implementation task tracking                                           |
-| [`doxygen/`](doxygen/)                  | Doxygen inputs consumed by the published C++ API build                                      |
-| [`onboarding/`](onboarding/README.md)   | Current developer handbook path: build/test/CI/release/API policy and workflows             |
-| [`plans/`](plans/README.md)             | Living roadmap, priority, open gaps, gates, and plan lifecycle                              |
-| [`python_api/`](python_api/index.rst)   | Reusable dartpy API module pages for Sphinx autodoc                                         |
-| [`readthedocs/`](readthedocs/README.md) | Published user documentation site source                                                    |
+| Directory                               | Owns                                                                              |
+| --------------------------------------- | --------------------------------------------------------------------------------- |
+| [`ai/`](ai/README.md)                   | AI-native principles, terminology, branch/scenario profiles, workflows, and gates |
+| [`assets/`](assets/)                    | Source-controlled assets used by repository docs outside RTD static               |
+| [`background/`](background/README.md)   | Theory and research foundations derived from preserved source PDFs                |
+| [`design/`](design/README.md)           | Durable technical design proposals and decision rationale                         |
+| [`dev_tasks/`](dev_tasks/README.md)     | Durable lifecycle README and temporary task subfolders                            |
+| [`doxygen/`](doxygen/)                  | Doxygen inputs consumed by the published C++ API build                            |
+| [`onboarding/`](onboarding/README.md)   | Current developer handbook path: build/test/CI/release/API policy and workflows   |
+| [`plans/`](plans/README.md)             | Living roadmap, priority, open gaps, gates, and plan lifecycle                    |
+| [`python_api/`](python_api/index.rst)   | Reusable dartpy API module pages for Sphinx autodoc                               |
+| [`readthedocs/`](readthedocs/README.md) | Published user documentation site source                                          |
 
 The Markdown developer and agent docs are optimized for GitHub and LLM-friendly
 inspection. The published site under `readthedocs/` is Sphinx/RST plus MyST
@@ -44,6 +44,6 @@ Markdown and owns end-user navigation.
 - **Published docs/API site?** → [readthedocs/README.md](readthedocs/README.md) + [onboarding/api-documentation.md](onboarding/api-documentation.md)
 - **Revising project plans?** → [plans/README.md](plans/README.md) + [plans/dashboard.md](plans/dashboard.md) + [plans/north-star-roadmap.md](plans/north-star-roadmap.md)
 - **Using AI agent workflows?** → [ai/README.md](ai/README.md) + [ai/principles.md](ai/principles.md) + [ai/north-star.md](ai/north-star.md) + [onboarding/ai-tools.md](onboarding/ai-tools.md)
-- **Letting AI pick next work?** → [ai/README.md#choosing-the-next-task](ai/README.md#choosing-the-next-task) + [ai/workflows.md](ai/workflows.md)
+- **Letting AI pick next work?** → [ai/README.md#workflow-entrypoints](ai/README.md#workflow-entrypoints) + [ai/workflows.md](ai/workflows.md)
 - **Using DART API?** → [dart.readthedocs.io](https://dart.readthedocs.io/)
 - **Looking for examples?** → [examples/](../examples/) and [tutorials/](../tutorials/)

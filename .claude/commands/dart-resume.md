@@ -43,7 +43,8 @@ modifiers. Interpret arguments in this order:
    do not limit scope unless paired with an explicit scope-limited mode.
 3. **Explicit target path**: if an argument names `docs/dev_tasks/<task>` or a
    file under that folder, treat that dev task as the target and read its
-   `README.md` and `RESUME.md` after recon. Resolve relative paths from the repo
+   current `README.md` and `RESUME.md` snapshots after recon, following the
+   selective-reading protocol in `docs/dev_tasks/README.md`. Resolve relative paths from the repo
    root discovered by `git rev-parse --show-toplevel`, not from the launch
    directory.
 4. **Closeout wording**: words such as `complete`, `finish`, `retire`,
@@ -65,11 +66,11 @@ $dart-resume PR 2991
 
 @AGENTS.md
 @docs/dev_tasks/README.md
-@docs/ai/sessions.md
 @docs/ai/verification.md
-@docs/onboarding/ci-cd.md
-@docs/onboarding/contributing.md
-@docs/onboarding/changelog.md
+
+Load `docs/onboarding/ci-cd.md` when CI is part of the current action,
+`docs/onboarding/contributing.md` before branch/PR work, and
+`docs/onboarding/changelog.md` for the closeout changelog decision.
 
 ## Workflow
 
@@ -86,8 +87,9 @@ gh pr status
 ### Reconstruct
 
 If `$ARGUMENTS` names a `docs/dev_tasks/<task>` path, use that folder as the
-target and inspect its `README.md`, `RESUME.md`, and any directly referenced
-owner docs before choosing work. If the folder is already absent, verify whether
+target and inspect its current `README.md` and `RESUME.md` snapshots before
+choosing work. Follow current owner pointers; retrieve historical entries only
+for relevant uncertainty, per `docs/dev_tasks/README.md`. If the folder is already absent, verify whether
 it was retired on current `main`, identify the durable owner doc that replaced
 it, and report that no folder cleanup remains.
 
@@ -114,66 +116,20 @@ Before editing, write explicit pass/fail criteria for the resumed task:
 
 ### Continue
 
-- Propose a 3-6 step plan before editing.
-- Continue with minimal scope and preserve existing user changes.
-- Verification comes first when the route is uncertain. Define the observable
-  signal, build or select the smallest reproducer/check, run a control vs
-  candidate comparison when possible, and only then choose the implementation
-  path. If the existing verification is weak, improve the check or debugging
-  surface before trusting the result.
-- For 3D structure or behavior claims, route through `dart-verify-sim`: text
-  oracle first, then assessed claim-tied visual evidence or a recorded
-  exception; a screenshot alone is not proof.
-- When the decision depends on behavior outside the repository, search the
-  relevant upstream docs, papers, issues, standards, or release notes and record
-  the source-backed conclusion in the task docs, durable owner doc, or PR
-  evidence. Prefer primary sources.
-- If the task is large, decompose it into independently verifiable work items.
-  Use available AI-native subagent, sub-session, or parallel-worker support only
-  when the user explicitly requested delegation and the current surface permits
-  it. Otherwise, keep the decomposition as a serial plan or explicit handoff
-  packets. Validate and integrate every delegated result yourself; repo-tracked
-  docs remain the source of truth even when agent-specific orchestration is
-  available.
-- Keep progress tracking current in the task's `README.md`, `RESUME.md`, or
-  durable owner doc after meaningful progress. If the current session cannot
-  finish because of context, environment, approval, or a real blocker, leave the
-  next session with exact current reality, remaining work, blockers, and gates.
-- For active solver/paper implementations, keep the resume surface explicit
-  about the completed slice and the next missing paper-parity gap
-  (`docs/ai/verification.md` owns the completion bar).
-- Run a completion audit before finalizing a dev-task target:
-  identify the exact `docs/dev_tasks/<task>/` folder, inspect it for remaining
-  plans/evidence/decisions, promote any durable dashboard, evidence matrix, API
-  inventory, migration map, long-lived decision, or deferred-but-real work into
-  `docs/plans/`, `docs/design/`, or `docs/onboarding/`, update dashboard/plan
-  progress when the task changes roadmap state, then remove the dev-task folder
-  completely in the completing change.
-- In completion mode, do not leave the long-form resume prompt to carry
-  decisions. Record the final decision or parked follow-up in the durable owner
-  doc, then delete or update the dev-task folder according to
-  `docs/dev_tasks/README.md`.
-- Before finalizing a resumed task that changes behavior, public API, packaging,
-  CI, docs workflow, AI-infra workflow, release process, or user-visible docs,
-  invoke the `dart-changelog` routine in `decide` or `finalize` mode. If no
-  entry is needed, keep the reason in the local PR body/checklist draft or task
-  evidence; if an entry is needed, prepare the local `CHANGELOG.md` edit and PR
-  link when available. Pushing the changelog edit or updating the PR body still
-  requires explicit maintainer/user approval.
-- If remaining work is real but blocked by a substantial design decision,
-  maintainer direction, external dependency, or scope boundary that should not
-  be resolved in the current session, ask the human before retiring the folder
-  unless prior maintainer direction is already recorded. Record the parked or
-  blocked work in the durable owner doc before deletion.
-- Do not call a dev task complete while `docs/dev_tasks/<task>/` still exists.
-  If implementation is done but the folder remains, the remaining work is the
-  durable-doc promotion plus folder cleanup.
-- Run `pixi run lint` before committing and the task-type gate set from
-  `docs/ai/verification.md`; use `pixi run test-all` before done when feasible.
-- Merge the latest base branch into any published PR branch before pushing, and
-  follow the base-merge rules in `docs/onboarding/ai-reviews.md`. Push with
-  `git push -u origin HEAD` and create or update the PR only after explicit
-  maintainer/user approval, preferring additive follow-up commits.
+Continue the selected action within the reconstructed scope and supplied
+decisions. Use the task lifecycle in `docs/dev_tasks/README.md`, delegation
+contract in `docs/ai/orchestration.md`, and claim-specific gates/completion
+audit in `docs/ai/verification.md`. For 3D claims, use `dart-verify-sim`;
+retain the full solver/paper target across checkpoints.
+
+Before closeout, run `dart-changelog` in `decide` or `finalize` mode.
+Promote durable dashboards/matrices and remaining-work decisions, then remove
+the completed task folder under its owner's retirement rules. If a real blocker
+remains, preserve exact current state and next action instead of claiming done.
+
+For publication, load `docs/onboarding/ai-reviews.md`: merge the latest base
+before a PR push and reuse explicit authorization only within its recorded
+scope. Run `pixi run lint` before committing and the applicable pre-PR gates.
 
 ## Safety
 

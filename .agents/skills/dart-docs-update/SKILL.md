@@ -35,8 +35,11 @@ Update documentation: $ARGUMENTS
 @docs/information-architecture.md
 @docs/ai/principles.md
 @docs/ai/verification.md
-@docs/onboarding/ai-tools.md
-@docs/onboarding/changelog.md
+
+For AI instruction or workflow changes, follow the owner read order in
+`docs/ai/README.md`; read the relevant tool section of
+`docs/onboarding/ai-tools.md` only when compatibility is affected. Load
+`docs/onboarding/changelog.md` when making the closeout changelog decision.
 
 ## Workflow
 

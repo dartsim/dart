@@ -30,6 +30,7 @@ from install_git_hooks import HOOK_TEMPLATE, SENTINEL
 
 JSON_READ_ERRORS = (OSError, json.JSONDecodeError)
 TOML_READ_ERRORS = (OSError, tomllib.TOMLDecodeError)
+PATH_RESOLUTION_ERRORS = (OSError, RuntimeError, ValueError)
 
 AI_TASKS = {
     "ai-doctor",
@@ -165,6 +166,50 @@ def _instruction_context_inventory(root: Path) -> dict[str, object]:
     }
 
 
+def _declared_reading_inventory(root: Path, commands: list[Path]) -> dict[str, object]:
+    """Measure direct @file reading, not transitive context or model tokens."""
+    import sync_ai_commands as sync
+
+    root = root.resolve()
+    workflows: list[dict[str, object]] = []
+    for command in sorted(commands):
+        files: dict[str, int] = {}
+        unavailable: list[dict[str, str]] = []
+        readings = sync.extract_required_reading_from_content(
+            command.read_text(encoding="utf-8", errors="replace")
+        )
+        for relative in sorted(set(readings)):
+            try:
+                path = (root / relative).resolve()
+                if Path(relative).is_absolute() or not path.is_relative_to(root):
+                    reason = "outside repository"
+                elif not path.is_file():
+                    reason = "not a file"
+                else:
+                    files[str(path.relative_to(root))] = path.stat().st_size
+                    continue
+            except PATH_RESOLUTION_ERRORS:
+                reason = "unreadable path"
+            unavailable.append({"path": relative, "reason": reason})
+        workflows.append(
+            {
+                "path": str(command.relative_to(root)),
+                "files": [
+                    {"path": path, "bytes": size}
+                    for path, size in sorted(files.items())
+                ],
+                "bytes": sum(files.values()),
+                "unavailable": unavailable,
+            }
+        )
+    largest = max(
+        workflows,
+        key=lambda entry: (entry["bytes"], entry["path"]),
+        default={"path": "", "bytes": 0, "files": [], "unavailable": []},
+    )
+    return {"workflows": workflows, "largest": largest}
+
+
 def _managed_generated_skills(root: Path) -> list[Path]:
     skills_root = root / ".agents" / "skills"
     manifest_path = skills_root / ".dart-generated.json"
@@ -259,6 +304,7 @@ def _model_harness_inventory(
         },
         "project_agent_config": displayed_agent_config,
         "instruction_context": _instruction_context_inventory(root),
+        "declared_reading": _declared_reading_inventory(root, commands),
         "workflow_sources": _line_inventory(commands, root),
         "domain_skill_sources": _line_inventory(skills, root),
         "generated_skill_metadata_chars": metadata_chars,
@@ -432,6 +478,12 @@ def report(root: Path, requested_profile: str) -> dict:
     tools = tool_versions()
     trust = _codex_trust(root)
     inventory = _inventory(root, profile)
+    errors.extend(
+        f"{workflow['path']}: required reading `{entry['path']}` "
+        f"is unavailable ({entry['reason']})"
+        for workflow in inventory["model_harness"]["declared_reading"]["workflows"]
+        for entry in workflow["unavailable"]
+    )
     warnings = [
         f"{tool} is not available"
         for tool, version in tools.items()
@@ -503,7 +555,9 @@ def main() -> int:
             "chars, "
             f"{model_harness['instruction_context']['largest_chain']['bytes']}/"
             f"{model_harness['instruction_context']['repository_limit_bytes']} "
-            "instruction bytes"
+            "instruction bytes, "
+            f"{model_harness['declared_reading']['largest']['bytes']} "
+            "bytes in largest declared workflow reading (direct @files only)"
         )
         for tool, version in data["tools"].items():
             print(f"  {tool}: {version}")

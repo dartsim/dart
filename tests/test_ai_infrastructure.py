@@ -1066,7 +1066,7 @@ def test_model_upgrade_workflow_keeps_comparison_and_trigger_boundaries():
     lanes = [block for block in routing_section.split("\n- **")[1:]]
     assert len(lanes) >= 2
     for lane in lanes:
-        assert "accept native image input" in _flat(lane), lane[:60]
+        assert re.search(r"\baccepts? native image input\b", _flat(lane)), lane[:60]
     families = {
         family.lower() for family in re.findall(r"claude-([a-z]+)-\d", routing_section)
     }
@@ -2259,6 +2259,13 @@ def test_doctor_report_is_read_only(tmp_path):
     assert model_harness["workflow_sources"]["longest"]["lines"] > 0
     assert model_harness["domain_skill_sources"]["longest"]["lines"] > 0
     assert model_harness["generated_skill_metadata_chars"] > 0
+    assert len(model_harness["declared_reading"]["workflows"]) == (
+        result["inventory"]["source_commands"]["count"]
+    )
+    assert all(
+        not entry["unavailable"]
+        for entry in model_harness["declared_reading"]["workflows"]
+    )
     assert (
         model_harness["instruction_context"]["largest_chain"]["bytes"]
         <= model_harness["instruction_context"]["repository_limit_bytes"]
@@ -2274,6 +2281,149 @@ def test_doctor_report_is_read_only(tmp_path):
     assert "check-ai-infra" in result["inventory"]["tasks"]["ai_tasks"]
     assert set(result["trust"]) == {"user_config", "project", "project_hook"}
     assert _content_hashes(root) == before
+
+
+def test_doctor_declared_reading_counts_unique_utf8_bytes(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    doc = root / "guide.md"
+    doc.write_text("Résumé — current state\n", encoding="utf-8")
+    command = root / "workflow.md"
+    command.write_text(
+        "@not-required.md\n## Required Reading\n"
+        "@guide.md\n@./guide.md\n@guide.md\n"
+        "Load `conditional.md` only when needed.\n"
+        "## Workflow\n@not-required-either.md\n",
+        encoding="utf-8",
+    )
+
+    result = ai_doctor._declared_reading_inventory(root, [command])
+
+    assert result["workflows"] == [
+        {
+            "path": "workflow.md",
+            "files": [{"path": "guide.md", "bytes": len(doc.read_bytes())}],
+            "bytes": len(doc.read_bytes()),
+            "unavailable": [],
+        }
+    ]
+    assert result["largest"] == result["workflows"][0]
+
+
+def test_doctor_declared_reading_reports_missing_and_external_paths(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    outside = tmp_path / "outside.md"
+    outside.write_text("must not count external context", encoding="utf-8")
+    (root / "linked.md").symlink_to(outside)
+    command = root / "workflow.md"
+    command.write_text(
+        "## Required Reading\n@missing.md\n@linked.md\n@../outside.md\n"
+        f"@{outside}\n@.\n## Workflow\n",
+        encoding="utf-8",
+    )
+
+    result = ai_doctor._declared_reading_inventory(root, [command])
+    entry = result["workflows"][0]
+
+    assert entry["bytes"] == 0
+    assert entry["files"] == []
+    assert {item["path"]: item["reason"] for item in entry["unavailable"]} == {
+        "missing.md": "not a file",
+        "linked.md": "outside repository",
+        "../outside.md": "outside repository",
+        str(outside): "outside repository",
+        ".": "not a file",
+    }
+    assert ai_doctor._declared_reading_inventory(root, [])["largest"]["bytes"] == 0
+
+
+@pytest.mark.parametrize(
+    "resolution_error",
+    (None, OSError, RuntimeError),
+    ids=("native", "os-error", "legacy-loop-error"),
+)
+def test_doctor_declared_reading_continues_after_symlink_loop(
+    tmp_path, monkeypatch, resolution_error
+):
+    loop = tmp_path / "a-loop"
+    loop.symlink_to(loop.name)
+    guide = tmp_path / "z-guide.md"
+    guide.write_text("Current state.\n", encoding="utf-8")
+    command = tmp_path / "workflow.md"
+    command.write_text(
+        "## Required Reading\n@a-loop\n@z-guide.md\n## Workflow\n",
+        encoding="utf-8",
+    )
+    if resolution_error is not None:
+        native_resolve = Path.resolve
+
+        def resolve(path, *args, **kwargs):
+            if path == loop:
+                raise resolution_error("Symlink loop")
+            return native_resolve(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "resolve", resolve)
+
+    entry = ai_doctor._declared_reading_inventory(tmp_path, [command])["workflows"][0]
+
+    assert entry["files"] == [{"path": "z-guide.md", "bytes": len(guide.read_bytes())}]
+    assert entry["bytes"] == len(guide.read_bytes())
+    assert len(entry["unavailable"]) == 1
+    assert entry["unavailable"][0]["path"] == "a-loop"
+    assert entry["unavailable"][0]["reason"] in {"not a file", "unreadable path"}
+
+
+@pytest.mark.parametrize(
+    ("reading", "reason"),
+    (
+        ("../outside.md", "outside repository"),
+        ("absolute", "outside repository"),
+        ("linked.md", "outside repository"),
+        (".", "not a file"),
+        ("bad\0name", "unreadable path"),
+    ),
+)
+def test_doctor_cli_reports_unavailable_declared_reading(tmp_path, reading, reason):
+    root = make_repo(tmp_path, "main")
+    outside = _write(tmp_path, "outside.md")
+    (root / "linked.md").symlink_to(outside)
+    if reading == "absolute":
+        reading = str(outside)
+    command = root / ".claude/commands/dart-review-pr.md"
+    command.write_text(
+        command.read_text(encoding="utf-8")
+        + f"\n## Required Reading\n@{reading}\n@AGENTS.md\n## Workflow\n",
+        encoding="utf-8",
+    )
+    _generate_adapters(root)
+    invocation = [
+        sys.executable,
+        str(SCRIPTS / "ai_doctor.py"),
+        "--root",
+        str(root),
+        "--profile",
+        "main",
+    ]
+
+    plain = subprocess.run(invocation, capture_output=True, text=True)
+    structured = subprocess.run(invocation + ["--json"], capture_output=True, text=True)
+
+    assert plain.returncode == 1, plain.stdout + plain.stderr
+    assert structured.returncode == 1, structured.stdout + structured.stderr
+    assert "DART AI doctor: FAIL" in plain.stdout, plain.stderr
+    data = json.loads(structured.stdout)
+    assert not data["ok"]
+    diagnostic = (
+        f".claude/commands/dart-review-pr.md: required reading `{reading}` "
+        f"is unavailable ({reason})"
+    )
+    assert diagnostic in data["errors"]
+    assert f"ERROR: {diagnostic}" in plain.stdout
+    reading_inventory = data["inventory"]["model_harness"]["declared_reading"]
+    assert reading_inventory["largest"]["files"] == [
+        {"path": "AGENTS.md", "bytes": (root / "AGENTS.md").stat().st_size}
+    ]
 
 
 def test_doctor_skill_metadata_ignores_unmanaged_catalog_skills(tmp_path):

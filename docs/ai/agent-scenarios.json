@@ -96,9 +96,10 @@
       },
       "specialist_agent": "dart_reviewer",
       "owner_docs": [
+        "docs/ai/README.md",
+        "docs/ai/orchestration.md",
         "docs/ai/principles.md",
         "docs/ai/components.md",
-        "docs/ai/sessions.md",
         "docs/ai/verification.md",
         "docs/information-architecture.md",
         "docs/onboarding/agent-sim-verification.md",

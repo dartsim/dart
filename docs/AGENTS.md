@@ -17,11 +17,11 @@ For AI-infra docs, follow the read order in `docs/ai/README.md`.
 
 | Path           | Use for                                                             |
 | -------------- | ------------------------------------------------------------------- |
-| `ai/`          | AI-native principles, terminology, workflows, sessions, and gates   |
+| `ai/`          | AI-native principles, terminology, workflows, and gates             |
 | `assets/`      | Source-controlled docs assets outside RTD `_static/`                |
 | `background/`  | Theory and research foundations                                     |
 | `design/`      | Durable technical rationale and design decisions                    |
-| `dev_tasks/`   | Temporary active multi-session task tracking                        |
+| `dev_tasks/`   | Durable lifecycle README and temporary task subfolders              |
 | `doxygen/`     | C++ API Doxygen inputs                                              |
 | `onboarding/`  | Current developer handbook path: build/test/CI/release/API guidance |
 | `plans/`       | Living roadmap, priority, dependencies, gates, and plan lifecycle   |
@@ -34,8 +34,8 @@ For AI-infra docs, follow the read order in `docs/ai/README.md`.
 - Prefer updating an existing owner doc over adding a new file.
 - Put mutable priority, sequencing, next-step, and gate state in `plans/`, not
   `design/`.
-- Put active handoff and resume state in `dev_tasks/`; delete the folder when
-  the task completes after durable content is promoted.
+- Put active handoff and resume state in `dev_tasks/<task>/`; follow the
+  lifecycle and session policy in `dev_tasks/README.md`.
 - Put user-facing documentation in `readthedocs/` or root user entrypoints.
 - Keep `onboarding/` as the current handbook path unless a dedicated migration
   updates all links, workflows, generated adapters, and policy checks together.

@@ -47,8 +47,9 @@ clear reason exists (removing sensitive content, repairing branch history).
    `docs/onboarding/ai-reviews.md`. If the push is rejected because the remote
    head moved, fetch and compare it before retrying and validate an equivalent
    remote fix instead of pushing a duplicate.
-3. Ask for explicit maintainer/user approval before any push, PR comment, thread
-   resolution, or review re-trigger. After approval, push silently, resolve only
+3. Verify explicit maintainer/user approval covers the push, PR comment, thread
+   resolution, or review re-trigger; reuse existing authority for this PR and
+   scope, asking only where it is missing. With approval, push silently, resolve only
    reviewed and addressed thread IDs via GraphQL, and — when the approved push
    addressed Codex comments — re-trigger once with
    `gh pr comment $1 --body "@codex review"`.
