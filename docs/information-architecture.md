@@ -26,7 +26,7 @@ goal is still correct, but the repository has grown additional doc buckets with
 different lifecycles:
 
 - `docs/ai/` is no longer just another handbook chapter. It owns the agent
-  operating model: principles, terminology, workflow routing, sessions, and
+  operating model: principles, terminology, workflow routing, and
   verification policy.
 - `docs/background/` is reference material for theory and original-source
   foundations. It should grow by topic, but it should not become the place for
@@ -35,9 +35,9 @@ different lifecycles:
   shape, tradeoffs, constraints, and accepted decisions.
 - `docs/plans/` is living roadmap state: priority, dependency, horizon, open
   gaps, next step, and gates.
-- `docs/dev_tasks/` is temporary implementation handoff state for active
-  multi-session work. Completed knowledge must move out before the task folder
-  is deleted.
+- `docs/dev_tasks/README.md` owns durable lifecycle and session policy;
+  `docs/dev_tasks/<task>/` holds temporary implementation handoffs. Completed
+  knowledge must move out before the task folder is deleted.
 - `docs/readthedocs/`, `docs/doxygen/`, and `docs/python_api/` are published
   documentation and API-generation inputs, not the internal developer handbook.
 
@@ -88,11 +88,12 @@ Recommended actions:
 | --------------------- | ----------------------------------- | ------------------------- | ----------------------------- | -------------------------------------------------------------------- |
 | Published user manual | `docs/readthedocs/`                 | DART users                | durable, published            | Public user docs, tutorials, topic guides, generated API site inputs |
 | Developer handbook    | `docs/onboarding/`                  | contributors, agents      | durable, repo-local           | Build/test/CI/release/API policy and landed developer explanations   |
-| AI operating model    | `docs/ai/`                          | agents, maintainers       | durable, repo-local           | Agent principles, terminology, workflow routing, gates, sessions     |
+| AI operating model    | `docs/ai/`                          | agents, maintainers       | durable, repo-local           | Agent principles, terminology, workflow routing, gates               |
 | Theory background     | `docs/background/`                  | researchers, implementers | durable, reference            | Physics, math, robotics, control, collision, graphics, theory        |
 | Design rationale      | `docs/design/`                      | maintainers, implementers | durable, revisable            | Architecture, API shape, tradeoffs, constraints, accepted decisions  |
 | Living roadmap        | `docs/plans/`                       | maintainers, agents       | living, operational           | Priority, dependencies, open gaps, gates, acceptance criteria        |
-| Active task handoff   | `docs/dev_tasks/`                   | agents, task owners       | temporary, active             | Multi-session implementation state and resume context                |
+| Task lifecycle        | `docs/dev_tasks/README.md`          | agents, maintainers       | durable, repo-local           | Session handoff, active-task tracking, and retirement policy         |
+| Active task handoff   | `docs/dev_tasks/<task>/`            | agents, task owners       | temporary, active             | Multi-session implementation state and resume context                |
 | API generation inputs | `docs/doxygen/`, `docs/python_api/` | documentation tooling     | durable, generated-path input | C++ and dartpy API reference inputs                                  |
 | Shared assets         | `docs/assets/`                      | docs authors              | durable asset input           | Source-controlled docs assets outside site-local `_static/`          |
 
@@ -108,9 +109,10 @@ all command, skill, docs, and site references together.
 language, but not in lifecycle:
 
 - `docs/plans/` owns roadmap state and work selection.
-- `docs/dev_tasks/` owns branch/session-local implementation handoff state.
-- Completed task knowledge moves out of `docs/dev_tasks/` before the task
-  folder is deleted.
+- `docs/dev_tasks/README.md` owns lifecycle and session policy.
+- `docs/dev_tasks/<task>/` owns temporary branch/session-local handoff state.
+- Completed task knowledge moves out before its task folder is deleted; the
+  lifecycle README remains.
 
 `docs/design/` and `docs/plans/` intentionally overlap in architecture work, but
 not in mutability:
@@ -131,6 +133,7 @@ Use this matrix before creating or moving a doc:
 | Physics, robotics, math, solver, optimization, or graphics theory | `docs/background/`                      | `docs/design/` unless it is a DART decision |
 | DART architecture/API decision and rationale                      | `docs/design/`                          | `docs/plans/` if it has no active sequence  |
 | Priority, dependency, milestone, active gap, gate, or next step   | `docs/plans/dashboard.md` or plan file  | `docs/design/`                              |
+| Task lifecycle, session handoff, or retirement policy             | `docs/dev_tasks/README.md`              | task folders or duplicate AI policy docs    |
 | Multi-session implementation status, branch note, resume prompt   | `docs/dev_tasks/<task>/`                | durable docs after the task completes       |
 | Generated API reference source                                    | `docs/doxygen/` or `docs/python_api/`   | handwritten handbook pages                  |
 | Shared image or data asset for docs                               | `docs/assets/` or site-local `_static/` | task folders unless temporary               |
@@ -169,7 +172,7 @@ docs/
 ├── background/  # theory and reference foundations
 ├── design/      # durable DART technical rationale
 ├── plans/       # living roadmap and sequencing
-├── dev_tasks/   # temporary active task handoff state
+├── dev_tasks/   # durable lifecycle README and temporary task folders
 ├── readthedocs/ # published user manual
 ├── doxygen/     # C++ API generation input
 ├── python_api/  # dartpy API reference input

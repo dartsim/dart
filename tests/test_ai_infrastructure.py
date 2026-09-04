@@ -2338,6 +2338,42 @@ def test_doctor_declared_reading_reports_missing_and_external_paths(tmp_path):
     assert ai_doctor._declared_reading_inventory(root, [])["largest"]["bytes"] == 0
 
 
+@pytest.mark.parametrize(
+    "resolution_error",
+    (None, OSError, RuntimeError),
+    ids=("native", "os-error", "legacy-loop-error"),
+)
+def test_doctor_declared_reading_continues_after_symlink_loop(
+    tmp_path, monkeypatch, resolution_error
+):
+    loop = tmp_path / "a-loop"
+    loop.symlink_to(loop.name)
+    guide = tmp_path / "z-guide.md"
+    guide.write_text("Current state.\n", encoding="utf-8")
+    command = tmp_path / "workflow.md"
+    command.write_text(
+        "## Required Reading\n@a-loop\n@z-guide.md\n## Workflow\n",
+        encoding="utf-8",
+    )
+    if resolution_error is not None:
+        native_resolve = Path.resolve
+
+        def resolve(path, *args, **kwargs):
+            if path == loop:
+                raise resolution_error("Symlink loop")
+            return native_resolve(path, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "resolve", resolve)
+
+    entry = ai_doctor._declared_reading_inventory(tmp_path, [command])["workflows"][0]
+
+    assert entry["files"] == [{"path": "z-guide.md", "bytes": len(guide.read_bytes())}]
+    assert entry["bytes"] == len(guide.read_bytes())
+    assert len(entry["unavailable"]) == 1
+    assert entry["unavailable"][0]["path"] == "a-loop"
+    assert entry["unavailable"][0]["reason"] in {"not a file", "unreadable path"}
+
+
 def test_doctor_skill_metadata_ignores_unmanaged_catalog_skills(tmp_path):
     root = make_repo(tmp_path, "main")
     baseline = ai_doctor.report(root, "main")["inventory"]["model_harness"][

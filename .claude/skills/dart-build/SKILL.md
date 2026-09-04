@@ -59,6 +59,8 @@ For build system internals (CMake, dependencies): `docs/onboarding/build-system.
   sidecar instead of relying only on command success.
 - If the user explicitly asks for the `dartsim` app, run `pixi run dartsim`
   and verify the requested interaction or behavior before ending the check.
+  Then close any application you started solely for verification, unless the
+  user asked to leave it running.
 
 ## Key Files
 

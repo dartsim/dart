@@ -30,6 +30,7 @@ from install_git_hooks import HOOK_TEMPLATE, SENTINEL
 
 JSON_READ_ERRORS = (OSError, json.JSONDecodeError)
 TOML_READ_ERRORS = (OSError, tomllib.TOMLDecodeError)
+PATH_RESOLUTION_ERRORS = (OSError, RuntimeError)
 
 AI_TASKS = {
     "ai-doctor",
@@ -187,7 +188,7 @@ def _declared_reading_inventory(root: Path, commands: list[Path]) -> dict[str, o
                 else:
                     files[str(path.relative_to(root))] = path.stat().st_size
                     continue
-            except OSError:
+            except PATH_RESOLUTION_ERRORS:
                 reason = "unreadable path"
             unavailable.append({"path": relative, "reason": reason})
         workflows.append(
