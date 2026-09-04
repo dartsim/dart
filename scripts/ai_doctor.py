@@ -478,6 +478,12 @@ def report(root: Path, requested_profile: str) -> dict:
     tools = tool_versions()
     trust = _codex_trust(root)
     inventory = _inventory(root, profile)
+    errors.extend(
+        f"{workflow['path']}: required reading `{entry['path']}` "
+        f"is unavailable ({entry['reason']})"
+        for workflow in inventory["model_harness"]["declared_reading"]["workflows"]
+        for entry in workflow["unavailable"]
+    )
     warnings = [
         f"{tool} is not available"
         for tool, version in tools.items()

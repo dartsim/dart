@@ -2374,6 +2374,50 @@ def test_doctor_declared_reading_continues_after_symlink_loop(
     assert entry["unavailable"][0]["reason"] in {"not a file", "unreadable path"}
 
 
+@pytest.mark.parametrize("reading", ("../outside.md", "absolute", "linked.md", "."))
+def test_doctor_cli_reports_unavailable_declared_reading(tmp_path, reading):
+    root = make_repo(tmp_path, "main")
+    outside = _write(tmp_path, "outside.md")
+    (root / "linked.md").symlink_to(outside)
+    if reading == "absolute":
+        reading = str(outside)
+    command = root / ".claude/commands/dart-review-pr.md"
+    command.write_text(
+        command.read_text(encoding="utf-8")
+        + f"\n## Required Reading\n@{reading}\n@AGENTS.md\n## Workflow\n",
+        encoding="utf-8",
+    )
+    _generate_adapters(root)
+    invocation = [
+        sys.executable,
+        str(SCRIPTS / "ai_doctor.py"),
+        "--root",
+        str(root),
+        "--profile",
+        "main",
+    ]
+
+    plain = subprocess.run(invocation, capture_output=True, text=True)
+    structured = subprocess.run(invocation + ["--json"], capture_output=True, text=True)
+
+    assert plain.returncode == 1, plain.stdout + plain.stderr
+    assert structured.returncode == 1, structured.stdout + structured.stderr
+    assert "DART AI doctor: FAIL" in plain.stdout
+    data = json.loads(structured.stdout)
+    assert not data["ok"]
+    reason = "not a file" if reading == "." else "outside repository"
+    diagnostic = (
+        f".claude/commands/dart-review-pr.md: required reading `{reading}` "
+        f"is unavailable ({reason})"
+    )
+    assert diagnostic in data["errors"]
+    assert f"ERROR: {diagnostic}" in plain.stdout
+    reading_inventory = data["inventory"]["model_harness"]["declared_reading"]
+    assert reading_inventory["largest"]["files"] == [
+        {"path": "AGENTS.md", "bytes": (root / "AGENTS.md").stat().st_size}
+    ]
+
+
 def test_doctor_skill_metadata_ignores_unmanaged_catalog_skills(tmp_path):
     root = make_repo(tmp_path, "main")
     baseline = ai_doctor.report(root, "main")["inventory"]["model_harness"][
