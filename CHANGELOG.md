@@ -485,6 +485,10 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- AI workflows now stage context by task and phase, preserve authorized model,
+  effort, and action scopes across handoffs, and audit the whole harness during
+  model upgrades. Consolidated session policy and removed duplicate tutorials
+  and stale examples. AI diagnosis reports declared workflow reading size.
 - Modernized the pixi workspace for current pixi: declared workspace
   license/repository/documentation metadata and a `requires-pixi = ">=0.78"`
   floor, unified the default/collision-reference/cuda environments in one

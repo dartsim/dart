@@ -16,19 +16,6 @@ When a binding exposes or changes 3D structure or behavior, also load
 `dart-verify-sim`: a focused Python text oracle plus an assessed claim-tied
 capture, or a recorded exception when rendering is unavailable.
 
-## Quick Start
-
-```python
-import dartpy as dart
-
-world = dart.World()
-skel = dart.io.read_skeleton("dart://sample/urdf/KR5/KR5 sixx R650.urdf")
-world.add_skeleton(skel)
-
-for _ in range(100):
-    world.step()
-```
-
 ## Full Documentation
 
 For complete Python bindings guide: `docs/onboarding/python-bindings.md`

@@ -63,7 +63,7 @@ For build system internals (CMake, dependencies): `docs/onboarding/build-system.
   assessment, and claim-relevant engine debug layers; inspect the artifact and
   sidecar instead of relying only on command success.
 - If the user explicitly asks for the `dartsim` app, run `pixi run dartsim`
-  and terminate it after confirming the GUI binary launches.
+  and verify the requested interaction or behavior before ending the check.
 
 ## Key Files
 

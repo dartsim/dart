@@ -1443,7 +1443,6 @@ def validate_ai_docs(repo_root: Path) -> bool:
         docs_dir / "north-star.md",
         docs_dir / "workflows.md",
         docs_dir / "verification.md",
-        docs_dir / "sessions.md",
         docs_dir / "components.md",
         docs_dir / "terminology.md",
         docs_dir / "capabilities.json",

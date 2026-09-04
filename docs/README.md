@@ -44,6 +44,6 @@ Markdown and owns end-user navigation.
 - **Published docs/API site?** → [readthedocs/README.md](readthedocs/README.md) + [onboarding/api-documentation.md](onboarding/api-documentation.md)
 - **Revising project plans?** → [plans/README.md](plans/README.md) + [plans/dashboard.md](plans/dashboard.md) + [plans/north-star-roadmap.md](plans/north-star-roadmap.md)
 - **Using AI agent workflows?** → [ai/README.md](ai/README.md) + [ai/principles.md](ai/principles.md) + [ai/north-star.md](ai/north-star.md) + [onboarding/ai-tools.md](onboarding/ai-tools.md)
-- **Letting AI pick next work?** → [ai/README.md#choosing-the-next-task](ai/README.md#choosing-the-next-task) + [ai/workflows.md](ai/workflows.md)
+- **Letting AI pick next work?** → [ai/README.md#workflow-entrypoints](ai/README.md#workflow-entrypoints) + [ai/workflows.md](ai/workflows.md)
 - **Using DART API?** → [dart.readthedocs.io](https://dart.readthedocs.io/)
 - **Looking for examples?** → [examples/](../examples/) and [tutorials/](../tutorials/)

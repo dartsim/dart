@@ -34,14 +34,16 @@ changes are exempt. This complements `@codex review`; it does not replace it.
 - ❌ **NO** PR comment replies acknowledging or addressing bot feedback
 - ❌ **NO** comments like "Addressed the Codex review feedback"
 - ✅ **YES** Make the local code fix silently
-- ✅ **YES** Ask for explicit maintainer/user approval before any push, PR
-  comment, thread resolution, reviewer request, merge, or review re-trigger
+- ✅ **YES** Verify explicit maintainer/user approval covers each push, PR
+  comment, thread resolution, reviewer request, merge, or review re-trigger;
+  ask only for missing authority, per `docs/ai/principles.md`
 
 **The code change IS the response. No acknowledgment needed.**
 
 **Guidance for AI agents addressing automated reviews**:
 
-- Address the feedback in code locally, then ask before external mutations
+- Address feedback locally; reuse existing authorization for its action, PR,
+  and scope, and ask before external mutations only where authority is missing
 - If the feedback is valid, implement the fix without commenting
 - If the feedback appears incorrect (false positive):
   1. **Verify** the claim is false by running standalone tests or examining the code
@@ -173,11 +175,14 @@ After identifying an AI-generated review comment to address:
 
 1. **Make the code fix**
 2. **Run `pixi run lint`** — MANDATORY before every commit (auto-fixes formatting)
-3. **Ask for explicit maintainer/user approval before external mutations**
+3. **Verify explicit maintainer/user approval covers the intended external
+   mutations.** Reuse existing authorization for the action, PR, and scope
+   (including routine maintenance authorized by `dart-manage-pr`); ask only
+   for missing authority. Follow `docs/ai/principles.md`'s shared-state rule.
 4. **If approved, commit and push** silently (no reply to the comment)
 5. **If approved, resolve the thread** using GraphQL (see commands below)
-6. **If the addressed review was Codex, after the approved push, ask for
-   explicit maintainer/user approval for the PR comment, then re-trigger the
+6. **If the addressed review was Codex, after the approved push, verify
+   approval also covers the PR comment (ask only if missing), then re-trigger the
    review**:
    `gh pr comment <PR> --body "@codex review"`
 7. **Monitor for results**:
@@ -243,11 +248,11 @@ For agents iterating on automated reviews, the complete loop is:
    a. Implement the fix (or add a test refuting a false positive)
    b. Run `pixi run lint` (MANDATORY)
    c. Build and run relevant tests
-   d. Ask for explicit maintainer/user approval before push or PR mutation
+   d. Verify explicit approval covers each push or PR mutation; ask only if missing
 3. If approved, commit and push silently (no reply to bot comment)
 4. If approved, resolve addressed threads via GraphQL
-5. If the addressed review was Codex, after the approved push, ask for explicit
-   maintainer/user approval for the PR comment, then re-trigger:
+5. If the addressed review was Codex, after the approved push, verify approval
+   also covers the PR comment (ask only if missing), then re-trigger:
    `gh pr comment <PR> --body "@codex review"`
 6. For non-Codex bot findings, including `github-code-quality[bot]`, do not
    re-trigger Codex solely for those fixes unless Codex review comments were

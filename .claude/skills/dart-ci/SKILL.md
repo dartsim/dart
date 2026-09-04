@@ -11,27 +11,6 @@ When the failing claim depends on 3D structure or behavior, also load
 `dart-verify-sim` and reproduce it with a text oracle plus assessed visual
 evidence, or record why that renderer is unavailable in the failing environment.
 
-## Quick Commands
-
-```bash
-# Monitor PR checks
-gh pr checks <PR_NUMBER>
-gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast
-
-# View run details
-gh run list --branch <BRANCH> -e pull_request -L 20
-gh run watch <RUN_ID> --interval 30
-gh run view <RUN_ID> --json status,conclusion,url
-
-# Debug failures
-gh run view <RUN_ID> --job <JOB_ID> --log-failed
-gh run view <RUN_ID> --json jobs --jq '.jobs[] | {name, databaseId}'
-
-# Rerun failed jobs only after explicit maintainer/user approval
-gh run rerun <RUN_ID> --failed
-gh run rerun <RUN_ID> --job <DATABASE_ID>
-```
-
 ## Full Documentation
 
 For complete CI/CD guide: `docs/onboarding/ci-cd.md`
@@ -41,29 +20,11 @@ For complete CI/CD guide: `docs/onboarding/ci-cd.md`
 | Failure Type         | Solution                                                 |
 | -------------------- | -------------------------------------------------------- |
 | Formatting fails     | `pixi run lint`; push only after approval                |
-| Codecov patch fails  | Add tests for uncovered lines                            |
+| Codecov patch fails  | Inspect coverage upload/reporting before adding tests    |
 | FreeBSD RTTI fails   | Use type enums + `static_cast` instead of `dynamic_cast` |
 | macOS ARM64 SEGFAULT | Replace `alloca()`/VLAs with `std::vector<T>`            |
 | RTD build fails      | Use defensive `.get(key, default)` patterns              |
 | gz-physics fails     | Reproduce with `pixi run -e gazebo test-gz`              |
-
-## Workflow Architecture
-
-The CI gates that a PR check name maps to (full 18-workflow table with
-triggers: `docs/onboarding/ci-cd.md` § "Workflow Architecture"):
-
-| Workflow            | Purpose                 | Platforms  |
-| ------------------- | ----------------------- | ---------- |
-| `ci_lint.yml`       | Formatting              | Ubuntu     |
-| `ci_ubuntu.yml`     | Build + test + coverage | Ubuntu     |
-| `ci_macos.yml`      | Build + test            | macOS      |
-| `ci_windows.yml`    | Build + test            | Windows    |
-| `ci_freebsd.yml`    | Build + test (VM)       | FreeBSD    |
-| `ci_altlinux.yml`   | Build + test (Docker)   | Alt Linux  |
-| `ci_simd.yml`       | SIMD build + test       | Multi-arch |
-| `ci_gz_physics.yml` | Gazebo integration      | Ubuntu     |
-| `ci_gz_dart6.yml`   | DART 6 Gazebo canary    | Ubuntu     |
-| `ci_cuda.yml`       | CUDA compile + smoke    | Ubuntu/GPU |
 
 ## CUDA Runner Policy
 
@@ -79,14 +40,6 @@ runtime validation, but it must never run untrusted fork-PR code. Consequences:
   compute capabilities for `DART_CUDA_ARCHITECTURES`.
 - `pixi run check-phase5-cuda-workflow` enforces the trusted-event GPU guard
   and fork-PR hosted fallback in `ci_cuda.yml`.
-
-## Fast Iteration Loop
-
-1. Identify failing step from job logs
-2. Reproduce locally with same build toggles
-3. Fix the smallest failing test
-4. Push only after explicit maintainer/user approval, then monitor:
-   `gh run watch <RUN_ID>`
 
 ## Caching And Timing
 

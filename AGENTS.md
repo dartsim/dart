@@ -68,6 +68,8 @@ portable source of truth.
 Use `/dart-*` command adapters in Claude Code/OpenCode and generated `$dart-*`
 skill adapters in Codex. `docs/ai/workflows.md` owns the capability catalog;
 `docs/ai/terminology.md` owns the shared terms.
+`docs/ai/README.md` owns model and reasoning selection;
+`docs/ai/orchestration.md` owns planning and phase-specific delegation choices.
 Use `/dart-next` or `$dart-next` when an agent should select the next bounded
 task from the north star, plan dashboard, dev-task state, issues, PRs, or CI;
 pass `focus=<topic>` to prefer an area without hard-coding the outcome.
@@ -83,6 +85,7 @@ sources, not generated adapters.
 
 ## Key Rules
 
+- **Shared checkouts**: Re-verify branch and HEAD before branch-dependent actions; see `docs/dev_tasks/README.md` for shared-checkout and handoff discipline.
 - **Bug fixes**: Require PRs to BOTH the active DART 6 LTS branch (highest maintained `release-6.*`, currently `release-6.20`) AND `main`. See `docs/onboarding/contributing.md`.
 - **Multi-phase tasks**: Create `docs/dev_tasks/<task>/` for tracking. Promote durable artifacts before completion and delete the task folder in the completing PR. Relocate any deferred or hard-blocked remaining work to a durable home (design/plan/dashboard) and ask the human before retiring if it can't be completed. See `docs/dev_tasks/README.md` for criteria and cleanup rules.
 - **AI reviews**: NEVER reply to AI-generated review comments (usernames ending in `[bot]` like `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`, `github-actions[bot]`, `copilot[bot]`). No inline replies and no acknowledgment comments. Make local fixes silently. Pushes, PR comments, thread resolution, review re-triggers, and other GitHub mutations require explicit maintainer/user approval. See `docs/onboarding/ai-reviews.md`.

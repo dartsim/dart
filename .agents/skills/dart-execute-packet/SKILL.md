@@ -56,45 +56,19 @@ invent work.
 
 ## Availability and conflict check
 
-Run the full check from `docs/ai/orchestration.md` before claiming. A packet
-is available only when ALL of these hold:
+Apply `docs/ai/orchestration.md`'s "Packet discovery and claim signals":
+verify all dependencies, local and default-branch markers, remote branches, and
+open PRs before claiming. Fetch/list operations are read-only; an unverifiable
+precondition is unmet. Never remove another session's claim or reuse its branch.
+Pushes and PR mutations require explicit maintainer/user approval.
 
-1. **Dependencies** — its Dependencies line is satisfied in full: every named
-   packet is marked `[done — ...]`, and every non-packet precondition (for
-   example "maintainer direction on ..." or an accepted design note) has
-   recorded evidence in the plan or the named owner doc. Treat any
-   precondition you cannot verify as unmet and skip the packet.
-2. **Local markers** — its heading carries neither `[done — ...]` nor
-   `[claimed]` in the local plan file.
-3. **Remote markers** — `git fetch origin` (a read-only sync), then check the
-   plan file as it exists on the default branch
-   (`git show origin/main:docs/plans/<plan-file>.md`) for a marker the local
-   checkout does not have yet.
-4. **Branch/PR signals** — no one else is already working it:
-   `git ls-remote --heads origin` shows no branch embedding the packet ID in
-   the documented form (`wp-<plan>-<n>-<slug>`, for example
-   `wp-122-1-harness-manifest`), and `gh pr list --state open --search
-"WP-<plan>.<n>"` returns no open PR carrying the ID in its title. These are
-   read-only queries that mutate nothing; any push, PR creation, or other
-   GitHub mutation still requires explicit maintainer/user approval.
-
-If any signal says the packet is taken: in auto/plan mode skip to the next
-available packet; for an explicit packet ID, report the conflicting signal
-and stop.
+In auto/plan mode, skip unavailable packets. For an explicit packet ID, report
+the conflicting or unmet signal and stop.
 
 ## Readiness check
 
-Before claiming, inspect the packet text and named owner docs for the
-specification intake required by `docs/ai/orchestration.md`:
-
-- objective;
-- value or rationale;
-- scope;
-- non-goals;
-- assumptions and open decisions;
-- acceptance evidence;
-- gates; and
-- dependencies.
+Inspect the packet and named owners against the work-packet contract in
+`docs/ai/orchestration.md`.
 
 If objective, scope, acceptance evidence, gates, or dependencies are missing or
 too vague to verify, report that the packet is not executable and stop

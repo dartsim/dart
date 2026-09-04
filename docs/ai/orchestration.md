@@ -29,8 +29,8 @@ from public docs and `pixi run ...` commands without a specific AI tool.
   home, front-loads a decision interview or provided brief, and routes
   evidence-resolvable uncertainties to spikes and research instead of
   questions. Critical decisions, escalations executors cannot resolve, and
-  research synthesis use the strongest available reasoning; routine work uses
-  the lightest capable worker.
+  research synthesis use the strongest available reasoning within the user's
+  selected model and effort set; routine work stays within that same set.
 - **Executor** — owns implementation of one packet at a time. The executor
   takes a well-defined packet, makes the local edits, runs the packet's
   gates, records the evidence, and hands back. Executors do not widen scope,
@@ -59,6 +59,32 @@ Authoring and review stay separated: the agent that implemented a packet does
 not approve it. The orchestrator (or an independent reviewer session)
 performs the acceptance check.
 
+## Planning and execution choices
+
+For substantial work, discuss what to build and how to verify it before
+implementation. A supplied brief or agreed plan satisfies the decisions it
+already resolves; discuss only consequential choices still open. Recommend the reasoning mode by task shape using
+`docs/ai/README.md`: independent research questions can benefit from parallel
+investigation, while tightly coupled work benefits from one synthesis or
+implementation owner. A phase does not by itself select a mode.
+
+Record the reasoning mode, planning/execution phase, rationale, synthesis
+owner, and approved delegation scope in the plan or packet's assumptions.
+Distinguish research, review, and
+implementation permission. Planning-only authorization permits investigation
+and expressly requested plan-document updates, not implementation edits. Honor
+discussion-only requests and tool Plan Mode restrictions on all file writes.
+Research/review delegation does not authorize parallel writers.
+Implementation stays sequential unless the user approves independent ownership
+scopes. Preserve this decision in the existing resume surface across sessions.
+
+Explicit user model and effort restrictions also apply to children and review
+sessions. Verify effective settings instead of assuming a tool inherits effort.
+If the requested route is unavailable, report the exact limitation and continue
+only work that fits the authorized route; do not silently lower effort or switch
+models. Reuse authorization already given for the current scope instead of
+asking again. Routine local work needs no extra approval ceremony.
+
 ## Review Loop
 
 Review is part of the work cycle, not a final courtesy pass. For every
@@ -68,14 +94,9 @@ only when it meets the review-pass item of the completion audit in
 `docs/ai/verification.md`, recorded in the owning plan, dev-task
 `verification.md`, or PR evidence.
 
-Use the strongest available reviewer for the risk: `dart-review-pr` for PR
-shape and repo policy, `dart-analyze` for read-only design or regression
-questions, test-focused agents for coverage and failure modes, architecture or
-performance reviewers for shared contracts, and visual/UX reviewers for GUI or
-demo surfaces. When the environment supports cross-agent review, prefer Codex
-from a Claude-led workflow, Claude from a Codex-led workflow, or subagents with
-disjoint context. If those tools are unavailable, perform a role-separated
-local review and record the limitation.
+Select a reviewer for the packet's risk within the authorized model and
+delegation scope. Prefer an independent session or disjoint context; if that
+is unavailable, use a role-separated review and record the limitation.
 
 Reviewer findings are hypotheses, not commands. Investigate each substantive
 finding with code inspection, tests, docs, benchmarks, or visual evidence; then
@@ -99,8 +120,9 @@ separate tracking system. Every packet records:
   through.
 - **Non-goals** — the adjacent work this packet deliberately does not do.
 - **Assumptions and open decisions** — defaults inferred from current evidence,
-  plus links to any owner-local `Decision needed` block. A packet with a
-  consequential unresolved decision is not executable.
+  reasoning mode and phase, rationale, synthesis/implementation ownership, approved
+  delegation phases and scopes, plus links to any owner-local `Decision needed`
+  block. A packet with a consequential unresolved decision is not executable.
 - **Acceptance evidence** — the concrete artifacts that prove completion:
   named tests, gate commands, doc updates, benchmark packets. "It compiles"
   is not acceptance evidence.
@@ -111,16 +133,10 @@ separate tracking system. Every packet records:
 
 ## Specification intake and readiness
 
-DART uses the existing plan, dev-task, and packet surfaces as its
-specification-first workflow. Do not add a parallel `.specify/` tree for normal
-DART work. Before implementation starts, the owning surface must answer:
-
-- what value the work delivers;
-- what is in scope and explicitly out of scope;
-- which assumptions are being made from current evidence;
-- which decisions remain open and where they are recorded;
-- what acceptance evidence will prove the objective; and
-- which `pixi run ...` gates cover that evidence.
+Use the work-packet contract above in the existing owning plan or dev-task;
+do not create a parallel specification tree. Before implementation, resolve
+consequential decisions and name objective, scope, acceptance evidence, gates,
+and satisfied dependencies. Vague evidence means the packet is not executable.
 
 When a claim depends on 3D structure or behavior, route verification through
 `dart-verify-sim` and record the evidence pairing that
@@ -142,38 +158,12 @@ choosing.
 
 ## Discovering unknowns before committing
 
-Specification intake only works when the map matches the territory. Your plan,
-context, and prompts are the map; the real code, tests, and requirements are
-the territory, and the gap between them is the work's unknowns. Before authoring
-or claiming a substantial packet, spend effort converting consequential unknowns
-into knowns instead of encoding guesses into a plan. A packet built on
-unexplored territory is not ready, however precise its wording looks.
-
-Four DART-native methods, each usable without a specific AI tool:
-
-- **Blind-spot review** — an independent pass, in a different session than the
-  one drafting the work, that answers "what is missing, wrong, or unstated
-  here?" against the plan and the code it touches. This is the authoring/review
-  separation above applied before implementation; route it through
-  `dart-analyze` or a read-only reviewer.
-- **Throwaway spike** — a time-boxed prototype on a scratch branch whose output
-  is knowledge, not merged code. Use it to make the territory visible (does the
-  API allow this, where does the real scope land) before the plan hardens, then
-  fold the findings back into the packet and discard the spike.
-- **Requirements interview** — let the agent interview the maintainer to pull
-  out intent, constraints, and non-goals that were never written down, answering
-  the intake questions above from the human rather than from a guess. Reserve it
-  for consequential ambiguity; short instructions in a well-prepared repo need
-  no interview.
-- **Reference map** — ground the work in authoritative references (the
-  `docs/readthedocs/papers.md` catalog via `dart-references`, design docs, or an
-  existing baseline in the code) instead of reconstructing behavior from memory.
-
-Blind-spot review and reference map route through `dart-analyze` and
-`dart-references`; the throwaway spike and the requirements interview are
-intentionally manual (a scratch branch, a conversation) with no dedicated
-workflow. Prefer the lightest method that resolves the unknown, and record what
-it resolved as the packet's assumptions-and-open-decisions evidence.
+Before substantial work, resolve material unknowns with repository inspection,
+primary references, a bounded scratch spike, or an independent blind-spot
+review. Route read-only analysis through `dart-analyze` and research catalog
+work through `dart-references`. Ask the maintainer only for consequential intent
+or tradeoffs that evidence cannot settle. Record the resolved evidence and any
+remaining owner-local `Decision needed` block in the packet.
 
 ## Sizing rules
 
@@ -183,8 +173,8 @@ orchestrator applies these rules when decomposing:
 - One packet = one branch = one verification story (the existing
   `docs/ai/north-star.md` bounded-task rule).
 - An executor should be able to hold the packet's entire scope in working
-  context: prefer a dozen files or fewer; split mechanical sweeps (renames,
-  relabels) from judgment work (contract design) into separate packets.
+  context. Split mechanical sweeps from contract design when they need different
+  ownership or acceptance evidence.
 - Behavior-preserving refactors and behavior-changing fixes never share a
   packet.
 - If acceptance evidence cannot be named concretely at authoring time, the
@@ -251,9 +241,11 @@ How any session — human or agent — finds work and avoids collisions:
   report back rather than patching around it (the packet-scoped case of the
   root-cause axiom in `docs/ai/principles.md`).
 - Conflicting instructions between a packet and an owner doc: the owner doc
-  wins; report the conflict so the packet (or the doc) is corrected.
+  wins among repository documents; report the conflict so the packet (or the
+  doc) is corrected. This does not override explicit user scope or higher-level
+  tool/session instructions.
 - Anything touching shared state beyond the local clone follows the safety
-  boundary in `docs/ai/README.md`: GitHub mutations only with explicit
+  boundary in `docs/ai/principles.md`: GitHub mutations only with explicit
   maintainer/user approval.
 - Sibling-lane file collisions: when another lane has an in-flight (open PR)
   change, treat the files in its diff as a do-not-edit set and keep your work

@@ -9,250 +9,144 @@ This document defines how DART maintains AI-facing components.
 
 ## Ownership Model
 
-`AGENTS.md` is the root pointer board. `docs/ai/` owns durable AI-native policy.
-`docs/ai/terminology.md` owns canonical AI-facing terms.
-`docs/onboarding/ai-tools.md` owns compatibility details. The current editable
-workflow source is `.claude/commands/`, and the current editable domain-skill
-source is `.claude/skills/`.
-`docs/ai/capabilities.json` owns machine-readable capability status, category,
-and gate profile; `docs/ai/workflows.md` owns the human-readable public paths
-and gate details. `docs/ai/branch-profile.json` owns branch facts and forbidden
-cross-branch surfaces; `docs/ai/agent-scenarios.json` owns the eight deterministic
-fresh-session scenario contracts.
+`docs/ai/README.md` owns the source map; `docs/ai/terminology.md` owns terms.
+Edit workflow sources in `.claude/commands/` and domain skills in
+`.claude/skills/`. Generated `.agents/skills/` and `.opencode/command/`
+entrypoints name their source and must not be hand-edited. Sync owns only
+DART-generated adapters and must preserve unrelated user/plugin skills.
 
-The Markdown files directly under `docs/ai/` use a narrow frontmatter pilot
-with only stable identity fields: `type` and `owner`. The pilot does not carry
-mutable status, freshness, or relationship lists; those stay in the owner docs,
-the plan dashboard, or generated manifests with an explicit consumer.
+Maintained `.codex/` sources bound concurrency/delegation and define read-only
+specialists and fast trusted-project hooks. They must not pin models or weaken
+user permissions. Hooks are incomplete interception; the cross-tool Git guard
+and explicit full gates remain required. Tool-specific caveats belong in
+`docs/onboarding/ai-tools.md`.
 
-AI docs are agent context, not a dumping ground. Keep always-loaded entrypoints
-compact and make rules visible through owner placement, read-order pointers,
-workflow required reading, and generated-adapter sync instead of duplication.
+Markdown directly under `docs/ai/` has stable `type` and `owner` frontmatter.
+Mutable status belongs in its plan/dashboard owner; add metadata only with a
+consumer. Harness context includes the north star, living plans, active
+`docs/dev_tasks/` handoffs, and the handbook/design/module owners routed into a
+task. Audit representative live state without loading every linked document.
 
-DART's AI infrastructure includes the tracked documentation that supplies
-in-session context and across-session project state, not only tool config,
-prompts, adapters, agents, hooks, scripts, and tests. That durable context layer
-includes the north star and session policy under `docs/ai/`, living priority
-and gates under `docs/plans/`, active handoff state under `docs/dev_tasks/`,
-and the handbook, design, release, or module owner docs routed into a task.
+## Harness Upgrade Audit Contract
 
-Model or coding-agent upgrade audits must inspect that layer for discovery,
-freshness, duplication, context cost, resume quality, and human usability.
-Keep it progressively disclosed: audit owner paths and representative live
-state, but do not load every plan, task, or handbook page into every session.
+`dart-model-upgrade` audits the whole harness by default. A new model can expose
+instruction conflicts or unnecessary context even when configuration and
+adapters still validate. Inspect each surface below, using representative live
+tasks rather than loading every owner document. Report a supported preserve,
+update, remove/consolidate, or add verdict for each surface; a routing-only
+change does not establish whole-harness readiness.
 
-Generated adapter entrypoints are first-class entrypoints for their tools:
+| Surface                      | Content and structure questions                                                                                | Evidence                                                                                                  |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Entry points and skills      | Does the right request discover the right workflow? Is required reading staged by task and phase?              | Fresh direct, indirect, incomplete, and non-trigger requests; declared reading inventory and actual reads |
+| Instructions and permissions | Do stops, intake, delegation, and review rules preserve supplied decisions and authorization?                  | Conflicting source rules; fresh authorized and unauthorized action cases                                  |
+| Durable context and handoffs | Is each changing fact owned once? Can a new session identify current work before historical logs?              | Owner/index links, live dashboard and representative handoff, fresh continuation                          |
+| Tools and agents             | Do installed interfaces support the requested behavior and model/effort restrictions for parents and children? | Primary guidance, version/config probes, recorded effective settings and tool calls                       |
+| Hooks and safety boundaries  | Are the guard and runner invariants preserved without duplicating slow gates?                                  | Structural checks and behavioral runner probes; explicit permission boundaries                            |
+| Verification                 | Does evidence test the claimed outcome, including simulation and unavailable capabilities?                     | Text oracles, assessed native image review, failure cases, relevant regression gates                      |
+| Maintenance and portability  | Are source/generated ownership, public paths, branch differences, and cleanup clear?                           | Adapter parity, docs policy, manual command path, branch-local apply/adapt/omit assessment                |
+| Upgrade workflow itself      | Would a bare invocation discover these responsibilities without extra coaching?                                | A fresh invocation with no audit findings or expected answers supplied                                    |
 
-- `.agents/skills/` for Codex;
-- `.opencode/command/` for OpenCode.
+For each proposed change, record the observed failure or cost, owner, candidate,
+comparison that could reject it, and preservation gates. Prefer consolidation
+when it removes a demonstrated conflict or repeated loading. Keep new machinery
+only when it owns a distinct responsibility or failure boundary. Static size
+reductions are context-budget evidence, not proof of higher-quality answers;
+record correctness and constraint adherence separately from latency and tokens.
+Measure authored words and files before/after separately from generated copies
+and formatting bytes. Name removed/merged responsibilities and their retained
+owners. Deferred loading is not content removal; justify net additions and any
+duplication preserved for discovery.
 
-Generated files include source metadata and must not be hand-edited. The sync
-manifest owns only DART-generated skill directories; synchronization must
-preserve unrelated user or plugin skills in `.agents/skills/`.
+Keep DART-specific constraints, owner routes, acceptance evidence, and completion
+criteria. Rely on the model and built-in harness for general engineering and
+session mechanics they already perform reliably; test suspected redundancy with
+fresh tasks before removing a safeguard. Prefer an outcome and its quality bar
+over another generic plan/execute loop. Do not copy volatile product guidance
+into skills: link to its authority and keep dated compatibility evidence in
+`docs/onboarding/ai-tools.md`. Replace superseded evidence; retain only
+compatibility history that still changes a decision.
 
-Codex runtime components are maintained sources under `.codex/`:
-
-- `config.toml` bounds project agent concurrency and delegation depth without
-  pinning a model or weakening user sandbox/approval policy;
-- `agents/*.toml` defines read-only, input/output-specific scouts and reviewers;
-  and
-- `hooks.json` defines a trusted-project, fast command guard.
-
-Native Windows hook execution uses `.claude/hooks/pre-commit-guard.ps1` and
-`scripts/pretool_guard_bridge.py` to forward into the shared Git Bash guard.
-
-The hook is advisory because tool interception is not a complete enforcement
-boundary. The installed Git pre-commit hook is cross-tool enforcement, while
-explicit `pixi run lint` and task-specific gates remain required.
+Load startup essentials once, then the relevant owner sections when a decision
+needs them. A workflow's `@file` entries declare unconditional reading; prose
+pointers name conditional reading and its trigger. Keep placement and safety
+requirements explicit even when their detail is deferred. `pixi run ai-doctor --json`
+reports per-workflow declared reading bytes; these exclude conditional,
+transitive, and tool-injected context and are not token or runtime measurements.
 
 ## Adding A Workflow
 
-1. Add the concise workflow source under `.claude/commands/dart-<name>.md`
-   with this structure (the sync check enforces the frontmatter key and the
-   three sections in order; do not pin `model` or `effort`):
+Create `.claude/commands/dart-<name>.md` with `description` and
+`argument-hint` frontmatter, then `## Required Reading`, `## Workflow`, and
+`## Output` in that order. Use `$ARGUMENTS` for invocation input. Keep the
+procedure concise; put policy and reference material in their owners.
+Do not pin `model` or `effort`.
 
-   ```markdown
-   ---
-   description: brief lowercase description
-   argument-hint: "<topic>"
-   ---
-
-   ## Required Reading
-
-   @AGENTS.md
-   @docs/onboarding/relevant-doc.md
-
-   ## Workflow
-
-   1. Step one
-   2. Step two
-
-   ## Output
-
-   - Summarize the outcome and validation for `$ARGUMENTS`.
-   ```
-
-2. Keep detailed policy in `docs/ai/` or `docs/onboarding/`.
-3. Add the workflow to `docs/ai/workflows.md`.
-4. Add the workflow to `docs/ai/capabilities.json`.
-5. Run `pixi run sync-ai-commands`.
-6. Run `pixi run check-ai-commands`.
+Register the capability in `docs/ai/workflows.md` (public paths, required
+reading, gates) and `docs/ai/capabilities.json` (status, category, gate profile).
+Run `pixi run sync-ai-commands` and `pixi run check-ai-commands`.
+New generated directories may be hidden by a personal global gitignore:
+stage them explicitly with `git add -f` if needed and confirm tracking with
+`git ls-files`; disk parity alone cannot prove a fresh clone has the adapter.
 
 ## Adding A Domain Skill
 
-1. Add `.claude/skills/dart-<name>/SKILL.md`.
-2. Keep the skill lightweight and point to full docs.
-3. Add the skill to `docs/ai/workflows.md`.
-4. Add the skill to `docs/ai/capabilities.json`.
-5. Run `pixi run sync-ai-commands`.
-6. Run `pixi run check-ai-commands`.
+Create `.claude/skills/dart-<name>/SKILL.md` with `name` and a quoted
+`description` beginning `DART <Name>:`. Describe when to load it, retain
+non-obvious DART constraints and commands, and point to the full owner docs.
+Follow the same catalog registration, generation, and tracking checks above.
+Module-local `AGENTS.md` owns module context; a skill supplies on-demand
+routing and procedure. Do not duplicate tutorials or mutable API examples.
 
 ## Improving AI Infra From Learnings
 
-Use `dart-retro` after a completed session only when the learning is
-general enough to help future agents or contributors. Skip routine work,
-one-off local choices, and review-only narrative.
+Use `dart-retro` for durable, reusable findings. Skip routine work and
+review-only narrative. Improve the existing owner from
+`docs/ai/README.md`'s source map or the placement matrix in
+`docs/information-architecture.md`. Add an agent, hook, script, or document
+only for a distinct stable responsibility or failure boundary.
 
-Retrospective docs edits are local work when the user requested them. GitHub,
-CI, branch, and review-thread mutations still require explicit approval.
-
-Route durable learnings to one owner:
-
-- Cross-session axioms and audit questions: `docs/ai/principles.md`, kept
-  compact.
-- Canonical AI-facing terms and migration candidates:
-  `docs/ai/terminology.md`.
-- Gate selection and evidence expectations: `docs/ai/verification.md`.
-- Workflow routing and public paths: `docs/ai/workflows.md`.
-- Machine-readable capability status, category, and gate profile:
-  `docs/ai/capabilities.json`.
-- AI component mechanics, source surfaces, and structural checks: this file.
-- Tool compatibility and generated-adapter caveats:
-  `docs/onboarding/ai-tools.md`.
-- Automated PR review handling and the review-fix loop:
-  `docs/onboarding/ai-reviews.md`.
-- Documentation bucket placement and future restructure criteria:
-  `docs/information-architecture.md`.
-- Reusable user-invoked workflow: `.claude/commands/`, synced to generated
-  adapters.
-- Reusable on-demand domain knowledge: `.claude/skills/`, synced to generated
-  adapters.
-- Future agents, hooks, or scripts: add only when the responsibility or
-  lifecycle trigger is stable enough to justify a maintained component.
-- Project, problem, component, or plan-specific learning: the relevant
-  `docs/` owner, such as `docs/plans/`, `docs/onboarding/`, or a module
-  `AGENTS.md`.
-- Plan lifecycle policy: `docs/plans/README.md` and `docs/plans/AGENTS.md`.
-  Plans should drive current work and then move durable output to
-  `docs/readthedocs/`, `docs/onboarding/`, `docs/design/`, code, tests,
-  examples, or release docs.
-
-Prefer improving or consolidating an existing component over adding a new
-surface. If two docs would need the same changing fact, pick one owner and make
-the other a pointer.
-
-Durable retrospective learnings must be discoverable from the owner surface they
-improve. Prefer editing an existing owner doc. If a learning justifies a new
-durable file, link that file from the relevant owner index or plan before the
-temporary session or dev-task context is retired.
+Make a rule discoverable through the owner index and relevant required-reading
+path, then verify adapter sync. Do not copy it across entrypoints to compensate
+for a missing link. Promote durable task output before retiring its temporary
+home; plans own mutable sequence and gates, not permanent implementation detail.
+Local retrospective edits follow task authorization; external mutations follow
+`docs/ai/principles.md`.
 
 ## Public Path Requirement
 
-Every AI workflow must map back to public docs and `pixi run ...` commands so a
-contributor can complete the same work manually. AI tooling can make the path
-faster; it must not be the only path.
+Every capability maps to tracked docs and `pixi run ...` commands that a
+contributor can use without an AI tool.
 
 ## Checks
 
-`scripts/sync_ai_commands.py` is the implementation behind
-`pixi run sync-ai-commands` and `pixi run check-ai-commands`.
+| Command                      | Responsibility / implementation                                                                                                                                      |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pixi run sync-ai-commands`  | Generate DART-owned adapters; `scripts/sync_ai_commands.py`                                                                                                          |
+| `pixi run check-ai-commands` | Non-mutating parity, metadata/budgets, catalogs, required reading, public paths, approval wording, and capability references; same script                            |
+| `pixi run check-ai-infra`    | Runtime/config/hook safety, instruction discovery, branch profiles, model-pin ownership, scenarios, and guarded runner wiring/probes; `scripts/ai_infrastructure.py` |
+| `pixi run test-ai-infra`     | Focused regression suite under the guarded runner                                                                                                                    |
+| `pixi run check-docs-policy` | Placement, dev-task/plan lifecycle, dashboard/archive shape, pilot frontmatter/links/discoverability, and research catalog; `scripts/check_docs_policy.py`           |
+| `pixi run ai-doctor`         | Read-only setup, discovery, reading-size, and recovery diagnosis; `scripts/ai_doctor.py`                                                                             |
+| `pixi run check-agent-hook`  | Bounded staged structural feedback, not completion evidence                                                                                                          |
 
-`pixi run sync-ai-commands` updates generated `.agents/skills/` and
-`.opencode/command/` files from `.claude/` sources.
+Preserve these failure boundaries when changing the checks:
 
-`pixi run check-ai-commands` is the non-mutating CI check. It verifies:
+- Docs-update always loads `docs/AGENTS.md` and the information-architecture
+  owner; new-task loads that owner before placing durable output.
+- Capability references cover prose, invocation, and source-path forms.
+  Deliberate non-capability names use the explicit
+  `NON_CAPABILITY_DART_NAMES` ledger, never a build-system-derived exemption.
+- Every tracked pytest/CTest gate crosses its canonical guarded runner.
+  Completion probes prove real test execution, hostile-selector/plugin
+  isolation, zero-body rejection, and failure propagation. Preserve the CTest
+  wrapper's lexical flow contract; superficial command markers are insufficient.
+- The simulation scenario retains the text oracle, claim-tied native image
+  review, and honest unavailable exception.
+- North-star freshness is advisory: changing a cited file does not itself
+  invalidate a conclusion. Re-verify the owner evidence before refreshing dates.
+  New advisories need an owned pilot and clean inventory or explicit baseline.
 
-- generated adapter sync;
-- DART-owned generated-skill manifest safety and preservation of unrelated
-  skills;
-- machine-readable capability manifest coverage;
-- effective capability parity across Claude Code, OpenCode, and Codex;
-- command and skill frontmatter, descriptions, and line budgets (measured on
-  the editable `.claude/` sources; generated adapters add a fixed header);
-- required command structure: an `argument-hint` frontmatter key plus
-  `## Required Reading`, `## Workflow`, and `## Output` sections in order;
-- required `docs/ai/` policy documents exist;
-- `AGENTS.md` and `docs/README.md` point to the AI entrypoint;
-- `AGENTS.md` points to the workflow catalog and generated surfaces;
-- `docs/ai/workflows.md` capability rows;
-- public path and gate evidence for each workflow;
-- required-reading entries are represented in each workflow row;
-- `dart-docs-update` always loads `docs/AGENTS.md` and
-  `docs/information-architecture.md` so documentation edits cannot bypass the
-  docs placement owner;
-- `dart-new-task` always loads `docs/information-architecture.md` so
-  dev-task cleanup cannot choose a durable owner without the placement matrix;
-- approval-boundary wording around GitHub, CI, branch, and review-thread
-  mutations;
-- private-path references in `docs/ai/`;
-- capability-name references in workflow and skill sources: every
-  `dart-*` mention — inline code, `/`- or `$`-prefixed invocation in any
-  Markdown context, bare prose, or canonical source path — must name a
-  capability that exists on this branch. A deliberate non-capability
-  `dart-*` name (for example the demos app) is added to the explicit
-  `NON_CAPABILITY_DART_NAMES` ledger in `scripts/sync_ai_commands.py`;
-  the ledger never exempts invocation or path forms, and names are not
-  harvested from the build system, so an incidental collision cannot
-  silently exempt a retired capability. When extending a text-scanning
-  check like this one, enumerate the mention-form input space up front
-  rather than patching one escape at a time.
-
-`pixi run check-ai-infra` adds runtime and drift validation beyond adapter
-parity. It checks Codex agent/config/hook schema and safety, documented Pixi
-tasks and tracked paths, nested `AGENTS.md` discovery, branch-profile
-references, generated ownership, model-routing ownership (no `model`/`effort`
-frontmatter pins in workflow sources and no model names outside
-`docs/ai/README.md` § "Model Routing" or the tested-version evidence in
-`docs/onboarding/ai-tools.md`), the machine-readable routing scenarios, and
-canonical pytest/CTest task and tracked-workflow wiring. Direct pytest/CTest
-invocations in Pixi tasks or workflows are rejected so each pytest/CTest-backed
-tracked gate crosses a guarded runner. Its completion path also executes bounded
-runner probes that prove hostile ambient selectors and plugins cannot turn a
-gate into collection-only or zero-body success, while deliberate test failures
-still propagate. The security-sensitive CTest wrapper also has an exact lexical
-flow contract so later audit edits cannot hide execution, reset sanitized
-arguments, or shadow the final command while retaining superficial markers.
-The staged hook keeps using the structural subset; it does not run completion
-probes or project suites.
-The simulation-verification scenario is a required domain-skill route with a
-focused correctness gate and a machine-checked text-first plus claim-tied visual
-evidence policy, including an honest unavailable exception.
-`pixi run test-ai-infra` runs the focused top-level regression suite in normal
-lint CI. `pixi run ai-doctor` is a non-mutating diagnosis surface; it reports
-recovery commands but never synchronizes files or installs hooks.
-
-`pixi run check-docs-policy` also enforces documentation lifecycle rules that
-are outside generated-adapter sync, including docs bucket visibility,
-the root information-architecture owner links, dev-task shape, plan cleanup
-invariants, the dashboard entry budgets owned by `docs/plans/README.md`, the
-no-`Complete`-entries rule for
-`docs/plans/dashboard.md` (completed plans move to `docs/plans/archive.md`,
-whose entry shape is also checked), the `docs/ai/` frontmatter pilot, and
-the `docs/readthedocs/papers.md` catalog schema, pilot-scoped internal
-Markdown links, and conservative owner-index discoverability (both promoted
-from advisory to blocking after the PLAN-121 pilot inventory reported a clean
-cycle). North-star evidence freshness remains a report-only advisory by
-design: blocking on git-date freshness would fail unrelated PRs whenever
-cited evidence paths change, so clearing that channel stays a manual,
-owner-doc-governed re-verification step.
-
-Report-only checks still need a quiet default run. Before adding a new advisory
-to a mandatory command, scope it to an owned pilot surface, clean the existing
-inventory, or add an explicit baseline so routine verification output remains
-actionable. A report-only signal that always prints legacy debt is not ready to
-be a shared gate.
-
-These checks are structural. The principle audit in `docs/ai/principles.md`
-owns judgment calls such as source-of-truth placement, public path quality, and
-whether a change is simpler than the alternatives. `docs/ai/verification.md`
-owns gate selection and evidence mapping.
+These structural checks do not prove instruction quality. Gate selection,
+behavioral evidence, and completion belong to `docs/ai/verification.md`;
+the principle audit supplies the judgment about simplicity and ownership.

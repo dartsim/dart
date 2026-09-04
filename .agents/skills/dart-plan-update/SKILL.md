@@ -31,6 +31,8 @@ Discuss or update DART living plans: $ARGUMENTS
 
 @AGENTS.md
 @docs/ai/principles.md
+@docs/ai/README.md
+@docs/ai/orchestration.md
 @docs/ai/north-star.md
 @docs/plans/README.md
 @docs/plans/dashboard.md
@@ -59,7 +61,8 @@ Discuss or update DART living plans: $ARGUMENTS
      status, horizon, dimension, next step, and gate.
    - when deriving packets or dev-task work, include the DART specification
      intake from `docs/ai/orchestration.md`: value, scope, non-goals,
-     assumptions/open decisions, acceptance evidence, gates, and dependencies.
+     assumptions/open decisions (including reasoning mode, phase, and approved delegation
+     scopes), acceptance evidence, gates, and dependencies.
      Use owner-local `Decision needed` blocks for consequential ambiguity
      instead of silent defaults.
 4. For discussion-only requests, present the tradeoff and proposed plan delta;
