@@ -30,7 +30,7 @@ from install_git_hooks import HOOK_TEMPLATE, SENTINEL
 
 JSON_READ_ERRORS = (OSError, json.JSONDecodeError)
 TOML_READ_ERRORS = (OSError, tomllib.TOMLDecodeError)
-PATH_RESOLUTION_ERRORS = (OSError, RuntimeError)
+PATH_RESOLUTION_ERRORS = (OSError, RuntimeError, ValueError)
 
 AI_TASKS = {
     "ai-doctor",

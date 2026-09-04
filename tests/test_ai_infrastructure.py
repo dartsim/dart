@@ -2374,8 +2374,17 @@ def test_doctor_declared_reading_continues_after_symlink_loop(
     assert entry["unavailable"][0]["reason"] in {"not a file", "unreadable path"}
 
 
-@pytest.mark.parametrize("reading", ("../outside.md", "absolute", "linked.md", "."))
-def test_doctor_cli_reports_unavailable_declared_reading(tmp_path, reading):
+@pytest.mark.parametrize(
+    ("reading", "reason"),
+    (
+        ("../outside.md", "outside repository"),
+        ("absolute", "outside repository"),
+        ("linked.md", "outside repository"),
+        (".", "not a file"),
+        ("bad\0name", "unreadable path"),
+    ),
+)
+def test_doctor_cli_reports_unavailable_declared_reading(tmp_path, reading, reason):
     root = make_repo(tmp_path, "main")
     outside = _write(tmp_path, "outside.md")
     (root / "linked.md").symlink_to(outside)
@@ -2402,10 +2411,9 @@ def test_doctor_cli_reports_unavailable_declared_reading(tmp_path, reading):
 
     assert plain.returncode == 1, plain.stdout + plain.stderr
     assert structured.returncode == 1, structured.stdout + structured.stderr
-    assert "DART AI doctor: FAIL" in plain.stdout
+    assert "DART AI doctor: FAIL" in plain.stdout, plain.stderr
     data = json.loads(structured.stdout)
     assert not data["ok"]
-    reason = "not a file" if reading == "." else "outside repository"
     diagnostic = (
         f".claude/commands/dart-review-pr.md: required reading `{reading}` "
         f"is unavailable ({reason})"
