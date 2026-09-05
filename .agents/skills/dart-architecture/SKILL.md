@@ -69,8 +69,9 @@ clean-break, north-star). The docs an agent most often needs inline:
   from concrete runtime implementations.
 - Select behavior by documented method-family names and policy value objects.
 - A small DART-owned CPU/CUDA preference is accepted public design; library,
-  pool, stream, kernel and ISA types remain private. Existing identifier
-  checkers stay enforced until WP-040.2 migrates their focused fixtures.
+  pool, stream, kernel and ISA types remain private. WP-040.2 in
+  `docs/plans/040-dart7-release-hardening.md` owns checker-transition
+  requirements and status.
 - Keep the easy path (`World` + `addRigidBody`/`addMultibody` + `step`) free of
   solver vocabulary.
 - Fallbacks must never silently substitute algorithms: validate capabilities

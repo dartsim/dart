@@ -73,7 +73,7 @@ its own line so status updates remain git-history friendly.
   interacting 100-body corpus; M3 qualifies articulated research workflows.
 - Gate: Fixed independent RB-01–RB-07 oracles, supported-envelope regressions,
   public-boundary tests and architecture/allocation updates. DART 6 comparisons
-  are optional evidence; WP-040.2 owns the currently enforced checker transition.
+  are optional evidence; WP-040.2 owns checker-transition requirements and status.
   Full CPU/CUDA M1 acceptance is coordinated by PLAN-040, not this CPU slice.
 
 ### PLAN-041: Official Simulation API Promotion
