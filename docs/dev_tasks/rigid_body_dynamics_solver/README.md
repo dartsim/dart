@@ -4,11 +4,11 @@ Develop dependable DART 7 rigid-body and articulated simulation under
 [PLAN-080](../../plans/080-rigid-body-dynamics-solver.md), using the readiness
 and prerequisite contracts in [PLAN-040](../../plans/040-dart7-release-hardening.md).
 
-## Current Status
+## Implementation History
 
-Routing refreshed 2026-09-04. Start with WP-040.1; WP-080.1 requires accepted
-WP-040.1 and WP-030.3. Follow their plan dependencies before claiming a physics
-packet. The slice checkboxes below preserve implementation history and do not
+Use the [dashboard](../../plans/dashboard.md) for current work selection and
+PLAN-040/080 for packet prerequisites and acceptance state. The slice
+checkboxes below preserve implementation history and do not
 close the current milestones. Contact-polish details remain backlog until
 admitted by the current PLAN-080 packet sequence.
 
@@ -114,9 +114,9 @@ follow the [public API boundary](../../onboarding/api-boundaries.md).
 1. Treat the model-loading and unified contact/constraint line as landed on
    `main` via PR #2838; do not look for the retired
    `feature/experimental-model-loader` branch as the active publication path.
-2. Read PLAN-040 and PLAN-080, then use the dashboard to claim the next ready
-   packet. Start with WP-040.1; WP-080.1 is blocked until WP-040.1 and WP-030.3
-   are accepted. Subsystem A polish is not an independent next-step override.
+2. Use the [dashboard](../../plans/dashboard.md) to select work, then consult
+   the owning plan's current packet state and prerequisites before claiming it.
+   The historical contact-polish sequence cannot override those owners.
 3. Keep richer model-loading diagnostics, visual/material import, actuator,
    mimic/coupler, loop-closure, integrator, and COM-Jacobian work as separate
    deferred slices unless the active solver-polish work directly requires them.

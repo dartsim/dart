@@ -1,12 +1,12 @@
 # Resume: Rigid-Body Dynamics Solver
 
-## Current Routing (2026-09-04)
+## Work Selection
 
 Read [PLAN-040](../../plans/040-dart7-release-hardening.md),
 [PLAN-080](../../plans/080-rigid-body-dynamics-solver.md) and the
-[dashboard](../../plans/dashboard.md) before selecting work. Start with
-WP-040.1; WP-080.1 requires accepted WP-040.1 and WP-030.3. The historical
-contact-polish sequence below cannot bypass those prerequisites.
+[dashboard](../../plans/dashboard.md) before selecting work. The dashboard
+owns current routing; the plans own packet state and prerequisites. The
+historical contact-polish sequence below cannot override those owners.
 
 ## Implementation Snapshot (2026-09-01, Historical)
 
