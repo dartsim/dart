@@ -129,7 +129,6 @@ AI_PREFIXES = (
     ".agents/",
     ".claude/",
     ".codex/",
-    ".opencode/",
     ".github/workflows/",
     "docs/README.md",
     "docs/ai/",
@@ -445,9 +444,7 @@ def model_name_scan_paths(root: Path) -> list[Path]:
     harness sources and may name models for their own reasons.
     """
     candidates = list(_source_files(root))
-    candidates.extend(
-        root / name for name in ("CLAUDE.md", "GEMINI.md") if (root / name).is_file()
-    )
+    candidates.extend(root / name for name in ("CLAUDE.md",) if (root / name).is_file())
     for base in (".claude/hooks", ".codex", "docs/onboarding"):
         candidates.extend(path for path in (root / base).rglob("*") if path.is_file())
     return sorted(
@@ -934,7 +931,7 @@ def check_path_references(root: Path, profile: str | None = None) -> list[str]:
 
 
 def check_generated_adapters(root: Path) -> list[str]:
-    """Check generated Codex/OpenCode adapters and their ownership manifest."""
+    """Check generated Codex adapters and their ownership manifest."""
     errors: list[str] = []
     skills_root = root / ".agents" / "skills"
     try:
@@ -1039,21 +1036,6 @@ def check_generated_adapters(root: Path) -> list[str]:
             )
     for source in commands:
         relative = str(source.relative_to(root))
-        opencode = root / ".opencode" / "command" / source.name
-        if not opencode.is_file():
-            errors.append(f"{opencode.relative_to(root)}: missing generated command")
-        elif opencode.is_symlink():
-            errors.append(
-                f"{opencode.relative_to(root)}: generated command is a symlink"
-            )
-        else:
-            opencode_content = opencode.read_text()
-            if not sync.has_auto_gen_header(opencode_content) or (
-                sync.strip_auto_gen_header(opencode_content) != source.read_text()
-            ):
-                errors.append(
-                    f"{opencode.relative_to(root)}: generated command is stale"
-                )
         codex = root / ".agents" / "skills" / source.stem / "SKILL.md"
         expected_codex = sync.add_auto_gen_header(
             sync.render_codex_command_skill(source), relative
@@ -1078,12 +1060,6 @@ def check_generated_adapters(root: Path) -> list[str]:
             )
         elif codex.read_text() != expected_codex:
             errors.append(f"{codex.relative_to(root)}: generated skill is stale")
-    expected_commands = {source.name for source in commands}
-    actual_commands = {
-        path.name for path in (root / ".opencode" / "command").glob("*.md")
-    }
-    for orphan in sorted(actual_commands - expected_commands):
-        errors.append(f".opencode/command/{orphan}: orphaned generated command")
     legacy_root = root / ".codex" / "skills"
     if legacy_root.is_symlink():
         errors.append(".codex/skills: legacy skill root must not be a symlink")
@@ -2633,7 +2609,6 @@ def tool_versions() -> dict[str, str]:
         ("pixi", ("--version",)),
         ("codex", ("--version",)),
         ("claude", ("--version",)),
-        ("opencode", ("--version",)),
     ):
         executable = shutil.which(tool)
         if not executable:

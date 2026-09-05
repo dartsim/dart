@@ -154,12 +154,6 @@ compile_flags.txt
 # (session logs, scheduled-task locks, settings.local.json, runtime caches)
 # MUST NOT be.
 
-# OpenCode project commands.
-.opencode/*
-!.opencode/command/
-!.opencode/command/**/*.md
-!.opencode/AGENTS.md
-
 # Cross-agent project skills. Codex discovers this standards-based catalog.
 !.agents/
 .agents/*
@@ -206,9 +200,6 @@ compile_flags.txt
 #   .claude/todos/                 (per-developer TaskCreate state)
 #   .claude/ide/                   (per-developer IDE integration)
 
-# OpenCode project files.
-.omo/
-
 # Other AI agents — defensive ignores so per-developer caches from these
 # tools don't accidentally land in the repo. If we adopt one and want to
 # track team workflows, add an allowlist following the pattern above.
@@ -217,6 +208,7 @@ compile_flags.txt
 .cursor-tutor/
 .cursorignore
 .gemini/
+.opencode/
 .windsurf/
 .continue/
 .sourcegraph/

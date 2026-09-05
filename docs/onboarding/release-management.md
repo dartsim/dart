@@ -11,8 +11,7 @@ Use it with the release workflow sources in `.claude/commands/`:
 | `/dart-release-packaging`  | Prepare a release version bump and changelog               |
 
 Codex exposes the same workflows as generated `$dart-*` skill adapters from
-those sources. OpenCode receives generated command adapters through
-`.opencode/command/`.
+those sources.
 
 ## Branches and Milestones
 
@@ -80,12 +79,11 @@ For merge commits, use `git cherry-pick -x -m 1 <MERGE_COMMIT_HASH>`.
 
 AI-infra and workflow-doc backports need one extra check before cherry-picking.
 Compare the release branch's `docs/ai/capabilities.json`, `docs/ai/workflows.md`,
-`.claude/commands/`, `.claude/skills/`, `.agents/skills/`, and
-`.opencode/command/` against `main`. If the release branch intentionally has a
-smaller workflow surface, adapt the guidance to the release owners and
-regenerate only the affected adapters; do not add main-only workflows just to
-make the patch apply. Record a changelog entry when the backport changes
-contributor or agent behavior.
+`.claude/commands/`, `.claude/skills/`, and `.agents/skills/` against `main`. If
+the release branch intentionally has a smaller workflow surface, adapt the
+guidance to the release owners and regenerate only the affected adapters; do not
+add main-only workflows just to make the patch apply. Record a changelog entry
+when the backport changes contributor or agent behavior.
 
 ## Release Branch CI Fixes
 
@@ -166,13 +164,14 @@ git merge origin/$RELEASE_BRANCH -m "Merge $RELEASE_BRANCH into main (v$RELEASE_
 
 ### Conflict Strategy
 
-| Conflict Type                       | Default Resolution                    | Reason                          |
-| ----------------------------------- | ------------------------------------- | ------------------------------- |
-| Deleted in main, updated in release | Keep deleted                          | DART 7 intentionally removed it |
-| Added in both branches              | Prefer main unless release is unique  | Main has DART 7-compatible form |
-| Content conflicts                   | Prefer main modernization             | Main carries C++23/DART 7 work  |
-| `CHANGELOG.md`                      | Review manually                       | Avoid losing release notes      |
-| Files only in release               | Keep only if still relevant to `main` | Some release-only files differ  |
+| Conflict Type                                                 | Default Resolution                         | Reason                                                                     |
+| ------------------------------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------- |
+| Deleted in main, updated in release                           | Keep deleted                               | DART 7 intentionally removed it                                            |
+| Added in both branches                                        | Prefer main unless release is unique       | Main has DART 7-compatible form                                            |
+| Content conflicts                                             | Prefer main modernization                  | Main carries C++23/DART 7 work                                             |
+| `CHANGELOG.md`                                                | Review manually                            | Avoid losing release notes                                                 |
+| Files only in release                                         | Keep only if still relevant to `main`      | Some release-only files differ                                             |
+| Release-local AI surfaces (`.opencode/command/`, `GEMINI.md`) | Keep deleted, even when they merge cleanly | `main` supports only Claude Code and Codex; see [ai-tools.md](ai-tools.md) |
 
 Useful conflict helpers:
 

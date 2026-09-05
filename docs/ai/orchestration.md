@@ -189,7 +189,7 @@ orchestrator applies these rules when decomposing:
    updates the dashboard entry's next step.
 2. An executor picks up the first available packet (see "Packet discovery
    and claim signals" below) — via `$dart-execute-packet` (Codex) or
-   `/dart-execute-packet` (Claude/OpenCode) — appends `[claimed]` to the
+   `/dart-execute-packet` (Claude Code) — appends `[claimed]` to the
    packet heading, and creates the packet's topic branch
    (`wp-<plan>-<n>-<slug>`) so the claim is discoverable by other sessions.
 3. The executor implements exactly that packet, runs its gates, records the

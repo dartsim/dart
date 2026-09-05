@@ -127,7 +127,7 @@ lint-toml = { cmd = ["bash", "-lc", "python scripts/lint_toml.py"] }
 lint-cmake = { cmd = ["python", "scripts/lint_cmake.py"] }
 
 lint-md = { cmd = """
-    prettier --write '**/*.md' '!**/.pixi/**' '!**/.claude/worktrees/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.agents/skills/**' '!.opencode/**'
+    prettier --write '**/*.md' '!**/.pixi/**' '!**/.claude/worktrees/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.agents/skills/**'
 """ }
 
 lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }
@@ -285,7 +285,7 @@ check-lint-toml = { cmd = [
 ] }
 
 check-lint-md = { cmd = """
-    prettier --check '**/*.md' '!**/.pixi/**' '!**/.claude/worktrees/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.agents/skills/**' '!.opencode/**'
+    prettier --check '**/*.md' '!**/.pixi/**' '!**/.claude/worktrees/**' '!**/build/**' '!**/external/**' '!**/node_modules/**' '!.agents/skills/**'
 """ }
 
 check-lint-rst = { cmd = ["python", "scripts/lint_rst.py"] }

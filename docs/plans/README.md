@@ -212,7 +212,7 @@ Horizons mean:
 
 ## Plan Update Workflow
 
-Use `$dart-plan-update` in Codex or `/dart-plan-update` in Claude/OpenCode for
+Use `$dart-plan-update` in Codex or `/dart-plan-update` in Claude Code for
 planning discussions and plan edits.
 Use `$dart-next` or `/dart-next` when the goal is to select and execute the
 next bounded task from the dashboard and other tracked evidence.
@@ -259,7 +259,7 @@ dashboard if plan state changes.
 
 The living plan system relies on repository checks instead of manual memory:
 
-- `pixi run check-ai-commands` verifies generated Codex/OpenCode adapter sync,
+- `pixi run check-ai-commands` verifies generated Codex adapter sync,
   workflow capability parity, workflow public paths, required-reading path
   existence, required-reading coverage in `docs/ai/workflows.md`, and
   approval-boundary wording.

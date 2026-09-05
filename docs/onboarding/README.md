@@ -103,9 +103,9 @@ This onboarding guide is organized into several focused documents:
 
 ### AI Workflow Commands
 
-Repeatable AI workflows live in `.claude/commands/` and are synced to
-OpenCode and Codex. Use `/dart-*` in Claude Code/OpenCode and `$dart-*` in
-Codex. See [ai-tools.md](ai-tools.md) for compatibility details and
+Repeatable AI workflows live in `.claude/commands/` and are synced to Codex.
+Use `/dart-*` in Claude Code and `$dart-*` in Codex. See
+[ai-tools.md](ai-tools.md) for compatibility details and
 [release-management.md](release-management.md) for release-specific workflows;
 [ai-reviews.md](ai-reviews.md) owns how automated PR reviews are handled.
 
