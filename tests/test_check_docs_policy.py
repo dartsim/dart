@@ -931,6 +931,64 @@ def test_link_check_validates_myst_doc_roles_inside_sphinx_source_root(tmp_path)
     assert any("/user_guide/also-missing" in w for w in warnings)  # inside {note}
 
 
+def test_link_check_validates_toctree_entries_and_raw_html_hrefs(tmp_path):
+    module = _load_module()
+    site = tmp_path / "docs" / "readthedocs"
+    (site / "guide").mkdir(parents=True)
+    (site / "_static").mkdir()
+    (site / "conf.py").write_text("project = 'x'\n", encoding="utf-8")
+    (site / "guide" / "index.md").write_text("# Guide\n", encoding="utf-8")
+    (site / "guide" / "start.md").write_text("# Start\n", encoding="utf-8")
+    (site / "about.rst").write_text("About\n=====\n", encoding="utf-8")
+    (site / "_static" / "logo.png").write_bytes(b"png")
+    (site / "index.md").write_text(
+        "# Site\n\n"
+        '<div><a href="guide/start.html">Start</a> <a href="guide/">Guide</a> '
+        '<a href="guide/missing.html">Missing</a> <a href="_static/logo.png">Logo</a> '
+        '<a href="_static/nope.png">Nope</a> <a href="https://example.com">Ext</a> '
+        '<a href="#top">Top</a></div>\n\n'
+        "```{toctree}\n"
+        ":hidden:\n"
+        ":maxdepth: 1\n"
+        "\n"
+        "guide/start\n"
+        "About <about>\n"
+        "guide/gone\n"
+        "https://example.com/external\n"
+        "```\n"
+        "\n"
+        "```{toctree}\n"
+        ":glob:\n"
+        "\n"
+        "guide/*\n"
+        "```\n",
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 3
+    assert any("guide/missing.html" in w for w in warnings)
+    assert any("_static/nope.png" in w for w in warnings)
+    assert any("toctree entry `guide/gone`" in w for w in warnings)
+
+
+def test_link_check_raw_html_href_outside_sphinx_root_checks_files(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "img.png").write_bytes(b"png")
+    (docs / "README.md").write_text(
+        '<img src="img.png"><a href="img.png">ok</a> <a href="missing.png">bad</a>\n',
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert "missing.png" in warnings[0]
+
+
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"

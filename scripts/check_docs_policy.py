@@ -453,10 +453,10 @@ def _resolve_markdown_link(
     return (base_dir / target_path).resolve()
 
 
-def _iter_inline_tokens(text: str, offset: int = 0):
-    """Yield (line, inline token) pairs, recursing into MyST directive fences
-    whose body is Markdown (admonitions, grids, ...). Literal directives and
-    ordinary code fences are skipped."""
+def _iter_block_tokens(text: str, offset: int = 0):
+    """Yield (line, token) pairs for every block-level token, recursing into
+    MyST directive fences whose body is Markdown (admonitions, grids, ...).
+    Literal directives and ordinary code fences are yielded but not entered."""
     for token in MARKDOWN_PARSER.parse(text):
         line_number = offset + ((token.map[0] + 1) if token.map else 0)
         directive = (
@@ -465,10 +465,102 @@ def _iter_inline_tokens(text: str, offset: int = 0):
             else None
         )
         if directive and directive.group("name") not in MYST_LITERAL_DIRECTIVES:
-            yield from _iter_inline_tokens(token.content, offset=line_number)
+            yield from _iter_block_tokens(token.content, offset=line_number)
             continue
+        yield line_number, token
+
+
+def _iter_inline_tokens(text: str, offset: int = 0):
+    """Yield (line, inline token) pairs, including those inside
+    Markdown-bearing MyST directives."""
+    for line_number, token in _iter_block_tokens(text, offset=offset):
         if token.type == "inline" and token.children:
             yield line_number, token
+
+
+HTML_HREF_RE = re.compile(r"""href\s*=\s*(?:"(?P<dq>[^"]*)"|'(?P<sq>[^']*)')""")
+TOCTREE_ENTRY_RE = re.compile(r"^(?:.*<(?P<bracketed>[^>]+)>|(?P<plain>\S.*?))\s*$")
+
+
+def _iter_html_hrefs(text: str) -> list[tuple[int, str]]:
+    """Return (line, href) pairs from raw HTML blocks and inline HTML."""
+    hrefs: list[tuple[int, str]] = []
+    for line_number, token in _iter_block_tokens(text):
+        fragments: list[str] = []
+        if token.type == "html_block":
+            fragments.append(token.content)
+        elif token.type == "inline" and token.children:
+            fragments.extend(
+                child.content for child in token.children if child.type == "html_inline"
+            )
+        for fragment in fragments:
+            for match in HTML_HREF_RE.finditer(fragment):
+                href = (
+                    match.group("dq")
+                    if match.group("dq") is not None
+                    else match.group("sq")
+                )
+                if href:
+                    hrefs.append((line_number, href))
+    return hrefs
+
+
+def _iter_toctree_entries(text: str) -> list[tuple[int, str]]:
+    """Return (line, target) pairs for entries of MyST ``{toctree}`` fences.
+
+    Option lines (``:maxdepth: 1``), blank lines, and comments are skipped;
+    ``Title <target>`` yields the target; glob patterns under ``:glob:`` and
+    external URLs are not validated.
+    """
+    entries: list[tuple[int, str]] = []
+    for line_number, token in _iter_block_tokens(text):
+        if token.type != "fence":
+            continue
+        directive = MYST_DIRECTIVE_RE.match(token.info.strip())
+        if not directive or directive.group("name") != "toctree":
+            continue
+        lines = token.content.splitlines()
+        glob_mode = any(line.strip() == ":glob:" for line in lines)
+        for index, raw in enumerate(lines, start=1):
+            line = raw.strip()
+            if not line or line.startswith((":", "%", "<!--")):
+                continue
+            match = TOCTREE_ENTRY_RE.match(line)
+            target = (match.group("bracketed") or match.group("plain")).strip()
+            if _is_external_link(target):
+                continue
+            if glob_mode and any(character in target for character in "*?["):
+                continue
+            entries.append((line_number + index, target))
+    return entries
+
+
+def _resolve_built_html_href(href: str, path: Path, source_root: Path) -> bool:
+    """Return whether a raw HTML ``href`` on a Sphinx page names a real
+    source page (``x.html`` -> ``x.md``/``x.rst``, ``x/`` -> ``x/index.*``) or
+    an existing file such as a static asset."""
+    base = source_root if href.startswith("/") else path.parent
+    target = href.lstrip("/")
+    root = source_root.resolve()
+    if target.endswith(".html"):
+        page = target[: -len(".html")]
+        return (
+            _resolve_myst_doc_role(
+                ("/" if href.startswith("/") else "") + page, path, source_root
+            )
+            is not None
+        )
+    if target.endswith("/"):
+        return (
+            _resolve_myst_doc_role(
+                ("/" if href.startswith("/") else "") + target + "index",
+                path,
+                source_root,
+            )
+            is not None
+        )
+    resolved = (base / target).resolve()
+    return resolved.exists() and resolved.is_relative_to(root)
 
 
 def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
@@ -923,6 +1015,21 @@ def check_markdown_internal_links(repo_root: Path) -> list[str]:
                         f"`{_display_path(resolved, repo_root)}` does not define"
                     )
         source_root = _sphinx_source_root(path, repo_root)
+        for line_number, href in _iter_html_hrefs(text):
+            target = _strip_markdown_link_target(href)
+            if not target or _is_external_link(target) or target.startswith("#"):
+                continue
+            target = unquote(target.split("?", 1)[0].split("#", 1)[0])
+            if source_root is not None:
+                ok = _resolve_built_html_href(target, path, source_root)
+            else:
+                resolved = _resolve_markdown_link(target, path.parent, repo_root, path)
+                ok = resolved is not None and resolved.exists()
+            if not ok:
+                warnings.append(
+                    f"{path.relative_to(repo_root)}:{line_number}: raw HTML href "
+                    f"`{href}` does not name an existing page or file"
+                )
         if source_root is None:
             continue
         for line_number, target in _iter_myst_doc_roles(text):
@@ -930,6 +1037,13 @@ def check_markdown_internal_links(repo_root: Path) -> list[str]:
                 warnings.append(
                     f"{path.relative_to(repo_root)}:{line_number}: MyST role "
                     f"`{{doc}}` targets `{target}`, which is not a page under "
+                    f"`{_display_path(source_root, repo_root)}`"
+                )
+        for line_number, target in _iter_toctree_entries(text):
+            if _resolve_myst_doc_role(target, path, source_root) is None:
+                warnings.append(
+                    f"{path.relative_to(repo_root)}:{line_number}: toctree entry "
+                    f"`{target}` is not a page under "
                     f"`{_display_path(source_root, repo_root)}`"
                 )
     return warnings
