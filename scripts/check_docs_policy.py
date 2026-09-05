@@ -130,6 +130,25 @@ PAPERS_CLOSED_VALUE_FIELDS = ("Type", "Status", "Priority", "Verdict")
 # CommonMark plus GFM tables, so links inside table cells are seen and code
 # blocks, inline code, and HTML are never mistaken for links or headings.
 MARKDOWN_PARSER = MarkdownIt("commonmark").enable("table")
+# MyST directives whose body is literal (code, raw markup, or Sphinx syntax),
+# not Markdown; every other directive body is parsed for links.
+MYST_LITERAL_DIRECTIVES = {
+    "code",
+    "code-block",
+    "code-cell",
+    "sourcecode",
+    "literalinclude",
+    "raw",
+    "eval-rst",
+    "math",
+    "mermaid",
+    "include",
+    "toctree",
+    "highlight",
+    "parsed-literal",
+    "glossary",
+}
+MYST_DIRECTIVE_RE = re.compile(r"^\{(?P<name>[A-Za-z][A-Za-z0-9_-]*)\}")
 
 
 def iter_markdown_files(repo_root: Path) -> list[Path]:
@@ -443,9 +462,14 @@ def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
     """
     links: list[tuple[int, str]] = []
     for token in MARKDOWN_PARSER.parse(text):
-        if token.type == "fence" and token.info.strip().startswith("{"):
-            # MyST directive (```{note} ...```): its body is Markdown, not
-            # code, so links inside it are still checked.
+        directive = (
+            MYST_DIRECTIVE_RE.match(token.info.strip())
+            if token.type == "fence"
+            else None
+        )
+        if directive and directive.group("name") not in MYST_LITERAL_DIRECTIVES:
+            # MyST directive with a Markdown body (```{note} ...```): links
+            # inside it are still checked; literal directives stay code.
             offset = (token.map[0] + 1) if token.map else 0
             for inner_line, link in _iter_markdown_links(token.content):
                 links.append((offset + inner_line, link))

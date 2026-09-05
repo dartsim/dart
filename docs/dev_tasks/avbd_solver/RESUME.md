@@ -40,7 +40,11 @@ here:
   and the schema-6 packets under
   `docs/plans/104-vertex-block-descent-solver/`; the packets record the
   artifact hashes, pinned paper-input hashes, and solver fingerprints and
-  validate them transitively (`pixi run check-avbd-packets`).
+  validate them transitively. `pixi run check-avbd-packets` and
+  `pixi run check-plan104-paper-parity` are the strict claim gates;
+  `pixi run lint` runs the same validators with `--stale-source report`, so a
+  seal that predates the current source is an advisory there and an error
+  here.
 - `README.md` § "Current local gates" records the default and CUDA
   `test-all` passes on the sealed bytes. A green CUDA environment gate does
   not close the missing VBD/AVBD solver GPU-parity rows.

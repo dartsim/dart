@@ -842,6 +842,12 @@ def test_markdown_links_include_myst_directive_bodies():
         "```python\n"
         "print('[not](code.md)')\n"
         "```\n"
+        "```{code-block} python\n"
+        "print('[literal](literal.md)')\n"
+        "```\n"
+        "```{eval-rst}\n"
+        "`RST link <rst.md>`_ and [x](rst.md)\n"
+        "```\n"
     )
 
     links = module._iter_markdown_links(text)

@@ -23,6 +23,7 @@ from avbd_packet_schema import (  # noqa: E402
     AVBD_PACKET_SCHEMA_VERSION,
     PLAN104_CLAIMS_KEY,
 )
+from check_avbd_packets import split_stale_source_findings  # noqa: E402
 from check_avbd_packets import (  # noqa: E402
     PacketValidationContext,
 )
@@ -1859,6 +1860,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=None,
         help="Explicit coverage contract to validate (repeatable).",
     )
+    parser.add_argument(
+        "--stale-source",
+        choices=("error", "report"),
+        default="error",
+        help="How to treat evidence packets whose sealed source state no longer "
+        "matches the working tree: 'error' (default) fails closed, the bar for "
+        "any parity claim; 'report' prints them as advisories so repository-wide "
+        "lint does not fail on unrelated source or dependency changes.",
+    )
     return parser.parse_args(argv)
 
 
@@ -1873,10 +1883,20 @@ def main(argv: list[str] | None = None) -> int:
         contracts = tuple(_strict_json_loads(path.read_bytes()) for path in paths)
         all_errors.extend(matrix_errors(contracts))
 
+    stale: list[str] = []
+    if args.stale_source == "report":
+        all_errors, stale = split_stale_source_findings(all_errors)
     if all_errors:
         for error in all_errors:
             print(f"ERROR: {error}")
         return 1
+    for finding in stale:
+        print(f"STALE: {finding}", file=sys.stderr)
+    if stale:
+        print(
+            "Sealed evidence predates the current source state; no parity row can "
+            "close on it until the evidence is regenerated."
+        )
 
     total = 0
     for path in paths:

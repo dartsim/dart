@@ -490,7 +490,11 @@ compatibility remains on the active DART 6 LTS branch._
   replaced the DART 6-era onboarding deep dive with a handbook index, trimmed
   stale dev-task session logs, and added a `dart-docs-update audit` mode.
   `check-docs-policy` now checks every markdown link, rejects unreferenced
-  docs, and reports oversized dev-task snapshots.
+  docs, and reports oversized dev-task snapshots. `pixi run lint` validates
+  AVBD evidence packets and the PLAN-104 parity contract with
+  `--stale-source report`, so a sealed packet that predates the current
+  source is an advisory in lint and still an error in the strict
+  `check-avbd-packets` and `check-plan104-paper-parity` claim gates.
   ([#3479](https://github.com/dartsim/dart/pull/3479))
 - AI workflows now stage context by task and phase, preserve authorized model,
   effort, and action scopes across handoffs, and audit the whole harness during

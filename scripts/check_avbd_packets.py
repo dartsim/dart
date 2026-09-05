@@ -15,6 +15,7 @@ import argparse
 import hashlib
 import json
 import math
+import re
 import struct
 import sys
 import uuid
@@ -737,7 +738,62 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=DEFAULT_PACKET_DIR,
         help="Directory scanned for avbd-*-packet.json files.",
     )
+    parser.add_argument(
+        "--stale-source",
+        choices=("error", "report"),
+        default="error",
+        help="How to treat sealed evidence whose recorded source state no "
+        "longer matches the working tree. 'error' (default) fails closed, "
+        "which is the bar for any parity or performance claim; 'report' "
+        "prints the stale seals as advisories so repository-wide lint does "
+        "not fail on unrelated source or dependency changes. Structural "
+        "and hash defects inside a packet always fail.",
+    )
     return parser.parse_args(argv)
+
+
+# Findings that only say the sealed evidence predates the current working tree.
+# They never describe a corrupt or self-inconsistent packet.
+STALE_SOURCE_PATTERNS = (
+    re.compile(
+        r"\.source_provenance\.(digest|file_count|ignored_paths|roots) does not "
+        r"match current source state$"
+    ),
+    re.compile(r"benchmark source capture digest does not match current source state$"),
+    re.compile(
+        r"benchmark source hash does not match current benchmark translation unit$"
+    ),
+    re.compile(r"source_provenance\.files\[\d+\]\.sha256 drifted for "),
+    re.compile(r"source_provenance\.files paths must exactly match "),
+)
+# The packet-level digest is recomputed from the listed files, so it is a stale
+# seal only when a listed file also drifted; on its own it is a mutated packet.
+PACKET_DIGEST_PATTERN = re.compile(
+    r": source_provenance\.digest does not match current listed source contents$"
+)
+PACKET_FILE_DRIFT_PATTERN = re.compile(
+    r"source_provenance\.files(\[\d+\]\.sha256 drifted for | paths must exactly match )"
+)
+
+
+def split_stale_source_findings(errors: list[str]) -> tuple[list[str], list[str]]:
+    """Split validator output into hard errors and stale-seal advisories."""
+    drifted_packets = {
+        error.split(": ", 1)[0]
+        for error in errors
+        if PACKET_FILE_DRIFT_PATTERN.search(error)
+    }
+    hard: list[str] = []
+    stale: list[str] = []
+    for error in errors:
+        packet_name = error.split(": ", 1)[0]
+        if any(pattern.search(error) for pattern in STALE_SOURCE_PATTERNS):
+            stale.append(error)
+        elif PACKET_DIGEST_PATTERN.search(error) and packet_name in drifted_packets:
+            stale.append(error)
+        else:
+            hard.append(error)
+    return hard, stale
 
 
 def _sha256(path: Path) -> str:
@@ -4960,10 +5016,25 @@ def main(argv: list[str]) -> int:
                 reported_errors.add(error)
                 all_errors.append(error)
 
+    stale: list[str] = []
+    if args.stale_source == "report":
+        all_errors, stale = split_stale_source_findings(all_errors)
     if all_errors:
         for error in all_errors:
             print(f"ERROR: {error}")
         return 1
+
+    if stale:
+        for finding in stale:
+            print(f"STALE: {finding}", file=sys.stderr)
+        stale_packets = sorted({finding.split(": ", 1)[0] for finding in stale})
+        print(
+            f"Validated {len(packets)} AVBD packet(s); {len(stale_packets)} sealed "
+            "evidence packet(s) predate the current source state and cannot "
+            "support a parity or performance claim until regenerated: "
+            + ", ".join(stale_packets)
+        )
+        return 0
 
     print(f"Validated {len(packets)} AVBD packet(s)")
     return 0
