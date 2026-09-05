@@ -943,7 +943,7 @@ def test_link_check_validates_toctree_entries_and_raw_html_hrefs(tmp_path):
     (site / "_static" / "logo.png").write_bytes(b"png")
     (site / "index.md").write_text(
         "# Site\n\n"
-        '<div><a href="guide/start.html">Start</a> <a href="guide/">Guide</a> '
+        '<div id="top"><a href="guide/start.html">Start</a> <a href="guide/">Guide</a> '
         '<a href="guide/missing.html">Missing</a> <a href="_static/logo.png">Logo</a> '
         '<a href="_static/nope.png">Nope</a> <a href="https://example.com">Ext</a> '
         '<a href="#top">Top</a></div>\n\n'
@@ -991,6 +991,54 @@ def test_link_check_raw_html_href_outside_sphinx_root_checks_files(tmp_path):
     assert any("missing.png" in w for w in warnings)
     assert any("also-missing.png" in w for w in warnings)
     assert any("unquoted-missing.png" in w for w in warnings)
+
+
+def test_docs_orphans_script_reference_does_not_replace_index_reachability(tmp_path):
+    module = _load_module()
+    bucket = tmp_path / "docs" / "onboarding"
+    bucket.mkdir(parents=True)
+    (bucket / "README.md").write_text("# Index\n", encoding="utf-8")
+    (bucket / "page.md").write_text("# Page\n", encoding="utf-8")
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    (scripts / "tool.py").write_text(
+        'DOC = "docs/onboarding/page.md"\n', encoding="utf-8"
+    )
+    plan_dir = tmp_path / "docs" / "plans" / "001-demo"
+    plan_dir.mkdir(parents=True)
+    (plan_dir / "packet.json").write_text("{}\n", encoding="utf-8")
+    (scripts / "packets.py").write_text(
+        'PACKET = "docs/plans/001-demo/packet.json"\n', encoding="utf-8"
+    )
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, warnings = module.check_docs_orphans(tmp_path)
+
+    assert any("docs/onboarding/page.md" in f for f in failures)  # script-only
+    assert warnings == []  # sidecar data reached through the script is fine
+
+
+def test_link_check_validates_raw_html_fragments(tmp_path):
+    module = _load_module()
+    site = tmp_path / "docs" / "readthedocs"
+    site.mkdir(parents=True)
+    (site / "conf.py").write_text("project = 'x'\n", encoding="utf-8")
+    (site / "guide.md").write_text(
+        '# Guide\n\n## Install\n\n<div id="cards"></div>\n', encoding="utf-8"
+    )
+    (site / "index.md").write_text(
+        '# Site\n\n<a name="top"></a>\n'
+        '<a href="#top">top</a> <a href="#missing">bad</a> '
+        '<a href="guide.html#install">ok</a> <a href="guide.html#cards">ok2</a> '
+        '<a href="guide.html#nope">bad2</a>\n',
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 2
+    assert any("#missing" in w for w in warnings)
+    assert any("#nope" in w for w in warnings)
 
 
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):

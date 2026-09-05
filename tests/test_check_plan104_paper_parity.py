@@ -78,6 +78,28 @@ def _errors_for_mutation(tmp_path, path, mutate):
     return module.contract_errors(_write_contract(tmp_path, contract))
 
 
+def test_report_mode_still_validates_matrix_when_seals_are_stale(monkeypatch, capsys):
+    module = _load_module()
+    calls = []
+
+    def fake_matrix_errors(contracts):
+        calls.append(len(contracts))
+        return ["paper-parity-matrix.md: injected matrix defect"]
+
+    monkeypatch.setattr(module, "matrix_errors", fake_matrix_errors)
+
+    assert module.main(["--stale-source", "report"]) == 1
+    assert calls == [2]
+    assert "injected matrix defect" in capsys.readouterr().out
+
+
+def test_report_mode_downgrades_closure_wrapper_for_stale_only_packets():
+    module = _load_module()
+    context = module._ValidationContext(stale_source="report")
+    assert context.stale_source == "report"
+    assert module.STALE_CLOSURE_SUFFIX.endswith("source state")
+
+
 def test_committed_contracts_pass_and_cover_176_rows(capsys):
     # Structural validity of the committed contracts and their evidence; the
     # strict default additionally requires every seal to match the current

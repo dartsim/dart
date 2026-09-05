@@ -87,7 +87,7 @@ These map onto two distribution surfaces:
   ships as a runtime executable (via package managers), not as a library, so it
   is not consumed by downstream code and keeps minimal runtime dependencies.
 
-<!-- docs-policy: evidence-last-verified=2026-09-04 -->
+<!-- docs-policy: evidence-last-verified=2026-09-05 -->
 
 ## Current State
 

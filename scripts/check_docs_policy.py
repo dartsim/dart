@@ -480,16 +480,22 @@ def _iter_inline_tokens(text: str, offset: int = 0):
 
 
 class _HrefCollector(HTMLParser):
-    """Collect every `href` attribute (any tag, any quoting, any case)."""
+    """Collect `href` attributes and `id`/`name` anchors (any tag, any
+    quoting, any case)."""
 
     def __init__(self) -> None:
         super().__init__()
         self.hrefs: list[str] = []
+        self.anchors: set[str] = set()
 
     def handle_starttag(self, tag, attrs):  # noqa: ARG002 - HTMLParser API
         for name, value in attrs:
-            if name.lower() == "href" and value:
+            if not value:
+                continue
+            if name.lower() == "href":
                 self.hrefs.append(value)
+            elif name.lower() in {"id", "name"}:
+                self.anchors.add(value)
 
 
 def _html_hrefs(fragment: str) -> list[str]:
@@ -497,6 +503,27 @@ def _html_hrefs(fragment: str) -> list[str]:
     collector.feed(fragment)
     collector.close()
     return collector.hrefs
+
+
+def _html_anchor_ids(text: str) -> set[str]:
+    """Return `id`/`name` anchors declared in raw HTML within ``text``."""
+    collector = _HrefCollector()
+    for _, token in _iter_block_tokens(text):
+        if token.type == "html_block":
+            collector.feed(token.content)
+        elif token.type == "inline" and token.children:
+            for child in token.children:
+                if child.type == "html_inline":
+                    collector.feed(child.content)
+    collector.close()
+    return collector.anchors
+
+
+def _page_anchors(page: Path) -> set[str]:
+    """Anchors a Markdown page defines: heading slugs plus HTML id/name."""
+    return _markdown_heading_anchors(page) | _html_anchor_ids(
+        page.read_text(encoding="utf-8", errors="replace")
+    )
 
 
 TOCTREE_ENTRY_RE = re.compile(r"^(?:.*<(?P<bracketed>[^>]+)>|(?P<plain>\S.*?))\s*$")
@@ -548,32 +575,24 @@ def _iter_toctree_entries(text: str) -> list[tuple[int, str]]:
     return entries
 
 
-def _resolve_built_html_href(href: str, path: Path, source_root: Path) -> bool:
-    """Return whether a raw HTML ``href`` on a Sphinx page names a real
-    source page (``x.html`` -> ``x.md``/``x.rst``, ``x/`` -> ``x/index.*``) or
-    an existing file such as a static asset."""
+def _resolve_built_html_href(href: str, path: Path, source_root: Path) -> Path | None:
+    """Resolve a raw HTML ``href`` on a Sphinx page to the source page it
+    renders (``x.html`` -> ``x.md``/``x.rst``, ``x/`` -> ``x/index.*``) or to
+    an existing file such as a static asset; None when nothing matches."""
     base = source_root if href.startswith("/") else path.parent
     target = href.lstrip("/")
     root = source_root.resolve()
+    prefix = "/" if href.startswith("/") else ""
     if target.endswith(".html"):
-        page = target[: -len(".html")]
-        return (
-            _resolve_myst_doc_role(
-                ("/" if href.startswith("/") else "") + page, path, source_root
-            )
-            is not None
+        return _resolve_myst_doc_role(
+            prefix + target[: -len(".html")], path, source_root
         )
     if target.endswith("/"):
-        return (
-            _resolve_myst_doc_role(
-                ("/" if href.startswith("/") else "") + target + "index",
-                path,
-                source_root,
-            )
-            is not None
-        )
+        return _resolve_myst_doc_role(prefix + target + "index", path, source_root)
     resolved = (base / target).resolve()
-    return resolved.exists() and resolved.is_relative_to(root)
+    if resolved.exists() and resolved.is_relative_to(root):
+        return resolved
+    return None
 
 
 def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
@@ -1021,7 +1040,7 @@ def check_markdown_internal_links(repo_root: Path) -> list[str]:
                 # `[Foo](foo/#section)` renders the directory's README.
                 resolved = resolved / "README.md"
             if anchor and resolved.suffix == ".md" and resolved.is_file():
-                if anchor not in _markdown_heading_anchors(resolved):
+                if anchor not in _page_anchors(resolved):
                     warnings.append(
                         f"{path.relative_to(repo_root)}:{line_number}: link "
                         f"`{raw_link}` names heading anchor `#{anchor}` that "
@@ -1030,18 +1049,33 @@ def check_markdown_internal_links(repo_root: Path) -> list[str]:
         source_root = _sphinx_source_root(path, repo_root)
         for line_number, href in _iter_html_hrefs(text):
             target = _strip_markdown_link_target(href)
-            if not target or _is_external_link(target) or target.startswith("#"):
+            if not target or _is_external_link(target):
                 continue
+            fragment = unquote(target.split("#", 1)[1]) if "#" in target else ""
             target = unquote(target.split("?", 1)[0].split("#", 1)[0])
-            if source_root is not None:
-                ok = _resolve_built_html_href(target, path, source_root)
+            if not target:
+                page: Path | None = path  # same-page `#fragment`
+            elif source_root is not None:
+                page = _resolve_built_html_href(target, path, source_root)
             else:
-                resolved = _resolve_markdown_link(target, path.parent, repo_root, path)
-                ok = resolved is not None and resolved.exists()
-            if not ok:
+                page = _resolve_markdown_link(target, path.parent, repo_root, path)
+                if page is not None and not page.exists():
+                    page = None
+            if page is None:
                 warnings.append(
                     f"{path.relative_to(repo_root)}:{line_number}: raw HTML href "
                     f"`{href}` does not name an existing page or file"
+                )
+                continue
+            if (
+                fragment
+                and page.suffix == ".md"
+                and fragment not in _page_anchors(page)
+            ):
+                warnings.append(
+                    f"{path.relative_to(repo_root)}:{line_number}: raw HTML href "
+                    f"`{href}` names anchor `#{fragment}` that "
+                    f"`{_display_path(page, repo_root)}` does not define"
                 )
         if source_root is None:
             continue
@@ -1205,18 +1239,35 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
         return found
 
     referrers = {rel_path: _referrers(rel_path) for rel_path in checked}
-    reachable = {other for other in corpus if other not in checked}
-    changed = True
-    while changed:
-        changed = False
-        for rel_path, sources in referrers.items():
-            if rel_path not in reachable and sources & reachable:
-                reachable.add(rel_path)
-                changed = True
+
+    def _propagate(roots: set[str], allowed_referrer) -> set[str]:
+        reachable = set(roots)
+        changed = True
+        while changed:
+            changed = False
+            for rel_path, sources in referrers.items():
+                if rel_path in reachable:
+                    continue
+                if any(s in reachable and allowed_referrer(s) for s in sources):
+                    reachable.add(rel_path)
+                    changed = True
+        return reachable
+
+    def _is_doc(rel_path: str) -> bool:
+        return rel_path.endswith((".md", ".rst"))
+
+    # Documentation must be discoverable through documentation: only bucket
+    # indexes, other docs, and agent instruction files count as referrers.
+    # A page named only by a script or test is still unindexed.
+    doc_roots = {o for o in corpus if o not in checked and _is_doc(o)}
+    doc_reachable = _propagate(doc_roots, _is_doc)
+    # Sidecar data may legitimately be addressed by scripts and tests.
+    all_reachable = _propagate({o for o in corpus if o not in checked}, lambda _s: True)
 
     failures: list[str] = []
     warnings: list[str] = []
     for rel_path, blocking in sorted(checked.items()):
+        reachable = doc_reachable if blocking else all_reachable
         if rel_path in reachable:
             continue
         if blocking:
