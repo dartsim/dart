@@ -19,9 +19,9 @@ retirement do not alone establish that the user's goal was met.
 @docs/ai/components.md
 @docs/ai/verification.md
 
-Load task owners as needed; use `docs/onboarding/ai-tools.md` for tool/runtime
-questions. `docs/ai/components.md` owns placement of accepted learnings; this
-workflow owns the retrospective method.
+Load task owners as needed. Read `docs/onboarding/ai-tools.md` for tool/runtime
+questions and before controlled agent runs. `docs/ai/components.md` owns
+placement of accepted learnings; this workflow owns the retrospective method.
 
 ## Skip If
 

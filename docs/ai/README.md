@@ -31,8 +31,8 @@ For authoring or executing orchestrator-defined work packets, also read
 
 For AI component maintenance or durable AI-infra self-improvement, read
 `docs/ai/terminology.md`, `docs/ai/components.md`,
-`docs/ai/verification.md`, and
-`docs/onboarding/ai-tools.md`.
+and `docs/ai/verification.md`. Read `docs/onboarding/ai-tools.md` for
+tool/runtime questions and before controlled agent runs.
 
 ## Visibility And Context Budget
 
