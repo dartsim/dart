@@ -131,8 +131,16 @@ separate tracking system. Every packet records:
   is not acceptance evidence.
 - **Gates** — the `pixi run ...` commands from `docs/ai/verification.md`
   that must pass, plus packet-specific checks.
+- **Architecture impact** — affected data, solver/coupling, compute, precision,
+  checkpoint and public API invariants; source baseline, evidence and unresolved
+  owners. Cite unchanged evidence with a reason when the packet has no impact.
 - **Dependencies** — packet IDs or merged-evidence preconditions. A packet
   with unmet dependencies is not available for execution.
+
+At intake and acceptance, use the current architecture assessment for affected
+invariants. Milestone exits, new families/coupling, layout or execution-order
+changes and checkpoint-schema changes also require a cross-family audit.
+Update the assessment and affected capability/allocation rows with the packet.
 
 ## Specification intake and readiness
 

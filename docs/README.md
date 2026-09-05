@@ -14,6 +14,7 @@ For people:
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Use DART from C++ or Python             | [dart.readthedocs.io](https://dart.readthedocs.io/) (source: [`readthedocs/`](readthedocs/README.md)); [`examples/`](../examples/) |
 | See what the project is working on      | [`plans/dashboard.md`](plans/dashboard.md) (operating view), [`ai/north-star.md`](ai/north-star.md) (mission and current state)    |
+| Follow DART 7 milestone prerequisites   | [PLAN-040](plans/040-dart7-release-hardening.md) (scope, gaps, M1 packets and acceptance)                                          |
 | Build, test, or contribute              | [`onboarding/README.md`](onboarding/README.md) (developer handbook), [`CONTRIBUTING.md`](../CONTRIBUTING.md)                       |
 | Understand the DART 7 architecture      | [`readthedocs/architecture.md`](readthedocs/architecture.md) (one page), [`design/README.md`](design/README.md) (rationale)        |
 | Understand the theory behind the engine | [`background/README.md`](background/README.md)                                                                                     |

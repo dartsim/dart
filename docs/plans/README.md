@@ -5,6 +5,13 @@ into sequenced, evidence-backed work. Use it to decide what to do next, revise
 priorities, or cut a strategic direction into bounded packets. Cross-bucket
 placement rules live in [`../README.md`](../README.md).
 
+For DART 7 readiness, start with
+[PLAN-040](040-dart7-release-hardening.md): milestone scope, gaps, M1 dependency
+map and acceptance. The dashboard still owns priority and initiative status;
+packet state stays in each owning plan using the orchestration lifecycle.
+Capability labels (`Implemented`, `Partial`, `Planned`, `Undecided`) describe
+source/evidence coverage and are distinct from initiative/packet status.
+
 ## Files
 
 Do not maintain a per-file inventory here; list the current set with

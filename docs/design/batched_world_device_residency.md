@@ -1,7 +1,8 @@
 # Batched World And Device Residency
 
-This note is the PLAN-091 WP-091.33 contract for replicated batched worlds and
-device residency. It narrows the batching target to semantics first:
+This note owns the replicated-world/device-residency contract originating in
+completed PLAN-091. Current qualification is owned by PLAN-030/080/041/122
+under the [PLAN-040 milestones](../plans/040-dart7-release-hardening.md). It narrows the batching target to semantics first:
 batched execution must be observationally equivalent to stepping `n`
 independent sequential `World` instances, while leaving room for CPU, SIMD, and
 device implementations behind the same internal Model/State split.
@@ -20,7 +21,8 @@ DART should support two batch execution shapes:
    mixed topologies and dynamic scene-authoring workflows, but it is not the
    target layout for accelerator throughput.
 
-The public API should describe execution shape, not backend technology. Device
+The public API describes execution shape and may provide a small DART-owned
+device preference/report; runtime technology stays behind that value boundary. Device
 buffers, streams, queues, kernels, residency handles, and component-storage
 types stay internal. Public `World` handles remain the user-facing authoring
 surface; batched SoA buffers are the execution representation.
@@ -33,8 +35,10 @@ Control, Contacts, random seeds, and time cursor.
 
 Required equivalence:
 
-- A single-lane batch is bitwise identical to the ordinary sequential
-  `World::step()` reference path for the supported solver families.
+- A single-lane batch is bitwise identical to its ordinary sequential
+  reference only for a pinned deterministic backend, variant, precision and
+  update order. Cross-backend comparisons use declared finite-horizon norms
+  and tolerances even when both paths use Float64.
 - Multi-lane batch results match stepping each lane independently with the same
   substep count, solver options, control inputs, and contact ordering.
 - Errors and diagnostics include the lane index when a lane-local validation or
@@ -104,15 +108,28 @@ Residency rules:
 - Contact and scratch buffers are backend-owned. They may stay resident across
   substeps, but their contents are invalid outside their documented validity
   window.
-- Backend failure falls back only at a synchronization boundary where State can
-  be made coherent. Mid-step CPU fallback is allowed only if the backend proves
-  the partially updated State is either untouched or recoverable.
+- Explicit device requests never silently fall back. An automatic policy may
+  choose only a documented coherent boundary and supported path; failed partial
+  updates require rollback or an explicit invalid-state result. Drain device
+  work before releasing captured buffers or reconstructing an invalid context.
 
 This follows the packaging rule in `scalable_compute_decisions.md`: the default
 core and default `dartpy` wheel stay CPU-only, while optional sidecars may own
 device runtime code.
 
+Each in-flight State owns mutable graph execution records, bindings, scratch
+and continuation. Shared pools have one total worker budget. Invalidate caches
+on topology/configuration/buffer/capacity changes and restore; active contact
+counts within prepared capacity are data. Device launch is not completion:
+use events or synchronous completion before dependent work and public return.
+Serialize semantic state/versioned configuration, then reconstruct runtime
+resources; see [compute decisions](scalable_compute_decisions.md).
+
 ## Precision Policy
+
+[PLAN-040](../plans/040-dart7-release-hardening.md) owns milestone precision
+and backend requirements. The policies below describe precision choices;
+PLAN-041 owns admission of public `dtype`/scalar-template selectors.
 
 Double precision is the reference. A backend may offer float or mixed precision
 only when it records the resolved precision in the benchmark/diagnostic packet
@@ -149,9 +166,11 @@ Policy:
   sidecar seed for resident batch rollout kernels and the internal
   rigid-batch resident owner.
 
-## Follow-Up Packets
+## Historical Packet Decomposition
 
-The WP-091.33 design slices into these implementation packets:
+The completed WP-091.33 design used the following decomposition. These IDs
+are historical context, not executable active packets; consult the current
+PLAN-030/080/041/122 packets and source assessment before choosing work:
 
 - **WP-091.33a Batch semantics tests:** add one-lane and multi-lane parity
   tests for the supported rigid-body batch paths, including lane-indexed error

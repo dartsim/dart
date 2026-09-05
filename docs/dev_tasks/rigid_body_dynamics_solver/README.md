@@ -1,10 +1,16 @@
 # Rigid-Body Dynamics Solver — Dev Task
 
-Bring the DART 7 `World` (`dart/simulation/`) to DART
-6-equivalent — then better — rigid-body simulation, implemented as the **first
-solver** under a multi-solver, multi-physics architecture.
+Develop dependable DART 7 rigid-body and articulated simulation under
+[PLAN-080](../../plans/080-rigid-body-dynamics-solver.md), using the readiness
+and prerequisite contracts in [PLAN-040](../../plans/040-dart7-release-hardening.md).
 
-## Current Status
+## Implementation History
+
+Use the [dashboard](../../plans/dashboard.md) for current work selection and
+PLAN-040/080 for packet prerequisites and acceptance state. The slice
+checkboxes below preserve implementation history and do not
+close the current milestones. Contact-polish details remain backlog until
+admitted by the current PLAN-080 packet sequence.
 
 - [x] Gap analysis: legacy DART 6 rigid-body sim vs DART 7 World
       ([`01-gap-analysis.md`](01-gap-analysis.md)).
@@ -38,7 +44,7 @@ solver** under a multi-solver, multi-physics architecture.
 - [ ] Phase 3: constraint & contact solver (started: velocity-level sequential
       contact for free rigid bodies; the current semi-implicit default routes
       mixed free-rigid / articulated-link contact through the unified boxed-LCP
-      stage when multibody structures are present. Remaining work is Subsystem A
+      stage when multibody structures are present. Remaining backlog includes
       polish from `RESUME.md`: warm starting, friction-cone iteration, scaling
       around the unified solve, and separate joint-limit/motor/island slices).
 - [ ] Phase 4: joint features & actuators (started: spring stiffness, rest
@@ -49,13 +55,14 @@ solver** under a multi-solver, multi-physics architecture.
 
 ### DART 7 B2 gate — rigid open-chain dynamics parity
 
-> Current Reality (2026-09-01): the parity harness cited below
+> Historical evidence (2026-09-01): the parity harness cited below
 > (`tests/unit/simulation/experimental/world/test_world_parity.cpp`) was
 > removed when the experimental World was promoted in PR #2932, and nothing
 > replaced it. The checkbox records the gate as it passed in June 2026 (the
-> harness landed via PR #2842). Because `main` may not carry classic-World
-> references, the gate is re-claimed from a `release-6.*` parity run rather
-> than a new harness in this tree.
+> harness landed via PR #2842). Current acceptance follows independent oracles
+> in PLAN-040; DART 6 comparisons are supplemental. Consult
+> [WP-040.2](../../plans/040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+> for checker-transition requirements and status.
 
 - [x] World-parity harness (historical, see the note above):
       `test_world_parity.cpp` compared the classic DART 6 world against the
@@ -69,17 +76,15 @@ solver** under a multi-solver, multi-physics architecture.
 
 ## Goal
 
-A user can build a rigid-body / articulated scene on the DART 7 `World`,
-step it, and get dynamics that match legacy DART 6 (within tolerance) and then
-exceed it (armature, pluggable integrator, fresh-by-default reads, backend-
-neutral compute, model/state separation) — without the public API exposing
-solvers, couplers, ECS storage, or execution backends.
+A user can build and step a rigid-body or articulated scene through an intuitive
+DART 7 API, with correctness established by independent physical oracles.
+Common workflows use validated defaults; advanced method/device preferences
+follow the [public API boundary](../../onboarding/api-boundaries.md).
 
 ## Boundaries
 
-- Keep public configuration at the method-family / policy level (`WorldOptions`,
-  handles, and value objects), not public solver, coupler, ECS, backend, or
-  registry types.
+- Keep common configuration simple and validate explicit advanced selections;
+  follow the public API boundary for method/policy values and private internals.
 - Rigid-body work must continue to compose with the existing multibody,
   deformable, rigid IPC, variational-integrator, and differentiable paths
   through the centralized built-in schedule instead of adding another parallel
@@ -87,36 +92,32 @@ solvers, couplers, ECS storage, or execution backends.
 - Direct file loading remains outside this task; compose through maintained
   `dart::io` readers and the DART 7 skeleton/world conversion bridges.
 - Do not modify the maintainer's external multiphysics API design notes (an untracked personal document).
-- Do not name solvers/presets/examples after other engines; use method/approach
-  names. Do not reference specific external engines by name in core code or
-  docs.
+- Use method/approach names for solvers, presets and examples. Named engines
+  are permitted in cited comparative research under the
+  [current research scope decision](../../design/simulation_solver_architecture.md#verified-engine-lessons-and-dart-inferences).
 
 ## Key Decisions
 
-- The five slice-level principles (DART 6 parity, SoA data, batch processing,
-  pure backend-portable kernels, reuse-or-rewrite) live in
-  [`architecture_principles.md`](architecture_principles.md).
-- Dynamics live in solver-shaped units; the `World` owns composition, time, and
-  the step schedule. See the architecture design doc.
-- Entities are assigned to a solver by **physics domain**, not geometry.
-- Coupling is pairwise and swappable; solvers never branch on coupler identity.
-- Model/State/Control/Contacts are conceptually separate (precondition for
-  batching/differentiability); the easy path hides this.
+- [Solver architecture](../../design/simulation_solver_architecture.md) owns
+  domain/representation compatibility, solver portfolios, shared or partitioned
+  coupling, and model/state/control ownership. [Compute decisions](../../design/scalable_compute_decisions.md)
+  owns data/execution contracts; PLAN-040 and PLAN-080 own readiness and admitted work.
 - Default gravity is `(0, 0, -9.81)`, matching legacy DART 6 and the user's
   multiphysics API vision. Gravity is added to the transient force buffer as
   `mass * gravity`, not stored in the per-body force accumulator.
 - Applied rigid-body forces and torques are persistent inputs, matching main's
   #2698 integration convention.
-- Parity with DART 6 on shared scenes is the gate before any DART 8 promotion
-  claim.
+- PLAN-040 owns DART 7 readiness. DART 8 is a future major release, not the
+  promotion target for this task.
 
 ## Immediate Next Steps
 
 1. Treat the model-loading and unified contact/constraint line as landed on
    `main` via PR #2838; do not look for the retired
    `feature/experimental-model-loader` branch as the active publication path.
-2. The next step is owned by the PLAN-080 entry in `docs/plans/dashboard.md`
-   (Subsystem A polish around the unified contact solve).
+2. Use the [dashboard](../../plans/dashboard.md) to select work, then consult
+   the owning plan's current packet state and prerequisites before claiming it.
+   The historical contact-polish sequence cannot override those owners.
 3. Keep richer model-loading diagnostics, visual/material import, actuator,
    mimic/coupler, loop-closure, integrator, and COM-Jacobian work as separate
    deferred slices unless the active solver-polish work directly requires them.
