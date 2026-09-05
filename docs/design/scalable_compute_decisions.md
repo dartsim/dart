@@ -360,7 +360,7 @@ framework applies.
 allocator direction. It is a dependency for some scalable-compute work, not a
 replacement for workload ranking or backend decisions.
 
-`docs/design/shared_cuda_device_substrate.md` (PLAN-031) owns the intra-codebase
+`docs/design/shared_cuda_device_substrate.md` owns the intra-codebase
 decision of which GPU device-runtime code is shared across experimental CUDA
 solvers versus kept solver-local, so new GPU solvers reuse common blocks instead
 of reinventing the runtime probe, error mapping, launch config, and device

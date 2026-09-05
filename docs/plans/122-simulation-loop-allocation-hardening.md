@@ -274,7 +274,8 @@ already closed.
   slice, not full CUDA deformable simulation.
 - Gates: `pixi run lint`, focused CPU tests, and `pixi run -e cuda test-cuda` or
   the backend-specific gate on capable hosts.
-- Dependencies: PLAN-030, PLAN-031, PLAN-081, PLAN-083, and PLAN-104.
+- Dependencies: PLAN-030, PLAN-081, PLAN-083, PLAN-104, and the
+  [shared CUDA substrate contract](../design/shared_cuda_device_substrate.md).
 
 ### WP-122.8 M1 Allocation And Lifecycle Qualification
 
