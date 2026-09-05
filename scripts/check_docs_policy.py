@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 try:
     from markdown_it import MarkdownIt
@@ -350,10 +351,11 @@ def _is_external_link(link: str) -> bool:
 
 
 def _strip_markdown_link_target(link: str) -> str:
+    """Return the destination of a parser-provided link (spaces are literal)."""
     target = link.strip()
     if target.startswith("<") and ">" in target:
         return target[1 : target.index(">")]
-    return target.split(None, maxsplit=1)[0] if target else ""
+    return target
 
 
 def _normalize_markdown_link(link: str) -> str:
@@ -412,25 +414,10 @@ def _resolve_markdown_link(
     target_path = Path(target)
     if target_path.is_absolute():
         return target_path.resolve()
-    if repo_root is not None and target_path.parts[:1] in {
-        ("docs",),
-        ("scripts",),
-        ("tests",),
-        ("dart",),
-        ("python",),
-        ("examples",),
-        ("tutorials",),
-        (".github",),
-    }:
-        return (repo_root / target_path).resolve()
-    resolved = (base_dir / target_path).resolve()
-    if repo_root is not None and not resolved.exists():
-        # Docs sometimes write repo-root-relative paths (`cmake/foo.cmake`);
-        # accept them when the base-relative form does not exist.
-        root_relative = (repo_root / target_path).resolve()
-        if root_relative.exists():
-            return root_relative
-    return resolved
+    # Markdown semantics only: a relative destination resolves against the
+    # referring file's directory, exactly as GitHub renders it. A destination
+    # that only exists from the repository root is a broken link.
+    return (base_dir / target_path).resolve()
 
 
 def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
@@ -449,16 +436,31 @@ def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
             if child.type == "link_open":
                 href = child.attrGet("href")
                 if href:
-                    links.append((line_number, str(href)))
+                    # markdown-it percent-encodes destinations; filesystem
+                    # checks need the literal path.
+                    links.append((line_number, unquote(str(href))))
     return links
 
 
 def _github_heading_slug(heading: str) -> str:
-    """Approximate GitHub's heading-to-anchor slug."""
-    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading)
-    text = text.replace("`", "").strip().lower()
+    """Apply GitHub's heading-to-anchor slug rules to rendered heading text."""
+    text = heading.strip().lower()
     text = re.sub(r"[^\w\- ]", "", text)
     return text.replace(" ", "-")
+
+
+def _inline_plain_text(token) -> str:
+    """Return the text a reader sees for an inline token: text and code
+    content, with line breaks as spaces and link/emphasis markup removed."""
+    parts: list[str] = []
+    for child in token.children or []:
+        if child.type in {"text", "code_inline"}:
+            parts.append(child.content)
+        elif child.type in {"softbreak", "hardbreak"}:
+            parts.append(" ")
+        elif child.children:
+            parts.append(_inline_plain_text(child))
+    return "".join(parts)
 
 
 def _markdown_heading_anchors(path: Path) -> set[str]:
@@ -474,7 +476,7 @@ def _markdown_heading_anchors(path: Path) -> set[str]:
     for index, token in enumerate(tokens):
         if token.type != "heading_open" or index + 1 >= len(tokens):
             continue
-        original = _github_heading_slug(tokens[index + 1].content)
+        original = _github_heading_slug(_inline_plain_text(tokens[index + 1]))
         slug = original
         while slug in anchors:
             occurrences[original] = occurrences.get(original, 0) + 1
@@ -742,8 +744,8 @@ def check_design_docs_index(repo_root: Path) -> list[str]:
         readme.read_text(encoding="utf-8", errors="replace") if readme.exists() else ""
     )
     readme_links: set[str] = set()
-    for match in re.finditer(r"\[[^\]]+\]\((?P<link>[^)]+)\)", readme_text):
-        linked_path = _resolve_markdown_link(match.group("link"), design_dir)
+    for _, raw_link in _iter_markdown_links(readme_text):
+        linked_path = _resolve_markdown_link(raw_link, design_dir)
         if not linked_path:
             continue
         try:
@@ -852,7 +854,9 @@ def check_docs_discoverability(repo_root: Path) -> list[str]:
             if doc.name in {"README.md"}:
                 continue
             repo_relative = str(doc.relative_to(repo_root))
-            text_mentions_doc = repo_relative in index_text or doc.name in index_text
+            text_mentions_doc = _mentions_reference(
+                index_text, repo_relative
+            ) or _mentions_reference(index_text, doc.name)
             if doc.resolve() not in linked_targets and not text_mentions_doc:
                 warnings.append(
                     f"{doc.relative_to(repo_root)}: not linked from `{index}`"
