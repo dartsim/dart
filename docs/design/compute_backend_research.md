@@ -60,7 +60,7 @@ cancellation request drains device work or makes captured buffers safe to free.
 **Recommendation:** retain Taskflow provisionally; compare it with Dispenso
 and oneTBB on identical DART workloads. Use enkiTS as the allocation fallback.
 An incumbent wins a performance tie only after passing every hard gate. If no
-runtime qualifies, retain the serial M1 path and block parallel promotion;
+runtime qualifies, retain qualified serial execution and block parallel promotion;
 do not write a general-purpose scheduler to evade a failed comparison.
 
 ## Kernel And Device Execution Options
@@ -72,15 +72,15 @@ do not write a general-purpose scheduler to evade a failed comparison.
 | [Kokkos Graph](https://kokkos.org/kokkos-core-wiki/ProgrammingGuide/Graph.html)                       | `Kokkos::Graph` exposes graph construction and submission; topology is fixed after instantiation, with backend graph lowering where supported.                                                                        | Compare repeated fixed-shape submission. It is not an automatic scheduler for arbitrary physics or dynamic contact topology.                                                                                          |
 | [RAJA resources](https://raja.readthedocs.io/en/develop/sphinx/user_guide/feature/resource.html)      | Loop policies and host/device resources/events.                                                                                                                                                                       | Screen if kernel portability is valuable but Kokkos ownership/toolchain cost is unsuitable. It does not by itself replace a general task-graph runtime.                                                               |
 | [SYCL / AdaptiveCpp](https://adaptivecpp.github.io/AdaptiveCpp/architecture/)                         | C++ heterogeneous kernel compilation and runtime scheduling over supported backends; substantial compiler/runtime integration.                                                                                        | Portability screen after the native/Kokkos experiment. Pin compiler/runtime/device combinations and match floating-point flags. Broader vendor reach is a hypothesis until tested on target hardware.                 |
-| [NVIDIA stdexec](https://github.com/NVIDIA/stdexec)                                                   | Experimental C++20 sender/receiver implementation; CPU facilities and a separate GPU toolchain path requiring supported `nvc++`, not ordinary NVCC.                                                                   | Track composable completion/cancellation design. Do not infer standard-library shipping dates or use it as the M1 foundation without a supported-toolchain prototype.                                                 |
+| [NVIDIA stdexec](https://github.com/NVIDIA/stdexec)                                                   | Experimental C++20 sender/receiver implementation; CPU facilities and a separate GPU toolchain path requiring supported `nvc++`, not ordinary NVCC.                                                                   | Track composable completion/cancellation design. Do not infer standard-library shipping dates or adopt it as a foundation without a supported-toolchain prototype.                                                    |
 | [Taskflow GPU tasking](https://taskflow.github.io/taskflow/GPUTasking.html)                           | CUDA graph wrappers such as `tf::cudaGraph` / `tf::cudaGraphExec`.                                                                                                                                                    | Possible lowering adapter; existing CPU closures still need actual CUDA kernels. Compare launch/capture overhead rather than selecting from API symmetry.                                                             |
-| [CUDA Graphs](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cuda-graphs.html) | Graph capture/replay and constrained conditional nodes, including device-side control flow.                                                                                                                           | Ordered streams are the M1 correctness baseline. Use graph replay only where repeated workloads justify it; conditional nodes do not capture arbitrary host control flow.                                             |
+| [CUDA Graphs](https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/cuda-graphs.html) | Graph capture/replay and constrained conditional nodes, including device-side control flow.                                                                                                                           | Ordered streams provide a simple correctness reference. Use graph replay only where repeated workloads justify it; conditional nodes do not capture arbitrary host control flow.                                      |
 
 **Recommendation:** WP-030.3 compares native CPU/CUDA with Kokkos Serial/CUDA
 on the same owned storage and numerical contract. CPU scheduling and device
-kernel portability may choose different libraries. M1 needs actual NVIDIA CUDA
-coverage; AMD/Intel/Apple production support and mixed precision can follow
-without exposing framework types through the facade.
+kernel portability may choose different libraries. PLAN-040 owns backend and
+precision admission; this comparison does not establish production support for
+other GPU vendors or expose framework types through the facade.
 
 ## Broader Scheduling References
 
@@ -90,8 +90,8 @@ submission from data dependencies, residency and performance models;
 facilities; [Legion](https://legion.stanford.edu/overview/) uses logical regions
 and privileges for data-centric execution. These are useful references for
 resource identity, movement and scheduling. Their broader runtime, packaging
-and programming models require a demonstrated need before adoption. M1 does
-not need distributed execution or an optimizing compiler framework.
+and programming models require a demonstrated need before adopting distributed
+execution or an optimizing compiler framework.
 
 The transferable idea is a computation node/group graph with explicit program
 order, owned resource ranges and measurable costs. Access modes alone cannot
@@ -109,15 +109,15 @@ Keep two independent axes in evidence:
   full World copies or replicated model arrays are not proof of shared-model
   efficiency.
 - **B: interacting bodies in one world.** Collision/contact islands are
-  irregular and coupled. M1's one-body CUDA examples establish correctness;
-  M2's 100-body plane/box/bowl scenes establish initial scaling evidence.
-  Neither track must wait for the other to show a speedup. The former blanket
-  “batch first; single scene requires a multi-year rewrite” recommendation is
-  superseded by this bounded sequence.
+  irregular and coupled. Single-body examples can isolate physical correctness;
+  interacting many-body scenes expose collision and scheduling costs. These
+  answer different questions from independent-world throughput. The owning
+  plans determine workload sizes and sequence; none implies a universal GPU
+  speedup or a mandatory batch-first architecture.
 
 Pre-register a benchmark matrix containing empty/tiny DAGs, coarse independent
 nodes, chains, forks/joins, reductions, contact-shaped and independent-island
-work, repeated submissions, interleaved worlds, nested calls and real M1/M2
+work, repeated submissions, interleaved worlds, nested calls and representative simulation
 scenes. Fix graph shape, physics, accuracy, precision, compiler flags, threads
 and hardware. Include first use, prepared execution and end-to-end workflows;
 record p50/p95/p99 latency, throughput, allocations, actual total workers,
@@ -145,8 +145,8 @@ on CUDA. Preserve this distinction in every benchmark and capability row.
 Keep the default C++/dartpy install CPU-only with no GPU runtime dependency;
 qualify an optional CUDA component and a simple DART-owned device preference.
 Test core import without the component/device and explicit unavailable-device
-errors. CPU-only installation remains supported even when CUDA runtime evidence
-is mandatory for milestone acceptance.
+errors. Installation policy is separate from runtime evidence; PLAN-040 owns
+the required backend matrix.
 
 Do not require a distinct wheel for every CUDA minor release by assumption:
 [NVIDIA minor-version compatibility](https://docs.nvidia.com/deploy/cuda-compatibility/minor-version-compatibility.html)

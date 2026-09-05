@@ -13,8 +13,8 @@ PLAN-031 is the completed extraction baseline. This design is scoped to
 GPU packaging shape decided in
 [`scalable_compute_decisions.md`](scalable_compute_decisions.md).
 
-[PLAN-040 M1](../plans/040-dart7-release-hardening.md) now requires complete
-CPU/CUDA Float64 examples. This shared runtime baseline does not prove full
+[PLAN-040](../plans/040-dart7-release-hardening.md) owns current backend
+readiness requirements. This shared runtime baseline does not prove full
 World stepping. WP-030.3/030.4 qualify buffer/event/error ownership; device
 completion, cancellation draining and graph capture follow
 [the compute contract](scalable_compute_decisions.md). Function-static mutable

@@ -25,11 +25,10 @@ For each candidate workload, collect:
 - package and CI feasibility;
 - public API impact.
 
-The historical first GPU prototype was internal. Current
-[PLAN-040 M1](../plans/040-dart7-release-hardening.md) requires every named rigid
-example on CPU and CUDA Float64, including contact and restart. Installation
-remains optional. PLAN-030 owns runtime/kernel qualification before broader
-implementation; a prototype speedup cannot substitute for this coverage.
+The historical first GPU prototype was internal.
+[PLAN-040](../plans/040-dart7-release-hardening.md) owns current milestone
+backend requirements; PLAN-030 owns runtime/kernel qualification. A prototype
+speedup cannot substitute for correctness and complete execution evidence.
 
 ## Simulation Compute Graph Boundary
 
@@ -52,7 +51,7 @@ profiling surface.
 
 Resource-access metadata already declares reads, writes, mutations, reductions
 and scratch and supports diagnostics. It does not infer dependencies or prove
-alias-safe access. Retain the following contract while qualifying it in M1:
+alias-safe access. The durable contract is:
 
 - explicit graph edges remain the correctness source of truth;
 - resource access metadata starts as diagnostics and validation input;
@@ -69,7 +68,7 @@ Keep three layers separate:
 
 1. **DART semantic graph:** physical/program order, input/output resources,
    solver-iteration boundaries and coarse computation groups. Explicit edges
-   are authoritative in M1. Domains do not dictate one task per entity.
+   are authoritative. Domains do not dictate one task per entity.
 2. **Executable plan:** bind node/group work to state-owned buffers and kernel
    implementations; choose serial/parallel/device lowering, scratch, completion
    dependencies and optional capture. Validate before running.
@@ -88,9 +87,9 @@ Group coarse stages/islands and small compatible kernels to amortize overhead.
 A group preserves its dependency and observable error boundaries. A solver's
 Gauss-Seidel order cannot silently become Jacobi, and a fixed-iteration method
 cannot gain a different convergence policy because tasks were rescheduled.
-M1 may execute whole solver loops in one node or ordered stream; M2 measures
+Whole solver loops may execute in one node or ordered stream. Evaluate
 coarsening, graph updates, conditional device nodes and critical-path/locality
-heuristics. Scheduling is constrained optimization measured on workloads, not
+heuristics against measured workloads. Scheduling is constrained optimization measured on workloads, not
 a promise of globally optimal job ordering.
 
 Immutable topology may be shared. Mutable graph execution records, bindings,
@@ -101,7 +100,7 @@ nesting, teardown and profiling on/off; instrumentation must preserve dispatch.
 
 A device node completes when the work and dependent writes complete, not when
 its host launch returns. Use correct event dependencies or synchronous
-completion; asynchronous overlap is not an M1 requirement. Error/cancellation
+completion. Asynchronous overlap is an optional performance mechanism. Error/cancellation
 must stop dependent work, drain outstanding device jobs before buffers are
 released and leave a documented state. Invalid device contexts require explicit
 reconstruction. Do not promise rollback merely from catching a host exception.
@@ -117,7 +116,7 @@ WP-030.1–030.4 select a runtime/kernel combination using the
 deterministic supported reductions, lifetime/isolation, error draining,
 first-post-bake no allocation including submission, bounded workers, package
 isolation and supported toolchains. Rank adoption candidates only after they qualify;
-diagnostic/baseline timings may include clearly labeled unqualified candidates. WP-122.8 verifies the complete selected M1 pipeline afterward.
+diagnostic/baseline timings may include clearly labeled unqualified candidates. PLAN-122 owns integrated allocation qualification.
 
 ## Freshness And Cache Strategy
 

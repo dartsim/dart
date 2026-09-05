@@ -13,7 +13,7 @@ the new API; compatibility and parity evidence for that API live on
 The companion Python binding design lives in
 [`simulation_python_api.md`](simulation_python_api.md).
 
-## Accepted M1 Workflow Contract
+## Workflow Contract
 
 [PLAN-040](../plans/040-dart7-release-hardening.md) defines the next readiness
 cut; [WP-041.1](../plans/041-official-simulation-api-promotion.md#wp-0411-complete-m1-checkpoints-and-installed-workflows)
@@ -24,7 +24,7 @@ step, inspect, save and resume with defaults. Advanced values can request a
 DART-owned method variant or `cpu`/`cuda` preference and inspect the resolved
 configuration; runtime/pool/stream/kernel/ECS types remain private. Exact new
 API spelling requires the packet's first-use review and checker migration in
-WP-040.2. M1 remains Float64 with no public `dtype` selector.
+WP-040.2. PLAN-040/041 own precision admission and any public `dtype` selector.
 
 Full state includes orientation/angular velocity and result-affecting history;
 the current general state-vector/replay/binary surfaces have different scoped

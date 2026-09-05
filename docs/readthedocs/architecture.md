@@ -44,7 +44,7 @@ DATA AND COLLISION — model · state · controls · contacts · continuation
 COMPUTE — semantic dependency graph → executable plan → runtime adapter
   Current: ordered World stages, explicit graphs within selected stages,
            Taskflow CPU execution, selected resident CUDA kernels
-  Planned: qualified ownership/completion and full M1 CUDA step pipeline
+  Planned: qualified ownership/completion and full CUDA rigid/contact step pipeline
 ```
 
 The arrows show responsibilities, not a claim that the whole World step is
@@ -57,7 +57,7 @@ kernels and correct memory/completion handling.
 
 | Area                     | Current implementation                                                                                        | Remaining qualification                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Rigid bodies             | `World::addRigidBody`; SI default and opt-in IPC/VBD/AVBD choices                                             | General rotation, isotropic ground friction, complete CPU/CUDA M1 examples                                                   |
+| Rigid bodies             | `World::addRigidBody`; SI default and opt-in IPC/VBD/AVBD choices                                             | General rotation, isotropic ground friction, complete CUDA rigid/contact stepping                                            |
 | Articulated rigid bodies | `World::addMultibody`; semi-implicit and opt-in variational integration, shared rigid/articulated constraints | Complete admitted robotics/control/loading/restart workflow and measured complexity                                          |
 | Deformables              | `World::addDeformableBody`; bounded mass-spring/FEM/IPC/VBD/AVBD mechanisms                                   | Family-specific paper and coupling coverage                                                                                  |
 | Collision                | Native World queries and contact generation; standalone collision library capabilities                        | Solver variants can require different CCD/contact primitives; library availability is not integration into every step path   |

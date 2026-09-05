@@ -161,7 +161,7 @@ The north-star invariant is:
 2. Same-shape baked `World::step()` loops must not grow from the world base
    allocator.
 3. Representative baked loops also need global heap/raw allocation guards.
-   Public convenience calls outside the step are a separate boundary; M1
+   Public convenience calls outside the step are a separate boundary; the step contract
    includes third-party runtime submission inside the measured loop. An
    unavoidable submission allocation blocks qualification of that runtime path.
 4. Final closure evidence for a DART 7 path starts measurement on the first
@@ -198,8 +198,8 @@ The durable rule from those gates is narrower than "all code never allocates":
 same-shape baked `World::step()` paths should reuse World-owned, frame, stack,
 or stage-owned scratch after prepare/bake. Public return-by-value diagnostics,
 standalone helper overloads and third-party work outside the step may allocate.
-Within an accepted M1 built-in loop, runtime/library allocations count too;
-WP-122.8 audits serial, parallel and CUDA paths separately. Representative
+Within a built-in loop, runtime/library allocations count too;
+PLAN-122 audits serial, parallel and CUDA paths separately. Representative
 closed rows do not establish universal executor coverage.
 
 ## Evidence Surfaces
