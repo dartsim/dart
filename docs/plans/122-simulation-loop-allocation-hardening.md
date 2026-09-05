@@ -16,7 +16,7 @@
   [`122-simulation-loop-allocation-hardening/coverage-matrix.md`](122-simulation-loop-allocation-hardening/coverage-matrix.md)
   records which rows are final evidence, which rows are steady-state-only
   evidence, and which rows remain open.
-- Progress snapshot: 14 of 18 matrix rows are closed with first-post-bake
+- Progress snapshot: 14 of 20 matrix rows are closed with first-post-bake
   evidence. `L-001` is now closed: the legacy `dynamics::Skeleton` → DART 7
   `World` model-loading bridge (`dart::simulation::io::addSkeleton`) has
   first-post-bake world-base, global-heap, and raw-malloc gates over an imported
@@ -24,9 +24,9 @@
   phase. These matrix rows do not establish universal parallel-executor coverage: `D-004` is closed by routing
   systems above the retained dense-direct cutoff to the sparse iterative path
   instead of Eigen sparse-direct numeric factorization. The remaining open rows
-  are promotion-gated rows `M-004`, `F-002`, and `G-001`; they stay owned by
-  their named plans until the corresponding solver, derivative, or accelerator
-  path is promoted into `World::step()`. No new `docs/dev_tasks/` folder is
+  are existing-path rows `R-005` and `G-002`, plus promotion-gated rows
+  `M-004`, `F-002`, and `G-001`. Each stays with its named owner until its
+  evidence closes. No new `docs/dev_tasks/` folder is
   needed for those rows while this plan and its coverage matrix remain the
   durable owner.
 
@@ -35,11 +35,11 @@
 The [current assessment](../design/dart7_architecture_assessment.md#f6--clean-break-boundaries-and-scoped-foundation-evidence)
 identifies parallel unified-island scratch and function-static deformable CUDA
 PSD buffers that existing representative rows do not qualify. PLAN-122 owns
-allocation coverage, coordinated with PLAN-030 for runtime/ownership. Admit
-explicit parallel-island rows with M2 and deformable-device rows with their
-family promotion; record execution mode, concurrency and first-step evidence.
-These remain open investigations beyond the one-body SI M1 envelope.
-WP-122.8 completion must not close or erase them.
+allocation coverage, coordinated with PLAN-030 for runtime/ownership. The matrix
+already tracks these selectable paths as open `R-005` and `G-002`; deferring
+their closure to M2/family work does not defer their admission to the matrix.
+Record execution mode, concurrency and first-step evidence. WP-122.8 completion
+must not close or erase these wider rows.
 
 ## Scope
 
@@ -161,12 +161,17 @@ already closed.
 - Objective: make every DART 7 articulated/multibody solver family row carry
   allocation evidence before promotion.
 - Scope: semi-implicit multibody velocity paths, variational integration,
-  AVBD/VBD rows that are already selectable in `World::step()`, and future
+  AVBD/VBD and parallel unified-island `R-005` rows already selectable in `World::step()`, and future
   unified Newton-barrier multibody rows from PLAN-083.
 - Non-goals: DART 6 articulated-body parity paths outside the DART 7 `World`.
 - Acceptance evidence: each promoted DART 7 row in the matrix cites post-bake
   world-base/global/raw gates, including contacts, motors, loop closures, and
   actuator combinations that use dynamic Eigen storage.
+  For `R-005`, use at least two unequal active contact islands, more than one
+  worker and an assertion of actual parallel unified dispatch. Measure worker
+  allocations and runtime submission from the first post-bake step, including
+  lazy range-pool creation; add worker-thread allocation negative controls.
+  Preserve sequential-reference parity and dispatch with profiling enabled.
 - Gates: `pixi run lint`, focused `test_world` multibody/variational/AVBD/VBD
   allocation filters, and the relevant PLAN-083/104 focused tests.
 - Dependencies: PLAN-080, PLAN-083, PLAN-084, PLAN-104, and the corresponding
@@ -211,10 +216,19 @@ already closed.
 - Scope: host allocation gates still apply; device buffer growth, graph-capture
   allocation, and per-call `cudaMalloc`/`cudaFree` or equivalent backend
   allocation need a backend-specific counter or deterministic diagnostic.
+  `G-002` tracks the existing World-selected CUDA PSD offload; `G-001` retains
+  admission of future accelerator stages.
 - Non-goals: routing device memory through the CPU `MemoryManager`.
 - Acceptance evidence: each accelerator row has host no-allocation gates plus a
   device-allocation diagnostic or benchmark packet showing no per-step device
   allocation after bake.
+  For `G-002`, begin with fresh owner/process state and nontrivial PSD batches
+  above the actual offload threshold. Verify CUDA execution, prepared capacity
+  and first-post-bake host/device counters. Two different-sized Worlds must
+  match isolated results when interleaved and invoked concurrently, with safe
+  scratch ownership and completion before reclamation. Earlier process-global
+  buffer warming cannot determine success. This closes only the PSD offload
+  slice, not full CUDA deformable simulation.
 - Gates: `pixi run lint`, focused CPU tests, and `pixi run -e cuda test-cuda` or
   the backend-specific gate on capable hosts.
 - Dependencies: PLAN-030, PLAN-031, PLAN-081, PLAN-083, and PLAN-104.

@@ -164,7 +164,7 @@ plans.**
 
 Broad first-post-bake zero-allocation tests exist in `test_world.cpp`; the
 [PLAN-122 matrix](../plans/122-simulation-loop-allocation-hardening/coverage-matrix.md)
-records 14/18 closed rows. That is scoped evidence. Parallel unified islands
+records the current row statuses. That is scoped evidence. Parallel unified islands
 allocate fresh vector/per-island scratch in
 [unified_constraint.cpp](../../dart/simulation/compute/unified_constraint.cpp).
 The [cached graph allocation test](../../tests/unit/simulation/compute/test_compute_graph.cpp)
@@ -172,8 +172,8 @@ accepts a constant Taskflow submission allocation floor, not zero allocation.
 Function-static CUDA PSD buffers in
 [deformable_psd_projection_cuda.cpp](../../dart/simulation/compute/cuda/deformable_psd_projection_cuda.cpp)
 also warrant an ownership/concurrency audit before wider multi-state claims.
-**Owners: PLAN-122/030 for the wider parallel-island and deformable-device
-ownership audits at M2/family admission; WP-122.8 qualifies only the selected
+**Owners: PLAN-122 R-005/G-002 and PLAN-030 for the already selectable
+parallel-island and deformable-device paths; WP-122.8 qualifies only the selected
 M1 pipeline.** Closing M1 cannot retire those wider findings. The compute
 decision owns runtime viability, including the M1 submission-allocation gap.
 

@@ -41,8 +41,8 @@ Research-focused means three things:
 3. DART should scale with the computing platforms researchers actually use.
    Multi-core CPU support is a first-class direction, SIMD is already part of
    the codebase, and DART 7 includes private opt-in CUDA support for selected
-   simulation workloads. PLAN-040 requires complete CPU/CUDA Float64 evidence
-   for every M1 rigid example while keeping CUDA optional to install. Broader
+   simulation workloads. [PLAN-040](../plans/040-dart7-release-hardening.md)
+   owns milestone backend requirements and their acceptance evidence. Broader
    GPU expansion should still be made
    from benchmarkable algorithm needs, packaging impact, security boundaries,
    and maintenance cost. Scalability work should be judged by real research

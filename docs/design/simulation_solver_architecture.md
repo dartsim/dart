@@ -171,6 +171,12 @@ energy; testing them against conservation would be incorrect.
 
 ## Verified Engine Lessons And DART Inferences
 
+Scope decision (2026-09-04 milestone-planning request): the requested comparisons
+explicitly permit named external engines in cited research documentation. This
+supersedes the earlier rigid-body task's no-names restriction for these
+comparisons. DART solver, preset and example names still describe methods or
+capabilities rather than borrowing engine names.
+
 Research checked 2026-09-04. Upstream `latest` pages can describe development
 behavior; pin source versions when implementing a comparison. These systems
 provide examples, not evidence that DART has implemented their capabilities.

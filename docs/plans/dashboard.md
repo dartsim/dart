@@ -133,15 +133,16 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Next
 - Dimension: Algorithm extensibility
-- Next step: Preserve the 14/18 closed coverage-matrix rows as scoped evidence.
+- Next step: Preserve the 14/20 closed coverage-matrix rows as scoped evidence.
   WP-122.8 qualifies the full M1 serial/parallel/CUDA path after WP-030.5 and
   WP-041.1. Audit Taskflow submission allocations, parallel island scratch,
   total workers, state isolation and first prepared step after restore; existing
   representative CPU rows do not establish universal executor coverage.
 - Gate: First-post-bake World-base/global/raw host and device allocation
   evidence, including runtime submission, on every selected M1 path. Skipped
-  runtime/interposer checks do not close rows. Remaining M-004/F-002/G-001
-  promotions stay with their named owners until qualified.
+  runtime/interposer checks do not close rows. Existing parallel-island R-005
+  and CUDA PSD G-002 paths remain open; future M-004/F-002/G-001 promotions
+  stay with their named owners until qualified.
 
 ### PLAN-012: Cloud Dartpy Tutorials
 

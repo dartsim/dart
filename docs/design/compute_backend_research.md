@@ -7,7 +7,7 @@ DART parent revision `afe6c7d`. This is decision input, not a claim that the
 candidates were benchmarked inside DART. [PLAN-030](../plans/030-compute-scalability-roadmap.md)
 owns executable comparison packets; [compute decisions](scalable_compute_decisions.md)
 owns the semantic graph and acceptance contract. [PLAN-040](../plans/040-dart7-release-hardening.md)
-requires complete CPU/CUDA Float64 M1 examples. CUDA is optional to install.
+owns the milestone backend, precision and example requirements.
 
 There is no single “best parallel library” independent of workload and layer.
 A task scheduler, device-kernel portability library and device graph facility

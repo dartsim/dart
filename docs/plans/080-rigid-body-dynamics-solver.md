@@ -22,7 +22,8 @@ selection and complete CUDA execution, PLAN-041 owns public checkpoint
 workflows, PLAN-122 owns allocation qualification, and PLAN-040 coordinates
 readiness. Existing implementation detail remains in
 `docs/dev_tasks/rigid_body_dynamics_solver/` while that task is active.
-New implementation must reconcile its next slice with these prerequisites.
+Its README and RESUME route implementation through the prerequisites below;
+older contact-polish sequences remain historical backlog, not a bypass.
 
 The CPU reference comes first so physical errors are separable from backend
 errors. All M1 examples still require a complete CUDA implementation before

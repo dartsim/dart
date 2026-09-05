@@ -39,10 +39,9 @@ Before finalizing substantial AI-assisted work:
 [PLAN-040](../plans/040-dart7-release-hardening.md) owns the milestone matrix.
 Independent physical oracles are primary; DART 6 is optional differential
 comparison evidence, with existing promotion-checker migration owned by
-WP-040.2. M1 requires every named example on CPU and CUDA Float64, full supported
-checkpoint continuation, installed workflows and first-post-bake allocation
-proof. CUDA installation can remain optional; compilation, skipped runtime
-checks and hidden CPU fallback cannot close GPU coverage. Pin actual method,
+WP-040.2. Follow PLAN-040 for admitted examples, backends, precision and the
+checkpoint, installed-workflow and allocation acceptance gates. Compilation,
+skipped runtime checks and hidden CPU fallback cannot close GPU coverage. Pin actual method,
 variant, precision and execution identity. Separate same-backend deterministic
 replay from cross-backend finite-horizon tolerances. A documentation PR cannot
 close a physics or compute prototype gate.

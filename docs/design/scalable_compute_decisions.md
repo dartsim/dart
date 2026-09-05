@@ -200,8 +200,9 @@ cannot hold that case, use the largest power-of-two `worldCount` that fits, but
 do not claim a go decision below `worldCount = 1024`. The GPU path passes only if
 its median full-workload time is at least 1.25x faster than the CPU batch median
 and the CPU/GPU final states match the Phase 2 tolerance contract. Otherwise that historical prototype failed its gate. This threshold remains
-the Phase 5 packet contract; it does not cancel mandatory M1 CUDA correctness
-work or require a GPU speedup for a single body.
+the Phase 5 packet contract. [PLAN-040](../plans/040-dart7-release-hardening.md)
+owns current milestone backend requirements; this historical batch threshold
+does not define acceptance for other workloads.
 
 The checked CPU smoke row is
 `BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10`; the full

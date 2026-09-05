@@ -127,9 +127,9 @@ resources; see [compute decisions](scalable_compute_decisions.md).
 
 ## Precision Policy
 
-M1 requires Float64 on both CPU and CUDA for every accepted example. The
-policies below describe later precision choices; public `dtype`/scalar-template
-selectors remain deferred under PLAN-041.
+[PLAN-040](../plans/040-dart7-release-hardening.md) owns milestone precision
+and backend requirements. The policies below describe precision choices;
+PLAN-041 owns admission of public `dtype`/scalar-template selectors.
 
 Double precision is the reference. A backend may offer float or mixed precision
 only when it records the resolved precision in the benchmark/diagnostic packet
