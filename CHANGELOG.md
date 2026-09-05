@@ -491,6 +491,7 @@ compatibility remains on the active DART 6 LTS branch._
   stale dev-task session logs, and added a `dart-docs-update audit` mode.
   `check-docs-policy` now checks every markdown link, rejects unreferenced
   docs, and reports oversized dev-task snapshots.
+  ([#3479](https://github.com/dartsim/dart/pull/3479))
 - AI workflows now stage context by task and phase, preserve authorized model,
   effort, and action scopes across handoffs, and audit the whole harness during
   model upgrades. Consolidated session policy and removed duplicate tutorials
