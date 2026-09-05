@@ -667,6 +667,35 @@ def test_docs_orphans_bare_name_is_not_unique_when_published_page_shares_it(tmp_
     assert any("docs/design/foo.md" in f for f in failures)
 
 
+def test_markdown_links_keep_balanced_parentheses_and_resolve_references():
+    module = _load_module()
+    text = (
+        "[API](guide_(v2).md) and [ref-style][docs] and ![img](picture.png)\n"
+        "\n"
+        "[docs]: reference/target.md#section\n"
+    )
+
+    links = [link for _, link in module._iter_markdown_links(text)]
+
+    assert links == ["guide_(v2).md", "reference/target.md#section"]
+
+
+def test_markdown_heading_anchors_include_setext_headings(tmp_path):
+    module = _load_module()
+    page = tmp_path / "page.md"
+    page.write_text(
+        "Title Here\n==========\n\nSecond Level\n------------\n\n"
+        "Text then\n\n---\n\n## `code` and [link](x.md) heading\n",
+        encoding="utf-8",
+    )
+
+    assert module._markdown_heading_anchors(page) == {
+        "title-here",
+        "second-level",
+        "code-and-link-heading",
+    }
+
+
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"

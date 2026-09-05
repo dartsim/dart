@@ -9,6 +9,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+try:
+    from markdown_it import MarkdownIt
+except ImportError as exc:  # pragma: no cover - environment guard
+    raise SystemExit(
+        "check_docs_policy.py needs markdown-it-py (run it through "
+        "`pixi run check-docs-policy`)"
+    ) from exc
+
 SKIP_DIRS = {".deps", ".git", ".pixi", "build", "external", "node_modules"}
 GIT_QUERY_ERRORS = (OSError, subprocess.CalledProcessError)
 REQUIRED_DOCS_TOP_LEVEL_DIRS = (
@@ -118,13 +126,9 @@ NORTH_STAR_FRESHNESS_MARKER_RE = re.compile(
     r"<!--\s*docs-policy:\s*evidence-last-verified=(?P<date>\d{4}-\d{2}-\d{2})\s*-->"
 )
 PAPERS_CLOSED_VALUE_FIELDS = ("Type", "Status", "Priority", "Verdict")
-MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\((?P<link>[^)]+)\)")
-MARKDOWN_FENCE_RE = re.compile(r"^(?P<marker>`{3,}|~{3,})")
-MARKDOWN_LIST_ITEM_RE = re.compile(
-    r"^(?P<indent>[ \t]*)(?P<marker>[-*+]|\d{1,9}[.)])[ \t]+"
-)
-MARKDOWN_INLINE_CODE_RE = re.compile(r"(?P<ticks>`+)(?:.*?)(?P=ticks)")
-MARKDOWN_HEADING_RE = re.compile(r"^(?P<level>#{1,6})\s+(?P<text>.*?)\s*#*\s*$")
+# CommonMark plus GFM tables, so links inside table cells are seen and code
+# blocks, inline code, and HTML are never mistaken for links or headings.
+MARKDOWN_PARSER = MarkdownIt("commonmark").enable("table")
 
 
 def iter_markdown_files(repo_root: Path) -> list[Path]:
@@ -429,65 +433,23 @@ def _resolve_markdown_link(
     return resolved
 
 
-def _iter_markdown_lines_outside_fences(text: str) -> list[tuple[int, str]]:
-    """Return (line_number, line) pairs that are not inside a fenced code block.
-
-    A fence closes only on a marker of the same character whose run is at
-    least as long as the opening run, so longer outer fences can wrap shorter
-    inner ones (CommonMark).
-    """
-    lines: list[tuple[int, str]] = []
-    all_lines = text.splitlines()
-    open_marker: str | None = None
-    for index, line in enumerate(all_lines):
-        match = MARKDOWN_FENCE_RE.match(line.lstrip(" "))
-        if match and (
-            open_marker is not None or _fence_indent_allowed(all_lines, index)
-        ):
-            marker = match.group("marker")
-            if open_marker is None:
-                open_marker = marker
-                continue
-            if marker[0] == open_marker[0] and len(marker) >= len(open_marker):
-                open_marker = None
-                continue
-        if open_marker is not None:
-            continue
-        lines.append((index + 1, line))
-    return lines
-
-
-def _fence_indent_allowed(lines: list[str], index: int) -> bool:
-    """CommonMark allows at most three spaces of indentation before a fence,
-    measured from the content column of the enclosing list item (or the
-    document margin). Deeper indentation is an indented code block."""
-    line = lines[index]
-    if line.startswith("\t"):
-        return False
-    indent = len(line) - len(line.lstrip(" "))
-    if indent <= 3:
-        return True
-    for previous in reversed(lines[:index]):
-        if not previous.strip():
-            continue
-        previous_indent = len(previous) - len(previous.lstrip(" "))
-        if previous_indent >= indent:
-            continue
-        item = MARKDOWN_LIST_ITEM_RE.match(previous)
-        content_indent = len(item.group(0)) if item else previous_indent
-        return indent - content_indent <= 3
-    return False
-
-
 def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
-    """Return (line, link) pairs outside fenced code blocks and inline code."""
+    """Return (line, destination) pairs for every Markdown link in ``text``.
+
+    The CommonMark parser resolves reference-style links, keeps balanced
+    parentheses in destinations, and never yields link-shaped text inside
+    fenced or indented code, inline code, or HTML. Images are not links.
+    """
     links: list[tuple[int, str]] = []
-    for line_number, line in _iter_markdown_lines_outside_fences(text):
-        # Neutralize inline code so `[x](y.md)` inside code is not a link,
-        # while [`x`](y.md) keeps a non-empty link text.
-        prose = MARKDOWN_INLINE_CODE_RE.sub("code", line)
-        for match in MARKDOWN_LINK_RE.finditer(prose):
-            links.append((line_number, match.group("link")))
+    for token in MARKDOWN_PARSER.parse(text):
+        if token.type != "inline" or not token.children:
+            continue
+        line_number = (token.map[0] + 1) if token.map else 0
+        for child in token.children:
+            if child.type == "link_open":
+                href = child.attrGet("href")
+                if href:
+                    links.append((line_number, str(href)))
     return links
 
 
@@ -500,19 +462,20 @@ def _github_heading_slug(heading: str) -> str:
 
 
 def _markdown_heading_anchors(path: Path) -> set[str]:
-    """Return the anchor slugs GitHub generates for a markdown file's headings."""
+    """Return the anchor slugs GitHub generates for a markdown file's headings.
+
+    ATX and Setext headings both count; github-slugger semantics reserve
+    already-taken slugs, so `Foo`, `Foo-1`, `Foo` yields `foo`, `foo-1`,
+    `foo-2`.
+    """
     anchors: set[str] = set()
     occurrences: dict[str, int] = {}
-    text = path.read_text(encoding="utf-8", errors="replace")
-    for _, line in _iter_markdown_lines_outside_fences(text):
-        match = MARKDOWN_HEADING_RE.match(line)
-        if not match:
+    tokens = MARKDOWN_PARSER.parse(path.read_text(encoding="utf-8", errors="replace"))
+    for index, token in enumerate(tokens):
+        if token.type != "heading_open" or index + 1 >= len(tokens):
             continue
-        original = _github_heading_slug(match.group("text"))
+        original = _github_heading_slug(tokens[index + 1].content)
         slug = original
-        # github-slugger: keep appending the per-original counter until the
-        # candidate is not already taken, so `Foo`, `Foo-1`, `Foo` yields
-        # `foo`, `foo-1`, `foo-2`.
         while slug in anchors:
             occurrences[original] = occurrences.get(original, 0) + 1
             slug = f"{original}-{occurrences[original]}"
