@@ -8,6 +8,15 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import unquote
+
+try:
+    from markdown_it import MarkdownIt
+except ImportError as exc:  # pragma: no cover - environment guard
+    raise SystemExit(
+        "check_docs_policy.py needs markdown-it-py (run it through "
+        "`pixi run check-docs-policy`)"
+    ) from exc
 
 SKIP_DIRS = {".deps", ".git", ".pixi", "build", "external", "node_modules"}
 GIT_QUERY_ERRORS = (OSError, subprocess.CalledProcessError)
@@ -118,10 +127,9 @@ NORTH_STAR_FRESHNESS_MARKER_RE = re.compile(
     r"<!--\s*docs-policy:\s*evidence-last-verified=(?P<date>\d{4}-\d{2}-\d{2})\s*-->"
 )
 PAPERS_CLOSED_VALUE_FIELDS = ("Type", "Status", "Priority", "Verdict")
-MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\((?P<link>[^)]+)\)")
-MARKDOWN_FENCE_RE = re.compile(r"^(?P<marker>`{3,}|~{3,})")
-MARKDOWN_INLINE_CODE_RE = re.compile(r"(?P<ticks>`+)(?:.*?)(?P=ticks)")
-MARKDOWN_HEADING_RE = re.compile(r"^(?P<level>#{1,6})\s+(?P<text>.*?)\s*#*\s*$")
+# CommonMark plus GFM tables, so links inside table cells are seen and code
+# blocks, inline code, and HTML are never mistaken for links or headings.
+MARKDOWN_PARSER = MarkdownIt("commonmark").enable("table")
 
 
 def iter_markdown_files(repo_root: Path) -> list[Path]:
@@ -343,10 +351,11 @@ def _is_external_link(link: str) -> bool:
 
 
 def _strip_markdown_link_target(link: str) -> str:
+    """Return the destination of a parser-provided link (spaces are literal)."""
     target = link.strip()
     if target.startswith("<") and ">" in target:
         return target[1 : target.index(">")]
-    return target.split(None, maxsplit=1)[0] if target else ""
+    return target
 
 
 def _normalize_markdown_link(link: str) -> str:
@@ -405,83 +414,74 @@ def _resolve_markdown_link(
     target_path = Path(target)
     if target_path.is_absolute():
         return target_path.resolve()
-    if repo_root is not None and target_path.parts[:1] in {
-        ("docs",),
-        ("scripts",),
-        ("tests",),
-        ("dart",),
-        ("python",),
-        ("examples",),
-        ("tutorials",),
-        (".github",),
-    }:
-        return (repo_root / target_path).resolve()
-    resolved = (base_dir / target_path).resolve()
-    if repo_root is not None and not resolved.exists():
-        # Docs sometimes write repo-root-relative paths (`cmake/foo.cmake`);
-        # accept them when the base-relative form does not exist.
-        root_relative = (repo_root / target_path).resolve()
-        if root_relative.exists():
-            return root_relative
-    return resolved
-
-
-def _iter_markdown_lines_outside_fences(text: str) -> list[tuple[int, str]]:
-    """Return (line_number, line) pairs that are not inside a fenced code block.
-
-    A fence closes only on a marker of the same character whose run is at
-    least as long as the opening run, so longer outer fences can wrap shorter
-    inner ones (CommonMark).
-    """
-    lines: list[tuple[int, str]] = []
-    open_marker: str | None = None
-    for line_number, line in enumerate(text.splitlines(), start=1):
-        match = MARKDOWN_FENCE_RE.match(line.lstrip())
-        if match:
-            marker = match.group("marker")
-            if open_marker is None:
-                open_marker = marker
-                continue
-            if marker[0] == open_marker[0] and len(marker) >= len(open_marker):
-                open_marker = None
-                continue
-        if open_marker is not None:
-            continue
-        lines.append((line_number, line))
-    return lines
+    # Markdown semantics only: a relative destination resolves against the
+    # referring file's directory, exactly as GitHub renders it. A destination
+    # that only exists from the repository root is a broken link.
+    return (base_dir / target_path).resolve()
 
 
 def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
-    """Return (line, link) pairs outside fenced code blocks and inline code."""
+    """Return (line, destination) pairs for every Markdown link in ``text``.
+
+    The CommonMark parser resolves reference-style links, keeps balanced
+    parentheses in destinations, and never yields link-shaped text inside
+    fenced or indented code, inline code, or HTML. Images are not links.
+    """
     links: list[tuple[int, str]] = []
-    for line_number, line in _iter_markdown_lines_outside_fences(text):
-        prose = MARKDOWN_INLINE_CODE_RE.sub("", line)
-        for match in MARKDOWN_LINK_RE.finditer(prose):
-            links.append((line_number, match.group("link")))
+    for token in MARKDOWN_PARSER.parse(text):
+        if token.type != "inline" or not token.children:
+            continue
+        line_number = (token.map[0] + 1) if token.map else 0
+        for child in token.children:
+            if child.type == "link_open":
+                href = child.attrGet("href")
+                if href:
+                    # markdown-it percent-encodes destinations; filesystem
+                    # checks need the literal path.
+                    links.append((line_number, unquote(str(href))))
     return links
 
 
 def _github_heading_slug(heading: str) -> str:
-    """Approximate GitHub's heading-to-anchor slug."""
-    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading)
-    text = text.replace("`", "").strip().lower()
+    """Apply GitHub's heading-to-anchor slug rules to rendered heading text."""
+    text = heading.strip().lower()
     text = re.sub(r"[^\w\- ]", "", text)
     return text.replace(" ", "-")
 
 
+def _inline_plain_text(token) -> str:
+    """Return the text a reader sees for an inline token: text and code
+    content, with line breaks as spaces and link/emphasis markup removed."""
+    parts: list[str] = []
+    for child in token.children or []:
+        if child.type in {"text", "code_inline"}:
+            parts.append(child.content)
+        elif child.type in {"softbreak", "hardbreak"}:
+            parts.append(" ")
+        elif child.children:
+            parts.append(_inline_plain_text(child))
+    return "".join(parts)
+
+
 def _markdown_heading_anchors(path: Path) -> set[str]:
-    """Return the anchor slugs GitHub generates for a markdown file's headings."""
+    """Return the anchor slugs GitHub generates for a markdown file's headings.
+
+    ATX and Setext headings both count; github-slugger semantics reserve
+    already-taken slugs, so `Foo`, `Foo-1`, `Foo` yields `foo`, `foo-1`,
+    `foo-2`.
+    """
     anchors: set[str] = set()
-    counts: dict[str, int] = {}
-    text = path.read_text(encoding="utf-8", errors="replace")
-    for _, line in _iter_markdown_lines_outside_fences(text):
-        match = MARKDOWN_HEADING_RE.match(line)
-        if not match:
+    occurrences: dict[str, int] = {}
+    tokens = MARKDOWN_PARSER.parse(path.read_text(encoding="utf-8", errors="replace"))
+    for index, token in enumerate(tokens):
+        if token.type != "heading_open" or index + 1 >= len(tokens):
             continue
-        slug = _github_heading_slug(match.group("text"))
-        seen = counts.get(slug, 0)
-        anchors.add(slug if seen == 0 else f"{slug}-{seen}")
-        counts[slug] = seen + 1
+        original = _github_heading_slug(_inline_plain_text(tokens[index + 1]))
+        slug = original
+        while slug in anchors:
+            occurrences[original] = occurrences.get(original, 0) + 1
+            slug = f"{original}-{occurrences[original]}"
+        anchors.add(slug)
     return anchors
 
 
@@ -744,8 +744,8 @@ def check_design_docs_index(repo_root: Path) -> list[str]:
         readme.read_text(encoding="utf-8", errors="replace") if readme.exists() else ""
     )
     readme_links: set[str] = set()
-    for match in re.finditer(r"\[[^\]]+\]\((?P<link>[^)]+)\)", readme_text):
-        linked_path = _resolve_markdown_link(match.group("link"), design_dir)
+    for _, raw_link in _iter_markdown_links(readme_text):
+        linked_path = _resolve_markdown_link(raw_link, design_dir)
         if not linked_path:
             continue
         try:
@@ -854,7 +854,9 @@ def check_docs_discoverability(repo_root: Path) -> list[str]:
             if doc.name in {"README.md"}:
                 continue
             repo_relative = str(doc.relative_to(repo_root))
-            text_mentions_doc = repo_relative in index_text or doc.name in index_text
+            text_mentions_doc = _mentions_reference(
+                index_text, repo_relative
+            ) or _mentions_reference(index_text, doc.name)
             if doc.resolve() not in linked_targets and not text_mentions_doc:
                 warnings.append(
                     f"{doc.relative_to(repo_root)}: not linked from `{index}`"
@@ -869,8 +871,8 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
     subject to this check: bucket indexes and ``AGENTS.md`` files, root docs,
     the published site sources, scripts, tests, workflows, and ``pixi.toml``.
     A checked doc is reachable when a root, or another reachable checked doc,
-    references it by repo path, by ``parent/name``, by bare name from a file in
-    the same directory (a relative link), or by a bare name that is unique
+    references it through a Markdown link that resolves to it, by its full
+    repo-relative path as a whole token, or by a bare name that is unique
     among the checked files. Mutual references between unreachable docs do
     not keep each other alive. Markdown docs under ``docs/`` (outside the
     published site) fail; plan sidecar data files warn because scripts may
@@ -903,26 +905,52 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
                 continue
             checked[rel_path] = False
 
+    # Bare-name matching is only unambiguous when no other tracked file in the
+    # corpus or the checked set shares the basename (a published-site page
+    # with the same name must not lend its links to a repo-local doc).
     name_counts: dict[str, int] = {}
-    for rel_path in checked:
+    for rel_path in set(checked) | set(corpus):
         name = Path(rel_path).name
         name_counts[name] = name_counts.get(name, 0) + 1
 
+    # Markdown referrers: every link resolved relative to the referring file.
+    link_targets: dict[str, set[str]] = {}
+    for other, text in corpus.items():
+        if not other.endswith(".md"):
+            continue
+        other_path = repo_root / other
+        targets: set[str] = set()
+        for _, raw_link in _iter_markdown_links(text):
+            resolved = _resolve_markdown_link(
+                raw_link,
+                other_path.parent,
+                repo_root=repo_root,
+                current_file=other_path,
+            )
+            if resolved is None:
+                continue
+            try:
+                targets.add(str(resolved.relative_to(repo_root.resolve())))
+            except ValueError:
+                continue
+        link_targets[other] = targets
+
     def _referrers(rel_path: str) -> set[str]:
-        path = Path(rel_path)
-        name = path.name
-        suffix = f"{path.parent.name}/{name}"
+        """Files that reference ``rel_path``: a resolved Markdown link, the
+        full repo-relative path as a whole token (scripts, tests, workflows,
+        prose in backticks), or the bare name as a whole token when it is
+        unique among the checked files."""
+        name = Path(rel_path).name
         unique = name_counts.get(name, 0) <= 1
-        rel_dir = str(path.parent)
         found: set[str] = set()
         for other, text in corpus.items():
             if other == rel_path or name not in text:
                 continue
-            if _mentions_reference(text, rel_path) or _mentions_reference(text, suffix):
+            if rel_path in link_targets.get(other, ()):
                 found.add(other)
-            elif (unique or str(Path(other).parent) == rel_dir) and (
-                _mentions_reference(text, name)
-            ):
+            elif _mentions_reference(text, rel_path):
+                found.add(other)
+            elif unique and _mentions_reference(text, name):
                 found.add(other)
         return found
 
