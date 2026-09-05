@@ -21,7 +21,8 @@ Before finalizing substantial AI-assisted work:
 4. Identify missing, weakly verified, or blocked requirements.
 5. Verify review evidence: at least two clean independent or role-separated
    review passes on the current post-fix state, with substantive findings
-   investigated rather than blindly accepted.
+   investigated rather than blindly accepted. Apply the coverage and
+   revalidation rules in Review Evidence below.
 6. For model/scene, behavior-bearing physics/simulation, or GUI work, verify
    `dart-verify-sim` paired a text correctness oracle with assessed claim-tied
    visual/debug evidence, or recorded a justified unavailable exception.
@@ -134,6 +135,23 @@ visual artifacts before changing behavior. Record whether the finding was fixed,
 deferred, or rejected with evidence. The review-pass requirement is item 5 of
 the completion audit above.
 
+For substantive PRs, a completed hosted review plus the independent local lane
+can satisfy those two passes; do not add a third pass just to count each policy
+wording separately. Without hosted review, local-only work can use two
+independent or role-separated passes, but this does not replace a PR's hosted
+review gate. The substantive-PR independent-session requirement and
+docs-only/mechanical exemption live in `docs/onboarding/ai-reviews.md`.
+
+Preserve the reviewed baseline, findings, and dispositions. After a fix, the
+independent reviewer can revalidate the delta and its interactions against that
+baseline and explicitly record coverage of the resulting state. Expand to a
+full review when scope, architecture, or interactions invalidate the baseline.
+Formatting-only cleanup needs an explicit no-behavior-change assessment rather
+than two new broad local reviews. Required current-head hosted review and
+validation still apply. A clean pass means no unresolved substantive issue;
+verified false positives do not require another round. Add new tests when they
+close a coverage gap, not merely to reject feedback already refuted by evidence.
+
 ## DART 7 Simulation Allocation Evidence
 
 Changes that add, migrate, or materially alter a DART 7 `World::step()` domain,
@@ -174,7 +192,7 @@ Missing or vague acceptance evidence means the task is not ready for execution.
 ## Review Safety Evidence
 
 `docs/onboarding/ai-reviews.md` owns the automated-review loop: no inline
-replies to bot accounts, local verification of each claim, a refuting test for
-false positives, and explicit approval before any push, comment, thread
+replies to bot accounts, local verification and evidence-backed disposition of
+each claim, and explicit approval before any push, comment, thread
 resolution, or re-trigger. The final response states which actions were
 local-only and which external mutations, if any, were explicitly approved.

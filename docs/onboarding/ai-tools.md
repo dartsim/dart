@@ -6,18 +6,20 @@ This file owns DART-specific setup, compatibility caveats, and dated evidence.
 
 ## Quick Reference
 
-| Tool        | Instructions              | DART workflow / domain skill                                                |
-| ----------- | ------------------------- | --------------------------------------------------------------------------- |
-| Claude Code | `CLAUDE.md` → `AGENTS.md` | `/dart-*`: `.claude/commands/` and `.claude/skills/`                        |
-| OpenCode    | `AGENTS.md`               | `/dart-*` workflows: `.opencode/command/`; domain skills: `.claude/skills/` |
-| Codex       | `AGENTS.md`               | `$dart-*`: generated `.agents/skills/`                                      |
-| Gemini CLI  | `GEMINI.md` → `AGENTS.md` | Read `.claude/commands/` and `.claude/skills/` manually                     |
+| Tool        | Instructions              | DART workflow / domain skill                         |
+| ----------- | ------------------------- | ---------------------------------------------------- |
+| Claude Code | `CLAUDE.md` → `AGENTS.md` | `/dart-*`: `.claude/commands/` and `.claude/skills/` |
+| Codex       | `AGENTS.md`               | `$dart-*`: generated `.agents/skills/`               |
 
 Run `pixi run ai-setup` once to synchronize adapters and install the Git guard;
 `pixi run ai-doctor` diagnoses discovery/configuration without edits.
 Tracked references are repository-relative. `@file` lines declare required
 reading; automatic import behavior varies by tool, so load the files explicitly
 when needed. Keep personal settings untracked.
+
+Agents without a generated adapter read `AGENTS.md` and the `.claude/` sources
+directly. Add a generated target in `scripts/sync_ai_commands.py` only when DART
+adopts the tool.
 
 ## Detailed Compatibility
 
@@ -60,32 +62,6 @@ Current references:
 Guidance was refreshed on 2026-09-04. DART retains outcome, scope, evidence, and
 handoff rules; client/API history handling belongs to the client, not a copied
 prompting tutorial in repository skills.
-
-### OpenCode
-
-**Verified**: generated command adapters continuously via `pixi run
-check-ai-commands` in CI; behavior notes checked against current OpenCode docs
-on 2026-09-01 with OpenCode 1.18.21 installed
-
-**Notes**:
-
-- Discovers skills from `.opencode/skills/`, `.claude/skills/`, and
-  `.agents/skills/` (project and home directories)
-- Does NOT read `.claude/commands/`. Current OpenCode docs name
-  `.opencode/commands/`; the installed 1.18.21 client also accepts DART's
-  generated `.opencode/command/` (both spellings are in the binary). Move the
-  generated path when the singular form stops loading.
-- Commands support frontmatter: `description`, `agent`, `model`
-
-### Gemini CLI
-
-**Verified**: manual-reference path only (no generated adapter); behavior notes
-hand-checked 2026-07
-
-**Notes**:
-
-- Use `GEMINI.md` or `AGENTS.md` as context
-- DART supplies no generated Gemini adapter; read workflow sources manually.
 
 ### OpenAI Codex
 
@@ -174,7 +150,7 @@ Current references:
 | Frequent hook blocks unexpectedly      | Run `pixi run check-agent-hook` directly; inspect JSON/input diagnostics; use the documented emergency bypass only if necessary |
 | Full validation fails after quick gate | Select the task-specific focused/full gates in `docs/ai/verification.md`; the fast hook is not completion evidence              |
 | A documented command/path is absent    | Confirm the current branch; run `pixi run ai-doctor`; fix the source owner rather than adding an unverified alias               |
-| Generated file differs                 | Edit `.claude/` source, regenerate, and never patch `.agents/skills/` or `.opencode/command/` directly                          |
+| Generated file differs                 | Edit `.claude/` source, regenerate, and never patch `.agents/skills/` directly                                                  |
 
 `main` is DART 7: C++23, nanobind, `dart::io`, the clean-break architecture,
 CUDA validation, planning packets, benchmark packets, and DART 7 verification
@@ -183,6 +159,10 @@ skills belong there. `release-6.20` is DART 6: C++17, pybind11,
 belong there. The release catalog is intentionally smaller. Common AI-infra
 changes use an apply/adapt/omit audit and branch-local gates; never copy a task,
 path, command, or toolchain fact merely because it exists on the other branch.
+`main` supports only Claude Code and Codex. `release-6.20` still carries
+generated `.opencode/command/` adapters and `GEMINI.md` as release-local
+surfaces; the release-to-`main` forward merge must drop them rather than
+reintroduce them on `main`.
 
 ## Verification
 
@@ -194,3 +174,51 @@ the version, date, observed behavior, and untested boundaries here.
 `docs/ai/verification.md` owns gate selection and completion evidence.
 
 Automated PR review handling lives in [ai-reviews.md](ai-reviews.md).
+
+## Codex Hosted Review Settings
+
+Recommended starting configuration, based on the maintainer's settings UI
+confirmed on 2026-09-05:
+
+| Setting                | Choice                  |
+| ---------------------- | ----------------------- |
+| Auto review            | On                      |
+| Review trigger         | On PR open              |
+| Exhaustive code review | On for a measured trial |
+| Enable credits use     | Off                     |
+
+These are account/repository preferences, not local agent model or effort
+settings. Check the effective repository policy as well as personal preferences
+before relying on an automatic trigger. See the
+[official GitHub review documentation](https://learn.chatgpt.com/docs/third-party/github)
+for automatic/manual requests and scoped repository review rules.
+
+The observed UI exposes one general Exhaustive toggle. Treat it as enabled for
+follow-up reviews too; there is no observed initial-review-only or per-round
+control. Do not toggle it between rounds. Its description promises continued
+search for additional findings until no new issues are found, not defect-free
+code. Internal pass count, billing multiplier, and cost savings were not
+established. Completion must use the evidence rules in
+[ai-reviews.md](ai-reviews.md#codex-review-for-draft-prs).
+
+PR-open automation plus deliberate manual follow-ups fits batched fixes.
+Every-push automation can race those requests; experimental smart detection is
+not proof of required current-head coverage. A different chosen configuration
+must still obey the single-trigger-owner rule. Changing account settings or
+enabling credits requires separate explicit authorization.
+
+### Evaluating The Trial
+
+Evaluate the next ten representative PRs using their existing verification
+evidence, recording PR/head, settings, hosted round count, accepted/rejected
+findings, repair-induced regressions, time to readiness, and local agent tokens
+and hosted review usage where available. Compare with similar prior PRs and
+separate physics, tooling, and documentation changes; unavailable usage is
+unknown, not zero. Do not infer dollar savings from comment counts.
+
+Retain Exhaustive if broader early discovery and fewer repair cycles justify
+its review usage without degrading quality. Otherwise recommend disabling the
+general toggle while retaining batching and the strategy checkpoint. Report
+the sample and limitations; neither structural checks nor a small mixed sample
+prove causal savings. This is a trial protocol, not evidence that ten PRs have
+already been evaluated.

@@ -11,9 +11,9 @@ This document defines how DART maintains AI-facing components.
 
 `docs/ai/README.md` owns the source map; `docs/ai/terminology.md` owns terms.
 Edit workflow sources in `.claude/commands/` and domain skills in
-`.claude/skills/`. Generated `.agents/skills/` and `.opencode/command/`
-entrypoints name their source and must not be hand-edited. Sync owns only
-DART-generated adapters and must preserve unrelated user/plugin skills.
+`.claude/skills/`. Generated `.agents/skills/` entrypoints name their source
+and must not be hand-edited. Sync owns only DART-generated adapters and must
+preserve unrelated user/plugin skills.
 
 Maintained `.codex/` sources bound concurrency/delegation and define read-only
 specialists and fast trusted-project hooks. They must not pin models or weaken

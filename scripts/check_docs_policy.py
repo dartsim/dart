@@ -3,10 +3,15 @@
 
 from __future__ import annotations
 
+import ast
+import fnmatch
+import functools
 import json
 import re
 import subprocess
 import sys
+import unicodedata
+from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -132,6 +137,38 @@ PAPERS_CLOSED_VALUE_FIELDS = ("Type", "Status", "Priority", "Verdict")
 MARKDOWN_PARSER = MarkdownIt("commonmark").enable("table")
 
 
+@functools.lru_cache(maxsize=None)
+def _parse_markdown(text: str):
+    """Parse once per distinct text; every pass over a page reuses the tokens."""
+    return MARKDOWN_PARSER.parse(text)
+
+
+@functools.lru_cache(maxsize=None)
+def _read_text(path: Path) -> str:
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+# MyST directives whose body is literal (code, raw markup, or Sphinx syntax),
+# not Markdown; every other directive body is parsed for links.
+MYST_LITERAL_DIRECTIVES = {
+    "code",
+    "code-block",
+    "code-cell",
+    "sourcecode",
+    "literalinclude",
+    "raw",
+    "eval-rst",
+    "math",
+    "mermaid",
+    "include",
+    "toctree",
+    "highlight",
+    "parsed-literal",
+    "glossary",
+}
+MYST_DIRECTIVE_RE = re.compile(r"^\{(?P<name>[A-Za-z][A-Za-z0-9_-]*)\}")
+
+
 def iter_markdown_files(repo_root: Path) -> list[Path]:
     return iter_tracked_files(repo_root, ["*.md"])
 
@@ -147,6 +184,7 @@ def iter_tracked_files(repo_root: Path, patterns: list[str]) -> list[Path]:
             [
                 "git",
                 "ls-files",
+                "-z",  # NUL-delimited: no C-style quoting of non-ASCII names
                 "--cached",
                 "--others",
                 "--exclude-standard",
@@ -168,7 +206,7 @@ def iter_tracked_files(repo_root: Path, patterns: list[str]) -> list[Path]:
         return sorted(set(files))
 
     files = []
-    for line in result.stdout.splitlines():
+    for line in result.stdout.split("\0"):
         if not line:
             continue
         path = repo_root / line
@@ -178,8 +216,10 @@ def iter_tracked_files(repo_root: Path, patterns: list[str]) -> list[Path]:
 
 
 def _display_path(path: Path, repo_root: Path) -> str:
+    """Repo-relative path in POSIX form on every platform, so prefix checks
+    and corpus keys match the forward-slash paths docs and pathspecs use."""
     try:
-        return str(path.relative_to(repo_root))
+        return path.relative_to(repo_root).as_posix()
     except ValueError:
         return str(path)
 
@@ -223,6 +263,20 @@ def check_docs_indexes(repo_root: Path) -> list[str]:
                 failures.append(
                     f"{docs_readme.relative_to(repo_root)}: missing `{marker}` entry"
                 )
+
+    # Every tracked top-level docs directory must be a registered bucket;
+    # adding one means registering it here and in docs/README.md.
+    tracked_dirs = {
+        _display_path(path, repo_root).split("/")[1]
+        for path in iter_tracked_files(repo_root, [":(glob)docs/*/**"])
+        if not path.is_dir()
+    }
+    for directory in sorted(tracked_dirs - set(REQUIRED_DOCS_TOP_LEVEL_DIRS)):
+        failures.append(
+            f"docs/{directory}/: unregistered docs bucket; add it to "
+            "REQUIRED_DOCS_TOP_LEVEL_DIRS in scripts/check_docs_policy.py and to "
+            "the bucket table in docs/README.md, or move its content"
+        )
 
     return failures
 
@@ -346,8 +400,13 @@ def _normalize_plan_owner(owner: str) -> str:
     return owner.split("#", maxsplit=1)[0].strip()
 
 
+URI_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
+
+
 def _is_external_link(link: str) -> bool:
-    return "://" in link or link.startswith(("mailto:", "tel:"))
+    """Any RFC 3986 scheme (`https:`, `mailto:`, `urn:`, `ssh:`) or a
+    scheme-relative `//host/path` destination is external."""
+    return bool(URI_SCHEME_RE.match(link)) or link.startswith("//")
 
 
 def _strip_markdown_link_target(link: str) -> str:
@@ -359,9 +418,15 @@ def _strip_markdown_link_target(link: str) -> str:
 
 
 def _normalize_markdown_link(link: str) -> str:
+    """Return the decoded filesystem path of a link destination.
+
+    The query and fragment are split off first so a percent-encoded reserved
+    character in the path (``guide%23v2.md``) decodes to the literal filename
+    instead of being mistaken for a delimiter.
+    """
     target = _strip_markdown_link_target(link)
     target = target.split("?", maxsplit=1)[0]
-    return target.split("#", maxsplit=1)[0].strip()
+    return unquote(target.split("#", maxsplit=1)[0].strip())
 
 
 def _resolve_dashboard_owner(
@@ -420,6 +485,152 @@ def _resolve_markdown_link(
     return (base_dir / target_path).resolve()
 
 
+def _iter_block_tokens(text: str, offset: int = 0):
+    """Yield (line, token) pairs for every block-level token, recursing into
+    MyST directive fences whose body is Markdown (admonitions, grids, ...).
+    Literal directives and ordinary code fences are yielded but not entered."""
+    for token in _parse_markdown(text):
+        line_number = offset + ((token.map[0] + 1) if token.map else 0)
+        directive = (
+            MYST_DIRECTIVE_RE.match(token.info.strip())
+            if token.type == "fence"
+            else None
+        )
+        if directive and directive.group("name") not in MYST_LITERAL_DIRECTIVES:
+            yield from _iter_block_tokens(token.content, offset=line_number)
+            continue
+        yield line_number, token
+
+
+def _iter_inline_tokens(text: str, offset: int = 0):
+    """Yield (line, inline token) pairs, including those inside
+    Markdown-bearing MyST directives."""
+    for line_number, token in _iter_block_tokens(text, offset=offset):
+        if token.type == "inline" and token.children:
+            yield line_number, token
+
+
+class _HrefCollector(HTMLParser):
+    """Collect `href` attributes and `id`/`name` anchors (any tag, any
+    quoting, any case)."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.hrefs: list[str] = []
+        self.anchors: set[str] = set()
+
+    def handle_starttag(self, tag, attrs):  # noqa: ARG002 - HTMLParser API
+        for name, value in attrs:
+            if not value:
+                continue
+            if name.lower() == "href":
+                self.hrefs.append(value)
+            elif name.lower() in {"id", "name"}:
+                self.anchors.add(value)
+
+
+def _html_hrefs(fragment: str) -> list[str]:
+    collector = _HrefCollector()
+    collector.feed(fragment)
+    collector.close()
+    return collector.hrefs
+
+
+def _html_anchor_ids(text: str) -> set[str]:
+    """Return `id`/`name` anchors declared in raw HTML within ``text``."""
+    collector = _HrefCollector()
+    for _, token in _iter_block_tokens(text):
+        if token.type == "html_block":
+            collector.feed(token.content)
+        elif token.type == "inline" and token.children:
+            for child in token.children:
+                if child.type == "html_inline":
+                    collector.feed(child.content)
+    collector.close()
+    return collector.anchors
+
+
+@functools.lru_cache(maxsize=None)
+def _page_anchors(page: Path) -> set[str]:
+    """Anchors a Markdown page defines: heading ids plus HTML id/name.
+
+    Pages under a Sphinx source root get docutils section ids (what the
+    published site renders); repository-local Markdown gets GitHub slugs.
+    """
+    sphinx = _sphinx_source_root(page, None) is not None
+    return _markdown_heading_anchors(page, docutils=sphinx) | _html_anchor_ids(
+        _read_text(page)
+    )
+
+
+TOCTREE_ENTRY_RE = re.compile(r"^(?:.*<(?P<bracketed>[^>]+)>|(?P<plain>\S.*?))\s*$")
+
+
+def _iter_html_hrefs(text: str) -> list[tuple[int, str]]:
+    """Return (line, href) pairs from raw HTML blocks and inline HTML."""
+    hrefs: list[tuple[int, str]] = []
+    for line_number, token in _iter_block_tokens(text):
+        fragments: list[str] = []
+        if token.type == "html_block":
+            fragments.append(token.content)
+        elif token.type == "inline" and token.children:
+            fragments.extend(
+                child.content for child in token.children if child.type == "html_inline"
+            )
+        for fragment in fragments:
+            hrefs.extend((line_number, href) for href in _html_hrefs(fragment))
+    return hrefs
+
+
+def _iter_toctree_entries(text: str) -> list[tuple[int, str, bool]]:
+    """Return (line, target, is_glob) triples for MyST ``{toctree}`` entries.
+
+    Option lines (``:maxdepth: 1``), blank lines, comments, ``self``, and
+    external URLs are skipped; ``Title <target>`` yields the target; under
+    ``:glob:`` a wildcard entry is flagged so the caller expands it.
+    """
+    entries: list[tuple[int, str, bool]] = []
+    for line_number, token in _iter_block_tokens(text):
+        if token.type != "fence":
+            continue
+        directive = MYST_DIRECTIVE_RE.match(token.info.strip())
+        if not directive or directive.group("name") != "toctree":
+            continue
+        lines = token.content.splitlines()
+        glob_mode = any(line.strip() == ":glob:" for line in lines)
+        for index, raw in enumerate(lines, start=1):
+            line = raw.strip()
+            if not line or line.startswith((":", "%", "<!--")):
+                continue
+            match = TOCTREE_ENTRY_RE.match(line)
+            target = (match.group("bracketed") or match.group("plain")).strip()
+            if target == "self" or _is_external_link(target):
+                continue  # `self` is Sphinx's special entry for the current page
+            is_glob = glob_mode and any(character in target for character in "*?[")
+            entries.append((line_number + index, target, is_glob))
+    return entries
+
+
+def _resolve_built_html_href(href: str, path: Path, source_root: Path) -> Path | None:
+    """Resolve a raw HTML ``href`` on a Sphinx page to the source page it
+    renders (``x.html`` -> ``x.md``/``x.rst``, ``x/`` -> ``x/index.*``) or to
+    an existing file such as a static asset; None when nothing matches."""
+    base = source_root if href.startswith("/") else path.parent
+    target = href.lstrip("/")
+    root = source_root.resolve()
+    prefix = "/" if href.startswith("/") else ""
+    if target.endswith(".html"):
+        return _resolve_myst_doc_role(
+            prefix + target[: -len(".html")], path, source_root
+        )
+    if target.endswith("/"):
+        return _resolve_myst_doc_role(prefix + target + "index", path, source_root)
+    resolved = (base / target).resolve()
+    if resolved.exists() and resolved.is_relative_to(root):
+        return resolved
+    return None
+
+
 def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
     """Return (line, destination) pairs for every Markdown link in ``text``.
 
@@ -428,18 +639,136 @@ def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
     fenced or indented code, inline code, or HTML. Images are not links.
     """
     links: list[tuple[int, str]] = []
-    for token in MARKDOWN_PARSER.parse(text):
-        if token.type != "inline" or not token.children:
-            continue
-        line_number = (token.map[0] + 1) if token.map else 0
+    for line_number, token in _iter_inline_tokens(text):
         for child in token.children:
             if child.type == "link_open":
                 href = child.attrGet("href")
                 if href:
-                    # markdown-it percent-encodes destinations; filesystem
-                    # checks need the literal path.
-                    links.append((line_number, unquote(str(href))))
+                    # Keep markdown-it's percent-encoded form; the resolver
+                    # decodes path and fragment separately.
+                    links.append((line_number, str(href)))
     return links
+
+
+MYST_DOC_ROLE_SUFFIX = "{doc}"
+SPHINX_SOURCE_SUFFIXES = (".md", ".rst")
+
+
+def _iter_myst_doc_roles(text: str) -> list[tuple[int, str]]:
+    """Return (line, target) pairs for MyST ``{doc}`` cross-references.
+
+    markdown-it sees ``{doc}`` as text followed by an inline code span; the
+    span holds either ``target`` or ``Label <target>``. Roles inside
+    Markdown-bearing directives are included.
+    """
+    roles: list[tuple[int, str]] = []
+    for line_number, token in _iter_inline_tokens(text):
+        children = token.children
+        for index, child in enumerate(children[:-1]):
+            if child.type != "text" or not child.content.endswith(MYST_DOC_ROLE_SUFFIX):
+                continue
+            span = children[index + 1]
+            if span.type != "code_inline":
+                continue
+            target = span.content.strip()
+            if target.endswith(">") and "<" in target:
+                target = target[target.rindex("<") + 1 : -1].strip()
+            if target:
+                roles.append((line_number, target))
+    return roles
+
+
+@functools.lru_cache(maxsize=None)
+def _sphinx_source_root(path: Path, repo_root: Path | None) -> Path | None:
+    """Return the nearest ancestor holding ``conf.py`` (the Sphinx srcdir)."""
+    for ancestor in path.parents:
+        if (ancestor / "conf.py").is_file():
+            return ancestor
+        if repo_root is not None and ancestor == repo_root:
+            break
+    return None
+
+
+@functools.lru_cache(maxsize=None)
+def _sphinx_exclude_patterns(source_root: Path) -> tuple[str, ...]:
+    """Read ``exclude_patterns`` from ``conf.py`` without executing it."""
+    try:
+        tree = ast.parse(_read_text(source_root / "conf.py"))
+    except OSError, SyntaxError, ValueError:
+        return ()
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(
+            isinstance(target, ast.Name) and target.id == "exclude_patterns"
+            for target in node.targets
+        ):
+            continue
+        try:
+            value = ast.literal_eval(node.value)
+        except ValueError:
+            return ()
+        if isinstance(value, (list, tuple)):
+            return tuple(str(item) for item in value)
+    return ()
+
+
+def _is_sphinx_excluded(page: Path, source_root: Path) -> bool:
+    """Whether Sphinx drops ``page`` from its document set via exclude_patterns."""
+    try:
+        rel = page.resolve().relative_to(source_root.resolve()).as_posix()
+    except ValueError:
+        return True
+    for pattern in _sphinx_exclude_patterns(source_root):
+        pattern = pattern.rstrip("/")
+        if rel == pattern or rel.startswith(pattern + "/"):
+            return True
+        if fnmatch.fnmatch(rel, pattern) or fnmatch.fnmatch(rel, pattern + "/*"):
+            return True
+    return False
+
+
+def _resolve_myst_doc_role(target: str, path: Path, source_root: Path) -> Path | None:
+    """Resolve a ``{doc}`` target to an existing page, or None when missing."""
+    base = source_root if target.startswith("/") else path.parent
+    stem = base / target.lstrip("/")
+    candidates = [stem] if stem.suffix in SPHINX_SOURCE_SUFFIXES else []
+    candidates.extend(
+        stem.with_name(stem.name + suffix) for suffix in SPHINX_SOURCE_SUFFIXES
+    )
+    root = source_root.resolve()
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        # Sphinx only registers documents under its source root; a target that
+        # escapes it (`../../README`) or matches `exclude_patterns` is not a
+        # page even if the file exists.
+        if (
+            resolved.is_file()
+            and resolved.is_relative_to(root)
+            and not _is_sphinx_excluded(resolved, source_root)
+        ):
+            return resolved
+    return None
+
+
+def _expand_toctree_glob(pattern: str, path: Path, source_root: Path) -> list[Path]:
+    """Pages a ``:glob:`` toctree pattern matches, in Sphinx's document set."""
+    base = source_root if pattern.startswith("/") else path.parent
+    relative = pattern.lstrip("/")
+    matches: list[Path] = []
+    for suffix in ("", *SPHINX_SOURCE_SUFFIXES):
+        for candidate in base.glob(relative + suffix):
+            if (
+                candidate.suffix not in SPHINX_SOURCE_SUFFIXES
+                or not candidate.is_file()
+            ):
+                continue
+            resolved = candidate.resolve()
+            if resolved == path.resolve() or _is_sphinx_excluded(resolved, source_root):
+                continue
+            if resolved not in matches:
+                matches.append(resolved)
+    return matches
 
 
 def _github_heading_slug(heading: str) -> str:
@@ -463,20 +792,36 @@ def _inline_plain_text(token) -> str:
     return "".join(parts)
 
 
-def _markdown_heading_anchors(path: Path) -> set[str]:
-    """Return the anchor slugs GitHub generates for a markdown file's headings.
+def _docutils_id(text: str) -> str:
+    """Approximate docutils ``make_id``: the section id Sphinx renders."""
+    ascii_text = (
+        unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    )
+    identifier = re.sub(r"[^a-z0-9]+", "-", ascii_text.lower())
+    return re.sub(r"^[-0-9]+|-+$", "", identifier)
 
-    ATX and Setext headings both count; github-slugger semantics reserve
-    already-taken slugs, so `Foo`, `Foo-1`, `Foo` yields `foo`, `foo-1`,
-    `foo-2`.
+
+def _markdown_heading_anchors(path: Path, docutils: bool = False) -> set[str]:
+    """Return the anchors a markdown file's headings generate.
+
+    ATX and Setext headings both count. GitHub (default) reserves taken slugs
+    so `Foo`, `Foo-1`, `Foo` yields `foo`, `foo-1`, `foo-2`; docutils ids
+    (``docutils=True``) follow the same reservation with docutils normalization.
     """
     anchors: set[str] = set()
     occurrences: dict[str, int] = {}
-    tokens = MARKDOWN_PARSER.parse(path.read_text(encoding="utf-8", errors="replace"))
+    tokens = _parse_markdown(_read_text(path))
+    slugify = _docutils_id if docutils else _github_heading_slug
+    automatic_sections = 0
     for index, token in enumerate(tokens):
         if token.type != "heading_open" or index + 1 >= len(tokens):
             continue
-        original = _github_heading_slug(_inline_plain_text(tokens[index + 1]))
+        original = slugify(_inline_plain_text(tokens[index + 1]))
+        if not original and docutils:
+            # docutils allocates `section-N` when a title normalizes to nothing
+            # (for example `# 2026`).
+            automatic_sections += 1
+            original = f"section-{automatic_sections}"
         slug = original
         while slug in anchors:
             occurrences[original] = occurrences.get(original, 0) + 1
@@ -808,13 +1153,73 @@ def check_markdown_internal_links(repo_root: Path) -> list[str]:
                 )
                 continue
             anchor = _markdown_link_anchor(raw_link)
+            if anchor and resolved.is_dir():
+                # `[Foo](foo/#section)` renders the directory's README.
+                resolved = resolved / "README.md"
             if anchor and resolved.suffix == ".md" and resolved.is_file():
-                if anchor not in _markdown_heading_anchors(resolved):
+                if anchor not in _page_anchors(resolved):
                     warnings.append(
                         f"{path.relative_to(repo_root)}:{line_number}: link "
                         f"`{raw_link}` names heading anchor `#{anchor}` that "
                         f"`{_display_path(resolved, repo_root)}` does not define"
                     )
+        source_root = _sphinx_source_root(path, repo_root)
+        for line_number, href in _iter_html_hrefs(text):
+            target = _strip_markdown_link_target(href)
+            if not target or _is_external_link(target):
+                continue
+            fragment = unquote(target.split("#", 1)[1]) if "#" in target else ""
+            target = unquote(target.split("?", 1)[0].split("#", 1)[0])
+            if not target:
+                page: Path | None = path  # same-page `#fragment`
+            elif source_root is not None:
+                page = _resolve_built_html_href(target, path, source_root)
+            else:
+                page = _resolve_markdown_link(target, path.parent, repo_root, path)
+                if page is not None and not (
+                    page.exists() and page.is_relative_to(repo_root.resolve())
+                ):
+                    page = None
+            if page is None:
+                warnings.append(
+                    f"{path.relative_to(repo_root)}:{line_number}: raw HTML href "
+                    f"`{href}` does not name an existing page or file"
+                )
+                continue
+            if (
+                fragment
+                and page.suffix == ".md"
+                and fragment not in _page_anchors(page)
+            ):
+                warnings.append(
+                    f"{path.relative_to(repo_root)}:{line_number}: raw HTML href "
+                    f"`{href}` names anchor `#{fragment}` that "
+                    f"`{_display_path(page, repo_root)}` does not define"
+                )
+        if source_root is None:
+            continue
+        for line_number, target in _iter_myst_doc_roles(text):
+            if _resolve_myst_doc_role(target, path, source_root) is None:
+                warnings.append(
+                    f"{path.relative_to(repo_root)}:{line_number}: MyST role "
+                    f"`{{doc}}` targets `{target}`, which is not a page under "
+                    f"`{_display_path(source_root, repo_root)}`"
+                )
+        for line_number, target, is_glob in _iter_toctree_entries(text):
+            if is_glob:
+                if not _expand_toctree_glob(target, path, source_root):
+                    warnings.append(
+                        f"{path.relative_to(repo_root)}:{line_number}: toctree glob "
+                        f"`{target}` matches no page under "
+                        f"`{_display_path(source_root, repo_root)}`"
+                    )
+                continue
+            if _resolve_myst_doc_role(target, path, source_root) is None:
+                warnings.append(
+                    f"{path.relative_to(repo_root)}:{line_number}: toctree entry "
+                    f"`{target}` is not a page under "
+                    f"`{_display_path(source_root, repo_root)}`"
+                )
     return warnings
 
 
@@ -822,7 +1227,8 @@ def _markdown_link_anchor(link: str) -> str:
     target = _strip_markdown_link_target(link)
     if "#" not in target:
         return ""
-    return target.split("#", maxsplit=1)[1].strip().lower()
+    # Fragments are case-sensitive: `#Heading` does not reach `#heading`.
+    return unquote(target.split("#", maxsplit=1)[1].strip())
 
 
 def check_docs_discoverability(repo_root: Path) -> list[str]:
@@ -853,7 +1259,7 @@ def check_docs_discoverability(repo_root: Path) -> list[str]:
         for doc in sorted(docs_dir.glob("*.md")):
             if doc.name in {"README.md"}:
                 continue
-            repo_relative = str(doc.relative_to(repo_root))
+            repo_relative = doc.relative_to(repo_root).as_posix()
             text_mentions_doc = _mentions_reference(
                 index_text, repo_relative
             ) or _mentions_reference(index_text, doc.name)
@@ -929,8 +1335,11 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
             )
             if resolved is None:
                 continue
+            if resolved.is_dir() and (resolved / "README.md").is_file():
+                # A directory link exposes that directory's README.
+                resolved = resolved / "README.md"
             try:
-                targets.add(str(resolved.relative_to(repo_root.resolve())))
+                targets.add(resolved.relative_to(repo_root.resolve()).as_posix())
             except ValueError:
                 continue
         link_targets[other] = targets
@@ -944,10 +1353,12 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
         unique = name_counts.get(name, 0) <= 1
         found: set[str] = set()
         for other, text in corpus.items():
-            if other == rel_path or name not in text:
+            if other == rel_path:
                 continue
             if rel_path in link_targets.get(other, ()):
-                found.add(other)
+                found.add(other)  # resolved link (may be a directory link)
+            elif name not in text:
+                continue
             elif _mentions_reference(text, rel_path):
                 found.add(other)
             elif unique and _mentions_reference(text, name):
@@ -955,18 +1366,35 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
         return found
 
     referrers = {rel_path: _referrers(rel_path) for rel_path in checked}
-    reachable = {other for other in corpus if other not in checked}
-    changed = True
-    while changed:
-        changed = False
-        for rel_path, sources in referrers.items():
-            if rel_path not in reachable and sources & reachable:
-                reachable.add(rel_path)
-                changed = True
+
+    def _propagate(roots: set[str], allowed_referrer) -> set[str]:
+        reachable = set(roots)
+        changed = True
+        while changed:
+            changed = False
+            for rel_path, sources in referrers.items():
+                if rel_path in reachable:
+                    continue
+                if any(s in reachable and allowed_referrer(s) for s in sources):
+                    reachable.add(rel_path)
+                    changed = True
+        return reachable
+
+    def _is_doc(rel_path: str) -> bool:
+        return rel_path.endswith((".md", ".rst"))
+
+    # Documentation must be discoverable through documentation: only bucket
+    # indexes, other docs, and agent instruction files count as referrers.
+    # A page named only by a script or test is still unindexed.
+    doc_roots = {o for o in corpus if o not in checked and _is_doc(o)}
+    doc_reachable = _propagate(doc_roots, _is_doc)
+    # Sidecar data may legitimately be addressed by scripts and tests.
+    all_reachable = _propagate({o for o in corpus if o not in checked}, lambda _s: True)
 
     failures: list[str] = []
     warnings: list[str] = []
     for rel_path, blocking in sorted(checked.items()):
+        reachable = doc_reachable if blocking else all_reachable
         if rel_path in reachable:
             continue
         if blocking:
@@ -988,8 +1416,14 @@ def _is_orphan_root_by_convention(rel_path: str) -> bool:
     name = parts[-1]
     if parts[:1] != ("docs",):
         return False
-    if name in ORPHAN_INDEX_NAMES and len(parts) <= 3:
-        return True  # docs/README.md, docs/AGENTS.md, docs/<bucket>/{README,AGENTS}.md
+    if name in ORPHAN_INDEX_NAMES and len(parts) == 2:
+        return True  # docs/README.md, docs/AGENTS.md
+    if (
+        name in ORPHAN_INDEX_NAMES
+        and len(parts) == 3
+        and parts[1] in REQUIRED_DOCS_TOP_LEVEL_DIRS
+    ):
+        return True  # docs/<registered bucket>/{README,AGENTS}.md
     return (
         parts[:2] == ("docs", "dev_tasks")
         and len(parts) == 4

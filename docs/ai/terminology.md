@@ -17,26 +17,26 @@ slash command, a skill, or a manual recipe.
 
 ## Canonical Terms
 
-| Term                         | Use for                                                                                                                              | Do not use for                                                                       | Current DART owner                                     |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| Agent                        | A coding-assistant worker session that reasons over context, calls tools, and completes a task.                                      | GitHub bot comments or generated files.                                              | `AGENTS.md`, `docs/onboarding/ai-tools.md`             |
-| Instruction file             | Persistent project guidance loaded into agent context, especially `AGENTS.md` and tool redirects such as `CLAUDE.md` or `GEMINI.md`. | Reusable procedures that should load on demand.                                      | `AGENTS.md`, module `AGENTS.md` files                  |
-| Capability                   | A DART `dart-*` workflow or domain skill as seen across supported tools.                                                             | A specific file format, command syntax, or runtime tool call.                        | `docs/ai/workflows.md`, `docs/ai/capabilities.json`    |
-| Workflow                     | A repeatable DART procedure with required reading, steps, output, and gates.                                                         | General domain background or one-off task state.                                     | `.claude/commands/`, `docs/ai/workflows.md`            |
-| Workflow source              | The editable source file for a user-invoked DART workflow.                                                                           | Generated tool adapters.                                                             | `.claude/commands/`                                    |
-| Domain skill                 | On-demand DART domain knowledge or procedure, usually a lightweight pointer to full docs.                                            | Workflow commands with task lifecycle steps.                                         | `.claude/skills/`                                      |
-| Agent Skill                  | A portable `SKILL.md` package with metadata, instructions, and optional scripts or references.                                       | MCP tools, slash commands, or always-loaded instructions.                            | `.claude/skills/`, generated Codex skill adapters      |
-| Slash command                | A leading-slash UI invocation, such as `/dart-next` in Claude Code or OpenCode.                                                      | Codex project workflows, because Codex slash commands are built-in session controls. | `.claude/commands/`, `.opencode/command/`              |
-| Generated adapter entrypoint | A tool-specific file generated from an editable DART source so a supported agent can invoke the same capability.                     | An editable source of truth.                                                         | `.agents/skills/`, `.opencode/command/`                |
-| MCP server                   | External provider of tools, resources, prompts, or context through Model Context Protocol.                                           | Local docs, workflow files, or generated adapters.                                   | Tool configuration outside this repo unless checked in |
-| MCP tool                     | Callable action exposed by an MCP server.                                                                                            | Shell commands, Pixi tasks, DART workflow capabilities, or skill instructions.       | MCP server metadata                                    |
-| Hook                         | Deterministic lifecycle automation that runs at configured agent events.                                                             | Prompt-based reusable workflows or a substitute for explicit validation.             | `.claude/hooks/`, `.codex/hooks.json`, Git hooks       |
-| Subagent                     | A separate worker context used for isolated or delegated work.                                                                       | A DART capability, workflow, or skill.                                               | `docs/ai/orchestration.md`                             |
-| Orchestrator                 | The role that decomposes, sequences, and reviews work packets.                                                                       | A specific AI product.                                                               | `docs/ai/orchestration.md`                             |
-| Executor                     | The role that implements one packet and returns evidence.                                                                            | A specific AI product.                                                               | `docs/ai/orchestration.md`                             |
-| Work packet                  | A bounded handoff unit in a numbered plan or dev-task surface.                                                                       | A GitHub issue, PR, branch, or entire roadmap item.                                  | `docs/ai/orchestration.md`, numbered plans             |
-| Gate                         | A command or check that can fail and directly supports the completion claim.                                                         | Informal confidence.                                                                 | `docs/ai/verification.md`                              |
-| Evidence                     | File state, command output, review state, benchmark data, or artifact proving a requirement.                                         | Intent, plausible reasoning, or an uninspected broad check.                          | `docs/ai/verification.md`                              |
+| Term                         | Use for                                                                                                               | Do not use for                                                                       | Current DART owner                                     |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| Agent                        | A coding-assistant worker session that reasons over context, calls tools, and completes a task.                       | GitHub bot comments or generated files.                                              | `AGENTS.md`, `docs/onboarding/ai-tools.md`             |
+| Instruction file             | Persistent project guidance loaded into agent context, especially `AGENTS.md` and tool redirects such as `CLAUDE.md`. | Reusable procedures that should load on demand.                                      | `AGENTS.md`, module `AGENTS.md` files                  |
+| Capability                   | A DART `dart-*` workflow or domain skill as seen across supported tools.                                              | A specific file format, command syntax, or runtime tool call.                        | `docs/ai/workflows.md`, `docs/ai/capabilities.json`    |
+| Workflow                     | A repeatable DART procedure with required reading, steps, output, and gates.                                          | General domain background or one-off task state.                                     | `.claude/commands/`, `docs/ai/workflows.md`            |
+| Workflow source              | The editable source file for a user-invoked DART workflow.                                                            | Generated tool adapters.                                                             | `.claude/commands/`                                    |
+| Domain skill                 | On-demand DART domain knowledge or procedure, usually a lightweight pointer to full docs.                             | Workflow commands with task lifecycle steps.                                         | `.claude/skills/`                                      |
+| Agent Skill                  | A portable `SKILL.md` package with metadata, instructions, and optional scripts or references.                        | MCP tools, slash commands, or always-loaded instructions.                            | `.claude/skills/`, generated Codex skill adapters      |
+| Slash command                | A leading-slash UI invocation, such as `/dart-next` in Claude Code.                                                   | Codex project workflows, because Codex slash commands are built-in session controls. | `.claude/commands/`                                    |
+| Generated adapter entrypoint | A tool-specific file generated from an editable DART source so a supported agent can invoke the same capability.      | An editable source of truth.                                                         | `.agents/skills/`                                      |
+| MCP server                   | External provider of tools, resources, prompts, or context through Model Context Protocol.                            | Local docs, workflow files, or generated adapters.                                   | Tool configuration outside this repo unless checked in |
+| MCP tool                     | Callable action exposed by an MCP server.                                                                             | Shell commands, Pixi tasks, DART workflow capabilities, or skill instructions.       | MCP server metadata                                    |
+| Hook                         | Deterministic lifecycle automation that runs at configured agent events.                                              | Prompt-based reusable workflows or a substitute for explicit validation.             | `.claude/hooks/`, `.codex/hooks.json`, Git hooks       |
+| Subagent                     | A separate worker context used for isolated or delegated work.                                                        | A DART capability, workflow, or skill.                                               | `docs/ai/orchestration.md`                             |
+| Orchestrator                 | The role that decomposes, sequences, and reviews work packets.                                                        | A specific AI product.                                                               | `docs/ai/orchestration.md`                             |
+| Executor                     | The role that implements one packet and returns evidence.                                                             | A specific AI product.                                                               | `docs/ai/orchestration.md`                             |
+| Work packet                  | A bounded handoff unit in a numbered plan or dev-task surface.                                                        | A GitHub issue, PR, branch, or entire roadmap item.                                  | `docs/ai/orchestration.md`, numbered plans             |
+| Gate                         | A command or check that can fail and directly supports the completion claim.                                          | Informal confidence.                                                                 | `docs/ai/verification.md`                              |
+| Evidence                     | File state, command output, review state, benchmark data, or artifact proving a requirement.                          | Intent, plausible reasoning, or an uninspected broad check.                          | `docs/ai/verification.md`                              |
 
 ## Preferred Phrasing
 
@@ -68,7 +68,6 @@ conventions:
 - Claude Code treats custom command files and skills as slash-invoked skills
   while keeping `.claude/commands/` compatible (tested version recorded in
   `docs/onboarding/ai-tools.md`).
-- OpenCode keeps custom commands and Agent Skills as separate surfaces.
 - Codex uses skills for repo workflows and reserves slash commands for built-in
   session controls.
 - MCP is the integration standard for external tools and context. Do not rename
@@ -79,8 +78,8 @@ conventions:
 
 The source map in `docs/ai/README.md` names which surfaces are editable
 sources (`.claude/commands/`, `.claude/skills/`, `.codex/`) and which are
-generated adapters (`.agents/skills/`, `.opencode/command/`); this file only
-fixes the vocabulary for them.
+generated Codex adapters (`.agents/skills/`); this file only fixes the
+vocabulary for them.
 
 ## Migration Candidates
 
@@ -89,8 +88,8 @@ Track them as explicit AI-infra changes because they affect discovery,
 generated files, and CI checks:
 
 1. Evaluate moving reusable workflow authoring from `.claude/commands/` to an
-   Agent Skills source once Claude Code, OpenCode, and Codex all expose the
-   same behavior from that source without weakening slash-command ergonomics.
+   Agent Skills source once Claude Code and Codex both expose the same behavior
+   from that source without weakening slash-command ergonomics.
 2. Add MCP only for external systems or deterministic local services that need
    structured callable actions or resources. Do not add MCP as a wrapper around
    plain docs links or Pixi commands.

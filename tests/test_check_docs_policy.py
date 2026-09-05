@@ -624,17 +624,19 @@ def test_docs_orphans_dev_task_entrypoints_are_roots(tmp_path):
 def test_docs_orphans_resolve_links_instead_of_path_suffixes(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"
-    for bucket in ("a", "b"):
+    for bucket in ("onboarding", "design"):
         (docs / bucket / "topic").mkdir(parents=True)
         (docs / bucket / "topic" / "notes.md").write_text("# Notes\n", encoding="utf-8")
-    (docs / "a" / "README.md").write_text("[notes](topic/notes.md)\n", encoding="utf-8")
-    (docs / "b" / "README.md").write_text("# B\n", encoding="utf-8")
+    (docs / "onboarding" / "README.md").write_text(
+        "[notes](topic/notes.md)\n", encoding="utf-8"
+    )
+    (docs / "design" / "README.md").write_text("# Design\n", encoding="utf-8")
     (docs / "README.md").write_text("# Docs\n", encoding="utf-8")
 
     failures, _ = module.check_docs_orphans(tmp_path)
 
-    assert any("docs/b/topic/notes.md" in f for f in failures)
-    assert not any("docs/a/topic/notes.md" in f for f in failures)
+    assert any("docs/design/topic/notes.md" in f for f in failures)
+    assert not any("docs/onboarding/topic/notes.md" in f for f in failures)
 
 
 def test_markdown_heading_anchors_reserve_taken_slugs(tmp_path):
@@ -742,6 +744,375 @@ def test_docs_discoverability_requires_whole_token_mention(tmp_path):
 
     assert any("docs/ai/api.md: not linked" in w for w in warnings)
     assert not any("old-api.md" in w for w in warnings)
+
+
+def test_display_path_is_posix_even_for_windows_paths():
+    from pathlib import PureWindowsPath
+
+    module = _load_module()
+    rel = module._display_path(
+        PureWindowsPath("C:/repo/docs/readthedocs/topics/page.md"),
+        PureWindowsPath("C:/repo"),
+    )
+
+    assert rel == "docs/readthedocs/topics/page.md"
+    assert rel.startswith(module.ORPHAN_EXCLUDED_PREFIXES)
+
+
+def test_link_check_treats_scheme_relative_urls_as_external(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "README.md").write_text("[guide](//example.com/docs)\n", encoding="utf-8")
+
+    assert module.check_markdown_internal_links(tmp_path) == []
+
+
+def test_iter_tracked_files_reads_non_ascii_names(tmp_path):
+    import subprocess
+
+    module = _load_module()
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    doc = tmp_path / "docs" / "café.md"
+    doc.parent.mkdir()
+    doc.write_text("# Café\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "docs/café.md"], check=True)
+
+    files = module.iter_tracked_files(tmp_path, [":(glob)docs/*.md"])
+
+    assert [f.name for f in files] == ["café.md"]
+
+
+def test_link_check_decodes_reserved_characters_after_splitting_fragment(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "guide#v2.md").write_text("# Guide\n\n## Notes\n", encoding="utf-8")
+    (docs / "README.md").write_text(
+        "[guide](guide%23v2.md) [notes](guide%23v2.md#notes) [bad](guide%23v2.md#nope)\n",
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert "#nope" in warnings[0]
+
+
+def test_docs_orphans_unregistered_bucket_readme_is_not_a_root(tmp_path):
+    module = _load_module()
+    bucket = tmp_path / "docs" / "foo"
+    bucket.mkdir(parents=True)
+    (bucket / "README.md").write_text("[child](child.md)\n", encoding="utf-8")
+    (bucket / "child.md").write_text("[back](README.md)\n", encoding="utf-8")
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, _ = module.check_docs_orphans(tmp_path)
+
+    assert any("docs/foo/README.md" in f for f in failures)
+    assert any("docs/foo/child.md" in f for f in failures)
+
+
+def test_link_check_treats_any_uri_scheme_as_external(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "README.md").write_text(
+        "[rfc](urn:ietf:rfc:3986) [ssh](ssh://git@example.com/repo) "
+        "[mail](mailto:a@b.c) [rel](missing.md)\n",
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert "missing.md" in warnings[0]
+
+
+def test_markdown_links_include_myst_directive_bodies():
+    module = _load_module()
+    text = (
+        "Intro [a](a.md)\n"
+        "\n"
+        "```{note}\n"
+        "See [b](b.md) and\n"
+        "[c](c.md).\n"
+        "```\n"
+        "\n"
+        "```python\n"
+        "print('[not](code.md)')\n"
+        "```\n"
+        "```{code-block} python\n"
+        "print('[literal](literal.md)')\n"
+        "```\n"
+        "```{eval-rst}\n"
+        "`RST link <rst.md>`_ and [x](rst.md)\n"
+        "```\n"
+    )
+
+    links = module._iter_markdown_links(text)
+
+    assert [link for _, link in links] == ["a.md", "b.md", "c.md"]
+    # Links report the line of their containing paragraph, offset into the file.
+    assert [line for line, _ in links] == [1, 4, 4]
+
+
+def test_docs_orphans_directory_link_reaches_nested_readme(tmp_path):
+    module = _load_module()
+    nested = tmp_path / "docs" / "design" / "foo"
+    nested.mkdir(parents=True)
+    (tmp_path / "docs" / "design" / "README.md").write_text(
+        "[foo](foo/)\n", encoding="utf-8"
+    )
+    (nested / "README.md").write_text("[x](x.md)\n", encoding="utf-8")
+    (nested / "x.md").write_text("# X\n", encoding="utf-8")
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, _ = module.check_docs_orphans(tmp_path)
+
+    assert failures == []
+
+
+def test_link_check_validates_anchors_on_directory_links(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    (docs / "foo").mkdir(parents=True)
+    (docs / "foo" / "README.md").write_text("# Foo\n\n## Present\n", encoding="utf-8")
+    (docs / "README.md").write_text(
+        "[ok](foo/#present) [bad](foo/#missing)\n", encoding="utf-8"
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert "#missing" in warnings[0]
+
+
+def test_link_check_anchor_comparison_is_case_sensitive(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "target.md").write_text("# Heading\n", encoding="utf-8")
+    (docs / "README.md").write_text(
+        "[ok](target.md#heading) [bad](target.md#Heading)\n", encoding="utf-8"
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert "#Heading" in warnings[0]
+
+
+def test_link_check_validates_myst_doc_roles_inside_sphinx_source_root(tmp_path):
+    module = _load_module()
+    site = tmp_path / "docs" / "readthedocs"
+    (site / "user_guide").mkdir(parents=True)
+    (site / "conf.py").write_text("project = 'x'\n", encoding="utf-8")
+    (site / "user_guide" / "index.md").write_text("# Guide\n", encoding="utf-8")
+    (site / "overview.rst").write_text("Overview\n========\n", encoding="utf-8")
+    (site / "user_guide" / "page.md").write_text(
+        "See {doc}`index`, {doc}`Overview </overview>`, {doc}`Label <../overview>`, "
+        "{doc}`/user_guide/missing`, and {doc}`../../README`.\n"
+        "\n"
+        "```{note}\n"
+        "Inside a directive: {doc}`/user_guide/also-missing`.\n"
+        "```\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "README.md").write_text("# Repo docs\n", encoding="utf-8")
+    # Outside a Sphinx source root the role syntax is plain text.
+    (tmp_path / "docs" / "notes.md").write_text("{doc}`nothing`\n", encoding="utf-8")
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 3
+    assert any("/user_guide/missing" in w for w in warnings)
+    assert any("../../README" in w for w in warnings)  # escapes the source root
+    assert any("/user_guide/also-missing" in w for w in warnings)  # inside {note}
+
+
+def test_link_check_validates_toctree_entries_and_raw_html_hrefs(tmp_path):
+    module = _load_module()
+    site = tmp_path / "docs" / "readthedocs"
+    (site / "guide").mkdir(parents=True)
+    (site / "_static").mkdir()
+    (site / "conf.py").write_text("project = 'x'\n", encoding="utf-8")
+    (site / "guide" / "index.md").write_text("# Guide\n", encoding="utf-8")
+    (site / "guide" / "start.md").write_text("# Start\n", encoding="utf-8")
+    (site / "about.rst").write_text("About\n=====\n", encoding="utf-8")
+    (site / "_static" / "logo.png").write_bytes(b"png")
+    (site / "index.md").write_text(
+        "# Site\n\n"
+        '<div id="top"><a href="guide/start.html">Start</a> <a href="guide/">Guide</a> '
+        '<a href="guide/missing.html">Missing</a> <a href="_static/logo.png">Logo</a> '
+        '<a href="_static/nope.png">Nope</a> <a href="https://example.com">Ext</a> '
+        '<a href="#top">Top</a></div>\n\n'
+        "```{toctree}\n"
+        ":hidden:\n"
+        ":maxdepth: 1\n"
+        "\n"
+        "self\n"
+        "guide/start\n"
+        "About <about>\n"
+        "guide/gone\n"
+        "https://example.com/external\n"
+        "```\n"
+        "\n"
+        "```{toctree}\n"
+        ":glob:\n"
+        "\n"
+        "guide/*\n"
+        "```\n",
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 3
+    assert any("guide/missing.html" in w for w in warnings)
+    assert any("_static/nope.png" in w for w in warnings)
+    assert any("toctree entry `guide/gone`" in w for w in warnings)
+
+
+def test_link_check_raw_html_href_outside_sphinx_root_checks_files(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "img.png").write_bytes(b"png")
+    (docs / "README.md").write_text(
+        '<img src="img.png"><a href="img.png">ok</a> <a href="missing.png">bad</a>\n'
+        "<A HREF='also-missing.png'>bad2</A> <a href=unquoted-missing.png>bad3</a>\n",
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 3
+    assert any("missing.png" in w for w in warnings)
+    assert any("also-missing.png" in w for w in warnings)
+    assert any("unquoted-missing.png" in w for w in warnings)
+
+
+def test_docs_orphans_script_reference_does_not_replace_index_reachability(tmp_path):
+    module = _load_module()
+    bucket = tmp_path / "docs" / "onboarding"
+    bucket.mkdir(parents=True)
+    (bucket / "README.md").write_text("# Index\n", encoding="utf-8")
+    (bucket / "page.md").write_text("# Page\n", encoding="utf-8")
+    scripts = tmp_path / "scripts"
+    scripts.mkdir()
+    (scripts / "tool.py").write_text(
+        'DOC = "docs/onboarding/page.md"\n', encoding="utf-8"
+    )
+    plan_dir = tmp_path / "docs" / "plans" / "001-demo"
+    plan_dir.mkdir(parents=True)
+    (plan_dir / "packet.json").write_text("{}\n", encoding="utf-8")
+    (scripts / "packets.py").write_text(
+        'PACKET = "docs/plans/001-demo/packet.json"\n', encoding="utf-8"
+    )
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, warnings = module.check_docs_orphans(tmp_path)
+
+    assert any("docs/onboarding/page.md" in f for f in failures)  # script-only
+    assert warnings == []  # sidecar data reached through the script is fine
+
+
+def test_link_check_validates_raw_html_fragments(tmp_path):
+    module = _load_module()
+    site = tmp_path / "docs" / "readthedocs"
+    site.mkdir(parents=True)
+    (site / "conf.py").write_text("project = 'x'\n", encoding="utf-8")
+    (site / "guide.md").write_text(
+        '# Guide\n\n## Install\n\n<div id="cards"></div>\n', encoding="utf-8"
+    )
+    (site / "index.md").write_text(
+        '# Site\n\n<a name="top"></a>\n'
+        '<a href="#top">top</a> <a href="#missing">bad</a> '
+        '<a href="guide.html#install">ok</a> <a href="guide.html#cards">ok2</a> '
+        '<a href="guide.html#nope">bad2</a>\n',
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 2
+    assert any("#missing" in w for w in warnings)
+    assert any("#nope" in w for w in warnings)
+
+
+def test_sphinx_pages_use_docutils_anchors_and_exclude_patterns(tmp_path):
+    module = _load_module()
+    site = tmp_path / "docs" / "readthedocs"
+    (site / "_includes").mkdir(parents=True)
+    (site / "conf.py").write_text(
+        'exclude_patterns = ["_build", "README.md", "_includes"]\n', encoding="utf-8"
+    )
+    (site / "README.md").write_text("# Site readme\n", encoding="utf-8")
+    (site / "_includes" / "legacy.md").write_text("# Legacy\n", encoding="utf-8")
+    (site / "guide.md").write_text(
+        "# Guide\n\n## Rigid bodies & shapes\n", encoding="utf-8"
+    )
+    (site / "index.md").write_text(
+        '<a href="guide.html#rigid-bodies-shapes">ok</a> '
+        '<a href="guide.html#rigid-bodies--shapes">github-style</a>\n\n'
+        "{doc}`README` and {doc}`_includes/legacy` are excluded documents.\n\n"
+        "```{toctree}\n:glob:\n\nmissing-*\nguide*\n```\n",
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert any("#rigid-bodies--shapes" in w for w in warnings)
+    assert not any("#rigid-bodies-shapes`" in w for w in warnings)
+    assert any("`README`" in w for w in warnings)
+    assert any("`_includes/legacy`" in w for w in warnings)
+    assert any("toctree glob `missing-*`" in w for w in warnings)
+    assert not any("guide*" in w for w in warnings)
+    assert len(warnings) == 4
+
+
+def test_link_check_raw_html_href_must_stay_inside_repository(tmp_path):
+    module = _load_module()
+    outside = tmp_path.parent / f"{tmp_path.name}-outside.txt"
+    outside.write_text("x\n", encoding="utf-8")
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "README.md").write_text(
+        f'<a href="../../{outside.name}">escapes</a>\n', encoding="utf-8"
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert outside.name in warnings[0]
+
+
+def test_docs_indexes_reject_unregistered_bucket(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    (docs / "foo").mkdir(parents=True)
+    (docs / "README.md").write_text(
+        "".join(f"[{d}]({d}/)\n" for d in module.REQUIRED_DOCS_TOP_LEVEL_DIRS),
+        encoding="utf-8",
+    )
+    (docs / "AGENTS.md").write_text("# docs/\n", encoding="utf-8")
+    (docs / "foo" / "README.md").write_text("# Foo\n", encoding="utf-8")
+
+    failures = module.check_docs_indexes(tmp_path)
+
+    assert any("docs/foo/: unregistered docs bucket" in f for f in failures)
+
+
+def test_sphinx_pages_get_docutils_section_fallback_ids(tmp_path):
+    module = _load_module()
+    site = tmp_path / "docs" / "readthedocs"
+    site.mkdir(parents=True)
+    (site / "conf.py").write_text("project = 'x'\n", encoding="utf-8")
+    page = site / "page.md"
+    page.write_text("# 2026\n\n## 12.5\n\n## Real title\n", encoding="utf-8")
+
+    assert module._page_anchors(page) == {"section-1", "section-2", "real-title"}
 
 
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):

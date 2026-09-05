@@ -94,13 +94,12 @@ source owns its own procedure. Three entrypoints answer recurring questions:
 | `.codex/config.toml`            | Trusted-project bounded agent concurrency and delegation-depth policy               |
 | `.codex/agents/`                | Discoverable read-only scout, reviewer, and release-auditor profiles                |
 | `.codex/hooks.json`             | Maintained fast Codex command-hook configuration                                    |
-| `.opencode/command/`            | Generated OpenCode command adapter entrypoints                                      |
 | `scripts/sync_ai_commands.py`   | Adapter sync and AI docs consistency checker                                        |
 
-Do not hand-edit generated `.agents/skills/` or `.opencode/command/` files.
-Update the source surface, then run `pixi run sync-ai-commands`. Files under
-`.codex/` are maintained project runtime configuration and must be reviewed
-like scripts rather than regenerated.
+Do not hand-edit generated `.agents/skills/` files. Update the source surface,
+then run `pixi run sync-ai-commands`. Files under `.codex/` are maintained
+project runtime configuration and must be reviewed like scripts rather than
+regenerated.
 
 ## Agent-Friendly Setup And Diagnosis
 
@@ -158,11 +157,11 @@ lean, and choose within the user's authorized model and effort set. An explicit
 restriction also bounds comparisons and delegated sessions; tool defaults do
 not expand it.
 
-Claude Code, OpenCode, Gemini CLI, future Codex models, and human contributors
-remain supported: roles are not products, authoring and review stay separate,
-and every workflow maps to public docs and `pixi run ...` commands. DART 6.20
-has a separately maintained compatibility-first catalog; never infer that a
-`main` path, task, or language/toolchain fact exists on the release branch.
+Claude Code, future Codex models, and human contributors remain supported:
+roles are not products, authoring and review stay separate, and every workflow
+maps to public docs and `pixi run ...` commands. DART 6.20 has a separately
+maintained compatibility-first catalog; never infer that a `main` path, task,
+or language/toolchain fact exists on the release branch.
 
 ## Safety Boundary
 

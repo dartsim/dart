@@ -16,7 +16,7 @@ in the shared `.agents/skills/` catalog.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-docs-update <arguments>`
+- Claude Code: `/dart-docs-update <arguments>`
 - Codex: `$dart-docs-update <arguments>`
 
 Treat the text after the skill name as `$ARGUMENTS`. When the workflow
@@ -65,7 +65,7 @@ For AI instruction or workflow changes, follow the owner read order in
    - Regular docs: `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`,
      and `CHANGELOG.md` when `dart-changelog` requires a release-note entry
    - AI source files: `.claude/commands/**`, `.claude/skills/**`
-4. For AI workflow changes, edit `.claude/` sources and run `pixi run sync-ai-commands`; do not hand-edit generated `.agents/skills/` or `.opencode/command/` files (`.codex/` is a maintained source)
+4. For AI workflow changes, edit `.claude/` sources and run `pixi run sync-ai-commands`; do not hand-edit generated `.agents/skills/` files (`.codex/` is a maintained source)
 5. Classify new or moved docs by lifecycle first, then audience, then topic,
    using the placement matrix in `docs/README.md`. For AI docs, keep
    always-loaded entrypoints compact: improve owner placement or pointers

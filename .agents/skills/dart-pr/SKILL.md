@@ -16,7 +16,7 @@ in the shared `.agents/skills/` catalog.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-pr <arguments>`
+- Claude Code: `/dart-pr <arguments>`
 - Codex: `$dart-pr <arguments>`
 
 Treat the text after the skill name as `$ARGUMENTS`. When the workflow
@@ -109,8 +109,8 @@ Use these practices:
 7. Commit only intended files with a plain descriptive commit title.
 8. Merge the latest base branch into the PR branch before any push, and follow
    the base-merge and automated-review rules in `docs/onboarding/ai-reviews.md`
-   (no inline bot replies; `@codex review` re-triggers are throttled to one per
-   approved review-fix round). Ask for explicit maintainer/user approval before
+   (no inline bot replies; one trigger owner and completed fix batches).
+   Ask for explicit maintainer/user approval before
    pushing or opening the draft PR. After approval:
    ```bash
    git push -u origin HEAD
@@ -125,7 +125,11 @@ Use these practices:
     wording, and PR-link follow-up. If `CHANGELOG.md` needs the PR number, keep
     the follow-up changelog commit local until explicit maintainer/user approval
     is given for the additional push or PR update.
-11. Monitor CI: `gh pr checks <PR_NUMBER>`.
+11. Follow the single Review-Fix Loop Workflow in
+    `docs/onboarding/ai-reviews.md`, reusing explicit approval for its action,
+    PR, and scope. Account for the initial automatic review before requesting
+    another; apply the strategy checkpoint and current-head readiness gates.
+    Monitor CI: `gh pr checks <PR_NUMBER>`.
 
 ## Output
 

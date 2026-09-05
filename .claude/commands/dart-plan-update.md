@@ -51,9 +51,8 @@ Discuss or update DART living plans: $ARGUMENTS
    and workstreams, and the dimensions or sequencing principles in
    `docs/plans/README.md` only for strategic framing.
 6. If the plan item becomes implementation work, route to `/dart-new-task` in
-   Claude/OpenCode or `$dart-new-task` in Codex, and use
-   `docs/dev_tasks/README.md` when it is multi-session or needs design
-   tracking.
+   Claude Code or `$dart-new-task` in Codex, and use `docs/dev_tasks/README.md`
+   when it is multi-session or needs design tracking.
 7. Verify with `docs/ai/verification.md`: use the docs-only gate for plan-only
    docs, and the AI docs/adapters gate set when AI docs, workflow sources, or
    generated adapters change.

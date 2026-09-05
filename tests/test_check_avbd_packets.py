@@ -131,9 +131,12 @@ def _disable_figure13_consistency(module, monkeypatch):
     monkeypatch.setattr(module, "_paper_benchmark_timing_errors", lambda *_args: [])
 
 
-def test_committed_packet_corpus_passes():
+def test_committed_packet_corpus_is_structurally_valid():
+    # The committed corpus must always be self-consistent. Whether its seals
+    # match the current source is a claim-time question (`--stale-source
+    # error`, the default), not a property of the checked-in files.
     module = _load_module()
-    assert module.main([]) == 0
+    assert module.main(["--stale-source", "report"]) == 0
 
 
 @pytest.mark.parametrize(
@@ -389,6 +392,164 @@ def test_source_provenance_rejects_file_and_digest_drift(tmp_path, monkeypatch):
     errors = _packet_errors(module, path)
     assert any("sha256 drifted for solver.cpp" in error for error in errors)
     assert any("source_provenance.digest" in error for error in errors)
+
+
+def test_stale_source_report_mode_downgrades_drifted_seal_only(
+    tmp_path, monkeypatch, capsys
+):
+    module = _load_module()
+    monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
+    source = tmp_path / "solver.cpp"
+    source.write_text("first\n")
+    path = _write_packet(
+        tmp_path,
+        "avbd-new-scene-packet.json",
+        {
+            "schema_version": module.AVBD_PACKET_SCHEMA_VERSION,
+            "resolved_solver_identity": _identity(),
+            "source_provenance": _source_provenance(tmp_path, "solver.cpp"),
+        },
+    )
+    source.write_text("second\n")
+    argv = ["--packet-dir", str(tmp_path), "--packet", str(path)]
+
+    assert module.main(argv) == 1
+    assert module.main([*argv, "--stale-source", "report"]) == 0
+    captured = capsys.readouterr()
+    assert "STALE:" in captured.err
+    assert "predate the current source state" in captured.out
+
+
+def test_stale_source_report_mode_keeps_mutated_digest_as_error(tmp_path, monkeypatch):
+    module = _load_module()
+    monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
+    (tmp_path / "solver.cpp").write_text("stable\n")
+    provenance = _source_provenance(tmp_path, "solver.cpp")
+    provenance["digest"] = "0" * 64
+    path = _write_packet(
+        tmp_path,
+        "avbd-new-scene-packet.json",
+        {
+            "schema_version": module.AVBD_PACKET_SCHEMA_VERSION,
+            "resolved_solver_identity": _identity(),
+            "source_provenance": provenance,
+        },
+    )
+
+    assert (
+        module.main(
+            [
+                "--packet-dir",
+                str(tmp_path),
+                "--packet",
+                str(path),
+                "--stale-source",
+                "report",
+            ]
+        )
+        == 1
+    )
+
+
+def test_split_stale_source_findings_keeps_lone_capture_metadata_mismatch_hard():
+    module = _load_module()
+    lone = [
+        "avbd-paper-x-packet.json: visual_evidence.impact.source_provenance.file_count does not match current source state",
+        "avbd-paper-x-packet.json: visual_evidence.impact.source_provenance.roots does not match current source state",
+    ]
+    with_drift = lone + [
+        "avbd-paper-x-packet.json: visual_evidence.impact.source_provenance.digest does not match current source state",
+    ]
+
+    hard, stale = module.split_stale_source_findings(lone)
+    assert hard == lone and stale == []
+
+    hard, stale = module.split_stale_source_findings(with_drift)
+    assert hard == [] and stale == with_drift
+
+
+def test_stale_source_report_mode_keeps_lone_recorded_hash_edit_as_error(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
+    (tmp_path / "solver.cpp").write_text("stable\n")
+    provenance = _source_provenance(tmp_path, "solver.cpp")
+    provenance["files"][0]["sha256"] = "1" * 64  # file and packet digest unchanged
+    path = _write_packet(
+        tmp_path,
+        "avbd-new-scene-packet.json",
+        {
+            "schema_version": module.AVBD_PACKET_SCHEMA_VERSION,
+            "resolved_solver_identity": _identity(),
+            "source_provenance": provenance,
+        },
+    )
+
+    assert (
+        module.main(
+            [
+                "--packet-dir",
+                str(tmp_path),
+                "--packet",
+                str(path),
+                "--stale-source",
+                "report",
+            ]
+        )
+        == 1
+    )
+
+
+def test_stale_source_report_mode_treats_deleted_sealed_file_as_stale(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
+    source = tmp_path / "solver.cpp"
+    source.write_text("first\n")
+    path = _write_packet(
+        tmp_path,
+        "avbd-new-scene-packet.json",
+        {
+            "schema_version": module.AVBD_PACKET_SCHEMA_VERSION,
+            "resolved_solver_identity": _identity(),
+            "source_provenance": _source_provenance(tmp_path, "solver.cpp"),
+        },
+    )
+    source.unlink()
+    argv = ["--packet-dir", str(tmp_path), "--packet", str(path)]
+
+    assert module.main(argv) == 1
+    assert module.main([*argv, "--stale-source", "report"]) == 0
+
+
+def test_split_stale_source_findings_keeps_source_contract_mismatch_hard():
+    module = _load_module()
+    errors = [
+        "avbd-paper-x-packet.json: source_provenance.files paths must exactly match the canonical ordered paper-packet source contract",
+        "avbd-paper-x-packet.json: source_provenance.digest does not match current listed source contents",
+    ]
+
+    hard, stale = module.split_stale_source_findings(errors)
+
+    assert stale == []
+    assert hard == errors
+
+
+def test_split_stale_source_findings_classifies_paper_capture_messages():
+    module = _load_module()
+    errors = [
+        "avbd-paper-x-packet.json: visual_evidence.impact.source_provenance.digest does not match current source state",
+        "avbd-paper-x-packet.json: benchmark source capture digest does not match current source state",
+        "avbd-paper-x-packet.json: benchmark source hash does not match current benchmark translation unit",
+        "avbd-paper-x-packet.json: visual_evidence.impact.source_provenance.working_tree_clean must be true; a dirty capture source tree makes the recorded Git HEAD unverifiable",
+    ]
+
+    hard, stale = module.split_stale_source_findings(errors)
+
+    assert len(stale) == 3
+    assert hard == [errors[3]]
 
 
 def test_source_provenance_rejects_digest_mutation(tmp_path, monkeypatch):
@@ -1503,7 +1664,10 @@ def test_legacy_allowlist_and_current_packets_cover_committed_corpus():
             )
         if packet["schema_version"] == module.AVBD_PACKET_SCHEMA_VERSION:
             assert "resolved_solver_identity" in packet
-        assert _packet_errors(module, path) == []
+        hard_errors, _stale = module.split_stale_source_findings(
+            _packet_errors(module, path)
+        )
+        assert hard_errors == []
 
 
 _TIMING_GATE_PACKET_NAME = "avbd-paper-vbd-comparison-packet.json"

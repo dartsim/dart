@@ -495,8 +495,16 @@ compatibility remains on the active DART 6 LTS branch._
   replaced the DART 6-era onboarding deep dive with a handbook index, trimmed
   stale dev-task session logs, and added a `dart-docs-update audit` mode.
   `check-docs-policy` now checks every markdown link, rejects unreferenced
-  docs, and reports oversized dev-task snapshots.
+  docs, and reports oversized dev-task snapshots. `pixi run lint` validates
+  AVBD evidence packets and the PLAN-104 parity contract with
+  `--stale-source report`, so a sealed packet that predates the current
+  source is an advisory in lint and still an error in the strict
+  `check-avbd-packets` and `check-plan104-paper-parity` claim gates.
   ([#3479](https://github.com/dartsim/dart/pull/3479))
+- Automated review workflows now batch related fixes, require a root-cause
+  checkpoint after two rounds still find valid issues, and track review coverage
+  on the current revision while preserving independent review and validation.
+  ([#3484](https://github.com/dartsim/dart/pull/3484))
 - AI workflows now stage context by task and phase, preserve authorized model,
   effort, and action scopes across handoffs, and audit the whole harness during
   model upgrades. Consolidated session policy and removed duplicate tutorials
@@ -586,6 +594,11 @@ compatibility remains on the active DART 6 LTS branch._
   versions and comparison-lane mechanics, and a harness-wide refresh fixed
   outdated, duplicated, and over-constrained AI guidance at its owners.
   ([#3473](https://github.com/dartsim/dart/pull/3473))
+- Narrowed the supported AI harness to Claude Code and Codex: removed the
+  generated OpenCode command adapters, the Gemini CLI instruction redirect, and
+  their sync and check paths, so agents without a generated adapter read
+  `AGENTS.md` and the `.claude/` sources directly.
+  ([#3483](https://github.com/dartsim/dart/pull/3483))
 - Let `pixi run trajectory-record` and `pixi run agent-capture` load a scratch
   scene with `--factory path/to/file.py:callable`, because the Pixi task
   environment replaces `PYTHONPATH` and a module outside the task path was not

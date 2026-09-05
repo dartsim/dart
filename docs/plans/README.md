@@ -134,7 +134,7 @@ changed.
 
 ## Revising Plans
 
-Use `/dart-plan-update` (Claude Code, OpenCode) or `$dart-plan-update` (Codex)
+Use `/dart-plan-update` (Claude Code) or `$dart-plan-update` (Codex)
 for plan discussions and edits, and `/dart-next` or `$dart-next` to select and
 execute the next bounded task. Revise when the north star or a release
 priority changes; when CI, benchmark, packaging, or downstream evidence changes
