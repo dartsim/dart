@@ -16,7 +16,7 @@
   [`122-simulation-loop-allocation-hardening/coverage-matrix.md`](122-simulation-loop-allocation-hardening/coverage-matrix.md)
   records which rows are final evidence, which rows are steady-state-only
   evidence, and which rows remain open.
-- Progress snapshot: 14 of 22 matrix rows are closed with first-post-bake
+- Progress snapshot: 14 of 24 matrix rows are closed with first-post-bake
   evidence. `L-001` is now closed: the legacy `dynamics::Skeleton` → DART 7
   `World` model-loading bridge (`dart::simulation::io::addSkeleton`) has
   first-post-bake world-base, global-heap, and raw-malloc gates over an imported
@@ -24,7 +24,7 @@
   phase. These matrix rows do not establish universal parallel-executor coverage: `D-004` is closed by routing
   systems above the retained dense-direct cutoff to the sparse iterative path
   instead of Eigen sparse-direct numeric factorization. The remaining open rows
-  are executor-inventory row `H-002`, existing-path rows `R-005`, `M-005`
+  are executor-inventory row `H-002`, existing-path rows `H-003`, `R-005`, `M-005`, `M-006`
   and `G-002`, plus promotion-gated rows
   `M-004`, `F-002`, and `G-001`. Each stays with its named owner until its
   evidence closes. No new `docs/dev_tasks/` folder is
@@ -38,7 +38,8 @@ identifies parallel unified-island scratch and function-static deformable CUDA
 PSD buffers that existing representative rows do not qualify. PLAN-122 owns
 allocation coverage, coordinated with PLAN-030 for runtime/ownership. The matrix
 already tracks these selectable paths as open `R-005` and `G-002`, and parallel
-multibody ranges as `M-005`. `H-002` owns the complete executor-mode inventory;
+multibody ranges as `M-005`, parallel VBD/AVBD as `M-006`, and Taskflow graph
+submission as `H-003`. `H-002` owns the complete executor-mode inventory;
 default sequential evidence cannot qualify untested supplied executors. Deferring
 their closure to M2/family work does not defer their admission to the matrix.
 Record execution mode, concurrency and first-step evidence. WP-122.8 completion
@@ -138,8 +139,15 @@ already closed.
   placeholders cannot close the inventory. Removing a mapping or adding an
   unmapped dispatch mode must fail its validation. Inventory completeness does
   not qualify its open rows, which still block PLAN-122 completion. New modes
-  invalidate the inventory until mapped. The Taskflow submission floor stays
-  with WP-122.8/PLAN-030 and needs a concrete row before H-002 can close.
+  invalidate the inventory until mapped. `H-003` owns the concrete Taskflow
+  submission floor. It requires actual non-inline graph dispatch through a
+  built-in World pipeline, counters covering runtime and worker allocations,
+  and first-post-bake evidence with profiling on/off and independent states.
+  Require absolute zero World-base/global/raw allocations; subtracting a graph
+  allocation floor or running unmeasured graphs containing simulation work is
+  not qualification. Cached graph structure or a constant count cannot close it.
+  PLAN-030 owns runtime remediation/replacement; excluding Taskflow from a
+  selected milestone path does not close the still-selectable `H-003` path.
 - Gates: `pixi run lint`, focused `test_world` allocation filters, and the new
   matrix/helper checker if added.
 - Dependencies: none.
@@ -185,7 +193,8 @@ already closed.
 - Objective: make every DART 7 articulated/multibody solver family row carry
   allocation evidence before promotion.
 - Scope: semi-implicit multibody velocity paths, variational integration,
-  AVBD/VBD, parallel unified-island `R-005` and multibody-range `M-005` rows
+  AVBD/VBD, parallel unified-island `R-005`, multibody-range `M-005` and
+  parallel VBD/AVBD `M-006` rows
   already selectable in `World::step()`, and future
   unified Newton-barrier multibody rows from PLAN-083.
 - Non-goals: DART 6 articulated-body parity paths outside the DART 7 `World`.
@@ -201,6 +210,11 @@ already closed.
   range dispatch. Counter coverage starts on the first post-bake step and
   includes worker/runtime setup; small ranges that execute inline do not
   qualify the parallel path. Compare against the sequential reference.
+  `M-006` covers both VBD/AVBD variants and their colored-block/row-update
+  dispatch predicates through World stepping. Size scenes to exercise the
+  parallel branches and measure all three host allocation surfaces, including
+  workers and runtime setup, from the first post-bake step. Warmed helper
+  stability or World-base-only counters are partial evidence, not closure.
 - Gates: `pixi run lint`, focused `test_world` multibody/variational/AVBD/VBD
   allocation filters, and the relevant PLAN-083/104 focused tests.
 - Dependencies: PLAN-080, PLAN-083, PLAN-084, PLAN-104, and the corresponding
