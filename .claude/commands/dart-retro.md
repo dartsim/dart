@@ -1,10 +1,15 @@
 ---
-description: run a retrospective and capture durable lessons
-argument-hint: "<what-was-completed>"
+description: improve the AI harness from successful or unsatisfactory task outcomes
+argument-hint: "[task, PR, or outcome; defaults to this session]"
 agent: build
 ---
 
-Run a retrospective and capture durable lessons: $ARGUMENTS
+Improve future task execution through a retrospective: $ARGUMENTS
+
+Use the original request and session evidence to improve the harness for future
+similar tasks: better quality, completeness, or efficiency. Successful,
+unsatisfactory, incomplete, and blocked outcomes qualify. PR merge and dev-task
+retirement do not alone establish that the user's goal was met.
 
 ## Required Reading
 
@@ -13,47 +18,49 @@ Run a retrospective and capture durable lessons: $ARGUMENTS
 @docs/ai/principles.md
 @docs/ai/components.md
 @docs/ai/verification.md
-@docs/onboarding/ai-tools.md
+
+Load task owners as needed; use `docs/onboarding/ai-tools.md` for tool/runtime
+questions. `docs/ai/components.md` owns placement of accepted learnings; this
+workflow owns the retrospective method.
 
 ## Skip If
 
-Stop without editing when all are true:
-
-- no new patterns, gotchas, or failure modes were discovered
-- no workflow improvement is needed
-- the learning is too session-specific to help future agents or contributors
-- existing docs already cover what happened
-- the task was routine and left no durable insight
-
-## Routing
-
-`docs/ai/components.md` owns routing for durable session learnings. Use this
-command as the hindsight workflow; do not duplicate the routing table here.
+Conclude without harness edits when the evidence supports no reusable
+improvement: existing guidance already covers the lesson and is discoverable,
+the finding is task-specific, or no change has a supported benefit. State why
+and report missing evidence; success, failure, or a merged PR alone is not a
+skip condition.
 
 ## Workflow
 
-1. Search existing docs before adding content.
-2. Inventory the completed work before routing lessons. Consider domain/design
-   choices, public API or package compatibility, CI/review failure modes,
-   workflow friction, and cleanup or handoff steps separately so a late
-   operational task does not hide feature-level learnings.
-3. Decide whether each lesson is general enough for shared AI infra. Do not
-   update AI components after every session.
-4. Prefer update, remove, consolidate, or restructure over adding new files.
-5. Make every durable learning discoverable from its owner surface: update an
-   existing owner doc when possible, and when a new durable file is justified,
-   link it from the relevant owner index or plan before retiring temporary
-   context.
-6. Keep `docs/ai/principles.md` compact; put procedures in the owner docs it
-   links to.
-7. Avoid ephemeral branch, PR, commit, or username details.
-8. If adding a workflow command or skill, edit `.claude/` source files and run
-   `pixi run sync-ai-commands`.
-9. Run `pixi run lint` before committing. For AI docs or adapter changes, also
-   run the AI docs/adapters gate set from `docs/ai/verification.md`.
+1. **Reconstruct intent and outcome.** Default to the current session. Compare
+   the initial request and later scope decisions with artifacts and results.
+   Inspect relevant history around decisions, corrections, and failures,
+   including substantive domain work before CI/review/closeout. State missing
+   evidence; do not load every log by default.
+2. **Find the harness contribution.** Connect useful decisions, rework, missed
+   requirements, and wasted context/tool cycles to instructions, routing, tools,
+   or gates. Separate observations from inferred causes, implementation bugs,
+   and external blockers. Check existing owners and executable coverage before
+   proposing rules; investigate why existing guidance was missed.
+3. **Choose a testable improvement.** State the observed decision, causal gap,
+   owner, and what an agent starting from the same brief should do differently.
+   Name the expected benefit, a check that could disprove it, and successful
+   constraints to preserve.
+4. **Improve existing owners.** Prefer removal, consolidation, or rewriting to
+   appending rules or files; repair discovery when guidance already exists.
+   Follow `docs/ai/components.md` for placement and adapter regeneration. Keep
+   session identifiers out of durable guidance. Preserve model/effort/action
+   limits; a retrospective does not reopen the original implementation or
+   authorize new GitHub mutations.
+5. **Validate proportionately.** For consequential instruction changes, replay
+   the observed decision and a contrasting similar task; use fresh controlled
+   agents when permitted and useful. Distinguish structural checks, predicted
+   benefits, and measured outcomes. Run the relevant gates in
+   `docs/ai/verification.md` and `pixi run lint` before committing.
 
 ## Output
 
-- What learning was captured
-- Where it was documented
-- Checks run
+- Original intent, actual outcome, and material session evidence
+- Accepted/rejected harness changes, expected future behavior, and owner files
+- Validation results, measured benefits or limits, and remaining work

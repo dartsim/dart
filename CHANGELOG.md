@@ -490,6 +490,9 @@ compatibility remains on the active DART 6 LTS branch._
   model upgrades. Consolidated session policy and removed duplicate tutorials
   and stale examples. AI diagnosis reports declared workflow reading size.
   ([#3477](https://github.com/dartsim/dart/pull/3477))
+- Retrospectives now compare the original request with successful or
+  unsatisfactory outcomes, validate reusable harness improvements, and skip
+  unsupported edits.
 - Modernized the pixi workspace for current pixi: declared workspace
   license/repository/documentation metadata and a `requires-pixi = ">=0.78"`
   floor, unified the default/collision-reference/cuda environments in one
