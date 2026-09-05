@@ -1,35 +1,21 @@
 # DART 7 Simulation API Promotion Readiness Audit
 
-## Status
+## Purpose
 
-Promotion readiness audit. This document is the PLAN-041 Workstream 1
-deliverable: the **promotion contract and readiness audit** for the official
-DART 7 simulation API. It
-freezes the supported public subset, records the headers/modules to promote,
-lists the public-looking internals to hide, maps the parity evidence that gates
-the promotion claim, and tracks the concrete boundary blockers to clear.
-
-The key boundary slices have landed: the simulation module builds by default,
-installs only an explicit public-header allowlist, keeps EnTT/Taskflow out of
-promoted header include paths, uses the `dart::simulation` namespace and
-`dart-simulation` target, and promotes the Python import layout to
-`dartpy.simulation.World` / `dartpy.World`. Remaining readiness work is cleanup,
-negative smokes for retired names, and keeping the guards green.
+This audit records the official DART 7 simulation API's supported public subset,
+header/module inventory, internals to hide, and durable package and boundary
+constraints. It does not establish simulation or release readiness.
 
 Companion docs:
 
 - API shape and rationale: [`simulation_cpp_api.md`](simulation_cpp_api.md)
   and [`simulation_python_api.md`](simulation_python_api.md).
-- Operating state, sequencing, and gates: `PLAN-041` in
-  [`../plans/dashboard.md`](../plans/dashboard.md) and
-  [`../plans/041-official-simulation-api-promotion.md`](../plans/041-official-simulation-api-promotion.md).
+- Operating state and work selection: [`../plans/dashboard.md`](../plans/dashboard.md).
+- Milestone scope and acceptance evidence:
+  [`PLAN-040`](../plans/040-dart7-release-hardening.md).
+- API promotion status, sequencing, checkpoints and installed workflows:
+  [`PLAN-041`](../plans/041-official-simulation-api-promotion.md).
 - Public/internal API policy: [`../onboarding/api-boundaries.md`](../onboarding/api-boundaries.md).
-- The `dart::simulation::World` name-collision transaction is tracked
-  separately under PLAN-041 Workstream 4.
-
-This audit owns inventory and readiness state, not API-shape rationale (which
-lives in the companion shape docs) and not priority/horizon (which lives in the
-dashboard).
 
 ## Why an audit before a facade
 
@@ -93,7 +79,7 @@ The original blocker was `world.hpp` exposing `entt::registry` through
 hatch has been replaced by opaque world storage, and promoted headers are now
 checked transitively.
 
-Current gates:
+Boundary verification mechanisms:
 
 - `pixi run check-dart7-promotion-surface` runs
   `scripts/audit_dart7_promotion_surface.py --strict`, classifies promotion
@@ -116,17 +102,11 @@ Current gates:
   uses, staged `dart-simulation-experimental` package names, and related transition
   references must stay in named transition buckets, and those code/build/test
   bucket counts may not grow. Its
-  strict-final mode is the final local claim gate. In-tree parity references have been
-  ratcheted to zero; any new main-branch `dart::simulation::World` parity
-  dependency under `tests/unit/simulation/` fails the default
-  blocker check. The former contact/constraint, skeleton-to-multibody, and
-  world-parity rows now carry DART 7-only regression assertions; parity
-  evidence belongs on `release-6.*` branches.
-- `pixi run check-dart7-final-world-promotion` layers strict-final blocker
-  removal with a required local `release-6.*` branch ref. It is intentionally
-  not part of default lint while transition references are being retired, but it
-  is the final claim gate for "parity came from `release-6.*` branches, not
-  main's classic World implementation."
+  strict-final mode rejects remaining transition references.
+
+The [API-boundary policy](../onboarding/api-boundaries.md) owns promotion-check
+requirements and points to the checker-transition contract. Consult that owner
+for final-promotion checks and release-reference handling.
 
 ### D. Header inventory ownership
 
@@ -145,18 +125,6 @@ Its current promotion groups are:
 Everything else under `comps/`, `ecs/`, `detail/`, `io/`, `space/`, `common/`,
 most of `compute/`, and most of `diff/` remains internal unless it is added to
 that script and the CMake allowlist together.
-
-### E. Remaining promotion blockers
-
-The public-surface leak blocker is cleared for the promoted simulation package.
-The still-open blockers are cleanup and guard-hardening items:
-
-- stale docs or user-facing snippets that still teach retired experimental or
-  DART 6 paths;
-- negative smokes for obsolete experimental headers, modules, targets, and
-  aliases;
-- any future parity claim that relies on main-branch DART 6 code instead of
-  `release-6.*` branch evidence.
 
 ## Frozen Supported Public Subset (PROMOTE)
 
@@ -210,44 +178,20 @@ constraints (per-workstream tracking and status live in the plan, see below):
   identity with no duplicate nanobind registration and no
   `dartpy.simulation_experimental` runtime/stub surface.
 
-## Parity Evidence Map
+## Readiness Ownership
 
-Promotion of the public subset cannot be claimed until the DART 7 checkable parity
-gates ([`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md)) have
-direct evidence. The gates and their required evidence (per-gate status is tracked
-in PLAN-041, not here):
+Use [PLAN-040](../plans/040-dart7-release-hardening.md) for physical correctness
+oracles, the role of DART 6 comparisons, milestone dependencies and acceptance
+criteria. Use [PLAN-041](../plans/041-official-simulation-api-promotion.md) for
+promotion blockers, checkpoint and installed-workflow evidence, and completion
+status. Passing the boundary checks described here does not establish completion
+of those plans.
 
-| Gate                         | Required evidence                                                         |
-| ---------------------------- | ------------------------------------------------------------------------- |
-| DART 7 model loading         | URDF/SDF/MJCF load with topology/DOF/transform/mass/collision.            |
-| Rigid dynamics parity        | Shared open-chain scenes match the classic DART 6 path within tolerances. |
-| Contact/constraint parity    | Contacts, friction, limits, motors, mimic/coupler, loop closures.         |
-| Serialization/replay parity  | Topology/state/assets + record/replay round-trip within bounded error.    |
-| Stable public API promotion  | Promoted headers hide ECS/components/solver/backend (boundary checks).    |
-| Name-collision resolution    | `dart::simulation::World` owned by the promoted DART 7 facade.            |
-| Core build/tests + packaging | Lint, build, tests, and package/export smokes for the touched scope.      |
+## Maintenance
 
-## Operating state lives in the plan, not here
-
-Per [`AGENTS.md`](AGENTS.md), this design doc does not own gates, per-workstream
-status, or implementation handoff. The blocker workstream sequence and the
-current per-gate parity status are tracked
-in [`../plans/dashboard.md`](../plans/dashboard.md) and
-[`../plans/041-official-simulation-api-promotion.md`](../plans/041-official-simulation-api-promotion.md)
-(PLAN-041), with the DART 7 checkable parity gates in
-[`../onboarding/release-roadmap.md`](../onboarding/release-roadmap.md).
-
-## WS1 Acceptance
-
-Workstream 1 is satisfied when: the supported public subset is frozen (above),
-the hide-list is explicit (above), the package/header checks are executable
-(`check-dart7-promotion-surface`, `check-simulation-public-header-smoke`,
-`check-dart7-promotion-package-contract`,
-`check-dart7-promotion-installed-package`, and `check-dartpy-import-layout`),
-the remaining blockers are stated as durable design constraints (above), and
-the parity-evidence map names each gate (above). Per-workstream sequencing and
-per-gate status live in PLAN-041. Update this audit when the install rule,
-package dependencies, header layout, or import layout changes.
+Update this audit when the supported subset, install rule, package dependencies,
+header layout, or import layout changes. Keep readiness status and acceptance
+criteria in their owning plans.
 
 ## Verification
 
