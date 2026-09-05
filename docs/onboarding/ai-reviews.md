@@ -5,7 +5,7 @@ How DART agents and contributors handle review comments from AI bot accounts
 requests. Tool compatibility details live in `ai-tools.md`; the approval
 boundary itself is axiom 9 of `docs/ai/principles.md`.
 
-When AI agents (Claude Code, OpenCode, etc.) work on PRs, they may encounter review comments from other AI systems (e.g., Codex bot, GitHub Copilot).
+When AI agents (Claude Code, Codex, etc.) work on PRs, they may encounter review comments from other AI systems (e.g., Codex bot, GitHub Copilot).
 
 ## Independent Review Lane
 

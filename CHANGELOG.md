@@ -574,6 +574,11 @@ compatibility remains on the active DART 6 LTS branch._
   versions and comparison-lane mechanics, and a harness-wide refresh fixed
   outdated, duplicated, and over-constrained AI guidance at its owners.
   ([#3473](https://github.com/dartsim/dart/pull/3473))
+- Narrowed the supported AI harness to Claude Code and Codex: removed the
+  generated OpenCode command adapters, the Gemini CLI instruction redirect, and
+  their sync and check paths, so agents without a generated adapter read
+  `AGENTS.md` and the `.claude/` sources directly.
+  ([#3483](https://github.com/dartsim/dart/pull/3483))
 - Let `pixi run trajectory-record` and `pixi run agent-capture` load a scratch
   scene with `--factory path/to/file.py:callable`, because the Pixi task
   environment replaces `PYTHONPATH` and a module outside the task path was not
