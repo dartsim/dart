@@ -115,6 +115,7 @@ NORTH_STAR_FRESHNESS_MARKER_RE = re.compile(
 PAPERS_CLOSED_VALUE_FIELDS = ("Type", "Status", "Priority", "Verdict")
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\((?P<link>[^)]+)\)")
 MARKDOWN_FENCE_RE = re.compile(r"^(?P<marker>`{3,}|~{3,})")
+MARKDOWN_INLINE_CODE_RE = re.compile(r"(?P<ticks>`+)(?:.*?)(?P=ticks)")
 MARKDOWN_HEADING_RE = re.compile(r"^(?P<level>#{1,6})\s+(?P<text>.*?)\s*#*\s*$")
 
 
@@ -446,10 +447,11 @@ def _iter_markdown_lines_outside_fences(text: str) -> list[tuple[int, str]]:
 
 
 def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
-    """Return (line, link) pairs outside fenced code blocks."""
+    """Return (line, link) pairs outside fenced code blocks and inline code."""
     links: list[tuple[int, str]] = []
     for line_number, line in _iter_markdown_lines_outside_fences(text):
-        for match in MARKDOWN_LINK_RE.finditer(line):
+        prose = MARKDOWN_INLINE_CODE_RE.sub("", line)
+        for match in MARKDOWN_LINK_RE.finditer(prose):
             links.append((line_number, match.group("link")))
     return links
 
@@ -856,15 +858,19 @@ def check_docs_discoverability(repo_root: Path) -> list[str]:
 
 
 def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
-    """Reject docs that no other tracked doc, script, test, or workflow names.
+    """Reject docs that are not reachable from a root surface.
 
-    A markdown doc under ``docs/`` (outside the published site) must be
-    mentioned by basename somewhere else in the tracked corpus; plan sidecar
-    data files get the same check as an advisory because scripts may address
-    them through computed paths.
+    Roots are every tracked file in the reference corpus that is not itself
+    subject to this check: bucket indexes and ``AGENTS.md`` files, root docs,
+    the published site sources, scripts, tests, workflows, and ``pixi.toml``.
+    A checked doc is reachable when a root, or another reachable checked doc,
+    references it by repo path, by ``parent/name``, by bare name from a file in
+    the same directory (a relative link), or by a bare name that is unique
+    among the checked files. Mutual references between unreachable docs do
+    not keep each other alive. Markdown docs under ``docs/`` (outside the
+    published site) fail; plan sidecar data files warn because scripts may
+    address them through computed paths.
     """
-    failures: list[str] = []
-    warnings: list[str] = []
     corpus: dict[str, str] = {}
     for path in iter_tracked_files(repo_root, list(ORPHAN_CORPUS_PATTERNS)):
         if path.is_dir():
@@ -876,48 +882,66 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
         except OSError:
             continue
 
-    tracked_names: dict[str, int] = {}
-    for pattern in (*ORPHAN_DOC_PATTERNS, *ORPHAN_SIDECAR_PATTERNS):
+    checked: dict[str, bool] = {}  # rel_path -> blocking
+    for pattern in ORPHAN_DOC_PATTERNS:
         for path in iter_tracked_files(repo_root, [pattern]):
-            tracked_names[path.name] = tracked_names.get(path.name, 0) + 1
+            rel_path = _display_path(path, repo_root)
+            if rel_path.startswith(ORPHAN_EXCLUDED_PREFIXES) or path.is_dir():
+                continue
+            if path.name in ORPHAN_EXEMPT_NAMES:
+                continue
+            checked[rel_path] = True
+    for pattern in ORPHAN_SIDECAR_PATTERNS:
+        for path in iter_tracked_files(repo_root, [pattern]):
+            rel_path = _display_path(path, repo_root)
+            if path.suffix == ".md" or path.is_dir() or rel_path in checked:
+                continue
+            checked[rel_path] = False
 
-    def _is_orphan(path: Path) -> bool:
-        """A doc is referenced by its repo path, by `parent/name`, by a bare
-        name from a file in the same directory (a relative link), or by a bare
-        name anywhere when that name is unique among the checked docs."""
-        rel_path = _display_path(path, repo_root)
+    name_counts: dict[str, int] = {}
+    for rel_path in checked:
+        name = Path(rel_path).name
+        name_counts[name] = name_counts.get(name, 0) + 1
+
+    def _referrers(rel_path: str) -> set[str]:
+        path = Path(rel_path)
         name = path.name
         suffix = f"{path.parent.name}/{name}"
-        unique = tracked_names.get(name, 0) <= 1
-        rel_dir = str(Path(rel_path).parent)
+        unique = name_counts.get(name, 0) <= 1
+        rel_dir = str(path.parent)
+        found: set[str] = set()
         for other, text in corpus.items():
             if other == rel_path:
                 continue
             if rel_path in text or suffix in text:
-                return False
-            if name in text and (unique or str(Path(other).parent) == rel_dir):
-                return False
-        return True
+                found.add(other)
+            elif name in text and (unique or str(Path(other).parent) == rel_dir):
+                found.add(other)
+        return found
 
-    for path in iter_tracked_files(repo_root, list(ORPHAN_DOC_PATTERNS)):
-        rel_path = _display_path(path, repo_root)
-        if rel_path.startswith(ORPHAN_EXCLUDED_PREFIXES):
+    referrers = {rel_path: _referrers(rel_path) for rel_path in checked}
+    reachable = {other for other in corpus if other not in checked}
+    changed = True
+    while changed:
+        changed = False
+        for rel_path, sources in referrers.items():
+            if rel_path not in reachable and sources & reachable:
+                reachable.add(rel_path)
+                changed = True
+
+    failures: list[str] = []
+    warnings: list[str] = []
+    for rel_path, blocking in sorted(checked.items()):
+        if rel_path in reachable:
             continue
-        if path.name in ORPHAN_EXEMPT_NAMES:
-            continue
-        if _is_orphan(path):
+        if blocking:
             failures.append(
-                f"{rel_path}: not referenced by any tracked doc, script, test, "
-                "or workflow; link it from its owner index or delete it"
+                f"{rel_path}: not reachable from any index, owner doc, script, "
+                "test, or workflow; link it from its owner index or delete it"
             )
-
-    for path in iter_tracked_files(repo_root, list(ORPHAN_SIDECAR_PATTERNS)):
-        if path.suffix == ".md" or path.is_dir():
-            continue
-        rel_path = _display_path(path, repo_root)
-        if _is_orphan(path):
+        else:
             warnings.append(
-                f"{rel_path}: plan sidecar not referenced by its owner plan, a "
+                f"{rel_path}: plan sidecar not reachable from its owner plan, a "
                 "sidecar doc, or a script"
             )
     return failures, warnings

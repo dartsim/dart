@@ -511,6 +511,47 @@ def test_link_check_rejects_missing_heading_anchor_and_accepts_present_one(tmp_p
     assert "#plan-update-workflow" in warnings[0]
 
 
+def test_markdown_links_ignore_inline_code_spans():
+    module = _load_module()
+    text = (
+        "Write links as `[guide](missing.md)` or ``[x](`also-missing.md`)``; "
+        "[real](real.md).\n"
+    )
+
+    links = [link for _, link in module._iter_markdown_links(text)]
+
+    assert links == ["real.md"]
+
+
+def test_docs_orphans_rejects_island_that_only_references_itself(tmp_path):
+    module = _load_module()
+    bucket = tmp_path / "docs" / "onboarding"
+    bucket.mkdir(parents=True)
+    (bucket / "README.md").write_text("# Index\n", encoding="utf-8")
+    (bucket / "a.md").write_text("[b](b.md)\n", encoding="utf-8")
+    (bucket / "b.md").write_text("[a](a.md)\n", encoding="utf-8")
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, _ = module.check_docs_orphans(tmp_path)
+
+    assert any("docs/onboarding/a.md" in f for f in failures)
+    assert any("docs/onboarding/b.md" in f for f in failures)
+
+
+def test_docs_orphans_accepts_chain_reachable_from_index(tmp_path):
+    module = _load_module()
+    bucket = tmp_path / "docs" / "onboarding"
+    bucket.mkdir(parents=True)
+    (bucket / "README.md").write_text("[a](a.md)\n", encoding="utf-8")
+    (bucket / "a.md").write_text("[b](b.md)\n", encoding="utf-8")
+    (bucket / "b.md").write_text("# B\n", encoding="utf-8")
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, _ = module.check_docs_orphans(tmp_path)
+
+    assert failures == []
+
+
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"
@@ -520,11 +561,12 @@ def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     b.mkdir(parents=True)
     (a / "coverage-matrix.md").write_text("# A\n", encoding="utf-8")
     (b / "coverage-matrix.md").write_text("# B\n", encoding="utf-8")
-    # Only A's matrix is referenced by a path-qualified link.
+    # Only A's matrix is referenced by a path-qualified link from a plan that
+    # the docs index (a root) reaches.
     (docs / "plans" / "001-a.md").write_text(
         "[matrix](001-a/coverage-matrix.md)\n", encoding="utf-8"
     )
-    (docs / "README.md").write_text("# Docs\n", encoding="utf-8")
+    (docs / "README.md").write_text("[plan](plans/001-a.md)\n", encoding="utf-8")
 
     failures, _ = module.check_docs_orphans(tmp_path)
 
@@ -593,7 +635,7 @@ def test_docs_orphans_rejects_unreferenced_doc_and_warns_for_sidecar(tmp_path):
 
     failures, warnings = module.check_docs_orphans(tmp_path)
 
-    assert any("docs/onboarding/lost.md: not referenced" in f for f in failures)
+    assert any("docs/onboarding/lost.md: not reachable" in f for f in failures)
     assert not any("linked.md" in f for f in failures)
     assert any("docs/plans/001-demo/packet.json" in w for w in warnings)
 
