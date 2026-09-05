@@ -65,8 +65,10 @@ Recommended actions:
 4. Prefer sidecar subdirectories inside an existing bucket when one initiative
    outgrows a single file. Add a new top-level folder only when the split meets
    the criteria below.
-5. Use policy checks to keep the placement owner discoverable, then rely on
-   local folder READMEs and AGENTS files for bucket-specific details.
+5. When moving or consolidating an owner, update bucket descriptions,
+   placement rules, links, and adapters together. Review `docs/README.md`,
+   `docs/AGENTS.md`, this file, and affected entrypoints: valid links do not
+   establish correct ownership.
 
 ## Alternatives Considered
 

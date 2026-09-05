@@ -100,11 +100,12 @@ routing and procedure. Do not duplicate tutorials or mutable API examples.
 
 ## Improving AI Infra From Learnings
 
-Use `dart-retro` for durable, reusable findings. Skip routine work and
-review-only narrative. Improve the existing owner from
-`docs/ai/README.md`'s source map or the placement matrix in
-`docs/information-architecture.md`. Add an agent, hook, script, or document
-only for a distinct stable responsibility or failure boundary.
+Use `dart-retro` after successful or unsatisfactory tasks to improve future
+execution from the original request and observed session history. The workflow
+owns reconstruction, causal analysis, and validation. Place accepted changes
+using `docs/ai/README.md`'s source map or `docs/information-architecture.md`.
+Add an agent, hook, script, or document only for a distinct stable responsibility
+or failure boundary.
 
 Make a rule discoverable through the owner index and relevant required-reading
 path, then verify adapter sync. Do not copy it across entrypoints to compensate

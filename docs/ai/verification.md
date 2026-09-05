@@ -138,11 +138,13 @@ adapters, planning workflows, or agent rules, run the principle audit in
 selection and evidence mapping; `docs/ai/principles.md` owns the principle audit; `docs/ai/components.md` owns the exact structural checks performed
 by `pixi run check-ai-commands` and `pixi run check-ai-infra`.
 
-The focused `test-ai-infra` suite and aggregate `check-ai-infra` gate must
-pass in addition to adapter sync. `docs/ai/components.md` owns their guarded
-runner and discovery invariants; the fast staged hook is not completion
-evidence. Run `pixi run exercise-agent-scenarios` directly for routing/profile
-changes so failures identify the affected case.
+`pixi run test-ai-infra` and `pixi run check-ai-infra` must pass after the last
+formatting or adapter change. Covered startup scripts can support older Python
+than Pixi or dartpy; the syntax guard in `tests/test_ai_infrastructure.py` owns
+that minimum. Exercise changed error handling on that runtime as well as Pixi.
+`docs/ai/components.md` owns guarded-runner and discovery invariants; the fast
+staged hook is not completion evidence. Run `pixi run exercise-agent-scenarios`
+directly for routing/profile changes so failures identify the affected case.
 
 When AI workflow changes derive implementation tasks, verify that the owning
 plan packet or `docs/dev_tasks/<task>/README.md` records the DART
