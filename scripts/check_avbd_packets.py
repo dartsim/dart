@@ -15,6 +15,7 @@ import argparse
 import hashlib
 import json
 import math
+import re
 import struct
 import sys
 import uuid
@@ -737,7 +738,88 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=DEFAULT_PACKET_DIR,
         help="Directory scanned for avbd-*-packet.json files.",
     )
+    parser.add_argument(
+        "--stale-source",
+        choices=("error", "report"),
+        default="error",
+        help="How to treat sealed evidence whose recorded source state no "
+        "longer matches the working tree. 'error' (default) fails closed, "
+        "which is the bar for any parity or performance claim; 'report' "
+        "prints the stale seals as advisories so repository-wide lint does "
+        "not fail on unrelated source or dependency changes. Structural "
+        "and hash defects inside a packet always fail.",
+    )
     return parser.parse_args(argv)
+
+
+# Findings that only say the sealed evidence predates the current working tree.
+# They never describe a corrupt or self-inconsistent packet.
+STALE_SOURCE_PATTERNS = (
+    re.compile(r"\.source_provenance\.digest does not match current source state$"),
+    re.compile(r"benchmark source capture digest does not match current source state$"),
+    re.compile(
+        r"benchmark source hash does not match current benchmark translation unit$"
+    ),
+)
+# The packet-level digest is recomputed from the listed files, so it is a stale
+# seal only when a listed file also drifted; on its own it is a mutated packet.
+# A file list that departs from the canonical paper-packet source contract is
+# a structural defect and always stays a hard error.
+PACKET_DIGEST_PATTERN = re.compile(
+    r": source_provenance\.digest does not match current listed source contents$"
+)
+PACKET_FILE_DRIFT_PATTERN = re.compile(
+    r"source_provenance\.files\[\d+\]\.(sha256 drifted for |path must be a regular file: )"
+)
+# Capture metadata (file count, roots, ignored paths) legitimately changes only
+# together with the source digest; a lone mismatch is an edited packet.
+CAPTURE_METADATA_PATTERN = re.compile(
+    r"^(?P<capture>.*\.source_provenance)\.(file_count|ignored_paths|roots) does not "
+    r"match current source state$"
+)
+CAPTURE_DIGEST_PATTERN = re.compile(
+    r"^(?P<capture>.*\.source_provenance)\.digest does not match current source state$"
+)
+
+
+def split_stale_source_findings(errors: list[str]) -> tuple[list[str], list[str]]:
+    """Split validator output into hard errors and stale-seal advisories."""
+    # A listed source file that really changed produces both a per-file hash
+    # mismatch and a packet-digest mismatch (the digest is recomputed from the
+    # current contents). Either finding alone is an edited packet, not drift.
+    sha_drift_packets = {
+        error.split(": ", 1)[0]
+        for error in errors
+        if PACKET_FILE_DRIFT_PATTERN.search(error)
+    }
+    digest_mismatch_packets = {
+        error.split(": ", 1)[0]
+        for error in errors
+        if PACKET_DIGEST_PATTERN.search(error)
+    }
+    drifted_packets = sha_drift_packets & digest_mismatch_packets
+    drifted_captures = {
+        match.group("capture")
+        for error in errors
+        if (match := CAPTURE_DIGEST_PATTERN.match(error))
+    }
+    hard: list[str] = []
+    stale: list[str] = []
+    for error in errors:
+        packet_name = error.split(": ", 1)[0]
+        metadata = CAPTURE_METADATA_PATTERN.match(error)
+        if any(pattern.search(error) for pattern in STALE_SOURCE_PATTERNS):
+            stale.append(error)
+        elif metadata and metadata.group("capture") in drifted_captures:
+            stale.append(error)
+        elif (
+            PACKET_DIGEST_PATTERN.search(error)
+            or PACKET_FILE_DRIFT_PATTERN.search(error)
+        ) and packet_name in drifted_packets:
+            stale.append(error)
+        else:
+            hard.append(error)
+    return hard, stale
 
 
 def _sha256(path: Path) -> str:
@@ -4960,10 +5042,25 @@ def main(argv: list[str]) -> int:
                 reported_errors.add(error)
                 all_errors.append(error)
 
+    stale: list[str] = []
+    if args.stale_source == "report":
+        all_errors, stale = split_stale_source_findings(all_errors)
     if all_errors:
         for error in all_errors:
             print(f"ERROR: {error}")
         return 1
+
+    if stale:
+        for finding in stale:
+            print(f"STALE: {finding}", file=sys.stderr)
+        stale_packets = sorted({finding.split(": ", 1)[0] for finding in stale})
+        print(
+            f"Validated {len(packets)} AVBD packet(s); {len(stale_packets)} sealed "
+            "evidence packet(s) predate the current source state and cannot "
+            "support a parity or performance claim until regenerated: "
+            + ", ".join(stale_packets)
+        )
+        return 0
 
     print(f"Validated {len(packets)} AVBD packet(s)")
     return 0

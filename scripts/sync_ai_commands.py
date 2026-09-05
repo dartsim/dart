@@ -36,9 +36,9 @@ MAX_COMMAND_LINES = 200
 REQUIRED_COMMAND_SECTIONS = ("Required Reading", "Workflow", "Output")
 DOCS_UPDATE_REQUIRED_READING = (
     "docs/AGENTS.md",
-    "docs/information-architecture.md",
+    "docs/README.md",
 )
-NEW_TASK_REQUIRED_READING = ("docs/information-architecture.md",)
+NEW_TASK_REQUIRED_READING = ("docs/README.md",)
 CAPABILITY_SCHEMA_VERSION = 1
 GENERATED_SKILLS_SCHEMA_VERSION = 1
 GENERATED_SKILLS_MANIFEST = ".dart-generated.json"

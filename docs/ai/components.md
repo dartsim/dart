@@ -103,7 +103,8 @@ routing and procedure. Do not duplicate tutorials or mutable API examples.
 Use `dart-retro` after successful or unsatisfactory tasks to improve future
 execution from the original request and observed session history. The workflow
 owns reconstruction, causal analysis, and validation. Place accepted changes
-using `docs/ai/README.md`'s source map or `docs/information-architecture.md`.
+using `docs/ai/README.md`'s source map or the placement matrix in
+`docs/README.md`.
 Add an agent, hook, script, or document only for a distinct stable responsibility
 or failure boundary.
 
@@ -121,20 +122,20 @@ contributor can use without an AI tool.
 
 ## Checks
 
-| Command                      | Responsibility / implementation                                                                                                                                      |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pixi run sync-ai-commands`  | Generate DART-owned adapters; `scripts/sync_ai_commands.py`                                                                                                          |
-| `pixi run check-ai-commands` | Non-mutating parity, metadata/budgets, catalogs, required reading, public paths, approval wording, and capability references; same script                            |
-| `pixi run check-ai-infra`    | Runtime/config/hook safety, instruction discovery, branch profiles, model-pin ownership, scenarios, and guarded runner wiring/probes; `scripts/ai_infrastructure.py` |
-| `pixi run test-ai-infra`     | Focused regression suite under the guarded runner                                                                                                                    |
-| `pixi run check-docs-policy` | Placement, dev-task/plan lifecycle, dashboard/archive shape, pilot frontmatter/links/discoverability, and research catalog; `scripts/check_docs_policy.py`           |
-| `pixi run ai-doctor`         | Read-only setup, discovery, reading-size, and recovery diagnosis; `scripts/ai_doctor.py`                                                                             |
-| `pixi run check-agent-hook`  | Bounded staged structural feedback, not completion evidence                                                                                                          |
+| Command                      | Responsibility / implementation                                                                                                                                                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pixi run sync-ai-commands`  | Generate DART-owned adapters; `scripts/sync_ai_commands.py`                                                                                                                                                                          |
+| `pixi run check-ai-commands` | Non-mutating parity, metadata/budgets, catalogs, required reading, public paths, approval wording, and capability references; same script                                                                                            |
+| `pixi run check-ai-infra`    | Runtime/config/hook safety, instruction discovery, branch profiles, model-pin ownership, scenarios, and guarded runner wiring/probes; `scripts/ai_infrastructure.py`                                                                 |
+| `pixi run test-ai-infra`     | Focused regression suite under the guarded runner                                                                                                                                                                                    |
+| `pixi run check-docs-policy` | Placement owner, dev-task/plan lifecycle and snapshot budgets, dashboard/archive shape, `docs/ai` frontmatter, repo-wide links and anchors, orphan docs, index discoverability, and research catalog; `scripts/check_docs_policy.py` |
+| `pixi run ai-doctor`         | Read-only setup, discovery, reading-size, and recovery diagnosis; `scripts/ai_doctor.py`                                                                                                                                             |
+| `pixi run check-agent-hook`  | Bounded staged structural feedback, not completion evidence                                                                                                                                                                          |
 
 Preserve these failure boundaries when changing the checks:
 
-- Docs-update always loads `docs/AGENTS.md` and the information-architecture
-  owner; new-task loads that owner before placing durable output.
+- Docs-update always loads `docs/AGENTS.md` and the placement owner
+  `docs/README.md`; new-task loads that owner before placing durable output.
 - Capability references cover prose, invocation, and source-path forms.
   Deliberate non-capability names use the explicit
   `NON_CAPABILITY_DART_NAMES` ledger, never a build-system-derived exemption.

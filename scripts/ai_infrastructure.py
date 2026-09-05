@@ -137,7 +137,6 @@ AI_PREFIXES = (
     "docs/onboarding/ai-reviews.md",
     "docs/onboarding/ai-tools.md",
     "docs/onboarding/contributing.md",
-    "docs/information-architecture.md",
     "docs/onboarding/release-management.md",
     "scripts/ai_",
     "scripts/check_ai_",

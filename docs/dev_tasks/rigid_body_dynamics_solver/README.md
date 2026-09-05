@@ -93,6 +93,9 @@ solvers, couplers, ECS storage, or execution backends.
 
 ## Key Decisions
 
+- The five slice-level principles (DART 6 parity, SoA data, batch processing,
+  pure backend-portable kernels, reuse-or-rewrite) live in
+  [`architecture_principles.md`](architecture_principles.md).
 - Dynamics live in solver-shaped units; the `World` owns composition, time, and
   the step schedule. See the architecture design doc.
 - Entities are assigned to a solver by **physics domain**, not geometry.

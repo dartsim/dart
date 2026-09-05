@@ -1,10 +1,9 @@
 # Rigid-Body Solver — Architecture Principles (DART 7)
 
 Durable design intent for the DART 7 rigid-body dynamics solver. These
-govern every slice (integration, contacts/constraints, model loading) and how
-the PR #2705 convention re-alignment should be resolved
-([`convention_realignment.md`](convention_realignment.md)). Roadmap context in
-[`RESUME.md`](RESUME.md).
+govern every slice (integration, contacts/constraints, model loading); the
+task status lives in [`README.md`](README.md) and the durable architecture in
+`docs/design/simulation_solver_architecture.md`.
 
 ## Principles
 
@@ -38,10 +37,10 @@ the PR #2705 convention re-alignment should be resolved
    scratch** — `main` ships only the DART 7 API, so there is no obligation
    to preserve DART 6's internal structure for compatibility.
 
-## Implication for gravity / forces (and the #2705 re-alignment)
+## Implication for gravity / forces
 
-Reconcile in the **batch-friendly direction**, not by reverting to per-entity
-gravity:
+Gravity and applied loads follow the batch-friendly direction, never
+per-entity gravity:
 
 - Keep the integration kernel **pure** (no gravity baked in) — this is #2698's
   design and is required for backend portability (principle 4).

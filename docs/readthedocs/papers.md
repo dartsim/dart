@@ -8,9 +8,7 @@ comparative engine implementations that DART cites, implements, extends,
 reproduces, or uses as a baseline.
 
 This page is intentionally published in the website documentation rather than
-only in internal developer docs. The old
-`docs/design/simulation_experimental_references.md` path is kept only as a
-compatibility pointer; do not add entries there.
+only in internal developer docs.
 
 The catalog currently focuses on the DART 7 simulation world
 (`dart/simulation/**` and `dartpy.simulation`) and its algorithms. The schema

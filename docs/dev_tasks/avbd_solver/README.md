@@ -20,12 +20,11 @@ This folder is the temporary working surface; the durable owner is the plan.
 - **Active, incomplete paper implementation.** No parity is claimed. The
   headline gates remain **open**: a source-demo/paper CPU win, GPU parity, and a
   same-hardware paper-number match.
-- **Branch state:** active local branch
-  `feature/vbd-avbd-paper-parity-contract`, owning draft PR #3432. Do not copy a
-  mutable head SHA into this tracker: verify `git rev-parse HEAD`, fetched
-  `origin/main`, live PR head/draft state, CI, and reviews immediately before
-  any external action. Keep the PR draft until the foundation gates and review
-  loop are clean; never infer merge approval from an earlier session.
+- **Branch state:** the shared foundation merged to `main` in PR #3432
+  (`aafc4b66072`, 2026-09-03). No feature branch is open; the VBD-completion
+  PR starts from updated `main`. Verify `git rev-parse HEAD`, fetched
+  `origin/main`, and live PR/CI state immediately before any external action;
+  never infer merge approval from an earlier session.
 - **Current packet:** C++ and dartpy callers can explicitly select public
   Sequential Impulse, VBD, and AVBD rigid-body families with one positive
   contact/joint solve budget. Sequential Impulse now owns hard fixed,
@@ -224,55 +223,18 @@ test-all` passed every phase (213 + 80 + 8 `ctest` entries; its Python
   gate still would not close the missing solver-specific VBD/AVBD
   GPU-parity predicates.
 
-## Foundation PR Exit Criteria
+## Foundation Landed
 
-Draft PR #3432 is ready for maintainer review only when every item below is
-true on one final source snapshot. These criteria close the shared foundation;
-they do not claim that any of the 176 paper-parity rows is complete.
+PR #3432 closed the shared foundation on 2026-09-03: honest public Sequential
+Impulse, fixed-penalty VBD, and augmented VBD/AVBD selections without implicit
+family fallback, schema-6 packets bound to the selected family and scene
+fingerprint, the zero-trust correctness audit with no open P1/P2 finding in
+the foundation envelope, matched Figure 13 rows regenerated from the final
+binaries with long-horizon captures and semantic review, and one uncontaminated
+same-host five-repeat benchmark. None of that claims any of the 176 paper-parity
+rows.
 
-1. The public Sequential Impulse, fixed-penalty VBD, and augmented VBD/AVBD
-   selections execute their advertised formulation without an implicit family
-   fallback. Runtime diagnostics and schema-6 packets bind the actual selected
-   family, formulation, contact method, iteration policy, projection policy,
-   and scene fingerprint.
-2. The zero-trust correctness audit has no unresolved P1/P2 finding in the
-   foundation envelope. In particular, rigid and deformable contact candidate
-   construction is bounded and fail-closed, per-contact friction continuation
-   cannot alias another contact, fixed-penalty VBD cannot retain AVBD dual or
-   anchor state, attachment/fracture state has one explicit solver-row metric
-   and lifecycle contract with its force/torque dimensional limitation stated,
-   and replay rejects every construction/configuration/layout drift that can
-   change continuation meaning.
-3. Every current packet passes the current schema-6 validator. Historical
-   schemas remain readable only through the exact filename/version allowlist;
-   no historical packet may close a current claim. Writer-owned source lists,
-   source digests, solver fingerprints, artifact hashes, parent links, and
-   semantic reviews all validate transitively.
-4. The matched Figure 13 AVBD, VBD, and Sequential Impulse rows are regenerated
-   from the final binaries. Each has the method-specific diagnostic checkpoint
-   oracles, a 600-frame (10 simulated seconds) long-horizon capture, a still,
-   a video, engine and pixel-integrity verdicts, and an independent semantic
-   review bound to the exact bytes. The evidence is publication-shaped partial
-   evidence only: outcomes may differ, and no speedup or source-equivalence
-   claim is permitted without a matched accuracy denominator.
-5. One uncontaminated same-host five-repeat benchmark run records all three
-   methods from the same scene/configuration, with the quiet-host and in-run
-   watchdog gates passing. The PR description reports medians, dispersion,
-   hardware/build identity, exact commands, outcome differences, and honest
-   limitations; it embeds or links the long-horizon videos and still fallbacks.
-6. `pixi run lint`, the full default `pixi run test-all`, the full visible-GPU
-   `pixi run -e cuda test-all`, focused replay/serialization/allocation/contact
-   regressions, both packet/parity validators, and the text-first plus visual
-   simulation gates pass on the final bytes. A CUDA build/environment pass is
-   not mislabeled as solver-specific VBD/AVBD CUDA parity.
-7. Immediately before the final push, the latest fetched `origin/main` is
-   merged (never rebased) into the published branch and all final-byte gates
-   affected by that merge are rerun. Required hosted checks are green, the PR
-   remains draft, its DART 7.0 milestone and description are current, and the
-   complete `@codex review` loop has no actionable finding. Merging still
-   requires separate explicit maintainer approval.
-
-After #3432 lands, full paper parity remains exactly two owning changes: one
+Full paper parity remains exactly two owning changes: one
 VBD PR closing all 88 VBD rows and one AVBD PR closing all 88 AVBD rows. Each
 must include its complete implementation, CPU/CUDA correctness tests, all key
 paper/project/video/source demos, achieved-accuracy performance comparisons,
@@ -309,13 +271,9 @@ numbers.
 
 ## Immediate Next Steps
 
-The foundation head is the takeover commit chain recorded in
-[`RESUME.md`](RESUME.md) (rigid packet, evidence pipeline, re-derived AVBD
-oracle, evidence-runner fixes, then the evidence commit). If the foundation PR
-is still open, manage only that PR through current-head CI and review; do not
-extend its branch into the remaining parity program. After
-maintainer approval and landing, complete all 88 VBD predicates in one VBD PR
-from updated `main`, including an honest public XPBD comparator, the VBD
+The shared foundation is on `main` (PR #3432, `aafc4b66072`); no foundation
+branch or PR remains. Complete all 88 VBD predicates in one VBD PR from
+updated `main`, including an honest public XPBD comparator, the VBD
 CPU/CUDA and corpus gaps, achieved-accuracy performance, and PR-hosted images,
 GIFs, and videos for every paper/site/video/source-demo row. After that lands,
 complete all 88 AVBD predicates in a second AVBD PR from updated `main`,

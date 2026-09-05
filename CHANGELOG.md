@@ -485,6 +485,17 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Consolidated the `docs/` map, placement matrix, and maintenance rules into
+  `docs/README.md`, folded the north-star roadmap into `docs/plans/README.md`,
+  replaced the DART 6-era onboarding deep dive with a handbook index, trimmed
+  stale dev-task session logs, and added a `dart-docs-update audit` mode.
+  `check-docs-policy` now checks every markdown link, rejects unreferenced
+  docs, and reports oversized dev-task snapshots. `pixi run lint` validates
+  AVBD evidence packets and the PLAN-104 parity contract with
+  `--stale-source report`, so a sealed packet that predates the current
+  source is an advisory in lint and still an error in the strict
+  `check-avbd-packets` and `check-plan104-paper-parity` claim gates.
+  ([#3479](https://github.com/dartsim/dart/pull/3479))
 - Automated review workflows now batch related fixes, require a root-cause
   checkpoint after two rounds still find valid issues, and track review coverage
   on the current revision while preserving independent review and validation.

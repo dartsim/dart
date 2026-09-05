@@ -11,8 +11,8 @@ link to a detailed numbered initiative file or to the authoritative owner
 document for initiatives tracked elsewhere until they warrant a dedicated plan
 file. Detailed plan files own workstreams, acceptance criteria, and any
 relocated progress log. External owner documents own the referenced scope until
-a detailed initiative file is added. `north-star-roadmap.md` owns strategic
-framing.
+a detailed initiative file is added. [`README.md`](README.md) owns the plan
+policy and north-star dimensions.
 
 Each entry stays bounded: at most 40 lines per `### PLAN-` block and at most 15
 lines in its `- Next step:` field. When an entry outgrows that, move the

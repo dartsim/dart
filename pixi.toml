@@ -205,10 +205,17 @@ lint-plan122-allocation-matrix = { cmd = [
   "python",
   "scripts/check_plan122_allocation_matrix.py",
 ] }
-lint-avbd-packets = { cmd = ["python", "scripts/check_avbd_packets.py"] }
+lint-avbd-packets = { cmd = [
+  "python",
+  "scripts/check_avbd_packets.py",
+  "--stale-source",
+  "report",
+] }
 lint-plan104-paper-parity = { cmd = [
   "python",
   "scripts/check_plan104_paper_parity.py",
+  "--stale-source",
+  "report",
 ] }
 lint-architecture-page = { cmd = [
   "python",
@@ -357,9 +364,25 @@ check-plan122-allocation-matrix = { cmd = [
   "scripts/check_plan122_allocation_matrix.py",
 ] }
 check-avbd-packets = { cmd = ["python", "scripts/check_avbd_packets.py"] }
+# Structural/hash validation for repository-wide lint; stale seals are
+# advisories here and errors in the strict `check-avbd-packets` claim gate.
+check-avbd-packets-structure = { cmd = [
+  "python",
+  "scripts/check_avbd_packets.py",
+  "--stale-source",
+  "report",
+] }
 check-plan104-paper-parity = { cmd = [
   "python",
   "scripts/check_plan104_paper_parity.py",
+] }
+# Contract/evidence structure for repository-wide lint; stale seals are
+# advisories here and errors in the strict `check-plan104-paper-parity` gate.
+check-plan104-paper-parity-structure = { cmd = [
+  "python",
+  "scripts/check_plan104_paper_parity.py",
+  "--stale-source",
+  "report",
 ] }
 check-architecture-page = { cmd = [
   "python",
@@ -442,8 +465,8 @@ check-lint = { depends-on = [
   "check-plan083-completion-audit",
   "check-lcp-solver-roster",
   "check-plan122-allocation-matrix",
-  "check-avbd-packets",
-  "check-plan104-paper-parity",
+  "check-avbd-packets-structure",
+  "check-plan104-paper-parity-structure",
   "check-architecture-page",
   "check-ai-commands",
   "check-ai-infra",
