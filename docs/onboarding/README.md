@@ -81,12 +81,12 @@ rationale in [`../design/`](../design/README.md); theory lives in
 
 ### AI tooling
 
-| Page                                                   | Covers                                                                            |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| [ai-tools.md](ai-tools.md)                             | Claude Code, Codex, OpenCode, and Gemini CLI setup, compatibility, dated evidence |
-| [ai-reviews.md](ai-reviews.md)                         | Handling automated review bots and the review-fix loop                            |
-| [agent-sim-verification.md](agent-sim-verification.md) | Text-first plus visual verification of 3D scenes and physics                      |
+| Page                                                   | Covers                                                       |
+| ------------------------------------------------------ | ------------------------------------------------------------ |
+| [ai-tools.md](ai-tools.md)                             | Claude Code and Codex setup, compatibility, dated evidence   |
+| [ai-reviews.md](ai-reviews.md)                         | Handling automated review bots and the review-fix loop       |
+| [agent-sim-verification.md](agent-sim-verification.md) | Text-first plus visual verification of 3D scenes and physics |
 
-Agent workflows are `/dart-*` commands in Claude Code and OpenCode and
-`$dart-*` skills in Codex; [`../ai/README.md`](../ai/README.md) owns the
+Agent workflows are `/dart-*` commands in Claude Code and `$dart-*` skills
+in Codex; [`../ai/README.md`](../ai/README.md) owns the
 operating model and [`../ai/workflows.md`](../ai/workflows.md) the catalog.

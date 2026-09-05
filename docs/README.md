@@ -111,7 +111,7 @@ Run the audit when finishing a task, archiving a plan, or before a release:
 pixi run check-docs-policy   # indexes, links, orphans, plan and dev-task shape, budgets
 ```
 
-`/dart-docs-update audit` (Claude Code, OpenCode) or `$dart-docs-update audit`
+`/dart-docs-update audit` (Claude Code) or `$dart-docs-update audit`
 (Codex) runs that check, reviews its advisories, and walks the table above to
 propose consolidations and deletions.
 

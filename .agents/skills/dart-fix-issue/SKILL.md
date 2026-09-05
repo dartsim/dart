@@ -16,7 +16,7 @@ in the shared `.agents/skills/` catalog.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-fix-issue <arguments>`
+- Claude Code: `/dart-fix-issue <arguments>`
 - Codex: `$dart-fix-issue <arguments>`
 
 Treat the text after the skill name as `$ARGUMENTS`. When the workflow

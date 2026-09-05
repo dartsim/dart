@@ -35,38 +35,38 @@ reading `docs/ai/principles.md`, then load the task-specific docs below. Tools
 that support `@file` references may use them, but the paths below are the
 portable source of truth.
 
-| Task Type                                | Load These Files                                                                                                                                                                                                 |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Any task**                             | This file (loaded first by every tool chain), `docs/ai/principles.md`                                                                                                                                            |
-| Project direction                        | `docs/ai/north-star.md`                                                                                                                                                                                          |
-| Building                                 | `docs/onboarding/building.md`                                                                                                                                                                                    |
-| Testing                                  | `docs/onboarding/testing.md`                                                                                                                                                                                     |
-| Model / simulation / visual verification | `docs/onboarding/agent-sim-verification.md`, `docs/ai/verification.md`; use `/dart-verify-sim` (Claude Code) or `$dart-verify-sim` (Codex); OpenCode loads the same skill from `.claude/skills/dart-verify-sim/` |
-| Contributing                             | `docs/onboarding/contributing.md`, `CONTRIBUTING.md`                                                                                                                                                             |
-| Code style                               | `docs/onboarding/code-style.md`                                                                                                                                                                                  |
-| Docs structure / placement / maintenance | `docs/README.md` (map, placement matrix, maintenance rules), `docs/AGENTS.md`                                                                                                                                    |
-| Architecture                             | `docs/onboarding/architecture.md` (classic core), `docs/onboarding/README.md` (handbook index)                                                                                                                   |
-| DART 7 architecture vision               | `docs/readthedocs/architecture.md` (multi-physics/solver/backend one-paper), `docs/design/simulation_solver_architecture.md`                                                                                     |
-| Architecture hardening / work packets    | `docs/design/dart7_architecture_assessment.md` (verified findings + standing rule), `docs/plans/solver-family-intake.md`, `docs/ai/orchestration.md`                                                             |
-| Public API work                          | `docs/onboarding/api-boundaries.md`                                                                                                                                                                              |
-| Theory/research foundations              | `docs/background/README.md`                                                                                                                                                                                      |
-| CI/CD issues                             | `docs/onboarding/ci-cd.md`                                                                                                                                                                                       |
-| Python bindings                          | `docs/onboarding/python-bindings.md`                                                                                                                                                                             |
-| Model loading                            | `docs/onboarding/io-parsing.md`                                                                                                                                                                                  |
-| Build system                             | `docs/onboarding/build-system.md`                                                                                                                                                                                |
-| Profiling / performance                  | `docs/onboarding/profiling.md`                                                                                                                                                                                   |
-| AI docs / instruction edits              | `docs/ai/README.md` read order: `docs/ai/principles.md`, `docs/ai/components.md`, `docs/ai/verification.md`; `docs/ai/terminology.md` when naming things                                                         |
-| Tool compatibility / adapters            | `docs/onboarding/ai-tools.md`, `docs/ai/components.md`                                                                                                                                                           |
-| Planning                                 | `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/plans/README.md`, `docs/plans/dashboard.md`, `docs/ai/verification.md`                                                                                   |
-| PR reviews                               | `docs/onboarding/ai-reviews.md` (automated review handling rules)                                                                                                                                                |
-| Release work                             | `docs/onboarding/release-management.md`                                                                                                                                                                          |
-| Changelog work                           | `docs/onboarding/changelog.md`, `docs/onboarding/release-roadmap.md`, `docs/onboarding/release-management.md`; use `/dart-changelog` or `$dart-changelog` for changelog decisions and entries                    |
-| Dev tasks                                | `docs/dev_tasks/README.md` (when to create, cleanup rules)                                                                                                                                                       |
+| Task Type                                | Load These Files                                                                                                                                                                              |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Any task**                             | This file (loaded first by every tool chain), `docs/ai/principles.md`                                                                                                                         |
+| Project direction                        | `docs/ai/north-star.md`                                                                                                                                                                       |
+| Building                                 | `docs/onboarding/building.md`                                                                                                                                                                 |
+| Testing                                  | `docs/onboarding/testing.md`                                                                                                                                                                  |
+| Model / simulation / visual verification | `docs/onboarding/agent-sim-verification.md`, `docs/ai/verification.md`; use `/dart-verify-sim` (Claude Code) or `$dart-verify-sim` (Codex)                                                    |
+| Contributing                             | `docs/onboarding/contributing.md`, `CONTRIBUTING.md`                                                                                                                                          |
+| Code style                               | `docs/onboarding/code-style.md`                                                                                                                                                               |
+| Docs structure / placement / maintenance | `docs/README.md` (map, placement matrix, maintenance rules), `docs/AGENTS.md`                                                                                                                 |
+| Architecture                             | `docs/onboarding/architecture.md` (classic core), `docs/onboarding/README.md` (handbook index)                                                                                                |
+| DART 7 architecture vision               | `docs/readthedocs/architecture.md` (multi-physics/solver/backend one-paper), `docs/design/simulation_solver_architecture.md`                                                                  |
+| Architecture hardening / work packets    | `docs/design/dart7_architecture_assessment.md` (verified findings + standing rule), `docs/plans/solver-family-intake.md`, `docs/ai/orchestration.md`                                          |
+| Public API work                          | `docs/onboarding/api-boundaries.md`                                                                                                                                                           |
+| Theory/research foundations              | `docs/background/README.md`                                                                                                                                                                   |
+| CI/CD issues                             | `docs/onboarding/ci-cd.md`                                                                                                                                                                    |
+| Python bindings                          | `docs/onboarding/python-bindings.md`                                                                                                                                                          |
+| Model loading                            | `docs/onboarding/io-parsing.md`                                                                                                                                                               |
+| Build system                             | `docs/onboarding/build-system.md`                                                                                                                                                             |
+| Profiling / performance                  | `docs/onboarding/profiling.md`                                                                                                                                                                |
+| AI docs / instruction edits              | `docs/ai/README.md` read order: `docs/ai/principles.md`, `docs/ai/components.md`, `docs/ai/verification.md`; `docs/ai/terminology.md` when naming things                                      |
+| Tool compatibility / adapters            | `docs/onboarding/ai-tools.md`, `docs/ai/components.md`                                                                                                                                        |
+| Planning                                 | `docs/ai/principles.md`, `docs/ai/north-star.md`, `docs/plans/README.md`, `docs/plans/dashboard.md`, `docs/ai/verification.md`                                                                |
+| PR reviews                               | `docs/onboarding/ai-reviews.md` (automated review handling rules)                                                                                                                             |
+| Release work                             | `docs/onboarding/release-management.md`                                                                                                                                                       |
+| Changelog work                           | `docs/onboarding/changelog.md`, `docs/onboarding/release-roadmap.md`, `docs/onboarding/release-management.md`; use `/dart-changelog` or `$dart-changelog` for changelog decisions and entries |
+| Dev tasks                                | `docs/dev_tasks/README.md` (when to create, cleanup rules)                                                                                                                                    |
 
 ## AI Workflows And Skills
 
-Use `/dart-*` command adapters in Claude Code/OpenCode and generated `$dart-*`
-skill adapters in Codex. `docs/ai/workflows.md` owns the capability catalog;
+Use `/dart-*` command adapters in Claude Code and generated `$dart-*` skill
+adapters in Codex. `docs/ai/workflows.md` owns the capability catalog;
 `docs/ai/terminology.md` owns the shared terms.
 `docs/ai/README.md` owns model and reasoning selection;
 `docs/ai/orchestration.md` owns planning and phase-specific delegation choices.
@@ -78,10 +78,9 @@ explicitly autonomous work from a brief or one up-front interview; it uses
 `docs/dev_tasks/<task>/` as the project home.
 
 Editable sources live in `.claude/commands/` and `.claude/skills/`. Generated
-OpenCode and Codex entrypoints live in `.opencode/command/` and
-`.agents/skills/`; do not hand-edit generated files. Codex project agents,
-hooks, and runtime configuration live under `.codex/` and are maintained
-sources, not generated adapters.
+Codex entrypoints live in `.agents/skills/`; do not hand-edit generated files.
+Codex project agents, hooks, and runtime configuration live under `.codex/` and
+are maintained sources, not generated adapters.
 
 ## Key Rules
 
@@ -120,6 +119,5 @@ does not replace the mandatory full `pixi run lint` before a commit.
 
 ## Tool Compatibility
 
-See `docs/onboarding/ai-tools.md` for Claude Code, Codex, Gemini CLI, and
-OpenCode compatibility details. Keep this root file as a pointer board, not a
-second tool registry.
+See `docs/onboarding/ai-tools.md` for Claude Code and Codex compatibility
+details. Keep this root file as a pointer board, not a second tool registry.

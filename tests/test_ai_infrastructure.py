@@ -277,11 +277,6 @@ def _generate_adapters(root: Path) -> None:
         relative = str(source.relative_to(root))
         _write(
             root,
-            f".opencode/command/{source.name}",
-            sync.add_auto_gen_header(source.read_text(), relative),
-        )
-        _write(
-            root,
             f".agents/skills/{source.stem}/SKILL.md",
             sync.add_auto_gen_header(sync.render_codex_command_skill(source), relative),
         )
@@ -1909,6 +1904,22 @@ def test_generated_adapter_checker_rejects_symlinked_expected_skill(tmp_path):
     )
 
 
+def test_generated_adapter_check_ignores_stray_opencode_tree(tmp_path):
+    root = make_repo(tmp_path, "main")
+    source = root / ".claude" / "commands" / "dart-new-task.md"
+    _write(
+        root,
+        ".opencode/command/dart-next.md",
+        sync.add_auto_gen_header(
+            source.read_text(), ".claude/commands/dart-new-task.md"
+        ),
+    )
+
+    errors = infra.check_generated_adapters(root)
+
+    assert errors == []
+
+
 def test_non_object_scenario_entry_is_rejected(tmp_path):
     root = make_repo(tmp_path, "main")
     path = root / infra.SCENARIO_MANIFEST
@@ -2126,9 +2137,6 @@ def test_stale_generated_adapters_are_rejected(tmp_path):
     errors = infra.check_generated_adapters(root)
 
     assert any(
-        "dart-new-task.md: generated command is stale" in error for error in errors
-    )
-    assert any(
         "dart-new-task/SKILL.md: generated skill is stale" in error for error in errors
     )
 
@@ -2200,13 +2208,13 @@ def test_tool_versions_probes_all_agent_clis(monkeypatch):
 
     versions = infra.tool_versions()
 
-    assert set(versions) == {"git", "pixi", "codex", "claude", "opencode", "python"}
-    for tool in ("git", "pixi", "codex", "claude", "opencode"):
+    assert set(versions) == {"git", "pixi", "codex", "claude", "python"}
+    for tool in ("git", "pixi", "codex", "claude"):
         assert versions[tool] == "not found"
     assert versions["python"]
 
 
-def test_tool_versions_survives_failing_or_silent_probes(monkeypatch):
+def test_tool_versions_survives_failing_probes(monkeypatch):
     monkeypatch.setattr(infra.shutil, "which", lambda tool: f"/bin/{tool}")
 
     def fake_run(cmd, **kwargs):
@@ -2220,13 +2228,28 @@ def test_tool_versions_survives_failing_or_silent_probes(monkeypatch):
             )
         if "claude" in cmd[0]:
             raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
-        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+        raise AssertionError(f"unexpected probe {cmd}")
 
     monkeypatch.setattr(infra.subprocess, "run", fake_run)
 
     versions = infra.tool_versions()
 
-    for tool in ("git", "pixi", "codex", "claude", "opencode"):
+    for tool in ("git", "pixi", "codex", "claude"):
+        assert versions[tool] == "not found"
+    assert versions["python"]
+
+
+def test_tool_versions_treats_silent_probe_as_not_found(monkeypatch):
+    monkeypatch.setattr(infra.shutil, "which", lambda tool: f"/bin/{tool}")
+    monkeypatch.setattr(
+        infra.subprocess,
+        "run",
+        lambda cmd, **kwargs: subprocess.CompletedProcess(cmd, 0, stdout="", stderr=""),
+    )
+
+    versions = infra.tool_versions()
+
+    for tool in ("git", "pixi", "codex", "claude"):
         assert versions[tool] == "not found"
     assert versions["python"]
 
