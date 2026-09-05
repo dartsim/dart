@@ -103,11 +103,15 @@ contract (`WorldStepStage`, `WorldStepPipeline`). Built-in family stages and
 their per-family solver stats are implementation internals: keep them under
 `compute/detail/` or another internal owner and expose user-facing observations
 through curated `World` diagnostics, profiles, or public policy values instead.
-Do not expose Taskflow types, GPU devices, streams, memory pools, SIMD storage
-requirements, solver registries, or rendering backends until a later plan and
-benchmark gate justify them. Future resource read/write declarations should
-start as diagnostic metadata and validation inputs before becoming scheduler
-contracts.
+Taskflow/runtime types, raw GPU devices, streams, memory pools, SIMD storage
+requirements, solver registries and rendering backends remain private. A small
+DART-owned `cpu`/`cuda` preference and resolved-device report are accepted design
+under PLAN-041/042; these values do not expose runtime objects. Existing
+`check-compute-backend-boundaries` identifier restrictions and the final World
+promotion release-ref requirement still apply until
+[WP-040.2](../plans/040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+migrates focused fixtures and Pixi arguments. Resource access metadata already
+exists as diagnostics; dependency inference needs the PLAN-030 graph contract.
 
 DART 7 deformable simulation follows the same boundary: public handles
 and options describe model topology, initial state, fixed nodes, and physical

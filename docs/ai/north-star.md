@@ -41,10 +41,20 @@ Research-focused means three things:
 3. DART should scale with the computing platforms researchers actually use.
    Multi-core CPU support is a first-class direction, SIMD is already part of
    the codebase, and DART 7 includes private opt-in CUDA support for selected
-   simulation workloads. Future GPU expansion should still be made
+   simulation workloads. PLAN-040 requires complete CPU/CUDA Float64 evidence
+   for every M1 rigid example while keeping CUDA optional to install. Broader
+   GPU expansion should still be made
    from benchmarkable algorithm needs, packaging impact, security boundaries,
    and maintenance cost. Scalability work should be judged by real research
    workloads, not by backend availability alone.
+
+DART 7 is a new engine, distinct from DART 6. Independent physical oracles,
+complete simulation-state continuation and continuously audited model/state,
+solver and compute contracts define readiness. The milestone sequence and
+implementation prerequisites live in
+[PLAN-040](../plans/040-dart7-release-hardening.md). The intended default solver is a
+versioned policy over tested method variants/combinations, not a promise of one
+universally best algorithm. M1 validates a bounded foundation before expansion.
 
 The intended result is that DART becomes the default reference platform when
 researchers evaluate simulation libraries across these three dimensions.
@@ -147,7 +157,8 @@ DART is ready for sustained autonomous agent work when:
 - research-facing APIs are clean, package/source-build paths are verified, and
   new algorithms can be benchmarked against existing baselines;
 - compute scalability work has an evidence-backed CPU/GPU roadmap, including
-  private CUDA validation gates before any GPU APIs become public commitments;
+  M1 runtime qualification and small DART-owned device preferences while
+  runtime/library types stay private;
 - `dart-next` or an equivalent workflow stays active across supported AI
   surfaces and can select one bounded next task without hidden maintainer
   context;

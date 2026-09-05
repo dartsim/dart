@@ -21,8 +21,7 @@
   `World` model-loading bridge (`dart::simulation::io::addSkeleton`) has
   first-post-bake world-base, global-heap, and raw-malloc gates over an imported
   scene, with the source-model translation kept in the pre-bake configuration
-  phase. There are no remaining implementation-capacity rows for currently
-  selectable DART 7 CPU `World::step()` paths: `D-004` is closed by routing
+  phase. These matrix rows do not establish universal parallel-executor coverage: `D-004` is closed by routing
   systems above the retained dense-direct cutoff to the sparse iterative path
   instead of Eigen sparse-direct numeric factorization. The remaining open rows
   are promotion-gated rows `M-004`, `F-002`, and `G-001`; they stay owned by
@@ -30,6 +29,17 @@
   path is promoted into `World::step()`. No new `docs/dev_tasks/` folder is
   needed for those rows while this plan and its coverage matrix remain the
   durable owner.
+
+## Additional Coverage Investigations
+
+The [current assessment](../design/dart7_architecture_assessment.md#f6--clean-break-boundaries-and-scoped-foundation-evidence)
+identifies parallel unified-island scratch and function-static deformable CUDA
+PSD buffers that existing representative rows do not qualify. PLAN-122 owns
+allocation coverage, coordinated with PLAN-030 for runtime/ownership. Admit
+explicit parallel-island rows with M2 and deformable-device rows with their
+family promotion; record execution mode, concurrency and first-step evidence.
+These remain open investigations beyond the one-body SI M1 envelope.
+WP-122.8 completion must not close or erase them.
 
 ## Scope
 
@@ -52,8 +62,9 @@ Out of scope:
 - Public return-by-value diagnostics and standalone helper APIs whose outputs
   intentionally outlive a step, unless a built-in `World` stage calls them in
   the simulation loop.
-- Third-party internal allocations that DART cannot control, unless a built-in
-  DART 7 path can avoid them by preparing reusable DART-owned scratch at bake.
+- Third-party allocations outside the measured simulation loop. M1 includes
+  runtime submission and any third-party allocation inside the step: an
+  unavoidable allocation is a failed qualification, not an exemption.
 
 ## Harness Contract
 
@@ -82,6 +93,13 @@ until the relevant bake path sizes every needed buffer before the first measured
 post-bake step.
 
 ## Work Packets
+
+WP-122.1–122.7 retain the existing coverage workstreams. Their row-level
+progress is in the linked coverage matrix; do not re-execute a closed row or
+infer that a whole packet/family is complete from its representative tests.
+WP-122.8 is the next M1 qualification packet after its dependencies close.
+Parallel and device paths require their own evidence even when a CPU row is
+already closed.
 
 ### WP-122.1 Harness Manifest And First-Step Gates
 
@@ -200,6 +218,36 @@ post-bake step.
 - Gates: `pixi run lint`, focused CPU tests, and `pixi run -e cuda test-cuda` or
   the backend-specific gate on capable hosts.
 - Dependencies: PLAN-030, PLAN-031, PLAN-081, PLAN-083, and PLAN-104.
+
+### WP-122.8 M1 Allocation And Lifecycle Qualification
+
+- Objective/value: prove that the chosen runtime, kernels and full M1 workflow
+  honor the storage and isolation contracts together.
+- Scope: extend the coverage matrix with explicit serial, parallel range,
+  task-graph submission and CUDA rows for the accepted RB corpus; graph/cache
+  invalidation, reset/restore and concurrent-state lifetime tests.
+- Architecture impact: state isolation, prepared capacities, graph submission
+  and device lifetime; update the allocation matrix and architecture assessment.
+- Non-goals: weakening existing zero-allocation gates, excluding third-party
+  submission from measurement, or qualifying every research family.
+- Assumptions/open decisions: capacities are established at bake; setup,
+  explicit observations and checkpoint I/O are measured separately. Restoring
+  may rebuild scratch/graphs before re-entering the prepared step boundary.
+- Acceptance evidence: measure the first post-bake and first post-restore
+  prepared step without hidden stepping/prewarm. No World-base/global/raw host
+  allocation or device allocation occurs in any selected M1 step path. Include
+  changing active contact counts within capacity, two interleaved independent
+  states, model rebuild and stale-handle rejection, profiling on/off, nested
+  execution, errors/cancellation and completion before teardown. Over-capacity
+  work fails explicitly or rebakes outside the step according to contract.
+  Record total actual workers and device memory, not only Taskflow's pool size.
+  The current constant Taskflow submission allocation floor is an open gap.
+- Gates: focused allocation/lifecycle/concurrency tests, `pixi run lint`,
+  `pixi run test-all`, `pixi run -e cuda test-all`; record platform interposer
+  availability. Skipped allocation/runtime measurements cannot close a row.
+- Dependencies: accepted WP-030.5 and WP-041.1; consume the WP-030.4 runtime
+  decision. A runtime that fails hard gates must be replaced or excluded from
+  the accepted M1 path rather than receiving an undocumented waiver.
 
 ## Completion Criteria
 

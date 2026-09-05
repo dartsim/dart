@@ -17,12 +17,11 @@ and multi-backend simulation.
 
 ## The design in one sentence
 
-The `World` owns topology, time, and a configured set of **solvers**; each
-solver advances the dynamics of the entities in its **physics domain**, and
-**couplers** mediate interactions between domains — with parallelizable work
-expressed as **compute-graph** nodes that any **backend executor** runs.
-Users configure method families and policies, never solver registries,
-component storage, or execution backends.
+World owns topology, time and composition. A solver may advance one or several
+physical domains, using a shared solve or an explicit coupling strategy.
+Semantic dependencies, executable plans and runtime adapters separate physics
+from scheduling. Users configure DART-owned method/policy values, never solver
+registries, component storage or runtime objects.
 
 ## Why three axes of choice
 
@@ -40,16 +39,13 @@ component storage, or execution backends.
 `docs/readthedocs/architecture.md` is the single-page map of the design and
 the options at each seam, with honest status markers.
 `docs/design/dart7_architecture_assessment.md` is the verified record of
-where the implementation still diverges from that design (no internal solver
-contract yet, conceptual-only Model/State split, executor seam unused by
-dynamics stages, missing apples-to-apples substrate) and owns the standing
-rule: new solver families enter only through
-`docs/plans/solver-family-intake.md`, including contract conformance and
-machine-recorded solver identity in all benchmark evidence. PLAN-091 retired
-the first living hardening packet plan; current follow-up work routes through
-`docs/plans/dashboard.md`, the intake checklist, and the durable owner docs
-named in the assessment. Do not write new code that copies a pattern the
-assessment still lists as a verified finding.
+where implementation is partial: complete shared-model states, full CUDA World
+stepping, portable continuation, and coverage beyond the existing metrics/corpus.
+It owns the continuous audit rule. New families enter through
+`docs/plans/solver-family-intake.md`; `docs/plans/040-dart7-release-hardening.md`
+coordinates milestone readiness, and active subsystem plans own packets.
+PLAN-091 is completed background. Recheck source evidence before copying a
+pattern or repeating an absence claim from an older audit.
 
 ## Key owner documents
 
@@ -57,22 +53,24 @@ The architecture page's **Source-of-truth map** is the single owner of the full
 topic → owner-doc mapping (solver, API, extension, compute, differentiable,
 clean-break, north-star). The docs an agent most often needs inline:
 
-| Topic                                                     | Document                                                                    |
-| --------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Solver abstraction, domain assignment, coupling, schedule | `docs/design/simulation_solver_architecture.md`                             |
-| Verified findings, standing rule, competitor lessons      | `docs/design/dart7_architecture_assessment.md`                              |
-| Public C++ / dartpy API shape and promotion rules         | `docs/design/simulation_cpp_api.md`, `docs/design/simulation_python_api.md` |
-| CPU / SIMD / GPU decision framework                       | `docs/design/scalable_compute_decisions.md`                                 |
-| DART 7 vs DART 6 topology · live progress / parity gates  | `docs/design/dart7_clean_break_strategy.md`, `docs/plans/dashboard.md`      |
+| Topic                                                       | Document                                                                    |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Solver abstraction, domain assignment, coupling, schedule   | `docs/design/simulation_solver_architecture.md`                             |
+| Verified findings, standing rule, competitor lessons        | `docs/design/dart7_architecture_assessment.md`                              |
+| Public C++ / dartpy API shape and promotion rules           | `docs/design/simulation_cpp_api.md`, `docs/design/simulation_python_api.md` |
+| CPU / SIMD / GPU decision framework                         | `docs/design/scalable_compute_decisions.md`                                 |
+| DART 7 vs DART 6 topology · live progress / readiness gates | `docs/design/dart7_clean_break_strategy.md`, `docs/plans/dashboard.md`      |
 
 ## Public-facade rules (do not violate)
 
 - Do not expose `Solver`, `Coupler`, `PhysicsDomain`, ECS storage, component
-  types, executor/backend types, or solver registries as public API.
+  types, concrete runtime/backend types, or solver registries as public API.
+  Existing DART-owned abstract executor/stage extension interfaces are distinct
+  from concrete runtime implementations.
 - Select behavior by documented method-family names and policy value objects.
-- Backend names (CUDA, Taskflow, SIMD ISA) may appear in build flags,
-  diagnostics, and benchmarks — never in public types, namespaces, or required
-  configuration.
+- A small DART-owned CPU/CUDA preference is accepted public design; library,
+  pool, stream, kernel and ISA types remain private. Existing identifier
+  checkers stay enforced until WP-040.2 migrates their focused fixtures.
 - Keep the easy path (`World` + `addRigidBody`/`addMultibody` + `step`) free of
   solver vocabulary.
 - Fallbacks must never silently substitute algorithms: validate capabilities

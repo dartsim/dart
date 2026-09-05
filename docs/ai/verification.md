@@ -15,7 +15,9 @@ Before finalizing substantial AI-assisted work:
 
 1. Restate the objective as concrete deliverables.
 2. Map each explicit request, file, command, gate, and deliverable to evidence.
-3. Inspect the actual files, command output, review state, or artifacts.
+3. Inspect the actual files, command output, review state, or artifacts. Audit
+   affected architecture invariants and update the assessment/capability rows;
+   milestone exits and new solver/coupling contracts require cross-family review.
 4. Identify missing, weakly verified, or blocked requirements.
 5. Verify review evidence: at least two clean independent or role-separated
    review passes on the current post-fix state, with substantive findings
@@ -31,6 +33,23 @@ Before finalizing substantial AI-assisted work:
    owner in `docs/plans/`, `docs/design/`, or `docs/onboarding/`.
 9. Continue working until all required items are satisfied or a real blocker
    remains.
+
+## DART 7 Readiness Evidence
+
+[PLAN-040](../plans/040-dart7-release-hardening.md) owns the milestone matrix.
+Independent physical oracles are primary; DART 6 is optional differential
+comparison evidence, with existing promotion-checker migration owned by
+WP-040.2. M1 requires every named example on CPU and CUDA Float64, full supported
+checkpoint continuation, installed workflows and first-post-bake allocation
+proof. CUDA installation can remain optional; compilation, skipped runtime
+checks and hidden CPU fallback cannot close GPU coverage. Pin actual method,
+variant, precision and execution identity. Separate same-backend deterministic
+replay from cross-backend finite-horizon tolerances. A documentation PR cannot
+close a physics or compute prototype gate.
+
+The milestone sequence does not waive any full paper target below. The proposed
+separation of reproduction and performance policy is a recorded maintainer
+decision in PLAN-040, not an accepted exception to current requirements.
 
 ## Research Paper Implementation Evidence
 

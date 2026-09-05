@@ -8,7 +8,7 @@ Current sequencing for scalable-compute roadmap work lives in
 
 ## Purpose
 
-DART needs a compute roadmap for multi-core CPU, SIMD, and possible GPU
+DART needs a compute roadmap for multi-core CPU, SIMD, and GPU
 workloads before any public accelerator API becomes a commitment. This design
 keeps backend decisions tied to research workloads, benchmark evidence,
 packaging impact, and API boundaries.
@@ -25,8 +25,11 @@ For each candidate workload, collect:
 - package and CI feasibility;
 - public API impact.
 
-The first GPU milestone should be an internal prototype and benchmark report,
-not a public API.
+The historical first GPU prototype was internal. Current
+[PLAN-040 M1](../plans/040-dart7-release-hardening.md) requires every named rigid
+example on CPU and CUDA Float64, including contact and restart. Installation
+remains optional. PLAN-030 owns runtime/kernel qualification before broader
+implementation; a prototype speedup cannot substitute for this coverage.
 
 ## Simulation Compute Graph Boundary
 
@@ -36,7 +39,7 @@ simulation work. It belongs under `dart::simulation` and uses a backend-neutral
 Taskflow is the first parallel backend but should not appear in stable public
 APIs.
 
-The first milestone includes graph nodes and explicit dependencies, static
+Implemented early compute slices include graph nodes and explicit dependencies, static
 parallel-level inspection, opt-in execution profiles, domain/acceleration
 metadata, DOT visualization, graph-backed kinematics and
 rigid-body stages, and `compute::WorldStepPipeline` for composing multiple
@@ -47,12 +50,9 @@ profiling surface.
 
 ## Resource Access Metadata
 
-The next compute milestone is descriptive resource access metadata for graph
-nodes. It should declare whether a node reads, writes, mutates, reduces, or uses
-scratch resources, and it should improve validation, DOT output, profiling
-context, and future graph-shaping decisions.
-
-Keep the first resource-access PR conservative:
+Resource-access metadata already declares reads, writes, mutations, reductions
+and scratch and supports diagnostics. It does not infer dependencies or prove
+alias-safe access. Retain the following contract while qualifying it in M1:
 
 - explicit graph edges remain the correctness source of truth;
 - resource access metadata starts as diagnostics and validation input;
@@ -62,6 +62,62 @@ Keep the first resource-access PR conservative:
   multi-writer access;
 - no GPU residency, stream, memory-transfer, solver registry, or rendering API
   should be introduced as part of resource access metadata.
+
+## Semantic Graph, Executable Plan And Runtime Adapter
+
+Keep three layers separate:
+
+1. **DART semantic graph:** physical/program order, input/output resources,
+   solver-iteration boundaries and coarse computation groups. Explicit edges
+   are authoritative in M1. Domains do not dictate one task per entity.
+2. **Executable plan:** bind node/group work to state-owned buffers and kernel
+   implementations; choose serial/parallel/device lowering, scratch, completion
+   dependencies and optional capture. Validate before running.
+3. **Runtime adapter:** Taskflow, another CPU pool or a device graph submits
+   already-defined work. It cannot invent physics dependencies or turn host
+   closures into device kernels.
+
+Each resource needs identity including model/state/lane, range and alias
+information. Infer RAW, WAR and WAW edges only against declared program order;
+unknown aliasing serializes or rejects. Read/read may overlap; reductions need
+owned partials and an explicit merge tree. `Reduce` metadata alone is not a
+race-freedom or reproducibility guarantee. Debug hazard diagnostics must be
+complemented by release-mode validation and adversarial dependency tests.
+
+Group coarse stages/islands and small compatible kernels to amortize overhead.
+A group preserves its dependency and observable error boundaries. A solver's
+Gauss-Seidel order cannot silently become Jacobi, and a fixed-iteration method
+cannot gain a different convergence policy because tasks were rescheduled.
+M1 may execute whole solver loops in one node or ordered stream; M2 measures
+coarsening, graph updates, conditional device nodes and critical-path/locality
+heuristics. Scheduling is constrained optimization measured on workloads, not
+a promise of globally optimal job ordering.
+
+Immutable topology may be shared. Mutable graph execution records, bindings,
+profilers, continuation and scratch belong to each in-flight state. A runtime
+pool may be shared within a documented total worker budget, including range
+workers and nested solver work. Test interleaving, concurrent invocations,
+nesting, teardown and profiling on/off; instrumentation must preserve dispatch.
+
+A device node completes when the work and dependent writes complete, not when
+its host launch returns. Use correct event dependencies or synchronous
+completion; asynchronous overlap is not an M1 requirement. Error/cancellation
+must stop dependent work, drain outstanding device jobs before buffers are
+released and leave a documented state. Invalid device contexts require explicit
+reconstruction. Do not promise rollback merely from catching a host exception.
+
+Active contact counts are data within prepared capacity. Graph caches need
+explicit invalidation for topology, selected variant/configuration, buffer
+identity, capacity, device/context and restore. Snapshot files contain semantic
+state and versioned configuration, not pointers, streams, captured graphs or
+thread-pool state; reconstruct those before the prepared step boundary.
+
+WP-030.1–030.4 select a runtime/kernel combination using the
+[research shortlist](compute_backend_research.md). Hard gates are correctness,
+deterministic supported reductions, lifetime/isolation, error draining,
+first-post-bake no allocation including submission, bounded workers, package
+isolation and supported toolchains. Rank adoption candidates only after they qualify;
+diagnostic/baseline timings may include clearly labeled unqualified candidates. WP-122.8 verifies the complete selected M1 pipeline afterward.
 
 ## Freshness And Cache Strategy
 
@@ -143,9 +199,9 @@ over the same `RigidBodyStateBatch` and controls on CPU and GPU. If runner memor
 cannot hold that case, use the largest power-of-two `worldCount` that fits, but
 do not claim a go decision below `worldCount = 1024`. The GPU path passes only if
 its median full-workload time is at least 1.25x faster than the CPU batch median
-and the CPU/GPU final states match the Phase 2 tolerance contract. Otherwise the
-GPU track is parked or cut until a more representative compute-bound workload
-exists.
+and the CPU/GPU final states match the Phase 2 tolerance contract. Otherwise that historical prototype failed its gate. This threshold remains
+the Phase 5 packet contract; it does not cancel mandatory M1 CUDA correctness
+work or require a GPU speedup for a single body.
 
 The checked CPU smoke row is
 `BM_Phase5RigidBodyBatchCpuBaseline/1024/128/10`; the full
@@ -214,9 +270,9 @@ parity bar, so the Phase 6 GPU track is not cut. CUDA is the implemented backend
 (Taskflow GPU tasking is CUDA-only); the CUDA-versus-SYCL choice for any broader
 backend stays a Phase 6 decision behind the internal executor interface, made
 only if and when Phase 6 GPU stage coverage is pursued. This decision rests on
-single-host evidence by design: the project does not maintain GPU CI, so the
-packet is reproducible on any CUDA host rather than gated on a project-owned
-runner.
+single-host historical measurements. Current CI runs CUDA runtime tests for
+trusted events and compile-only coverage for fork PRs; neither automatically
+refreshes this historical performance packet.
 
 ## Cross-Cutting Invariants
 
@@ -224,10 +280,10 @@ These held for every phase of the scalable-compute work and remain
 binding for follow-on (Phase 6) work:
 
 - Synchronous `World::step()` stays deterministic and unchanged in semantics;
-  sequential execution is the reference path. DART 6 parity evidence belongs on
-  `release-6.*` branches.
-- Executor injection through the abstract `ComputeExecutor` is the only public
-  concurrency seam. No `entt`, `comps`, thread-pool, GPU device, stream, kernel,
+  sequential execution and independent physical oracles are the reference.
+  Optional DART 6 differential evidence belongs on `release-6.*` branches.
+- Executor injection remains a DART-owned abstract execution seam; concrete
+  runtime implementations stay private. No `entt`, `comps`, thread-pool, GPU device, stream, kernel,
   memory-pool, or solver-registry type enters the public API.
 - Every phase exit cites a checked-in benchmark baseline through `bm`,
   `bm-check`, or `bm-compute-check` — not a vague "benchmark green."
@@ -254,8 +310,10 @@ GPU support must be an optional sidecar, not a dependency of the core install:
 - A CPU fallback with identical semantics is required in the core package before
   any GPU sidecar is useful.
 - Build flags, package names, CI labels, diagnostics, and benchmark reports may
-  name CUDA, SYCL, or another backend. Public C++/Python API types, namespaces,
-  solver names, and required user configuration must not.
+  name CUDA, SYCL, or another backend. Third-party runtime/framework types and implementation namespaces stay
+  private; DART-owned algorithm/variant names remain public policy concepts. A small DART-owned `cpu`/`cuda` preference and resolved-device report
+  are accepted public design under PLAN-041/042. Existing identifier checkers
+  still apply until WP-040.2 lands their bounded fixture migration.
 - Any sidecar package must have its own build/import smoke CI (the nvcc compile
   needs no GPU, so a GitHub-hosted runner suffices) and a no-GPU import test
   proving the core package remains usable without it.

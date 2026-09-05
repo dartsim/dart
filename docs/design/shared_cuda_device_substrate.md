@@ -7,10 +7,18 @@ Implemented baseline. PR #2875 landed the shared CUDA runtime helpers,
 document now owns the durable rationale and extraction triggers for sharing GPU
 device-runtime code across DART 7's experimental CUDA solvers instead of
 reinventing it per solver. Operating state (priority, horizon, next step, gate)
-lives in `docs/plans/dashboard.md` under PLAN-031. This design is scoped to
+for new qualification lives in `docs/plans/dashboard.md` under PLAN-030;
+PLAN-031 is the completed extraction baseline. This design is scoped to
 `dart::simulation`; it does not promote CUDA into the public API or change the
 GPU packaging shape decided in
 [`scalable_compute_decisions.md`](scalable_compute_decisions.md).
+
+[PLAN-040 M1](../plans/040-dart7-release-hardening.md) now requires complete
+CPU/CUDA Float64 examples. This shared runtime baseline does not prove full
+World stepping. WP-030.3/030.4 qualify buffer/event/error ownership; device
+completion, cancellation draining and graph capture follow
+[the compute contract](scalable_compute_decisions.md). Function-static mutable
+buffers need an explicit concurrency/ownership audit before shared-state claims.
 
 ## Purpose
 

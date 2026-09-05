@@ -3,9 +3,10 @@
 Status: accepted release-topology direction.
 
 This document records durable topology and rationale. The mutable DART 7
-release gates and active implementation order are owned by
+release procedures are owned by
 [`docs/onboarding/release-roadmap.md`](../onboarding/release-roadmap.md) and
-PLAN-040 in [`docs/plans/dashboard.md`](../plans/dashboard.md#plan-040-dart-7-release-hardening).
+[PLAN-040](../plans/040-dart7-release-hardening.md) owns milestone readiness;
+[the dashboard](../plans/dashboard.md) owns execution order.
 
 ## Decision
 
@@ -15,7 +16,8 @@ DART 7 does not serve as a long-lived compatibility bridge for the DART 6 API.
 and for Gazebo / gz-physics users that need it.
 
 The DART 7 simulation stack is the public API target for the clean break, but
-promotion is parity-gated. DART 7 should not ship claims for core robotics
+release readiness is gated by independent physical correctness and installed
+workflows. DART 7 is a new engine, not a revision of the DART 6 architecture. DART 7 should not ship claims for core robotics
 workflows without direct evidence. DART 8 is reserved for a later post-DART-7
 major release, not as the active cleanup point for DART 6 compatibility debt.
 
@@ -39,9 +41,10 @@ same maintenance burden under a different name.
 
 The clean break is still evidence-gated. The DART 7 world must cover
 basic robotics simulation before promotion. Research algorithms such as IPC,
-VBD, differentiable simulation, and GPU backends can continue as opt-in
-features; they do not all block the DART 7 release unless the promoted public
-API depends on them.
+VBD and differentiable simulation can continue as opt-in research features.
+PLAN-040 recommends M1-M3 plus release qualification for 7.0. CUDA remains
+optional to install but every M1 example requires real CPU/CUDA Float64
+evidence. M4-M6 are subsequent research directions, not blanket release blockers.
 
 ## Release Topology
 
@@ -50,7 +53,7 @@ API depends on them.
   fixes, and gz-required compatibility fixes. Do not backport normal DART 7
   features by default.
 - **DART 7.0**: clean-break release from main. Promotes the new simulation API
-  only after the parity gates in the release roadmap pass. Removes DART 6
+  only after the readiness and release-qualification gates pass. Removes DART 6
   public API shims, legacy dartpy modules, classic `World`, and gz-only
   compatibility surfaces from the DART 7 public contract.
 - **DART 8**: future post-DART-7 major release. It is not the active cleanup
@@ -71,6 +74,7 @@ dated. The default compatibility answer for gz-physics is the maintained
 - Whether yanked `dartpy` 7.0.0 artifacts can be reused safely, or whether the
   first published clean-break package should use a later patch/pre-release
   number.
-- Exact `release-6.*` parity evidence packet and scene corpus for rigid dynamics.
+- Numerical manifests for admitted DART 7 milestones; DART 6 is optional
+  differential evidence. WP-040.2 owns the current checker-policy migration.
 - Whether any future gz-physics migration adapter is owned by DART or by
   downstream Gazebo work.

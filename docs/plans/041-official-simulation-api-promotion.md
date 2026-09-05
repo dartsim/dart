@@ -14,8 +14,53 @@
   `dartpy.simulation_experimental`; and the classic Python world is quarantined
   as `dartpy.gui.RenderWorld`. Remaining work is cleanup and hardening: finish
   stale docs, keep public-header/package guards green, retire obsolete staging
-  task names, and ensure parity claims are backed by `release-6.*` branches
-  rather than main-branch DART 6 code.
+  task names, and qualify complete state/checkpoint and installed workflows
+  against PLAN-040. Optional DART 6 comparisons use `release-6.*` branches.
+
+## M1 Checkpoint And Public Workflow Packet
+
+[PLAN-040](040-dart7-release-hardening.md) owns the accepted M1 contract.
+Independent physical oracles define correctness; DART 6 is optional comparison
+material. Current `check-dart7-final-world-promotion` still requires a local
+`release-6.*` ref through its Pixi argument/checker. WP-040.2 must migrate that
+requirement and narrowly admit DART-owned device preferences before public
+promotion. This docs change does not disable the existing gate.
+
+### WP-041.1 Complete M1 Checkpoints And Installed Workflows
+
+- Objective/value: users can build, control, inspect, save and resume the full
+  supported M1 simulation without understanding engine internals.
+- Scope: World state/checkpoint API and schema, serialization implementation,
+  Python bindings/stubs, public scene examples, installed-package tests and
+  PLAN-042 boundary checks. Reuse current replay and stable component IDs.
+- Architecture impact: full state/schema, view lifetime, resolved configuration and
+  installed API boundaries; update the assessment and restart capability rows.
+- Non-goals: all-domain/all-family portable snapshots, public scalar templates
+  or `dtype` selectors, serialized runtime pointers/graphs, or a plugin ABI.
+- Assumptions/open decisions: Float64 M1; small DART-owned `cpu`/`cuda` preference
+  and actual resolved-device/variant report. Exact API spelling is decided by
+  a short C++/Python first-use review before implementation, not invented as an
+  already available interface in this plan.
+- Acceptance evidence: self-contained model/geometry plus complete position,
+  orientation, linear/angular velocity, controls, time, timestep policy,
+  resolved variant/precision, model/config fingerprints, schema versions and
+  result-affecting contact/solver history. Explicitly inventory recomputable
+  scratch and graph reconstruction. Fresh-process CPU→CPU, CUDA→CUDA, CPU→CUDA
+  and CUDA→CPU continuation at flight, pre-impact, contact/sliding and rest
+  passes the fixed manifest. Same pinned deterministic backend replay is exact;
+  cross-backend finite-horizon norms use accepted tolerances. Reject corrupt,
+  nonfinite, mismatched or unsupported snapshots transactionally. Record and
+  test control lifetime, handle/view invalidation and model rebuild behavior.
+  Installed C++ and Python examples construct, apply forces, step, inspect,
+  save/load and continue using only the public facade; unsupported explicit
+  device/method requests report actionable errors without silent fallback.
+- Gates: focused C++ serialization/state and Python workflow tests;
+  `pixi run check-api-boundaries`, `pixi run check-dartpy-import-layout`,
+  `pixi run check-dart7-promotion-installed-package`, appropriate stub/docs
+  regeneration, `pixi run test-all`, `pixi run -e cuda test-all`, and installed
+  core-without-CUDA/optional-CUDA component import smokes.
+- Dependencies: accepted WP-040.2, WP-080.3 and WP-030.5. WP-122.8 then
+  qualifies the integrated first-post-bake/post-restore allocation contract.
 
 ## Direction
 
@@ -452,7 +497,9 @@ classic Python world is quarantined as `dartpy.gui.RenderWorld`. The urgent
 remaining promotion work is hardening and cleanup: finish stale docs, keep
 the public-header/package/import guards green, add negative smokes for retired
 experimental paths and targets, and keep strict-final World-promotion checks
-green with parity evidence sourced from `release-6.*` branch refs.
+green under their currently enforced contract; WP-040.2 owns migration of
+the universal release-branch requirement. DART 7 numerical evidence uses
+independent oracles and optional `release-6.*` differential comparisons.
 The promoted `World` remains double-backed; public scalar precision selectors
 (`sim.World(dtype=...)`, `sim.World[...]`, scalar-specific aliases, or a public
 C++ scalar-template facade) stay deferred until a separate

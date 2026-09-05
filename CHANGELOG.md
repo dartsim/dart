@@ -485,6 +485,11 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Defined DART 7 readiness milestones and prerequisite work packets, including
+  full CPU/CUDA rigid-example validation, checkpoint foundations, compute-library
+  comparisons and continuous architecture audits.
+  ([Milestone plan](docs/plans/040-dart7-release-hardening.md))
+
 - Consolidated the `docs/` map, placement matrix, and maintenance rules into
   `docs/README.md`, folded the north-star roadmap into `docs/plans/README.md`,
   replaced the DART 6-era onboarding deep dive with a handbook index, trimmed
