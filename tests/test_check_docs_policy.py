@@ -1041,6 +1041,53 @@ def test_link_check_validates_raw_html_fragments(tmp_path):
     assert any("#nope" in w for w in warnings)
 
 
+def test_sphinx_pages_use_docutils_anchors_and_exclude_patterns(tmp_path):
+    module = _load_module()
+    site = tmp_path / "docs" / "readthedocs"
+    (site / "_includes").mkdir(parents=True)
+    (site / "conf.py").write_text(
+        'exclude_patterns = ["_build", "README.md", "_includes"]\n', encoding="utf-8"
+    )
+    (site / "README.md").write_text("# Site readme\n", encoding="utf-8")
+    (site / "_includes" / "legacy.md").write_text("# Legacy\n", encoding="utf-8")
+    (site / "guide.md").write_text(
+        "# Guide\n\n## Rigid bodies & shapes\n", encoding="utf-8"
+    )
+    (site / "index.md").write_text(
+        '<a href="guide.html#rigid-bodies-shapes">ok</a> '
+        '<a href="guide.html#rigid-bodies--shapes">github-style</a>\n\n'
+        "{doc}`README` and {doc}`_includes/legacy` are excluded documents.\n\n"
+        "```{toctree}\n:glob:\n\nmissing-*\nguide*\n```\n",
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert any("#rigid-bodies--shapes" in w for w in warnings)
+    assert not any("#rigid-bodies-shapes`" in w for w in warnings)
+    assert any("`README`" in w for w in warnings)
+    assert any("`_includes/legacy`" in w for w in warnings)
+    assert any("toctree glob `missing-*`" in w for w in warnings)
+    assert not any("guide*" in w for w in warnings)
+    assert len(warnings) == 4
+
+
+def test_link_check_raw_html_href_must_stay_inside_repository(tmp_path):
+    module = _load_module()
+    outside = tmp_path.parent / f"{tmp_path.name}-outside.txt"
+    outside.write_text("x\n", encoding="utf-8")
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "README.md").write_text(
+        f'<a href="../../{outside.name}">escapes</a>\n', encoding="utf-8"
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert outside.name in warnings[0]
+
+
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"

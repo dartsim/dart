@@ -501,6 +501,29 @@ def test_stale_source_report_mode_keeps_lone_recorded_hash_edit_as_error(
     )
 
 
+def test_stale_source_report_mode_treats_deleted_sealed_file_as_stale(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
+    source = tmp_path / "solver.cpp"
+    source.write_text("first\n")
+    path = _write_packet(
+        tmp_path,
+        "avbd-new-scene-packet.json",
+        {
+            "schema_version": module.AVBD_PACKET_SCHEMA_VERSION,
+            "resolved_solver_identity": _identity(),
+            "source_provenance": _source_provenance(tmp_path, "solver.cpp"),
+        },
+    )
+    source.unlink()
+    argv = ["--packet-dir", str(tmp_path), "--packet", str(path)]
+
+    assert module.main(argv) == 1
+    assert module.main([*argv, "--stale-source", "report"]) == 0
+
+
 def test_split_stale_source_findings_keeps_source_contract_mismatch_hard():
     module = _load_module()
     errors = [

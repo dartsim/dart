@@ -769,7 +769,7 @@ PACKET_DIGEST_PATTERN = re.compile(
     r": source_provenance\.digest does not match current listed source contents$"
 )
 PACKET_FILE_DRIFT_PATTERN = re.compile(
-    r"source_provenance\.files\[\d+\]\.sha256 drifted for "
+    r"source_provenance\.files\[\d+\]\.(sha256 drifted for |path must be a regular file: )"
 )
 # Capture metadata (file count, roots, ignored paths) legitimately changes only
 # together with the source digest; a lone mismatch is an edited packet.
