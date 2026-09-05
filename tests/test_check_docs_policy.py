@@ -951,6 +951,7 @@ def test_link_check_validates_toctree_entries_and_raw_html_hrefs(tmp_path):
         ":hidden:\n"
         ":maxdepth: 1\n"
         "\n"
+        "self\n"
         "guide/start\n"
         "About <about>\n"
         "guide/gone\n"
@@ -979,14 +980,17 @@ def test_link_check_raw_html_href_outside_sphinx_root_checks_files(tmp_path):
     docs.mkdir()
     (docs / "img.png").write_bytes(b"png")
     (docs / "README.md").write_text(
-        '<img src="img.png"><a href="img.png">ok</a> <a href="missing.png">bad</a>\n',
+        '<img src="img.png"><a href="img.png">ok</a> <a href="missing.png">bad</a>\n'
+        "<A HREF='also-missing.png'>bad2</A> <a href=unquoted-missing.png>bad3</a>\n",
         encoding="utf-8",
     )
 
     warnings = module.check_markdown_internal_links(tmp_path)
 
-    assert len(warnings) == 1
-    assert "missing.png" in warnings[0]
+    assert len(warnings) == 3
+    assert any("missing.png" in w for w in warnings)
+    assert any("also-missing.png" in w for w in warnings)
+    assert any("unquoted-missing.png" in w for w in warnings)
 
 
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):

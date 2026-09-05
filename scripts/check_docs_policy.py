@@ -7,6 +7,7 @@ import json
 import re
 import subprocess
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -478,7 +479,26 @@ def _iter_inline_tokens(text: str, offset: int = 0):
             yield line_number, token
 
 
-HTML_HREF_RE = re.compile(r"""href\s*=\s*(?:"(?P<dq>[^"]*)"|'(?P<sq>[^']*)')""")
+class _HrefCollector(HTMLParser):
+    """Collect every `href` attribute (any tag, any quoting, any case)."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.hrefs: list[str] = []
+
+    def handle_starttag(self, tag, attrs):  # noqa: ARG002 - HTMLParser API
+        for name, value in attrs:
+            if name.lower() == "href" and value:
+                self.hrefs.append(value)
+
+
+def _html_hrefs(fragment: str) -> list[str]:
+    collector = _HrefCollector()
+    collector.feed(fragment)
+    collector.close()
+    return collector.hrefs
+
+
 TOCTREE_ENTRY_RE = re.compile(r"^(?:.*<(?P<bracketed>[^>]+)>|(?P<plain>\S.*?))\s*$")
 
 
@@ -494,14 +514,7 @@ def _iter_html_hrefs(text: str) -> list[tuple[int, str]]:
                 child.content for child in token.children if child.type == "html_inline"
             )
         for fragment in fragments:
-            for match in HTML_HREF_RE.finditer(fragment):
-                href = (
-                    match.group("dq")
-                    if match.group("dq") is not None
-                    else match.group("sq")
-                )
-                if href:
-                    hrefs.append((line_number, href))
+            hrefs.extend((line_number, href) for href in _html_hrefs(fragment))
     return hrefs
 
 
@@ -527,8 +540,8 @@ def _iter_toctree_entries(text: str) -> list[tuple[int, str]]:
                 continue
             match = TOCTREE_ENTRY_RE.match(line)
             target = (match.group("bracketed") or match.group("plain")).strip()
-            if _is_external_link(target):
-                continue
+            if target == "self" or _is_external_link(target):
+                continue  # `self` is Sphinx's special entry for the current page
             if glob_mode and any(character in target for character in "*?["):
                 continue
             entries.append((line_number + index, target))
