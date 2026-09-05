@@ -149,7 +149,7 @@ to dominate every workload to remain useful to researchers.
 [Solver intake](../plans/solver-family-intake.md) binds complete paper
 manifests, shared-scene metrics, actual solver/backend identity and all existing
 paper obligations. The current requirement to beat every claimed reference
-benchmark remains policy; PLAN-040 records a separate decision about splitting
+benchmark remains policy; PLAN-040 lists an unresolved proposal to separate
 reproduction from performance improvement. A new default does not waive older
 family completion targets.
 

@@ -39,12 +39,10 @@ collision and constraint APIs, and package-config behavior used by pinned
 gz-physics builds. A broad compatibility shim inside DART 7 would recreate the
 same maintenance burden under a different name.
 
-The clean break is still evidence-gated. The DART 7 world must cover
-basic robotics simulation before promotion. Research algorithms such as IPC,
-VBD and differentiable simulation can continue as opt-in research features.
-PLAN-040 recommends M1-M3 plus release qualification for 7.0. CUDA remains
-optional to install but every M1 example requires real CPU/CUDA Float64
-evidence. M4-M6 are subsequent research directions, not blanket release blockers.
+[PLAN-040](../plans/040-dart7-release-hardening.md) owns the release cut,
+backend readiness requirements and scope of subsequent research milestones.
+Those requirements can evolve independently of the compatibility topology
+recorded here.
 
 ## Release Topology
 
