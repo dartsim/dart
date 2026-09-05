@@ -143,15 +143,19 @@ gh pr checks <PR_NUMBER>
      replies; verify claims locally; apply AI-review fixes silently).
    - For human reviewers, reply only when a response is useful after a fix or
      when a question needs clarification.
-   - After an approved push that addressed Codex comments on a PR that already
-     had a Codex review, post a fresh top-level `@codex review`; that PR comment
-     needs explicit maintainer/user approval and must not duplicate an active
-     trigger.
+   - Follow that owner's single Review-Fix Loop Workflow for completed finding
+     batches, one trigger owner, current-head evidence, and the two-round
+     strategy checkpoint. Preserve review state across handoffs; do not start
+     another manual request merely because a push completed. Every external
+     mutation still requires explicit maintainer/user approval covering its
+     action and PR.
    - For substantive code PRs, an independent review session (a human, or a
      separate agent session running the `dart-review-pr` workflow via
      `/dart-review-pr` or `$dart-review-pr`) must record its outcome —
      findings, or an explicitly clean result — before merge approval;
-     docs-only and mechanical changes are exempt.
+     docs-only and mechanical changes are exempt. Count hosted plus independent
+     coverage and revalidate fixes using `docs/ai/verification.md`; the same
+     independent lane can perform the strategy checkpoint.
 5. Mark ready or merge only when appropriate:
    - Confirm review requirements are satisfied and local validation matches the
      intended transition.
@@ -167,7 +171,8 @@ gh pr checks <PR_NUMBER>
    `pixi run -e cuda test-all`; do not substitute the default run for the CUDA
    run, and record a skip or blocker explicitly. Merge only after CI and review
    are green, the milestone is set, an independent review recorded a clean
-   result on the current post-fix head (after findings, a clean re-review;
+   result covering the current post-fix head (baseline plus delta revalidation
+   is allowed by `docs/ai/verification.md`;
    the step 4 docs-only/mechanical exemption also satisfies this), the
    PR is not draft, GitHub reports it mergeable, and explicit merge approval is
    given. PR comments, review re-triggers, thread resolution, reviewer requests,
@@ -200,6 +205,8 @@ Report:
 - PR number, URL, base, head, draft state, milestone, and merge status.
 - CI summary: passing, failing, pending, or skipped checks.
 - Review summary, independent-review status, and whether `@codex review` ran.
+- Reviewed head, completed round count, trigger/completion evidence, and any
+  strategy-checkpoint outcome or missing review coverage.
 - Local pre-merge validation state when `mode=merge` ran.
 - Commits pushed, merge action, and branch cleanup action.
 - Remaining blockers or next action.

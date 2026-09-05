@@ -5,15 +5,15 @@ How DART agents and contributors handle review comments from AI bot accounts
 requests. Tool compatibility details live in `ai-tools.md`; the approval
 boundary itself is axiom 9 of `docs/ai/principles.md`.
 
-When AI agents (Claude Code, Codex, etc.) work on PRs, they may encounter review comments from other AI systems (e.g., Codex bot, GitHub Copilot).
-
 ## Independent Review Lane
 
 For substantive code PRs, an independent reviewer session — a human, or a
 separate agent session running `/dart-review-pr` that did not author the
 change — records findings before merge approval. Docs-only and mechanical
 changes are exempt. This complements `@codex review`; it does not replace it.
-`dart-manage-pr` checks this gate in `mode=merge`.
+`dart-manage-pr` checks this gate in `mode=merge`. Hosted review plus this
+independent lane can satisfy the two-pass requirement; see
+`docs/ai/verification.md` for baseline and delta revalidation evidence.
 
 ## Detecting AI-Generated Reviews
 
@@ -45,50 +45,62 @@ changes are exempt. This complements `@codex review`; it does not replace it.
 - Address feedback locally; reuse existing authorization for its action, PR,
   and scope, and ask before external mutations only where authority is missing
 - If the feedback is valid, implement the fix without commenting
-- If the feedback appears incorrect (false positive):
-  1. **Verify** the claim is false by running standalone tests or examining the code
-  2. **Add a test** that explicitly documents the correct behavior AND refutes the claim
-  3. Example: If Codex claims `hprod([2,3,5,7])` returns 294 instead of 210:
-     ```cpp
-     EXPECT_FLOAT_EQ(result, 210.0f);  // Verify correct behavior
-     EXPECT_NE(result, 294.0f);        // Explicitly refute false claim
-     ```
-  4. Add the test locally (no comment needed) - the test serves as permanent documentation
-- **Follow the review-fix loop** (see workflow below)
-
-This avoids noisy bot-to-bot conversations while still leveraging automated verification.
-
-> **Note**: False positives can recur across reviews. Tests that explicitly refute incorrect claims prevent future confusion and document the verification.
+- If feedback is a false positive, record its rejection with code, existing
+  tests, or other concrete evidence in the current task/PR verification notes.
+  Add a regression test only when it closes a coverage gap; do not change code
+  merely to reject a claim or obtain a clean bot verdict.
+- Treat repeated comments as claims to recheck against the current head.
+  Addressed threads can recur, but recurrence is not a product guarantee or
+  proof that a fix failed. Resolve only individually verified, addressed
+  threads with approval; thread resolution itself does not prove correctness.
+- Follow the single review-fix loop below for all automated reviewers.
 
 ## Codex Review For Draft PRs
 
-For fast-moving work, trigger the first Codex review while the PR is still a
-draft when explicit maintainer/user approval covers PR comments. Use a top-level
-comment:
+The settings and their limitations live in
+[ai-tools.md](ai-tools.md#codex-hosted-review-settings). With the recommended
+PR-open trigger, automatic review owns the initial eligible event; the agent
+owns deliberate follow-ups. Check for an automatic run, pending request, or
+completed review of the intended head before requesting one manually. Absence
+of a reaction immediately after an event does not prove no run was queued.
+
+A stable draft can receive early feedback with a top-level comment when no
+review already covers or is queued for its head and explicit maintainer/user
+approval covers PR comments:
 
 ```bash
 gh pr comment <PR> --body "@codex review"
 ```
 
-This keeps the PR draft for human readiness while getting automated feedback
-early. If a Codex activity signal or submitted review already appears, do not
-post a duplicate trigger. After posting, wait for a submitted review, a no-issues
-comment, a thumbs-up reaction, or an eyes reaction before treating the trigger as
-accepted; do not re-trigger unless there is a concrete timeout/blocker or a
-follow-up push addressed Codex findings.
+If every-push or experimental smart detection is configured instead, establish
+who owns the next request before manually triggering. Do not race an automatic
+run or rely on smart detection as proof that the current head was reviewed.
 
-After an approved follow-up push that addresses Codex review comments, request a
-fresh top-level Codex review with `@codex review`. This is the normal completion
-step for a Codex review-fix round, not an inline reply. A manual trigger is a PR
-comment and still requires explicit maintainer/user approval.
+Keep a compact record in the existing task/PR evidence: head SHA, trigger owner
+and comment/run ID, requested time, completion evidence, completed round count,
+and finding dispositions. Preserve it across handoffs; no separate review
+service or ledger is required. Poll bounded status summaries and fetch new
+findings once, rather than repeatedly loading the full history into context.
+
+An eyes reaction acknowledges a request; it is not completion. A submitted
+review, no-issues comment, or bot thumbs-up must be associated with the intended
+head. For reactions without a SHA, require an unambiguous request-to-head link
+and no intervening push; otherwise coverage is unknown. With Exhaustive enabled,
+the first posted finding or submitted review may not be the final batch: inspect
+the associated task/run completion when available. If completion cannot be
+established, record that uncertainty and monitor; do not infer completion from
+silence. Local investigation may proceed while the run finishes, but collect
+the final batch before the next approved push or review request.
 
 ## Draft Ready Fast Path
 
 To move quickly without bypassing branch protection, a draft PR can be marked
 ready for review once all of these are true on the current head:
 
-- Codex review has no unresolved actionable threads, or the latest Codex result
-  is a no-issues comment/reaction.
+- Codex review completed on the current head and all findings have verified
+  dispositions with no unresolved actionable issues. Rejected false positives
+  need evidence, not another identical review. A clean result on an older head
+  or resolving threads alone does not satisfy this gate.
 - Local validation passed after the last pushed change, and the worktree is
   clean: default `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux
   hosts with a visible NVIDIA CUDA runtime.
@@ -101,24 +113,19 @@ approves a policy bypass.
 
 ## Codex Re-Trigger Cadence And Throttling
 
-After explicit maintainer/user approval for the PR comment, re-trigger Codex at
-most once per review-fix round, and only after an approved push that addressed
-its comments. Rapid, repeated `@codex review` requests across many quick rounds
-can slow or suspend Codex: observed review latency grows round over round and a
-later re-trigger can receive no review at all. If Codex stays silent well beyond
-its usual turnaround after a re-trigger, treat it as a throttle/timeout blocker,
-not a reason to re-request. Weekly usage limits are the same class of blocker:
-when quota is exhausted mid-loop, record the converged state plus local
-verification (gates, tests, and an independent or role-separated review pass)
-instead of waiting for another hosted round. Record the converged state as
-evidence — all surfaced findings fixed and their threads resolved — and report
-the throttle rather than re-spamming the PR with more triggers.
+Request at most one Codex run per intended head, after a validated fix batch or
+another change leaves the required current-head coverage missing, and only with
+approval for the PR comment. A non-Codex finding is not itself a trigger; the
+resulting change and missing review coverage determine whether one is needed.
 
-Codex re-emits every unresolved inline thread verbatim on later rounds, even
-when the current head already contains the fix. Verify each re-raised comment
-against the current head; once a thread is genuinely addressed, resolve it
-(after the approval that covers thread resolution) before the next round —
-otherwise the no-issues verdict cannot converge no matter how many rounds run.
+If Codex remains silent beyond its observed turnaround, inspect run state and
+quota before diagnosing a timeout; latency alone does not prove throttling.
+Do not spam retries. After a confirmed failed/cancelled run, retry once only
+when its cause is cleared, no run is pending, and existing approval covers it.
+Weekly quota exhaustion or inaccessible completion evidence is a blocker:
+finish useful local investigation/validation, record known findings and the
+missing hosted evidence, and report the blocker. Do not enable credits, claim a
+clean review, or bypass readiness gates to make the loop finish.
 
 ## Updating Published PRs
 
@@ -171,48 +178,66 @@ pre-retarget head; the post-merge-base push is the state that matters.
 
 ## Review-Fix Loop Workflow
 
-After identifying an AI-generated review comment to address:
+1. **Collect the completed batch.** Verify head and run completion; paginate
+   reviews, inline threads/comments, and relevant issue comments/reactions.
+   Include human feedback. Group findings by the invariant they challenge;
+   record accepted, rejected-with-evidence, or explicitly deferred dispositions.
+   Do not silently defer a valid in-scope defect to reach a clean verdict.
+2. **Check convergence before another round.** Count completed hosted runs,
+   including the initial automatic run, not individual comments or internal
+   Exhaustive passes. If the second run still leaves valid issues, perform the
+   strategy checkpoint below before requesting a third run. Keep the count
+   across pushes and handoffs; later rounds with valid issues require the same
+   checkpoint again.
+3. **Repair the defect family.** Inspect related callers, sibling cases, and
+   interactions before implementing all accepted findings as a coherent batch.
+   For parsers, cover syntax boundaries, reserved delimiters, and literal versus
+   interpreted content; for validators, define valid inputs and a negative-case
+   matrix rather than appending exclusions one at a time. Keep unrelated
+   features out of the repair batch.
+4. **Verify the batch locally.** Run focused regression gates and independent
+   delta review where required by `docs/ai/verification.md`. Fix repair-induced
+   regressions before publication. Run `pixi run lint` before every commit;
+   merge the latest base and rerun affected gates before each approved push.
+5. **Publish once the batch is ready.** Verify explicit approval covers each
+   intended push, thread resolution, and PR comment; reuse existing authority
+   for this action, PR, and scope (including `dart-manage-pr` maintenance).
+   With approval, push silently and resolve only individually verified,
+   addressed threads. Apply the trigger ownership/cadence rules above for one
+   follow-up review of the resulting head, never one request per finding.
+6. **Assess completion.** Monitor the run and CI; new findings return to batch
+   assessment and the convergence checkpoint. Apply the draft-ready and merge
+   gates, or report the specific external blocker. A round budget never grants
+   readiness or excuses a valid defect.
 
-1. **Make the code fix**
-2. **Run `pixi run lint`** — MANDATORY before every commit (auto-fixes formatting)
-3. **Verify explicit maintainer/user approval covers the intended external
-   mutations.** Reuse existing authorization for the action, PR, and scope
-   (including routine maintenance authorized by `dart-manage-pr`); ask only
-   for missing authority. Follow `docs/ai/principles.md`'s shared-state rule.
-4. **If approved, commit and push** silently (no reply to the comment)
-5. **If approved, resolve the thread** using GraphQL (see commands below)
-6. **If the addressed review was Codex, after the approved push, verify
-   approval also covers the PR comment (ask only if missing), then re-trigger the
-   review**:
-   `gh pr comment <PR> --body "@codex review"`
-7. **Monitor for results**:
-   - New review comments → repeat from step 1
-   - "No issues" or 👍 reaction + local validation on the current head: default
-     `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux CUDA hosts
-     → draft PR is ready for human review
+### Strategy Checkpoint
 
-Apply the same no-inline-reply handling to `github-code-quality[bot]` findings:
-fix valid findings locally, push only after approval, and do not post an
-acknowledgment reply. The `@codex review` re-trigger is only for Codex review
-rounds.
+Pause automatic re-triggering and perform a bounded independent root-cause
+review of the affected subsystem. Use the existing independent reviewer when
+possible; this can also supply the required delta review. If an independent
+reviewer is unavailable, continue useful local investigation and validation,
+but report the missing checkpoint and hold further hosted requests. Existing
+trigger approval does not waive this checkpoint, including for docs-only PRs.
 
-**Agents MUST:**
-
-- Run `pixi run lint` before EVERY commit (CI will fail otherwise)
-- Treat PR comments, pushes, thread resolution, reviewer requests, merges, and
-  review re-triggers as external mutations that require explicit approval
-- Keep local fixes read-only with respect to GitHub until that approval exists
+Distinguish missed sibling cases, incomplete fixes, regressions introduced by
+repairs, false positives, and newly expanded scope. Record the underlying
+contract, a coherent repair approach, and regression cases that could disprove
+it in existing verification evidence. Complete those checks before the next
+approved request. Continue within existing authorization; this checkpoint is
+not a routine permission stop. Ask only when repair requires a consequential
+scope decision or missing authority. Preserve unresolved findings explicitly.
 
 ## GraphQL Commands for Thread Resolution
 
 ```bash
-# List unresolved threads (get thread IDs)
-gh api graphql -f query='
-  query {
+# List all unresolved threads; replace PR_NUMBER with the integer PR number.
+gh api graphql --paginate -f query='
+  query($endCursor: String) {
     repository(owner: "dartsim", name: "dart") {
       pullRequest(number: PR_NUMBER) {
-        reviewThreads(first: 20) {
-          nodes { id isResolved path line }
+        reviewThreads(first: 100, after: $endCursor) {
+          nodes { id isResolved isOutdated path line }
+          pageInfo { hasNextPage endCursor }
         }
       }
     }
@@ -238,44 +263,22 @@ conversation" in the UI adds no comment noise. The code change is the response;
 the resolved thread shows the fix was acknowledged after the maintainer/user
 approved the PR mutation.
 
-## Autonomous Review-Fix-Monitor Loop
-
-For agents iterating on automated reviews, the complete loop is:
-
-```
-1. Fetch latest review comments
-2. For each comment:
-   a. Implement the fix (or add a test refuting a false positive)
-   b. Run `pixi run lint` (MANDATORY)
-   c. Build and run relevant tests
-   d. Verify explicit approval covers each push or PR mutation; ask only if missing
-3. If approved, commit and push silently (no reply to bot comment)
-4. If approved, resolve addressed threads via GraphQL
-5. If the addressed review was Codex, after the approved push, verify approval
-   also covers the PR comment (ask only if missing), then re-trigger:
-   `gh pr comment <PR> --body "@codex review"`
-6. For non-Codex bot findings, including `github-code-quality[bot]`, do not
-   re-trigger Codex solely for those fixes unless Codex review comments were
-   also addressed in the same push
-7. Monitor CI: `gh pr checks <PR>`
-8. Wait for new review (poll with `gh api repos/dartsim/dart/pulls/<PR>/reviews`)
-9. If new review has comments → go to step 2
-10. If no new comments AND local validation passed on the current head (default
-    `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux CUDA hosts)
-    → mark draft PRs ready for human review after approval
-11. Keep monitoring hosted CI until required checks pass before merge
-```
-
-**Checking for new reviews:**
+## Review And CI Monitoring
 
 ```bash
-# List all reviews with timestamps
-gh api repos/dartsim/dart/pulls/<PR>/reviews \
-  --jq '.[] | "ID:\(.id) User:\(.user.login) State:\(.state) At:\(.submitted_at)"'
+# List all reviews with reviewed commits and timestamps.
+gh api --paginate repos/dartsim/dart/pulls/<PR>/reviews \
+  --jq '.[] | {id, user: .user.login, state, commit_id, submitted_at}'
 
-# Fetch comments from a specific review
-gh api repos/dartsim/dart/pulls/<PR>/reviews/<REVIEW_ID>/comments \
-  --jq '.[] | "File:\(.path) Line:\(.line // .original_line) Body:\(.body)"'
+# Fetch all inline comments, including replies and review associations.
+gh api --paginate repos/dartsim/dart/pulls/<PR>/comments \
+  --jq '.[] | {id, pull_request_review_id, in_reply_to_id, user: .user.login, path, line, original_line, commit_id, body}'
+
+# Find request/completion comments, then reactions on the relevant comment.
+gh api --paginate repos/dartsim/dart/issues/<PR>/comments \
+  --jq '.[] | {id, user: .user.login, created_at, body}'
+gh api --paginate repos/dartsim/dart/issues/comments/<COMMENT_ID>/reactions \
+  --jq '.[] | {user: .user.login, content, created_at}'
 ```
 
 **Monitoring CI:**
@@ -295,12 +298,25 @@ look like completion. For long runs prefer a resilient poll that re-queries
 `gh pr checks <PR>` on an interval, tolerates transient failures, and stops only
 when nothing is pending, any check fails, or the head SHA moves.
 
-**Stop conditions:**
+Use the readiness gates above and `dart-manage-pr` for merge requirements.
+Classify pre-existing, skipped, cancelled, and external failures with evidence;
+do not treat a required check that never ran as a pass.
 
-- Codex review returns no comments (or only 👍 reactions)
-- Local validation passes on the current head for draft-ready state: default
-  `pixi run test-all`, plus `pixi run -e cuda test-all` on Linux CUDA hosts
-- All required CI checks pass for merge-ready state
-- Pre-existing failures (e.g., `simulation` "Not Run") can be ignored
+## Workflow Validation Cases
 
----
+For changes to this policy, use fresh read-only sessions with the relevant
+workflow entrypoint and hypothetical PR state. Ask for next actions and
+readiness evidence without authorizing real GitHub mutations. Evaluate decisions
+against these cases; structural routing checks alone do not exercise the loop.
+
+| Case                                                          | Expected decision                                                                         |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Automatic review queued, no reaction yet                      | Inspect/wait; no duplicate manual trigger                                                 |
+| Exhaustive run posts findings but completion is unknown       | Investigate locally; hold publication/re-trigger until final batch is established         |
+| Multiple related valid findings                               | Repair and test the underlying family in one batch                                        |
+| Second completed run finds a repair regression                | Independent strategy checkpoint before another approved request; no lowered gate          |
+| Old clean result, new head, all threads resolved              | Current-head review coverage is missing                                                   |
+| More than 100 threads/comments                                | Paginate to exhaustion; examine late human and bot findings                               |
+| Existing test disproves the only finding on the reviewed head | Record rejection; no gratuitous test, push, or repeat review                              |
+| Quota exhausted after fixes                                   | Finish local evidence, report missing hosted review; no credits change or readiness claim |
+| Clean current-head review with required local/CI evidence     | Stop reviewing; take only the authorized readiness/merge transition                       |

@@ -485,6 +485,9 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Automated review workflows now batch related fixes, require a root-cause
+  checkpoint after two rounds still find valid issues, and track review coverage
+  on the current revision while preserving independent review and validation.
 - AI workflows now stage context by task and phase, preserve authorized model,
   effort, and action scopes across handoffs, and audit the whole harness during
   model upgrades. Consolidated session policy and removed duplicate tutorials
