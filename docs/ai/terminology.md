@@ -77,17 +77,10 @@ conventions:
 
 ## Current Compatibility Contract
 
-DART currently keeps `.claude/commands/` as the editable workflow source because
-Claude Code and OpenCode expose those workflows through `/dart-*` command
-entrypoints. The sync script renders equivalent generated adapters for Codex.
-
-DART keeps `.claude/skills/` as the editable domain-skill source. The sync
-script renders equivalent generated Codex skill adapters.
-
-Generated `.agents/skills/` and `.opencode/command/` files are first-class
-entrypoints for their tools, but not sources of truth. Change the editable
-source, then run the AI adapter sync checks. `.codex/` contains maintained
-project configuration, agents, and hooks; it is not a generated adapter tree.
+The source map in `docs/ai/README.md` names which surfaces are editable
+sources (`.claude/commands/`, `.claude/skills/`, `.codex/`) and which are
+generated adapters (`.agents/skills/`, `.opencode/command/`); this file only
+fixes the vocabulary for them.
 
 ## Migration Candidates
 

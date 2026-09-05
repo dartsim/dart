@@ -38,7 +38,7 @@ Start a team-scale or autonomous DART task: $ARGUMENTS
 
 Load additional owners only when the matching phase needs them:
 
-- placement or cleanup: `docs/information-architecture.md`;
+- placement or cleanup: `docs/README.md`;
 - numbered-plan selection or packet state: `docs/plans/dashboard.md`;
 - version control, changelog, tools, or review:
   `docs/onboarding/{contributing,changelog,ai-tools}.md`.

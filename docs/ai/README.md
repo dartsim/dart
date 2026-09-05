@@ -20,11 +20,11 @@ already-read documents for each phase.
 
 For multi-session work, read `docs/dev_tasks/README.md`.
 
-For project planning, also read `docs/plans/README.md`,
-`docs/plans/dashboard.md`, and `docs/plans/north-star-roadmap.md`.
+For project planning, also read `docs/plans/README.md` and
+`docs/plans/dashboard.md`.
 
-For documentation structure or placement work, also read `docs/README.md`,
-`docs/information-architecture.md`, and `docs/AGENTS.md`.
+For documentation structure, placement, or maintenance work, also read
+`docs/README.md` and `docs/AGENTS.md`.
 
 For authoring or executing orchestrator-defined work packets, also read
 `docs/ai/orchestration.md`.

@@ -7,7 +7,7 @@ owner: self
 
 This file is the repo-level source of truth for DART's mission and current
 project state. Current plan operating state lives in `docs/plans/dashboard.md`,
-and strategic planning rules live in `docs/plans/north-star-roadmap.md`. This
+and plan policy and north-star dimensions live in `docs/plans/README.md`. This
 file complements the release roadmap and active dev-task folders; it does not
 replace issue tracking, CI, or release notes.
 
@@ -87,7 +87,7 @@ These map onto two distribution surfaces:
   ships as a runtime executable (via package managers), not as a library, so it
   is not consumed by downstream code and keeps minimal runtime dependencies.
 
-<!-- docs-policy: evidence-last-verified=2026-09-01 -->
+<!-- docs-policy: evidence-last-verified=2026-09-04 -->
 
 ## Current State
 
@@ -98,7 +98,7 @@ These map onto two distribution surfaces:
 | Public API modernization | DART 7 uses C++23, snake_case public headers with generated PascalCase compatibility wrappers, explicit API-boundary policy, and the `pixi run check-api-boundaries` policy gate.                                                                                                                                                       | `docs/onboarding/code-style.md`, `docs/onboarding/api-boundaries.md`, `scripts/check_api_boundaries.py`                                                                               |
 | Python-first API         | `dartpy` is nanobind-based, flattens most user symbols onto the top-level module, keeps temporary legacy warnings only while DART 7 clean-break gates close, and treats Python bindings as a public API filter.                                                                                                                         | `docs/onboarding/python-bindings.md`, `python/AGENTS.md`, `pyproject.toml`                                                                                                            |
 | Model loading            | `dart::io` is the preferred front door for reading worlds and skeletons while parser-specific APIs remain available for advanced cases.                                                                                                                                                                                                 | `docs/onboarding/io-parsing.md`, `dart/io/AGENTS.md`                                                                                                                                  |
-| Research accessibility   | README installation paths cover Python packages, C++ packages, and Pixi-based source workflows, but the north-star criteria for API simplicity and package readiness were not explicit before this file.                                                                                                                                | `README.md`, `docs/onboarding/building.md`, `pixi.toml`                                                                                                                               |
+| Research accessibility   | README installation paths cover Python packages, C++ packages, and Pixi-based source workflows, and the north-star criteria for API simplicity and package readiness are the ones stated above.                                                                                                                                         | `README.md`, `docs/onboarding/building.md`, `pixi.toml`                                                                                                                               |
 | Algorithm extensibility  | Modular foundations exist, and PLAN-091 retired the June 2026 architecture-hardening packet plan after landing its planned guardrails, evidence, and ownership cleanup; the architecture assessment remains the current owner for unresolved implementation gaps.                                                                       | `docs/design/dart7_architecture_assessment.md`, `docs/plans/solver-family-intake.md`, `docs/plans/dashboard.md`                                                                       |
 | Scalable computation     | The codebase includes SIMD and allocator work, CI covers major host platforms, and build options already separate optional accelerator modules; the scalable-compute decision framework and backend evidence survey now exist, while multi-core and GPU implementation is sequenced under PLAN-030.                                     | `dart/simd/`, `docs/design/scalable_compute_decisions.md`, `docs/design/compute_backend_research.md`, `docs/plans/dashboard.md`, `dart/simulation/compute/`, `.github/workflows/`     |
 | Build, test, and CI      | Pixi tasks provide the contributor path; CI spans Linux, macOS, Windows, FreeBSD, Alt Linux, SIMD, lint, CodeQL, gz-physics, and wheel publishing workflows.                                                                                                                                                                            | `pixi.toml`, `.github/workflows/`, `docs/onboarding/building.md`, `docs/onboarding/testing.md`, `docs/onboarding/ci-cd.md`                                                            |
@@ -107,33 +107,21 @@ These map onto two distribution surfaces:
 
 ## What Is Missing
 
-| Gap                                                                                | Why it matters                                                                                                                    | Resolution plan                                                                                                                                                                                                                                                                               |
-| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Current project status is only partly machine-checkable.                           | Link and task-shape checks cannot establish whether a recorded decision or completion claim is still correct.                     | Use `pixi run check-docs-policy` for owner links and task shape; verify current status against the evidence owned by each plan or task before acting.                                                                                                                                         |
-| Active dev-task hygiene still depends on manual cleanup discipline.                | Long-running work loses context when a task folder omits current status, resume instructions, or a clear promotion/deletion path. | Keep DART 7 World promotion in PLAN-040/041/042 and durable owner docs selected by `docs/information-architecture.md`; keep active folders compliant with `docs/dev_tasks/README.md`, promote durable artifacts before deleting completed folders, and add checks if task-shape drift recurs. |
-| Release roadmap is product-focused, not execution-focused.                         | It states DART 7 clean-break direction but does not by itself rank the technical work needed to get there.                        | Track current execution order in `docs/plans/dashboard.md` and keep detailed rationale or contributor guidance in the matching `docs/design/`, `docs/onboarding/`, or `docs/readthedocs/` owner.                                                                                              |
-| Research usability is not tracked as a first-class outcome.                        | Self-explanatory APIs, package availability, and Pixi source-build ergonomics determine whether researchers can start quickly.    | Add research-readiness criteria to roadmap work: public API clarity, package-manager availability, and source-build instructions must be verified for major user-facing changes.                                                                                                              |
-| Algorithm extension points need continued intake discipline.                       | Researchers need to implement new algorithms and compare them against built-in baselines without rewriting foundations.           | PLAN-091 retired the first hardening packet plan; keep the verified findings in `docs/design/dart7_architecture_assessment.md` current and route every new family through the strengthened `docs/plans/solver-family-intake.md`.                                                              |
-| Compute scalability still needs workload-specific implementation evidence.         | Multi-core CPU and GPU progress must be judged against research workloads and maintenance cost.                                   | Follow PLAN-030 in `docs/plans/dashboard.md` for current implementation order and `docs/design/scalable_compute_decisions.md` for the decision framework; do not duplicate their evolving backlog here.                                                                                       |
-| Verification gates are documented by change type but not tied to roadmap outcomes. | Passing a broad gate is only useful when it covers the actual objective.                                                          | For every major roadmap task, document the minimum objective-specific evidence next to the work item, then run the gates in `docs/ai/verification.md`.                                                                                                                                        |
+| Gap                                                                                | Why it matters                                                                                                                    | Resolution plan                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current project status is only partly machine-checkable.                           | Link and task-shape checks cannot establish whether a recorded decision or completion claim is still correct.                     | Use `pixi run check-docs-policy` for owner links and task shape; verify current status against the evidence owned by each plan or task before acting.                                                                                                                       |
+| Active dev-task hygiene still depends on manual cleanup discipline.                | Long-running work loses context when a task folder omits current status, resume instructions, or a clear promotion/deletion path. | Keep DART 7 World promotion in PLAN-040/041/042 and durable owner docs selected by `docs/README.md`; keep active folders compliant with `docs/dev_tasks/README.md`, promote durable artifacts before deleting completed folders, and add checks if task-shape drift recurs. |
+| Release roadmap is product-focused, not execution-focused.                         | It states DART 7 clean-break direction but does not by itself rank the technical work needed to get there.                        | Track current execution order in `docs/plans/dashboard.md` and keep detailed rationale or contributor guidance in the matching `docs/design/`, `docs/onboarding/`, or `docs/readthedocs/` owner.                                                                            |
+| Research usability is not tracked as a first-class outcome.                        | Self-explanatory APIs, package availability, and Pixi source-build ergonomics determine whether researchers can start quickly.    | Add research-readiness criteria to roadmap work: public API clarity, package-manager availability, and source-build instructions must be verified for major user-facing changes.                                                                                            |
+| Algorithm extension points need continued intake discipline.                       | Researchers need to implement new algorithms and compare them against built-in baselines without rewriting foundations.           | PLAN-091 retired the first hardening packet plan; keep the verified findings in `docs/design/dart7_architecture_assessment.md` current and route every new family through the strengthened `docs/plans/solver-family-intake.md`.                                            |
+| Compute scalability still needs workload-specific implementation evidence.         | Multi-core CPU and GPU progress must be judged against research workloads and maintenance cost.                                   | Follow PLAN-030 in `docs/plans/dashboard.md` for current implementation order and `docs/design/scalable_compute_decisions.md` for the decision framework; do not duplicate their evolving backlog here.                                                                     |
+| Verification gates are documented by change type but not tied to roadmap outcomes. | Passing a broad gate is only useful when it covers the actual objective.                                                          | For every major roadmap task, document the minimum objective-specific evidence next to the work item, then run the gates in `docs/ai/verification.md`.                                                                                                                      |
 
 ## Planning Surfaces
 
-Use one planning surface for each kind of state:
-
-- `docs/plans/dashboard.md` owns current priority, status, horizon, north-star
-  dimension, next step, and gate for operating plans, within enforced entry
-  budgets; completed plans move to `docs/plans/archive.md` in the PR that
-  completes them.
-- `docs/plans/north-star-roadmap.md` owns strategic framing and sequencing
-  principles.
-- Detailed numbered initiative files in `docs/plans/` own scope, workstreams,
-  acceptance criteria, revision triggers, and rationale.
-- `docs/dev_tasks/` owns active multi-session implementation tracking.
-- `docs/design/` owns durable architecture, API-shape, tradeoff, and
-  constraint rationale.
-- `docs/onboarding/` owns durable developer handbook material after work lands.
-- `docs/readthedocs/` owns published user guidance.
+`docs/plans/dashboard.md` owns the operating state of every open plan;
+`docs/plans/README.md` owns the plan lifecycle and north-star dimensions;
+`docs/README.md` owns which bucket holds each other kind of knowledge.
 
 ## Autonomous Agent Loop
 
@@ -154,7 +142,7 @@ DART is ready for sustained autonomous agent work when:
 - a fresh agent can state the mission, current status, and next execution path
   from tracked docs alone;
 - active long-running work is represented by compliant dev-task folders or by
-  durable owner docs selected by `docs/information-architecture.md`;
+  durable owner docs selected by `docs/README.md`;
 - each major roadmap item names its verification evidence;
 - research-facing APIs are clean, package/source-build paths are verified, and
   new algorithms can be benchmarked against existing baselines;

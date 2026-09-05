@@ -485,6 +485,12 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Consolidated the `docs/` map, placement matrix, and maintenance rules into
+  `docs/README.md`, folded the north-star roadmap into `docs/plans/README.md`,
+  replaced the DART 6-era onboarding deep dive with a handbook index, trimmed
+  stale dev-task session logs, and added a `dart-docs-update audit` mode.
+  `check-docs-policy` now checks every markdown link, rejects unreferenced
+  docs, and reports oversized dev-task snapshots.
 - AI workflows now stage context by task and phase, preserve authorized model,
   effort, and action scopes across handoffs, and audit the whole harness during
   model upgrades. Consolidated session policy and removed duplicate tutorials

@@ -21,10 +21,9 @@ Select and execute the next bounded DART task: $ARGUMENTS
 @docs/plans/dashboard.md
 @docs/dev_tasks/README.md
 
-Load `docs/plans/README.md`, `docs/plans/north-star-roadmap.md`,
-`docs/onboarding/contributing.md`, `docs/onboarding/ci-cd.md`, and
-`docs/onboarding/ai-tools.md` only when the selected mode or routed workflow
-needs them.
+Load `docs/plans/README.md`, `docs/onboarding/contributing.md`,
+`docs/onboarding/ci-cd.md`, and `docs/onboarding/ai-tools.md` only when the
+selected mode or routed workflow needs them.
 
 ## Arguments
 

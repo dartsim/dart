@@ -8,8 +8,7 @@ Design docs may be revised as evidence changes, but they should not own active
 priority, horizon, next step, gate, or implementation handoff state. Keep those
 fields in `docs/plans/dashboard.md` or `docs/dev_tasks/<task>/`.
 For cross-bucket placement decisions, use
-[`docs/information-architecture.md`](../information-architecture.md); this
-README owns design-specific routing.
+[`docs/README.md`](../README.md); this README owns design-specific routing.
 
 The published, single-page synthesis of these design docs — the DART 7
 multi-physics / multi-solver / multi-backend architecture as abstracted pipeline
@@ -49,15 +48,13 @@ rule itself.
 | [`shared_cuda_device_substrate.md`](shared_cuda_device_substrate.md)               | Shared GPU device-runtime substrate so CUDA solvers reuse common blocks (runtime probe, error mapping, launch config, device buffer, single-sourced kernels) instead of reinventing them (PLAN-031)            |
 | [`simulation_cpp_api.md`](simulation_cpp_api.md)                                   | C++ API shape for the official DART 7 clean-break `dart::simulation` API                                                                                                                                       |
 | [`simulation_python_api.md`](simulation_python_api.md)                             | Python API shape for `dartpy.simulation` and the `dartpy.World` root convenience alias                                                                                                                         |
-| [`simulation_experimental_references.md`](simulation_experimental_references.md)   | Compatibility pointer to the consolidated research reference catalog                                                                                                                                           |
 | [`../readthedocs/papers.md`](../readthedocs/papers.md)                             | Managed catalog of research papers, textbooks, standards, and comparative engines for the DART 7 World (status, priority, verdict)                                                                             |
 | [`simulation_solver_architecture.md`](simulation_solver_architecture.md)           | Internal architecture for solvers, domain assignment, multi-physics coupling, and the step schedule behind the DART 7 `World`                                                                                  |
 | [`simulation_variational_integrator.md`](simulation_variational_integrator.md)     | Architecture and math rationale for the linear-time variational integrator (discrete-mechanics) integration family (PLAN-084)                                                                                  |
 
 ## Placement Rules
 
-Use [`docs/information-architecture.md`](../information-architecture.md) for
-the full placement matrix. The local rules below describe what this bucket
+Use [`docs/README.md`](../README.md) for the full placement matrix. The local rules below describe what this bucket
 should and should not own:
 
 - Put roadmap priority, status, horizon, next step, and gate in

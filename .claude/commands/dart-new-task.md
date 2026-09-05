@@ -11,7 +11,7 @@ Start a new task in DART: $ARGUMENTS
 Read these files first:
 @AGENTS.md
 @docs/ai/principles.md
-@docs/information-architecture.md
+@docs/README.md
 
 Then load owners when the task needs them:
 
@@ -20,7 +20,7 @@ Then load owners when the task needs them:
 - Branching or contribution: `docs/onboarding/contributing.md` before setup.
 - C++/Python/build changes: `docs/onboarding/building.md` and
   `docs/onboarding/code-style.md` before implementation.
-- Docs edits: `docs/AGENTS.md` and `docs/README.md` before editing.
+- Docs edits: `docs/AGENTS.md` before editing.
 - Acceptance and testing: the task's gate set in `docs/ai/verification.md`
   before implementation; load detailed test guidance for the affected surface.
 
@@ -54,8 +54,8 @@ Then load owners when the task needs them:
    active DART 6 LTS branch); follow `.github/PULL_REQUEST_TEMPLATE.md`
 7. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, first
    promote durable dashboards, evidence matrices, API inventories, migration
-   maps, or long-lived decisions into the durable owner selected by
-   `docs/information-architecture.md`.
+   maps, or long-lived decisions into the durable owner selected by the
+   placement matrix in `docs/README.md`.
    Then remove the dev-task folder completely (include the deletion in this PR,
    not after merge).
 

@@ -23,7 +23,9 @@ REQUIRED_DOCS_TOP_LEVEL_DIRS = (
     "python_api",
     "readthedocs",
 )
-DOCS_INFORMATION_ARCHITECTURE = "docs/information-architecture.md"
+DOCS_PLACEMENT_OWNER = "docs/README.md"
+DOCS_PLACEMENT_HEADING = "## Where Docs Belong"
+DEV_TASK_SIZE_ADVISORIES = {"RESUME.md": 200, "README.md": 400}
 
 # These strings have shown up as "footer metadata" in Markdown docs and should
 # not be committed to the repository.
@@ -82,18 +84,38 @@ DOCS_AI_TYPE_LEGEND = {
 }
 DISCOVERABILITY_INDEXES = {
     "docs/ai": "docs/ai/README.md",
+    "docs/background": "docs/background/README.md",
+    "docs/onboarding": "docs/onboarding/README.md",
 }
-MARKDOWN_LINK_ADVISORY_PATTERNS = (
-    ":(glob)docs/*.md",
-    ":(glob)docs/ai/*.md",
-    "docs/plans/121-ai-docs-knowledge-graph.md",
-    "docs/readthedocs/papers.md",
+MARKDOWN_LINK_PATTERNS = (":(glob)*.md", ":(glob)**/*.md")
+# Docs that must be reachable from another tracked doc, script, test, or
+# workflow; a doc nobody references is dead weight (docs/README.md).
+ORPHAN_DOC_PATTERNS = (":(glob)docs/**/*.md",)
+ORPHAN_SIDECAR_PATTERNS = (":(glob)docs/plans/*/*",)
+ORPHAN_EXCLUDED_PREFIXES = ("docs/readthedocs/",)
+# Discovered by directory convention (docs/dev_tasks/README.md), not by link.
+ORPHAN_EXEMPT_NAMES = {"README.md", "AGENTS.md", "RESUME.md"}
+ORPHAN_CORPUS_PATTERNS = (
+    ":(glob)*.md",
+    ":(glob)docs/**/*.md",
+    ":(glob)docs/**/*.rst",
+    ":(glob)docs/**/*.py",
+    ":(glob)**/AGENTS.md",
+    ":(glob).claude/**/*.md",
+    ":(glob).codex/**/*",
+    ":(glob).github/**/*",
+    ":(glob)scripts/**/*.py",
+    ":(glob)tests/**/*.py",
+    ":(glob)python/**/*.py",
+    "pixi.toml",
 )
 NORTH_STAR_FRESHNESS_MARKER_RE = re.compile(
     r"<!--\s*docs-policy:\s*evidence-last-verified=(?P<date>\d{4}-\d{2}-\d{2})\s*-->"
 )
 PAPERS_CLOSED_VALUE_FIELDS = ("Type", "Status", "Priority", "Verdict")
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\((?P<link>[^)]+)\)")
+MARKDOWN_FENCE_RE = re.compile(r"^(?P<marker>`{3,}|~{3,})")
+MARKDOWN_HEADING_RE = re.compile(r"^(?P<level>#{1,6})\s+(?P<text>.*?)\s*#*\s*$")
 
 
 def iter_markdown_files(repo_root: Path) -> list[Path]:
@@ -179,40 +201,43 @@ def check_docs_indexes(repo_root: Path) -> list[str]:
     for path in (docs_readme, docs_agents):
         if not path.exists():
             failures.append(f"{path.relative_to(repo_root)}: missing docs index")
-            continue
-        text = path.read_text(encoding="utf-8", errors="replace")
+    if docs_readme.exists():
+        text = docs_readme.read_text(encoding="utf-8", errors="replace")
         for directory in REQUIRED_DOCS_TOP_LEVEL_DIRS:
             marker = f"{directory}/"
             if marker not in text:
                 failures.append(
-                    f"{path.relative_to(repo_root)}: missing `{marker}` entry"
+                    f"{docs_readme.relative_to(repo_root)}: missing `{marker}` entry"
                 )
 
     return failures
 
 
-def check_docs_information_architecture(repo_root: Path) -> list[str]:
-    """Ensure the docs placement owner exists and stays discoverable."""
-    failures: list[str] = []
-    owner = repo_root / DOCS_INFORMATION_ARCHITECTURE
-    if not owner.exists():
-        return [f"{DOCS_INFORMATION_ARCHITECTURE}: missing docs placement owner"]
+def check_docs_placement_owner(repo_root: Path) -> list[str]:
+    """Ensure the docs placement owner exists and stays discoverable.
 
-    for rel_path in ("AGENTS.md", "docs/README.md", "docs/AGENTS.md"):
+    ``docs/README.md`` owns the bucket map and placement matrix; the root and
+    docs-local ``AGENTS.md`` entrypoints must point agents at it.
+    """
+    failures: list[str] = []
+    owner = repo_root / DOCS_PLACEMENT_OWNER
+    if not owner.exists():
+        return [f"{DOCS_PLACEMENT_OWNER}: missing docs placement owner"]
+    owner_text = owner.read_text(encoding="utf-8", errors="replace")
+    if DOCS_PLACEMENT_HEADING not in owner_text:
+        failures.append(
+            f"{DOCS_PLACEMENT_OWNER}: missing `{DOCS_PLACEMENT_HEADING}` "
+            "placement section"
+        )
+
+    for rel_path in ("AGENTS.md", "docs/AGENTS.md"):
         path = repo_root / rel_path
         if not path.exists():
             failures.append(f"{rel_path}: missing docs index")
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
-        markers = (
-            (DOCS_INFORMATION_ARCHITECTURE,)
-            if rel_path == "AGENTS.md"
-            else (DOCS_INFORMATION_ARCHITECTURE, "information-architecture.md")
-        )
-        if not any(marker in text for marker in markers):
-            failures.append(
-                f"{rel_path}: missing `{DOCS_INFORMATION_ARCHITECTURE}` pointer"
-            )
+        if DOCS_PLACEMENT_OWNER not in text:
+            failures.append(f"{rel_path}: missing `{DOCS_PLACEMENT_OWNER}` pointer")
 
     return failures
 
@@ -233,6 +258,30 @@ def check_dev_task_shape(repo_root: Path) -> list[str]:
                 )
 
     return failures
+
+
+def check_dev_task_size(repo_root: Path) -> list[str]:
+    """Report dev-task snapshot files that have grown into logs (advisory)."""
+    warnings: list[str] = []
+    dev_tasks_dir = repo_root / "docs" / "dev_tasks"
+    if not dev_tasks_dir.exists():
+        return warnings
+
+    for task_dir in sorted(path for path in dev_tasks_dir.iterdir() if path.is_dir()):
+        for name, budget in DEV_TASK_SIZE_ADVISORIES.items():
+            path = task_dir / name
+            if not path.exists():
+                continue
+            line_count = len(
+                path.read_text(encoding="utf-8", errors="replace").splitlines()
+            )
+            if line_count > budget:
+                warnings.append(
+                    f"{path.relative_to(repo_root)}: {line_count} lines exceeds the "
+                    f"{budget}-line snapshot budget; prune history or promote "
+                    "durable content (docs/dev_tasks/README.md)"
+                )
+    return warnings
 
 
 def _dashboard_entries(text: str) -> list[dict[str, str]]:
@@ -361,15 +410,72 @@ def _resolve_markdown_link(
         (".github",),
     }:
         return (repo_root / target_path).resolve()
-    return (base_dir / target_path).resolve()
+    resolved = (base_dir / target_path).resolve()
+    if repo_root is not None and not resolved.exists():
+        # Docs sometimes write repo-root-relative paths (`cmake/foo.cmake`);
+        # accept them when the base-relative form does not exist.
+        root_relative = (repo_root / target_path).resolve()
+        if root_relative.exists():
+            return root_relative
+    return resolved
+
+
+def _iter_markdown_lines_outside_fences(text: str) -> list[tuple[int, str]]:
+    """Return (line_number, line) pairs that are not inside a fenced code block.
+
+    A fence closes only on a marker of the same character whose run is at
+    least as long as the opening run, so longer outer fences can wrap shorter
+    inner ones (CommonMark).
+    """
+    lines: list[tuple[int, str]] = []
+    open_marker: str | None = None
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        match = MARKDOWN_FENCE_RE.match(line.lstrip())
+        if match:
+            marker = match.group("marker")
+            if open_marker is None:
+                open_marker = marker
+                continue
+            if marker[0] == open_marker[0] and len(marker) >= len(open_marker):
+                open_marker = None
+                continue
+        if open_marker is not None:
+            continue
+        lines.append((line_number, line))
+    return lines
 
 
 def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
+    """Return (line, link) pairs outside fenced code blocks."""
     links: list[tuple[int, str]] = []
-    for line_number, line in enumerate(text.splitlines(), start=1):
+    for line_number, line in _iter_markdown_lines_outside_fences(text):
         for match in MARKDOWN_LINK_RE.finditer(line):
             links.append((line_number, match.group("link")))
     return links
+
+
+def _github_heading_slug(heading: str) -> str:
+    """Approximate GitHub's heading-to-anchor slug."""
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", heading)
+    text = text.replace("`", "").strip().lower()
+    text = re.sub(r"[^\w\- ]", "", text)
+    return text.replace(" ", "-")
+
+
+def _markdown_heading_anchors(path: Path) -> set[str]:
+    """Return the anchor slugs GitHub generates for a markdown file's headings."""
+    anchors: set[str] = set()
+    counts: dict[str, int] = {}
+    text = path.read_text(encoding="utf-8", errors="replace")
+    for _, line in _iter_markdown_lines_outside_fences(text):
+        match = MARKDOWN_HEADING_RE.match(line)
+        if not match:
+            continue
+        slug = _github_heading_slug(match.group("text"))
+        seen = counts.get(slug, 0)
+        anchors.add(slug if seen == 0 else f"{slug}-{seen}")
+        counts[slug] = seen + 1
+    return anchors
 
 
 def check_plan_id_uniqueness(entries: list[dict[str, str]]) -> list[str]:
@@ -661,16 +767,12 @@ def check_design_docs_index(repo_root: Path) -> list[str]:
 
 
 def check_markdown_internal_links(repo_root: Path) -> list[str]:
-    """Reject broken internal links in tracked pilot markdown docs.
-
-    Pilot-scoped to the AI-graph guardrail surfaces so the existing
-    repository-wide link inventory stays out of scope. Blocking since the
-    PLAN-121 promotion (the pilot inventory reported one clean cycle);
-    fragments are normalized to their owning file; heading anchors are not
-    validated yet.
+    """Reject broken internal links and dead heading anchors in every tracked
+    markdown doc. Fenced code blocks are skipped; anchors are compared against
+    GitHub-style heading slugs of the target file.
     """
     warnings: list[str] = []
-    for path in iter_tracked_files(repo_root, list(MARKDOWN_LINK_ADVISORY_PATTERNS)):
+    for path in iter_tracked_files(repo_root, list(MARKDOWN_LINK_PATTERNS)):
         text = path.read_text(encoding="utf-8", errors="replace")
         for line_number, raw_link in _iter_markdown_links(text):
             target = _strip_markdown_link_target(raw_link)
@@ -697,7 +799,23 @@ def check_markdown_internal_links(repo_root: Path) -> list[str]:
                     f"{path.relative_to(repo_root)}:{line_number}: broken internal "
                     f"link `{raw_link}` -> `{_display_path(resolved, repo_root)}`"
                 )
+                continue
+            anchor = _markdown_link_anchor(raw_link)
+            if anchor and resolved.suffix == ".md" and resolved.is_file():
+                if anchor not in _markdown_heading_anchors(resolved):
+                    warnings.append(
+                        f"{path.relative_to(repo_root)}:{line_number}: link "
+                        f"`{raw_link}` names heading anchor `#{anchor}` that "
+                        f"`{_display_path(resolved, repo_root)}` does not define"
+                    )
     return warnings
+
+
+def _markdown_link_anchor(link: str) -> str:
+    target = _strip_markdown_link_target(link)
+    if "#" not in target:
+        return ""
+    return target.split("#", maxsplit=1)[1].strip().lower()
 
 
 def check_docs_discoverability(repo_root: Path) -> list[str]:
@@ -735,6 +853,74 @@ def check_docs_discoverability(repo_root: Path) -> list[str]:
                     f"{doc.relative_to(repo_root)}: not linked from `{index}`"
                 )
     return warnings
+
+
+def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
+    """Reject docs that no other tracked doc, script, test, or workflow names.
+
+    A markdown doc under ``docs/`` (outside the published site) must be
+    mentioned by basename somewhere else in the tracked corpus; plan sidecar
+    data files get the same check as an advisory because scripts may address
+    them through computed paths.
+    """
+    failures: list[str] = []
+    warnings: list[str] = []
+    corpus: dict[str, str] = {}
+    for path in iter_tracked_files(repo_root, list(ORPHAN_CORPUS_PATTERNS)):
+        if path.is_dir():
+            continue
+        try:
+            corpus[_display_path(path, repo_root)] = path.read_text(
+                encoding="utf-8", errors="replace"
+            )
+        except OSError:
+            continue
+
+    tracked_names: dict[str, int] = {}
+    for pattern in (*ORPHAN_DOC_PATTERNS, *ORPHAN_SIDECAR_PATTERNS):
+        for path in iter_tracked_files(repo_root, [pattern]):
+            tracked_names[path.name] = tracked_names.get(path.name, 0) + 1
+
+    def _is_orphan(path: Path) -> bool:
+        """A doc is referenced by its repo path, by `parent/name`, by a bare
+        name from a file in the same directory (a relative link), or by a bare
+        name anywhere when that name is unique among the checked docs."""
+        rel_path = _display_path(path, repo_root)
+        name = path.name
+        suffix = f"{path.parent.name}/{name}"
+        unique = tracked_names.get(name, 0) <= 1
+        rel_dir = str(Path(rel_path).parent)
+        for other, text in corpus.items():
+            if other == rel_path:
+                continue
+            if rel_path in text or suffix in text:
+                return False
+            if name in text and (unique or str(Path(other).parent) == rel_dir):
+                return False
+        return True
+
+    for path in iter_tracked_files(repo_root, list(ORPHAN_DOC_PATTERNS)):
+        rel_path = _display_path(path, repo_root)
+        if rel_path.startswith(ORPHAN_EXCLUDED_PREFIXES):
+            continue
+        if path.name in ORPHAN_EXEMPT_NAMES:
+            continue
+        if _is_orphan(path):
+            failures.append(
+                f"{rel_path}: not referenced by any tracked doc, script, test, "
+                "or workflow; link it from its owner index or delete it"
+            )
+
+    for path in iter_tracked_files(repo_root, list(ORPHAN_SIDECAR_PATTERNS)):
+        if path.suffix == ".md" or path.is_dir():
+            continue
+        rel_path = _display_path(path, repo_root)
+        if _is_orphan(path):
+            warnings.append(
+                f"{rel_path}: plan sidecar not referenced by its owner plan, a "
+                "sidecar doc, or a script"
+            )
+    return failures, warnings
 
 
 def _parse_frontmatter(text: str) -> dict[str, str]:
@@ -1195,8 +1381,9 @@ def main() -> int:
     for path in iter_markdown_files(repo_root):
         failures.extend(check_file(path, repo_root))
     failures.extend(check_docs_indexes(repo_root))
-    failures.extend(check_docs_information_architecture(repo_root))
+    failures.extend(check_docs_placement_owner(repo_root))
     failures.extend(check_dev_task_shape(repo_root))
+    warnings.extend(check_dev_task_size(repo_root))
     failures.extend(check_plan_lifecycle(repo_root))
     failures.extend(check_dashboard_structure(repo_root))
     failures.extend(check_plan_archive_shape(repo_root))
@@ -1205,6 +1392,9 @@ def main() -> int:
     failures.extend(check_papers_catalog(repo_root))
     failures.extend(check_markdown_internal_links(repo_root))
     failures.extend(check_docs_discoverability(repo_root))
+    orphan_failures, orphan_warnings = check_docs_orphans(repo_root)
+    failures.extend(orphan_failures)
+    warnings.extend(orphan_warnings)
     warnings.extend(check_north_star_evidence_freshness(repo_root))
 
     if warnings:

@@ -1,54 +1,29 @@
 # docs/
 
-Agent entry point for DART documentation.
+Agent rules for editing DART documentation.
 
 ## Required Reading
 
-Start with:
-
 1. Root `AGENTS.md`
-2. `docs/README.md`
-3. `docs/information-architecture.md`
-4. The local folder `README.md` or `AGENTS.md` for the surface you are editing
+2. `docs/README.md` (tree map, placement matrix, maintenance rules)
+3. The `README.md` or `AGENTS.md` of the bucket you are editing
+4. For `docs/ai/`, the read order in `docs/ai/README.md`
 
-For AI-infra docs, follow the read order in `docs/ai/README.md`.
+## Rules
 
-## Bucket Map
-
-| Path           | Use for                                                             |
-| -------------- | ------------------------------------------------------------------- |
-| `ai/`          | AI-native principles, terminology, workflows, and gates             |
-| `assets/`      | Source-controlled docs assets outside RTD `_static/`                |
-| `background/`  | Theory and research foundations                                     |
-| `design/`      | Durable technical rationale and design decisions                    |
-| `dev_tasks/`   | Durable lifecycle README and temporary task subfolders              |
-| `doxygen/`     | C++ API Doxygen inputs                                              |
-| `onboarding/`  | Current developer handbook path: build/test/CI/release/API guidance |
-| `plans/`       | Living roadmap, priority, dependencies, gates, and plan lifecycle   |
-| `python_api/`  | Reusable dartpy API module pages                                    |
-| `readthedocs/` | Published user documentation site source                            |
-
-## Placement Rules
-
-- Classify docs by lifecycle first, then audience, then topic.
-- Prefer updating an existing owner doc over adding a new file.
-- Put mutable priority, sequencing, next-step, and gate state in `plans/`, not
-  `design/`.
-- Put active handoff and resume state in `dev_tasks/<task>/`; follow the
-  lifecycle and session policy in `dev_tasks/README.md`.
-- Put user-facing documentation in `readthedocs/` or root user entrypoints.
-- Keep `onboarding/` as the current handbook path unless a dedicated migration
-  updates all links, workflows, generated adapters, and policy checks together.
-
-See `docs/information-architecture.md` for the full placement matrix and future
-split or rename criteria.
+- Place content by the matrix in `docs/README.md` § "Where Docs Belong":
+  lifecycle first, then audience, then topic.
+- Prefer rewriting or deleting an existing doc over adding one. A new file
+  must be linked from its bucket index in the same change.
+- Keep mutable state (status, next step, gates) in `docs/plans/`; keep
+  temporary handoff state in `docs/dev_tasks/<task>/`; keep user-facing pages
+  in `docs/readthedocs/`.
+- Do not append history to active docs; rewrite the current state and let git
+  keep the past.
+- Do not hand-edit generated adapters; edit `.claude/` sources and run
+  `pixi run sync-ai-commands` (see `docs/ai/components.md`).
 
 ## Verification
 
-Use `docs/ai/verification.md` to select gates. For docs-structure or placement
-policy changes, run at least:
-
-- `pixi run lint-md`
-- `pixi run check-lint-md`
-- `pixi run check-docs-policy`
-- `pixi run check-lint-spell`
+Run the docs gates listed in `docs/README.md` § "Verification"; use
+`docs/ai/verification.md` when AI docs or adapters change.

@@ -14,7 +14,7 @@ lifecycle.
 
 **Final status:** Complete (archived 2026-07-03).
 
-**Owner doc:** [`README.md#plan-update-workflow`](README.md#plan-update-workflow)
+**Owner doc:** [`README.md#revising-plans`](README.md#revising-plans)
 
 **Dimension:** AI-native execution · **Horizon at completion:** Later
 
