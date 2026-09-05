@@ -453,6 +453,24 @@ def _resolve_markdown_link(
     return (base_dir / target_path).resolve()
 
 
+def _iter_inline_tokens(text: str, offset: int = 0):
+    """Yield (line, inline token) pairs, recursing into MyST directive fences
+    whose body is Markdown (admonitions, grids, ...). Literal directives and
+    ordinary code fences are skipped."""
+    for token in MARKDOWN_PARSER.parse(text):
+        line_number = offset + ((token.map[0] + 1) if token.map else 0)
+        directive = (
+            MYST_DIRECTIVE_RE.match(token.info.strip())
+            if token.type == "fence"
+            else None
+        )
+        if directive and directive.group("name") not in MYST_LITERAL_DIRECTIVES:
+            yield from _iter_inline_tokens(token.content, offset=line_number)
+            continue
+        if token.type == "inline" and token.children:
+            yield line_number, token
+
+
 def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
     """Return (line, destination) pairs for every Markdown link in ``text``.
 
@@ -461,22 +479,7 @@ def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
     fenced or indented code, inline code, or HTML. Images are not links.
     """
     links: list[tuple[int, str]] = []
-    for token in MARKDOWN_PARSER.parse(text):
-        directive = (
-            MYST_DIRECTIVE_RE.match(token.info.strip())
-            if token.type == "fence"
-            else None
-        )
-        if directive and directive.group("name") not in MYST_LITERAL_DIRECTIVES:
-            # MyST directive with a Markdown body (```{note} ...```): links
-            # inside it are still checked; literal directives stay code.
-            offset = (token.map[0] + 1) if token.map else 0
-            for inner_line, link in _iter_markdown_links(token.content):
-                links.append((offset + inner_line, link))
-            continue
-        if token.type != "inline" or not token.children:
-            continue
-        line_number = (token.map[0] + 1) if token.map else 0
+    for line_number, token in _iter_inline_tokens(text):
         for child in token.children:
             if child.type == "link_open":
                 href = child.attrGet("href")
@@ -495,13 +498,11 @@ def _iter_myst_doc_roles(text: str) -> list[tuple[int, str]]:
     """Return (line, target) pairs for MyST ``{doc}`` cross-references.
 
     markdown-it sees ``{doc}`` as text followed by an inline code span; the
-    span holds either ``target`` or ``Label <target>``.
+    span holds either ``target`` or ``Label <target>``. Roles inside
+    Markdown-bearing directives are included.
     """
     roles: list[tuple[int, str]] = []
-    for token in MARKDOWN_PARSER.parse(text):
-        if token.type != "inline" or not token.children:
-            continue
-        line_number = (token.map[0] + 1) if token.map else 0
+    for line_number, token in _iter_inline_tokens(text):
         children = token.children
         for index, child in enumerate(children[:-1]):
             if child.type != "text" or not child.content.endswith(MYST_DOC_ROLE_SUFFIX):

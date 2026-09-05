@@ -760,7 +760,6 @@ STALE_SOURCE_PATTERNS = (
     re.compile(
         r"benchmark source hash does not match current benchmark translation unit$"
     ),
-    re.compile(r"source_provenance\.files\[\d+\]\.sha256 drifted for "),
 )
 # The packet-level digest is recomputed from the listed files, so it is a stale
 # seal only when a listed file also drifted; on its own it is a mutated packet.
@@ -785,11 +784,20 @@ CAPTURE_DIGEST_PATTERN = re.compile(
 
 def split_stale_source_findings(errors: list[str]) -> tuple[list[str], list[str]]:
     """Split validator output into hard errors and stale-seal advisories."""
-    drifted_packets = {
+    # A listed source file that really changed produces both a per-file hash
+    # mismatch and a packet-digest mismatch (the digest is recomputed from the
+    # current contents). Either finding alone is an edited packet, not drift.
+    sha_drift_packets = {
         error.split(": ", 1)[0]
         for error in errors
         if PACKET_FILE_DRIFT_PATTERN.search(error)
     }
+    digest_mismatch_packets = {
+        error.split(": ", 1)[0]
+        for error in errors
+        if PACKET_DIGEST_PATTERN.search(error)
+    }
+    drifted_packets = sha_drift_packets & digest_mismatch_packets
     drifted_captures = {
         match.group("capture")
         for error in errors
@@ -804,7 +812,10 @@ def split_stale_source_findings(errors: list[str]) -> tuple[list[str], list[str]
             stale.append(error)
         elif metadata and metadata.group("capture") in drifted_captures:
             stale.append(error)
-        elif PACKET_DIGEST_PATTERN.search(error) and packet_name in drifted_packets:
+        elif (
+            PACKET_DIGEST_PATTERN.search(error)
+            or PACKET_FILE_DRIFT_PATTERN.search(error)
+        ) and packet_name in drifted_packets:
             stale.append(error)
         else:
             hard.append(error)

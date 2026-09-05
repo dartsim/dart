@@ -468,6 +468,39 @@ def test_split_stale_source_findings_keeps_lone_capture_metadata_mismatch_hard()
     assert hard == [] and stale == with_drift
 
 
+def test_stale_source_report_mode_keeps_lone_recorded_hash_edit_as_error(
+    tmp_path, monkeypatch
+):
+    module = _load_module()
+    monkeypatch.setattr(module, "REPO_ROOT", tmp_path)
+    (tmp_path / "solver.cpp").write_text("stable\n")
+    provenance = _source_provenance(tmp_path, "solver.cpp")
+    provenance["files"][0]["sha256"] = "1" * 64  # file and packet digest unchanged
+    path = _write_packet(
+        tmp_path,
+        "avbd-new-scene-packet.json",
+        {
+            "schema_version": module.AVBD_PACKET_SCHEMA_VERSION,
+            "resolved_solver_identity": _identity(),
+            "source_provenance": provenance,
+        },
+    )
+
+    assert (
+        module.main(
+            [
+                "--packet-dir",
+                str(tmp_path),
+                "--packet",
+                str(path),
+                "--stale-source",
+                "report",
+            ]
+        )
+        == 1
+    )
+
+
 def test_split_stale_source_findings_keeps_source_contract_mismatch_hard():
     module = _load_module()
     errors = [
