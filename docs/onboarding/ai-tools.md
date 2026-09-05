@@ -174,3 +174,51 @@ the version, date, observed behavior, and untested boundaries here.
 `docs/ai/verification.md` owns gate selection and completion evidence.
 
 Automated PR review handling lives in [ai-reviews.md](ai-reviews.md).
+
+## Codex Hosted Review Settings
+
+Recommended starting configuration, based on the maintainer's settings UI
+confirmed on 2026-09-05:
+
+| Setting                | Choice                  |
+| ---------------------- | ----------------------- |
+| Auto review            | On                      |
+| Review trigger         | On PR open              |
+| Exhaustive code review | On for a measured trial |
+| Enable credits use     | Off                     |
+
+These are account/repository preferences, not local agent model or effort
+settings. Check the effective repository policy as well as personal preferences
+before relying on an automatic trigger. See the
+[official GitHub review documentation](https://learn.chatgpt.com/docs/third-party/github)
+for automatic/manual requests and scoped repository review rules.
+
+The observed UI exposes one general Exhaustive toggle. Treat it as enabled for
+follow-up reviews too; there is no observed initial-review-only or per-round
+control. Do not toggle it between rounds. Its description promises continued
+search for additional findings until no new issues are found, not defect-free
+code. Internal pass count, billing multiplier, and cost savings were not
+established. Completion must use the evidence rules in
+[ai-reviews.md](ai-reviews.md#codex-review-for-draft-prs).
+
+PR-open automation plus deliberate manual follow-ups fits batched fixes.
+Every-push automation can race those requests; experimental smart detection is
+not proof of required current-head coverage. A different chosen configuration
+must still obey the single-trigger-owner rule. Changing account settings or
+enabling credits requires separate explicit authorization.
+
+### Evaluating The Trial
+
+Evaluate the next ten representative PRs using their existing verification
+evidence, recording PR/head, settings, hosted round count, accepted/rejected
+findings, repair-induced regressions, time to readiness, and local agent tokens
+and hosted review usage where available. Compare with similar prior PRs and
+separate physics, tooling, and documentation changes; unavailable usage is
+unknown, not zero. Do not infer dollar savings from comment counts.
+
+Retain Exhaustive if broader early discovery and fewer repair cycles justify
+its review usage without degrading quality. Otherwise recommend disabling the
+general toggle while retaining batching and the strategy checkpoint. Report
+the sample and limitations; neither structural checks nor a small mixed sample
+prove causal savings. This is a trial protocol, not evidence that ten PRs have
+already been evaluated.
