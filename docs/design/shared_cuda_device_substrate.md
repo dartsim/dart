@@ -267,7 +267,8 @@ The hard guardrails from `scalable_compute_decisions.md` and
 
 The build-now sequence below is complete on `main` in PR #2875. Future work uses
 the deferral table above and must promote only real second-use extractions.
-Canonical priority, next step, and gate live in PLAN-031.
+Canonical priority, next step, and gate live in PLAN-030 on the dashboard;
+PLAN-031 records the completed extraction.
 
 - **P0 — pin parity baselines (complete).** Record CPU/GPU parity for all three
   modules at the existing tolerance (Phase-5 reference 1.78e-15) before any
@@ -331,6 +332,6 @@ PR #2875 resolved the questions that affected the landed substrate:
 - PLAN-083 (`083-unified-newton-barrier-multibody.md`) owns CPU Newton-barrier
   primitive consolidation; the deferred device IPC math promotes those same
   `detail/newton_barrier` cores host/device-portable rather than copying them.
-- `docs/plans/dashboard.md` PLAN-031 owns this work's operating state; PLAN-030,
-  PLAN-104, PLAN-082, and PLAN-081 are the dependent GPU-solver tracks this
-  substrate de-duplicates.
+- `docs/plans/dashboard.md` PLAN-030 owns current qualification work;
+  PLAN-031 records the completed extraction. PLAN-104, PLAN-082 and PLAN-081
+  are dependent GPU-solver tracks that share this substrate.
