@@ -624,17 +624,19 @@ def test_docs_orphans_dev_task_entrypoints_are_roots(tmp_path):
 def test_docs_orphans_resolve_links_instead_of_path_suffixes(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"
-    for bucket in ("a", "b"):
+    for bucket in ("onboarding", "design"):
         (docs / bucket / "topic").mkdir(parents=True)
         (docs / bucket / "topic" / "notes.md").write_text("# Notes\n", encoding="utf-8")
-    (docs / "a" / "README.md").write_text("[notes](topic/notes.md)\n", encoding="utf-8")
-    (docs / "b" / "README.md").write_text("# B\n", encoding="utf-8")
+    (docs / "onboarding" / "README.md").write_text(
+        "[notes](topic/notes.md)\n", encoding="utf-8"
+    )
+    (docs / "design" / "README.md").write_text("# Design\n", encoding="utf-8")
     (docs / "README.md").write_text("# Docs\n", encoding="utf-8")
 
     failures, _ = module.check_docs_orphans(tmp_path)
 
-    assert any("docs/b/topic/notes.md" in f for f in failures)
-    assert not any("docs/a/topic/notes.md" in f for f in failures)
+    assert any("docs/design/topic/notes.md" in f for f in failures)
+    assert not any("docs/onboarding/topic/notes.md" in f for f in failures)
 
 
 def test_markdown_heading_anchors_reserve_taken_slugs(tmp_path):
@@ -764,6 +766,51 @@ def test_link_check_treats_scheme_relative_urls_as_external(tmp_path):
     (docs / "README.md").write_text("[guide](//example.com/docs)\n", encoding="utf-8")
 
     assert module.check_markdown_internal_links(tmp_path) == []
+
+
+def test_iter_tracked_files_reads_non_ascii_names(tmp_path):
+    import subprocess
+
+    module = _load_module()
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    doc = tmp_path / "docs" / "café.md"
+    doc.parent.mkdir()
+    doc.write_text("# Café\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "docs/café.md"], check=True)
+
+    files = module.iter_tracked_files(tmp_path, [":(glob)docs/*.md"])
+
+    assert [f.name for f in files] == ["café.md"]
+
+
+def test_link_check_decodes_reserved_characters_after_splitting_fragment(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "guide#v2.md").write_text("# Guide\n\n## Notes\n", encoding="utf-8")
+    (docs / "README.md").write_text(
+        "[guide](guide%23v2.md) [notes](guide%23v2.md#notes) [bad](guide%23v2.md#nope)\n",
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert "#nope" in warnings[0]
+
+
+def test_docs_orphans_unregistered_bucket_readme_is_not_a_root(tmp_path):
+    module = _load_module()
+    bucket = tmp_path / "docs" / "foo"
+    bucket.mkdir(parents=True)
+    (bucket / "README.md").write_text("[child](child.md)\n", encoding="utf-8")
+    (bucket / "child.md").write_text("[back](README.md)\n", encoding="utf-8")
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, _ = module.check_docs_orphans(tmp_path)
+
+    assert any("docs/foo/README.md" in f for f in failures)
+    assert any("docs/foo/child.md" in f for f in failures)
 
 
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):

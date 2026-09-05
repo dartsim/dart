@@ -147,6 +147,7 @@ def iter_tracked_files(repo_root: Path, patterns: list[str]) -> list[Path]:
             [
                 "git",
                 "ls-files",
+                "-z",  # NUL-delimited: no C-style quoting of non-ASCII names
                 "--cached",
                 "--others",
                 "--exclude-standard",
@@ -168,7 +169,7 @@ def iter_tracked_files(repo_root: Path, patterns: list[str]) -> list[Path]:
         return sorted(set(files))
 
     files = []
-    for line in result.stdout.splitlines():
+    for line in result.stdout.split("\0"):
         if not line:
             continue
         path = repo_root / line
@@ -362,9 +363,15 @@ def _strip_markdown_link_target(link: str) -> str:
 
 
 def _normalize_markdown_link(link: str) -> str:
+    """Return the decoded filesystem path of a link destination.
+
+    The query and fragment are split off first so a percent-encoded reserved
+    character in the path (``guide%23v2.md``) decodes to the literal filename
+    instead of being mistaken for a delimiter.
+    """
     target = _strip_markdown_link_target(link)
     target = target.split("?", maxsplit=1)[0]
-    return target.split("#", maxsplit=1)[0].strip()
+    return unquote(target.split("#", maxsplit=1)[0].strip())
 
 
 def _resolve_dashboard_owner(
@@ -439,9 +446,9 @@ def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
             if child.type == "link_open":
                 href = child.attrGet("href")
                 if href:
-                    # markdown-it percent-encodes destinations; filesystem
-                    # checks need the literal path.
-                    links.append((line_number, unquote(str(href))))
+                    # Keep markdown-it's percent-encoded form; the resolver
+                    # decodes path and fragment separately.
+                    links.append((line_number, str(href)))
     return links
 
 
@@ -825,7 +832,7 @@ def _markdown_link_anchor(link: str) -> str:
     target = _strip_markdown_link_target(link)
     if "#" not in target:
         return ""
-    return target.split("#", maxsplit=1)[1].strip().lower()
+    return unquote(target.split("#", maxsplit=1)[1].strip()).lower()
 
 
 def check_docs_discoverability(repo_root: Path) -> list[str]:
@@ -991,8 +998,14 @@ def _is_orphan_root_by_convention(rel_path: str) -> bool:
     name = parts[-1]
     if parts[:1] != ("docs",):
         return False
-    if name in ORPHAN_INDEX_NAMES and len(parts) <= 3:
-        return True  # docs/README.md, docs/AGENTS.md, docs/<bucket>/{README,AGENTS}.md
+    if name in ORPHAN_INDEX_NAMES and len(parts) == 2:
+        return True  # docs/README.md, docs/AGENTS.md
+    if (
+        name in ORPHAN_INDEX_NAMES
+        and len(parts) == 3
+        and parts[1] in REQUIRED_DOCS_TOP_LEVEL_DIRS
+    ):
+        return True  # docs/<registered bucket>/{README,AGENTS}.md
     return (
         parts[:2] == ("docs", "dev_tasks")
         and len(parts) == 4
