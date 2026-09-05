@@ -16,7 +16,7 @@
   [`122-simulation-loop-allocation-hardening/coverage-matrix.md`](122-simulation-loop-allocation-hardening/coverage-matrix.md)
   records which rows are final evidence, which rows are steady-state-only
   evidence, and which rows remain open.
-- Progress snapshot: 14 of 20 matrix rows are closed with first-post-bake
+- Progress snapshot: 14 of 22 matrix rows are closed with first-post-bake
   evidence. `L-001` is now closed: the legacy `dynamics::Skeleton` → DART 7
   `World` model-loading bridge (`dart::simulation::io::addSkeleton`) has
   first-post-bake world-base, global-heap, and raw-malloc gates over an imported
@@ -24,7 +24,8 @@
   phase. These matrix rows do not establish universal parallel-executor coverage: `D-004` is closed by routing
   systems above the retained dense-direct cutoff to the sparse iterative path
   instead of Eigen sparse-direct numeric factorization. The remaining open rows
-  are existing-path rows `R-005` and `G-002`, plus promotion-gated rows
+  are executor-inventory row `H-002`, existing-path rows `R-005`, `M-005`
+  and `G-002`, plus promotion-gated rows
   `M-004`, `F-002`, and `G-001`. Each stays with its named owner until its
   evidence closes. No new `docs/dev_tasks/` folder is
   needed for those rows while this plan and its coverage matrix remain the
@@ -36,7 +37,9 @@ The [current assessment](../design/dart7_architecture_assessment.md#f6--clean-br
 identifies parallel unified-island scratch and function-static deformable CUDA
 PSD buffers that existing representative rows do not qualify. PLAN-122 owns
 allocation coverage, coordinated with PLAN-030 for runtime/ownership. The matrix
-already tracks these selectable paths as open `R-005` and `G-002`; deferring
+already tracks these selectable paths as open `R-005` and `G-002`, and parallel
+multibody ranges as `M-005`. `H-002` owns the complete executor-mode inventory;
+default sequential evidence cannot qualify untested supplied executors. Deferring
 their closure to M2/family work does not defer their admission to the matrix.
 Record execution mode, concurrency and first-step evidence. WP-122.8 completion
 must not close or erase these wider rows.
@@ -110,12 +113,33 @@ already closed.
   without copy/paste; add a lightweight checker or meta-test that verifies each
   closed matrix row cites an existing test; relabel existing prewarm-based raw
   gates as steady-state until their underlying path bakes all scratch.
+  `H-002` inventories every selectable World stage/method and its default or
+  supplied executor, actual graph/range/device dispatch, profiling and fallback
+  behavior. Qualify each mode directly or link it to a named open row. Include
+  Taskflow submission, lazy range pools and nested/concurrent execution; a
+  cached graph's constant allocation floor is not zero-allocation evidence.
+  Name inline versus Taskflow graph dispatch and kinematics cache rebuilds;
+  multibody, island and VBD/AVBD colored-block/row ranges; profiling adapters;
+  CUDA selection and CPU fallback; explicit rigid stages and custom pipelines
+  containing built-in stages. Classify standalone WorldBatch graph construction
+  separately from the measured World step. Inventory DART-owned executors and
+  adapter contracts; caller-written executor/stage behavior requires separate
+  conformance evidence.
 - Non-goals: proving every domain row in this packet; changing the DART 6
   compatibility lane.
 - Acceptance evidence: the helper/API name is documented in
   `docs/onboarding/testing.md`; the coverage matrix distinguishes final,
   steady-state-only, and open rows; a focused test proves the helper fails when
   an allocation is injected after bake.
+  `H-002` closes only when the inventory records each supported mode's activation
+  predicate and source location, with evidence that exercises that exact mode
+  or a direct mapping to a distinct, concrete open row with scope, owner and
+  acceptance criteria. Self/circular mappings and generic future-promotion
+  placeholders cannot close the inventory. Removing a mapping or adding an
+  unmapped dispatch mode must fail its validation. Inventory completeness does
+  not qualify its open rows, which still block PLAN-122 completion. New modes
+  invalidate the inventory until mapped. The Taskflow submission floor stays
+  with WP-122.8/PLAN-030 and needs a concrete row before H-002 can close.
 - Gates: `pixi run lint`, focused `test_world` allocation filters, and the new
   matrix/helper checker if added.
 - Dependencies: none.
@@ -161,7 +185,8 @@ already closed.
 - Objective: make every DART 7 articulated/multibody solver family row carry
   allocation evidence before promotion.
 - Scope: semi-implicit multibody velocity paths, variational integration,
-  AVBD/VBD and parallel unified-island `R-005` rows already selectable in `World::step()`, and future
+  AVBD/VBD, parallel unified-island `R-005` and multibody-range `M-005` rows
+  already selectable in `World::step()`, and future
   unified Newton-barrier multibody rows from PLAN-083.
 - Non-goals: DART 6 articulated-body parity paths outside the DART 7 `World`.
 - Acceptance evidence: each promoted DART 7 row in the matrix cites post-bake
@@ -172,6 +197,10 @@ already closed.
   allocations and runtime submission from the first post-bake step, including
   lazy range-pool creation; add worker-thread allocation negative controls.
   Preserve sequential-reference parity and dispatch with profiling enabled.
+  `M-005` additionally requires multiple multibodies with actual multi-worker
+  range dispatch. Counter coverage starts on the first post-bake step and
+  includes worker/runtime setup; small ranges that execute inline do not
+  qualify the parallel path. Compare against the sequential reference.
 - Gates: `pixi run lint`, focused `test_world` multibody/variational/AVBD/VBD
   allocation filters, and the relevant PLAN-083/104 focused tests.
 - Dependencies: PLAN-080, PLAN-083, PLAN-084, PLAN-104, and the corresponding
