@@ -99,8 +99,8 @@ follow the [public API boundary](../../onboarding/api-boundaries.md).
 
 - [Solver architecture](../../design/simulation_solver_architecture.md) owns
   domain/representation compatibility, solver portfolios, shared or partitioned
-  coupling, and model/state/control ownership. The former task-local
-  [`architecture_principles.md`](architecture_principles.md) is superseded.
+  coupling, and model/state/control ownership. [Compute decisions](../../design/scalable_compute_decisions.md)
+  owns data/execution contracts; PLAN-040 and PLAN-080 own readiness and admitted work.
 - Default gravity is `(0, 0, -9.81)`, matching legacy DART 6 and the user's
   multiphysics API vision. Gravity is added to the transient force buffer as
   `mass * gravity`, not stored in the per-body force accumulator.
