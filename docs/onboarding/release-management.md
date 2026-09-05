@@ -79,11 +79,12 @@ For merge commits, use `git cherry-pick -x -m 1 <MERGE_COMMIT_HASH>`.
 
 AI-infra and workflow-doc backports need one extra check before cherry-picking.
 Compare the release branch's `docs/ai/capabilities.json`, `docs/ai/workflows.md`,
-`.claude/commands/`, `.claude/skills/`, and `.agents/skills/` against `main`. If
-the release branch intentionally has a smaller workflow surface, adapt the
-guidance to the release owners and regenerate only the affected adapters; do not
-add main-only workflows just to make the patch apply. Record a changelog entry
-when the backport changes contributor or agent behavior.
+`.claude/commands/`, `.claude/skills/`, `.agents/skills/`, and its release-only
+`.opencode/command/` adapters against `main`. If the release branch
+intentionally has a smaller workflow surface, adapt the guidance to the release
+owners and regenerate only the affected adapters, including the release-only
+ones; do not add main-only workflows just to make the patch apply. Record a
+changelog entry when the backport changes contributor or agent behavior.
 
 ## Release Branch CI Fixes
 
