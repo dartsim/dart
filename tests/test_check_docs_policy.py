@@ -813,6 +813,60 @@ def test_docs_orphans_unregistered_bucket_readme_is_not_a_root(tmp_path):
     assert any("docs/foo/child.md" in f for f in failures)
 
 
+def test_link_check_treats_any_uri_scheme_as_external(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "README.md").write_text(
+        "[rfc](urn:ietf:rfc:3986) [ssh](ssh://git@example.com/repo) "
+        "[mail](mailto:a@b.c) [rel](missing.md)\n",
+        encoding="utf-8",
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert "missing.md" in warnings[0]
+
+
+def test_markdown_links_include_myst_directive_bodies():
+    module = _load_module()
+    text = (
+        "Intro [a](a.md)\n"
+        "\n"
+        "```{note}\n"
+        "See [b](b.md) and\n"
+        "[c](c.md).\n"
+        "```\n"
+        "\n"
+        "```python\n"
+        "print('[not](code.md)')\n"
+        "```\n"
+    )
+
+    links = module._iter_markdown_links(text)
+
+    assert [link for _, link in links] == ["a.md", "b.md", "c.md"]
+    # Links report the line of their containing paragraph, offset into the file.
+    assert [line for line, _ in links] == [1, 4, 4]
+
+
+def test_docs_orphans_directory_link_reaches_nested_readme(tmp_path):
+    module = _load_module()
+    nested = tmp_path / "docs" / "design" / "foo"
+    nested.mkdir(parents=True)
+    (tmp_path / "docs" / "design" / "README.md").write_text(
+        "[foo](foo/)\n", encoding="utf-8"
+    )
+    (nested / "README.md").write_text("[x](x.md)\n", encoding="utf-8")
+    (nested / "x.md").write_text("# X\n", encoding="utf-8")
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, _ = module.check_docs_orphans(tmp_path)
+
+    assert failures == []
+
+
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"

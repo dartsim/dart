@@ -349,9 +349,13 @@ def _normalize_plan_owner(owner: str) -> str:
     return owner.split("#", maxsplit=1)[0].strip()
 
 
+URI_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*:")
+
+
 def _is_external_link(link: str) -> bool:
-    # Scheme-relative URLs (`//host/path`) are external too.
-    return "://" in link or link.startswith(("mailto:", "tel:", "//"))
+    """Any RFC 3986 scheme (`https:`, `mailto:`, `urn:`, `ssh:`) or a
+    scheme-relative `//host/path` destination is external."""
+    return bool(URI_SCHEME_RE.match(link)) or link.startswith("//")
 
 
 def _strip_markdown_link_target(link: str) -> str:
@@ -439,6 +443,13 @@ def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
     """
     links: list[tuple[int, str]] = []
     for token in MARKDOWN_PARSER.parse(text):
+        if token.type == "fence" and token.info.strip().startswith("{"):
+            # MyST directive (```{note} ...```): its body is Markdown, not
+            # code, so links inside it are still checked.
+            offset = (token.map[0] + 1) if token.map else 0
+            for inner_line, link in _iter_markdown_links(token.content):
+                links.append((offset + inner_line, link))
+            continue
         if token.type != "inline" or not token.children:
             continue
         line_number = (token.map[0] + 1) if token.map else 0
@@ -939,6 +950,9 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
             )
             if resolved is None:
                 continue
+            if resolved.is_dir() and (resolved / "README.md").is_file():
+                # A directory link exposes that directory's README.
+                resolved = resolved / "README.md"
             try:
                 targets.add(resolved.relative_to(repo_root.resolve()).as_posix())
             except ValueError:
@@ -954,10 +968,12 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
         unique = name_counts.get(name, 0) <= 1
         found: set[str] = set()
         for other, text in corpus.items():
-            if other == rel_path or name not in text:
+            if other == rel_path:
                 continue
             if rel_path in link_targets.get(other, ()):
-                found.add(other)
+                found.add(other)  # resolved link (may be a directory link)
+            elif name not in text:
+                continue
             elif _mentions_reference(text, rel_path):
                 found.add(other)
             elif unique and _mentions_reference(text, name):
