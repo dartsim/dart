@@ -744,6 +744,28 @@ def test_docs_discoverability_requires_whole_token_mention(tmp_path):
     assert not any("old-api.md" in w for w in warnings)
 
 
+def test_display_path_is_posix_even_for_windows_paths():
+    from pathlib import PureWindowsPath
+
+    module = _load_module()
+    rel = module._display_path(
+        PureWindowsPath("C:/repo/docs/readthedocs/topics/page.md"),
+        PureWindowsPath("C:/repo"),
+    )
+
+    assert rel == "docs/readthedocs/topics/page.md"
+    assert rel.startswith(module.ORPHAN_EXCLUDED_PREFIXES)
+
+
+def test_link_check_treats_scheme_relative_urls_as_external(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "README.md").write_text("[guide](//example.com/docs)\n", encoding="utf-8")
+
+    assert module.check_markdown_internal_links(tmp_path) == []
+
+
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"

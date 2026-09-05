@@ -178,8 +178,10 @@ def iter_tracked_files(repo_root: Path, patterns: list[str]) -> list[Path]:
 
 
 def _display_path(path: Path, repo_root: Path) -> str:
+    """Repo-relative path in POSIX form on every platform, so prefix checks
+    and corpus keys match the forward-slash paths docs and pathspecs use."""
     try:
-        return str(path.relative_to(repo_root))
+        return path.relative_to(repo_root).as_posix()
     except ValueError:
         return str(path)
 
@@ -347,7 +349,8 @@ def _normalize_plan_owner(owner: str) -> str:
 
 
 def _is_external_link(link: str) -> bool:
-    return "://" in link or link.startswith(("mailto:", "tel:"))
+    # Scheme-relative URLs (`//host/path`) are external too.
+    return "://" in link or link.startswith(("mailto:", "tel:", "//"))
 
 
 def _strip_markdown_link_target(link: str) -> str:
@@ -853,7 +856,7 @@ def check_docs_discoverability(repo_root: Path) -> list[str]:
         for doc in sorted(docs_dir.glob("*.md")):
             if doc.name in {"README.md"}:
                 continue
-            repo_relative = str(doc.relative_to(repo_root))
+            repo_relative = doc.relative_to(repo_root).as_posix()
             text_mentions_doc = _mentions_reference(
                 index_text, repo_relative
             ) or _mentions_reference(index_text, doc.name)
@@ -930,7 +933,7 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
             if resolved is None:
                 continue
             try:
-                targets.add(str(resolved.relative_to(repo_root.resolve())))
+                targets.add(resolved.relative_to(repo_root.resolve()).as_posix())
             except ValueError:
                 continue
         link_targets[other] = targets
