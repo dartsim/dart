@@ -114,10 +114,9 @@ The DART 6 LTS support line sunsets on a trigger, not a fixed calendar date:
   `dartpy.simulation.World` and `dartpy.World`, with `dart-simulation` as the
   package component. Readiness requires complete physics/workflow and package
   evidence; namespace promotion alone does not establish it.
-- The proposed 7.0 cut is M1-M3 from
-  [PLAN-040](../plans/040-dart7-release-hardening.md), plus the release checks
-  below. CUDA is optional to install but mandatory for all M1 example evidence.
-  Broader research families and M4-M6 do not automatically block the release.
+- [PLAN-040](../plans/040-dart7-release-hardening.md) owns the proposed release
+  cut, backend readiness requirements and deferred research scope. The release
+  checks below complement that coordinator.
 
 ### DART 7 Implementation Order
 
@@ -135,7 +134,7 @@ DART 6 support/Gazebo policy and package/release gates below remain required.
 | Gate                              | Required evidence                                                                                                                                               | Local or CI command                                                                                                                                             |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | DART 7 model loading              | URDF, SDF, MJCF, and promoted optional USD loaders import into the promoted world API with topology, DOF, transform, mass/inertia, collision, and Python tests. | Focused simulation loader tests plus `pixi run test-simulation` and `pixi run test-py`; USD gates run only when `DART_BUILD_IO_USD=ON`.                         |
-| Rigid dynamics correctness        | M1-M3 scenes pass independent gravity, rotation, integration, energy and control oracles; optional DART 6 comparisons are supplemental.                         | PLAN-040 manifests and DART 7 regression tests; optional release-branch comparisons.                                                                            |
+| Rigid dynamics correctness        | Scenes admitted by PLAN-040 pass its independent physical oracles; optional DART 6 comparisons are supplemental.                                                | PLAN-040 manifests and DART 7 regression tests; optional release-branch comparisons.                                                                            |
 | Contact/constraint correctness    | Contact response, friction, joint limits, motors, mimic/coupler behavior, and loop closures have tests and migration examples.                                  | Focused simulation contact/constraint tests and parity suite rows.                                                                                              |
 | Serialization/replay continuation | World topology, state, model assets, and record/replay round-trip with bounded error.                                                                           | Serialization/replay tests for promoted world APIs.                                                                                                             |
 | Stable public API promotion       | Promoted APIs hide ECS storage, component types, solver registries, backend details, and implementation escape hatches.                                         | `pixi run check-api-boundaries`, generated stubs, docs, and migration snippets.                                                                                 |

@@ -105,22 +105,15 @@ model, accuracy target or hardware configuration.
 ## Readiness Sequence
 
 [PLAN-040](https://github.com/dartsim/dart/blob/main/docs/plans/040-dart7-release-hardening.md)
-sets readiness gates without dates:
+owns the milestone sequence, proposed release cut, backend requirements and
+acceptance criteria. Consult that coordinator for the current required
+examples and evidence; this architecture page does not maintain a second
+release checklist.
 
-1. **M1:** one rigid sphere/box and optional ground, general rotation,
-   force/torque, contact/friction/restitution, complete snapshots and simple
-   installed C++/Python use. Every example runs fully on CPU and CUDA Float64.
-2. **M2:** interacting 100-body plane/box/bowl scenes and measured scaling;
-   independent-world batches are separate benchmarks.
-3. **M3:** robotics and repeatable research workflows with compatible method
-   substitution. M1-M3 plus release qualification define the proposed 7.0 cut.
-4. **M4-M6:** bidirectional rigid-solid coupling, thin structures, then selected
-   fluid/granular models through separate capability and reference gates.
-
-CUDA remains optional to install, while actual CUDA runtime evidence is
-mandatory for M1. GPU compilation and CPU fallback cannot satisfy that gate.
-Single-body GPU speedup is not required. DART 6 can provide differential
-comparisons; independent physical correctness defines DART 7 acceptance.
+Backend claims need actual runtime evidence: GPU compilation or CPU fallback
+does not demonstrate CUDA execution. Performance depends on the workload.
+DART 6 can provide differential comparisons; independent physical correctness
+defines DART 7 acceptance.
 
 ## Source-of-truth Map
 

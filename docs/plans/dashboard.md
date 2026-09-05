@@ -34,8 +34,8 @@ its own line so status updates remain git-history friendly.
   numerical/oracle manifest. Then WP-040.2 migrates the current promotion/API
   checker conflicts while PLAN-030 qualifies compute choices. Follow the M1
   dependency graph through complete rigid ownership/physics, CUDA execution,
-  checkpoints and allocation evidence. M1-M3 plus release qualification define
-  the proposed 7.0 cut; M4-M6 require finite successor ownership.
+  checkpoints and allocation evidence. Consult the coordinator for the proposed
+  release cut and successor ownership.
 - Gate: WP-040.3 accepts every named M1 example and restart path on CPU and
   CUDA Float64, installed C++/Python workflows, first-post-bake allocation and
   continuous architecture-audit evidence. Existing paper targets and DART 6
