@@ -1088,6 +1088,33 @@ def test_link_check_raw_html_href_must_stay_inside_repository(tmp_path):
     assert outside.name in warnings[0]
 
 
+def test_docs_indexes_reject_unregistered_bucket(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    (docs / "foo").mkdir(parents=True)
+    (docs / "README.md").write_text(
+        "".join(f"[{d}]({d}/)\n" for d in module.REQUIRED_DOCS_TOP_LEVEL_DIRS),
+        encoding="utf-8",
+    )
+    (docs / "AGENTS.md").write_text("# docs/\n", encoding="utf-8")
+    (docs / "foo" / "README.md").write_text("# Foo\n", encoding="utf-8")
+
+    failures = module.check_docs_indexes(tmp_path)
+
+    assert any("docs/foo/: unregistered docs bucket" in f for f in failures)
+
+
+def test_sphinx_pages_get_docutils_section_fallback_ids(tmp_path):
+    module = _load_module()
+    site = tmp_path / "docs" / "readthedocs"
+    site.mkdir(parents=True)
+    (site / "conf.py").write_text("project = 'x'\n", encoding="utf-8")
+    page = site / "page.md"
+    page.write_text("# 2026\n\n## 12.5\n\n## Real title\n", encoding="utf-8")
+
+    assert module._page_anchors(page) == {"section-1", "section-2", "real-title"}
+
+
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"

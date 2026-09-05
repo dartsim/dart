@@ -264,6 +264,20 @@ def check_docs_indexes(repo_root: Path) -> list[str]:
                     f"{docs_readme.relative_to(repo_root)}: missing `{marker}` entry"
                 )
 
+    # Every tracked top-level docs directory must be a registered bucket;
+    # adding one means registering it here and in docs/README.md.
+    tracked_dirs = {
+        _display_path(path, repo_root).split("/")[1]
+        for path in iter_tracked_files(repo_root, [":(glob)docs/*/**"])
+        if not path.is_dir()
+    }
+    for directory in sorted(tracked_dirs - set(REQUIRED_DOCS_TOP_LEVEL_DIRS)):
+        failures.append(
+            f"docs/{directory}/: unregistered docs bucket; add it to "
+            "REQUIRED_DOCS_TOP_LEVEL_DIRS in scripts/check_docs_policy.py and to "
+            "the bucket table in docs/README.md, or move its content"
+        )
+
     return failures
 
 
@@ -784,8 +798,7 @@ def _docutils_id(text: str) -> str:
         unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
     )
     identifier = re.sub(r"[^a-z0-9]+", "-", ascii_text.lower())
-    identifier = re.sub(r"^[-0-9]+|-+$", "", identifier)
-    return identifier or "id"
+    return re.sub(r"^[-0-9]+|-+$", "", identifier)
 
 
 def _markdown_heading_anchors(path: Path, docutils: bool = False) -> set[str]:
@@ -799,10 +812,16 @@ def _markdown_heading_anchors(path: Path, docutils: bool = False) -> set[str]:
     occurrences: dict[str, int] = {}
     tokens = _parse_markdown(_read_text(path))
     slugify = _docutils_id if docutils else _github_heading_slug
+    automatic_sections = 0
     for index, token in enumerate(tokens):
         if token.type != "heading_open" or index + 1 >= len(tokens):
             continue
         original = slugify(_inline_plain_text(tokens[index + 1]))
+        if not original and docutils:
+            # docutils allocates `section-N` when a title normalizes to nothing
+            # (for example `# 2026`).
+            automatic_sections += 1
+            original = f"section-{automatic_sections}"
         slug = original
         while slug in anchors:
             occurrences[original] = occurrences.get(original, 0) + 1

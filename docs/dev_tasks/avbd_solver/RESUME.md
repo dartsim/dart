@@ -33,8 +33,7 @@ This file owns only the exact branch/session stop point and takeover sequence.
 
 ## Sealed Evidence
 
-The landed Figure 13 evidence has durable owners; do not copy their digests
-here:
+The landed Figure 13 evidence has durable owners; do not copy digests here:
 
 - `README.md` § "Current packet chain" names the sealed capture-source digest
   and the schema-6 packets under
@@ -48,9 +47,8 @@ here:
 - `README.md` § "Current local gates" records the default and CUDA
   `test-all` passes on the sealed bytes. A green CUDA environment gate does
   not close the missing VBD/AVBD solver GPU-parity rows.
-- Median CPU cost per step and the cross-method ratios live in the plan's
-  progress log; outcomes intentionally differ and no raw cost ratio is a
-  speedup, parity, or quality claim.
+- Median CPU cost per step and cross-method ratios live in the plan's progress
+  log; no raw cost ratio is a speedup, parity, or quality claim.
 
 ## Immediate Resume Sequence
 
