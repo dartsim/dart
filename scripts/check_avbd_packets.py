@@ -764,15 +764,16 @@ STALE_SOURCE_PATTERNS = (
         r"benchmark source hash does not match current benchmark translation unit$"
     ),
     re.compile(r"source_provenance\.files\[\d+\]\.sha256 drifted for "),
-    re.compile(r"source_provenance\.files paths must exactly match "),
 )
 # The packet-level digest is recomputed from the listed files, so it is a stale
 # seal only when a listed file also drifted; on its own it is a mutated packet.
+# A file list that departs from the canonical paper-packet source contract is
+# a structural defect and always stays a hard error.
 PACKET_DIGEST_PATTERN = re.compile(
     r": source_provenance\.digest does not match current listed source contents$"
 )
 PACKET_FILE_DRIFT_PATTERN = re.compile(
-    r"source_provenance\.files(\[\d+\]\.sha256 drifted for | paths must exactly match )"
+    r"source_provenance\.files\[\d+\]\.sha256 drifted for "
 )
 
 

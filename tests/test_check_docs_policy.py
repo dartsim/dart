@@ -873,6 +873,21 @@ def test_docs_orphans_directory_link_reaches_nested_readme(tmp_path):
     assert failures == []
 
 
+def test_link_check_validates_anchors_on_directory_links(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    (docs / "foo").mkdir(parents=True)
+    (docs / "foo" / "README.md").write_text("# Foo\n\n## Present\n", encoding="utf-8")
+    (docs / "README.md").write_text(
+        "[ok](foo/#present) [bad](foo/#missing)\n", encoding="utf-8"
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert "#missing" in warnings[0]
+
+
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"

@@ -451,6 +451,19 @@ def test_stale_source_report_mode_keeps_mutated_digest_as_error(tmp_path, monkey
     )
 
 
+def test_split_stale_source_findings_keeps_source_contract_mismatch_hard():
+    module = _load_module()
+    errors = [
+        "avbd-paper-x-packet.json: source_provenance.files paths must exactly match the canonical ordered paper-packet source contract",
+        "avbd-paper-x-packet.json: source_provenance.digest does not match current listed source contents",
+    ]
+
+    hard, stale = module.split_stale_source_findings(errors)
+
+    assert stale == []
+    assert hard == errors
+
+
 def test_split_stale_source_findings_classifies_paper_capture_messages():
     module = _load_module()
     errors = [

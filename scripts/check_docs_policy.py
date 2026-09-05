@@ -853,6 +853,9 @@ def check_markdown_internal_links(repo_root: Path) -> list[str]:
                 )
                 continue
             anchor = _markdown_link_anchor(raw_link)
+            if anchor and resolved.is_dir():
+                # `[Foo](foo/#section)` renders the directory's README.
+                resolved = resolved / "README.md"
             if anchor and resolved.suffix == ".md" and resolved.is_file():
                 if anchor not in _markdown_heading_anchors(resolved):
                     warnings.append(
