@@ -48,8 +48,9 @@ replay from cross-backend finite-horizon tolerances. A documentation PR cannot
 close a physics or compute prototype gate.
 
 The milestone sequence does not waive any full paper target below. The proposed
-separation of reproduction and performance policy is a recorded maintainer
-decision in PLAN-040, not an accepted exception to current requirements.
+separation of reproduction and performance policy remains unresolved; PLAN-040
+owns its decision status. Current requirements apply until the maintainer
+explicitly approves a policy change there.
 
 ## Research Paper Implementation Evidence
 
