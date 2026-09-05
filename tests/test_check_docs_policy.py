@@ -552,6 +552,52 @@ def test_docs_orphans_accepts_chain_reachable_from_index(tmp_path):
     assert failures == []
 
 
+def test_docs_orphans_do_not_match_basename_inside_longer_name(tmp_path):
+    module = _load_module()
+    bucket = tmp_path / "docs" / "onboarding"
+    bucket.mkdir(parents=True)
+    (bucket / "README.md").write_text("[old](old-api.md)\n", encoding="utf-8")
+    (bucket / "old-api.md").write_text("# Old\n", encoding="utf-8")
+    (bucket / "api.md").write_text("# New\n", encoding="utf-8")
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, _ = module.check_docs_orphans(tmp_path)
+
+    assert any("docs/onboarding/api.md" in f for f in failures)
+    assert not any("old-api.md" in f for f in failures)
+
+
+def test_docs_orphans_nested_readme_is_not_a_root(tmp_path):
+    module = _load_module()
+    nested = tmp_path / "docs" / "design" / "foo"
+    nested.mkdir(parents=True)
+    (tmp_path / "docs" / "design" / "README.md").write_text(
+        "# Design\n", encoding="utf-8"
+    )
+    (nested / "README.md").write_text("[x](x.md)\n", encoding="utf-8")
+    (nested / "x.md").write_text("[back](README.md)\n", encoding="utf-8")
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, _ = module.check_docs_orphans(tmp_path)
+
+    assert any("docs/design/foo/README.md" in f for f in failures)
+    assert any("docs/design/foo/x.md" in f for f in failures)
+
+
+def test_docs_orphans_dev_task_entrypoints_are_roots(tmp_path):
+    module = _load_module()
+    task = tmp_path / "docs" / "dev_tasks" / "demo"
+    task.mkdir(parents=True)
+    (task / "README.md").write_text("[notes](notes.md)\n", encoding="utf-8")
+    (task / "RESUME.md").write_text("# Resume\n", encoding="utf-8")
+    (task / "notes.md").write_text("# Notes\n", encoding="utf-8")
+    (tmp_path / "docs" / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, _ = module.check_docs_orphans(tmp_path)
+
+    assert failures == []
+
+
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"

@@ -93,8 +93,13 @@ MARKDOWN_LINK_PATTERNS = (":(glob)*.md", ":(glob)**/*.md")
 ORPHAN_DOC_PATTERNS = (":(glob)docs/**/*.md",)
 ORPHAN_SIDECAR_PATTERNS = (":(glob)docs/plans/*/*",)
 ORPHAN_EXCLUDED_PREFIXES = ("docs/readthedocs/",)
-# Discovered by directory convention (docs/dev_tasks/README.md), not by link.
-ORPHAN_EXEMPT_NAMES = {"README.md", "AGENTS.md", "RESUME.md"}
+# Root surfaces discovered by convention rather than by link: the docs map,
+# one index/rule sheet per bucket, and dev-task entrypoints
+# (docs/dev_tasks/README.md). Deeper README/AGENTS files must be reachable.
+ORPHAN_INDEX_NAMES = {"README.md", "AGENTS.md"}
+ORPHAN_DEV_TASK_ENTRYPOINTS = {"README.md", "RESUME.md"}
+ORPHAN_REFERENCE_BOUNDARY_BEFORE = re.compile(r"[A-Za-z0-9_.\-]")
+ORPHAN_REFERENCE_BOUNDARY_AFTER = re.compile(r"[A-Za-z0-9_\-]")
 ORPHAN_CORPUS_PATTERNS = (
     ":(glob)*.md",
     ":(glob)docs/**/*.md",
@@ -888,7 +893,7 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
             rel_path = _display_path(path, repo_root)
             if rel_path.startswith(ORPHAN_EXCLUDED_PREFIXES) or path.is_dir():
                 continue
-            if path.name in ORPHAN_EXEMPT_NAMES:
+            if _is_orphan_root_by_convention(rel_path):
                 continue
             checked[rel_path] = True
     for pattern in ORPHAN_SIDECAR_PATTERNS:
@@ -911,11 +916,13 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
         rel_dir = str(path.parent)
         found: set[str] = set()
         for other, text in corpus.items():
-            if other == rel_path:
+            if other == rel_path or name not in text:
                 continue
-            if rel_path in text or suffix in text:
+            if _mentions_reference(text, rel_path) or _mentions_reference(text, suffix):
                 found.add(other)
-            elif name in text and (unique or str(Path(other).parent) == rel_dir):
+            elif (unique or str(Path(other).parent) == rel_dir) and (
+                _mentions_reference(text, name)
+            ):
                 found.add(other)
         return found
 
@@ -945,6 +952,42 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
                 "sidecar doc, or a script"
             )
     return failures, warnings
+
+
+def _is_orphan_root_by_convention(rel_path: str) -> bool:
+    """Return whether a doc is discovered by convention instead of by link."""
+    parts = Path(rel_path).parts
+    name = parts[-1]
+    if parts[:1] != ("docs",):
+        return False
+    if name in ORPHAN_INDEX_NAMES and len(parts) <= 3:
+        return True  # docs/README.md, docs/AGENTS.md, docs/<bucket>/{README,AGENTS}.md
+    return (
+        parts[:2] == ("docs", "dev_tasks")
+        and len(parts) == 4
+        and name in ORPHAN_DEV_TASK_ENTRYPOINTS
+    )
+
+
+def _mentions_reference(text: str, candidate: str) -> bool:
+    """Return whether ``candidate`` appears in ``text`` as a whole path token.
+
+    ``api.md`` must not match inside ``old-api.md`` or ``api.mdx``; a longer
+    path ending in the candidate (``../plans/api.md``) still counts.
+    """
+    start = 0
+    while True:
+        index = text.find(candidate, start)
+        if index < 0:
+            return False
+        before = text[index - 1] if index > 0 else ""
+        after_index = index + len(candidate)
+        after = text[after_index] if after_index < len(text) else ""
+        if not ORPHAN_REFERENCE_BOUNDARY_BEFORE.match(before or " ") and not (
+            ORPHAN_REFERENCE_BOUNDARY_AFTER.match(after or " ")
+        ):
+            return True
+        start = index + 1
 
 
 def _parse_frontmatter(text: str) -> dict[str, str]:
