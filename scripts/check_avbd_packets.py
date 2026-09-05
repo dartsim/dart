@@ -755,10 +755,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 # Findings that only say the sealed evidence predates the current working tree.
 # They never describe a corrupt or self-inconsistent packet.
 STALE_SOURCE_PATTERNS = (
-    re.compile(
-        r"\.source_provenance\.(digest|file_count|ignored_paths|roots) does not "
-        r"match current source state$"
-    ),
+    re.compile(r"\.source_provenance\.digest does not match current source state$"),
     re.compile(r"benchmark source capture digest does not match current source state$"),
     re.compile(
         r"benchmark source hash does not match current benchmark translation unit$"
@@ -775,6 +772,15 @@ PACKET_DIGEST_PATTERN = re.compile(
 PACKET_FILE_DRIFT_PATTERN = re.compile(
     r"source_provenance\.files\[\d+\]\.sha256 drifted for "
 )
+# Capture metadata (file count, roots, ignored paths) legitimately changes only
+# together with the source digest; a lone mismatch is an edited packet.
+CAPTURE_METADATA_PATTERN = re.compile(
+    r"^(?P<capture>.*\.source_provenance)\.(file_count|ignored_paths|roots) does not "
+    r"match current source state$"
+)
+CAPTURE_DIGEST_PATTERN = re.compile(
+    r"^(?P<capture>.*\.source_provenance)\.digest does not match current source state$"
+)
 
 
 def split_stale_source_findings(errors: list[str]) -> tuple[list[str], list[str]]:
@@ -784,11 +790,19 @@ def split_stale_source_findings(errors: list[str]) -> tuple[list[str], list[str]
         for error in errors
         if PACKET_FILE_DRIFT_PATTERN.search(error)
     }
+    drifted_captures = {
+        match.group("capture")
+        for error in errors
+        if (match := CAPTURE_DIGEST_PATTERN.match(error))
+    }
     hard: list[str] = []
     stale: list[str] = []
     for error in errors:
         packet_name = error.split(": ", 1)[0]
+        metadata = CAPTURE_METADATA_PATTERN.match(error)
         if any(pattern.search(error) for pattern in STALE_SOURCE_PATTERNS):
+            stale.append(error)
+        elif metadata and metadata.group("capture") in drifted_captures:
             stale.append(error)
         elif PACKET_DIGEST_PATTERN.search(error) and packet_name in drifted_packets:
             stale.append(error)

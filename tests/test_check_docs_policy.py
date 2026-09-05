@@ -912,16 +912,18 @@ def test_link_check_validates_myst_doc_roles_inside_sphinx_source_root(tmp_path)
     (site / "overview.rst").write_text("Overview\n========\n", encoding="utf-8")
     (site / "user_guide" / "page.md").write_text(
         "See {doc}`index`, {doc}`Overview </overview>`, {doc}`Label <../overview>`, "
-        "and {doc}`/user_guide/missing`.\n",
+        "{doc}`/user_guide/missing`, and {doc}`../../README`.\n",
         encoding="utf-8",
     )
+    (tmp_path / "docs" / "README.md").write_text("# Repo docs\n", encoding="utf-8")
     # Outside a Sphinx source root the role syntax is plain text.
-    (tmp_path / "docs" / "README.md").write_text("{doc}`nothing`\n", encoding="utf-8")
+    (tmp_path / "docs" / "notes.md").write_text("{doc}`nothing`\n", encoding="utf-8")
 
     warnings = module.check_markdown_internal_links(tmp_path)
 
-    assert len(warnings) == 1
-    assert "/user_guide/missing" in warnings[0]
+    assert len(warnings) == 2
+    assert any("/user_guide/missing" in w for w in warnings)
+    assert any("../../README" in w for w in warnings)  # escapes the source root
 
 
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):

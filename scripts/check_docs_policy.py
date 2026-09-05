@@ -535,9 +535,13 @@ def _resolve_myst_doc_role(target: str, path: Path, source_root: Path) -> Path |
     candidates.extend(
         stem.with_name(stem.name + suffix) for suffix in SPHINX_SOURCE_SUFFIXES
     )
+    root = source_root.resolve()
     for candidate in candidates:
-        if candidate.is_file():
-            return candidate
+        resolved = candidate.resolve()
+        # Sphinx only registers documents under its source root; a target that
+        # escapes it (`../../README`) is not a page even if the file exists.
+        if resolved.is_file() and resolved.is_relative_to(root):
+            return resolved
     return None
 
 

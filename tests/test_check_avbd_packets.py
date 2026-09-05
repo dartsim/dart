@@ -451,6 +451,23 @@ def test_stale_source_report_mode_keeps_mutated_digest_as_error(tmp_path, monkey
     )
 
 
+def test_split_stale_source_findings_keeps_lone_capture_metadata_mismatch_hard():
+    module = _load_module()
+    lone = [
+        "avbd-paper-x-packet.json: visual_evidence.impact.source_provenance.file_count does not match current source state",
+        "avbd-paper-x-packet.json: visual_evidence.impact.source_provenance.roots does not match current source state",
+    ]
+    with_drift = lone + [
+        "avbd-paper-x-packet.json: visual_evidence.impact.source_provenance.digest does not match current source state",
+    ]
+
+    hard, stale = module.split_stale_source_findings(lone)
+    assert hard == lone and stale == []
+
+    hard, stale = module.split_stale_source_findings(with_drift)
+    assert hard == [] and stale == with_drift
+
+
 def test_split_stale_source_findings_keeps_source_contract_mismatch_hard():
     module = _load_module()
     errors = [
