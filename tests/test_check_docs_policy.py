@@ -622,6 +622,51 @@ def test_markdown_heading_anchors_reserve_taken_slugs(tmp_path):
     assert module._markdown_heading_anchors(page) == {"foo", "foo-1", "foo-2", "foo-3"}
 
 
+def test_markdown_links_treat_deeply_indented_backticks_as_indented_code():
+    module = _load_module()
+    text = (
+        "Paragraph.\n"
+        "\n"
+        "    ```\n"
+        "    not a fence, an indented code block\n"
+        "[bad](missing.md)\n"
+    )
+
+    links = [link for _, link in module._iter_markdown_links(text)]
+
+    assert links == ["missing.md"]
+
+
+def test_markdown_links_allow_fences_indented_inside_list_items():
+    module = _load_module()
+    text = (
+        "1. Step with code:\n"
+        "     ```bash\n"
+        "     echo [x](inside.md)\n"
+        "     ```\n"
+        "   [after](after.md)\n"
+    )
+
+    links = [link for _, link in module._iter_markdown_links(text)]
+
+    assert links == ["after.md"]
+
+
+def test_docs_orphans_bare_name_is_not_unique_when_published_page_shares_it(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    (docs / "design").mkdir(parents=True)
+    (docs / "readthedocs").mkdir()
+    (docs / "design" / "README.md").write_text("# Design\n", encoding="utf-8")
+    (docs / "design" / "foo.md").write_text("# Repo-local\n", encoding="utf-8")
+    (docs / "readthedocs" / "foo.md").write_text("# Published\n", encoding="utf-8")
+    (docs / "README.md").write_text("[site](readthedocs/foo.md)\n", encoding="utf-8")
+
+    failures, _ = module.check_docs_orphans(tmp_path)
+
+    assert any("docs/design/foo.md" in f for f in failures)
+
+
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"

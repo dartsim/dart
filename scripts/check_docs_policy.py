@@ -120,6 +120,9 @@ NORTH_STAR_FRESHNESS_MARKER_RE = re.compile(
 PAPERS_CLOSED_VALUE_FIELDS = ("Type", "Status", "Priority", "Verdict")
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\((?P<link>[^)]+)\)")
 MARKDOWN_FENCE_RE = re.compile(r"^(?P<marker>`{3,}|~{3,})")
+MARKDOWN_LIST_ITEM_RE = re.compile(
+    r"^(?P<indent>[ \t]*)(?P<marker>[-*+]|\d{1,9}[.)])[ \t]+"
+)
 MARKDOWN_INLINE_CODE_RE = re.compile(r"(?P<ticks>`+)(?:.*?)(?P=ticks)")
 MARKDOWN_HEADING_RE = re.compile(r"^(?P<level>#{1,6})\s+(?P<text>.*?)\s*#*\s*$")
 
@@ -434,10 +437,13 @@ def _iter_markdown_lines_outside_fences(text: str) -> list[tuple[int, str]]:
     inner ones (CommonMark).
     """
     lines: list[tuple[int, str]] = []
+    all_lines = text.splitlines()
     open_marker: str | None = None
-    for line_number, line in enumerate(text.splitlines(), start=1):
-        match = MARKDOWN_FENCE_RE.match(line.lstrip())
-        if match:
+    for index, line in enumerate(all_lines):
+        match = MARKDOWN_FENCE_RE.match(line.lstrip(" "))
+        if match and (
+            open_marker is not None or _fence_indent_allowed(all_lines, index)
+        ):
             marker = match.group("marker")
             if open_marker is None:
                 open_marker = marker
@@ -447,8 +453,30 @@ def _iter_markdown_lines_outside_fences(text: str) -> list[tuple[int, str]]:
                 continue
         if open_marker is not None:
             continue
-        lines.append((line_number, line))
+        lines.append((index + 1, line))
     return lines
+
+
+def _fence_indent_allowed(lines: list[str], index: int) -> bool:
+    """CommonMark allows at most three spaces of indentation before a fence,
+    measured from the content column of the enclosing list item (or the
+    document margin). Deeper indentation is an indented code block."""
+    line = lines[index]
+    if line.startswith("\t"):
+        return False
+    indent = len(line) - len(line.lstrip(" "))
+    if indent <= 3:
+        return True
+    for previous in reversed(lines[:index]):
+        if not previous.strip():
+            continue
+        previous_indent = len(previous) - len(previous.lstrip(" "))
+        if previous_indent >= indent:
+            continue
+        item = MARKDOWN_LIST_ITEM_RE.match(previous)
+        content_indent = len(item.group(0)) if item else previous_indent
+        return indent - content_indent <= 3
+    return False
 
 
 def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
@@ -910,8 +938,11 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
                 continue
             checked[rel_path] = False
 
+    # Bare-name matching is only unambiguous when no other tracked file in the
+    # corpus or the checked set shares the basename (a published-site page
+    # with the same name must not lend its links to a repo-local doc).
     name_counts: dict[str, int] = {}
-    for rel_path in checked:
+    for rel_path in set(checked) | set(corpus):
         name = Path(rel_path).name
         name_counts[name] = name_counts.get(name, 0) + 1
 
