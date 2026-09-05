@@ -515,12 +515,12 @@ def test_markdown_links_ignore_inline_code_spans():
     module = _load_module()
     text = (
         "Write links as `[guide](missing.md)` or ``[x](`also-missing.md`)``; "
-        "[real](real.md).\n"
+        "[real](real.md) and [`code-text`](code.md).\n"
     )
 
     links = [link for _, link in module._iter_markdown_links(text)]
 
-    assert links == ["real.md"]
+    assert links == ["real.md", "code.md"]
 
 
 def test_docs_orphans_rejects_island_that_only_references_itself(tmp_path):
@@ -596,6 +596,30 @@ def test_docs_orphans_dev_task_entrypoints_are_roots(tmp_path):
     failures, _ = module.check_docs_orphans(tmp_path)
 
     assert failures == []
+
+
+def test_docs_orphans_resolve_links_instead_of_path_suffixes(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    for bucket in ("a", "b"):
+        (docs / bucket / "topic").mkdir(parents=True)
+        (docs / bucket / "topic" / "notes.md").write_text("# Notes\n", encoding="utf-8")
+    (docs / "a" / "README.md").write_text("[notes](topic/notes.md)\n", encoding="utf-8")
+    (docs / "b" / "README.md").write_text("# B\n", encoding="utf-8")
+    (docs / "README.md").write_text("# Docs\n", encoding="utf-8")
+
+    failures, _ = module.check_docs_orphans(tmp_path)
+
+    assert any("docs/b/topic/notes.md" in f for f in failures)
+    assert not any("docs/a/topic/notes.md" in f for f in failures)
+
+
+def test_markdown_heading_anchors_reserve_taken_slugs(tmp_path):
+    module = _load_module()
+    page = tmp_path / "page.md"
+    page.write_text("# Foo\n\n## Foo-1\n\n## Foo\n\n## Foo\n", encoding="utf-8")
+
+    assert module._markdown_heading_anchors(page) == {"foo", "foo-1", "foo-2", "foo-3"}
 
 
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):

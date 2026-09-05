@@ -455,7 +455,9 @@ def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
     """Return (line, link) pairs outside fenced code blocks and inline code."""
     links: list[tuple[int, str]] = []
     for line_number, line in _iter_markdown_lines_outside_fences(text):
-        prose = MARKDOWN_INLINE_CODE_RE.sub("", line)
+        # Neutralize inline code so `[x](y.md)` inside code is not a link,
+        # while [`x`](y.md) keeps a non-empty link text.
+        prose = MARKDOWN_INLINE_CODE_RE.sub("code", line)
         for match in MARKDOWN_LINK_RE.finditer(prose):
             links.append((line_number, match.group("link")))
     return links
@@ -472,16 +474,21 @@ def _github_heading_slug(heading: str) -> str:
 def _markdown_heading_anchors(path: Path) -> set[str]:
     """Return the anchor slugs GitHub generates for a markdown file's headings."""
     anchors: set[str] = set()
-    counts: dict[str, int] = {}
+    occurrences: dict[str, int] = {}
     text = path.read_text(encoding="utf-8", errors="replace")
     for _, line in _iter_markdown_lines_outside_fences(text):
         match = MARKDOWN_HEADING_RE.match(line)
         if not match:
             continue
-        slug = _github_heading_slug(match.group("text"))
-        seen = counts.get(slug, 0)
-        anchors.add(slug if seen == 0 else f"{slug}-{seen}")
-        counts[slug] = seen + 1
+        original = _github_heading_slug(match.group("text"))
+        slug = original
+        # github-slugger: keep appending the per-original counter until the
+        # candidate is not already taken, so `Foo`, `Foo-1`, `Foo` yields
+        # `foo`, `foo-1`, `foo-2`.
+        while slug in anchors:
+            occurrences[original] = occurrences.get(original, 0) + 1
+            slug = f"{original}-{occurrences[original]}"
+        anchors.add(slug)
     return anchors
 
 
@@ -869,8 +876,8 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
     subject to this check: bucket indexes and ``AGENTS.md`` files, root docs,
     the published site sources, scripts, tests, workflows, and ``pixi.toml``.
     A checked doc is reachable when a root, or another reachable checked doc,
-    references it by repo path, by ``parent/name``, by bare name from a file in
-    the same directory (a relative link), or by a bare name that is unique
+    references it through a Markdown link that resolves to it, by its full
+    repo-relative path as a whole token, or by a bare name that is unique
     among the checked files. Mutual references between unreachable docs do
     not keep each other alive. Markdown docs under ``docs/`` (outside the
     published site) fail; plan sidecar data files warn because scripts may
@@ -908,21 +915,44 @@ def check_docs_orphans(repo_root: Path) -> tuple[list[str], list[str]]:
         name = Path(rel_path).name
         name_counts[name] = name_counts.get(name, 0) + 1
 
+    # Markdown referrers: every link resolved relative to the referring file.
+    link_targets: dict[str, set[str]] = {}
+    for other, text in corpus.items():
+        if not other.endswith(".md"):
+            continue
+        other_path = repo_root / other
+        targets: set[str] = set()
+        for _, raw_link in _iter_markdown_links(text):
+            resolved = _resolve_markdown_link(
+                raw_link,
+                other_path.parent,
+                repo_root=repo_root,
+                current_file=other_path,
+            )
+            if resolved is None:
+                continue
+            try:
+                targets.add(str(resolved.relative_to(repo_root.resolve())))
+            except ValueError:
+                continue
+        link_targets[other] = targets
+
     def _referrers(rel_path: str) -> set[str]:
-        path = Path(rel_path)
-        name = path.name
-        suffix = f"{path.parent.name}/{name}"
+        """Files that reference ``rel_path``: a resolved Markdown link, the
+        full repo-relative path as a whole token (scripts, tests, workflows,
+        prose in backticks), or the bare name as a whole token when it is
+        unique among the checked files."""
+        name = Path(rel_path).name
         unique = name_counts.get(name, 0) <= 1
-        rel_dir = str(path.parent)
         found: set[str] = set()
         for other, text in corpus.items():
             if other == rel_path or name not in text:
                 continue
-            if _mentions_reference(text, rel_path) or _mentions_reference(text, suffix):
+            if rel_path in link_targets.get(other, ()):
                 found.add(other)
-            elif (unique or str(Path(other).parent) == rel_dir) and (
-                _mentions_reference(text, name)
-            ):
+            elif _mentions_reference(text, rel_path):
+                found.add(other)
+            elif unique and _mentions_reference(text, name):
                 found.add(other)
         return found
 
