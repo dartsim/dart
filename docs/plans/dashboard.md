@@ -119,7 +119,7 @@ its own line so status updates remain git-history friendly.
   negative smokes and docs cleanup for removed DART 6 or experimental paths.
   Independent DART 7 oracles define correctness; optional DART 6 references
   use release branches. WP-040.2 owns the existing final-promotion and device
-  identifier checker migration; current gates remain enforced until it lands.
+  identifier checker-transition requirements and status.
 - Gate: The planning PR passes the docs-only gates; follow-up implementation
   PRs must prove final examples, stubs/docs, package exports, API boundaries,
   C++/Python tests, `check-dart7-promotion-package-contract`,

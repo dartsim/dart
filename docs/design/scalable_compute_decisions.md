@@ -312,8 +312,9 @@ GPU support must be an optional sidecar, not a dependency of the core install:
 - Build flags, package names, CI labels, diagnostics, and benchmark reports may
   name CUDA, SYCL, or another backend. Third-party runtime/framework types and implementation namespaces stay
   private; DART-owned algorithm/variant names remain public policy concepts. A small DART-owned `cpu`/`cuda` preference and resolved-device report
-  are accepted public design under PLAN-041/042. Existing identifier checkers
-  still apply until WP-040.2 lands their bounded fixture migration.
+  are accepted public design under PLAN-041/042.
+  [WP-040.2](../plans/040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+  owns identifier-checker transition requirements and status.
 - Any sidecar package must have its own build/import smoke CI (the nvcc compile
   needs no GPU, so a GitHub-hosted runner suffices) and a no-GPU import test
   proving the core package remains usable without it.

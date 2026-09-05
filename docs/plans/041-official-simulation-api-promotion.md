@@ -21,10 +21,9 @@
 
 [PLAN-040](040-dart7-release-hardening.md) owns the accepted M1 contract.
 Independent physical oracles define correctness; DART 6 is optional comparison
-material. Current `check-dart7-final-world-promotion` still requires a local
-`release-6.*` ref through its Pixi argument/checker. WP-040.2 must migrate that
-requirement and narrowly admit DART-owned device preferences before public
-promotion. This docs change does not disable the existing gate.
+material. [WP-040.2](040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+owns checker-transition requirements and status for final-promotion release
+references and DART-owned device preferences.
 
 ### WP-041.1 Complete M1 Checkpoints And Installed Workflows
 
@@ -187,10 +186,10 @@ The plan incorporates three focused review perspectives before implementation:
    the way to `release-6.*` branch evidence. The contact/constraint,
    skeleton-to-multibody, and world dynamics rows now run as DART 7-only
    regressions.
-   `check-dart7-final-world-promotion` combines the strict-final blocker gate
-   with a required local `release-6.*` branch ref; it is expected to fail until
-   the local checkout has an appropriate release branch ref, and it is the
-   command to run before claiming main no longer depends on DART 6 parity code.
+   `check-dart7-final-world-promotion` is the command to run before claiming
+   main no longer depends on DART 6 parity code.
+   [WP-040.2](040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+   owns its release-ref transition requirements and status.
    Remaining work: keep that smoke aligned with final headers/components and
    add negative checks for obsolete experimental targets.
 4. **World name-collision transaction design** - accepted: clear the classic
@@ -497,8 +496,9 @@ classic Python world is quarantined as `dartpy.gui.RenderWorld`. The urgent
 remaining promotion work is hardening and cleanup: finish stale docs, keep
 the public-header/package/import guards green, add negative smokes for retired
 experimental paths and targets, and keep strict-final World-promotion checks
-green under their currently enforced contract; WP-040.2 owns migration of
-the universal release-branch requirement. DART 7 numerical evidence uses
+green under the contract owned by
+[WP-040.2](040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration).
+DART 7 numerical evidence uses
 independent oracles and optional `release-6.*` differential comparisons.
 The promoted `World` remains double-backed; public scalar precision selectors
 (`sim.World(dtype=...)`, `sim.World[...]`, scalar-specific aliases, or a public

@@ -23,14 +23,15 @@ Common use should construct a World, add a body/ground, apply force/torque,
 step, inspect, save and resume with defaults. Advanced values can request a
 DART-owned method variant or `cpu`/`cuda` preference and inspect the resolved
 configuration; runtime/pool/stream/kernel/ECS types remain private. Exact new
-API spelling requires the packet's first-use review and checker migration in
-WP-040.2. PLAN-040/041 own precision admission and any public `dtype` selector.
+API spelling and first-use review belong to WP-041.1; PLAN-040/041 own
+precision admission and any public `dtype` selector.
+[WP-040.2](../plans/040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+owns checker-transition requirements and status.
 
 Full state includes orientation/angular velocity and result-affecting history;
 the current general state-vector/replay/binary surfaces have different scoped
 coverage. Test ownership, view lifetime, reset and complete fresh-process
-continuation rather than equating a transform snapshot with a restart. Current
-policy checkers remain enforced until their explicitly owned migration lands.
+continuation rather than equating a transform snapshot with a restart.
 
 ## Purpose
 

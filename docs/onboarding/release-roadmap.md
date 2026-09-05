@@ -125,8 +125,9 @@ and [the dashboard](../plans/dashboard.md) owns execution priority. The earlier
 facade/name/target transaction has landed; PLAN-041/042 retain hardening,
 checkpoint, installed-workflow and boundary work. Independent physical oracles
 are primary; DART 6 release branches can provide differential comparisons.
-WP-040.2 migrates the current final-promotion checker/argument requirement for a
-release-branch ref. Existing checkers remain enforced until that packet lands.
+[WP-040.2](../plans/040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+owns checker-transition requirements and status, including the final-promotion
+release-branch-ref check and its Pixi arguments.
 DART 6 support/Gazebo policy and package/release gates below remain required.
 
 ### DART 7 Checkable Gates

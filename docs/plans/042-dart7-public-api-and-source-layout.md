@@ -27,9 +27,10 @@ boundaries. A small DART-owned device preference and resolved-device value may
 name CPU/CUDA; runtime libraries, streams, kernels, pools and implementation
 namespaces remain private. Common examples need no explicit device or solver.
 Independent DART 7 oracles define physical correctness. Optional DART 6
-comparisons use release branches. Existing final-promotion and backend-name
-checkers remain enforced until WP-040.2 migrates their focused fixtures and
-Pixi arguments; references to the current checks below describe that transition.
+comparisons use release branches.
+[WP-040.2](040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+owns final-promotion and backend-name checker-transition requirements and status;
+consult it when using the checks referenced below.
 
 ## Direction
 
@@ -387,8 +388,8 @@ For implementation PRs derived from this plan, select by touched scope:
 - default source/wheel smokes proving the final World path without staging
   build flags
 - negative smokes for removed headers, modules, targets, and aliases
-- `pixi run check-dart7-final-world-promotion`, with parity evidence sourced
-  from local `release-6.*` branch refs rather than main-branch DART 6 World tests
+- `pixi run check-dart7-final-world-promotion`, following the checker contract
+  in [WP-040.2](040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
 - case-insensitive filesystem validation for renamed public headers
 
 ## Revision Triggers

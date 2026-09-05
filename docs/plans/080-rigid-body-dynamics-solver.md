@@ -28,8 +28,9 @@ older contact-polish sequences remain historical backlog, not a bypass.
 The CPU reference comes first so physical errors are separable from backend
 errors. All M1 examples still require a complete CUDA implementation before
 M1 closes. DART 6 is an optional differential reference from `release-6.*`,
-not the physics oracle. Existing promotion checker requirements remain in
-force until WP-040.2 explicitly migrates them.
+not the physics oracle.
+[WP-040.2](040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+owns promotion-checker transition requirements and status.
 
 ## M1 Work Packets
 

@@ -60,8 +60,9 @@ admitted by the current PLAN-080 packet sequence.
 > removed when the experimental World was promoted in PR #2932, and nothing
 > replaced it. The checkbox records the gate as it passed in June 2026 (the
 > harness landed via PR #2842). Current acceptance follows independent oracles
-> in PLAN-040; DART 6 comparisons are supplemental. Existing promotion-checker
-> requirements remain enforced until WP-040.2 migrates them.
+> in PLAN-040; DART 6 comparisons are supplemental. Consult
+> [WP-040.2](../../plans/040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+> for checker-transition requirements and status.
 
 - [x] World-parity harness (historical, see the note above):
       `test_world_parity.cpp` compared the classic DART 6 world against the

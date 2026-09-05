@@ -16,9 +16,10 @@ line (PR #2838), and the `Locked` (PR #3251), `Servo` (PR #3258), and
 is open. The B2 rigid open-chain parity harness was removed with the World
 promotion in PR #2932 and has no replacement yet; because `main` may not carry
 classic-World references, earlier work used `release-6.*` comparisons. Current
-physical acceptance comes from PLAN-040's independent oracles; existing checker
-requirements remain enforced until WP-040.2 migrates them. The contact-solver
-plan below records historical implementation detail, not current routing.
+physical acceptance comes from PLAN-040's independent oracles. Consult
+[WP-040.2](../../plans/040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+for checker-transition requirements and status. The contact-solver plan below
+records historical implementation detail, not current routing.
 
 - **Open baseline to beat (measured 2026-09-02 on `main`):** a 0.1 m
   half-extent box (mass 0.5, restitution 0, `dt` 0.005) dropped 0.3 m onto a
