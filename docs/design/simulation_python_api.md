@@ -15,23 +15,21 @@ The companion C++ API design lives in
 
 ## Workflow Contract
 
-[PLAN-040](../plans/040-dart7-release-hardening.md) defines the next readiness
-cut; [WP-041.1](../plans/041-official-simulation-api-promotion.md#wp-0411-complete-m1-checkpoints-and-installed-workflows)
-owns implementation. The existing facade is promoted, but complete rigid
-state/checkpoint and CPU/CUDA workflows are not claimed implemented here.
 Common use should construct a World, add a body/ground, apply force/torque,
 step, inspect, save and resume with defaults. Advanced values can request a
 DART-owned method variant or `cpu`/`cuda` preference and inspect the resolved
-configuration; runtime/pool/stream/kernel/ECS types remain private. Exact new
-API spelling and first-use review belong to WP-041.1; PLAN-040/041 own
-precision admission and any public `dtype` selector.
-[WP-040.2](../plans/040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
-owns checker-transition requirements and status.
+configuration; runtime/pool/stream/kernel/ECS types remain private.
 
-Full state includes orientation/angular velocity and result-affecting history;
-the current general state-vector/replay/binary surfaces have different scoped
-coverage. Test ownership, view lifetime, reset and complete fresh-process
-continuation rather than equating a transform snapshot with a restart.
+Full state includes orientation/angular velocity and result-affecting history.
+Test ownership, view lifetime, reset and complete fresh-process continuation
+rather than equating a transform snapshot with a restart.
+
+For current readiness, implementation status, precision admission and work
+selection, consult the [dashboard](../plans/dashboard.md),
+[PLAN-040](../plans/040-dart7-release-hardening.md) and
+[PLAN-041](../plans/041-official-simulation-api-promotion.md).
+The [API-boundary policy](../onboarding/api-boundaries.md) owns public/internal
+boundaries and points to the checker-transition contract.
 
 ## Purpose
 
