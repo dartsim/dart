@@ -888,6 +888,42 @@ def test_link_check_validates_anchors_on_directory_links(tmp_path):
     assert "#missing" in warnings[0]
 
 
+def test_link_check_anchor_comparison_is_case_sensitive(tmp_path):
+    module = _load_module()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "target.md").write_text("# Heading\n", encoding="utf-8")
+    (docs / "README.md").write_text(
+        "[ok](target.md#heading) [bad](target.md#Heading)\n", encoding="utf-8"
+    )
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert "#Heading" in warnings[0]
+
+
+def test_link_check_validates_myst_doc_roles_inside_sphinx_source_root(tmp_path):
+    module = _load_module()
+    site = tmp_path / "docs" / "readthedocs"
+    (site / "user_guide").mkdir(parents=True)
+    (site / "conf.py").write_text("project = 'x'\n", encoding="utf-8")
+    (site / "user_guide" / "index.md").write_text("# Guide\n", encoding="utf-8")
+    (site / "overview.rst").write_text("Overview\n========\n", encoding="utf-8")
+    (site / "user_guide" / "page.md").write_text(
+        "See {doc}`index`, {doc}`Overview </overview>`, {doc}`Label <../overview>`, "
+        "and {doc}`/user_guide/missing`.\n",
+        encoding="utf-8",
+    )
+    # Outside a Sphinx source root the role syntax is plain text.
+    (tmp_path / "docs" / "README.md").write_text("{doc}`nothing`\n", encoding="utf-8")
+
+    warnings = module.check_markdown_internal_links(tmp_path)
+
+    assert len(warnings) == 1
+    assert "/user_guide/missing" in warnings[0]
+
+
 def test_docs_orphans_matches_by_path_not_bare_basename(tmp_path):
     module = _load_module()
     docs = tmp_path / "docs"

@@ -487,6 +487,60 @@ def _iter_markdown_links(text: str) -> list[tuple[int, str]]:
     return links
 
 
+MYST_DOC_ROLE_SUFFIX = "{doc}"
+SPHINX_SOURCE_SUFFIXES = (".md", ".rst")
+
+
+def _iter_myst_doc_roles(text: str) -> list[tuple[int, str]]:
+    """Return (line, target) pairs for MyST ``{doc}`` cross-references.
+
+    markdown-it sees ``{doc}`` as text followed by an inline code span; the
+    span holds either ``target`` or ``Label <target>``.
+    """
+    roles: list[tuple[int, str]] = []
+    for token in MARKDOWN_PARSER.parse(text):
+        if token.type != "inline" or not token.children:
+            continue
+        line_number = (token.map[0] + 1) if token.map else 0
+        children = token.children
+        for index, child in enumerate(children[:-1]):
+            if child.type != "text" or not child.content.endswith(MYST_DOC_ROLE_SUFFIX):
+                continue
+            span = children[index + 1]
+            if span.type != "code_inline":
+                continue
+            target = span.content.strip()
+            if target.endswith(">") and "<" in target:
+                target = target[target.rindex("<") + 1 : -1].strip()
+            if target:
+                roles.append((line_number, target))
+    return roles
+
+
+def _sphinx_source_root(path: Path, repo_root: Path) -> Path | None:
+    """Return the nearest ancestor holding ``conf.py`` (the Sphinx srcdir)."""
+    for ancestor in path.parents:
+        if (ancestor / "conf.py").is_file():
+            return ancestor
+        if ancestor == repo_root:
+            break
+    return None
+
+
+def _resolve_myst_doc_role(target: str, path: Path, source_root: Path) -> Path | None:
+    """Resolve a ``{doc}`` target to an existing page, or None when missing."""
+    base = source_root if target.startswith("/") else path.parent
+    stem = base / target.lstrip("/")
+    candidates = [stem] if stem.suffix in SPHINX_SOURCE_SUFFIXES else []
+    candidates.extend(
+        stem.with_name(stem.name + suffix) for suffix in SPHINX_SOURCE_SUFFIXES
+    )
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def _github_heading_slug(heading: str) -> str:
     """Apply GitHub's heading-to-anchor slug rules to rendered heading text."""
     text = heading.strip().lower()
@@ -863,6 +917,16 @@ def check_markdown_internal_links(repo_root: Path) -> list[str]:
                         f"`{raw_link}` names heading anchor `#{anchor}` that "
                         f"`{_display_path(resolved, repo_root)}` does not define"
                     )
+        source_root = _sphinx_source_root(path, repo_root)
+        if source_root is None:
+            continue
+        for line_number, target in _iter_myst_doc_roles(text):
+            if _resolve_myst_doc_role(target, path, source_root) is None:
+                warnings.append(
+                    f"{path.relative_to(repo_root)}:{line_number}: MyST role "
+                    f"`{{doc}}` targets `{target}`, which is not a page under "
+                    f"`{_display_path(source_root, repo_root)}`"
+                )
     return warnings
 
 
@@ -870,7 +934,8 @@ def _markdown_link_anchor(link: str) -> str:
     target = _strip_markdown_link_target(link)
     if "#" not in target:
         return ""
-    return unquote(target.split("#", maxsplit=1)[1].strip()).lower()
+    # Fragments are case-sensitive: `#Heading` does not reach `#heading`.
+    return unquote(target.split("#", maxsplit=1)[1].strip())
 
 
 def check_docs_discoverability(repo_root: Path) -> list[str]:
