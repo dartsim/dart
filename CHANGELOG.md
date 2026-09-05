@@ -493,6 +493,7 @@ compatibility remains on the active DART 6 LTS branch._
 - Retrospectives now compare the original request with successful or
   unsatisfactory outcomes, validate reusable harness improvements, and skip
   unsupported edits.
+  ([#3478](https://github.com/dartsim/dart/pull/3478))
 - Modernized the pixi workspace for current pixi: declared workspace
   license/repository/documentation metadata and a `requires-pixi = ">=0.78"`
   floor, unified the default/collision-reference/cuda environments in one
