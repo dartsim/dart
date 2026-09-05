@@ -496,6 +496,10 @@ compatibility remains on the active DART 6 LTS branch._
   source is an advisory in lint and still an error in the strict
   `check-avbd-packets` and `check-plan104-paper-parity` claim gates.
   ([#3479](https://github.com/dartsim/dart/pull/3479))
+- Automated review workflows now batch related fixes, require a root-cause
+  checkpoint after two rounds still find valid issues, and track review coverage
+  on the current revision while preserving independent review and validation.
+  ([#3484](https://github.com/dartsim/dart/pull/3484))
 - AI workflows now stage context by task and phase, preserve authorized model,
   effort, and action scopes across handoffs, and audit the whole harness during
   model upgrades. Consolidated session policy and removed duplicate tutorials
