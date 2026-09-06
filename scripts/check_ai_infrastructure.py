@@ -18,6 +18,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
 
+from review_gate import hook_inventory
+
 EXPECTED_AGENTS = {"dart_release_auditor", "dart_reviewer", "dart_scout"}
 DIRECT_PIXI_COMMANDS = {"bash", "c++", "cmake", "ctest", "python", "python3", "sh"}
 CONFIG_ONLY_CACHE_VARIABLES = {
@@ -1396,6 +1398,13 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
         errors.append(f"pixi.toml: invalid TOML: {error}")
         return
 
+    review_commands = collect_task_commands(pixi, "review-gate")
+    if not review_commands or any(
+        shlex.split(command) != ["python", "scripts/review_gate.py"]
+        for command in review_commands
+    ):
+        errors.append("pixi.toml: review-gate must run the local evidence checker")
+
     task_markers = {
         "test": "--target tests_and_run",
         "test-py": "pytest",
@@ -1479,6 +1488,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 "tests/test_sync_ai_commands.py",
                 "tests/test_ai_infrastructure.py",
                 "tests/test_install_git_hooks.py",
+                "tests/test_review_gate.py",
                 "-q",
             ],
             "depends-on": [],
@@ -3893,6 +3903,8 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
     windows_content = windows.read_text(encoding="utf-8")
     for marker in (
         "Native Windows hook smoke",
+        "Native Windows review gate",
+        "pixi run python -I scripts/run_pytest.py tests/test_review_gate.py -q",
         'pixi run python -c "import sys; print(sys.executable)"',
         "$launcher",
         "$hookCommand",
@@ -4816,6 +4828,16 @@ def doctor_report(root: Path) -> dict[str, Any]:
     skills = sorted((root / ".claude" / "skills").glob("*/SKILL.md"))
     generated = sorted((root / ".agents" / "skills").glob("*/SKILL.md"))
     agents = sorted((root / ".codex" / "agents").glob("*.toml"))
+    review_hook = hook_inventory(root)
+    warnings = []
+    if review_hook["core_hooks_path"]:
+        warnings.append(
+            "core.hooksPath is configured; integrate the review gate with its owner"
+        )
+    elif not review_hook["installed"] or not review_hook["checker_current"]:
+        warnings.append(
+            "managed Git pre-push hook/checker is missing or stale; run pixi run install-hooks"
+        )
     return {
         "schema_version": 1,
         "root": str(root),
@@ -4843,11 +4865,13 @@ def doctor_report(root: Path) -> dict[str, Any]:
                 "manifest": ".agents/skills/.dart-generated.json",
             },
             "custom_agents": _path_inventory(agents, root),
+            "review_hook": review_hook,
             "model_harness": _model_harness_inventory(root),
             "durable_context": _durable_context_inventory(root),
             "visual_verification": _visual_verification_inventory(root),
         },
         "errors": errors,
+        "warnings": warnings,
         "ok": not errors,
     }
 
@@ -4899,6 +4923,8 @@ def print_doctor(data: dict[str, Any]) -> None:
         print(f"  {tool}: {tool_version}")
     print("Trust: project agents and hooks load only after the repository is trusted")
     print("Hook inspection: use `/hooks` in Codex; git hook: `pixi run install-hooks`")
+    for warning in data["warnings"]:
+        print(f"  WARNING: {warning}")
     for error in data["errors"]:
         print(f"  ERROR: {error}")
 

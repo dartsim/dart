@@ -39,25 +39,20 @@ ownership.
 
 ## Review Loop
 
-Review is part of the release-branch work cycle, not a final courtesy pass.
-For every meaningful implementation chunk, the orchestrator runs an independent
-review lane after verification and again after cleanup or fixes. A packet is
-done only after the current post-fix state has at least two clean review passes
-recorded in the owning plan, dev-task `verification.md`, or PR evidence.
+Review accompanies meaningful implementation chunks and repairs. Before branch
+publication, follow `docs/onboarding/ai-reviews.md`: two distinct non-author
+sessions review the immutable candidate, one for correctness and one for
+contracts. Supply the complete merge-base diff, acceptance criteria, factual
+validation, and prior findings. A strategy checkpoint can serve the contracts
+pass when it covers that final candidate; do not add redundant local rounds.
 
-Use the strongest available reviewer for the risk: `dart-review-pr` for PR
-shape and release policy, `dart-analyze` for read-only compatibility or
-regression questions, test-focused agents for coverage and failure modes, and
-visual reviewers for GUI/example surfaces. When the environment supports
-cross-agent review, prefer Codex from a Claude-led workflow, Claude from a
-Codex-led workflow, or subagents with disjoint context. If unavailable, perform
-a role-separated local review and record the limitation.
-
-Reviewer findings are hypotheses, not commands. Investigate each substantive
-finding with code inspection, tests, docs, benchmarks, downstream checks, or
-visual evidence; then fix it, split it into a tracked follow-up, or record a
-no-fix rationale with evidence. Re-run relevant gates before the next review
-pass, and do not mark a packet complete while findings are unexplained.
+Choose reviewers within the authorized model and reasoning constraints from
+`docs/ai/README.md`. Role-separated author investigation can help local work
+when independent sessions are unavailable, but cannot clear publication.
+Implementation stays with one writer. Findings are hypotheses: inspect their
+evidence, repair the underlying family, and rerun gates before obtaining the
+new candidate's review pair. Preserve unresolved findings and evidenced
+rejections; no clean response silently removes them.
 
 ## Work-Packet Contract
 

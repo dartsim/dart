@@ -10,6 +10,8 @@ mutations: $ARGUMENTS
 @docs/onboarding/contributing.md
 @docs/onboarding/ci-cd.md
 @docs/onboarding/ai-tools.md
+@docs/onboarding/ai-reviews.md
+@docs/ai/verification.md
 
 ## Modes
 
@@ -117,37 +119,25 @@ gh pr checks <PR_NUMBER>
      ```bash
      git fetch origin <base-branch>
      git merge --no-ff origin/<base-branch>  # never rebase a published PR branch
-     # rebuild + retest if the merge touched code
+     # commit, validate, obtain local reviews, and review-gate check
      git push                                 # after explicit approval
      ```
      The local base merge is a routine pre-push step; the push itself still
      requires explicit maintainer/user approval. Never rebase or force-push a
      published PR branch unless the maintainer explicitly requests it.
 4. Address reviews:
-   - Use the `dart-review-pr` workflow for substantive review feedback.
-   - Never reply to AI-generated review comments from bot users such as
-     `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`,
-     `github-actions[bot]`, or `copilot[bot]`.
-   - When a draft PR is first published, request Codex review with a top-level
-     `@codex review` once explicit maintainer/user approval covers PR comments;
-     it can run while the PR remains draft. If Codex already shows an activity
-     signal or submitted review, do not post a duplicate trigger.
-   - Apply AI-review fixes silently. After explicit maintainer/user approval
-     and after the branch is ready, push, resolve reviewed and addressed
-     threads, and request a fresh AI review only when the approved follow-up
-     push addressed Codex review comments, or when the first trigger has a
-     concrete timeout/blocker:
-     ```bash
-     gh pr comment <PR_NUMBER> --body "@codex review"
-     ```
-   - For substantive code PRs, an independent review session (a human, or a
-     separate session running `dart-review-pr` via `/dart-review-pr` or
-     `$dart-review-pr`) must record its outcome — findings or an explicitly
-     clean result — before merge approval; docs-only/mechanical are exempt.
-   - For human reviewers, reply only when a response is useful after a fix or
-     when a question needs clarification.
-   - After posting `@codex review`, keep monitoring until a submitted review,
-     a visible activity signal, or a concrete timeout/blocker is observed.
+   - Follow the single Review-Fix Loop Workflow in
+     `docs/onboarding/ai-reviews.md`: paginate completed batches, check trigger
+     ownership and current-head coverage, repair related cases together, and
+     perform the independent strategy checkpoint after two problematic rounds.
+   - Never reply to bot feedback. Reuse the maintenance authority granted by
+     this invocation for its stated scope; ask only for missing authority.
+   - Before every push, including repairs and base integration, pass the
+     independent local publication gate on the immutable validated candidate.
+     Use `dart-review-pr` for correctness and contracts; apply the owner's
+     strict non-substantive exception only with independent recorded evidence.
+   - Monitor hosted completion and CI after publication; a reaction or old
+     clean result does not establish current-head completion.
 5. Mark ready or merge only when appropriate:
    - Confirm review requirements are satisfied and local validation matches the
      intended transition.
@@ -159,9 +149,9 @@ gh pr checks <PR_NUMBER>
      validation on the current head after the latest pushed change
      (`pixi run test-all`, plus the Gazebo gate when downstream compatibility
      could be affected); merge only when required hosted checks and review are
-     green, the milestone is set, an independent review recorded a clean
-     result on the current post-fix head (after findings, a clean re-review;
-     the step 4 docs-only/mechanical exemption also satisfies this), the
+     green, the milestone is set, the independent local gate passes on the current post-fix head and
+     hosted review has verified dispositions with no unresolved actionable
+     finding, the
      PR is not draft and GitHub reports it mergeable, and explicit merge
      approval is given.
    - PR comments, review re-triggers, thread resolution, reviewer requests,

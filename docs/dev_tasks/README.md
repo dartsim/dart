@@ -22,8 +22,9 @@ current branch/worktree state, immediate next step, risks, recovery notes, and
 verification commands. Behavior-bearing physics or simulation deliverables
 should include a high-quality, self-contained GUI example or durable demo
 artifact with runnable command and visual evidence unless explicitly out of
-scope. Record review evidence as well: at least two clean independent or
-role-separated passes on the current post-fix state.
+scope. Record review evidence as well. Publication requires the independent
+local reviews defined in `docs/onboarding/ai-reviews.md`; role separation within
+an authoring session cannot satisfy that gate.
 
 Add these sidecars when they improve resumability or evidence:
 

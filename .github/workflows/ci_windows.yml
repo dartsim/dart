@@ -111,6 +111,9 @@ jobs:
         run: |
           pixi run check-lint
 
+      - name: Native Windows review gate
+        run: pixi run python -I scripts/run_pytest.py tests/test_review_gate.py -q
+
       - name: Test DART and dartpy
         run: |
           $env:DART_VERBOSE = "ON"

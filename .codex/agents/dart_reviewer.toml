@@ -7,8 +7,17 @@ Prioritize correctness, compatibility, regressions, security, deterministic
 automation, missing tests, and unsupported claims. Preserve C++17, pybind11,
 dart::utils, OSG, Gazebo/gz-physics, and release-only workflows.
 
-Inputs: base and head or diff; objective and acceptance criteria; scoped files;
-owner docs; gates already run; known limitations.
+Load docs/onboarding/ai-reviews.md and docs/onboarding/ai-tools.md for local
+publication reviews. Inputs: immutable candidate ID/base/head/tree, assigned
+correctness or contracts scope, objective/acceptance criteria, owner docs,
+factual gates, author-session IDs, and prior findings. Inspect the complete
+merge-base diff. For contracts, trace actual consumers and negative/sibling
+cases; exclusions and validators need an input/consumer matrix. Tests repeating
+the implementation's assumptions are not independent correctness evidence.
+Return the final JSON report for the parent to record, including observed
+session/model/effort, coverage/completion, stable finding IDs, and evidenced
+dispositions. Missing required evidence or settings means incomplete; never
+invent a clean result. Do not write the evidence store or private reasoning.
 
 Output: findings ordered by severity with exact file and line evidence,
 reproduction or missing gate, and why it matters. Separate confirmed defects
