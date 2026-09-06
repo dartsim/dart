@@ -18,7 +18,10 @@ Checks (all advisory by default; ``--strict`` turns findings into failures):
   text or in the fixture's documented ``graph_vocabulary``, so a renamed or
   new compute node shows up as drift;
 * with ``--probe-output <json>`` or a built probe binary, the fresh dump has
-  the same stages and graph node/edge sets as the fixture.
+  the same stages and graph node/edge sets as the fixture;
+* the fixture and any fresh dump record a nonempty stage list and at least one
+  executed compute graph with nodes, so an empty dump can neither pass the
+  checks vacuously nor be committed by ``--regenerate``.
 
 ``--regenerate`` rewrites the fixture from a fresh probe dump.
 """
@@ -40,11 +43,31 @@ FIXTURE = IR_DIR / "compute-graph.runtime.json"
 STEP_VIEW = IR_DIR / "world-step.dataflow.json"
 COMPUTE_VIEW = IR_DIR / "compute-graph.architecture.json"
 PROBE_ENV = "DART_ARCHITECTURE_PROBE_OUTPUT"
-PROBE_BINARY_CANDIDATES = tuple(
-    f"build/default/cpp/{build_type}/bin/test_architecture_probe{suffix}"
-    for build_type in ("Release", "Debug")
-    for suffix in ("", ".exe")
-)
+PROBE_BINARY_NAME = "test_architecture_probe"
+BUILD_TYPES = ("Release", "Debug")
+
+
+def probe_binary_candidates(environment: str = "default") -> tuple[str, ...]:
+    """Relative probe paths inside one pixi environment's build tree.
+
+    Single-config generators (Ninja, Makefiles) build in
+    ``build/<env>/cpp/<Config>`` and place tests in its ``bin``; multi-config
+    generators (Visual Studio) build in ``build/<env>/cpp`` and place tests in
+    ``bin/<Config>`` (``dart_add_simulation_test`` in ``cmake/dart_defs.cmake``).
+    """
+    root = f"build/{environment}/cpp"
+    return tuple(
+        candidate
+        for build_type in BUILD_TYPES
+        for suffix in ("", ".exe")
+        for candidate in (
+            f"{root}/{build_type}/bin/{PROBE_BINARY_NAME}{suffix}",
+            f"{root}/bin/{build_type}/{PROBE_BINARY_NAME}{suffix}",
+        )
+    )
+
+
+PROBE_BINARY_CANDIDATES = probe_binary_candidates()
 
 
 def load_json(path: Path) -> dict:
@@ -81,6 +104,32 @@ def graph_signature(
     return signature
 
 
+def dump_shape_findings(dump: dict, label: str) -> list[str]:
+    """Reject dumps whose emptiness would let every other check pass vacuously."""
+    findings: list[str] = []
+    stages = dump.get("stages")
+    if (
+        not isinstance(stages, list)
+        or not stages
+        or not all(isinstance(stage, str) and stage for stage in stages)
+    ):
+        findings.append(
+            f"{label} records no stage list; the reference scene must run a full "
+            "World::step()"
+        )
+    graphs = dump.get("graphs")
+    if not isinstance(graphs, list) or not graphs:
+        findings.append(
+            f"{label} records no executed compute graph; the reference scene must "
+            "exercise at least the kinematics graph"
+        )
+    else:
+        for index, graph in enumerate(graphs):
+            if not isinstance(graph, dict) or not graph.get("nodes"):
+                findings.append(f"{label} graph {index} has no nodes")
+    return findings
+
+
 def compare_dumps(fixture: dict, fresh: dict) -> list[str]:
     findings: list[str] = []
     if not fresh.get("execution_trace", False):
@@ -89,6 +138,7 @@ def compare_dumps(fixture: dict, fresh: dict) -> list[str]:
             "(DART_BUILD_PROFILE compiled out); rebuild with profiling for fresh "
             "evidence"
         )
+    findings.extend(dump_shape_findings(fresh, "probe dump"))
     if fixture.get("stages") != fresh.get("stages"):
         findings.append(
             "stage list drifted: fixture "
@@ -118,6 +168,7 @@ def check_against_views(
             "fixture stages were not observed from an executed step; regenerate "
             "from a profiling-enabled build"
         )
+    findings.extend(dump_shape_findings(fixture, "fixture"))
     stage_ids = {str(n.get("id")) for n in step_view.get("nodes", [])}
     stages = [str(s) for s in fixture.get("stages", [])]
     for stage in stages:
@@ -167,10 +218,16 @@ def check_against_views(
 
 
 def find_probe_binary() -> Path | None:
-    for candidate in PROBE_BINARY_CANDIDATES:
-        path = REPO_ROOT / candidate
-        if path.is_file() and os.access(path, os.X_OK):
-            return path
+    """Locate the probe in the active pixi environment's build tree, then default."""
+    environments: list[str] = []
+    for environment in (os.environ.get("PIXI_ENVIRONMENT_NAME"), "default"):
+        if environment and environment not in environments:
+            environments.append(environment)
+    for environment in environments:
+        for candidate in probe_binary_candidates(environment):
+            path = REPO_ROOT / candidate
+            if path.is_file() and os.access(path, os.X_OK):
+                return path
     return None
 
 
@@ -262,6 +319,12 @@ def main(argv: list[str]) -> int:
                 "out); rebuild with DART_BUILD_PROFILE=ON or pass "
                 "--allow-schedule-only"
             )
+            return 1
+        shape = dump_shape_findings(fresh, "probe dump")
+        if shape:
+            for finding in shape:
+                print(f"ERROR: {finding}")
+            print("ERROR: refusing to regenerate the fixture from an empty probe dump")
             return 1
         previous = load_json(args.fixture) if args.fixture.is_file() else None
         args.fixture.write_text(

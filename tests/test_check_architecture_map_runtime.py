@@ -256,11 +256,77 @@ def test_main_compares_probe_output_and_regenerates(
     assert "test_architecture_probe.cpp" in regenerated["source"]
 
 
-def test_probe_candidates_cover_windows_executables() -> None:
+def test_probe_candidates_cover_windows_executables_and_multi_config_layouts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     candidates = camr.PROBE_BINARY_CANDIDATES
     assert "build/default/cpp/Release/bin/test_architecture_probe" in candidates
     assert "build/default/cpp/Release/bin/test_architecture_probe.exe" in candidates
     assert "build/default/cpp/Debug/bin/test_architecture_probe.exe" in candidates
+    # Multi-config generators (Visual Studio) place tests in bin/<Config>.
+    assert "build/default/cpp/bin/Release/test_architecture_probe.exe" in candidates
+    assert "build/default/cpp/bin/Debug/test_architecture_probe" in candidates
+
+    monkeypatch.setattr(camr, "REPO_ROOT", tmp_path)
+    monkeypatch.delenv("PIXI_ENVIRONMENT_NAME", raising=False)
+    assert camr.find_probe_binary() is None
+    msvc = tmp_path / "build/default/cpp/bin/Release/test_architecture_probe.exe"
+    msvc.parent.mkdir(parents=True)
+    msvc.write_text("", encoding="utf-8")
+    msvc.chmod(0o755)
+    assert camr.find_probe_binary() == msvc
+
+    monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "gpu")
+    gpu = tmp_path / "build/gpu/cpp/Release/bin/test_architecture_probe"
+    gpu.parent.mkdir(parents=True)
+    gpu.write_text("", encoding="utf-8")
+    gpu.chmod(0o755)
+    assert camr.find_probe_binary() == gpu
+
+
+def test_empty_dumps_are_findings_and_never_regenerated(
+    views: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    empty = _fixture()
+    empty["stages"] = []
+    empty["graphs"] = []
+    findings = camr.check_against_views(empty, _step_view(), _compute_view())
+    assert any("records no stage list" in f for f in findings)
+    assert any("no executed compute graph" in f for f in findings)
+    assert any(
+        "no executed compute graph" in f for f in camr.compare_dumps(_fixture(), empty)
+    )
+    nodeless = _fixture()
+    nodeless["graphs"] = [{"nodes": [], "edges": []}]
+    assert any(
+        "graph 0 has no nodes" in f
+        for f in camr.check_against_views(nodeless, _step_view(), _compute_view())
+    )
+
+    monkeypatch.setattr(camr, "find_probe_binary", lambda: None)
+    fixture_path = views / "compute-graph.runtime.json"
+    fixture_path.write_text(json.dumps(empty), encoding="utf-8")
+    assert camr.main(["--fixture", str(fixture_path), "--strict"]) == 1
+    assert "records no stage list" in capsys.readouterr().out
+
+    good = _fixture()
+    fixture_path.write_text(json.dumps(good), encoding="utf-8")
+    probe = views / "probe.json"
+    probe.write_text(json.dumps(empty), encoding="utf-8")
+    assert (
+        camr.main(
+            [
+                "--fixture",
+                str(fixture_path),
+                "--probe-output",
+                str(probe),
+                "--regenerate",
+            ]
+        )
+        == 1
+    )
+    assert "refusing to regenerate" in capsys.readouterr().out
+    assert json.loads(fixture_path.read_text(encoding="utf-8")) == good
 
 
 def test_regenerate_without_probe_fails(
