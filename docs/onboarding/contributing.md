@@ -205,73 +205,84 @@ pixi run coverage-view
 
 ### Submitting a Pull Request
 
-Use `.github/PULL_REQUEST_TEMPLATE.md`. This section owns PR-writing guidance
-for contributors and the PR workflows. Write for a reviewer unfamiliar with
-the implementation; recent PRs supply context, not a style authority.
+Use `.github/PULL_REQUEST_TEMPLATE.md`. This section owns PR-writing guidance.
+Write for a DART maintainer who knows the project but has not followed the task:
+what problem or missing capability prompted the change, how it is addressed,
+and what matters when reviewing it?
 
-- **Summary:** Start with 1–3 short bullets, normally under 50 words total.
-  Put the most important outcome first. Include only the problem context needed
-  to understand it; leave file inventories, investigation history, and routine
-  compatibility assurances out. This is an editorial target, not a hard limit.
-- **Supporting detail:** Add Key Changes, Motivation / Problem, or Before / After
-  only when they help the reviewer understand or assess the change. Order by
-  impact, group by behavior, and give each bullet one main point. Explain a
-  mechanism only when it clarifies an outcome, tradeoff, or risk. Avoid repeating
-  the Summary or describing each changed file. Use comparisons when they add
-  information; performance claims need a baseline, workload, metric, and limits.
-- **Risks and migration:** Put material risks or Breaking Changes immediately
-  after Summary, with the affected users and required action. Qualify claims
-  where they appear; a shorter description must not imply broader support or
-  stronger validation than the evidence establishes.
-- **Testing:** Group exact commands, targets, or test names with their results.
-  Keep failures, pending checks, skipped checks and their reasons visible.
-  Report relevant CI observations or measurements; distinguish measured results
-  from expectations. Link lengthy supporting logs or provenance, or put them
-  in an expandable details block. Omit routine investigation and review diaries;
-  retain required review evidence in a compact, accessible record.
-- **Visual verification:** For 3D structure or behavior changes, use
-  `dart-verify-sim` and [the simulation-verification guide](agent-sim-verification.md).
-  Keep claim-relevant media and before/after comparisons, captions, and visible
-  observations directly visible in a Visual verification section after Testing.
-  Use the same camera, dimensions, and renderer for before/after captures.
-  Preserve baseline identities, text correctness evidence, assessment/verdict,
-  claim boundaries, limitations, and reproduction commands. Follow the guide for unavailable evidence and
-  GitHub-hosted publication; never commit transient media. Brevity does not
-  reduce the required evidence or impose a length limit on this section.
-- **Related links and checklist:** Include relevant issues, backports, and
-  follow-ups; omit empty sections and "None" boilerplate. Keep the template's
-  checklist collapsed at the bottom, set the branch milestone, and mark
-  non-applicable items "N/A" with a short reason.
+- **Explain the change first.** Summary is the TL;DR: the concrete problem and
+  principal change, usually one or two short sentences in prose or bullets.
+  Aim for roughly 30–50 words total as a backstop; shorter is fine, and a count
+  alone does not establish clarity. Give each bullet one main point instead of
+  packing it with clauses; put secondary changes below. Name the API, solver,
+  or workflow when it makes the change precise. "Improve robustness" describes
+  an intention, not what the diff does.
+- **Order by reviewer importance.** Put material behavior changes, migration
+  actions, and limitations beside the claims they qualify. Add rationale or Key
+  Changes when the solution needs explanation beyond the opening. For a broad
+  change, point to the decision or implementation area needing scrutiny. Group
+  related changes by behavior; a file inventory or repeated Summary adds little.
+- **Choose evidence for the claim.** A docs or CI change needs the affected
+  workflow and its relevant check. An API change needs the old/new usage and
+  caller action. Physics work needs the method, correctness criterion, measured
+  result and limits. Performance claims need a comparable baseline, workload,
+  solver/backend configuration, hardware and accuracy tradeoffs where relevant.
+  Keep the decisive result in the body and link reproducible supporting detail.
+- **Keep Testing proportionate.** State what was verified and the relevant
+  command, test, or run link with its result, not its execution history. Keep
+  failed, skipped, unavailable, or pending validation visible when it limits a
+  claim or blocks required readiness/merge gates, including failures unrelated
+  to this diff. Run all required gates; their presentation need not enumerate
+  every formatter, routine rerun, or successful check already available in
+  GitHub. Workflow output contracts are caller/handoff reports, not PR-body
+  sections. Keep required audit and review provenance in existing task/session
+  evidence; only reviewer-relevant conclusions belong here. Expandable blocks
+  are for useful supporting detail, not a place to keep otherwise unnecessary
+  process logs.
 
-Summary and Testing are the default narrative sections. Add only the supporting
-sections the change needs; optional headings do not make applicable evidence,
-migration guidance, or backport requirements optional. On updates, rewrite the
-title and body around the final diff and current evidence instead of appending
-the history of fixes.
+Summary and Testing are the default sections. Use a comparison, additional
+heading, or a few **bold key terms** when it makes the change easier to review;
+avoid forcing every PR into the same extended outline. Keep relevant issue,
+backport, and follow-up links, and the template's collapsed checklist with the
+milestone and short N/A reasons. Optional sections do not waive applicable
+migration, evidence, or backport requirements.
 
-#### Compact Example
+#### Simulation Evidence
 
-For a hypothetical CI change, keep the outcome in Summary and the important
-exception beside it. Replace the illustrative test results with actual evidence:
+For 3D structure or behavior changes, use `dart-verify-sim` and
+[the simulation-verification guide](agent-sim-verification.md). Keep the Visual
+verification section with the claim it explains; it can precede Testing when
+the behavior is central to the PR. Retain visible, assessed media, before/after
+comparisons with the same camera, dimensions and renderer, captions and
+observations, baseline identities, the text correctness oracle, verdict, claim
+boundaries, limitations, and reproduction commands. Follow the guide for
+unavailable evidence and GitHub-hosted publication; never commit transient
+media. Concision does not cap, collapse, or remove this required evidence.
 
-```markdown
-## Summary
+#### Example And Final Read
 
-- Restore compiler caching in supported CI jobs.
-- Skip unnecessary builds for documentation-only changes.
+For a hypothetical CI fix, "Improve CI efficiency and fix path filtering" is
+short but leaves the reviewer to discover the problem. A useful opening is:
 
-## Limitations
+> Documentation-only PRs still run the full build matrix because excluded files
+> match the code filter. Fix exclusion matching so those PRs skip compilation
+> while retaining their docs and workflow checks.
 
-- Windows MSBuild still builds without compiler caching.
+Then report the filter regression check and any pending hosted verification.
+The example supplies context and the specific fix without listing every YAML
+file. A solver PR needs its numerical and visual evidence as well.
 
-## Testing
+Before publication or an update, read the rendered description alongside the
+final diff. Can a reviewer explain the problem and solution from the opening,
+identify the consequential change, and find the evidence and limitations?
+Remove repetition and process narration; restore missing rationale or technical
+detail. Rewrite for the current change instead of appending its repair history.
 
-- `pixi run test-ai-infra`: passed, including path-filter regression cases.
-- Hosted cache-hit measurements: pending; no build-time improvement measured yet.
-```
-
-The full template checklist still applies. A simulation change also needs its
-assessed visual evidence; the short example does not replace that requirement.
+This adapts [Google's change-description guidance](https://google.github.io/eng-practices/review/developer/cl-descriptions.html)
+and [GitHub's review guidance](https://docs.github.com/en/pull-requests/concepts/helping-others-review-your-changes).
+The scientific and API emphasis fits [SciPy's review guidance](https://scipy.github.io/devdocs/dev/hacking.html#reviewing-pull-requests)
+and [Drake's checklist](https://drake.mit.edu/code_review_checklist.html);
+DART's verification owners define the required evidence and gates.
 
 ### Review Checklist
 

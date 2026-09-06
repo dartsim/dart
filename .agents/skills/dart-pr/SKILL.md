@@ -44,6 +44,11 @@ PR template. Keep titles plain, scoped, and outcome-focused, without agent
 prefixes. Recent PRs can supply relevant context; use the current owner guidance
 rather than copying their length or structure.
 
+Draft from the final diff and the reason for it, not from the session report.
+Before publication, read the rendered body as a reviewer: the opening must
+explain the concrete problem and solution, and the rest must earn its space
+through review-relevant rationale or evidence. Short but generic is not enough.
+
 For 3D structure or behavior changes (model/scene, dynamics, collision/contact,
 simulation, rendering, GUI, visual examples), use `dart-verify-sim`. Preserve the
 owner's visible media, assessed comparisons, text oracle, claim boundaries, and
