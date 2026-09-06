@@ -364,6 +364,7 @@ def test_review_gate_changes_reach_native_windows_job() -> None:
         "scripts/run_pytest.py",
         "pixi.toml",
         "pixi.lock",
+        "pyproject.toml",
         ".github/actions/setup-pixi-ci/action.yml",
         ".github/workflows/ci_windows.yml",
     ):

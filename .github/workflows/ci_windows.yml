@@ -86,6 +86,7 @@ jobs:
               - "tests/test_review_gate.py"
               - "pixi.toml"
               - "pixi.lock"
+              - "pyproject.toml"
               - ".github/workflows/ci_windows.yml"
 
   hook-smoke:
