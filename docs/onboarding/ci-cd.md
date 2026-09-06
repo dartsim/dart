@@ -483,14 +483,16 @@ GitHub gives the repository 10 GB of Actions cache with least-recently-used
 eviction (entries unused for 7 days are also dropped). Compiler objects are
 the only thing that earns that budget:
 
-- **sccache objects**: the whole budget. Only `main`/release pushes,
-  schedules, and dispatches write (`SCCACHE_GHA_RW_MODE=READ_WRITE`); pull
-  request runs read the base branch's entries and do not write
-  (`READ_ONLY`, set by `configure-compiler-cache`). GitHub scopes entries per
-  ref, so PR writes would duplicate every object under `refs/pull/N/merge`
-  and evict `main`'s copies: on 2026-09-06 the cache sat at 9.99 GB in
-  14,673 entries and hit rates on the merged-head run fell to 35-45%. A PR
-  therefore pays a cold compile only for the translation units it changes.
+- **sccache objects**: the whole budget. Only branch refs write
+  (`SCCACHE_GHA_RW_MODE=READ_WRITE`: `main`/release pushes, schedules, and
+  branch dispatches). Every other ref reads the entries its base branch
+  populated and does not write (`READ_ONLY`, set by
+  `configure-compiler-cache`): pull requests under `refs/pull/N/merge` and
+  the `v*` release-tag wheel builds under `refs/tags/`. GitHub scopes entries
+  per ref, so writes there duplicate every object and evict `main`'s copies:
+  on 2026-09-06 the PR duplicates alone had the cache at 9.99 GB in 14,673
+  entries and hit rates on the merged-head run fell to 35-45%. A PR therefore
+  pays a cold compile only for the translation units it changes.
 - **Not cached on purpose**: pixi environments (`setup-pixi-ci` defaults
   `cache: "false"`; `pixi install --locked` takes well under a minute and the
   entries were ~500–600 MB per platform) and CodeQL C++ TRAP databases

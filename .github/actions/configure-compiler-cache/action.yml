@@ -54,17 +54,21 @@ runs:
         echo "SCCACHE_IGNORE_SERVER_IO_ERROR=1" >> "${GITHUB_ENV}"
         echo "SCCACHE_IDLE_TIMEOUT=0" >> "${GITHUB_ENV}"
         # The repository's Actions cache is capped at 10 GB with LRU eviction.
-        # GitHub scopes cache entries per ref, so a pull-request run that
-        # misses writes its own copy under refs/pull/N/merge next to the copy
-        # main already holds; with ~13 build configurations those duplicates
-        # filled the cap within a day and evicted main's entries (hit rates
-        # fell from 96-98% to 35-45%). Pull requests therefore read the cache
-        # that main pushes populate and never write to it; protected-branch
-        # pushes, schedules, and dispatches keep read-write.
-        if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ]; then
-          export SCCACHE_GHA_RW_MODE=READ_ONLY
-          echo "SCCACHE_GHA_RW_MODE=READ_ONLY" >> "${GITHUB_ENV}"
-        fi
+        # GitHub scopes cache entries per ref, so a run on any ref other than
+        # a branch that misses writes its own copy of the object next to the
+        # copy main already holds: pull requests under refs/pull/N/merge,
+        # release tags under refs/tags/vX. With ~13 build configurations the
+        # PR duplicates alone filled the cap within a day and evicted main's
+        # entries (hit rates fell from 96-98% to 35-45%). Only branch refs
+        # (protected-branch pushes, schedules, and branch dispatches) write;
+        # every other ref reads the entries its base branch populated.
+        case "${GITHUB_REF:-}" in
+          refs/heads/*) ;;
+          *)
+            export SCCACHE_GHA_RW_MODE=READ_ONLY
+            echo "SCCACHE_GHA_RW_MODE=READ_ONLY" >> "${GITHUB_ENV}"
+            ;;
+        esac
 
         DISABLE_SCCACHE=0
         DISABLE_REASON=""
