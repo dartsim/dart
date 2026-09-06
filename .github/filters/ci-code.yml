@@ -20,15 +20,33 @@ code:
   - "!.claude/**"
   - "!.codex/**"
   - "!.opencode/**"
-  # Documentation trees, papers, and the root prose files. Markdown is
-  # excluded only by tree or by name, never with a blanket `*.md` glob:
-  # READMEs inside source trees are consumed by builds and tests
-  # (pyproject.toml embeds the root README.md as the wheel's long
-  # description; python/tests parse python/examples/demos/README.md), so
-  # they stay code. `tutorials/` is not excluded either: the root
-  # CMakeLists.txt installs that directory into the package tree, so it ends
-  # up inside the wheel (as do `data/` and `examples/`).
-  - "!docs/**"
+  # Prose documentation and the root prose files. The docs tree is only
+  # partly prose in this repository: CMake configures docs/doxygen at
+  # configure time, a C++ test and the LCP demo parse docs/background/lcp,
+  # Python tests execute docs/readthedocs/conf.py and parse
+  # docs/python_api, and evidence packets under docs/plans are test inputs.
+  # Those stay code; only the trees and files below are excluded, and
+  # tests/test_ci_code_filter.py scans the platform-tier tests, the demos,
+  # the C++ tests, and CMake for references into excluded paths. Markdown is
+  # excluded by tree or by name, never with a blanket `*.md` glob, because
+  # READMEs inside source trees are build and test inputs (pyproject.toml
+  # embeds the root README.md; python/tests parse
+  # python/examples/demos/README.md).
+  - "!docs/AGENTS.md"
+  - "!docs/README.md"
+  - "!docs/ai/**"
+  - "!docs/background/AGENTS.md"
+  - "!docs/background/ATTRIBUTION.md"
+  - "!docs/background/README.md"
+  - "!docs/background/dynamics/**"
+  - "!docs/design/**"
+  - "!docs/dev_tasks/**"
+  - "!docs/onboarding/**"
+  - "!docs/readthedocs/**/*.md"
+  - "!docs/readthedocs/**/*.rst"
+  - "!docs/readthedocs/_static/**"
+  - "!docs/readthedocs/_templates/**"
+  - "!docs/readthedocs/locale/**"
   - "!paper/**"
   - "!.readthedocs.yml"
   - "!AGENTS.md"

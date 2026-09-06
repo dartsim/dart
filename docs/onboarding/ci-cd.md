@@ -658,18 +658,29 @@ full platform and wheel matrix. `tests/test_ci_code_filter.py` (part of
 quantifier or when a literal exclusion no longer exists.
 
 The filter excludes the AI tool surfaces (`.agents/`, `.claude/`, `.codex/`,
-`.opencode/`), the documentation trees and root prose files, scheduled-only
-and maintenance workflows, the distro container harnesses, repository
-metadata that nothing builds from, and the AI-infrastructure Python files
-that only `pixi run test-ai-infra` exercises. Markdown is excluded by tree or
-by name, never with a blanket `*.md` glob: READMEs inside source trees are
-build and test inputs (`pyproject.toml` embeds the root `README.md` as the
-wheel's long description; the Python tests parse
-`python/examples/demos/README.md`). Other inputs that look like metadata but
-feed a build stay in: `package.xml` (CMake and `pyproject.toml` read the
-version), `LICENSE` (packaged into the wheel), `tutorials/` (installed by the
-root `CMakeLists.txt` into the package tree, like `data/` and `examples/`),
-`codecov.yml`, `.gitattributes`, and `.gitignore`. Agent hook changes
+`.opencode/`), the prose documentation trees and root prose files,
+scheduled-only and maintenance workflows, the distro container harnesses,
+repository metadata that nothing builds from, and the AI-infrastructure
+Python files that only `pixi run test-ai-infra` exercises. The docs tree is
+only partly prose here, so it is excluded piecewise: `docs/ai/`,
+`docs/design/`, `docs/dev_tasks/`, `docs/onboarding/`, the Read the Docs
+sources and locale, and `docs/background/dynamics/` are excluded, while
+`docs/doxygen/` (configured by CMake at every configure), `docs/python_api/`
+and `docs/readthedocs/conf.py` (parsed and executed by Python tests),
+`docs/background/lcp/` (parsed by a C++ test and the LCP demo), and
+`docs/plans/` (evidence packets that tests load) stay code. Markdown is
+excluded by tree or by name, never with a blanket `*.md` glob, because
+READMEs inside source trees are build and test inputs (`pyproject.toml`
+embeds the root `README.md` as the wheel's long description; the Python tests
+parse `python/examples/demos/README.md`). Other inputs that look like
+metadata but feed a build stay in: `package.xml` (CMake and `pyproject.toml`
+read the version), `LICENSE` (packaged into the wheel), `tutorials/`
+(installed by the root `CMakeLists.txt` into the package tree, like `data/`
+and `examples/`), `codecov.yml`, `.gitattributes`, and `.gitignore`.
+`tests/test_ci_code_filter.py` scans the platform-tier Python tests, the
+demos, the C++ tests, and CMake for references into excluded paths, so a test
+that starts reading a prose file fails `pixi run test-ai-infra` instead of
+merging with its checks skipped. Agent hook changes
 (`.claude/hooks/**`) run the Windows hook smoke job through its own `hooks`
 filter in `ci_windows.yml`.
 
