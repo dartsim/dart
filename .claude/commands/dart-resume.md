@@ -54,11 +54,11 @@ modifiers. Interpret arguments in this order:
 5. **Branch/PR/issue hint**: otherwise, treat arguments as a branch, PR, issue,
    topic, or free-form resume hint and reconstruct the task from live repo state.
 
-Examples:
+Examples (replace `<task>` with the selected task directory):
 
 ```text
-$dart-resume docs/dev_tasks/rigid_ipc_solver
-$dart-resume docs/dev_tasks/rigid_ipc_solver --slice
+$dart-resume docs/dev_tasks/<task>
+$dart-resume docs/dev_tasks/<task> --slice
 $dart-resume PR 2991
 ```
 

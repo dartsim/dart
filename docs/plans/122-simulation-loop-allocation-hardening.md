@@ -166,8 +166,8 @@ already closed.
   systems above the stack solve cap.
 - Gates: `pixi run lint`, focused `test_world` rigid IPC allocation filters,
   and `test_rigid_ipc_barrier`.
-- Dependencies: coordinate with PLAN-082 and
-  `docs/dev_tasks/rigid_ipc_solver/` if that task is active.
+- Dependencies: coordinate with
+  [PLAN-082](082-rigid-implicit-barrier-contact.md) and its selected work packet.
 
 ### WP-122.3 Deformable IPC And FEM Scale Closure
 
@@ -177,7 +177,7 @@ already closed.
   ground/self-contact scenes, static/moving obstacle surfaces, and mesh-backed
   IPC-class scenes from PLAN-081.
 - Non-goals: paper-complete IPC feature parity itself; that remains owned by
-  PLAN-081 and its dev task.
+  PLAN-081 and its parity roadmap.
 - Acceptance evidence: deformable rows that are selectable in DART 7
   `World::step()` have post-bake world-base, global-heap, and raw-malloc gates;
   larger sparse-direct paths either replace Eigen sparse numeric factorization
@@ -186,7 +186,8 @@ already closed.
   the retained dense-direct cap plus default sparse iterative routing above it.
 - Gates: `pixi run lint`, focused `test_world` deformable allocation filters,
   and PLAN-081 focused solver tests.
-- Dependencies: PLAN-081 and `docs/dev_tasks/ipc_deformable_solver/`.
+- Dependencies: [PLAN-081](081-deformable-implicit-barrier-solver.md) and its
+  selected work packet.
 
 ### WP-122.4 Articulated, Variational, AVBD, VBD, And Unified Newton Rows
 

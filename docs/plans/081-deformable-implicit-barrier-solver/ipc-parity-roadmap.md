@@ -1,7 +1,7 @@
 # IPC Paper-Parity Roadmap
 
 Authoritative execution roadmap for taking the DART 7 deformable
-solver from its current mass-spring contact scaffold to faithful reproduction
+solver from its landed FEM/contact slices to faithful reproduction
 of the IPC paper (Li et al. 2020) experiments, with correctness tests and
 performance benchmarks that match or beat the reference, on **both CPU and
 GPU**. Companion to [`ipc-paper-figure-showcase.md`](ipc-paper-figure-showcase.md)
@@ -10,7 +10,11 @@ GPU**. Companion to [`ipc-paper-figure-showcase.md`](ipc-paper-figure-showcase.m
 [`ipc_scene_corpus_manifest.json`](ipc_scene_corpus_manifest.json) (154 upstream
 scenes).
 
-## Ground truth (audited from the paper + current code, 2026-05-30)
+## Paper Baseline And Scoped Implementation
+
+The paper baseline was audited on 2026-05-30. The implementation summary below
+was reconciled with source and the landed increments during the 2026-09-06
+handoff retirement; it is not a new physics or performance validation pass.
 
 - **Every IPC simulation scene is FEM-tetrahedral.** Figs 1, 2, 4, 5, 7, 8,
   13–22 and the Fig 10/11/12 unit tests are all volumetric tetrahedral FE
@@ -23,23 +27,25 @@ scenes).
   **Fig 23** (16-scene per-step statistics) and **Table 1** (h-sweep on the
   twisted-rods scene). Consequently the GPU story is **net-new acceleration**:
   there is no published GPU baseline to match — the win is (a) match/undercut
-  IPC's per-step CPU time at equal accuracy, then (b) add GPU as a bonus.
-- **DART today is mass-spring, not FEM.** Elastic energy is per-edge
-  `0.5·k·(L−L0)²`; tets are inert scaffolding (lumped mass + surface
-  extraction only). `DeformableMaterial.youngsModulus/poissonRatio` exist but
-  are unused. On top of the spring net, real IPC machinery is landed: C2
-  clamped-log barrier (self-contact PT+EE, ground, sphere obstacle), sparse
-  projected Newton with batched PSD projection (+ optional CUDA backend),
-  lagged smoothed Coulomb friction (ground + self-contact), conservative
-  PT/EE CCD limiters, and active-set sweep-and-prune broad phase.
-- **153/154 corpus scenes need FEM** _and_ upstream meshes; 0 meshes are
-  vendored and there is no `.msh`/`.obj`/`.seg`/`.pt` importer. So essentially
-  no paper scene is reproducible today, and **every showcase figure row is
-  still `planned`.**
+  IPC's per-step CPU time at equal accuracy, then (b) qualify DART's additional
+  GPU path. Both CPU and GPU remain requirements of this DART program.
+- **FEM and contact increments are implemented.** The original mass-spring
+  scaffold has been extended with tetrahedral material energy, static
+  sphere/box/capsule obstacle barriers, projected Newton, iterative/matrix-free
+  solves, lagged friction and optional CUDA PSD offload. Source and regressions
+  live in `dart/simulation/compute/deformable_dynamics_stage.cpp` and
+  `tests/unit/simulation/world/test_deformable_body.cpp`. These do not establish
+  complete material, contact, coupled-domain or resident-GPU qualification.
+- **The full source corpus remains unqualified.** GMSH `.msh` and codimensional
+  `.obj`/`.seg`/`.pt` importers and scoped figure examples have landed. The
+  remaining pinned asset pipeline is M4; the manifest and figure showcase own
+  per-row status. Importer or kernel availability alone does not reproduce a
+  paper scene.
 
 ## Critical path (capability-ordered)
 
-The milestones are ordered by dependency. Each ships as one PR off `main`
+M1-M7 below are IPC-local milestones, distinct from PLAN-040's DART 7 release
+milestones. They are ordered by dependency. Each ships as one PR off `main`
 (milestone DART 7.0) with **kernel + correctness tests + a runnable example +
 a benchmark**, per the standing slice contract.
 
@@ -108,13 +114,11 @@ for face/edge/corner) have landed, so sphere- and box-obstacle contact are now
 first-class Newton terms; FEM slabs draping over a sphere and over a box are
 shown in py-demos. Remaining M2:
 
-Generalize obstacle contact into a real clamped-log **force** everywhere: an
-analytic half-space (plane) collision object, a box-obstacle barrier force
-(reuse PT distance kernels against the box's triangulated faces), the
-projected-Newton Hessian for the sphere/box obstacle barriers, and wire the
-already-implemented point-edge / point-point distance kernels into the active
-set so codimensional contact has barrier coverage. Unblocks the plane-drop
-unit families and is a prerequisite for codim objects.
+Qualify the analytic half-space collision-object envelope and wire the
+point-edge / point-point distance kernels into the remaining codimensional
+active-set paths. Do not repeat the implemented box force or sphere/box
+Hessian work. The remaining coverage unblocks the plane-drop and codimensional
+unit families; admit each supported obstacle and motion envelope explicitly.
 
 ### M3 — Codimensional collision objects (triangle / edge / vertex)
 
@@ -151,8 +155,8 @@ Progress: the **GMSH `.msh` tetrahedral-mesh importer** has landed
 an FEM cantilever. Remaining M4:
 
 A fetch-into-fixtures workflow for the upstream meshes pinned at
-`573d2c7e0…` (no vendoring, no runtime dependency), plus a GMSH `.msh`
-tet-mesh importer in `dart/io`. Port the contact-free tutorial scenes
+`573d2c7e0…` (no vendoring, no runtime dependency), and qualification of those
+assets through the implemented importers. Port the contact-free tutorial scenes
 (`2cubesFall` DBC/NBC) first as regression fixtures, then the contact scenes.
 
 ### M5 — Mesh-vs-obstacle friction completeness — capsule LANDED
@@ -310,9 +314,10 @@ upstream asset pipeline).
 
 ## Honest status
 
-This is a multi-PR program. No paper figure is reproducible until at least M1
-(FEM) lands, and the contact-heavy figures additionally need M2/M3/M5 plus the
-M4 assets. The mass-spring showcases already in py-demos (`IPC Deformable (sx)`)
+This is an incomplete multi-PR program. Every paper figure needs its own
+source-matched evidence; contact-heavy figures require the admitted M2/M3/M5
+envelopes and M4 assets. Landed FEM or importer slices do not close those rows.
+The mass-spring showcases already in py-demos (`IPC Deformable (sx)`)
 evoke the paper's _themes_ but are explicitly **not** figure reproductions and
 do not count toward parity. Progress is tracked by promoting figure rows in
 [`ipc-paper-figure-showcase.md`](ipc-paper-figure-showcase.md) from `planned`

@@ -182,6 +182,10 @@ by this planning PR.
 
 ### WP-040.1 Oracle Manifest And Acceptance Specification
 
+- Execution handoff:
+  [`dart7_m1_oracle_manifest`](../dev_tasks/dart7_m1_oracle_manifest/README.md)
+  is prepared and unclaimed. Creating the handoff accepts no numerical budgets
+  or milestone; the dashboard retains next-action ownership.
 - Objective/value: make M1 pass/fail independent of implementation output so
   foundational errors cannot be hidden by CPU/GPU agreement.
 - Scope: this plan's example contract and an owner-linked numerical manifest;

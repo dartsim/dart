@@ -91,9 +91,18 @@ performance leadership. The retired task tracker does not narrow that objective.
 Maintainer direction now extends this same solver-family plan to Augmented VBD
 (`avbd-2025`). AVBD is not a replacement for the VBD foundation above; it is
 the hard-constraint, friction, rigid/articulated, finite-stiffness-ramp, and
-CPU/GPU performance continuation of the VBD path. The active multi-session
-implementation tracker is
-[`../dev_tasks/avbd_solver/`](../dev_tasks/avbd_solver/). The first local
+CPU/GPU performance continuation of the VBD path. On 2026-09-06 the maintainer
+directed retirement of the AVBD task handoff with unfinished work preserved in
+this plan, its audits, corpus and fail-closed parity contracts. All 176 VBD/AVBD
+predicates retain their requirements and evidence state. Create a new bounded
+task home when a completion program is selected; folder retirement does not
+complete either method. Retirement validation found the three Figure 13 wall,
+VBD-comparison and Sequential-Impulse-comparison capture seals already stale
+against the starting revision `53c9495a95ff80400695775549b719a124c74596`.
+Their JSON bytes were preserved; historical validation does not establish
+current-source parity or performance. Recompute provenance and regenerate the
+dependent evidence before making those claims, using the strict packet gates.
+The first local
 implementation slice adds a tested internal scalar-row utility for AVBD
 regularization, warm starting, hard-row clamping, dual updates, and
 finite-stiffness ramping. Follow-on local slices add deterministic scalar-row
@@ -1171,8 +1180,9 @@ internal/explicit-opt-in decision, not a leaked solver registry.
 
 ### Ordered completion PRs
 
-The maintainer directed the remaining parity program into two ordered
-completion PRs after the current shared SI/VBD/AVBD foundation lands:
+The shared SI/VBD/AVBD foundation landed in PR #3432 (`aafc4b66072`). The
+maintainer directed the remaining parity program into two ordered completion
+PRs from current `main`:
 
 1. Complete all 88 VBD predicates in one VBD PR from updated `main`. That PR
    owns the honest XPBD comparator needed by the VBD paper comparisons, the
@@ -1549,7 +1559,8 @@ owning code, never as standalone doc or cleanup PRs.
   the per-row helpers (the Figure 13 wall and the source-demo state digests
   are unchanged by the memoization alone); the exact Jacobian itself is a
   Newton-path correctness change and stays. The benchmark ratio against the
-  pre-memoization head is recorded in the README's performance paragraph.
+  pre-memoization head is recorded in this plan's progress log and the sealed
+  comparison packets. Those dated results are not current-build validation.
 
 ## Acceptance Criteria
 
@@ -1873,8 +1884,8 @@ same-GPU Table 1 reproduction. Maintainer direction now promotes Augmented VBD
 (`avbd-2025`) as the next PLAN-104
 implementation focus: use
 [`104-vertex-block-descent-solver/avbd-paper-gap-audit.md`](104-vertex-block-descent-solver/avbd-paper-gap-audit.md)
-plus the active [`../dev_tasks/avbd_solver/`](../dev_tasks/avbd_solver/)
-tracker to implement AVBD's hard constraints, bounded contact/friction,
+and this plan's ordered completion PRs to implement AVBD's hard constraints,
+bounded contact/friction,
 finite-stiffness ramping, 6-DOF rigid/articulated blocks, soft/rigid coupling,
 all paper/demo scenes, and CPU/GPU benchmark parity. The local AVBD foundation
 now includes the internal scalar-row utility, deterministic row
