@@ -53,6 +53,18 @@ runs:
         export SCCACHE_IDLE_TIMEOUT=0
         echo "SCCACHE_IGNORE_SERVER_IO_ERROR=1" >> "${GITHUB_ENV}"
         echo "SCCACHE_IDLE_TIMEOUT=0" >> "${GITHUB_ENV}"
+        # The repository's Actions cache is capped at 10 GB with LRU eviction.
+        # GitHub scopes cache entries per ref, so a pull-request run that
+        # misses writes its own copy under refs/pull/N/merge next to the copy
+        # main already holds; with ~13 build configurations those duplicates
+        # filled the cap within a day and evicted main's entries (hit rates
+        # fell from 96-98% to 35-45%). Pull requests therefore read the cache
+        # that main pushes populate and never write to it; protected-branch
+        # pushes, schedules, and dispatches keep read-write.
+        if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ]; then
+          export SCCACHE_GHA_RW_MODE=READ_ONLY
+          echo "SCCACHE_GHA_RW_MODE=READ_ONLY" >> "${GITHUB_ENV}"
+        fi
 
         DISABLE_SCCACHE=0
         DISABLE_REASON=""
@@ -206,7 +218,7 @@ runs:
           echo "### Compiler cache"
           echo
           echo "- launcher: ${DART_COMPILER_CACHE_VALUE:-none}"
-          echo "- GitHub Actions cache backend: $([ "${HAS_GHA_CACHE}" -eq 1 ] && echo available || echo unavailable)"
+          echo "- GitHub Actions cache backend: $([ "${HAS_GHA_CACHE}" -eq 1 ] && echo available || echo unavailable) (${SCCACHE_GHA_RW_MODE:-READ_WRITE})"
           if [ -n "${SCCACHE_BACKEND}" ]; then
             echo "- sccache storage: ${SCCACHE_BACKEND}"
           fi
