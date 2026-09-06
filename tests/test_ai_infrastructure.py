@@ -3233,6 +3233,46 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
     json.dumps(report)
 
 
+@pytest.mark.parametrize("value", ["", " ", "\t", ".custom-hooks"])
+def test_doctor_reports_configured_hooks_path_without_installer_advice(
+    tmp_path, monkeypatch, value
+):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "config", "core.hooksPath", value], check=True
+    )
+    monkeypatch.setattr(infra, "run_checks", lambda root: [])
+    report = infra.doctor_report(tmp_path)
+    inventory = report["inventory"]["review_hook"]
+    assert inventory["core_hooks_configured"] is True
+    assert inventory["core_hooks_path"] == value
+    assert any(
+        "core.hooksPath is configured" in warning for warning in report["warnings"]
+    )
+    assert not any(
+        "run pixi run install-hooks" in warning for warning in report["warnings"]
+    )
+
+
+def test_doctor_does_not_certify_hook_configuration_query_errors(tmp_path, monkeypatch):
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    monkeypatch.setattr(infra, "run_checks", lambda root: [])
+    execute = subprocess.run
+
+    def broken_config(args, **kwargs):
+        if args[-3:] == ["config", "--get", "core.hooksPath"]:
+            return subprocess.CompletedProcess(args, 3, "", "injected config failure")
+        return execute(args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", broken_config)
+    report = infra.doctor_report(tmp_path)
+    assert not report["ok"]
+    assert any("injected config failure" in error for error in report["errors"])
+    assert not any(
+        "run pixi run install-hooks" in warning for warning in report["warnings"]
+    )
+
+
 def test_malformed_hook_json_returns_errors_instead_of_tracebacks(tmp_path):
     (tmp_path / ".codex").mkdir()
     (tmp_path / ".codex" / "hooks.json").write_text(

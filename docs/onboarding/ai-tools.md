@@ -172,13 +172,14 @@ The shared Git hooks directory contains both hooks and a dependency-free Python
 isolated mode; truncated or modified checker files fail closed. Older linked
 worktrees use that installed copy. Setup installs
 it; `pixi run ai-doctor` reports a missing/stale hook or checker. Custom
-`core.hooksPath` managers retain control: the installer refuses to overwrite
-that configuration; use the [custom-manager integration](#custom-hook-managers)
+`core.hooksPath` managers retain control: the installer refuses configured
+values, including empty or whitespace-only values; use the [custom-manager integration](#custom-hook-managers)
 below for both gates.
 Foreign executable hooks are preserved as `pre-commit.local` and
 `pre-push.local`; the push gate replays Git's original stdin and arguments and
 propagates the foreign hook's exit status. A preservation collision stops
-installation. `DART_SKIP_HOOKS` applies only to the commit guard.
+installation. An unowned installed checker also stops installation before any
+hook changes. `DART_SKIP_HOOKS` applies only to the commit guard.
 
 After fetching/merging the current base, committing and validating the candidate:
 
@@ -319,31 +320,33 @@ propagate failures, and supply the original pre-push arguments and stdin.
 Use an already available Python 3.11+ interpreter; these handlers perform no
 environment installation, network, model, build or test work.
 
-From a checkout containing the current gate, export its verified launcher and
-standalone checker outside branch-controlled files. Repeat this command when
-the checker changes:
+From a checkout containing the current gate, export its commit handler, verified
+pre-push launcher and standalone checker outside branch-controlled files. Repeat
+this command when the hooks or checker change:
 
 ```bash
 pixi run install-hooks --custom-manager
 ```
 
-This atomically publishes `dart-review-pre-push` and `dart-review-gate.py`
-directly in Git's canonical common directory, leaving the manager's configuration
-and handlers intact. It leaves any earlier `dart-review-runtime` directory
-untouched. The export refuses unowned or aliased output files, and refuses a
-common directory that doubles as a hooks directory. The launcher verifies the
-checker digest before execution. Interrupted initial exports or mismatched
-refreshes block pushes; rerun the export to finish installation. Its stable
-ownership markers permit recovery after a checker-only initial export or a
-damaged checker with an owned launcher.
+The export checks ownership of all three output files before writing any of
+them, then publishes `dart-review-gate.py`, `dart-review-pre-commit` and
+`dart-review-pre-push` in that order directly in Git's canonical common
+directory. Each file replacement is atomic. The manager's configuration and
+handlers, and any earlier `dart-review-runtime` directory, remain intact.
+The export refuses unowned or aliased output files and a common directory
+that doubles as a hooks directory. The push launcher verifies the checker
+digest before execution. Interrupted initial exports or mismatched refreshes
+block pushes; rerun the export to finish installation. Stable ownership markers
+permit recovery after partial installation or a damaged checker with an owned
+pre-push launcher. An earlier two-file export can add the missing commit handler;
+an existing unowned commit handler stops the whole refresh.
 
-The manager's pre-commit handler runs the existing staged guard:
+The manager's pre-commit handler invokes the canonical commit guard:
 
 ```sh
 #!/bin/sh
-repo_root=$(git rev-parse --show-toplevel) || exit 1
-cd "$repo_root" || exit 1
-exec "${DART_HOOK_PYTHON:-python3}" -I scripts/check_agent_hook.py --profile staged
+dart_common=$(git rev-parse --git-common-dir) || exit 1
+exec "$dart_common/dart-review-pre-commit" "$@"
 ```
 
 Its pre-push handler invokes the exported launcher, including in older worktrees:
@@ -358,9 +361,12 @@ Set `DART_HOOK_PYTHON` to the chosen interpreter when `python3` is unavailable.
 These are separate handlers: retain any additional manager-owned checks and
 their ordering. Do not consume pre-push stdin before passing it to the checker.
 For evidence preparation from an older checkout, use the installed-CLI recipe
-with `$dart_common/dart-review-gate.py` as the runtime path. The exported
-launcher leaves all chaining to the manager; it does not run an incidental
-`pre-push.local` in the Git common directory.
+with `$dart_common/dart-review-gate.py` as the runtime path. The commit guard
+selects compatible Python and runs the staged guard with its local imports.
+In older worktrees or without compatible Python, it runs Git's staged whitespace
+check. It retains `DART_SKIP_HOOKS` and `DART_HOOK_DRY_RUN` commit behavior; neither
+flag bypasses the push gate. Both exported handlers leave all chaining to the
+manager; they do not run incidental `pre-commit.local` or `pre-push.local` files.
 The doctor reports manager ownership; it cannot certify arbitrary manager
 configuration. Verify integration with a disposable unreviewed branch push
 that is blocked, followed by a reviewed push that succeeds.
