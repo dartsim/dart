@@ -490,6 +490,10 @@ compatibility remains on the active DART 6 LTS branch._
   enforced by the installed Git hook.
   ([#3494](https://github.com/dartsim/dart/pull/3494))
 
+- Solver and OpenUSD follow-up work now lives in durable plans instead of
+  retired task handoffs; the next active handoff prepares the M1 oracle manifest.
+  ([#3493](https://github.com/dartsim/dart/pull/3493))
+
 - Defined DART 7 readiness milestones and prerequisite work packets, including
   full CPU/CUDA rigid-example validation, checkpoint foundations, compute-library
   comparisons and continuous architecture audits.

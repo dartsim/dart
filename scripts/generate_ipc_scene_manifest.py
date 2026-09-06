@@ -298,7 +298,10 @@ def planned_artifact(path: str, target_type: str) -> str:
     if target_type == "benchmark":
         return f"bm_ipc_scene_corpus --benchmark_filter={name}"
     if target_type == "manual":
-        return f"docs/dev_tasks/ipc_deformable_solver/manual/{name}"
+        return (
+            "docs/plans/081-deformable-implicit-barrier-solver/"
+            "ipc-paper-gap-audit.md#manual-comparisons"
+        )
     return f"CTest label ipc_scene::{name}"
 
 
@@ -312,7 +315,7 @@ def planned_command(path: str, target_type: str) -> str:
     if target_type == "benchmark":
         return f"pixi run bm bm_ipc_scene_corpus -- --benchmark_filter={name}"
     if target_type == "manual":
-        return f"manual baseline: docs/dev_tasks/ipc_deformable_solver/manual/{name}"
+        return f"manual baseline: {planned_artifact(path, target_type)}"
     return f"ctest -L ipc_scene::{name}"
 
 

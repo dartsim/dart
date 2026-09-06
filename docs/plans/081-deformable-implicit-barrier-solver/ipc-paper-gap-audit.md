@@ -1,9 +1,12 @@
 # IPC Paper Gap Audit For PLAN-081
 
-This sidecar records the current gap between DART's first deformable slice and
-the complete Incremental Potential Contact (IPC) method family. It is intended
-as the next-session handoff for implementing the remaining IPC-class solver,
-examples, tests, benchmarks, and material/property coverage.
+This sidecar records the obligation inventory from DART's first deformable
+slice to the complete Incremental Potential Contact (IPC) method family. Its
+first-slice capability descriptions are historical; use the
+[parity roadmap](ipc-parity-roadmap.md) and
+[PLAN-081 qualification summary](../081-deformable-implicit-barrier-solver.md#remaining-qualification-after-handoff-retirement)
+for landed increments and remaining implementation work. Keep the full solver,
+example, test, benchmark and material/property targets when selecting a slice.
 
 ## Source Snapshot
 
@@ -50,10 +53,10 @@ from `git ls-tree` against upstream commit
 `573d2c7e04104d3f9baf526bdaee7745891a571a`, so it includes 144 regular scene
 files plus 10 tracked symlink aliases.
 
-## Current DART Slice
+## Audited First DART Slice
 
-DART currently has a DART 7 point-mass deformable slice, not a full IPC
-solver:
+At the audited first-slice revision, DART had a point-mass deformable slice,
+not a full IPC solver:
 
 - `DeformableBody` stores world-space nodes, velocities, masses, fixed nodes,
   and distance-spring edges.
@@ -435,6 +438,17 @@ dependency policy is approved.
 - `input/paperExamples/supplementB/SQPBenchmark/29_cowHeadPlaneCO.txt`
 - `input/paperExamples/supplementB/SQPBenchmark/30_matTwist.txt`
 - `input/paperExamples/supplementB/Utopia/utopiaComparison.txt`
+
+### Manual Comparisons
+
+The source-pinned Utopia row
+`input/paperExamples/supplementB/Utopia/utopiaComparison.txt` remains a manual,
+non-CI comparison. This section is its durable target in
+[`ipc_scene_corpus_manifest.json`](ipc_scene_corpus_manifest.json); it is not
+an executable baseline or evidence that the comparison has run. A CI-safe
+external baseline, input/parameter mapping and comparable measured output
+remain prerequisites to any comparison claim. Task retirement changes only
+this target's location, not the row's classification or acceptance bar.
 
 ### Failure-Mode Corpus
 

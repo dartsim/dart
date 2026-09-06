@@ -2382,10 +2382,10 @@
       "priority": "P3",
       "dart_target_type": "manual",
       "status": "manual",
-      "dart_artifact": "docs/dev_tasks/ipc_deformable_solver/manual/paperexamples_supplementb_utopia_utopiacomparison",
+      "dart_artifact": "docs/plans/081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md#manual-comparisons",
       "required_assets_or_importer": [],
       "expected_invariant": "Manual comparison asset remains documented until a CI-safe Utopia baseline exists.",
-      "dart_command_or_ctest_or_benchmark": "manual baseline: docs/dev_tasks/ipc_deformable_solver/manual/paperexamples_supplementb_utopia_utopiacomparison",
+      "dart_command_or_ctest_or_benchmark": "manual baseline: docs/plans/081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md#manual-comparisons",
       "visual_evidence_requirement": "not-required",
       "benchmark_profile_artifact": "not-required",
       "notes_or_gap": "Manual because the upstream comparison depends on an external baseline that is not yet CI-safe for DART."

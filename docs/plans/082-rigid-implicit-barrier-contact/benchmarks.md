@@ -1,6 +1,7 @@
 # Rigid IPC Benchmarks And Performance Methodology
 
-This document tracks the performance pillar of PLAN-082 (Workstream 7). The
+This document owns the performance methodology and retained findings for
+[PLAN-082](../082-rigid-implicit-barrier-contact.md) (Workstream 7). The
 maintainer directive is explicit: the rigid IPC path must eventually **beat the
 current DART rigid contact path, the audited reference implementation, and the
 paper-reported numbers**, with any slower row carrying an explicit accepted
@@ -12,9 +13,14 @@ CCD, corpus parity, production convergence). Until then these numbers exist to
 (a) establish a DART-internal baseline, (b) catch regressions, and (c) point at
 the next optimization.
 
+The numerical snapshots below were recorded in May 2026; they were not rerun
+for the 2026-09-06 handoff retirement. Their ratios and fitted complexity are
+scoped to those scenes and revisions, not current-build performance claims.
+Revalidate source paths, settings and measurements before using them as a gate.
+
 ## Harness
 
-- C++ Google Benchmark target: `tests/benchmark/simulation/experimental/bm_rigid_ipc_solver.cpp`
+- C++ Google Benchmark target: `tests/benchmark/simulation/bm_rigid_ipc_solver.cpp`
   (registered as `bm_rigid_ipc_solver`).
 - Run: `pixi run bm --target bm_rigid_ipc_solver --build-type Release`
 - JSON capture (for regression gates / manifest evidence):
@@ -129,9 +135,8 @@ starting, active-set reuse) follow from here.
   sweep helpers — shared IPC primitives, Workstream 8), keeping the exact
   distance/reach cull on the candidates so results are identical. Enumeration is
   now O(N log N + overlapping pairs); it does not change the 1–4 body benchmark
-  (few pairs) but makes many-body paper scenes tractable. Promoting these sweep
-  helpers to a dedicated shared header is a future cleanup once a third user
-  appears.
+  (few pairs) but makes many-body paper scenes tractable. Further shared-helper extraction follows PLAN-083 and its
+  demonstrated second-use contract.
 - **Per-primitive barrier kernels cost ~6–8 µs.** Dominated by the
   reduced-coordinate chain rule plus the 12x12 PSD eigen-projection
   (`projectToPsd`).
@@ -216,11 +221,12 @@ Order of execution (bounded slices, each benchmarked and regression-guarded):
      confirmed the rotation bound and caught an off-by-`convergeAbs` reach bug
      that was fixed before commit. Guarded by anti-tunneling (180° rotation
      through a static point), far-skip, and tolerance-band regressions.
-   - Spatial index (uniform grid / sort-and-sweep) so pair enumeration itself
-     is sub-quadratic, reusing the deformable candidate-set pattern.
+   - The sort-and-sweep pair enumeration is implemented; profile current
+     distributions before selecting a different spatial index.
    - Per-primitive kernel cost (~6–8 µs): reduce the reduced-coordinate chain
-     rule and PSD eigen-projection cost (skip projection when the local Hessian
-     is already PSD; cheaper 12x12 projection); these touch numerics, so gate on
+     rule and PSD eigen-projection cost through a cheaper 12x12 projection or
+     fewer active-primitive evaluations. The rejected LDLT precheck above needs
+     new evidence before reconsideration; numerical changes require
      finite-difference and solver regressions.
 2. **CPU solver-structure, behavior-aware.**
    - Warm-start the projected-Newton solve from the previous step's pose delta
