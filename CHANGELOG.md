@@ -47,6 +47,7 @@
   * Require two independent local reviews before substantive branch pushes,
     with recorded finding dispositions and an evidenced trivial-change
     exception enforced by the installed Git hook.
+    [#3492](https://github.com/dartsim/dart/pull/3492)
 
   * Refresh the release-6.20 Read the Docs build, install, tutorial, and
     migration pages so the stable website reads version metadata from
