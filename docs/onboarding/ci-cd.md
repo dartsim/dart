@@ -667,8 +667,9 @@ build and test inputs (`pyproject.toml` embeds the root `README.md` as the
 wheel's long description; the Python tests parse
 `python/examples/demos/README.md`). Other inputs that look like metadata but
 feed a build stay in: `package.xml` (CMake and `pyproject.toml` read the
-version), `LICENSE` (packaged into the wheel), `codecov.yml`,
-`.gitattributes`, and `.gitignore`. Agent hook changes
+version), `LICENSE` (packaged into the wheel), `tutorials/` (installed by the
+root `CMakeLists.txt` into the package tree, like `data/` and `examples/`),
+`codecov.yml`, `.gitattributes`, and `.gitignore`. Agent hook changes
 (`.claude/hooks/**`) run the Windows hook smoke job through its own `hooks`
 filter in `ci_windows.yml`.
 

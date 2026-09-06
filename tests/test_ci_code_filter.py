@@ -80,7 +80,7 @@ def test_filter_excludes_ai_tool_and_doc_surfaces() -> None:
         "!.codex/**",
         "!.opencode/**",
         "!docs/**",
-        "!tutorials/**",
+        "!paper/**",
         "!CHANGELOG.md",
     ):
         assert required in patterns, required
@@ -95,7 +95,16 @@ def test_packaged_and_test_consumed_files_stay_code() -> None:
     tree or by root name, never with a blanket ``*.md`` glob.
     """
     patterns = _filter_patterns()
-    for forbidden in ("!README.md", "!LICENSE", "!package.xml"):
+    # tutorials/, data/, and examples/ are installed by the root CMakeLists.txt
+    # and therefore packaged into the wheel.
+    for forbidden in (
+        "!README.md",
+        "!LICENSE",
+        "!package.xml",
+        "!tutorials/**",
+        "!data/**",
+        "!examples/**",
+    ):
         assert forbidden not in patterns, forbidden
     blanket = [pattern for pattern in patterns if pattern.endswith("*.md")]
     assert not blanket, f"blanket markdown exclusions: {blanket}"

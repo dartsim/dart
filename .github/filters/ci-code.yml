@@ -20,14 +20,15 @@ code:
   - "!.claude/**"
   - "!.codex/**"
   - "!.opencode/**"
-  # Documentation trees, tutorials (a CMake stub since the OSG tutorials were
-  # removed), papers, and the root prose files. Markdown is excluded only by
-  # tree or by name, never with a blanket `*.md` glob: READMEs inside source
-  # trees are consumed by builds and tests (pyproject.toml embeds the root
-  # README.md as the wheel's long description; python/tests parse
-  # python/examples/demos/README.md), so they stay code.
+  # Documentation trees, papers, and the root prose files. Markdown is
+  # excluded only by tree or by name, never with a blanket `*.md` glob:
+  # READMEs inside source trees are consumed by builds and tests
+  # (pyproject.toml embeds the root README.md as the wheel's long
+  # description; python/tests parse python/examples/demos/README.md), so
+  # they stay code. `tutorials/` is not excluded either: the root
+  # CMakeLists.txt installs that directory into the package tree, so it ends
+  # up inside the wheel (as do `data/` and `examples/`).
   - "!docs/**"
-  - "!tutorials/**"
   - "!paper/**"
   - "!.readthedocs.yml"
   - "!AGENTS.md"
