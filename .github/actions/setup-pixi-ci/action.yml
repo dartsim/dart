@@ -39,13 +39,6 @@ inputs:
   enable-sccache:
     description: Enable sccache setup on GitHub-hosted runners.
     default: "true"
-  sccache-disable-annotations:
-    description: >-
-      Disable the sccache-action post-step stats (hit ratio annotation and job
-      summary table). Off by default so every job records hit/miss evidence;
-      the launcher and the stats client are the same action-provided binary,
-      so the historical client/server version mismatch no longer applies.
-    default: "false"
   sccache-continue-on-error:
     description: Continue if sccache setup fails.
     default: "false"
@@ -103,4 +96,10 @@ runs:
       continue-on-error: ${{ inputs.sccache-continue-on-error == 'true' }}
       uses: mozilla-actions/sccache-action@v0.0.11
       with:
-        disable_annotations: ${{ inputs.sccache-disable-annotations }}
+        # Literal, not an input: the action's post step evaluates this again,
+        # and nested composite actions see empty `inputs` there (the SIMD jobs
+        # failed with "Input does not meet YAML 1.2 Core Schema specification:
+        # disable_annotations" when setup-dart-linux-ci wrapped this action).
+        # Stats stay on so every job records hit/miss evidence; the launcher
+        # and the stats client are the same action-provided binary.
+        disable_annotations: false
