@@ -523,6 +523,10 @@ compatibility remains on the active DART 6 LTS branch._
   pixi docs build moved to the main-push tier, schedules are weekly, and one
   Linux setup composite replaces the per-job boilerplate (a code PR runs 18
   jobs instead of 27). ([#3489](https://github.com/dartsim/dart/pull/3489))
+- Pull-request CI runs now read the compiler cache that `main` populates and
+  no longer write duplicate entries under their own cache scope, which had
+  filled the 10 GB Actions cache and evicted `main`'s objects.
+  ([#3491](https://github.com/dartsim/dart/pull/3491))
 - AI workflows now stage context by task and phase, preserve authorized model,
   effort, and action scopes across handoffs, and audit the whole harness during
   model upgrades. Consolidated session policy and removed duplicate tutorials
