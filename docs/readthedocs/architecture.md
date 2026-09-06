@@ -61,7 +61,7 @@ Coupling beyond shared constraint rows and rigid-obstacle contact is planned.
 
 ```{raw} html
 <div class="arch-map">
-  <iframe src="architecture-map/simulation-framework.html?theme=light&embed=1" title="DART 7 simulation framework map" loading="lazy"></iframe>
+  <iframe style="height: 400px" src="architecture-map/simulation-framework.html?theme=light&embed=1" title="DART 7 simulation framework map" loading="lazy"></iframe>
   <p class="arch-map__links"><a href="architecture-map/simulation-framework.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/simulation-framework.architecture.json</code></p>
 </div>
 ```
@@ -79,7 +79,7 @@ diagnostics, replay, and checkpoints.
 
 ```{raw} html
 <div class="arch-map">
-  <iframe src="architecture-map/world-step.html?theme=light&embed=1" title="World::step() data flow" loading="lazy"></iframe>
+  <iframe style="height: 520px" src="architecture-map/world-step.html?theme=light&embed=1" title="World::step() data flow" loading="lazy"></iframe>
   <p class="arch-map__links"><a href="architecture-map/world-step.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/world-step.dataflow.json</code></p>
 </div>
 ```
@@ -95,7 +95,7 @@ asynchronous device completion are planned and shown as such.
 
 ```{raw} html
 <div class="arch-map">
-  <iframe src="architecture-map/compute-graph.html?theme=light&embed=1" title="DART 7 compute graph" loading="lazy"></iframe>
+  <iframe style="height: 440px" src="architecture-map/compute-graph.html?theme=light&embed=1" title="DART 7 compute graph" loading="lazy"></iframe>
   <p class="arch-map__links"><a href="architecture-map/compute-graph.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/compute-graph.architecture.json</code></p>
 </div>
 ```
@@ -109,7 +109,7 @@ before opening the developer handbook.
 
 ```{raw} html
 <div class="arch-map">
-  <iframe src="architecture-map/library-context.html?theme=light&embed=1" title="DART library context map" loading="lazy"></iframe>
+  <iframe style="height: 450px" src="architecture-map/library-context.html?theme=light&embed=1" title="DART library context map" loading="lazy"></iframe>
   <p class="arch-map__links"><a href="architecture-map/library-context.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/library-context.architecture.json</code></p>
 </div>
 ```
