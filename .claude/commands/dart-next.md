@@ -27,11 +27,12 @@ Interpret `$ARGUMENTS` as optional constraints:
 - `mode=select`: choose one task and stop with evidence.
 - `mode=execute`: choose one task, make local changes, and verify locally.
   This is the default when the user asks to do the work.
-- `mode=pr`: execute locally and prepare PR text, then ask for explicit
-  maintainer/user approval before any GitHub, PR, CI, branch, or review-thread
-  mutation, including pushes, PR creation, PR comments, reviewer requests,
-  review re-triggers, thread resolution, ready-for-review transitions, merges,
-  CI reruns, or branch deletion.
+- `mode=pr`: execute locally and prepare PR text. Before an action requiring
+  explicit maintainer/user approval under `docs/ai/principles.md` and the PR
+  owner docs, verify existing authorization covers its action, target, and
+  scope; ask only for missing authority. Ordinary authorized local branch
+  creation is preparation; shared-state mutations, branch deletion, and
+  destructive Git operations retain their approval requirements.
 - `size=tiny|small|medium|large` or `days=N`: fit the chosen task to the
   requested scope. Default to `small`, meaning one focused local session.
 - `focus=<topic>`: prefer a focus area without making it the only allowed
@@ -59,9 +60,12 @@ clarifying question.
    - `docs/ai/north-star.md` gaps and readiness criteria;
    - issue, PR, or CI state named by the user or inferable from the branch.
 3. Exclude candidates that are blocked, larger than the requested size, missing
-   enough evidence to start, likely to require unapproved GitHub mutations, or
-   only bootstrap/maintain the `dart-next` workflow itself unless explicitly
-   focused.
+   enough evidence to start, or only bootstrap/maintain the `dart-next` workflow
+   itself unless explicitly focused. Missing approval excludes a candidate only
+   when it has no useful bounded deliverable within the selected mode and
+   current authorization. A later publication requirement does not disqualify
+   local preparation. Preserve explicitly named targets; report their remaining
+   approval boundary after completing authorized work.
 4. Prefer the highest-value remaining candidate in this order:
    - user-specified issue, PR, failing check, or file path;
    - candidates matching `focus=<topic>` or `area=<dimension>`;
@@ -119,10 +123,11 @@ update `docs/dev_tasks/<task>/` according to `docs/dev_tasks/README.md`.
 ## PR And Review Management
 
 Use `$dart-pr` or `/dart-pr` only after local verification is complete and the
-user requested PR preparation. Ask for explicit maintainer/user approval before
-any GitHub, PR, CI, branch, or review-thread mutation, including push, PR
-creation, PR comment, reviewer request, review re-trigger, review-thread
-resolution, ready-for-review transition, CI rerun, merge, or branch deletion.
+user requested PR preparation. Verify existing explicit maintainer/user approval
+for each approval-gated action under `docs/ai/principles.md` and the PR owner
+docs; ask only for missing or changed authority. Local branch creation and
+other authorized preparation need no extra approval. Shared-state mutations,
+branch deletion, and destructive Git operations retain their approval boundaries.
 
 After a PR exists and explicit approval covers PR management, use
 `$dart-manage-pr` or `/dart-manage-pr` for CI, review, and cleanup; the Codex
