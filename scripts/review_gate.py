@@ -95,16 +95,19 @@ def require(condition: object, message: str) -> None:
 
 
 def git(root: Path, *args: str) -> str:
+    """Read literal Git values without trimming significant path/URL whitespace."""
     result = subprocess.run(
         ["git", "-C", str(root), *args],
         capture_output=True,
-        encoding="utf-8",
         env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
         timeout=10,
     )
     if result.returncode:
-        raise GateError(f"git {args[0]} failed: {result.stderr.strip()}")
-    return result.stdout.strip()
+        message = result.stderr.decode("utf-8", errors="replace").strip()
+        raise GateError(f"git {args[0]} failed: {message}")
+    # Git emits LF-terminated binary output, including on Windows. Text mode
+    # would also translate significant CR bytes inside a path or URL.
+    return result.stdout.decode("utf-8").removesuffix("\n")
 
 
 def hooks_path_configuration(root: Path) -> tuple[bool, str]:
@@ -112,14 +115,14 @@ def hooks_path_configuration(root: Path) -> tuple[bool, str]:
     result = subprocess.run(
         ["git", "-C", str(root), "config", "--get", "core.hooksPath"],
         capture_output=True,
-        text=True,
         timeout=10,
     )
     require(
         result.returncode in (0, 1),
-        f"cannot read core.hooksPath: {result.stderr.strip()}",
+        "cannot read core.hooksPath: "
+        + result.stderr.decode("utf-8", errors="replace").strip(),
     )
-    return result.returncode == 0, result.stdout.removesuffix("\n")
+    return result.returncode == 0, result.stdout.decode("utf-8").removesuffix("\n")
 
 
 def digest(value: object) -> str:
@@ -322,8 +325,11 @@ class Store:
     def prepare(self, args: argparse.Namespace) -> str:
         locations = git(
             self.root, "remote", "get-url", "--push", "--all", args.remote
-        ).splitlines()
-        require(len(locations) == 1, "prepare requires a remote with one push URL")
+        ).split("\n")
+        require(
+            len(locations) == 1,
+            "prepare requires a remote with one push URL on a single line",
+        )
         target = args.target
         require(
             target.startswith("refs/heads/"), "target must be a full refs/heads/ branch"
