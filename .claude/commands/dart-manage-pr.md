@@ -72,17 +72,19 @@ gh pr checks <PR_NUMBER>
    - For bug fixes, verify the required DART 6 LTS + `main` dual-PR flow.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
-   - Confirm the PR body follows the template order in
-     `docs/onboarding/contributing.md`, with Summary first as the skimmable
-     outcome, the optional Before / After section that `dart-pr` describes for
-     user-facing impact, and an explicit baseline for any performance claim.
+   - Apply the PR-writing guidance in
+     `docs/onboarding/contributing.md#submitting-a-pull-request`: a concrete
+     problem and solution, important decisions first, and claim-relevant evidence
+     with visible limitations. Read the rendered body against the current diff;
+     rewrite stale content rather than appending a repair diary.
    - Ensure transient visual evidence (screenshots, headless renders, GIFs,
      videos) is hosted as GitHub attachments rather than committed to the
      branch; `pixi run evidence-publish` renders the section and its upload
      placeholders (`docs/onboarding/agent-sim-verification.md`).
-   - When the claim depends on 3D structure or behavior, accept an optional
-     `Visual verification` subsection after Testing produced through
-     `dart-verify-sim`, and verify it agrees with the text oracle, covers
+   - When the claim depends on 3D structure or behavior, require
+     `Visual verification` produced through `dart-verify-sim` with the claim it
+     explains, or the guide's documented unavailable-evidence handling. Verify
+     it agrees with the text oracle, covers
      explicit claims, names what is not proved and any limitations, records
      view/debug layers, and includes reproduce commands.
    - Inspect local state before editing:

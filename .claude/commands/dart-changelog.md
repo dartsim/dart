@@ -43,7 +43,8 @@ If no mode is given, infer the smallest mode that satisfies the caller's need.
 ## Output Contract
 
 Every run must leave the caller with a concise, pasteable decision note. Use
-this shape in the response, PR body draft, or handoff text:
+this shape in the response or handoff text. The PR body/checklist needs only the
+relevant decision, no-entry reason, or unresolved follow-up, not this full note:
 
 ```markdown
 Changelog decision:

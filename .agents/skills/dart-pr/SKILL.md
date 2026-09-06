@@ -38,51 +38,25 @@ Ask only for missing or changed authority after completing authorized preparatio
 @docs/onboarding/changelog.md
 @.github/PULL_REQUEST_TEMPLATE.md
 
-## Recent PR Patterns
+## Drafting the PR
 
-When the expected PR style is unclear, inspect recently merged PRs before
-drafting the title or body:
+Follow the PR-writing guidance in
+`docs/onboarding/contributing.md#submitting-a-pull-request` and fill the compact
+PR template. Keep titles plain, scoped, and outcome-focused, without agent
+prefixes. Recent PRs can supply relevant context; use the current owner guidance
+rather than copying their length or structure.
 
-```bash
-gh pr list --repo dartsim/dart --state merged --base main --limit 10 \
-  --json number,title,body,mergedAt
-```
+Draft from the final diff and the reason for it, not from the session report.
+Before publication, read the rendered body as a reviewer: the opening must
+explain the concrete problem and solution, and the rest must earn its space
+through review-relevant rationale or evidence. Short but generic is not enough.
 
-Use these practices:
-
-- Keep titles plain, scoped, and outcome-focused. Do not add agent prefixes.
-- Fill the PR template in DART's default order: Summary, Motivation / Problem,
-  Changes / Key Changes, optional Before / After, Testing, Breaking Changes,
-  and Related Issues / PRs. Keep Summary first because reviewers need the
-  skimmable outcome before the rationale. If the motivation is necessary to
-  understand the outcome, make the first Summary sentence problem-oriented,
-  then keep the fuller why in Motivation / Problem rather than moving it above
-  Summary.
-- Write Summary and Motivation for a user or downstream maintainer unfamiliar
-  with the implementation: lead with what changes for them, what stays
-  compatible, how they opt in or migrate, and why the evidence matters. Keep
-  implementation mechanics in Changes unless they explain a user-visible
-  outcome or risk.
-- When the change has user-facing API, workflow, behavior, or performance
-  impact, add a concise `## Before / After` section before Testing covering
-  only relevant dimensions (public API, commands/workflows, behavior,
-  migration, performance baseline). Phrase each row as a user-visible
-  before/after, then name the mechanism as supporting context. For performance
-  claims, name the baseline explicitly (CPU path, parent commit, `main`, or
-  prior implementation) plus workload, metric, and limitations.
-- In Testing, list exact commands, targets, or test names that ran. For CI,
-  performance, or infrastructure work, include evidence such as CI observations,
-  timing, reruns, benchmark output, or why a skipped check is expected.
-- For 3D structure or behavior changes (model/scene, dynamics,
-  collision/contact, simulation, rendering, GUI, visual examples), use
-  `dart-verify-sim`: report the text correctness oracle and assessed,
-  claim-relevant visual/debug evidence (an image alone is not proof), captured
-  before and after with the same camera, dimensions, and renderer, and include
-  the commands. Publish transient evidence with `pixi run evidence-publish`
-  (GitHub-hosted placeholders, or approved release assets) as described in
-  `docs/onboarding/agent-sim-verification.md`; never commit transient evidence.
-- Mark non-applicable checklist items as "N/A" with a short reason, and mention
-  related PRs, issues, backports, and follow-ups explicitly, including "None".
+For 3D structure or behavior changes (model/scene, dynamics, collision/contact,
+simulation, rendering, GUI, visual examples), use `dart-verify-sim`. Preserve the
+owner's visible media, assessed comparisons, text oracle, claim boundaries, and
+reproduction evidence. Publish transient evidence with `pixi run evidence-publish`
+as described in `docs/onboarding/agent-sim-verification.md`; never commit
+transient evidence. A compact template does not reduce these requirements.
 
 ## Workflow
 
