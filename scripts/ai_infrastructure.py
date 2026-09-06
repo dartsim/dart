@@ -233,10 +233,9 @@ def repository_root(start: Path | None = None) -> Path:
     result = subprocess.run(
         ["git", "-C", str(start), "rev-parse", "--show-toplevel"],
         capture_output=True,
-        text=True,
     )
     if result.returncode == 0:
-        return Path(result.stdout.strip()).resolve()
+        return Path(result.stdout.decode("utf-8").removesuffix("\n")).resolve()
     return start.resolve()
 
 

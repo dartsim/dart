@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shlex
 import shutil
 import stat
 import sys
@@ -41,7 +42,7 @@ from pathlib import Path
 from review_gate import GateError, git, hooks_path_configuration, pre_push_hook
 
 SENTINEL = "DART-MANAGED-HOOK"
-HOOK_VERSION = "7"
+HOOK_VERSION = "8"
 
 # POSIX sh hook body. Kept dependency-free. It prefers the repository Pixi
 # interpreter, then a compatible PATH python3. In an older linked worktree or
@@ -59,7 +60,9 @@ if [ "${{DART_SKIP_HOOKS:-0}}" = "1" ]; then
     exit 0
 fi
 
-repo_root=$(git rev-parse --show-toplevel) || exit 1
+# Protect path newlines, then remove exactly Git's LF and the sentinel.
+repo_root=$(git rev-parse --show-toplevel && printf '.') || exit 1
+repo_root=${{repo_root%??}}
 
 select_hook_python() {{
     for candidate in \
@@ -71,7 +74,7 @@ select_hook_python() {{
         [ -n "$candidate" ] || continue
         if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
             if "$candidate" -c 'import tomllib' >/dev/null 2>&1; then
-                printf '%s\n' "$candidate"
+                python_cmd="$candidate"
                 return 0
             fi
         fi
@@ -79,7 +82,8 @@ select_hook_python() {{
     return 1
 }}
 
-python_cmd=$(select_hook_python) || python_cmd=
+python_cmd=
+select_hook_python || python_cmd=
 
 if [ -n "${{DART_HOOK_DRY_RUN:-}}" ]; then
     echo "DART pre-commit (dry run): would run selected Python: scripts/check_agent_hook.py --profile staged" >&2
@@ -115,9 +119,9 @@ def pre_commit_hook(*, chain_local: bool = True) -> str:
     """Share commit behavior while leaving custom-manager chaining to its owner."""
     local_hook = """\
 # Chain to a foreign hook preserved at install time, if any.
-hooks_dir=$(git rev-parse --git-path hooks)
-if [ -x "$hooks_dir/pre-commit.local" ]; then
-    "$hooks_dir/pre-commit.local" "$@" || exit $?
+local_hook=$(git rev-parse --git-path hooks/pre-commit.local) || exit 1
+if [ -x "$local_hook" ]; then
+    "$local_hook" "$@" || exit $?
 fi"""
     return _HOOK_TEMPLATE.replace(
         "@LOCAL_COMMIT_HOOK@", local_hook if chain_local else ""
@@ -271,7 +275,7 @@ def install(hooks_dir: Path) -> int:
     )
     print(
         "  Installed evidence CLI: python3 -I "
-        '"$(git rev-parse --git-path hooks)/dart-review-gate.py" --help'
+        '"$(git rev-parse --git-path hooks/dart-review-gate.py)" --help'
     )
     print("  DART_SKIP_HOOKS applies only to the existing commit guard, not pre-push.")
     return 0
@@ -294,10 +298,7 @@ def export_review_runtime(common: Path) -> int:
         "  Chain dart-review-pre-commit and dart-review-pre-push from your manager; "
         "its configuration and handlers were not changed."
     )
-    print(
-        "  Installed evidence CLI: python3 -I "
-        '"$(git rev-parse --git-common-dir)/dart-review-gate.py" --help'
-    )
+    print("  Installed evidence CLI: python3 -I " f"{shlex.quote(str(runtime))} --help")
     return 0
 
 
