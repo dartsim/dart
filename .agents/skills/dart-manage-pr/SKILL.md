@@ -93,10 +93,11 @@ gh pr checks <PR_NUMBER>
    - For bug fixes, verify the required DART 6 LTS + `main` dual-PR flow.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
-   - Confirm the PR body follows the template order in
-     `docs/onboarding/contributing.md`, with Summary first as the skimmable
-     outcome, the optional Before / After section that `dart-pr` describes for
-     user-facing impact, and an explicit baseline for any performance claim.
+   - Apply the PR-writing guidance in
+     `docs/onboarding/contributing.md#submitting-a-pull-request`: concise
+     prioritized Summary, useful supporting sections, visible risks and testing
+     limitations, and an explicit baseline for performance claims. Rewrite the
+     body around the current diff rather than appending a repair diary.
    - Ensure transient visual evidence (screenshots, headless renders, GIFs,
      videos) is hosted as GitHub attachments rather than committed to the
      branch; `pixi run evidence-publish` renders the section and its upload

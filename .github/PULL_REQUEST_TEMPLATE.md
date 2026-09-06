@@ -2,42 +2,27 @@
 
 -
 
-<!-- Outcome first for reviewers: what changed and who is affected. If the problem context is necessary, fold it into the first sentence and expand it below. Link relevant GitHub issues, if any. -->
-
-## Motivation / Problem
-
--
-
-<!-- Why is this change needed? What problem does it solve? Keep the fuller rationale here, after the skimmable Summary. -->
-
-## Changes / Key Changes
-
--
-
-<!-- High-level list of key changes. -->
+<!-- 1–3 short outcome bullets, normally under 50 words total, most important first.
+PR-writing guidance: docs/onboarding/contributing.md#submitting-a-pull-request.
+Put material risks or Breaking Changes immediately after Summary. Add context,
+Key Changes, or Before / After only when useful; omit empty sections. -->
 
 ## Testing
 
-- What you tested (commands, manual steps, or explain why not). Example:
-  `pixi run lint`, `pixi run test-all`, and on Linux CUDA hosts
-  `pixi run -e cuda test-all`
+- Commands or manual checks and their results; name pending or skipped checks.
 
-## Breaking Changes
-
-- [ ] None
--
-
-<!-- If breaking changes exist, describe impact and migration steps. -->
-
-## Related Issues / PRs (backports)
-
--
-
-<!-- List issue links and any related/backport PRs. -->
+<!-- Keep failures and limitations visible. Link or collapse lengthy supporting logs.
+For 3D structure or behavior changes, add Visual verification here using
+dart-verify-sim and docs/onboarding/agent-sim-verification.md. Keep assessed
+media/comparisons and their supporting evidence visible; do not shorten away
+required evidence. Include related issues, backports, or follow-ups when relevant. -->
 
 ---
 
-#### Checklist
+<details>
+<summary>Checklist</summary>
+
+<!-- Mark non-applicable items N/A with a short reason. -->
 
 - [ ] Milestone set (DART 7.0 for `main`, branch-matching DART 6.x release
       milestone for the active DART 6 LTS branch)
@@ -45,3 +30,5 @@
 - [ ] Add unit tests for new functionality
 - [ ] Document new methods and classes
 - [ ] Add Python bindings (dartpy) if applicable
+
+</details>

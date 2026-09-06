@@ -205,21 +205,73 @@ pixi run coverage-view
 
 ### Submitting a Pull Request
 
-Your PR description should include:
+Use `.github/PULL_REQUEST_TEMPLATE.md`. This section owns PR-writing guidance
+for contributors and the PR workflows. Write for a reviewer unfamiliar with
+the implementation; recent PRs supply context, not a style authority.
 
-1. **Summary**: What does this PR do?
-2. **Motivation**: Why is this change needed?
-3. **Changes**: List of key changes
-4. **Testing**: How was this tested?
-5. **Breaking Changes**: Any API changes?
-6. **Related Issues**: Link to relevant issues
+- **Summary:** Start with 1–3 short bullets, normally under 50 words total.
+  Put the most important outcome first. Include only the problem context needed
+  to understand it; leave file inventories, investigation history, and routine
+  compatibility assurances out. This is an editorial target, not a hard limit.
+- **Supporting detail:** Add Key Changes, Motivation / Problem, or Before / After
+  only when they help the reviewer understand or assess the change. Order by
+  impact, group by behavior, and give each bullet one main point. Explain a
+  mechanism only when it clarifies an outcome, tradeoff, or risk. Avoid repeating
+  the Summary or describing each changed file. Use comparisons when they add
+  information; performance claims need a baseline, workload, metric, and limits.
+- **Risks and migration:** Put material risks or Breaking Changes immediately
+  after Summary, with the affected users and required action. Qualify claims
+  where they appear; a shorter description must not imply broader support or
+  stronger validation than the evidence establishes.
+- **Testing:** Group exact commands, targets, or test names with their results.
+  Keep failures, pending checks, skipped checks and their reasons visible.
+  Report relevant CI observations or measurements; distinguish measured results
+  from expectations. Link lengthy supporting logs or provenance, or put them
+  in an expandable details block. Omit routine investigation and review diaries;
+  retain required review evidence in a compact, accessible record.
+- **Visual verification:** For 3D structure or behavior changes, use
+  `dart-verify-sim` and [the simulation-verification guide](agent-sim-verification.md).
+  Keep claim-relevant media and before/after comparisons, captions, and visible
+  observations directly visible in a Visual verification section after Testing.
+  Use the same camera, dimensions, and renderer for before/after captures.
+  Preserve baseline identities, text correctness evidence, assessment/verdict,
+  claim boundaries, limitations, and reproduction commands. Follow the guide for unavailable evidence and
+  GitHub-hosted publication; never commit transient media. Brevity does not
+  reduce the required evidence or impose a length limit on this section.
+- **Related links and checklist:** Include relevant issues, backports, and
+  follow-ups; omit empty sections and "None" boilerplate. Keep the template's
+  checklist collapsed at the bottom, set the branch milestone, and mark
+  non-applicable items "N/A" with a short reason.
 
-Keep Summary first as the reviewer skim target. If the motivation is necessary
-to understand the outcome, make the first Summary sentence problem-oriented,
-then put the fuller rationale in Motivation rather than moving Motivation above
-Summary.
+Summary and Testing are the default narrative sections. Add only the supporting
+sections the change needs; optional headings do not make applicable evidence,
+migration guidance, or backport requirements optional. On updates, rewrite the
+title and body around the final diff and current evidence instead of appending
+the history of fixes.
 
-Also set the milestone to match the target branch (see above).
+#### Compact Example
+
+For a hypothetical CI change, keep the outcome in Summary and the important
+exception beside it. Replace the illustrative test results with actual evidence:
+
+```markdown
+## Summary
+
+- Restore compiler caching in supported CI jobs.
+- Skip unnecessary builds for documentation-only changes.
+
+## Limitations
+
+- Windows MSBuild still builds without compiler caching.
+
+## Testing
+
+- `pixi run test-ai-infra`: passed, including path-filter regression cases.
+- Hosted cache-hit measurements: pending; no build-time improvement measured yet.
+```
+
+The full template checklist still applies. A simulation change also needs its
+assessed visual evidence; the short example does not replace that requirement.
 
 ### Review Checklist
 
@@ -344,7 +396,7 @@ Before submitting your pull request, verify:
 - [ ] Documentation is updated if needed
 - [ ] Commit messages are clear and descriptive
 - [ ] No merge conflicts with main branch
-- [ ] PR description includes summary, motivation, and testing notes
+- [ ] PR description leads with a concise summary and reports testing outcomes
 - [ ] PR description uses `.github/PULL_REQUEST_TEMPLATE.md`
 - [ ] Milestone is set for the target branch (`DART 7.0` for `main`,
       branch-matching DART 6.x release milestone for the active DART 6 LTS branch)

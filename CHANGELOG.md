@@ -599,6 +599,8 @@ compatibility remains on the active DART 6 LTS branch._
   their sync and check paths, so agents without a generated adapter read
   `AGENTS.md` and the `.claude/` sources directly.
   ([#3483](https://github.com/dartsim/dart/pull/3483))
+- Made PR descriptions easier to scan with short outcome summaries, optional
+  supporting sections, and preserved visual verification evidence.
 - Let `pixi run trajectory-record` and `pixi run agent-capture` load a scratch
   scene with `--factory path/to/file.py:callable`, because the Pixi task
   environment replaces `PYTHONPATH` and a module outside the task path was not
