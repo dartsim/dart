@@ -12,14 +12,13 @@
           "sync",
           "rigid_body_velocity",
           "rigid_body_contact",
-          "multibody_forward_dynamics",
           "multibody_variational_integration",
           "deformable_dynamics",
           "rigid_body_position",
           "kinematics",
           "continuation"
         ],
-        "note": "SequentialImpulse, Vbd, or Avbd: velocity, contact, then any standalone multibody stage and deformables, then position."
+        "note": "SequentialImpulse, Vbd, or Avbd: velocity, contact, then the Variational multibody stage and deformables when present, then position."
       },
       {
         "id": "fused-multibody",

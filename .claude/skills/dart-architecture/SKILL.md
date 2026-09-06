@@ -65,9 +65,10 @@ public-API boundary that hides internals.
 
 ### Update procedure
 
-A change to a `dart/simulation` module, a `BuiltInWorldStepStageSlot`, a
-`RigidBodySolver` or `MultibodyIntegrationFamily` enumerator, a `WorldStepStage`
-subclass, a `dart/<module>` directory, or a public selection updates the owning
+A change to a `dart/simulation` module, a `BuiltInWorldStepStageSlot`, an
+enumerator of any public selector `enum class` in `world_options.hpp` or
+`multibody/multibody_options.hpp` (the gate sweeps every enum there), a
+`WorldStepStage` subclass, or a `dart/<module>` directory updates the owning
 view in the same change:
 
 1. Edit the view JSON: add or retitle the node, cite its `sources`, set the

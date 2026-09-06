@@ -374,7 +374,7 @@
     },
     {
       "kind": "region",
-      "label": "dart::simulation internals (never public)",
+      "label": "Engine: only installed headers are public",
       "wraps": [
         "components",
         "schedule",
@@ -480,9 +480,21 @@
       "dot": "emerald",
       "title": "Read left to right",
       "items": [
-        "Users touch only the World facade, scene handles, and option values",
+        "Public surface: World, handles, option values, and the installed headers (derivatives, executors, stages)",
         "Selection resolves to an ordered stage schedule; stages emit compute graphs",
-        "RigidBodySolver: SequentialImpulse (default), Ipc, Avbd, Vbd; ContactSolverMethod picks SequentialImpulse or BoxedLcp"
+        "Selectors are the enum classes of world_options.hpp and multibody_options.hpp; the gate lists every enumerator"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Public selectors",
+      "items": [
+        "RigidBodySolver: SequentialImpulse (default), Ipc, Avbd, Vbd",
+        "ContactSolverMethod: SequentialImpulse (default), BoxedLcp",
+        "MultibodyIntegrationFamily: SemiImplicit (fuses with the split rigid solve), Variational (standalone stage)",
+        "RigidAvbdParameterProfile: Paper2025Table2, SourceDemo2d, SourceDemo3d, MassScaledReference",
+        "ContactGradientMode: Analytic, ComplementarityAware, PreContactSurrogate",
+        "ComputeAcceleratorPolicy: CpuOnly, PreferAccelerated"
       ]
     },
     {

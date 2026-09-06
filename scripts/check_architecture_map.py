@@ -9,7 +9,8 @@ and runs inside ``pixi run check-lint``. It fails when:
 * cited source evidence points at a missing path, an out-of-range line, or a
   qualified/CamelCase symbol that no public header defines;
 * a ``dart/simulation`` directory, a ``BuiltInWorldStepStageSlot`` enumerator,
-  a ``RigidBodySolver`` or ``MultibodyIntegrationFamily`` enumerator, a
+  an enumerator of any public selector ``enum class`` declared in
+  ``world_options.hpp`` or ``multibody/multibody_options.hpp``, a
   ``dart/<module>`` directory, or a ``WorldStepStage`` subclass is absent from
   the view that owns it (allowlists below carry a reason per exemption);
 * a stage id used outside the step-flow view is not a node of that view;
@@ -50,10 +51,12 @@ SIMULATION_DIR = Path("dart/simulation")
 COMPUTE_DIR = SIMULATION_DIR / "compute"
 STAGE_SLOT_HEADER = SIMULATION_DIR / "detail" / "world_step_schedule.hpp"
 STAGE_SLOT_ENUM = "BuiltInWorldStepStageSlot"
-RIGID_SOLVER_HEADER = SIMULATION_DIR / "world_options.hpp"
-RIGID_SOLVER_ENUM = "RigidBodySolver"
-MULTIBODY_FAMILY_HEADER = SIMULATION_DIR / "multibody" / "multibody_options.hpp"
-MULTIBODY_FAMILY_ENUM = "MultibodyIntegrationFamily"
+# Every `enum class` declared in these public option headers is a selector the
+# framework view must spell out enumerator by enumerator.
+PUBLIC_SELECTOR_HEADERS = (
+    SIMULATION_DIR / "world_options.hpp",
+    SIMULATION_DIR / "multibody" / "multibody_options.hpp",
+)
 STAGE_CLASS_DIRS = (COMPUTE_DIR, COMPUTE_DIR / "detail")
 LIBRARY_EXTRA_PREFIXES = ("python/dartpy", "dartsim")
 
@@ -128,6 +131,11 @@ def snake_case(name: str) -> str:
 
 def strip_comments(text: str) -> str:
     return _COMMENT_RE.sub("", text)
+
+
+def parse_enum_names(text: str) -> list[str]:
+    """Names of the `enum class` definitions in a header (declarations skipped)."""
+    return re.findall(r"enum\s+class\s+(\w+)\b[^{;]*\{", text)
 
 
 def parse_enumerators(text: str, enum_name: str) -> list[str]:
@@ -488,22 +496,27 @@ class Checker:
                         "module to a component or exempt it with a reason"
                     )
             text = framework.text()
-            for header, enum_name in (
-                (RIGID_SOLVER_HEADER, RIGID_SOLVER_ENUM),
-                (MULTIBODY_FAMILY_HEADER, MULTIBODY_FAMILY_ENUM),
-            ):
-                enumerators = parse_enumerators(self.read(header), enum_name)
-                if not enumerators:
+            for header in PUBLIC_SELECTOR_HEADERS:
+                header_text = self.read(header)
+                enum_names = parse_enum_names(header_text)
+                if not enum_names:
                     self.error(
-                        f"{header.as_posix()}: could not parse `enum class "
-                        f"{enum_name}`; update the checker"
+                        f"{header.as_posix()}: declares no `enum class`; update "
+                        "PUBLIC_SELECTOR_HEADERS in the checker"
                     )
-                for enumerator in enumerators:
-                    if not re.search(r"\b" + re.escape(enumerator) + r"\b", text):
+                for enum_name in enum_names:
+                    enumerators = parse_enumerators(header_text, enum_name)
+                    if not enumerators:
                         self.error(
-                            f"{framework.relpath}: `{enum_name}::{enumerator}` does not "
-                            "appear in any label, sublabel, tag, or card"
+                            f"{header.as_posix()}: could not parse `enum class "
+                            f"{enum_name}`; update the checker"
                         )
+                    for enumerator in enumerators:
+                        if not re.search(r"\b" + re.escape(enumerator) + r"\b", text):
+                            self.error(
+                                f"{framework.relpath}: `{enum_name}::{enumerator}` "
+                                "does not appear in any label, sublabel, tag, or card"
+                            )
 
         if compute is not None:
             paths = compute.source_paths()

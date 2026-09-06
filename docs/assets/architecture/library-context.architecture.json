@@ -436,7 +436,6 @@
       "from": "io",
       "to": "classic",
       "label": "Skeleton loading",
-      "variant": "dashed",
       "route": "straight"
     },
     {

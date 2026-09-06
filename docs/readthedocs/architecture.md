@@ -55,7 +55,10 @@ runtime, and `security` marks the public-API boundary that hides internals.
 
 Everything a user touches sits inside the public boundary on the left: the
 World facade, the scene handles, and the option values that select method
-families. Selection resolves to an ordered stage schedule; the schedule drives
+families. The engine region beside it is public only through the headers that
+`dart/simulation/CMakeLists.txt` installs, such as step derivatives, executors,
+and custom stages; the rest of it is internal. Selection resolves to an
+ordered stage schedule; the schedule drives
 the rigid, multibody, and deformable solver families and emits compute graphs.
 Coupling beyond shared constraint rows and rigid-obstacle contact is planned.
 

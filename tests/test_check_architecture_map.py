@@ -48,6 +48,7 @@ enum class RigidBodySolver
   Ipc = 3,
 };
 enum class ContactSolverMethod { SequentialImpulse, BoxedLcp };
+enum class ContactGradientMode;
 } // namespace simulation
 } // namespace dart
 """
@@ -117,6 +118,7 @@ def _framework_view() -> dict:
             },
         ],
         "boundaries": [{"kind": "region", "label": "Internals", "wraps": ["rigid"]}],
+        "cards": [{"title": "Selectors", "items": ["ContactSolverMethod: BoxedLcp"]}],
         "connections": [
             {"id": "w-r", "from": "world", "to": "rigid", "label": "stages"}
         ],
@@ -510,6 +512,49 @@ def test_enumerator_vocabulary_coverage(repo: Path) -> None:
     _rewrite(repo, "simulation-framework.architecture.json", mutate)
     errors = _run(repo)
     assert any("`RigidBodySolver::Ipc` does not appear" in e for e in errors)
+
+
+def test_every_public_selector_enum_is_swept(repo: Path) -> None:
+    header = repo / "dart/simulation/world_options.hpp"
+    text = header.read_text(encoding="utf-8")
+    assert cam.parse_enum_names(text) == ["RigidBodySolver", "ContactSolverMethod"]
+    header.write_text(
+        text.replace(
+            "enum class ContactGradientMode;",
+            "enum class ContactGradientMode;\n"
+            "enum class ComputeAcceleratorPolicy { CpuOnly, PreferAccelerated };",
+        ),
+        encoding="utf-8",
+    )
+    errors = _run(repo)
+    assert any(
+        "`ComputeAcceleratorPolicy::CpuOnly` does not appear" in e for e in errors
+    )
+    assert not any("ContactGradientMode" in e for e in errors)
+
+
+def test_pixi_lint_aggregates_wire_the_map_gate_on_every_target() -> None:
+    import tomllib
+
+    config = tomllib.loads(
+        (Path(__file__).resolve().parents[1] / "pixi.toml").read_text(encoding="utf-8")
+    )
+
+    def dependencies(tasks: dict, name: str) -> list[str]:
+        entries = tasks.get(name, {}).get("depends-on", [])
+        return [e["task"] if isinstance(e, dict) else e for e in entries]
+
+    task_tables = {"tasks": config["tasks"]}
+    for target, table in config.get("target", {}).items():
+        if "tasks" in table:
+            task_tables[f"target.{target}.tasks"] = table["tasks"]
+    for scope, tasks in task_tables.items():
+        for aggregate, gate in (
+            ("lint", "lint-architecture-map"),
+            ("check-lint", "check-architecture-map"),
+        ):
+            if aggregate in tasks:
+                assert gate in dependencies(tasks, aggregate), f"{scope}.{aggregate}"
 
 
 def test_compute_and_library_coverage(repo: Path) -> None:

@@ -2241,6 +2241,7 @@ lint = { depends-on = [
   "lint-sdf-sdformat-boundary",
   "lint-dart7-legacy-freeze",
   "lint-lcp-solver-roster",
+  "lint-architecture-map",
   "sync-ai-commands",
 ] }
 
@@ -2270,6 +2271,7 @@ check-lint = { depends-on = [
   "check-header-guards",
   "check-sdf-sdformat-boundary",
   "check-lcp-solver-roster",
+  "check-architecture-map",
   "check-ai-commands",
   "check-ai-infra",
 ] }

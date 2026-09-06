@@ -44,9 +44,10 @@ sources that CI checks against the code.
    commit. The blocking gate, `scripts/check_architecture_map.py`, needs no
    Node.js and runs inside `pixi run check-lint`.
 5. **Two liveness tiers.** Blocking: cited paths, line ranges, and symbols
-   exist; every `dart/simulation/<dir>`, `BuiltInWorldStepStageSlot`,
-   `RigidBodySolver`, and `MultibodyIntegrationFamily` enumerator,
-   `WorldStepStage` subclass, and `dart/<module>` directory appears in the
+   exist; every `dart/simulation/<dir>`, `BuiltInWorldStepStageSlot`
+   enumerator, enumerator of the public selector enums in `world_options.hpp`
+   and `multibody/multibody_options.hpp`, `WorldStepStage` subclass, and
+   `dart/<module>` directory appears in the
    view that owns it (allowlists carry a reason per exemption); stage ids are
    the enumerator names in snake case wherever a view mentions a stage; the
    page embeds every view and names every source. Advisory:
