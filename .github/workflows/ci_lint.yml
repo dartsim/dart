@@ -12,6 +12,9 @@ on:
       - "**"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   # Preserve manual/tag evidence, but cancel superseded branch and PR
   # validations so rapid merge bursts converge on the latest ref tip.
@@ -29,6 +32,7 @@ jobs:
     name: Lint
     if: github.event.deleted != true
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Clean stale Linux workspace
         if: runner.os == 'Linux'
@@ -66,6 +70,7 @@ jobs:
       github.ref == 'refs/heads/main' ||
       startsWith(github.ref, 'refs/heads/release-'))
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Clean stale Linux workspace
         if: runner.os == 'Linux'

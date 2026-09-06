@@ -25,8 +25,10 @@ user.
 
 ## Command Body
 
-Prepare or open a DART pull request after explicit maintainer/user approval:
-$ARGUMENTS
+Prepare the PR locally within the authorized task: $ARGUMENTS
+Before an action requiring explicit maintainer/user approval under the owner
+docs, verify that existing authorization covers its action, target, and scope.
+Ask only for missing or changed authority after completing authorized preparation.
 
 ## Required Reading
 
@@ -84,8 +86,8 @@ transient evidence. A compact template does not reduce these requirements.
 8. Merge the latest base branch into the PR branch before any push, and follow
    the base-merge and automated-review rules in `docs/onboarding/ai-reviews.md`
    (no inline bot replies; one trigger owner and completed fix batches).
-   Ask for explicit maintainer/user approval before
-   pushing or opening the draft PR. After approval:
+   Verify explicit maintainer/user approval covers pushing and opening the draft
+   PR; ask only for missing authority. With that approval:
    ```bash
    git push -u origin HEAD
    gh pr create --draft --base <target-branch> --milestone "<milestone>" \
@@ -97,8 +99,9 @@ transient evidence. A compact template does not reduce these requirements.
    repairing branch history).
 10. Invoke the `dart-changelog` routine for the changelog decision, entry
     wording, and PR-link follow-up. If `CHANGELOG.md` needs the PR number, keep
-    the follow-up changelog commit local until explicit maintainer/user approval
-    is given for the additional push or PR update.
+    the follow-up changelog commit local unless existing explicit maintainer/user
+    approval covers its push or PR update; otherwise request only the missing
+    authority.
 11. Follow the single Review-Fix Loop Workflow in
     `docs/onboarding/ai-reviews.md`, reusing explicit approval for its action,
     PR, and scope. Account for the initial automatic review before requesting

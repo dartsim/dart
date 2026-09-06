@@ -505,11 +505,22 @@ compatibility remains on the active DART 6 LTS branch._
   checkpoint after two rounds still find valid issues, and track review coverage
   on the current revision while preserving independent review and validation.
   ([#3484](https://github.com/dartsim/dart/pull/3484))
+- Re-enabled the CI compiler cache on GitHub-hosted runners (it had been
+  silently disabled since GitHub's cache-service v2 migration) with a
+  fail-loud guard and backend assertion, reallocated the Actions cache budget
+  to sccache, and fixed the shared code filter so documentation- and
+  AI-harness-only PRs skip the platform and wheel matrix. Workflows now declare
+  least-privilege permissions and job timeouts.
+  ([#3485](https://github.com/dartsim/dart/pull/3485))
 - AI workflows now stage context by task and phase, preserve authorized model,
   effort, and action scopes across handoffs, and audit the whole harness during
   model upgrades. Consolidated session policy and removed duplicate tutorials
   and stale examples. AI diagnosis reports declared workflow reading size.
   ([#3477](https://github.com/dartsim/dart/pull/3477))
+- Agent workflows prepare authorized local work before approval boundaries,
+  preserve active task handoffs through checkpoint PRs, and avoid resetting
+  existing CI-fix branches. Explicit publication approval and approval to retire
+  unfinished work remain required. ([#3488](https://github.com/dartsim/dart/pull/3488))
 - Retrospectives now compare the original request with successful or
   unsatisfactory outcomes, validate reusable harness improvements, and skip
   unsupported edits.

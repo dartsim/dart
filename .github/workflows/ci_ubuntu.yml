@@ -13,6 +13,9 @@ on:
     - cron: "0 2 * * 0,3"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   # Preserve scheduled/manual/tag evidence, but cancel superseded branch and PR
   # validations so rapid merge bursts converge on the latest ref tip.
@@ -31,6 +34,11 @@ jobs:
   changes:
     if: github.event.deleted != true
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # dorny/paths-filter lists changed files through the pull-request API.
+      pull-requests: read
     outputs:
       core_branch_push: ${{ steps.scope.outputs.core_branch_push }}
       code: ${{ steps.filter.outputs.code }}
@@ -51,15 +59,17 @@ jobs:
             }
           fi
 
+      # PR events list files through the API; push events fetch the `before`
+      # commit on demand, so a full-history clone is not needed here.
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
       - uses: ./.github/actions/ci-scope
         id: scope
       - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: .github/filters/ci-code.yml
+          # Required so the `!` exclusions in the filter file act as excludes.
+          predicate-quantifier: some-with-excludes
       - name: Check for an open PR from this branch
         id: open_pr
         if: github.event_name == 'push'
@@ -102,6 +112,9 @@ jobs:
       (github.event_name == 'schedule' || needs.changes.outputs.code == 'true')
     name: Coverage (Debug)
     runs-on: ubuntu-latest
+    # Instrumented Debug build + parallel lcov capture; ~65 min warm, sized
+    # for a cold cache well below the ~6h default kill.
+    timeout-minutes: 180
     env:
       # The Debug + --coverage build instruments every translation unit, using
       # materially more memory than a normal build; eight parallel jobs starve
@@ -531,6 +544,7 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Native Collision (no FCL/Bullet/ODE)
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     env:
       BUILD_TYPE: Release
       DART_PARALLEL_JOBS: 8
@@ -616,6 +630,7 @@ jobs:
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     name: Collision Benchmark Guard
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     env:
       BUILD_TYPE: Release
       DART_PARALLEL_JOBS: 8
@@ -771,6 +786,7 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Asserts enabled (no -DNDEBUG)
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     env:
       DART_PARALLEL_JOBS: 8
     steps:
@@ -846,6 +862,7 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Eigen 64-byte alignment
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     env:
       DART_PARALLEL_JOBS: 8
     steps:
@@ -888,6 +905,7 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: Headless Rendering Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 150
     env:
       DART_PARALLEL_JOBS: 8
     steps:
@@ -967,6 +985,7 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: DART GUI Smoke (${{ matrix.compiler.name }})
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:

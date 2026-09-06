@@ -7,7 +7,11 @@ version: 2
 updates:
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
-    directory: "/"
+    # "/" covers .github/workflows; the composite actions under
+    # .github/actions/* carry their own `uses:` pins and must be listed too.
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "weekly"
     groups:

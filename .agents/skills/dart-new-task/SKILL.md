@@ -65,20 +65,19 @@ Then load owners when the task needs them:
      DART 6 LTS `origin/release-6.*` branch first, then cherry-pick or reapply
      to `main`
 4. **Implement** - Keep commits focused, follow code style
-5. **Verify** - Run `pixi run lint` before committing, then the gate set for
+5. **Task lifecycle** - For an intermediate commit or PR, preserve and update
+   the active task folder. In the completing change, follow
+   `docs/dev_tasks/README.md`: complete feasible work, promote durable artifacts,
+   and remove the folder before final validation and commit. Preserve the
+   owner's approval requirement for retiring unfinished work.
+6. **Verify** - Run `pixi run lint` before committing, then the gate set for
    this task type from `docs/ai/verification.md`. If the claim depends on 3D
    structure or behavior, route through `dart-verify-sim`: text oracle first,
    then assessed claim-tied visual evidence, or record why it is not applicable.
-6. **PR** - After explicit maintainer/user approval, `git push -u origin HEAD`
+7. **PR** - After explicit maintainer/user approval, `git push -u origin HEAD`
    then `gh pr create --draft --base <target-branch> --milestone "<milestone>"`
    (`DART 7.0` for `main`, branch-matching DART 6.x release milestone for the
    active DART 6 LTS branch); follow `.github/PULL_REQUEST_TEMPLATE.md`
-7. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, first
-   promote durable dashboards, evidence matrices, API inventories, migration
-   maps, or long-lived decisions into the durable owner selected by the
-   placement matrix in `docs/README.md`.
-   Then remove the dev-task folder completely (include the deletion in this PR,
-   not after merge).
 
 ## Type-Specific
 
