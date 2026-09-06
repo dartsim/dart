@@ -37,6 +37,13 @@ the durable owner is [`../../onboarding/ci-cd.md`](../../onboarding/ci-cd.md).
 - Merge the latest `main` before every push; never rebase the published
   branch.
 
+## Evidence Probe
+
+This file was touched by a documentation-only pull request against the
+PR-1 branch to demonstrate that the shared code filter reports
+`code=false` and every platform and wheel job is skipped; the probe PR is
+closed without merging once the run is recorded.
+
 ## Context At Risk
 
 - The measured baseline numbers (README) come from PR #3455 and the
