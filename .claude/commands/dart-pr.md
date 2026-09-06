@@ -14,6 +14,7 @@ Ask only for missing or changed authority after completing authorized preparatio
 @AGENTS.md
 @docs/onboarding/contributing.md
 @docs/onboarding/ai-reviews.md
+@docs/ai/verification.md
 @docs/onboarding/changelog.md
 @.github/PULL_REQUEST_TEMPLATE.md
 
@@ -65,6 +66,10 @@ transient evidence. A compact template does not reduce these requirements.
 8. Merge the latest base branch into the PR branch before any push, and follow
    the base-merge and automated-review rules in `docs/onboarding/ai-reviews.md`
    (no inline bot replies; one trigger owner and completed fix batches).
+   Commit and validate the immutable candidate, obtain two clean non-author
+   local reviews (or the evidenced trivial exception), and pass
+   `pixi run review-gate check <candidate>` before publication. Complete this
+   local work before asking for missing publication approval.
    Verify explicit maintainer/user approval covers pushing and opening the draft
    PR; ask only for missing authority. With that approval:
    ```bash

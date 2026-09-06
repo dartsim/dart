@@ -494,6 +494,12 @@ compatibility remains on the active DART 6 LTS branch._
   DART 6 handbook page shrank to a pointer page and `nodejs` joined the
   docs toolchain for Read the Docs.
   ([Design](docs/design/architecture_map.md))
+
+- Require two independent local reviews before substantive branch pushes,
+  with recorded finding dispositions and an evidenced trivial-change exception
+  enforced by the installed Git hook.
+  ([#3494](https://github.com/dartsim/dart/pull/3494))
+
 - Solver and OpenUSD follow-up work now lives in durable plans instead of
   retired task handoffs; the next active handoff prepares the M1 oracle manifest.
   ([#3493](https://github.com/dartsim/dart/pull/3493))

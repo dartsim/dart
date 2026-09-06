@@ -121,3 +121,15 @@ does not replace the mandatory full `pixi run lint` before a commit.
 
 See `docs/onboarding/ai-tools.md` for Claude Code and Codex compatibility
 details. Keep this root file as a pointer board, not a second tool registry.
+
+## Code Review Rules
+
+`pixi run install-hooks` also installs the offline pre-push checker; refresh it
+after updates. `pixi run ai-doctor` reports missing or stale installation.
+
+- Before publication, apply `docs/onboarding/ai-reviews.md` and pass the local
+  `review-gate`: separate non-author correctness and contracts sessions.
+- Trace consequential assumptions to actual consumers and sibling cases.
+  Check that test expectations come from requirements, including negative cases.
+- File extensions do not establish harmlessness; docs, packaging metadata,
+  examples, and agent instructions can change executable behavior.

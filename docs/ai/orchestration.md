@@ -87,26 +87,20 @@ asking again. Routine local work needs no extra approval ceremony.
 
 ## Review Loop
 
-Review is part of the work cycle, not a final courtesy pass. For every
-meaningful implementation chunk, the orchestrator runs an independent review
-lane after verification and revalidates cleanup or fixes using the baseline and
-delta rules in `docs/ai/verification.md`. The same lane can perform a PR's
-strategy checkpoint under `docs/onboarding/ai-reviews.md`; avoid redundant
-review sessions with identical scope. A packet is done
-only when it meets the review-pass item of the completion audit in
-`docs/ai/verification.md`, recorded in the owning plan, dev-task
-`verification.md`, or PR evidence.
+Review accompanies meaningful implementation chunks and repairs. Before branch
+publication, follow `docs/onboarding/ai-reviews.md`: two distinct non-author
+sessions review the immutable candidate, one for correctness and one for
+contracts. Supply the complete merge-base diff, acceptance criteria, factual
+validation, and prior findings. A strategy checkpoint can serve the contracts
+pass when it covers that final candidate; do not add redundant local rounds.
 
-Select a reviewer for the packet's risk within the authorized model and
-delegation scope. Prefer an independent session or disjoint context; if that
-is unavailable, use a role-separated review and record the limitation.
-
-Reviewer findings are hypotheses, not commands. Investigate each substantive
-finding with code inspection, tests, docs, benchmarks, or visual evidence; then
-fix it, split it into a tracked follow-up, or record a no-fix rationale with
-evidence. Re-run the relevant gates after fixes before asking for the next
-review pass. Do not mark a packet complete while review findings are
-unexplained, unverified, or only acknowledged.
+Choose reviewers within the authorized model and reasoning constraints from
+`docs/ai/README.md`. Role-separated author investigation can help local work
+when independent sessions are unavailable, but cannot clear publication.
+Implementation stays with one writer. Findings are hypotheses: inspect their
+evidence, repair the underlying family, and rerun gates before obtaining the
+new candidate's review pair. Preserve unresolved findings and evidenced
+rejections; no clean response silently removes them.
 
 ## Work-packet contract
 

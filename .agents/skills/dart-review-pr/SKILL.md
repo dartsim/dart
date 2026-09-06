@@ -32,23 +32,46 @@ Review or respond to PR: $ARGUMENTS
 @AGENTS.md
 @docs/onboarding/code-style.md
 @docs/onboarding/ai-reviews.md
+@docs/onboarding/ai-tools.md
 @docs/ai/verification.md
 
 ## Workflow
 
 Pick the sub-workflow from `mode=` in `$ARGUMENTS`, defaulting to `review`.
 
-### Review
+### Review A Local Candidate Or PR
 
-```bash
-gh pr view $1 && gh pr diff $1
-```
+For `candidate=<id>`, read its `candidate.json` at the path printed by
+`review-gate prepare`. Verify the supplied base/head/tree and inspect
+`git diff <merge_base> <head>` with surrounding code. Work from the immutable
+candidate in an isolated read-only checkout; do not accidentally review dirty
+files or a later HEAD. No PR needs to exist. The parent supplies objective,
+acceptance criteria, factual gates, prior findings, and author-session IDs.
 
-Check code style, tests, docs, and focused commits. When a claim depends on 3D
-structure or behavior, require the `dart-verify-sim` text oracle and assessed
-visual/debug evidence rather than accepting a screenshot alone.
-Record findings as read-only output; do not push, comment, resolve threads, or re-trigger review
-without explicit maintainer/user approval for that external mutation.
+For a PR number, obtain its current head/base and complete diff with
+`gh pr view` and `gh pr diff`, then follow the same coverage policy. A PR review
+without a prepared local candidate is useful feedback, not publication evidence.
+
+Apply the assigned scope from `docs/onboarding/ai-reviews.md`: correctness
+covers the complete PR diff and acceptance evidence; contracts independently
+traces consumers, sibling cases, and negative cases and records the required
+input/consumer matrix for exclusions, parsers, or validators. Challenge test
+oracles against actual requirements. A non-substantive assessment must prove
+unchanged behavior under the owner's strict baseline rules. Missing evidence
+or unobserved effective reviewer settings makes the report incomplete.
+
+Use a distinct non-author session for each substantive scope. Check code style,
+tests, docs, and focused commits. For 3D claims,
+require the `dart-verify-sim` text oracle plus assessed visual/debug evidence,
+or a justified replacement. Report every surviving finding as a coherent batch, including
+repair regressions and earlier findings whose disposition is unsupported.
+
+Stay read-only. For a local candidate return the final JSON report defined in
+`docs/onboarding/ai-tools.md` for the parent to import with `review-gate record`.
+Include observed session/model/effort, coverage, completion, findings with stable
+IDs and concrete evidence, and verified dispositions. Do not mutate the evidence
+store yourself. A clean verdict requires complete coverage for the current stage under the
+review owner; explicitly retain pending hosted acceptance checks.
 
 ### Address Feedback
 
@@ -65,7 +88,8 @@ after explicit maintainer/user approval and only when the user requests it or a
 clear reason exists (removing sensitive content, repairing branch history).
 
 Run the relevant local gates, including `pixi run lint` before every commit.
-Merge the latest base before each approved push and apply the owner's remote
+Merge the latest base, validate and pass the independent local review gate
+before each approved push, and apply the owner's remote
 divergence recovery if the head moved. Reuse existing explicit authority for
 this PR, action, and scope; ask only where it is missing. No inline bot replies.
 Monitor CI (`gh pr checks $1`); readiness and merge remain separately gated and

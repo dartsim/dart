@@ -140,6 +140,8 @@ autonomous project-home loop.
    model/effort and delegation scope; use role-separated local review when an
    independent route is unavailable under that scope. Root-cause
    failures and fold newly discovered unknowns back into step 3.
+   Author role separation cannot clear publication; use the independent local
+   gate in `docs/onboarding/ai-reviews.md` before any branch push.
 9. **Update docs at each stopping point** - Follow `docs/dev_tasks/README.md`'s
    Session End protocol. Keep the current snapshot sufficient for a fresh
    session to resume without hidden chat memory or reading the entire history.

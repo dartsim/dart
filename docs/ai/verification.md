@@ -19,10 +19,10 @@ Before finalizing substantial AI-assisted work:
    affected architecture invariants and update the assessment/capability rows;
    milestone exits and new solver/coupling contracts require cross-family review.
 4. Identify missing, weakly verified, or blocked requirements.
-5. Verify review evidence: at least two clean independent or role-separated
-   review passes on the current post-fix state, with substantive findings
-   investigated rather than blindly accepted. Apply the coverage and
-   revalidation rules in Review Evidence below.
+5. Verify review evidence: two clean non-author local passes on the current
+   immutable candidate, or the independent non-substantive assessment, under
+   `docs/onboarding/ai-reviews.md`. Investigate substantive findings and apply
+   the coverage rules in Review Evidence below.
 6. For model/scene, behavior-bearing physics/simulation, or GUI work, verify
    `dart-verify-sim` paired a text correctness oracle with assessed claim-tied
    visual/debug evidence, or recorded a justified unavailable exception.
@@ -129,28 +129,19 @@ image-capable reviewer is available.
 
 ## Review Evidence
 
-Review findings are extra input, not orders. For each substantive review
-finding, verify the claim with code inspection, tests, docs, benchmarks, or
-visual artifacts before changing behavior. Record whether the finding was fixed,
-deferred, or rejected with evidence. The review-pass requirement is item 5 of
-the completion audit above.
+`docs/onboarding/ai-reviews.md` owns review coverage, finding dispositions, and
+the independent local publication gate. Two clean non-author sessions on the
+immutable candidate satisfy the local completion requirement: one correctness
+pass and one contracts pass. Substantive edits require a fresh pair; a trivial
+delta needs the owner's independent non-substantive assessment. Preserve all
+findings and verify fixed or rejected dispositions with concrete evidence.
+Required acceptance evidence cannot be replaced by a clean review.
 
-For substantive PRs, a completed hosted review plus the independent local lane
-can satisfy those two passes; do not add a third pass just to count each policy
-wording separately. Without hosted review, local-only work can use two
-independent or role-separated passes, but this does not replace a PR's hosted
-review gate. The substantive-PR independent-session requirement and
-docs-only/mechanical exemption live in `docs/onboarding/ai-reviews.md`.
-
-Preserve the reviewed baseline, findings, and dispositions. After a fix, the
-independent reviewer can revalidate the delta and its interactions against that
-baseline and explicitly record coverage of the resulting state. Expand to a
-full review when scope, architecture, or interactions invalidate the baseline.
-Formatting-only cleanup needs an explicit no-behavior-change assessment rather
-than two new broad local reviews. Required current-head hosted review and
-validation still apply. A clean pass means no unresolved substantive issue;
-verified false positives do not require another round. Add new tests when they
-close a coverage gap, not merely to reject feedback already refuted by evidence.
+Local-only work may use role-separated investigation when independent sessions
+are unavailable, with the limitation recorded, but that cannot satisfy the
+publication gate. Hosted review remains current-head evidence for readiness and
+merge; it does not count as a local pass. Do not add further local rounds merely
+to satisfy overlapping policy wording.
 
 ## DART 7 Simulation Allocation Evidence
 
