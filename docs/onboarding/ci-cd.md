@@ -637,7 +637,7 @@ code:
   - "**"
   - "!.claude/**"
   - "!docs/**"
-  - "!*/**/*.md"
+  - "!CHANGELOG.md"
 ```
 
 ```yaml
@@ -658,14 +658,17 @@ full platform and wheel matrix. `tests/test_ci_code_filter.py` (part of
 quantifier or when a literal exclusion no longer exists.
 
 The filter excludes the AI tool surfaces (`.agents/`, `.claude/`, `.codex/`,
-`.opencode/`), documentation and prose formats, scheduled-only and
-maintenance workflows, the distro container harnesses, repository metadata
-that nothing builds from, and the AI-infrastructure Python files that only
-`pixi run test-ai-infra` exercises. Inputs that look like metadata but feed a
-build stay in: `package.xml` (CMake and `pyproject.toml` read the version),
-the root `README.md` (`pyproject.toml` embeds it as the wheel's long
-description, so markdown is excluded below the root and by name at the root),
-`codecov.yml`, `.gitattributes`, and `.gitignore`. Agent hook changes
+`.opencode/`), the documentation trees and root prose files, scheduled-only
+and maintenance workflows, the distro container harnesses, repository
+metadata that nothing builds from, and the AI-infrastructure Python files
+that only `pixi run test-ai-infra` exercises. Markdown is excluded by tree or
+by name, never with a blanket `*.md` glob: READMEs inside source trees are
+build and test inputs (`pyproject.toml` embeds the root `README.md` as the
+wheel's long description; the Python tests parse
+`python/examples/demos/README.md`). Other inputs that look like metadata but
+feed a build stay in: `package.xml` (CMake and `pyproject.toml` read the
+version), `LICENSE` (packaged into the wheel), `codecov.yml`,
+`.gitattributes`, and `.gitignore`. Agent hook changes
 (`.claude/hooks/**`) run the Windows hook smoke job through its own `hooks`
 filter in `ci_windows.yml`.
 

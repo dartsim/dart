@@ -6,20 +6,28 @@ the durable owner is [`../../onboarding/ci-cd.md`](../../onboarding/ci-cd.md).
 
 ## Stop Point
 
-> **Current Reality (2026-09-05):** PR-1 branch
-> `ci/fix-compiler-cache-and-path-filter` implements the PR-1 packet in the
-> README. Verify with `git status --short --branch`, `git log --oneline -5`,
-> and `gh pr list --head ci/fix-compiler-cache-and-path-filter` before acting;
-> the branch state below is a snapshot, not a checkout command.
+> **Current Reality (2026-09-06):** PR-1 is open as
+> [#3485](https://github.com/dartsim/dart/pull/3485) from
+> `ci/fix-compiler-cache-and-path-filter` (milestone DART 7.0), merged with
+> the latest `main` (no rebase), with two Codex review rounds addressed
+> (root README, LICENSE, and test-consumed READMEs kept in the code filter;
+> this handoff refreshed). The docs-only probe PR #3486 is closed; its runs
+> logged `Filter code = false` on every workflow with all platform and wheel
+> jobs skipped. Verify with `git status --short --branch`,
+> `gh pr view 3485 --json mergeStateStatus,headRefOid`, and
+> `gh pr checks 3485` before acting; the branch state here is a snapshot.
 
 ## Next Action
 
-1. Push, open PR-1 (milestone `DART 7.0`), add the changelog line with the
-   PR number.
-2. Collect live evidence: cold run, docs-only push (expect skips), second
-   code push (expect cache hits and materially shorter build steps).
-3. Refresh the "Expected CI Times" table in `ci-cd.md` from those runs.
-4. After merge, start PR-2 from the README packet list.
+1. Read the required checks on the current PR head; any failure in
+   "Configure environment for compiler cache" is a cache-setup defect to fix,
+   not a guard to weaken.
+2. Record the warm-cache evidence from the head run's sccache-action post-step
+   stats (hit/miss lines per job) and the build-step durations in the
+   "Expected CI Times" table of `docs/onboarding/ci-cd.md`; commit and push
+   that refresh (merge `main` first).
+3. Merge #3485 once every required check is green, then start PR-2 from the
+   README packet list, sized against the recorded warm numbers.
 
 ## Session Constraints
 

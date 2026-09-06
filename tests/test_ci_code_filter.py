@@ -80,21 +80,25 @@ def test_filter_excludes_ai_tool_and_doc_surfaces() -> None:
         "!.codex/**",
         "!.opencode/**",
         "!docs/**",
-        "!*/**/*.md",
+        "!tutorials/**",
+        "!CHANGELOG.md",
     ):
         assert required in patterns, required
 
 
-def test_root_readme_stays_code() -> None:
-    """pyproject.toml embeds README.md in the wheel metadata (readme = ...).
+def test_packaged_and_test_consumed_files_stay_code() -> None:
+    """Files that builds, tests, or packaging consume must never be excluded.
 
-    A blanket ``!**/*.md`` would also drop the root README and skip the wheel
-    build for edits to the published PyPI description; markdown is therefore
-    excluded below the root (``!*/**/*.md``) plus the root prose files by name.
+    pyproject.toml embeds README.md as the wheel's long description and
+    scikit-build-core packages LICENSE; python/tests parse
+    python/examples/demos/README.md. Markdown is therefore excluded only by
+    tree or by root name, never with a blanket ``*.md`` glob.
     """
-    patterns = set(_filter_patterns())
-    assert "!**/*.md" not in patterns
-    assert "!README.md" not in patterns
+    patterns = _filter_patterns()
+    for forbidden in ("!README.md", "!LICENSE", "!package.xml"):
+        assert forbidden not in patterns, forbidden
+    blanket = [pattern for pattern in patterns if pattern.endswith("*.md")]
+    assert not blanket, f"blanket markdown exclusions: {blanket}"
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     assert 'readme = "README.md"' in pyproject
 

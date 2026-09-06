@@ -20,23 +20,21 @@ code:
   - "!.claude/**"
   - "!.codex/**"
   - "!.opencode/**"
-  # Documentation, tutorials (a CMake stub since the OSG tutorials were
-  # removed), papers, and prose formats. Markdown is excluded below the root
-  # and by name at the root: the root README.md stays code because
-  # pyproject.toml embeds it as the dartpy wheel's long description
-  # (`readme = "README.md"`), so README edits keep the wheel build.
+  # Documentation trees, tutorials (a CMake stub since the OSG tutorials were
+  # removed), papers, and the root prose files. Markdown is excluded only by
+  # tree or by name, never with a blanket `*.md` glob: READMEs inside source
+  # trees are consumed by builds and tests (pyproject.toml embeds the root
+  # README.md as the wheel's long description; python/tests parse
+  # python/examples/demos/README.md), so they stay code.
   - "!docs/**"
   - "!tutorials/**"
   - "!paper/**"
   - "!.readthedocs.yml"
-  - "!*/**/*.md"
   - "!AGENTS.md"
   - "!CHANGELOG.md"
   - "!CLAUDE.md"
   - "!CONTRIBUTING.md"
-  - "!**/*.rst"
-  - "!**/*.po"
-  - "!**/*.pot"
+  - "!.github/PULL_REQUEST_TEMPLATE.md"
   # Scheduled-only and maintenance workflows: they never run in the PR tier,
   # so editing them does not need the PR matrix. Build/test/packaging
   # workflows stay covered by `**`.
@@ -55,15 +53,15 @@ code:
   - "!.devcontainer/**"
   # Repository metadata that no build, test, or packaging step consumes.
   # Not excluded on purpose: package.xml (CMake and pyproject derive the
-  # version from it), codecov.yml (validated by the Coverage upload),
-  # .gitattributes and .gitignore (checkout and sdist contents).
+  # version from it), LICENSE (scikit-build-core packages it into the wheel),
+  # codecov.yml (validated by the Coverage upload), .gitattributes and
+  # .gitignore (checkout and sdist contents).
   - "!.clang-format"
   - "!.codespellrc"
   - "!.gersemirc"
   - "!Brewfile"
   - "!CITATION.bib"
   - "!CITATION.cff"
-  - "!LICENSE"
   - "!colcon.pkg"
   # AI-infrastructure Python that only `pixi run test-ai-infra` (CI Lint)
   # exercises. Keep this list in sync with the `test-ai-infra` task.
