@@ -432,6 +432,12 @@ those findings and their related cases. Their adverse reports were added to the
 existing journals; earlier clean reports did not override them. This is further
 evidence that two local passes do not guarantee a correct implementation.
 
+Local reviews of the repair then caught custom-manager regressions before
+publication: executing an empty retained checker could succeed, and exporting
+through an aliased or retargeted directory could replace existing hook handlers.
+The findings remained open across those revisions, including when a later
+adverse report superseded an earlier clean report on the same candidate.
+
 This small qualitative exercise had unequal review scopes and no controlled
 cost comparison. It establishes neither universal detection nor fewer hosted
 iterations. The [ten-PR trial](ai-tools.md#codex-hosted-review-settings) owns

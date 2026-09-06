@@ -17,8 +17,8 @@ interpreter first. Behaviour:
   worktrees of the repository.
 * A repository or user with ``core.hooksPath`` set manages hooks elsewhere;
   the installer refuses rather than write into a shared personal hooks
-  directory. ``--custom-manager`` instead exports the verified push launcher
-  and checker into ``<git-common-dir>/dart-review-runtime`` for explicit chaining.
+  directory. ``--custom-manager`` instead exports two named runtime files
+  directly into the Git common directory for explicit chaining.
 * Emergency bypass at commit time: ``DART_SKIP_HOOKS=1 git commit ...``.
 * Verification aid: ``DART_HOOK_DRY_RUN=1`` makes the installed hook print the
   command it *would* run instead of running it, so tests and manual checks can
@@ -161,6 +161,22 @@ def resolve_hooks_dir() -> Path:
     return raw
 
 
+def resolve_export_root() -> Path:
+    """Use Git's canonical metadata root without an aliasable child directory."""
+    common = Path(
+        run_git(["rev-parse", "--path-format=absolute", "--git-common-dir"])
+    ).resolve()
+    configured = Path(
+        run_git(["rev-parse", "--path-format=absolute", "--git-path", "hooks"])
+    ).resolve()
+    if common in (configured, (common / "hooks").resolve()):
+        sys.exit(
+            "error: Git common directory is also a hooks directory; "
+            "refusing to export into the hook manager"
+        )
+    return common
+
+
 def publish_file(path: Path, content: bytes, executable: bool = False) -> None:
     """Readers see a complete old or new file, including during reinstall."""
     descriptor, temporary = tempfile.mkstemp(prefix=".dart-hook-", dir=path.parent)
@@ -197,14 +213,12 @@ def preserve_hook(path: Path, local: Path) -> None:
             local.chmod(stat.S_IMODE(os.fstat(original.fileno()).st_mode))
 
 
-def install(hooks_dir: Path, *, push_only: bool = False) -> int:
+def install(hooks_dir: Path) -> int:
     checker = Path(__file__).with_name("review_gate.py").read_bytes()
     definitions = (
         ("pre-commit", SENTINEL, HOOK_TEMPLATE),
         ("pre-push", "DART-MANAGED-PRE-PUSH v1", pre_push_hook(checker)),
     )
-    if push_only:
-        definitions = definitions[1:]
     # Check both preservation boundaries before replacing either hook.
     for name, sentinel, _ in definitions:
         hook = hooks_dir / name
@@ -228,23 +242,52 @@ def install(hooks_dir: Path, *, push_only: bool = False) -> int:
                 f"Preserved existing {name} hook as {local} (chained from the DART hook)."
             )
         write_hook(hook, template)
-        action = "Exported" if push_only else "Installed"
-        print(f"{action} DART {name} hook: {hook}")
+        print(f"Installed DART {name} hook: {hook}")
     print(
         "  Pre-push requires recorded local reviews; see docs/onboarding/ai-reviews.md."
     )
-    if push_only:
-        print(
-            "  Chain dart-review-runtime/pre-push from your existing manager; "
-            "its configuration and handlers were not changed."
-        )
-        runtime_path = "$(git rev-parse --git-common-dir)/dart-review-runtime"
-    else:
-        runtime_path = "$(git rev-parse --git-path hooks)"
     print(
-        f'  Installed evidence CLI: python3 -I "{runtime_path}/dart-review-gate.py" --help'
+        "  Installed evidence CLI: python3 -I "
+        '"$(git rev-parse --git-path hooks)/dart-review-gate.py" --help'
     )
     print("  DART_SKIP_HOOKS applies only to the existing commit guard, not pre-push.")
+    return 0
+
+
+def export_review_runtime(common: Path) -> int:
+    """Publish only reserved leaves, never adopt or change manager handlers."""
+    launcher = common / "dart-review-pre-push"
+    runtime = common / "dart-review-gate.py"
+    for path in (launcher, runtime):
+        if path.is_symlink() or (path.exists() and not path.is_file()):
+            sys.exit(
+                f"error: refusing to replace an aliased or non-file export: {path}"
+            )
+    owned_launcher = launcher.is_file() and not foreign_hook(
+        launcher, "DART-MANAGED-PRE-PUSH v1"
+    )
+    if launcher.exists() and not owned_launcher:
+        sys.exit(f"error: refusing to replace an unmanaged export: {launcher}")
+    if (
+        runtime.exists()
+        and not owned_launcher
+        and foreign_hook(runtime, "# DART-REVIEW-CHECKER v1")
+    ):
+        sys.exit(f"error: refusing to replace an unmanaged export: {runtime}")
+    # An owned launcher permits recovery of its damaged checker. A checker-only
+    # interrupted initial export carries its own stable ownership marker.
+    checker = Path(__file__).with_name("review_gate.py").read_bytes()
+    publish_file(runtime, checker)
+    write_hook(launcher, pre_push_hook(checker, chain_local=False))
+    print(f"Exported DART review launcher: {launcher}")
+    print(
+        "  Chain dart-review-pre-push from your existing manager; "
+        "its configuration and handlers were not changed."
+    )
+    print(
+        "  Installed evidence CLI: python3 -I "
+        '"$(git rev-parse --git-common-dir)/dart-review-gate.py" --help'
+    )
     return 0
 
 
@@ -257,12 +300,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     if args.custom_manager:
-        common = Path(run_git(["rev-parse", "--git-common-dir"]))
-        hooks_dir = (Path.cwd() / common / "dart-review-runtime").resolve()
+        hooks_dir = resolve_export_root()
+        lock_name = ".dart-review-export-lock"
     else:
         hooks_dir = resolve_hooks_dir()
+        lock_name = ".dart-install-lock"
     hooks_dir.mkdir(parents=True, exist_ok=True)
-    lock = hooks_dir / ".dart-install-lock"
+    lock = hooks_dir / lock_name
     try:
         lock.mkdir()
     except FileExistsError:
@@ -270,7 +314,9 @@ def main(argv: list[str] | None = None) -> int:
             f"error: another installer holds {lock}; after a crash verify it stopped before removing the lock"
         )
     try:
-        return install(hooks_dir, push_only=args.custom_manager)
+        if args.custom_manager:
+            return export_review_runtime(hooks_dir)
+        return install(hooks_dir)
     finally:
         lock.rmdir()
 
