@@ -119,12 +119,19 @@ def check_against_views(
                 f"guided view `{guided}` named by the fixture does not exist"
             )
         else:
-            focus = set(views[guided].get("focus", []))
+            focus = [str(f) for f in views[guided].get("focus", [])]
             missing = [s for s in stages if s not in focus]
             if missing:
                 findings.append(
                     f"guided view `{guided}` does not focus recorded stage(s) {missing}"
                 )
+            else:
+                focused_order = [f for f in focus if f in stages]
+                if focused_order != stages:
+                    findings.append(
+                        f"guided view `{guided}` lists stages in the order "
+                        f"{focused_order}, but the step ran {stages}"
+                    )
     vocabulary = (
         view_text(compute_view)
         + "\n"
@@ -205,12 +212,21 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
 
     fresh: dict | None = None
+    probe_failed = False
     if args.probe_output is not None:
         fresh = load_json(args.probe_output)
     else:
+        if args.probe_binary is not None and not (
+            args.probe_binary.is_file() and os.access(args.probe_binary, os.X_OK)
+        ):
+            print(
+                f"ERROR: probe binary {args.probe_binary} is missing or not executable"
+            )
+            return 1
         binary = args.probe_binary or find_probe_binary()
         if binary is not None:
             fresh = run_probe(binary)
+            probe_failed = fresh is None
         else:
             print(
                 "probe binary not built; comparing the committed fixture with the views only"
@@ -236,6 +252,11 @@ def main(argv: list[str]) -> int:
     findings = check_against_views(
         fixture, load_json(STEP_VIEW), load_json(COMPUTE_VIEW)
     )
+    if probe_failed:
+        findings.append(
+            "probe binary failed or wrote no dump; the fixture could not be compared "
+            "with fresh evidence"
+        )
     if fresh is not None:
         findings.extend(compare_dumps(fixture, fresh))
 

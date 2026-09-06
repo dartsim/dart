@@ -25,9 +25,12 @@ their input geometry looks similar.
 ## The Living Architecture Map
 
 The four views below are rendered at documentation build time from typed JSON
-sources under `docs/assets/architecture/`. Each node carries a status tag and
-cites the source files that back it; the `SRC` markers open those files at the
-commit the site was built from. A CI check fails when a cited path, line, or
+sources under `docs/assets/architecture/`. Each node carries a status tag. In
+the three architecture views every node cites the source files that back it,
+and the `SRC` markers open those files at the commit the site was built from;
+the data-flow view's nodes are the step-stage slots themselves, so their
+evidence is the checked one-to-one mapping to the schedule enumerators rather
+than file links. A CI check fails when a cited path, line, or
 symbol disappears, or when a simulation module, step-stage slot, or solver
 family is missing from the view that owns it, so the map cannot drift silently
 behind the code. Pan, zoom, search, and node focus work inside each frame; the

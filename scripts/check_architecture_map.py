@@ -207,10 +207,38 @@ class Checker:
         return self._header_text
 
     def symbol_resolves(self, symbol: str) -> bool:
-        tail = symbol.split("::")[-1]
-        return (
-            re.search(r"\b" + re.escape(tail) + r"\b", self.header_text()) is not None
+        """True when ``symbol`` is declared where its qualification says.
+
+        ``dart::a::b::Name`` must be declared by a header under ``dart/a/b/``
+        (class, struct, enum, namespace, using, concept, or function), so a
+        namespace move or a typo in any component fails instead of matching a
+        same-named declaration elsewhere. Other qualified names must occur
+        verbatim in the headers; unqualified CamelCase names may occur anywhere.
+        """
+        parts = symbol.split("::")
+        if len(parts) == 1:
+            pattern = r"\b" + re.escape(symbol) + r"\b"
+            return re.search(pattern, self.header_text()) is not None
+        if parts[0] != "dart":
+            return re.search(re.escape(symbol), self.header_text()) is not None
+        directory = self._abs(Path("dart", *parts[1:-1]))
+        if not directory.is_dir():
+            return False
+        tail = re.escape(parts[-1])
+        declaration = re.compile(
+            r"(?:\b(?:class|struct|enum\s+class|enum|using|concept)\s+"
+            r"(?:DART_\w+_API\s+)?" + tail + r"\b)"
+            r"|(?:\bnamespace\s+(?:[\w:]+::)?" + tail + r"\b)"
+            r"|(?:\b" + tail + r"\s*\()"
         )
+        for header in sorted(directory.rglob("*.hpp")):
+            try:
+                text = header.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            if declaration.search(text):
+                return True
+        return False
 
     def read(self, relative: Path | str) -> str:
         try:

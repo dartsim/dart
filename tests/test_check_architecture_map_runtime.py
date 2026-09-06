@@ -103,6 +103,32 @@ def test_unknown_stage_and_focus_and_vocabulary_are_reported() -> None:
     assert any("compute node `mystery:node` is not named" in f for f in findings)
 
 
+def test_guided_view_order_must_match_recorded_order() -> None:
+    fixture = _fixture()
+    step = _step_view()
+    step["meta"]["views"][0]["focus"] = ["kinematics", "rigid_body_velocity", "sync"]
+    findings = camr.check_against_views(fixture, step, _compute_view())
+    assert any("lists stages in the order" in f for f in findings)
+
+
+def test_failing_probe_binary_is_a_finding_and_strict_fails(
+    views: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fixture_path = views / "compute-graph.runtime.json"
+    fixture_path.write_text(json.dumps(_fixture()), encoding="utf-8")
+    monkeypatch.setattr(camr, "find_probe_binary", lambda: Path("/nonexistent/probe"))
+    monkeypatch.setattr(camr, "run_probe", lambda binary: None)
+    assert camr.main(["--fixture", str(fixture_path)]) == 0
+    assert "probe binary failed" in capsys.readouterr().out
+    assert camr.main(["--fixture", str(fixture_path), "--strict"]) == 1
+    assert (
+        camr.main(
+            ["--fixture", str(fixture_path), "--probe-binary", str(views / "missing")]
+        )
+        == 1
+    )
+
+
 def test_missing_guided_view_is_reported() -> None:
     fixture = _fixture()
     fixture["guided_view"] = "nope"

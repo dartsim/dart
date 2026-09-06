@@ -327,6 +327,16 @@ def test_unknown_symbol_in_sublabel(repo: Path) -> None:
     assert any("`GhostClassName`" in e for e in errors)
 
 
+def test_qualified_symbols_resolve_in_their_namespace_directory(repo: Path) -> None:
+    checker = cam.Checker(repo_root=repo)
+    assert checker.symbol_resolves("dart::simulation::World")
+    assert checker.symbol_resolves("dart::simulation::RigidBodySolver")
+    assert not checker.symbol_resolves("dart::collision::World")
+    assert not checker.symbol_resolves("dart::nowhere::World")
+    assert not checker.symbol_resolves("totally::wrong::World")
+    assert checker.symbol_resolves("StateSpace")
+
+
 def test_dartpy_dotted_names_are_not_symbols() -> None:
     assert cam.Checker._symbols("dartpy.World · dart::simulation::World") == [
         "dart::simulation::World"

@@ -120,8 +120,8 @@
       "label": "Deformables",
       "sublabel": "FEM \u00b7 VBD \u00b7 IPC",
       "tag": "Partial",
-      "stage": 2,
-      "row": 4
+      "stage": 3,
+      "row": 3
     },
     {
       "id": "rigid_ipc_contact",
@@ -254,15 +254,11 @@
       "to": "multibody_forward_dynamics",
       "label": "joint state",
       "classification": "standalone",
-      "fromSide": "right",
+      "fromSide": "bottom",
       "toSide": "bottom",
       "via": [
         [
-          181,
-          385
-        ],
-        [
-          181,
+          100,
           700
         ],
         [
@@ -281,17 +277,25 @@
       "to": "deformable_dynamics",
       "label": "vertex state",
       "classification": "deformable",
-      "fromSide": "bottom",
-      "toSide": "left",
+      "fromSide": "right",
+      "toSide": "bottom",
       "via": [
         [
-          100,
-          613
+          181,
+          385
+        ],
+        [
+          181,
+          556
+        ],
+        [
+          745,
+          556
         ]
       ],
       "labelAt": [
-        422,
-        594
+        460,
+        541
       ]
     },
     {
@@ -429,7 +433,7 @@
       ],
       "labelAt": [
         745,
-        462
+        424
       ]
     },
     {
@@ -451,30 +455,12 @@
       "to": "kinematics",
       "label": "vertices",
       "classification": "deformable",
-      "fromSide": "right",
-      "toSide": "left",
-      "via": [
-        [
-          637,
-          613
-        ],
-        [
-          637,
-          556
-        ],
-        [
-          878,
-          556
-        ],
-        [
-          878,
-          385
-        ]
-      ],
       "labelAt": [
-        745,
-        542
-      ]
+        838,
+        480
+      ],
+      "route": "vertical-channel",
+      "channelX": 878
     },
     {
       "id": "kinematics-continuation",
@@ -497,7 +483,7 @@
       "title": "One ordered stage list",
       "items": [
         "makeBuiltInWorldStepSchedule picks at most eight slots from the eleven shown",
-        "Empty domains add no stage; kinematics always runs last",
+        "Empty domains add no stage; deformables advance after the position stages in the fused schedule; kinematics always runs last",
         "Flows name the data a stage hands on, so state ownership is readable"
       ]
     },

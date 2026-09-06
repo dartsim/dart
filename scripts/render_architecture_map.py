@@ -366,10 +366,7 @@ def fallback_html(view: View, reason: str, revision: str | None) -> str:
         source_comment(view, revision),
         '<html lang="en"><head><meta charset="utf-8">',
         f"<title>{title}</title>",
-        "<style>body{font:15px/1.5 system-ui,sans-serif;margin:1.5rem;"
-        "color:#1f2933;background:#fff}h1{font-size:1.25rem}"
-        "h2{font-size:1rem;margin-top:1.25rem}code{font-size:.9em}"
-        "ul{padding-left:1.25rem}.note{color:#52606d}</style></head><body>",
+        "<style>body{font:15px/1.5 system-ui,sans-serif;margin:1.5rem;color:#1f2933;background:#fff}h1{font-size:1.25rem}h2{font-size:1rem;margin-top:1.25rem}code{font-size:.9em}ul{padding-left:1.25rem}.note{color:#52606d}</style></head><body>",
         f"<h1>{title}</h1>",
         f'<p class="note">Text rendering. {html.escape(reason)} '
         f"Source: <code>{html.escape(view.relpath)}</code>.</p>",
