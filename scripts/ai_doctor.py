@@ -461,8 +461,8 @@ def _recovery(
     )
     if custom_hooks:
         add(
-            "wire the DART gates into the configured hook manager; see docs/onboarding/ai-tools.md",
-            "python3 scripts/check_agent_hook.py --profile staged",
+            "integrate both DART gates without replacing the configured hook manager",
+            "read docs/onboarding/ai-tools.md#custom-hook-managers",
         )
     elif any("managed Git pre-" in warning for warning in warnings):
         add("the cross-tool Git hook is missing or stale", "pixi run install-hooks")

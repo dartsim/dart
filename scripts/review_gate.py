@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# DART-REVIEW-CHECKER v1
 """Record independent review evidence and check outgoing Git branch updates.
 
 Uses Python 3.11+ and the standard library only. The installer copies this
@@ -13,8 +14,10 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
+import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -22,17 +25,17 @@ SCHEMA_VERSION = 1
 MAX_BYTES = 2 * 1024 * 1024
 ID_RE = re.compile(r"[0-9a-f]{64}\Z")
 OID_RE = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
+EVIDENCE_PATH_RE = re.compile(
+    r"(?:targets/[0-9a-f]{64}\.json|candidates/[0-9a-f]{64}/"
+    r"(?:candidate\.json|reports\.json|reports/[0-9]{6}-[0-9a-f]{64}\.json))\Z"
+)
 
 PRE_PUSH_TEMPLATE = """\
 #!/bin/sh
 # DART-MANAGED-PRE-PUSH v1
 # Installed with its standalone checker by pixi run install-hooks.
 repo_root=$(git rev-parse --show-toplevel) || exit 1
-hooks_dir=$(git rev-parse --git-path hooks) || exit 1
-case "$hooks_dir" in
-    /*|[A-Za-z]:*) ;;
-    *) hooks_dir="$repo_root/$hooks_dir" ;;
-esac
+hooks_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 1
 checker="$hooks_dir/dart-review-gate.py"
 if [ ! -f "$checker" ]; then
     echo "DART review gate BLOCKED: installed checker missing; run pixi run install-hooks" >&2
@@ -52,7 +55,7 @@ if hashlib.sha256(source).hexdigest() != expected:
     sys.exit("DART review gate BLOCKED: installed checker changed; run pixi run install-hooks")
 sys.argv = [path, *sys.argv[3:]]
 exec(compile(source, path, "exec"), {"__name__": "__main__", "__file__": path})
-' "$checker" "@CHECKER_SHA256@" pre-push "$@"
+' "$checker" "@CHECKER_SHA256@" pre-push@LOCAL_HOOK_FLAG@ "$@"
 }
 if [ -n "${DART_HOOK_PYTHON:-}" ]; then
     if ! "$DART_HOOK_PYTHON" -I -c 'import sys; sys.exit(sys.version_info < (3, 11))' </dev/null >/dev/null 2>&1; then
@@ -72,10 +75,10 @@ exit 1
 """
 
 
-def pre_push_hook(checker: bytes) -> str:
+def pre_push_hook(checker: bytes, *, chain_local: bool = True) -> str:
     return PRE_PUSH_TEMPLATE.replace(
         "@CHECKER_SHA256@", hashlib.sha256(checker).hexdigest()
-    )
+    ).replace("@LOCAL_HOOK_FLAG@", "" if chain_local else " --no-local-hook")
 
 
 class GateError(Exception):
@@ -109,15 +112,32 @@ def digest(value: object) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def read_json(path: Path) -> dict:
+def destination(candidate: dict) -> str:
+    """Read new opaque destinations and preserve existing local history."""
+    if "destination" in candidate:
+        value = candidate["destination"]
+        require(
+            isinstance(value, str) and bool(ID_RE.fullmatch(value)),
+            "invalid candidate destination",
+        )
+        require("location" not in candidate, "candidate mixes destination formats")
+        return value
+    # The original schema-1 journal stored the raw location. Keep those
+    # immutable records readable; new candidates never persist a push URL.
+    return digest(
+        [text_field(candidate.get("location"), "location"), candidate["target"]]
+    )
+
+
+def read_json(path: Path, maximum: int = MAX_BYTES) -> dict:
     require(path.is_file(), f"missing evidence: {path}")
-    require(path.stat().st_size <= MAX_BYTES, f"oversized evidence: {path}")
+    require(path.stat().st_size <= maximum, f"oversized evidence: {path}")
     value = json.loads(path.read_text(encoding="utf-8"))
     require(isinstance(value, dict), f"expected JSON object: {path}")
     return value
 
 
-def write_json_files(files: list[tuple[Path, dict]]) -> None:
+def encoded_files(files: list[tuple[Path, dict]]) -> list[tuple[Path, bytes]]:
     encoded = [
         (path, (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8"))
         for path, value in files
@@ -126,11 +146,73 @@ def write_json_files(files: list[tuple[Path, dict]]) -> None:
     # Compact inputs may expand through indentation or Unicode escaping.
     for path, contents in encoded:
         require(len(contents) <= MAX_BYTES, f"oversized serialized evidence: {path}")
-    # Commands hold the store lock. Use exact LF bytes on every platform so
-    # the published sizes match the checked sizes, including on Windows.
+    return encoded
+
+
+def atomic_write(path: Path, contents: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary = tempfile.mkstemp(prefix=".dart-review-", dir=path.parent)
+    try:
+        with os.fdopen(descriptor, "wb") as output:
+            output.write(contents)
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def recover_json_files(store: Path) -> None:
+    """Finish a committed update before any locked reader inspects evidence."""
+    pending = store / "pending.json"
+    if not pending.exists():
+        return
+    transaction = read_json(pending, maximum=4 * MAX_BYTES)
+    updates = transaction.get("updates")
+    require(
+        isinstance(updates, list)
+        and len(updates) in (2, 3)
+        and transaction.get("digest") == digest(updates),
+        "invalid pending evidence transaction",
+    )
+    files = []
+    for update in updates:
+        require(isinstance(update, dict), "invalid pending evidence update")
+        name = update.get("path")
+        require(
+            isinstance(name, str) and bool(EVIDENCE_PATH_RE.fullmatch(name)),
+            "invalid pending evidence path",
+        )
+        value = update.get("value")
+        require(isinstance(value, dict), "invalid pending evidence value")
+        path = store / name
+        require(
+            path.resolve().is_relative_to(store.resolve()),
+            "pending evidence path escapes the store",
+        )
+        files.append((path, value))
+    require(len({path for path, _ in files}) == len(files), "duplicate evidence path")
+    # Validate the complete transaction before publishing any of its files.
+    encoded = encoded_files(files)
     for path, contents in encoded:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(contents)
+        atomic_write(path, contents)
+    pending.unlink()
+
+
+def write_json_files(store: Path, files: list[tuple[Path, dict]]) -> None:
+    encoded_files(files)
+    updates = [
+        {"path": path.relative_to(store).as_posix(), "value": value}
+        for path, value in files
+    ]
+    transaction = json.dumps({"updates": updates, "digest": digest(updates)}).encode(
+        "utf-8"
+    )
+    require(len(transaction) <= 4 * MAX_BYTES, "oversized evidence transaction")
+    # The durable intent makes interruption after any individual replacement
+    # recoverable. Commands hold the store lock throughout publication/recovery.
+    atomic_write(store / "pending.json", transaction)
+    recover_json_files(store)
 
 
 def text_field(value: object, label: str) -> str:
@@ -157,6 +239,7 @@ class Store:
                 "verify no command is running before removing that empty directory"
             ) from exc
         try:
+            recover_json_files(self.path)
             yield
         finally:
             lock.rmdir()
@@ -165,8 +248,8 @@ class Store:
         require(bool(ID_RE.fullmatch(candidate_id)), "invalid candidate ID")
         return self.path / "candidates" / candidate_id
 
-    def target_path(self, location: str, target: str) -> Path:
-        return self.path / "targets" / (digest([location, target]) + ".json")
+    def target_path(self, destination_id: str) -> Path:
+        return self.path / "targets" / (destination_id + ".json")
 
     def candidate(self, candidate_id: str) -> dict:
         if candidate_id in self._candidates:
@@ -196,9 +279,7 @@ class Store:
         self._candidates[candidate_id] = data
         return data
 
-    def target(
-        self, location: str, target: str, *, initial: bool = False
-    ) -> str | None:
+    def target(self, destination_id: str, *, initial: bool = False) -> str | None:
         """The mutable index must identify the unique immutable history tip."""
         matches = {}
         for path in (self.path / "candidates").glob("*/candidate.json"):
@@ -207,9 +288,9 @@ class Store:
                 digest(data) == path.parent.name,
                 "candidate identity or content changed",
             )
-            if (data.get("location"), data.get("target")) == (location, target):
+            if destination(data) == destination_id:
                 matches[path.parent.name] = data
-        index = self.target_path(location, target)
+        index = self.target_path(destination_id)
         if not matches:
             require(
                 initial and not index.exists(), "missing or mismatched target history"
@@ -248,25 +329,26 @@ class Store:
         authors = sorted(
             {text_field(author, "author session") for author in args.author_session}
         )
-        target_path = self.target_path(locations[0], target)
-        previous = self.target(locations[0], target, initial=True)
+        destination_id = digest([locations[0], target])
+        target_path = self.target_path(destination_id)
+        previous = self.target(destination_id, initial=True)
         if previous:
             prior = self.candidate(previous)
             require(
-                prior["location"] == locations[0] and prior["target"] == target,
+                destination(prior) == destination_id and prior["target"] == target,
                 "target history does not match publication destination",
             )
             authors = sorted(set(authors) | set(prior["authors"]))
-            if (prior["head"], prior["base_ref"], prior["base"], prior["authors"]) == (
-                head,
-                base_ref,
-                base,
-                authors,
-            ):
+            if "destination" in prior and (
+                prior["head"],
+                prior["base_ref"],
+                prior["base"],
+                prior["authors"],
+            ) == (head, base_ref, base, authors):
                 return previous
         data = {
             "schema_version": SCHEMA_VERSION,
-            "location": locations[0],
+            "destination": destination_id,
             "target": target,
             "base_ref": base_ref,
             "base": base,
@@ -278,11 +360,12 @@ class Store:
         }
         candidate_id = digest(data)
         write_json_files(
+            self.path,
             [
                 (self.candidate_dir(candidate_id) / "candidate.json", data),
                 (self.candidate_dir(candidate_id) / "reports.json", {"reports": []}),
                 (target_path, {"candidate": candidate_id}),
-            ]
+            ],
         )
         return candidate_id
 
@@ -397,7 +480,7 @@ class Store:
 
     def record(self, candidate_id: str, report_path: Path) -> None:
         candidate = self.candidate(candidate_id)
-        active = self.target(candidate["location"], candidate["target"])
+        active = self.target(destination(candidate))
         cursor = active
         seen = set()
         while cursor and cursor != candidate_id:
@@ -423,11 +506,13 @@ class Store:
         )
         manifest = self.candidate_dir(candidate_id) / "reports.json"
         names = read_json(manifest)["reports"]
-        write_json_files([(path, report), (manifest, {"reports": [*names, path.name]})])
+        write_json_files(
+            self.path, [(path, report), (manifest, {"reports": [*names, path.name]})]
+        )
 
     def assert_current(self, candidate_id: str, candidate: dict) -> None:
         require(
-            self.target(candidate["location"], candidate["target"]) == candidate_id,
+            self.target(destination(candidate)) == candidate_id,
             "a newer candidate supersedes this evidence",
         )
         require(
@@ -460,14 +545,14 @@ class Store:
         if current:
             self.assert_current(candidate_id, active)
         outstanding: dict[str, dict] = {}
-        known: set[str] = set()
+        finding_heads: dict[str, str] = {}
         passed: dict[str, dict] = {}
         prior_candidates: dict[str, dict] = {}
         verdict = "two clean independent reviews are missing"
         for identity, candidate in history:
             require(
-                (candidate["location"], candidate["target"])
-                == (active["location"], active["target"]),
+                (destination(candidate), candidate["target"])
+                == (destination(active), active["target"]),
                 "candidate history changed publication target",
             )
             latest = {}
@@ -478,17 +563,40 @@ class Store:
                 for finding in report["findings"]:
                     # Reports remain immutable; the same logical issue can
                     # acquire more precise wording and evidence on a new head.
-                    known.add(finding["id"])
+                    finding_heads[finding["id"]] = candidate["head"]
                     outstanding[finding["id"]] = finding
                 for disposition in report["dispositions"]:
                     require(
-                        disposition["id"] in known,
+                        disposition["id"] in finding_heads,
                         "disposition names an unknown finding",
                     )
                     require(
                         report["status"] == "complete",
                         "incomplete review cannot close a finding",
                     )
+                    if report["reviewer"]["session"] in active["authors"]:
+                        # Adding an author revokes their earlier dispositions
+                        # without corrupting the immutable report history.
+                        require(
+                            not (extra and extra[0] == identity and report is extra[1]),
+                            "an active authoring session cannot close a finding",
+                        )
+                        continue
+                    if disposition["status"] == "fixed":
+                        finding_head = finding_heads[disposition["id"]]
+                        changed_head = candidate["head"] != finding_head
+                        require(
+                            changed_head
+                            or not (
+                                extra and extra[0] == identity and report is extra[1]
+                            ),
+                            "a fixed disposition needs a changed head in a later candidate",
+                        )
+                        if not changed_head:
+                            # Retain findings from invalid dispositions that an
+                            # older checker accepted; a later valid report can
+                            # repair the record without deleting its history.
+                            continue
                     outstanding.pop(disposition["id"], None)
                 latest[(report["reviewer"]["session"], report["scope"])] = report
             clean = [
@@ -569,10 +677,12 @@ class Store:
             )
             if set(head) == {"0"} or not target.startswith("refs/heads/"):
                 continue
-            candidate_id = self.target(location, target)
+            destination_id = digest([location, target])
+            candidate_id = self.target(destination_id)
             candidate = self.candidate(candidate_id)
             require(
-                (candidate["location"], candidate["target"]) == (location, target),
+                destination(candidate) == destination_id
+                and candidate["target"] == target,
                 "candidate does not match outgoing destination",
             )
             require(
@@ -615,6 +725,7 @@ def hook_inventory(root: Path) -> dict:
             }
         )
     except HOOK_INVENTORY_ERRORS:
+        # Missing or unreadable installation state remains unverified above.
         pass
     return result
 
@@ -642,6 +753,11 @@ def main() -> int:
     push = commands.add_parser(
         "pre-push", help="Git hook entrypoint; reads ref updates from stdin"
     )
+    push.add_argument(
+        "--no-local-hook",
+        action="store_true",
+        help="leave hook chaining to the configured custom manager",
+    )
     push.add_argument("remote")
     push.add_argument("location")
     args = parser.parse_args()
@@ -654,7 +770,7 @@ def main() -> int:
                 store.pre_push(args.location, payload)
             # A shell preserves Git's executable/shebang handling on Windows too.
             local = Path(__file__).resolve().parent / "pre-push.local"
-            if local.is_file() and os.access(local, os.X_OK):
+            if not args.no_local_hook and local.is_file() and os.access(local, os.X_OK):
                 return subprocess.run(
                     [
                         "sh",
@@ -693,6 +809,12 @@ def main() -> int:
         subprocess.SubprocessError,
     ) as exc:
         print(f"DART review gate BLOCKED: {exc}", file=sys.stderr)
+        print(
+            "  Evidence CLI (also in older worktrees): python3 -I "
+            + shlex.quote(str(Path(__file__).resolve()))
+            + " --help",
+            file=sys.stderr,
+        )
         return 1
 
 

@@ -9,6 +9,7 @@ import argparse
 import ast
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -134,6 +135,42 @@ def install(repository):
     repo, _, env = repository
     result = run(repo, env, sys.executable, str(INSTALLER))
     assert result.returncode == 0, result.stderr
+
+
+def install_custom_manager(repository, *, export=True):
+    repo, _, env = repository
+    runtime = repo / ".git" / "dart-review-gate.py"
+    manager = repo.parent / "custom manager"
+    manager.mkdir()
+    guide = (ROOT / "docs" / "onboarding" / "ai-tools.md").read_text(encoding="utf-8")
+    guidance = guide.split("### Custom Hook Managers\n", 1)[1]
+    assert "pixi run install-hooks --custom-manager" in guidance
+    handlers = re.findall(r"```sh\n(.*?)```", guidance, flags=re.DOTALL)
+    assert len(handlers) == 2
+    hook = manager / "pre-push"
+    hook.write_bytes(handlers[1].encode("utf-8"))
+    hook.chmod(0o755)
+    git(repo, env, "config", "core.hooksPath", str(manager))
+    if export:
+        result = run(repo, env, sys.executable, str(INSTALLER), "--custom-manager")
+        assert result.returncode == 0, result.stderr
+    return runtime, manager
+
+
+def directory_alias(path, target):
+    try:
+        path.symlink_to(target, target_is_directory=True)
+    except OSError:
+        if os.name != "nt":
+            raise
+        # Native Windows junctions do not require symbolic-link privileges.
+        result = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", str(path), str(target)],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+    assert path.resolve() == target.resolve()
 
 
 def push(repository, *refs, success=True):
@@ -321,6 +358,433 @@ def test_false_positive_can_be_rejected_without_a_new_commit(repository):
     push(repository)
 
 
+@pytest.mark.parametrize("revision", ["same", "authors-only", "repeated"])
+def test_fixed_disposition_needs_a_changed_candidate_head(repository, revision):
+    repo, _, env = repository
+    previous = prepare(repository)
+    record(
+        repository,
+        previous,
+        report(
+            previous,
+            "finder",
+            verdict="findings",
+            findings=[{"id": "defect", "summary": "Defect", "evidence": "input.txt"}],
+        ),
+    )
+    if revision == "authors-only":
+        candidate = prepare(repository, authors=("author", "another-author"))
+    elif revision == "repeated":
+        commit(repo, env, "incomplete repair\n")
+        candidate = prepare(repository)
+        record(
+            repository,
+            candidate,
+            report(
+                candidate,
+                "finder",
+                verdict="findings",
+                findings=[
+                    {"id": "defect", "summary": "Still broken", "evidence": "input.txt"}
+                ],
+            ),
+        )
+    else:
+        candidate = previous
+    pair(repository, candidate)
+    result = record(
+        repository,
+        candidate,
+        report(
+            candidate,
+            dispositions=[
+                {"id": "defect", "status": "fixed", "evidence": "Claimed repair"}
+            ],
+        ),
+        success=False,
+    )
+    assert "changed head in a later candidate" in result.stderr
+    install(repository)
+    assert "unresolved findings: defect" in push(repository, success=False).stderr
+
+
+@pytest.mark.parametrize("strategy", ["amend", "replace"])
+def test_rewritten_unpublished_repair_retains_findings_and_requires_reviews(
+    repository, strategy
+):
+    repo, _, env = repository
+    previous = prepare(repository)
+    old_head = git(repo, env, "rev-parse", "HEAD")
+    record(
+        repository,
+        previous,
+        report(
+            previous,
+            "finder",
+            verdict="findings",
+            findings=[{"id": "defect", "summary": "Defect", "evidence": "input.txt"}],
+        ),
+    )
+    if strategy == "amend":
+        (repo / "input.txt").write_text("amended repair\n", encoding="utf-8")
+        git(repo, env, "add", "input.txt")
+        git(repo, env, "commit", "--amend", "-qm", "Fixture repair")
+    else:
+        git(repo, env, "switch", "-C", "topic", "origin/main")
+        commit(repo, env, "replacement repair\n")
+    assert git(repo, env, "merge-base", old_head, "HEAD") != old_head
+    candidate = prepare(repository)
+    pair(repository, candidate)
+    install(repository)
+    assert "unresolved findings: defect" in push(repository, success=False).stderr
+    record(
+        repository,
+        candidate,
+        report(
+            candidate,
+            dispositions=[
+                {
+                    "id": "defect",
+                    "status": "fixed",
+                    "evidence": "Independent inspection verifies the rewritten consumer",
+                }
+            ],
+        ),
+    )
+    push(repository)
+
+
+@pytest.mark.parametrize("late", [False, True])
+@pytest.mark.parametrize("status", ["fixed", "rejected"])
+def test_active_author_dispositions_cannot_close_findings(repository, late, status):
+    repo, _, env = repository
+    previous = prepare(repository)
+    record(
+        repository,
+        previous,
+        report(
+            previous,
+            "finder",
+            verdict="findings",
+            findings=[{"id": "defect", "summary": "Defect", "evidence": "input.txt"}],
+        ),
+    )
+    commit(repo, env, "first repair\n")
+    interim = prepare(repository)
+    disposition = report(
+        interim,
+        "future-author",
+        dispositions=[
+            {"id": "defect", "status": status, "evidence": "Inspected the consumer"}
+        ],
+    )
+    if not late:
+        record(repository, interim, disposition)
+        pair(repository, interim)
+    commit(repo, env, "additional authored repair\n")
+    candidate = prepare(repository, authors=("author", "future-author"))
+    pair(repository, candidate)
+    if late:
+        result = record(repository, interim, disposition, success=False)
+        assert "active authoring session" in result.stderr
+    install(repository)
+    assert "unresolved findings: defect" in push(repository, success=False).stderr
+    record(
+        repository,
+        candidate,
+        report(
+            candidate,
+            dispositions=[
+                {
+                    "id": "defect",
+                    "status": status,
+                    "evidence": "Independent inspection of the active candidate",
+                }
+            ],
+        ),
+    )
+    push(repository)
+
+
+def test_destination_credentials_are_not_persisted_or_printed(repository):
+    repo, _, env = repository
+    location = "https://synthetic-user:synthetic-secret@example.invalid/repo?token=synthetic-query"
+    git(repo, env, "remote", "set-url", "--push", "origin", location)
+    candidate = prepare(repository)
+    pair(repository, candidate)
+    install(repository)
+    head = git(repo, env, "rev-parse", "HEAD")
+    payload = f"refs/heads/topic {head} refs/heads/topic {'0' * len(head)}\n"
+    checker = repo / ".git" / "hooks" / "dart-review-gate.py"
+    result = run(
+        repo,
+        env,
+        sys.executable,
+        str(checker),
+        "pre-push",
+        "origin",
+        location,
+        input=payload,
+    )
+    assert result.returncode == 0, result.stderr
+    artifacts = b"".join(
+        path.read_bytes() for path in (repo / ".git" / "dart-review").rglob("*.json")
+    )
+    for credential in (b"synthetic-user", b"synthetic-secret", b"synthetic-query"):
+        assert credential not in artifacts
+        assert credential.decode() not in result.stdout + result.stderr
+    changed = run(
+        repo,
+        env,
+        sys.executable,
+        str(checker),
+        "pre-push",
+        "origin",
+        location.replace("synthetic-secret", "different-secret"),
+        input=payload,
+    )
+    assert changed.returncode != 0
+
+
+def test_opaque_candidate_preserves_legacy_destination_history(repository, monkeypatch):
+    monkeypatch.syspath_prepend(str(GATE.parent))
+    import review_gate as gate
+
+    repo, remote, env = repository
+    initial = prepare(repository)
+    store = gate.Store(repo)
+    metadata = gate.read_json(store.candidate_dir(initial) / "candidate.json")
+    metadata.pop("destination")
+    metadata["location"] = str(remote)
+    legacy = gate.digest(metadata)
+    store.candidate_dir(initial).rename(store.candidate_dir(legacy))
+    (store.candidate_dir(legacy) / "candidate.json").write_text(json.dumps(metadata))
+    index = next((store.path / "targets").glob("*.json"))
+    index.write_text(json.dumps({"candidate": legacy}))
+    record(
+        repository,
+        legacy,
+        report(
+            legacy,
+            "finder",
+            verdict="findings",
+            findings=[{"id": "legacy", "summary": "Defect", "evidence": "input.txt"}],
+        ),
+    )
+    candidate = prepare(repository)
+    current = gate.read_json(store.candidate_dir(candidate) / "candidate.json")
+    assert candidate != legacy and current["previous"] == legacy
+    assert "location" not in current
+    pair(repository, candidate)
+    install(repository)
+    assert "unresolved findings: legacy" in push(repository, success=False).stderr
+    commit(repo, env, "repair retained legacy finding\n")
+    repaired = prepare(repository)
+    pair(repository, repaired)
+    record(
+        repository,
+        repaired,
+        report(
+            repaired,
+            dispositions=[
+                {
+                    "id": "legacy",
+                    "status": "fixed",
+                    "evidence": "Verified changed consumer",
+                }
+            ],
+        ),
+    )
+    push(repository)
+
+
+def test_legacy_invalid_fixed_record_remains_open_and_recoverable(
+    repository, monkeypatch
+):
+    monkeypatch.syspath_prepend(str(GATE.parent))
+    import review_gate as gate
+
+    repo, _, env = repository
+    previous = prepare(repository)
+    record(
+        repository,
+        previous,
+        report(
+            previous,
+            "finder",
+            verdict="findings",
+            findings=[{"id": "legacy", "summary": "Defect", "evidence": "input.txt"}],
+        ),
+    )
+    pair(repository, previous)
+    invalid = report(
+        previous,
+        dispositions=[
+            {
+                "id": "legacy",
+                "status": "fixed",
+                "evidence": "Unchanged-head claim",
+            }
+        ],
+    )
+    store = gate.Store(repo)
+    # The original checker accepted this report with a valid hash/manifest.
+    # Preserve its bytes and prove the corrected checker can recover without
+    # treating it as an effective disposition or deleting the journal.
+    with store.lock():
+        manifest = store.candidate_dir(previous) / "reports.json"
+        names = gate.read_json(manifest)["reports"]
+        path = (
+            manifest.parent
+            / "reports"
+            / f"{len(names) + 1:06d}-{gate.digest(invalid)}.json"
+        )
+        gate.write_json_files(
+            store.path,
+            [
+                (path, invalid),
+                (manifest, {"reports": [*names, path.name]}),
+            ],
+        )
+    install(repository)
+    assert "unresolved findings: legacy" in push(repository, success=False).stderr
+    commit(repo, env, "actual repair\n")
+    candidate = prepare(repository)
+    pair(repository, candidate)
+    record(
+        repository,
+        candidate,
+        report(
+            candidate,
+            dispositions=[
+                {
+                    "id": "legacy",
+                    "status": "fixed",
+                    "evidence": "Verified changed consumer",
+                }
+            ],
+        ),
+    )
+    push(repository)
+    assert gate.read_json(path) == invalid
+
+
+def test_invalid_transaction_cannot_publish_an_earlier_valid_path(
+    repository, monkeypatch
+):
+    monkeypatch.syspath_prepend(str(GATE.parent))
+    import review_gate as gate
+
+    repo, _, _ = repository
+    candidate = prepare(repository)
+    pair(repository, candidate)
+    store = gate.Store(repo)
+    index = next((store.path / "targets").glob("*.json"))
+    updates = [
+        {
+            "path": index.relative_to(store.path).as_posix(),
+            "value": {"candidate": "f" * 64},
+        },
+        {"path": "../outside.json", "value": {"overwrite": True}},
+    ]
+    (store.path / "pending.json").write_text(
+        json.dumps(
+            {
+                "updates": updates,
+                "digest": gate.digest(updates),
+            }
+        )
+    )
+    original = evidence_bytes(store.path)
+    with pytest.raises(gate.GateError, match="invalid pending evidence path"):
+        with store.lock():
+            pytest.fail("Invalid recovery should block access to the store")
+    assert evidence_bytes(store.path) == original
+    assert not (store.path.parent / "outside.json").exists()
+
+
+@pytest.mark.parametrize("operation", ["prepare", "record"])
+@pytest.mark.parametrize("stage", ["first", "last", "cleanup"])
+def test_interrupted_evidence_update_recovers_without_discarding_history(
+    repository, monkeypatch, operation, stage
+):
+    monkeypatch.syspath_prepend(str(GATE.parent))
+    import review_gate as gate
+
+    repo, _, env = repository
+    previous = prepare(repository)
+    pair(repository, previous)
+    store = gate.Store(repo)
+    original_reports = {
+        path.name: path.read_bytes()
+        for path in (store.candidate_dir(previous) / "reports").glob("*.json")
+    }
+    source = repo.parent / "next-review.json"
+    source.write_text(
+        json.dumps(report(previous, "another-reviewer")), encoding="utf-8"
+    )
+    if operation == "prepare":
+        commit(repo, env, "next candidate\n")
+    args = argparse.Namespace(
+        base="origin/main",
+        head="HEAD",
+        remote="origin",
+        target="refs/heads/topic",
+        author_session=["author"],
+    )
+    error = KeyboardInterrupt if stage == "last" else OSError
+    publish = gate.atomic_write
+    unlink = Path.unlink
+
+    def interrupted_write(path, contents):
+        first = (
+            path.name == "candidate.json"
+            if operation == "prepare"
+            else path.parent.name == "reports"
+        )
+        last = (
+            path.parent.name == "targets"
+            if operation == "prepare"
+            else path.name == "reports.json"
+        )
+        if (stage == "first" and first) or (stage == "last" and last):
+            raise error("injected publication interruption")
+        return publish(path, contents)
+
+    def interrupted_cleanup(path, *args, **kwargs):
+        if stage == "cleanup" and path == store.path / "pending.json":
+            raise error("injected cleanup interruption")
+        return unlink(path, *args, **kwargs)
+
+    with monkeypatch.context() as fault:
+        fault.setattr(gate, "atomic_write", interrupted_write)
+        fault.setattr(Path, "unlink", interrupted_cleanup)
+        with pytest.raises(error, match="injected"):
+            with store.lock():
+                if operation == "prepare":
+                    store.prepare(args)
+                else:
+                    store.record(previous, source)
+    assert (store.path / "pending.json").is_file()
+    recovered = gate.Store(repo)
+    with recovered.lock():
+        assert not (store.path / "pending.json").exists()
+        if operation == "prepare":
+            candidate = recovered.prepare(args)
+            assert recovered.candidate(candidate)["previous"] == previous
+        else:
+            candidate = previous
+            assert len(recovered.reports(candidate)) == 3
+    for name, contents in original_reports.items():
+        assert (
+            store.candidate_dir(previous) / "reports" / name
+        ).read_bytes() == contents
+    if operation == "prepare":
+        pair(repository, candidate)
+    install(repository)
+    push(repository)
+
+
 def test_later_incomplete_review_does_not_leave_an_old_clean_pass(repository):
     candidate = prepare(repository)
     pair(repository, candidate)
@@ -474,23 +938,80 @@ def test_installed_checker_works_from_older_linked_worktree(repository):
     push((linked, remote, env), "topic:topic")
 
 
+@pytest.mark.parametrize("custom_manager", [False, True])
+def test_older_worktree_can_prepare_record_check_and_push(repository, custom_manager):
+    repo, remote, env = repository
+    if custom_manager:
+        runtime, manager = install_custom_manager(repository)
+    else:
+        install(repository)
+        runtime = repo / ".git" / "hooks" / "dart-review-gate.py"
+    linked = repo.parent / "old source checkout"
+    git(repo, env, "worktree", "add", "-b", "legacy-topic", str(linked), "main")
+    assert not (linked / "scripts" / "review_gate.py").exists()
+    assert not (linked / "pixi.toml").exists()
+    commit(linked, env, "new change authored in the old checkout\n")
+    old_repository = (linked, remote, env)
+    push(old_repository, "legacy-topic", success=False)
+    prepared = run(
+        linked,
+        env,
+        sys.executable,
+        str(runtime),
+        "prepare",
+        "--base",
+        "origin/main",
+        "--remote",
+        "origin",
+        "--target",
+        "refs/heads/legacy-topic",
+        "--author-session",
+        "author",
+    )
+    assert prepared.returncode == 0, prepared.stderr
+    candidate = prepared.stdout.strip()
+    source = repo.parent / "legacy-review.json"
+    for scope, reviewer in (("correctness", "reviewer-a"), ("contracts", "reviewer-b")):
+        source.write_text(
+            json.dumps(report(candidate, reviewer, scope)), encoding="utf-8"
+        )
+        result = run(
+            linked, env, sys.executable, str(runtime), "record", candidate, str(source)
+        )
+        assert result.returncode == 0, result.stderr
+    checked = run(linked, env, sys.executable, str(runtime), "check", candidate)
+    assert checked.returncode == 0, checked.stderr
+    push(old_repository, "legacy-topic")
+    if custom_manager:
+        assert git(linked, env, "config", "core.hooksPath") == str(manager)
+
+
 @pytest.mark.parametrize(
     "damage", ["checker", "empty-checker", "replaced-checker", "interpreter"]
 )
-def test_missing_runtime_fails_closed(repository, damage):
+@pytest.mark.parametrize("custom_manager", [False, True])
+def test_missing_runtime_fails_closed(repository, damage, custom_manager):
     repo, _, env = repository
     candidate = prepare(repository)
     pair(repository, candidate)
-    install(repository)
+    if custom_manager:
+        runtime, _ = install_custom_manager(repository)
+    else:
+        install(repository)
+        runtime = repo / ".git" / "hooks" / "dart-review-gate.py"
     if damage == "checker":
-        (repo / ".git" / "hooks" / "dart-review-gate.py").unlink()
+        runtime.unlink()
     elif damage in ("empty-checker", "replaced-checker"):
-        (repo / ".git" / "hooks" / "dart-review-gate.py").write_bytes(
+        runtime.write_bytes(
             b"" if damage == "empty-checker" else b"raise SystemExit(0)\n"
         )
     else:
         env["DART_HOOK_PYTHON"] = "/unavailable/python"
     assert "BLOCKED" in push(repository, success=False).stderr
+    if custom_manager and damage != "interpreter":
+        restored = run(repo, env, sys.executable, str(INSTALLER), "--custom-manager")
+        assert restored.returncode == 0, restored.stderr
+        push(repository)
 
 
 def test_ambient_python_and_commit_bypass_flags_cannot_disable_push_gate(repository):
@@ -529,6 +1050,224 @@ def test_custom_hook_manager_is_preserved(repository):
     result = run(repo, env, sys.executable, str(INSTALLER))
     assert result.returncode and "core.hooksPath is set" in result.stderr
     assert not list(managed.iterdir())
+    existing = managed / "pre-push"
+    existing.write_bytes(b"#!/bin/sh\n# manager owns this handler\nexit 29\n")
+    existing.chmod(0o755)
+    hooks = repo / ".git" / "hooks"
+    original = {path.name: path.read_bytes() for path in hooks.iterdir()}
+    result = run(repo, env, sys.executable, str(INSTALLER), "--custom-manager")
+    assert result.returncode == 0, result.stderr
+    assert git(repo, env, "config", "core.hooksPath") == str(managed)
+    assert existing.read_bytes().endswith(b"exit 29\n")
+    assert list(managed.iterdir()) == [existing]
+    assert {path.name: path.read_bytes() for path in hooks.iterdir()} == original
+    exported = repo / ".git"
+    assert (exported / "dart-review-pre-push").is_file()
+    assert not (exported / "pre-commit").exists()
+
+
+@pytest.mark.parametrize(
+    "alias", ["configured", "relative-configured", "external", "default"]
+)
+def test_custom_export_preserves_aliased_hook_directories(repository, alias):
+    repo, _, env = repository
+    common = repo / ".git"
+    legacy = common / "dart-review-runtime"
+    manager = legacy if "configured" in alias else repo.parent / "shared manager"
+    manager.mkdir()
+    handler = b"#!/bin/sh\necho original-manager >&2\nexit 0\n"
+    (manager / "pre-push").write_bytes(handler)
+    (manager / "pre-push").chmod(0o755)
+    default = common / "hooks"
+    if alias == "external":
+        directory_alias(legacy, manager)
+    elif alias == "default":
+        (default / "pre-push").write_bytes(handler)
+        (default / "pre-push").chmod(0o755)
+        directory_alias(legacy, default)
+    configured = (
+        ".git/dart-review-runtime" if alias == "relative-configured" else str(manager)
+    )
+    git(repo, env, "config", "core.hooksPath", configured)
+    before_manager = {p.name: p.read_bytes() for p in manager.iterdir()}
+    before_default = {p.name: p.read_bytes() for p in default.iterdir()}
+    push(repository)
+    commit(repo, env, "successor still governed by the original manager\n")
+    nested = repo / "nested directory"
+    nested.mkdir()
+    run(nested, env, sys.executable, str(INSTALLER), "--custom-manager")
+    assert {p.name: p.read_bytes() for p in manager.iterdir()} == before_manager
+    assert {p.name: p.read_bytes() for p in default.iterdir()} == before_default
+    assert git(repo, env, "config", "core.hooksPath") == configured
+    assert "original-manager" in push(repository).stderr
+
+
+def test_custom_export_is_not_redirected_by_legacy_directory_retargeting(
+    repository, monkeypatch
+):
+    monkeypatch.syspath_prepend(str(INSTALLER.parent))
+    import install_git_hooks as installer
+
+    repo, _, env = repository
+    legacy = repo / ".git" / "dart-review-runtime"
+    legacy.mkdir()
+    manager = repo.parent / "shared manager"
+    manager.mkdir()
+    original = b"#!/bin/sh\n# shared owner\nexit 0\n"
+    (manager / "pre-push").write_bytes(original)
+    (manager / "pre-push").chmod(0o755)
+    git(repo, env, "config", "core.hooksPath", str(manager))
+    publish = installer.publish_file
+    retargeted = []
+
+    def retarget(path, content, executable=False):
+        if not retargeted:
+            legacy.rename(legacy.with_name("runtime-before-move"))
+            directory_alias(legacy, manager)
+            retargeted.append(True)
+        return publish(path, content, executable)
+
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(installer, "publish_file", retarget)
+    assert installer.main(["--custom-manager"]) == 0
+    assert retargeted
+    assert list(manager.iterdir()) == [manager / "pre-push"]
+    assert (manager / "pre-push").read_bytes() == original
+    push(repository)
+
+
+@pytest.mark.parametrize("refresh", [False, True])
+@pytest.mark.parametrize("name", ["dart-review-gate.py", "dart-review-pre-push"])
+@pytest.mark.parametrize(
+    "phase, error", [("before", OSError), ("after", KeyboardInterrupt)]
+)
+def test_custom_export_interruption_blocks_unreviewed_push(
+    repository, monkeypatch, refresh, name, phase, error
+):
+    monkeypatch.syspath_prepend(str(INSTALLER.parent))
+    import install_git_hooks as installer
+
+    repo, _, env = repository
+    runtime, manager = install_custom_manager(repository, export=refresh)
+    manager_bytes = (manager / "pre-push").read_bytes()
+    push(repository, success=False)
+    source = repo.parent / "new export source"
+    source.mkdir()
+    checker = GATE.read_bytes() + b"\n# refreshed fixture version\n"
+    (source / "review_gate.py").write_bytes(checker)
+    monkeypatch.setattr(installer, "__file__", str(source / "install_git_hooks.py"))
+    monkeypatch.chdir(repo)
+    replace = installer.os.replace
+    interruptions = []
+
+    def interrupted(temporary, destination):
+        if destination.name == name:
+            # Readers still enforce the old version or block missing/mismatched
+            # files. The new file is complete before becoming visible.
+            assert Path(temporary).read_bytes() == (
+                checker
+                if name == "dart-review-gate.py"
+                else installer.pre_push_hook(checker, chain_local=False).encode("utf-8")
+            )
+            push(repository, success=False)
+            if phase == "after":
+                replace(temporary, destination)
+            interruptions.append(destination)
+            raise error("injected custom export interruption")
+        return replace(temporary, destination)
+
+    monkeypatch.setattr(installer.os, "replace", interrupted)
+    with pytest.raises(error, match="injected custom export interruption"):
+        installer.main(["--custom-manager"])
+    assert interruptions == [runtime.parent / name]
+    assert not (runtime.parent / ".dart-review-export-lock").exists()
+    assert (manager / "pre-push").read_bytes() == manager_bytes
+    assert git(repo, env, "config", "core.hooksPath") == str(manager)
+    push(repository, success=False)
+    monkeypatch.setattr(installer.os, "replace", replace)
+    (source / "review_gate.py").write_bytes(checker + b"# next installer revision\n")
+    assert installer.main(["--custom-manager"]) == 0
+    push(repository, success=False)
+    candidate = prepare(repository)
+    pair(repository, candidate)
+    push(repository)
+
+
+def test_custom_export_does_not_chain_an_incidental_common_hook(repository):
+    repo, _, _ = repository
+    install_custom_manager(repository)
+    incidental = repo / ".git" / "pre-push.local"
+    original = b"#!/bin/sh\necho unrelated-common-hook >&2\nexit 37\n"
+    incidental.write_bytes(original)
+    incidental.chmod(0o755)
+    candidate = prepare(repository)
+    pair(repository, candidate)
+    assert "unrelated-common-hook" not in push(repository).stderr
+    assert incidental.read_bytes() == original
+
+
+@pytest.mark.parametrize("name", ["dart-review-gate.py", "dart-review-pre-push"])
+@pytest.mark.parametrize("kind", ["file", "directory", "hardlink"])
+def test_custom_export_preserves_foreign_output_leaves(repository, name, kind):
+    repo, _, env = repository
+    runtime, manager = install_custom_manager(repository, export=False)
+    destination = runtime.parent / name
+    original = b"foreign output owner\n"
+    if kind == "directory":
+        destination.mkdir()
+        (destination / "owned.txt").write_bytes(original)
+    elif kind == "hardlink":
+        external = repo.parent / "shared output.txt"
+        external.write_bytes(original)
+        os.link(external, destination)
+    else:
+        destination.write_bytes(original)
+    result = run(repo, env, sys.executable, str(INSTALLER), "--custom-manager")
+    assert result.returncode and "refusing" in result.stderr
+    if kind == "directory":
+        assert (destination / "owned.txt").read_bytes() == original
+    else:
+        assert destination.read_bytes() == original
+    if kind == "hardlink":
+        assert external.read_bytes() == original
+        assert os.path.samefile(external, destination)
+    for other in {"dart-review-gate.py", "dart-review-pre-push"} - {name}:
+        assert not (runtime.parent / other).exists()
+    assert git(repo, env, "config", "core.hooksPath") == str(manager)
+    assert not (runtime.parent / ".dart-review-export-lock").exists()
+
+
+@pytest.mark.parametrize(
+    "alias", ["configured", "relative", "configured-alias", "default-alias"]
+)
+def test_custom_export_refuses_common_directory_hook_ownership(repository, alias):
+    repo, _, env = repository
+    common = repo / ".git"
+    original = b"#!/bin/sh\n# common hook owner\nexit 29\n"
+    (common / "pre-push").write_bytes(original)
+    if alias == "default-alias":
+        hooks = common / "hooks"
+        hooks.rename(common / "original-hooks")
+        directory_alias(hooks, common)
+        manager = repo.parent / "separate manager"
+        manager.mkdir()
+        configured = str(manager)
+    elif alias == "configured-alias":
+        manager = repo.parent / "manager alias"
+        directory_alias(manager, common)
+        configured = str(manager)
+    else:
+        configured = ".git" if alias == "relative" else str(common)
+    git(repo, env, "config", "core.hooksPath", configured)
+    nested = repo / "nested directory"
+    nested.mkdir()
+    result = run(nested, env, sys.executable, str(INSTALLER), "--custom-manager")
+    assert result.returncode and "hooks directory" in result.stderr
+    assert (common / "pre-push").read_bytes() == original
+    assert not (common / "dart-review-pre-push").exists()
+    assert not (common / "dart-review-gate.py").exists()
+    assert not (common / ".dart-review-export-lock").exists()
+    assert git(repo, env, "config", "core.hooksPath") == configured
 
 
 @pytest.mark.parametrize("damage", ["missing", "empty", "rewound"])
@@ -730,7 +1469,7 @@ def test_concurrent_installers_preserve_the_original_foreign_hook(
 
     monkeypatch.setattr(installer, "resolve_hooks_dir", lambda: hooks)
     monkeypatch.setattr(installer, "foreign_hook", paused)
-    assert installer.main() == 0
+    assert installer.main([]) == 0
     assert attempts
     assert (hooks / "pre-push.local").read_bytes() == original
 
@@ -756,20 +1495,20 @@ def test_doctor_detects_missing_stale_and_disabled_review_installation(
     repository, monkeypatch
 ):
     monkeypatch.syspath_prepend(str(INSTALLER.parent))
-    from review_gate import hook_inventory
+    import review_gate as gate
 
     repo, _, _ = repository
-    assert not hook_inventory(repo)["installed"]
+    assert not gate.hook_inventory(repo)["installed"]
     install(repository)
     source = repo / "scripts" / "review_gate.py"
     source.parent.mkdir()
     source.write_bytes(GATE.read_bytes())
-    assert hook_inventory(repo)["installed"]
-    assert hook_inventory(repo)["checker_current"]
+    assert gate.hook_inventory(repo)["installed"]
+    assert gate.hook_inventory(repo)["checker_current"]
     source.write_bytes(GATE.read_bytes() + b"\n# source changed\n")
-    assert not hook_inventory(repo)["checker_current"]
+    assert not gate.hook_inventory(repo)["checker_current"]
     (repo / ".git" / "hooks" / "pre-push").write_bytes(b"#!/bin/sh\nexit 0\n")
-    assert not hook_inventory(repo)["installed"]
+    assert not gate.hook_inventory(repo)["installed"]
 
 
 def test_installed_runtime_retains_python_311_syntax():
@@ -927,7 +1666,7 @@ def test_failed_foreign_hook_adoption_keeps_the_original_active(
     monkeypatch.setattr(installer, "resolve_hooks_dir", lambda: hooks)
     monkeypatch.setattr(installer, "write_hook", fail_publication)
     with pytest.raises(OSError, match="injected replacement failure"):
-        installer.main()
+        installer.main([])
     assert hook.read_bytes() == original
     assert os.access(hook, os.X_OK)
     assert (hooks / (name + ".local")).read_bytes() == original
@@ -959,7 +1698,7 @@ def test_backup_created_after_preflight_is_not_overwritten(repository, monkeypat
     monkeypatch.setattr(installer, "preserve_hook", intervening_backup)
     monkeypatch.setattr(installer, "resolve_hooks_dir", lambda: hooks)
     with pytest.raises(FileExistsError):
-        installer.main()
+        installer.main([])
     assert hook.read_bytes() == original
     assert (hooks / "pre-push.local").read_bytes() == b"another owner's backup\n"
 

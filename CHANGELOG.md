@@ -488,6 +488,7 @@ compatibility remains on the active DART 6 LTS branch._
 - Require two independent local reviews before substantive branch pushes,
   with recorded finding dispositions and an evidenced trivial-change exception
   enforced by the installed Git hook.
+  ([#3494](https://github.com/dartsim/dart/pull/3494))
 
 - Defined DART 7 readiness milestones and prerequisite work packets, including
   full CPU/CUDA rigid-example validation, checkpoint foundations, compute-library

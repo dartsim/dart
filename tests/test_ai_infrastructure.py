@@ -2661,7 +2661,8 @@ def test_doctor_custom_hookspath_recovery_does_not_recommend_installer(tmp_path)
     result = ai_doctor.report(root, "main")
     commands = {item["command"] for item in result["recovery"]}
 
-    assert "python3 scripts/check_agent_hook.py --profile staged" in commands
+    assert "read docs/onboarding/ai-tools.md#custom-hook-managers" in commands
+    assert "python3 scripts/check_agent_hook.py --profile staged" not in commands
     assert "pixi run install-hooks" not in commands
 
 
