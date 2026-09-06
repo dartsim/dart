@@ -42,17 +42,21 @@ are implemented on both isolated branches. The archive/contrast trial and its
 remaining Python API miss are promoted to the review-policy owner's behavioral
 replay section. Enforcement regressions exercise actual local Git pushes.
 
-- Release: adapter/infrastructure/scenario gates pass; 619 AI tests pass;
+- Release: adapter/infrastructure/scenario gates pass; 623 AI tests pass;
   `test-all` passes (158 CTest targets and 271 Python tests); full lint passes.
-- Main: adapter/infrastructure/scenario/docs-policy gates pass; 658 AI tests
+- Main: adapter/infrastructure/scenario/docs-policy gates pass; 662 AI tests
   pass. Full CPU validation passes (229 unit and 81 simulation CTest targets,
-  2,015 Python tests with 19 skips); full CUDA validation is in progress.
-- The 54 focused gate cases pass after repairs to late baseline findings,
-  stable finding evidence, and interrupted adoption of foreign hooks.
+  2,015 Python tests with 19 skips). The CUDA `test-all` command passes,
+  including eight GPU runtime tests and benchmark smoke checks. Its configured
+  profile disables dartpy, GUI and examples; two simulation tests are disabled.
+- The 58 focused gate cases pass after repairs to late baseline findings,
+  stable finding evidence, interrupted adoption of foreign hooks, and
+  serialized evidence size limits across complete updates.
   Independent reviews of the resulting candidates remain pending.
 - Native Windows acceptance and current-head hosted review await approved
   draft publication. They are unexecuted, not passed.
-- The shared hook is installed and both doctors detect its exact runtime.
+- The shared hook is installed; reinstallation follows any runtime update.
+  Both doctors detect whether its installed bytes match their branch's source.
   The Git-common review store owns current candidate/report state; check it
   before starting additional review sessions.
 

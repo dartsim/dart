@@ -250,6 +250,10 @@ hashed reports remain intact. A disposition has that `id`, `status`
 close findings. The gate evaluates accumulated findings and the latest report
 per session and scope; a later clean report alone does not close an issue.
 
+JSON inputs and stored artifacts are limited to 2 MiB each. The gate checks all
+serialized sizes before writing a candidate or report update; an oversized
+update is rejected before any evidence file changes.
+
 For the policy's trivial exception use `scope: non-substantive`, add
 `no_behavior_change: true` and a concrete `reason`. For an update also supply
 `baseline: <previously passed candidate ID>`; it must be a reviewed ancestor

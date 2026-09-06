@@ -19,9 +19,10 @@
 
 ## Next Actions
 
-1. Inspect local validation and current candidate records. Main CPU validation
-   passes; complete the main CUDA gate against its integrated base, then run formatting and
-   affected infrastructure checks. Commit only intended files after full lint.
+1. Inspect local validation and current candidate records. Main CPU and CUDA
+   commands pass at this checkpoint, with the CUDA profile's configured skips
+   recorded in `README.md`. Rerun missing or stale validation after relevant
+   changes. Commit only intended files after full lint.
 2. Prepare each intended outgoing commit. Obtain missing independent local
    correctness/contracts reports, repair complete finding batches, and repeat
    affected gates. If a current candidate already passes, do not add redundant

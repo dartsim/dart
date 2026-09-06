@@ -5,6 +5,7 @@ Git configuration are involved. Unlike the older commit-guard suite, these
 tests deliberately run on native Windows as well as POSIX.
 """
 
+import argparse
 import ast
 import json
 import os
@@ -961,3 +962,95 @@ def test_backup_created_after_preflight_is_not_overwritten(repository, monkeypat
         installer.main()
     assert hook.read_bytes() == original
     assert (hooks / "pre-push.local").read_bytes() == b"another owner's backup\n"
+
+
+def evidence_bytes(directory):
+    return {
+        path.relative_to(directory): path.read_bytes()
+        for path in directory.rglob("*.json")
+    }
+
+
+@pytest.mark.parametrize("expansion", ["unicode", "indentation"])
+def test_expanding_report_is_rejected_without_changing_evidence(repository, expansion):
+    repo, _, env = repository
+    candidate = prepare(repository)
+    pair(repository, candidate)
+    directory = repo / ".git" / "dart-review"
+    before = evidence_bytes(directory)
+    value = report(candidate)
+    if expansion == "unicode":
+        value["report"] = "é" * 400_000
+    else:
+        value["coverage"] = ["x"] * 260_000
+    raw = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    assert len(raw) < 2 * 1024 * 1024
+    source = repo.parent / "expanded-review.json"
+    source.write_bytes(raw)
+    result = run(repo, env, sys.executable, str(GATE), "record", candidate, str(source))
+    assert result.returncode and "oversized serialized evidence" in result.stderr
+    assert evidence_bytes(directory) == before
+    install(repository)
+    push(repository)
+
+
+def test_oversized_candidate_leaves_existing_history_readable(repository, monkeypatch):
+    monkeypatch.syspath_prepend(str(GATE.parent))
+    import review_gate as gate
+
+    repo, _, _ = repository
+    candidate = prepare(repository)
+    pair(repository, candidate)
+    store = gate.Store(repo)
+    before = evidence_bytes(store.path)
+    # Scale the same producer/reader boundary without exceeding OS argv limits.
+    monkeypatch.setattr(gate, "MAX_BYTES", 2_000)
+    args = argparse.Namespace(
+        base="origin/main",
+        head="HEAD",
+        remote="origin",
+        target="refs/heads/topic",
+        author_session=["é" * 400],
+    )
+    with store.lock():
+        with pytest.raises(gate.GateError, match="oversized serialized evidence"):
+            store.prepare(args)
+        assert evidence_bytes(store.path) == before
+        assert store.assess(candidate) == "two independent local reviews"
+    install(repository)
+    push(repository)
+
+
+def test_full_manifest_rejects_append_before_publishing_report(repository, monkeypatch):
+    monkeypatch.syspath_prepend(str(GATE.parent))
+    import review_gate as gate
+
+    repo, _, _ = repository
+    candidate = prepare(repository)
+    pair(repository, candidate)
+    store = gate.Store(repo)
+    source = repo.parent / "journal-review.json"
+    # Reach the real journal boundary with a bounded number of actual records.
+    monkeypatch.setattr(gate, "MAX_BYTES", 2_000)
+    with store.lock():
+        for index in range(50):
+            before = evidence_bytes(store.path)
+            source.write_text(
+                json.dumps(report(candidate, summary=f"Completed review {index}")),
+                encoding="utf-8",
+            )
+            try:
+                store.record(candidate, source)
+            except gate.GateError as error:
+                assert "oversized serialized evidence" in str(error)
+                assert "reports.json" in str(error)
+                assert evidence_bytes(store.path) == before
+                break
+        else:
+            pytest.fail("The bounded manifest never reached its capacity")
+        assert store.assess(candidate) == "two independent local reviews"
+        assert all(
+            b"\r\n" not in contents for contents in evidence_bytes(store.path).values()
+        )
+    install(repository)
+    push(repository)
