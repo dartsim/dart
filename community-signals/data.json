@@ -2,7 +2,7 @@
   "citations": {
     "crossref": 191,
     "google_scholar": 404,
-    "google_scholar_checked": "2026-08-31",
+    "google_scholar_checked": "2026-09-06",
     "google_scholar_manual_fallback": false,
     "indexed_max": 309,
     "indexed_min": 191,
@@ -15,15 +15,15 @@
       "age": "within 1 year",
       "freshness": "current",
       "label": "Gazebo gz-sim",
-      "pushed_at": "2026-08-31T06:45:03Z",
+      "pushed_at": "2026-09-05T00:20:49Z",
       "repo": "gazebosim/gz-sim",
-      "stars": 1474
+      "stars": 1485
     },
     {
       "age": "within 1 year",
       "freshness": "current",
       "label": "Gazebo gz-physics",
-      "pushed_at": "2026-08-30T07:46:00Z",
+      "pushed_at": "2026-09-05T02:31:36Z",
       "repo": "gazebosim/gz-physics",
       "stars": 92
     },
@@ -49,7 +49,7 @@
       "label": "Aikido",
       "pushed_at": "2023-03-10T20:08:11Z",
       "repo": "personalrobotics/aikido",
-      "stars": 233
+      "stars": 234
     },
     {
       "age": "within 1 year",
@@ -60,7 +60,7 @@
       "stars": 490
     },
     {
-      "age": "2.9 years ago",
+      "age": "3.0 years ago",
       "freshness": "older",
       "label": "MASS",
       "pushed_at": "2023-09-19T22:42:33Z",
@@ -69,7 +69,7 @@
     },
     {
       "age": "5.0 years ago",
-      "freshness": "3y+ historical",
+      "freshness": "5y+ historical",
       "label": "SimBenchmark",
       "pushed_at": "2021-09-05T19:45:51Z",
       "repo": "leggedrobotics/SimBenchmark",
@@ -94,29 +94,29 @@
     "package_depends_dart": true,
     "requires_dart_610": true
   },
-  "generated_at": "2026-08-31T10:55:13.994535Z",
+  "generated_at": "2026-09-06T05:57:18.987336Z",
   "packages": {
     "conda": {
-      "combined_gross": 1146272,
-      "dartpy": 290077,
-      "dartsim": 710838,
-      "dartsim-cpp": 145357
+      "combined_gross": 1162372,
+      "dartpy": 295071,
+      "dartsim": 719190,
+      "dartsim-cpp": 148111
     },
-    "homebrew_installs_365d": 18461,
-    "homebrew_on_request_365d": 1418,
-    "pepy_dartpy_all_time": 265845
+    "homebrew_installs_365d": 18323,
+    "homebrew_on_request_365d": 1396,
+    "pepy_dartpy_all_time": 266301
   },
-  "since": "2025-08-31",
+  "since": "2025-09-06",
   "sources": {
     "anaconda_dartpy": "https://api.anaconda.org/package/conda-forge/dartpy",
     "anaconda_dartsim": "https://api.anaconda.org/package/conda-forge/dartsim",
     "anaconda_dartsim_cpp": "https://api.anaconda.org/package/conda-forge/dartsim-cpp",
     "crossref": "https://api.crossref.org/works/10.21105/joss.00500",
     "gazebo_physics": "https://gazebosim.org/api/sim/9/physics.html",
-    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-08-31",
+    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-09-06",
     "github_issues": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Aissue+state%3Aopen",
     "github_latest_release": "https://api.github.com/repos/dartsim/dart/releases/latest",
-    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-08-31",
+    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-09-06",
     "github_prs": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+state%3Aopen",
     "github_repo": "https://api.github.com/repos/dartsim/dart",
     "github_traffic_docs": "https://docs.github.com/en/rest/metrics/traffic",
@@ -134,16 +134,16 @@
     "contributors_login": 55,
     "contributors_with_anon": 79,
     "created_issues_12m": 32,
-    "created_prs_12m": 1400,
+    "created_prs_12m": 1432,
     "forks": 304,
-    "latest_push": "2026-08-30",
+    "latest_push": "2026-09-06",
     "latest_release": "v6.19.4",
     "latest_release_date": "2026-07-19",
-    "merged_prs_12m": 1311,
+    "merged_prs_12m": 1339,
     "open_issues": 4,
-    "open_prs": 4,
+    "open_prs": 5,
     "releases_12m": 21,
-    "stars": 1198,
+    "stars": 1201,
     "watchers": 49
   },
   "traffic": {
