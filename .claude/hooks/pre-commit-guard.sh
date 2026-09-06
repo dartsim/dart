@@ -944,7 +944,7 @@ if [ "$verdict" = "commit" ]; then
             *) hook_path="$repo_root/$hook_path" ;;
         esac
         if [ -x "$hook_path" ] \
-            && grep -Fq "DART-MANAGED-HOOK v7  (sentinel line: do not edit; the installer keys on it)" "$hook_path" 2>/dev/null \
+            && grep -Fq "DART-MANAGED-HOOK v8  (sentinel line: do not edit; the installer keys on it)" "$hook_path" 2>/dev/null \
             && grep -Fq 'if ! "$python_cmd" scripts/check_agent_hook.py --profile staged; then' "$hook_path" 2>/dev/null; then
             exit 0
         fi

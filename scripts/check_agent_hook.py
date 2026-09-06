@@ -62,9 +62,8 @@ def repo_root() -> Path:
         ["git", "rev-parse", "--show-toplevel"],
         check=True,
         capture_output=True,
-        text=True,
     )
-    return Path(result.stdout.strip())
+    return Path(result.stdout.decode("utf-8").removesuffix("\n"))
 
 
 def is_ai_infrastructure_path(path: str) -> bool:

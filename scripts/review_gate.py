@@ -23,6 +23,7 @@ from pathlib import Path
 
 SCHEMA_VERSION = 1
 MAX_BYTES = 2 * 1024 * 1024
+MAX_CANDIDATES = 1000
 ID_RE = re.compile(r"[0-9a-f]{64}\Z")
 OID_RE = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 EVIDENCE_PATH_RE = re.compile(
@@ -34,9 +35,13 @@ PRE_PUSH_TEMPLATE = """\
 #!/bin/sh
 # DART-MANAGED-PRE-PUSH v1
 # Installed with its standalone checker by pixi run install-hooks.
-repo_root=$(git rev-parse --show-toplevel) || exit 1
-hooks_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 1
-checker="$hooks_dir/dart-review-gate.py"
+# Protect path newlines from command substitution, then remove Git's LF and sentinel.
+repo_root=$(git rev-parse --show-toplevel && printf '.') || exit 1
+repo_root=${repo_root%??}
+case "$0" in
+    */*) checker="${0%/*}/dart-review-gate.py" ;;
+    *) checker="./dart-review-gate.py" ;;
+esac
 if [ ! -f "$checker" ]; then
     echo "DART review gate BLOCKED: installed checker missing; run pixi run install-hooks" >&2
     exit 1
@@ -322,6 +327,31 @@ class Store:
         require(identity in tips, "target index is empty, stale, or mismatched")
         return identity
 
+    def history(self, candidate_id: str) -> list[tuple[str, dict]]:
+        """Read one bounded, structurally valid publication-target ancestry."""
+        self.candidate_dir(candidate_id)
+        history = []
+        seen = set()
+        cursor = candidate_id
+        while cursor:
+            require(
+                cursor not in seen and len(seen) < MAX_CANDIDATES,
+                "invalid or excessive candidate history",
+            )
+            seen.add(cursor)
+            candidate = self.candidate(cursor)
+            history.append((cursor, candidate))
+            cursor = candidate["previous"]
+        active = history[0][1]
+        for _, candidate in history:
+            require(
+                (destination(candidate), candidate["target"])
+                == (destination(active), active["target"]),
+                "candidate history changed publication target",
+            )
+        history.reverse()
+        return history
+
     def prepare(self, args: argparse.Namespace) -> str:
         locations = git(
             self.root, "remote", "get-url", "--push", "--all", args.remote
@@ -354,7 +384,8 @@ class Store:
         target_path = self.target_path(destination_id)
         previous = self.target(destination_id, initial=True)
         if previous:
-            prior = self.candidate(previous)
+            history = self.history(previous)
+            prior = history[-1][1]
             require(
                 destination(prior) == destination_id and prior["target"] == target,
                 "target history does not match publication destination",
@@ -367,6 +398,11 @@ class Store:
                 prior["authors"],
             ) == (head, base_ref, base, authors):
                 return previous
+            require(
+                len(history) < MAX_CANDIDATES,
+                f"candidate history limit ({MAX_CANDIDATES}) reached; "
+                "refusing to replace the last usable target tip",
+            )
         data = {
             "schema_version": SCHEMA_VERSION,
             "destination": destination_id,
@@ -502,14 +538,9 @@ class Store:
     def record(self, candidate_id: str, report_path: Path) -> None:
         candidate = self.candidate(candidate_id)
         active = self.target(destination(candidate))
-        cursor = active
-        seen = set()
-        while cursor and cursor != candidate_id:
-            require(cursor not in seen, "invalid candidate history")
-            seen.add(cursor)
-            cursor = self.candidate(cursor)["previous"]
         require(
-            cursor == candidate_id, "report is outside the active candidate history"
+            candidate_id in {identity for identity, _ in self.history(active)},
+            "report is outside the active candidate history",
         )
         report = read_json(report_path)
         self.validate_report(report, candidate_id)
@@ -549,19 +580,7 @@ class Store:
         extra: tuple[str, dict] | None = None,
         require_pass: bool = True,
     ) -> str:
-        history = []
-        seen = set()
-        cursor = candidate_id
-        while cursor:
-            require(
-                cursor not in seen and len(seen) < 1000,
-                "invalid or excessive candidate history",
-            )
-            seen.add(cursor)
-            candidate = self.candidate(cursor)
-            history.append((cursor, candidate))
-            cursor = candidate["previous"]
-        history.reverse()
+        history = self.history(candidate_id)
         active = history[-1][1]
         if current:
             self.assert_current(candidate_id, active)
@@ -571,11 +590,6 @@ class Store:
         prior_candidates: dict[str, dict] = {}
         verdict = "two clean independent reviews are missing"
         for identity, candidate in history:
-            require(
-                (destination(candidate), candidate["target"])
-                == (destination(active), active["target"]),
-                "candidate history changed publication target",
-            )
             latest = {}
             reports = self.reports(identity)
             if extra and extra[0] == identity:

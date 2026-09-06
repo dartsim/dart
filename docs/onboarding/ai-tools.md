@@ -202,7 +202,7 @@ The installed checker also exposes the supported `prepare`, `record` and
 lacks the `review-gate` Pixi task or source script:
 
 ```bash
-dart_review_gate="$(git rev-parse --git-path hooks)/dart-review-gate.py"
+dart_review_gate=$(git rev-parse --git-path hooks/dart-review-gate.py) || exit 1
 python3 -I "$dart_review_gate" prepare --base origin/<base> --head HEAD \
   --remote origin --target refs/heads/<topic> --author-session <author-session-id>
 python3 -I "$dart_review_gate" record <candidate> <reviewer-report.json>
@@ -298,6 +298,13 @@ candidate. After a killed process, verify it
 has stopped before removing its empty lock directory; retain `pending.json`
 for recovery. Corrupt or oversized transaction data blocks recovery.
 
+Each publication target retains at most 1,000 candidate revisions. At capacity,
+`prepare` can reuse the unchanged current candidate but refuses a new revision
+before changing any evidence. Existing reviews, findings and target identity
+remain intact; recording reports and checking the last candidate still work.
+An already over-limit history requires manual investigation; the gate retains
+its evidence and blocks publication, including after recovery of older intent.
+
 For the policy's trivial exception use `scope: non-substantive`, add
 `no_behavior_change: true` and a concrete `reason`. For an update also supply
 `baseline: <previously passed candidate ID>`; it must be a reviewed ancestor
@@ -345,7 +352,9 @@ The manager's pre-commit handler invokes the canonical commit guard:
 
 ```sh
 #!/bin/sh
-dart_common=$(git rev-parse --git-common-dir) || exit 1
+# Protect path newlines, then remove exactly Git's LF and the sentinel.
+dart_common=$(git rev-parse --git-common-dir && printf '.') || exit 1
+dart_common=${dart_common%??}
 exec "$dart_common/dart-review-pre-commit" "$@"
 ```
 
@@ -353,7 +362,9 @@ Its pre-push handler invokes the exported launcher, including in older worktrees
 
 ```sh
 #!/bin/sh
-dart_common=$(git rev-parse --git-common-dir) || exit 1
+# Protect path newlines, then remove exactly Git's LF and the sentinel.
+dart_common=$(git rev-parse --git-common-dir && printf '.') || exit 1
+dart_common=${dart_common%??}
 exec "$dart_common/dart-review-pre-push" "$@"
 ```
 
