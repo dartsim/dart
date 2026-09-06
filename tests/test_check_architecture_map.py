@@ -526,6 +526,7 @@ def test_stage_id_outside_step_view_must_exist_there(repo: Path) -> None:
                 "tag": "Implemented",
                 "pos": [0, 0],
                 "size": [1, 1],
+                "sources": list(ir["components"][0]["sources"]),
             }
         )
 
@@ -570,6 +571,35 @@ def test_nested_stage_sources_are_scanned(repo: Path) -> None:
         in e
         for e in errors
     )
+
+
+def test_every_stage_subclass_spelling_is_detected(repo: Path) -> None:
+    nested = repo / "dart/simulation/compute/family/spellings.hpp"
+    nested.parent.mkdir(parents=True)
+    nested.write_text(
+        "namespace dart::simulation::compute {\n"
+        "// class CommentedStage : public WorldStepStage {};\n"
+        "struct QuietStage : compute::WorldStepStage {};\n"
+        "class LoudStage final\n"
+        "  : public dart::simulation::compute::WorldStepStage {};\n"
+        "class Runner : private WorldStepStage {};\n"
+        "class NotAStage : public WorldStepStageBase {};\n"
+        "}\n",
+        encoding="utf-8",
+    )
+    errors = "\n".join(_run(repo))
+    for name in ("QuietStage", "LoudStage", "Runner"):
+        assert f"`{name}` derives from WorldStepStage" in errors
+    assert "CommentedStage" not in errors
+    assert "NotAStage" not in errors
+
+
+def test_architecture_components_must_cite_sources(repo: Path) -> None:
+    def mutate(ir):
+        del ir["components"][1]["sources"]
+
+    _rewrite(repo, "simulation-framework.architecture.json", mutate)
+    assert any("node `rigid` cites no sources" in e for e in _run(repo))
 
 
 def test_card_symbols_are_validated(repo: Path) -> None:

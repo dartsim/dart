@@ -134,6 +134,19 @@ def _git_head(repo: Path) -> str | None:
         return None
 
 
+def _worktree_clean(repo: Path) -> bool:
+    """True when no tracked file differs from HEAD (untracked files are ignored)."""
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(repo), "diff", "--quiet", "HEAD", "--"],
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return False
+    return completed.returncode == 0
+
+
 def ensure_archify(
     deps_dir: Path,
     *,
@@ -144,22 +157,22 @@ def ensure_archify(
 ) -> Path | None:
     """Return the archify checkout at the pinned commit, cloning it if allowed."""
     cli = deps_dir / ARCHIFY_CLI
-    if cli.is_file() and _git_head(deps_dir) == commit:
+    if cli.is_file() and _git_head(deps_dir) == commit and _worktree_clean(deps_dir):
         return deps_dir
     if deps_dir.exists():
         if not fetch:
             return None
         if any(deps_dir.iterdir()) and not (deps_dir / CACHE_MARKER).is_file():
             log(
-                f"{deps_dir} is not at the pinned archify commit {commit[:12]} and "
-                f"is not a checkout this script created ({CACHE_MARKER} is "
-                "missing); refusing to replace it. Delete it yourself or pass "
-                "--deps-dir."
+                f"{deps_dir} is not a clean checkout of the pinned archify commit "
+                f"{commit[:12]} and is not a checkout this script created "
+                f"({CACHE_MARKER} is missing); refusing to replace it. Delete it "
+                "yourself or pass --deps-dir."
             )
             return None
         log(
-            f"{deps_dir} is not at the pinned archify commit {commit[:12]}; "
-            "re-fetching."
+            f"{deps_dir} is not a clean checkout of the pinned archify commit "
+            f"{commit[:12]}; re-fetching."
         )
         shutil.rmtree(deps_dir)
     if not fetch:

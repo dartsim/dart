@@ -317,6 +317,32 @@ def test_ensure_archify_refuses_to_replace_a_foreign_directory(
     assert ram.CACHE_MARKER in captured.out + captured.err
 
 
+def test_ensure_archify_rejects_a_modified_pinned_checkout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cache = tmp_path / "archify"
+    cli = cache / ram.ARCHIFY_CLI
+    cli.parent.mkdir(parents=True)
+    cli.write_text("tampered", encoding="utf-8")
+    monkeypatch.setattr(ram, "_git_head", lambda path: ram.ARCHIFY_COMMIT)
+    monkeypatch.setattr(ram, "_worktree_clean", lambda path: False)
+    monkeypatch.setattr(ram.subprocess, "run", lambda *a, **k: None)
+    # Not created by this script: refused, left untouched.
+    assert ram.ensure_archify(cache) is None
+    assert cli.read_text(encoding="utf-8") == "tampered"
+    # Created by this script: replaced by a fresh clone.
+    (cache / ram.CACHE_MARKER).write_text("ours", encoding="utf-8")
+
+    def fake_clone(args, **kwargs):
+        target = Path(args[-1]) / ram.ARCHIFY_CLI
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("pristine", encoding="utf-8")
+
+    monkeypatch.setattr(ram.subprocess, "run", fake_clone)
+    assert ram.ensure_archify(cache) == cache
+    assert cli.read_text(encoding="utf-8") == "pristine"
+
+
 def test_ensure_archify_replaces_only_its_own_stale_cache(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -325,6 +351,7 @@ def test_ensure_archify_replaces_only_its_own_stale_cache(
     (cache / ram.CACHE_MARKER).write_text("stale", encoding="utf-8")
     (cache / "stale.txt").write_text("old", encoding="utf-8")
     monkeypatch.setattr(ram, "_git_head", lambda path: ram.ARCHIFY_COMMIT)
+    monkeypatch.setattr(ram, "_worktree_clean", lambda path: True)
 
     def fake_clone(args, **kwargs):
         target = Path(args[-1])

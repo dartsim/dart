@@ -6,7 +6,8 @@ that ``docs/readthedocs/architecture.md`` embeds. This checker needs no Node.js
 and runs inside ``pixi run check-lint``. It fails when:
 
 * a view is not well-formed JSON with unique ids and resolvable edges;
-* cited source evidence points at a missing path, an out-of-range line, a
+* an architecture component cites no source at all, or cited source
+  evidence points at a missing path, an out-of-range line, a
   line range that no longer contains the symbol it is labelled with, a
   qualified label whose owner does not enclose the cited lines, or a
   qualified/CamelCase symbol in a label, sublabel, card, boundary, stage, or
@@ -14,8 +15,10 @@ and runs inside ``pixi run check-lint``. It fails when:
 * a ``dart/simulation`` directory, a ``BuiltInWorldStepStageSlot`` enumerator,
   an enumerator of any public selector ``enum class`` declared in
   ``world_options.hpp`` or ``multibody/multibody_options.hpp``, a
-  ``dart/<module>`` directory, or a ``WorldStepStage`` subclass is absent from
-  the view that owns it (allowlists below carry a reason per exemption);
+  ``dart/<module>`` directory, or a ``WorldStepStage`` subclass (any
+  ``class``/``struct`` spelling and base qualification under the compute tree)
+  is absent from the view that owns it (allowlists below carry a reason per
+  exemption);
 * a stage id used outside the step-flow view is not a node of that view, or
   the step-flow view holds a node that is neither a snake-cased slot nor one
   of the listed bookends (``STEP_VIEW_BOOKENDS``);
@@ -105,9 +108,13 @@ _ENUM_RE_TEMPLATE = r"enum\s+class\s+{name}\b[^{{]*\{{(.*?)\}}\s*;"
 # SRC link is verified to open a declaration and not whatever moved there.
 _SOURCE_SYMBOL_LABEL_RE = re.compile(r"^[A-Za-z_]\w*(?:::[A-Za-z_]\w*)*$")
 _COMMENT_RE = re.compile(r"//[^\n]*|/\*.*?\*/", re.S)
+# `class` or `struct`, any access specifier, any qualification of the base, and
+# any class name: the slot is derived from the name with a `Stage` suffix removed.
 _STAGE_CLASS_RE = re.compile(
-    r"class\s+(?:DART_SIMULATION_API\s+)?(\w+Stage)\b[^{;]*?:\s*public\s+"
-    r"(?:compute::)?WorldStepStage\b",
+    r"\b(?:class|struct)\s+(?:DART_\w+_API\s+)?(\w+)\b[^{;]*?:\s*"
+    r"(?:[^{;]*?,\s*)?(?:(?:public|protected|private)\s+)?(?:virtual\s+)?"
+    r"(?:dart::simulation::compute::|simulation::compute::|compute::)?"
+    r"WorldStepStage\b[^{;]*\{",
     re.S,
 )
 _QUALIFIED_SYMBOL_RE = re.compile(
@@ -482,6 +489,11 @@ class Checker:
         label = view.relpath
         for node in view.nodes():
             node_id = node.get("id", "?")
+            if view.diagram_type == "architecture" and not node.get("sources"):
+                self.error(
+                    f"{label}: node `{node_id}` cites no sources; every architecture "
+                    "component must cite at least one file that backs it"
+                )
             for source in node.get("sources", []) or []:
                 if not isinstance(source, dict) or not source.get("path"):
                     self.error(f"{label}: node `{node_id}` has a source without a path")
@@ -681,7 +693,11 @@ class Checker:
                         )
 
         for class_name, header in self._stage_classes():
-            base = class_name[: -len("Stage")]
+            base = (
+                class_name[: -len("Stage")]
+                if class_name.endswith("Stage")
+                else class_name
+            )
             if base in slots or class_name in STAGE_CLASS_ALLOWLIST:
                 continue
             self.error(
@@ -697,7 +713,7 @@ class Checker:
             return found
         files = {path for pattern in ("*.hpp", "*.cpp") for path in root.rglob(pattern)}
         for source in sorted(files):
-            text = source.read_text(encoding="utf-8", errors="ignore")
+            text = strip_comments(source.read_text(encoding="utf-8", errors="ignore"))
             for match in _STAGE_CLASS_RE.finditer(text):
                 rel = source.relative_to(self.repo_root).as_posix()
                 found.append((match.group(1), rel))

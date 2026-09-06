@@ -21,8 +21,9 @@ Checks (all advisory by default; ``--strict`` turns findings into failures):
 * with ``--probe-output <json>`` or a built probe binary, the fresh dump has
   the same stages and graph node/edge sets as the fixture;
 * the fixture and any fresh dump record a nonempty stage list and at least one
-  executed compute graph with nodes, so an empty dump can neither pass the
-  checks vacuously nor be committed by ``--regenerate``.
+  executed compute graph whose edges are pairs of its recorded nodes, so an
+  empty or dangling dump can neither pass the checks vacuously nor be
+  committed by ``--regenerate``.
 
 ``--regenerate`` rewrites the fixture from a fresh probe dump.
 """
@@ -126,8 +127,34 @@ def dump_shape_findings(dump: dict, label: str) -> list[str]:
         )
     else:
         for index, graph in enumerate(graphs):
-            if not isinstance(graph, dict) or not graph.get("nodes"):
+            nodes = graph.get("nodes") if isinstance(graph, dict) else None
+            if (
+                not isinstance(nodes, list)
+                or not nodes
+                or not all(isinstance(node, str) and node for node in nodes)
+            ):
                 findings.append(f"{label} graph {index} has no nodes")
+                continue
+            edges = graph.get("edges")
+            if not isinstance(edges, list):
+                findings.append(f"{label} graph {index} edges are not a list")
+                continue
+            names = set(nodes)
+            for position, edge in enumerate(edges):
+                if not (
+                    isinstance(edge, (list, tuple))
+                    and len(edge) == 2
+                    and all(isinstance(end, str) for end in edge)
+                ):
+                    findings.append(
+                        f"{label} graph {index} edge {position} is not a [from, to] "
+                        "pair of node names"
+                    )
+                elif edge[0] not in names or edge[1] not in names:
+                    findings.append(
+                        f"{label} graph {index} edge {position} {list(edge)} names a "
+                        "node the graph did not record"
+                    )
     return findings
 
 

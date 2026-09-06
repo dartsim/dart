@@ -104,9 +104,41 @@ def test_unknown_stage_and_focus_and_vocabulary_are_reported() -> None:
     assert any("compute node `mystery:node` is not named" in f for f in findings)
 
 
+def test_dangling_or_malformed_graph_edges_are_findings(
+    views: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    dangling = _fixture()
+    dangling["graphs"][0]["edges"] = [["kinematics:frames", "kinematics:ghost"]]
+    findings = camr.check_against_views(dangling, _step_view(), _compute_view())
+    assert any("names a node the graph did not record" in f for f in findings)
+    malformed = _fixture()
+    malformed["graphs"][0]["edges"] = ["kinematics:frames"]
+    assert any(
+        "is not a [from, to] pair" in f
+        for f in camr.check_against_views(malformed, _step_view(), _compute_view())
+    )
+    probe = views / "probe.json"
+    probe.write_text(json.dumps(dangling), encoding="utf-8")
+    fixture_path = views / "compute-graph.runtime.json"
+    assert (
+        camr.main(
+            [
+                "--fixture",
+                str(fixture_path),
+                "--probe-output",
+                str(probe),
+                "--regenerate",
+            ]
+        )
+        == 1
+    )
+    assert "refusing to regenerate" in capsys.readouterr().out
+    assert not fixture_path.exists()
+
+
 def test_renamed_compute_node_is_not_hidden_by_a_substring() -> None:
     fixture = _fixture()
-    fixture["graphs"][0]["nodes"] = ["kinematic_level_0_chunk_0"]
+    fixture["graphs"][0] = {"nodes": ["kinematic_level_0_chunk_0"], "edges": []}
     fixture["graph_vocabulary"] = []
     findings = camr.check_against_views(fixture, _step_view(), _compute_view())
     assert any("`kinematic_level_0_chunk_0` is not named" in f for f in findings)

@@ -463,7 +463,7 @@
       "id": "multibody-compute",
       "from": "multibody",
       "to": "compute",
-      "label": "compute graphs"
+      "label": "parallelFor"
     },
     {
       "id": "coupling-deformable",
@@ -473,6 +473,20 @@
       "variant": "dashed",
       "fromSide": "left",
       "toSide": "right"
+    },
+    {
+      "id": "rigid-compute",
+      "from": "rigid",
+      "to": "compute",
+      "label": "compute graphs",
+      "fromSide": "right",
+      "toSide": "top",
+      "via": [
+        [
+          1245,
+          206
+        ]
+      ]
     }
   ],
   "cards": [
@@ -481,7 +495,7 @@
       "title": "Read left to right",
       "items": [
         "Public surface: World, handles, option values, and the installed headers (derivatives, executors, stages)",
-        "Selection resolves to an ordered stage schedule; stages emit compute graphs",
+        "Selection resolves to an ordered stage schedule; the rigid integration and kinematics stages emit compute graphs, other stages use the executor directly",
         "Selectors are the enum classes of world_options.hpp and multibody_options.hpp; the gate lists every enumerator"
       ]
     },

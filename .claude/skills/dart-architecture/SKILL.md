@@ -71,7 +71,8 @@ enumerator of any public selector `enum class` in `world_options.hpp` or
 `WorldStepStage` subclass, or a `dart/<module>` directory updates the owning
 view in the same change:
 
-1. Edit the view JSON: add or retitle the node, cite its `sources`, set the
+1. Edit the view JSON: add or retitle the node, cite its `sources` (every
+   architecture component needs at least one; the gate fails otherwise), set the
    `tag` from the assessment, and label new relationships with the exchanged
    data (dataflow flows) or the mechanism (architecture connections).
 2. `pixi run check-architecture-map` (blocking, no Node.js): missing paths,
