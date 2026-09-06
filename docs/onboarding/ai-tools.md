@@ -327,11 +327,15 @@ the checker changes:
 pixi run install-hooks --custom-manager
 ```
 
-This publishes complete files atomically under
-`<git-common-dir>/dart-review-runtime` and leaves the manager's configuration
-and handlers intact. The exported launcher verifies the checker digest before
-execution. Interrupted initial exports or mismatched refreshes block pushes;
-rerun the export to finish installation.
+This atomically publishes `dart-review-pre-push` and `dart-review-gate.py`
+directly in Git's canonical common directory, leaving the manager's configuration
+and handlers intact. It leaves any earlier `dart-review-runtime` directory
+untouched. The export refuses unowned or aliased output files, and refuses a
+common directory that doubles as a hooks directory. The launcher verifies the
+checker digest before execution. Interrupted initial exports or mismatched
+refreshes block pushes; rerun the export to finish installation. Its stable
+ownership markers permit recovery after a checker-only initial export or a
+damaged checker with an owned launcher.
 
 The manager's pre-commit handler runs the existing staged guard:
 
@@ -347,14 +351,16 @@ Its pre-push handler invokes the exported launcher, including in older worktrees
 ```sh
 #!/bin/sh
 dart_common=$(git rev-parse --git-common-dir) || exit 1
-exec "$dart_common/dart-review-runtime/pre-push" "$@"
+exec "$dart_common/dart-review-pre-push" "$@"
 ```
 
 Set `DART_HOOK_PYTHON` to the chosen interpreter when `python3` is unavailable.
 These are separate handlers: retain any additional manager-owned checks and
 their ordering. Do not consume pre-push stdin before passing it to the checker.
 For evidence preparation from an older checkout, use the installed-CLI recipe
-with `$dart_common/dart-review-runtime/dart-review-gate.py` as the runtime path.
+with `$dart_common/dart-review-gate.py` as the runtime path. The exported
+launcher leaves all chaining to the manager; it does not run an incidental
+`pre-push.local` in the Git common directory.
 The doctor reports manager ownership; it cannot certify arbitrary manager
 configuration. Verify integration with a disposable unreviewed branch push
 that is blocked, followed by a reviewed push that succeeds.

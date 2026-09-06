@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# DART-REVIEW-CHECKER v1
 """Record independent review evidence and check outgoing Git branch updates.
 
 Uses Python 3.11+ and the standard library only. The installer copies this
@@ -54,7 +55,7 @@ if hashlib.sha256(source).hexdigest() != expected:
     sys.exit("DART review gate BLOCKED: installed checker changed; run pixi run install-hooks")
 sys.argv = [path, *sys.argv[3:]]
 exec(compile(source, path, "exec"), {"__name__": "__main__", "__file__": path})
-' "$checker" "@CHECKER_SHA256@" pre-push "$@"
+' "$checker" "@CHECKER_SHA256@" pre-push@LOCAL_HOOK_FLAG@ "$@"
 }
 if [ -n "${DART_HOOK_PYTHON:-}" ]; then
     if ! "$DART_HOOK_PYTHON" -I -c 'import sys; sys.exit(sys.version_info < (3, 11))' </dev/null >/dev/null 2>&1; then
@@ -74,10 +75,10 @@ exit 1
 """
 
 
-def pre_push_hook(checker: bytes) -> str:
+def pre_push_hook(checker: bytes, *, chain_local: bool = True) -> str:
     return PRE_PUSH_TEMPLATE.replace(
         "@CHECKER_SHA256@", hashlib.sha256(checker).hexdigest()
-    )
+    ).replace("@LOCAL_HOOK_FLAG@", "" if chain_local else " --no-local-hook")
 
 
 class GateError(Exception):
@@ -752,6 +753,11 @@ def main() -> int:
     push = commands.add_parser(
         "pre-push", help="Git hook entrypoint; reads ref updates from stdin"
     )
+    push.add_argument(
+        "--no-local-hook",
+        action="store_true",
+        help="leave hook chaining to the configured custom manager",
+    )
     push.add_argument("remote")
     push.add_argument("location")
     args = parser.parse_args()
@@ -764,7 +770,7 @@ def main() -> int:
                 store.pre_push(args.location, payload)
             # A shell preserves Git's executable/shebang handling on Windows too.
             local = Path(__file__).resolve().parent / "pre-push.local"
-            if local.is_file() and os.access(local, os.X_OK):
+            if not args.no_local_hook and local.is_file() and os.access(local, os.X_OK):
                 return subprocess.run(
                     [
                         "sh",
