@@ -32,6 +32,8 @@ $ARGUMENTS
 @AGENTS.md
 @docs/onboarding/contributing.md
 @docs/onboarding/ai-tools.md
+@docs/onboarding/ai-reviews.md
+@docs/ai/verification.md
 @docs/onboarding/changelog.md
 @.github/PULL_REQUEST_TEMPLATE.md
 
@@ -139,21 +141,20 @@ Use these practices:
    git switch --no-track -c <type>/<topic> origin/<target-branch>
    ```
 7. Commit only intended files with a plain descriptive commit title.
-8. Ask for explicit maintainer/user approval before pushing or opening the draft
-   PR. Never push directly to `release-*`. If approved:
+8. Before first publication as well as updates, merge the latest fetched base,
+   commit and validate the immutable candidate, then follow
+   `docs/onboarding/ai-reviews.md` and pass `pixi run review-gate check` with
+   two clean non-author reviews or the evidenced trivial exception. Complete
+   this local work before asking for any missing publication approval. Never
+   push directly to `release-*`. With explicit maintainer/user approval covering push and draft creation:
    ```bash
    branch=$(git branch --show-current)
    git push -u origin "HEAD:${branch}"
    gh pr create --draft --base <target-branch> --milestone "<milestone>" \
      --title "<plain title>" --body-file <filled-template-file>
    ```
-   For fast feedback on a draft PR, also request Codex review after publication
-   when approval covers PR comments:
-   ```bash
-   gh pr comment <PR_NUMBER> --body "@codex review"
-   ```
-   If Codex already shows an activity signal or submitted review, do not post a
-   duplicate trigger.
+   Apply the review owner's automatic/manual trigger ownership rules before
+   an approved hosted review request; do not race a queued automatic run.
 9. After a PR is published, prefer additive follow-up commits for updates so
    reviewers can inspect each review round. Amend or force-push only after
    explicit maintainer/user approval and only when the user explicitly requests
@@ -165,7 +166,7 @@ Use these practices:
     ```bash
     git fetch origin <target-branch>
     git merge --no-ff origin/<target-branch>  # never rebase a published PR branch
-    # rebuild + retest if the merge touched code
+    # commit, validate, obtain independent local reviews, and review-gate check
     git push                                   # after explicit approval
     ```
     The local base merge is a routine pre-push step; the push itself still
@@ -184,24 +185,10 @@ Use these practices:
 
 ## AI Review Comments
 
-Never reply to AI-generated review comments from bot users such as
-`chatgpt-codex-connector[bot]`, `github-code-quality[bot]`,
-`github-actions[bot]`, or `copilot[bot]`.
-When a draft PR is first published, a top-level `@codex review` is the preferred
-fast path once explicit maintainer/user approval covers PR comments; it can run
-while the PR remains draft. Make fixes silently. Push and ask for a new AI review
-with `@codex review` only after explicit maintainer/user approval and only when
-the approved follow-up push addressed Codex review comments, or when the first
-trigger has a concrete timeout/blocker.
-
-After Codex returns no actionable issues and local validation passes on the
-current head (`pixi run test-all` for the default build plus C++/Python runtime
-aggregate, focused `pixi run test` or `pixi run test-py` when clearer
-attribution is useful, plus lint and the Gazebo gate when the touched surface
-requires them), a draft PR is ready to mark ready for human review after
-explicit approval even if hosted CI is still pending. Do not merge until
-branch protection and required checks pass unless a maintainer explicitly
-approves a policy bypass.
+Follow `docs/onboarding/ai-reviews.md` for the single review-fix loop, no inline
+bot replies, finding-family batches, strategy checkpoint, current-head evidence,
+and approval reuse. That owner defines ready/merge requirements; passing local
+reviews does not replace the hosted review or validation requirements.
 
 ## Output
 

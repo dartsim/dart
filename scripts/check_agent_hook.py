@@ -44,6 +44,7 @@ AI_PATH_PREFIXES = (
     "scripts/check_agent_hook.py",
     "scripts/check_ai_infrastructure.py",
     "scripts/install_git_hooks.py",
+    "scripts/review_gate.py",
     "scripts/pretool_guard_bridge.py",
     "scripts/run_pytest.py",
     "scripts/setup_ai.py",
@@ -51,6 +52,7 @@ AI_PATH_PREFIXES = (
     "tests/CMakeLists.txt",
     "tests/test_ai_infrastructure.py",
     "tests/test_install_git_hooks.py",
+    "tests/test_review_gate.py",
     "tests/test_sync_ai_commands.py",
 )
 

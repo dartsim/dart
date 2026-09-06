@@ -156,8 +156,9 @@ simulation state with text-first and OSG visual/debug evidence.
    to the trusted root configuration without conftest or explicit local plugin
    loading; source-marker matches alone are insufficient.
    Audit-only uses `pixi run check-lint`; only apply mode runs auto-fixing
-   `pixi run lint` before a commit. Complete the principle audit and two clean
-   role-separated reviews. Label unavailable behavioral, cross-tool, hosted,
+   `pixi run lint` before a commit. Complete the principle audit and
+   the review requirements in `docs/ai/verification.md`. Before publication,
+   apply the non-author local gate in `docs/onboarding/ai-reviews.md`. Label unavailable behavioral, cross-tool, hosted,
    or downstream evidence.
 10. **Close out for DART 6.** Make the changelog decision in apply mode,
     promote durable guidance, and remove completing temporary task state.

@@ -24,6 +24,8 @@ criteria, see
   workflow references for maintainers and agents.
   Start with [`onboarding/architecture.md`](onboarding/architecture.md) for the
   DART 6.20 component map and compatibility boundaries.
+  [`onboarding/ai-reviews.md`](onboarding/ai-reviews.md) owns local publication
+  reviews and automated review handling.
 - [`plans/`](plans/README.md): living release-branch roadmap state, priority,
   gates, and sequencing.
 - [`readthedocs/`](readthedocs/): public user documentation source.

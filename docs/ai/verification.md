@@ -240,12 +240,19 @@ replacement user-level artifact or check.
 
 ## Review Evidence
 
-Review findings are extra input, not orders. For each substantive review
-finding, verify the claim with code inspection, tests, docs, downstream checks,
-benchmarks, or visual artifacts before changing behavior. Record whether the
-finding was fixed, deferred, or rejected with evidence. Completion requires two
-clean independent or role-separated review passes on the current post-fix state;
-a pass before later fixes does not count as final evidence.
+`docs/onboarding/ai-reviews.md` owns review coverage, finding dispositions, and
+the independent local publication gate. Two clean non-author sessions on the
+immutable candidate satisfy the local completion requirement: one correctness
+pass and one contracts pass. Substantive edits require a fresh pair; a trivial
+delta needs the owner's independent non-substantive assessment. Preserve all
+findings and verify fixed or rejected dispositions with concrete evidence.
+Required acceptance evidence cannot be replaced by a clean review.
+
+Local-only work may use role-separated investigation when independent sessions
+are unavailable, with the limitation recorded, but that cannot satisfy the
+publication gate. Hosted review remains current-head evidence for readiness and
+merge; it does not count as a local pass. Do not add further local rounds merely
+to satisfy overlapping policy wording.
 
 ## Completion Audit
 

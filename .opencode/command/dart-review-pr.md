@@ -1,6 +1,6 @@
 ---
 description: review a PR or address review feedback
-argument-hint: "<pr-number> [address]"
+argument-hint: "<pr-number> [mode=review|feedback] | candidate=<id> scope=correctness|contracts|non-substantive"
 agent: build
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
@@ -14,89 +14,76 @@ Review or respond to PR: $ARGUMENTS
 
 @AGENTS.md
 @docs/onboarding/code-style.md
-@docs/onboarding/ai-tools.md (for AI-generated review handling)
+@docs/onboarding/ai-reviews.md
+@docs/onboarding/ai-tools.md
 @docs/ai/verification.md
 
 ## Workflow
 
-### To Review
+Pick the sub-workflow from `mode=` in `$ARGUMENTS`, defaulting to `review`.
 
-```bash
-gh pr view $1 && gh pr diff $1
-```
+### Review A Local Candidate Or PR
 
-Check code style, tests, docs, and focused commits. For claims involving 3D
-structure or behavior, require the `dart-verify-sim` text oracle plus assessed
-claim-tied OSG/debug-overlay evidence, or a justified replacement; a screenshot
-alone is not correctness evidence.
+For `candidate=<id>`, read its `candidate.json` at the path printed by
+`review-gate prepare`. Verify the supplied base/head/tree and inspect
+`git diff <merge_base> <head>` with surrounding code. Work from the immutable
+candidate in an isolated read-only checkout; do not accidentally review dirty
+files or a later HEAD. No PR needs to exist. The parent supplies objective,
+acceptance criteria, factual gates, prior findings, and author-session IDs.
 
-### To Address Feedback
+For a PR number, obtain its current head/base and complete diff with
+`gh pr view` and `gh pr diff`, then follow the same coverage policy. A PR review
+without a prepared local candidate is useful feedback, not publication evidence.
 
-```bash
-gh pr view $1 --comments
-```
+Apply the assigned scope from `docs/onboarding/ai-reviews.md`: correctness
+covers the complete PR diff and acceptance evidence; contracts independently
+traces consumers, sibling cases, and negative cases and records the required
+input/consumer matrix for exclusions, parsers, or validators. Challenge test
+oracles against actual requirements. A non-substantive assessment must prove
+unchanged behavior under the owner's strict baseline rules. Missing evidence
+or unobserved effective reviewer settings makes the report incomplete.
 
-Apply minimal fixes locally and verify. Do not push, comment, resolve threads,
-or re-trigger review without explicit maintainer/user approval for that
-external mutation.
+Use a distinct non-author session for each substantive scope. Check code style,
+tests, docs, and focused commits. For 3D claims,
+require the `dart-verify-sim` text oracle plus assessed visual/debug evidence,
+or a justified replacement. Report every surviving finding as a coherent batch, including
+repair regressions and earlier findings whose disposition is unsupported.
 
-For published PRs, prefer a new follow-up commit for review fixes so reviewers
-can inspect what changed since the previous round. Amend or force-push only
-after explicit maintainer/user approval and only when the user explicitly
-requests it or when there is a clear reason such as removing sensitive content
-or repairing broken branch history.
+Stay read-only. For a local candidate return the final JSON report defined in
+`docs/onboarding/ai-tools.md` for the parent to import with `review-gate record`.
+Include observed session/model/effort, coverage, completion, findings with stable
+IDs and concrete evidence, and verified dispositions. Do not mutate the evidence
+store yourself. A clean verdict requires complete coverage for the current stage under the
+review owner; explicitly retain pending hosted acceptance checks.
 
-Before every push, first merge the latest base branch into the PR branch (on
-every push, not just the first) so each pushed/CI-tested state reflects current
-target base branch and conflicts surface early: `git fetch origin <base>` then
-`git merge --no-ff origin/<base>`, rebuild/retest if the merge touched code, then
-push. The local base merge is a routine pre-push step; the push itself still
-requires explicit maintainer/user approval. Do not rebase a published PR branch
-by default because it invalidates existing CI runs and makes PR review/comment
-history harder to follow. Rebase or force-push only when the maintainer
-explicitly requests it.
+### Address Feedback
 
-If the push is rejected because the remote PR head moved, fetch and compare the
-remote head before retrying. If it already contains an equivalent review fix,
-validate that head and follow `docs/onboarding/ai-tools.md` instead of pushing a
-duplicate commit.
+Use the paginated review/CI inspection commands and the single Review-Fix Loop
+Workflow in `docs/onboarding/ai-reviews.md`. Collect the completed batch, verify
+claims, and repair the underlying defect family. That owner defines trigger
+ownership, current-head completion, the two-round strategy checkpoint, false
+positive dispositions, blockers, and readiness; do not restart a per-comment
+fix/push/review loop here.
 
-## Automated Reviews (Codex, Code Quality, Copilot, etc.)
+For published PRs, prefer a new
+follow-up commit so reviewers can inspect each round; amend or force-push only
+after explicit maintainer/user approval and only when the user requests it or a
+clear reason exists (removing sensitive content, repairing branch history).
 
-When a draft PR is first published, request the first Codex review with a
-top-level `@codex review` once explicit maintainer/user approval covers PR
-comments; it can run while the PR remains draft. If Codex already shows an
-activity signal or submitted review, do not post a duplicate trigger.
-
-1. Make the local fix silently (no reply)
-2. Run the relevant local gates, including `pixi run lint` before any commit
-3. Ask for explicit maintainer/user approval before push, thread resolution,
-   PR comment, or review re-trigger
-4. If approved, push the fix silently
-5. If approved, resolve only the review threads that were actually reviewed
-   and addressed (thread resolution is approval-gated; see
-   `docs/onboarding/ai-tools.md` § "Approval Boundaries")
-6. After the approved push, if the fixes addressed Codex review comments, ask
-   for explicit maintainer/user approval for the PR comment, then re-trigger:
-   `gh pr comment $1 --body "@codex review"`
-7. Also handle `github-code-quality[bot]` review comments with the same
-   no-inline-reply loop. Fix valid findings locally and push silently after
-   approval; do not re-trigger Codex solely for non-Codex bot findings unless
-   Codex comments were also addressed.
-8. Monitor CI: `gh pr checks $1`
-9. Check for new review, repeat until no actionable comments remain
-10. For draft PRs, mark ready after explicit approval once Codex is clean and
-    local validation passes on the current head: `pixi run test-all` for the
-    default build plus C++/Python runtime aggregate, focused `pixi run test` or
-    `pixi run test-py` when clearer attribution is useful, plus lint and the
-    Gazebo gate when the touched surface requires them; merge still waits for
-    required hosted checks unless a maintainer explicitly approves a policy
-    bypass
-
-Review rules owner: `docs/onboarding/ai-tools.md` § "AI Review Comments" and § "Approval Boundaries"
+Run the relevant local gates, including `pixi run lint` before every commit.
+Merge the latest base, validate and pass the independent local review gate
+before each approved push, and apply the owner's remote
+divergence recovery if the head moved. Reuse existing explicit authority for
+this PR, action, and scope; ask only where it is missing. No inline bot replies.
+Monitor CI (`gh pr checks $1`); readiness and merge remain separately gated and
+require approval for the corresponding external mutation.
 
 ## Output
 
-- Review findings ordered by severity, or the feedback addressed
-- Verification commands run for addressed feedback
-- Any external mutation left pending explicit approval
+- PR number and whether the pass was a review or a feedback round
+- Findings or fixes applied, with file/line references
+- Reviewed head, completion/trigger evidence, completed round count, and any
+  strategy-checkpoint outcome
+- Which actions were local-only and which external mutations were explicitly
+  approved
+- Codex/CI state and any remaining blocker

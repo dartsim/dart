@@ -120,6 +120,8 @@ the real scope materially different stops and reports back.
    Claude from Codex, subagents, or specialist reviewers when available; fall
    back to role-separated local review only when unavailable. Root-cause
    failures and fold newly discovered unknowns back into step 3.
+   Author role separation cannot clear publication; use the independent local
+   gate in `docs/onboarding/ai-reviews.md` before any branch push.
 9. **Update docs at each stopping point** - Every meaningful cycle updates the
    project home: `README.md` for status/plan/risks, `RESUME.md` for the next
    fresh-session handoff, `decisions.md` if decisions changed,

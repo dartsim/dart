@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
 
 
 def _load(name: str, path: Path):
@@ -3414,6 +3415,8 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
     )
     (workflows / "ci_windows.yml").write_text(
         "Native Windows hook smoke\n"
+        "Native Windows review gate\n"
+        "pixi run python -I scripts/run_pytest.py tests/test_review_gate.py -q\n"
         'pixi run python -c "import sys; print(sys.executable)"\n'
         "$launcher\n"
         "$hookCommand\n"
