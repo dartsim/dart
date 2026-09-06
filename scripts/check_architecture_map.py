@@ -8,7 +8,7 @@ and runs inside ``pixi run check-lint``. It fails when:
 * a view is not well-formed JSON with unique ids and resolvable edges;
 * an architecture component cites no source at all, or cited source
   evidence points at a missing path, an out-of-range line, a
-  line range that no longer contains the symbol it is labelled with, a
+  line range that no longer declares the symbol it is labelled with, a
   qualified label whose owner does not enclose the cited lines, or a
   qualified/CamelCase symbol in a label, sublabel, card, boundary, stage, or
   guide note that no public header declares;
@@ -122,12 +122,28 @@ _ENUM_RE_TEMPLATE = r"enum\s+class\s+{name}\b[^{{]*\{{(.*?)\}}\s*;"
 # A line-cited source is labelled with the symbol declared at those lines, so the
 # SRC link is verified to open a declaration and not whatever moved there.
 _SOURCE_SYMBOL_LABEL_RE = re.compile(r"^[A-Za-z_]\w*(?:::[A-Za-z_]\w*)*$")
+# Declaration shapes a cited span may contain for its labelled symbol: a type-like
+# declaration, a function or member declaration led by its type, or an enumerator.
+_SPAN_DECLARATION_TEMPLATE = (
+    r"\b(?:class|struct|enum\s+class|enum|namespace|using|concept)\s+"
+    r"(?:DART_\w+_API\s+)?{token}\b"
+    r"|[\w:<>\]]+(?<!\breturn)[\s&*]+{token}\s*[(;={{]"
+    r"|(?m:^\s*{token}\s*(?:=[^,\n]*)?,?\s*$)"
+)
+
+
+def span_declares(span: str, token: str) -> bool:
+    """True when the comment-free ``span`` declares ``token`` rather than mentions it."""
+    pattern = _SPAN_DECLARATION_TEMPLATE.format(token=re.escape(token))
+    return re.search(pattern, blank_comments(span)) is not None
+
+
 _COMMENT_RE = re.compile(r"//[^\n]*|/\*.*?\*/", re.S)
 # `class` or `struct`, any access specifier, any qualification of the base, and
 # any class name: the slot is derived from the name with a `Stage` suffix removed.
 _STAGE_CLASS_RE = re.compile(
     r"\b(?:class|struct)\s+(?:DART_\w+_API\s+)?(\w+)\b[^{;]*?:\s*"
-    r"(?:[^{;]*?,\s*)?(?:(?:public|protected|private)\s+)?(?:virtual\s+)?"
+    r"(?:[^{;]*?,\s*)?(?:(?:public|protected|private|virtual)\s+){0,2}"
     r"(?:dart::simulation::compute::|simulation::compute::|compute::)?"
     r"WorldStepStage\b[^{;]*\{",
     re.S,
@@ -577,11 +593,11 @@ class Checker:
                 token = symbol_label.rsplit("::", 1)[-1]
                 source_text = self.read(rel)
                 span = "\n".join(source_text.splitlines()[line - 1 : span_end])
-                if not re.search(r"\b" + re.escape(token) + r"\b", span):
+                if not span_declares(span, token):
                     self.error(
                         f"{label}: node `{node_id}` cites `{rel}` lines "
                         f"{line}..{span_end} for `{symbol_label}`, but they no "
-                        f"longer contain `{token}`"
+                        f"longer contain a declaration of `{token}`"
                     )
                     continue
                 if "::" in symbol_label:

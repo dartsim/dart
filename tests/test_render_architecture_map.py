@@ -266,6 +266,33 @@ def test_text_summaries_mark_planned_relationships(ir_dir: Path) -> None:
     assert "later (planned)" in ram.fallback_html(view, "no node", None)
 
 
+def test_summaries_and_fallback_include_cards(ir_dir: Path) -> None:
+    view = next(
+        v for v in ram.discover_views(ir_dir) if v.diagram_type == "architecture"
+    )
+    ir = json.loads(view.path.read_text(encoding="utf-8"))
+    ir["cards"] = [{"title": "Public selectors", "items": ["RigidBodySolver: Ipc"]}]
+    view.path.write_text(json.dumps(ir), encoding="utf-8")
+    markdown = ram.view_summary_markdown(view)
+    assert "*Public selectors*" in markdown and "- RigidBodySolver: Ipc" in markdown
+    page = ram.fallback_html(view, "no node", None)
+    assert "<h2>Public selectors</h2>" in page and "RigidBodySolver: Ipc" in page
+
+
+def test_main_fails_when_a_required_view_is_missing_from_the_default_dir(
+    ir_dir: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(ram, "DEFAULT_IR_DIR", ir_dir)
+    assert ram.main(["--output-dir", str(tmp_path / "out")]) == ram.EXIT_FAILED
+    captured = capsys.readouterr()
+    assert (
+        "required view `simulation-framework` is missing" in captured.out + captured.err
+    )
+
+
 def test_text_summaries_are_written_for_non_html_builders(
     ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -254,6 +254,17 @@ def view_shape_error(view: View) -> str | None:
     return None
 
 
+def required_views_missing(views: list[View]) -> list[str]:
+    """Names of the checker's required views that ``views`` does not contain."""
+    scripts_dir = str(Path(__file__).resolve().parent)
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    import check_architecture_map as cam
+
+    present = {view.name for view in views}
+    return [name for name in cam.REQUIRED_VIEWS if name not in present]
+
+
 def structural_errors(views: list[View]) -> list[str]:
     """Run the checker's structural rules (ids, edges, stages, tags) on views.
 
@@ -323,6 +334,12 @@ def view_summary_markdown(view: View) -> str:
         str(n.get("id")): str(n.get("label", n.get("id")))
         for n in ir.get("components", []) + ir.get("nodes", [])
     }
+    for card in ir.get("cards", []) or []:
+        if not isinstance(card, dict):
+            continue
+        lines.append(f"*{card.get('title', '')}*")
+        lines.extend(f"- {item}" for item in card.get("items", []) or [])
+        lines.append("")
     if edges:
         lines.append("*Relationships*")
         for edge in edges:
@@ -567,6 +584,14 @@ def fallback_html(view: View, reason: str, revision: str | None) -> str:
                 )
             parts.append("</ul>")
         edges = ir.get("connections", [])
+    for card in ir.get("cards", []) or []:
+        if not isinstance(card, dict):
+            continue
+        parts.append(f"<h2>{html.escape(str(card.get('title', '')))}</h2><ul>")
+        parts.extend(
+            f"<li>{html.escape(str(item))}</li>" for item in card.get("items", []) or []
+        )
+        parts.append("</ul>")
     if edges:
         parts.append("<h2>Relationships</h2><ul>")
         for edge in edges:
@@ -640,6 +665,15 @@ def main(argv: list[str]) -> int:
         missing = wanted - {v.name for v in views}
         if missing:
             log(f"unknown view(s): {sorted(missing)}")
+            return EXIT_FAILED
+    if not args.views and args.ir_dir.resolve() == DEFAULT_IR_DIR.resolve():
+        missing = required_views_missing(views)
+        if missing:
+            for name in missing:
+                log(
+                    f"{args.ir_dir}: required view `{name}` is missing; the "
+                    "architecture page embeds it, so nothing was rendered."
+                )
             return EXIT_FAILED
     if not views:
         log(f"no views found under {args.ir_dir}; nothing to render.")

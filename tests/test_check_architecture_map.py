@@ -73,7 +73,8 @@ class DART_SIMULATION_API KinematicsStage final
 } // namespace dart::simulation::compute
 """
 WORLD_HEADER = (
-    "namespace dart::simulation {\nclass World\n{\n  void step();\n  StateSpace space;\n};\n"
+    "namespace dart::simulation {\nclass World\n{\n  void step();\n  StateSpace space;\n"
+    "  // step() advances the world by one step\n};\n"
     "StateSpace makeStateSpace();\n"
     "inline StateSpace take(StateSpace s) { return std::move(s); }\n}\n" + "\n" * 20
 )
@@ -347,8 +348,23 @@ def test_line_cited_source_must_hold_its_symbol(repo: Path) -> None:
     _rewrite(repo, "simulation-framework.architecture.json", moved)
     errors = _run(repo)
     assert any(
-        "lines 2..3 for `StateSpace`, but they no longer contain `StateSpace`" in e
+        "lines 2..3 for `StateSpace`, but they no longer contain a declaration of "
+        "`StateSpace`" in e
         for e in errors
+    )
+
+    def comment_only(ir):
+        ir["components"][0]["sources"][0] = {
+            "path": "dart/simulation/world.hpp",
+            "line": 6,
+            "label": "World::step",
+        }
+
+    _rewrite(repo, "simulation-framework.architecture.json", comment_only)
+    assert any(
+        "lines 6..6 for `World::step`, but they no longer contain a declaration of "
+        "`step`" in e
+        for e in _run(repo)
     )
 
     def prose(ir):
@@ -600,12 +616,14 @@ def test_every_stage_subclass_spelling_is_detected(repo: Path) -> None:
         "class LoudStage final\n"
         "  : public dart::simulation::compute::WorldStepStage {};\n"
         "class Runner : private WorldStepStage {};\n"
+        "struct VirtualStage : virtual public WorldStepStage {};\n"
+        "struct VirtualStage2 : public virtual compute::WorldStepStage {};\n"
         "class NotAStage : public WorldStepStageBase {};\n"
         "}\n",
         encoding="utf-8",
     )
     errors = "\n".join(_run(repo))
-    for name in ("QuietStage", "LoudStage", "Runner"):
+    for name in ("QuietStage", "LoudStage", "Runner", "VirtualStage", "VirtualStage2"):
         assert f"`{name}` derives from WorldStepStage" in errors
     assert "CommentedStage" not in errors
     assert "NotAStage" not in errors
