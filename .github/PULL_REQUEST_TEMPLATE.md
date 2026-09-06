@@ -2,42 +2,31 @@
 
 -
 
-<!-- Outcome first for reviewers: what changed and who is affected. If the problem context is necessary, fold it into the first sentence and expand it below. Link relevant GitHub issues, if any. -->
-
-## Motivation / Problem
-
--
-
-<!-- Why is this change needed? What problem does it solve? Keep the fuller rationale here, after the skimmable Summary. -->
-
-## Changes / Key Changes
-
--
-
-<!-- High-level list of key changes. -->
+<!-- TL;DR: concrete problem or missing capability + principal change.
+Use one or two short sentences, as prose or bullets (roughly 30–50 words total).
+Keep secondary changes below; a short but generic opening is not enough.
+PR-writing guidance: docs/onboarding/contributing.md#submitting-a-pull-request.
+Keep material risks/migration beside the affected claim. Add rationale, Key Changes,
+or a comparison only when it helps review. -->
 
 ## Testing
 
-- What you tested (commands, manual steps, or explain why not). Example:
-  `pixi run lint`, `pixi run test-all`, and on Linux CUDA hosts
-  `pixi run -e cuda test-all`
+- Relevant check or evidence and result.
 
-## Breaking Changes
-
-- [ ] None
--
-
-<!-- If breaking changes exist, describe impact and migration steps. -->
-
-## Related Issues / PRs (backports)
-
--
-
-<!-- List issue links and any related/backport PRs. -->
+<!-- Keep failed, skipped, pending, or unavailable validation visible when it limits
+a claim or blocks required readiness/merge gates, even if unrelated to this diff.
+Full gate inventories and process/audit logs belong in task/session evidence, not this body.
+For 3D structure or behavior changes, include Visual verification with the claim
+it explains (before Testing when central), using dart-verify-sim and
+docs/onboarding/agent-sim-verification.md. Keep required media and evidence visible.
+Include relevant issues, backports, or follow-ups. -->
 
 ---
 
-#### Checklist
+<details>
+<summary>Checklist</summary>
+
+<!-- Mark non-applicable items N/A with a short reason. -->
 
 - [ ] Milestone set (DART 7.0 for `main`, branch-matching DART 6.x release
       milestone for the active DART 6 LTS branch)
@@ -45,3 +34,5 @@
 - [ ] Add unit tests for new functionality
 - [ ] Document new methods and classes
 - [ ] Add Python bindings (dartpy) if applicable
+
+</details>
