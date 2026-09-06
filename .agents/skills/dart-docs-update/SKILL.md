@@ -52,6 +52,10 @@ For AI instruction or workflow changes, follow the owner read order in
 2. For `audit`, build the finding list first:
    - run `pixi run check-docs-policy` and collect every failure and advisory
      (broken links, orphans, dev-task size budgets, dashboard budgets);
+   - run `pixi run check-architecture-map` and, when a build exists,
+     `pixi run check-architecture-map-runtime`; treat findings as drift of the
+     architecture map views under `docs/assets/architecture/` (see the
+     `dart-architecture` skill for the update procedure);
    - walk the "Keeping Docs Current" table in `docs/README.md` against the
      bucket: completed tasks whose folders remain, archived plans still
      pointing at numbered files, resolved `Decision needed` blocks, superseded

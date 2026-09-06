@@ -448,5 +448,5 @@ short when sccache or ccache is installed.
 ## See Also
 
 - [build-system.md](build-system.md) - Deep dive into DART's CMake architecture
-- [architecture.md](architecture.md) - Core simulation engine architecture
+- [architecture.md](architecture.md) - Classic core architecture; the DART 7 map is on the published architecture page
 - [CONTRIBUTING.md](../../CONTRIBUTING.md) - Contribution guidelines and code style

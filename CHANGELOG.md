@@ -485,6 +485,16 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Added the living architecture map: four typed archify views (simulation
+  framework, `World::step()` data flow, compute graph, library context) under
+  `docs/assets/architecture/` rendered into the published architecture page at
+  docs-build time, a blocking `check-architecture-map` gate in `check-lint`,
+  an advisory runtime drift check backed by a recording-executor probe test,
+  and a `dart-architecture` skill that owns the update procedure; the classic
+  DART 6 handbook page shrank to a pointer page and `nodejs` joined the
+  docs toolchain for Read the Docs.
+  ([Design](docs/design/architecture_map.md))
+
 - Defined DART 7 readiness milestones and prerequisite work packets, including
   full CPU/CUDA rigid-example validation, checkpoint foundations, compute-library
   comparisons and continuous architecture audits.

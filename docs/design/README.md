@@ -13,7 +13,9 @@ For cross-bucket placement decisions, use
 The published, single-page synthesis of these design docs — the DART 7
 multi-physics / multi-solver / multi-backend architecture as abstracted pipeline
 boxes with the available options at each seam — is
-[`docs/readthedocs/architecture.md`](../readthedocs/architecture.md). It is a
+[`docs/readthedocs/architecture.md`](../readthedocs/architecture.md), which
+embeds the four typed views under
+[`docs/assets/architecture/`](../assets/README.md). It is a
 navigational map that links back to the owner docs below; it does not own any
 rule itself.
 
@@ -24,6 +26,7 @@ rule itself.
 | [`agent_sim_verification.md`](agent_sim_verification.md)                           | Research and design record for agent-facing 3D-scene/physics verification: the text-first-corroborate-with-images decision, measured A/B evidence, image tolerance policy, and the rerun opt-in                |
 | [`algorithm_extension_contracts.md`](algorithm_extension_contracts.md)             | Durable rules for research-facing algorithm extension and baseline contracts                                                                                                                                   |
 | [`ai_spec_kit_assessment.md`](ai_spec_kit_assessment.md)                           | Assessment of GitHub Spec Kit for DART AI workflows, including the decision to adapt its lifecycle ideas without installing it as the default DART workflow                                                    |
+| [`architecture_map.md`](architecture_map.md)                                       | Decisions behind the living architecture map: typed archify views as source of truth, pinned renderer in the docs build, evidence stamping, blocking and advisory liveness gates, deferred work                |
 | [`batched_world_device_residency.md`](batched_world_device_residency.md)           | Contract for homogeneous batched `World` semantics, SoA Model/State blocks, and internal device-residency boundaries (PLAN-091 WP-091.33)                                                                      |
 | [`compute_backend_research.md`](compute_backend_research.md)                       | Evidence survey and DART workload-candidate ranking behind the scalable-compute roadmap                                                                                                                        |
 | [`cpp23_modernization.md`](cpp23_modernization.md)                                 | C++23 adoption: compiler floor, portability gate (adopt-now/guarded/deferred), phased rollout, and per-phase execution status                                                                                  |

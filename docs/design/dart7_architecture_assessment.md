@@ -31,8 +31,10 @@ Record the source baseline, changed invariants, tests and unresolved owners in
 an **Architecture impact** field. New families and major components use the
 [solver-family intake](../plans/solver-family-intake.md). Milestone exits,
 new coupling, changed storage/layout, execution ordering, result-affecting
-state, and public selection trigger a cross-family audit. Update this document
-and affected capability/allocation matrices in the same change.
+state, and public selection trigger a cross-family audit. Update this document, the affected capability/allocation matrices, and the
+owning architecture map view under `docs/assets/architecture/` in the same
+change; `pixi run check-architecture-map` enforces the map's coverage and
+evidence, and `pixi run check-architecture-map-runtime` reports schedule drift.
 
 An unchanged invariant can cite prior evidence with a reason it remains valid.
 A resolved finding is narrowed or removed with evidence; do not preserve false

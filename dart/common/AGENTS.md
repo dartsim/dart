@@ -36,5 +36,5 @@ Benchmarks: `tests/benchmark/common/bm_allocators.cpp` and
 
 ## See Also
 
-- @docs/onboarding/architecture.md — Memory management in architecture overview
+- @docs/design/hierarchical_allocator.md — World-level memory management proposal
 - @docs/design/hierarchical_allocator.md — Original design document

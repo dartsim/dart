@@ -22,36 +22,94 @@ of rigid physics; particles can discretize several domains. A shell surface and
 a surface bounding a volumetric solid need different physical models even when
 their input geometry looks similar.
 
-```text
-WORLD FACADE — construct · control · step · inspect · checkpoint
-  Current: DART-owned method options and resolved configuration
-  Planned: versioned selection policy over tested compatible methods
-                         │
-PHYSICAL SCENE — domains + dimensions + representations + interactions
-  Current: rigid/free and articulated paths; bounded deformable paths
-  Planned: qualified bidirectional coupling; thin structures and fluid models
-                         │
-SOLVER PORTFOLIO — each method owns a declared supported envelope
-  Current: SI / boxed-LCP contact; rigid IPC; VBD / AVBD;
-           articulated semi-implicit / variational; deformable methods
-  Planned: versioned variants and validated shared/partitioned combinations
-                         │
-DATA AND COLLISION — model · state · controls · contacts · continuation
-  Current: split components, dense rigid/multibody model, native collision,
-           metrics, replay and bounded binary snapshots
-  Partial: independent shared-model states and complete portable checkpoints
-                         │
-COMPUTE — semantic dependency graph → executable plan → runtime adapter
-  Current: ordered World stages, explicit graphs within selected stages,
-           Taskflow CPU execution, selected resident CUDA kernels
-  Planned: qualified ownership/completion and full CUDA rigid/contact step pipeline
+## The Living Architecture Map
+
+The four views below are rendered at documentation build time from typed JSON
+sources under `docs/assets/architecture/`. Each node carries a status tag and
+cites the source files that back it; the `SRC` markers open those files at the
+commit the site was built from. A CI check fails when a cited path, line, or
+symbol disappears, or when a simulation module, step-stage slot, or solver
+family is missing from the view that owns it, so the map cannot drift silently
+behind the code. Pan, zoom, search, and node focus work inside each frame; the
+"Open the interactive view" link gives the full viewer with guided chapters
+and exports.
+
+**Status tags** follow the
+[architecture assessment](https://github.com/dartsim/dart/blob/main/docs/design/dart7_architecture_assessment.md):
+`Implemented` means a source path and a scoped test exist, `Partial` means a
+useful implementation with uncovered contract cells, `Planned` means accepted
+work without qualifying implementation, and `Undecided` marks an open design
+decision. Dashed relationships lead to planned work.
+
+**Node colors** reuse the renderer's fixed type palette with DART meanings:
+`external` is the user-facing facade or a third-party library, `frontend` is a
+dartpy or dartsim surface, `backend` is solver, stage, or compute code,
+`database` is model, state, storage, checkpoint, or replay data, `messagebus`
+is coupling, exchange, or the step schedule, `cloud` is an executor or device
+runtime, and `security` marks the public-API boundary that hides internals.
+
+### Simulation Framework
+
+Everything a user touches sits inside the public boundary on the left: the
+World facade, the scene handles, and the option values that select method
+families. Selection resolves to an ordered stage schedule; the schedule drives
+the rigid, multibody, and deformable solver families and emits compute graphs.
+Coupling beyond shared constraint rows and rigid-obstacle contact is planned.
+
+```{raw} html
+<div class="arch-map">
+  <iframe src="architecture-map/simulation-framework.html?theme=light&embed=1" title="DART 7 simulation framework map" loading="lazy"></iframe>
+  <p class="arch-map__links"><a href="architecture-map/simulation-framework.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/simulation-framework.architecture.json</code></p>
+</div>
 ```
 
-The arrows show responsibilities, not a claim that the whole World step is
-already one executable DAG. The current built-in schedule is an ordered stage
-list with preflight/prepare/execute contracts. Stages may emit graphs. A task
-executor schedules supplied operations; device execution needs actual device
-kernels and correct memory/completion handling.
+### World::step() Data Flow
+
+The built-in schedule is an ordered stage list, not one executable DAG. Which
+slots run depends on the selected families: the split rigid pipeline
+(sequential impulse, VBD, AVBD) advances velocity, contact, and position as
+separate stages; IPC uses one combined contact-and-advance stage; semi-implicit
+multibody fuses into the unified constraint solve while variational integration
+runs standalone. Every flow names the data a stage hands on, so the owner of
+each state between stages is readable. Kinematics always runs last and feeds
+diagnostics, replay, and checkpoints.
+
+```{raw} html
+<div class="arch-map">
+  <iframe src="architecture-map/world-step.html?theme=light&embed=1" title="World::step() data flow" loading="lazy"></iframe>
+  <p class="arch-map__links"><a href="architecture-map/world-step.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/world-step.dataflow.json</code></p>
+</div>
+```
+
+### Compute Graph
+
+Three layers stay separate: the semantic graph with explicit edges as the
+correctness source of truth, the executable plan that binds work to buffers
+and kernels, and the runtime adapters (sequential reference, Taskflow, resident
+CUDA kernels) that submit already-defined work. Profiles, metrics, and the DOT
+export are the evidence surface. Dependency inference, grouping, and
+asynchronous device completion are planned and shown as such.
+
+```{raw} html
+<div class="arch-map">
+  <iframe src="architecture-map/compute-graph.html?theme=light&embed=1" title="DART 7 compute graph" loading="lazy"></iframe>
+  <p class="arch-map__links"><a href="architecture-map/compute-graph.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/compute-graph.architecture.json</code></p>
+</div>
+```
+
+### Library Context
+
+The whole library at a glance: the DART 7 core modules, the classic modules
+that DART 6 users know, the dartpy and dartsim surfaces, and the external
+dependencies each module owns. Use it to find which module a topic lives in
+before opening the developer handbook.
+
+```{raw} html
+<div class="arch-map">
+  <iframe src="architecture-map/library-context.html?theme=light&embed=1" title="DART library context map" loading="lazy"></iframe>
+  <p class="arch-map__links"><a href="architecture-map/library-context.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/library-context.architecture.json</code></p>
+</div>
+```
 
 ## Available Options And Their Limits
 
@@ -86,7 +144,7 @@ These scoped availability markers retain the source/test contract enforced by
 The source-backed [architecture assessment](https://github.com/dartsim/dart/blob/main/docs/design/dart7_architecture_assessment.md)
 records precise gaps and owning files. It is updated at packet intake and
 acceptance, and across families when storage, scheduling, coupling or
-continuation changes.
+continuation changes; the map views above are updated in the same change.
 
 ## Defaults, Explicit Choices And Research Variants
 
@@ -119,6 +177,7 @@ defines DART 7 acceptance.
 
 | Topic                                         | Owner                                                                                                                                                                                                                                                                                       |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Architecture map views and their checks       | [`docs/assets/architecture/`](https://github.com/dartsim/dart/tree/main/docs/assets/architecture), `pixi run check-architecture-map`, `pixi run render-architecture-map`; [design decisions](https://github.com/dartsim/dart/blob/main/docs/design/architecture_map.md)                     |
 | Milestones, dependency packets and gaps       | [PLAN-040](https://github.com/dartsim/dart/blob/main/docs/plans/040-dart7-release-hardening.md), [dashboard](https://github.com/dartsim/dart/blob/main/docs/plans/dashboard.md)                                                                                                             |
 | Source-backed audit and standing rule         | [Architecture assessment](https://github.com/dartsim/dart/blob/main/docs/design/dart7_architecture_assessment.md)                                                                                                                                                                           |
 | Solver portfolio, coupling and engine lessons | [Solver architecture](https://github.com/dartsim/dart/blob/main/docs/design/simulation_solver_architecture.md)                                                                                                                                                                              |

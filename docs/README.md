@@ -81,15 +81,16 @@ Docs are maintained as part of the change that makes them stale, not in
 periodic cleanups. Git history owns the past; active docs describe the current
 state and the remaining work.
 
-| When...                                    | Do this in the same change                                                                                                                             |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A task using `dev_tasks/<task>/` completes | Promote durable decisions, matrices, and inventories to their owners, redirect links, delete the folder ([`dev_tasks/README.md`](dev_tasks/README.md)) |
-| A plan completes                           | Move its dashboard entry to [`plans/archive.md`](plans/archive.md); delete or fold the numbered plan file once nothing points to it                    |
-| A `Decision needed` block is resolved      | Replace the block with the decision and rationale in the owner doc; update the dashboard if plan state changed                                         |
-| A doc is superseded or duplicated          | Delete it and redirect links; do not leave stub or "deprecated" pages                                                                                  |
-| A rule changes                             | Edit the owner doc only; entrypoints and workflows carry pointers, not copies                                                                          |
-| A workflow, skill, or AI doc changes       | Follow [`ai/components.md`](ai/components.md) and regenerate adapters                                                                                  |
-| A published page is ported to DART 7       | Remove its legacy notice and update [`onboarding/dart7-docs-migration.md`](onboarding/dart7-docs-migration.md)                                         |
+| When...                                                                                 | Do this in the same change                                                                                                                             |
+| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A task using `dev_tasks/<task>/` completes                                              | Promote durable decisions, matrices, and inventories to their owners, redirect links, delete the folder ([`dev_tasks/README.md`](dev_tasks/README.md)) |
+| A plan completes                                                                        | Move its dashboard entry to [`plans/archive.md`](plans/archive.md); delete or fold the numbered plan file once nothing points to it                    |
+| A `Decision needed` block is resolved                                                   | Replace the block with the decision and rationale in the owner doc; update the dashboard if plan state changed                                         |
+| A doc is superseded or duplicated                                                       | Delete it and redirect links; do not leave stub or "deprecated" pages                                                                                  |
+| A rule changes                                                                          | Edit the owner doc only; entrypoints and workflows carry pointers, not copies                                                                          |
+| A workflow, skill, or AI doc changes                                                    | Follow [`ai/components.md`](ai/components.md) and regenerate adapters                                                                                  |
+| A published page is ported to DART 7                                                    | Remove its legacy notice and update [`onboarding/dart7-docs-migration.md`](onboarding/dart7-docs-migration.md)                                         |
+| A `dart/simulation` module, step-stage slot, solver family, or public selection changes | Update the owning architecture map view under [`assets/architecture/`](assets/README.md); `pixi run check-architecture-map` fails until it is current  |
 
 Rules that keep the set small:
 

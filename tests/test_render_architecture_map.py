@@ -1,0 +1,341 @@
+"""Tests for scripts/render_architecture_map.py (PLAN-130 WP-130.1).
+
+These tests never run Node.js or archify; they cover discovery, stamping,
+post-processing, fallbacks, and the exit-code contract with archify mocked.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / "scripts" / "render_architecture_map.py"
+
+
+def _load_module():
+    spec = importlib.util.spec_from_file_location("render_architecture_map", SCRIPT)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+ram = _load_module()
+
+
+def _architecture_ir(with_sources: bool = True) -> dict:
+    component = {
+        "id": "world",
+        "type": "external",
+        "label": "World facade",
+        "sublabel": "dart::simulation::World",
+        "tag": "Implemented",
+        "pos": [40, 100],
+        "size": [160, 64],
+    }
+    if with_sources:
+        component["sources"] = [{"path": "dart/simulation/world.hpp", "line": 1}]
+    return {
+        "schema_version": 1,
+        "diagram_type": "architecture",
+        "meta": {"title": "Test <map>"},
+        "components": [component],
+        "connections": [],
+    }
+
+
+def _dataflow_ir() -> dict:
+    return {
+        "schema_version": 1,
+        "diagram_type": "dataflow",
+        "meta": {"title": "Step flow"},
+        "stages": [{"label": "Velocity"}, {"label": "Position"}],
+        "nodes": [
+            {
+                "id": "rigid_body_velocity",
+                "type": "backend",
+                "label": "Rigid velocity",
+                "stage": 0,
+                "row": 0,
+                "tag": "Implemented",
+            },
+            {
+                "id": "rigid_body_position",
+                "type": "backend",
+                "label": "Rigid position",
+                "stage": 1,
+                "row": 0,
+            },
+        ],
+        "flows": [
+            {
+                "from": "rigid_body_velocity",
+                "to": "rigid_body_position",
+                "label": "velocities & impulses",
+            }
+        ],
+    }
+
+
+@pytest.fixture
+def ir_dir(tmp_path: Path) -> Path:
+    directory = tmp_path / "ir"
+    directory.mkdir()
+    (directory / "framework.architecture.json").write_text(
+        json.dumps(_architecture_ir()), encoding="utf-8"
+    )
+    (directory / "step.dataflow.json").write_text(
+        json.dumps(_dataflow_ir()), encoding="utf-8"
+    )
+    (directory / "compute-graph.runtime.json").write_text("{}", encoding="utf-8")
+    (directory / "README.md").write_text("not a view", encoding="utf-8")
+    return directory
+
+
+def test_discover_views_recognizes_only_view_suffixes(ir_dir: Path) -> None:
+    views = ram.discover_views(ir_dir)
+    assert [(v.name, v.diagram_type) for v in views] == [
+        ("framework", "architecture"),
+        ("step", "dataflow"),
+    ]
+
+
+def test_discover_views_missing_dir_is_empty(tmp_path: Path) -> None:
+    assert ram.discover_views(tmp_path / "nope") == []
+
+
+def test_stamp_repository_adds_revision_without_mutating_input() -> None:
+    ir = _architecture_ir()
+    stamped = ram.stamp_repository(ir, "a" * 40)
+    assert stamped["meta"]["repository"] == {
+        "url": ram.DART_REPOSITORY_URL,
+        "revision": "a" * 40,
+    }
+    assert "repository" not in ir["meta"]
+
+
+def test_declares_sources() -> None:
+    assert ram.declares_sources(_architecture_ir(with_sources=True))
+    assert not ram.declares_sources(_architecture_ir(with_sources=False))
+
+
+def test_strip_external_fonts_removes_google_font_links_only() -> None:
+    text = (
+        "<head>\n"
+        '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+        '  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono"\n'
+        '        rel="stylesheet" media="print" onload="this.media=\'all\'">\n'
+        "  <noscript>\n"
+        '    <link href="https://fonts.googleapis.com/css2?family=X" rel="stylesheet">\n'
+        "  </noscript>\n"
+        '  <link rel="icon" href="data:,">\n'
+        "</head>"
+    )
+    stripped = ram.strip_external_fonts(text)
+    assert "fonts.googleapis.com" not in stripped
+    assert "fonts.gstatic.com" not in stripped
+    assert "<noscript>" not in stripped
+    assert '<link rel="icon" href="data:,">' in stripped
+
+
+def test_prepend_source_comment_after_doctype() -> None:
+    comment = "<!-- generated -->\n"
+    text = "<!DOCTYPE html>\n<html></html>"
+    result = ram.prepend_source_comment(text, comment)
+    assert result.startswith("<!DOCTYPE html>\n<!-- generated -->\n<html>")
+    assert ram.prepend_source_comment("<html></html>", comment).startswith(comment)
+
+
+def test_source_comment_names_source_script_and_revision(ir_dir: Path) -> None:
+    view = ram.discover_views(ir_dir)[0]
+    comment = ram.source_comment(view, "b" * 40)
+    assert ram.SCRIPT_RELPATH in comment
+    assert view.path.name in comment
+    assert "b" * 40 in comment
+    assert ram.ARCHIFY_TAG in comment
+
+
+def test_fallback_html_renders_dataflow_and_escapes(ir_dir: Path) -> None:
+    views = {v.name: v for v in ram.discover_views(ir_dir)}
+    text = ram.fallback_html(views["step"], "Node.js missing.", None)
+    assert "<title>Step flow</title>" in text
+    assert "<h2>Velocity</h2>" in text and "<h2>Position</h2>" in text
+    assert "Rigid velocity" in text and "[Implemented]" in text
+    assert "velocities &amp; impulses" in text
+    arch = ram.fallback_html(views["framework"], "Node.js missing.", None)
+    assert "Test &lt;map&gt;" in arch
+    assert "World facade" in arch and "dart::simulation::World" in arch
+
+
+def test_main_writes_fallbacks_when_node_missing(
+    ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ram, "node_executable", lambda *a, **k: None)
+    out = tmp_path / "out"
+    code = ram.main(["--ir-dir", str(ir_dir), "--output-dir", str(out), "--no-fetch"])
+    assert code == ram.EXIT_UNAVAILABLE
+    rendered = sorted(p.name for p in out.iterdir())
+    assert rendered == ["framework.html", "step.html"]
+    text = (out / "framework.html").read_text(encoding="utf-8")
+    assert "Text rendering" in text
+    assert ram.SCRIPT_RELPATH in text
+
+
+def test_main_strict_and_check_fail_without_toolchain(
+    ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ram, "node_executable", lambda *a, **k: None)
+    out = tmp_path / "out"
+    assert (
+        ram.main(["--ir-dir", str(ir_dir), "--output-dir", str(out), "--strict"])
+        == ram.EXIT_FAILED
+    )
+    assert (
+        ram.main(["--ir-dir", str(ir_dir), "--output-dir", str(out), "--check"])
+        == ram.EXIT_FAILED
+    )
+    assert not out.exists()
+
+
+def test_main_without_views_is_a_noop(tmp_path: Path) -> None:
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert ram.main(["--ir-dir", str(empty), "--output-dir", str(tmp_path / "o")]) == 0
+
+
+def test_main_unknown_view_fails(ir_dir: Path, tmp_path: Path) -> None:
+    code = ram.main(
+        [
+            "--ir-dir",
+            str(ir_dir),
+            "--output-dir",
+            str(tmp_path / "o"),
+            "--views",
+            "ghost",
+        ]
+    )
+    assert code == ram.EXIT_FAILED
+
+
+def test_ensure_archify_no_fetch_without_checkout(tmp_path: Path) -> None:
+    assert ram.ensure_archify(tmp_path / "missing", fetch=False) is None
+
+
+def test_render_view_reports_validation_diagnostics(
+    ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    view = ram.discover_views(ir_dir)[0]
+    calls: list[list[str]] = []
+
+    def fake_run(node, archify_dir, args, cwd):
+        calls.append(args)
+        return 1, {
+            "ok": False,
+            "diagnostics": [
+                {
+                    "code": "repository-evidence/file-missing",
+                    "severity": "error",
+                    "message": "nope",
+                    "supportedFixes": ["fix the path"],
+                }
+            ],
+        }
+
+    monkeypatch.setattr(ram, "run_archify", fake_run)
+    ok, message = ram.render_view(
+        view,
+        node=Path("node"),
+        archify_dir=tmp_path,
+        output_dir=tmp_path / "out",
+        revision="c" * 40,
+    )
+    assert not ok
+    assert "repository-evidence/file-missing" in message
+    assert "fix the path" in message
+    assert calls and calls[0][0] == "validate"
+    assert "--repo-root" in calls[0]
+
+
+def test_render_view_requires_revision_for_source_evidence(
+    ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    view = ram.discover_views(ir_dir)[0]
+    monkeypatch.setattr(ram, "run_archify", lambda *a, **k: (0, {"ok": True}))
+    ok, message = ram.render_view(
+        view,
+        node=Path("node"),
+        archify_dir=tmp_path,
+        output_dir=tmp_path,
+        revision=None,
+    )
+    assert not ok
+    assert "revision is unknown" in message
+
+
+def test_render_view_success_writes_post_processed_html(
+    ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    view = ram.discover_views(ir_dir)[0]
+    seen: list[list[str]] = []
+
+    def fake_run(node, archify_dir, args, cwd):
+        seen.append(args)
+        if args[0] == "deliver":
+            output = Path(args[3])
+            output.write_text(
+                "<!DOCTYPE html>\n<html><head>"
+                '<link href="https://fonts.googleapis.com/css2?family=X" rel="stylesheet">'
+                "</head><body>ok</body></html>",
+                encoding="utf-8",
+            )
+        return 0, {"ok": True}
+
+    monkeypatch.setattr(ram, "run_archify", fake_run)
+    out = tmp_path / "out"
+    ok, message = ram.render_view(
+        view,
+        node=Path("node"),
+        archify_dir=tmp_path,
+        output_dir=out,
+        revision="d" * 40,
+    )
+    assert ok, message
+    text = (out / "framework.html").read_text(encoding="utf-8")
+    assert text.startswith(
+        "<!DOCTYPE html>\n<!-- Generated by scripts/render_architecture_map.py"
+    )
+    assert "fonts.googleapis.com" not in text
+    assert "<body>ok</body>" in text
+    assert [args[0] for args in seen] == ["validate", "deliver"]
+    # The stamped candidate, not the tracked file, is what archify sees.
+    candidate = Path(seen[0][2])
+    assert candidate.name == view.path.name and candidate != view.path
+
+
+def test_render_view_dataflow_skips_repo_root(
+    ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    view = [v for v in ram.discover_views(ir_dir) if v.diagram_type == "dataflow"][0]
+    seen: list[list[str]] = []
+
+    def fake_run(node, archify_dir, args, cwd):
+        seen.append(args)
+        return 0, {"ok": True}
+
+    monkeypatch.setattr(ram, "run_archify", fake_run)
+    ok, _ = ram.render_view(
+        view,
+        node=Path("node"),
+        archify_dir=tmp_path,
+        output_dir=tmp_path / "out",
+        revision="e" * 40,
+        check_only=True,
+    )
+    assert ok
+    assert len(seen) == 1 and "--repo-root" not in seen[0]

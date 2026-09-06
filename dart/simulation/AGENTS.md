@@ -35,6 +35,6 @@ Integration tests: none yet (`tests/integration/` has no `simulation/` subdirect
 
 ## See Also
 
-- @docs/onboarding/architecture.md - Physics pipeline details
+- @docs/readthedocs/architecture.md - DART 7 architecture map (framework, step data flow, compute graph)
 - @dart/constraint/AGENTS.md - Constraint solving
 - @dart/collision/AGENTS.md - Collision detection

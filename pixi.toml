@@ -50,6 +50,7 @@ libsdformat = ">=16.0.1,<17"
 myst-parser = ">=5.1.0,<6"
 nanobind = ">=3,<4"
 ninja = ">=1.13.2,<2"
+nodejs = ">=22,<27"
 numpy = ">=2.4.6,<3"
 octomap = ">=1.10.0,<2"
 pip = ">=26.1.2,<27"
@@ -221,6 +222,17 @@ lint-architecture-page = { cmd = [
   "python",
   "scripts/check_architecture_page_lint.py",
 ] }
+lint-architecture-map = { cmd = [
+  "python",
+  "scripts/check_architecture_map.py",
+] }
+
+# Render the architecture map views (docs/assets/architecture/*.json) with the
+# pinned archify checkout; conf.py runs the same driver during docs-build.
+render-architecture-map = { cmd = [
+  "python",
+  "scripts/render_architecture_map.py",
+] }
 
 report-api-boundary-inventory = { cmd = [
   "python",
@@ -259,6 +271,7 @@ lint = { depends-on = [
   "lint-avbd-packets",
   "lint-plan104-paper-parity",
   "lint-architecture-page",
+  "lint-architecture-map",
   "sync-ai-commands",
 ] }
 
@@ -388,6 +401,16 @@ check-architecture-page = { cmd = [
   "python",
   "scripts/check_architecture_page_lint.py",
 ] }
+check-architecture-map = { cmd = [
+  "python",
+  "scripts/check_architecture_map.py",
+] }
+# Advisory runtime drift check: compares the committed compute-graph.runtime.json
+# fixture with a fresh probe dump when the test binary exists (pass --strict to fail).
+check-architecture-map-runtime = { cmd = [
+  "python",
+  "scripts/check_architecture_map_runtime.py",
+] }
 
 sync-ai-commands = { cmd = ["python", "scripts/sync_ai_commands.py"] }
 check-ai-commands = { cmd = [
@@ -426,6 +449,10 @@ test-ai-infra = { cmd = [
   "tests/test_check_agent_hook.py",
   "tests/test_setup_ai.py",
   "tests/test_check_docs_policy.py",
+  "tests/test_check_architecture_page_lint.py",
+  "tests/test_render_architecture_map.py",
+  "tests/test_check_architecture_map.py",
+  "tests/test_check_architecture_map_runtime.py",
   "-q",
 ] }
 
@@ -468,6 +495,7 @@ check-lint = { depends-on = [
   "check-avbd-packets-structure",
   "check-plan104-paper-parity-structure",
   "check-architecture-page",
+  "check-architecture-map",
   "check-ai-commands",
   "check-ai-infra",
 ] }
