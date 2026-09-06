@@ -16,7 +16,7 @@ in the shared `.agents/skills/` catalog.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-release-merge-main <arguments>`
+- Claude Code: `/dart-release-merge-main <arguments>`
 - Codex: `$dart-release-merge-main <arguments>`
 
 Treat the text after the skill name as `$ARGUMENTS`. When the workflow

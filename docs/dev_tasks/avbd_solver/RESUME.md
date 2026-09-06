@@ -9,272 +9,56 @@ This file owns only the exact branch/session stop point and takeover sequence.
 
 ## Stop Point
 
-> **Current Reality (2026-09-03, takeover session):** the branch carries the
-> takeover chain `cde14ad788c` (rigid AVBD packet, evidence pipeline, legacy
-> packet pins, scale packets), `e1b0aa1fe6b`, `e5224b016c7` (AVBD Figure 13
-> oracle re-derived for the paper-profile outcome), `7d340dc7c4e`,
-> `12bfa9a1796`, `e8b02fcfcdb`, `c549b9f24de` (evidence-runner fixes),
-> `dadd1f0ce97` (first reseal and validator fixes), `3d2d543ecdf` (review
-> wave 3), `caa26ec5473`, `f1a8093d474`, `fe061587d5b`, `a1dfabc5fa9` (D5:
-> named AVBD parameter profiles), `3d0ac5f1f0a`, `f009859d8ce`,
-> `9fc193dc4a6` (the source profiles reproduce the pinned reference sources'
-> solver rules, verified against headless builds of those sources),
-> `32ba93fb159` (reseal on `9fc193dc4a6`), `1bcc088fe6f`, `bd99b56aaec`,
-> `5838271f4d5` (gate record, arm64 row bound, Debug runner job cap),
-> `6da51e494f9` (D6: `MassScaledReference` is the public default; the
-> profile-derived rows belong to the AVBD family only; finding F closed for
-> sustained friction at its four owners: the 2D source's anchor rule as a
-> profile field, the box-box face clip without the reference-plane crossing
-> vertices and with per-vertex depths, corner/edge contact feature codes,
-> per-key feature-only identity; the 2D ports lock their bodies to the plane
-> and every source-demo scene runs the sources' ten iterations; the rigid
-> block kernel memoized bitwise), `6e2f52ef216` (the benchmark's
-> parameterized fixtures pin the paper profile), and `68986c76679` (the
-> evidence reseal on `6e2f52ef216`). The sealed Figure 13 evidence is captured from `6e2f52ef216`
-> (see the README for the current capture-source digest and medians). Under
-> the paper profile the AVBD wall keeps standing with 36 broken attachments
-> ([5, 5, 5] in the impact regions plus 21 outside) and no displaced brick,
-> so its review records visual agreement with Figure 13(d) as not proven.
-> Open items recorded in the README and the plan: the `Paper2025Table2`
-> `beta`/`k_start` units if that profile is ever to run with the adaptive
-> initial guess, and sliding friction under the 2D profile (bounded, not
-> matched). The branch is pushed with the PR body and its attachments; every
-> later push, PR edit, and merge await explicit approval. Treat everything
-> below this note as the pre-takeover historical stop point; the session
-> ledger with decisions D1-D6 lives outside the tree.
+> **Current Reality (2026-09-04):** the shared VBD/AVBD foundation merged to
+> `main` in PR #3432 (`aafc4b66072`, 2026-09-03): the fail-closed 88-row VBD
+> and 88-row AVBD parity contracts, AVBD Section 3.5 quasi-Newton geometric
+> stiffness and Section 4 parallel dual/stiffness updates, the articulated
+> finite-row slices, public Sequential Impulse / VBD / AVBD family selection
+> with SI-owned hard pair rows, the named AVBD parameter profiles (D5), the
+> `MassScaledReference` public default (D6), and the resealed matched Figure 13
+> evidence. No feature branch is open; the next slice starts from updated
+> `main`. Open items recorded in the README and the plan: the
+> `Paper2025Table2` `beta`/`k_start` units if that profile is ever to run with
+> the adaptive initial guess, and sliding friction under the 2D profile
+> (bounded, not matched). The session ledger with decisions D1-D6 lives
+> outside the tree.
 
-At the 2026-08-31 zero-trust checkpoint, draft PR #3432 remains the shared
-foundation only. The live branch is
-`feature/vbd-avbd-paper-parity-contract`; obtain its exact head, fetched
-`origin/main`, PR draft state, checks, and reviews live rather than trusting a
-stored SHA. The predecessor Figure 13 packet chain, six stills, three
-two-second videos, and strict five-repeat benchmark are source-stale historical
-evidence. They remain useful for diagnosing regressions, but they are not bound
-to the final implementation bytes and cannot satisfy the foundation exit
-criteria. Reseal all three methods with schema 6, the final
-source/configuration fingerprints, fresh quiet-host timings, the existing
-diagnostic checkpoints, and a 600-frame long-horizon still/video/review before
-the next push. Validator hardening and broad default/CUDA gate reruns must also
-be clean; do not treat the older aggregate results later in this file as
-current.
+## Base And Branch
 
-The 88-row VBD and 88-row AVBD contracts remain fail-closed with no complete
-rows. The local three-method Figure 13 packet is useful partial evidence, not
-paper parity. Full scope is still all paper/reference algorithms and features,
-CPU and GPU implementations, every paper/site/video/source-demo experiment,
-and performance that beats the comparable reference and published paper
-numbers. Do not reduce this to an MVP, a CPU-only lane, or one wall demo.
+- Base: updated `main` containing `aafc4b66072` (PR #3432).
+- Branch: none open. Create the VBD-completion branch from `origin/main` when
+  that PR starts; create the AVBD-completion branch only after the VBD PR
+  lands. Verify live local, remote, PR, CI, and review state before any
+  external action; a prior session's mutation approval does not carry over.
 
-## Exact Worktree And Branch
+## Sealed Evidence
 
-- Worktree: `/home/js/dev/dartsim/dart/task_5`
-- Branch: `feature/vbd-avbd-paper-parity-contract`
-- Head/base/remote: intentionally not pinned here; fetch and inspect live.
+The landed Figure 13 evidence has durable owners; do not copy digests here:
 
-Treat the recorded remote-tracking SHAs as pre-publication snapshots, not fresh
-remote assertions. The foundation may already have been pushed or opened as a
-PR after this handoff was committed. Verify live local, remote, PR, CI, and
-review state before any external action, and do not infer that a prior session's
-mutation approval remains active.
-
-The evidence-refresh commit after `52173fba3aa` should leave the tracked scope
-clean and no task-created untracked files. If resuming before that commit
-exists, preserve the working tree exactly; do not reset, stash, rebase, switch
-worktrees, abort an in-progress merge, or discard files.
-
-The local commit ladder above `main` is:
-
-| Commit        | Local slice                                        |
-| ------------- | -------------------------------------------------- |
-| `710cbfc1152` | Fail-closed VBD/AVBD paper-parity contracts        |
-| `a78f688a178` | AVBD Section 3.5 quasi-Newton geometric stiffness  |
-| `0b0154573b8` | AVBD Section 4 parallel dual/stiffness update      |
-| `761263bbd41` | Articulated finite masked rows                     |
-| `9ebd9b895b1` | Articulated finite movable-pair motors             |
-| `131981788fa` | Articulated finite load and fracture accounting    |
-| `646b447d6cc` | Public AVBD solver and Figure 13 evidence          |
-| `d9af744a9cb` | Public fixed-penalty VBD comparison                |
-| `37178193ccf` | Public SI pair rows and Figure 13 comparison       |
-| `37a02b4d2c7` | Merge local `main` snapshot `b15e7a652b7`          |
-| `52173fba3aa` | Merge fetched `origin/main` snapshot `ef10cb2633b` |
-| branch tip    | Refresh Figure 13 evidence after the latest merge  |
-
-## Current SI Slice
-
-The dirty slice makes the default public SI family own its hard rigid pair
-constraints instead of borrowing the private AVBD projector:
-
-- fixed, spherical, revolute, and prismatic masks interleave with contact rows
-  in the configured projected Gauss-Seidel sweeps;
-- bounded one-DOF velocity motors use the same SI row ownership;
-- break force is derived from accumulated impulse over `dt`, broken rows stay
-  excluded, and a non-velocity post-stabilization pass reduces pose drift;
-- finite-stiffness public pair rows reject SI and direct callers to VBD/AVBD;
-- shared rigid-pair geometry and input extraction have solver-neutral
-  ownership, while SI and AVBD retain separate row/continuation state; and
-- the matched `sequential_impulse_paper_breakable_wall` demo, writer, packet,
-  benchmark row, source-provenance utility, and tests complete the third honest
-  Figure 13 method row.
-
-The warm-start ownership rule is deliberately narrower than a full AVBD scratch
-clear. Crossing through SI invalidates AVBD contact and hard point-joint/motor
-continuation state, but preserves independently active AVBD distance-spring
-continuation.
-
-### Post-review correctness fix
-
-The first correctness review found a real P2 defect: when public SI declined a
-private `RigidAvbdContactConfig` compatibility envelope, the fallback called
-the full AVBD scratch `clear()`. That erased `distanceSpringInventory` and
-cold-started unrelated distance springs every step.
-
-The working tree fixes the cause in
-`dart/simulation/compute/rigid_body_contact_stage.cpp` by calling
-`clearSequentialImpulseOwnedWarmStart()`. That clears contact and hard
-point-joint/motor continuation only. The regression
-`World.SequentialImpulseFallbackPreservesAvbdDistanceSpringWarmStart` in
-`tests/unit/simulation/world/test_world.cpp` compares fallback and control
-worlds with a stiffness-ramping distance spring; it failed at the second-step
-transform/velocity before the fix and passes after it.
-
-The first architecture/claims review separately rejected the old statement
-that every timing CV was below 0.7%. A later source fix invalidated that
-otherwise clean benchmark snapshot. Three current-source reruns were rejected
-for host contention, and a fourth candidate was rejected because its task
-wrapper rebuilt after the quiet gate and its watchdog fired. The accepted run
-used the already-built target after a renewed two-minute quiet window and a
-clean in-run watchdog. Do not restore an old timing bound or hand-edit
-generated packet JSON; all three packets were regenerated from that one JSON
-in AVBD -> VBD -> SI order.
-
-## Current Evidence
-
-### Correctness and aggregate gates
-
-- The 2026-08-31 zero-trust audit invalidated the old 192-test and aggregate-gate
-  acceptance record by expanding the validators and changing provenance-bound
-  source files. The latest focused run passed 155 tests with the two live-corpus
-  cases intentionally excluded until all three Figure 13 packets are resealed.
-- The latest uncached default `test-all` passed lint, both builds, 229/229 core
-  C++ tests, and all 81 runnable simulation tests, then stopped during Python
-  collection on an import-order defect in the new plot test. That defect is
-  fixed, but the entire CPU gate must be rerun after packet resealing.
-- The entire CUDA `test-all` gate must also be rerun on the final bytes. Earlier
-  full CPU/CUDA passes are historical evidence only, not current acceptance.
-- The expanded focused surface now checks required top-level paper-capture
-  provenance, exact ordered writer-owned source lists, required self-method
-  medians, exact timing-ratio keys, future schema rejection, exact legacy
-  filename-to-version pinning, transitive packet-link validation, and both
-  live-corpus checks.
-- Six captures and three semantic reviews remain the underlying Figure 13
-  media, but the generated packets must be resealed before those artifacts bind
-  the current source digest. A green CUDA environment gate still does **not**
-  close the missing VBD/AVBD solver GPU-parity rows.
-
-### Source and benchmark provenance
-
-- Current capture-source digest:
-  `ce6b6be09bc06b23b7932a88e2c89dd6dafbeb54828a1c92212aaaa7af47e30a`
-- Benchmark translation-unit digest:
-  `cfc992187ae0a4beeae3111bdeba6a6b76c8f08884e4416d139e161fa4944834`
-- Historical accepted predecessor benchmark (source-stale; not current
-  acceptance evidence):
-  `build/plan104-foundation-evidence/figure13/benchmark.json`
-  (SHA-256
-  `75ae6f9223d5d2db3d99290e1aca38125953f67cb7051c8f79b0c8f561548bd9`).
-  Median CPU costs/CVs were 8.044504 ms/1.77% AVBD,
-  7.683010 ms/0.46% VBD, and 13.058432 ms/0.52% SI.
-- The previously accepted forward-merge packet root
-  `/tmp/plan104-figure13-fwd-merge.VfZPUI` is preserved but source-stale after
-  merging `origin/main` at `ef10cb2633b`; its captures, benchmark, and packets
-  are historical non-evidence.
-- The earlier merged-source packet root
-  `/tmp/plan104-figure13-main-merge.aVseEf` is preserved but rejected because
-  the subsequent forward-declaration owner fix changed the capture-source
-  digest. Its captures, benchmark, and packets are historical non-evidence.
-- Historical rejected pre-merge attempts remain in
-  `/tmp/plan104-figure13-reseal.FTkRfX`:
-  - `figure13-three-method.json`: CPU CVs 4.46% AVBD, 7.47% VBD, and 2.51% SI;
-  - `figure13-three-method-clean.json`: a fresh external-load spike produced
-    43.86% VBD CPU CV;
-  - `figure13-three-method-quiet.json`: an unrelated parallel build started
-    during the run, producing 25.74% AVBD CPU CV and implausibly inflated VBD
-    and SI medians; and
-  - `figure13-three-method-rejected-watchdog.json`: the task wrapper rebuilt
-    after its quiet gate and the in-run watchdog fired, so the candidate was
-    rejected before packet generation.
-
-Packet hashes are validated transitively from the committed files and are not
-duplicated in this mutable handoff. On the sealed `6e2f52ef216` evidence
-VBD/AVBD is 0.8503x, SI/AVBD is 1.1249x, and SI/VBD is 1.3228x (median CPU
-cost per step: 13.252252 / 11.268830 / 14.906923 ms AVBD / VBD / SI; the
-previous seal's were 0.8651x / 0.9243x / 1.0684x and the pre-audit head's
-0.9551x / 1.6233x / 1.6997x). Outcomes
-intentionally differ, and there is no source achieved-accuracy or
-same-hardware denominator for this reconstructed scene; no raw cost ratio is a
-speedup, parity, or quality claim.
-
-### Visual evidence
-
-The local evidence root is
-`build/plan104-foundation-evidence/figure13`.
-All six
-1280x720 captures passed engine ViewReports, pixel-integrity checks, and
-separate original-resolution semantic review. The review records are
-`avbd-visual-review.json`, `vbd-visual-review.json`, and
-`si-visual-review.json` in that root.
-
-| Method/checkpoint | Image SHA-256                                                      | Assessed observation                                    |
-| ----------------- | ------------------------------------------------------------------ | ------------------------------------------------------- |
-| AVBD frame 60     | `c01d0de8ae3e9ee1df09a4fca9da19b5407182be90f05440efbb7ce3dedb9117` | Globally standing wall with visible displacement damage |
-| AVBD frame 120    | `605a4b5cca2e82cbe81037c2161512c57897271aba28d9440e5d31ead662ec9b` | Standing retained structure after fracture              |
-| VBD frame 18      | `b46e52773a5c4198744f87e55b1d34e7f55749ccd6e660018a1bc339df05bee6` | Bend without fracture                                   |
-| VBD frame 120     | `399c402427e6bde5cb0a973efe199587bb92ece2b96fc5b69ccc3a5a81d73304` | Recovery with all attachments retained                  |
-| SI frame 14       | `9ce9b3f3aed1c8d523f58ba5890a65a1e873cb3222fcfc4a42a3deb73ca5b002` | Initial fracture while placement remains                |
-| SI frame 120      | `414701fef70c169cf571ce120e0f0ff391f97ca5238cce954bd71952cb4cf70b` | Retained-row failure and collapse                       |
-
-The pinned paper inputs used for adjudication were
-`/tmp/dart-vbd-avbd-parity.teIxO8/avbd.pdf` (SHA-256
-`7957d116b9130cfb0aa5a48ab7cd0d74a64ad79f75c99acd291bdece2be3f2d6`) and
-`/tmp/avbd-wall-visuals.SalJ3h/paper-10.png` (SHA-256
-`040361603d4e986de4d2da570593b9dc8295f8def2f57fd200de9a3e3836c61b`). All
-`/tmp` paths are conveniences, not durable sources. If they have expired,
-regenerate evidence with the tracked demos/writers and reacquire the pinned
-paper input; never weaken a packet because a temporary artifact disappeared.
-
-### Review state
-
-The first pre-merge role-separated review pair found the stale CV claim and the
-distance-spring warm-start defect described above. A subsequent architecture
-review found four more current-tree gaps: the wall claim lacked exact broken
-identities and retained-row residuals, packet checking did not fail closed on
-source or transitive-link drift, shared SI/AVBD pair geometry still had AVBD
-ownership, and one rejection diagnostic was not solver-neutral. The current
-tree addresses those findings and reseals all six captures, the accepted
-benchmark, and the tracked packet chain to the new source digest. The final
-pre-merge independent code review approved the complete SI code/evidence tree.
-The final pre-merge architecture/docs/claims review then found two remaining
-fail-closed gaps: the canonical Figure 13/video rows omitted the SI packet, and
-legacy packet names were not pinned to their exact historical schema versions.
-The SI closeout added the evidence links, preserved the honest
-XPBD/CUDA/performance blockers, pinned each legacy name to version 1 or 3 with
-downgrade mutation coverage, corrected active schema-version prose to version
-4, and passed both fresh pre-merge reviews with no actionable finding. The
-subsequent `main` merge, conflict resolutions, provenance reseal, and handoff
-corrections received the final local review recorded above.
+- `README.md` § "Current packet chain" names the sealed capture-source digest
+  and the schema-6 packets under
+  `docs/plans/104-vertex-block-descent-solver/`; the packets record the
+  artifact hashes, pinned paper-input hashes, and solver fingerprints and
+  validate them transitively. `pixi run check-avbd-packets` and
+  `pixi run check-plan104-paper-parity` are the strict claim gates;
+  `pixi run lint` runs the same validators with `--stale-source report`, so a
+  seal that predates the current source is an advisory there and an error
+  here.
+- `README.md` § "Current local gates" records the default and CUDA
+  `test-all` passes on the sealed bytes. A green CUDA environment gate does
+  not close the missing VBD/AVBD solver GPU-parity rows.
+- Median CPU cost per step and cross-method ratios live in the plan's progress
+  log; no raw cost ratio is a speedup, parity, or quality claim.
 
 ## Immediate Resume Sequence
 
-1. Stay in the exact worktree and verify the branch, upstream snapshot, status,
-   and commit ladder. Expect the SI closeout at `37178193ccf` followed by the
-   merges at `37a02b4d2c7` and `52173fba3aa`, then the evidence-refresh commit.
-   If the refresh commit is absent, preserve the working tree and complete only
-   its final lint/check/commit sequence.
-2. Recompute the capture-source digest and run the parity, packet, and
-   allocation checkers. The expected digest, accepted benchmark hash, and
-   packet hashes are the values above. If any differs after a source change,
-   regenerate all dependent captures, benchmark, packets, and semantic reviews
-   before trusting them. Find stale live claims with:
+1. `git fetch origin main`, confirm `aafc4b66072` is in `origin/main`, and
+   branch from it for the next completion PR.
+2. Recompute the capture-source digest (expected value: `README.md`
+   § "Current packet chain") and run the parity, packet, and allocation
+   checkers (commands below). If any digest or hash differs after a
+   source change, regenerate all dependent captures, benchmark, packets, and
+   semantic reviews before trusting them. Find stale live claims with:
 
    ```bash
    rg -n '8\.660|8\.370|13\.905|8\.697|8\.620|13\.945|9\.305|9\.043|15\.308|0\.967|0\.991|0\.972|1\.603|1\.618|1\.645|1\.693|0\.7%|1\.1%|4f8bc725|c46c2de5|bbf00f868375449e|694cde6e' \
@@ -282,24 +66,19 @@ corrections received the final local review recorded above.
      docs/plans/104-vertex-block-descent-solver.md
    ```
 
-3. If the evidence-refresh commit is absent, run `pixi run lint` immediately
-   before it, re-run packet/provenance checks, inspect `git diff --check` and
-   the exact staged scope, and commit locally with a plain descriptive message
-   and no AI attribution. Repeat proportional gates if a post-merge fix changes
-   covered source.
-4. Inspect live GitHub state. If the foundation PR is open, manage only its
-   current head through CI and review under fresh maintainer approval. Never
-   rebase a published PR branch; merge the latest base before every follow-up
-   push. Do not merge without separate explicit approval.
-5. Do not extend this shared-foundation branch into the remaining parity
-   program. After maintainer approval and landing, create one VBD-completion PR
-   from updated `main`; only after that lands, create one AVBD-completion PR
-   from updated `main`.
+3. Run `pixi run lint` immediately before every commit, re-run packet and
+   provenance checks after it, inspect `git diff --check` and the exact staged
+   scope, and commit with a plain descriptive message and no AI attribution.
+4. GitHub mutations (push, PR creation or edits, review re-triggers, merge)
+   need explicit approval each time. Never rebase a published PR branch; merge
+   the latest base before every follow-up push.
+5. Follow "Continue The Full Plan After The Shared Foundation" below: VBD
+   completion in one PR from updated `main`, then AVBD completion in a second
+   PR.
 
 ## Resume Commands
 
 ```bash
-cd /home/js/dev/dartsim/dart/task_5
 git status --short --branch
 git branch -vv --no-abbrev
 git log --oneline --decorate -12
@@ -403,27 +182,19 @@ solver-identity contract.
 ## Copy-paste Resume Prompt
 
 ```text
-Resume PLAN-104 AVBD/VBD paper parity from
-/home/js/dev/dartsim/dart/task_5 using
-docs/dev_tasks/avbd_solver/RESUME.md as the exact stop-point contract. Stay on
-feature/vbd-avbd-paper-parity-contract; verify live state before acting and do
-not reset, stash, rebase, switch trees, push, or mutate GitHub without explicit
-approval. First read AGENTS.md,
+Resume PLAN-104 AVBD/VBD paper parity using
+docs/dev_tasks/avbd_solver/RESUME.md as the stop-point contract. The shared
+foundation is on main (PR #3432); branch from updated origin/main and verify
+live state before acting. Do not reset, stash, rebase, switch trees, push, or
+mutate GitHub without explicit approval. First read AGENTS.md,
 docs/ai/principles.md, docs/ai/verification.md, the PLAN-104 owner, paper gap
-audit, demo corpus, parity matrix, and both dev-task files. Verify that the SI
-closeout at `37178193ccf` is followed by merges `37a02b4d2c7` and
-`52173fba3aa`, then the final evidence-refresh commit. If the foundation PR is
-open, manage only its current head through CI and review; do not merge without
-separate explicit approval. Do not extend the shared foundation branch into
-the remaining parity program. After maintainer approval and landing, complete
-VBD first in one PR from updated main, including honest XPBD comparison, all
-CPU/CUDA and corpus rows, performance leadership, and all current-head
-paper/site/video/source-demo image and video attachments; do not create a
-separate media PR.
-After that PR lands, complete AVBD in a second PR from updated main, including
-all AVBD-specific CPU/CUDA, unified-row, corpus, four-method, performance, and
+audit, demo corpus, parity matrix, and both dev-task files. Complete VBD first
+in one PR, including honest XPBD comparison, all CPU/CUDA and corpus rows,
+performance leadership, and all current-head paper/site/video/source-demo
+image and video attachments; do not create a separate media PR. After that PR
+lands, complete AVBD in a second PR from updated main, including all
+AVBD-specific CPU/CUDA, unified-row, corpus, four-method, performance, and
 current-head image/video evidence; do not create a separate media PR. Keep all
 claims fail-closed until every one of the 176 canonical predicates passes. Do
-not stop at an MVP, CPU-only implementation, or documentation checkpoint, and
-do not push or mutate GitHub without explicit approval.
+not stop at an MVP, CPU-only implementation, or documentation checkpoint.
 ```

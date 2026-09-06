@@ -126,8 +126,7 @@ Other workflows should call this routine whenever they touch behavior or docs
 that may need release notes. The caller keeps ownership of the overall task,
 validation, PR body, and approval boundary; `dart-changelog` owns the changelog
 decision, wording, placement, evidence-link hygiene, and the pasteable decision
-note that lets Claude, Codex, OpenCode, and manual contributors record the same
-outcome.
+note that lets Claude, Codex, and manual contributors record the same outcome.
 
 ## Output
 

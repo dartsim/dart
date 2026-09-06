@@ -2,9 +2,9 @@
 
 ## Status
 
-Proposal. This document owns durable design rules for research-facing algorithm
-extension points. Current sequencing for applying these rules lives in
-`docs/plans/dashboard.md` under PLAN-020.
+This document owns durable design rules for research-facing algorithm
+extension points. The receiving active plan in `docs/plans/dashboard.md` owns
+execution; PLAN-040 coordinates readiness. PLAN-020 is completed background.
 
 ## Purpose
 
@@ -13,7 +13,7 @@ them against built-in baselines without rebuilding shared foundations such as
 model loading, math, collision, memory, threading, SIMD, tests, or benchmarks.
 
 This design describes the contract shape for those extension points. Dashboard
-entry PLAN-020 tracks when to apply the rules to another algorithm family.
+entries and the solver-family intake determine when to apply them to another family.
 
 ## Contract Principles
 
@@ -65,18 +65,17 @@ Each extension family should define:
 Benchmarks should compare the new algorithm against an explicit DART baseline
 instead of reporting isolated timing numbers.
 
-## Candidate Family Example
+## Existing Family Example
 
-LCP/contact solving is a useful example candidate when applying these rules
-because DART already has LCP theory docs, multiple solver implementations,
-constraint integration, and benchmark context. PLAN-020 decides whether and
-when it becomes the first formalized family.
+LCP/contact solving already has a formalized contract and multiple implementations.
+Reuse `docs/design/lcp_solver_contract.md` and `docs/background/lcp/` as the
+existing example; PLAN-020 is not an open family-selection decision. New
+families receive active ownership through the solver intake before work starts.
 
-Create a focused design doc such as `docs/design/lcp_solver_contract.md` only
-after the plan formally selects that family and inventories the current solver
-surface. Keep mathematical derivations and attribution-heavy background in
-`docs/background/lcp/`; the design doc should own DART-specific interface and
-comparison rules.
+Variant and selection-policy versions, supported physical/representation cells,
+continuation state, interaction ownership and actual compute execution are part
+of the comparison contract. Internal extension seams can evolve with evidence;
+a public third-party plugin ABI remains a separate design decision.
 
 ## Verification Expectations
 

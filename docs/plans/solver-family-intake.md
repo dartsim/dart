@@ -1,8 +1,8 @@
 # Solver Family Intake Checklist
 
 This checklist is the plan-owned intake surface for new solver, algorithm,
-paper, or major component work. PLAN-020 in [`dashboard.md`](dashboard.md) owns
-the operating gate; durable architecture rationale lives in
+paper, or major component work. The receiving active plan in
+[`dashboard.md`](dashboard.md) owns execution; PLAN-040 coordinates readiness; durable architecture rationale lives in
 [`../design/algorithm_extension_contracts.md`](../design/algorithm_extension_contracts.md)
 and
 [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md).
@@ -10,7 +10,9 @@ and
 Before implementation starts, the owner plan or dev task should record:
 
 1. **Family routing.** Name the existing DART solver family and owner plan that
-   receives the work, or justify a new family. Examples: PLAN-081/082/083 for
+   receives the work, or justify a new family. Declare physical domains,
+   intrinsic dimensions, representations, and which degrees of freedom and
+   interactions the method owns, including any shared coupled block. Examples: PLAN-081/082/083 for
    IPC and Newton-barrier variants, PLAN-104 for VBD/OGC/AVBD variants,
    PLAN-110 plus PLAN-084 for differentiable variational rigid-body work.
 2. **Shared-component inventory.** List the collision, kinematics, model/state,
@@ -23,39 +25,52 @@ Before implementation starts, the owner plan or dev task should record:
 4. **Apples-to-apples evidence.** Define the DART incumbent, reference
    implementation, paper number, scene corpus, accuracy metric, and benchmark
    JSON shape used for comparison. A performance claim without matched accuracy
-   and matched scene parameters is not a completion claim.
+   and matched scene parameters is not a completion claim. Preserve the full
+   paper/source/experiment manifest and existing performance obligations from
+   `docs/ai/verification.md`; a milestone slice does not waive them.
 5. **Public boundary.** Confirm public APIs and dartpy bindings expose
    DART-owned domains, method families, policies, diagnostics, and value types,
    not upstream project names, solver registries, ECS storage, backend
    resources, or reverse-pass caches.
 6. **Configuration surface.** Define the default `World`/options path, the
    advanced nested options, validation rules, serialization expectations, and
-   diagnostics. The common path should be simple, and invalid or incompatible
+   diagnostics, versioned variant/default-policy identities and actual backend.
+   The common path should be simple, and invalid or incompatible
    option combinations should fail before they produce misleading simulation
    results.
 7. **Failure and fallback semantics.** Record unsupported-feature errors,
    fallback behavior, non-convergence handling, determinism requirements, and
-   serialization/restart expectations before promoting a runtime path.
+   serialization/restart expectations before promoting a runtime path. Inventory
+   result-affecting history versus recomputable scratch, exact same-backend
+   replay versus cross-backend tolerance, and explicit migration limitations.
 8. **World-step schedule integration.** Record which built-in schedule slots the
    runtime path adds, replaces, or deliberately avoids in
    `detail/world_step_schedule.hpp`; whether the method participates in the
-   prepare / pre-couple / couple / post-couple lifecycle; which domain-presence
+   proposed prepare / pre-couple / couple / post-couple lifecycle or a justified
+   shared/partitioned schedule; resource ownership, completion and reduction
+   order; which domain-presence
    flags activate it so empty domains do not add placeholder work; and which
    focused tests prove default `World::step()` and custom-final-stage stepping
    share the same dynamics schedule without exceeding the built-in inline stage
    capacity.
 9. **Solver-contract conformance.** Record how the family enters through the
    internal solver contract and the single method-selection idiom owned by
-   PLAN-091 (typed per-domain policy value objects resolved at finalize, with
-   capability validation and a resolved-configuration report). While a
+   the solver architecture (typed DART-owned policy values resolved at bake,
+   capability/interaction validation and a resolved-configuration report). While a
    contract piece is still landing, record explicitly which interim mechanism
    the family uses and the migration step that retires it — silent scene- or
    content-dependent method substitution is not acceptable in any new family.
 10. **Solver-identity and metrics evidence.** Every benchmark or evidence
     packet the family produces must machine-record the resolved solver
     configuration (no packet is valid without it), populate the shared
-    cross-family step-metrics fields once they exist, and register its
+    existing cross-family step-metrics fields, extending them where required, and register its
     comparison scenes in the shared scene corpus rather than hand-building
     bespoke scenes. A performance or parity claim whose packet cannot prove
     which solver actually ran is not evidence. See the standing rule in
     [`../design/dart7_architecture_assessment.md`](../design/dart7_architecture_assessment.md).
+
+11. **Architecture impact.** Audit changed model/state, solver/coupling, compute,
+    precision, checkpoint and API invariants against the current assessment.
+    Update affected capability/allocation rows with revision-bound evidence;
+    name unresolved owners. Adding a coupled pair requires force/momentum/work
+    and convergence tests, not merely successful graph execution.

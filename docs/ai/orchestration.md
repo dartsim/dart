@@ -89,7 +89,10 @@ asking again. Routine local work needs no extra approval ceremony.
 
 Review is part of the work cycle, not a final courtesy pass. For every
 meaningful implementation chunk, the orchestrator runs an independent review
-lane after verification and again after any cleanup or fixes. A packet is done
+lane after verification and revalidates cleanup or fixes using the baseline and
+delta rules in `docs/ai/verification.md`. The same lane can perform a PR's
+strategy checkpoint under `docs/onboarding/ai-reviews.md`; avoid redundant
+review sessions with identical scope. A packet is done
 only when it meets the review-pass item of the completion audit in
 `docs/ai/verification.md`, recorded in the owning plan, dev-task
 `verification.md`, or PR evidence.
@@ -128,8 +131,16 @@ separate tracking system. Every packet records:
   is not acceptance evidence.
 - **Gates** — the `pixi run ...` commands from `docs/ai/verification.md`
   that must pass, plus packet-specific checks.
+- **Architecture impact** — affected data, solver/coupling, compute, precision,
+  checkpoint and public API invariants; source baseline, evidence and unresolved
+  owners. Cite unchanged evidence with a reason when the packet has no impact.
 - **Dependencies** — packet IDs or merged-evidence preconditions. A packet
   with unmet dependencies is not available for execution.
+
+At intake and acceptance, use the current architecture assessment for affected
+invariants. Milestone exits, new families/coupling, layout or execution-order
+changes and checkpoint-schema changes also require a cross-family audit.
+Update the assessment and affected capability/allocation rows with the packet.
 
 ## Specification intake and readiness
 
@@ -189,7 +200,7 @@ orchestrator applies these rules when decomposing:
    updates the dashboard entry's next step.
 2. An executor picks up the first available packet (see "Packet discovery
    and claim signals" below) — via `$dart-execute-packet` (Codex) or
-   `/dart-execute-packet` (Claude/OpenCode) — appends `[claimed]` to the
+   `/dart-execute-packet` (Claude Code) — appends `[claimed]` to the
    packet heading, and creates the packet's topic branch
    (`wp-<plan>-<n>-<slug>`) so the claim is discoverable by other sessions.
 3. The executor implements exactly that packet, runs its gates, records the

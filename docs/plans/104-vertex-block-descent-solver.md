@@ -374,7 +374,12 @@ high-ratio builders continue to identify the Variational multibody integrator,
 not rigid AVBD. Refreshed claims need current schema-version-6 packets that machine-record
 `resolved_solver_identity`, `rigid_contact_selection`, multibody identity, and
 the resolved solver-configuration/profile binding, enforced by
-`pixi run check-avbd-packets`.
+`pixi run check-avbd-packets` and `pixi run check-plan104-paper-parity`.
+Those strict gates fail when a sealed packet predates the current source
+state; repository-wide `pixi run lint` runs the same validators with
+`--stale-source report`, so unrelated source or dependency changes surface
+stale seals as advisories instead of blocking every PR, and no stale seal can
+back a parity or performance claim.
 
 Public C++ and dartpy callers can now select the default
 `RigidBodySolver::SequentialImpulse`, the fixed-penalty

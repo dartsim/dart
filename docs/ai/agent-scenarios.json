@@ -75,7 +75,6 @@
       "specialist_agent": "dart_reviewer",
       "owner_docs": [
         "docs/README.md",
-        "docs/information-architecture.md",
         "docs/AGENTS.md"
       ],
       "permitted_scopes": ["named AI owner docs", "generator-owned adapters"],
@@ -101,7 +100,7 @@
         "docs/ai/principles.md",
         "docs/ai/components.md",
         "docs/ai/verification.md",
-        "docs/information-architecture.md",
+        "docs/README.md",
         "docs/onboarding/agent-sim-verification.md",
         "docs/plans/README.md",
         "docs/dev_tasks/README.md",

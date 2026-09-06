@@ -16,20 +16,34 @@
   [`122-simulation-loop-allocation-hardening/coverage-matrix.md`](122-simulation-loop-allocation-hardening/coverage-matrix.md)
   records which rows are final evidence, which rows are steady-state-only
   evidence, and which rows remain open.
-- Progress snapshot: 14 of 18 matrix rows are closed with first-post-bake
+- Progress snapshot: 14 of 24 matrix rows are closed with first-post-bake
   evidence. `L-001` is now closed: the legacy `dynamics::Skeleton` → DART 7
   `World` model-loading bridge (`dart::simulation::io::addSkeleton`) has
   first-post-bake world-base, global-heap, and raw-malloc gates over an imported
   scene, with the source-model translation kept in the pre-bake configuration
-  phase. There are no remaining implementation-capacity rows for currently
-  selectable DART 7 CPU `World::step()` paths: `D-004` is closed by routing
+  phase. These matrix rows do not establish universal parallel-executor coverage: `D-004` is closed by routing
   systems above the retained dense-direct cutoff to the sparse iterative path
   instead of Eigen sparse-direct numeric factorization. The remaining open rows
-  are promotion-gated rows `M-004`, `F-002`, and `G-001`; they stay owned by
-  their named plans until the corresponding solver, derivative, or accelerator
-  path is promoted into `World::step()`. No new `docs/dev_tasks/` folder is
+  are executor-inventory row `H-002`, existing-path rows `H-003`, `R-005`, `M-005`, `M-006`
+  and `G-002`, plus promotion-gated rows
+  `M-004`, `F-002`, and `G-001`. Each stays with its named owner until its
+  evidence closes. No new `docs/dev_tasks/` folder is
   needed for those rows while this plan and its coverage matrix remain the
   durable owner.
+
+## Additional Coverage Investigations
+
+The [current assessment](../design/dart7_architecture_assessment.md#f6--clean-break-boundaries-and-scoped-foundation-evidence)
+identifies parallel unified-island scratch and function-static deformable CUDA
+PSD buffers that existing representative rows do not qualify. PLAN-122 owns
+allocation coverage, coordinated with PLAN-030 for runtime/ownership. The matrix
+already tracks these selectable paths as open `R-005` and `G-002`, and parallel
+multibody ranges as `M-005`, parallel VBD/AVBD as `M-006`, and Taskflow graph
+submission as `H-003`. `H-002` owns the complete executor-mode inventory;
+default sequential evidence cannot qualify untested supplied executors. Deferring
+their closure to M2/family work does not defer their admission to the matrix.
+Record execution mode, concurrency and first-step evidence. WP-122.8 completion
+must not close or erase these wider rows.
 
 ## Scope
 
@@ -52,8 +66,9 @@ Out of scope:
 - Public return-by-value diagnostics and standalone helper APIs whose outputs
   intentionally outlive a step, unless a built-in `World` stage calls them in
   the simulation loop.
-- Third-party internal allocations that DART cannot control, unless a built-in
-  DART 7 path can avoid them by preparing reusable DART-owned scratch at bake.
+- Third-party allocations outside the measured simulation loop. M1 includes
+  runtime submission and any third-party allocation inside the step: an
+  unavoidable allocation is a failed qualification, not an exemption.
 
 ## Harness Contract
 
@@ -83,6 +98,13 @@ post-bake step.
 
 ## Work Packets
 
+WP-122.1–122.7 retain the existing coverage workstreams. Their row-level
+progress is in the linked coverage matrix; do not re-execute a closed row or
+infer that a whole packet/family is complete from its representative tests.
+WP-122.8 is the next M1 qualification packet after its dependencies close.
+Parallel and device paths require their own evidence even when a CPU row is
+already closed.
+
 ### WP-122.1 Harness Manifest And First-Step Gates
 
 - Objective: make the no-allocation harness reusable and make final evidence
@@ -92,12 +114,40 @@ post-bake step.
   without copy/paste; add a lightweight checker or meta-test that verifies each
   closed matrix row cites an existing test; relabel existing prewarm-based raw
   gates as steady-state until their underlying path bakes all scratch.
+  `H-002` inventories every selectable World stage/method and its default or
+  supplied executor, actual graph/range/device dispatch, profiling and fallback
+  behavior. Qualify each mode directly or link it to a named open row. Include
+  Taskflow submission, lazy range pools and nested/concurrent execution; a
+  cached graph's constant allocation floor is not zero-allocation evidence.
+  Name inline versus Taskflow graph dispatch and kinematics cache rebuilds;
+  multibody, island and VBD/AVBD colored-block/row ranges; profiling adapters;
+  CUDA selection and CPU fallback; explicit rigid stages and custom pipelines
+  containing built-in stages. Classify standalone WorldBatch graph construction
+  separately from the measured World step. Inventory DART-owned executors and
+  adapter contracts; caller-written executor/stage behavior requires separate
+  conformance evidence.
 - Non-goals: proving every domain row in this packet; changing the DART 6
   compatibility lane.
 - Acceptance evidence: the helper/API name is documented in
   `docs/onboarding/testing.md`; the coverage matrix distinguishes final,
   steady-state-only, and open rows; a focused test proves the helper fails when
   an allocation is injected after bake.
+  `H-002` closes only when the inventory records each supported mode's activation
+  predicate and source location, with evidence that exercises that exact mode
+  or a direct mapping to a distinct, concrete open row with scope, owner and
+  acceptance criteria. Self/circular mappings and generic future-promotion
+  placeholders cannot close the inventory. Removing a mapping or adding an
+  unmapped dispatch mode must fail its validation. Inventory completeness does
+  not qualify its open rows, which still block PLAN-122 completion. New modes
+  invalidate the inventory until mapped. `H-003` owns the concrete Taskflow
+  submission floor. It requires actual non-inline graph dispatch through a
+  built-in World pipeline, counters covering runtime and worker allocations,
+  and first-post-bake evidence with profiling on/off and independent states.
+  Require absolute zero World-base/global/raw allocations; subtracting a graph
+  allocation floor or running unmeasured graphs containing simulation work is
+  not qualification. Cached graph structure or a constant count cannot close it.
+  PLAN-030 owns runtime remediation/replacement; excluding Taskflow from a
+  selected milestone path does not close the still-selectable `H-003` path.
 - Gates: `pixi run lint`, focused `test_world` allocation filters, and the new
   matrix/helper checker if added.
 - Dependencies: none.
@@ -143,12 +193,28 @@ post-bake step.
 - Objective: make every DART 7 articulated/multibody solver family row carry
   allocation evidence before promotion.
 - Scope: semi-implicit multibody velocity paths, variational integration,
-  AVBD/VBD rows that are already selectable in `World::step()`, and future
+  AVBD/VBD, parallel unified-island `R-005`, multibody-range `M-005` and
+  parallel VBD/AVBD `M-006` rows
+  already selectable in `World::step()`, and future
   unified Newton-barrier multibody rows from PLAN-083.
 - Non-goals: DART 6 articulated-body parity paths outside the DART 7 `World`.
 - Acceptance evidence: each promoted DART 7 row in the matrix cites post-bake
   world-base/global/raw gates, including contacts, motors, loop closures, and
   actuator combinations that use dynamic Eigen storage.
+  For `R-005`, use at least two unequal active contact islands, more than one
+  worker and an assertion of actual parallel unified dispatch. Measure worker
+  allocations and runtime submission from the first post-bake step, including
+  lazy range-pool creation; add worker-thread allocation negative controls.
+  Preserve sequential-reference parity and dispatch with profiling enabled.
+  `M-005` additionally requires multiple multibodies with actual multi-worker
+  range dispatch. Counter coverage starts on the first post-bake step and
+  includes worker/runtime setup; small ranges that execute inline do not
+  qualify the parallel path. Compare against the sequential reference.
+  `M-006` covers both VBD/AVBD variants and their colored-block/row-update
+  dispatch predicates through World stepping. Size scenes to exercise the
+  parallel branches and measure all three host allocation surfaces, including
+  workers and runtime setup, from the first post-bake step. Warmed helper
+  stability or World-base-only counters are partial evidence, not closure.
 - Gates: `pixi run lint`, focused `test_world` multibody/variational/AVBD/VBD
   allocation filters, and the relevant PLAN-083/104 focused tests.
 - Dependencies: PLAN-080, PLAN-083, PLAN-084, PLAN-104, and the corresponding
@@ -193,13 +259,53 @@ post-bake step.
 - Scope: host allocation gates still apply; device buffer growth, graph-capture
   allocation, and per-call `cudaMalloc`/`cudaFree` or equivalent backend
   allocation need a backend-specific counter or deterministic diagnostic.
+  `G-002` tracks the existing World-selected CUDA PSD offload; `G-001` retains
+  admission of future accelerator stages.
 - Non-goals: routing device memory through the CPU `MemoryManager`.
 - Acceptance evidence: each accelerator row has host no-allocation gates plus a
   device-allocation diagnostic or benchmark packet showing no per-step device
   allocation after bake.
+  For `G-002`, begin with fresh owner/process state and nontrivial PSD batches
+  above the actual offload threshold. Verify CUDA execution, prepared capacity
+  and first-post-bake host/device counters. Two different-sized Worlds must
+  match isolated results when interleaved and invoked concurrently, with safe
+  scratch ownership and completion before reclamation. Earlier process-global
+  buffer warming cannot determine success. This closes only the PSD offload
+  slice, not full CUDA deformable simulation.
 - Gates: `pixi run lint`, focused CPU tests, and `pixi run -e cuda test-cuda` or
   the backend-specific gate on capable hosts.
-- Dependencies: PLAN-030, PLAN-031, PLAN-081, PLAN-083, and PLAN-104.
+- Dependencies: PLAN-030, PLAN-081, PLAN-083, PLAN-104, and the
+  [shared CUDA substrate contract](../design/shared_cuda_device_substrate.md).
+
+### WP-122.8 M1 Allocation And Lifecycle Qualification
+
+- Objective/value: prove that the chosen runtime, kernels and full M1 workflow
+  honor the storage and isolation contracts together.
+- Scope: extend the coverage matrix with explicit serial, parallel range,
+  task-graph submission and CUDA rows for the accepted RB corpus; graph/cache
+  invalidation, reset/restore and concurrent-state lifetime tests.
+- Architecture impact: state isolation, prepared capacities, graph submission
+  and device lifetime; update the allocation matrix and architecture assessment.
+- Non-goals: weakening existing zero-allocation gates, excluding third-party
+  submission from measurement, or qualifying every research family.
+- Assumptions/open decisions: capacities are established at bake; setup,
+  explicit observations and checkpoint I/O are measured separately. Restoring
+  may rebuild scratch/graphs before re-entering the prepared step boundary.
+- Acceptance evidence: measure the first post-bake and first post-restore
+  prepared step without hidden stepping/prewarm. No World-base/global/raw host
+  allocation or device allocation occurs in any selected M1 step path. Include
+  changing active contact counts within capacity, two interleaved independent
+  states, model rebuild and stale-handle rejection, profiling on/off, nested
+  execution, errors/cancellation and completion before teardown. Over-capacity
+  work fails explicitly or rebakes outside the step according to contract.
+  Record total actual workers and device memory, not only Taskflow's pool size.
+  The current constant Taskflow submission allocation floor is an open gap.
+- Gates: focused allocation/lifecycle/concurrency tests, `pixi run lint`,
+  `pixi run test-all`, `pixi run -e cuda test-all`; record platform interposer
+  availability. Skipped allocation/runtime measurements cannot close a row.
+- Dependencies: accepted WP-030.5 and WP-041.1; consume the WP-030.4 runtime
+  decision. A runtime that fails hard gates must be replaced or excluded from
+  the accepted M1 path rather than receiving an undocumented waiver.
 
 ## Completion Criteria
 

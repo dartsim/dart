@@ -16,7 +16,7 @@ in the shared `.agents/skills/` catalog.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-model-upgrade <arguments>`
+- Claude Code: `/dart-model-upgrade <arguments>`
 - Codex: `$dart-model-upgrade <arguments>`
 
 Treat the text after the skill name as `$ARGUMENTS`. When the workflow
@@ -50,9 +50,9 @@ surface without loading every referenced document in full:
 
 - Target/control: `docs/ai/README.md` § "Model Routing" and the target tool's
   section in `docs/onboarding/ai-tools.md`.
-- Structure/discovery: relevant rows of `docs/ai/workflows.md`, owner indexes
-  in `docs/README.md`, and `docs/AGENTS.md` plus
-  `docs/information-architecture.md` before documentation changes.
+- Structure/discovery: relevant rows of `docs/ai/workflows.md`, the docs map
+  and placement matrix in `docs/README.md`, and `docs/AGENTS.md` before
+  documentation changes.
 - Project state: current state in `docs/ai/north-star.md`,
   `docs/plans/dashboard.md`, and one representative active plan/handoff;
   `docs/dev_tasks/README.md` and `docs/ai/orchestration.md` own continuation and

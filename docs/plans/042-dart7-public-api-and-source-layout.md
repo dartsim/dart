@@ -19,6 +19,19 @@
   compatibility surfaces, so the remaining work is cleanup, quarantine, and
   enforcement rather than choosing staging names.
 
+## Readiness And Policy Alignment
+
+[PLAN-040](040-dart7-release-hardening.md) coordinates M1-M3 readiness;
+WP-041.1 owns the checkpoint/first-use workflow and consumes this plan's public
+boundaries. A small DART-owned device preference and resolved-device value may
+name CPU/CUDA; runtime libraries, streams, kernels, pools and implementation
+namespaces remain private. Common examples need no explicit device or solver.
+Independent DART 7 oracles define physical correctness. Optional DART 6
+comparisons use release branches.
+[WP-040.2](040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
+owns final-promotion and backend-name checker-transition requirements and status;
+consult it when using the checks referenced below.
+
 ## Direction
 
 Keep the public topology explicit. Move files only when the move reinforces
@@ -50,14 +63,14 @@ The default recommendation to review, then accept or revise, is:
 
 - Python advanced path: curated submodules remain discoverable for ownership and
   advanced workflows, but first-time examples should not require users to learn
-  `dart.simulation_experimental`, DART 6 legacy modules, backend names, or
+  `dart.simulation_experimental`, DART 6 legacy modules, runtime implementation names, or
   implementation folders. Advanced groups such as `simulation.state`,
   `simulation.compute`, or `simulation.diff` appear only after their C++ public
   wrappers are stable.
 - Python root facade: replace accidental broad root flattening with an approved
   allowlist. The initial simulation allowance is `World`; add `WorldOptions` or
   `WorldConfig` only if the first-page example needs it. Do not root-promote
-  `simulation_experimental`, backend names, solver registries, parser-specific
+  `simulation_experimental`, backend implementation namespaces, solver registries, parser-specific
   classes, ECS/storage concepts, or research-algorithm staging types.
 - C++ common path: keep module ownership explicit unless review proves a
   top-level `dart::World` facade removes real friction without creating ABI,
@@ -315,7 +328,7 @@ The accepted Python decision must define each row before implementation:
   generated `__init__.pyi`, and generated API docs match that allowlist and do
   not accidentally preserve whole-module flattening from `python/dartpy/_layout.py`.
 - The public first-use example uses final names and does not mention
-  `experimental`, DART 6 legacy modules, backend names, component storage, or
+  `experimental`, DART 6 legacy modules, runtime types, component storage, or
   implementation folders.
 - The accepted Python policy proves `dart.World is dart.simulation.World`, does
   not bind a second C++ World class, keeps
@@ -375,8 +388,8 @@ For implementation PRs derived from this plan, select by touched scope:
 - default source/wheel smokes proving the final World path without staging
   build flags
 - negative smokes for removed headers, modules, targets, and aliases
-- `pixi run check-dart7-final-world-promotion`, with parity evidence sourced
-  from local `release-6.*` branch refs rather than main-branch DART 6 World tests
+- `pixi run check-dart7-final-world-promotion`, following the checker contract
+  in [WP-040.2](040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
 - case-insensitive filesystem validation for renamed public headers
 
 ## Revision Triggers

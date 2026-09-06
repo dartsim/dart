@@ -13,6 +13,24 @@ the new API; compatibility and parity evidence for that API live on
 The companion Python binding design lives in
 [`simulation_python_api.md`](simulation_python_api.md).
 
+## Workflow Contract
+
+Common use should construct a World, add a body/ground, apply force/torque,
+step, inspect, save and resume with defaults. Advanced values can request a
+DART-owned method variant or `cpu`/`cuda` preference and inspect the resolved
+configuration; runtime/pool/stream/kernel/ECS types remain private.
+
+Full state includes orientation/angular velocity and result-affecting history.
+Test ownership, view lifetime, reset and complete fresh-process continuation
+rather than equating a transform snapshot with a restart.
+
+For current readiness, implementation status, precision admission and work
+selection, consult the [dashboard](../plans/dashboard.md),
+[PLAN-040](../plans/040-dart7-release-hardening.md) and
+[PLAN-041](../plans/041-official-simulation-api-promotion.md).
+The [API-boundary policy](../onboarding/api-boundaries.md) owns public/internal
+boundaries and points to the checker-transition contract.
+
 ## Purpose
 
 The C++ DART 7 simulation API gives DART a clean public simulation surface for

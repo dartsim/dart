@@ -15,11 +15,14 @@ Before finalizing substantial AI-assisted work:
 
 1. Restate the objective as concrete deliverables.
 2. Map each explicit request, file, command, gate, and deliverable to evidence.
-3. Inspect the actual files, command output, review state, or artifacts.
+3. Inspect the actual files, command output, review state, or artifacts. Audit
+   affected architecture invariants and update the assessment/capability rows;
+   milestone exits and new solver/coupling contracts require cross-family review.
 4. Identify missing, weakly verified, or blocked requirements.
 5. Verify review evidence: at least two clean independent or role-separated
    review passes on the current post-fix state, with substantive findings
-   investigated rather than blindly accepted.
+   investigated rather than blindly accepted. Apply the coverage and
+   revalidation rules in Review Evidence below.
 6. For model/scene, behavior-bearing physics/simulation, or GUI work, verify
    `dart-verify-sim` paired a text correctness oracle with assessed claim-tied
    visual/debug evidence, or recorded a justified unavailable exception.
@@ -31,6 +34,23 @@ Before finalizing substantial AI-assisted work:
    owner in `docs/plans/`, `docs/design/`, or `docs/onboarding/`.
 9. Continue working until all required items are satisfied or a real blocker
    remains.
+
+## DART 7 Readiness Evidence
+
+[PLAN-040](../plans/040-dart7-release-hardening.md) owns the milestone matrix.
+Independent physical oracles are primary; DART 6 is optional differential
+comparison evidence, with existing promotion-checker migration owned by
+WP-040.2. Follow PLAN-040 for admitted examples, backends, precision and the
+checkpoint, installed-workflow and allocation acceptance gates. Compilation,
+skipped runtime checks and hidden CPU fallback cannot close GPU coverage. Pin actual method,
+variant, precision and execution identity. Separate same-backend deterministic
+replay from cross-backend finite-horizon tolerances. A documentation PR cannot
+close a physics or compute prototype gate.
+
+The milestone sequence does not waive any full paper target below. The proposed
+separation of reproduction and performance policy remains unresolved; PLAN-040
+owns its decision status. Current requirements apply until the maintainer
+explicitly approves a policy change there.
 
 ## Research Paper Implementation Evidence
 
@@ -115,6 +135,23 @@ visual artifacts before changing behavior. Record whether the finding was fixed,
 deferred, or rejected with evidence. The review-pass requirement is item 5 of
 the completion audit above.
 
+For substantive PRs, a completed hosted review plus the independent local lane
+can satisfy those two passes; do not add a third pass just to count each policy
+wording separately. Without hosted review, local-only work can use two
+independent or role-separated passes, but this does not replace a PR's hosted
+review gate. The substantive-PR independent-session requirement and
+docs-only/mechanical exemption live in `docs/onboarding/ai-reviews.md`.
+
+Preserve the reviewed baseline, findings, and dispositions. After a fix, the
+independent reviewer can revalidate the delta and its interactions against that
+baseline and explicitly record coverage of the resulting state. Expand to a
+full review when scope, architecture, or interactions invalidate the baseline.
+Formatting-only cleanup needs an explicit no-behavior-change assessment rather
+than two new broad local reviews. Required current-head hosted review and
+validation still apply. A clean pass means no unresolved substantive issue;
+verified false positives do not require another round. Add new tests when they
+close a coverage gap, not merely to reject feedback already refuted by evidence.
+
 ## DART 7 Simulation Allocation Evidence
 
 Changes that add, migrate, or materially alter a DART 7 `World::step()` domain,
@@ -155,7 +192,7 @@ Missing or vague acceptance evidence means the task is not ready for execution.
 ## Review Safety Evidence
 
 `docs/onboarding/ai-reviews.md` owns the automated-review loop: no inline
-replies to bot accounts, local verification of each claim, a refuting test for
-false positives, and explicit approval before any push, comment, thread
+replies to bot accounts, local verification and evidence-backed disposition of
+each claim, and explicit approval before any push, comment, thread
 resolution, or re-trigger. The final response states which actions were
 local-only and which external mutations, if any, were explicitly approved.

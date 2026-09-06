@@ -6,8 +6,8 @@ design decisions, or dependencies between steps. A small, linear task needs no
 folder; documentation work follows the same criteria.
 
 Task folders are temporary. Promote durable output to the owner selected by
-[`docs/information-architecture.md`](../information-architecture.md) and delete
-the folder in the completing change.
+[`docs/README.md`](../README.md) and delete the folder in the completing
+change.
 
 ## Project Home
 
@@ -33,6 +33,17 @@ When a dashboard entry owns the next action, its `- Next step:` field is the
 single source of truth. README and RESUME point there instead of copying it.
 Link to code and evidence instead of reproducing API inventories, mutable
 versions, or full implementation history.
+
+Both required files are snapshots, not logs. Rewrite them in place: replace a
+stale "current reality" block instead of stacking a new one above it, collapse
+completed checklist phases to one line each, and delete session summaries,
+branch ladders, and command lists that no longer describe the next action. Git
+history keeps the removed text. `pixi run check-docs-policy` reports a
+`RESUME.md` over 200 lines or a `README.md` over 400 lines as an advisory;
+treat it as a signal to promote or prune before the next handoff. Accepted
+baseline when the budget was introduced (2026-09-04): the `README.md` files of
+`avbd_solver`, `ipc_deformable_solver`, and `rigid_ipc_solver` exceed it and
+are pruned by their owners at their next handoff.
 
 ## Session Start
 
@@ -94,6 +105,6 @@ Complete these steps in the same change that finishes the task:
 
 ## Related
 
-- [Documentation placement](../information-architecture.md)
+- [Documentation map and placement](../README.md)
 - [Agent policy and workflow index](../ai/README.md)
 - [Developer handbook](../onboarding/README.md)

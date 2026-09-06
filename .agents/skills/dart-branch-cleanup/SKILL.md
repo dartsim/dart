@@ -16,7 +16,7 @@ in the shared `.agents/skills/` catalog.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-branch-cleanup <arguments>`
+- Claude Code: `/dart-branch-cleanup <arguments>`
 - Codex: `$dart-branch-cleanup <arguments>`
 
 Treat the text after the skill name as `$ARGUMENTS`. When the workflow

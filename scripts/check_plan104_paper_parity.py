@@ -23,6 +23,7 @@ from avbd_packet_schema import (  # noqa: E402
     AVBD_PACKET_SCHEMA_VERSION,
     PLAN104_CLAIMS_KEY,
 )
+from check_avbd_packets import split_stale_source_findings  # noqa: E402
 from check_avbd_packets import (  # noqa: E402
     PacketValidationContext,
 )
@@ -38,6 +39,7 @@ DEFAULT_CONTRACTS = (
 )
 
 PLAN104_PACKET_VALIDATOR = "plan104_packet/v1"
+STALE_CLOSURE_SUFFIX = "packet seal predates the current source state"
 # Compatibility alias for existing tests and callers; the validator is
 # deliberately family-neutral and accepts both VBD and AVBD packet names.
 AVBD_PACKET_VALIDATOR = PLAN104_PACKET_VALIDATOR
@@ -57,6 +59,9 @@ class _ValidationContext:
         )
     )
     closure_packet_results: dict[Path, tuple[str, ...]] = field(default_factory=dict)
+    # "error" (default) fails closed on stale seals; "report" turns a closure
+    # whose packet only has stale-seal findings into an advisory.
+    stale_source: str = "error"
 
 
 def _validate_avbd_packet(path: Path, context: _ValidationContext) -> list[str]:
@@ -1308,7 +1313,11 @@ def _closure_evidence_errors(
     if validator_registered:
         validator_errors = _validator_result(validator_name, absolute_path, context)
         if validator_errors:
-            errors.append(f"{label}.path failed registered packet validation")
+            hard_errors, _stale = split_stale_source_findings(list(validator_errors))
+            if hard_errors or context.stale_source != "report":
+                errors.append(f"{label}.path failed registered packet validation")
+            else:
+                errors.append(f"{label}.path {STALE_CLOSURE_SUFFIX}")
 
     loaded = context.avbd_packets.loaded.get(absolute_path.resolve())
     packet = loaded.packet if loaded is not None else None
@@ -1859,6 +1868,15 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default=None,
         help="Explicit coverage contract to validate (repeatable).",
     )
+    parser.add_argument(
+        "--stale-source",
+        choices=("error", "report"),
+        default="error",
+        help="How to treat evidence packets whose sealed source state no longer "
+        "matches the working tree: 'error' (default) fails closed, the bar for "
+        "any parity claim; 'report' prints them as advisories so repository-wide "
+        "lint does not fail on unrelated source or dependency changes.",
+    )
     return parser.parse_args(argv)
 
 
@@ -1866,17 +1884,32 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     paths = tuple(args.contract) if args.contract else DEFAULT_CONTRACTS
     all_errors: list[str] = []
-    validation_context = _ValidationContext()
+    validation_context = _ValidationContext(stale_source=args.stale_source)
     for path in paths:
         all_errors.extend(contract_errors(path, validation_context=validation_context))
+
+    stale: list[str] = []
+    if args.stale_source == "report":
+        all_errors, stale = split_stale_source_findings(all_errors)
+        stale_closures = [e for e in all_errors if e.endswith(STALE_CLOSURE_SUFFIX)]
+        all_errors = [e for e in all_errors if not e.endswith(STALE_CLOSURE_SUFFIX)]
+        stale.extend(stale_closures)
+    # The matrix is validated whenever no hard contract error remains, so a
+    # stale seal (the condition report mode tolerates) never skips it.
     if not args.contract and not all_errors:
         contracts = tuple(_strict_json_loads(path.read_bytes()) for path in paths)
         all_errors.extend(matrix_errors(contracts))
-
     if all_errors:
         for error in all_errors:
             print(f"ERROR: {error}")
         return 1
+    for finding in stale:
+        print(f"STALE: {finding}", file=sys.stderr)
+    if stale:
+        print(
+            "Sealed evidence predates the current source state; no parity row can "
+            "close on it until the evidence is regenerated."
+        )
 
     total = 0
     for path in paths:

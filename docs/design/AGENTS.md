@@ -2,30 +2,18 @@
 
 Agent rules for durable DART design documents.
 
-## Purpose
-
-`docs/design/` owns technical rationale that should survive after a plan or
-dev task completes. Design docs explain architecture, API shape, constraints,
-tradeoffs, and non-goals. They are not roadmap dashboards or implementation
-handoff logs.
-
-## Rules
-
-- Start with `docs/README.md`, then this file, then the relevant plan,
-  onboarding, background, or module docs.
-- Keep design docs durable and current-state oriented. Use Git history for old
-  alternatives that are no longer relevant.
-- Do not put priority, horizon, next step, gate, or active implementation
-  handoff state here. Use `docs/plans/dashboard.md` and
-  `docs/dev_tasks/<task>/` for that state.
-- A design doc may have a short proposal/accepted/superseded status, but it
-  should not become a phase tracker.
+- Read `docs/README.md`, then `README.md` here, then the relevant plan,
+  handbook, background, or module docs.
+- Design docs own architecture, API shape, constraints, tradeoffs, and
+  non-goals that outlive a roadmap sequence. Keep them current-state oriented;
+  rejected alternatives that no longer inform a decision go to git history.
+- Do not record priority, horizon, next step, gate, or implementation handoff
+  state here; those belong to `docs/plans/dashboard.md` and
+  `docs/dev_tasks/<task>/`. A short proposal/accepted/superseded status is
+  fine; a phase tracker is not.
 - Link to `docs/onboarding/api-boundaries.md` for public/internal API policy
-  and apply that policy to the specific design.
-- Keep each direct `docs/design/*.md` file listed in `docs/design/README.md`.
+  instead of restating it.
+- List every direct `docs/design/*.md` file in `README.md` (checked by
+  `pixi run check-docs-policy`).
 
-## Verification
-
-Use `docs/ai/verification.md` to select gates for design-doc edits. The docs
-policy check verifies that direct design docs stay indexed and avoid
-dashboard-owned fields.
+Select gates with `docs/ai/verification.md`.

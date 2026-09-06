@@ -16,7 +16,7 @@ in the shared `.agents/skills/` catalog.
 
 ## Invocation
 
-- Claude Code/OpenCode: `/dart-plan-update <arguments>`
+- Claude Code: `/dart-plan-update <arguments>`
 - Codex: `$dart-plan-update <arguments>`
 
 Treat the text after the skill name as `$ARGUMENTS`. When the workflow
@@ -36,7 +36,6 @@ Discuss or update DART living plans: $ARGUMENTS
 @docs/ai/north-star.md
 @docs/plans/README.md
 @docs/plans/dashboard.md
-@docs/plans/north-star-roadmap.md
 @docs/ai/verification.md
 
 ## Workflow
@@ -70,12 +69,11 @@ Discuss or update DART living plans: $ARGUMENTS
    one.
 5. For plan edits, update `docs/plans/dashboard.md` for operating state, the
    detailed numbered initiative file or external owner document for rationale
-   and workstreams, and `docs/plans/north-star-roadmap.md` only for strategic
-   framing.
+   and workstreams, and the dimensions or sequencing principles in
+   `docs/plans/README.md` only for strategic framing.
 6. If the plan item becomes implementation work, route to `/dart-new-task` in
-   Claude/OpenCode or `$dart-new-task` in Codex, and use
-   `docs/dev_tasks/README.md` when it is multi-session or needs design
-   tracking.
+   Claude Code or `$dart-new-task` in Codex, and use `docs/dev_tasks/README.md`
+   when it is multi-session or needs design tracking.
 7. Verify with `docs/ai/verification.md`: use the docs-only gate for plan-only
    docs, and the AI docs/adapters gate set when AI docs, workflow sources, or
    generated adapters change.

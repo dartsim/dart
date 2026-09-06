@@ -7,10 +7,18 @@ Implemented baseline. PR #2875 landed the shared CUDA runtime helpers,
 document now owns the durable rationale and extraction triggers for sharing GPU
 device-runtime code across DART 7's experimental CUDA solvers instead of
 reinventing it per solver. Operating state (priority, horizon, next step, gate)
-lives in `docs/plans/dashboard.md` under PLAN-031. This design is scoped to
+for new qualification lives in `docs/plans/dashboard.md` under PLAN-030;
+PLAN-031 is the completed extraction baseline. This design is scoped to
 `dart::simulation`; it does not promote CUDA into the public API or change the
 GPU packaging shape decided in
 [`scalable_compute_decisions.md`](scalable_compute_decisions.md).
+
+[PLAN-040](../plans/040-dart7-release-hardening.md) owns current backend
+readiness requirements. This shared runtime baseline does not prove full
+World stepping. WP-030.3/030.4 qualify buffer/event/error ownership; device
+completion, cancellation draining and graph capture follow
+[the compute contract](scalable_compute_decisions.md). Function-static mutable
+buffers need an explicit concurrency/ownership audit before shared-state claims.
 
 ## Purpose
 
@@ -259,7 +267,8 @@ The hard guardrails from `scalable_compute_decisions.md` and
 
 The build-now sequence below is complete on `main` in PR #2875. Future work uses
 the deferral table above and must promote only real second-use extractions.
-Canonical priority, next step, and gate live in PLAN-031.
+Canonical priority, next step, and gate live in PLAN-030 on the dashboard;
+PLAN-031 records the completed extraction.
 
 - **P0 — pin parity baselines (complete).** Record CPU/GPU parity for all three
   modules at the existing tolerance (Phase-5 reference 1.78e-15) before any
@@ -323,6 +332,6 @@ PR #2875 resolved the questions that affected the landed substrate:
 - PLAN-083 (`083-unified-newton-barrier-multibody.md`) owns CPU Newton-barrier
   primitive consolidation; the deferred device IPC math promotes those same
   `detail/newton_barrier` cores host/device-portable rather than copying them.
-- `docs/plans/dashboard.md` PLAN-031 owns this work's operating state; PLAN-030,
-  PLAN-104, PLAN-082, and PLAN-081 are the dependent GPU-solver tracks this
-  substrate de-duplicates.
+- `docs/plans/dashboard.md` PLAN-030 owns current qualification work;
+  PLAN-031 records the completed extraction. PLAN-104, PLAN-082 and PLAN-081
+  are dependent GPU-solver tracks that share this substrate.
