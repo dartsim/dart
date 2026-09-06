@@ -126,7 +126,7 @@
       "id": "collision",
       "type": "backend",
       "label": "dart::collision",
-      "sublabel": "native \u00b7 fcl \u00b7 bullet \u00b7 ode",
+      "sublabel": "native \u00b7 compat facades",
       "tag": "Implemented",
       "pos": [
         600,
@@ -420,7 +420,8 @@
           530,
           596
         ]
-      ]
+      ],
+      "variant": "dashed"
     },
     {
       "id": "simulation-common",
@@ -479,6 +480,7 @@
       "title": "Where things live",
       "items": [
         "DART 7 simulation, collision, IO, sensors, math, and common utilities form the library distribution",
+        "Collision runs the native detector; fcl, bullet, and ode are compatibility facades with reference engines in tests",
         "dartpy binds the library; dartsim drives the simulation engine through its own editor engine and renders through dart::gui",
         "Handbook pages under docs/onboarding explain each module"
       ]

@@ -43,8 +43,9 @@ sources that CI checks against the code.
    copy and runs archify with `--repo-root`, so `SRC` markers open the built
    commit. The blocking gate, `scripts/check_architecture_map.py`, needs no
    Node.js and runs inside `pixi run check-lint`.
-5. **Two liveness tiers.** Blocking: cited paths, line ranges, and symbols
-   exist; every `dart/simulation/<dir>`, `BuiltInWorldStepStageSlot`
+5. **Two liveness tiers.** Blocking: cited paths exist, cited line ranges
+   still hold the symbol they are labelled with, cited symbols resolve;
+   every `dart/simulation/<dir>`, `BuiltInWorldStepStageSlot`
    enumerator, enumerator of the public selector enums in `world_options.hpp`
    and `multibody/multibody_options.hpp`, `WorldStepStage` subclass, and
    `dart/<module>` directory appears in the
@@ -88,15 +89,6 @@ the runtime probe is derived); no archify fork or `development` channel; no
 archify `visual-check` browser evidence; no ECS storage, collision-library
 internals, or CUDA residency detail in any view; no fifth view; no change to
 the linted availability table on the page; no dartsim GUI integration.
-
-## Deferred
-
-- Guided chapters (`meta.views`) beyond the step-schedule variants, once a
-  live diagram draws requests for a walkthrough.
-- Architecture delta receipts in pull requests through `archify compare`,
-  once the views have changed at least twice and the receipt shape is known.
-- Promoting the runtime drift check from advisory to blocking, once the
-  fixture has survived a few schedule changes without false positives.
 
 ## Files
 

@@ -20,7 +20,7 @@ modules next to the DART 7 core and the dartpy and dartsim surfaces.
 | Layer      | Modules                                                                       | Handbook page                            |
 | ---------- | ----------------------------------------------------------------------------- | ---------------------------------------- |
 | Foundation | `dart/common`, `dart/math`, `dart/lcpsolver`, `dart/simd`                     | this page (below), [profiling.md]        |
-| Collision  | `dart/collision` (native default; fcl, bullet, ode backends)                  | [`dart/collision/AGENTS.md`]             |
+| Collision  | `dart/collision` (native detector; fcl, bullet, ode compatibility facades)    | [`dart/collision/AGENTS.md`]             |
 | Dynamics   | `dart/dynamics` (`Skeleton`, `BodyNode`, `Joint`, shapes)                     | [dynamics.md]                            |
 | Constraint | `dart/constraint` (`ConstraintSolver`, contact, joint limits)                 | [constraints.md]                         |
 | Simulation | DART 6 `World` stepping and recording (`release-6.*` only), `dart/io` loading | [io-parsing.md], [aspect-system.md]      |

@@ -6,7 +6,8 @@ that ``docs/readthedocs/architecture.md`` embeds. This checker needs no Node.js
 and runs inside ``pixi run check-lint``. It fails when:
 
 * a view is not well-formed JSON with unique ids and resolvable edges;
-* cited source evidence points at a missing path, an out-of-range line, or a
+* cited source evidence points at a missing path, an out-of-range line, a
+  line range that no longer contains the symbol it is labelled with, or a
   qualified/CamelCase symbol that no public header defines;
 * a ``dart/simulation`` directory, a ``BuiltInWorldStepStageSlot`` enumerator,
   an enumerator of any public selector ``enum class`` declared in
@@ -86,6 +87,9 @@ STAGE_CLASS_ALLOWLIST: dict[str, str] = {
 }
 
 _ENUM_RE_TEMPLATE = r"enum\s+class\s+{name}\b[^{{]*\{{(.*?)\}}\s*;"
+# A line-cited source is labelled with the symbol declared at those lines, so the
+# SRC link is verified to open a declaration and not whatever moved there.
+_SOURCE_SYMBOL_LABEL_RE = re.compile(r"^[A-Za-z_]\w*(?:::[A-Za-z_]\w*)*$")
 _COMMENT_RE = re.compile(r"//[^\n]*|/\*.*?\*/", re.S)
 _STAGE_CLASS_RE = re.compile(
     r"class\s+(?:DART_SIMULATION_API\s+)?(\w+Stage)\b[^{;]*?:\s*public\s+"
@@ -440,6 +444,24 @@ class Checker:
                     self.error(
                         f"{label}: node `{node_id}` cites `{rel}` end_line "
                         f"{end_line!r}, outside {line}..{count}"
+                    )
+                    continue
+                span_end = end_line if end_line is not None else line
+                symbol_label = str(source.get("label") or "").strip()
+                if not _SOURCE_SYMBOL_LABEL_RE.match(symbol_label):
+                    self.error(
+                        f"{label}: node `{node_id}` cites `{rel}` line {line} with "
+                        f"label {symbol_label!r}; a line-cited source needs the "
+                        "symbol declared there as its label"
+                    )
+                    continue
+                token = symbol_label.rsplit("::", 1)[-1]
+                span = "\n".join(self.read(rel).splitlines()[line - 1 : span_end])
+                if not re.search(r"\b" + re.escape(token) + r"\b", span):
+                    self.error(
+                        f"{label}: node `{node_id}` cites `{rel}` lines "
+                        f"{line}..{span_end} for `{symbol_label}`, but they no "
+                        f"longer contain `{token}`"
                     )
             for key in ("label", "sublabel"):
                 text = str(node.get(key) or "")

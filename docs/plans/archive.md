@@ -357,7 +357,7 @@ in `docs/readthedocs/architecture.md`, the classic-core page folded to about
 120 lines with every inbound reference updated, the extended
 `dart-architecture` skill and owner rules, and the runtime probe with the
 advisory `check-architecture-map-runtime` drift check. Pull-request delta
-receipts (formerly WP-130.8) are recorded as deferred in the design doc.
+receipts (formerly WP-130.8) are parked under PLAN-131 on the dashboard.
 
 **Closing evidence:** `pixi run check-architecture-map`,
 `pixi run render-architecture-map`, `pixi run docs-build` (four frames rendered

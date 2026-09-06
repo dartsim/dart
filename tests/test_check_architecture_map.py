@@ -98,7 +98,12 @@ def _framework_view() -> dict:
                 "pos": [0, 0],
                 "size": [100, 50],
                 "sources": [
-                    {"path": "dart/simulation/world.hpp", "line": 2, "end_line": 3},
+                    {
+                        "path": "dart/simulation/world.hpp",
+                        "line": 2,
+                        "end_line": 3,
+                        "label": "World",
+                    },
                     {"path": "dart/simulation/body/rigid_body.hpp"},
                     {"path": "dart/simulation/detail/world_step_schedule.hpp"},
                 ],
@@ -332,6 +337,34 @@ def test_end_line_before_line_is_reported(repo: Path) -> None:
 
     _rewrite(repo, "simulation-framework.architecture.json", mutate)
     assert any("end_line 1" in e for e in _run(repo))
+
+
+def test_line_cited_source_must_hold_its_symbol(repo: Path) -> None:
+    def moved(ir):
+        ir["components"][0]["sources"][0]["label"] = "StateSpace"
+
+    _rewrite(repo, "simulation-framework.architecture.json", moved)
+    errors = _run(repo)
+    assert any(
+        "lines 2..3 for `StateSpace`, but they no longer contain `StateSpace`" in e
+        for e in errors
+    )
+
+    def prose(ir):
+        ir["components"][0]["sources"][0]["label"] = "loading bridge"
+
+    _rewrite(repo, "simulation-framework.architecture.json", prose)
+    assert any("needs the symbol declared there as its label" in e for e in _run(repo))
+
+    def qualified(ir):
+        ir["components"][0]["sources"][0] = {
+            "path": "dart/simulation/world.hpp",
+            "line": 4,
+            "label": "World::step",
+        }
+
+    _rewrite(repo, "simulation-framework.architecture.json", qualified)
+    assert _run(repo) == []
 
 
 def test_unknown_symbol_in_sublabel(repo: Path) -> None:
