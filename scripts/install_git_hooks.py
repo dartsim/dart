@@ -8,7 +8,7 @@ interpreter first. Behaviour:
 * Managed hooks carry sentinel lines; reinstallation publishes complete files
   atomically, keeping the old checker effective while its replacement is written.
 * If a *foreign* (non-DART) hook already exists it is preserved,
-  not clobbered: it is moved to the corresponding ``.local`` with its mode unchanged
+  not clobbered: it is copied to the corresponding ``.local`` with its mode unchanged
   and chained from the managed hook when executable. If that ``.local``
   is already present the installer refuses with a clear message rather than
   lose an existing local hook.
@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -180,6 +181,20 @@ def foreign_hook(path: Path, sentinel: str) -> bool:
     )
 
 
+def preserve_hook(path: Path, local: Path) -> None:
+    """Keep the original active until its managed replacement is published.
+
+    Exclusive creation also refuses a backup created after preflight. If the
+    copy or later publication fails, the active foreign hook remains intact.
+    """
+    if path.is_symlink():
+        local.symlink_to(os.readlink(path), target_is_directory=path.is_dir())
+    else:
+        with path.open("rb") as original, local.open("xb") as backup:
+            shutil.copyfileobj(original, backup)
+            local.chmod(stat.S_IMODE(os.fstat(original.fileno()).st_mode))
+
+
 def install(hooks_dir: Path) -> int:
     checker = Path(__file__).with_name("review_gate.py").read_bytes()
     definitions = (
@@ -204,7 +219,7 @@ def install(hooks_dir: Path) -> int:
         hook = hooks_dir / name
         if foreign_hook(hook, sentinel):
             local = hooks_dir / f"{name}.local"
-            shutil.move(str(hook), str(local))
+            preserve_hook(hook, local)
             print(
                 f"Preserved existing {name} hook as {local} (chained from the DART hook)."
             )

@@ -42,10 +42,14 @@ are implemented on both isolated branches. The archive/contrast trial and its
 remaining Python API miss are promoted to the review-policy owner's behavioral
 replay section. Enforcement regressions exercise actual local Git pushes.
 
-- Release: adapter/infrastructure/scenario gates pass; 611 AI tests pass;
+- Release: adapter/infrastructure/scenario gates pass; 619 AI tests pass;
   `test-all` passes (158 CTest targets and 271 Python tests); full lint passes.
-- Main: adapter/infrastructure/scenario/docs-policy gates pass; 641 AI tests
-  pass; full lint passes. Full CPU and CUDA validation are in progress.
+- Main: adapter/infrastructure/scenario/docs-policy gates pass; 658 AI tests
+  pass. Full CPU validation passes (229 unit and 81 simulation CTest targets,
+  2,015 Python tests with 19 skips); full CUDA validation is in progress.
+- The 54 focused gate cases pass after repairs to late baseline findings,
+  stable finding evidence, and interrupted adoption of foreign hooks.
+  Independent reviews of the resulting candidates remain pending.
 - Native Windows acceptance and current-head hosted review await approved
   draft publication. They are unexecuted, not passed.
 - The shared hook is installed and both doctors detect its exact runtime.
@@ -60,7 +64,7 @@ and remove this folder in the completing PR before its final validation/reviews.
 ## Changelog decision
 
 - Mode: draft
-- Base evidence: release-6.20 e8f5b9a267fd and main fda07ac56715.
+- Base evidence: release-6.20 e8f5b9a267fd and main 53c9495a95f.
 - Scope evidence: local gate, installer, review workflow and test changes.
 - Decision: entry required; contributor publication behavior changes.
 - Target section: DART 6.20 Build; DART 7 Build, Packaging, and Developer Tooling.

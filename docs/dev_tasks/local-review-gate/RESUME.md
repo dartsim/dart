@@ -19,8 +19,8 @@
 
 ## Next Actions
 
-1. Inspect local validation and current candidate records. Complete any missing
-   main CPU/CUDA gates against its integrated base, then run formatting and
+1. Inspect local validation and current candidate records. Main CPU validation
+   passes; complete the main CUDA gate against its integrated base, then run formatting and
    affected infrastructure checks. Commit only intended files after full lint.
 2. Prepare each intended outgoing commit. Obtain missing independent local
    correctness/contracts reports, repair complete finding batches, and repeat
