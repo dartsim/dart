@@ -487,7 +487,7 @@ compatibility remains on the active DART 6 LTS branch._
 
 - Solver and OpenUSD follow-up work now lives in durable plans instead of
   retired task handoffs; the next active handoff prepares the M1 oracle manifest.
-  ([Plan dashboard](docs/plans/dashboard.md))
+  ([#3493](https://github.com/dartsim/dart/pull/3493))
 
 - Defined DART 7 readiness milestones and prerequisite work packets, including
   full CPU/CUDA rigid-example validation, checkpoint foundations, compute-library
