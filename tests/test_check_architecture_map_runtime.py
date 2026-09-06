@@ -63,6 +63,7 @@ def _compute_view() -> dict:
 def _fixture() -> dict:
     return {
         "schema_version": 1,
+        "execution_trace": True,
         "guided_view": "fused-multibody",
         "stages": ["rigid_body_velocity", "kinematics"],
         "graphs": [
@@ -126,6 +127,53 @@ def test_failing_probe_binary_is_a_finding_and_strict_fails(
             ["--fixture", str(fixture_path), "--probe-binary", str(views / "missing")]
         )
         == 1
+    )
+
+
+def test_schedule_only_dumps_and_fixtures_are_findings(
+    views: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fixture = _fixture()
+    fixture["execution_trace"] = False
+    findings = camr.check_against_views(fixture, _step_view(), _compute_view())
+    assert any("not observed from an executed step" in f for f in findings)
+    fresh = _fixture()
+    fresh["execution_trace"] = False
+    assert any(
+        "not an execution trace" in f for f in camr.compare_dumps(_fixture(), fresh)
+    )
+
+    fixture_path = views / "compute-graph.runtime.json"
+    probe = views / "probe.json"
+    probe.write_text(json.dumps(fresh), encoding="utf-8")
+    assert (
+        camr.main(
+            [
+                "--fixture",
+                str(fixture_path),
+                "--probe-output",
+                str(probe),
+                "--regenerate",
+            ]
+        )
+        == 1
+    )
+    assert "no execution trace" in capsys.readouterr().out
+    assert (
+        camr.main(
+            [
+                "--fixture",
+                str(fixture_path),
+                "--probe-output",
+                str(probe),
+                "--regenerate",
+                "--allow-schedule-only",
+            ]
+        )
+        == 0
+    )
+    assert (
+        json.loads(fixture_path.read_text(encoding="utf-8"))["execution_trace"] is False
     )
 
 

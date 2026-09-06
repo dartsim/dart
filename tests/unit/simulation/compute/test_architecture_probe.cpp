@@ -270,10 +270,13 @@ std::string jsonEscape(const std::string& text)
 
 std::string toJson(
     const std::vector<std::string>& stages,
-    const std::vector<RecordedGraph>& graphs)
+    const std::vector<RecordedGraph>& graphs,
+    bool executionTrace)
 {
   std::ostringstream out;
   out << "{\n  \"schema_version\": 1,\n";
+  out << "  \"execution_trace\": " << (executionTrace ? "true" : "false")
+      << ",\n";
   out << "  \"scene\": \"free rigid sphere over static sphere, revolute "
          "pendulum, four-node mass-spring patch\",\n";
   out << "  \"stages\": [";
@@ -319,7 +322,7 @@ TEST(ArchitectureProbe, ReferenceSceneStagesAndGraphsMatchTheMap)
   // The default families (SequentialImpulse rigid, SemiImplicit multibody)
   // run the fused schedule documented by the "fused-multibody" guided view
   // of docs/assets/architecture/world-step.dataflow.json.
-  const std::vector<std::string> stages = scheduledStageNames();
+  const std::vector<std::string> scheduled = scheduledStageNames();
   const std::vector<std::string> expected
       = {"rigid_body_velocity",
          "multibody_velocity",
@@ -328,16 +331,20 @@ TEST(ArchitectureProbe, ReferenceSceneStagesAndGraphsMatchTheMap)
          "multibody_position",
          "deformable_dynamics",
          "kinematics"};
-  EXPECT_EQ(stages, expected);
+  EXPECT_EQ(scheduled, expected);
 
+  // The dump records what the World executed when profiling is compiled in;
+  // otherwise it records the built-in schedule and says so, and the runtime
+  // checker refuses to treat such a dump as fresh execution evidence.
+  std::vector<std::string> stages = scheduled;
+  bool executionTrace = false;
 #if DART_BUILD_PROFILE
-  // With profiling compiled in, the stages that actually ran must be exactly
-  // the scheduled ones.
-  std::vector<std::string> profiled;
+  stages.clear();
   for (const auto& stage : world.getLastStepProfile().stages) {
-    profiled.push_back(stage.name);
+    stages.push_back(stage.name);
   }
-  EXPECT_EQ(profiled, stages);
+  EXPECT_EQ(stages, scheduled);
+  executionTrace = true;
 #endif
 
   // Kinematics is graph-backed, so at least one graph ran through the
@@ -360,6 +367,6 @@ TEST(ArchitectureProbe, ReferenceSceneStagesAndGraphsMatchTheMap)
       output != nullptr && *output != '\0') {
     std::ofstream file(output);
     ASSERT_TRUE(file.is_open()) << "cannot write probe output to " << output;
-    file << toJson(stages, executor.graphs());
+    file << toJson(stages, executor.graphs(), executionTrace);
   }
 }

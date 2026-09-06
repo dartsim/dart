@@ -138,6 +138,7 @@ def _step_view() -> dict:
                 "id": "rigid_body_velocity",
                 "type": "backend",
                 "label": "Rigid velocity",
+                "tag": "Implemented",
                 "stage": 0,
                 "row": 0,
             },
@@ -145,6 +146,7 @@ def _step_view() -> dict:
                 "id": "rigid_body_contact",
                 "type": "backend",
                 "label": "Rigid contact",
+                "tag": "Partial",
                 "stage": 1,
                 "row": 0,
             },
@@ -152,6 +154,7 @@ def _step_view() -> dict:
                 "id": "kinematics",
                 "type": "backend",
                 "label": "Kinematics",
+                "tag": "Implemented",
                 "stage": 2,
                 "row": 0,
             },
@@ -177,6 +180,7 @@ def _compute_view() -> dict:
                 "id": "graph",
                 "type": "cloud",
                 "label": "Compute graph",
+                "tag": "Implemented",
                 "pos": [0, 0],
                 "size": [100, 50],
                 "sources": [
@@ -200,6 +204,7 @@ def _library_view() -> dict:
                 "id": "modules",
                 "type": "backend",
                 "label": "Modules",
+                "tag": "Implemented",
                 "pos": [0, 0],
                 "size": [100, 50],
                 "sources": [
@@ -212,6 +217,7 @@ def _library_view() -> dict:
                 "id": "app",
                 "type": "frontend",
                 "label": "dartsim app",
+                "tag": "Partial",
                 "pos": [200, 0],
                 "size": [100, 50],
                 "sources": [{"path": "dartsim/main.cpp"}],
@@ -393,6 +399,22 @@ def test_bad_tag_and_dangling_edge(repo: Path) -> None:
     assert any("wraps unknown id `phantom`" in e for e in errors)
 
 
+def test_missing_tag_is_reported(repo: Path) -> None:
+    def mutate(ir):
+        ir["components"][0].pop("tag")
+
+    _rewrite(repo, "simulation-framework.architecture.json", mutate)
+    assert any("`world` has no status tag" in e for e in _run(repo))
+
+
+def test_duplicate_view_names_across_suffixes_are_rejected(repo: Path) -> None:
+    (repo / "docs/assets/architecture/compute-graph.dataflow.json").write_text(
+        json.dumps(_step_view()), encoding="utf-8"
+    )
+    errors = _run(repo)
+    assert any("view name `compute-graph` is already used" in e for e in errors)
+
+
 def test_dataflow_needs_labels_and_valid_stage(repo: Path) -> None:
     def mutate(ir):
         ir["flows"][0].pop("label")
@@ -421,6 +443,7 @@ def test_stage_id_outside_step_view_must_exist_there(repo: Path) -> None:
                 "id": "kinematics",
                 "type": "backend",
                 "label": "K",
+                "tag": "Implemented",
                 "pos": [0, 0],
                 "size": [1, 1],
             }

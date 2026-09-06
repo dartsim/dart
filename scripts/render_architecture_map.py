@@ -604,6 +604,15 @@ def main(argv: list[str]) -> int:
     if not views:
         log(f"no views found under {args.ir_dir}; nothing to render.")
         return EXIT_OK
+    seen: dict[str, View] = {}
+    for view in views:
+        if view.name in seen:
+            log(
+                f"{view.relpath}: view name `{view.name}` is already used by "
+                f"{seen[view.name].relpath}; both would render to `{view.name}.html`."
+            )
+            return EXIT_FAILED
+        seen[view.name] = view
 
     shape_errors = [error for error in map(view_shape_error, views) if error]
     if not shape_errors:

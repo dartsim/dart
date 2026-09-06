@@ -69,6 +69,7 @@ def _dataflow_ir() -> dict:
                 "id": "rigid_body_position",
                 "type": "backend",
                 "label": "Rigid position",
+                "tag": "Implemented",
                 "stage": 1,
                 "row": 0,
             },
@@ -259,6 +260,19 @@ def test_text_summaries_are_written_for_non_html_builders(
     assert (
         "**World facade** (external, Implemented): dart::simulation::World" in framework
     )
+
+
+def test_duplicate_view_names_fail_before_writing(
+    ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (ir_dir / "framework.dataflow.json").write_text(
+        json.dumps(_dataflow_ir()), encoding="utf-8"
+    )
+    monkeypatch.setattr(ram, "node_executable", lambda *a, **k: None)
+    out = tmp_path / "out"
+    code = ram.main(["--ir-dir", str(ir_dir), "--output-dir", str(out), "--no-fetch"])
+    assert code == ram.EXIT_FAILED
+    assert not out.exists()
 
 
 def test_main_without_views_is_a_noop(tmp_path: Path) -> None:

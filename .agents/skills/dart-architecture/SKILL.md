@@ -98,7 +98,9 @@ view in the same change:
   with the views and, when `pixi run build` has produced the
   `test_architecture_probe` binary, with a fresh probe dump. It is advisory;
   pass `--strict` to fail on drift and `--regenerate` after an intentional
-  schedule change.
+  schedule change. Only a profiling-enabled build (the `pixi run build`
+  default) records an execution trace; a schedule-only dump is reported
+  and is refused for regeneration unless `--allow-schedule-only` is passed.
 - Compare each node's `tag` with the current findings in
   `docs/design/dart7_architecture_assessment.md`; the assessment wins.
 - Archify upgrades change `ARCHIFY_TAG` and `ARCHIFY_COMMIT` together in

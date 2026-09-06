@@ -318,6 +318,13 @@ class Checker:
                     f"{rel.as_posix()}: diagram_type {declared!r} does not match "
                     f"the file suffix ({diagram_type})"
                 )
+            if name in views:
+                self.error(
+                    f"{rel.as_posix()}: view name `{name}` is already used by "
+                    f"{views[name].relpath}; the renderer would write both to "
+                    f"`{name}.html`"
+                )
+                continue
             views[name] = ViewFile(
                 name=name, diagram_type=diagram_type, path=rel, ir=ir
             )
@@ -345,7 +352,12 @@ class Checker:
                 self.error(f"{label}: duplicate id `{node_id}`")
             ids.add(str(node_id))
             tag = node.get("tag")
-            if tag is not None and tag not in STATUS_TAGS:
+            if tag is None:
+                self.error(
+                    f"{label}: node `{node_id}` has no status tag; every node "
+                    f"carries one of {', '.join(STATUS_TAGS)}"
+                )
+            elif tag not in STATUS_TAGS:
                 self.error(
                     f"{label}: node `{node_id}` tag {tag!r} is not one of "
                     f"{', '.join(STATUS_TAGS)}"
