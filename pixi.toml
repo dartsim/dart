@@ -403,6 +403,7 @@ test-ai-infra = { cmd = [
   "tests/test_check_agent_hook.py",
   "tests/test_setup_ai.py",
   "tests/test_check_docs_policy.py",
+  "tests/test_ci_code_filter.py",
   "-q",
 ] }
 

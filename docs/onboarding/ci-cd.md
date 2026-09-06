@@ -27,7 +27,7 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
     schedules, and manual runs.
   - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
   - `gh run view --job <JOB_ID> --log-failed` only works after the job completes; use the REST logs endpoint (or wait) when a run is still in progress.
-  - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early (including AppVeyor); resolve conflicts locally and push before re-running CI.
+  - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early; resolve conflicts locally and push before re-running CI.
   - FreeBSD VM tests can take over 1 hour to complete; this is expected, not a sign of failure.
   - The Linux `ASAN Tests` job is compile-dominated (~2h of instrumented build
     for ~2min of ctest) and runs on protected branch pushes, schedules, and
@@ -143,21 +143,6 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   vendored paths before upload, confirm the Code Scanning analyses include the
   target commit and language, then require the open-alert count to reach zero.
 
-## Task Recap (General)
-
-This task standardized naming and packaging for the experimental simulation module and ensured it installs cleanly as an optional component. Classic simulation APIs were kept independent of experimental code while the experimental module continues to rely on core DART facilities. A small behavior fix aligned World stepping with classic solver split-impulse cleanup. Changes were validated with lint plus full test and Gazebo integration runs, then monitored in CI.
-
-## How We Worked (Repeatable Playbook)
-
-- Sync with the target branch and inspect the diff before making edits.
-- Keep legacy/public APIs isolated from experimental modules; verify dependencies flow one way.
-- Update build/CI naming and docs when namespaces or component names change.
-- Run lint before committing so formatter/codespell changes are captured.
-- Run the smallest local validation first, then full test-all and Gazebo workflows when simulation/build changes land.
-- Resolve merge conflicts before re-running CI so the PR remains mergeable.
-- When review feedback cites behavioral differences, compare against the classic implementation and align or explain the deviation.
-- Push each commit and monitor GitHub Actions until all jobs complete.
-
 ## Fast Iteration Loop
 
 - Identify the first failing step in the CI job log, then reproduce locally with the same build toggles.
@@ -272,26 +257,26 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 
 ### Core CI Workflows
 
-| Workflow                      | Purpose                     | Platforms                   | Trigger                                       | Doc-only skip      |
-| ----------------------------- | --------------------------- | --------------------------- | --------------------------------------------- | ------------------ |
-| `ci_lint.yml`                 | Lint + docs build           | Ubuntu                      | Any branch push, PR, manual                   | No                 |
-| `ci_ubuntu.yml`               | Build, test, coverage       | Ubuntu                      | Branch push core; PR/main full                | Yes                |
-| `ci_macos.yml`                | Build, test                 | macOS                       | PR, main/release push, schedule               | Yes                |
-| `ci_windows.yml`              | Build, test                 | Windows                     | PR, main/release push, schedule               | Yes                |
-| `ci_freebsd.yml`              | Build, test (VM)            | FreeBSD                     | Schedule, manual                              | N/A                |
-| `ci_altlinux.yml`             | Build, test (Docker)        | Alt Linux                   | Schedule, manual                              | N/A                |
-| `ci_cuda.yml`                 | CUDA compile + smoke        | Ubuntu/GPU                  | Path-scoped PR; trusted GPU runtime           | N/A                |
-| `ci_gz_physics.yml`           | Gazebo integration          | Ubuntu                      | Release-branch push/PR; manual canary         | Yes                |
-| `ci_gz_dart6.yml`             | DART 6 Gazebo canary        | Ubuntu                      | Weekly schedule + manual (on main)            | N/A                |
-| `ci_simd.yml`                 | SIMD multi-arch             | Ubuntu + macOS arm64 (NEON) | Branch/PR path-scoped, manual                 | N/A                |
-| `publish_dartpy.yml`          | Python wheels               | Multi-platform              | PR, main/release/tag push, schedule           | Yes                |
-| `codeql.yml`                  | Static security analysis    | Ubuntu                      | `main` push/PR (code paths), schedule, manual | Yes (path filters) |
-| `benchmark_pr_comparison.yml` | Benchmark PR comparison     | Ubuntu                      | PR (label-gated)                              | N/A                |
-| `performance_dashboard.yml`   | Performance dashboard       | Ubuntu                      | `main` push (path-scoped), schedule, manual   | N/A                |
-| `community_signals.yml`       | Community signals dashboard | Self-hosted Linux           | `main` push (path-scoped), schedule, manual   | N/A                |
-| `pages_deploy.yml`            | GitHub Pages deploy         | Self-hosted Linux           | Workflow run, manual                          | N/A                |
-| `update_lockfiles.yml`        | Pixi lockfile refresh PRs   | Ubuntu                      | Schedule, manual                              | N/A                |
-| `cancel_branch_jobs.yml`      | Cancel superseded runs      | Ubuntu                      | PR closure, branch delete                     | N/A                |
+| Workflow                      | Purpose                     | Platforms                   | Trigger                                                            | Doc-only skip      |
+| ----------------------------- | --------------------------- | --------------------------- | ------------------------------------------------------------------ | ------------------ |
+| `ci_lint.yml`                 | Lint + docs build           | Ubuntu                      | Any branch push, PR, manual                                        | No                 |
+| `ci_ubuntu.yml`               | Build, test, coverage       | Ubuntu                      | Branch push core; PR/main full                                     | Yes                |
+| `ci_macos.yml`                | Build, test                 | macOS                       | PR, main/release push, schedule                                    | Yes                |
+| `ci_windows.yml`              | Build, test; hook smoke     | Windows                     | PR, main/release push, schedule; hook smoke when hook paths change | Yes                |
+| `ci_freebsd.yml`              | Build, test (VM)            | FreeBSD                     | Schedule, manual                                                   | N/A                |
+| `ci_altlinux.yml`             | Build, test (Docker)        | Alt Linux                   | Schedule, manual                                                   | N/A                |
+| `ci_cuda.yml`                 | CUDA compile + smoke        | Ubuntu/GPU                  | Path-scoped PR; trusted GPU runtime                                | N/A                |
+| `ci_gz_physics.yml`           | Gazebo integration          | Ubuntu                      | Release-branch push/PR; manual canary                              | Yes                |
+| `ci_gz_dart6.yml`             | DART 6 Gazebo canary        | Ubuntu                      | Weekly schedule + manual (on main)                                 | N/A                |
+| `ci_simd.yml`                 | SIMD multi-arch             | Ubuntu + macOS arm64 (NEON) | Branch/PR path-scoped, manual                                      | N/A                |
+| `publish_dartpy.yml`          | Python wheels               | Multi-platform              | PR, main/release/tag push, schedule                                | Yes                |
+| `codeql.yml`                  | Static security analysis    | Ubuntu                      | `main` push/PR (code paths), schedule, manual                      | Yes (path filters) |
+| `benchmark_pr_comparison.yml` | Benchmark PR comparison     | Ubuntu                      | PR (label-gated)                                                   | N/A                |
+| `performance_dashboard.yml`   | Performance dashboard       | Ubuntu                      | `main` push (path-scoped), schedule, manual                        | N/A                |
+| `community_signals.yml`       | Community signals dashboard | Self-hosted Linux           | `main` push (path-scoped), schedule, manual                        | N/A                |
+| `pages_deploy.yml`            | GitHub Pages deploy         | Self-hosted Linux           | Workflow run, manual                                               | N/A                |
+| `update_lockfiles.yml`        | Pixi lockfile refresh PRs   | Ubuntu                      | Schedule, manual                                                   | N/A                |
+| `cancel_branch_jobs.yml`      | Cancel superseded runs      | Ubuntu                      | PR closure, branch delete                                          | N/A                |
 
 ### CI Tiering Policy
 
@@ -354,7 +339,8 @@ Guardrails:
   signal before opening a PR.
 - Essential validations run on every PR
 - Full matrix testing runs on main branch and releases
-- Debug builds run on schedule (2x per week)
+- Debug C++ builds run on every PR on Linux and macOS; Windows stays
+  Release-only (see Conditional Execution Patterns)
 - Keep gz-physics compatibility in the release-support PR tier so downstream
   Gazebo integration breakages are caught before release-line merges. For
   `main` PRs, run the manual gz-physics canary only when the change is relevant
@@ -426,53 +412,53 @@ DART compilation takes 15-25 minutes per build without caching. With proper cach
 
 We standardized on sccache everywhere and automatically fall back to ccache when
 it is the only launcher available. The detection logic lives in
-`cmake/CompilerCache.cmake`, so **plain CMake invocations, pixi tasks, and CI
+`cmake/compiler_cache.cmake`, so **plain CMake invocations, pixi tasks, and CI
 jobs all share the same configuration**. You can disable auto-detection with
 `-DDART_DISABLE_COMPILER_CACHE=ON` or force a specific launcher via the
 `DART_COMPILER_CACHE` cache variable/environment variable.
 
-**Linux/macOS setup** (see `.github/workflows/ci_ubuntu.yml` and `ci_macos.yml`):
+CI wires the launcher through two composite actions on Linux and macOS jobs
+and on every wheel build (the Windows wheel configures with Ninja through
+scikit-build-core, so the launcher applies there):
 
 ```yaml
-- name: Setup sccache
-  uses: mozilla-actions/sccache-action@v0.0.9
+- name: Setup pixi (CI) # installs pixi and mozilla-actions/sccache-action
+  uses: ./.github/actions/setup-pixi-ci
   with:
-    disable_annotations: true
+    pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
 - name: Configure environment for compiler cache
   uses: ./.github/actions/configure-compiler-cache
 ```
 
-**Windows setup** (see `.github/workflows/ci_windows.yml`):
+`configure-compiler-cache` selects the launcher, exports
+`DART_COMPILER_CACHE` and `CMAKE_{C,CXX}_COMPILER_LAUNCHER`, writes a
+"Compiler cache" block to the job step summary (launcher, backend
+availability, runner), and **fails the job on a GitHub-hosted runner when no
+launcher could be configured** (`require-cache: "false"` opts a job out
+deliberately). The GitHub Actions cache backend is detected through
+`ACTIONS_RESULTS_URL` (cache service v2) or the legacy `ACTIONS_CACHE_URL`.
 
-```yaml
-- name: Setup sccache
-  uses: mozilla-actions/sccache-action@v0.0.9
-  with:
-    disable_annotations: true
+Self-hosted runners (the GPU runner) skip sccache and use a persistent ccache
+directory under the runner tool cache instead; see the action for the
+rationale.
 
-- name: Configure environment for compiler cache
-  shell: powershell
-  run: |
-    echo "SCCACHE_GHA_ENABLED=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    echo "SCCACHE_NO_DAEMON=1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    echo "DART_COMPILER_CACHE=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    if ($env:SCCACHE_PATH) {
-      echo "CMAKE_C_COMPILER_LAUNCHER=$env:SCCACHE_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      echo "CMAKE_CXX_COMPILER_LAUNCHER=$env:SCCACHE_PATH" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    } else {
-      echo "CMAKE_C_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    }
-    $ccacheDir = Join-Path $env:RUNNER_TEMP "ccache"
-    New-Item -ItemType Directory -Force -Path $ccacheDir | Out-Null
-    echo "CCACHE_BASEDIR=$env:GITHUB_WORKSPACE" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    echo "CCACHE_DIR=$ccacheDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    echo "CCACHE_COMPRESS=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    echo "CCACHE_MAXSIZE=5G" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-```
+The Windows `Tests (Release)` job is the exception: the pixi Windows tasks
+configure a multi-config Visual Studio tree, and MSBuild ignores
+`CMAKE_<LANG>_COMPILER_LAUNCHER` (CMake honors it for Makefile and Ninja
+generators only), so that job still builds uncached (~100 min). Caching it
+needs either a Ninja configure under a Visual Studio developer environment
+or sccache's MSBuild integration (`CMAKE_VS_GLOBALS` with
+`CLToolExe`/`CLToolPath`); the follow-up is tracked in
+`docs/dev_tasks/ci-optimization/README.md`.
 
-> **Note:** `disable_annotations` disables the post-run `sccache --show-stats` call, which avoids occasional client/server version mismatches on GitHub-hosted runners.
+> **Regression history (May–September 2026):** the action gated sccache on
+> `ACTIONS_CACHE_URL` only. GitHub's cache-service v2 migration removed that
+> variable, so every hosted job logged `GitHub Actions cache URL is
+unavailable; disabling sccache launcher.` and built cold for months while
+> the workflows still read as cached. The fail-loud guard above exists so
+> this cannot recur silently; when a job fails at "Configure environment for
+> compiler cache", fix the cache setup rather than disabling the guard.
 
 **Local builds:** Because the detection logic is inside CMake, you do not need
 to wire anything up manually. If either `sccache` or `ccache` is on your PATH,
@@ -484,10 +470,30 @@ from the same cache. CUDA-enabled dartpy Pixi builds keep
 issues, but still allow C/CXX launchers unless
 `DART_DISABLE_COMPILER_CACHE=ON` is set.
 
+### Cache budget
+
+GitHub gives the repository 10 GB of Actions cache with least-recently-used
+eviction (entries unused for 7 days are also dropped). Compiler objects are
+the only thing that earns that budget:
+
+- **sccache objects**: the whole budget. PR runs (including fork PRs) read
+  the base branch's entries and write only to their own pull-request scope;
+  nothing a PR run writes reaches the `main` scope.
+- **Not cached on purpose**: pixi environments (`setup-pixi-ci` defaults
+  `cache: "false"`; `pixi install --locked` takes well under a minute and the
+  entries were ~500–600 MB per platform) and CodeQL C++ TRAP databases
+  (`trap-caching: false`; two ~3 GB entries once consumed 6 GB).
+- apt package caches stay (a few MB).
+
+Check usage with `gh api repos/dartsim/dart/actions/cache/usage` and the
+largest entries with
+`gh api "repos/dartsim/dart/actions/caches?sort=size_in_bytes&direction=desc"`.
+If a new cache consumer is added, record it here and keep sccache first.
+
 #### CI reliability notes
 
-- The `.github/actions/configure-compiler-cache` action may disable the sccache launcher on some Linux runners (e.g., self-hosted or non-Ubuntu) and fall back to `ccache` when available (otherwise `env`) to avoid flaky `try_compile` failures.
-- In `.github/workflows/ci_macos.yml`, the "Setup sccache" step is best-effort (`continue-on-error: true`) so transient download timeouts don't fail the job.
+- The `.github/actions/configure-compiler-cache` action disables the sccache launcher on self-hosted or non-Ubuntu Linux runners and falls back to `ccache` when available (otherwise `env`) to avoid flaky `try_compile` failures; on GitHub-hosted runners it fails the job instead of building cold.
+- In `.github/workflows/ci_macos.yml`, the "Setup sccache" step is best-effort (`sccache-continue-on-error: true`) so transient download timeouts don't fail the job; the compiler-cache guard then reports the missing launcher.
 
 ## MSVC Toolchain Policy
 
@@ -542,35 +548,22 @@ runners. Windows keeps Release-only tests to keep runtime acceptable.
 
 ### Python Wheel Builds
 
-Full wheel matrix is expensive, so PRs outside `main` run only the baseline
-Python version on each OS. Feature branch pushes skip wheel builds in the core
-pre-PR tier; open a PR for baseline wheel coverage or use manual dispatch for
-the full matrix. `main`, tags, schedules, and manual runs keep the full matrix.
-In a May 2026 PR run, the six non-baseline Py313/Py314 wheel jobs consumed
-146.6 job-minutes, while the three baseline Py312 wheel jobs kept Ubuntu,
-macOS, and Windows packaging coverage in the PR tier.
+Python 3.14 is the only supported dartpy interpreter, so `publish_dartpy.yml`
+runs one static matrix (Ubuntu, macOS 15, Windows) for PRs, protected-branch
+pushes, release tags, schedules, and manual dispatch. The `Wheels` aggregate
+job is the stable required check; individual legs are not required directly.
 
-**Pattern** (see `publish_dartpy.yml`):
-
-```yaml
-wheel_matrix:
-  outputs:
-    matrix: ${{ steps.matrix.outputs.matrix }}
-
-build_wheels:
-  needs: [changes, wheel_matrix]
-  strategy:
-    matrix: ${{ fromJSON(needs.wheel_matrix.outputs.matrix) }}
-```
+When a second Python version is supported again, reintroduce the two-tier
+matrix: PRs build the baseline interpreter per OS, while `main`, tags,
+schedules, manual runs, and PRs that edit `publish_dartpy.yml` build the full
+Python-version matrix (May 2026 measurement: six non-baseline legs cost
+146.6 job-minutes per PR run).
 
 **Behavior:**
 
-- **PRs**: Baseline Python wheel builds on Ubuntu, macOS, and Windows
-- **PR workflow changes**: Full Python-version matrix builds
+- **PRs, main, tags, schedules, manual runs**: Ubuntu, macOS, and Windows wheels
 - **Feature branch pushes**: Wheel builds are skipped by the core branch-push tier
-- **Main branch**: Full Python-version matrix builds
-- **Release tags**: Full Python-version matrix builds
-- **Scheduled/manual runs**: Full Python-version matrix builds
+- **Doc-only changes**: skipped by the shared code filter; `Wheels` still reports green
 
 ### Documentation Builds
 
@@ -642,14 +635,37 @@ workflows.
 ```yaml
 code:
   - "**"
+  - "!.claude/**"
   - "!docs/**"
-  - "!tutorials/**"
   - "!**/*.md"
 ```
 
-The shared filter also excludes maintenance-only workflow files such as
-`.github/workflows/update_lockfiles.yml`; those changes should still run lint,
-but they do not need to launch the platform build/test or wheel matrix.
+```yaml
+- uses: dorny/paths-filter@v4
+  id: filter
+  with:
+    filters: .github/filters/ci-code.yml
+    # Required so the `!` exclusions act as excludes.
+    predicate-quantifier: some-with-excludes
+```
+
+The quantifier is not optional: under the action's default `some`, the
+patterns are OR-ed and a negated pattern matches everything that is _not_
+excluded, so `code` is always true. That is what happened from May to
+September 2026, when every documentation-only and AI-harness PR still ran the
+full platform and wheel matrix. `tests/test_ci_code_filter.py` (part of
+`pixi run test-ai-infra`) fails when a workflow reads the filter without the
+quantifier or when a literal exclusion no longer exists.
+
+The filter excludes the AI tool surfaces (`.agents/`, `.claude/`, `.codex/`,
+`.opencode/`), documentation and prose formats, scheduled-only and
+maintenance workflows, the distro container harnesses, repository metadata
+that nothing builds from, and the AI-infrastructure Python files that only
+`pixi run test-ai-infra` exercises. Inputs that look like metadata but feed a
+build stay in: `package.xml` (CMake and `pyproject.toml` read the version),
+`codecov.yml`, `.gitattributes`, and `.gitignore`. Agent hook changes
+(`.claude/hooks/**`) run the Windows hook smoke job through its own `hooks`
+filter in `ci_windows.yml`.
 
 Coverage guardrails:
 
@@ -668,8 +684,11 @@ Coverage guardrails:
 - Use native `paths-ignore` only for workflows that cannot share the dorny
   filter file, such as CodeQL trigger configuration.
 
-**Savings:** 12-25 minutes per PR on platform jobs for doc-only and
-maintenance-workflow-only changes
+**Savings:** a documentation- or AI-harness-only PR runs Lint,
+Documentation, the one-minute `changes` jobs, and the `Wheels` aggregate
+(plus the CodeQL Python analysis for AI-harness changes, which `codeql.yml`'s
+own `paths-ignore` does not cover) instead of the ~27-job platform and wheel
+matrix; every required check reports skipped or green.
 
 ## Testing Strategy
 
@@ -739,37 +758,39 @@ runtime checks do not depend on PTX JIT compatibility with the installed driver.
 
 ### Expected CI Times
 
-**Typical PR, warm cache (measured July 2026):**
+**Baseline, code PR, compiler cache silently off (PR #3455, 2026-08-29):**
 
-- Ubuntu Release Tests: ~60-70 min (ASAN now runs as continuous coverage)
-- Ubuntu Coverage (Debug): ~95-105 min (build ~50, ctest ~38, parallel capture)
-- Ubuntu Debug Tests: ~55 min
-- macOS: ~35-50 min
-- Windows: ~75-100 min
-- Wall-clock to all-green: ~100 min (previously ~180 min when the ASAN phase
-  ran inside Release Tests)
+- Ubuntu Release Tests: 64 min (53 min build, 21 s ctest, 8 min dartpy)
+- Ubuntu Coverage (Debug): 65 min (+33 min queue wait)
+- Ubuntu Debug Tests: 53 min
+- Ubuntu Headless Rendering: 51 min (two builds: examples + docking dartpy)
+- macOS Release / Debug (arm64): 40 / 33 min
+- Windows Tests (Release): 104 min (~100 min build, 32 s ctest)
+- Wheels: Ubuntu 30, macOS 35, Windows 62 min
+- 27 jobs, ~735 job-minutes, wall-clock to all-green ~107 min; the free plan
+  caps concurrency at 20 jobs, so queue wait reached 35 min on some jobs.
+
+**Warm compiler cache (after September 2026 fix):** record the measured
+numbers here from the first two runs after the fix; expect the build-bound
+steps to drop by 50-70%.
 
 **Continuous additions on main/release pushes:**
 
-- ASAN Tests: ~2h (compile-dominated)
-- CodeQL C++: ~100 min
-
-Cold caches roughly double the build-bound jobs; sccache typically recovers a
-50-70% reduction on subsequent runs.
+- ASAN Tests: ~100 min (compile-dominated)
+- CodeQL C++: ~90 min
+- Performance Dashboard: ~50 min
 
 ### Cache Health
 
-**Monitor cache hit rates:**
-
-- Target: >80% after first run
-- Check cache statistics in workflow logs
-- Adjust `max-size` if caches frequently exceed limits
-
-**Cache invalidation:**
-
-- Caches are specific to OS + build type
-- Automatic invalidation on cache key change
-- Manual cache clearing via GitHub UI if needed
+- Every job's step summary carries a "Compiler cache" block from
+  `configure-compiler-cache` (launcher, backend availability, runner). A
+  hosted job with `launcher: none` fails; do not weaken that guard.
+- Repository usage: `gh api repos/dartsim/dart/actions/cache/usage` (10 GB
+  cap; see Cache budget above for what may occupy it).
+- Warm-run evidence: compare the build step duration of two consecutive runs
+  of the same job; a warm run should be well under half of a cold run.
+- Cache keys are content-hashed per object by sccache, so there is nothing to
+  bust manually; clearing entries from the GitHub UI forces a cold rebuild.
 
 ### Maintenance Tasks
 
@@ -846,13 +867,15 @@ Notes:
 
 **Check:**
 
-1. Cache hit rate in workflow logs
-2. Whether ccache/sccache is being used (look for "compiler launcher" in logs)
-3. If Debug builds are running on PRs (should only run on schedule)
+1. The job's "Compiler cache" step summary: `launcher: sccache` and
+   `GitHub Actions cache backend: available` are expected on hosted runners
+2. Whether the build step duration matches the cold baseline in Expected CI
+   Times (then the cache is not hitting) or the warm numbers
+3. `gh api repos/dartsim/dart/actions/cache/usage` against the 10 GB budget
 
 **Solutions:**
 
-- Clear GitHub Actions cache and rebuild
+- Fix the cache setup rather than disabling the `require-cache` guard
 - Verify `CMAKE_*_COMPILER_LAUNCHER` environment variables are set
 - Check conditional execution logic
 
@@ -880,7 +903,7 @@ Notes:
 
 1. Whether the job ran on a self-hosted runner vs GitHub-hosted (see the runner metadata snippet in [CI Triage](#ci-triage))
 2. Whether `.github/actions/configure-compiler-cache` disabled sccache and selected `ccache` (or `env` if unavailable) (look for its stderr messages and `DART_COMPILER_CACHE` in logs)
-3. If this only happens on CI, treat sccache as optional and focus on correctness first; caching should not be required to pass CI
+3. On GitHub-hosted Linux runners and on wheel builds the launcher is required: `configure-compiler-cache` fails the job with `No compiler-cache launcher is configured` (or `sccache server is not using the GitHub Actions cache`) instead of building cold. A transient `503` from the cache service fails the job within a minute at that step; re-run it. Otherwise fix the setup (action version, exported `ACTIONS_RESULTS_URL`/`ACTIONS_RUNTIME_TOKEN`, sccache download) rather than passing `require-cache: "false"` or `DART_DISABLE_COMPILER_CACHE=ON`. macOS jobs opt out deliberately and only report the missing launcher in the step summary; the Windows `Tests (Release)` job does not run the action at all (see Compilation Caching Strategy).
 
 **Related files:**
 
@@ -891,9 +914,11 @@ Notes:
 
 **Debug-only failures:**
 
-- Debug builds still run on schedule
-- Check scheduled workflow runs for failures
-- Debug-specific issues (assertions, memory checks) caught there
+- Debug C++ jobs run on every code PR: `Debug Tests` and `Coverage (Debug)`
+  on Linux, `Debug Tests (arm64)` on macOS; the Linux Debug job also builds
+  and smoke-tests dartpy in Debug
+- Check those PR jobs first; scheduled runs repeat the same tier
+- Debug-specific issues (assertions, memory checks) surface there
 
 **Single-platform failures:**
 
@@ -975,11 +1000,20 @@ Sphinx extensions may break on newer versions. Use defensive patterns: `.get(key
 - ccache/sccache: 30-50 min saved on subsequent builds
 - MSVC multi-core verified as optimally configured
 
+**Phase 3: Correctness of the cache and filter layers** (September 2026)
+
+- Compiler cache re-enabled on hosted runners (it had been silently disabled
+  since the Actions cache-service v2 migration) with a fail-loud guard
+- Cache budget reallocated to sccache (pixi environment and CodeQL TRAP
+  caches off)
+- Shared code filter fixed (`predicate-quantifier: some-with-excludes`) and
+  widened to AI tool surfaces, with a structural test
+- Least-privilege `permissions` and `timeout-minutes` on every workflow/job
+
 **Future opportunities:**
 
-- Parallel test execution (CTest `--parallel`)
+- Consolidate duplicate Release builds across Linux jobs (planned PR-2)
 - Split test suites into parallel jobs
-- Docker-based CI for faster dependency installation
 
 ## Related Documentation
 

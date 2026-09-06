@@ -1,11 +1,76 @@
+# Shared "does this change need the build/test/wheel tier?" filter for
+# dorny/paths-filter. Every workflow that reads this file MUST pass
+# `predicate-quantifier: some-with-excludes`: with the default `some`
+# quantifier the negated patterns below are OR-ed in and match everything
+# that is *not* excluded, so `code` is always true and the doc-only skip never
+# fires (this was the case from May to September 2026).
+# tests/test_ci_code_filter.py enforces the quantifier and that every literal
+# path below still exists.
+#
+# Keep build, test, packaging, and CI orchestration inputs as code:
+# `.github/actions/**`, `.github/filters/**`, the platform/wheel/CodeQL
+# workflows, `scripts/**`, `tests/**`, `cmake/**`, `pixi.*`, and everything
+# under `dart/`, `python/`, `examples/`, `dartsim/`.
 code:
   - "**"
-  - "!.github/workflows/update_lockfiles.yml"
-  - "!docker/dev/**"
+  # AI tool surfaces: commands, skills, generated adapters, hooks. Hooks are
+  # covered by `pixi run test-ai-infra` in CI Lint and by the Windows hook
+  # smoke job (its own `hooks` filter in ci_windows.yml).
+  - "!.agents/**"
+  - "!.claude/**"
+  - "!.codex/**"
+  - "!.opencode/**"
+  # Documentation, tutorials (a CMake stub since the OSG tutorials were
+  # removed), papers, and prose formats.
   - "!docs/**"
-  - "!.readthedocs.yml"
   - "!tutorials/**"
+  - "!paper/**"
+  - "!.readthedocs.yml"
   - "!**/*.md"
   - "!**/*.rst"
   - "!**/*.po"
   - "!**/*.pot"
+  # Scheduled-only and maintenance workflows: they never run in the PR tier,
+  # so editing them does not need the PR matrix. Build/test/packaging
+  # workflows stay covered by `**`.
+  - "!.github/workflows/cancel_branch_jobs.yml"
+  - "!.github/workflows/ci_altlinux.yml"
+  - "!.github/workflows/ci_freebsd.yml"
+  - "!.github/workflows/ci_gz_dart6.yml"
+  - "!.github/workflows/community_signals.yml"
+  - "!.github/workflows/pages_deploy.yml"
+  - "!.github/workflows/update_lockfiles.yml"
+  - "!.github/dependabot.yml"
+  - "!.github/DISCUSSION_TEMPLATE/**"
+  - "!.github/ISSUE_TEMPLATE/**"
+  # Container/VM harnesses used only by the scheduled distro jobs.
+  - "!docker/**"
+  - "!.devcontainer/**"
+  # Repository metadata that no build, test, or packaging step consumes.
+  # Not excluded on purpose: package.xml (CMake and pyproject derive the
+  # version from it), codecov.yml (validated by the Coverage upload),
+  # .gitattributes and .gitignore (checkout and sdist contents).
+  - "!.clang-format"
+  - "!.codespellrc"
+  - "!.gersemirc"
+  - "!Brewfile"
+  - "!CITATION.bib"
+  - "!CITATION.cff"
+  - "!LICENSE"
+  - "!colcon.pkg"
+  # AI-infrastructure Python that only `pixi run test-ai-infra` (CI Lint)
+  # exercises. Keep this list in sync with the `test-ai-infra` task.
+  - "!scripts/ai_doctor.py"
+  - "!scripts/ai_infrastructure.py"
+  - "!scripts/check_ai_infrastructure.py"
+  - "!scripts/check_docs_policy.py"
+  - "!scripts/exercise_agent_scenarios.py"
+  - "!scripts/setup_ai.py"
+  - "!scripts/sync_ai_commands.py"
+  - "!tests/test_ai_infrastructure.py"
+  - "!tests/test_check_agent_hook.py"
+  - "!tests/test_check_docs_policy.py"
+  - "!tests/test_ci_code_filter.py"
+  - "!tests/test_install_git_hooks.py"
+  - "!tests/test_setup_ai.py"
+  - "!tests/test_sync_ai_commands.py"

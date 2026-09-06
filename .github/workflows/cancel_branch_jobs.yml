@@ -16,6 +16,7 @@ jobs:
     name: Automation | Cancel branch workflows
     if: github.event_name == 'pull_request' || github.event_name == 'delete'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Cancel runs for branch
         uses: actions/github-script@v9

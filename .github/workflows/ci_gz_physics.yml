@@ -11,6 +11,9 @@ on:
       - "release-*"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   # Preserve scheduled/manual/tag evidence, but cancel superseded branch and PR
   # validations so rapid merge bursts converge on the latest ref tip.
@@ -29,20 +32,27 @@ jobs:
   changes:
     if: github.event.deleted != true
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # dorny/paths-filter lists changed files through the pull-request API.
+      pull-requests: read
     outputs:
       core_branch_push: ${{ steps.scope.outputs.core_branch_push }}
       code: ${{ steps.filter.outputs.code }}
       full_ci: ${{ steps.scope.outputs.full_ci }}
     steps:
+      # PR events list files through the API; push events fetch the `before`
+      # commit on demand, so a full-history clone is not needed here.
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
       - uses: ./.github/actions/ci-scope
         id: scope
       - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: .github/filters/ci-code.yml
+          # Required so the `!` exclusions in the filter file act as excludes.
+          predicate-quantifier: some-with-excludes
 
   test_gazebo:
     needs: changes
@@ -54,6 +64,8 @@ jobs:
       needs.changes.outputs.code == 'true')
     name: GZ Physics Tests
     runs-on: ubuntu-latest
+    # DART + gz-physics + gz-sim from source; 30-130 min observed.
+    timeout-minutes: 240
     env:
       # Keep parallelism modest to avoid process limits on shared runners.
       DART_PARALLEL_JOBS: 8

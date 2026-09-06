@@ -15,6 +15,9 @@ name: Publish dartpy
     - cron: "0 10 * * 0,3"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   # Include the event name so a manual workflow_dispatch publish is not
   # cancelled by a push-triggered wheel build of the same ref.
@@ -34,9 +37,13 @@ concurrency:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # dorny/paths-filter lists changed files through the pull-request API.
+      pull-requests: read
     outputs:
       code: ${{ steps.code_filter.outputs.code }}
-      wheel_workflow: ${{ steps.wheel_filter.outputs.wheel_workflow }}
     steps:
       - name: Clean stale Linux workspace
         if: runner.os == 'Linux'
@@ -52,61 +59,18 @@ jobs:
             }
           fi
 
+      # PR events list files through the API; push events fetch the `before`
+      # commit on demand, so a full-history clone is not needed here.
       - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
       - uses: dorny/paths-filter@v4
         id: code_filter
         with:
           filters: .github/filters/ci-code.yml
-      - uses: dorny/paths-filter@v4
-        id: wheel_filter
-        with:
-          filters: |
-            wheel_workflow:
-              - '.github/workflows/publish_dartpy.yml'
-
-  wheel_matrix:
-    needs: changes
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-    steps:
-      - id: matrix
-        run: |
-          if [[ "${{ needs.changes.outputs.wheel_workflow }}" == "true" \
-             || "$GITHUB_EVENT_NAME" == "schedule" \
-             || "$GITHUB_EVENT_NAME" == "workflow_dispatch" \
-             || "$GITHUB_REF" == "refs/heads/main" \
-             || "$GITHUB_REF" == refs/heads/release-* \
-             || "$GITHUB_REF" == refs/tags/v* ]]; then
-            cat >> "$GITHUB_OUTPUT" <<'EOF'
-          matrix<<JSON
-          {
-            "include": [
-              {"os":"ubuntu-latest","python-version":"314"},
-              {"os":"macos-15","python-version":"314"},
-              {"os":"windows-2025-vs2026","python-version":"314"}
-            ]
-          }
-          JSON
-          EOF
-          else
-            cat >> "$GITHUB_OUTPUT" <<'EOF'
-          matrix<<JSON
-          {
-            "include": [
-              {"os":"ubuntu-latest","python-version":"314"},
-              {"os":"macos-15","python-version":"314"},
-              {"os":"windows-2025-vs2026","python-version":"314"}
-            ]
-          }
-          JSON
-          EOF
-          fi
+          # Required so the `!` exclusions in the filter file act as excludes.
+          predicate-quantifier: some-with-excludes
 
   build_wheels:
-    needs: [changes, wheel_matrix]
+    needs: changes
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
     name: Wheels | ${{ matrix.os }} Py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -126,7 +90,15 @@ jobs:
     # macOS wheels: delocate bundles dylibs. Windows wheels: delvewheel bundles DLLs.
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.wheel_matrix.outputs.matrix) }}
+      # Python 3.14 is the only supported dartpy interpreter, so PR, protected
+      # branch, tag, schedule, and manual runs share one matrix. When a second
+      # Python version is added, reintroduce the PR-baseline vs full-matrix
+      # tiering documented in docs/onboarding/ci-cd.md (Python Wheel Builds).
+      matrix:
+        include:
+          - { os: ubuntu-latest, python-version: "314" }
+          - { os: macos-15, python-version: "314" }
+          - { os: windows-2025-vs2026, python-version: "314" }
     steps:
       - name: Clean stale Linux workspace
         if: runner.os == 'Linux'
@@ -159,8 +131,10 @@ jobs:
 
       - name: Build wheel
         env:
-          # Work around occasional sccache spawn failures on ubuntu-latest + Python 3.14 wheel builds.
-          DART_DISABLE_COMPILER_CACHE: ${{ (matrix.os == 'ubuntu-latest' && matrix.python-version == '314') && 'ON' || 'OFF' }}
+          # Work around occasional sccache spawn failures on ubuntu-latest
+          # wheel builds (observed with the Python 3.14 wheel). Revisit once the
+          # re-enabled GitHub Actions cache backend has a few weeks of history.
+          DART_DISABLE_COMPILER_CACHE: ${{ matrix.os == 'ubuntu-latest' && 'ON' || 'OFF' }}
         run: pixi run -e py${{ matrix.python-version }}-wheel wheel-build
 
       - name: Repair wheel
@@ -179,14 +153,14 @@ jobs:
 
   wheels:
     name: Wheels
-    needs: [changes, wheel_matrix, build_wheels]
+    needs: [changes, build_wheels]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check wheel matrix result
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
-          MATRIX_RESULT: ${{ needs.wheel_matrix.result }}
           WHEEL_RESULT: ${{ needs.build_wheels.result }}
           CODE_CHANGED: ${{ needs.changes.outputs.code }}
           EVENT_NAME: ${{ github.event_name }}
@@ -194,11 +168,6 @@ jobs:
         run: |
           if [[ "$CHANGES_RESULT" != "success" ]]; then
             echo "::error::changes job result was '$CHANGES_RESULT'"
-            exit 1
-          fi
-
-          if [[ "$MATRIX_RESULT" != "success" ]]; then
-            echo "::error::wheel_matrix job result was '$MATRIX_RESULT'"
             exit 1
           fi
 
@@ -220,6 +189,7 @@ jobs:
     name: Wheels | Publish to PyPI
     needs: [build_wheels, wheels]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Publish all tagged versions (stable and dev) to production PyPI
     # Examples: v7.0.0, v7.0.0.dev0, v7.0.0.alpha1, v7.0.0.beta1, v7.0.0.rc1
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
