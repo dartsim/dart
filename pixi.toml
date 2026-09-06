@@ -423,6 +423,7 @@ test-ai-infra = { cmd = [
   "tests/test_sync_ai_commands.py",
   "tests/test_ai_infrastructure.py",
   "tests/test_install_git_hooks.py",
+  "tests/test_review_gate.py",
   "tests/test_check_agent_hook.py",
   "tests/test_setup_ai.py",
   "tests/test_check_docs_policy.py",
@@ -1952,6 +1953,7 @@ test-all = { depends-on = ["verify-full"] }          # backward-compatible alias
 
 # One-time setup: install the pre-commit git hook that runs check-agent-hook.
 install-hooks = { cmd = "python scripts/install_git_hooks.py" }
+review-gate = { cmd = "python scripts/review_gate.py" }
 
 # Tier 0 — inner loop: fast lint subset + fast unit tests (long poles skipped).
 check-lint-quick = { depends-on = [

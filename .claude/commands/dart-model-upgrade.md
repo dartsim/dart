@@ -125,8 +125,9 @@ surface without loading every referenced document in full:
    them. Preserve runner-probe invariants, model-pin boundaries, generated
    parity, and instruction discovery. `audit-only` uses read-only lint such as
    `pixi run check-lint`; `apply` runs `pixi run lint` before any commit.
-   Complete the principle audit and two clean role-separated reviews on the
-   post-fix state. Label unavailable behavioral, cross-tool, or hosted evidence;
+   Complete the principle audit and the review requirements in
+   `docs/ai/verification.md` on the post-fix state. Before publication, apply
+   the non-author local gate in `docs/onboarding/ai-reviews.md`. Label unavailable behavioral, cross-tool, or hosted evidence;
    hosted rate limits do not require waiting after local review converges.
 9. **Close out by mode and branch.** `audit-only` stops with findings,
    recommendations, limitations, proposed gates, and apply/adapt/omit advice.

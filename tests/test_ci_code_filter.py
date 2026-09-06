@@ -20,6 +20,7 @@ from __future__ import annotations
 import ast
 import re
 import tomllib
+from fnmatch import fnmatchcase
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -390,4 +391,37 @@ def test_no_excluded_path_is_consumed_by_the_skipped_tier() -> None:
     assert not offenders, "\n".join(
         f"{path} is excluded by {pattern} but referenced by {consumers}"
         for path, (pattern, consumers) in sorted(offenders.items())
+    )
+
+
+def test_review_gate_changes_reach_native_windows_job() -> None:
+    """The isolated native job must run when any review-gate input changes."""
+    workflow = (WORKFLOW_DIR / "ci_windows.yml").read_text(encoding="utf-8")
+    hook_filter = workflow.split("            hooks:\n", 1)[1].split(
+        "\n  hook-smoke:", 1
+    )[0]
+    patterns = _filter_patterns(hook_filter)
+    for consumer_input in (
+        "docs/onboarding/ai-tools.md",
+        "scripts/check_agent_hook.py",
+        "scripts/ai_infrastructure.py",
+        "scripts/review_gate.py",
+        "scripts/install_git_hooks.py",
+        "tests/test_review_gate.py",
+        "scripts/run_pytest.py",
+        "pixi.toml",
+        "pixi.lock",
+        "pyproject.toml",
+        ".github/actions/setup-pixi-ci/action.yml",
+        ".github/workflows/ci_windows.yml",
+    ):
+        assert any(fnmatchcase(consumer_input, pattern) for pattern in patterns), (
+            consumer_input,
+            patterns,
+        )
+    native_job = workflow.split("\n  hook-smoke:\n", 1)[1].split("\n  build:\n", 1)[0]
+    assert "needs.changes.outputs.hooks == 'true'" in native_job
+    assert (
+        "pixi run python -I scripts/run_pytest.py tests/test_review_gate.py -q"
+        in native_job
     )
