@@ -54,6 +54,7 @@ jobs:
   matrix_prep:
     name: Security | CodeQL matrix
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
@@ -99,6 +100,13 @@ jobs:
     env:
       BUILD_TYPE: Release
       DART_VERBOSE: ON
+      # The CodeQL C++ extractor traces the compiler processes of the manual
+      # build. A compiler cache hides them: sccache hits skip the compiler
+      # entirely and misses run it inside the detached sccache server, outside
+      # the tracer's process tree, so the database would come out empty.
+      # cmake/compiler_cache.cmake honors this flag and leaves the launcher
+      # variables unset.
+      DART_DISABLE_COMPILER_CACHE: "ON"
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.matrix_prep.outputs.matrix) }}
@@ -138,16 +146,18 @@ jobs:
         with:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
-      - name: Configure environment for compiler cache
-        if: matrix.run_build
-        uses: ./.github/actions/configure-compiler-cache
-
       - name: Initialize CodeQL
         uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
           config-file: ./.github/codeql/config.yml
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build_mode }}
+          # The C++ TRAP cache is ~3 GB per entry and two entries consumed
+          # 6 GB of the repository's 10 GB Actions cache, starving the
+          # compiler cache every PR depends on. The analysis runs on main
+          # pushes and the weekly schedule only, so the incremental TRAP
+          # benefit does not justify the budget.
+          trap-caching: false
 
       - name: Configure (CMake)
         if: matrix.run_build

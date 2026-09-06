@@ -61,7 +61,9 @@ jobs:
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
-          cache: true
+          # Environment caching is off repository-wide: the entries competed
+          # with the compiler cache for the 10 GB Actions cache budget.
+          cache: false
           environments: gazebo
 
       - name: Install apt packages

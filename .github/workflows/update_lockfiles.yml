@@ -20,6 +20,7 @@ jobs:
   discover-base-branches:
     name: Maintenance | Discover lockfile bases
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       bases: ${{ steps.branches.outputs.bases }}
     steps:
@@ -51,6 +52,7 @@ jobs:
       queue: max
       cancel-in-progress: false
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
