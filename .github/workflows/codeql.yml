@@ -18,15 +18,18 @@ on:
   pull_request:
     branches:
       - "main"
-    paths-ignore:
-      - "docs/**"
-      - ".github/workflows/update_lockfiles.yml"
-      - ".readthedocs.yml"
-      - "tutorials/**"
-      - "**/*.md"
-      - "**/*.rst"
-      - "**/*.po"
-      - "**/*.pot"
+    # Pull requests run the Python analysis only, and .github/codeql/config.yml
+    # limits it to these trees, so a PR that changes none of them would only
+    # re-analyze code that main already scanned.
+    paths:
+      - "dart/**/*.py"
+      - "python/**/*.py"
+      - "tests/**/*.py"
+      - "examples/**/*.py"
+      - "tutorials/**/*.py"
+      - "docs/**/*.py"
+      - ".github/codeql/**"
+      - ".github/workflows/codeql.yml"
   schedule:
     - cron: "0 6 * * 1" # Weekly on Mondays at 06:00 UTC
   workflow_dispatch:
@@ -37,68 +40,23 @@ permissions:
   security-events: write
 
 concurrency:
-  # Preserve scheduled/manual/tag evidence, but cancel superseded branch and PR
+  # Preserve scheduled/manual evidence, but cancel superseded branch and PR
   # validations so rapid merge bursts converge on the latest ref tip.
   group: >-
     ${{ (github.event_name == 'schedule'
-        || github.event_name == 'workflow_dispatch'
-        || startsWith(github.ref, 'refs/tags/v'))
+        || github.event_name == 'workflow_dispatch')
         && format('{0}-{1}-{2}-{3}', github.workflow, github.ref, github.event_name, github.run_id)
         || format('{0}-{1}-{2}', github.workflow, github.ref, github.event_name) }}
   cancel-in-progress: >-
     ${{ github.event_name != 'schedule'
-        && github.event_name != 'workflow_dispatch'
-        && !startsWith(github.ref, 'refs/tags/v') }}
+        && github.event_name != 'workflow_dispatch' }}
 
 jobs:
-  matrix_prep:
-    name: Security | CodeQL matrix
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    outputs:
-      matrix: ${{ steps.matrix.outputs.matrix }}
-    steps:
-      - id: matrix
-        run: |
-          # The C++ analysis needs a manual Debug build plus CodeQL database
-          # extraction (~100 min), which is too heavy to repeat on every PR
-          # push. It runs on main pushes, the weekly schedule, and manual
-          # dispatch; scanning main right after merge keeps alert coverage
-          # without gating PR feedback. The Python analysis (build-mode:
-          # none) is cheap and stays on PRs.
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            cat >> "$GITHUB_OUTPUT" <<'EOF'
-          matrix<<JSON
-          {
-            "include": [
-              {"language": "python", "build_mode": "none", "run_build": false,
-               "dartpy": "ON", "gui": "ON", "cmake_build_type": "Release"}
-            ]
-          }
-          JSON
-          EOF
-          else
-            cat >> "$GITHUB_OUTPUT" <<'EOF'
-          matrix<<JSON
-          {
-            "include": [
-              {"language": "cpp", "build_mode": "manual", "run_build": true,
-               "dartpy": "OFF", "gui": "OFF", "cmake_build_type": "Debug"},
-              {"language": "python", "build_mode": "none", "run_build": false,
-               "dartpy": "ON", "gui": "ON", "cmake_build_type": "Release"}
-            ]
-          }
-          JSON
-          EOF
-          fi
-
   analyze:
     name: Security | CodeQL (${{ matrix.language }})
-    needs: matrix_prep
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      BUILD_TYPE: Release
       DART_VERBOSE: ON
       # The CodeQL C++ extractor traces the compiler processes of the manual
       # build. A compiler cache hides them: sccache hits skip the compiler
@@ -109,29 +67,23 @@ jobs:
       DART_DISABLE_COMPILER_CACHE: "ON"
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.matrix_prep.outputs.matrix) }}
+      # The C++ analysis needs a manual Debug build plus CodeQL database
+      # extraction (~100 min), which is too heavy to repeat on every PR push.
+      # It runs on main pushes, the weekly schedule, and manual dispatch;
+      # scanning main right after merge keeps alert coverage without gating PR
+      # feedback. The Python analysis (build-mode: none) is cheap and stays on
+      # PRs. The matrix is selected by event here instead of by a separate
+      # matrix-emitting job.
+      matrix: >-
+        ${{ github.event_name == 'pull_request'
+            && fromJSON('{"include":[{"language":"python","build_mode":"none","run_build":false}]}')
+            || fromJSON('{"include":[{"language":"cpp","build_mode":"manual","run_build":true},{"language":"python","build_mode":"none","run_build":false}]}') }}
     steps:
-      - name: Clean stale Linux workspace
-        if: runner.os == 'Linux'
-        run: |
-          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
-            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
-              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
-                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
-              else
-                echo "::warning::Unable to clean stale workspace entries before checkout."
-              fi
-            }
-          fi
-
       - name: Checkout
         uses: actions/checkout@v7
 
-      # The C++ build plus the CodeQL database fills the ~14 GB free on the
-      # default ubuntu-latest image (CodeQL DB creation fails with
-      # "No space left on device"). Reclaim the large preinstalled toolchains
-      # we do not use before building.
+      # The Debug build plus the CodeQL database is the largest tree CI
+      # produces; reclaim the preinstalled toolchains before building.
       - name: Free disk space
         if: matrix.run_build
         run: |
@@ -145,6 +97,7 @@ jobs:
         uses: ./.github/actions/setup-pixi-ci
         with:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+          enable-sccache: false
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
@@ -162,19 +115,18 @@ jobs:
       - name: Configure (CMake)
         if: matrix.run_build
         env:
-          DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
+          DART_BUILD_GUI_OVERRIDE: "OFF"
         run: |
-          pixi run config ${{ matrix.dartpy }} ${{ matrix.cmake_build_type }}
+          pixi run config OFF Debug
 
       - name: Build
         if: matrix.run_build
         env:
-          DART_BUILD_GUI_OVERRIDE: ${{ matrix.gui }}
+          DART_BUILD_GUI_OVERRIDE: "OFF"
           DART_PARALLEL_JOBS: "2"
         run: |
-          BUILD_DIR="build/default/cpp/${{ matrix.cmake_build_type }}"
           pixi run python scripts/cmake_build.py \
-            --build-dir "$BUILD_DIR" \
+            --build-dir build/default/cpp/Debug \
             --target dart_component_dart \
             --target dart-collision-native \
             --target dart-io \

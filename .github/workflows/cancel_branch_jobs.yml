@@ -1,4 +1,7 @@
-# Cancel queued or running workflow runs for a branch once its PR is merged or the branch is deleted.
+# Cancel queued or running workflow runs for a branch once its PR is merged or
+# the branch is deleted. Both triggers stay: `delete` covers the common
+# auto-delete-after-merge path, and `pull_request: closed` covers merged PRs
+# whose branch is kept (fork PRs are skipped by the owner check below).
 name: Cancel PR Branch Jobs
 
 on:
@@ -14,7 +17,6 @@ permissions:
 jobs:
   cancel-jobs:
     name: Automation | Cancel branch workflows
-    if: github.event_name == 'pull_request' || github.event_name == 'delete'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

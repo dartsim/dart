@@ -61,6 +61,10 @@ code:
   - "!.github/workflows/ci_altlinux.yml"
   - "!.github/workflows/ci_freebsd.yml"
   - "!.github/workflows/ci_gz_dart6.yml"
+  # ci_gz_physics.yml: on main its release-* triggers never fire (the file is
+  # the release-line template); the clean-break policy that validates it runs
+  # under check-lint.
+  - "!.github/workflows/ci_gz_physics.yml"
   - "!.github/workflows/community_signals.yml"
   - "!.github/workflows/pages_deploy.yml"
   - "!.github/workflows/update_lockfiles.yml"
