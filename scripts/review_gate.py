@@ -117,12 +117,20 @@ def read_json(path: Path) -> dict:
     return value
 
 
-def write_json(path: Path, value: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    # Commands hold the store lock. Readers cannot observe partial writes.
-    path.write_text(
-        json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+def write_json_files(files: list[tuple[Path, dict]]) -> None:
+    encoded = [
+        (path, (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8"))
+        for path, value in files
+    ]
+    # Validate every resulting artifact before changing the journal or index.
+    # Compact inputs may expand through indentation or Unicode escaping.
+    for path, contents in encoded:
+        require(len(contents) <= MAX_BYTES, f"oversized serialized evidence: {path}")
+    # Commands hold the store lock. Use exact LF bytes on every platform so
+    # the published sizes match the checked sizes, including on Windows.
+    for path, contents in encoded:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(contents)
 
 
 def text_field(value: object, label: str) -> str:
@@ -269,9 +277,13 @@ class Store:
             "previous": previous,
         }
         candidate_id = digest(data)
-        write_json(self.candidate_dir(candidate_id) / "candidate.json", data)
-        write_json(self.candidate_dir(candidate_id) / "reports.json", {"reports": []})
-        write_json(target_path, {"candidate": candidate_id})
+        write_json_files(
+            [
+                (self.candidate_dir(candidate_id) / "candidate.json", data),
+                (self.candidate_dir(candidate_id) / "reports.json", {"reports": []}),
+                (target_path, {"candidate": candidate_id}),
+            ]
+        )
         return candidate_id
 
     def reports(self, candidate_id: str) -> list[dict]:
@@ -409,10 +421,9 @@ class Store:
             / "reports"
             / f"{len(reports) + 1:06d}-{digest(report)}.json"
         )
-        write_json(path, report)
         manifest = self.candidate_dir(candidate_id) / "reports.json"
         names = read_json(manifest)["reports"]
-        write_json(manifest, {"reports": [*names, path.name]})
+        write_json_files([(path, report), (manifest, {"reports": [*names, path.name]})])
 
     def assert_current(self, candidate_id: str, candidate: dict) -> None:
         require(
