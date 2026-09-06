@@ -181,7 +181,7 @@ def test_main_writes_fallbacks_when_node_missing(
     code = ram.main(["--ir-dir", str(ir_dir), "--output-dir", str(out), "--no-fetch"])
     assert code == ram.EXIT_UNAVAILABLE
     rendered = sorted(p.name for p in out.iterdir())
-    assert rendered == ["framework.html", "step.html"]
+    assert rendered == ["framework.html", "framework.md", "step.html", "step.md"]
     text = (out / "framework.html").read_text(encoding="utf-8")
     assert "Text rendering" in text
     assert ram.SCRIPT_RELPATH in text
@@ -230,6 +230,35 @@ def test_view_shape_error_reports_type_title_and_nodes(tmp_path: Path) -> None:
     assert "`nodes`" in ram.view_shape_error(view)
     path.write_text(json.dumps(_dataflow_ir()), encoding="utf-8")
     assert ram.view_shape_error(view) is None
+
+
+def test_dangling_flow_fails_even_without_toolchain(
+    ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ir = _dataflow_ir()
+    ir["flows"][0]["to"] = "ghost"
+    (ir_dir / "step.dataflow.json").write_text(json.dumps(ir), encoding="utf-8")
+    monkeypatch.setattr(ram, "node_executable", lambda *a, **k: None)
+    out = tmp_path / "out"
+    code = ram.main(["--ir-dir", str(ir_dir), "--output-dir", str(out), "--no-fetch"])
+    assert code == ram.EXIT_FAILED
+    assert not out.exists()
+
+
+def test_text_summaries_are_written_for_non_html_builders(
+    ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(ram, "node_executable", lambda *a, **k: None)
+    out = tmp_path / "out"
+    ram.main(["--ir-dir", str(ir_dir), "--output-dir", str(out), "--no-fetch"])
+    summary = (out / "step.md").read_text(encoding="utf-8")
+    assert summary.startswith("**Step flow**")
+    assert "*Velocity*" in summary and "**Rigid velocity**" in summary
+    assert "Rigid velocity → Rigid position: velocities & impulses" in summary
+    framework = (out / "framework.md").read_text(encoding="utf-8")
+    assert (
+        "**World facade** (external, Implemented): dart::simulation::World" in framework
+    )
 
 
 def test_main_without_views_is_a_noop(tmp_path: Path) -> None:

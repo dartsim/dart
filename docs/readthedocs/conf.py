@@ -541,6 +541,9 @@ root_doc = "index"
 
 exclude_patterns = [
     "_build",
+    # Build outputs copied into the site (Doxygen bundle, architecture map);
+    # the architecture page pulls its text summaries in with ``include``.
+    "_generated",
     "Thumbs.db",
     ".DS_Store",
     "README.md",
@@ -627,11 +630,10 @@ def render_architecture_map(app):
 
     Mirrors the Doxygen hook: a missing toolchain (Node.js or the pinned
     archify checkout) degrades to text fallbacks with a warning, while an
-    invalid view is a content error that fails the build.
+    invalid view is a content error that fails the build. Runs for every
+    builder because the driver also writes the Markdown summaries that the
+    PDF and EPUB outputs include in place of the interactive frames.
     """
-
-    if app.builder.format != "html":
-        return
 
     completed = subprocess.run(
         [

@@ -218,6 +218,95 @@ def view_shape_error(view: View) -> str | None:
     return None
 
 
+def structural_errors(views: list[View]) -> list[str]:
+    """Run the checker's structural rules (ids, edges, stages, tags) on views.
+
+    Imported lazily from the sibling checker so the docs build fails on a
+    malformed view in every environment, including ones without Node.js where
+    only the text fallback would otherwise be written.
+    """
+    scripts_dir = str(Path(__file__).resolve().parent)
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    import check_architecture_map as cam
+
+    errors: list[str] = []
+    for view in views:
+        try:
+            ir = json.loads(view.path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            errors.append(f"{view.relpath}: unreadable JSON ({exc})")
+            continue
+        checker = cam.Checker(repo_root=REPO_ROOT)
+        checker.check_structure(
+            cam.ViewFile(
+                name=view.name,
+                diagram_type=view.diagram_type,
+                path=Path(view.relpath),
+                ir=ir,
+            )
+        )
+        errors.extend(checker.errors)
+    return errors
+
+
+def view_summary_markdown(view: View) -> str:
+    """Portable Markdown rendering of a view for non-HTML builders (PDF, EPUB)."""
+    ir = json.loads(view.path.read_text(encoding="utf-8"))
+    title = str(ir.get("meta", {}).get("title", view.name))
+    lines = [f"**{title}** (text rendering of `{view.relpath}`)", ""]
+
+    def item(node: dict) -> str:
+        text = f"- **{node.get('label', node.get('id', ''))}**"
+        details = [str(node[k]) for k in ("type", "tag") if node.get(k)]
+        if details:
+            text += f" ({', '.join(details)})"
+        if node.get("sublabel"):
+            text += f": {node['sublabel']}"
+        return text
+
+    if view.diagram_type == "dataflow":
+        stages = [str(s.get("label", i)) for i, s in enumerate(ir.get("stages", []))]
+        for index, stage in enumerate(stages):
+            lines.append(f"*{stage}*")
+            lines.extend(
+                item(n) for n in ir.get("nodes", []) if n.get("stage") == index
+            )
+            lines.append("")
+        edges = ir.get("flows", [])
+    else:
+        lines.extend(item(c) for c in ir.get("components", []))
+        lines.append("")
+        for boundary in ir.get("boundaries", []) or []:
+            wraps = ", ".join(str(w) for w in boundary.get("wraps", []))
+            lines.append(f"- *{boundary.get('label', '')}*: {wraps}")
+        if ir.get("boundaries"):
+            lines.append("")
+        edges = ir.get("connections", [])
+    labels = {
+        str(n.get("id")): str(n.get("label", n.get("id")))
+        for n in ir.get("components", []) + ir.get("nodes", [])
+    }
+    if edges:
+        lines.append("*Relationships*")
+        for edge in edges:
+            text = f"- {labels.get(str(edge.get('from')), edge.get('from'))} → "
+            text += str(labels.get(str(edge.get("to")), edge.get("to")))
+            if edge.get("label"):
+                text += f": {edge['label']}"
+            lines.append(text)
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def write_text_summaries(views: list[View], output_dir: Path) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for view in views:
+        (output_dir / f"{view.name}.md").write_text(
+            view_summary_markdown(view), encoding="utf-8"
+        )
+
+
 def stamp_repository(ir: dict, revision: str, url: str = DART_REPOSITORY_URL) -> dict:
     """Return a copy of an architecture IR with ``meta.repository`` set.
 
@@ -517,6 +606,8 @@ def main(argv: list[str]) -> int:
         return EXIT_OK
 
     shape_errors = [error for error in map(view_shape_error, views) if error]
+    if not shape_errors:
+        shape_errors = structural_errors(views)
     if shape_errors:
         for error in shape_errors:
             log(error)
@@ -538,6 +629,7 @@ def main(argv: list[str]) -> int:
         if args.check or args.strict:
             log(f"{reason} Interactive rendering is required here.")
             return EXIT_FAILED
+        write_text_summaries(views, args.output_dir)
         written = write_fallbacks(views, args.output_dir, reason, revision)
         log(
             f"{reason} Wrote text fallbacks for {len(written)} view(s) to "
@@ -545,6 +637,8 @@ def main(argv: list[str]) -> int:
         )
         return EXIT_UNAVAILABLE
 
+    if not args.check:
+        write_text_summaries(views, args.output_dir)
     report = Report()
     for view in views:
         ok, message = render_view(

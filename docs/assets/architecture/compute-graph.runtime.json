@@ -24,18 +24,6 @@
           "kinematics_level_1_chunk_0"
         ]
       ]
-    },
-    {
-      "nodes": [
-        "kinematics_level_0_chunk_0",
-        "kinematics_level_1_chunk_0"
-      ],
-      "edges": [
-        [
-          "kinematics_level_0_chunk_0",
-          "kinematics_level_1_chunk_0"
-        ]
-      ]
     }
   ],
   "graph_vocabulary": []

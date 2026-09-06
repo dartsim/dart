@@ -40,21 +40,28 @@ enum class BuiltInWorldStepStageSlot
 }
 """
 OPTIONS_HEADER = """
+namespace dart {
+namespace simulation {
 enum class RigidBodySolver
 {
   SequentialImpulse,
   Ipc = 3,
 };
 enum class ContactSolverMethod { SequentialImpulse, BoxedLcp };
+} // namespace simulation
+} // namespace dart
 """
 MULTIBODY_HEADER = """
+namespace dart::simulation {
 enum class MultibodyIntegrationFamily
 {
   SemiImplicit,
   Variational,
 };
+}
 """
 STAGES_HEADER = """
+namespace dart::simulation::compute {
 class DART_SIMULATION_API RigidBodyVelocityStage final : public WorldStepStage
 {
 };
@@ -62,8 +69,12 @@ class DART_SIMULATION_API KinematicsStage final
   : public WorldStepStage
 {
 };
+} // namespace dart::simulation::compute
 """
-WORLD_HEADER = "class World\n{\n  void step();\n  StateSpace space;\n};\n" + "\n" * 20
+WORLD_HEADER = (
+    "namespace dart::simulation {\nclass World\n{\n  void step();\n  StateSpace space;\n};\n}\n"
+    + "\n" * 20
+)
 
 
 def _write(path: Path, text: str) -> None:
@@ -335,6 +346,31 @@ def test_qualified_symbols_resolve_in_their_namespace_directory(repo: Path) -> N
     assert not checker.symbol_resolves("dart::nowhere::World")
     assert not checker.symbol_resolves("totally::wrong::World")
     assert checker.symbol_resolves("StateSpace")
+    # The enclosing namespace must match, not just the module directory.
+    assert checker.symbol_resolves("dart::simulation::compute::KinematicsStage")
+    assert not checker.symbol_resolves("dart::simulation::KinematicsStage")
+    assert checker.symbol_resolves(
+        "dart::simulation::detail::BuiltInWorldStepStageSlot"
+    )
+    assert not checker.symbol_resolves("dart::simulation::BuiltInWorldStepStageSlot")
+    # Namespaces resolve as symbols, in both nested and compact forms.
+    assert checker.symbol_resolves("dart::simulation")
+    assert checker.symbol_resolves("dart::simulation::compute")
+
+
+def test_enclosing_namespace_tracks_nested_and_compact_forms() -> None:
+    text = (
+        "namespace dart {\nnamespace collision {\nclass A {};\n}\n"
+        "namespace math { struct B { void f() {} }; }\n}\n"
+        "namespace dart::simulation::compute {\nclass C {};\n}\nclass D {};\n"
+    )
+    assert cam.enclosing_namespace(text, text.index("class A")) == "dart::collision"
+    assert cam.enclosing_namespace(text, text.index("struct B")) == "dart::math"
+    assert (
+        cam.enclosing_namespace(text, text.index("class C"))
+        == "dart::simulation::compute"
+    )
+    assert cam.enclosing_namespace(text, text.index("class D")) == ""
 
 
 def test_dartpy_dotted_names_are_not_symbols() -> None:

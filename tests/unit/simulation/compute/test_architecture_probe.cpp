@@ -45,6 +45,8 @@
 // scripts/check_architecture_map_runtime.py compares with the committed
 // docs/assets/architecture/compute-graph.runtime.json fixture (advisory).
 
+#include <dart/config.hpp>
+
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/deformable_body.hpp>
 #include <dart/simulation/body/deformable_body_options.hpp>
@@ -56,6 +58,7 @@
 #include <dart/simulation/compute/compute_node.hpp>
 #include <dart/simulation/compute/sequential_executor.hpp>
 #include <dart/simulation/compute/world_step_profile.hpp>
+#include <dart/simulation/detail/world_step_schedule.hpp>
 #include <dart/simulation/multibody/joint_type.hpp>
 #include <dart/simulation/multibody/multibody.hpp>
 #include <dart/simulation/world.hpp>
@@ -108,6 +111,12 @@ public:
   [[nodiscard]] const std::vector<RecordedGraph>& graphs() const noexcept
   {
     return m_graphs;
+  }
+
+  /// Forget the graphs recorded so far, so a later step can be recorded alone.
+  void clear() noexcept
+  {
+    m_graphs.clear();
   }
 
 private:
@@ -184,6 +193,56 @@ void buildReferenceScene(sx::World& world)
   world.addDeformableBody("probe_patch", patch);
 }
 
+/// The name a built-in stage slot reports through `WorldStepStage::getName()`
+/// and the node id the architecture map uses for it (enumerator in snake case).
+std::string slotName(sx::detail::BuiltInWorldStepStageSlot slot)
+{
+  using Slot = sx::detail::BuiltInWorldStepStageSlot;
+  switch (slot) {
+    case Slot::RigidBodyVelocity:
+      return "rigid_body_velocity";
+    case Slot::RigidBodyContact:
+      return "rigid_body_contact";
+    case Slot::RigidBodyPosition:
+      return "rigid_body_position";
+    case Slot::RigidIpcContact:
+      return "rigid_ipc_contact";
+    case Slot::MultibodyVelocity:
+      return "multibody_velocity";
+    case Slot::MultibodyForwardDynamics:
+      return "multibody_forward_dynamics";
+    case Slot::MultibodyPosition:
+      return "multibody_position";
+    case Slot::MultibodyVariationalIntegration:
+      return "multibody_variational_integration";
+    case Slot::UnifiedConstraint:
+      return "unified_constraint";
+    case Slot::DeformableDynamics:
+      return "deformable_dynamics";
+    case Slot::Kinematics:
+      return "kinematics";
+  }
+  return "unknown";
+}
+
+/// Stage names the built-in schedule selects for the reference scene with the
+/// default families (SequentialImpulse rigid, SemiImplicit multibody). This
+/// does not depend on DART_BUILD_PROFILE, so the probe records the schedule in
+/// every build configuration.
+std::vector<std::string> scheduledStageNames()
+{
+  sx::detail::BuiltInWorldStepScheduleOptions options;
+  options.hasRigidBodies = true;
+  options.hasMultibodyStructures = true;
+  options.hasDeformableBodies = true;
+  options.includeKinematics = true;
+  std::vector<std::string> names;
+  for (const auto slot : sx::detail::makeBuiltInWorldStepSchedule(options)) {
+    names.push_back(slotName(slot));
+  }
+  return names;
+}
+
 std::string jsonEscape(const std::string& text)
 {
   std::string out;
@@ -251,18 +310,16 @@ TEST(ArchitectureProbe, ReferenceSceneStagesAndGraphsMatchTheMap)
   world.setStepProfilingEnabled(true);
 
   RecordingExecutor executor;
+  // Warm up once so first-step preparation does not masquerade as
+  // steady-state work, then record exactly one step.
   world.step(executor);
+  executor.clear();
   world.step(executor);
-
-  const auto& profile = world.getLastStepProfile();
-  std::vector<std::string> stages;
-  for (const auto& stage : profile.stages) {
-    stages.push_back(stage.name);
-  }
 
   // The default families (SequentialImpulse rigid, SemiImplicit multibody)
   // run the fused schedule documented by the "fused-multibody" guided view
   // of docs/assets/architecture/world-step.dataflow.json.
+  const std::vector<std::string> stages = scheduledStageNames();
   const std::vector<std::string> expected
       = {"rigid_body_velocity",
          "multibody_velocity",
@@ -272,6 +329,16 @@ TEST(ArchitectureProbe, ReferenceSceneStagesAndGraphsMatchTheMap)
          "deformable_dynamics",
          "kinematics"};
   EXPECT_EQ(stages, expected);
+
+#if DART_BUILD_PROFILE
+  // With profiling compiled in, the stages that actually ran must be exactly
+  // the scheduled ones.
+  std::vector<std::string> profiled;
+  for (const auto& stage : world.getLastStepProfile().stages) {
+    profiled.push_back(stage.name);
+  }
+  EXPECT_EQ(profiled, stages);
+#endif
 
   // Kinematics is graph-backed, so at least one graph ran through the
   // injected executor and every graph is a well-formed DAG.

@@ -1,8 +1,10 @@
 # DART Classic Core Architecture
 
-> **Scope:** the classic DART 6 core (`Skeleton`/`BodyNode`/`Joint`,
-> `ConstraintSolver`, and the classic `World`) that the maintained
-> `release-6.*` line ships and that `main` keeps frozen for compatibility.
+> **Scope:** the classic DART 6 core. `main` still carries the classic
+> `dart/dynamics`, `dart/constraint`, and `dart/optimizer` modules
+> (`Skeleton`/`BodyNode`/`Joint`, `ConstraintSolver`) in a frozen state; the
+> DART 6 `World` and its simulation API were removed from `main` and live only
+> on the maintained `release-6.*` line.
 > DART 7 is a different engine: its architecture, data flow, and compute graph
 > are mapped on the published
 > [architecture page](../readthedocs/architecture.md), with the rationale in
@@ -15,14 +17,14 @@ The classic core is a layered library; each layer depends only on the layers
 below it. The library-context view on the architecture page shows the same
 modules next to the DART 7 core and the dartpy and dartsim surfaces.
 
-| Layer      | Modules                                                       | Handbook page                            |
-| ---------- | ------------------------------------------------------------- | ---------------------------------------- |
-| Foundation | `dart/common`, `dart/math`, `dart/lcpsolver`, `dart/simd`     | this page (below), [profiling.md]        |
-| Collision  | `dart/collision` (native default; fcl, bullet, ode backends)  | [`dart/collision/AGENTS.md`]             |
-| Dynamics   | `dart/dynamics` (`Skeleton`, `BodyNode`, `Joint`, shapes)     | [dynamics.md]                            |
-| Constraint | `dart/constraint` (`ConstraintSolver`, contact, joint limits) | [constraints.md]                         |
-| Simulation | classic `World` stepping, recording, `dart/io` loading        | [io-parsing.md], [aspect-system.md]      |
-| Surfaces   | `dart/gui`, `dartpy`, `dartsim`                               | [gui-rendering.md], [python-bindings.md] |
+| Layer      | Modules                                                                       | Handbook page                            |
+| ---------- | ----------------------------------------------------------------------------- | ---------------------------------------- |
+| Foundation | `dart/common`, `dart/math`, `dart/lcpsolver`, `dart/simd`                     | this page (below), [profiling.md]        |
+| Collision  | `dart/collision` (native default; fcl, bullet, ode backends)                  | [`dart/collision/AGENTS.md`]             |
+| Dynamics   | `dart/dynamics` (`Skeleton`, `BodyNode`, `Joint`, shapes)                     | [dynamics.md]                            |
+| Constraint | `dart/constraint` (`ConstraintSolver`, contact, joint limits)                 | [constraints.md]                         |
+| Simulation | DART 6 `World` stepping and recording (`release-6.*` only), `dart/io` loading | [io-parsing.md], [aspect-system.md]      |
+| Surfaces   | `dart/gui`, `dartpy`, `dartsim`                                               | [gui-rendering.md], [python-bindings.md] |
 
 [profiling.md]: profiling.md
 [`dart/collision/AGENTS.md`]: ../../dart/collision/AGENTS.md
@@ -46,8 +48,8 @@ the derivations is in [`background/`](../background/README.md).
 
 ## Classic Simulation Loop
 
-The classic `World::step()` runs collision detection, constraint solving, and
-integration in generalized coordinates:
+On `release-6.*`, the classic `World::step()` runs collision detection,
+constraint solving, and integration in generalized coordinates:
 
 1. Compute forward dynamics for every `Skeleton` with Featherstone's
    articulated-body algorithm (`dart/dynamics`), using the composite rigid body

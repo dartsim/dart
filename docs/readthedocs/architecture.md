@@ -59,12 +59,23 @@ families. Selection resolves to an ordered stage schedule; the schedule drives
 the rigid, multibody, and deformable solver families and emits compute graphs.
 Coupling beyond shared constraint rows and rigid-obstacle contact is planned.
 
+````{only} html
+
 ```{raw} html
 <div class="arch-map">
   <iframe style="height: 400px" src="architecture-map/simulation-framework.html?theme=light&embed=1" title="DART 7 simulation framework map" loading="lazy"></iframe>
   <p class="arch-map__links"><a href="architecture-map/simulation-framework.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/simulation-framework.architecture.json</code></p>
 </div>
 ```
+
+````
+
+````{only} not html
+
+```{include} _generated/architecture-map/simulation-framework.md
+```
+
+````
 
 ### World::step() Data Flow
 
@@ -77,12 +88,23 @@ runs standalone. Every flow names the data a stage hands on, so the owner of
 each state between stages is readable. Kinematics always runs last and feeds
 diagnostics, replay, and checkpoints.
 
+````{only} html
+
 ```{raw} html
 <div class="arch-map">
   <iframe style="height: 520px" src="architecture-map/world-step.html?theme=light&embed=1" title="World::step() data flow" loading="lazy"></iframe>
   <p class="arch-map__links"><a href="architecture-map/world-step.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/world-step.dataflow.json</code></p>
 </div>
 ```
+
+````
+
+````{only} not html
+
+```{include} _generated/architecture-map/world-step.md
+```
+
+````
 
 ### Compute Graph
 
@@ -93,12 +115,23 @@ CUDA kernels) that submit already-defined work. Profiles, metrics, and the DOT
 export are the evidence surface. Dependency inference, grouping, and
 asynchronous device completion are planned and shown as such.
 
+````{only} html
+
 ```{raw} html
 <div class="arch-map">
   <iframe style="height: 440px" src="architecture-map/compute-graph.html?theme=light&embed=1" title="DART 7 compute graph" loading="lazy"></iframe>
   <p class="arch-map__links"><a href="architecture-map/compute-graph.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/compute-graph.architecture.json</code></p>
 </div>
 ```
+
+````
+
+````{only} not html
+
+```{include} _generated/architecture-map/compute-graph.md
+```
+
+````
 
 ### Library Context
 
@@ -107,12 +140,23 @@ that DART 6 users know, the dartpy and dartsim surfaces, and the external
 dependencies each module owns. Use it to find which module a topic lives in
 before opening the developer handbook.
 
+````{only} html
+
 ```{raw} html
 <div class="arch-map">
   <iframe style="height: 450px" src="architecture-map/library-context.html?theme=light&embed=1" title="DART library context map" loading="lazy"></iframe>
   <p class="arch-map__links"><a href="architecture-map/library-context.html?theme=light" target="_blank" rel="noopener">Open the interactive view</a> · source: <code>docs/assets/architecture/library-context.architecture.json</code></p>
 </div>
 ```
+
+````
+
+````{only} not html
+
+```{include} _generated/architecture-map/library-context.md
+```
+
+````
 
 ## Available Options And Their Limits
 

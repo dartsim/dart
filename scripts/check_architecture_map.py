@@ -96,6 +96,32 @@ _CAMEL_SYMBOL_RE = re.compile(r"\b[A-Z][a-z0-9]+(?:[A-Z][a-z0-9]+)+\b")
 _FIRST_LEVEL_DIRS_TO_SKIP = {"__pycache__"}
 
 
+_NAMESPACE_OR_BRACE_RE = re.compile(r"\bnamespace\s+([\w:]+)\s*\{|[{}]")
+
+
+def enclosing_namespace(text: str, position: int) -> str:
+    """Qualified namespace open at ``position`` in comment-free header text.
+
+    Tracks ``namespace a::b {`` and nested ``namespace a { namespace b {``
+    openings against brace depth; anonymous namespaces and other braces
+    (classes, functions) do not add a name.
+    """
+    depth = 0
+    stack: list[tuple[int, str]] = []
+    for match in _NAMESPACE_OR_BRACE_RE.finditer(text, 0, position):
+        token = match.group(0)
+        if token == "{":
+            depth += 1
+        elif token == "}":
+            depth -= 1
+            while stack and stack[-1][0] > depth:
+                stack.pop()
+        else:
+            depth += 1
+            stack.append((depth, match.group(1)))
+    return "::".join(name for _, name in stack)
+
+
 def snake_case(name: str) -> str:
     return re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
 
@@ -207,13 +233,16 @@ class Checker:
         return self._header_text
 
     def symbol_resolves(self, symbol: str) -> bool:
-        """True when ``symbol`` is declared where its qualification says.
+        """True when ``symbol`` is declared inside the namespace it names.
 
-        ``dart::a::b::Name`` must be declared by a header under ``dart/a/b/``
-        (class, struct, enum, namespace, using, concept, or function), so a
-        namespace move or a typo in any component fails instead of matching a
-        same-named declaration elsewhere. Other qualified names must occur
-        verbatim in the headers; unqualified CamelCase names may occur anywhere.
+        ``dart::a::b::Name`` must be declared (class, struct, enum, namespace,
+        using, concept, or function) by a header under ``dart/a/`` inside an
+        enclosing namespace that reads exactly ``dart::a::b``, whether the
+        header opens it as ``namespace dart::a::b {`` or as nested blocks. A
+        namespace move or a typo in any component therefore fails instead of
+        matching a same-named declaration elsewhere. Other qualified names
+        must occur verbatim in the headers; unqualified CamelCase names may
+        occur anywhere.
         """
         parts = symbol.split("::")
         if len(parts) == 1:
@@ -221,23 +250,34 @@ class Checker:
             return re.search(pattern, self.header_text()) is not None
         if parts[0] != "dart":
             return re.search(re.escape(symbol), self.header_text()) is not None
-        directory = self._abs(Path("dart", *parts[1:-1]))
-        if not directory.is_dir():
+        module = self._abs(Path("dart", parts[1]))
+        if not module.is_dir():
             return False
+        expected = "::".join(parts[:-1])
         tail = re.escape(parts[-1])
         declaration = re.compile(
             r"(?:\b(?:class|struct|enum\s+class|enum|using|concept)\s+"
             r"(?:DART_\w+_API\s+)?" + tail + r"\b)"
-            r"|(?:\bnamespace\s+(?:[\w:]+::)?" + tail + r"\b)"
+            r"|(?:\bnamespace\s+(?P<ns>(?:[\w]+::)*)" + tail + r"\b)"
             r"|(?:\b" + tail + r"\s*\()"
         )
-        for header in sorted(directory.rglob("*.hpp")):
+        for header in sorted(module.rglob("*.hpp")):
             try:
-                text = header.read_text(encoding="utf-8", errors="ignore")
+                text = strip_comments(
+                    header.read_text(encoding="utf-8", errors="ignore")
+                )
             except OSError:
                 continue
-            if declaration.search(text):
-                return True
+            for match in declaration.finditer(text):
+                enclosing = enclosing_namespace(text, match.start())
+                declared_prefix = (match.group("ns") or "").rstrip(":")
+                if match.group("ns") is not None:
+                    # A namespace declaration names the symbol itself.
+                    full = "::".join(filter(None, [enclosing, declared_prefix]))
+                    if full == expected:
+                        return True
+                elif enclosing == expected:
+                    return True
         return False
 
     def read(self, relative: Path | str) -> str:
