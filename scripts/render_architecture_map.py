@@ -45,6 +45,8 @@ ARCHIFY_TAG = "v2.16.0"
 # Commit the tag resolved to when it was pinned (2026-09-05). Upgrades change
 # both values together after the skill's audit procedure re-verifies rendering.
 ARCHIFY_COMMIT = "c826e6c3a7abad19c0f3cd1ca57207d54b1ad8de"
+# Written into a checkout this script cloned; only such checkouts are replaced.
+CACHE_MARKER = ".dart-architecture-map-cache"
 ARCHIFY_CLI = Path("archify") / "bin" / "archify.mjs"
 MIN_NODE_MAJOR = 18
 
@@ -145,14 +147,21 @@ def ensure_archify(
     if cli.is_file() and _git_head(deps_dir) == commit:
         return deps_dir
     if deps_dir.exists():
-        if _git_head(deps_dir) not in (None, commit):
-            log(
-                f"{deps_dir} is not at the pinned archify commit {commit[:12]}; "
-                "re-fetching."
-            )
         if not fetch:
             return None
-        shutil.rmtree(deps_dir, ignore_errors=True)
+        if any(deps_dir.iterdir()) and not (deps_dir / CACHE_MARKER).is_file():
+            log(
+                f"{deps_dir} is not at the pinned archify commit {commit[:12]} and "
+                f"is not a checkout this script created ({CACHE_MARKER} is "
+                "missing); refusing to replace it. Delete it yourself or pass "
+                "--deps-dir."
+            )
+            return None
+        log(
+            f"{deps_dir} is not at the pinned archify commit {commit[:12]}; "
+            "re-fetching."
+        )
+        shutil.rmtree(deps_dir)
     if not fetch:
         return None
     deps_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -187,6 +196,11 @@ def ensure_archify(
     if not cli.is_file():
         log(f"archify checkout at {deps_dir} lacks {ARCHIFY_CLI}.")
         return None
+    (deps_dir / CACHE_MARKER).write_text(
+        f"archify {tag} {commit}\nCloned by scripts/render_architecture_map.py; "
+        "safe to delete.\n",
+        encoding="utf-8",
+    )
     return deps_dir
 
 

@@ -42,13 +42,13 @@ are rendered at docs-build time from typed JSON under
 `docs/assets/architecture/`. The JSON is the source of truth; rendered HTML is
 never committed.
 
-| View                                     | Owns                                                                                                                                       |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `simulation-framework.architecture.json` | facade → scene → selection → schedule → solver families → data/collision → compute; every `dart/simulation/<dir>` except `compute/`        |
-| `world-step.dataflow.json`               | the built-in `World::step()` stage slots as nodes (ids are `BuiltInWorldStepStageSlot` names in snake case), flows named by exchanged data |
-| `compute-graph.architecture.json`        | semantic graph → executable plan → runtime adapters → evidence; `dart/simulation/compute/**`                                               |
-| `library-context.architecture.json`      | every `dart/<module>`, `dartpy`, `dartsim`, external dependencies                                                                          |
-| `compute-graph.runtime.json`             | fixture recorded by `tests/unit/simulation/compute/test_architecture_probe.cpp` for the advisory runtime drift check                       |
+| View                                     | Owns                                                                                                                                                                                                                                                 |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `simulation-framework.architecture.json` | facade → scene → selection → schedule → solver families → data/collision → compute; every `dart/simulation/<dir>` except `compute/`                                                                                                                  |
+| `world-step.dataflow.json`               | the built-in `World::step()` stage slots as nodes (ids are `BuiltInWorldStepStageSlot` names in snake case) plus the two listed bookends `sync` and `continuation` for the prologue and epilogue outside the schedule, flows named by exchanged data |
+| `compute-graph.architecture.json`        | semantic graph → executable plan → runtime adapters → evidence; `dart/simulation/compute/**`                                                                                                                                                         |
+| `library-context.architecture.json`      | every `dart/<module>`, `dartpy`, `dartsim`, external dependencies                                                                                                                                                                                    |
+| `compute-graph.runtime.json`             | fixture recorded by `tests/unit/simulation/compute/test_architecture_probe.cpp` for the advisory runtime drift check                                                                                                                                 |
 
 Read the owning view before changing the code it describes: each node cites
 up to three `sources` (path, optional line range), carries a status `tag`, and

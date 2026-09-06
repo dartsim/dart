@@ -50,7 +50,8 @@ sources that CI checks against the code.
    and `multibody/multibody_options.hpp`, `WorldStepStage` subclass, and
    `dart/<module>` directory appears in the
    view that owns it (allowlists carry a reason per exemption); stage ids are
-   the enumerator names in snake case wherever a view mentions a stage; the
+   the enumerator names in snake case wherever a view mentions a stage, and
+   the step view's only non-slot nodes are its two listed bookends; the
    page embeds every view and names every source. Advisory:
    `scripts/check_architecture_map_runtime.py` compares the committed
    `compute-graph.runtime.json` fixture, recorded by

@@ -367,6 +367,46 @@ def test_line_cited_source_must_hold_its_symbol(repo: Path) -> None:
     _rewrite(repo, "simulation-framework.architecture.json", qualified)
     assert _run(repo) == []
 
+    def fully_qualified(ir):
+        ir["components"][0]["sources"][0]["label"] = "dart::simulation::World::step"
+
+    _rewrite(repo, "simulation-framework.architecture.json", fully_qualified)
+    assert _run(repo) == []
+
+    def wrong_owner(ir):
+        ir["components"][0]["sources"][0]["label"] = "Wrong::step"
+
+    _rewrite(repo, "simulation-framework.architecture.json", wrong_owner)
+    assert any(
+        "sit inside `dart::simulation::World`, not `Wrong`" in e for e in _run(repo)
+    )
+
+
+def test_enclosing_scope_tracks_classes_and_skips_template_headers() -> None:
+    text = (
+        "namespace dart::simulation {\n"
+        "template <class T> class Holder\n{\n  void get();\n};\n"
+        "enum class Mode\n{\n  Fast,\n};\n"
+        "struct Plain;\n"
+        "}\n"
+    )
+    assert cam.enclosing_scope(text, text.index("void get")) == (
+        "dart::simulation::Holder"
+    )
+    assert cam.enclosing_scope(text, text.index("Fast")) == "dart::simulation::Mode"
+    assert cam.enclosing_scope(text, text.index("struct Plain")) == "dart::simulation"
+
+
+def test_step_view_rejects_unlisted_non_slot_nodes(repo: Path) -> None:
+    def mutate(ir):
+        ir["nodes"].append(dict(ir["nodes"][0], id="mystery", label="Mystery"))
+        ir["nodes"].append(dict(ir["nodes"][0], id="sync", label="Sync"))
+
+    _rewrite(repo, "world-step.dataflow.json", mutate)
+    errors = _run(repo)
+    assert any("node `mystery` is neither a snake-cased" in e for e in errors)
+    assert not any("node `sync`" in e for e in errors)
+
 
 def test_unknown_symbol_in_sublabel(repo: Path) -> None:
     def mutate(ir):

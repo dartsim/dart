@@ -299,6 +299,45 @@ def test_ensure_archify_no_fetch_without_checkout(tmp_path: Path) -> None:
     assert ram.ensure_archify(tmp_path / "missing", fetch=False) is None
 
 
+def test_ensure_archify_refuses_to_replace_a_foreign_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    foreign = tmp_path / "archify"
+    foreign.mkdir()
+    (foreign / "my-work.txt").write_text("keep me", encoding="utf-8")
+    monkeypatch.setattr(ram, "_git_head", lambda path: "0" * 40)
+
+    def fail_clone(*args, **kwargs):  # pragma: no cover - must not be reached
+        raise AssertionError("clone attempted on a foreign directory")
+
+    monkeypatch.setattr(ram.subprocess, "run", fail_clone)
+    assert ram.ensure_archify(foreign) is None
+    assert (foreign / "my-work.txt").read_text(encoding="utf-8") == "keep me"
+    captured = capsys.readouterr()
+    assert ram.CACHE_MARKER in captured.out + captured.err
+
+
+def test_ensure_archify_replaces_only_its_own_stale_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cache = tmp_path / "archify"
+    cache.mkdir()
+    (cache / ram.CACHE_MARKER).write_text("stale", encoding="utf-8")
+    (cache / "stale.txt").write_text("old", encoding="utf-8")
+    monkeypatch.setattr(ram, "_git_head", lambda path: ram.ARCHIFY_COMMIT)
+
+    def fake_clone(args, **kwargs):
+        target = Path(args[-1])
+        cli = target / ram.ARCHIFY_CLI
+        cli.parent.mkdir(parents=True, exist_ok=True)
+        cli.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(ram.subprocess, "run", fake_clone)
+    assert ram.ensure_archify(cache) == cache
+    assert not (cache / "stale.txt").exists()
+    assert ram.ARCHIFY_COMMIT in (cache / ram.CACHE_MARKER).read_text(encoding="utf-8")
+
+
 def test_render_view_reports_validation_diagnostics(
     ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

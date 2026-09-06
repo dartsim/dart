@@ -28,9 +28,11 @@ The four views below are rendered at documentation build time from typed JSON
 sources under `docs/assets/architecture/`. Each node carries a status tag. In
 the three architecture views every node cites the source files that back it,
 and the `SRC` markers open those files at the commit the site was built from;
-the data-flow view's nodes are the step-stage slots themselves, so their
+the data-flow view's stage nodes are the step-stage slots themselves, so their
 evidence is the checked one-to-one mapping to the schedule enumerators rather
-than file links. A CI check fails when a cited path, line, or
+than file links, and its only other nodes are the two bookends that
+`World::step()` runs outside the schedule: the sync prologue and the
+diagnostics epilogue, both listed as such in the check. A CI check fails when a cited path, line, or
 symbol disappears, or when a simulation module, step-stage slot, or solver
 family is missing from the view that owns it, so the map cannot drift silently
 behind the code. Pan, zoom, search, and node focus work inside each frame; the

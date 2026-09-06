@@ -7,7 +7,8 @@ and runs inside ``pixi run check-lint``. It fails when:
 
 * a view is not well-formed JSON with unique ids and resolvable edges;
 * cited source evidence points at a missing path, an out-of-range line, a
-  line range that no longer contains the symbol it is labelled with, or a
+  line range that no longer contains the symbol it is labelled with, a
+  qualified label whose owner does not enclose the cited lines, or a
   qualified/CamelCase symbol in a label, sublabel, card, boundary, stage, or
   guide note that no public header declares;
 * a ``dart/simulation`` directory, a ``BuiltInWorldStepStageSlot`` enumerator,
@@ -15,7 +16,9 @@ and runs inside ``pixi run check-lint``. It fails when:
   ``world_options.hpp`` or ``multibody/multibody_options.hpp``, a
   ``dart/<module>`` directory, or a ``WorldStepStage`` subclass is absent from
   the view that owns it (allowlists below carry a reason per exemption);
-* a stage id used outside the step-flow view is not a node of that view;
+* a stage id used outside the step-flow view is not a node of that view, or
+  the step-flow view holds a node that is neither a snake-cased slot nor one
+  of the listed bookends (``STEP_VIEW_BOOKENDS``);
 * the published page does not embed a view or name its JSON source.
 
 Archify's own schema and layout validation happens at render time in
@@ -71,6 +74,15 @@ SIMULATION_COVERAGE_EXEMPTIONS: dict[str, str] = {
     ),
 }
 
+# Step-flow nodes that are not schedule slots: the parts of World::step() that run
+# before and after the built-in schedule, each with the reason it is drawn.
+STEP_VIEW_BOOKENDS = {
+    "sync": "World::step() prologue: handle sync and frame preparation before "
+    "the schedule runs",
+    "continuation": "World::step() epilogue: replay, metrics, and continuation "
+    "state after the schedule runs",
+}
+
 # WorldStepStage subclasses that intentionally have no BuiltInWorldStepStageSlot.
 STAGE_CLASS_ALLOWLIST: dict[str, str] = {
     "MultibodyContactStage": (
@@ -106,6 +118,34 @@ _FIRST_LEVEL_DIRS_TO_SKIP = {"__pycache__"}
 
 
 _NAMESPACE_OR_BRACE_RE = re.compile(r"\bnamespace\s+([\w:]+)\s*\{|[{}]")
+# Namespaces plus class, struct, and enum-class bodies; template headers are
+# consumed so `template <class T>` never opens a scope named T.
+_SCOPE_OR_BRACE_RE = re.compile(
+    r"\btemplate\s*<[^{};]*?>"
+    r"|\bnamespace\s+([\w:]+)\s*\{"
+    r"|\b(?:enum\s+class|class|struct)\s+(?:DART_\w+_API\s+)?(\w+)\b[^;{}]*\{"
+    r"|[{}]"
+)
+
+
+def _scope_at(text: str, position: int, pattern: re.Pattern[str]) -> str:
+    depth = 0
+    stack: list[tuple[int, str]] = []
+    for match in pattern.finditer(text, 0, position):
+        token = match.group(0)
+        if token == "{":
+            depth += 1
+        elif token == "}":
+            depth -= 1
+            while stack and stack[-1][0] > depth:
+                stack.pop()
+        else:
+            name = next((group for group in match.groups() if group), None)
+            if name is None:
+                continue  # a template header opens no scope
+            depth += 1
+            stack.append((depth, name))
+    return "::".join(name for _, name in stack)
 
 
 def enclosing_namespace(text: str, position: int) -> str:
@@ -115,20 +155,17 @@ def enclosing_namespace(text: str, position: int) -> str:
     openings against brace depth; anonymous namespaces and other braces
     (classes, functions) do not add a name.
     """
-    depth = 0
-    stack: list[tuple[int, str]] = []
-    for match in _NAMESPACE_OR_BRACE_RE.finditer(text, 0, position):
-        token = match.group(0)
-        if token == "{":
-            depth += 1
-        elif token == "}":
-            depth -= 1
-            while stack and stack[-1][0] > depth:
-                stack.pop()
-        else:
-            depth += 1
-            stack.append((depth, match.group(1)))
-    return "::".join(name for _, name in stack)
+    return _scope_at(text, position, _NAMESPACE_OR_BRACE_RE)
+
+
+def enclosing_scope(text: str, position: int) -> str:
+    """Like ``enclosing_namespace`` but class, struct, and enum bodies count too."""
+    return _scope_at(text, position, _SCOPE_OR_BRACE_RE)
+
+
+def blank_comments(text: str) -> str:
+    """Replace comments with spaces so offsets and line numbers are preserved."""
+    return _COMMENT_RE.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), text)
 
 
 def snake_case(name: str) -> str:
@@ -489,13 +526,26 @@ class Checker:
                     )
                     continue
                 token = symbol_label.rsplit("::", 1)[-1]
-                span = "\n".join(self.read(rel).splitlines()[line - 1 : span_end])
+                source_text = self.read(rel)
+                span = "\n".join(source_text.splitlines()[line - 1 : span_end])
                 if not re.search(r"\b" + re.escape(token) + r"\b", span):
                     self.error(
                         f"{label}: node `{node_id}` cites `{rel}` lines "
                         f"{line}..{span_end} for `{symbol_label}`, but they no "
                         f"longer contain `{token}`"
                     )
+                    continue
+                if "::" in symbol_label:
+                    owner = symbol_label.rsplit("::", 1)[0]
+                    blanked = blank_comments(source_text)
+                    offset = sum(len(l) + 1 for l in blanked.split("\n")[: line - 1])
+                    scope = enclosing_scope(blanked, offset)
+                    if not (scope == owner or scope.endswith("::" + owner)):
+                        self.error(
+                            f"{label}: node `{node_id}` cites `{rel}` lines "
+                            f"{line}..{span_end} for `{symbol_label}`, but those "
+                            f"lines sit inside `{scope or '<global>'}`, not `{owner}`"
+                        )
             for key in ("label", "sublabel"):
                 text = str(node.get(key) or "")
                 for symbol in self._symbols(text):
@@ -611,6 +661,14 @@ class Checker:
                     self.error(
                         f"{step.relpath}: stage slot `{slot}` has no node with id "
                         f"`{snake_case(slot)}`"
+                    )
+            for node_id in sorted(node_ids):
+                if node_id not in slot_ids and node_id not in STEP_VIEW_BOOKENDS:
+                    self.error(
+                        f"{step.relpath}: node `{node_id}` is neither a snake-cased "
+                        f"{STAGE_SLOT_ENUM} enumerator nor a listed bookend; add "
+                        "the slot, or list the bookend in STEP_VIEW_BOOKENDS with "
+                        "a reason"
                     )
             for name, view in views.items():
                 if name == STEP_VIEW:
