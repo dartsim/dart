@@ -34,5 +34,7 @@ Include relevant issues, backports, or follow-ups. -->
 - [ ] Add unit tests for new functionality
 - [ ] Document new methods and classes
 - [ ] Add Python bindings (dartpy) if applicable
+- [ ] Architecture map views (`docs/assets/architecture/`) updated when
+      `dart/simulation/**` structure, step-stage slots, or solver families changed
 
 </details>

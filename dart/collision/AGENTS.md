@@ -97,5 +97,5 @@ package/downstream evidence when relevant:
 
 ## See Also
 
-- @docs/onboarding/architecture.md - Collision in physics pipeline
+- @docs/readthedocs/architecture.md - Collision inside the DART 7 step data flow
 - @dart/constraint/AGENTS.md - How contacts become constraints

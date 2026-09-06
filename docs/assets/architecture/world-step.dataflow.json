@@ -1,0 +1,505 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "World::step() Data Flow",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "si-split",
+        "label": "Sequential-impulse split pipeline",
+        "focus": [
+          "sync",
+          "rigid_body_velocity",
+          "rigid_body_contact",
+          "multibody_variational_integration",
+          "deformable_dynamics",
+          "rigid_body_position",
+          "kinematics",
+          "continuation"
+        ],
+        "note": "SequentialImpulse, Vbd, or Avbd: velocity, contact, then the Variational multibody stage and deformables when present, then position."
+      },
+      {
+        "id": "fused-multibody",
+        "label": "Fused multibody with unified constraint",
+        "focus": [
+          "sync",
+          "rigid_body_velocity",
+          "multibody_velocity",
+          "unified_constraint",
+          "rigid_body_position",
+          "multibody_position",
+          "deformable_dynamics",
+          "kinematics",
+          "continuation"
+        ],
+        "note": "SemiImplicit multibody shares one constraint solve with rigid bodies, then both positions update; deformables advance before kinematics."
+      },
+      {
+        "id": "combined-ipc",
+        "label": "Combined IPC contact and advance",
+        "focus": [
+          "sync",
+          "rigid_ipc_contact",
+          "multibody_forward_dynamics",
+          "multibody_variational_integration",
+          "deformable_dynamics",
+          "kinematics",
+          "continuation"
+        ],
+        "note": "Ipc has one contact-and-advance stage; a multibody domain then runs its standalone stage and a deformable domain runs deformable dynamics."
+      }
+    ],
+    "viewBox": [
+      1080,
+      800
+    ]
+  },
+  "stages": [
+    {
+      "label": "Sync and prepare"
+    },
+    {
+      "label": "Velocity or IPC step"
+    },
+    {
+      "label": "Contact and constraint"
+    },
+    {
+      "label": "Position and advance"
+    },
+    {
+      "label": "Kinematics and continuation"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "sync",
+      "type": "messagebus",
+      "label": "Sync and prepare",
+      "sublabel": "handles + frames",
+      "tag": "Implemented",
+      "stage": 0,
+      "row": 2
+    },
+    {
+      "id": "rigid_body_velocity",
+      "type": "backend",
+      "label": "Rigid velocity",
+      "sublabel": "forces, gravity",
+      "tag": "Implemented",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "multibody_velocity",
+      "type": "backend",
+      "label": "Joint velocity",
+      "sublabel": "semi-implicit",
+      "tag": "Implemented",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "rigid_body_contact",
+      "type": "backend",
+      "label": "Rigid contact",
+      "sublabel": "SI, VBD, AVBD",
+      "tag": "Partial",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "unified_constraint",
+      "type": "messagebus",
+      "label": "Unified solve",
+      "sublabel": "shared rows",
+      "tag": "Partial",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "deformable_dynamics",
+      "type": "backend",
+      "label": "Deformables",
+      "sublabel": "FEM \u00b7 VBD \u00b7 IPC",
+      "tag": "Partial",
+      "stage": 3,
+      "row": 3
+    },
+    {
+      "id": "rigid_ipc_contact",
+      "type": "backend",
+      "label": "IPC advance",
+      "sublabel": "barrier + CCD",
+      "tag": "Partial",
+      "stage": 1,
+      "row": 2
+    },
+    {
+      "id": "rigid_body_position",
+      "type": "backend",
+      "label": "Rigid position",
+      "sublabel": "integrate poses",
+      "tag": "Implemented",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "multibody_position",
+      "type": "backend",
+      "label": "Joint position",
+      "sublabel": "integrate joints",
+      "tag": "Implemented",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "multibody_variational_integration",
+      "type": "backend",
+      "label": "Variational",
+      "sublabel": "standalone",
+      "tag": "Partial",
+      "stage": 2,
+      "row": 3
+    },
+    {
+      "id": "multibody_forward_dynamics",
+      "type": "backend",
+      "label": "Forward dynamics",
+      "sublabel": "standalone",
+      "tag": "Implemented",
+      "stage": 3,
+      "row": 4
+    },
+    {
+      "id": "continuation",
+      "type": "database",
+      "label": "Diagnostics",
+      "sublabel": "replay + metrics",
+      "tag": "Partial",
+      "stage": 4,
+      "row": 0
+    },
+    {
+      "id": "kinematics",
+      "type": "backend",
+      "label": "Kinematics",
+      "sublabel": "frame transforms",
+      "tag": "Implemented",
+      "stage": 4,
+      "row": 2
+    }
+  ],
+  "flows": [
+    {
+      "id": "sync-rigid-velocity",
+      "from": "sync",
+      "to": "rigid_body_velocity",
+      "label": "state",
+      "classification": "rigid",
+      "variant": "emphasis",
+      "labelAt": [
+        207,
+        214
+      ]
+    },
+    {
+      "id": "sync-multibody-velocity",
+      "from": "sync",
+      "to": "multibody_velocity",
+      "label": "state",
+      "classification": "joint",
+      "variant": "emphasis",
+      "labelAt": [
+        233,
+        292
+      ]
+    },
+    {
+      "id": "sync-ipc",
+      "from": "sync",
+      "to": "rigid_ipc_contact",
+      "label": "rigid state",
+      "classification": "Ipc",
+      "labelAt": [
+        214,
+        405
+      ],
+      "route": "straight"
+    },
+    {
+      "id": "sync-variational",
+      "from": "sync",
+      "to": "multibody_variational_integration",
+      "label": "joint state",
+      "classification": "Variational",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "via": [
+        [
+          100,
+          499
+        ]
+      ],
+      "labelAt": [
+        400,
+        484
+      ]
+    },
+    {
+      "id": "sync-forward-dynamics",
+      "from": "sync",
+      "to": "multibody_forward_dynamics",
+      "label": "joint state",
+      "classification": "standalone",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [
+        [
+          100,
+          700
+        ],
+        [
+          745,
+          700
+        ]
+      ],
+      "labelAt": [
+        460,
+        685
+      ]
+    },
+    {
+      "id": "sync-deformable",
+      "from": "sync",
+      "to": "deformable_dynamics",
+      "label": "vertex state",
+      "classification": "deformable",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [
+        [
+          100,
+          556
+        ],
+        [
+          745,
+          556
+        ]
+      ],
+      "labelAt": [
+        460,
+        541
+      ]
+    },
+    {
+      "id": "rigid-velocity-contact",
+      "from": "rigid_body_velocity",
+      "to": "rigid_body_contact",
+      "label": "v pred",
+      "variant": "emphasis",
+      "route": "straight",
+      "labelAt": [
+        397,
+        137
+      ]
+    },
+    {
+      "id": "rigid-velocity-unified",
+      "from": "rigid_body_velocity",
+      "to": "unified_constraint",
+      "label": "v pred",
+      "labelAt": [
+        422,
+        214
+      ]
+    },
+    {
+      "id": "multibody-velocity-unified",
+      "from": "multibody_velocity",
+      "to": "unified_constraint",
+      "label": "v",
+      "classification": "joint",
+      "route": "straight",
+      "labelAt": [
+        447,
+        290
+      ]
+    },
+    {
+      "id": "rigid-contact-position",
+      "from": "rigid_body_contact",
+      "to": "rigid_body_position",
+      "label": "v*",
+      "classification": "solved",
+      "variant": "emphasis",
+      "labelAt": [
+        611,
+        137
+      ],
+      "route": "straight"
+    },
+    {
+      "id": "unified-rigid-position",
+      "from": "unified_constraint",
+      "to": "rigid_body_position",
+      "label": "v*",
+      "classification": "solved",
+      "labelAt": [
+        611,
+        214
+      ]
+    },
+    {
+      "id": "unified-multibody-position",
+      "from": "unified_constraint",
+      "to": "multibody_position",
+      "label": "v*",
+      "classification": "joints",
+      "labelAt": [
+        668,
+        256
+      ],
+      "route": "straight"
+    },
+    {
+      "id": "ipc-kinematics",
+      "from": "rigid_ipc_contact",
+      "to": "kinematics",
+      "label": "poses",
+      "classification": "Ipc",
+      "route": "straight",
+      "labelAt": [
+        650,
+        372
+      ]
+    },
+    {
+      "id": "rigid-position-kinematics",
+      "from": "rigid_body_position",
+      "to": "kinematics",
+      "label": "poses",
+      "classification": "rigid",
+      "route": "vertical-channel",
+      "channelX": 878,
+      "labelAt": [
+        838,
+        176
+      ]
+    },
+    {
+      "id": "multibody-position-kinematics",
+      "from": "multibody_position",
+      "to": "kinematics",
+      "label": "joints",
+      "route": "vertical-channel",
+      "channelX": 866,
+      "labelAt": [
+        833,
+        290
+      ]
+    },
+    {
+      "id": "variational-kinematics",
+      "from": "multibody_variational_integration",
+      "to": "kinematics",
+      "label": "joint state",
+      "classification": "variational",
+      "fromSide": "right",
+      "toSide": "left",
+      "via": [
+        [
+          637,
+          499
+        ],
+        [
+          637,
+          442
+        ],
+        [
+          866,
+          442
+        ],
+        [
+          866,
+          385
+        ]
+      ],
+      "labelAt": [
+        745,
+        424
+      ]
+    },
+    {
+      "id": "forward-dynamics-kinematics",
+      "from": "multibody_forward_dynamics",
+      "to": "kinematics",
+      "label": "joint state",
+      "classification": "forward",
+      "route": "vertical-channel",
+      "channelX": 890,
+      "labelAt": [
+        845,
+        594
+      ]
+    },
+    {
+      "id": "deformable-kinematics",
+      "from": "deformable_dynamics",
+      "to": "kinematics",
+      "label": "vertices",
+      "classification": "deformable",
+      "labelAt": [
+        838,
+        480
+      ],
+      "route": "vertical-channel",
+      "channelX": 878
+    },
+    {
+      "id": "kinematics-continuation",
+      "from": "kinematics",
+      "to": "continuation",
+      "label": "frames",
+      "classification": "metrics",
+      "variant": "emphasis",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelAt": [
+        960,
+        271
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "One ordered stage list",
+      "items": [
+        "makeBuiltInWorldStepSchedule picks at most seven slots from the eleven shown",
+        "Empty domains add no stage; deformables advance after the position stages in the fused schedule; kinematics always runs last",
+        "Flows name the data a stage hands on, so state ownership is readable"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Family variants",
+      "items": [
+        "Split rigid pipeline: SequentialImpulse, Vbd, Avbd",
+        "Combined rigid stage: Ipc only",
+        "Multibody: SemiImplicit fuses into the unified constraint; Variational runs standalone"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Continuation",
+      "items": [
+        "Replay records substantial continuation state; binary snapshots reject populated AVBD state",
+        "StepMetrics and resolved configuration report what actually ran",
+        "General state vectors omit free-rigid orientation and deformables today"
+      ]
+    }
+  ]
+}

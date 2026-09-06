@@ -36,5 +36,5 @@ Benchmarks: `tests/benchmark/common/bm_allocators.cpp` and
 
 ## See Also
 
-- @docs/onboarding/architecture.md — Memory management in architecture overview
+- @docs/readthedocs/architecture.md — Living architecture map; the library-context view places common utilities next to the DART 7 core
 - @docs/design/hierarchical_allocator.md — Original design document

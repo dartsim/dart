@@ -40,10 +40,10 @@ def test_real_doc_passes():
     assert module.check(REAL_DOC, HEADER_ROOT) == []
 
 
-def test_real_doc_has_eight_available_rows():
+def test_real_doc_has_nine_available_rows():
     module = _load_module()
     rows = module.available_rows(REAL_DOC.read_text(encoding="utf-8"))
-    assert len(rows) == 8, [lineno for lineno, _ in rows]
+    assert len(rows) == 9, [lineno for lineno, _ in rows]
 
 
 def test_valid_synthetic_row_passes(tmp_path):

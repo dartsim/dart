@@ -1,0 +1,440 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DART 7 Compute Graph",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "stages",
+      "type": "messagebus",
+      "label": "Stage pipeline",
+      "sublabel": "WorldStepPipeline \u00b7 stages",
+      "tag": "Partial",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/compute/world_step_pipeline.cpp",
+          "label": "WorldStepPipeline"
+        },
+        {
+          "path": "dart/simulation/compute/world_step_stage.hpp",
+          "label": "WorldStepStage"
+        },
+        {
+          "path": "dart/simulation/compute/detail/world_step_stages.hpp",
+          "label": "built-in stages"
+        }
+      ]
+    },
+    {
+      "id": "graph",
+      "type": "backend",
+      "label": "Semantic compute graph",
+      "sublabel": "ComputeGraph \u00b7 edges",
+      "tag": "Implemented",
+      "pos": [
+        320,
+        170
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/compute/compute_graph.hpp",
+          "label": "ComputeGraph"
+        },
+        {
+          "path": "dart/simulation/compute/compute_node.hpp",
+          "label": "ComputeNode"
+        },
+        {
+          "path": "dart/simulation/compute/compute_stage_metadata.hpp",
+          "label": "stage metadata"
+        }
+      ]
+    },
+    {
+      "id": "resources",
+      "type": "backend",
+      "label": "Resource access metadata",
+      "sublabel": "reads, writes, reductions",
+      "tag": "Partial",
+      "pos": [
+        320,
+        430
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/compute/compute_stage_metadata.hpp",
+          "label": "access declarations"
+        },
+        {
+          "path": "dart/simulation/compute/compute_graph.hpp",
+          "label": "findResourceHazards"
+        },
+        {
+          "path": "docs/design/scalable_compute_decisions.md",
+          "label": "contract"
+        }
+      ]
+    },
+    {
+      "id": "lowering",
+      "type": "backend",
+      "label": "Executable plan",
+      "sublabel": "cached lowering \u00b7 batches",
+      "tag": "Partial",
+      "pos": [
+        600,
+        170
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/compute/parallel_executor.cpp",
+          "label": "lowering cache"
+        },
+        {
+          "path": "dart/simulation/compute/rigid_body_batch_ops.hpp",
+          "label": "batch ops"
+        },
+        {
+          "path": "dart/simulation/compute/world_kinematics_graph.hpp",
+          "label": "kinematics graph"
+        }
+      ]
+    },
+    {
+      "id": "batch",
+      "type": "database",
+      "label": "World batch lanes",
+      "sublabel": "SoA lanes \u00b7 device residency",
+      "tag": "Partial",
+      "pos": [
+        600,
+        430
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/compute/world_batch.hpp",
+          "label": "world batch"
+        },
+        {
+          "path": "dart/simulation/compute/rigid_body_state_batch.hpp",
+          "label": "RigidBodyStateBatch"
+        },
+        {
+          "path": "docs/design/batched_world_device_residency.md",
+          "label": "residency contract"
+        }
+      ]
+    },
+    {
+      "id": "planned",
+      "type": "messagebus",
+      "label": "Inference and grouping",
+      "sublabel": "inferred edges \u00b7 grouping",
+      "tag": "Planned",
+      "pos": [
+        600,
+        690
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "docs/design/scalable_compute_decisions.md",
+          "label": "decision framework"
+        },
+        {
+          "path": "docs/plans/030-compute-scalability-roadmap.md",
+          "label": "PLAN-030"
+        },
+        {
+          "path": "docs/design/dart7_architecture_assessment.md",
+          "label": "finding F3"
+        }
+      ]
+    },
+    {
+      "id": "sequential",
+      "type": "cloud",
+      "label": "SequentialExecutor",
+      "sublabel": "reference path, always safe",
+      "tag": "Implemented",
+      "pos": [
+        880,
+        40
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/compute/sequential_executor.hpp",
+          "label": "SequentialExecutor"
+        },
+        {
+          "path": "dart/simulation/compute/compute_executor.hpp",
+          "label": "ComputeExecutor"
+        }
+      ]
+    },
+    {
+      "id": "parallel",
+      "type": "cloud",
+      "label": "ParallelExecutor",
+      "sublabel": "Taskflow pool \u00b7 parallelFor",
+      "tag": "Partial",
+      "pos": [
+        880,
+        300
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/compute/parallel_executor.hpp",
+          "label": "ParallelExecutor"
+        },
+        {
+          "path": "dart/simulation/compute/taskflow_executor.hpp",
+          "label": "Taskflow adapter"
+        }
+      ]
+    },
+    {
+      "id": "cuda",
+      "type": "cloud",
+      "label": "Resident CUDA kernels",
+      "sublabel": "rigid \u00b7 VBD \u00b7 PSD \u00b7 CCD",
+      "tag": "Partial",
+      "pos": [
+        880,
+        560
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/compute/cuda/cuda_runtime.cuh",
+          "label": "runtime probe"
+        },
+        {
+          "path": "dart/simulation/compute/cuda/rigid_body_state_batch_cuda.cuh",
+          "label": "rigid integration"
+        },
+        {
+          "path": "dart/simulation/compute/cuda/vbd_block_descent_cuda.cuh",
+          "label": "VBD rollout"
+        }
+      ]
+    },
+    {
+      "id": "evidence",
+      "type": "database",
+      "label": "Profiles and metrics",
+      "sublabel": "StepMetrics \u00b7 profiles \u00b7 DOT",
+      "tag": "Implemented",
+      "pos": [
+        1160,
+        300
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/compute/world_step_profile.hpp",
+          "label": "StepMetrics"
+        },
+        {
+          "path": "dart/simulation/compute/execution_profile.hpp",
+          "label": "ComputeExecutionProfile"
+        },
+        {
+          "path": "dart/simulation/compute/compute_graph_visualization.hpp",
+          "label": "toDot"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Semantic graph",
+      "wraps": [
+        "graph",
+        "resources"
+      ],
+      "pad": 20
+    },
+    {
+      "kind": "region",
+      "label": "Executable plan",
+      "wraps": [
+        "lowering",
+        "batch",
+        "planned"
+      ],
+      "pad": 20
+    },
+    {
+      "kind": "region",
+      "label": "Runtime adapters",
+      "wraps": [
+        "sequential",
+        "parallel",
+        "cuda"
+      ],
+      "pad": 20
+    }
+  ],
+  "connections": [
+    {
+      "id": "stages-graph",
+      "from": "stages",
+      "to": "graph",
+      "label": "emits graphs",
+      "variant": "emphasis"
+    },
+    {
+      "id": "graph-resources",
+      "from": "graph",
+      "to": "resources",
+      "label": "declared accesses",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "graph-lowering",
+      "from": "graph",
+      "to": "lowering",
+      "label": "topological order",
+      "variant": "emphasis"
+    },
+    {
+      "id": "resources-lowering",
+      "from": "resources",
+      "to": "lowering",
+      "label": "hazard diagnostics"
+    },
+    {
+      "id": "batch-lowering",
+      "from": "batch",
+      "to": "lowering",
+      "label": "lane buffers",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "batch-cuda",
+      "from": "batch",
+      "to": "cuda",
+      "label": "resident buffers"
+    },
+    {
+      "id": "resources-planned",
+      "from": "resources",
+      "to": "planned",
+      "label": "inferred edges",
+      "variant": "dashed"
+    },
+    {
+      "id": "lowering-sequential",
+      "from": "lowering",
+      "to": "sequential",
+      "label": "ordered calls"
+    },
+    {
+      "id": "lowering-parallel",
+      "from": "lowering",
+      "to": "parallel",
+      "label": "Taskflow graph",
+      "variant": "emphasis"
+    },
+    {
+      "id": "sequential-evidence",
+      "from": "sequential",
+      "to": "evidence",
+      "label": "profiles",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "parallel-evidence",
+      "from": "parallel",
+      "to": "evidence",
+      "label": "profiles, workers",
+      "variant": "emphasis"
+    },
+    {
+      "id": "cuda-evidence",
+      "from": "cuda",
+      "to": "evidence",
+      "label": "device timings",
+      "fromSide": "right",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Three layers, kept separate",
+      "items": [
+        "Semantic graph: explicit edges are the correctness source of truth",
+        "Executable plan: bind work to buffers and kernels, choose lowering, validate",
+        "Runtime adapter: Taskflow or a device submits already-defined work"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "What runs today",
+      "items": [
+        "Sequential reference and Taskflow graph execution with cached lowering",
+        "Resident CUDA kernels for rigid integration, VBD, PSD, LCP, and CCD",
+        "Kinematics caches its graph; rigid integration builds per call"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Planned, not claimed",
+      "items": [
+        "Dependency inference against declared program order",
+        "Grouping and coarsening measured on workloads",
+        "Asynchronous device completion edges and full CUDA World stepping"
+      ]
+    }
+  ]
+}

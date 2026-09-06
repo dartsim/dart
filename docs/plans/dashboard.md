@@ -503,3 +503,19 @@ its own line so status updates remain git-history friendly.
   headless/assessed viewer evidence, and stable Linux/macOS Python workflows.
   The historical macOS pytest abort must be root-caused before default
   enablement. Retiring the handoff completes no loader phase.
+
+### PLAN-131: Architecture Map Follow-Ups
+
+- Owner doc: [`../design/architecture_map.md`](../design/architecture_map.md)
+- Status: Parked
+- Horizon: Parked
+- Dimension: AI-native execution
+- Next step: Revisit only when an activation signal appears: add guided
+  chapters (`meta.views`) beyond the step-schedule variants once a live
+  diagram draws requests for a walkthrough; add architecture delta receipts
+  to pull requests through `archify compare` once the views have changed at
+  least twice and the receipt shape is known; promote
+  `check-architecture-map-runtime` from advisory to blocking once the fixture
+  has survived a few schedule changes without false positives.
+- Gate: One of the activation signals above is recorded in a pull request or
+  issue; until then no work is scheduled.

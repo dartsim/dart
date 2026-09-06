@@ -1,0 +1,537 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DART 7 Simulation Framework",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "world",
+      "type": "external",
+      "label": "World facade",
+      "sublabel": "dart::simulation::World",
+      "tag": "Implemented",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/world.hpp",
+          "line": 708,
+          "end_line": 711,
+          "label": "World::step"
+        },
+        {
+          "path": "python/dartpy/simulation/module_world.cpp",
+          "label": "dartpy.World"
+        },
+        {
+          "path": "dart/simulation/frame/frame.hpp",
+          "label": "frames"
+        }
+      ]
+    },
+    {
+      "id": "scene",
+      "type": "database",
+      "label": "Physical scene",
+      "sublabel": "rigid, multibody, deformable",
+      "tag": "Implemented",
+      "pos": [
+        320,
+        170
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/body/rigid_body.hpp",
+          "label": "RigidBody"
+        },
+        {
+          "path": "dart/simulation/multibody/multibody.hpp",
+          "label": "Multibody"
+        },
+        {
+          "path": "dart/simulation/constraint/loop_closure.hpp",
+          "label": "LoopClosure"
+        }
+      ]
+    },
+    {
+      "id": "selection",
+      "type": "external",
+      "label": "Solver selection",
+      "sublabel": "WorldOptions \u00b7 policy values",
+      "tag": "Implemented",
+      "pos": [
+        320,
+        430
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/world_options.hpp",
+          "line": 48,
+          "label": "RigidBodySolver"
+        },
+        {
+          "path": "dart/simulation/multibody/multibody_options.hpp",
+          "line": 25,
+          "label": "MultibodyIntegrationFamily"
+        },
+        {
+          "path": "dart/simulation/world_options.hpp",
+          "line": 120,
+          "label": "ContactSolverMethod"
+        }
+      ]
+    },
+    {
+      "id": "components",
+      "type": "database",
+      "label": "Model, state, control",
+      "sublabel": "baked model \u00b7 state \u00b7 replay",
+      "tag": "Partial",
+      "pos": [
+        600,
+        40
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/comps/all.hpp",
+          "label": "components"
+        },
+        {
+          "path": "dart/simulation/space/state_space.hpp",
+          "label": "StateSpace"
+        },
+        {
+          "path": "dart/simulation/io/binary_io.hpp",
+          "label": "binary checkpoints"
+        }
+      ]
+    },
+    {
+      "id": "schedule",
+      "type": "messagebus",
+      "label": "Step schedule",
+      "sublabel": "ordered stages \u00b7 preflight",
+      "tag": "Partial",
+      "pos": [
+        600,
+        300
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/detail/world_step_schedule.hpp",
+          "line": 190,
+          "label": "makeBuiltInWorldStepSchedule"
+        },
+        {
+          "path": "dart/simulation/compute/world_step_stage.hpp",
+          "label": "WorldStepStage"
+        },
+        {
+          "path": "dart/simulation/common/diagnostics.hpp",
+          "label": "diagnostics"
+        }
+      ]
+    },
+    {
+      "id": "collision",
+      "type": "backend",
+      "label": "Native collision",
+      "sublabel": "native contacts \u00b7 CCD casts",
+      "tag": "Implemented",
+      "pos": [
+        600,
+        560
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/collision/collision_group.hpp",
+          "label": "CollisionGroup"
+        },
+        {
+          "path": "dart/simulation/body/contact.hpp",
+          "label": "Contact"
+        },
+        {
+          "path": "dart/simulation/body/collision_body.hpp",
+          "label": "collision bodies"
+        }
+      ]
+    },
+    {
+      "id": "rigid",
+      "type": "backend",
+      "label": "Rigid solver families",
+      "sublabel": "SI default \u00b7 IPC, AVBD, VBD",
+      "tag": "Partial",
+      "pos": [
+        880,
+        170
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/detail/rigid_contact/boxed_lcp_contact.hpp",
+          "label": "SI and boxed LCP"
+        },
+        {
+          "path": "dart/simulation/detail/rigid_ipc/rigid_ipc_barrier.hpp",
+          "label": "rigid IPC"
+        },
+        {
+          "path": "dart/simulation/detail/rigid_avbd/rigid_block_kernel.hpp",
+          "label": "AVBD and VBD"
+        }
+      ]
+    },
+    {
+      "id": "multibody",
+      "type": "backend",
+      "label": "Multibody integration",
+      "sublabel": "SemiImplicit \u00b7 Variational",
+      "tag": "Partial",
+      "pos": [
+        880,
+        300
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/compute/multibody_dynamics.hpp",
+          "label": "multibody stages"
+        },
+        {
+          "path": "dart/simulation/compute/variational_integration.hpp",
+          "label": "variational"
+        },
+        {
+          "path": "dart/simulation/compute/unified_constraint.hpp",
+          "label": "unified constraint"
+        }
+      ]
+    },
+    {
+      "id": "deformable",
+      "type": "backend",
+      "label": "Deformable families",
+      "sublabel": "mass-spring \u00b7 FEM \u00b7 VBD",
+      "tag": "Partial",
+      "pos": [
+        880,
+        430
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/detail/deformable_vbd/block_descent.hpp",
+          "label": "VBD"
+        },
+        {
+          "path": "dart/simulation/detail/newton_barrier/projected_newton.hpp",
+          "label": "IPC"
+        },
+        {
+          "path": "dart/simulation/detail/deformable_elasticity/fem_tet_element.hpp",
+          "label": "FEM"
+        }
+      ]
+    },
+    {
+      "id": "diff",
+      "type": "backend",
+      "label": "Differentiation",
+      "sublabel": "StepDerivatives \u00b7 rollouts",
+      "tag": "Partial",
+      "pos": [
+        1160,
+        40
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/diff/step_derivatives.hpp",
+          "label": "StepDerivatives"
+        },
+        {
+          "path": "dart/simulation/diff/rollout.hpp",
+          "label": "rollouts"
+        },
+        {
+          "path": "docs/design/differentiable_simulation.md",
+          "label": "design"
+        }
+      ]
+    },
+    {
+      "id": "compute",
+      "type": "cloud",
+      "label": "Compute",
+      "sublabel": "graphs \u00b7 executors \u00b7 CUDA",
+      "tag": "Partial",
+      "pos": [
+        1160,
+        300
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/compute/compute_graph.hpp",
+          "label": "ComputeGraph"
+        },
+        {
+          "path": "dart/simulation/compute/parallel_executor.hpp",
+          "label": "ParallelExecutor"
+        },
+        {
+          "path": "dart/simulation/compute/cuda/cuda_runtime.cuh",
+          "label": "CUDA runtime"
+        }
+      ]
+    },
+    {
+      "id": "coupling",
+      "type": "messagebus",
+      "label": "Coupling strategies",
+      "sublabel": "shared or partitioned solve",
+      "tag": "Planned",
+      "pos": [
+        1160,
+        560
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "docs/design/simulation_solver_architecture.md",
+          "label": "design"
+        },
+        {
+          "path": "dart/simulation/detail/newton_barrier/mixed_domain_coupling.hpp",
+          "label": "mixed-domain coupling"
+        },
+        {
+          "path": "dart/simulation/detail/deformable_contact/continuous_collision_step.hpp",
+          "label": "deformable contact"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Public API: World, handles, option values",
+      "wraps": [
+        "world",
+        "scene",
+        "selection"
+      ],
+      "pad": 20
+    },
+    {
+      "kind": "region",
+      "label": "Engine: only installed headers are public",
+      "wraps": [
+        "components",
+        "schedule",
+        "collision",
+        "rigid",
+        "multibody",
+        "deformable",
+        "diff",
+        "compute",
+        "coupling"
+      ],
+      "pad": 20
+    }
+  ],
+  "connections": [
+    {
+      "id": "world-scene",
+      "from": "world",
+      "to": "scene",
+      "label": "authoring handles",
+      "variant": "emphasis"
+    },
+    {
+      "id": "world-selection",
+      "from": "world",
+      "to": "selection",
+      "label": "policy values"
+    },
+    {
+      "id": "scene-components",
+      "from": "scene",
+      "to": "components",
+      "label": "baked data",
+      "variant": "emphasis"
+    },
+    {
+      "id": "selection-schedule",
+      "from": "selection",
+      "to": "schedule",
+      "label": "resolved config"
+    },
+    {
+      "id": "schedule-collision",
+      "from": "schedule",
+      "to": "collision",
+      "label": "stages query contacts",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        685,
+        466
+      ]
+    },
+    {
+      "id": "schedule-rigid",
+      "from": "schedule",
+      "to": "rigid",
+      "label": "ordered stages",
+      "variant": "emphasis",
+      "labelSegment": 1
+    },
+    {
+      "id": "schedule-multibody",
+      "from": "schedule",
+      "to": "multibody"
+    },
+    {
+      "id": "schedule-deformable",
+      "from": "schedule",
+      "to": "deformable",
+      "label": "ordered stages",
+      "labelSegment": 1
+    },
+    {
+      "id": "rigid-multibody",
+      "from": "rigid",
+      "to": "multibody",
+      "label": "shared constraints",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "components-diff",
+      "from": "components",
+      "to": "diff",
+      "label": "step derivatives"
+    },
+    {
+      "id": "multibody-compute",
+      "from": "multibody",
+      "to": "compute",
+      "label": "parallelFor"
+    },
+    {
+      "id": "coupling-deformable",
+      "from": "coupling",
+      "to": "deformable",
+      "label": "typed exchange",
+      "variant": "dashed",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "rigid-compute",
+      "from": "rigid",
+      "to": "compute",
+      "label": "compute graphs",
+      "fromSide": "right",
+      "toSide": "top",
+      "via": [
+        [
+          1245,
+          206
+        ]
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Read left to right",
+      "items": [
+        "Public surface: World, handles, option values, and the installed headers (derivatives, executors, stages)",
+        "Selection resolves to an ordered stage schedule; the rigid integration and kinematics stages emit compute graphs, other stages use the executor directly",
+        "Selectors are the enum classes of world_options.hpp and multibody_options.hpp; the gate lists every enumerator"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Public selectors",
+      "items": [
+        "RigidBodySolver: SequentialImpulse (default), Ipc, Avbd, Vbd",
+        "ContactSolverMethod: SequentialImpulse (default), BoxedLcp",
+        "MultibodyIntegrationFamily: SemiImplicit (fuses with the split rigid solve), Variational (standalone stage)",
+        "RigidAvbdParameterProfile: Paper2025Table2, SourceDemo2d, SourceDemo3d, MassScaledReference",
+        "ContactGradientMode: Analytic, ComplementarityAware, PreContactSurrogate",
+        "ComputeAcceleratorPolicy: CpuOnly, PreferAccelerated"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Status tags",
+      "items": [
+        "Implemented: a source path and a scoped test exist",
+        "Partial: useful implementation with uncovered contract cells",
+        "Planned: accepted work without qualifying implementation"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Planned defaults",
+      "items": [
+        "Versioned selection policy over tested method combinations",
+        "Capability validation before stepping instead of silent fallbacks",
+        "Full CUDA rigid and contact stepping behind the same facade"
+      ]
+    }
+  ]
+}

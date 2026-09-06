@@ -269,7 +269,7 @@ history.
 
 **Final status:** Complete (archived 2026-07-03).
 
-**Owner doc:** [`../onboarding/architecture.md#12-math-module-dartmath`](../onboarding/architecture.md#12-math-module-dartmath)
+**Owner doc:** [`../onboarding/architecture.md#math-module-dartmath`](../onboarding/architecture.md#math-module-dartmath)
 
 **Dimension:** Release transition · **Horizon at completion:** Later
 
@@ -338,3 +338,29 @@ and undiscoverable pilot docs while keeping a quiet advisory channel;
 `pixi run python -m pytest tests/test_check_docs_policy.py` green;
 mutation-verified promotion (an injected pilot broken link fails the
 checker, reverting it restores exit 0).
+
+### PLAN-130: Living Architecture Map
+
+**Final status:** Complete (archived 2026-09-05).
+
+**Owner doc:** [`../design/architecture_map.md`](../design/architecture_map.md);
+views under [`../assets/architecture/`](../assets/README.md); update and audit
+procedures in the `dart-architecture` skill.
+
+**Dimension:** AI-native execution · **Horizon at completion:** Next
+
+**Outcome:** Landed WP-130.1 through WP-130.7 in one change: the pinned
+archify render driver in the docs build with text fallbacks, the blocking
+`check-architecture-map` gate in `check-lint`, the four views (simulation
+framework, `World::step()` data flow, compute graph, library context) embedded
+in `docs/readthedocs/architecture.md`, the classic-core page folded to about
+120 lines with every inbound reference updated, the extended
+`dart-architecture` skill and owner rules, and the runtime probe with the
+advisory `check-architecture-map-runtime` drift check. Pull-request delta
+receipts (formerly WP-130.8) are parked under PLAN-131 on the dashboard.
+
+**Closing evidence:** `pixi run check-architecture-map`,
+`pixi run render-architecture-map`, `pixi run docs-build` (four frames rendered
+and embedded), `pixi run check-architecture-map-runtime --strict` on the
+committed fixture, the `test_architecture_probe` gtest, `pixi run test-ai-infra`,
+`pixi run check-ai-infra`, and `pixi run check-docs-policy`.

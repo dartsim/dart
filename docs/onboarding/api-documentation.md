@@ -137,6 +137,12 @@ pixi run api-docs-build    # Convenience task that runs both builders
      stages the HTML bundle inside `_generated/cpp-api/`.
   4. Sphinx copies `_generated/cpp-api/` into the output tree so the RTD site
      serves the API reference next to the rest of the pages.
+  5. The same `builder-inited` event runs `scripts/render_architecture_map.py`,
+     which renders the architecture map views under
+     `docs/assets/architecture/` with the pinned archify checkout (fetched into
+     `.deps/archify`, Node.js from `build.tools.nodejs`) into
+     `_generated/architecture-map/`. Without Node.js the views degrade to text
+     fallbacks with a warning; an invalid view fails the build.
 
 ### GitHub Pages
 

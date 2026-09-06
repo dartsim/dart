@@ -15,6 +15,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from sphinx.errors import ExtensionError
 from sphinx.util import logging
 
 logger = logging.getLogger(__name__)
@@ -540,6 +541,9 @@ root_doc = "index"
 
 exclude_patterns = [
     "_build",
+    # Build outputs copied into the site (Doxygen bundle, architecture map);
+    # the architecture page pulls its text summaries in with ``include``.
+    "_generated",
     "Thumbs.db",
     ".DS_Store",
     "README.md",
@@ -617,6 +621,44 @@ def build_cpp_api_docs(app):
     logger.info("C++ API reference generated at %s", CPP_API_OUTPUT_DIR)
 
 
+ARCHITECTURE_MAP_SCRIPT = REPO_ROOT / "scripts" / "render_architecture_map.py"
+ARCHITECTURE_MAP_OUTPUT_DIR = GENERATED_ASSETS_DIR / "architecture-map"
+
+
+def render_architecture_map(app):
+    """Render docs/assets/architecture/*.json into _generated/architecture-map/.
+
+    Mirrors the Doxygen hook: a missing toolchain (Node.js or the pinned
+    archify checkout) degrades to text fallbacks with a warning, while an
+    invalid view is a content error that fails the build. Runs for every
+    builder because the driver also writes the Markdown summaries that the
+    PDF and EPUB outputs include in place of the interactive frames.
+    """
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(ARCHITECTURE_MAP_SCRIPT),
+            "--output-dir",
+            str(ARCHITECTURE_MAP_OUTPUT_DIR),
+        ],
+        cwd=REPO_ROOT,
+    )
+    if completed.returncode == 2:
+        logger.warning(
+            "Architecture map views were written as text fallbacks; install "
+            "Node.js >= 18 for the interactive rendering (see the driver log)."
+        )
+    elif completed.returncode != 0:
+        raise ExtensionError(
+            "Architecture map rendering failed; fix docs/assets/architecture/"
+            "*.json (see the driver log above)."
+        )
+    else:
+        logger.info("Architecture map rendered at %s", ARCHITECTURE_MAP_OUTPUT_DIR)
+
+
 def setup(app):
     app.connect("config-inited", _ensure_cpp_api_extra_path, priority=700)
     app.connect("builder-inited", build_cpp_api_docs)
+    app.connect("builder-inited", render_architecture_map)

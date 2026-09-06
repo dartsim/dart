@@ -1,0 +1,507 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DART Library Context",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "dartpy",
+      "type": "frontend",
+      "label": "dartpy",
+      "sublabel": "nanobind bindings",
+      "tag": "Implemented",
+      "pos": [
+        40,
+        170
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "python/dartpy/__init__.py",
+          "label": "module layout"
+        },
+        {
+          "path": "python/dartpy/simulation/module_world.cpp",
+          "label": "World bindings"
+        },
+        {
+          "path": "docs/onboarding/python-bindings.md",
+          "label": "handbook"
+        }
+      ]
+    },
+    {
+      "id": "dartsim",
+      "type": "frontend",
+      "label": "dartsim app",
+      "sublabel": "editor engine \u00b7 ImGui shell",
+      "tag": "Partial",
+      "pos": [
+        40,
+        430
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dartsim/README.md",
+          "label": "app overview"
+        },
+        {
+          "path": "dartsim/CMakeLists.txt",
+          "label": "app targets"
+        },
+        {
+          "path": "docs/design/dartsim_gui_simulator.md",
+          "label": "design"
+        }
+      ]
+    },
+    {
+      "id": "simulation",
+      "type": "backend",
+      "label": "dart::simulation",
+      "sublabel": "World \u00b7 solvers \u00b7 compute",
+      "tag": "Partial",
+      "pos": [
+        320,
+        170
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/simulation/world.hpp",
+          "label": "World"
+        },
+        {
+          "path": "dart/simulation/compute/compute_graph.hpp",
+          "label": "compute"
+        },
+        {
+          "path": "dart/simulation/io/binary_io.hpp",
+          "label": "state IO"
+        }
+      ]
+    },
+    {
+      "id": "gui",
+      "type": "frontend",
+      "label": "dart::gui",
+      "sublabel": "Filament \u00b7 GLFW \u00b7 ImGui",
+      "tag": "Implemented",
+      "pos": [
+        320,
+        430
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/gui/application.hpp",
+          "label": "application"
+        },
+        {
+          "path": "dart/gui/debug.hpp",
+          "label": "debug visuals"
+        },
+        {
+          "path": "docs/onboarding/gui-rendering.md",
+          "label": "handbook"
+        }
+      ]
+    },
+    {
+      "id": "collision",
+      "type": "backend",
+      "label": "dart::collision",
+      "sublabel": "native \u00b7 compat facades",
+      "tag": "Implemented",
+      "pos": [
+        600,
+        300
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/collision/collision_group.hpp",
+          "label": "CollisionGroup"
+        },
+        {
+          "path": "dart/collision/native/aabb.hpp",
+          "label": "native backend"
+        },
+        {
+          "path": "dart/collision/collision_detector.hpp",
+          "label": "detector facade"
+        }
+      ]
+    },
+    {
+      "id": "io",
+      "type": "backend",
+      "label": "dart::io",
+      "sublabel": "URDF \u00b7 SDF \u00b7 MJCF \u00b7 USD",
+      "tag": "Implemented",
+      "pos": [
+        600,
+        40
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/io/dart_resource_retriever.hpp",
+          "label": "resources"
+        },
+        {
+          "path": "dart/io/usd/usd_parser.cpp",
+          "label": "USD"
+        },
+        {
+          "path": "dart/simulation/io/skeleton_loader.hpp",
+          "label": "loading bridge"
+        }
+      ]
+    },
+    {
+      "id": "sensor",
+      "type": "backend",
+      "label": "dart::sensor",
+      "sublabel": "sensor manager",
+      "tag": "Partial",
+      "pos": [
+        600,
+        560
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/sensor/sensor.hpp",
+          "label": "Sensor"
+        },
+        {
+          "path": "dart/sensor/sensor_manager.hpp",
+          "label": "SensorManager"
+        }
+      ]
+    },
+    {
+      "id": "math",
+      "type": "backend",
+      "label": "dart::math and lcpsolver",
+      "sublabel": "Lie groups \u00b7 geometry \u00b7 LCP",
+      "tag": "Implemented",
+      "pos": [
+        880,
+        300
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/math/geometry.hpp",
+          "label": "geometry"
+        },
+        {
+          "path": "dart/lcpsolver/lcpsolver.hpp",
+          "label": "LCP"
+        },
+        {
+          "path": "dart/math/constants.hpp",
+          "label": "constants"
+        }
+      ]
+    },
+    {
+      "id": "common",
+      "type": "backend",
+      "label": "dart::common and simd",
+      "sublabel": "memory \u00b7 profiling \u00b7 SIMD",
+      "tag": "Implemented",
+      "pos": [
+        1160,
+        170
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/common/memory_manager.hpp",
+          "label": "MemoryManager"
+        },
+        {
+          "path": "dart/common/profile.hpp",
+          "label": "profiling"
+        },
+        {
+          "path": "dart/simd/simd.hpp",
+          "label": "SIMD"
+        }
+      ]
+    },
+    {
+      "id": "classic",
+      "type": "backend",
+      "label": "Classic DART 6 core",
+      "sublabel": "Skeleton \u00b7 ConstraintSolver",
+      "tag": "Implemented",
+      "pos": [
+        880,
+        40
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "dart/dynamics/body_node.hpp",
+          "label": "BodyNode"
+        },
+        {
+          "path": "dart/constraint/constraint_base.hpp",
+          "label": "ConstraintBase"
+        },
+        {
+          "path": "dart/optimizer/solver.hpp",
+          "label": "optimizer"
+        }
+      ]
+    },
+    {
+      "id": "externals",
+      "type": "external",
+      "label": "External dependencies",
+      "sublabel": "Eigen \u00b7 EnTT \u00b7 Taskflow",
+      "tag": "Implemented",
+      "pos": [
+        1160,
+        690
+      ],
+      "size": [
+        170,
+        72
+      ],
+      "sources": [
+        {
+          "path": "pixi.toml",
+          "label": "pinned versions"
+        },
+        {
+          "path": "docs/onboarding/build-system.md",
+          "label": "dependency map"
+        },
+        {
+          "path": "docs/onboarding/compatibility-policy.md",
+          "label": "floors"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "dart/ library (C++23)",
+      "wraps": [
+        "simulation",
+        "gui",
+        "io",
+        "collision",
+        "sensor",
+        "classic",
+        "math",
+        "common"
+      ],
+      "pad": 20
+    },
+    {
+      "kind": "security-group",
+      "label": "Classic modules: maintained on release-6.*, frozen on main",
+      "wraps": [
+        "classic"
+      ],
+      "pad": 12
+    }
+  ],
+  "connections": [
+    {
+      "id": "dartpy-simulation",
+      "from": "dartpy",
+      "to": "simulation",
+      "label": "binds",
+      "variant": "emphasis"
+    },
+    {
+      "id": "dartsim-gui",
+      "from": "dartsim",
+      "to": "gui",
+      "label": "renders through"
+    },
+    {
+      "id": "gui-simulation",
+      "from": "gui",
+      "to": "simulation",
+      "label": "reads world state",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "io-simulation",
+      "from": "io",
+      "to": "simulation",
+      "label": "parsed models",
+      "fromSide": "left",
+      "toSide": "top",
+      "via": [
+        [
+          405,
+          76
+        ]
+      ]
+    },
+    {
+      "id": "simulation-collision",
+      "from": "simulation",
+      "to": "collision",
+      "label": "contact queries",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left",
+      "via": [
+        [
+          560,
+          206
+        ],
+        [
+          560,
+          336
+        ]
+      ],
+      "labelSegment": 1,
+      "labelDx": 45
+    },
+    {
+      "id": "simulation-sensor",
+      "from": "simulation",
+      "to": "sensor",
+      "label": "world state",
+      "fromSide": "right",
+      "toSide": "left",
+      "via": [
+        [
+          530,
+          206
+        ],
+        [
+          530,
+          596
+        ]
+      ],
+      "variant": "dashed"
+    },
+    {
+      "id": "simulation-common",
+      "from": "simulation",
+      "to": "common",
+      "label": "memory, profiling",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "straight"
+    },
+    {
+      "id": "io-classic",
+      "from": "io",
+      "to": "classic",
+      "label": "Skeleton loading",
+      "route": "straight"
+    },
+    {
+      "id": "collision-math",
+      "from": "collision",
+      "to": "math",
+      "label": "geometry, distances",
+      "route": "straight"
+    },
+    {
+      "id": "common-externals",
+      "from": "common",
+      "to": "externals",
+      "label": "fmt, spdlog, Eigen",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "gui-externals",
+      "from": "gui",
+      "to": "externals",
+      "label": "Filament, ImGui, GLFW",
+      "fromSide": "bottom",
+      "toSide": "bottom",
+      "via": [
+        [
+          405,
+          820
+        ],
+        [
+          1245,
+          820
+        ]
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Where things live",
+      "items": [
+        "DART 7 simulation, collision, IO, sensors, math, and common utilities form the library distribution",
+        "Collision runs the native detector; fcl, bullet, and ode are compatibility facades with reference engines in tests",
+        "dartpy binds the library; dartsim drives the simulation engine through its own editor engine and renders through dart::gui",
+        "Handbook pages under docs/onboarding explain each module"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "DART 7 versus classic",
+      "items": [
+        "dart::simulation::World is the DART 7 engine; Skeleton-based dynamics stays for DART 6 users",
+        "Legacy loading bridges convert Skeleton models into multibody structures",
+        "Clean-break policy: release-6.* carries compatibility, main carries DART 7"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Externals",
+      "items": [
+        "Eigen, EnTT, Taskflow, fmt, spdlog, assimp, tinyxml2, urdfdom, sdformat, octomap",
+        "Filament, ImGui, GLFW for rendering; nanobind for dartpy",
+        "CUDA is private and opt-in for selected simulation kernels"
+      ]
+    }
+  ]
+}

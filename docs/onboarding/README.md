@@ -14,9 +14,9 @@ docs map and placement rules.
 - Running tests? → [testing.md](testing.md)
 - Contributing code? → [contributing.md](contributing.md) + [code-style.md](code-style.md)
 - Updating release notes? → [changelog.md](changelog.md)
-- Understanding the engine? → [architecture.md](architecture.md) (classic
-  core) and [`../readthedocs/architecture.md`](../readthedocs/architecture.md)
-  (DART 7 direction)
+- Understanding the engine? → [`../readthedocs/architecture.md`](../readthedocs/architecture.md)
+  (DART 7 living map: framework, step data flow, compute graph, library) and
+  [architecture.md](architecture.md) (classic DART 6 core)
 - Gazebo integration? → [build-system.md](build-system.md#gazebo-integration-feature)
 - Verifying model, simulation, collision, or GUI behavior? →
   [agent-sim-verification.md](agent-sim-verification.md)
@@ -53,17 +53,17 @@ real pain point demands it.
 
 ### Architecture and modules
 
-| Page                                     | Covers                                                                                |
-| ---------------------------------------- | ------------------------------------------------------------------------------------- |
-| [architecture.md](architecture.md)       | Classic DART core: module layers, `World::step` pipeline, key algorithms and patterns |
-| [dynamics.md](dynamics.md)               | `dart/dynamics`: Skeleton, BodyNode, Joint, kinematics and dynamics APIs              |
-| [constraints.md](constraints.md)         | Constraint solver internals and collision response                                    |
-| [aspect-system.md](aspect-system.md)     | Aspect, State, and Properties runtime extension pattern                               |
-| [io-parsing.md](io-parsing.md)           | Unified model loading through `dart::io` (URDF, SDF, MJCF, USD)                       |
-| [gui-rendering.md](gui-rendering.md)     | Filament renderer, GLFW windowing, ImGui overlays, headless capture                   |
-| [python-bindings.md](python-bindings.md) | nanobind `dartpy` architecture, stubs, wheels                                         |
-| [api-boundaries.md](api-boundaries.md)   | Public vs internal API policy, Python exposure, symbol visibility, policy gate        |
-| [profiling.md](profiling.md)             | Text-first profiling of the DART 7 `World` step                                       |
+| Page                                     | Covers                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------- |
+| [architecture.md](architecture.md)       | Classic DART 6 core: module layers, the classic `World::step` loop, math module |
+| [dynamics.md](dynamics.md)               | `dart/dynamics`: Skeleton, BodyNode, Joint, kinematics and dynamics APIs        |
+| [constraints.md](constraints.md)         | Constraint solver internals and collision response                              |
+| [aspect-system.md](aspect-system.md)     | Aspect, State, and Properties runtime extension pattern                         |
+| [io-parsing.md](io-parsing.md)           | Unified model loading through `dart::io` (URDF, SDF, MJCF, USD)                 |
+| [gui-rendering.md](gui-rendering.md)     | Filament renderer, GLFW windowing, ImGui overlays, headless capture             |
+| [python-bindings.md](python-bindings.md) | nanobind `dartpy` architecture, stubs, wheels                                   |
+| [api-boundaries.md](api-boundaries.md)   | Public vs internal API policy, Python exposure, symbol visibility, policy gate  |
+| [profiling.md](profiling.md)             | Text-first profiling of the DART 7 `World` step                                 |
 
 For the DART 7 multi-physics, multi-solver, multi-backend design see
 [`../readthedocs/architecture.md`](../readthedocs/architecture.md) and the

@@ -40,7 +40,7 @@
 - Solver architecture:
   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
 - Lie-group owner:
-  [`../onboarding/architecture.md#12-math-module-dartmath`](../onboarding/architecture.md#12-math-module-dartmath)
+  [`../onboarding/architecture.md#math-module-dartmath`](../onboarding/architecture.md#math-module-dartmath)
   and PLAN-100 in [`dashboard.md`](dashboard.md)
 - Research references:
   [`nakamura-1987-task-priority`](../readthedocs/papers.md#nakamura-1987-task-priority),
