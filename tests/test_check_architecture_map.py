@@ -125,7 +125,16 @@ def _framework_view() -> dict:
             },
         ],
         "boundaries": [{"kind": "region", "label": "Internals", "wraps": ["rigid"]}],
-        "cards": [{"title": "Selectors", "items": ["ContactSolverMethod: BoxedLcp"]}],
+        "cards": [
+            {
+                "title": "Selectors",
+                "items": [
+                    "RigidBodySolver: SequentialImpulse, Ipc",
+                    "ContactSolverMethod: SequentialImpulse, BoxedLcp",
+                    "MultibodyIntegrationFamily: SemiImplicit, Variational",
+                ],
+            }
+        ],
         "connections": [
             {"id": "w-r", "from": "world", "to": "rigid", "label": "stages"}
         ],
@@ -170,11 +179,17 @@ def _step_view() -> dict:
         ],
         "flows": [
             {
+                "id": "velocity-contact",
                 "from": "rigid_body_velocity",
                 "to": "rigid_body_contact",
                 "label": "velocities",
             },
-            {"from": "rigid_body_contact", "to": "kinematics", "label": "poses"},
+            {
+                "id": "contact-kinematics",
+                "from": "rigid_body_contact",
+                "to": "kinematics",
+                "label": "poses",
+            },
         ],
     }
 
@@ -637,6 +652,30 @@ def test_architecture_components_must_cite_sources(repo: Path) -> None:
     assert any("node `rigid` cites no sources" in e for e in _run(repo))
 
 
+def test_edge_ids_are_required_and_unique(repo: Path) -> None:
+    def mutate(ir):
+        ir["connections"].append({"from": "world", "to": "rigid", "label": "x"})
+        ir["connections"].append(
+            {"id": "w-r", "from": "world", "to": "rigid", "label": "again"}
+        )
+
+    _rewrite(repo, "simulation-framework.architecture.json", mutate)
+    errors = _run(repo)
+    assert any("edge 'world' -> 'rigid' has no id" in e for e in errors)
+    assert any("duplicate edge id `w-r`" in e for e in errors)
+
+
+def test_page_embed_must_be_an_iframe(repo: Path) -> None:
+    page = repo / cam.DEFAULT_PAGE
+    text = page.read_text(encoding="utf-8").replace(
+        '<iframe src="architecture-map/world-step.html"></iframe>',
+        '<a href="architecture-map/world-step.html">Open the interactive view</a>',
+    )
+    page.write_text(text, encoding="utf-8")
+    errors = _run(repo)
+    assert any("does not embed `architecture-map/world-step.html`" in e for e in errors)
+
+
 def test_scalar_array_entries_are_rejected(repo: Path) -> None:
     def mutate(ir):
         ir["components"].append("not-a-component")
@@ -684,13 +723,18 @@ def test_exempt_directory_is_not_required(repo: Path) -> None:
 
 def test_enumerator_vocabulary_coverage(repo: Path) -> None:
     def mutate(ir):
-        ir["components"][1][
-            "sublabel"
-        ] = "SequentialImpulse · SemiImplicit · Variational"
+        # The token survives elsewhere in the view; only its own card item counts.
+        ir["cards"][0]["items"][0] = "RigidBodySolver: Ipc"
+        del ir["cards"][0]["items"][1]
 
     _rewrite(repo, "simulation-framework.architecture.json", mutate)
     errors = _run(repo)
-    assert any("`RigidBodySolver::Ipc` does not appear" in e for e in errors)
+    assert any(
+        "`RigidBodySolver::SequentialImpulse` does not appear in the "
+        "`RigidBodySolver:` card item" in e
+        for e in errors
+    )
+    assert any("no card item starts with `ContactSolverMethod:`" in e for e in errors)
 
 
 def test_every_public_selector_enum_is_swept(repo: Path) -> None:
@@ -707,7 +751,7 @@ def test_every_public_selector_enum_is_swept(repo: Path) -> None:
     )
     errors = _run(repo)
     assert any(
-        "`ComputeAcceleratorPolicy::CpuOnly` does not appear" in e for e in errors
+        "no card item starts with `ComputeAcceleratorPolicy:`" in e for e in errors
     )
     assert not any("ContactGradientMode" in e for e in errors)
 

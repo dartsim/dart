@@ -478,7 +478,7 @@
       "dot": "emerald",
       "title": "One ordered stage list",
       "items": [
-        "makeBuiltInWorldStepSchedule picks at most eight slots from the eleven shown",
+        "makeBuiltInWorldStepSchedule picks at most seven slots from the eleven shown",
         "Empty domains add no stage; deformables advance after the position stages in the fused schedule; kinematics always runs last",
         "Flows name the data a stage hands on, so state ownership is readable"
       ]

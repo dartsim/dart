@@ -14,7 +14,8 @@ and runs inside ``pixi run check-lint``. It fails when:
   guide note that no public header declares;
 * a ``dart/simulation`` directory, a ``BuiltInWorldStepStageSlot`` enumerator,
   an enumerator of any public selector ``enum class`` declared in
-  ``world_options.hpp`` or ``multibody/multibody_options.hpp``, a
+  ``world_options.hpp`` or ``multibody/multibody_options.hpp`` (each selector
+  has its own ``Enum: A, B`` card item in the framework view), a
   ``dart/<module>`` directory, or a ``WorldStepStage`` subclass (any
   ``class``/``struct`` spelling and base qualification under the compute tree)
   is absent from the view that owns it (allowlists below carry a reason per
@@ -23,8 +24,8 @@ and runs inside ``pixi run check-lint``. It fails when:
   the step-flow view holds a node that is neither a snake-cased slot nor one
   of the listed bookends (``STEP_VIEW_BOOKENDS``);
 * a top-level array (components, nodes, connections, flows, cards, boundaries,
-  stages) holds an entry that is not an object, or a guided view focuses an
-  id that is not a node;
+  stages) holds an entry that is not an object, an edge lacks a unique id, or
+  a guided view focuses an id that is not a node;
 * the published page does not embed a view or name its JSON source.
 
 Archify's own schema and layout validation happens at render time in
@@ -505,7 +506,18 @@ class Checker:
                     )
         if not ids:
             self.error(f"{label}: view declares no nodes")
+        edge_ids: set[str] = set()
         for edge in view.edges():
+            edge_id = edge.get("id")
+            if not isinstance(edge_id, str) or not edge_id:
+                self.error(
+                    f"{label}: edge {edge.get('from')!r} -> {edge.get('to')!r} has "
+                    "no id"
+                )
+            elif edge_id in edge_ids:
+                self.error(f"{label}: duplicate edge id `{edge_id}`")
+            else:
+                edge_ids.add(edge_id)
             for end in ("from", "to"):
                 target = edge.get(end)
                 if target not in ids:
@@ -672,7 +684,16 @@ class Checker:
                         f"{framework.relpath}: no source cites `{directory}/`; add the "
                         "module to a component or exempt it with a reason"
                     )
-            text = framework.text()
+            selector_items: dict[str, list[str]] = {}
+            for card in framework.ir.get("cards", []) or []:
+                if not isinstance(card, dict):
+                    continue
+                for item in card.get("items", []) or []:
+                    match = re.match(r"\s*(\w+)\s*:\s*(.*)$", str(item))
+                    if match:
+                        selector_items.setdefault(match.group(1), []).append(
+                            match.group(2)
+                        )
             for header in PUBLIC_SELECTOR_HEADERS:
                 header_text = self.read(header)
                 enum_names = parse_enum_names(header_text)
@@ -688,11 +709,20 @@ class Checker:
                             f"{header.as_posix()}: could not parse `enum class "
                             f"{enum_name}`; update the checker"
                         )
+                    entries = selector_items.get(enum_name)
+                    if not entries:
+                        self.error(
+                            f"{framework.relpath}: no card item starts with "
+                            f"`{enum_name}:`; list its enumerators in the "
+                            "public-selector card"
+                        )
+                        continue
+                    text = " ".join(entries)
                     for enumerator in enumerators:
                         if not re.search(r"\b" + re.escape(enumerator) + r"\b", text):
                             self.error(
                                 f"{framework.relpath}: `{enum_name}::{enumerator}` "
-                                "does not appear in any label, sublabel, tag, or card"
+                                f"does not appear in the `{enum_name}:` card item"
                             )
 
         if compute is not None:
@@ -780,10 +810,15 @@ class Checker:
             return
         for view in views.values():
             embed = f"{RENDERED_DIR_NAME}/{view.name}.html"
-            if embed not in page_text:
+            iframe = re.compile(
+                r"<iframe\b[^>]*\bsrc=\"" + re.escape(embed) + r"(?:\?[^\"]*)?\"",
+                re.S,
+            )
+            if not iframe.search(page_text):
                 self.error(
                     f"{self.page.as_posix()}: does not embed `{embed}` for view "
-                    f"`{view.name}`"
+                    f"`{view.name}` through an <iframe src=...>; a link is not an "
+                    "embed"
                 )
             if view.path.name not in page_text:
                 self.error(

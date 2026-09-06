@@ -19,11 +19,11 @@ Checks (all advisory by default; ``--strict`` turns findings into failures):
   fixture's documented ``graph_vocabulary`` (case and underscores ignored), so
   a renamed or new compute node shows up as drift;
 * with ``--probe-output <json>`` or a built probe binary, the fresh dump has
-  the same stages and graph node/edge sets as the fixture;
+  the same scene, stages, and graph node/edge sets as the fixture;
 * the fixture and any fresh dump record a nonempty stage list and at least one
-  executed compute graph whose edges are pairs of its recorded nodes, so an
-  empty or dangling dump can neither pass the checks vacuously nor be
-  committed by ``--regenerate``.
+  executed compute graph whose edges are pairs of its recorded nodes without
+  self-edges or cycles, so an empty, dangling, or impossible dump can neither
+  pass the checks vacuously nor be committed by ``--regenerate``.
 
 ``--regenerate`` rewrites the fixture from a fresh probe dump; the guided view
 it records is validated against the step-flow view and can be set with
@@ -163,7 +163,36 @@ def dump_shape_findings(dump: dict, label: str) -> list[str]:
                         f"{label} graph {index} edge {position} {list(edge)} names a "
                         "node the graph did not record"
                     )
+                elif edge[0] == edge[1]:
+                    findings.append(
+                        f"{label} graph {index} edge {position} is a self-edge; "
+                        "ComputeGraph is a DAG"
+                    )
+            if not any(f.startswith(f"{label} graph {index} edge") for f in findings):
+                if not is_acyclic(nodes, edges):
+                    findings.append(
+                        f"{label} graph {index} contains a cycle; ComputeGraph is a DAG"
+                    )
     return findings
+
+
+def is_acyclic(nodes: list[str], edges: list) -> bool:
+    """Kahn's algorithm over validated [from, to] edges."""
+    indegree = {node: 0 for node in nodes}
+    outgoing: dict[str, list[str]] = {node: [] for node in nodes}
+    for source, target in edges:
+        outgoing[source].append(target)
+        indegree[target] += 1
+    ready = [node for node, degree in indegree.items() if degree == 0]
+    visited = 0
+    while ready:
+        node = ready.pop()
+        visited += 1
+        for target in outgoing[node]:
+            indegree[target] -= 1
+            if indegree[target] == 0:
+                ready.append(target)
+    return visited == len(nodes)
 
 
 def compare_dumps(fixture: dict, fresh: dict) -> list[str]:
@@ -175,6 +204,11 @@ def compare_dumps(fixture: dict, fresh: dict) -> list[str]:
             "evidence"
         )
     findings.extend(dump_shape_findings(fresh, "probe dump"))
+    if fixture.get("scene") != fresh.get("scene"):
+        findings.append(
+            f"reference scene drifted: fixture {fixture.get('scene')!r} vs probe "
+            f"{fresh.get('scene')!r}"
+        )
     if fixture.get("stages") != fresh.get("stages"):
         findings.append(
             "stage list drifted: fixture "
@@ -265,17 +299,30 @@ def check_against_views(
 
 
 def find_probe_binary() -> Path | None:
-    """Locate the probe in the active pixi environment's build tree, then default."""
+    """Locate the probe: the selected build type if set, else the newest binary.
+
+    ``BUILD_TYPE`` (set by the pixi build tasks) or ``CMAKE_BUILD_TYPE`` picks
+    the configuration; without either, the most recently built candidate wins so
+    a fresh Debug build is not shadowed by a stale Release one.
+    """
     environments: list[str] = []
     for environment in (os.environ.get("PIXI_ENVIRONMENT_NAME"), "default"):
         if environment and environment not in environments:
             environments.append(environment)
+    found: list[Path] = []
     for environment in environments:
         for candidate in probe_binary_candidates(environment):
             path = REPO_ROOT / candidate
             if path.is_file() and os.access(path, os.X_OK):
-                return path
-    return None
+                found.append(path)
+    if not found:
+        return None
+    preferred = os.environ.get("BUILD_TYPE") or os.environ.get("CMAKE_BUILD_TYPE")
+    if preferred:
+        matching = [p for p in found if f"/{preferred}/" in p.as_posix()]
+        if matching:
+            found = matching
+    return max(found, key=lambda p: p.stat().st_mtime)
 
 
 def run_probe(binary: Path) -> dict | None:

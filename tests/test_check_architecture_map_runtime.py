@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -134,6 +135,26 @@ def test_dangling_or_malformed_graph_edges_are_findings(
     )
     assert "refusing to regenerate" in capsys.readouterr().out
     assert not fixture_path.exists()
+
+
+def test_cyclic_and_self_edges_are_findings() -> None:
+    cyclic = _fixture()
+    cyclic["graphs"][0]["edges"].append(["kinematics:shapes", "kinematics:frames"])
+    findings = camr.check_against_views(cyclic, _step_view(), _compute_view())
+    assert any("contains a cycle" in f for f in findings)
+    looped = _fixture()
+    looped["graphs"][0]["edges"] = [["kinematics:frames", "kinematics:frames"]]
+    findings = camr.check_against_views(looped, _step_view(), _compute_view())
+    assert any("is a self-edge" in f for f in findings)
+    assert not camr.check_against_views(_fixture(), _step_view(), _compute_view())
+
+
+def test_scene_drift_is_a_finding() -> None:
+    fresh = _fixture()
+    fresh["scene"] = "a different reference scene"
+    assert any(
+        "reference scene drifted" in f for f in camr.compare_dumps(_fixture(), fresh)
+    )
 
 
 def test_renamed_compute_node_is_not_hidden_by_a_substring() -> None:
@@ -331,7 +352,9 @@ def test_main_compares_probe_output_and_regenerates(
     views: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     fixture_path = views / "compute-graph.runtime.json"
-    fixture_path.write_text(json.dumps(_fixture()), encoding="utf-8")
+    committed = _fixture()
+    committed["scene"] = "reference"
+    fixture_path.write_text(json.dumps(committed), encoding="utf-8")
     probe = views / "probe.json"
     fresh = _fixture()
     fresh["scene"] = "reference"
@@ -397,6 +420,21 @@ def test_probe_candidates_cover_windows_executables_and_multi_config_layouts(
     gpu.write_text("", encoding="utf-8")
     gpu.chmod(0o755)
     assert camr.find_probe_binary() == gpu
+
+    # Without a selected build type the newest binary wins; with one, it is honored.
+    monkeypatch.delenv("PIXI_ENVIRONMENT_NAME", raising=False)
+    monkeypatch.delenv("BUILD_TYPE", raising=False)
+    monkeypatch.delenv("CMAKE_BUILD_TYPE", raising=False)
+    release = tmp_path / "build/default/cpp/Release/bin/test_architecture_probe"
+    debug = tmp_path / "build/default/cpp/Debug/bin/test_architecture_probe"
+    for path, stamp in ((msvc, 500), (release, 1_000), (debug, 2_000)):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("", encoding="utf-8")
+        path.chmod(0o755)
+        os.utime(path, (stamp, stamp))
+    assert camr.find_probe_binary() == debug
+    monkeypatch.setenv("BUILD_TYPE", "Release")
+    assert camr.find_probe_binary() == release
 
 
 def test_empty_dumps_are_findings_and_never_regenerated(

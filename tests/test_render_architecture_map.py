@@ -76,6 +76,7 @@ def _dataflow_ir() -> dict:
         ],
         "flows": [
             {
+                "id": "velocity-position",
                 "from": "rigid_body_velocity",
                 "to": "rigid_body_position",
                 "label": "velocities & impulses",
