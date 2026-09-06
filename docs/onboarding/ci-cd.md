@@ -637,7 +637,7 @@ code:
   - "**"
   - "!.claude/**"
   - "!docs/**"
-  - "!**/*.md"
+  - "!*/**/*.md"
 ```
 
 ```yaml
@@ -663,6 +663,8 @@ maintenance workflows, the distro container harnesses, repository metadata
 that nothing builds from, and the AI-infrastructure Python files that only
 `pixi run test-ai-infra` exercises. Inputs that look like metadata but feed a
 build stay in: `package.xml` (CMake and `pyproject.toml` read the version),
+the root `README.md` (`pyproject.toml` embeds it as the wheel's long
+description, so markdown is excluded below the root and by name at the root),
 `codecov.yml`, `.gitattributes`, and `.gitignore`. Agent hook changes
 (`.claude/hooks/**`) run the Windows hook smoke job through its own `hooks`
 filter in `ci_windows.yml`.

@@ -21,12 +21,19 @@ code:
   - "!.codex/**"
   - "!.opencode/**"
   # Documentation, tutorials (a CMake stub since the OSG tutorials were
-  # removed), papers, and prose formats.
+  # removed), papers, and prose formats. Markdown is excluded below the root
+  # and by name at the root: the root README.md stays code because
+  # pyproject.toml embeds it as the dartpy wheel's long description
+  # (`readme = "README.md"`), so README edits keep the wheel build.
   - "!docs/**"
   - "!tutorials/**"
   - "!paper/**"
   - "!.readthedocs.yml"
-  - "!**/*.md"
+  - "!*/**/*.md"
+  - "!AGENTS.md"
+  - "!CHANGELOG.md"
+  - "!CLAUDE.md"
+  - "!CONTRIBUTING.md"
   - "!**/*.rst"
   - "!**/*.po"
   - "!**/*.pot"

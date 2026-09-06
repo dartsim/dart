@@ -80,9 +80,23 @@ def test_filter_excludes_ai_tool_and_doc_surfaces() -> None:
         "!.codex/**",
         "!.opencode/**",
         "!docs/**",
-        "!**/*.md",
+        "!*/**/*.md",
     ):
         assert required in patterns, required
+
+
+def test_root_readme_stays_code() -> None:
+    """pyproject.toml embeds README.md in the wheel metadata (readme = ...).
+
+    A blanket ``!**/*.md`` would also drop the root README and skip the wheel
+    build for edits to the published PyPI description; markdown is therefore
+    excluded below the root (``!*/**/*.md``) plus the root prose files by name.
+    """
+    patterns = set(_filter_patterns())
+    assert "!**/*.md" not in patterns
+    assert "!README.md" not in patterns
+    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'readme = "README.md"' in pyproject
 
 
 def test_literal_exclusions_exist() -> None:
