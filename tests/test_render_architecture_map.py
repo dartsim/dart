@@ -246,6 +246,25 @@ def test_dangling_flow_fails_even_without_toolchain(
     assert not out.exists()
 
 
+def test_text_summaries_mark_planned_relationships(ir_dir: Path) -> None:
+    view = next(
+        v for v in ram.discover_views(ir_dir) if v.diagram_type == "architecture"
+    )
+    ir = json.loads(view.path.read_text(encoding="utf-8"))
+    ids = [c["id"] for c in ir["components"]]
+    ir.setdefault("connections", []).append(
+        {
+            "id": "p",
+            "from": ids[0],
+            "to": ids[-1],
+            "label": "later",
+            "variant": "dashed",
+        }
+    )
+    view.path.write_text(json.dumps(ir), encoding="utf-8")
+    assert "later (planned)" in ram.view_summary_markdown(view)
+
+
 def test_text_summaries_are_written_for_non_html_builders(
     ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

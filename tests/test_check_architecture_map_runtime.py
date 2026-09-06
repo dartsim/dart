@@ -219,6 +219,67 @@ def test_schedule_only_dumps_and_fixtures_are_findings(
     )
 
 
+def test_execution_trace_must_be_a_json_boolean(
+    views: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    for value in ("false", "true", 1):
+        fixture = _fixture()
+        fixture["execution_trace"] = value
+        findings = camr.check_against_views(fixture, _step_view(), _compute_view())
+        assert any("must be a JSON boolean" in f for f in findings)
+        assert any("not observed from an executed step" in f for f in findings)
+    probe = views / "probe.json"
+    dump = _fixture()
+    dump["execution_trace"] = "true"
+    probe.write_text(json.dumps(dump), encoding="utf-8")
+    fixture_path = views / "compute-graph.runtime.json"
+    for extra in ([], ["--allow-schedule-only"]):
+        args = ["--fixture", str(fixture_path), "--probe-output", str(probe)]
+        assert camr.main(args + ["--regenerate"] + extra) == 1
+    assert "must be a JSON boolean" in capsys.readouterr().out
+    assert not fixture_path.exists()
+
+
+def test_regenerate_validates_the_guided_view(
+    views: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fixture_path = views / "compute-graph.runtime.json"
+    stale = _fixture()
+    stale["guided_view"] = "retired-view"
+    fixture_path.write_text(json.dumps(stale), encoding="utf-8")
+    probe = views / "probe.json"
+    probe.write_text(json.dumps(_fixture()), encoding="utf-8")
+    base = [
+        "--fixture",
+        str(fixture_path),
+        "--probe-output",
+        str(probe),
+        "--regenerate",
+    ]
+    # A stale preserved id is refused rather than written back.
+    assert camr.main(base) == 1
+    assert "is not a meta.views id" in capsys.readouterr().out
+    assert json.loads(fixture_path.read_text(encoding="utf-8"))["guided_view"] == (
+        "retired-view"
+    )
+    assert camr.main(base + ["--guided-view", "nope"]) == 1
+    assert camr.main(base + ["--guided-view", "fused-multibody"]) == 0
+    # A null or missing id counts as unset and records the validated default.
+    unset = _fixture()
+    unset["guided_view"] = None
+    fixture_path.write_text(json.dumps(unset), encoding="utf-8")
+    assert camr.main(base) == 0
+    regenerated = json.loads(fixture_path.read_text(encoding="utf-8"))
+    assert regenerated["guided_view"] == "fused-multibody"
+    assert regenerated["execution_trace"] is True
+    assert (
+        camr.main(
+            ["--fixture", str(fixture_path), "--strict", "--probe-output", str(probe)]
+        )
+        == 0
+    )
+
+
 def test_guided_view_is_required() -> None:
     for value in (None, ""):
         fixture = _fixture()

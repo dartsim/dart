@@ -330,6 +330,8 @@ def view_summary_markdown(view: View) -> str:
             text += str(labels.get(str(edge.get("to")), edge.get("to")))
             if edge.get("label"):
                 text += f": {edge['label']}"
+            if edge.get("variant") == "dashed":
+                text += " (planned)"
             lines.append(text)
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"

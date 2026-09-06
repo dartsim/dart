@@ -101,7 +101,8 @@ view in the same change:
   with the views and, when `pixi run build` has produced the
   `test_architecture_probe` binary, with a fresh probe dump. It is advisory;
   pass `--strict` to fail on drift and `--regenerate` after an intentional
-  schedule change. Only a profiling-enabled build (the `pixi run build`
+  schedule change (`--guided-view <id>` when the recorded guided view must
+  change; it is validated against the step-flow view). Only a profiling-enabled build (the `pixi run build`
   default) records an execution trace; a schedule-only dump is reported
   and is refused for regeneration unless `--allow-schedule-only` is passed.
 - Compare each node's `tag` with the current findings in
