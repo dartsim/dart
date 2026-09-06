@@ -27,7 +27,12 @@ from ai_infrastructure import (
     working_tree_state,
 )
 from install_git_hooks import HOOK_TEMPLATE, SENTINEL
-from review_gate import hook_inventory
+from review_gate import (
+    HOOK_INVENTORY_ERRORS,
+    GateError,
+    hook_inventory,
+    hooks_path_configuration,
+)
 
 JSON_READ_ERRORS = (OSError, json.JSONDecodeError)
 TOML_READ_ERRORS = (OSError, tomllib.TOMLDecodeError)
@@ -313,45 +318,51 @@ def _model_harness_inventory(
 
 
 def _git_hook_inventory(root: Path) -> dict[str, object]:
-    custom = subprocess.run(
-        ["git", "-C", str(root), "config", "--get", "core.hooksPath"],
-        capture_output=True,
-        text=True,
-    )
-    configured_path = custom.stdout.strip() if custom.returncode == 0 else ""
-    resolved = subprocess.run(
-        ["git", "-C", str(root), "rev-parse", "--git-path", "hooks/pre-commit"],
-        capture_output=True,
-        text=True,
-    )
-    if resolved.returncode != 0:
-        return {
-            "path": "unavailable",
-            "core_hooks_path": configured_path,
-            "exists": False,
-            "executable": False,
-            "managed": False,
-            "current": False,
-        }
-    hook_path = Path(resolved.stdout.strip())
-    if not hook_path.is_absolute():
-        hook_path = (root / hook_path).resolve()
-    try:
-        content = hook_path.read_text(errors="replace")
-    except OSError:
-        content = ""
-    exists = hook_path.is_file()
-    executable = exists and os.access(hook_path, os.X_OK)
-    managed = SENTINEL in content
-    current = managed and executable and content == HOOK_TEMPLATE
-    return {
-        "path": str(hook_path),
-        "core_hooks_path": configured_path,
-        "exists": exists,
-        "executable": executable,
-        "managed": managed,
-        "current": current,
+    result = {
+        "path": "unavailable",
+        "core_hooks_path": "",
+        "core_hooks_configured": False,
+        "exists": False,
+        "executable": False,
+        "managed": False,
+        "current": False,
     }
+    try:
+        configured, value = hooks_path_configuration(root)
+        result.update(core_hooks_configured=configured, core_hooks_path=value)
+        resolved = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "rev-parse",
+                "--path-format=absolute",
+                "--git-path",
+                "hooks/pre-commit",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if resolved.returncode:
+            raise GateError(
+                f"cannot resolve pre-commit hook: {resolved.stderr.strip()}"
+            )
+        hook_path = Path(resolved.stdout.removesuffix("\n"))
+        exists = hook_path.is_file()
+        content = hook_path.read_text(errors="replace") if exists else ""
+        executable = exists and os.access(hook_path, os.X_OK)
+        managed = SENTINEL in content
+        result.update(
+            path=str(hook_path),
+            exists=exists,
+            executable=executable,
+            managed=managed,
+            current=managed and executable and content == HOOK_TEMPLATE,
+        )
+    except HOOK_INVENTORY_ERRORS as error:
+        result["error"] = str(error)
+    return result
 
 
 def _inventory(root: Path, profile: str) -> dict[str, object]:
@@ -498,20 +509,28 @@ def report(root: Path, requested_profile: str) -> dict:
             "Codex project hook trust is not observed; use /hooks after review"
         )
     git_hook = inventory["git_hook"]
-    if git_hook["core_hooks_path"]:
+    review_hook = inventory["review_hook"]
+    hook_errors = [
+        f"cannot inspect managed Git hooks: {hook['error']}"
+        for hook in (git_hook, review_hook)
+        if hook.get("error")
+    ]
+    if hook_errors:
+        errors.extend(hook_errors)
+    elif git_hook["core_hooks_configured"]:
         warnings.append(
             "core.hooksPath is configured; the managed Git pre-commit/pre-push hooks "
             "cannot be installed automatically"
         )
-    elif not git_hook["current"]:
-        warnings.append("managed Git pre-commit hook is missing, stale, or disabled")
-    review_hook = inventory["review_hook"]
-    if not review_hook["core_hooks_path"] and (
-        not review_hook["installed"] or not review_hook["checker_current"]
-    ):
-        warnings.append(
-            "managed Git pre-push hook/checker is missing, stale, or disabled"
-        )
+    else:
+        if not git_hook["current"]:
+            warnings.append(
+                "managed Git pre-commit hook is missing, stale, or disabled"
+            )
+        if not review_hook["installed"] or not review_hook["checker_current"]:
+            warnings.append(
+                "managed Git pre-push hook/checker is missing, stale, or disabled"
+            )
     return {
         "schema_version": 1,
         "root": str(root),

@@ -2651,19 +2651,42 @@ def test_doctor_rejects_truncated_managed_git_hook(tmp_path):
     assert "pixi run install-hooks" in {item["command"] for item in result["recovery"]}
 
 
-def test_doctor_custom_hookspath_recovery_does_not_recommend_installer(tmp_path):
+@pytest.mark.parametrize("value", ["", " ", "\t", ".custom-hooks"])
+def test_doctor_custom_hookspath_recovery_does_not_recommend_installer(tmp_path, value):
     root = make_repo(tmp_path, "main")
     subprocess.run(
-        ["git", "-C", str(root), "config", "core.hooksPath", ".custom-hooks"],
+        ["git", "-C", str(root), "config", "core.hooksPath", value],
         check=True,
     )
 
     result = ai_doctor.report(root, "main")
     commands = {item["command"] for item in result["recovery"]}
 
+    for name in ("git_hook", "review_hook"):
+        assert result["inventory"][name]["core_hooks_configured"] is True
+        assert result["inventory"][name]["core_hooks_path"] == value
+
     assert "read docs/onboarding/ai-tools.md#custom-hook-managers" in commands
     assert "python3 scripts/check_agent_hook.py --profile staged" not in commands
     assert "pixi run install-hooks" not in commands
+
+
+def test_doctor_does_not_certify_hook_configuration_query_errors(tmp_path, monkeypatch):
+    root = make_repo(tmp_path, "main")
+    execute = subprocess.run
+
+    def broken_config(args, **kwargs):
+        if args[-3:] == ["config", "--get", "core.hooksPath"]:
+            return subprocess.CompletedProcess(args, 3, "", "injected config failure")
+        return execute(args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", broken_config)
+    result = ai_doctor.report(root, "main")
+    assert not result["ok"]
+    assert any("injected config failure" in error for error in result["errors"])
+    assert "pixi run install-hooks" not in {
+        item["command"] for item in result["recovery"]
+    }
 
 
 def test_doctor_recovery_does_not_claim_setup_repairs_tracked_hook(tmp_path):

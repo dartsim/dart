@@ -402,6 +402,9 @@ def test_review_gate_changes_reach_native_windows_job() -> None:
     )[0]
     patterns = _filter_patterns(hook_filter)
     for consumer_input in (
+        "docs/onboarding/ai-tools.md",
+        "scripts/check_agent_hook.py",
+        "scripts/ai_infrastructure.py",
         "scripts/review_gate.py",
         "scripts/install_git_hooks.py",
         "tests/test_review_gate.py",
