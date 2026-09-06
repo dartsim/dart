@@ -22,9 +22,9 @@ DART uses GitHub Actions for continuous integration and deployment. The CI syste
   - Suggested (Unverified): `gh pr checks <PR_NUMBER> --watch --interval 30 --fail-fast`
   - Suggested (Unverified): `gh run view --job <JOB_ID> --log-failed`
 - Gotchas:
-  - Feature branch pushes run a core pre-PR tier only; full required coverage
-    still runs from `pull_request`, protected branch pushes, release tags,
-    schedules, and manual runs.
+  - Feature-branch pushes run no CI; open a pull request for the platform
+    matrix. Full coverage runs from `pull_request`, protected branch pushes,
+    release tags, schedules, and manual runs.
   - `gh run watch` is blocking and can run for a long time; use a persistent shell and re-run it if your terminal session times out.
   - `gh run view --job <JOB_ID> --log-failed` only works after the job completes; use the REST logs endpoint (or wait) when a run is still in progress.
   - If a PR is not mergeable due to conflicts, CI checks may be blocked or fail early; resolve conflicts locally and push before re-running CI.
@@ -257,40 +257,39 @@ DART_PARALLEL_JOBS=8 CTEST_PARALLEL_LEVEL=8 pixi run test-eigen-overalignment
 
 ### Core CI Workflows
 
-| Workflow                      | Purpose                     | Platforms                   | Trigger                                                            | Doc-only skip      |
-| ----------------------------- | --------------------------- | --------------------------- | ------------------------------------------------------------------ | ------------------ |
-| `ci_lint.yml`                 | Lint + docs build           | Ubuntu                      | Any branch push, PR, manual                                        | No                 |
-| `ci_ubuntu.yml`               | Build, test, coverage       | Ubuntu                      | Branch push core; PR/main full                                     | Yes                |
-| `ci_macos.yml`                | Build, test                 | macOS                       | PR, main/release push, schedule                                    | Yes                |
-| `ci_windows.yml`              | Build, test; hook smoke     | Windows                     | PR, main/release push, schedule; hook smoke when hook paths change | Yes                |
-| `ci_freebsd.yml`              | Build, test (VM)            | FreeBSD                     | Schedule, manual                                                   | N/A                |
-| `ci_altlinux.yml`             | Build, test (Docker)        | Alt Linux                   | Schedule, manual                                                   | N/A                |
-| `ci_cuda.yml`                 | CUDA compile + smoke        | Ubuntu/GPU                  | Path-scoped PR; trusted GPU runtime                                | N/A                |
-| `ci_gz_physics.yml`           | Gazebo integration          | Ubuntu                      | Release-branch push/PR; manual canary                              | Yes                |
-| `ci_gz_dart6.yml`             | DART 6 Gazebo canary        | Ubuntu                      | Weekly schedule + manual (on main)                                 | N/A                |
-| `ci_simd.yml`                 | SIMD multi-arch             | Ubuntu + macOS arm64 (NEON) | Branch/PR path-scoped, manual                                      | N/A                |
-| `publish_dartpy.yml`          | Python wheels               | Multi-platform              | PR, main/release/tag push, schedule                                | Yes                |
-| `codeql.yml`                  | Static security analysis    | Ubuntu                      | `main` push/PR (code paths), schedule, manual                      | Yes (path filters) |
-| `benchmark_pr_comparison.yml` | Benchmark PR comparison     | Ubuntu                      | PR (label-gated)                                                   | N/A                |
-| `performance_dashboard.yml`   | Performance dashboard       | Ubuntu                      | `main` push (path-scoped), schedule, manual                        | N/A                |
-| `community_signals.yml`       | Community signals dashboard | Self-hosted Linux           | `main` push (path-scoped), schedule, manual                        | N/A                |
-| `pages_deploy.yml`            | GitHub Pages deploy         | Self-hosted Linux           | Workflow run, manual                                               | N/A                |
-| `update_lockfiles.yml`        | Pixi lockfile refresh PRs   | Ubuntu                      | Schedule, manual                                                   | N/A                |
-| `cancel_branch_jobs.yml`      | Cancel superseded runs      | Ubuntu                      | PR closure, branch delete                                          | N/A                |
+| Workflow                      | Purpose                     | Platforms                   | Trigger                                                                   | Doc-only skip      |
+| ----------------------------- | --------------------------- | --------------------------- | ------------------------------------------------------------------------- | ------------------ |
+| `ci_lint.yml`                 | Lint + docs build           | Ubuntu                      | Any branch push, PR, manual                                               | No                 |
+| `ci_ubuntu.yml`               | Build, test, coverage       | Ubuntu                      | PR, main/release push, weekly schedule, manual                            | Yes                |
+| `ci_macos.yml`                | Build, test                 | macOS                       | PR, main/release push, weekly schedule                                    | Yes                |
+| `ci_windows.yml`              | Build, test; hook smoke     | Windows                     | PR, main/release push, weekly schedule; hook smoke when hook paths change | Yes                |
+| `ci_freebsd.yml`              | Build, test (VM)            | FreeBSD                     | Schedule, manual                                                          | N/A                |
+| `ci_altlinux.yml`             | Build, test (Docker)        | Alt Linux                   | Schedule, manual                                                          | N/A                |
+| `ci_cuda.yml`                 | CUDA compile + smoke        | Ubuntu/GPU                  | Path-scoped PR; trusted GPU runtime                                       | N/A                |
+| `ci_gz_physics.yml`           | Gazebo integration          | Ubuntu                      | Manual canary on `main` (release lines carry their own copy)              | N/A                |
+| `ci_gz_dart6.yml`             | DART 6 Gazebo canary        | Ubuntu                      | Weekly schedule + manual (on main)                                        | N/A                |
+| `ci_simd.yml`                 | SIMD multi-arch             | Ubuntu + macOS arm64 (NEON) | Branch/PR path-scoped, manual                                             | N/A                |
+| `publish_dartpy.yml`          | Python wheels               | Multi-platform              | PR, main/release/tag push, weekly schedule                                | Yes                |
+| `codeql.yml`                  | Static security analysis    | Ubuntu                      | `main` push/PR (code paths), schedule, manual                             | Yes (path filters) |
+| `benchmark_pr_comparison.yml` | Benchmark PR comparison     | Ubuntu                      | PR (label-gated)                                                          | N/A                |
+| `performance_dashboard.yml`   | Performance dashboard       | Ubuntu                      | `main` push (path-scoped), weekly schedule, manual                        | N/A                |
+| `community_signals.yml`       | Community signals dashboard | Self-hosted Linux           | `main` push (path-scoped), schedule, manual                               | N/A                |
+| `pages_deploy.yml`            | GitHub Pages deploy         | Self-hosted Linux           | Workflow run, manual                                                      | N/A                |
+| `update_lockfiles.yml`        | Pixi lockfile refresh PRs   | Ubuntu                      | Schedule, manual                                                          | N/A                |
+| `cancel_branch_jobs.yml`      | Cancel superseded runs      | Ubuntu                      | PR closure, branch delete                                                 | N/A                |
 
 ### CI Tiering Policy
 
 Use CI tiers to reduce PR feedback cost without removing coverage from the
 project's continuous validation surface.
 
-| Tier                      | Required before merge | Examples                                                                                                                        |
-| ------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Core branch push          | No                    | Lint, Ubuntu core release tests (skipped once the branch has an open PR), path-scoped SIMD                                      |
-| Required PR               | Yes                   | Lint/docs, core Linux, macOS, Windows, baseline dartpy wheels                                                                   |
-| Conditional PR            | When affected         | SIMD-only CI, CUDA compile CI, path-filtered platform jobs for code changes                                                     |
-| Release support PR        | Yes on release lines  | gz-physics compatibility on active DART 6 LTS PRs                                                                               |
-| Main/release continuous   | After merge           | Full platform coverage on protected branches; full wheels on `main` and release tags; ASAN suite; CodeQL C++ analysis           |
-| Scheduled/manual coverage | No                    | FreeBSD VM, Alt Linux repro, ASAN suite, CUDA packet benchmarks, gz-physics migration canaries, repeated full matrix, lockfiles |
+| Tier                      | Required before merge | Examples                                                                                                                                                                                               |
+| ------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Required PR               | Yes                   | Lint/docs, Linux Coverage (Debug), Release Tests (with the headless demo check and the dartsim GUI smoke), Debug Tests, Asserts enabled; macOS Release/Debug; Windows Release; the three dartpy wheels |
+| Conditional PR            | When affected         | Differentiable Build and Visual Verification (code changes), SIMD-only CI, CUDA compile CI, the Windows hook smoke (hook paths)                                                                        |
+| Release support PR        | Yes on release lines  | gz-physics compatibility on active DART 6 LTS PRs                                                                                                                                                      |
+| Main/release continuous   | After merge           | The PR tier plus ASAN Tests, Eigen 64-byte alignment, DART GUI Smoke (Clang), CodeQL C++ analysis, the performance dashboard                                                                           |
+| Scheduled/manual coverage | No                    | Weekly repeat of the continuous tier, Collision Benchmark Guard, FreeBSD VM, Alt Linux repro, DART 6 Gazebo canary, lockfiles                                                                          |
 
 Guardrails:
 
@@ -302,8 +301,9 @@ Guardrails:
   fills that gap: it checks out each active DART 6 release branch weekly and
   runs the branch's own `test-gz` (gz-physics + gz-sim from source) so
   downstream drift is caught between release-line merges.
-- Treat core branch-push CI as early feedback only. It should be useful enough
-  before a PR exists, but it is not a substitute for the required PR tier.
+- Feature-branch pushes run no CI (September 2026): the pre-PR core tier
+  re-ran the same Release path the pull request runs and cost a queue slot on
+  every push. Open a pull request for platform feedback.
 - Do not move a job from required PR coverage to continuous-only coverage
   without evidence that it is expensive, redundant for most PRs, or better
   suited to scheduled validation.
@@ -311,8 +311,14 @@ Guardrails:
   tier in July 2026 with that evidence recorded: ASAN spends ~2h of
   instrumented compile for ~2min of ctest, CodeQL C++ repeats a ~100min manual
   build per PR push, and distro-repro breakage is effectively never PR-local.
-  All three keep running on `main` pushes and/or schedules; use
-  workflow_dispatch on a branch when a PR needs that evidence before merge.
+  In September 2026 the Eigen 64-byte alignment job (48 min per push) and the
+  Linux Clang GUI smoke (20 min; macOS covers clang on every PR) followed,
+  and three Linux jobs that rebuilt the default Release tree were folded:
+  Native Collision (its configure and tests were a strict subset of Release
+  Tests), the headless demo check and the GCC GUI smoke (now steps of Release
+  Tests on the tree it already builds). All continue on `main` pushes and/or
+  schedules; use workflow_dispatch on a branch when a PR needs that evidence
+  before merge.
 - Keep at least one dartpy wheel per supported OS in PR CI. Expanded Python
   version coverage can run on `main`, release tags, schedules, and manual
   dispatch.
@@ -335,10 +341,8 @@ Guardrails:
 
 **Optimize for fast feedback on branches and PRs:**
 
-- Feature branch pushes run a small core tier so contributors can get useful CI
-  signal before opening a PR.
-- Essential validations run on every PR
-- Full matrix testing runs on main branch and releases
+- Essential validations run on every PR; feature-branch pushes run no CI
+- Full matrix testing runs on main branch and releases; the schedule repeats it weekly
 - Debug C++ builds run on every PR on Linux and macOS; Windows stays
   Release-only (see Conditional Execution Patterns)
 - Keep gz-physics compatibility in the release-support PR tier so downstream
@@ -449,8 +453,7 @@ configure a multi-config Visual Studio tree, and MSBuild ignores
 generators only), so that job still builds uncached (~100 min). Caching it
 needs either a Ninja configure under a Visual Studio developer environment
 or sccache's MSBuild integration (`CMAKE_VS_GLOBALS` with
-`CLToolExe`/`CLToolPath`); the follow-up is tracked in
-`docs/dev_tasks/ci-optimization/README.md`.
+`CLToolExe`/`CLToolPath`); see "Follow-ups" under Maintenance Tasks.
 
 > **Regression history (May–September 2026):** the action gated sccache on
 > `ACTIONS_CACHE_URL` only. GitHub's cache-service v2 migration removed that
@@ -562,7 +565,6 @@ Python-version matrix (May 2026 measurement: six non-baseline legs cost
 **Behavior:**
 
 - **PRs, main, tags, schedules, manual runs**: Ubuntu, macOS, and Windows wheels
-- **Feature branch pushes**: Wheel builds are skipped by the core branch-push tier
 - **Doc-only changes**: skipped by the shared code filter; `Wheels` still reports green
 
 ### Documentation Builds
@@ -618,10 +620,8 @@ so platform test jobs do not each rebuild docs.
 
 **Key design:**
 
-- `ci_lint.yml` runs lint on all branch pushes and PRs, including doc-only
-  changes. The documentation build runs on PRs, protected branch pushes, and
-  manual dispatch, but is skipped for ordinary feature branch pushes to keep
-  the pre-PR tier small.
+- `ci_lint.yml` runs lint and the documentation build on PRs, protected
+  branch pushes, and manual dispatch, including doc-only changes.
 - FreeBSD CI (`ci_freebsd.yml`) and Alt Linux CI (`ci_altlinux.yml`) run on
   schedule/manual only to keep PR feedback fast; distro-repro breakage is
   effectively never PR-local
@@ -713,22 +713,17 @@ matrix; every required check reports skipped or green.
 
 **Per PR:**
 
-- Ubuntu Release: Full tests + coverage
-- Ubuntu Debug: Debug C++ and dartpy tests
-- macOS Release: Full tests
-- macOS Debug: Debug C++ tests
-- Windows Release: Full tests
-- Gazebo integration: required on release-line PRs; manual canary on `main`
-  when downstream migration evidence is needed
-- dartpy wheels: Baseline Python version on Ubuntu, macOS, and Windows
+- Ubuntu Release Tests: full C++ tests, Python tests, examples, the headless
+  `dart-demos` render check, the `dartsim` GUI smoke, and install
+- Ubuntu Coverage (Debug), Debug Tests (Debug C++ and dartpy smoke), Asserts
+  enabled (no -DNDEBUG), Differentiable Build, Visual Verification (ImGui
+  docking tree)
+- macOS Release: Full tests; macOS Debug: Debug C++ tests
+- Windows Release: Full tests (dartpy off); Windows hook smoke when hook
+  paths change
+- dartpy wheels: Ubuntu, macOS, and Windows
 
-**Feature branch pushes:**
-
-- Lint
-- Ubuntu core release path: Release C++ tests, Release Python tests, examples,
-  and install. Skipped once the branch has an open PR, because the
-  pull_request event already runs the full tier for every push.
-- SIMD multi-arch tests when SIMD paths change
+**Feature branch pushes:** none; open a pull request.
 
 **Release branch pushes and PRs:**
 
@@ -737,7 +732,8 @@ matrix; every required check reports skipped or green.
 **Main/release pushes and scheduled runs:**
 
 - Repeat the PR validation on a fixed cadence
-- Run the ASAN suite (`ASAN Tests`), CodeQL C++ analysis, and Alt Linux repro
+- Run the ASAN suite (`ASAN Tests`), Eigen 64-byte alignment, DART GUI Smoke
+  (Clang), CodeQL C++ analysis, and Alt Linux repro
 - Ensure periodic full validation
 - Run expanded dartpy wheel Python-version coverage
 
@@ -780,7 +776,7 @@ runtime checks do not depend on PTX JIT compatibility with the installed driver.
 - Ubuntu Release Tests: 64 min (53 min build, 21 s ctest, 8 min dartpy)
 - Ubuntu Coverage (Debug): 65 min (+33 min queue wait)
 - Ubuntu Debug Tests: 53 min
-- Ubuntu Headless Rendering: 51 min (two builds: examples + docking dartpy)
+- Ubuntu Headless Rendering: 51 min (two builds: examples + docking dartpy; folded in September 2026)
 - macOS Release / Debug (arm64): 40 / 33 min
 - Windows Tests (Release): 104 min (~100 min build, 32 s ctest)
 - Wheels: Ubuntu 30, macOS 35, Windows 62 min
@@ -822,6 +818,25 @@ steps to drop by 50-70%.
 - Update GitHub Actions versions
 - Review and optimize cache sizes
 - Evaluate new optimization opportunities
+
+**Follow-ups (recorded September 2026):**
+
+- Windows compiler cache: either configure the Windows test job with Ninja
+  under a Visual Studio developer environment (`DART_WINDOWS_CMAKE_GENERATOR=Ninja`
+  plus `-DCMAKE_BUILD_TYPE`, which the win-64 pixi tasks do not pass today,
+  and a `vcvars` activation step) or keep the Visual Studio generator and pass
+  sccache's MSBuild integration
+  (`-DCMAKE_VS_GLOBALS=CLToolExe=sccache.exe;CLToolPath=<dir>;TrackFileAccess=false;UseMultiToolTask=true`),
+  which needs an extra-arguments passthrough in `scripts/cmake_config.py`.
+  Windows is the PR long pole (~100 min uncached), so this is the largest
+  remaining wall-clock win; it changes what the Windows check exercises, so
+  it gets its own PR.
+- Repository settings (maintainer): consider disabling the GitHub default
+  "CodeQL - Code Quality" dynamic workflow if it duplicates `codeql.yml`;
+  decide whether `ci_macos.yml` should pin `macos-15` (wheel parity) or stay
+  on `macos-latest` (currently macOS 26) and record the choice here; remove
+  the stale AppVeyor webhook, which posts a failing non-required status on
+  non-mergeable PRs.
 
 ### Monitoring and Debugging from the GitHub CLI
 

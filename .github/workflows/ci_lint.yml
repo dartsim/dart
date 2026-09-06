@@ -64,11 +64,7 @@ jobs:
 
   docs:
     name: Documentation
-    if: >-
-      github.event.deleted != true &&
-      (github.event_name != 'push' ||
-      github.ref == 'refs/heads/main' ||
-      startsWith(github.ref, 'refs/heads/release-'))
+    if: github.event.deleted != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

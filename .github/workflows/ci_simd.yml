@@ -11,6 +11,10 @@ on:
       - "dart/simd/**"
       - "tests/unit/simd/**"
       - "tests/benchmark/simd/**"
+      - "CMakeLists.txt"
+      - "pixi.toml"
+      - "pixi.lock"
+      - ".github/actions/**"
       - ".github/workflows/ci_simd.yml"
   pull_request:
     branches:
@@ -19,6 +23,10 @@ on:
       - "dart/simd/**"
       - "tests/unit/simd/**"
       - "tests/benchmark/simd/**"
+      - "CMakeLists.txt"
+      - "pixi.toml"
+      - "pixi.lock"
+      - ".github/actions/**"
       - ".github/workflows/ci_simd.yml"
   workflow_dispatch:
 

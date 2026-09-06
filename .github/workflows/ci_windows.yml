@@ -13,7 +13,7 @@ on:
   schedule:
     # Offset from ci_ubuntu (02:00) and ci_macos (02:40) so the scheduled runs
     # do not stampede the shared/hosted runner pools simultaneously.
-    - cron: "20 2 * * 0,3"
+    - cron: "20 2 * * 0"
   workflow_dispatch:
 
 permissions:
@@ -184,8 +184,8 @@ jobs:
       # launcher that never runs. Enabling it needs either a Ninja configure
       # under a Visual Studio developer environment (as the Windows wheel
       # already does through scikit-build-core) or sccache's MSBuild
-      # integration (CMAKE_VS_GLOBALS CLToolExe/CLToolPath); tracked in
-      # docs/dev_tasks/ci-optimization/README.md.
+      # integration (CMAKE_VS_GLOBALS CLToolExe/CLToolPath); recorded under
+      # "Follow-ups" in docs/onboarding/ci-cd.md.
       - name: Setup pixi (CI)
         uses: ./.github/actions/setup-pixi-ci
         with:
