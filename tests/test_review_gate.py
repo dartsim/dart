@@ -10,6 +10,7 @@ import ast
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -275,6 +276,118 @@ def install_custom_manager(repository, *, export=True):
         result = run(repo, env, sys.executable, str(INSTALLER), "--custom-manager")
         assert result.returncode == 0, result.stderr
     return runtime, manager
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Newline filenames require POSIX")
+@pytest.mark.parametrize("custom_manager", [False, True])
+@pytest.mark.parametrize("boundary", ["checkout-pixi", "python-override", "common"])
+@pytest.mark.parametrize("shadow", [False, True])
+def test_hook_shell_preserves_newline_paths(
+    repository, custom_manager, boundary, shadow
+):
+    repo, remote, env = repository
+    selected = repo.parent / "selected-interpreters.bin"
+    env["DART_TEST_SELECTED_PYTHON"] = str(selected)
+    interpreter = (
+        '#!/bin/sh\nprintf \'%s\\0\' "$0" >> "$DART_TEST_SELECTED_PYTHON"\nexec '
+        + shlex.quote(sys.executable)
+        + ' "$@"\n'
+    )
+    if boundary == "checkout-pixi":
+        renamed = repo.with_name(repo.name + "\n\n")
+        repo.rename(renamed)
+        if shadow:
+            repo.mkdir()
+            git(repo, env, "init", "-q", "-b", "main")
+            commit(repo, env, "Unrelated clean index\n")
+            fake = repo / ".pixi" / "envs" / "default" / "bin" / "python"
+            fake.parent.mkdir(parents=True)
+            fake.write_text("#!/bin/sh\nexit 0\n")
+            fake.chmod(0o755)
+        repo = renamed
+        python = repo / ".pixi" / "envs" / "default" / "bin" / "python"
+        python.parent.mkdir(parents=True)
+        python.write_text(interpreter)
+        python.chmod(0o755)
+        env.pop("DART_HOOK_PYTHON")
+        unavailable = repo.parent / "unavailable interpreters"
+        unavailable.mkdir()
+        for name in ("python3", "python"):
+            command = unavailable / name
+            command.write_text("#!/bin/sh\nexit 1\n")
+            command.chmod(0o755)
+        env["PATH"] = str(unavailable) + os.pathsep + env["PATH"]
+    elif boundary == "python-override":
+        python = repo.parent / "selected-python\n\n"
+        python.write_text(interpreter)
+        python.chmod(0o755)
+        if shadow:
+            fake = repo.parent / "selected-python"
+            fake.write_text("#!/bin/sh\nexit 0\n")
+            fake.chmod(0o755)
+        env["DART_HOOK_PYTHON"] = str(python)
+    else:
+        # Git's gitfile syntax strips trailing LF. An explicit GIT_DIR supports
+        # this literal metadata path and exercises both exported launchers.
+        common = repo.parent / "metadata\n\n"
+        (repo / ".git").rename(common)
+        env.update({"GIT_DIR": str(common), "GIT_WORK_TREE": str(repo)})
+        if shadow:
+            unrelated = repo.parent / "metadata"
+            unrelated.mkdir()
+            for name in ("dart-review-pre-commit", "dart-review-pre-push"):
+                fake = unrelated / name
+                fake.write_text("#!/bin/sh\nexit 0\n")
+                fake.chmod(0o755)
+            before = {path.name: path.read_bytes() for path in unrelated.iterdir()}
+    literal_repository = (repo, remote, env)
+    if custom_manager:
+        install_custom_manager(literal_repository)
+    else:
+        install(literal_repository)
+    if boundary == "common":
+        installed = run(
+            repo,
+            env,
+            sys.executable,
+            str(INSTALLER),
+            *(["--custom-manager"] if custom_manager else []),
+        )
+        assert installed.returncode == 0, installed.stderr
+        command = installed.stdout.split("Installed evidence CLI: ", 1)[1]
+        command = command.split(" --help", 1)[0] + " --help"
+        help_result = run(repo, env, "sh", "-c", command)
+        assert help_result.returncode == 0, help_result.stderr
+        assert "prepare" in help_result.stdout
+    scripts = repo / "scripts"
+    scripts.mkdir()
+    for name in ("check_agent_hook.py", "ai_infrastructure.py"):
+        source = ROOT / "scripts" / name
+        if source.is_file():
+            (scripts / name).write_bytes(source.read_bytes())
+    accepted = commit(repo, env, "accepted by the actual staged guard\n")
+    (repo / "input.txt").write_text("reject this trailing space \n")
+    git(repo, env, "add", "input.txt")
+    rejected = run(repo, env, "git", "commit", "-qm", "Must be rejected")
+    assert rejected.returncode and "trailing whitespace" in (
+        rejected.stdout + rejected.stderr
+    )
+    assert git(repo, env, "rev-parse", "HEAD") == accepted
+    (repo / "input.txt").write_text("accepted by the actual staged guard\n")
+    git(repo, env, "add", "input.txt")
+    blocked = push(literal_repository, success=False)
+    assert "Python 3.11+ unavailable" not in blocked.stderr
+    candidate = prepare(literal_repository)
+    pair(literal_repository, candidate)
+    push(literal_repository)
+    assert (
+        git(repo, env, "ls-remote", "origin", "refs/heads/topic").split()[0] == accepted
+    )
+    if boundary != "common":
+        assert selected.is_file()
+        assert set(selected.read_bytes().split(b"\0")[:-1]) == {os.fsencode(python)}
+    elif shadow:
+        assert {path.name: path.read_bytes() for path in unrelated.iterdir()} == before
 
 
 def test_documented_custom_pre_commit_handler_runs_real_staged_guard(repository):
@@ -887,6 +1000,8 @@ def test_interrupted_evidence_update_recovers_without_discarding_history(
     monkeypatch.syspath_prepend(str(GATE.parent))
     import review_gate as gate
 
+    # Preparation/recovery must also work for the last admissible append.
+    monkeypatch.setattr(gate, "MAX_CANDIDATES", 2)
     repo, _, env = repository
     previous = prepare(repository)
     pair(repository, previous)
@@ -2076,6 +2191,169 @@ def evidence_bytes(directory):
         path.relative_to(directory): path.read_bytes()
         for path in directory.rglob("*.json")
     }
+
+
+@pytest.mark.parametrize("outstanding", [False, True])
+@pytest.mark.parametrize("growth", ["head", "base", "base-ref", "authors", "legacy"])
+def test_candidate_capacity_preserves_usable_tip_and_findings(
+    repository, monkeypatch, outstanding, growth
+):
+    monkeypatch.syspath_prepend(str(GATE.parent))
+    import review_gate as gate
+
+    repo, remote, env = repository
+    # Exercise the producer/consumer boundary with a short real Git history.
+    monkeypatch.setattr(gate, "MAX_CANDIDATES", 3)
+    store = gate.Store(repo)
+    args = argparse.Namespace(
+        base="origin/main",
+        head="HEAD",
+        remote="origin",
+        target="refs/heads/topic",
+        author_session=["author"],
+    )
+    for revision in range(3):
+        if revision:
+            commit(repo, env, f"revision {revision}\n")
+        with store.lock():
+            candidate = store.prepare(args)
+        if revision == 0:
+            first = candidate
+            record(
+                repository,
+                candidate,
+                report(
+                    candidate,
+                    verdict="findings",
+                    findings=[
+                        {
+                            "id": "capacity-history",
+                            "summary": "Finding retained at the history boundary",
+                            "evidence": "The original candidate contains the issue",
+                        }
+                    ],
+                ),
+            )
+        elif revision == 1 and not outstanding:
+            record(
+                repository,
+                candidate,
+                report(
+                    candidate,
+                    dispositions=[
+                        {
+                            "id": "capacity-history",
+                            "status": "fixed",
+                            "evidence": "The later revision repairs the original issue",
+                        }
+                    ],
+                ),
+            )
+    if growth == "legacy":
+        metadata = dict(store.candidate(candidate))
+        metadata.pop("destination")
+        metadata["location"] = str(remote)
+        legacy = gate.digest(metadata)
+        store.candidate_dir(candidate).rename(store.candidate_dir(legacy))
+        (store.candidate_dir(legacy) / "candidate.json").write_text(
+            json.dumps(metadata)
+        )
+        next((store.path / "targets").glob("*.json")).write_text(
+            json.dumps({"candidate": legacy})
+        )
+        candidate = legacy
+    pair(repository, candidate)
+    accepted = git(repo, env, "rev-parse", "HEAD")
+    before = evidence_bytes(store.path)
+    if growth == "head":
+        commit(repo, env, "revision beyond capacity\n")
+    elif growth in ("base", "base-ref"):
+        base = (
+            accepted if growth == "base" else git(repo, env, "rev-parse", "origin/main")
+        )
+        git(repo, env, "update-ref", "refs/remotes/origin/alternate", base)
+        args.base = "origin/alternate"
+    elif growth == "authors":
+        args.author_session.append("another-author")
+    with store.lock():
+        with pytest.raises(gate.GateError, match="candidate history limit"):
+            store.prepare(args)
+        assert evidence_bytes(store.path) == before
+        args.author_session = ["author"]
+        args.head = accepted
+        args.base = "origin/main"
+        if growth != "legacy":
+            assert store.prepare(args) == candidate
+        source = repo.parent / "capacity-review.json"
+        source.write_text(
+            json.dumps(report(candidate, summary="Review after refused growth"))
+        )
+        store.record(candidate, source)
+        if outstanding:
+            with pytest.raises(
+                gate.GateError, match="unresolved findings: capacity-history"
+            ):
+                store.assess(candidate)
+        else:
+            assert store.assess(candidate) == "two independent local reviews"
+        source.write_text(
+            json.dumps(
+                report(first, "late-reviewer", summary="Late ancestor assessment")
+            )
+        )
+        store.record(first, source)
+        # Another publication target has its own capacity and retained journal.
+        args.target = "refs/heads/independent"
+        separate = store.prepare(args)
+        assert store.candidate(separate)["previous"] is None
+    install(repository)
+    push(repository, f"{accepted}:refs/heads/topic", success=not outstanding)
+
+
+@pytest.mark.parametrize("damage", ["missing", "cycle", "excessive"])
+def test_invalid_history_blocks_all_consumers_without_publication(
+    repository, monkeypatch, damage
+):
+    monkeypatch.syspath_prepend(str(GATE.parent))
+    import review_gate as gate
+
+    repo, _, env = repository
+    first = prepare(repository)
+    commit(repo, env, "second revision\n")
+    candidate = prepare(repository)
+    store = gate.Store(repo)
+    if damage == "missing":
+        (store.candidate_dir(first) / "candidate.json").unlink()
+    elif damage == "cycle":
+        # A hash-consistent cycle is infeasible on disk. Isolate the traversal
+        # contract without weakening the real candidate hash validator.
+        original = store.candidate
+        monkeypatch.setattr(
+            store,
+            "candidate",
+            lambda identity: {**original(identity), "previous": candidate},
+        )
+    else:
+        monkeypatch.setattr(gate, "MAX_CANDIDATES", 1)
+    before = evidence_bytes(store.path)
+    args = argparse.Namespace(
+        base="origin/main",
+        head="HEAD",
+        remote="origin",
+        target="refs/heads/topic",
+        author_session=["author"],
+    )
+    source = repo.parent / "invalid-history-review.json"
+    source.write_text(json.dumps(report(candidate)))
+    with store.lock():
+        for operation in (
+            lambda: store.prepare(args),
+            lambda: store.record(candidate, source),
+            lambda: store.assess(candidate),
+        ):
+            with pytest.raises(gate.GateError):
+                operation()
+            assert evidence_bytes(store.path) == before
 
 
 @pytest.mark.parametrize("expansion", ["unicode", "indentation"])
