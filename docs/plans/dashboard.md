@@ -30,8 +30,10 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Release transition
-- Next step: Execute WP-040.1 first: derive and freeze the independent M1
-  numerical/oracle manifest. Then WP-040.2 migrates the current promotion/API
+- Next step: Execute WP-040.1 first through the prepared
+  [oracle-manifest task](../dev_tasks/dart7_m1_oracle_manifest/README.md): derive
+  and freeze the independent M1 numerical/oracle manifest. Then WP-040.2 migrates
+  the current promotion/API
   checker conflicts while PLAN-030 qualifies compute choices. Follow the M1
   dependency graph through complete rigid ownership/physics, CUDA execution,
   checkpoints and allocation evidence. Consult the coordinator for the proposed
@@ -171,11 +173,11 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Implement the full mesh-backed IPC-class follow-up from the PLAN-081
-  paper/repository gap audit in `docs/dev_tasks/ipc_deformable_solver/` and work
-  through mesh/material state, scene loading, BE/Newmark integration, PT/EE
-  distance derivatives, conservative CCD line search, projected Newton, friction,
-  diagnostics, and the upstream example/test/benchmark/visual corpus. Track
+- Next step: Select remaining IPC qualification from PLAN-081 and its durable
+  parity roadmap: scene/material semantics, BE/Newmark integration, obstacle
+  contact/friction, diagnostics, scale/GPU work and the upstream
+  example/test/benchmark/visual corpus. The former task handoff is retired;
+  implemented kernel slices do not close the full paper target. Track
   Shortest Path to Boundary and Penetration-free Projective Dynamics on the GPU
   as separate sidecars (source audit first, then a CPU-verifiable slice) before
   any solver or public API claim, and route shared-primitive decisions through
@@ -208,8 +210,8 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Continue the active rigid-IPC dev task
-  (`docs/dev_tasks/rigid_ipc_solver/`) toward production: curved
+- Next step: Select a bounded slice from PLAN-082 and its benchmark sidecar
+  toward production: curved
   CCD/residual/subdivision, local/scene barrier assembly and conservative line
   search, the opt-in runtime rigid-IPC stage and same-domain `World` solver
   selection, friction potentials and lagged passes, and remaining
@@ -266,17 +268,16 @@ its own line so status updates remain git-history friendly.
 - Status: Active
 - Horizon: Now
 - Dimension: Algorithm extensibility
-- Next step: Continue the active Augmented VBD (`avbd-2025`)
-  [`../dev_tasks/avbd_solver/`](../dev_tasks/avbd_solver/) tracker with
-  [`104-vertex-block-descent-solver/avbd-paper-gap-audit.md`](104-vertex-block-descent-solver/avbd-paper-gap-audit.md)
-  toward hard constraints, bounded contact/friction, finite-stiffness ramping,
-  rigid/articulated blocks, all paper/demo scenes, and CPU/GPU benchmark parity.
-  Select the next missing mechanism or reproduction from the machine-checked
-  176-row
-  [`104-vertex-block-descent-solver/paper-parity-matrix.md`](104-vertex-block-descent-solver/paper-parity-matrix.md);
-  Remaining VBD closeout (self-contact tangential friction, OGC audit, benchmark
-  JSON, paper tetrahedral reproduction, Phase 8b SoA + Gaia-CPU, Phase 9 same-GPU
-  Table 1) stays tracked in the owner plan and its progress log.
+- Next step: Follow the two ordered completion PRs in PLAN-104: finish all
+  88 VBD predicates first, then all 88 AVBD predicates. The old task handoff
+  is retired; the owner plan, paper audits and
+  [parity matrix](104-vertex-block-descent-solver/paper-parity-matrix.md)
+  retain every source-matched CPU/CUDA, mechanism, corpus, visual and
+  achieved-accuracy performance requirement. VBD owns its XPBD comparator,
+  OGC audit and remaining Gaia/TinyVBD/reference work; the subsequent AVBD PR
+  owns augmented-Lagrangian, unified rigid/articulated/contact, four-method
+  and AVBD-specific performance qualification. Keep deferred maintenance in
+  the completion PR that touches its owner, preserving the full targets.
 - Gate: VBD progress is not complete until the implementation distinguishes
   each internal kernel slice from a wired solver, keeps VBD naming
   backend-neutral, proves per-vertex force/Hessian correctness, an explicit
@@ -487,6 +488,21 @@ its own line so status updates remain git-history friendly.
   prevents per-frame discontinuities, singularity stalls, and local-minimum
   traps from being hidden, and specifies deterministic diagnostics for the
   `auto` policy.
+
+### PLAN-043: OpenUSD Scene Loading
+
+- Owner doc: [043-openusd-scene-loading.md](043-openusd-scene-loading.md)
+- Status: Parked
+- Horizon: Parked
+- Dimension: Easy start
+- Next step: Revisit when an OpenUSD-enabled build environment is available
+  and this work is selected. The scaffold remains OFF by default. The retired
+  handoff's scene mapping, Filament viewer, Python and macOS qualification
+  remain in PLAN-043; create a bounded task home when execution starts.
+- Gate: Real OpenUSD-enabled multi-prim loading, default OFF-path diagnostics,
+  headless/assessed viewer evidence, and stable Linux/macOS Python workflows.
+  The historical macOS pytest abort must be root-caused before default
+  enablement. Retiring the handoff completes no loader phase.
 
 ### PLAN-131: Architecture Map Follow-Ups
 

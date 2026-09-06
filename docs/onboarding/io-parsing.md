@@ -72,6 +72,9 @@ intentional snake_case module under `dart/io/` (it postdates the DART 7 snake_ca
 migration). Binary Crate (`.usdc`) / packaged (`.usdz`) USD, richer
 USD/USDPhysics prim mapping, a Filament viewer example, and dartpy bindings are
 planned follow-ups; see `dart/io/usd/usd_parser.hpp` for the current scope.
+[PLAN-043](../plans/043-openusd-scene-loading.md) owns the remaining scene,
+viewer and Python qualification, OpenUSD build-environment prerequisite and
+unresolved historical macOS pytest abort.
 
 ## Key APIs
 

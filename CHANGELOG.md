@@ -494,6 +494,9 @@ compatibility remains on the active DART 6 LTS branch._
   DART 6 handbook page shrank to a pointer page and `nodejs` joined the
   docs toolchain for Read the Docs.
   ([Design](docs/design/architecture_map.md))
+- Solver and OpenUSD follow-up work now lives in durable plans instead of
+  retired task handoffs; the next active handoff prepares the M1 oracle manifest.
+  ([#3493](https://github.com/dartsim/dart/pull/3493))
 
 - Defined DART 7 readiness milestones and prerequisite work packets, including
   full CPU/CUDA rigid-example validation, checkpoint foundations, compute-library

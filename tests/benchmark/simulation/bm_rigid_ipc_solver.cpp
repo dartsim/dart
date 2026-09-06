@@ -40,7 +40,8 @@
 // against the current DART rigid contact path, the audited reference
 // implementation, and the paper scene families is gated on completing the
 // algorithm's correctness (rigorous interval CCD, corpus parity, production
-// convergence). See docs/dev_tasks/rigid_ipc_solver/benchmarks.md.
+// convergence). See
+// docs/plans/082-rigid-implicit-barrier-contact/benchmarks.md.
 
 #include <dart/simulation/body/collision_shape.hpp>
 #include <dart/simulation/body/rigid_body.hpp>

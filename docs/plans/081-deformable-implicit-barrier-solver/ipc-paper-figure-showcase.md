@@ -187,10 +187,9 @@ per-figure breakdown of that workstream and must be referenced by any future
 slice PR description that adds, improves, or finalizes one of the paper
 figures.
 
-The dev-task tracking folder in
-[`../../dev_tasks/ipc_deformable_solver/`](../../dev_tasks/ipc_deformable_solver/)
-should not duplicate the figure catalog above. When that dev-task closes,
-durable per-figure status moves into the `Status` column here.
+This table owns durable per-figure status. Temporary task handoffs should link
+here rather than duplicate its catalog; retiring a handoff does not promote a
+figure's `Status`.
 
 ## Update Cadence
 
