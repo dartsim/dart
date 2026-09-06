@@ -61,6 +61,11 @@ to ensure fixes are available in both DART 6 and DART 7. Use the highest
 maintained `release-6.*` branch advertised by the upstream remote; this checkout
 currently sees `release-6.20`.
 
+If evidence shows that the release branch has no affected implementation, record
+that evidence and the unresolved release requirement. Continue authorized local
+work without inventing unrelated release changes. This finding does not by
+itself waive the dual-PR requirement; a scope exception needs maintainer direction.
+
 1. **Fix on release branch first**:
 
    ```bash
@@ -205,21 +210,84 @@ pixi run coverage-view
 
 ### Submitting a Pull Request
 
-Your PR description should include:
+Use `.github/PULL_REQUEST_TEMPLATE.md`. This section owns PR-writing guidance.
+Write for a DART maintainer who knows the project but has not followed the task:
+what problem or missing capability prompted the change, how it is addressed,
+and what matters when reviewing it?
 
-1. **Summary**: What does this PR do?
-2. **Motivation**: Why is this change needed?
-3. **Changes**: List of key changes
-4. **Testing**: How was this tested?
-5. **Breaking Changes**: Any API changes?
-6. **Related Issues**: Link to relevant issues
+- **Explain the change first.** Summary is the TL;DR: the concrete problem and
+  principal change, usually one or two short sentences in prose or bullets.
+  Aim for roughly 30–50 words total as a backstop; shorter is fine, and a count
+  alone does not establish clarity. Give each bullet one main point instead of
+  packing it with clauses; put secondary changes below. Name the API, solver,
+  or workflow when it makes the change precise. "Improve robustness" describes
+  an intention, not what the diff does.
+- **Order by reviewer importance.** Put material behavior changes, migration
+  actions, and limitations beside the claims they qualify. Add rationale or Key
+  Changes when the solution needs explanation beyond the opening. For a broad
+  change, point to the decision or implementation area needing scrutiny. Group
+  related changes by behavior; a file inventory or repeated Summary adds little.
+- **Choose evidence for the claim.** A docs or CI change needs the affected
+  workflow and its relevant check. An API change needs the old/new usage and
+  caller action. Physics work needs the method, correctness criterion, measured
+  result and limits. Performance claims need a comparable baseline, workload,
+  solver/backend configuration, hardware and accuracy tradeoffs where relevant.
+  Keep the decisive result in the body and link reproducible supporting detail.
+- **Keep Testing proportionate.** State what was verified and the relevant
+  command, test, or run link with its result, not its execution history. Keep
+  failed, skipped, unavailable, or pending validation visible when it limits a
+  claim or blocks required readiness/merge gates, including failures unrelated
+  to this diff. Run all required gates; their presentation need not enumerate
+  every formatter, routine rerun, or successful check already available in
+  GitHub. Workflow output contracts are caller/handoff reports, not PR-body
+  sections. Keep required audit and review provenance in existing task/session
+  evidence; only reviewer-relevant conclusions belong here. Expandable blocks
+  are for useful supporting detail, not a place to keep otherwise unnecessary
+  process logs.
 
-Keep Summary first as the reviewer skim target. If the motivation is necessary
-to understand the outcome, make the first Summary sentence problem-oriented,
-then put the fuller rationale in Motivation rather than moving Motivation above
-Summary.
+Summary and Testing are the default sections. Use a comparison, additional
+heading, or a few **bold key terms** when it makes the change easier to review;
+avoid forcing every PR into the same extended outline. Keep relevant issue,
+backport, and follow-up links, and the template's collapsed checklist with the
+milestone and short N/A reasons. Optional sections do not waive applicable
+migration, evidence, or backport requirements.
 
-Also set the milestone to match the target branch (see above).
+#### Simulation Evidence
+
+For 3D structure or behavior changes, use `dart-verify-sim` and
+[the simulation-verification guide](agent-sim-verification.md). Keep the Visual
+verification section with the claim it explains; it can precede Testing when
+the behavior is central to the PR. Retain visible, assessed media, before/after
+comparisons with the same camera, dimensions and renderer, captions and
+observations, baseline identities, the text correctness oracle, verdict, claim
+boundaries, limitations, and reproduction commands. Follow the guide for
+unavailable evidence and GitHub-hosted publication; never commit transient
+media. Concision does not cap, collapse, or remove this required evidence.
+
+#### Example And Final Read
+
+For a hypothetical CI fix, "Improve CI efficiency and fix path filtering" is
+short but leaves the reviewer to discover the problem. A useful opening is:
+
+> Documentation-only PRs still run the full build matrix because excluded files
+> match the code filter. Fix exclusion matching so those PRs skip compilation
+> while retaining their docs and workflow checks.
+
+Then report the filter regression check and any pending hosted verification.
+The example supplies context and the specific fix without listing every YAML
+file. A solver PR needs its numerical and visual evidence as well.
+
+Before publication or an update, read the rendered description alongside the
+final diff. Can a reviewer explain the problem and solution from the opening,
+identify the consequential change, and find the evidence and limitations?
+Remove repetition and process narration; restore missing rationale or technical
+detail. Rewrite for the current change instead of appending its repair history.
+
+This adapts [Google's change-description guidance](https://google.github.io/eng-practices/review/developer/cl-descriptions.html)
+and [GitHub's review guidance](https://docs.github.com/en/pull-requests/concepts/helping-others-review-your-changes).
+The scientific and API emphasis fits [SciPy's review guidance](https://scipy.github.io/devdocs/dev/hacking.html#reviewing-pull-requests)
+and [Drake's checklist](https://drake.mit.edu/code_review_checklist.html);
+DART's verification owners define the required evidence and gates.
 
 ### Review Checklist
 
@@ -344,7 +412,7 @@ Before submitting your pull request, verify:
 - [ ] Documentation is updated if needed
 - [ ] Commit messages are clear and descriptive
 - [ ] No merge conflicts with main branch
-- [ ] PR description includes summary, motivation, and testing notes
+- [ ] PR description leads with a concise summary and reports testing outcomes
 - [ ] PR description uses `.github/PULL_REQUEST_TEMPLATE.md`
 - [ ] Milestone is set for the target branch (`DART 7.0` for `main`,
       branch-matching DART 6.x release milestone for the active DART 6 LTS branch)

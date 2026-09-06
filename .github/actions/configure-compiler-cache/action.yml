@@ -1,50 +1,101 @@
 name: Configure compiler cache
-description: Configure sccache/ccache environment variables and fall back when the launcher is unusable.
+description: >-
+  Configure sccache/ccache environment variables, fall back when the launcher
+  is unusable, and fail loudly when a GitHub-hosted job would build uncached.
+inputs:
+  require-cache:
+    description: >-
+      Fail on GitHub-hosted runners when no compiler-cache launcher could be
+      configured. Builds are >95% of CI job time, so an uncached hosted build
+      is a regression, not a fallback. Set to "false" only for jobs that
+      deliberately build cold.
+    default: "true"
 runs:
   using: composite
   steps:
     - name: Configure compiler cache environment
       shell: bash
+      env:
+        REQUIRE_CACHE: ${{ inputs.require-cache }}
       run: |
         set -euo pipefail
 
+        # GitHub Actions cache service v2 (February 2025) replaced
+        # ACTIONS_CACHE_URL with ACTIONS_RESULTS_URL, and mozilla-actions/
+        # sccache-action exports the v2 variables (ACTIONS_RESULTS_URL,
+        # ACTIONS_RUNTIME_TOKEN, ACTIONS_CACHE_SERVICE_V2) for later steps.
+        # Gating on the legacy variable alone silently disabled sccache on
+        # every hosted runner from that migration until September 2026; accept
+        # either variable and fail below rather than build cold again.
+        # The sanity compile below is the first sccache client of the job and
+        # therefore spawns the daemonized server, which fixes its storage
+        # backend from the environment it is spawned with. Values written to
+        # GITHUB_ENV only reach *later* steps, so every variable the server
+        # must see is exported in this shell as well.
         HAS_GHA_CACHE=0
-        if [ -n "${ACTIONS_CACHE_URL:-}" ]; then
+        if [ -n "${ACTIONS_RESULTS_URL:-}" ] || [ -n "${ACTIONS_CACHE_URL:-}" ]; then
           HAS_GHA_CACHE=1
-          echo "SCCACHE_GHA_ENABLED=true" >> "${GITHUB_ENV}"
+          export SCCACHE_GHA_ENABLED=true
         else
-          echo "SCCACHE_GHA_ENABLED=false" >> "${GITHUB_ENV}"
+          export SCCACHE_GHA_ENABLED=false
         fi
-        echo "SCCACHE_NO_DAEMON=1" >> "${GITHUB_ENV}"
+        echo "SCCACHE_GHA_ENABLED=${SCCACHE_GHA_ENABLED}" >> "${GITHUB_ENV}"
+        # Do not set SCCACHE_NO_DAEMON: a non-daemonized server inherits the
+        # spawning compile's stdio, so a compile whose output is piped (every
+        # ninja job) blocks until the server's idle timeout closes the pipe
+        # (reproduced locally with sccache 0.17.0: 20 s stall with
+        # SCCACHE_IDLE_TIMEOUT=20, 0 s without the variable). The daemonized
+        # server detaches and survives across steps; with the idle timeout
+        # disabled it also survives long non-compile phases (ctest, lcov,
+        # dartpy tests) so the sccache-action post-step can read cumulative
+        # stats. The runner VM is ephemeral, so a job-lifetime server is safe.
+        export SCCACHE_IGNORE_SERVER_IO_ERROR=1
+        export SCCACHE_IDLE_TIMEOUT=0
         echo "SCCACHE_IGNORE_SERVER_IO_ERROR=1" >> "${GITHUB_ENV}"
+        echo "SCCACHE_IDLE_TIMEOUT=0" >> "${GITHUB_ENV}"
 
         DISABLE_SCCACHE=0
+        DISABLE_REASON=""
         if [ "${HAS_GHA_CACHE}" -eq 0 ]; then
           DISABLE_SCCACHE=1
-          echo "GitHub Actions cache URL is unavailable; disabling sccache launcher." >&2
+          DISABLE_REASON="GitHub Actions cache service URL is unavailable"
+          echo "${DISABLE_REASON}; disabling sccache launcher." >&2
         fi
 
         RUNNER_NAME_VALUE="${RUNNER_NAME:-}"
-        if [ "${RUNNER_OS:-}" = "Linux" ]; then
+        RUNNER_ENVIRONMENT_VALUE="${RUNNER_ENVIRONMENT:-}"
+        HOSTED=0
+        if [ "${RUNNER_ENVIRONMENT_VALUE}" = "github-hosted" ]; then
+          HOSTED=1
+        else
           case "${RUNNER_NAME_VALUE}" in
-            GitHub\ Actions*) ;;
-            *)
-              DISABLE_SCCACHE=1
-              echo "Self-hosted Linux runner detected (RUNNER_NAME=${RUNNER_NAME_VALUE:-unknown}); disabling sccache launcher." >&2
-              ;;
+            GitHub\ Actions*) HOSTED=1 ;;
           esac
+        fi
+
+        if [ "${RUNNER_OS:-}" = "Linux" ]; then
+          if [ "${HOSTED}" -eq 0 ]; then
+            DISABLE_SCCACHE=1
+            DISABLE_REASON="self-hosted Linux runner (RUNNER_NAME=${RUNNER_NAME_VALUE:-unknown})"
+            echo "Self-hosted Linux runner detected (RUNNER_NAME=${RUNNER_NAME_VALUE:-unknown}); disabling sccache launcher." >&2
+          fi
 
           if [ "${DISABLE_SCCACHE}" -eq 0 ] && [ -f /etc/os-release ]; then
             OS_ID="$(. /etc/os-release && echo "${ID:-}")"
             if [ -n "${OS_ID}" ] && [ "${OS_ID}" != "ubuntu" ]; then
               DISABLE_SCCACHE=1
+              DISABLE_REASON="non-Ubuntu Linux runner (ID=${OS_ID})"
               echo "Non-Ubuntu Linux runner detected (ID=${OS_ID}); disabling sccache launcher." >&2
             fi
           fi
         fi
 
+        # ccache is only a useful fallback on self-hosted runners, where its
+        # directory persists across jobs. On an ephemeral hosted runner it is
+        # always cold, so falling back to it there would hide a broken sccache
+        # setup behind a green job; hosted runners fail instead (see below).
         CCACHE_COMPILER_LAUNCHER_VALUE=""
-        if command -v ccache >/dev/null 2>&1; then
+        if [ "${HOSTED}" -eq 0 ] && command -v ccache >/dev/null 2>&1; then
           CCACHE_COMPILER_LAUNCHER_VALUE="ccache"
         fi
 
@@ -57,6 +108,8 @@ runs:
           elif command -v sccache >/dev/null 2>&1; then
             DART_COMPILER_CACHE_VALUE="sccache"
             CMAKE_COMPILER_LAUNCHER_VALUE="sccache"
+          else
+            DISABLE_REASON="sccache binary not found (SCCACHE_PATH unset and not on PATH)"
           fi
         fi
 
@@ -65,6 +118,30 @@ runs:
           CMAKE_COMPILER_LAUNCHER_VALUE="${CCACHE_COMPILER_LAUNCHER_VALUE}"
         fi
 
+        SCCACHE_BACKEND=""
+        if [ "${DART_COMPILER_CACHE_VALUE}" = "sccache" ]; then
+          # Start the daemon now, with the backend variables exported above,
+          # so the storage it binds is the GitHub Actions cache. This also
+          # validates the service URL and token: the server refuses to start
+          # when the backend is unusable. Runs on every platform, including
+          # the wheel jobs without a `cc` for the sanity compile below.
+          START_OUTPUT="$("${CMAKE_COMPILER_LAUNCHER_VALUE}" --start-server 2>&1 || true)"
+          case "${START_OUTPUT}" in
+            *"Address in use"*) ;;
+            *"Server startup failed"*|*"error:"*)
+              echo "sccache server failed to start: ${START_OUTPUT}" >&2
+              if [ -n "${CCACHE_COMPILER_LAUNCHER_VALUE}" ]; then
+                echo "falling back to ccache" >&2
+                DART_COMPILER_CACHE_VALUE="ccache"
+                CMAKE_COMPILER_LAUNCHER_VALUE="${CCACHE_COMPILER_LAUNCHER_VALUE}"
+              else
+                DISABLE_REASON="sccache server failed to start"
+                DART_COMPILER_CACHE_VALUE=""
+                CMAKE_COMPILER_LAUNCHER_VALUE="env"
+              fi
+              ;;
+          esac
+        fi
         if [ "${DART_COMPILER_CACHE_VALUE}" = "sccache" ]; then
           CC_PATH="$(command -v cc || true)"
           if [ -n "${CC_PATH}" ]; then
@@ -78,9 +155,29 @@ runs:
                 CMAKE_COMPILER_LAUNCHER_VALUE="${CCACHE_COMPILER_LAUNCHER_VALUE}"
               else
                 echo "sccache sanity check failed; falling back to no-op launcher (env)" >&2
+                DISABLE_REASON="sccache sanity compile failed"
                 DART_COMPILER_CACHE_VALUE=""
                 CMAKE_COMPILER_LAUNCHER_VALUE="env"
               fi
+            fi
+          fi
+          if [ "${DART_COMPILER_CACHE_VALUE}" = "sccache" ]; then
+            # Prove which storage the running server uses. On hosted runners
+            # anything other than the GitHub Actions cache (ghac) means the
+            # job would build cold with a per-job local disk cache, which is
+            # exactly the silent regression this action exists to prevent.
+            SCCACHE_BACKEND="$("${CMAKE_COMPILER_LAUNCHER_VALUE}" --show-stats 2>/dev/null | sed -n 's/^Cache location[[:space:]]*//p' | head -n 1 || true)"
+            if [ "${HOSTED}" -eq 1 ] && [ "${HAS_GHA_CACHE}" -eq 1 ]; then
+              case "${SCCACHE_BACKEND}" in
+                ghac*|"GitHub Actions"*) ;;
+                *)
+                  DISABLE_REASON="sccache server is not using the GitHub Actions cache (Cache location: ${SCCACHE_BACKEND:-unknown})"
+                  echo "${DISABLE_REASON}" >&2
+                  "${CMAKE_COMPILER_LAUNCHER_VALUE}" --stop-server >/dev/null 2>&1 || true
+                  DART_COMPILER_CACHE_VALUE=""
+                  CMAKE_COMPILER_LAUNCHER_VALUE="env"
+                  ;;
+              esac
             fi
           fi
         fi
@@ -95,13 +192,34 @@ runs:
         # tool-cache directory instead. GitHub-hosted runners are ephemeral, so
         # RUNNER_TEMP is correct there (and avoids leaking cache across images).
         CCACHE_DIR_VALUE="${RUNNER_TEMP}/ccache"
-        case "${RUNNER_NAME_VALUE}" in
-          GitHub\ Actions*) ;;
-          *) CCACHE_DIR_VALUE="${RUNNER_TOOL_CACHE}/dart-ccache" ;;
-        esac
+        if [ "${HOSTED}" -eq 0 ]; then
+          CCACHE_DIR_VALUE="${RUNNER_TOOL_CACHE}/dart-ccache"
+        fi
 
         echo "CCACHE_BASEDIR=${GITHUB_WORKSPACE}" >> "${GITHUB_ENV}"
         echo "CCACHE_DIR=${CCACHE_DIR_VALUE}" >> "${GITHUB_ENV}"
         echo "CCACHE_COMPRESS=true" >> "${GITHUB_ENV}"
         echo "CCACHE_MAXSIZE=5G" >> "${GITHUB_ENV}"
         mkdir -p "${CCACHE_DIR_VALUE}"
+
+        {
+          echo "### Compiler cache"
+          echo
+          echo "- launcher: ${DART_COMPILER_CACHE_VALUE:-none}"
+          echo "- GitHub Actions cache backend: $([ "${HAS_GHA_CACHE}" -eq 1 ] && echo available || echo unavailable)"
+          if [ -n "${SCCACHE_BACKEND}" ]; then
+            echo "- sccache storage: ${SCCACHE_BACKEND}"
+          fi
+          echo "- runner: ${RUNNER_OS:-?} / ${RUNNER_ENVIRONMENT_VALUE:-${RUNNER_NAME_VALUE:-?}}"
+          if [ -n "${DISABLE_REASON}" ]; then
+            echo "- note: ${DISABLE_REASON}"
+          fi
+        } >> "${GITHUB_STEP_SUMMARY}"
+        echo "Compiler cache launcher: ${DART_COMPILER_CACHE_VALUE:-none} (${CMAKE_COMPILER_LAUNCHER_VALUE})${SCCACHE_BACKEND:+; storage: ${SCCACHE_BACKEND}}"
+
+        # Guard: a GitHub-hosted job with no launcher builds cold (about 50-70%
+        # slower). That happened silently for months, so make it a failure.
+        if [ "${HOSTED}" -eq 1 ] && [ -z "${DART_COMPILER_CACHE_VALUE}" ] && [ "${REQUIRE_CACHE}" = "true" ]; then
+          echo "::error::No compiler-cache launcher is configured on a GitHub-hosted runner (${DISABLE_REASON:-unknown reason}). Fix the cache setup or pass require-cache: 'false' to build cold deliberately."
+          exit 1
+        fi

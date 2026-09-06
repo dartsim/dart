@@ -8,8 +8,13 @@ inputs:
     description: Path to the pixi binary.
     required: true
   cache:
-    description: Enable pixi cache on GitHub-hosted runners.
-    default: "true"
+    description: >-
+      Enable the setup-pixi environment cache on GitHub-hosted runners.
+      Off by default: `pixi install --locked` from conda-forge takes well
+      under a minute, while the cached environments (~500-600 MB each per
+      platform) consumed a third of the repository's 10 GB Actions cache and
+      evicted the compiler cache that every build depends on.
+    default: "false"
   environments:
     description: Space-separated pixi environment names to install on GitHub-hosted runners.
     default: "default"
@@ -35,8 +40,12 @@ inputs:
     description: Enable sccache setup on GitHub-hosted runners.
     default: "true"
   sccache-disable-annotations:
-    description: Disable sccache annotations.
-    default: "true"
+    description: >-
+      Disable the sccache-action post-step stats (hit ratio annotation and job
+      summary table). Off by default so every job records hit/miss evidence;
+      the launcher and the stats client are the same action-provided binary,
+      so the historical client/server version mismatch no longer applies.
+    default: "false"
   sccache-continue-on-error:
     description: Continue if sccache setup fails.
     default: "false"
@@ -92,6 +101,6 @@ runs:
     - name: Setup sccache
       if: ${{ inputs.enable-sccache == 'true' && startsWith(runner.name, 'GitHub Actions') }}
       continue-on-error: ${{ inputs.sccache-continue-on-error == 'true' }}
-      uses: mozilla-actions/sccache-action@v0.0.10
+      uses: mozilla-actions/sccache-action@v0.0.11
       with:
         disable_annotations: ${{ inputs.sccache-disable-annotations }}

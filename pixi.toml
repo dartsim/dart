@@ -453,6 +453,7 @@ test-ai-infra = { cmd = [
   "tests/test_render_architecture_map.py",
   "tests/test_check_architecture_map.py",
   "tests/test_check_architecture_map_runtime.py",
+  "tests/test_ci_code_filter.py",
   "-q",
 ] }
 

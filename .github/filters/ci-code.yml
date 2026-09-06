@@ -1,11 +1,100 @@
+# Shared "does this change need the build/test/wheel tier?" filter for
+# dorny/paths-filter. Every workflow that reads this file MUST pass
+# `predicate-quantifier: some-with-excludes`: with the default `some`
+# quantifier the negated patterns below are OR-ed in and match everything
+# that is *not* excluded, so `code` is always true and the doc-only skip never
+# fires (this was the case from May to September 2026).
+# tests/test_ci_code_filter.py enforces the quantifier and that every literal
+# path below still exists.
+#
+# Keep build, test, packaging, and CI orchestration inputs as code:
+# `.github/actions/**`, `.github/filters/**`, the platform/wheel/CodeQL
+# workflows, `scripts/**`, `tests/**`, `cmake/**`, `pixi.*`, and everything
+# under `dart/`, `python/`, `examples/`, `dartsim/`.
 code:
   - "**"
-  - "!.github/workflows/update_lockfiles.yml"
-  - "!docker/dev/**"
-  - "!docs/**"
+  # AI tool surfaces: commands, skills, generated adapters, hooks. Hooks are
+  # covered by `pixi run test-ai-infra` in CI Lint and by the Windows hook
+  # smoke job (its own `hooks` filter in ci_windows.yml).
+  - "!.agents/**"
+  - "!.claude/**"
+  - "!.codex/**"
+  - "!.opencode/**"
+  # Prose documentation and the root prose files. The docs tree is only
+  # partly prose in this repository: CMake configures docs/doxygen at
+  # configure time, a C++ test and the LCP demo parse docs/background/lcp,
+  # Python tests execute docs/readthedocs/conf.py and parse
+  # docs/python_api, and evidence packets under docs/plans are test inputs.
+  # Those stay code; only the trees and files below are excluded, and
+  # tests/test_ci_code_filter.py scans the platform-tier tests, the demos,
+  # the C++ tests, and CMake for references into excluded paths. Markdown is
+  # excluded by tree or by name, never with a blanket `*.md` glob, because
+  # READMEs inside source trees are build and test inputs (pyproject.toml
+  # embeds the root README.md; python/tests parse
+  # python/examples/demos/README.md).
+  - "!docs/AGENTS.md"
+  - "!docs/README.md"
+  - "!docs/ai/**"
+  - "!docs/background/AGENTS.md"
+  - "!docs/background/ATTRIBUTION.md"
+  - "!docs/background/README.md"
+  - "!docs/background/dynamics/**"
+  - "!docs/design/**"
+  - "!docs/dev_tasks/**"
+  - "!docs/onboarding/**"
+  - "!docs/readthedocs/**/*.md"
+  - "!docs/readthedocs/**/*.rst"
+  - "!docs/readthedocs/_static/**"
+  - "!docs/readthedocs/_templates/**"
+  - "!docs/readthedocs/locale/**"
+  - "!paper/**"
   - "!.readthedocs.yml"
-  - "!tutorials/**"
-  - "!**/*.md"
-  - "!**/*.rst"
-  - "!**/*.po"
-  - "!**/*.pot"
+  - "!AGENTS.md"
+  - "!CHANGELOG.md"
+  - "!CLAUDE.md"
+  - "!CONTRIBUTING.md"
+  - "!.github/PULL_REQUEST_TEMPLATE.md"
+  # Scheduled-only and maintenance workflows: they never run in the PR tier,
+  # so editing them does not need the PR matrix. Build/test/packaging
+  # workflows stay covered by `**`.
+  - "!.github/workflows/cancel_branch_jobs.yml"
+  - "!.github/workflows/ci_altlinux.yml"
+  - "!.github/workflows/ci_freebsd.yml"
+  - "!.github/workflows/ci_gz_dart6.yml"
+  - "!.github/workflows/community_signals.yml"
+  - "!.github/workflows/pages_deploy.yml"
+  - "!.github/workflows/update_lockfiles.yml"
+  - "!.github/dependabot.yml"
+  - "!.github/DISCUSSION_TEMPLATE/**"
+  - "!.github/ISSUE_TEMPLATE/**"
+  # Container/VM harnesses used only by the scheduled distro jobs.
+  - "!docker/**"
+  - "!.devcontainer/**"
+  # Repository metadata that no build, test, or packaging step consumes.
+  # Not excluded on purpose: package.xml (CMake and pyproject derive the
+  # version from it), LICENSE (scikit-build-core packages it into the wheel),
+  # codecov.yml (validated by the Coverage upload), .gitattributes and
+  # .gitignore (checkout and sdist contents).
+  - "!.clang-format"
+  - "!.codespellrc"
+  - "!.gersemirc"
+  - "!Brewfile"
+  - "!CITATION.bib"
+  - "!CITATION.cff"
+  - "!colcon.pkg"
+  # AI-infrastructure Python that only `pixi run test-ai-infra` (CI Lint)
+  # exercises. Keep this list in sync with the `test-ai-infra` task.
+  - "!scripts/ai_doctor.py"
+  - "!scripts/ai_infrastructure.py"
+  - "!scripts/check_ai_infrastructure.py"
+  - "!scripts/check_docs_policy.py"
+  - "!scripts/exercise_agent_scenarios.py"
+  - "!scripts/setup_ai.py"
+  - "!scripts/sync_ai_commands.py"
+  - "!tests/test_ai_infrastructure.py"
+  - "!tests/test_check_agent_hook.py"
+  - "!tests/test_check_docs_policy.py"
+  - "!tests/test_ci_code_filter.py"
+  - "!tests/test_install_git_hooks.py"
+  - "!tests/test_setup_ai.py"
+  - "!tests/test_sync_ai_commands.py"
