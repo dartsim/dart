@@ -3233,7 +3233,7 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
     json.dumps(report)
 
 
-@pytest.mark.parametrize("value", ["", " ", "\t", ".custom-hooks"])
+@pytest.mark.parametrize("value", ["", " ", "\t", "\r", ".custom-hooks"])
 def test_doctor_reports_configured_hooks_path_without_installer_advice(
     tmp_path, monkeypatch, value
 ):
@@ -3261,7 +3261,7 @@ def test_doctor_does_not_certify_hook_configuration_query_errors(tmp_path, monke
 
     def broken_config(args, **kwargs):
         if args[-3:] == ["config", "--get", "core.hooksPath"]:
-            return subprocess.CompletedProcess(args, 3, "", "injected config failure")
+            return subprocess.CompletedProcess(args, 3, b"", b"injected config failure")
         return execute(args, **kwargs)
 
     monkeypatch.setattr(subprocess, "run", broken_config)

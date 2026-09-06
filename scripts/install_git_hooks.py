@@ -34,12 +34,11 @@ import argparse
 import os
 import shutil
 import stat
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-from review_gate import GateError, hooks_path_configuration, pre_push_hook
+from review_gate import GateError, git, hooks_path_configuration, pre_push_hook
 
 SENTINEL = "DART-MANAGED-HOOK"
 HOOK_VERSION = "7"
@@ -130,17 +129,10 @@ HOOK_TEMPLATE = pre_commit_hook()
 
 def run_git(args: list[str]) -> str:
     """Read Git's path output without trimming significant path whitespace."""
-    result = subprocess.run(
-        ["git", *args],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        sys.exit(
-            f"error: `git {' '.join(args)}` failed: {result.stderr.strip()}\n"
-            "  (run this from inside the DART git repository)"
-        )
-    return result.stdout.removesuffix("\n")
+    try:
+        return git(Path.cwd(), *args)
+    except GateError as error:
+        sys.exit(f"error: {error}\n" "  (run this from inside the DART git repository)")
 
 
 def resolve_hooks_dir() -> Path:
