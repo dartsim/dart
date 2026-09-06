@@ -50,7 +50,7 @@ namespace dart::io::usd {
 /// binary Crate (`.usdc`) and packaged (`.usdz`) USD are not read yet. Mapping
 /// richer USD/USDPhysics structure (joints, inertia, collision shapes) and the
 /// remaining USD encodings is later-phase work tracked in
-/// `docs/dev_tasks/usd_scene_loader/`.
+/// `docs/plans/043-openusd-scene-loading.md`.
 ///
 /// This type is only compiled when DART is built with DART_BUILD_IO_USD=ON,
 /// which requires OpenUSD/pxr. When the toggle is OFF, the front door in

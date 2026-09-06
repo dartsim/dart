@@ -16,11 +16,12 @@
     conservative CCD with minimum separation, extends incremental potential
     contact to reduced coordinates, and introduces a rigid-body simulation
     benchmark.
-  - DART's current DART 7 rigid path has semi-implicit velocity/position
-    stages, native collision queries, sequential rigid contact impulses, partial
-    articulated contact response, and a deformable IPC-inspired first slice, but
-    it does not yet have rigid IPC barriers, curved-trajectory CCD, projected
-    Newton, lagged friction, fixture import, or same-domain method selection.
+  - DART has an opt-in rigid IPC stage, curved-trajectory CCD, reduced-coordinate
+    barriers, projected Newton, lagged friction, internal fixture replay and
+    `RigidBodySolver::Ipc` selection. Source owners include
+    `dart/simulation/compute/rigid_ipc_contact_stage.cpp` and
+    `dart/simulation/detail/rigid_ipc/`. These are scoped implementations, not
+    full corpus, interval-arithmetic, production-convergence or CPU/GPU parity.
   - The row-level upstream inventory lives in
     [`082-rigid-implicit-barrier-contact/rigid_ipc_fixture_manifest.json`](082-rigid-implicit-barrier-contact/rigid_ipc_fixture_manifest.json)
     and currently tracks 798 upstream rows: 300 fixture JSON paths, 405 CCD test
@@ -132,10 +133,10 @@
 
 - Architecture rationale:
   [`../design/simulation_solver_architecture.md`](../design/simulation_solver_architecture.md)
-- Rigid-body implementation tracker:
-  [`../dev_tasks/rigid_body_dynamics_solver/`](../dev_tasks/rigid_body_dynamics_solver/)
-- Active rigid IPC implementation tracker:
-  [`../dev_tasks/rigid_ipc_solver/`](../dev_tasks/rigid_ipc_solver/)
+- Rigid-body readiness and remaining dynamics:
+  [PLAN-080](080-rigid-body-dynamics-solver.md)
+- Rigid IPC benchmark methodology, dated measurements and open findings:
+  [`benchmarks.md`](082-rigid-implicit-barrier-contact/benchmarks.md)
 - Unified Newton-barrier family:
   [`083-unified-newton-barrier-multibody.md`](083-unified-newton-barrier-multibody.md)
   owns the cross-variant IPC/ABD consolidation plan. PLAN-082 remains the rigid
@@ -145,6 +146,32 @@
   [`082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md`](082-rigid-implicit-barrier-contact/simultaneous-impact-intake.md)
 - Research catalog:
   [`../readthedocs/papers.md`](../readthedocs/papers.md)
+
+## Remaining Qualification After Handoff Retirement
+
+On 2026-09-06 the maintainer directed retirement of the old rigid IPC task
+handoff with unfinished work preserved here and in the manifest and benchmark
+sidecar. PLAN-082 remains incomplete. Create a bounded task home when a slice
+is selected through the dashboard; retirement does not change the full target.
+
+- Qualify rigorous interval arithmetic, direct CCD evaluator/reference
+  semantics and accepted corpus tolerances, including codimensional and
+  kinematic rows. Existing ACCD/subdivision tests are not full interval-root
+  corpus parity.
+- Extend geometry and contact convergence, robust normal-push by kinematic
+  obstacles, dense simultaneous contact and articulated-scene support.
+  Preserve the conservative CCD lower-bound handling and exact-contact
+  plateau limitations recorded in the benchmark sidecar.
+- Complete lagged-friction corpus/convergence coverage, remaining importer and
+  comparison-command behavior, persisted scene-policy workflows, public examples
+  and mixed rigid/deformable coupling. PLAN-083 owns shared-primitive decisions.
+  Internal fixture import must not silently choose a solver; Sequential Impulse
+  stays the default and the DART-owned IPC opt-in uses the shared World schedule.
+- Close each manifest row only with its own DART tests, examples, CPU/GPU
+  evidence where required, comparison packets and assessed headless visuals.
+  Matching a fixture test does not close its separate paper-figure visual alias.
+  The benchmark sidecar preserves the incumbent/reference/paper performance
+  target, matched-accuracy rules and rejected optimization evidence.
 
 ## Workstreams
 
@@ -242,7 +269,7 @@
 
 Relocated from the dashboard on 2026-07-03; newest first.
 
-Continue the active dev task from fixture replay, comparison
+Continue selected slices from fixture replay, comparison
 script ingestion, curved-trajectory CCD/residual/subdivision slices, local
 rigid barrier derivatives, scene-level sparse barrier assembly, and
 conservative line-search feasibility, and barrier/dynamics Newton solve

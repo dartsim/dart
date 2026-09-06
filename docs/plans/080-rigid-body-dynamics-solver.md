@@ -20,10 +20,10 @@
 This plan owns model/state and rigid physics. PLAN-030 owns runtime/kernel
 selection and complete CUDA execution, PLAN-041 owns public checkpoint
 workflows, PLAN-122 owns allocation qualification, and PLAN-040 coordinates
-readiness. Existing implementation detail remains in
-`docs/dev_tasks/rigid_body_dynamics_solver/` while that task is active.
-Its README and RESUME route implementation through the prerequisites below;
-older contact-polish sequences remain historical backlog, not a bypass.
+readiness. On 2026-09-06 the maintainer directed retirement of the old rigid
+task handoff with unfinished work preserved here. This does not complete
+PLAN-080 or qualify M1-M3. Create a new bounded task home when a packet is
+selected; older contact-polish sequences cannot bypass its prerequisites.
 
 The CPU reference comes first so physical errors are separable from backend
 errors. All M1 examples still require a complete CUDA implementation before
@@ -31,6 +31,42 @@ M1 closes. DART 6 is an optional differential reference from `release-6.*`,
 not the physics oracle.
 [WP-040.2](040-dart7-release-hardening.md#wp-0402-policy-and-checker-migration)
 owns promotion-checker transition requirements and status.
+
+## Retained Requirements And Evidence
+
+- The existing force/torque persistence contract is documented on
+  [`RigidBody`](../../dart/simulation/body/rigid_body.hpp): loads remain until
+  callers clear or replace them. WP-080.2 must explicitly qualify frames,
+  offsets and one-shot versus persistent inputs rather than silently change
+  that contract. The current gravity default is `(0, 0, -9.81)` in
+  [`WorldOptions`](../../dart/simulation/world_options.hpp). Gravity belongs in
+  the transient integration force, not the applied-load accumulator.
+- The retired B2 open-chain comparison harness was removed during World
+  promotion in PR #2932. Its June results are historical, not current
+  acceptance evidence; use the independent PLAN-040 oracles and WP-040.2's
+  checker transition. The rigid MVP (#2705), unified contact/loading (#2838),
+  and Locked/Servo/Acceleration actuator slices (#3251/#3258/#3276) are
+  implementation history, not blanket feature parity.
+- A **dated resting-contact defect** was recorded on `main` on 2026-09-02:
+  a box with half-extent 0.1 m, mass 0.5 kg, restitution zero and `dt=0.005 s`,
+  dropped 0.3 m onto a static box, retained a 0.8-2 mm support gap and, from
+  1-6 s, speeds around 0.005-0.013 m/s and 0.04-0.1 rad/s. Three face contacts
+  remained active and the 0.001 deactivation thresholds were not reached.
+  The handoff attributed this to the rank-deficient near-coplanar fallback in
+  the coupled boxed-LCP increment. Reproduce and verify that attribution on the
+  selected revision before fixing it; this cleanup did not rerun the scene.
+  Keep an explicit gap/drift oracle using
+  [simulation verification](../onboarding/agent-sim-verification.md).
+- Remaining qualification includes contact warm starts, manifold stability,
+  circular friction, coupled rigid/link and link/link response, joint-limit and
+  motor constraints, islands/scaling, mimic/coupler relations, loop closures,
+  integrator choices and COM Jacobians. Existing partial implementations do not
+  close these envelopes. Admit M1 work through the packets below and M2/M3 work
+  through their workstreams; keep richer loader diagnostics and visual/material
+  import with the M3 research workflow and PLAN-041/042 boundaries.
+- The maintainer's untracked external multiphysics API notes are outside this
+  task's edit scope. Durable solver/API decisions remain in the linked design
+  and public-boundary owners.
 
 ## M1 Work Packets
 
