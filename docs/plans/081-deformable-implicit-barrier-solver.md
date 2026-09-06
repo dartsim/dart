@@ -57,10 +57,51 @@
   [`081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md`](081-deformable-implicit-barrier-solver/pd-ipc-gpu-gap-audit.md)
   owns the Penetration-free Projective Dynamics on the GPU research and
   implementation sequence for GPU-accelerated IPC-class deformable contact.
-- Implementation tracking: the first C++ slice is complete in this plan; future
-  slices continue from the workstreams below. Because full IPC parity is now a
-  multi-session implementation, start a new `docs/dev_tasks/` folder when that
-  work begins, then promote durable output and delete it in the completing PR.
+- Implementation qualification:
+  [`ipc-parity-roadmap.md`](081-deformable-implicit-barrier-solver/ipc-parity-roadmap.md)
+  owns the landed increments and remaining capability dependencies. On
+  2026-09-06 the maintainer directed retirement of the old deformable IPC task
+  handoff with unfinished work preserved in these owners. Full IPC parity
+  remains incomplete; create a bounded task home when work is selected.
+
+## Remaining Qualification After Handoff Retirement
+
+The former first-slice checklists are historical. FEM, box/sphere/capsule
+obstacle terms, adaptive ground/obstacle stiffness, iterative and matrix-free
+solves, and Fig-23-shaped diagnostics have scoped implementations. Source and
+regression owners include `dart/simulation/compute/deformable_dynamics_stage.cpp`,
+`tests/unit/simulation/world/test_deformable_body.cpp`, and the roadmap below.
+They do not establish complete corpus, coupling, resident-GPU or paper parity.
+
+- **Scene and state contract:** finish upstream scene-option and BE/Newmark
+  semantics, time-dependent boundary conditions, output-file compatibility,
+  broader contact-free replays and a Python-friendly binary checkpoint bytes
+  interface. Preserve ignored/unsupported-option diagnostics until those
+  semantics are implemented; parsing metadata alone does not honor it.
+- **Contact and obstacles:** the roadmap's M2/M3/M5 retain arbitrary mesh,
+  moving/deforming sphere and codimensional obstacle coverage, timing-aware
+  moving-obstacle CCD, conservative fast-motion coverage, friction, and
+  two-way interaction gaps. Static box barriers and their Hessians are already
+  implemented; do not reintroduce the old task's absent-box claim. Shared
+  primitives and coupling decisions go through PLAN-083.
+- **Nonlinear solve:** retain in-Newton stiffness homotopy, adaptive
+  self-contact stiffness, complementarity/convergence diagnostics and
+  contact-heavy qualification. The current contact active set is held fixed
+  during an inner Newton/line-search step and refreshed on outer iterations;
+  stronger guarantees need their own evidence.
+- **Scale and GPU:** follow roadmap M7 for automatic matrix-free selection,
+  larger contact-heavy meshes, AMG/multigrid, fully resident GPU assembly/solve
+  and transfer accounting. Standalone/live PSD offload is not a full GPU solve.
+- **Corpus and performance:** roadmap M4 owns the pinned upstream asset
+  pipeline. M7 owns paper-scale Fig-22/23 and Table-1 comparisons, average-contact
+  fixture design and process peak-memory semantics. The landed
+  `fig23_deformable_statistics_corpus.json` remains `paper_scale: false`;
+  inherited focused passes and shape-parity results do not close paper rows.
+
+Use the existing roadmap, gap audit, figure showcase and source manifest for
+row-level evidence. Preserve all CPU/GPU, reference-performance, material and
+visual requirements, including the SPB and PD-IPC sidecars; retirement changes
+the handoff location, not the full target or dashboard priority.
 
 ## Workstreams
 
@@ -202,11 +243,12 @@
 
 ## IPC Paper Parity Gap
 
-The first C++ slice is intentionally not full IPC. The line-by-line paper audit
+The first C++ slice was intentionally not full IPC. The line-by-line paper audit
 and upstream repository/example inventory lives in
 [`081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md`](081-deformable-implicit-barrier-solver/ipc-paper-gap-audit.md).
-Treat that file as the next-session checklist for completing the rest of the
-method family. In short, the remaining gap is:
+Treat that file as the full obligation inventory, together with the current
+qualification summary and roadmap. The list below defines the target; it does
+not mean that every listed kernel is still absent:
 
 - volumetric and surface mesh-backed deformable state, not only point masses;
 - density, Young's modulus, Poisson ratio, neo-Hookean and fixed-corotational
@@ -239,7 +281,7 @@ adds optional surface triangles, tetrahedra, material properties, density-based
 tetrahedral lumped mass assembly, deterministic boundary-surface extraction,
 custom binary serialization, mesh setup/step benchmark counters, and updates
 `experimental_deformable_gui` to render body-owned surface topology. The
-existing point-mass/spring solver remains the only stepping path.
+point-mass/spring solver was the only stepping path in that historical slice.
 
 The sub-slice must not be used as evidence for FEM elasticity, material-driven
 stiffness, mesh contact, no-intersection or no-inversion guarantees, CCD line

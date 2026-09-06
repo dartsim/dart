@@ -5,9 +5,9 @@ benchmark surfaces. The authoritative cross-family completion rule and
 canonical row inventory are
 [`paper-parity-matrix.md`](paper-parity-matrix.md) and
 [`avbd-paper-coverage-contract.json`](avbd-paper-coverage-contract.json).
-The active implementation tracker remains
-[`../../dev_tasks/avbd_solver/`](../../dev_tasks/avbd_solver/), and the method
-scope remains
+The remaining implementation sequence lives in
+[PLAN-104](../104-vertex-block-descent-solver.md#ordered-completion-prs), and the
+method scope remains
 [`avbd-paper-gap-audit.md`](avbd-paper-gap-audit.md). This file records the
 existing source-demo, paper, website/video, and performance artifacts without
 promoting narrow packet status into a paper-parity claim.
