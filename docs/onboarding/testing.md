@@ -916,11 +916,14 @@ The test suite follows these core principles:
 
 Tests are automatically run on:
 
-- Pull requests (before merging)
-- Commits to main branches
-- Scheduled nightly builds
+- Pull requests that change build, test, or packaging inputs (doc-only PRs
+  skip the platform jobs; see the code filter in
+  [ci-cd.md](ci-cd.md#lint-check-strategy))
+- Pushes to `main` and release branches (which also run the continuous-only
+  jobs: ASAN, Eigen 64-byte alignment, the Linux Clang GUI smoke, CodeQL C++)
+- A weekly scheduled repeat of the continuous tier
 
-All tests must pass before code can be merged.
+All required checks must pass before code can be merged.
 
 ## Debugging Tests
 
