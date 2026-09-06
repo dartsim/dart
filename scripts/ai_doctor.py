@@ -27,6 +27,7 @@ from ai_infrastructure import (
     working_tree_state,
 )
 from install_git_hooks import HOOK_TEMPLATE, SENTINEL
+from review_gate import hook_inventory
 
 JSON_READ_ERRORS = (OSError, json.JSONDecodeError)
 TOML_READ_ERRORS = (OSError, tomllib.TOMLDecodeError)
@@ -399,6 +400,7 @@ def _inventory(root: Path, profile: str) -> dict[str, object]:
             "windows_bridge": "scripts/pretool_guard_bridge.py",
         },
         "git_hook": _git_hook_inventory(root),
+        "review_hook": hook_inventory(root),
         "setup": {
             "path": "scripts/setup_ai.py",
             "steps": [
@@ -459,10 +461,10 @@ def _recovery(
     )
     if custom_hooks:
         add(
-            "wire the DART gate into the configured hook manager",
+            "wire the DART gates into the configured hook manager; see docs/onboarding/ai-tools.md",
             "python3 scripts/check_agent_hook.py --profile staged",
         )
-    elif any("managed Git pre-commit hook" in warning for warning in warnings):
+    elif any("managed Git pre-" in warning for warning in warnings):
         add("the cross-tool Git hook is missing or stale", "pixi run install-hooks")
     if trust.get("project") != "trusted":
         add("Codex project trust is not observed", "review project trust in Codex")
@@ -498,11 +500,18 @@ def report(root: Path, requested_profile: str) -> dict:
     git_hook = inventory["git_hook"]
     if git_hook["core_hooks_path"]:
         warnings.append(
-            "core.hooksPath is configured; the managed Git pre-commit hook "
+            "core.hooksPath is configured; the managed Git pre-commit/pre-push hooks "
             "cannot be installed automatically"
         )
     elif not git_hook["current"]:
         warnings.append("managed Git pre-commit hook is missing, stale, or disabled")
+    review_hook = inventory["review_hook"]
+    if not review_hook["core_hooks_path"] and (
+        not review_hook["installed"] or not review_hook["checker_current"]
+    ):
+        warnings.append(
+            "managed Git pre-push hook/checker is missing, stale, or disabled"
+        )
     return {
         "schema_version": 1,
         "root": str(root),

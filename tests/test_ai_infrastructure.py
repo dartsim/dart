@@ -389,6 +389,8 @@ def make_repo(tmp_path: Path, profile: str) -> Path:
         root,
         ".github/workflows/ci_windows.yml",
         "Native Windows hook smoke\n"
+        "Native Windows review gate\n"
+        "pixi run python -I scripts/run_pytest.py tests/test_review_gate.py -q\n"
         'pixi run python -c "import sys; print(sys.executable)"\n'
         "$launcher\n"
         "$hookCommand\n"

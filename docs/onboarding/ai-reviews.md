@@ -1,19 +1,86 @@
-# Handling Automated Reviews
+# Local And Automated Reviews
 
 How DART agents and contributors handle review comments from AI bot accounts
 (Codex, GitHub Copilot, code-quality bots) and run the review-fix loop on pull
 requests. Tool compatibility details live in `ai-tools.md`; the approval
-boundary itself is axiom 9 of `docs/ai/principles.md`.
+boundary itself lives in `docs/ai/principles.md`.
 
-## Independent Review Lane
+## Independent Local Review Before Publication
 
-For substantive code PRs, an independent reviewer session — a human, or a
-separate agent session running `/dart-review-pr` that did not author the
-change — records findings before merge approval. Docs-only and mechanical
-changes are exempt. This complements `@codex review`; it does not replace it.
-`dart-manage-pr` checks this gate in `mode=merge`. Hosted review plus this
-independent lane can satisfy the two-pass requirement; see
-`docs/ai/verification.md` for baseline and delta revalidation evidence.
+Before every substantive branch push, including the first draft publication,
+merge the latest fetched base, commit intended changes, and run the required
+validation. Prepare that immutable commit with `pixi run review-gate` using
+[the local evidence interface](ai-tools.md#local-review-evidence-interface).
+The policy applies regardless of the authoring tool or file extension.
+
+Require two completed, clean reviews from distinct sessions that did not author
+any part of the candidate:
+
+- **Correctness**: inspect the complete PR diff from its merge base, relevant
+  surrounding code, acceptance criteria, and tests. Review the resulting
+  behavior, including interactions introduced by repairs.
+- **Contracts**: independently challenge consequential assumptions. Trace
+  affected consumers, sibling cases, and negative cases. For exclusions,
+  parsers, and validators, record an input/consumer coverage matrix: input
+  class, actual consumer or contract, expected behavior, and evidence. Derive
+  expected behavior from consumers and requirements; tests that repeat the
+  implementation's assumptions do not establish correctness. Documentation,
+  packaging metadata, examples, and instructions can be executable inputs.
+  For broad exclusions, inventory every excluded rule and search repository-wide
+  for build/install declarations and test/runtime file reads. Cross-check both
+  directions: excluded paths to consumers, and consumer inputs to exclusions.
+  A row named only "ordinary docs" cannot discharge an unexplored subtree.
+  Check representative edits and deletions for each consumer class, and verify
+  that claimed cheaper checks preserve the original consumer's semantics.
+  Continue through the inventory after finding the first related issue.
+
+For changed runbooks and agent handoffs, reconcile state, next actions, paths,
+and action prerequisites against the supplied candidate/PR facts. Read the
+instructions as an operator would; outdated actionable steps require correction
+or an evidenced explanation of why their guards make them safe. Record this
+assessment even when the production code is otherwise sound.
+
+Use separate read-only sessions through `dart-review-pr` with a local candidate
+and scope. Give each the objective, repository guidance, candidate identity,
+factual validation, known limitations, and earlier findings to verify. Do not
+substitute the author's fix narrative for inspection. Record effective model
+and effort for agent reviewers from observable session settings; if unavailable,
+report the limitation and obtain a reviewer with observable settings. Project
+configuration remains unpinned; explicit user model restrictions still apply.
+The implementation author cannot serve as either publication reviewer.
+
+Fix the complete accepted finding batch, rerun affected gates, and prepare a new
+candidate. Every substantive change needs a fresh pair of reviews covering
+the new full candidate; earlier findings and evidenced dispositions carry
+forward. An incomplete report, missing required acceptance coverage, or a later
+clean response without dispositions cannot erase an outstanding finding.
+Reject false positives with concrete evidence; add tests only to close gaps.
+
+A genuinely trivial change may use one independent **non-substantive**
+assessment. It must inspect behavior and explain why it cannot change. For an
+update it must name an already reviewed ancestor baseline with the same base
+and assess the entire intervening delta. Extensions such as `.md` cannot grant
+exemptions: agent instructions, docs consumed by tests, and packaging inputs
+remain substantive. Formatting-only changes still need that recorded assessment.
+
+These passes satisfy the local completion requirement; do not add redundant
+local passes to count overlapping wording. Hosted review remains an additional
+current-head publication/ready/merge requirement under the rules below. Missing
+independent sessions or acceptance evidence blocks publication while useful
+local work continues; author self-review cannot substitute for this gate.
+
+Review completeness follows the current stage. Before an initial publication,
+reviewers must inspect all required local evidence and explicitly list hosted
+acceptance checks that can run only after publication. Those checks remain
+pending in the draft PR; they are not platform passes or evidence of readiness.
+A failed required local check cannot be relabeled as a pending hosted check.
+
+The installed pre-push hook checks every outgoing branch commit against these
+local records, including non-HEAD and multi-ref pushes. It performs no network,
+model, build, or test work. It checks the locally fetched base; contributors
+remain responsible for fetching current remote state before publication.
+Never use hook bypasses automatically to escape a failed gate. Evidence presence
+and consistency do not authenticate reviewers or guarantee their correctness.
 
 ## Detecting AI-Generated Reviews
 
@@ -144,7 +211,8 @@ instead of at merge time.
 ```bash
 git fetch origin <base-branch>
 git merge --no-ff origin/<base-branch>   # never rebase a published PR branch
-# rebuild + retest if the merge touched code, then push (an approved mutation)
+# commit, validate, prepare and record local reviews, then review-gate check
+# push only with approval
 git push
 ```
 
@@ -195,10 +263,11 @@ pre-retarget head; the post-merge-base push is the state that matters.
    interpreted content; for validators, define valid inputs and a negative-case
    matrix rather than appending exclusions one at a time. Keep unrelated
    features out of the repair batch.
-4. **Verify the batch locally.** Run focused regression gates and independent
-   delta review where required by `docs/ai/verification.md`. Fix repair-induced
+4. **Verify the batch locally.** Run focused regression gates. Fix repair-induced
    regressions before publication. Run `pixi run lint` before every commit;
-   merge the latest base and rerun affected gates before each approved push.
+   merge the latest base and rerun affected gates, then obtain the two clean
+   independent local reviews (or evidenced non-substantive assessment) and
+   pass `pixi run review-gate check <candidate>` before each approved push.
 5. **Publish once the batch is ready.** Verify explicit approval covers each
    intended push, thread resolution, and PR comment; reuse existing authority
    for this action, PR, and scope (including `dart-manage-pr` maintenance).
@@ -214,7 +283,7 @@ pre-retarget head; the post-merge-base push is the state that matters.
 
 Pause automatic re-triggering and perform a bounded independent root-cause
 review of the affected subsystem. Use the existing independent reviewer when
-possible; this can also supply the required delta review. If an independent
+possible; on the final candidate this can also supply its contracts pass. If an independent
 reviewer is unavailable, continue useful local investigation and validation,
 but report the missing checkpoint and hold further hosted requests. Existing
 trigger approval does not waive this checkpoint, including for docs-only PRs.
@@ -320,3 +389,42 @@ against these cases; structural routing checks alone do not exercise the loop.
 | Existing test disproves the only finding on the reviewed head | Record rejection; no gratuitous test, push, or repeat review                              |
 | Quota exhausted after fixes                                   | Finish local evidence, report missing hosted review; no credits change or readiness claim |
 | Clean current-head review with required local/CI evidence     | Stop reviewing; take only the authorized readiness/merge transition                       |
+
+### Local Gate Behavioral Replay (2026-09)
+
+The implementation trial used archived #3485 commits `1963de86858` (base
+`57b9cfe49bf`) and `4562d976903` (base `fda07ac5671`), with the corresponding
+newly published draft and already-open PR state. Read-only reviewer sessions
+received the relevant workflow, full candidate diff, and factual state. The
+historical findings were withheld. Session settings were independently verified;
+[the interface evidence](ai-tools.md#local-review-evidence-interface) records the
+tested model and effort.
+
+An initial review using the existing instructions missed the known exclusion
+family. After one revision of the proposed instructions, the final correctness
+and contracts pair together reported these historical cases:
+
+| Historical case                                            | Final revised pair                                               |
+| ---------------------------------------------------------- | ---------------------------------------------------------------- |
+| Root README consumed by packaging                          | Found in the initial snapshot; recognized as fixed in the update |
+| Demo README consumed by Python tests                       | Found                                                            |
+| LICENSE consumed by installation                           | Found                                                            |
+| Tutorial documentation consumed by build/install           | Found                                                            |
+| Python API documentation consumed by a Python test         | Missed                                                           |
+| Handoff still instructing an already-open PR to be created | Found                                                            |
+
+The missed Python API case is a concrete limit: the archived
+`python/tests/unit/gui/test_gui_scene.py` reads
+`docs/python_api/modules/gui.rst`; retained documentation checks do not prove
+that test's contract. The batch found the underlying consumer family and stale
+handoff, but did not exhaust all members of the family.
+
+A separate blind contrast review accepted a clean README typo as non-substantive
+and rejected an unrelated validator repair that coerced noncanonical inputs
+with `int(raw)`. It identified boolean/float/string acceptance and an unhandled
+infinity case against the supplied exact ASCII-decimal contract.
+
+This small qualitative exercise had unequal review scopes and no controlled
+cost comparison. It establishes neither universal detection nor fewer hosted
+iterations. The [ten-PR trial](ai-tools.md#codex-hosted-review-settings) owns
+ongoing measurement of local review time, escaped families, and total cost.

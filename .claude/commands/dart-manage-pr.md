@@ -130,13 +130,11 @@ gh pr checks <PR_NUMBER>
      another manual request merely because a push completed. Every external
      mutation still requires explicit maintainer/user approval covering its
      action and PR.
-   - For substantive code PRs, an independent review session (a human, or a
-     separate agent session running the `dart-review-pr` workflow via
-     `/dart-review-pr` or `$dart-review-pr`) must record its outcome —
-     findings, or an explicitly clean result — before merge approval;
-     docs-only and mechanical changes are exempt. Count hosted plus independent
-     coverage and revalidate fixes using `docs/ai/verification.md`; the same
-     independent lane can perform the strategy checkpoint.
+   - Before every push, commit and validate the immutable candidate and pass
+     the independent local publication gate from `docs/onboarding/ai-reviews.md`.
+     Use distinct non-author correctness and contracts sessions, or the strict
+     evidenced trivial exception. A strategy checkpoint may serve the contracts
+     pass when it covers that final candidate; hosted review remains additional.
 5. Mark ready or merge only when appropriate:
    - Confirm review requirements are satisfied and local validation matches the
      intended transition.
@@ -151,10 +149,9 @@ gh pr checks <PR_NUMBER>
    `pixi run test-all` and, on Linux hosts with a visible NVIDIA CUDA runtime,
    `pixi run -e cuda test-all`; do not substitute the default run for the CUDA
    run, and record a skip or blocker explicitly. Merge only after CI and review
-   are green, the milestone is set, an independent review recorded a clean
-   result covering the current post-fix head (baseline plus delta revalidation
-   is allowed by `docs/ai/verification.md`;
-   the step 4 docs-only/mechanical exemption also satisfies this), the
+   are green, the milestone is set, the independent local gate passes on the
+   current post-fix candidate and hosted review has verified dispositions with
+   no unresolved actionable finding, the
    PR is not draft, GitHub reports it mergeable, and explicit merge approval is
    given. PR comments, review re-triggers, thread resolution, reviewer requests,
    ready-for-review transitions, merges, and branch deletion are external

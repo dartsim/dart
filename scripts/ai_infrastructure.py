@@ -143,6 +143,7 @@ AI_PREFIXES = (
     "scripts/check_agent_hook.py",
     "scripts/exercise_agent_scenarios.py",
     "scripts/install_git_hooks.py",
+    "scripts/review_gate.py",
     "scripts/pretool_guard_bridge.py",
     "scripts/run_cpp_test.py",
     "scripts/run_pytest.py",
@@ -160,6 +161,7 @@ AI_PREFIXES = (
     "tests/test_ai_",
     "tests/test_check_agent_hook.py",
     "tests/test_install_git_hooks.py",
+    "tests/test_review_gate.py",
     "tests/test_sync_ai_commands.py",
     "pixi.toml",
 )
@@ -1111,6 +1113,8 @@ def check_ci_wiring(root: Path) -> list[str]:
     else:
         for marker in (
             "Native Windows hook smoke",
+            "Native Windows review gate",
+            "pixi run python -I scripts/run_pytest.py tests/test_review_gate.py -q",
             'pixi run python -c "import sys; print(sys.executable)"',
             "$launcher",
             "$hookCommand",
@@ -1739,6 +1743,12 @@ def check_test_runner_contract(root: Path) -> list[str]:
 
     pixi = _load_toml(root / "pixi.toml", errors)
     errors.extend(check_pixi_test_runner_invocations(pixi))
+    _require_task_prefix(
+        pixi, "review-gate", ("python", "scripts/review_gate.py"), errors
+    )
+    for location, command in _task_command_definitions(pixi, "test-ai-infra"):
+        if "tests/test_review_gate.py" not in _command_tokens(command):
+            errors.append(f"pixi.toml: {location} must exercise the review gate")
     pytest_prefix = ("python", "-I", "scripts/run_pytest.py")
     for task_name in (
         "check-dart7-legacy-freeze-meta",

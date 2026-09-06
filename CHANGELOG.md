@@ -485,6 +485,10 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Require two independent local reviews before substantive branch pushes,
+  with recorded finding dispositions and an evidenced trivial-change exception
+  enforced by the installed Git hook.
+
 - Defined DART 7 readiness milestones and prerequisite work packets, including
   full CPU/CUDA rigid-example validation, checkpoint foundations, compute-library
   comparisons and continuous architecture audits.

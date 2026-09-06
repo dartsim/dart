@@ -71,14 +71,19 @@ jobs:
       - uses: dorny/paths-filter@v4
         id: hooks_filter
         with:
-          # The native hook smoke below exercises the agent pre-commit guard,
-          # which the shared code filter excludes (.claude/**). Run it when the
-          # hook, its Python bridge, or the Python environment changes.
+          # Native Windows coverage for both the agent commit guard and the
+          # installed Git review gate. Include their runtimes, tests and runner
+          # even when the shared code filter would route a full build elsewhere.
           filters: |
             hooks:
               - ".claude/hooks/**"
+              - ".github/actions/setup-pixi-ci/**"
               - "scripts/pretool_guard_bridge.py"
               - "scripts/check_agent_hook.py"
+              - "scripts/install_git_hooks.py"
+              - "scripts/review_gate.py"
+              - "scripts/run_pytest.py"
+              - "tests/test_review_gate.py"
               - "pixi.toml"
               - "pixi.lock"
               - ".github/workflows/ci_windows.yml"
@@ -103,6 +108,10 @@ jobs:
           self-hosted-install: false
           enable-sccache: false
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi.exe
+
+      - name: Native Windows review gate
+        shell: powershell
+        run: pixi run python -I scripts/run_pytest.py tests/test_review_gate.py -q
 
       - name: Native Windows hook smoke
         shell: powershell

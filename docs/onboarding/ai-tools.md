@@ -212,7 +212,9 @@ enabling credits requires separate explicit authorization.
 Evaluate the next ten representative PRs using their existing verification
 evidence, recording PR/head, settings, hosted round count, accepted/rejected
 findings, repair-induced regressions, time to readiness, and local agent tokens
-and hosted review usage where available. Compare with similar prior PRs and
+and hosted review usage where available. Add local correctness/contracts
+review time, escaped defect families, and total review cost when measurable.
+Compare with similar prior PRs and
 separate physics, tooling, and documentation changes; unavailable usage is
 unknown, not zero. Do not infer dollar savings from comment counts.
 
@@ -222,3 +224,112 @@ general toggle while retaining batching and the strategy checkpoint. Report
 the sample and limitations; neither structural checks nor a small mixed sample
 prove causal savings. This is a trial protocol, not evidence that ten PRs have
 already been evaluated.
+
+## Local Review Evidence Interface
+
+**Implementation trial (2026-09)**: observed session settings confirmed GPT-6
+Astra Max for the archived and contrast reviews. The [behavioral replay](ai-reviews.md#local-gate-behavioral-replay-2026-09)
+records the results and limitations; this is tested-version evidence, not a
+project model pin.
+
+Run `pixi run install-hooks` once per repository and after checker updates.
+The shared Git hooks directory contains both hooks and a dependency-free Python
+3.11+ checker. The launcher verifies its installed bytes and runs Python in
+isolated mode; truncated or modified checker files fail closed. Older linked
+worktrees use that installed copy. Setup installs
+it; `pixi run ai-doctor` reports a missing/stale hook or checker. Custom
+`core.hooksPath` managers retain control: the installer refuses to overwrite
+that configuration, so integrate equivalent hooks with the manager explicitly.
+Foreign executable hooks are preserved as `pre-commit.local` and
+`pre-push.local`; the push gate replays Git's original stdin and arguments and
+propagates the foreign hook's exit status. A preservation collision stops
+installation. `DART_SKIP_HOOKS` applies only to the commit guard.
+
+After fetching/merging the current base, committing and validating the candidate:
+
+```bash
+pixi run review-gate prepare --base origin/<base> --head HEAD --remote origin \
+  --target refs/heads/<topic> --author-session <author-session-id>
+# Give both read-only reviewers the returned candidate ID and candidate.json.
+# Each returns its final JSON report; the parent imports it without rewriting it.
+pixi run review-gate record <candidate> <correctness-report.json>
+pixi run review-gate record <candidate> <contracts-report.json>
+pixi run review-gate check <candidate>
+# Only after existing explicit maintainer/user approval covers publication:
+git push origin HEAD:refs/heads/<topic>
+```
+
+`prepare` requires one push URL for the named remote and a fetched remote base
+that is already an ancestor. Repeat `--author-session` for every authoring
+session, including earlier tools or executors. It carries earlier authors and
+findings for that publication target automatically. Reviewer sessions cannot
+be authors, and the two scopes need different sessions. Agent session settings
+must be observed, not guessed from the author model or a requested override.
+No model runs inside this interface; humans and other tools use the same report
+contract. The reviewer owns its verdict and dispositions; the parent records
+its final output, not private reasoning or an invented clean result.
+
+Records live in `<git-common-dir>/dart-review/` outside tracked files. A
+versioned candidate binds commit, tree, fetched base ref and commit, merge base,
+remote push location, target branch, author sessions, and previous candidate.
+Reports have an ordered hash manifest; missing or corrupted files block the
+check. `prepare` returns the existing candidate for unchanged input. A changed
+commit, author set, or fetched base produces a new candidate. Keep these records
+across handoffs; do not remove them to discard a finding. A fresh clone has no
+local evidence and must obtain reviews before publication.
+
+Reviewer JSON schema (version 1; replace example values):
+
+```json
+{
+  "schema_version": 1,
+  "candidate": "<64-character candidate ID>",
+  "reviewer": {
+    "session": "<independent session ID>",
+    "kind": "agent",
+    "tool": "<observed tool>",
+    "model": "<effective model>",
+    "effort": "<effective effort>"
+  },
+  "scope": "correctness",
+  "status": "complete",
+  "verdict": "clean",
+  "summary": "No actionable findings survive inspection.",
+  "report": "Final reviewer output with evidence and limitations.",
+  "coverage": ["Complete base-to-head diff and acceptance checks inspected."],
+  "coverage_complete": true,
+  "findings": [],
+  "dispositions": []
+}
+```
+
+Use `kind: human` for a human session; tool/model/effort are then unnecessary.
+The second scope is `contracts`. `status` can be `incomplete`; `verdict` is
+`clean` or `findings`. Incomplete work or missing required acceptance coverage
+cannot count as clean. Apply the review owner's stage distinction: enumerate
+hosted checks still pending after initial publication in `coverage` and `report`;
+never report an unexecuted platform as passed. A finding has `id`, `summary`, and `evidence` strings.
+Use unique IDs for different issues and keep each logical ID stable across
+candidates. Later reports may refine its summary or evidence; all earlier
+hashed reports remain intact. A disposition has that `id`, `status`
+(`fixed` or `rejected`), and concrete `evidence`. Only a completed reviewer can
+close findings. The gate evaluates accumulated findings and the latest report
+per session and scope; a later clean report alone does not close an issue.
+
+JSON inputs and stored artifacts are limited to 2 MiB each. The gate checks all
+serialized sizes before writing a candidate or report update; an oversized
+update is rejected before any evidence file changes.
+
+For the policy's trivial exception use `scope: non-substantive`, add
+`no_behavior_change: true` and a concrete `reason`. For an update also supply
+`baseline: <previously passed candidate ID>`; it must be a reviewed ancestor
+with the same base. Initial trivial publication may omit the baseline.
+
+The pre-push entrypoint consumes the actual outgoing ref/SHA tuples, so a
+review of HEAD cannot authorize another source branch. All branch updates must
+pass; tags and deletions are outside this gate. The hook is offline and compares
+the fetched base, not live remote state. A failure explains missing or stale
+evidence. Restore corrupted evidence from its authentic source, rerun needed
+reviews, or reinstall a missing checker/interpreter; never automatically bypass
+a failure. Ordinary Git bypasses remain possible, and the records are local
+attestations rather than authentication or proof that a reviewer found every bug.

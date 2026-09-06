@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""Install DART's git ``pre-commit`` hook (the fast staged-file gate).
+"""Install DART's fast ``pre-commit`` and evidence-checking ``pre-push`` hooks.
 
 Idempotently writes ``<git-hooks-dir>/pre-commit`` so every ``git commit`` runs
 ``scripts/check_agent_hook.py --profile staged`` with a compatible Python
 interpreter first. Behaviour:
 
-* The managed hook carries a sentinel line (``DART-MANAGED-HOOK``); re-running
-  this installer detects it and rewrites the hook in place, so the command is
-  safe to run any number of times.
-* If a *foreign* (non-DART) ``pre-commit`` hook already exists it is preserved,
-  not clobbered: it is moved to ``pre-commit.local`` with its mode unchanged
-  and chained from the managed hook when executable. If a ``pre-commit.local``
+* Managed hooks carry sentinel lines; reinstallation publishes complete files
+  atomically, keeping the old checker effective while its replacement is written.
+* If a *foreign* (non-DART) hook already exists it is preserved,
+  not clobbered: it is copied to the corresponding ``.local`` with its mode unchanged
+  and chained from the managed hook when executable. If that ``.local``
   is already present the installer refuses with a clear message rather than
   lose an existing local hook.
 * Worktrees are handled via ``git rev-parse --git-path hooks``, which resolves
@@ -30,15 +29,17 @@ Runnable with plain ``python3`` — no third-party imports.
 
 from __future__ import annotations
 
+import os
 import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
+from review_gate import pre_push_hook
+
 SENTINEL = "DART-MANAGED-HOOK"
-# `.claude/hooks/pre-commit-guard.sh` greps for the exact "<SENTINEL> v<VERSION>"
-# sentinel line to recognize its own installed hook; bump both together.
 HOOK_VERSION = "7"
 
 # POSIX sh hook body. Kept dependency-free. It prefers the repository Pixi
@@ -147,7 +148,8 @@ def resolve_hooks_dir() -> Path:
             f"({hooks_path}); refusing to install into a custom hooks\n"
             "  directory that may be shared across repositories. Add the gate "
             "to your own\n"
-            "  hook manager (run `python3 scripts/check_agent_hook.py --profile staged` from pre-commit), "
+            "  hook manager (see docs/onboarding/ai-tools.md for both pre-commit "
+            "and pre-push integration), "
             "or unset\n"
             "  core.hooksPath and re-run `pixi run install-hooks`."
         )
@@ -157,49 +159,93 @@ def resolve_hooks_dir() -> Path:
     return raw
 
 
-def write_hook(path: Path) -> None:
-    path.write_text(HOOK_TEMPLATE)
-    mode = path.stat().st_mode
-    path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+def publish_file(path: Path, content: bytes, executable: bool = False) -> None:
+    """Readers see a complete old or new file, including during reinstall."""
+    descriptor, temporary = tempfile.mkstemp(prefix=".dart-hook-", dir=path.parent)
+    try:
+        with os.fdopen(descriptor, "wb") as output:
+            output.write(content)
+        Path(temporary).chmod(0o755 if executable else 0o644)
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def write_hook(path: Path, template: str = HOOK_TEMPLATE) -> None:
+    publish_file(path, template.encode("utf-8"), executable=True)
+
+
+def foreign_hook(path: Path, sentinel: str) -> bool:
+    return path.is_symlink() or (
+        path.exists() and sentinel not in path.read_text(errors="replace")
+    )
+
+
+def preserve_hook(path: Path, local: Path) -> None:
+    """Keep the original active until its managed replacement is published.
+
+    Exclusive creation also refuses a backup created after preflight. If the
+    copy or later publication fails, the active foreign hook remains intact.
+    """
+    if path.is_symlink():
+        local.symlink_to(os.readlink(path), target_is_directory=path.is_dir())
+    else:
+        with path.open("rb") as original, local.open("xb") as backup:
+            shutil.copyfileobj(original, backup)
+            local.chmod(stat.S_IMODE(os.fstat(original.fileno()).st_mode))
+
+
+def install(hooks_dir: Path) -> int:
+    checker = Path(__file__).with_name("review_gate.py").read_bytes()
+    definitions = (
+        ("pre-commit", SENTINEL, HOOK_TEMPLATE),
+        ("pre-push", "DART-MANAGED-PRE-PUSH v1", pre_push_hook(checker)),
+    )
+    # Check both preservation boundaries before replacing either hook.
+    for name, sentinel, _ in definitions:
+        hook = hooks_dir / name
+        local = hooks_dir / f"{name}.local"
+        if foreign_hook(hook, sentinel) and os.path.lexists(local):
+            sys.exit(
+                f"error: refusing to overwrite an existing {name} hook.\n"
+                f"  A foreign hook exists at {hook} AND {local} is already\n"
+                "  present, so the foreign hook cannot be backed up without loss.\n"
+                f"  Resolve manually: fold your hook logic into {name}.local,\n"
+                f"  remove {name}, then re-run `pixi run install-hooks`."
+            )
+    # Keep the installed checker independent of the currently checked-out tree.
+    publish_file(hooks_dir / "dart-review-gate.py", checker)
+    for name, sentinel, template in definitions:
+        hook = hooks_dir / name
+        if foreign_hook(hook, sentinel):
+            local = hooks_dir / f"{name}.local"
+            preserve_hook(hook, local)
+            print(
+                f"Preserved existing {name} hook as {local} (chained from the DART hook)."
+            )
+        write_hook(hook, template)
+        print(f"Installed DART {name} hook: {hook}")
+    print(
+        "  Pre-push requires recorded local reviews; see docs/onboarding/ai-reviews.md."
+    )
+    print("  DART_SKIP_HOOKS applies only to the existing commit guard, not pre-push.")
+    return 0
 
 
 def main() -> int:
     hooks_dir = resolve_hooks_dir()
     hooks_dir.mkdir(parents=True, exist_ok=True)
-
-    pre_commit = hooks_dir / "pre-commit"
-    local = hooks_dir / "pre-commit.local"
-
-    if pre_commit.exists():
-        existing = pre_commit.read_text(errors="replace")
-        if SENTINEL in existing:
-            write_hook(pre_commit)
-            print(
-                f"DART pre-commit hook already installed; refreshed in place: {pre_commit}"
-            )
-            return 0
-
-        # A foreign hook is present — preserve it rather than clobber.
-        if local.exists():
-            sys.exit(
-                "error: refusing to overwrite an existing pre-commit hook.\n"
-                f"  A foreign hook exists at {pre_commit} AND {local} is already\n"
-                "  present, so the foreign hook cannot be backed up without loss.\n"
-                "  Resolve manually: fold your hook logic into pre-commit.local,\n"
-                "  remove pre-commit, then re-run `pixi run install-hooks`."
-            )
-        shutil.move(str(pre_commit), str(local))
-        print(
-            f"Preserved existing pre-commit hook as {local} (chained from the DART hook)."
+    lock = hooks_dir / ".dart-install-lock"
+    try:
+        lock.mkdir()
+    except FileExistsError:
+        sys.exit(
+            f"error: another installer holds {lock}; after a crash verify it stopped before removing the lock"
         )
-
-    write_hook(pre_commit)
-    print(f"Installed DART pre-commit hook: {pre_commit}")
-    print(
-        "  Runs `scripts/check_agent_hook.py --profile staged` with the repository Pixi Python when available."
-    )
-    print("  Emergency bypass: DART_SKIP_HOOKS=1 git commit ...")
-    return 0
+    try:
+        return install(hooks_dir)
+    finally:
+        lock.rmdir()
 
 
 if __name__ == "__main__":
