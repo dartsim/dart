@@ -210,6 +210,15 @@ pixi run coverage-view
 
 ### Submitting a Pull Request
 
+Commit messages and PR text are project records, not tool output: use plain
+descriptive titles without agent tags, and never add AI attribution anywhere
+in a commit message, PR description, or comment. That excludes
+`Co-Authored-By` trailers naming an AI, generated-by footers, and links to
+agent sessions, even when a tool's default template or a runtime instruction
+offers one; strip such lines before committing, and if one was already
+published, rewrite the commit messages over the branch and force-push with
+lease.
+
 Use `.github/PULL_REQUEST_TEMPLATE.md`. This section owns PR-writing guidance.
 Write for a DART maintainer who knows the project but has not followed the task:
 what problem or missing capability prompted the change, how it is addressed,
