@@ -137,24 +137,85 @@ def install(repository):
     assert result.returncode == 0, result.stderr
 
 
-def install_custom_manager(repository, *, export=True):
-    repo, _, env = repository
-    runtime = repo / ".git" / "dart-review-gate.py"
-    manager = repo.parent / "custom manager"
-    manager.mkdir()
+def custom_manager_handlers():
     guide = (ROOT / "docs" / "onboarding" / "ai-tools.md").read_text(encoding="utf-8")
     guidance = guide.split("### Custom Hook Managers\n", 1)[1]
     assert "pixi run install-hooks --custom-manager" in guidance
     handlers = re.findall(r"```sh\n(.*?)```", guidance, flags=re.DOTALL)
     assert len(handlers) == 2
-    hook = manager / "pre-push"
-    hook.write_bytes(handlers[1].encode("utf-8"))
-    hook.chmod(0o755)
+    return handlers
+
+
+def install_custom_manager(repository, *, export=True):
+    repo, _, env = repository
+    runtime = repo / ".git" / "dart-review-gate.py"
+    manager = repo.parent / "custom manager"
+    manager.mkdir()
+    for name, handler in zip(("pre-commit", "pre-push"), custom_manager_handlers()):
+        hook = manager / name
+        hook.write_bytes(handler.encode("utf-8"))
+        hook.chmod(0o755)
     git(repo, env, "config", "core.hooksPath", str(manager))
     if export:
         result = run(repo, env, sys.executable, str(INSTALLER), "--custom-manager")
         assert result.returncode == 0, result.stderr
     return runtime, manager
+
+
+def test_documented_custom_pre_commit_handler_runs_real_staged_guard(repository):
+    repo, _, env = repository
+    install_custom_manager(repository)
+    scripts = repo / "scripts"
+    scripts.mkdir()
+    for name in ("check_agent_hook.py", "ai_infrastructure.py"):
+        source = ROOT / "scripts" / name
+        if source.is_file():
+            (scripts / name).write_bytes(source.read_bytes())
+
+    accepted = commit(repo, env, "valid staged change\n")
+    (repo / "input.txt").write_text("bad trailing space \n", encoding="utf-8")
+    git(repo, env, "add", "input.txt")
+    result = run(repo, env, "git", "commit", "-qm", "Must be rejected")
+    assert result.returncode != 0
+    assert "trailing whitespace" in result.stdout + result.stderr
+    assert git(repo, env, "rev-parse", "HEAD") == accepted
+
+
+@pytest.mark.parametrize("unavailable", ["script", "python"])
+def test_custom_pre_commit_fallback_and_commit_controls(repository, unavailable):
+    repo, remote, env = repository
+    install_custom_manager(repository)
+    if unavailable == "python":
+        scripts = repo / "scripts"
+        scripts.mkdir()
+        (scripts / "check_agent_hook.py").write_text(
+            "raise SystemExit('must not run')\n"
+        )
+        bin_dir = repo.parent / "incompatible python"
+        bin_dir.mkdir()
+        python = bin_dir / "python3"
+        python.write_bytes(b"#!/bin/sh\nexit 1\n")
+        python.chmod(0o755)
+        env = {
+            **env,
+            "DART_HOOK_PYTHON": str(python).replace("\\", "/"),
+            "PATH": f"{bin_dir}{os.pathsep}{env['PATH']}",
+        }
+    accepted = commit(repo, env, "valid fallback change\n")
+    (repo / "input.txt").write_text("invalid trailing whitespace \n", encoding="utf-8")
+    git(repo, env, "add", "input.txt")
+    blocked = run(repo, env, "git", "commit", "-qm", "Must be blocked")
+    assert blocked.returncode and "full agent gate unavailable" in blocked.stderr
+    assert "trailing whitespace" in blocked.stdout + blocked.stderr
+    assert git(repo, env, "rev-parse", "HEAD") == accepted
+    for flag in ("DART_SKIP_HOOKS", "DART_HOOK_DRY_RUN"):
+        (repo / "input.txt").write_text(
+            f"invalid {flag} whitespace \n", encoding="utf-8"
+        )
+        git(repo, env, "add", "input.txt")
+        controlled = {**env, flag: "1"}
+        git(repo, controlled, "commit", "--allow-empty", "-qm", "Commit control")
+        push((repo, remote, controlled), success=False)
 
 
 def directory_alias(path, target):
@@ -1066,6 +1127,64 @@ def test_custom_hook_manager_is_preserved(repository):
     assert not (exported / "pre-commit").exists()
 
 
+@pytest.mark.parametrize("value", ["", " ", "\t", ".custom-hooks"])
+def test_configured_hooks_path_is_refused_and_reported_literally(
+    repository, monkeypatch, value
+):
+    monkeypatch.syspath_prepend(str(INSTALLER.parent))
+    import review_gate as gate
+
+    repo, _, env = repository
+    for key in ("GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM"):
+        monkeypatch.setenv(key, env[key])
+    assert not gate.hook_inventory(repo)["core_hooks_configured"]
+    git(repo, env, "config", "core.hooksPath", value)
+    hooks = repo / ".git" / "hooks"
+    before = {p.name: p.read_bytes() for p in hooks.iterdir()}
+    result = run(repo, env, sys.executable, str(INSTALLER))
+    assert result.returncode and "core.hooksPath is set" in result.stderr
+    configured = run(repo, env, "git", "config", "--get", "core.hooksPath")
+    assert configured.returncode == 0 and configured.stdout == value + "\n"
+    assert {p.name: p.read_bytes() for p in hooks.iterdir()} == before
+    for name in ("pre-commit", "pre-push", "dart-review-gate.py", ".dart-install-lock"):
+        assert not (repo / name).exists()
+    inventory = gate.hook_inventory(repo)
+    assert inventory["core_hooks_configured"] is True
+    assert inventory["core_hooks_path"] == value
+    assert not inventory["installed"]
+    expected = git(
+        repo, env, "rev-parse", "--path-format=absolute", "--git-path", "hooks/pre-push"
+    )
+    assert Path(inventory["path"]) == Path(expected)
+
+
+def test_hook_configuration_query_error_blocks_install_and_diagnosis(
+    repository, monkeypatch
+):
+    monkeypatch.syspath_prepend(str(INSTALLER.parent))
+    import install_git_hooks as installer
+    import review_gate as gate
+
+    repo, _, _ = repository
+    hooks = repo / ".git" / "hooks"
+    before = {p.name: p.read_bytes() for p in hooks.iterdir()}
+    execute = subprocess.run
+
+    def broken_config(args, **kwargs):
+        if args[-3:] == ["config", "--get", "core.hooksPath"]:
+            return subprocess.CompletedProcess(args, 3, "", "injected config failure")
+        return execute(args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", broken_config)
+    monkeypatch.chdir(repo)
+    with pytest.raises(SystemExit, match="cannot read core.hooksPath"):
+        installer.main([])
+    inventory = gate.hook_inventory(repo)
+    assert "injected config failure" in inventory["error"]
+    assert not inventory["installed"] and not inventory["checker_current"]
+    assert {p.name: p.read_bytes() for p in hooks.iterdir()} == before
+
+
 @pytest.mark.parametrize(
     "alias", ["configured", "relative-configured", "external", "default"]
 )
@@ -1136,20 +1255,25 @@ def test_custom_export_is_not_redirected_by_legacy_directory_retargeting(
     push(repository)
 
 
-@pytest.mark.parametrize("refresh", [False, True])
-@pytest.mark.parametrize("name", ["dart-review-gate.py", "dart-review-pre-push"])
+@pytest.mark.parametrize("state", ["initial", "refresh", "two-file-upgrade"])
+@pytest.mark.parametrize("retry", ["same", "changed"])
+@pytest.mark.parametrize(
+    "name", ["dart-review-gate.py", "dart-review-pre-commit", "dart-review-pre-push"]
+)
 @pytest.mark.parametrize(
     "phase, error", [("before", OSError), ("after", KeyboardInterrupt)]
 )
 def test_custom_export_interruption_blocks_unreviewed_push(
-    repository, monkeypatch, refresh, name, phase, error
+    repository, monkeypatch, state, retry, name, phase, error
 ):
     monkeypatch.syspath_prepend(str(INSTALLER.parent))
     import install_git_hooks as installer
 
     repo, _, env = repository
-    runtime, manager = install_custom_manager(repository, export=refresh)
-    manager_bytes = (manager / "pre-push").read_bytes()
+    runtime, manager = install_custom_manager(repository, export=state != "initial")
+    if state == "two-file-upgrade":
+        (runtime.parent / "dart-review-pre-commit").unlink()
+    manager_bytes = {p.name: p.read_bytes() for p in manager.iterdir()}
     push(repository, success=False)
     source = repo.parent / "new export source"
     source.mkdir()
@@ -1164,11 +1288,16 @@ def test_custom_export_interruption_blocks_unreviewed_push(
         if destination.name == name:
             # Readers still enforce the old version or block missing/mismatched
             # files. The new file is complete before becoming visible.
-            assert Path(temporary).read_bytes() == (
-                checker
-                if name == "dart-review-gate.py"
-                else installer.pre_push_hook(checker, chain_local=False).encode("utf-8")
-            )
+            expected = {
+                "dart-review-gate.py": checker,
+                "dart-review-pre-commit": installer.pre_commit_hook(
+                    chain_local=False
+                ).encode("utf-8"),
+                "dart-review-pre-push": installer.pre_push_hook(
+                    checker, chain_local=False
+                ).encode("utf-8"),
+            }
+            assert Path(temporary).read_bytes() == expected[name]
             push(repository, success=False)
             if phase == "after":
                 replace(temporary, destination)
@@ -1181,12 +1310,20 @@ def test_custom_export_interruption_blocks_unreviewed_push(
         installer.main(["--custom-manager"])
     assert interruptions == [runtime.parent / name]
     assert not (runtime.parent / ".dart-review-export-lock").exists()
-    assert (manager / "pre-push").read_bytes() == manager_bytes
+    assert {p.name: p.read_bytes() for p in manager.iterdir()} == manager_bytes
     assert git(repo, env, "config", "core.hooksPath") == str(manager)
     push(repository, success=False)
     monkeypatch.setattr(installer.os, "replace", replace)
-    (source / "review_gate.py").write_bytes(checker + b"# next installer revision\n")
+    if retry == "changed":
+        checker += b"# next installer revision\n"
+    (source / "review_gate.py").write_bytes(checker)
     assert installer.main(["--custom-manager"]) == 0
+    assert runtime.read_bytes() == checker
+    assert (
+        runtime.parent / "dart-review-pre-commit"
+    ).read_bytes() == installer.pre_commit_hook(chain_local=False).encode("utf-8")
+    assert {p.name: p.read_bytes() for p in manager.iterdir()} == manager_bytes
+    commit(repo, env, "valid commit after export recovery\n")
     push(repository, success=False)
     candidate = prepare(repository)
     pair(repository, candidate)
@@ -1194,20 +1331,27 @@ def test_custom_export_interruption_blocks_unreviewed_push(
 
 
 def test_custom_export_does_not_chain_an_incidental_common_hook(repository):
-    repo, _, _ = repository
-    install_custom_manager(repository)
-    incidental = repo / ".git" / "pre-push.local"
+    repo, _, env = repository
+    _, manager = install_custom_manager(repository)
     original = b"#!/bin/sh\necho unrelated-common-hook >&2\nexit 37\n"
-    incidental.write_bytes(original)
-    incidental.chmod(0o755)
+    incidental = []
+    for directory in (repo / ".git", manager):
+        for name in ("pre-commit.local", "pre-push.local"):
+            path = directory / name
+            path.write_bytes(original)
+            path.chmod(0o755)
+            incidental.append(path)
+    commit(repo, env, "valid custom commit without implicit chaining\n")
     candidate = prepare(repository)
     pair(repository, candidate)
     assert "unrelated-common-hook" not in push(repository).stderr
-    assert incidental.read_bytes() == original
+    assert all(path.read_bytes() == original for path in incidental)
 
 
-@pytest.mark.parametrize("name", ["dart-review-gate.py", "dart-review-pre-push"])
-@pytest.mark.parametrize("kind", ["file", "directory", "hardlink"])
+@pytest.mark.parametrize(
+    "name", ["dart-review-gate.py", "dart-review-pre-commit", "dart-review-pre-push"]
+)
+@pytest.mark.parametrize("kind", ["file", "directory", "hardlink", "symlink"])
 def test_custom_export_preserves_foreign_output_leaves(repository, name, kind):
     repo, _, env = repository
     runtime, manager = install_custom_manager(repository, export=False)
@@ -1216,10 +1360,16 @@ def test_custom_export_preserves_foreign_output_leaves(repository, name, kind):
     if kind == "directory":
         destination.mkdir()
         (destination / "owned.txt").write_bytes(original)
-    elif kind == "hardlink":
+    elif kind in ("hardlink", "symlink"):
         external = repo.parent / "shared output.txt"
         external.write_bytes(original)
-        os.link(external, destination)
+        if kind == "hardlink":
+            os.link(external, destination)
+        else:
+            try:
+                destination.symlink_to(external)
+            except OSError as exc:
+                pytest.skip(f"Creating a symlink requires platform privileges: {exc}")
     else:
         destination.write_bytes(original)
     result = run(repo, env, sys.executable, str(INSTALLER), "--custom-manager")
@@ -1228,13 +1378,104 @@ def test_custom_export_preserves_foreign_output_leaves(repository, name, kind):
         assert (destination / "owned.txt").read_bytes() == original
     else:
         assert destination.read_bytes() == original
-    if kind == "hardlink":
+    if kind in ("hardlink", "symlink"):
         assert external.read_bytes() == original
         assert os.path.samefile(external, destination)
-    for other in {"dart-review-gate.py", "dart-review-pre-push"} - {name}:
+    for other in {
+        "dart-review-gate.py",
+        "dart-review-pre-commit",
+        "dart-review-pre-push",
+    } - {name}:
         assert not (runtime.parent / other).exists()
     assert git(repo, env, "config", "core.hooksPath") == str(manager)
     assert not (runtime.parent / ".dart-review-export-lock").exists()
+
+
+def test_custom_two_file_upgrade_refuses_unowned_commit_output_before_refresh(
+    repository,
+):
+    repo, _, env = repository
+    runtime, _ = install_custom_manager(repository)
+    commit_hook = runtime.parent / "dart-review-pre-commit"
+    commit_hook.write_bytes(b"another owner's commit handler\n")
+    # A damaged checker would normally be recoverable through its owned push
+    # launcher, but the newly introduced output must pass its own preflight.
+    runtime.write_bytes(b"damaged checker\n")
+    before = {
+        p.name: p.read_bytes()
+        for p in runtime.parent.glob("dart-review*")
+        if p.is_file()
+    }
+    result = run(repo, env, sys.executable, str(INSTALLER), "--custom-manager")
+    assert result.returncode and "unmanaged output" in result.stderr
+    assert {
+        p.name: p.read_bytes()
+        for p in runtime.parent.glob("dart-review*")
+        if p.is_file()
+    } == before
+
+
+@pytest.mark.parametrize("kind", ["file", "directory", "hardlink", "symlink"])
+def test_normal_install_preserves_an_unowned_checker_and_foreign_handlers(
+    repository, kind
+):
+    repo, _, env = repository
+    hooks = repo / ".git" / "hooks"
+    runtime = hooks / "dart-review-gate.py"
+    original = b"another owner's checker\n"
+    external = repo.parent / "foreign checker"
+    external.write_bytes(original)
+    if kind == "directory":
+        runtime.mkdir()
+        (runtime / "owned.txt").write_bytes(original)
+    elif kind == "hardlink":
+        os.link(external, runtime)
+    elif kind == "symlink":
+        try:
+            runtime.symlink_to(external)
+        except OSError as exc:
+            pytest.skip(f"Creating a symlink requires platform privileges: {exc}")
+    else:
+        runtime.write_bytes(original)
+    handlers = {}
+    for name in ("pre-commit", "pre-push"):
+        handler = hooks / name
+        handler.write_bytes(f"#!/bin/sh\n# foreign {name}\nexit 29\n".encode("utf-8"))
+        handler.chmod(0o755)
+        handlers[name] = handler.read_bytes()
+    result = run(repo, env, sys.executable, str(INSTALLER))
+    assert result.returncode and "refusing" in result.stderr
+    assert (
+        runtime / "owned.txt" if kind == "directory" else runtime
+    ).read_bytes() == original
+    assert external.read_bytes() == original
+    if kind in ("hardlink", "symlink"):
+        assert os.path.samefile(external, runtime)
+    for name, content in handlers.items():
+        assert (hooks / name).read_bytes() == content
+        assert not (hooks / f"{name}.local").exists()
+    assert not (hooks / ".dart-install-lock").exists()
+    assert run(repo, env, "git", "commit", "--allow-empty", "-qm", "Blocked").returncode
+    push(repository, success=False)
+
+
+@pytest.mark.parametrize("state", ["checker-only", "damaged-pair"])
+def test_normal_install_recovers_owned_checker_outputs(repository, state):
+    repo, _, env = repository
+    hooks = repo / ".git" / "hooks"
+    runtime = hooks / "dart-review-gate.py"
+    if state == "damaged-pair":
+        install(repository)
+        runtime.write_bytes(b"damaged checker\n")
+    else:
+        runtime.write_bytes(GATE.read_bytes())
+    install(repository)
+    assert runtime.read_bytes() == GATE.read_bytes()
+    commit(repo, env, "valid recovered commit\n")
+    push(repository, success=False)
+    candidate = prepare(repository)
+    pair(repository, candidate)
+    push(repository)
 
 
 @pytest.mark.parametrize(

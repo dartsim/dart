@@ -17,7 +17,7 @@ interpreter first. Behaviour:
   worktrees of the repository.
 * A repository or user with ``core.hooksPath`` set manages hooks elsewhere;
   the installer refuses rather than write into a shared personal hooks
-  directory. ``--custom-manager`` instead exports two named runtime files
+  directory. ``--custom-manager`` instead exports three named runtime files
   directly into the Git common directory for explicit chaining.
 * Emergency bypass at commit time: ``DART_SKIP_HOOKS=1 git commit ...``.
 * Verification aid: ``DART_HOOK_DRY_RUN=1`` makes the installed hook print the
@@ -39,7 +39,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from review_gate import pre_push_hook
+from review_gate import GateError, hooks_path_configuration, pre_push_hook
 
 SENTINEL = "DART-MANAGED-HOOK"
 HOOK_VERSION = "7"
@@ -47,7 +47,7 @@ HOOK_VERSION = "7"
 # POSIX sh hook body. Kept dependency-free. It prefers the repository Pixi
 # interpreter, then a compatible PATH python3. In an older linked worktree or
 # without Python 3.11+, it safely falls back to Git's staged whitespace check.
-HOOK_TEMPLATE = f"""\
+_HOOK_TEMPLATE = f"""\
 #!/bin/sh
 # DART pre-commit hook — installed by scripts/install_git_hooks.py
 # {SENTINEL} v{HOOK_VERSION}  (sentinel line: do not edit; the installer keys on it)
@@ -87,11 +87,7 @@ if [ -n "${{DART_HOOK_DRY_RUN:-}}" ]; then
     exit 0
 fi
 
-# Chain to a foreign hook preserved at install time, if any.
-hooks_dir=$(git rev-parse --git-path hooks)
-if [ -x "$hooks_dir/pre-commit.local" ]; then
-    "$hooks_dir/pre-commit.local" "$@" || exit $?
-fi
+@LOCAL_COMMIT_HOOK@
 
 cd "$repo_root" || exit 1
 
@@ -116,8 +112,24 @@ fi
 """
 
 
+def pre_commit_hook(*, chain_local: bool = True) -> str:
+    """Share commit behavior while leaving custom-manager chaining to its owner."""
+    local_hook = """\
+# Chain to a foreign hook preserved at install time, if any.
+hooks_dir=$(git rev-parse --git-path hooks)
+if [ -x "$hooks_dir/pre-commit.local" ]; then
+    "$hooks_dir/pre-commit.local" "$@" || exit $?
+fi"""
+    return _HOOK_TEMPLATE.replace(
+        "@LOCAL_COMMIT_HOOK@", local_hook if chain_local else ""
+    )
+
+
+HOOK_TEMPLATE = pre_commit_hook()
+
+
 def run_git(args: list[str]) -> str:
-    """Run a git command from the current directory and return stripped stdout."""
+    """Read Git's path output without trimming significant path whitespace."""
     result = subprocess.run(
         ["git", *args],
         capture_output=True,
@@ -128,7 +140,7 @@ def run_git(args: list[str]) -> str:
             f"error: `git {' '.join(args)}` failed: {result.stderr.strip()}\n"
             "  (run this from inside the DART git repository)"
         )
-    return result.stdout.strip()
+    return result.stdout.removesuffix("\n")
 
 
 def resolve_hooks_dir() -> Path:
@@ -139,15 +151,14 @@ def resolve_hooks_dir() -> Path:
     repositories, and installing (or relocating a foreign hook) there would
     affect every repo that uses it.
     """
-    hooks_path = subprocess.run(
-        ["git", "config", "--get", "core.hooksPath"],
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    if hooks_path:
+    try:
+        configured, hooks_path = hooks_path_configuration(Path.cwd())
+    except GateError as error:
+        sys.exit(f"error: {error}; refusing to install hooks")
+    if configured:
         sys.exit(
             "error: core.hooksPath is set "
-            f"({hooks_path}); refusing to install into a custom hooks\n"
+            f"({hooks_path!r}); refusing to install into a custom hooks\n"
             "  directory that may be shared across repositories. Add the gate "
             "to your own\n"
             "  hook manager (see docs/onboarding/ai-tools.md for both pre-commit "
@@ -213,12 +224,32 @@ def preserve_hook(path: Path, local: Path) -> None:
             local.chmod(stat.S_IMODE(os.fstat(original.fileno()).st_mode))
 
 
+def require_owned_file(path: Path, sentinel: str, *, recovery: bool = False) -> None:
+    """Refuse ambiguous outputs before any installer publication or adoption."""
+    if path.is_symlink() or (path.exists() and not path.is_file()):
+        sys.exit(f"error: refusing to replace an aliased or non-file output: {path}")
+    if path.exists() and not recovery and foreign_hook(path, sentinel):
+        sys.exit(f"error: refusing to replace an unmanaged output: {path}")
+
+
+def require_owned_checker(runtime: Path, launcher: Path) -> None:
+    owned_launcher = (
+        launcher.is_file()
+        and not launcher.is_symlink()
+        and not foreign_hook(launcher, "DART-MANAGED-PRE-PUSH v1")
+    )
+    # An owned push launcher permits recovery of its damaged checker. A
+    # checker-only interrupted installation carries its own stable marker.
+    require_owned_file(runtime, "# DART-REVIEW-CHECKER v1", recovery=owned_launcher)
+
+
 def install(hooks_dir: Path) -> int:
     checker = Path(__file__).with_name("review_gate.py").read_bytes()
     definitions = (
         ("pre-commit", SENTINEL, HOOK_TEMPLATE),
         ("pre-push", "DART-MANAGED-PRE-PUSH v1", pre_push_hook(checker)),
     )
+    require_owned_checker(hooks_dir / "dart-review-gate.py", hooks_dir / "pre-push")
     # Check both preservation boundaries before replacing either hook.
     for name, sentinel, _ in definitions:
         hook = hooks_dir / name
@@ -257,31 +288,18 @@ def install(hooks_dir: Path) -> int:
 def export_review_runtime(common: Path) -> int:
     """Publish only reserved leaves, never adopt or change manager handlers."""
     launcher = common / "dart-review-pre-push"
+    commit_hook = common / "dart-review-pre-commit"
     runtime = common / "dart-review-gate.py"
-    for path in (launcher, runtime):
-        if path.is_symlink() or (path.exists() and not path.is_file()):
-            sys.exit(
-                f"error: refusing to replace an aliased or non-file export: {path}"
-            )
-    owned_launcher = launcher.is_file() and not foreign_hook(
-        launcher, "DART-MANAGED-PRE-PUSH v1"
-    )
-    if launcher.exists() and not owned_launcher:
-        sys.exit(f"error: refusing to replace an unmanaged export: {launcher}")
-    if (
-        runtime.exists()
-        and not owned_launcher
-        and foreign_hook(runtime, "# DART-REVIEW-CHECKER v1")
-    ):
-        sys.exit(f"error: refusing to replace an unmanaged export: {runtime}")
-    # An owned launcher permits recovery of its damaged checker. A checker-only
-    # interrupted initial export carries its own stable ownership marker.
+    require_owned_file(launcher, "DART-MANAGED-PRE-PUSH v1")
+    require_owned_file(commit_hook, SENTINEL)
+    require_owned_checker(runtime, launcher)
     checker = Path(__file__).with_name("review_gate.py").read_bytes()
     publish_file(runtime, checker)
+    write_hook(commit_hook, pre_commit_hook(chain_local=False))
     write_hook(launcher, pre_push_hook(checker, chain_local=False))
     print(f"Exported DART review launcher: {launcher}")
     print(
-        "  Chain dart-review-pre-push from your existing manager; "
+        "  Chain dart-review-pre-commit and dart-review-pre-push from your manager; "
         "its configuration and handlers were not changed."
     )
     print(
@@ -296,7 +314,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--custom-manager",
         action="store_true",
-        help="export the verified push runtime without changing the hook manager",
+        help="export both Git gates without changing the hook manager",
     )
     args = parser.parse_args(argv)
     if args.custom_manager:

@@ -107,6 +107,21 @@ def git(root: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
+def hooks_path_configuration(root: Path) -> tuple[bool, str]:
+    """Preserve Git configuration presence separately from its literal value."""
+    result = subprocess.run(
+        ["git", "-C", str(root), "config", "--get", "core.hooksPath"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    require(
+        result.returncode in (0, 1),
+        f"cannot read core.hooksPath: {result.stderr.strip()}",
+    )
+    return result.returncode == 0, result.stdout.removesuffix("\n")
+
+
 def digest(value: object) -> str:
     encoded = json.dumps(value, sort_keys=True, ensure_ascii=True).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
@@ -695,21 +710,26 @@ class Store:
 
 def hook_inventory(root: Path) -> dict:
     """Installation diagnosis shared by branch-specific doctors."""
-    configured = subprocess.run(
-        ["git", "-C", str(root), "config", "--get", "core.hooksPath"],
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
     result = {
         "path": "unavailable",
-        "core_hooks_path": configured,
+        "core_hooks_path": "",
+        "core_hooks_configured": False,
         "installed": False,
         "checker_current": False,
     }
     try:
-        hooks = (root / git(root, "rev-parse", "--git-path", "hooks")).resolve()
-        hook = hooks / "pre-push"
-        checker = hooks / "dart-review-gate.py"
+        configured, value = hooks_path_configuration(root)
+        result.update(core_hooks_configured=configured, core_hooks_path=value)
+        hook = Path(
+            git(
+                root,
+                "rev-parse",
+                "--path-format=absolute",
+                "--git-path",
+                "hooks/pre-push",
+            )
+        )
+        checker = hook.with_name("dart-review-gate.py")
         source = root / "scripts" / "review_gate.py"
         result.update(
             {
@@ -724,9 +744,9 @@ def hook_inventory(root: Path) -> dict:
                 and checker.read_bytes() == source.read_bytes(),
             }
         )
-    except HOOK_INVENTORY_ERRORS:
+    except HOOK_INVENTORY_ERRORS as error:
         # Missing or unreadable installation state remains unverified above.
-        pass
+        result["error"] = str(error)
     return result
 
 

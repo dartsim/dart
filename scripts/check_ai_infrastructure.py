@@ -4830,7 +4830,9 @@ def doctor_report(root: Path) -> dict[str, Any]:
     agents = sorted((root / ".codex" / "agents").glob("*.toml"))
     review_hook = hook_inventory(root)
     warnings = []
-    if review_hook["core_hooks_path"]:
+    if review_hook.get("error"):
+        errors.append(f"cannot inspect managed Git hooks: {review_hook['error']}")
+    elif review_hook["core_hooks_configured"]:
         warnings.append(
             "core.hooksPath is configured; integrate both gates with its owner "
             "using docs/onboarding/ai-tools.md#custom-hook-managers"
