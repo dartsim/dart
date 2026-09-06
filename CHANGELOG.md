@@ -513,7 +513,7 @@ compatibility remains on the active DART 6 LTS branch._
 - Agent workflows prepare authorized local work before approval boundaries,
   preserve active task handoffs through checkpoint PRs, and avoid resetting
   existing CI-fix branches. Explicit publication approval and approval to retire
-  unfinished work remain required. ([workflow policy](docs/ai/principles.md))
+  unfinished work remain required. ([#3488](https://github.com/dartsim/dart/pull/3488))
 - Retrospectives now compare the original request with successful or
   unsatisfactory outcomes, validate reusable harness improvements, and skip
   unsupported edits.
