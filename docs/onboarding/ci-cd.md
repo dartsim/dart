@@ -822,8 +822,15 @@ jobs run `-LE simulation`.
 ### Cache Health
 
 - Every job's step summary carries a "Compiler cache" block from
-  `configure-compiler-cache` (launcher, backend availability, runner). A
-  hosted job with `launcher: none` fails; do not weaken that guard.
+  `configure-compiler-cache` (launcher, backend availability with the
+  read/write mode, runner). A hosted job with `launcher: none` fails; do not
+  weaken that guard.
+- The sccache action's post step prints the run's statistics. `Cache hits
+rate` is the number to watch. On a read-only ref (pull requests, tags)
+  every miss also shows up as a `Cache write errors` count: that is
+  sccache's read-only store refusing the put (`Cannot write to read-only
+storage`), not a backend failure, and the compile itself still succeeds.
+  A non-zero `Cache write errors` on a `main` push is a real problem.
 - Repository usage: `gh api repos/dartsim/dart/actions/cache/usage` (10 GB
   cap; see Cache budget above for what may occupy it).
 - Warm-run evidence: compare the build step duration of two consecutive runs
