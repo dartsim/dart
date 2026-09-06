@@ -57,7 +57,7 @@ runs:
         pixi-bin-path: ${{ inputs.pixi-bin-path }}
 
     - name: Pixi install (retry)
-      if: ${{ inputs.self-hosted-install == 'true' && !runner.environment == 'github-hosted' }}
+      if: ${{ inputs.self-hosted-install == 'true' && runner.environment != 'github-hosted' }}
       shell: bash
       run: |
         set -euo pipefail
