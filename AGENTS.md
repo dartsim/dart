@@ -103,7 +103,7 @@ are maintained sources, not generated adapters.
 - [ ] `pixi run build` — If C++/Python code changed
 - [ ] `pixi run test-unit` — If behavior could be affected
 - [ ] **CHANGELOG.md** — Use `/dart-changelog` or `$dart-changelog` to decide and update according to `docs/onboarding/changelog.md` if adding features, fixing bugs, or making breaking changes
-- [ ] **Dev task cleanup** — If task used `docs/dev_tasks/<task>/`, promote durable artifacts and remove the folder in this PR (not after merge)
+- [ ] **Dev task lifecycle** — For an intermediate commit or PR, preserve and update the active `docs/dev_tasks/<task>/` folder. In the completing change, promote durable artifacts and remove the folder before final validation and commit. Follow `docs/dev_tasks/README.md`, including approval for retiring unfinished work.
 
 Shortcut: `pixi run test-all` runs lint + build + all tests.
 On Linux hosts with a visible NVIDIA CUDA runtime, also run

@@ -46,12 +46,15 @@ exception.
    `origin/release-6.*` branch; otherwise start from `origin/main`.
 3. Fix with minimal changes + add regression test. For dual-PR bug fixes, fix
    the active DART 6 LTS branch first, then cherry-pick or reapply to `main`.
-4. `pixi run lint`, then the smallest relevant tests and the task-type gate
+4. For an intermediate commit or PR, preserve and update the active task folder.
+   In the completing change, follow `docs/dev_tasks/README.md`: complete feasible
+   work, promote durable artifacts, and remove the folder before final validation
+   and commit. Preserve its approval requirement for retiring unfinished work.
+5. `pixi run lint`, then the smallest relevant tests and the task-type gate
    set from `docs/ai/verification.md`
-5. Before PR creation, invoke the `dart-changelog` routine to decide whether
+6. Before PR creation, invoke the `dart-changelog` routine to decide whether
    `CHANGELOG.md` needs an entry, then fill `.github/PULL_REQUEST_TEMPLATE.md`.
-6. After explicit maintainer/user approval, `git push -u origin HEAD && gh pr create --base <target-branch> --milestone "<milestone>"`
-7. **Before PR**: If task used `docs/dev_tasks/<task>/`, remove the folder (include in this PR, not after merge)
+7. After explicit maintainer/user approval, `git push -u origin HEAD && gh pr create --base <target-branch> --milestone "<milestone>"`
 
 ## CRITICAL: Dual-PR for Bug Fixes
 
