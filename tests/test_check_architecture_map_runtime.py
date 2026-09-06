@@ -208,6 +208,13 @@ def test_main_compares_probe_output_and_regenerates(
     assert "test_architecture_probe.cpp" in regenerated["source"]
 
 
+def test_probe_candidates_cover_windows_executables() -> None:
+    candidates = camr.PROBE_BINARY_CANDIDATES
+    assert "build/default/cpp/Release/bin/test_architecture_probe" in candidates
+    assert "build/default/cpp/Release/bin/test_architecture_probe.exe" in candidates
+    assert "build/default/cpp/Debug/bin/test_architecture_probe.exe" in candidates
+
+
 def test_regenerate_without_probe_fails(
     views: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

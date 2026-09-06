@@ -16,7 +16,7 @@
           "kinematics",
           "continuation"
         ],
-        "note": "Default free-rigid path: velocity, contact, position as separate stages; VBD and AVBD reuse the same split slots."
+        "note": "SequentialImpulse, Vbd, or Avbd rigid-only world: separate velocity, contact, position stages; other domains slot in before position."
       },
       {
         "id": "fused-multibody",
@@ -40,10 +40,13 @@
         "focus": [
           "sync",
           "rigid_ipc_contact",
+          "multibody_forward_dynamics",
+          "multibody_variational_integration",
+          "deformable_dynamics",
           "kinematics",
           "continuation"
         ],
-        "note": "Ipc is the only rigid family with one contact-and-advance stage; non-fusing multibody families run standalone."
+        "note": "Ipc has one contact-and-advance stage; a multibody domain then runs its standalone stage and a deformable domain runs deformable dynamics."
       }
     ],
     "viewBox": [

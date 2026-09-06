@@ -40,9 +40,10 @@ FIXTURE = IR_DIR / "compute-graph.runtime.json"
 STEP_VIEW = IR_DIR / "world-step.dataflow.json"
 COMPUTE_VIEW = IR_DIR / "compute-graph.architecture.json"
 PROBE_ENV = "DART_ARCHITECTURE_PROBE_OUTPUT"
-PROBE_BINARY_CANDIDATES = (
-    "build/default/cpp/Release/bin/test_architecture_probe",
-    "build/default/cpp/Debug/bin/test_architecture_probe",
+PROBE_BINARY_CANDIDATES = tuple(
+    f"build/default/cpp/{build_type}/bin/test_architecture_probe{suffix}"
+    for build_type in ("Release", "Debug")
+    for suffix in ("", ".exe")
 )
 
 

@@ -203,6 +203,35 @@ def test_main_strict_and_check_fail_without_toolchain(
     assert not out.exists()
 
 
+def test_malformed_view_fails_even_without_toolchain(
+    ir_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (ir_dir / "broken.architecture.json").write_text("{not json", encoding="utf-8")
+    monkeypatch.setattr(ram, "node_executable", lambda *a, **k: None)
+    out = tmp_path / "out"
+    code = ram.main(["--ir-dir", str(ir_dir), "--output-dir", str(out), "--no-fetch"])
+    assert code == ram.EXIT_FAILED
+    assert not out.exists()
+
+
+def test_view_shape_error_reports_type_title_and_nodes(tmp_path: Path) -> None:
+    path = tmp_path / "x.dataflow.json"
+    view = ram.View(path=path, name="x", diagram_type="dataflow")
+    path.write_text(json.dumps({"diagram_type": "architecture"}), encoding="utf-8")
+    assert "does not match" in ram.view_shape_error(view)
+    path.write_text(
+        json.dumps({"diagram_type": "dataflow", "meta": {}}), encoding="utf-8"
+    )
+    assert "meta.title" in ram.view_shape_error(view)
+    path.write_text(
+        json.dumps({"diagram_type": "dataflow", "meta": {"title": "t"}, "nodes": []}),
+        encoding="utf-8",
+    )
+    assert "`nodes`" in ram.view_shape_error(view)
+    path.write_text(json.dumps(_dataflow_ir()), encoding="utf-8")
+    assert ram.view_shape_error(view) is None
+
+
 def test_main_without_views_is_a_noop(tmp_path: Path) -> None:
     empty = tmp_path / "empty"
     empty.mkdir()

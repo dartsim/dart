@@ -190,6 +190,34 @@ def ensure_archify(
     return deps_dir
 
 
+def view_shape_error(view: View) -> str | None:
+    """Return a message when a view is not a well-formed archify document.
+
+    This runs before rendering or fallback generation so a malformed view is a
+    content error (exit 1) in every environment, never a warning hidden behind
+    the text fallback.
+    """
+    try:
+        ir = json.loads(view.path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return f"{view.relpath}: unreadable JSON ({exc})"
+    if not isinstance(ir, dict):
+        return f"{view.relpath}: top level must be an object"
+    if ir.get("diagram_type") != view.diagram_type:
+        return (
+            f"{view.relpath}: diagram_type {ir.get('diagram_type')!r} does not "
+            f"match the file suffix ({view.diagram_type})"
+        )
+    meta = ir.get("meta")
+    if not isinstance(meta, dict) or not meta.get("title"):
+        return f"{view.relpath}: meta.title is required"
+    nodes_key = "components" if view.diagram_type == "architecture" else "nodes"
+    nodes = ir.get(nodes_key)
+    if not isinstance(nodes, list) or not nodes:
+        return f"{view.relpath}: `{nodes_key}` must be a non-empty list"
+    return None
+
+
 def stamp_repository(ir: dict, revision: str, url: str = DART_REPOSITORY_URL) -> dict:
     """Return a copy of an architecture IR with ``meta.repository`` set.
 
@@ -487,6 +515,13 @@ def main(argv: list[str]) -> int:
     if not views:
         log(f"no views found under {args.ir_dir}; nothing to render.")
         return EXIT_OK
+
+    shape_errors = [error for error in map(view_shape_error, views) if error]
+    if shape_errors:
+        for error in shape_errors:
+            log(error)
+        log(f"{len(shape_errors)} view(s) are malformed; nothing was rendered.")
+        return EXIT_FAILED
 
     revision = _git_head(REPO_ROOT)
     node = node_executable()
