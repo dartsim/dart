@@ -35,9 +35,11 @@ dual-PR rule in `docs/onboarding/contributing.md`).
 ## PR Path
 
 Run `pixi run lint` before committing and the task-type gate set from
-`docs/ai/verification.md`; use `dart-pr` to commit, push, and open the PR after
-explicit maintainer/user approval, and `dart-changelog` to decide the
-`CHANGELOG.md` entry per `docs/onboarding/changelog.md`. Use plain descriptive
+`docs/ai/verification.md`; use `dart-pr` for authorized local preparation and
+commits. Before publication or another approval-gated action, verify existing
+explicit maintainer/user approval covers its action, target, and scope; ask only
+for missing authority. Use `dart-changelog` to decide the `CHANGELOG.md` entry
+per `docs/onboarding/changelog.md`. Use plain descriptive
 commit messages and PR titles without agent tags. Update published PR branches
 with additive commits after merging the target branch; never rebase or
 force-push a published PR branch unless the maintainer explicitly asks.
