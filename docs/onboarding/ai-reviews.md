@@ -421,6 +421,17 @@ and rejected an unrelated validator repair that coerced noncanonical inputs
 with `int(raw)`. It identified boolean/float/string acceptance and an unhandled
 infinity case against the supplied exact ASCII-decimal contract.
 
+The first completed hosted reviews of the gate implementation in
+[#3492](https://github.com/dartsim/dart/pull/3492) and
+[#3494](https://github.com/dartsim/dart/pull/3494) found six additional defect
+families after both candidates passed two independent local reviews:
+unchanged-head fixed dispositions, dispositions by active authors, credentials
+in destination records, older-checkout CLI discovery, custom-hook integration,
+and interrupted evidence publication. Independent follow-up sessions confirmed
+those findings and their related cases. Their adverse reports were added to the
+existing journals; earlier clean reports did not override them. This is further
+evidence that two local passes do not guarantee a correct implementation.
+
 This small qualitative exercise had unequal review scopes and no controlled
 cost comparison. It establishes neither universal detection nor fewer hosted
 iterations. The [ten-PR trial](ai-tools.md#codex-hosted-review-settings) owns

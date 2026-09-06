@@ -228,6 +228,10 @@ def install(hooks_dir: Path) -> int:
     print(
         "  Pre-push requires recorded local reviews; see docs/onboarding/ai-reviews.md."
     )
+    print(
+        "  Installed evidence CLI: python3 -I "
+        '"$(git rev-parse --git-path hooks)/dart-review-gate.py" --help'
+    )
     print("  DART_SKIP_HOOKS applies only to the existing commit guard, not pre-push.")
     return 0
 

@@ -4832,7 +4832,8 @@ def doctor_report(root: Path) -> dict[str, Any]:
     warnings = []
     if review_hook["core_hooks_path"]:
         warnings.append(
-            "core.hooksPath is configured; integrate the review gate with its owner"
+            "core.hooksPath is configured; integrate both gates with its owner "
+            "using docs/onboarding/ai-tools.md#custom-hook-managers"
         )
     elif not review_hook["installed"] or not review_hook["checker_current"]:
         warnings.append(

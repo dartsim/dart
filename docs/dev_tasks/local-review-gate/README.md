@@ -15,8 +15,9 @@ cross-tool Git gate, and behavioral review validation.
 - One writer implements release first, then adapts main. Read-only reviewers
   use GPT-6 Astra Max with fresh context. Parallel implementation is excluded.
 - No C++/dartpy/ABI, installed package, solver, or Gazebo behavior changes.
-- GitHub publication, comments, review requests, and merges still require
-  their existing explicit authorization. No such mutation has been requested.
+- User subsequently approved both PR publications and their CI/hosted-review
+  cycles, including required fixes, pushes and review requests. That approval
+  does not include merging, ready transitions, force-pushes or branch deletion.
 - The gate checks supplied review evidence; it cannot prove reviewer honesty
   or correctness. Models, network calls, and builds stay outside the hook.
 - Durable policy belongs in `docs/onboarding/ai-reviews.md`, evidence rules in
@@ -42,19 +43,25 @@ are implemented on both isolated branches. The archive/contrast trial and its
 remaining Python API miss are promoted to the review-policy owner's behavioral
 replay section. Enforcement regressions exercise actual local Git pushes.
 
-- Release: adapter/infrastructure/scenario gates pass; 623 AI tests pass;
+- Initial release candidate: adapter/infrastructure/scenario gates pass; 623 AI tests pass;
   `test-all` passes (158 CTest targets and 271 Python tests); full lint passes.
-- Main: adapter/infrastructure/scenario/docs-policy gates pass; 662 AI tests
+- Initial main candidate: adapter/infrastructure/scenario/docs-policy gates pass; 665 AI tests
   pass. Full CPU validation passes (229 unit and 81 simulation CTest targets,
   2,015 Python tests with 19 skips). The CUDA `test-all` command passes,
   including eight GPU runtime tests and benchmark smoke checks. Its configured
   profile disables dartpy, GUI and examples; two simulation tests are disabled.
-- The 58 focused gate cases pass after repairs to late baseline findings,
-  stable finding evidence, interrupted adoption of foreign hooks, and
-  serialized evidence size limits across complete updates.
-  Independent reviews of the resulting candidates remain pending.
-- Native Windows acceptance and current-head hosted review await approved
-  draft publication. They are unexecuted, not passed.
+- Published PRs are [#3492](https://github.com/dartsim/dart/pull/3492) for release
+  and [#3494](https://github.com/dartsim/dart/pull/3494) for main. The release PR
+  was marked ready externally; main remains draft. Preserve their live state.
+- Both first hosted rounds completed with six confirmed defect families across
+  their initial heads. Independent adverse reports are recorded in both local
+  journals. The repairs cover disposition ancestry/author eligibility, opaque
+  destination identities, recoverable evidence transactions, installed CLI
+  discovery and custom-hook integration. New full validation and clean local
+  reviews are required before publishing the repair batch.
+- Native Windows ran the initial release review-gate step successfully at
+  `3d7ecdb172`; other platform jobs remain in progress. This does not validate
+  the changed repair runtime. Finish current-head Windows and hosted acceptance.
 - The shared hook is installed; reinstallation follows any runtime update.
   Both doctors detect whether its installed bytes match their branch's source.
   The Git-common review store owns current candidate/report state; check it
@@ -67,13 +74,13 @@ and remove this folder in the completing PR before its final validation/reviews.
 
 ## Changelog decision
 
-- Mode: draft
-- Base evidence: release-6.20 e8f5b9a267fd and main 53c9495a95f.
+- Mode: finalize
+- Base evidence: release-6.20 e8f5b9a267fd and main c5030dcab0fb.
 - Scope evidence: local gate, installer, review workflow and test changes.
 - Decision: entry required; contributor publication behavior changes.
 - Target section: DART 6.20 Build; DART 7 Build, Packaging, and Developer Tooling.
 - Entry text: Require two independent local reviews before substantive branch
   pushes, with recorded finding dispositions and an evidenced trivial-change
   exception enforced by the installed Git hook.
-- PR-body note: Draft links pending publication.
-- Follow-up: add each branch's PR link after approved PR creation.
+- PR-body note: Entries now have their branch-specific PR links locally.
+- Follow-up: include the links in the validated repair batch.

@@ -173,7 +173,8 @@ isolated mode; truncated or modified checker files fail closed. Older linked
 worktrees use that installed copy. Setup installs
 it; `pixi run ai-doctor` reports a missing/stale hook or checker. Custom
 `core.hooksPath` managers retain control: the installer refuses to overwrite
-that configuration, so integrate equivalent hooks with the manager explicitly.
+that configuration; use the [custom-manager integration](#custom-hook-managers)
+below for both gates.
 Foreign executable hooks are preserved as `pre-commit.local` and
 `pre-push.local`; the push gate replays Git's original stdin and arguments and
 propagates the foreign hook's exit status. A preservation collision stops
@@ -193,6 +194,31 @@ pixi run review-gate check <candidate>
 git push origin HEAD:refs/heads/<topic>
 ```
 
+### Installed CLI For Older Worktrees
+
+The installed checker also exposes the supported `prepare`, `record` and
+`check` commands. Use it from the checkout being reviewed when that checkout
+lacks the `review-gate` Pixi task or source script:
+
+```bash
+dart_review_gate="$(git rev-parse --git-path hooks)/dart-review-gate.py"
+python3 -I "$dart_review_gate" prepare --base origin/<base> --head HEAD \
+  --remote origin --target refs/heads/<topic> --author-session <author-session-id>
+python3 -I "$dart_review_gate" record <candidate> <reviewer-report.json>
+python3 -I "$dart_review_gate" check <candidate>
+```
+
+In PowerShell, set the same path with
+`$dart_review_gate = Join-Path (git rev-parse --git-path hooks) "dart-review-gate.py"`
+and use it with the commands above. `python3` must name an available Python
+3.11+ interpreter; substitute its full path or the Windows `python` command
+when needed. No third-party packages or Pixi task are required. The commands
+use the current checkout and shared evidence store; returning to another
+worktree is unnecessary. Custom hook managers use their retained runtime path
+below.
+
+### Evidence Records
+
 `prepare` requires one push URL for the named remote and a fetched remote base
 that is already an ancestor. Repeat `--author-session` for every authoring
 session, including earlier tools or executors. It carries earlier authors and
@@ -205,7 +231,10 @@ its final output, not private reasoning or an invented clean result.
 
 Records live in `<git-common-dir>/dart-review/` outside tracked files. A
 versioned candidate binds commit, tree, fetched base ref and commit, merge base,
-remote push location, target branch, author sessions, and previous candidate.
+an opaque digest binding the exact push URL and target branch, author sessions,
+and previous candidate. New records do not contain the raw push URL or embedded
+credentials. Existing local records remain readable without rewriting their
+history; preparing a legacy record creates a new opaque candidate.
 Reports have an ordered hash manifest; missing or corrupted files block the
 check. `prepare` returns the existing candidate for unchanged input. A changed
 commit, author set, or fetched base produces a new candidate. Keep these records
@@ -246,13 +275,27 @@ never report an unexecuted platform as passed. A finding has `id`, `summary`, an
 Use unique IDs for different issues and keep each logical ID stable across
 candidates. Later reports may refine its summary or evidence; all earlier
 hashed reports remain intact. A disposition has that `id`, `status`
-(`fixed` or `rejected`), and concrete `evidence`. Only a completed reviewer can
-close findings. The gate evaluates accumulated findings and the latest report
+(`fixed` or `rejected`), and concrete `evidence`. Only a completed reviewer who
+is independent of every active author can close findings, including through
+ancestor reports. A reviewer becoming an author revokes their earlier
+dispositions. `fixed` requires a later candidate with a different head from
+the latest commit on which that finding was reported; `rejected` can apply
+to the same commit. Amended repairs still require full independent reviews
+and any applicable history-rewrite approval.
+The gate evaluates accumulated findings and the latest report
 per session and scope; a later clean report alone does not close an issue.
 
-JSON inputs and stored artifacts are limited to 2 MiB each. The gate checks all
-serialized sizes before writing a candidate or report update; an oversized
-update is rejected before any evidence file changes.
+Each candidate, reviewer input, report and manifest is limited to 2 MiB.
+The gate checks all serialized sizes before writing an update; an oversized
+update is rejected before any evidence file changes. A validated transaction
+record commits the complete update before individual files are replaced
+atomically. The next command finishes interrupted publication under the store
+lock without discarding earlier findings. The recovery envelope combines up
+to three artifacts and is separately limited to 8 MiB. A recovered import may
+report that it is already recorded; run `check` to inspect the resulting
+candidate. After a killed process, verify it
+has stopped before removing its empty lock directory; retain `pending.json`
+for recovery. Corrupt or oversized transaction data blocks recovery.
 
 For the policy's trivial exception use `scope: non-substantive`, add
 `no_behavior_change: true` and a concrete `reason`. For an update also supply
@@ -267,3 +310,46 @@ evidence. Restore corrupted evidence from its authentic source, rerun needed
 reviews, or reinstall a missing checker/interpreter; never automatically bypass
 a failure. Ordinary Git bypasses remain possible, and the records are local
 attestations rather than authentication or proof that a reviewer found every bug.
+
+### Custom Hook Managers
+
+Keep the configured manager and its existing checks. The installer deliberately
+does not modify `core.hooksPath`. The manager must run both handlers below,
+propagate failures, and supply the original pre-push arguments and stdin.
+Use an already available Python 3.11+ interpreter; these handlers perform no
+environment installation, network, model, build or test work.
+
+From a checkout containing the current gate, retain its standalone runtime
+outside branch-controlled files. Refresh this copy when the checker changes:
+
+```bash
+dart_runtime="$(git rev-parse --git-common-dir)/dart-review-runtime"
+mkdir -p "$dart_runtime"
+cp scripts/review_gate.py "$dart_runtime/review_gate.py"
+```
+
+The manager's pre-commit handler runs the existing staged guard:
+
+```sh
+#!/bin/sh
+repo_root=$(git rev-parse --show-toplevel) || exit 1
+cd "$repo_root" || exit 1
+exec "${DART_HOOK_PYTHON:-python3}" -I scripts/check_agent_hook.py --profile staged
+```
+
+Its pre-push handler runs the retained checker, including in older worktrees:
+
+```sh
+#!/bin/sh
+dart_common=$(git rev-parse --git-common-dir) || exit 1
+exec "${DART_HOOK_PYTHON:-python3}" -I "$dart_common/dart-review-runtime/review_gate.py" pre-push "$@"
+```
+
+Set `DART_HOOK_PYTHON` to the chosen interpreter when `python3` is unavailable.
+These are separate handlers: retain any additional manager-owned checks and
+their ordering. Do not consume pre-push stdin before passing it to the checker.
+For evidence preparation from an older checkout, use the installed-CLI recipe
+with `$dart_common/dart-review-runtime/review_gate.py` as the runtime path.
+The doctor reports manager ownership; it cannot certify arbitrary manager
+configuration. Verify integration with a disposable unreviewed branch push
+that is blocked, followed by a reviewed push that succeeds.
