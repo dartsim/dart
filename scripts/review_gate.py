@@ -360,6 +360,10 @@ class Store:
             require(isinstance(finding, dict), "invalid finding")
             for name in ("id", "summary", "evidence"):
                 text_field(finding.get(name), f"finding {name}")
+        require(
+            len({finding["id"] for finding in findings}) == len(findings),
+            "finding IDs must be unique within a report",
+        )
         for disposition in dispositions:
             require(isinstance(disposition, dict), "invalid disposition")
             text_field(disposition.get("id"), "disposition finding ID")
@@ -445,8 +449,9 @@ class Store:
         if current:
             self.assert_current(candidate_id, active)
         outstanding: dict[str, dict] = {}
-        known: dict[str, dict] = {}
+        known: set[str] = set()
         passed: dict[str, dict] = {}
+        prior_candidates: dict[str, dict] = {}
         verdict = "two clean independent reviews are missing"
         for identity, candidate in history:
             require(
@@ -460,11 +465,9 @@ class Store:
                 reports.append(extra[1])
             for report in reports:
                 for finding in report["findings"]:
-                    require(
-                        finding["id"] not in known or known[finding["id"]] == finding,
-                        "a finding ID was reused for a different issue",
-                    )
-                    known[finding["id"]] = finding
+                    # Reports remain immutable; the same logical issue can
+                    # acquire more precise wording and evidence on a new head.
+                    known.add(finding["id"])
                     outstanding[finding["id"]] = finding
                 for disposition in report["dispositions"]:
                     require(
@@ -505,10 +508,10 @@ class Store:
                     )
                 else:
                     require(
-                        baseline_id in passed,
-                        "exception baseline lacks clean review evidence",
+                        baseline_id in prior_candidates,
+                        "exception baseline must name an earlier candidate",
                     )
-                    baseline = passed[baseline_id]
+                    baseline = prior_candidates[baseline_id]
                     require(
                         baseline["base"] == candidate["base"],
                         "a changed base needs two new reviews",
@@ -520,6 +523,17 @@ class Store:
                         == baseline["head"],
                         "exception baseline must be an ancestor of the candidate",
                     )
+                    if baseline_id not in passed:
+                        # New adverse evidence can revoke a previously valid
+                        # baseline. Keep that evidence and withdraw the old
+                        # exception, while refusing an invalid new exception.
+                        require(
+                            not (extra and extra[0] == identity and report is extra[1]),
+                            "exception baseline lacks clean review evidence",
+                        )
+                        if not eligible:
+                            verdict = "exception baseline lacks clean review evidence"
+                        continue
                 eligible = True
                 verdict = "independent non-substantive assessment"
             if outstanding:
@@ -527,6 +541,7 @@ class Store:
                 verdict = "unresolved findings: " + ", ".join(sorted(outstanding))
             if eligible:
                 passed[identity] = candidate
+            prior_candidates[identity] = candidate
         if require_pass:
             require(candidate_id in passed, verdict)
         return verdict

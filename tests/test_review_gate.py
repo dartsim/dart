@@ -76,7 +76,7 @@ def repository(tmp_path):
     return repo, remote, env
 
 
-def prepare(repository, target="topic"):
+def prepare(repository, target="topic", authors=("author",)):
     repo, _, env = repository
     result = run(
         repo,
@@ -90,8 +90,7 @@ def prepare(repository, target="topic"):
         "origin",
         "--target",
         "refs/heads/" + target,
-        "--author-session",
-        "author",
+        *[part for author in authors for part in ("--author-session", author)],
     )
     assert result.returncode == 0, result.stderr
     return result.stdout.strip()
@@ -602,13 +601,27 @@ def test_target_index_cannot_authorize_another_destination(repository, destinati
     assert "mismatched" in push(repository, *refs, success=False).stderr
 
 
-def test_late_ancestor_findings_block_active_descendant(repository):
+@pytest.mark.parametrize("trivial_descendant", [False, True])
+def test_late_ancestor_findings_block_active_descendant(repository, trivial_descendant):
     repo, _, env = repository
     previous = prepare(repository)
     pair(repository, previous)
     commit(repo, env, "later revision\n")
     candidate = prepare(repository)
-    pair(repository, candidate)
+    if trivial_descendant:
+        record(
+            repository,
+            candidate,
+            report(
+                candidate,
+                scope="non-substantive",
+                no_behavior_change=True,
+                reason="Reviewed the spelling-only delta to the passed baseline",
+                baseline=previous,
+            ),
+        )
+    else:
+        pair(repository, candidate)
     record(
         repository,
         previous,
@@ -641,6 +654,8 @@ def test_late_ancestor_findings_block_active_descendant(repository):
             ],
         ),
     )
+    if trivial_descendant:
+        record(repository, candidate, report(candidate, "reviewer-b", "contracts"))
     push(repository)
 
 
@@ -761,3 +776,188 @@ def test_installed_runtime_retains_python_311_syntax():
     # linked worktrees using the hook's documented minimum interpreter.
     for source in (GATE, INSTALLER):
         ast.parse(source.read_text(encoding="utf-8"), feature_version=(3, 11))
+
+
+def test_withdrawn_ancestor_approval_revokes_a_trivial_exception(repository):
+    repo, _, env = repository
+    previous = prepare(repository)
+    pair(repository, previous)
+    commit(repo, env, "spelling update\n")
+    candidate = prepare(repository)
+    record(
+        repository,
+        candidate,
+        report(
+            candidate,
+            "exception-reviewer",
+            "non-substantive",
+            no_behavior_change=True,
+            reason="Only spelling changed from the reviewed baseline",
+            baseline=previous,
+        ),
+    )
+    record(
+        repository,
+        previous,
+        report(previous, status="incomplete", coverage_complete=False),
+    )
+    install(repository)
+    assert "baseline lacks clean review" in push(repository, success=False).stderr
+    pair(repository, candidate)
+    push(repository)
+
+
+def test_added_author_does_not_poison_history_with_a_trivial_exception(repository):
+    repo, _, env = repository
+    previous = prepare(repository)
+    pair(repository, previous)
+    commit(repo, env, "spelling update\n")
+    interim = prepare(repository)
+    record(
+        repository,
+        interim,
+        report(
+            interim,
+            "exception-reviewer",
+            "non-substantive",
+            no_behavior_change=True,
+            reason="Only spelling changed from the reviewed baseline",
+            baseline=previous,
+        ),
+    )
+    candidate = prepare(repository, authors=("author", "reviewer-a"))
+    install(repository)
+    push(repository, success=False)
+    record(repository, candidate, report(candidate, "reviewer-c"))
+    record(repository, candidate, report(candidate, "reviewer-d", "contracts"))
+    push(repository)
+
+
+def test_stable_finding_accepts_updated_evidence_without_losing_history(repository):
+    repo, _, env = repository
+    previous = prepare(repository)
+    finding = {
+        "id": "consumer-contract",
+        "summary": "Consumer still reads the excluded input",
+        "evidence": "consumer.py:10 reads the input",
+    }
+    record(
+        repository,
+        previous,
+        report(previous, verdict="findings", findings=[finding]),
+    )
+    history = repo / ".git" / "dart-review" / "candidates" / previous / "reports"
+    original = {path.name: path.read_bytes() for path in history.glob("*.json")}
+    commit(repo, env, "repair changed source locations\n")
+    candidate = prepare(repository)
+    updated = {
+        **finding,
+        "summary": "Consumer reads the input after the partial repair",
+        "evidence": "consumer.py:17 still reads the input",
+    }
+    record(
+        repository,
+        candidate,
+        report(candidate, verdict="findings", findings=[updated]),
+    )
+    assert {path.name: path.read_bytes() for path in history.glob("*.json")} == original
+    pair(repository, candidate)
+    install(repository)
+    assert (
+        "unresolved findings: consumer-contract"
+        in push(repository, success=False).stderr
+    )
+    record(
+        repository,
+        candidate,
+        report(
+            candidate,
+            dispositions=[
+                {
+                    "id": finding["id"],
+                    "status": "rejected",
+                    "evidence": "The current consumer contract is exercised by an equivalent retained check",
+                }
+            ],
+        ),
+    )
+    push(repository)
+
+
+def test_duplicate_finding_ids_in_one_report_are_rejected(repository):
+    candidate = prepare(repository)
+    finding = {"id": "duplicate", "summary": "First issue", "evidence": "first.py:1"}
+    result = record(
+        repository,
+        candidate,
+        report(
+            candidate,
+            verdict="findings",
+            findings=[finding, {**finding, "summary": "Another issue"}],
+        ),
+        success=False,
+    )
+    assert "finding IDs must be unique" in result.stderr
+    pair(repository, candidate)
+    install(repository)
+    push(repository)
+
+
+@pytest.mark.parametrize("name", ["pre-commit", "pre-push"])
+def test_failed_foreign_hook_adoption_keeps_the_original_active(
+    repository, monkeypatch, name
+):
+    monkeypatch.syspath_prepend(str(INSTALLER.parent))
+    import install_git_hooks as installer
+
+    repo, _, env = repository
+    hooks = repo / ".git" / "hooks"
+    hook = hooks / name
+    original = b"#!/bin/sh\necho kept-foreign-hook >&2\nexit 29\n"
+    hook.write_bytes(original)
+    hook.chmod(0o755)
+    publish = installer.write_hook
+
+    def fail_publication(path, template=installer.HOOK_TEMPLATE):
+        if path.name == name:
+            raise OSError("injected replacement failure")
+        return publish(path, template)
+
+    monkeypatch.setattr(installer, "resolve_hooks_dir", lambda: hooks)
+    monkeypatch.setattr(installer, "write_hook", fail_publication)
+    with pytest.raises(OSError, match="injected replacement failure"):
+        installer.main()
+    assert hook.read_bytes() == original
+    assert os.access(hook, os.X_OK)
+    assert (hooks / (name + ".local")).read_bytes() == original
+    assert not (hooks / ".dart-install-lock").exists()
+    args = (
+        ("push", "origin", "topic")
+        if name == "pre-push"
+        else ("commit", "--allow-empty", "-qm", "Blocked fixture commit")
+    )
+    result = run(repo, env, "git", *args)
+    assert result.returncode and "kept-foreign-hook" in result.stderr
+
+
+def test_backup_created_after_preflight_is_not_overwritten(repository, monkeypatch):
+    monkeypatch.syspath_prepend(str(INSTALLER.parent))
+    import install_git_hooks as installer
+
+    repo, _, _ = repository
+    hooks = repo / ".git" / "hooks"
+    hook = hooks / "pre-push"
+    original = b"#!/bin/sh\nexit 29\n"
+    hook.write_bytes(original)
+    preserve = installer.preserve_hook
+
+    def intervening_backup(path, local):
+        local.write_bytes(b"another owner's backup\n")
+        return preserve(path, local)
+
+    monkeypatch.setattr(installer, "preserve_hook", intervening_backup)
+    monkeypatch.setattr(installer, "resolve_hooks_dir", lambda: hooks)
+    with pytest.raises(FileExistsError):
+        installer.main()
+    assert hook.read_bytes() == original
+    assert (hooks / "pre-push.local").read_bytes() == b"another owner's backup\n"

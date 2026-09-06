@@ -242,8 +242,10 @@ The second scope is `contracts`. `status` can be `incomplete`; `verdict` is
 `clean` or `findings`. Incomplete work or missing required acceptance coverage
 cannot count as clean. Apply the review owner's stage distinction: enumerate
 hosted checks still pending after initial publication in `coverage` and `report`;
-never report an unexecuted platform as passed. A finding has `id`, `summary`, and `evidence` strings;
-keep its ID stable across candidates. A disposition has that `id`, `status`
+never report an unexecuted platform as passed. A finding has `id`, `summary`, and `evidence` strings.
+Use unique IDs for different issues and keep each logical ID stable across
+candidates. Later reports may refine its summary or evidence; all earlier
+hashed reports remain intact. A disposition has that `id`, `status`
 (`fixed` or `rejected`), and concrete `evidence`. Only a completed reviewer can
 close findings. The gate evaluates accumulated findings and the latest report
 per session and scope; a later clean report alone does not close an issue.
