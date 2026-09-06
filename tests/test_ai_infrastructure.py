@@ -2651,7 +2651,7 @@ def test_doctor_rejects_truncated_managed_git_hook(tmp_path):
     assert "pixi run install-hooks" in {item["command"] for item in result["recovery"]}
 
 
-@pytest.mark.parametrize("value", ["", " ", "\t", ".custom-hooks"])
+@pytest.mark.parametrize("value", ["", " ", "\t", "\r", ".custom-hooks"])
 def test_doctor_custom_hookspath_recovery_does_not_recommend_installer(tmp_path, value):
     root = make_repo(tmp_path, "main")
     subprocess.run(
@@ -2677,7 +2677,7 @@ def test_doctor_does_not_certify_hook_configuration_query_errors(tmp_path, monke
 
     def broken_config(args, **kwargs):
         if args[-3:] == ["config", "--get", "core.hooksPath"]:
-            return subprocess.CompletedProcess(args, 3, "", "injected config failure")
+            return subprocess.CompletedProcess(args, 3, b"", b"injected config failure")
         return execute(args, **kwargs)
 
     monkeypatch.setattr(subprocess, "run", broken_config)

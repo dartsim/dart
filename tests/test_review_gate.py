@@ -137,6 +137,121 @@ def install(repository):
     assert result.returncode == 0, result.stderr
 
 
+@pytest.mark.parametrize(
+    "suffix",
+    [" ", "\t", "\v", "\r"],
+    ids=["space", "tab", "vertical-tab", "carriage-return"],
+)
+def test_prepared_destination_matches_literal_git_push_url(
+    repository, monkeypatch, suffix
+):
+    monkeypatch.syspath_prepend(str(INSTALLER.parent))
+    import review_gate as gate
+
+    repo, remote, env = repository
+    # This checks Git's literal URL value on every platform without requiring
+    # the filesystem to support directory names ending in these characters.
+    url = str(remote) + suffix
+    git(repo, env, "remote", "set-url", "origin", url)
+    observed = subprocess.run(
+        ["git", "remote", "get-url", "--push", "origin"],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        check=True,
+    )
+    assert observed.stdout == (url + "\n").encode("utf-8")
+    candidate = prepare(repository)
+    store = gate.Store(repo)
+    assert store.target(gate.digest([url, "refs/heads/topic"])) == candidate
+
+
+def test_newline_push_url_is_rejected_before_record_publication(repository):
+    repo, remote, env = repository
+    git(repo, env, "remote", "set-url", "origin", str(remote) + "\n")
+    result = run(
+        repo,
+        env,
+        sys.executable,
+        str(GATE),
+        "prepare",
+        "--base",
+        "origin/main",
+        "--remote",
+        "origin",
+        "--target",
+        "refs/heads/topic",
+        "--author-session",
+        "author",
+    )
+    assert result.returncode and "one push URL on a single line" in result.stderr
+    assert not (repo / ".git" / "dart-review" / "candidates").exists()
+
+
+@pytest.mark.skipif(
+    os.name == "nt", reason="These directory names require POSIX filesystem semantics"
+)
+@pytest.mark.parametrize(
+    "kind,suffix",
+    [
+        (kind, suffix)
+        for kind in ("checkout", "common", "remote")
+        for suffix in (" ", "\t", "\v")
+    ]
+    + [("carriage-return-components", "")],
+)
+def test_review_git_paths_preserve_trailing_whitespace(repository, kind, suffix):
+    repo, remote, env = repository
+    shadow = None
+    if kind == "carriage-return-components":
+        parent = repo.parent / "carriage\rcomponent"
+        parent.mkdir()
+        renamed = parent / repo.name
+        repo.rename(renamed)
+        repo = renamed
+        renamed = parent / remote.name
+        remote.rename(renamed)
+        remote = renamed
+        git(repo, env, "remote", "set-url", "origin", str(remote))
+    if kind == "checkout":
+        renamed = repo.with_name(repo.name + suffix)
+        repo.rename(renamed)
+        repo = renamed
+    elif kind == "remote":
+        renamed = remote.with_name(remote.name + suffix)
+        remote.rename(renamed)
+        remote = renamed
+        git(repo, env, "remote", "set-url", "origin", str(remote))
+    common = repo / ".git"
+    if kind in ("common", "carriage-return-components"):
+        common = repo.parent / ("separate metadata" + suffix)
+        if kind == "common":
+            shadow = repo.parent / "separate metadata"
+            shadow.mkdir()
+            (shadow / "owner.txt").write_text("unrelated metadata owner\n")
+        git(repo, env, "init", "-q", "--separate-git-dir", str(common))
+        linked = repo.parent / "linked checkout"
+        git(repo, env, "worktree", "add", "--detach", str(linked), "HEAD")
+        repo = linked
+    literal_repository = (repo, remote, env)
+    install(literal_repository)
+    push(literal_repository, success=False)
+    candidate = prepare(literal_repository)
+    assert (
+        common / "dart-review" / "candidates" / candidate / "candidate.json"
+    ).is_file()
+    pair(literal_repository, candidate)
+    checked = run(repo, env, sys.executable, str(GATE), "check", candidate)
+    assert checked.returncode == 0, checked.stderr
+    push(literal_repository)
+    assert git(remote, env, "rev-parse", "refs/heads/topic") == git(
+        repo, env, "rev-parse", "HEAD"
+    )
+    if shadow is not None:
+        assert list(shadow.iterdir()) == [shadow / "owner.txt"]
+        assert (shadow / "owner.txt").read_text() == "unrelated metadata owner\n"
+
+
 def custom_manager_handlers():
     guide = (ROOT / "docs" / "onboarding" / "ai-tools.md").read_text(encoding="utf-8")
     guidance = guide.split("### Custom Hook Managers\n", 1)[1]
@@ -1127,7 +1242,7 @@ def test_custom_hook_manager_is_preserved(repository):
     assert not (exported / "pre-commit").exists()
 
 
-@pytest.mark.parametrize("value", ["", " ", "\t", ".custom-hooks"])
+@pytest.mark.parametrize("value", ["", " ", "\t", "\r", ".custom-hooks"])
 def test_configured_hooks_path_is_refused_and_reported_literally(
     repository, monkeypatch, value
 ):
@@ -1143,8 +1258,14 @@ def test_configured_hooks_path_is_refused_and_reported_literally(
     before = {p.name: p.read_bytes() for p in hooks.iterdir()}
     result = run(repo, env, sys.executable, str(INSTALLER))
     assert result.returncode and "core.hooksPath is set" in result.stderr
-    configured = run(repo, env, "git", "config", "--get", "core.hooksPath")
-    assert configured.returncode == 0 and configured.stdout == value + "\n"
+    configured = subprocess.run(
+        ["git", "config", "--get", "core.hooksPath"],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        check=True,
+    )
+    assert configured.stdout == (value + "\n").encode("utf-8")
     assert {p.name: p.read_bytes() for p in hooks.iterdir()} == before
     for name in ("pre-commit", "pre-push", "dart-review-gate.py", ".dart-install-lock"):
         assert not (repo / name).exists()
@@ -1152,10 +1273,16 @@ def test_configured_hooks_path_is_refused_and_reported_literally(
     assert inventory["core_hooks_configured"] is True
     assert inventory["core_hooks_path"] == value
     assert not inventory["installed"]
-    expected = git(
-        repo, env, "rev-parse", "--path-format=absolute", "--git-path", "hooks/pre-push"
+    expected = subprocess.run(
+        ["git", "rev-parse", "--path-format=absolute", "--git-path", "hooks/pre-push"],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        check=True,
     )
-    assert Path(inventory["path"]) == Path(expected)
+    assert Path(inventory["path"]) == Path(
+        expected.stdout.decode("utf-8").removesuffix("\n")
+    )
 
 
 def test_hook_configuration_query_error_blocks_install_and_diagnosis(
@@ -1172,7 +1299,7 @@ def test_hook_configuration_query_error_blocks_install_and_diagnosis(
 
     def broken_config(args, **kwargs):
         if args[-3:] == ["config", "--get", "core.hooksPath"]:
-            return subprocess.CompletedProcess(args, 3, "", "injected config failure")
+            return subprocess.CompletedProcess(args, 3, b"", b"injected config failure")
         return execute(args, **kwargs)
 
     monkeypatch.setattr(subprocess, "run", broken_config)

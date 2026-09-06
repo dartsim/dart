@@ -29,7 +29,7 @@ from ai_infrastructure import (
 from install_git_hooks import HOOK_TEMPLATE, SENTINEL
 from review_gate import (
     HOOK_INVENTORY_ERRORS,
-    GateError,
+    git,
     hook_inventory,
     hooks_path_configuration,
 )
@@ -330,25 +330,15 @@ def _git_hook_inventory(root: Path) -> dict[str, object]:
     try:
         configured, value = hooks_path_configuration(root)
         result.update(core_hooks_configured=configured, core_hooks_path=value)
-        resolved = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(root),
+        hook_path = Path(
+            git(
+                root,
                 "rev-parse",
                 "--path-format=absolute",
                 "--git-path",
                 "hooks/pre-commit",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        if resolved.returncode:
-            raise GateError(
-                f"cannot resolve pre-commit hook: {resolved.stderr.strip()}"
             )
-        hook_path = Path(resolved.stdout.removesuffix("\n"))
+        )
         exists = hook_path.is_file()
         content = hook_path.read_text(errors="replace") if exists else ""
         executable = exists and os.access(hook_path, os.X_OK)

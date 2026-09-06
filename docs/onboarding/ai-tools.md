@@ -286,8 +286,8 @@ below.
 
 ### Evidence Records
 
-`prepare` requires one push URL for the named remote and a fetched remote base
-that is already an ancestor. Repeat `--author-session` for every authoring
+`prepare` requires one push URL on a single line for the named remote and a
+fetched remote base that is already an ancestor. Repeat `--author-session` for every authoring
 session, including earlier tools or executors. It carries earlier authors and
 findings for that publication target automatically. Reviewer sessions cannot
 be authors, and the two scopes need different sessions. Agent session settings

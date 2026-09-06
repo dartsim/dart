@@ -483,9 +483,16 @@ GitHub gives the repository 10 GB of Actions cache with least-recently-used
 eviction (entries unused for 7 days are also dropped). Compiler objects are
 the only thing that earns that budget:
 
-- **sccache objects**: the whole budget. PR runs (including fork PRs) read
-  the base branch's entries and write only to their own pull-request scope;
-  nothing a PR run writes reaches the `main` scope.
+- **sccache objects**: the whole budget. Only branch refs write
+  (`SCCACHE_GHA_RW_MODE=READ_WRITE`: `main`/release pushes, schedules, and
+  branch dispatches). Every other ref reads the entries its base branch
+  populated and does not write (`READ_ONLY`, set by
+  `configure-compiler-cache`): pull requests under `refs/pull/N/merge` and
+  the `v*` release-tag wheel builds under `refs/tags/`. GitHub scopes entries
+  per ref, so writes there duplicate every object and evict `main`'s copies:
+  on 2026-09-06 the PR duplicates alone had the cache at 9.99 GB in 14,673
+  entries and hit rates on the merged-head run fell to 35-45%. A PR therefore
+  pays a cold compile only for the translation units it changes.
 - **Not cached on purpose**: pixi environments (`setup-pixi-ci` defaults
   `cache: "false"`; `pixi install --locked` takes well under a minute and the
   entries were ~500–600 MB per platform) and CodeQL C++ TRAP databases
@@ -815,8 +822,15 @@ jobs run `-LE simulation`.
 ### Cache Health
 
 - Every job's step summary carries a "Compiler cache" block from
-  `configure-compiler-cache` (launcher, backend availability, runner). A
-  hosted job with `launcher: none` fails; do not weaken that guard.
+  `configure-compiler-cache` (launcher, backend availability with the
+  read/write mode, runner). A hosted job with `launcher: none` fails; do not
+  weaken that guard.
+- The sccache action's post step prints the run's statistics. `Cache hits
+rate` is the number to watch. On a read-only ref (pull requests, tags)
+  every miss also shows up as a `Cache write errors` count: that is
+  sccache's read-only store refusing the put (`Cannot write to read-only
+storage`), not a backend failure, and the compile itself still succeeds.
+  A non-zero `Cache write errors` on a `main` push is a real problem.
 - Repository usage: `gh api repos/dartsim/dart/actions/cache/usage` (10 GB
   cap; see Cache budget above for what may occupy it).
 - Warm-run evidence: compare the build step duration of two consecutive runs
