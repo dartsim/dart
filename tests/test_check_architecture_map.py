@@ -73,8 +73,9 @@ class DART_SIMULATION_API KinematicsStage final
 } // namespace dart::simulation::compute
 """
 WORLD_HEADER = (
-    "namespace dart::simulation {\nclass World\n{\n  void step();\n  StateSpace space;\n};\n}\n"
-    + "\n" * 20
+    "namespace dart::simulation {\nclass World\n{\n  void step();\n  StateSpace space;\n};\n"
+    "StateSpace makeStateSpace();\n"
+    "inline StateSpace take(StateSpace s) { return std::move(s); }\n}\n" + "\n" * 20
 )
 
 
@@ -397,6 +398,10 @@ def test_qualified_symbols_resolve_in_their_namespace_directory(repo: Path) -> N
     # Namespaces resolve as symbols, in both nested and compact forms.
     assert checker.symbol_resolves("dart::simulation")
     assert checker.symbol_resolves("dart::simulation::compute")
+    # Function declarations resolve; call expressions such as std::move() do not.
+    assert checker.symbol_resolves("dart::simulation::makeStateSpace")
+    assert checker.symbol_resolves("dart::simulation::take")
+    assert not checker.symbol_resolves("dart::simulation::move")
 
 
 def test_enclosing_namespace_tracks_nested_and_compact_forms() -> None:
@@ -509,6 +514,31 @@ def test_unmapped_stage_class_is_reported(repo: Path) -> None:
     )
     errors = _run(repo)
     assert any("`GhostStage` derives from WorldStepStage" in e for e in errors)
+
+
+def test_nested_stage_sources_are_scanned(repo: Path) -> None:
+    nested = repo / "dart/simulation/compute/family/nested_stage.cpp"
+    nested.parent.mkdir(parents=True)
+    nested.write_text(
+        "namespace dart::simulation::compute {\n"
+        "class NestedStage final : public WorldStepStage {};\n}\n",
+        encoding="utf-8",
+    )
+    errors = _run(repo)
+    assert any(
+        "compute/family/nested_stage.cpp: `NestedStage` derives from WorldStepStage"
+        in e
+        for e in errors
+    )
+
+
+def test_card_symbols_are_validated(repo: Path) -> None:
+    def mutate(ir):
+        ir["cards"][0]["items"].append("ComputeAcceleratorPolciy: CpuOnly")
+
+    _rewrite(repo, "simulation-framework.architecture.json", mutate)
+    errors = _run(repo)
+    assert any("card 0 item names `ComputeAcceleratorPolciy`" in e for e in errors)
 
 
 def test_allowlisted_stage_class_passes(

@@ -8,7 +8,8 @@ and runs inside ``pixi run check-lint``. It fails when:
 * a view is not well-formed JSON with unique ids and resolvable edges;
 * cited source evidence points at a missing path, an out-of-range line, a
   line range that no longer contains the symbol it is labelled with, or a
-  qualified/CamelCase symbol that no public header defines;
+  qualified/CamelCase symbol in a label, sublabel, card, boundary, stage, or
+  guide note that no public header declares;
 * a ``dart/simulation`` directory, a ``BuiltInWorldStepStageSlot`` enumerator,
   an enumerator of any public selector ``enum class`` declared in
   ``world_options.hpp`` or ``multibody/multibody_options.hpp``, a
@@ -58,7 +59,8 @@ PUBLIC_SELECTOR_HEADERS = (
     SIMULATION_DIR / "world_options.hpp",
     SIMULATION_DIR / "multibody" / "multibody_options.hpp",
 )
-STAGE_CLASS_DIRS = (COMPUTE_DIR, COMPUTE_DIR / "detail")
+# Every header and source under the compute tree is scanned for stage classes.
+STAGE_CLASS_ROOT = COMPUTE_DIR
 LIBRARY_EXTRA_PREFIXES = ("python/dartpy", "dartsim")
 
 # Directories under dart/simulation that no view has to cite, with the reason.
@@ -177,6 +179,31 @@ class ViewFile:
     def node_ids(self) -> set[str]:
         return {str(n.get("id")) for n in self.nodes() if n.get("id") is not None}
 
+    def prose(self) -> list[tuple[str, str]]:
+        """Every (where, text) pair outside node labels that may name symbols."""
+        fields: list[tuple[str, str]] = []
+        for index, card in enumerate(self.ir.get("cards", []) or []):
+            if not isinstance(card, dict):
+                continue
+            fields.append((f"card {index} title", str(card.get("title") or "")))
+            for item in card.get("items", []) or []:
+                fields.append((f"card {index} item", str(item)))
+        for index, boundary in enumerate(self.ir.get("boundaries", []) or []):
+            if isinstance(boundary, dict):
+                fields.append((f"boundary {index}", str(boundary.get("label") or "")))
+        for index, stage in enumerate(self.ir.get("stages", []) or []):
+            if isinstance(stage, dict):
+                fields.append((f"stage {index}", str(stage.get("label") or "")))
+        for view in self.ir.get("meta", {}).get("views", []) or []:
+            if isinstance(view, dict):
+                fields.append(
+                    (f"guide `{view.get('id')}` label", str(view.get("label") or ""))
+                )
+                fields.append(
+                    (f"guide `{view.get('id')}` note", str(view.get("note") or ""))
+                )
+        return fields
+
     def source_paths(self) -> list[str]:
         paths: list[str] = []
         for node in self.nodes():
@@ -248,7 +275,9 @@ class Checker:
         """True when ``symbol`` is declared inside the namespace it names.
 
         ``dart::a::b::Name`` must be declared (class, struct, enum, namespace,
-        using, concept, or function) by a header under ``dart/a/`` inside an
+        using, concept, or a function declaration led by its return type; a
+        call such as ``std::move(x)`` does not count) by a header under
+        ``dart/a/`` inside an
         enclosing namespace that reads exactly ``dart::a::b``, whether the
         header opens it as ``namespace dart::a::b {`` or as nested blocks. A
         namespace move or a typo in any component therefore fails instead of
@@ -271,7 +300,11 @@ class Checker:
             r"(?:\b(?:class|struct|enum\s+class|enum|using|concept)\s+"
             r"(?:DART_\w+_API\s+)?" + tail + r"\b)"
             r"|(?:\bnamespace\s+(?P<ns>(?:[\w]+::)*)" + tail + r"\b)"
-            r"|(?:\b" + tail + r"\s*\()"
+            r"|(?:[\w:<>]+"
+            r"(?<!\breturn)(?<!\bco_return)(?<!\bco_await)(?<!\bco_yield)"
+            r"(?<!\bthrow)(?<!\bnew)(?<!\bdelete)(?<!\bcase)(?<!\belse)"
+            r"(?<!\bsizeof)(?<!\boperator)"
+            r"[\s&*]+" + tail + r"\s*\()"
         )
         for header in sorted(module.rglob("*.hpp")):
             try:
@@ -471,6 +504,13 @@ class Checker:
                             f"{label}: node `{node_id}` {key} names `{symbol}`, which "
                             "no header under dart/ defines"
                         )
+        for where, text in view.prose():
+            for symbol in self._symbols(text):
+                if not self.symbol_resolves(symbol):
+                    self.error(
+                        f"{label}: {where} names `{symbol}`, which no header under "
+                        "dart/ defines"
+                    )
 
     @staticmethod
     def _symbols(text: str) -> list[str]:
@@ -594,15 +634,15 @@ class Checker:
 
     def _stage_classes(self) -> list[tuple[str, str]]:
         found: list[tuple[str, str]] = []
-        for directory in STAGE_CLASS_DIRS:
-            root = self._abs(directory)
-            if not root.is_dir():
-                continue
-            for header in sorted(root.glob("*.hpp")):
-                text = header.read_text(encoding="utf-8", errors="ignore")
-                for match in _STAGE_CLASS_RE.finditer(text):
-                    rel = header.relative_to(self.repo_root).as_posix()
-                    found.append((match.group(1), rel))
+        root = self._abs(STAGE_CLASS_ROOT)
+        if not root.is_dir():
+            return found
+        files = {path for pattern in ("*.hpp", "*.cpp") for path in root.rglob(pattern)}
+        for source in sorted(files):
+            text = source.read_text(encoding="utf-8", errors="ignore")
+            for match in _STAGE_CLASS_RE.finditer(text):
+                rel = source.relative_to(self.repo_root).as_posix()
+                found.append((match.group(1), rel))
         return found
 
     # ---------------------------------------------------------------------- page

@@ -81,7 +81,7 @@ view in the same change:
    data (dataflow flows) or the mechanism (architecture connections).
 2. `pixi run check-architecture-map` (blocking, no Node.js): missing paths,
    out-of-range lines, line ranges that no longer hold their labelled
-   symbol, unresolved symbols, uncovered directories or
+   symbol, unresolved symbols in labels, cards, boundaries, and guide notes, uncovered directories or
    enumerators, unmapped stage classes, and page embeds. Stage classes that
    intentionally have no schedule slot go into `STAGE_CLASS_ALLOWLIST` in
    `scripts/check_architecture_map.py` with a reason.

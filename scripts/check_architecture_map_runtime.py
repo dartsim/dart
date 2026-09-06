@@ -14,9 +14,10 @@ Checks (all advisory by default; ``--strict`` turns findings into failures):
 * every recorded stage name is a node id of the step-flow view;
 * the recorded stage list matches the guided view named by the fixture's
   ``guided_view`` (the schedule variant the reference scene exercises);
-* every node name of every recorded graph appears in the compute-graph view
-  text or in the fixture's documented ``graph_vocabulary``, so a renamed or
-  new compute node shows up as drift;
+* every node name of every recorded graph, with its level/chunk suffix
+  stripped, matches a whole word of the compute-graph view text or of the
+  fixture's documented ``graph_vocabulary`` (case and underscores ignored), so
+  a renamed or new compute node shows up as drift;
 * with ``--probe-output <json>`` or a built probe binary, the fresh dump has
   the same stages and graph node/edge sets as the fixture;
 * the fixture and any fresh dump record a nonempty stage list and at least one
@@ -159,6 +160,11 @@ def compare_dumps(fixture: dict, fresh: dict) -> list[str]:
     return findings
 
 
+def normalize_token(token: str) -> str:
+    """Compare identifiers ignoring case and underscores (`Kinematics` == `kinematics`)."""
+    return re.sub(r"[^a-z0-9]", "", token.lower())
+
+
 def check_against_views(
     fixture: dict, step_view: dict, compute_view: dict
 ) -> list[str]:
@@ -200,6 +206,7 @@ def check_against_views(
         + "\n"
         + "\n".join(str(v) for v in fixture.get("graph_vocabulary", []))
     )
+    tokens = {normalize_token(t) for t in re.findall(r"[A-Za-z0-9_]+", vocabulary)}
     seen: set[str] = set()
     for graph in fixture.get("graphs", []):
         for node in graph.get("nodes", []):
@@ -209,7 +216,7 @@ def check_against_views(
             seen.add(name)
             stem = re.split(r"[\[:#(]", name, maxsplit=1)[0].strip()
             stem = re.sub(r"(?:_level_\d+)?(?:_chunk_\d+)?(?:_\d+)?$", "", stem)
-            if stem and not re.search(re.escape(stem), vocabulary, re.IGNORECASE):
+            if stem and normalize_token(stem) not in tokens:
                 findings.append(
                     f"compute node `{name}` is not named by {COMPUTE_VIEW.name} or "
                     "the fixture's graph_vocabulary"

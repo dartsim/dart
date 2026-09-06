@@ -104,6 +104,16 @@ def test_unknown_stage_and_focus_and_vocabulary_are_reported() -> None:
     assert any("compute node `mystery:node` is not named" in f for f in findings)
 
 
+def test_renamed_compute_node_is_not_hidden_by_a_substring() -> None:
+    fixture = _fixture()
+    fixture["graphs"][0]["nodes"] = ["kinematic_level_0_chunk_0"]
+    fixture["graph_vocabulary"] = []
+    findings = camr.check_against_views(fixture, _step_view(), _compute_view())
+    assert any("`kinematic_level_0_chunk_0` is not named" in f for f in findings)
+    fixture["graphs"][0]["nodes"] = ["kinematics_level_0_chunk_0"]
+    assert not camr.check_against_views(fixture, _step_view(), _compute_view())
+
+
 def test_guided_view_order_must_match_recorded_order() -> None:
     fixture = _fixture()
     step = _step_view()

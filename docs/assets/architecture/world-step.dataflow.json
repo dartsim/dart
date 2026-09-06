@@ -61,7 +61,7 @@
       "label": "Sync and prepare"
     },
     {
-      "label": "Velocity"
+      "label": "Velocity or IPC step"
     },
     {
       "label": "Contact and constraint"
@@ -134,8 +134,8 @@
       "label": "IPC advance",
       "sublabel": "barrier + CCD",
       "tag": "Partial",
-      "stage": 3,
-      "row": 0
+      "stage": 1,
+      "row": 2
     },
     {
       "id": "rigid_body_position",
@@ -144,7 +144,7 @@
       "sublabel": "integrate poses",
       "tag": "Implemented",
       "stage": 3,
-      "row": 1
+      "row": 0
     },
     {
       "id": "multibody_position",
@@ -153,8 +153,7 @@
       "sublabel": "integrate joints",
       "tag": "Implemented",
       "stage": 3,
-      "row": 2,
-      "yOffset": -20
+      "row": 1
     },
     {
       "id": "multibody_variational_integration",
@@ -224,11 +223,11 @@
       "to": "rigid_ipc_contact",
       "label": "rigid state",
       "classification": "Ipc",
-      "route": "top-channel",
       "labelAt": [
-        420,
-        88
-      ]
+        214,
+        405
+      ],
+      "route": "straight"
     },
     {
       "id": "sync-variational",
@@ -236,21 +235,17 @@
       "to": "multibody_variational_integration",
       "label": "joint state",
       "classification": "Variational",
-      "fromSide": "right",
+      "fromSide": "bottom",
       "toSide": "left",
       "via": [
         [
-          300,
-          385
-        ],
-        [
-          300,
+          100,
           499
         ]
       ],
       "labelAt": [
-        422,
-        480
+        400,
+        484
       ]
     },
     {
@@ -282,15 +277,11 @@
       "to": "deformable_dynamics",
       "label": "vertex state",
       "classification": "deformable",
-      "fromSide": "right",
+      "fromSide": "bottom",
       "toSide": "bottom",
       "via": [
         [
-          181,
-          385
-        ],
-        [
-          181,
+          100,
           556
         ],
         [
@@ -347,7 +338,8 @@
       "labelAt": [
         611,
         137
-      ]
+      ],
+      "route": "straight"
     },
     {
       "id": "unified-rigid-position",
@@ -355,10 +347,9 @@
       "to": "rigid_body_position",
       "label": "v*",
       "classification": "solved",
-      "route": "straight",
       "labelAt": [
         611,
-        240
+        214
       ]
     },
     {
@@ -368,9 +359,10 @@
       "label": "v*",
       "classification": "joints",
       "labelAt": [
-        637,
-        318
-      ]
+        668,
+        256
+      ],
+      "route": "straight"
     },
     {
       "id": "ipc-kinematics",
@@ -378,11 +370,10 @@
       "to": "kinematics",
       "label": "poses",
       "classification": "Ipc",
-      "route": "vertical-channel",
-      "channelX": 890,
+      "route": "straight",
       "labelAt": [
-        890,
-        214
+        650,
+        372
       ]
     },
     {
@@ -395,7 +386,7 @@
       "channelX": 878,
       "labelAt": [
         838,
-        252
+        176
       ]
     },
     {
@@ -407,7 +398,7 @@
       "channelX": 866,
       "labelAt": [
         833,
-        346
+        290
       ]
     },
     {
