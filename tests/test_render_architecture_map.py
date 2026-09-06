@@ -267,6 +267,23 @@ def test_text_summaries_mark_planned_relationships(ir_dir: Path) -> None:
     assert "later (planned)" in ram.fallback_html(view, "no node", None)
 
 
+def test_summaries_and_fallback_cite_sources(ir_dir: Path) -> None:
+    view = next(
+        v for v in ram.discover_views(ir_dir) if v.diagram_type == "architecture"
+    )
+    ir = json.loads(view.path.read_text(encoding="utf-8"))
+    ir["components"][0]["sources"] = [
+        {"path": "dart/simulation/world.hpp", "line": 3, "end_line": 5},
+        {"path": "dart/simulation/world_options.hpp"},
+    ]
+    view.path.write_text(json.dumps(ir), encoding="utf-8")
+    markdown = ram.view_summary_markdown(view)
+    assert "`dart/simulation/world.hpp:3-5`" in markdown
+    assert "`dart/simulation/world_options.hpp`" in markdown
+    page = ram.fallback_html(view, "no node", None)
+    assert "<code>dart/simulation/world.hpp:3-5</code>" in page
+
+
 def test_summaries_and_fallback_include_cards(ir_dir: Path) -> None:
     view = next(
         v for v in ram.discover_views(ir_dir) if v.diagram_type == "architecture"

@@ -15,7 +15,8 @@ and runs inside ``pixi run check-lint``. It fails when:
 * a ``dart/simulation`` directory, a ``BuiltInWorldStepStageSlot`` enumerator,
   an enumerator of any public selector ``enum class`` declared in
   ``world_options.hpp`` or ``multibody/multibody_options.hpp`` (each selector
-  has its own ``Enum: A, B`` card item in the framework view), a
+  has its own ``Enum: A, B`` card item in the framework view, and that item
+  may list only declared enumerators), a
   ``dart/<module>`` directory, or a ``WorldStepStage`` subclass (any
   ``class``/``struct`` spelling and base qualification under the compute tree)
   is absent from the view that owns it (allowlists below carry a reason per
@@ -723,6 +724,14 @@ class Checker:
                             self.error(
                                 f"{framework.relpath}: `{enum_name}::{enumerator}` "
                                 f"does not appear in the `{enum_name}:` card item"
+                            )
+                    for piece in re.sub(r"\([^)]*\)", " ", text).split(","):
+                        listed = re.match(r"\s*([A-Za-z_]\w*)", piece)
+                        if listed and listed.group(1) not in enumerators:
+                            self.error(
+                                f"{framework.relpath}: the `{enum_name}:` card item "
+                                f"lists `{listed.group(1)}`, which `{enum_name}` does "
+                                "not declare"
                             )
 
         if compute is not None:

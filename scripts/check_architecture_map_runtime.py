@@ -13,14 +13,15 @@ Checks (all advisory by default; ``--strict`` turns findings into failures):
 
 * every recorded stage name is a node id of the step-flow view;
 * the fixture names a guided view (``guided_view``, the schedule variant the
-  reference scene exercises) and the recorded stage list matches it in order;
+  reference scene exercises) and the recorded stage list equals that view's
+  scheduled entries (its focus minus the sync/continuation bookends) in order;
 * every node name of every recorded graph, with its level/chunk suffix
   stripped, matches a whole word of the compute-graph view text or of the
   fixture's documented ``graph_vocabulary`` (case and underscores ignored), so
   a renamed or new compute node shows up as drift;
 * with ``--probe-output <json>`` or a built probe binary, the fresh dump has
   the same scene, stages, and graph node/edge sets as the fixture;
-* the fixture and any fresh dump record a nonempty stage list and at least one
+* the fixture and any fresh dump record a scene description, a nonempty stage list, and at least one
   executed compute graph whose edges are pairs of its recorded nodes without
   self-edges or cycles, so an empty, dangling, or impossible dump can neither
   pass the checks vacuously nor be committed by ``--regenerate``.
@@ -116,6 +117,11 @@ def dump_shape_findings(dump: dict, label: str) -> list[str]:
         findings.append(
             f"{label} execution_trace must be a JSON boolean, not "
             f"{type(dump.get('execution_trace')).__name__}"
+        )
+    if not isinstance(dump.get("scene"), str) or not dump["scene"].strip():
+        findings.append(
+            f"{label} records no scene description; the probe must say what its "
+            "reference scene covers"
         )
     stages = dump.get("stages")
     if (
@@ -229,6 +235,19 @@ def compare_dumps(fixture: dict, fresh: dict) -> list[str]:
     return findings
 
 
+def step_view_bookends() -> tuple[str, ...]:
+    """The step-flow nodes that are not schedule slots, shared with the checker."""
+    scripts_dir = str(Path(__file__).resolve().parent)
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    try:
+        import check_architecture_map as cam
+
+        return tuple(cam.STEP_VIEW_BOOKENDS)
+    except ImportError:
+        return ("sync", "continuation")
+
+
 def normalize_token(token: str) -> str:
     """Compare identifiers ignoring case and underscores (`Kinematics` == `kinematics`)."""
     return re.sub(r"[^a-z0-9]", "", token.lower())
@@ -263,18 +282,13 @@ def check_against_views(
             )
         else:
             focus = [str(f) for f in views[guided].get("focus", [])]
-            missing = [s for s in stages if s not in focus]
-            if missing:
+            bookends = step_view_bookends()
+            expected = [f for f in focus if f not in bookends]
+            if stages != expected:
                 findings.append(
-                    f"guided view `{guided}` does not focus recorded stage(s) {missing}"
+                    f"guided view `{guided}` schedules {expected}, but the fixture "
+                    f"recorded {stages}"
                 )
-            else:
-                focused_order = [f for f in focus if f in stages]
-                if focused_order != stages:
-                    findings.append(
-                        f"guided view `{guided}` lists stages in the order "
-                        f"{focused_order}, but the step ran {stages}"
-                    )
     vocabulary = (
         view_text(compute_view)
         + "\n"
@@ -319,9 +333,13 @@ def find_probe_binary() -> Path | None:
         return None
     preferred = os.environ.get("BUILD_TYPE") or os.environ.get("CMAKE_BUILD_TYPE")
     if preferred:
-        matching = [p for p in found if f"/{preferred}/" in p.as_posix()]
-        if matching:
-            found = matching
+        found = [p for p in found if f"/{preferred}/" in p.as_posix()]
+        if not found:
+            print(
+                f"no {preferred} probe binary is built; not falling back to another "
+                "build type"
+            )
+            return None
     return max(found, key=lambda p: p.stat().st_mtime)
 
 

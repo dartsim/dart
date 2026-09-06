@@ -736,6 +736,19 @@ def test_enumerator_vocabulary_coverage(repo: Path) -> None:
     )
     assert any("no card item starts with `ContactSolverMethod:`" in e for e in errors)
 
+    def stale(ir):
+        ir["cards"][0]["items"][
+            0
+        ] = "RigidBodySolver: SequentialImpulse (default), Ipc, Legacy"
+
+    _rewrite(repo, "simulation-framework.architecture.json", stale)
+    errors = _run(repo)
+    assert any(
+        "the `RigidBodySolver:` card item lists `Legacy`, which `RigidBodySolver` "
+        "does not declare" in e
+        for e in errors
+    )
+
 
 def test_every_public_selector_enum_is_swept(repo: Path) -> None:
     header = repo / "dart/simulation/world_options.hpp"

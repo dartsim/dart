@@ -297,6 +297,21 @@ def structural_errors(views: list[View]) -> list[str]:
     return errors
 
 
+def source_refs(node: dict) -> list[str]:
+    """`path` or `path:line[-end]` for every cited source of a node."""
+    refs: list[str] = []
+    for source in node.get("sources", []) or []:
+        if not isinstance(source, dict) or not source.get("path"):
+            continue
+        ref = str(source["path"])
+        if source.get("line"):
+            ref += f":{source['line']}"
+            if source.get("end_line"):
+                ref += f"-{source['end_line']}"
+        refs.append(ref)
+    return refs
+
+
 def view_summary_markdown(view: View) -> str:
     """Portable Markdown rendering of a view for non-HTML builders (PDF, EPUB)."""
     ir = json.loads(view.path.read_text(encoding="utf-8"))
@@ -310,6 +325,9 @@ def view_summary_markdown(view: View) -> str:
             text += f" ({', '.join(details)})"
         if node.get("sublabel"):
             text += f": {node['sublabel']}"
+        cites = [f"`{ref}`" for ref in source_refs(node)]
+        if cites:
+            text += f" — sources: {', '.join(cites)}"
         return text
 
     if view.diagram_type == "dataflow":
@@ -553,6 +571,9 @@ def fallback_html(view: View, reason: str, revision: str | None) -> str:
         text = f"<strong>{label}</strong>"
         if sublabel:
             text += f" &mdash; {html.escape(str(sublabel))}"
+        cites = [f"<code>{html.escape(ref)}</code>" for ref in source_refs(node)]
+        if cites:
+            text += f" (sources: {', '.join(cites)})"
         if tag:
             text += f" <em>[{html.escape(str(tag))}]</em>"
         return f"<li>{text}</li>"

@@ -65,6 +65,7 @@ def _fixture() -> dict:
     return {
         "schema_version": 1,
         "execution_trace": True,
+        "scene": "reference scene",
         "guided_view": "fused-multibody",
         "stages": ["rigid_body_velocity", "kinematics"],
         "graphs": [
@@ -99,9 +100,7 @@ def test_unknown_stage_and_focus_and_vocabulary_are_reported() -> None:
     fixture["graphs"].append({"nodes": ["mystery:node"], "edges": []})
     findings = camr.check_against_views(fixture, _step_view(), _compute_view())
     assert any("recorded stage `ghost_stage` has no node" in f for f in findings)
-    assert any(
-        "does not focus recorded stage(s) ['ghost_stage']" in f for f in findings
-    )
+    assert any("but the fixture recorded" in f and "ghost_stage" in f for f in findings)
     assert any("compute node `mystery:node` is not named" in f for f in findings)
 
 
@@ -172,7 +171,44 @@ def test_guided_view_order_must_match_recorded_order() -> None:
     step = _step_view()
     step["meta"]["views"][0]["focus"] = ["kinematics", "rigid_body_velocity", "sync"]
     findings = camr.check_against_views(fixture, step, _compute_view())
-    assert any("lists stages in the order" in f for f in findings)
+    assert any("schedules ['kinematics', 'rigid_body_velocity']" in f for f in findings)
+
+
+def test_missing_scheduled_stage_is_a_finding() -> None:
+    fixture = _fixture()
+    fixture["stages"] = ["kinematics"]
+    findings = camr.check_against_views(fixture, _step_view(), _compute_view())
+    assert any(
+        "schedules ['rigid_body_velocity', 'kinematics'], but the fixture recorded "
+        "['kinematics']" in f
+        for f in findings
+    )
+
+
+def test_scene_is_required_in_every_dump(views: Path) -> None:
+    for value in (None, "", "   "):
+        fixture = _fixture()
+        fixture["scene"] = value
+        findings = camr.check_against_views(fixture, _step_view(), _compute_view())
+        assert any("records no scene description" in f for f in findings)
+    probe = views / "probe.json"
+    dump = _fixture()
+    del dump["scene"]
+    probe.write_text(json.dumps(dump), encoding="utf-8")
+    fixture_path = views / "compute-graph.runtime.json"
+    assert (
+        camr.main(
+            [
+                "--fixture",
+                str(fixture_path),
+                "--probe-output",
+                str(probe),
+                "--regenerate",
+            ]
+        )
+        == 1
+    )
+    assert not fixture_path.exists()
 
 
 def test_failing_probe_binary_is_a_finding_and_strict_fails(
@@ -435,6 +471,9 @@ def test_probe_candidates_cover_windows_executables_and_multi_config_layouts(
     assert camr.find_probe_binary() == debug
     monkeypatch.setenv("BUILD_TYPE", "Release")
     assert camr.find_probe_binary() == release
+    # A requested configuration that is not built yields no probe at all.
+    monkeypatch.setenv("BUILD_TYPE", "RelWithDebInfo")
+    assert camr.find_probe_binary() is None
 
 
 def test_empty_dumps_are_findings_and_never_regenerated(
