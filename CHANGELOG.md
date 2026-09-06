@@ -512,6 +512,13 @@ compatibility remains on the active DART 6 LTS branch._
   AI-harness-only PRs skip the platform and wheel matrix. Workflows now declare
   least-privilege permissions and job timeouts.
   ([#3485](https://github.com/dartsim/dart/pull/3485))
+- Consolidated the CI tiers: feature-branch pushes no longer run CI, the
+  Native Collision job and the arm64 SIMD leg were folded into the jobs whose
+  builds already cover them, the headless demo check and GUI smoke run inside
+  Release Tests, Eigen 64-byte alignment, the Linux Clang GUI smoke, and the
+  pixi docs build moved to the main-push tier, schedules are weekly, and one
+  Linux setup composite replaces the per-job boilerplate (a code PR runs 18
+  jobs instead of 27). ([#3489](https://github.com/dartsim/dart/pull/3489))
 - AI workflows now stage context by task and phase, preserve authorized model,
   effort, and action scopes across handoffs, and audit the whole harness during
   model upgrades. Consolidated session policy and removed duplicate tutorials

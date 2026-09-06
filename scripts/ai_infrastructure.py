@@ -1091,6 +1091,11 @@ def check_generated_adapters(root: Path) -> list[str]:
     return errors
 
 
+# A top-level job key in a workflow file (two-space indent, `name:` line), used
+# to bound step-level marker checks to the job that owns the step.
+_NEXT_JOB_RE = re.compile(r"\n  [A-Za-z0-9_-]+:\n")
+
+
 def check_ci_wiring(root: Path) -> list[str]:
     path = root / ".github" / "workflows" / "ci_lint.yml"
     try:
@@ -1173,8 +1178,10 @@ def check_ci_wiring(root: Path) -> list[str]:
             ".github/workflows/ci_ubuntu.yml: missing visual CI marker "
             "'Agent visual verification smoke'"
         )
-    visual_section = linux_content.partition(visual_step_name)[2].partition(
-        "\n  filament-gui-smoke:"
+    # The section ends at the next job key so the check does not depend on
+    # which job happens to follow the visual job in the workflow.
+    visual_section = _NEXT_JOB_RE.split(
+        linux_content.partition(visual_step_name)[2], maxsplit=1
     )[0]
     if re.search(r"(?m)^\s*if\s*:", visual_section):
         errors.append(
@@ -1708,8 +1715,8 @@ def check_test_runner_contract(root: Path) -> list[str]:
         errors.append(f".github/workflows/ci_ubuntu.yml: unable to read: {exc}")
     else:
         debug_step_name = "- name: Run Debug Python tests"
-        debug_step = linux_workflow.partition(debug_step_name)[2].partition(
-            "\n  build-asserts:"
+        debug_step = _NEXT_JOB_RE.split(
+            linux_workflow.partition(debug_step_name)[2], maxsplit=1
         )[0]
         for marker in (
             "pixi run build-py-dev ON Debug",

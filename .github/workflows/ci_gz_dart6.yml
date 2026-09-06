@@ -15,8 +15,8 @@ name: CI DART 6 Gazebo Canary
 
 on:
   schedule:
-    # Weekly, offset from the other Monday crons (FreeBSD 04:00, Alt Linux
-    # 05:00, CodeQL 06:00) to avoid stampeding the runner pool.
+    # Weekly (Monday). The minute offsets between crons are cosmetic under
+    # GitHub's cron jitter.
     - cron: "0 7 * * 1"
   workflow_dispatch:
 
@@ -36,8 +36,35 @@ concurrency:
         && github.event_name != 'workflow_dispatch' }}
 
 jobs:
+  discover-release-branch:
+    name: Discover the active DART 6 release branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      branches: ${{ steps.branches.outputs.branches }}
+    steps:
+      - name: Discover latest DART 6 release branch
+        id: branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Same discovery as update_lockfiles.yml, so the canary and the
+          # lockfile refresh always agree on the active LTS lane.
+          release_branch=$(
+            git ls-remote --heads "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" "release-6.*" |
+              awk '{ sub("refs/heads/", "", $2); print $2 }' |
+              sort -V |
+              tail -n 1
+          )
+          if [ -z "${release_branch}" ]; then
+            echo "No release-6.* branch found" >&2
+            exit 1
+          fi
+          printf 'branches=["%s"]\n' "${release_branch}" >> "${GITHUB_OUTPUT}"
+
   gz-canary:
     name: gz-physics + gz-sim (${{ matrix.branch }})
+    needs: discover-release-branch
     runs-on: ubuntu-latest
     # DART build + gz-physics + gz-sim from source; observed 30-130 min on the
     # release-line PR gate depending on runner load.
@@ -45,8 +72,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch:
-          - release-6.20
+        branch: ${{ fromJSON(needs.discover-release-branch.outputs.branches) }}
     env:
       DART_PARALLEL_JOBS: 8
     steps:

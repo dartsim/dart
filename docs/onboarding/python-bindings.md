@@ -332,7 +332,7 @@ environment and prove `dartpy.gui` is present.
 
 **Workflow**: `.github/workflows/publish_dartpy.yml`
 
-- **Every commit**: Build → Repair → Verify → Test → Upload artifacts
+- **Pull requests and `main`/release pushes** (code changes): Build → Repair → Verify → Test → Upload artifacts
 - **Version tags** (`v*.*.*`): All above + Publish to PyPI
 
 ## Key Patterns
