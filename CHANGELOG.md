@@ -485,6 +485,13 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Re-enabled the CI compiler cache on GitHub-hosted runners (it had been
+  silently disabled since GitHub's cache-service v2 migration) with a
+  fail-loud guard and backend assertion, reallocated the Actions cache budget
+  to sccache, and fixed the shared code filter so documentation- and
+  AI-harness-only PRs skip the platform and wheel matrix. Workflows now declare
+  least-privilege permissions and job timeouts.
+  ([#3485](https://github.com/dartsim/dart/pull/3485))
 - AI workflows now stage context by task and phase, preserve authorized model,
   effort, and action scopes across handoffs, and audit the whole harness during
   model upgrades. Consolidated session policy and removed duplicate tutorials
