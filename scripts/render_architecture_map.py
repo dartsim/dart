@@ -577,6 +577,8 @@ def fallback_html(view: View, reason: str, revision: str | None) -> str:
             )
             if label:
                 text += f": {html.escape(str(label))}"
+            if edge.get("variant") == "dashed":
+                text += " (planned)"
             parts.append(f"<li>{text}</li>")
         parts.append("</ul>")
     parts.append("</body></html>\n")

@@ -19,9 +19,9 @@ modules next to the DART 7 core and the dartpy and dartsim surfaces.
 
 | Layer      | Modules                                                                       | Handbook page                            |
 | ---------- | ----------------------------------------------------------------------------- | ---------------------------------------- |
-| Foundation | `dart/common`, `dart/math`, `dart/lcpsolver`, `dart/simd`                     | this page (below), [profiling.md]        |
-| Collision  | `dart/collision` (native detector; fcl, bullet, ode compatibility facades)    | [`dart/collision/AGENTS.md`]             |
+| Foundation | `dart/common`, `dart/math` (with `dart/math/lcp`), `dart/simd`                | this page (below), [profiling.md]        |
 | Dynamics   | `dart/dynamics` (`Skeleton`, `BodyNode`, `Joint`, shapes)                     | [dynamics.md]                            |
+| Collision  | `dart/collision` (native detector; fcl, bullet, ode compatibility facades)    | [`dart/collision/AGENTS.md`]             |
 | Constraint | `dart/constraint` (`ConstraintSolver`, contact, joint limits)                 | [constraints.md]                         |
 | Simulation | DART 6 `World` stepping and recording (`release-6.*` only), `dart/io` loading | [io-parsing.md], [aspect-system.md]      |
 | Surfaces   | `dart/gui`, `dartpy`, `dartsim`                                               | [gui-rendering.md], [python-bindings.md] |
@@ -40,8 +40,7 @@ modules next to the DART 7 core and the dartpy and dartsim surfaces.
 `dart/math` owns the Lie-group and geometry primitives shared by both engines:
 `SO3`/`SE3` operations, spatial vectors and inertia, configuration spaces,
 geometry helpers such as `computeSupportPolygon`, and the constants and helper
-functions used by the solvers. The LCP solvers used by the classic constraint
-layer live in `dart/lcpsolver` (Dantzig and PGS variants). The typed batch
+functions used by the solvers. The LCP solvers used by the classic constraint layer live in `dart/math/lcp` (`dart::math::DantzigSolver`, `dart::math::PgsSolver`); `dart/lcpsolver` is only the deprecated compatibility surface that includes that module. The typed batch
 strategy for the Lie group API is described in
 [`design/lie_group_batch.md`](../design/lie_group_batch.md); the theory behind
 the derivations is in [`background/`](../background/README.md).
@@ -58,7 +57,7 @@ constraint solving, and integration in generalized coordinates:
 2. Detect collisions through the configured `CollisionDetector` and build
    contact constraints (`dart/collision`, `dart/constraint`).
 3. Solve the constraint problem as a boxed LCP over constrained groups
-   (`ConstraintSolver`, `dart/lcpsolver`), applying joint limits, servo and
+   (`ConstraintSolver`, `dart/math/lcp`), applying joint limits, servo and
    friction constraints alongside contacts.
 4. Integrate velocities and positions with semi-implicit Euler and apply the
    resulting state to every `Skeleton`; record frames when recording is on.

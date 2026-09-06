@@ -397,6 +397,23 @@ def test_enclosing_scope_tracks_classes_and_skips_template_headers() -> None:
     assert cam.enclosing_scope(text, text.index("struct Plain")) == "dart::simulation"
 
 
+def test_guided_view_focus_must_name_nodes(repo: Path) -> None:
+    def mutate(ir):
+        ir["meta"]["views"] = [
+            {
+                "id": "fused-multibody",
+                "label": "Fused",
+                "focus": ["rigid_body_velocity", "ghost"],
+            }
+        ]
+
+    _rewrite(repo, "world-step.dataflow.json", mutate)
+    errors = _run(repo)
+    assert any(
+        "guided view `fused-multibody` focuses unknown id `ghost`" in e for e in errors
+    )
+
+
 def test_step_view_rejects_unlisted_non_slot_nodes(repo: Path) -> None:
     def mutate(ir):
         ir["nodes"].append(dict(ir["nodes"][0], id="mystery", label="Mystery"))

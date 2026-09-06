@@ -263,6 +263,7 @@ def test_text_summaries_mark_planned_relationships(ir_dir: Path) -> None:
     )
     view.path.write_text(json.dumps(ir), encoding="utf-8")
     assert "later (planned)" in ram.view_summary_markdown(view)
+    assert "later (planned)" in ram.fallback_html(view, "no node", None)
 
 
 def test_text_summaries_are_written_for_non_html_builders(

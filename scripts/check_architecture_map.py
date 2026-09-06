@@ -23,7 +23,8 @@ and runs inside ``pixi run check-lint``. It fails when:
   the step-flow view holds a node that is neither a snake-cased slot nor one
   of the listed bookends (``STEP_VIEW_BOOKENDS``);
 * a top-level array (components, nodes, connections, flows, cards, boundaries,
-  stages) holds an entry that is not an object;
+  stages) holds an entry that is not an object, or a guided view focuses an
+  id that is not a node;
 * the published page does not embed a view or name its JSON source.
 
 Archify's own schema and layout validation happens at render time in
@@ -509,6 +510,15 @@ class Checker:
                     self.error(
                         f"{label}: boundary `{boundary.get('label')}` wraps unknown "
                         f"id `{wrapped}`"
+                    )
+        for guide in view.ir.get("meta", {}).get("views", []) or []:
+            if not isinstance(guide, dict):
+                continue
+            for focused in guide.get("focus", []) or []:
+                if focused not in ids:
+                    self.error(
+                        f"{label}: guided view `{guide.get('id')}` focuses unknown "
+                        f"id `{focused}`"
                     )
 
     # ------------------------------------------------------------------ evidence
