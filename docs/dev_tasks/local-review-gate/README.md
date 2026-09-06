@@ -55,12 +55,16 @@ replay section. Enforcement regressions exercise actual local Git pushes.
   was marked ready externally; main remains draft. Preserve their live state.
 - Both first hosted rounds completed with six confirmed defect families across
   their initial heads. Independent adverse reports are recorded in both local
-  journals. The repairs cover disposition ancestry/author eligibility, opaque
+  journals. The repairs cover disposition head/author eligibility, opaque
   destination identities, recoverable evidence transactions, installed CLI
-  discovery and custom-hook integration. New full validation and clean local
-  reviews are required before publishing the repair batch.
+  discovery and custom-hook integration. Both complete reviews of the first
+  repair verified five families fixed and reproduced a custom-manager bypass
+  with empty/truncated retained checker bytes. That finding remains recorded.
+  The follow-up exports the digest-verified launcher atomically for the manager;
+  new full validation and clean local reviews are required before publication.
 - Native Windows ran the initial release review-gate step successfully at
-  `3d7ecdb172`; other platform jobs remain in progress. This does not validate
+  `3d7ecdb172`; main's Windows hook job passed all 58 gate tests at
+  `c76439b35b`. Other platform jobs remain in progress. These do not validate
   the changed repair runtime. Finish current-head Windows and hosted acceptance.
 - The shared hook is installed; reinstallation follows any runtime update.
   Both doctors detect whether its installed bytes match their branch's source.

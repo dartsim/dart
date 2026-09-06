@@ -22,6 +22,10 @@
   The changing repair trees require fresh full local reviews; earlier clean
   reports are superseded by the adverse evidence. Do not duplicate the initial
   requests or mistake their completion for clean repaired-head coverage.
+- Both complete local reviews of repair `adabe8dc3e` verified five hosted
+  families fixed and kept custom-manager integrity open after reproducing an
+  empty/truncated-runtime bypass. The subsequent installer export and its
+  corruption/interruption tests need a new immutable candidate and full pair.
 
 ## Next Actions
 

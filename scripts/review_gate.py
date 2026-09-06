@@ -34,11 +34,7 @@ PRE_PUSH_TEMPLATE = """\
 # DART-MANAGED-PRE-PUSH v1
 # Installed with its standalone checker by pixi run install-hooks.
 repo_root=$(git rev-parse --show-toplevel) || exit 1
-hooks_dir=$(git rev-parse --git-path hooks) || exit 1
-case "$hooks_dir" in
-    /*|[A-Za-z]:*) ;;
-    *) hooks_dir="$repo_root/$hooks_dir" ;;
-esac
+hooks_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 1
 checker="$hooks_dir/dart-review-gate.py"
 if [ ! -f "$checker" ]; then
     echo "DART review gate BLOCKED: installed checker missing; run pixi run install-hooks" >&2
@@ -728,6 +724,7 @@ def hook_inventory(root: Path) -> dict:
             }
         )
     except HOOK_INVENTORY_ERRORS:
+        # Missing or unreadable installation state remains unverified above.
         pass
     return result
 

@@ -319,14 +319,19 @@ propagate failures, and supply the original pre-push arguments and stdin.
 Use an already available Python 3.11+ interpreter; these handlers perform no
 environment installation, network, model, build or test work.
 
-From a checkout containing the current gate, retain its standalone runtime
-outside branch-controlled files. Refresh this copy when the checker changes:
+From a checkout containing the current gate, export its verified launcher and
+standalone checker outside branch-controlled files. Repeat this command when
+the checker changes:
 
 ```bash
-dart_runtime="$(git rev-parse --git-common-dir)/dart-review-runtime"
-mkdir -p "$dart_runtime"
-cp scripts/review_gate.py "$dart_runtime/review_gate.py"
+pixi run install-hooks --custom-manager
 ```
+
+This publishes complete files atomically under
+`<git-common-dir>/dart-review-runtime` and leaves the manager's configuration
+and handlers intact. The exported launcher verifies the checker digest before
+execution. Interrupted initial exports or mismatched refreshes block pushes;
+rerun the export to finish installation.
 
 The manager's pre-commit handler runs the existing staged guard:
 
@@ -337,19 +342,19 @@ cd "$repo_root" || exit 1
 exec "${DART_HOOK_PYTHON:-python3}" -I scripts/check_agent_hook.py --profile staged
 ```
 
-Its pre-push handler runs the retained checker, including in older worktrees:
+Its pre-push handler invokes the exported launcher, including in older worktrees:
 
 ```sh
 #!/bin/sh
 dart_common=$(git rev-parse --git-common-dir) || exit 1
-exec "${DART_HOOK_PYTHON:-python3}" -I "$dart_common/dart-review-runtime/review_gate.py" pre-push "$@"
+exec "$dart_common/dart-review-runtime/pre-push" "$@"
 ```
 
 Set `DART_HOOK_PYTHON` to the chosen interpreter when `python3` is unavailable.
 These are separate handlers: retain any additional manager-owned checks and
 their ordering. Do not consume pre-push stdin before passing it to the checker.
 For evidence preparation from an older checkout, use the installed-CLI recipe
-with `$dart_common/dart-review-runtime/review_gate.py` as the runtime path.
+with `$dart_common/dart-review-runtime/dart-review-gate.py` as the runtime path.
 The doctor reports manager ownership; it cannot certify arbitrary manager
 configuration. Verify integration with a disposable unreviewed branch push
 that is blocked, followed by a reviewed push that succeeds.

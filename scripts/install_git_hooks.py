@@ -17,7 +17,8 @@ interpreter first. Behaviour:
   worktrees of the repository.
 * A repository or user with ``core.hooksPath`` set manages hooks elsewhere;
   the installer refuses rather than write into a shared personal hooks
-  directory.
+  directory. ``--custom-manager`` instead exports the verified push launcher
+  and checker into ``<git-common-dir>/dart-review-runtime`` for explicit chaining.
 * Emergency bypass at commit time: ``DART_SKIP_HOOKS=1 git commit ...``.
 * Verification aid: ``DART_HOOK_DRY_RUN=1`` makes the installed hook print the
   command it *would* run instead of running it, so tests and manual checks can
@@ -29,6 +30,7 @@ Runnable with plain ``python3`` — no third-party imports.
 
 from __future__ import annotations
 
+import argparse
 import os
 import shutil
 import stat
@@ -195,12 +197,14 @@ def preserve_hook(path: Path, local: Path) -> None:
             local.chmod(stat.S_IMODE(os.fstat(original.fileno()).st_mode))
 
 
-def install(hooks_dir: Path) -> int:
+def install(hooks_dir: Path, *, push_only: bool = False) -> int:
     checker = Path(__file__).with_name("review_gate.py").read_bytes()
     definitions = (
         ("pre-commit", SENTINEL, HOOK_TEMPLATE),
         ("pre-push", "DART-MANAGED-PRE-PUSH v1", pre_push_hook(checker)),
     )
+    if push_only:
+        definitions = definitions[1:]
     # Check both preservation boundaries before replacing either hook.
     for name, sentinel, _ in definitions:
         hook = hooks_dir / name
@@ -224,20 +228,39 @@ def install(hooks_dir: Path) -> int:
                 f"Preserved existing {name} hook as {local} (chained from the DART hook)."
             )
         write_hook(hook, template)
-        print(f"Installed DART {name} hook: {hook}")
+        action = "Exported" if push_only else "Installed"
+        print(f"{action} DART {name} hook: {hook}")
     print(
         "  Pre-push requires recorded local reviews; see docs/onboarding/ai-reviews.md."
     )
+    if push_only:
+        print(
+            "  Chain dart-review-runtime/pre-push from your existing manager; "
+            "its configuration and handlers were not changed."
+        )
+        runtime_path = "$(git rev-parse --git-common-dir)/dart-review-runtime"
+    else:
+        runtime_path = "$(git rev-parse --git-path hooks)"
     print(
-        "  Installed evidence CLI: python3 -I "
-        '"$(git rev-parse --git-path hooks)/dart-review-gate.py" --help'
+        f'  Installed evidence CLI: python3 -I "{runtime_path}/dart-review-gate.py" --help'
     )
     print("  DART_SKIP_HOOKS applies only to the existing commit guard, not pre-push.")
     return 0
 
 
-def main() -> int:
-    hooks_dir = resolve_hooks_dir()
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--custom-manager",
+        action="store_true",
+        help="export the verified push runtime without changing the hook manager",
+    )
+    args = parser.parse_args(argv)
+    if args.custom_manager:
+        common = Path(run_git(["rev-parse", "--git-common-dir"]))
+        hooks_dir = (Path.cwd() / common / "dart-review-runtime").resolve()
+    else:
+        hooks_dir = resolve_hooks_dir()
     hooks_dir.mkdir(parents=True, exist_ok=True)
     lock = hooks_dir / ".dart-install-lock"
     try:
@@ -247,7 +270,7 @@ def main() -> int:
             f"error: another installer holds {lock}; after a crash verify it stopped before removing the lock"
         )
     try:
-        return install(hooks_dir)
+        return install(hooks_dir, push_only=args.custom_manager)
     finally:
         lock.rmdir()
 
