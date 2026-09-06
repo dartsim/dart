@@ -39,13 +39,6 @@ inputs:
   enable-sccache:
     description: Enable sccache setup on GitHub-hosted runners.
     default: "true"
-  sccache-disable-annotations:
-    description: >-
-      Disable the sccache-action post-step stats (hit ratio annotation and job
-      summary table). Off by default so every job records hit/miss evidence;
-      the launcher and the stats client are the same action-provided binary,
-      so the historical client/server version mismatch no longer applies.
-    default: "false"
   sccache-continue-on-error:
     description: Continue if sccache setup fails.
     default: "false"
@@ -57,14 +50,14 @@ runs:
       uses: prefix-dev/setup-pixi@v0.10.2
       with:
         pixi-version: ${{ inputs.pixi-version }}
-        cache: ${{ inputs.cache == 'true' && startsWith(runner.name, 'GitHub Actions') }}
-        environments: ${{ inputs.run-install == 'true' && startsWith(runner.name, 'GitHub Actions') && inputs.environments || '' }}
-        post-cleanup: ${{ inputs.post-cleanup == 'true' && startsWith(runner.name, 'GitHub Actions') }}
-        run-install: ${{ inputs.run-install == 'true' && startsWith(runner.name, 'GitHub Actions') }}
+        cache: ${{ inputs.cache == 'true' && runner.environment == 'github-hosted' }}
+        environments: ${{ inputs.run-install == 'true' && runner.environment == 'github-hosted' && inputs.environments || '' }}
+        post-cleanup: ${{ inputs.post-cleanup == 'true' && runner.environment == 'github-hosted' }}
+        run-install: ${{ inputs.run-install == 'true' && runner.environment == 'github-hosted' }}
         pixi-bin-path: ${{ inputs.pixi-bin-path }}
 
     - name: Pixi install (retry)
-      if: ${{ inputs.self-hosted-install == 'true' && !startsWith(runner.name, 'GitHub Actions') }}
+      if: ${{ inputs.self-hosted-install == 'true' && runner.environment != 'github-hosted' }}
       shell: bash
       run: |
         set -euo pipefail
@@ -99,8 +92,14 @@ runs:
         exit 1
 
     - name: Setup sccache
-      if: ${{ inputs.enable-sccache == 'true' && startsWith(runner.name, 'GitHub Actions') }}
+      if: ${{ inputs.enable-sccache == 'true' && runner.environment == 'github-hosted' }}
       continue-on-error: ${{ inputs.sccache-continue-on-error == 'true' }}
       uses: mozilla-actions/sccache-action@v0.0.11
       with:
-        disable_annotations: ${{ inputs.sccache-disable-annotations }}
+        # Literal, not an input: the action's post step evaluates this again,
+        # and nested composite actions see empty `inputs` there (the SIMD jobs
+        # failed with "Input does not meet YAML 1.2 Core Schema specification:
+        # disable_annotations" when setup-dart-linux-ci wrapped this action).
+        # Stats stay on so every job records hit/miss evidence; the launcher
+        # and the stats client are the same action-provided binary.
+        disable_annotations: false

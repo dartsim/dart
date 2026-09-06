@@ -140,14 +140,16 @@ def find_violations(workflow_path: Path = DEFAULT_WORKFLOW) -> list[Violation]:
         return violations
 
     for required in (
-        "needs.changes.outputs.full_ci == 'true'",
+        # The diff build must stay on the pull-request tier next to
+        # build-release: gated on the shared code filter, and unconditional
+        # for schedule/dispatch runs that carry no file-change payload.
+        "needs.changes.outputs.code == 'true'",
         "github.event_name == 'schedule'",
         "github.event_name == 'workflow_dispatch'",
-        "needs.changes.outputs.code == 'true'",
     ):
         if required not in diff_job:
             violations.append(
-                Violation(f"build-diff must preserve the full-CI condition: {required}")
+                Violation(f"build-diff must preserve the PR-tier condition: {required}")
             )
 
     if DIFF_ENV not in diff_job:

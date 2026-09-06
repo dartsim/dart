@@ -90,6 +90,49 @@ def test_filter_excludes_ai_tool_and_doc_surfaces() -> None:
         assert required in patterns, required
 
 
+def test_literal_exclusions_exist() -> None:
+    missing = [
+        pattern
+        for pattern in _filter_patterns()
+        if pattern.startswith("!")
+        and not _is_glob(pattern[1:])
+        and not (ROOT / pattern[1:]).exists()
+    ]
+    assert not missing, f"stale literal exclusions in ci-code.yml: {missing}"
+
+
+def test_every_shared_filter_step_sets_the_quantifier() -> None:
+    workflows = _workflows_using_shared_filter()
+    assert workflows, "no workflow reads the shared filter file"
+    problems: list[str] = []
+    for workflow in workflows:
+        text = workflow.read_text(encoding="utf-8")
+        steps = _filter_steps(text)
+        if not steps:
+            problems.append(f"{workflow.name}: could not locate the paths-filter step")
+            continue
+        for step in steps:
+            if f"predicate-quantifier: {REQUIRED_QUANTIFIER}" not in step:
+                problems.append(
+                    f"{workflow.name}: paths-filter step must set "
+                    f"predicate-quantifier: {REQUIRED_QUANTIFIER}"
+                )
+    assert not problems, "\n".join(problems)
+
+
+def test_filter_steps_parser_detects_missing_quantifier() -> None:
+    sample = (
+        "      - uses: dorny/paths-filter@v4\n"
+        "        id: filter\n"
+        "        with:\n"
+        "          filters: .github/filters/ci-code.yml\n"
+        "      - name: next\n"
+    )
+    steps = _filter_steps(sample)
+    assert len(steps) == 1
+    assert REQUIRED_QUANTIFIER not in steps[0]
+
+
 def test_packaged_and_test_consumed_files_stay_code() -> None:
     """Files that builds, tests, or packaging consume must never be excluded.
 
@@ -299,6 +342,7 @@ def test_consumer_scan_sees_known_readers() -> None:
 # still wired into `check-lint`, so the allowance cannot outlive its reason.
 LINT_TIER_COVERED = {
     "docs/onboarding/release-roadmap.md": "check-dart7-clean-break-policy",
+    ".github/workflows/ci_gz_physics.yml": "check-dart7-clean-break-policy",
 }
 
 
