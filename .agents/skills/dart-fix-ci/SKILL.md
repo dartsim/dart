@@ -54,10 +54,12 @@ the renderer is unavailable.
    `main`. If continuing an existing PR, fetch and check out that PR branch
    instead of creating a new one. For a `release-*` base, branch from the
    release branch and prefer cherry-picking the proven `main` fix; keep any new
-   fix release-scoped and minimal:
+   fix release-scoped and minimal. Create a uniquely named branch. If the intended
+   branch exists, inspect and resume it within the requested scope or choose a
+   fresh name; do not reset it:
    ```bash
    git fetch origin <RELEASE_BRANCH>
-   git checkout -B fix/<issue>-<release-branch> origin/<RELEASE_BRANCH>
+   git switch --no-track -c fix/<unique-topic>-<release-branch> origin/<RELEASE_BRANCH>
    ```
 6. Reproduce locally with the smallest relevant command:
    - formatting: `pixi run lint`

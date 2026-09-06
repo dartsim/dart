@@ -61,6 +61,11 @@ to ensure fixes are available in both DART 6 and DART 7. Use the highest
 maintained `release-6.*` branch advertised by the upstream remote; this checkout
 currently sees `release-6.20`.
 
+If evidence shows that the release branch has no affected implementation, record
+that evidence and the unresolved release requirement. Continue authorized local
+work without inventing unrelated release changes. This finding does not by
+itself waive the dual-PR requirement; a scope exception needs maintainer direction.
+
 1. **Fix on release branch first**:
 
    ```bash

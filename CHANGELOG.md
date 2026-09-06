@@ -510,6 +510,10 @@ compatibility remains on the active DART 6 LTS branch._
   model upgrades. Consolidated session policy and removed duplicate tutorials
   and stale examples. AI diagnosis reports declared workflow reading size.
   ([#3477](https://github.com/dartsim/dart/pull/3477))
+- Agent workflows prepare authorized local work before approval boundaries,
+  preserve active task handoffs through checkpoint PRs, and avoid resetting
+  existing CI-fix branches. Explicit publication approval and approval to retire
+  unfinished work remain required. ([workflow policy](docs/ai/principles.md))
 - Retrospectives now compare the original request with successful or
   unsatisfactory outcomes, validate reusable harness improvements, and skip
   unsupported edits.
