@@ -1,8 +1,10 @@
 name: CI FreeBSD (VM)
 
+# Manual only until the VM lane is green again: the weekly cron produced no
+# passing run between 2026-05-18 and 2026-08-31 (failures and 120-minute
+# timeouts) while occupying the self-hosted runner. Re-add
+# `schedule: - cron: "0 4 * * 1"` once a workflow_dispatch run passes.
 on:
-  schedule:
-    - cron: "0 4 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -64,11 +66,11 @@ jobs:
         env:
           FREEBSD_VM_CPUS: "2"
           FREEBSD_VM_MEM: "4096"
-          FREEBSD_VM_BUILD_PARALLEL_LEVEL: "1"
-          FREEBSD_VM_CTEST_TIMEOUT: "2400"
-          # Skip tests that require SDF support or crash in QEMU nested virtualization.
-          # See PR #2419 for details on each exclusion.
-          FREEBSD_VM_TEST_EXCLUDE_REGEX: "ForwardKinematics|AtlasIK|INTEGRATION_io_Read|INTEGRATION_io_UrdfParser|INTEGRATION_io_UrdfMaterialParsing|INTEGRATION_io_IkFast|INTEGRATION_simulation_MomentumConservation|INTEGRATION_simulation_MimicConstraint|UNIT_constraint_BalanceConstraint|test_IoRead"
+          # Build parallelism and the ctest timeout come from the freebsd-test
+          # pixi task, which owns those values.
+          # Skip tests that require SDF support or crash in QEMU nested
+          # virtualization (PR #2419); names that no longer exist were dropped.
+          FREEBSD_VM_TEST_EXCLUDE_REGEX: "ForwardKinematics|AtlasIK|INTEGRATION_io_Read|INTEGRATION_io_UrdfParser|INTEGRATION_io_UrdfMaterialParsing|INTEGRATION_io_IkFast|UNIT_constraint_BalanceConstraint"
         run: |
           set -euo pipefail
           max_attempts=2

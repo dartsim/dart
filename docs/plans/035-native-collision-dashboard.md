@@ -537,12 +537,16 @@ reference-engine names, when setting goals.
    Closure path: final `Collision Benchmark Guard` artifact and PR evidence
    packet.
 2. Review-head CI proof for the local Atlas Simbicon ASan ownership repair.
-   Closure path: final `CI Linux` / `Release Tests` AddressSanitizer step and
-   PR evidence packet.
+   Closure path: the `CI Linux` / `ASAN Tests` job on the merged `main` push
+   (the sanitizer phase left `Release Tests` in July 2026) and PR evidence
+   packet.
 3. Final native-only, reference-enabled, downstream, wheel/package, and
    platform CI.
    Closure path: final PR description, final CI artifacts, and release-gate
-   evidence.
+   evidence. Native-only collision coverage runs inside `Release Tests` on
+   every PR (the separate native-only job was folded in September 2026);
+   reference-enabled comparisons run in `Collision Benchmark Guard` (weekly
+   schedule and dispatch).
 4. Deferred feature/scope decisions: point BVH, OBB/RSS/k-DOP, non-linear CCD
    variants.
    Closure path:

@@ -7,8 +7,10 @@
 # - main/release pushes, schedule, workflow_dispatch: the PR tier plus ASAN
 #   Tests, Eigen 64-byte alignment, DART GUI Smoke (Clang); the Collision
 #   Benchmark Guard runs on schedule and dispatch only.
-# Every Linux job starts with the same three steps (workspace clean, checkout,
-# setup-dart-linux-ci); the first is a YAML anchor reused by alias below.
+# Every Linux job starts with checkout plus the setup-dart-linux-ci composite
+# (disk reclaim where needed, pixi + sccache, apt, compiler-cache guard). The
+# jobs run on GitHub-hosted runners only; the self-hosted GPU runner keeps its
+# own workspace-clean step in ci_cuda.yml.
 
 name: CI Linux
 
@@ -31,18 +33,16 @@ permissions:
   contents: read
 
 concurrency:
-  # Preserve scheduled/manual/tag evidence, but cancel superseded branch and PR
+  # Preserve scheduled/manual evidence, but cancel superseded branch and PR
   # validations so rapid merge bursts converge on the latest ref tip.
   group: >-
     ${{ (github.event_name == 'schedule'
-        || github.event_name == 'workflow_dispatch'
-        || startsWith(github.ref, 'refs/tags/v'))
+        || github.event_name == 'workflow_dispatch')
         && format('{0}-{1}-{2}-{3}', github.workflow, github.ref, github.event_name, github.run_id)
         || format('{0}-{1}-{2}', github.workflow, github.ref, github.event_name) }}
   cancel-in-progress: >-
     ${{ github.event_name != 'schedule'
-        && github.event_name != 'workflow_dispatch'
-        && !startsWith(github.ref, 'refs/tags/v') }}
+        && github.event_name != 'workflow_dispatch' }}
 
 jobs:
   changes:
@@ -56,23 +56,6 @@ jobs:
     outputs:
       code: ${{ steps.filter.outputs.code }}
     steps:
-      # Self-hosted parity runners can leave root-owned files behind; hosted
-      # runners are ephemeral and this is a no-op there.
-      - &clean-workspace
-        name: Clean stale Linux workspace
-        if: runner.os == 'Linux'
-        run: |
-          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
-            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
-              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
-                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
-              else
-                echo "::warning::Unable to clean stale workspace entries before checkout."
-              fi
-            }
-          fi
-
       # PR events list files through the API; push events fetch the `before`
       # commit on demand, so a full-history clone is not needed here.
       - uses: actions/checkout@v7
@@ -92,8 +75,9 @@ jobs:
       needs.changes.outputs.code == 'true'
     name: Coverage (Debug)
     runs-on: ubuntu-latest
-    # Instrumented Debug build + parallel lcov capture; ~65 min warm, sized
-    # for a cold cache well below the ~6h default kill.
+    # Instrumented Debug build + parallel lcov capture; ~65 min with the cache
+    # off, ~40 min warm (ctest and lcov dominate). Sized well below the ~6h
+    # default kill.
     timeout-minutes: 180
     env:
       # The Debug + --coverage build instruments every translation unit, using
@@ -102,7 +86,6 @@ jobs:
       # parallelism lower to avoid OOM kills (cf. the ASAN build below).
       DART_PARALLEL_JOBS: 4
     steps:
-      - *clean-workspace
       - name: Checkout
         uses: actions/checkout@v7
       # The instrumented object files (debug info + gcov arcs) are several
@@ -138,10 +121,11 @@ jobs:
       needs.changes.outputs.code == 'true'
     name: Release Tests
     runs-on: ubuntu-latest
-    # Build-bound (Release build + dartpy + examples + install). The
-    # `all` target already builds dart-demos and the dartsim GUI app, so the
-    # headless demo check and the dartsim GUI smoke run here on the same tree
-    # instead of rebuilding it in separate jobs.
+    # Build-bound (Release build + dartpy + examples + install). The headless
+    # demo check runs on the dart-demos binary the `examples` target built, and
+    # the dartsim GUI smoke builds the (EXCLUDE_FROM_ALL) dartsim app on the
+    # same tree, so neither needs the separate Release builds they used to
+    # have. Cold ~93 min; warm ~14 min.
     timeout-minutes: 150
     env:
       DART_PARALLEL_JOBS: 8
@@ -149,15 +133,10 @@ jobs:
       # few long-pole tests. The job is build-bound.
       CTEST_PARALLEL_LEVEL: 4
     steps:
-      - *clean-workspace
       - name: Checkout
         uses: actions/checkout@v7
-      # The Release tree plus dartpy and examples runs close to the hosted
-      # runner's free space.
       - name: Setup DART Linux CI
         uses: ./.github/actions/setup-dart-linux-ci
-        with:
-          free-disk-space: "true"
 
       - name: Run Release C++ tests
         run: |
@@ -201,9 +180,13 @@ jobs:
           echo "Headless rendering test passed!"
 
       - name: Run DART GUI smoke (dartsim)
-        # Same system GCC and the same configured tree as the tests above; the
-        # pixi task's dartpy-OFF override is not used so the tree is not
-        # reconfigured away from the dartpy build the Python tests need.
+        # scripts/run_cpp_example.py reconfigures this tree with the GUI smoke
+        # tests enabled (DART_ENABLE_GUI_FILAMENT_SMOKE_TESTS) and tutorials
+        # off, builds the dartsim target, and runs the headless smoke entries
+        # under xvfb. It runs after the C++/Python tests on purpose: enabling
+        # the smoke option earlier would register offscreen-render tests into
+        # the plain ctest pass, which has no display. The pixi task's
+        # dartpy-OFF override is not used, so dartpy stays configured.
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=Release \
@@ -231,13 +214,10 @@ jobs:
       CTEST_PARALLEL_LEVEL: 4
       DART_BUILD_DIFF_OVERRIDE: ON
     steps:
-      - *clean-workspace
       - name: Checkout
         uses: actions/checkout@v7
       - name: Setup DART Linux CI
         uses: ./.github/actions/setup-dart-linux-ci
-        with:
-          free-disk-space: "true"
 
       - name: Configure differentiable build
         run: |
@@ -299,7 +279,6 @@ jobs:
       DART_PARALLEL_JOBS: 4
       CTEST_PARALLEL_LEVEL: 4
     steps:
-      - *clean-workspace
       - name: Checkout
         uses: actions/checkout@v7
       # The instrumented ASAN tree keeps sanitizer metadata and debug info for
@@ -326,7 +305,6 @@ jobs:
       DART_PARALLEL_JOBS: 8
       CMAKE_BUILD_PARALLEL_LEVEL: 8
     steps:
-      - *clean-workspace
       - name: Checkout
         uses: actions/checkout@v7
       - name: Setup DART Linux CI
@@ -357,14 +335,14 @@ jobs:
       needs.changes.outputs.code == 'true'
     name: Debug Tests
     runs-on: ubuntu-latest
-    # The Debug job's dominant cost is the dartpy nanobind build (see the
-    # Python tests step), not the C++ ctest. Generous cold-cache cap.
+    # The dominant cost is the Debug build of the C++ test executables at two
+    # parallel jobs (memory-bound, see below); ctest takes ~3 min and the
+    # dartpy Debug build ~2 min warm. Each step sets DART_PARALLEL_JOBS
+    # itself. Generous cold-cache cap.
     timeout-minutes: 210
     env:
-      DART_PARALLEL_JOBS: 8
       CTEST_PARALLEL_LEVEL: 4
     steps:
-      - *clean-workspace
       - name: Checkout
         uses: actions/checkout@v7
       # The Debug build keeps full debug info for every test executable and
@@ -415,11 +393,11 @@ jobs:
       needs.changes.outputs.code == 'true'
     name: Asserts enabled (no -DNDEBUG)
     runs-on: ubuntu-latest
+    # Build-only: the one CI build that compiles with -Werror while DART_ASSERT
+    # bodies are live (CMAKE_BUILD_TYPE=None), exercises the fetched Tracy
+    # client, and compiles examples and dartpy in that mode. ~2 min warm.
     timeout-minutes: 90
-    env:
-      DART_PARALLEL_JOBS: 8
     steps:
-      - *clean-workspace
       - name: Checkout
         uses: actions/checkout@v7
       - name: Setup DART Linux CI
@@ -474,7 +452,6 @@ jobs:
     env:
       DART_PARALLEL_JOBS: 8
     steps:
-      - *clean-workspace
       - name: Checkout
         uses: actions/checkout@v7
       - name: Setup DART Linux CI
@@ -501,7 +478,6 @@ jobs:
     env:
       DART_PARALLEL_JOBS: 8
     steps:
-      - *clean-workspace
       - name: Checkout
         uses: actions/checkout@v7
       - name: Setup DART Linux CI
@@ -548,7 +524,6 @@ jobs:
       # libstdc++ -- ABI-matching the conda deps -- unlike -stdlib=libc++.
       CXXFLAGS: "-D__cpp_concepts=202002L -Wno-builtin-macro-redefined"
     steps:
-      - *clean-workspace
       - name: Checkout
         uses: actions/checkout@v7
       - name: Setup DART Linux CI

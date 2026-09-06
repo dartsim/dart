@@ -57,14 +57,14 @@ runs:
       uses: prefix-dev/setup-pixi@v0.10.2
       with:
         pixi-version: ${{ inputs.pixi-version }}
-        cache: ${{ inputs.cache == 'true' && startsWith(runner.name, 'GitHub Actions') }}
-        environments: ${{ inputs.run-install == 'true' && startsWith(runner.name, 'GitHub Actions') && inputs.environments || '' }}
-        post-cleanup: ${{ inputs.post-cleanup == 'true' && startsWith(runner.name, 'GitHub Actions') }}
-        run-install: ${{ inputs.run-install == 'true' && startsWith(runner.name, 'GitHub Actions') }}
+        cache: ${{ inputs.cache == 'true' && runner.environment == 'github-hosted' }}
+        environments: ${{ inputs.run-install == 'true' && runner.environment == 'github-hosted' && inputs.environments || '' }}
+        post-cleanup: ${{ inputs.post-cleanup == 'true' && runner.environment == 'github-hosted' }}
+        run-install: ${{ inputs.run-install == 'true' && runner.environment == 'github-hosted' }}
         pixi-bin-path: ${{ inputs.pixi-bin-path }}
 
     - name: Pixi install (retry)
-      if: ${{ inputs.self-hosted-install == 'true' && !startsWith(runner.name, 'GitHub Actions') }}
+      if: ${{ inputs.self-hosted-install == 'true' && !runner.environment == 'github-hosted' }}
       shell: bash
       run: |
         set -euo pipefail
@@ -99,7 +99,7 @@ runs:
         exit 1
 
     - name: Setup sccache
-      if: ${{ inputs.enable-sccache == 'true' && startsWith(runner.name, 'GitHub Actions') }}
+      if: ${{ inputs.enable-sccache == 'true' && runner.environment == 'github-hosted' }}
       continue-on-error: ${{ inputs.sccache-continue-on-error == 'true' }}
       uses: mozilla-actions/sccache-action@v0.0.11
       with:

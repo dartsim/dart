@@ -45,20 +45,6 @@ jobs:
     outputs:
       code: ${{ steps.code_filter.outputs.code }}
     steps:
-      - name: Clean stale Linux workspace
-        if: runner.os == 'Linux'
-        run: |
-          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
-            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
-              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
-                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
-              else
-                echo "::warning::Unable to clean stale workspace entries before checkout."
-              fi
-            }
-          fi
-
       # PR events list files through the API; push events fetch the `before`
       # commit on demand, so a full-history clone is not needed here.
       - uses: actions/checkout@v7
@@ -100,20 +86,6 @@ jobs:
           - { os: macos-15, python-version: "314" }
           - { os: windows-2025-vs2026, python-version: "314" }
     steps:
-      - name: Clean stale Linux workspace
-        if: runner.os == 'Linux'
-        run: |
-          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
-            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
-              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
-                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
-              else
-                echo "::warning::Unable to clean stale workspace entries before checkout."
-              fi
-            }
-          fi
-
       - uses: actions/checkout@v7
 
       - name: Setup pixi (CI)
@@ -129,12 +101,11 @@ jobs:
       - name: Configure environment for compiler cache
         uses: ./.github/actions/configure-compiler-cache
 
+      # All three legs build through the compiler cache; the compiler-cache
+      # guard fails the job loudly if the launcher cannot bind the GitHub
+      # Actions cache, which replaces the old cold-build exception for the
+      # Linux leg (32 min cold vs 16 min warm on macOS).
       - name: Build wheel
-        env:
-          # Work around occasional sccache spawn failures on ubuntu-latest
-          # wheel builds (observed with the Python 3.14 wheel). Revisit once the
-          # re-enabled GitHub Actions cache backend has a few weeks of history.
-          DART_DISABLE_COMPILER_CACHE: ${{ matrix.os == 'ubuntu-latest' && 'ON' || 'OFF' }}
         run: pixi run -e py${{ matrix.python-version }}-wheel wheel-build
 
       - name: Repair wheel

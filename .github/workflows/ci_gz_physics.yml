@@ -1,33 +1,62 @@
 # https://help.github.com/en/articles/workflow-syntax-for-github-actions
+#
+# Release-line Gazebo gate. On `main` the push/pull_request triggers name
+# release-* refs and can never fire from this copy of the file; they exist so
+# that merging `main` into a release branch carries the gate along, which the
+# DART 7 clean-break policy (`check-dart7-clean-break-policy`) enforces. On
+# `main` the workflow is a manual migration canary through workflow_dispatch.
 
 name: CI gz-physics
 
-# On `main` this workflow is a manual migration canary: the release-line PR
-# gate lives in each release branch's own copy of this file, and GitHub only
-# evaluates the triggers of the file on the pushed ref, so push/pull_request
-# triggers naming release-* here could never fire.
 on:
+  push:
+    branches:
+      - "release-*"
+  pull_request:
+    branches:
+      - "release-*"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  # Preserve scheduled/manual/tag evidence, but cancel superseded branch and PR
-  # validations so rapid merge bursts converge on the latest ref tip.
+  # Preserve manual evidence, but cancel superseded branch and PR validations
+  # so rapid merge bursts converge on the latest ref tip.
   group: >-
-    ${{ (github.event_name == 'schedule'
-        || github.event_name == 'workflow_dispatch'
-        || startsWith(github.ref, 'refs/tags/v'))
+    ${{ github.event_name == 'workflow_dispatch'
         && format('{0}-{1}-{2}-{3}', github.workflow, github.ref, github.event_name, github.run_id)
         || format('{0}-{1}-{2}', github.workflow, github.ref, github.event_name) }}
   cancel-in-progress: >-
-    ${{ github.event_name != 'schedule'
-        && github.event_name != 'workflow_dispatch'
-        && !startsWith(github.ref, 'refs/tags/v') }}
+    ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
+  changes:
+    if: github.event.deleted != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # dorny/paths-filter lists changed files through the pull-request API.
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      # PR events list files through the API; push events fetch the `before`
+      # commit on demand, so a full-history clone is not needed here.
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: .github/filters/ci-code.yml
+          # Required so the `!` exclusions in the filter file act as excludes.
+          predicate-quantifier: some-with-excludes
+
   test_gazebo:
+    needs: changes
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      needs.changes.outputs.code == 'true'
     name: GZ Physics Tests
     runs-on: ubuntu-latest
     # DART + gz-physics + gz-sim from source; 30-130 min observed.
@@ -41,21 +70,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup pixi (CI)
-        uses: ./.github/actions/setup-pixi-ci
+      - name: Setup DART Linux CI
+        uses: ./.github/actions/setup-dart-linux-ci
         with:
-          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
           environments: gazebo
           install-args: -e gazebo
-
-      - name: Install apt packages
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
-        with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: 1.0
-
-      - name: Configure environment for compiler cache
-        uses: ./.github/actions/configure-compiler-cache
 
       - name: Test gz-physics
         env:

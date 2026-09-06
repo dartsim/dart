@@ -11,8 +11,7 @@ on:
     branches:
       - "**"
   schedule:
-    # Offset from ci_ubuntu (02:00) and ci_macos (02:40) so the scheduled runs
-    # do not stampede the shared/hosted runner pools simultaneously.
+    # Weekly drift canary (minute offsets between platform crons are cosmetic).
     - cron: "20 2 * * 0"
   workflow_dispatch:
 
@@ -20,18 +19,16 @@ permissions:
   contents: read
 
 concurrency:
-  # Preserve scheduled/manual/tag evidence, but cancel superseded branch and PR
+  # Preserve scheduled/manual evidence, but cancel superseded branch and PR
   # validations so rapid merge bursts converge on the latest ref tip.
   group: >-
     ${{ (github.event_name == 'schedule'
-        || github.event_name == 'workflow_dispatch'
-        || startsWith(github.ref, 'refs/tags/v'))
+        || github.event_name == 'workflow_dispatch')
         && format('{0}-{1}-{2}-{3}', github.workflow, github.ref, github.event_name, github.run_id)
         || format('{0}-{1}-{2}', github.workflow, github.ref, github.event_name) }}
   cancel-in-progress: >-
     ${{ github.event_name != 'schedule'
-        && github.event_name != 'workflow_dispatch'
-        && !startsWith(github.ref, 'refs/tags/v') }}
+        && github.event_name != 'workflow_dispatch' }}
 
 jobs:
   changes:
@@ -45,20 +42,6 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
       hooks: ${{ steps.hooks_filter.outputs.hooks }}
     steps:
-      - name: Clean stale Linux workspace
-        if: runner.os == 'Linux'
-        run: |
-          if [ -n "${GITHUB_WORKSPACE:-}" ] && [ "${GITHUB_WORKSPACE}" != "/" ] && [ -d "${GITHUB_WORKSPACE}" ]; then
-            find "${GITHUB_WORKSPACE}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + || {
-              if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-                docker run --rm -v "${GITHUB_WORKSPACE}:/workspace" alpine:3.20 sh -c \
-                  'find /workspace -mindepth 1 -maxdepth 1 -exec rm -rf {} +'
-              else
-                echo "::warning::Unable to clean stale workspace entries before checkout."
-              fi
-            }
-          fi
-
       # PR events list files through the API; push events fetch the `before`
       # commit on demand, so a full-history clone is not needed here.
       - uses: actions/checkout@v7
@@ -152,7 +135,8 @@ jobs:
   build:
     needs: changes
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || needs.changes.outputs.code == 'true'
-    name: Tests (${{ matrix.build_type }})
+    # Release-only: the required check name `Tests (Release)` must stay.
+    name: Tests (Release)
     runs-on: windows-2025-vs2026
     env:
       # Pin the VS 2026 image required by DART's Windows toolchain floor.
@@ -169,10 +153,6 @@ jobs:
     # The uncached MSBuild Release build runs ~100-105 min; keep the cap
     # above that until the job gets a working compiler cache.
     timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        build_type: ["Release"] # Windows CI keeps Release-only to keep runtimes acceptable
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -200,7 +180,7 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           $env:DART_VERBOSE = "ON"
-          $env:BUILD_TYPE = "${{ matrix.build_type }}"
+          $env:BUILD_TYPE = "Release"
           pixi run test-no-plane OFF
 
       # Skip install on Windows to keep job runtimes within limits; Linux covers install path.
