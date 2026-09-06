@@ -602,6 +602,17 @@ def test_architecture_components_must_cite_sources(repo: Path) -> None:
     assert any("node `rigid` cites no sources" in e for e in _run(repo))
 
 
+def test_scalar_array_entries_are_rejected(repo: Path) -> None:
+    def mutate(ir):
+        ir["components"].append("not-a-component")
+        ir["connections"].append(7)
+
+    _rewrite(repo, "simulation-framework.architecture.json", mutate)
+    errors = _run(repo)
+    assert any("`components[2]` must be an object, not str" in e for e in errors)
+    assert any("`connections[1]` must be an object, not int" in e for e in errors)
+
+
 def test_card_symbols_are_validated(repo: Path) -> None:
     def mutate(ir):
         ir["cards"][0]["items"].append("ComputeAcceleratorPolciy: CpuOnly")

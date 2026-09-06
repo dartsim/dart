@@ -62,7 +62,9 @@ families. The engine region beside it is public only through the headers that
 and custom stages; the rest of it is internal. Selection resolves to an
 ordered stage schedule; the schedule drives
 the rigid, multibody, and deformable solver families and emits compute graphs.
-Coupling beyond shared constraint rows and rigid-obstacle contact is planned.
+Its contact and constraint stages query native collision while they run;
+contacts never influence which stages are scheduled. Coupling beyond shared
+constraint rows and rigid-obstacle contact is planned.
 
 ````{only} html
 

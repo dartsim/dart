@@ -219,6 +219,18 @@ def test_schedule_only_dumps_and_fixtures_are_findings(
     )
 
 
+def test_guided_view_is_required() -> None:
+    for value in (None, ""):
+        fixture = _fixture()
+        fixture["guided_view"] = value
+        findings = camr.check_against_views(fixture, _step_view(), _compute_view())
+        assert any("names no guided_view" in f for f in findings)
+    fixture = _fixture()
+    del fixture["guided_view"]
+    findings = camr.check_against_views(fixture, _step_view(), _compute_view())
+    assert any("names no guided_view" in f for f in findings)
+
+
 def test_missing_guided_view_is_reported() -> None:
     fixture = _fixture()
     fixture["guided_view"] = "nope"

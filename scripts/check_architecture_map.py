@@ -22,6 +22,8 @@ and runs inside ``pixi run check-lint``. It fails when:
 * a stage id used outside the step-flow view is not a node of that view, or
   the step-flow view holds a node that is neither a snake-cased slot nor one
   of the listed bookends (``STEP_VIEW_BOOKENDS``);
+* a top-level array (components, nodes, connections, flows, cards, boundaries,
+  stages) holds an entry that is not an object;
 * the published page does not embed a view or name its JSON source.
 
 Archify's own schema and layout validation happens at render time in
@@ -76,6 +78,18 @@ SIMULATION_COVERAGE_EXEMPTIONS: dict[str, str] = {
         "every view by PLAN-130 decision 9"
     ),
 }
+
+# Top-level arrays whose every entry must be an object; a scalar entry would be
+# skipped by the checks below and crash the text fallback renderer.
+OBJECT_LIST_KEYS = (
+    "components",
+    "nodes",
+    "connections",
+    "flows",
+    "cards",
+    "boundaries",
+    "stages",
+)
 
 # Step-flow nodes that are not schedule slots: the parts of World::step() that run
 # before and after the built-in schedule, each with the reason it is drawn.
@@ -407,6 +421,19 @@ class Checker:
                     f"{rel.as_posix()}: diagram_type {declared!r} does not match "
                     f"the file suffix ({diagram_type})"
                 )
+            for key in OBJECT_LIST_KEYS:
+                entries = ir.get(key)
+                if entries is None:
+                    continue
+                if not isinstance(entries, list):
+                    self.error(f"{rel.as_posix()}: `{key}` must be a list")
+                    continue
+                for index, entry in enumerate(entries):
+                    if not isinstance(entry, dict):
+                        self.error(
+                            f"{rel.as_posix()}: `{key}[{index}]` must be an object, "
+                            f"not {type(entry).__name__}"
+                        )
             if name in views:
                 self.error(
                     f"{rel.as_posix()}: view name `{name}` is already used by "

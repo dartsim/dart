@@ -242,6 +242,15 @@ def view_shape_error(view: View) -> str | None:
     nodes = ir.get(nodes_key)
     if not isinstance(nodes, list) or not nodes:
         return f"{view.relpath}: `{nodes_key}` must be a non-empty list"
+    for key in (nodes_key, "connections", "flows", "cards", "boundaries", "stages"):
+        entries = ir.get(key)
+        if entries is None:
+            continue
+        if not isinstance(entries, list):
+            return f"{view.relpath}: `{key}` must be a list"
+        for index, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                return f"{view.relpath}: `{key}[{index}]` must be an object"
     return None
 
 

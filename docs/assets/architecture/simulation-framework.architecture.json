@@ -417,12 +417,16 @@
       "label": "resolved config"
     },
     {
-      "id": "collision-schedule",
-      "from": "collision",
-      "to": "schedule",
-      "label": "contacts",
-      "fromSide": "top",
-      "toSide": "bottom"
+      "id": "schedule-collision",
+      "from": "schedule",
+      "to": "collision",
+      "label": "stages query contacts",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        685,
+        466
+      ]
     },
     {
       "id": "schedule-rigid",

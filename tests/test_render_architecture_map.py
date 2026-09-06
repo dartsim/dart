@@ -295,6 +295,18 @@ def test_main_unknown_view_fails(ir_dir: Path, tmp_path: Path) -> None:
     assert code == ram.EXIT_FAILED
 
 
+def test_view_shape_error_rejects_scalar_entries(ir_dir: Path) -> None:
+    view = ram.discover_views(ir_dir)[0]
+    ir = json.loads(view.path.read_text(encoding="utf-8"))
+    key = "components" if view.diagram_type == "architecture" else "nodes"
+    ir[key].append("not-a-node")
+    view.path.write_text(json.dumps(ir), encoding="utf-8")
+    message = ram.view_shape_error(ram.discover_views(ir_dir)[0])
+    assert (
+        message is not None and f"`{key}[" in message and "must be an object" in message
+    )
+
+
 def test_ensure_archify_no_fetch_without_checkout(tmp_path: Path) -> None:
     assert ram.ensure_archify(tmp_path / "missing", fetch=False) is None
 

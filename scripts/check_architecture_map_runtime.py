@@ -12,8 +12,8 @@ fresh probe dump.
 Checks (all advisory by default; ``--strict`` turns findings into failures):
 
 * every recorded stage name is a node id of the step-flow view;
-* the recorded stage list matches the guided view named by the fixture's
-  ``guided_view`` (the schedule variant the reference scene exercises);
+* the fixture names a guided view (``guided_view``, the schedule variant the
+  reference scene exercises) and the recorded stage list matches it in order;
 * every node name of every recorded graph, with its level/chunk suffix
   stripped, matches a whole word of the compute-graph view text or of the
   fixture's documented ``graph_vocabulary`` (case and underscores ignored), so
@@ -208,7 +208,12 @@ def check_against_views(
         if stage not in stage_ids:
             findings.append(f"recorded stage `{stage}` has no node in {STEP_VIEW.name}")
     guided = fixture.get("guided_view")
-    if guided:
+    if not isinstance(guided, str) or not guided:
+        findings.append(
+            "fixture names no guided_view, so the recorded stage order cannot be "
+            "validated; set it to a `meta.views` id of the step-flow view"
+        )
+    else:
         views = {v.get("id"): v for v in step_view.get("meta", {}).get("views", [])}
         if guided not in views:
             findings.append(
