@@ -205,9 +205,9 @@ private:
 
 //==============================================================================
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class ShapeFrame : public virtual common::VersionCounter,
-                   public detail::ShapeFrameCompositeBase,
-                   public virtual Frame
+class alignas(Frame) ShapeFrame : public virtual common::VersionCounter,
+                                  public detail::ShapeFrameCompositeBase,
+                                  public virtual Frame
 {
 public:
   friend class BodyNode;
