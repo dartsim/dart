@@ -46,6 +46,9 @@ namespace dynamics {
 /// zero relative acceleration. It does not move within its parent Frame after
 /// its relative transform is set. However, classes that inherit the FixedFrame
 /// class may alter its relative transform or change what its parent Frame is.
+///
+/// alignas(Frame): the non-virtual part must be as aligned as the virtual Frame
+/// base, or GCC's base-object constructors fault on aligned stores (#3447).
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class alignas(Frame) FixedFrame
   : public virtual Frame,

@@ -42,6 +42,22 @@
     explicit package dependency:
     [#3116](https://github.com/dartsim/dart/pull/3116)
 
+  * Fix a crash when constructing `SimpleFrame` (for example while Gazebo
+    loads a world through gz-physics) with GCC 16, or with AVX code generation
+    on older GCC: GCC's base-object constructors assume the full class
+    alignment of `this`, so `ShapeFrame`, `JacobianNode`, `FixedFrame`, and
+    `common::Virtual<T>` now declare `alignas` of their virtual base, which
+    makes the non-virtual part of every class that inherits `Frame` virtually
+    as aligned as the class itself. This changes the layout of `SimpleFrame`
+    and of the `dart-gui-osg` `InteractiveFrame`/`InteractiveTool` in every
+    build with Eigen static alignment enabled, of `ShapeNode` in AVX2 and
+    AVX-512 builds, of `SoftBodyNode` in AVX-512 builds, and of any downstream
+    `common::Virtual<T>` instantiation whose `T` is aligned above 8 bytes (on
+    MSVC `common::Virtual<T>` also gains the `vtordisp` layout that the other
+    virtual-base classes already use), so rebuild downstream code against
+    DART 6.20:
+    [#3447](https://github.com/dartsim/dart/issues/3447)
+
 * Build
 
   * Refresh the release-6.20 Read the Docs build, install, tutorial, and

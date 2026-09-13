@@ -50,6 +50,9 @@ class InverseKinematics;
 /// The JacobianNode class serves as a common interface for BodyNodes and
 /// EndEffectors to both be used as references for IK modules. This is a pure
 /// abstract class.
+///
+/// alignas(Frame): the non-virtual part must be as aligned as the virtual Frame
+/// base, or GCC's base-object constructors fault on aligned stores (#3447).
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 class alignas(Frame) JacobianNode : public virtual Frame, public Node
 {
