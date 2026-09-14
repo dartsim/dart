@@ -56,6 +56,7 @@
     MSVC `common::Virtual<T>` also gains the `vtordisp` layout that the other
     virtual-base classes already use), so rebuild downstream code against
     DART 6.20:
+    [#3504](https://github.com/dartsim/dart/pull/3504),
     [#3447](https://github.com/dartsim/dart/issues/3447)
 
 * Build
