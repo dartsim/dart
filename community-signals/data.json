@@ -1,13 +1,13 @@
 {
   "citations": {
     "crossref": 191,
-    "google_scholar": 404,
-    "google_scholar_checked": "2026-09-06",
+    "google_scholar": 406,
+    "google_scholar_checked": "2026-09-14",
     "google_scholar_manual_fallback": false,
-    "indexed_max": 309,
+    "indexed_max": 310,
     "indexed_min": 191,
-    "openalex": 273,
-    "semantic_scholar": 309,
+    "openalex": 272,
+    "semantic_scholar": 310,
     "semantic_scholar_influential": 9
   },
   "downstream": [
@@ -15,17 +15,17 @@
       "age": "within 1 year",
       "freshness": "current",
       "label": "Gazebo gz-sim",
-      "pushed_at": "2026-09-05T00:20:49Z",
+      "pushed_at": "2026-09-14T03:23:02Z",
       "repo": "gazebosim/gz-sim",
-      "stars": 1485
+      "stars": 1501
     },
     {
       "age": "within 1 year",
       "freshness": "current",
       "label": "Gazebo gz-physics",
-      "pushed_at": "2026-09-05T02:31:36Z",
+      "pushed_at": "2026-09-11T21:56:04Z",
       "repo": "gazebosim/gz-physics",
-      "stars": 92
+      "stars": 93
     },
     {
       "age": "1.5 years ago",
@@ -76,7 +76,7 @@
       "stars": 227
     },
     {
-      "age": "7.2 years ago",
+      "age": "7.3 years ago",
       "freshness": "5y+ historical",
       "label": "pydart2",
       "pushed_at": "2019-06-12T14:24:09Z",
@@ -86,7 +86,8 @@
   ],
   "errors": [
     "traffic clones: HTTP 403",
-    "traffic views: HTTP 403"
+    "traffic views: HTTP 403",
+    "homebrew: <urlopen error [Errno 101] Network is unreachable>"
   ],
   "gazebo": {
     "dartsim_plugin_files": 41,
@@ -94,29 +95,29 @@
     "package_depends_dart": true,
     "requires_dart_610": true
   },
-  "generated_at": "2026-09-06T05:57:18.987336Z",
+  "generated_at": "2026-09-14T09:56:13.597092Z",
   "packages": {
     "conda": {
-      "combined_gross": 1162372,
-      "dartpy": 295071,
-      "dartsim": 719190,
-      "dartsim-cpp": 148111
+      "combined_gross": 1182132,
+      "dartpy": 301566,
+      "dartsim": 728561,
+      "dartsim-cpp": 152005
     },
-    "homebrew_installs_365d": 18323,
-    "homebrew_on_request_365d": 1396,
-    "pepy_dartpy_all_time": 266301
+    "homebrew_installs_365d": null,
+    "homebrew_on_request_365d": null,
+    "pepy_dartpy_all_time": 267028
   },
-  "since": "2025-09-06",
+  "since": "2025-09-14",
   "sources": {
     "anaconda_dartpy": "https://api.anaconda.org/package/conda-forge/dartpy",
     "anaconda_dartsim": "https://api.anaconda.org/package/conda-forge/dartsim",
     "anaconda_dartsim_cpp": "https://api.anaconda.org/package/conda-forge/dartsim-cpp",
     "crossref": "https://api.crossref.org/works/10.21105/joss.00500",
     "gazebo_physics": "https://gazebosim.org/api/sim/9/physics.html",
-    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-09-06",
+    "github_created_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+created%3A%3E%3D2025-09-14",
     "github_issues": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Aissue+state%3Aopen",
     "github_latest_release": "https://api.github.com/repos/dartsim/dart/releases/latest",
-    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-09-06",
+    "github_merged_prs_12m": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+merged%3A%3E%3D2025-09-14",
     "github_prs": "https://api.github.com/search/issues?q=repo%3Adartsim%2Fdart+is%3Apr+state%3Aopen",
     "github_repo": "https://api.github.com/repos/dartsim/dart",
     "github_traffic_docs": "https://docs.github.com/en/rest/metrics/traffic",
@@ -134,16 +135,16 @@
     "contributors_login": 55,
     "contributors_with_anon": 79,
     "created_issues_12m": 32,
-    "created_prs_12m": 1432,
+    "created_prs_12m": 1435,
     "forks": 304,
-    "latest_push": "2026-09-06",
+    "latest_push": "2026-09-13",
     "latest_release": "v6.19.4",
     "latest_release_date": "2026-07-19",
-    "merged_prs_12m": 1339,
-    "open_issues": 4,
-    "open_prs": 5,
+    "merged_prs_12m": 1346,
+    "open_issues": 2,
+    "open_prs": 0,
     "releases_12m": 21,
-    "stars": 1201,
+    "stars": 1204,
     "watchers": 49
   },
   "traffic": {
