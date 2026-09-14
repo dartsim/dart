@@ -98,18 +98,22 @@ entry still matches nearby `CHANGELOG.md` style after adding the PR link.
 2. Read `docs/onboarding/changelog.md` and the relevant `CHANGELOG.md` release
    section. Compare nearby bullets before drafting so wording, section choice,
    and level of detail match the current file.
-3. Decide whether an entry is required using the guide:
-   - user-visible API, behavior, packaging, CI, docs workflow, AI-infra,
-     simulation correctness, release, or migration impact usually needs an
-     entry;
-   - typo-only, formatting-only, generated-only, and tiny internal refactors
-     usually do not.
+3. Decide whether an entry is required using the guide. `CHANGELOG.md` is
+   written for users of the released library and packages:
+   - public API, behavior, packaging, dependency, platform, simulation
+     correctness, release, or migration impact needs an entry;
+   - CI, tooling, AI-harness, docs-workflow, and other internal changes do not,
+     unless they change a command or workflow that users of the release run;
+     typo-only, formatting-only, generated-only, and tiny internal refactors
+     never do.
 4. Record the decision with the Output Contract before modifying
    `CHANGELOG.md` or telling a caller to skip it. The decision must cite the
    diff, PR, issue, release section, or target branch that was inspected.
 5. When writing, start with the reader-visible outcome, not the implementation
    chore. Use one concise bullet, combine closely related changes, avoid author
-   credits, and avoid one-bullet-per-PR diary style.
+   credits, and avoid one-bullet-per-PR diary style. Keep the entry to what the
+   reader must know or do (what changed for them, any rebuild or migration
+   step); the mechanism belongs in the PR body or a design doc.
 6. Place the entry under the target branch's release section and nearest
    existing category. Do not create a new category for one PR unless the release
    shape genuinely needs it.
