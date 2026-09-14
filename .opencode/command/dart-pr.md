@@ -53,11 +53,11 @@ Use these practices:
   name the baseline explicitly: CPU path, parent commit, `main`, or prior
   implementation, plus workload, metric, and important limitations.
 - Write the body for a human skimming it: bullets that each carry one
-  highlight, about 300 words; the mechanism in one sentence, details in the
-  code, a design doc, or the linked issue.
+  highlight, about 300 words; mechanism in one sentence, details elsewhere.
 - In Testing, list only checks that CI does not run on the PR (a reporter's
   toolchain reproduction, a negative check proving a new test bites, hardware
-  runs, independent review passes), not jobs the PR's CI runs anyway.
+  runs, independent review passes), not jobs CI runs anyway; the local gates
+  in steps 5-7 still run and their record stays in task evidence.
 - For CI, performance, or infrastructure work, include evidence such as CI run
   observations, timing, reruns, benchmark output, or why a skipped check is
   expected.
