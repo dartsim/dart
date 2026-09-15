@@ -373,7 +373,7 @@ void SoftContactConstraint::setErrorAllowance(double _allowance)
     dtwarn << "Error reduction parameter[" << _allowance
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
-    mErrorAllowance = 0.0;
+    _allowance = 0.0;
   }
 
   mErrorAllowance = _allowance;
@@ -392,12 +392,12 @@ void SoftContactConstraint::setErrorReductionParameter(double _erp)
   if (_erp < 0.0) {
     dtwarn << "Error reduction parameter[" << _erp << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
-    mErrorReductionParameter = 0.0;
+    _erp = 0.0;
   }
   if (_erp > 1.0) {
     dtwarn << "Error reduction parameter[" << _erp << "] is greater than 1.0. "
            << "It is set to 1.0." << std::endl;
-    mErrorReductionParameter = 1.0;
+    _erp = 1.0;
   }
 
   mErrorReductionParameter = _erp;
@@ -417,7 +417,7 @@ void SoftContactConstraint::setMaxErrorReductionVelocity(double _erv)
     dtwarn << "Maximum error reduction velocity[" << _erv
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
-    mMaxErrorReductionVelocity = 0.0;
+    _erv = 0.0;
   }
 
   mMaxErrorReductionVelocity = _erv;
@@ -437,7 +437,7 @@ void SoftContactConstraint::setConstraintForceMixing(double _cfm)
     dtwarn << "Constraint force mixing parameter[" << _cfm
            << "] is lower than 1e-9. "
            << "It is set to 1e-9." << std::endl;
-    mConstraintForceMixing = 1e-9;
+    _cfm = 1e-9;
   }
 
   mConstraintForceMixing = _cfm;
