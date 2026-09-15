@@ -33,17 +33,28 @@
 #ifndef DART_COMMON_VIRTUAL_HPP_
 #define DART_COMMON_VIRTUAL_HPP_
 
+#include <dart/common/ClassWithVirtualBase.hpp>
+
 namespace dart {
 namespace common {
 
 /// This class is used to have CRTP functions inherit their template parameters
 /// virtually instead of directly.
+///
+/// alignas(T): keep the non-virtual part as aligned as the virtual base so that
+/// derived classes never place it under-aligned (see #3447 for Frame). The
+/// alignof(void*) floor keeps instantiations whose T is aligned below the
+/// vtable pointer well-formed; it must stay a single alignas specifier because
+/// GCC does not combine two of them for the non-virtual part.
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
 template <class T>
-class Virtual : public virtual T
+class alignas(alignof(T) > alignof(void*) ? alignof(T) : alignof(void*)) Virtual
+  : public virtual T
 {
 public:
   virtual ~Virtual() = default;
 };
+DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
 } // namespace common
 } // namespace dart
