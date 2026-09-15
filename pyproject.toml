@@ -70,6 +70,14 @@ DART_VERBOSE = "ON"
 DART_USE_SYSTEM_IMGUI = "OFF"
 
 [tool.black]
+# Build-time scripts (scripts/capture_source_provenance.py and anything CMake
+# or the Git hooks invoke) run under the system interpreter, not the Pixi
+# Python 3.14 pin. Without an explicit target list black infers py314 from
+# `requires-python` and rewrites `except (A, B):` into the 3.14-only
+# `except A, B:` form (PEP 758), which broke source builds on Python 3.12
+# (https://github.com/dartsim/dart/issues/3502). py310 matches the build-time
+# Python floor stated under Prerequisites in docs/onboarding/building.md.
+target-version = ["py310", "py311", "py312", "py313", "py314"]
 exclude = '/(build|dist|docs|examples|external|python|\.pixi)/'
 
 [tool.isort]

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import _ctypes
+import ast
 import ctypes
 import importlib.util
 import os
@@ -572,6 +573,39 @@ def test_shared_library_provenance_keeps_python_optional_for_cpp_only_configure(
     )
 
     assert result.returncode == 0, result.stdout
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "feature_version"),
+    [
+        # CMake runs these with the Python 3 it discovered, which the
+        # Prerequisites in docs/onboarding/building.md floor at 3.10 (Ubuntu
+        # 22.04, the oldest platform in its support table).
+        ("scripts/capture_source_provenance.py", (3, 10)),
+        ("scripts/avbd_packet_schema.py", (3, 10)),
+        ("dart/gui/detail/testing/analyze_headless_smoke.py", (3, 10)),
+        # The pre-commit gate falls back to the PATH python3;
+        # scripts/install_git_hooks.py documents its 3.11 floor. The Windows
+        # PreToolUse launcher (.claude/hooks/pre-commit-guard.ps1) runs the
+        # bridge with ``py -3`` or ``python`` when no Pixi interpreter exists.
+        ("scripts/check_agent_hook.py", (3, 11)),
+        ("scripts/pretool_guard_bridge.py", (3, 11)),
+        # .github/workflows/community_signals.yml runs this with the runner's
+        # system Python, outside the Pixi environment.
+        ("scripts/generate_community_signals_dashboard.py", (3, 10)),
+    ],
+)
+def test_out_of_environment_script_parses_at_its_python_floor(
+    relative_path: str, feature_version: tuple[int, int]
+) -> None:
+    # Every Pixi environment pins Python 3.14, where 3.14-only syntax such as
+    # PEP 758 ``except A, B:`` is legal, so py_compile, black, and CI stay
+    # green while a source build with a distribution Python fails (issue
+    # #3502). Parse each script that runs outside that environment with the
+    # grammar of the oldest interpreter it must support.
+    path = _ROOT / relative_path
+    source = path.read_text(encoding="utf-8")
+    ast.parse(source, str(path), feature_version=feature_version)
 
 
 def _runtime_snapshot(images: list[dict[str, object]]) -> dict[str, object]:
