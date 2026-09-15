@@ -2974,6 +2974,10 @@ const DeactivationOptions& World::getDeactivationOptions() const
 //==============================================================================
 void World::bake()
 {
+  // A skeleton already in the world may have gained or lost joints since the
+  // recording's layout was last refreshed by addSkeleton/removeSkeleton.
+  mRecording->updateNumGenCoords(mSkeletons);
+
   const auto collisionResult = getConstraintSolver()->getLastCollisionResult();
   const auto nContacts = static_cast<int>(collisionResult.getNumContacts());
   const auto nSkeletons = getNumSkeletons();
