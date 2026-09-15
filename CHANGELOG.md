@@ -208,6 +208,13 @@
     conversion:
     [gazebosim/gz-physics#1018](https://github.com/gazebosim/gz-physics/issues/1018)
 
+  * Honor `DART_SKIP_spdlog=ON` on hosts where spdlog is installed: the core
+    library now configures with `DART_HAVE_spdlog=0` and no spdlog link, and
+    the installed `dart` component no longer requires spdlog. The default
+    configuration (option OFF) is unchanged:
+    [#3512](https://github.com/dartsim/dart/pull/3512),
+    [#3503](https://github.com/dartsim/dart/issues/3503)
+
 * Collision
 
   * Provide the DART-owned collision backend through the built-in `dart`
