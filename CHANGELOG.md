@@ -369,6 +369,14 @@
     applications that intentionally consume Bullet proximity hits:
     [#3136](https://github.com/dartsim/dart/pull/3136)
 
+  * Refresh both operands of a two-group `CollisionGroup::collide()` /
+    `CollisionGroup::distance()` query, each according to its own
+    automatic-update setting, so a collision shape added to a body the other
+    group is subscribed to is no longer missed and the result no longer depends
+    on the operand order:
+    [#3509](https://github.com/dartsim/dart/pull/3509),
+    [#3499](https://github.com/dartsim/dart/issues/3499)
+
 * Dynamics
 
   * Fix `dart::utils::SdfParser` loading every SDF `<soft_shape>` link as a
