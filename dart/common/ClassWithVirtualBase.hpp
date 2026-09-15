@@ -40,9 +40,11 @@
 // C4250: 'class1' : inherits 'class2::member' via dominance
 // This warning is expected with virtual inheritance and is safe to suppress.
 // See https://github.com/gazebosim/gz-physics/pull/837
+// C4324: 'struct' : structure was padded due to alignment specifier
+// Expected for the alignas(Frame) classes (see #3447) and safe to suppress.
 #if defined(_MSC_VER)
   #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN                           \
-    __pragma(warning(push)) __pragma(warning(disable : 4250))                  \
+    __pragma(warning(push)) __pragma(warning(disable : 4250 4324))             \
         __pragma(vtordisp(push, 2))
   #define DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END                             \
     __pragma(vtordisp(pop)) __pragma(warning(pop))

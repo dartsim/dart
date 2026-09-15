@@ -851,3 +851,105 @@ TEST(World, GetIndexBoundsCheck)
   EXPECT_DEATH(world->getIndex(100), "");
 #endif
 }
+
+//==============================================================================
+// Regression test for https://github.com/dartsim/dart/issues/3497
+TEST(World, GetIndexTracksRemovalAndTopologyChanges)
+{
+  const auto makeSkeleton = [](const std::string& name, std::size_t numDofs) {
+    auto skeleton = Skeleton::create(name);
+    for (std::size_t i = 0; i < numDofs; ++i)
+      skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+    return skeleton;
+  };
+
+  auto world = World::create();
+  auto first = makeSkeleton("first", 2u);
+  auto middle = makeSkeleton("middle", 3u);
+  auto last = makeSkeleton("last", 4u);
+  world->addSkeleton(first);
+  world->addSkeleton(middle);
+  world->addSkeleton(last);
+  EXPECT_EQ(world->getIndex(3), 9);
+
+  // Growing a contained skeleton shifts every later boundary.
+  middle->createJointAndBodyNodePair<RevoluteJoint>(); // middle: 3 -> 4
+  EXPECT_EQ(world->getIndex(1), 2);
+  EXPECT_EQ(world->getIndex(2), 6);
+  EXPECT_EQ(world->getIndex(3), 10);
+
+  // Removing a middle skeleton whose width changed after it was added
+  // repairs the whole range, including the terminal total.
+  world->removeSkeleton(middle);
+  ASSERT_EQ(world->getNumSkeletons(), 2u);
+  EXPECT_EQ(world->getIndex(0), 0);
+  EXPECT_EQ(world->getIndex(1), 2);
+  EXPECT_EQ(world->getIndex(2), 6);
+
+  // Growth of a remaining skeleton after removal is reflected too.
+  last->createJointAndBodyNodePair<RevoluteJoint>(); // last: 4 -> 5
+  EXPECT_EQ(world->getIndex(2), 7);
+
+  // Stepping (which rebuilds the internal cache) must agree.
+  world->step();
+  EXPECT_EQ(world->getIndex(2), 7);
+
+  world->removeAllSkeletons();
+  EXPECT_EQ(world->getIndex(0), 0);
+}
+
+//==============================================================================
+// Regression test for https://github.com/dartsim/dart/issues/3498
+TEST(World, RecordingDropsFramesWhenSkeletonDofLayoutChanges)
+{
+  const auto makeSkeleton = [](const std::string& name, double position) {
+    auto skeleton = Skeleton::create(name);
+    skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+    skeleton->setPosition(0, position);
+    return skeleton;
+  };
+
+  auto world = World::create();
+  auto first = makeSkeleton("first", 11.0);
+  auto second = makeSkeleton("second", 22.0);
+  world->addSkeleton(first);
+  world->addSkeleton(second);
+
+  Recording* recording = world->getRecording();
+  world->bake();
+  ASSERT_EQ(recording->getNumFrames(), 1);
+  ASSERT_EQ(recording->getNumSkeletons(), 2);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 0, 0), 11.0);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 1, 0), 22.0);
+
+  // Removing a skeleton changes the per-skeleton DOF layout, so the frame
+  // packed under the old layout must not survive to be re-sliced under the
+  // new one (row zero would otherwise report 11 for the surviving skeleton).
+  world->removeSkeleton(first);
+  EXPECT_EQ(recording->getNumSkeletons(), 1);
+  EXPECT_EQ(recording->getNumFrames(), 0);
+
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 1);
+  EXPECT_EQ(recording->getNumDofs(0), 1);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 0, 0), 22.0);
+
+  // Growing a contained skeleton in place is only visible to the recording at
+  // the next bake, which must refresh the layout and drop the stale frame.
+  second->createJointAndBodyNodePair<RevoluteJoint>(); // second: 1 -> 2 DOFs
+  second->setPosition(1, 33.0);
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 1);
+  ASSERT_EQ(recording->getNumDofs(0), 2);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 0, 0), 22.0);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 0, 1), 33.0);
+
+  // A bake without any layout change must keep accumulating frames.
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 2);
+
+  // Adding a skeleton while frames exist is a layout change as well.
+  world->addSkeleton(makeSkeleton("third", 44.0));
+  EXPECT_EQ(recording->getNumSkeletons(), 2);
+  EXPECT_EQ(recording->getNumFrames(), 0);
+}

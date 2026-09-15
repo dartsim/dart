@@ -42,6 +42,15 @@
     explicit package dependency:
     [#3116](https://github.com/dartsim/dart/pull/3116)
 
+  * Fix a crash when constructing `SimpleFrame` (for example while Gazebo
+    loads a world through gz-physics) with GCC 16, or with AVX code generation
+    on older GCC, by aligning the non-virtual part of the classes that inherit
+    `Frame` virtually to `Frame` itself. This changes the layout of
+    `SimpleFrame` (and of `ShapeNode` and `SoftBodyNode` in AVX builds), so
+    rebuild downstream code against DART 6.20:
+    [#3504](https://github.com/dartsim/dart/pull/3504),
+    [#3447](https://github.com/dartsim/dart/issues/3447)
+
 * Build
 
   * Refresh the release-6.20 Read the Docs build, install, tutorial, and
@@ -376,6 +385,22 @@
     applications that intentionally consume Bullet proximity hits:
     [#3136](https://github.com/dartsim/dart/pull/3136)
 
+  * Refresh both operands of a two-group `CollisionGroup::collide()` /
+    `CollisionGroup::distance()` query, each according to its own
+    automatic-update setting, so a collision shape added to a body the other
+    group is subscribed to is no longer missed and the result no longer depends
+    on the operand order:
+    [#3509](https://github.com/dartsim/dart/pull/3509),
+    [#3499](https://github.com/dartsim/dart/issues/3499)
+
+  * Fix `CollisionGroup::removeAllShapeFrames()` leaving the skeleton and
+    body-node subscriptions behind with pointers to the deleted collision
+    records, which crashed the next `update()` after a subscribed source
+    changed and silently re-added frames to the emptied group. Removing all
+    frames now drops every subscription, as `removeShapeFrame()` already does:
+    [#3510](https://github.com/dartsim/dart/pull/3510),
+    [#3500](https://github.com/dartsim/dart/issues/3500)
+
 * Dynamics
 
   * Fix `dart::utils::SdfParser` loading every SDF `<soft_shape>` link as a
@@ -604,6 +629,31 @@
     directly appending single-contact pair results once the disjoint
     contact-bound proof has already disabled cross-pair duplicate checks:
     [#3056](https://github.com/dartsim/dart/issues/3056)
+
+  * Fix `World::getIndex()` returning stale cumulative DOF boundaries after
+    `World::removeSkeleton()` (the terminal total kept the removed skeleton's
+    width) or after a skeleton already in the world gained or lost joints;
+    boundaries now reflect the skeletons' current DOF counts:
+    [#3508](https://github.com/dartsim/dart/pull/3508),
+    [#3497](https://github.com/dartsim/dart/issues/3497)
+
+  * Fix `Recording` (filled by `World::bake()`) silently re-slicing previously
+    baked frames after the per-skeleton DOF layout changed: adding or removing
+    a skeleton, or changing a contained skeleton's joints, now drops the frames
+    that can no longer be interpreted (with a warning), and `World::bake()`
+    refreshes the layout before recording a frame:
+    [#3513](https://github.com/dartsim/dart/pull/3513),
+    [#3498](https://github.com/dartsim/dart/issues/3498)
+
+  * Fix the class-wide parameter setters of `DynamicJointConstraint`,
+    `JointConstraint`, `JointLimitConstraint`, `SoftContactConstraint`,
+    `ContactConstraint`, `JointCoulombFrictionConstraint`, and
+    `ServoMotorConstraint` (`setErrorAllowance`, `setErrorReductionParameter`,
+    `setMaxErrorReductionVelocity`, `setConstraintForceMixing`) storing an
+    out-of-range argument verbatim after warning that it was clamped; the
+    getters now return the bound the warning names:
+    [#3511](https://github.com/dartsim/dart/pull/3511),
+    [#3501](https://github.com/dartsim/dart/issues/3501)
 
 * Python
 

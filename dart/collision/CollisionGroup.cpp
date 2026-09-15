@@ -172,6 +172,12 @@ void CollisionGroup::removeAllShapeFrames()
   removeAllCollisionObjectsFromEngine();
 
   mObjectInfoList.clear();
+  // Removing every ShapeFrame also drops every subscription, as
+  // removeShapeFrame() does for a single frame. The sources cache raw pointers
+  // to the ObjectInfo records deleted above, so leaving them behind would make
+  // the next update() dereference freed memory and re-add the frames.
+  mSkeletonSources.clear();
+  mBodyNodeSources.clear();
   mObserver.removeAllShapeFrames();
   if (hadObjects)
     incrementContentVersion();
@@ -231,6 +237,11 @@ bool CollisionGroup::collide(
   if (mUpdateAutomatically)
     update();
 
+  // The other operand keeps its own subscriptions, so refresh it too (by its
+  // own setting); otherwise the result would depend on the operand order.
+  if (otherGroup && otherGroup != this && otherGroup->getAutomaticUpdate())
+    otherGroup->update();
+
   return mCollisionDetector->collide(this, otherGroup, option, result);
 }
 
@@ -252,6 +263,9 @@ double CollisionGroup::distance(
 {
   if (mUpdateAutomatically)
     update();
+
+  if (otherGroup && otherGroup != this && otherGroup->getAutomaticUpdate())
+    otherGroup->update();
 
   return mCollisionDetector->distance(this, otherGroup, option, result);
 }
@@ -408,6 +422,8 @@ void CollisionGroup::ShapeFrameObserver::removeShapeFrame(
 void CollisionGroup::ShapeFrameObserver::removeAllShapeFrames()
 {
   removeAllSubjects();
+  mMap.clear();
+  mDeletedFrames.clear();
 }
 
 //==============================================================================
