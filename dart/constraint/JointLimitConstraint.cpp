@@ -91,7 +91,7 @@ void JointLimitConstraint::setErrorAllowance(double allowance)
     dtwarn << "Error reduction parameter[" << allowance
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
-    mErrorAllowance = 0.0;
+    allowance = 0.0;
   }
 
   mErrorAllowance = allowance;
@@ -110,12 +110,12 @@ void JointLimitConstraint::setErrorReductionParameter(double erp)
   if (erp < 0.0) {
     dtwarn << "Error reduction parameter[" << erp << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
-    mErrorReductionParameter = 0.0;
+    erp = 0.0;
   }
   if (erp > 1.0) {
     dtwarn << "Error reduction parameter[" << erp << "] is greater than 1.0. "
            << "It is set to 1.0." << std::endl;
-    mErrorReductionParameter = 1.0;
+    erp = 1.0;
   }
 
   mErrorReductionParameter = erp;
@@ -135,7 +135,7 @@ void JointLimitConstraint::setMaxErrorReductionVelocity(double erv)
     dtwarn << "Maximum error reduction velocity[" << erv
            << "] is lower than 0.0. "
            << "It is set to 0.0." << std::endl;
-    mMaxErrorReductionVelocity = 0.0;
+    erv = 0.0;
   }
 
   mMaxErrorReductionVelocity = erv;
@@ -155,7 +155,7 @@ void JointLimitConstraint::setConstraintForceMixing(double cfm)
     dtwarn << "Constraint force mixing parameter[" << cfm
            << "] is lower than 1e-9. "
            << "It is set to 1e-9." << std::endl;
-    mConstraintForceMixing = 1e-9;
+    cfm = 1e-9;
   }
 
   mConstraintForceMixing = cfm;

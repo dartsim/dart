@@ -237,6 +237,11 @@ bool CollisionGroup::collide(
   if (mUpdateAutomatically)
     update();
 
+  // The other operand keeps its own subscriptions, so refresh it too (by its
+  // own setting); otherwise the result would depend on the operand order.
+  if (otherGroup && otherGroup != this && otherGroup->getAutomaticUpdate())
+    otherGroup->update();
+
   return mCollisionDetector->collide(this, otherGroup, option, result);
 }
 
@@ -258,6 +263,9 @@ double CollisionGroup::distance(
 {
   if (mUpdateAutomatically)
     update();
+
+  if (otherGroup && otherGroup != this && otherGroup->getAutomaticUpdate())
+    otherGroup->update();
 
   return mCollisionDetector->distance(this, otherGroup, option, result);
 }

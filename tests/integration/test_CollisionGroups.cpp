@@ -544,6 +544,74 @@ TEST(CollisionGroupsTest, FclRemovesSharedObjectAfterOtherGroupRefresh)
   EXPECT_EQ(result.getNumContacts(), 0u);
 }
 
+// Regression test for https://github.com/dartsim/dart/issues/3499: a two-group
+// query must refresh the other operand as well as the receiver, so the result
+// does not depend on operand order.
+TEST_P(CollisionGroupsTest, PairwiseQueryUpdatesOtherGroup)
+{
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(
+          GetParam())) {
+    std::cout << "Skipping test for [" << GetParam() << "], because it is not "
+              << "available" << std::endl;
+    return;
+  }
+
+  auto cd
+      = dart::collision::CollisionDetector::getFactory()->create(GetParam());
+  auto groupA = cd->createCollisionGroup();
+  auto groupB = cd->createCollisionGroup();
+
+  // One body per skeleton. Body A starts with a unit sphere; body B starts
+  // without any shape and sits 0.5 along X so that spheres overlap without
+  // coincident centers.
+  auto sphere = std::make_shared<dart::dynamics::SphereShape>(1.0);
+  auto skelA = dart::dynamics::Skeleton::create("A");
+  auto pairA = skelA->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  auto* shapeA
+      = pairA.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+          sphere);
+  auto skelB = dart::dynamics::Skeleton::create("B");
+  auto pairB = skelB->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = 0.5 * Eigen::Vector3d::UnitX();
+  pairB.first->setTransform(tf);
+
+  groupA->subscribeTo(skelA);
+  groupB->subscribeTo(skelB);
+  EXPECT_FALSE(groupA->collide(groupB.get()));
+  EXPECT_EQ(groupB->getNumShapeFrames(), 0u);
+
+  // Forward order: B is the other operand and gains its shape after the
+  // subscription. The query must refresh B, not only the receiver A.
+  pairB.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+  EXPECT_TRUE(groupA->collide(groupB.get()));
+  EXPECT_EQ(groupB->getNumShapeFrames(), 1u);
+
+  // Reverse order: A is the other operand now.
+  shapeA->remove();
+  groupA->update();
+  ASSERT_EQ(groupA->getNumShapeFrames(), 0u);
+  pairA.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+  EXPECT_TRUE(groupB->collide(groupA.get()));
+  EXPECT_EQ(groupA->getNumShapeFrames(), 1u);
+
+  // The two-group distance query refreshes the other operand the same way.
+  // Engines without distance support still perform the refresh, because it
+  // happens before the detector is asked.
+  pairB.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+  groupA->distance(groupB.get());
+  EXPECT_EQ(groupB->getNumShapeFrames(), 2u);
+
+  // A group that opted out of automatic updates is left alone until it is
+  // updated explicitly.
+  groupB->setAutomaticUpdate(false);
+  pairB.second->createShapeNodeWith<dart::dynamics::CollisionAspect>(sphere);
+  EXPECT_TRUE(groupA->collide(groupB.get()));
+  EXPECT_EQ(groupB->getNumShapeFrames(), 2u);
+  groupB->update();
+  EXPECT_EQ(groupB->getNumShapeFrames(), 3u);
+}
+
 // Regression test for https://github.com/dartsim/dart/issues/3500
 TEST_P(CollisionGroupsTest, RemoveAllShapeFramesDropsSubscriptions)
 {
