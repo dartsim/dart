@@ -42,6 +42,15 @@
     explicit package dependency:
     [#3116](https://github.com/dartsim/dart/pull/3116)
 
+  * Fix a crash when constructing `SimpleFrame` (for example while Gazebo
+    loads a world through gz-physics) with GCC 16, or with AVX code generation
+    on older GCC, by aligning the non-virtual part of the classes that inherit
+    `Frame` virtually to `Frame` itself. This changes the layout of
+    `SimpleFrame` (and of `ShapeNode` and `SoftBodyNode` in AVX builds), so
+    rebuild downstream code against DART 6.20:
+    [#3504](https://github.com/dartsim/dart/pull/3504),
+    [#3447](https://github.com/dartsim/dart/issues/3447)
+
 * Build
 
   * Refresh the release-6.20 Read the Docs build, install, tutorial, and

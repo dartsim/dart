@@ -204,10 +204,15 @@ private:
 };
 
 //==============================================================================
+/// ShapeFrame is a Frame that carries a Shape and its visual, collision, and
+/// dynamics aspects.
+///
+/// alignas(Frame): the non-virtual part must be as aligned as the virtual Frame
+/// base, or GCC's base-object constructors fault on aligned stores (#3447).
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
-class ShapeFrame : public virtual common::VersionCounter,
-                   public detail::ShapeFrameCompositeBase,
-                   public virtual Frame
+class alignas(Frame) ShapeFrame : public virtual common::VersionCounter,
+                                  public detail::ShapeFrameCompositeBase,
+                                  public virtual Frame
 {
 public:
   friend class BodyNode;
