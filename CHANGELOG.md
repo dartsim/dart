@@ -485,6 +485,13 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- `DART_SKIP_spdlog=ON` now skips spdlog for the core `dart` library even when
+  spdlog is installed: `libdart` configures with `DART_HAVE_spdlog=0`, drops
+  the spdlog link, and the installed `dart` component no longer requires
+  spdlog. The option is core-only on `main`; `dart-simulation` still requires
+  spdlog, and the default configuration is unchanged.
+  ([#3503](https://github.com/dartsim/dart/issues/3503))
+
 - Added the living architecture map: four typed archify views (simulation
   framework, `World::step()` data flow, compute graph, library context) under
   `docs/assets/architecture/` rendered into the published architecture page at
