@@ -851,3 +851,49 @@ TEST(World, GetIndexBoundsCheck)
   EXPECT_DEATH(world->getIndex(100), "");
 #endif
 }
+
+//==============================================================================
+// Regression test for https://github.com/dartsim/dart/issues/3497
+TEST(World, GetIndexTracksRemovalAndTopologyChanges)
+{
+  const auto makeSkeleton = [](const std::string& name, std::size_t numDofs) {
+    auto skeleton = Skeleton::create(name);
+    for (std::size_t i = 0; i < numDofs; ++i)
+      skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+    return skeleton;
+  };
+
+  auto world = World::create();
+  auto first = makeSkeleton("first", 2u);
+  auto middle = makeSkeleton("middle", 3u);
+  auto last = makeSkeleton("last", 4u);
+  world->addSkeleton(first);
+  world->addSkeleton(middle);
+  world->addSkeleton(last);
+  EXPECT_EQ(world->getIndex(3), 9);
+
+  // Growing a contained skeleton shifts every later boundary.
+  middle->createJointAndBodyNodePair<RevoluteJoint>(); // middle: 3 -> 4
+  EXPECT_EQ(world->getIndex(1), 2);
+  EXPECT_EQ(world->getIndex(2), 6);
+  EXPECT_EQ(world->getIndex(3), 10);
+
+  // Removing a middle skeleton whose width changed after it was added
+  // repairs the whole range, including the terminal total.
+  world->removeSkeleton(middle);
+  ASSERT_EQ(world->getNumSkeletons(), 2u);
+  EXPECT_EQ(world->getIndex(0), 0);
+  EXPECT_EQ(world->getIndex(1), 2);
+  EXPECT_EQ(world->getIndex(2), 6);
+
+  // Growth of a remaining skeleton after removal is reflected too.
+  last->createJointAndBodyNodePair<RevoluteJoint>(); // last: 4 -> 5
+  EXPECT_EQ(world->getIndex(2), 7);
+
+  // Stepping (which rebuilds the internal cache) must agree.
+  world->step();
+  EXPECT_EQ(world->getIndex(2), 7);
+
+  world->removeAllSkeletons();
+  EXPECT_EQ(world->getIndex(0), 0);
+}

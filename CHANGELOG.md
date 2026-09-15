@@ -598,6 +598,13 @@
     contact-bound proof has already disabled cross-pair duplicate checks:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Fix `World::getIndex()` returning stale cumulative DOF boundaries after
+    `World::removeSkeleton()` (the terminal total kept the removed skeleton's
+    width) or after a skeleton already in the world gained or lost joints;
+    boundaries now reflect the skeletons' current DOF counts:
+    [#3508](https://github.com/dartsim/dart/pull/3508),
+    [#3497](https://github.com/dartsim/dart/issues/3497)
+
 * Python
 
   * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with
