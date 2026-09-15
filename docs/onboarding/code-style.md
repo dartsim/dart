@@ -10,8 +10,8 @@ Follow the existing style in nearby files.
   declares `alignas(<that base>)`, and a generic virtual-inheritance helper
   such as `common::Virtual<T>` declares `alignas(T)`, so the non-virtual part
   is as aligned as the class: GCC's base-object constructors assume the full
-  alignment of `this` (dartsim/dart#3447, `docs/design/dart6_frame_alignment.md`).
-  `UNIT_dynamics_FrameBaseAlignment` checks a fixed list of Frame-family
-  classes; add new ones to that list.
+  alignment of `this` (dartsim/dart#3447; see the comments at those
+  declarations). `UNIT_dynamics_FrameBaseAlignment` checks a fixed list of
+  Frame-family classes; add new ones to that list.
 
 Run `pixi run lint` before committing.
