@@ -598,6 +598,16 @@
     contact-bound proof has already disabled cross-pair duplicate checks:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Fix the class-wide parameter setters of `DynamicJointConstraint`,
+    `JointConstraint`, `JointLimitConstraint`, `SoftContactConstraint`,
+    `ContactConstraint`, `JointCoulombFrictionConstraint`, and
+    `ServoMotorConstraint` (`setErrorAllowance`, `setErrorReductionParameter`,
+    `setMaxErrorReductionVelocity`, `setConstraintForceMixing`) storing an
+    out-of-range argument verbatim after warning that it was clamped; the
+    getters now return the bound the warning names:
+    [#3511](https://github.com/dartsim/dart/pull/3511),
+    [#3501](https://github.com/dartsim/dart/issues/3501)
+
 * Python
 
   * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with
