@@ -2615,7 +2615,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   _skeleton->setTimeStep(mTimeStep);
   _skeleton->setGravity(mGravity);
 
-  mIndices.push_back(mIndices.back() + _skeleton->getNumDofs());
+  refreshSkeletonDofIndices();
   mConstraintSolver->addSkeleton(_skeleton);
   syncShallowSupportFreeRootVelocityStates();
   invalidateAllRestingKinematicSnapshot();
@@ -2656,11 +2656,6 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
     return;
   }
 
-  // Update mIndices.
-  for (std::size_t i = index + 1; i < mSkeletons.size() - 1; ++i)
-    mIndices[i] = mIndices[i + 1] - _skeleton->getNumDofs();
-  mIndices.pop_back();
-
   // Remove _skeleton from constraint handler.
   mConstraintSolver->removeSkeleton(_skeleton);
   invalidateAllRestingKinematicSnapshot();
@@ -2670,6 +2665,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
       mSkeletons.end());
+  refreshSkeletonDofIndices();
   syncShallowSupportFreeRootVelocityStates();
   invalidateSimulationMode();
 
@@ -2720,13 +2716,20 @@ bool World::hasSkeleton(const std::string& skeletonName) const
 //==============================================================================
 int World::getIndex(int _index) const
 {
-  if (_index < 0 || static_cast<std::size_t>(_index) >= mIndices.size()) {
+  if (_index < 0 || static_cast<std::size_t>(_index) > mSkeletons.size()) {
     dterr << "[World::getIndex] Index [" << _index << "] is out of range. "
-          << "Valid range is [0, " << mIndices.size() << ").\n";
+          << "Valid range is [0, " << mSkeletons.size() << "].\n";
     DART_ASSERT(false);
     return -1;
   }
-  return mIndices[_index];
+  // Sum the current DOF counts instead of reading mIndices so the result
+  // tracks joint/body topology changes made after a skeleton was added.
+  // This is O(n) in the number of skeletons; if it ever shows up in a
+  // profile, cache it keyed on Skeleton::getGlobalStructuralVersion().
+  int dofIndex = 0;
+  for (int i = 0; i < _index; ++i)
+    dofIndex += static_cast<int>(mSkeletons[i]->getNumDofs());
+  return dofIndex;
 }
 
 //==============================================================================
