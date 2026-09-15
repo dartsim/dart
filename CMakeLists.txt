@@ -7,6 +7,16 @@ project(dart)
 
 string(TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPERCASE)
 
+# DART 6 is a C++17 code base. Newer compilers default to C++20 or later, where
+# some of this code is deprecated (for example the implicit `this` capture of
+# `[=]` lambdas), so build DART itself as C++17 regardless of the compiler
+# default. Consumers still get the `cxx_std_17` minimum from the exported
+# targets.
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Use MACOSX_RPATH by default on OS X. This was added in CMake 2.8.12 and
 # became default in CMake 3.0. Explicitly setting this policy is necessary to
 # suppress a warning in CMake 3.0 and above.

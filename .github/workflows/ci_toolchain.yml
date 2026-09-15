@@ -54,11 +54,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # GCC 16 is not in Ubuntu 24.04; it comes from the Ubuntu toolchain
+          # PPA. It is the compiler that exposed dartsim/dart#3447 (aligned
+          # vector stores in base-object constructors of Frame-derived classes).
           - name: gcc (newest)
             family: gcc
-            version: "14"
-            cc: gcc-14
-            cxx: g++-14
+            version: "16"
+            cc: gcc-16
+            cxx: g++-16
           - name: clang (newest)
             family: clang
             version: "19"
@@ -75,6 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${FAMILY}" = "gcc" ]; then
+            sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
             sudo apt-get update
             sudo apt-get install -y "gcc-${VERSION}" "g++-${VERSION}"
           else

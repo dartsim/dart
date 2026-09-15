@@ -53,6 +53,10 @@
 
 * Build
 
+  * Build DART as C++17 regardless of the compiler default, so GCC 16 (which
+    defaults to C++20) builds with the default warnings-as-errors setting:
+    [#3505](https://github.com/dartsim/dart/pull/3505)
+
   * Refresh the release-6.20 Read the Docs build, install, tutorial, and
     migration pages so the stable website reads version metadata from
     `package.xml`, points users to the DART 6 LTS package lanes, and documents
