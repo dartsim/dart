@@ -47,8 +47,12 @@
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/DynamicJointConstraint.hpp"
+#include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
+#include "dart/constraint/JointLimitConstraint.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/ServoMotorConstraint.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
@@ -2954,4 +2958,107 @@ TEST(ConstraintSolver, MatrixFreeContactSolverOptInSupportsTwoReactiveBodies)
         profileSummary.find(
             "BoxedLcpConstraintSolver::matrixFreeContactSolve"));
   }
+}
+
+//==============================================================================
+namespace {
+
+// Sets an out-of-range value through a class-wide constraint parameter setter,
+// expects the getter to report the bound named by the setter's warning, then
+// restores the previous value so nothing leaks into other tests in this binary.
+void expectSetterClampsToBound(
+    void (*set)(double), double (*get)(), double invalid, double bound)
+{
+  const double previous = get();
+  set(invalid);
+  EXPECT_DOUBLE_EQ(bound, get()) << "argument " << invalid;
+  set(previous);
+  EXPECT_DOUBLE_EQ(previous, get());
+}
+
+template <typename Constraint>
+void expectParameterSettersClampToBounds(const char* name)
+{
+  SCOPED_TRACE(name);
+  expectSetterClampsToBound(
+      &Constraint::setErrorAllowance,
+      &Constraint::getErrorAllowance,
+      -0.25,
+      0.0);
+  expectSetterClampsToBound(
+      &Constraint::setErrorReductionParameter,
+      &Constraint::getErrorReductionParameter,
+      -0.25,
+      0.0);
+  expectSetterClampsToBound(
+      &Constraint::setErrorReductionParameter,
+      &Constraint::getErrorReductionParameter,
+      1.25,
+      1.0);
+  expectSetterClampsToBound(
+      &Constraint::setMaxErrorReductionVelocity,
+      &Constraint::getMaxErrorReductionVelocity,
+      -0.25,
+      0.0);
+  expectSetterClampsToBound(
+      &Constraint::setConstraintForceMixing,
+      &Constraint::getConstraintForceMixing,
+      0.0,
+      1e-9);
+}
+
+} // namespace
+
+//==============================================================================
+// Regression test for https://github.com/dartsim/dart/issues/3501: the setters
+// warned that an invalid argument "is set to" the bound but stored the invalid
+// argument anyway.
+TEST(ConstraintSolver, ParameterSettersClampInvalidValues)
+{
+  expectParameterSettersClampToBounds<constraint::DynamicJointConstraint>(
+      "DynamicJointConstraint");
+  expectParameterSettersClampToBounds<constraint::JointConstraint>(
+      "JointConstraint");
+  expectParameterSettersClampToBounds<constraint::JointLimitConstraint>(
+      "JointLimitConstraint");
+  expectParameterSettersClampToBounds<constraint::SoftContactConstraint>(
+      "SoftContactConstraint");
+
+  {
+    // ContactConstraint::setMaxErrorReductionVelocity already stores the bound
+    // and also switches off the adaptive max-ERV policy, so it is not probed.
+    SCOPED_TRACE("ContactConstraint");
+    using constraint::ContactConstraint;
+    expectSetterClampsToBound(
+        &ContactConstraint::setErrorAllowance,
+        &ContactConstraint::getErrorAllowance,
+        -0.25,
+        0.0);
+    expectSetterClampsToBound(
+        &ContactConstraint::setErrorReductionParameter,
+        &ContactConstraint::getErrorReductionParameter,
+        -0.25,
+        0.0);
+    expectSetterClampsToBound(
+        &ContactConstraint::setErrorReductionParameter,
+        &ContactConstraint::getErrorReductionParameter,
+        1.25,
+        1.0);
+    expectSetterClampsToBound(
+        &ContactConstraint::setConstraintForceMixing,
+        &ContactConstraint::getConstraintForceMixing,
+        0.0,
+        1e-9);
+  }
+
+  expectSetterClampsToBound(
+      &constraint::JointCoulombFrictionConstraint::setConstraintForceMixing,
+      &constraint::JointCoulombFrictionConstraint::getConstraintForceMixing,
+      0.0,
+      1e-9);
+  expectSetterClampsToBound(
+      &constraint::ServoMotorConstraint::setConstraintForceMixing,
+      &constraint::ServoMotorConstraint::getConstraintForceMixing,
+      0.0,
+      1e-9);
 }
