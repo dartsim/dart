@@ -53,6 +53,8 @@ Use `.github/PULL_REQUEST_TEMPLATE.md` and keep DART's default order: Summary, M
 
 Write PR descriptions for a user or downstream maintainer who is not already familiar with the implementation. Lead Summary and Motivation with what changes for them, what stays compatible, how they opt in or migrate, and why the evidence matters; keep implementation mechanics in Changes unless they explain user-visible risk.
 
+Write the body for a human skimming it: bullets, highlights only, and roughly 300 words in total; state the mechanism in one sentence and leave further detail to the code, a design doc, or the linked issue. In Testing, list only checks that CI does not run on the PR (a reproduction with a reporter's toolchain, a negative check that proves a new test bites, hardware-specific runs, independent review passes), not the lint, unit, gate, or platform jobs that the PR's CI runs anyway.
+
 When a PR has meaningful user-facing API, workflow, behavior, or performance impact, add a concise Before / After section. Cover only relevant dimensions, phrase rows as user-visible before/after outcomes, and for performance claims name the baseline explicitly: CPU path, parent commit, `main`, or prior implementation, plus workload, metric, and important limitations.
 
 Use plain descriptive commit messages and PR titles. Do not prefix them with agent tags such as `[codex]`, `[claude]`, or `[opencode]`.
@@ -97,16 +99,18 @@ Steps:
 
 ## CHANGELOG (After Approved PR Exists)
 
-Use `docs/onboarding/changelog.md` as the source of truth. After the approved PR
-exists, check if `CHANGELOG.md` needs updating:
+Use `docs/onboarding/changelog.md` as the source of truth. `CHANGELOG.md` is
+written for users of the released library and packages, so keep each entry to
+what the reader must know or do. After the approved PR exists, check if
+`CHANGELOG.md` needs updating:
 
 | Change Type                      | Update CHANGELOG?                    |
 | -------------------------------- | ------------------------------------ |
 | Bug fixes                        | ✅ Yes                               |
 | New features                     | ✅ Yes                               |
 | Breaking changes                 | ✅ Yes (in Breaking Changes section) |
-| Documentation improvements       | ✅ Yes (in Tooling and Docs)         |
-| CI/tooling changes               | ✅ Yes (in Tooling and Docs)         |
+| Documentation improvements       | ❌ No, unless a user-run workflow changes |
+| CI/tooling/AI-harness changes    | ❌ No, unless a user-run workflow changes |
 | Refactoring (no behavior change) | ⚠️ Maybe (if significant)            |
 | Dependency bumps                 | ⚠️ Maybe (if user-facing)            |
 | Typo fixes                       | ❌ No                                |

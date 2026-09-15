@@ -18,7 +18,7 @@
 
 ## Testing
 
-- What you tested (commands, manual steps, or explain why not). Example: `pixi run lint`, `pixi run test-all`
+- What you verified that this PR's CI does not run (a reproduction with a reporter's toolchain, a negative check, hardware runs, review passes), or why nothing beyond CI was needed. Omit the lint, unit, gate, and platform jobs CI runs anyway.
 
 ## Breaking Changes
 
