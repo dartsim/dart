@@ -278,6 +278,13 @@ compatibility remains on the active DART 6 LTS branch._
   collision queries.
 - Added native collision benchmarks, reference-engine comparisons, runtime source
   isolation checks, and a Filament collision sandbox for interactive inspection.
+- Fixed two-group `CollisionGroup::collide()` and `distance()` queries that
+  refreshed only the receiver: the other operand is now updated too when it
+  has automatic updates enabled, so a collision shape added to a body it
+  subscribed to is no longer missed and the result no longer depends on the
+  operand order. ([#3518](https://github.com/dartsim/dart/pull/3518),
+  [#3499](https://github.com/dartsim/dart/issues/3499))
+
 - Fixed `CollisionGroup::removeAllShapeFrames()` leaving skeleton and body-node
   subscriptions behind with pointers to the deleted collision records, which
   crashed the next `update()` after a subscribed source changed and silently
@@ -491,6 +498,24 @@ compatibility remains on the active DART 6 LTS branch._
   and `pixi run check-header-guards` enforces the convention ([#3420](https://github.com/dartsim/dart/pull/3420))
 
 #### Build, Packaging, and Developer Tooling
+
+- Fixed C++-only source builds on distribution Pythons older than 3.14 (for
+  example Ubuntu 24.04's 3.12): the build-time
+  `scripts/capture_source_provenance.py` used Python 3.14-only `except`
+  syntax and failed with a `SyntaxError` while generating
+  `capture_source_provenance.hpp`. Black now targets Python 3.10 through
+  3.14 so `pixi run lint` no longer emits 3.14-only syntax, and a unit test
+  holds the build-time script to the Python 3.10 grammar.
+  ([#3516](https://github.com/dartsim/dart/pull/3516),
+  [#3502](https://github.com/dartsim/dart/issues/3502))
+
+- `DART_SKIP_spdlog=ON` now skips spdlog for the core `dart` library even when
+  spdlog is installed: `libdart` configures with `DART_HAVE_spdlog=0`, drops
+  the spdlog link, and the installed `dart` component no longer requires
+  spdlog. The option is core-only on `main`; `dart-simulation` still requires
+  spdlog, and the default configuration is unchanged.
+  ([#3517](https://github.com/dartsim/dart/pull/3517),
+  [#3503](https://github.com/dartsim/dart/issues/3503))
 
 - Added the living architecture map: four typed archify views (simulation
   framework, `World::step()` data flow, compute graph, library context) under
