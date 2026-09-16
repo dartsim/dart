@@ -618,6 +618,14 @@
     [#3508](https://github.com/dartsim/dart/pull/3508),
     [#3497](https://github.com/dartsim/dart/issues/3497)
 
+  * Fix `Recording` (filled by `World::bake()`) silently re-slicing previously
+    baked frames after the per-skeleton DOF layout changed: adding or removing
+    a skeleton, or changing a contained skeleton's joints, now drops the frames
+    that can no longer be interpreted (with a warning), and `World::bake()`
+    refreshes the layout before recording a frame:
+    [#3513](https://github.com/dartsim/dart/pull/3513),
+    [#3498](https://github.com/dartsim/dart/issues/3498)
+
 * Python
 
   * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with
