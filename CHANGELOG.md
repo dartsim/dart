@@ -485,6 +485,16 @@ compatibility remains on the active DART 6 LTS branch._
 
 #### Build, Packaging, and Developer Tooling
 
+- Fixed C++-only source builds on distribution Pythons older than 3.14 (for
+  example Ubuntu 24.04's 3.12): the build-time
+  `scripts/capture_source_provenance.py` used Python 3.14-only `except`
+  syntax and failed with a `SyntaxError` while generating
+  `capture_source_provenance.hpp`. Black now targets Python 3.10 through
+  3.14 so `pixi run lint` no longer emits 3.14-only syntax, and a unit test
+  holds the build-time script to the Python 3.10 grammar.
+  ([#3516](https://github.com/dartsim/dart/pull/3516),
+  [#3502](https://github.com/dartsim/dart/issues/3502))
+
 - `DART_SKIP_spdlog=ON` now skips spdlog for the core `dart` library even when
   spdlog is installed: `libdart` configures with `DART_HAVE_spdlog=0`, drops
   the spdlog link, and the installed `dart` component no longer requires
