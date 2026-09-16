@@ -674,7 +674,7 @@ def _capture_runtime_trusted_roots(repo_root: Path) -> list[Path]:
     for candidate in candidates:
         try:
             roots.add(candidate.resolve(strict=True))
-        except OSError, RuntimeError, ValueError:
+        except (OSError, RuntimeError, ValueError):
             continue
     return sorted(roots, key=str)
 
@@ -819,7 +819,7 @@ def _assert_linux_loaded_mapping_matches_file(
                 continue
             major_text, minor_text = fields[3].split(":", maxsplit=1)
             identities.add((int(major_text, 16), int(minor_text, 16), int(fields[4])))
-        except OSError, RuntimeError, ValueError:
+        except (OSError, RuntimeError, ValueError):
             continue
     current = (os.major(stat.st_dev), os.minor(stat.st_dev), stat.st_ino)
     if not identities or identities != {current}:
