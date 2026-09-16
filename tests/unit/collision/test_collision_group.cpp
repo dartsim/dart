@@ -825,3 +825,41 @@ TEST(CollisionGroupTests, PairwiseQueryUpdatesOtherGroup)
   groupB->update();
   EXPECT_EQ(groupB->getNumShapeFrames(), 3u);
 }
+
+//==============================================================================
+// Regression test for https://github.com/dartsim/dart/issues/3500
+TEST(CollisionGroupTests, RemoveAllShapeFramesDropsSubscriptions)
+{
+  auto detector = dart::collision::DartCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  auto skeletonSource = createCollidableBody("skeleton");
+  auto bodyNodeSource = createCollidableBody("other");
+
+  group->subscribeTo(dynamics::ConstMetaSkeletonPtr(skeletonSource.skeleton));
+  group->subscribeTo(dynamics::ConstBodyNodePtr(bodyNodeSource.body));
+  ASSERT_EQ(group->getNumShapeFrames(), 2u);
+  ASSERT_TRUE(group->isSubscribedTo(skeletonSource.skeleton.get()));
+  ASSERT_TRUE(group->isSubscribedTo(bodyNodeSource.body));
+
+  // Removing every ShapeFrame also drops the subscriptions that provided them,
+  // just like removeShapeFrame() does for a single frame.
+  group->removeAllShapeFrames();
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+  EXPECT_FALSE(group->isSubscribedTo(skeletonSource.skeleton.get()));
+  EXPECT_FALSE(group->isSubscribedTo(bodyNodeSource.body));
+
+  // Mutating the former sources must neither crash the next update (the old
+  // code kept raw pointers to the deleted ObjectInfo records) nor repopulate
+  // the explicitly emptied group.
+  skeletonSource.body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.5)));
+  bodyNodeSource.body->createShapeNodeWith<dynamics::CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(0.5)));
+  group->update();
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+
+  // The group remains usable afterwards.
+  group->subscribeTo(dynamics::ConstMetaSkeletonPtr(skeletonSource.skeleton));
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+  EXPECT_TRUE(group->isSubscribedTo(skeletonSource.skeleton.get()));
+}

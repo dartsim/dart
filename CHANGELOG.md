@@ -285,6 +285,14 @@ compatibility remains on the active DART 6 LTS branch._
   operand order. ([#3518](https://github.com/dartsim/dart/pull/3518),
   [#3499](https://github.com/dartsim/dart/issues/3499))
 
+- Fixed `CollisionGroup::removeAllShapeFrames()` leaving skeleton and body-node
+  subscriptions behind with pointers to the deleted collision records, which
+  crashed the next `update()` after a subscribed source changed and silently
+  repopulated the emptied group; removing all frames now drops every
+  subscription, as `removeShapeFrame()` already does.
+  ([#3519](https://github.com/dartsim/dart/pull/3519),
+  [#3500](https://github.com/dartsim/dart/issues/3500))
+
 #### IO and Parsing
 
 - Made libsdformat a required dependency so SDF files are normalized through the

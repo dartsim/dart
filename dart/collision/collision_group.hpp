@@ -210,7 +210,9 @@ public:
   /// template function template<typename...> removeShapeFramesOf().
   void removeShapeFramesOf();
 
-  /// Remove all the ShapeFrames in this CollisionGroup
+  /// Remove all the ShapeFrames in this CollisionGroup. This also drops every
+  /// Skeleton and BodyNode subscription, so the group stays empty until
+  /// ShapeFrames are added or a source is subscribed to again.
   void removeAllShapeFrames();
 
   /// Unsubscribe from bodyNode. The ShapeFrames of the BodyNode will also be
