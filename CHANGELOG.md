@@ -390,6 +390,14 @@
     [#3509](https://github.com/dartsim/dart/pull/3509),
     [#3499](https://github.com/dartsim/dart/issues/3499)
 
+  * Fix `CollisionGroup::removeAllShapeFrames()` leaving the skeleton and
+    body-node subscriptions behind with pointers to the deleted collision
+    records, which crashed the next `update()` after a subscribed source
+    changed and silently re-added frames to the emptied group. Removing all
+    frames now drops every subscription, as `removeShapeFrame()` already does:
+    [#3510](https://github.com/dartsim/dart/pull/3510),
+    [#3500](https://github.com/dartsim/dart/issues/3500)
+
 * Dynamics
 
   * Fix `dart::utils::SdfParser` loading every SDF `<soft_shape>` link as a

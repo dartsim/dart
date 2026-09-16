@@ -612,6 +612,62 @@ TEST_P(CollisionGroupsTest, PairwiseQueryUpdatesOtherGroup)
   EXPECT_EQ(groupB->getNumShapeFrames(), 3u);
 }
 
+// Regression test for https://github.com/dartsim/dart/issues/3500
+TEST_P(CollisionGroupsTest, RemoveAllShapeFramesDropsSubscriptions)
+{
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(
+          GetParam())) {
+    std::cout << "Skipping test for [" << GetParam() << "], because it is not "
+              << "available" << std::endl;
+    return;
+  }
+
+  auto cd
+      = dart::collision::CollisionDetector::getFactory()->create(GetParam());
+  auto group = cd->createCollisionGroup();
+
+  auto skeleton = dart::dynamics::Skeleton::create("skeleton");
+  auto* skeletonBody
+      = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
+            .second;
+  skeletonBody->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+      std::make_shared<dart::dynamics::SphereShape>(1.0));
+
+  auto other = dart::dynamics::Skeleton::create("other");
+  auto* body
+      = other->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
+  body->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+      std::make_shared<dart::dynamics::SphereShape>(1.0));
+
+  group->subscribeTo(skeleton);
+  group->subscribeTo(body);
+  ASSERT_EQ(group->getNumShapeFrames(), 2u);
+  ASSERT_TRUE(group->isSubscribedTo(skeleton.get()));
+  ASSERT_TRUE(group->isSubscribedTo(body));
+
+  // Removing every ShapeFrame also drops the subscriptions that provided them,
+  // just like removeShapeFrame() does for a single frame.
+  group->removeAllShapeFrames();
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+  EXPECT_FALSE(group->isSubscribedTo(skeleton.get()));
+  EXPECT_FALSE(group->isSubscribedTo(body));
+
+  // Mutating the former sources must neither crash the next update (the old
+  // code kept raw pointers to the deleted ObjectInfo records) nor repopulate
+  // the explicitly emptied group.
+  skeletonBody->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+      std::make_shared<dart::dynamics::SphereShape>(0.5));
+  body->createShapeNodeWith<dart::dynamics::CollisionAspect>(
+      std::make_shared<dart::dynamics::SphereShape>(0.5));
+  group->update();
+  EXPECT_EQ(group->getNumShapeFrames(), 0u);
+
+  // The group remains usable afterwards.
+  group->subscribeTo(skeleton);
+  EXPECT_EQ(group->getNumShapeFrames(), 2u);
+  EXPECT_TRUE(group->isSubscribedTo(skeleton.get()));
+}
+
 INSTANTIATE_TEST_SUITE_P(
     CollisionEngine,
     CollisionGroupsTest,
