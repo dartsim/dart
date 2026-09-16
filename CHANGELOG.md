@@ -278,6 +278,12 @@ compatibility remains on the active DART 6 LTS branch._
   collision queries.
 - Added native collision benchmarks, reference-engine comparisons, runtime source
   isolation checks, and a Filament collision sandbox for interactive inspection.
+- Fixed two-group `CollisionGroup::collide()` and `distance()` queries that
+  refreshed only the receiver: the other operand is now updated too when it
+  has automatic updates enabled, so a collision shape added to a body it
+  subscribed to is no longer missed and the result no longer depends on the
+  operand order. ([#3518](https://github.com/dartsim/dart/pull/3518),
+  [#3499](https://github.com/dartsim/dart/issues/3499))
 
 #### IO and Parsing
 
