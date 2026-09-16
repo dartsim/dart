@@ -278,6 +278,13 @@ compatibility remains on the active DART 6 LTS branch._
   collision queries.
 - Added native collision benchmarks, reference-engine comparisons, runtime source
   isolation checks, and a Filament collision sandbox for interactive inspection.
+- Fixed `CollisionGroup::removeAllShapeFrames()` leaving skeleton and body-node
+  subscriptions behind with pointers to the deleted collision records, which
+  crashed the next `update()` after a subscribed source changed and silently
+  repopulated the emptied group; removing all frames now drops every
+  subscription, as `removeShapeFrame()` already does.
+  ([#3519](https://github.com/dartsim/dart/pull/3519),
+  [#3500](https://github.com/dartsim/dart/issues/3500))
 
 #### IO and Parsing
 
