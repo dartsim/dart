@@ -38,9 +38,11 @@
 
 #include "dart/simulation/Recording.hpp"
 
+#include "dart/common/Console.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <iostream>
+#include <utility>
 
 namespace dart {
 namespace simulation {
@@ -141,9 +143,28 @@ void Recording::addState(const Eigen::VectorXd& _state)
 void Recording::updateNumGenCoords(
     const std::vector<dynamics::SkeletonPtr>& _skeletons)
 {
-  mNumGenCoordsForSkeletons.clear();
-  for (std::size_t i = 0; i < _skeletons.size(); ++i)
-    mNumGenCoordsForSkeletons.push_back(_skeletons[i]->getNumDofs());
+  std::vector<int> numGenCoordsForSkeletons;
+  numGenCoordsForSkeletons.reserve(_skeletons.size());
+  for (const auto& skeleton : _skeletons)
+    numGenCoordsForSkeletons.push_back(
+        static_cast<int>(skeleton->getNumDofs()));
+
+  if (numGenCoordsForSkeletons == mNumGenCoordsForSkeletons)
+    return;
+
+  // Every baked frame is packed under the layout that was current when it was
+  // baked, so frames from the previous layout cannot be sliced under the new
+  // one. Treat the change as a new recording epoch instead of silently
+  // attributing old values to the wrong skeletons.
+  if (!mBakedStates.empty()) {
+    dtwarn << "[Recording::updateNumGenCoords] Dropping " << mBakedStates.size()
+           << " recorded frame(s) because the skeleton DOF layout changed; "
+           << "frames baked under the previous layout can no longer be "
+           << "interpreted.\n";
+    clear();
+  }
+
+  mNumGenCoordsForSkeletons = std::move(numGenCoordsForSkeletons);
 }
 
 } // namespace simulation

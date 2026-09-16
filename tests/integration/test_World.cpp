@@ -897,3 +897,59 @@ TEST(World, GetIndexTracksRemovalAndTopologyChanges)
   world->removeAllSkeletons();
   EXPECT_EQ(world->getIndex(0), 0);
 }
+
+//==============================================================================
+// Regression test for https://github.com/dartsim/dart/issues/3498
+TEST(World, RecordingDropsFramesWhenSkeletonDofLayoutChanges)
+{
+  const auto makeSkeleton = [](const std::string& name, double position) {
+    auto skeleton = Skeleton::create(name);
+    skeleton->createJointAndBodyNodePair<RevoluteJoint>();
+    skeleton->setPosition(0, position);
+    return skeleton;
+  };
+
+  auto world = World::create();
+  auto first = makeSkeleton("first", 11.0);
+  auto second = makeSkeleton("second", 22.0);
+  world->addSkeleton(first);
+  world->addSkeleton(second);
+
+  Recording* recording = world->getRecording();
+  world->bake();
+  ASSERT_EQ(recording->getNumFrames(), 1);
+  ASSERT_EQ(recording->getNumSkeletons(), 2);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 0, 0), 11.0);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 1, 0), 22.0);
+
+  // Removing a skeleton changes the per-skeleton DOF layout, so the frame
+  // packed under the old layout must not survive to be re-sliced under the
+  // new one (row zero would otherwise report 11 for the surviving skeleton).
+  world->removeSkeleton(first);
+  EXPECT_EQ(recording->getNumSkeletons(), 1);
+  EXPECT_EQ(recording->getNumFrames(), 0);
+
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 1);
+  EXPECT_EQ(recording->getNumDofs(0), 1);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 0, 0), 22.0);
+
+  // Growing a contained skeleton in place is only visible to the recording at
+  // the next bake, which must refresh the layout and drop the stale frame.
+  second->createJointAndBodyNodePair<RevoluteJoint>(); // second: 1 -> 2 DOFs
+  second->setPosition(1, 33.0);
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 1);
+  ASSERT_EQ(recording->getNumDofs(0), 2);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 0, 0), 22.0);
+  EXPECT_DOUBLE_EQ(recording->getGenCoord(0, 0, 1), 33.0);
+
+  // A bake without any layout change must keep accumulating frames.
+  world->bake();
+  EXPECT_EQ(recording->getNumFrames(), 2);
+
+  // Adding a skeleton while frames exist is a layout change as well.
+  world->addSkeleton(makeSkeleton("third", 44.0));
+  EXPECT_EQ(recording->getNumSkeletons(), 2);
+  EXPECT_EQ(recording->getNumFrames(), 0);
+}
