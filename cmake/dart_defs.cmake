@@ -2598,6 +2598,15 @@ function(dart_add_simulation_test TEST_NAME TEST_PATH)
     target_link_libraries(${TEST_NAME} PRIVATE EnTT::EnTT)
   endif()
 
+  # Same for spdlog: dart/simulation/common/logging.hpp includes <spdlog/...>
+  # unconditionally and dart-simulation links spdlog::spdlog PRIVATE, so a test
+  # that includes it needs spdlog's own usage requirements (include dirs,
+  # SPDLOG_FMT_EXTERNAL, fmt link). Tests used to inherit them from libdart's
+  # PUBLIC spdlog link, which DART_SKIP_spdlog=ON removes.
+  if(TARGET spdlog::spdlog)
+    target_link_libraries(${TEST_NAME} PRIVATE spdlog::spdlog)
+  endif()
+
   # Add to CTest with label for easy filtering
   add_test(NAME ${TEST_NAME} COMMAND $<TARGET_FILE:${TEST_NAME}>)
   set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${ARG_LABEL}")

@@ -182,6 +182,9 @@ dart/
 - **CMake Module:** `cmake/DARTFindspdlog.cmake`
 - **Targets:** `spdlog::spdlog` or `spdlog::spdlog_header_only`
 - **Skip Option:** `DART_SKIP_spdlog`
+- **Scope:** The skip applies to the core `dart` library only (it builds with
+  `DART_HAVE_spdlog=0`). `dart-simulation` always requires spdlog and probes
+  it separately.
 
 #### 5. FCL (Flexible Collision Library)
 

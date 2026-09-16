@@ -69,7 +69,11 @@ else()
   set(DART_HAVE_FCL FALSE CACHE BOOL "Check if fcl found." FORCE)
 endif()
 
-option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
+option(
+  DART_SKIP_spdlog
+  "If ON, the core dart library does not use spdlog even if it is found; dart-simulation still requires it."
+  OFF
+)
 mark_as_advanced(DART_SKIP_spdlog)
 # spdlog is OPTIONAL for core DART, so probe for it here WITHOUT the FetchContent
 # fallback in dart_find_spdlog.cmake. That fallback exists for the simulation
@@ -81,7 +85,16 @@ mark_as_advanced(DART_SKIP_spdlog)
 # fetching spdlog during this global dependency pass, before the build has decided
 # whether simulation can be built. A plain probe still sets spdlog_FOUND, which
 # is all of core's DART_HAVE_spdlog logic consumes.
-find_package(spdlog 1.9.2 QUIET CONFIG)
+if(NOT DART_SKIP_spdlog)
+  find_package(spdlog 1.9.2 QUIET CONFIG)
+else()
+  # dart/CMakeLists.txt keys DART_HAVE_spdlog and the exported package
+  # dependency off spdlog_FOUND, so reset a value inherited from a parent
+  # project too. The simulation module hard-requires spdlog and probes it
+  # separately (dart_simulation_dependencies.cmake); this option only governs
+  # core's optional use.
+  set(spdlog_FOUND FALSE)
+endif()
 
 # Only fetch ODE/Bullet if the corresponding collision module is enabled
 # and system libraries are not being used.

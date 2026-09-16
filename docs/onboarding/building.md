@@ -28,6 +28,8 @@ DART is supported on the following operating systems and compilers:
 
 Before you can build DART, you'll need to install the required and optional dependencies. The required dependencies are the minimum set needed to build DART, while the optional dependencies enable additional features.
 
+CMake also runs the Python 3 interpreter it discovers at build time to generate the source-provenance header, so that interpreter must be Python 3.10 or newer (the Pixi environment provides 3.14, and a C++-only build with no Python 3 on the path skips the header). dartpy itself needs Python 3.14 or newer; see [python-bindings.md](python-bindings.md).
+
 > **Note:** The dependencies and installation steps are subject to change. Please report any issues you encounter and contribute to keeping the instructions up-to-date.
 
 ### Ubuntu
