@@ -490,7 +490,8 @@ compatibility remains on the active DART 6 LTS branch._
   the spdlog link, and the installed `dart` component no longer requires
   spdlog. The option is core-only on `main`; `dart-simulation` still requires
   spdlog, and the default configuration is unchanged.
-  ([#3503](https://github.com/dartsim/dart/issues/3503))
+  ([#3517](https://github.com/dartsim/dart/pull/3517),
+  [#3503](https://github.com/dartsim/dart/issues/3503))
 
 - Added the living architecture map: four typed archify views (simulation
   framework, `World::step()` data flow, compute graph, library context) under
