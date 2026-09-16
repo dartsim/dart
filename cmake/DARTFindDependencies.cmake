@@ -160,7 +160,14 @@ find_package(Python3 COMPONENTS Interpreter Development)
 
 option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
 mark_as_advanced(DART_SKIP_spdlog)
-dart_find_package(spdlog)
+if(NOT DART_SKIP_spdlog)
+  dart_find_package(spdlog)
+else()
+  # dart/CMakeLists.txt keys DART_HAVE_spdlog and the exported package
+  # dependency off spdlog_FOUND, so reset a value inherited from a parent
+  # project too.
+  set(spdlog_FOUND FALSE)
+endif()
 
 if(NOT DART_USE_SYSTEM_ODE OR NOT DART_USE_SYSTEM_BULLET)
   include(FetchContent)
