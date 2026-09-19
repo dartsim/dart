@@ -259,6 +259,14 @@ compatibility remains on the active DART 6 LTS branch._
   stay on the Sequential Impulse rigid-body path and route SI-vs-IPC inspection
   to the dedicated solver-comparison scenes.
   ([#3063](https://github.com/dartsim/dart/pull/3063))
+- Fixed the class-wide parameter setters of `DynamicJointConstraint`,
+  `JointConstraint`, `JointLimitConstraint`, `SoftContactConstraint`,
+  `JointCoulombFrictionConstraint`, and `ServoMotorConstraint` storing an
+  out-of-range argument verbatim after warning that it was clamped. The getters
+  now return the bound the warning names, so an error reduction parameter above
+  1.0 is clamped instead of retained; `ContactConstraint` was already correct.
+  ([#3524](https://github.com/dartsim/dart/pull/3524),
+  [#3501](https://github.com/dartsim/dart/issues/3501))
 
 #### Collision and Geometry
 

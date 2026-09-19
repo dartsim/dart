@@ -97,7 +97,7 @@ void ServoMotorConstraint::setConstraintForceMixing(double cfm)
         "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
         "to 1e-9.",
         cfm);
-    mConstraintForceMixing = 1e-9;
+    cfm = 1e-9;
   }
 
   mConstraintForceMixing = cfm;

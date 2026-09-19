@@ -8,7 +8,13 @@
 #include "helpers/dynamics_helpers.hpp"
 
 #include "dart/constraint/ball_joint_constraint.hpp"
+#include "dart/constraint/contact_constraint.hpp"
 #include "dart/constraint/dynamic_joint_constraint.hpp"
+#include "dart/constraint/joint_constraint.hpp"
+#include "dart/constraint/joint_coulomb_friction_constraint.hpp"
+#include "dart/constraint/joint_limit_constraint.hpp"
+#include "dart/constraint/servo_motor_constraint.hpp"
+#include "dart/constraint/soft_contact_constraint.hpp"
 #include "dart/constraint/weld_joint_constraint.hpp"
 #include "dart/dynamics/skeleton.hpp"
 
@@ -34,6 +40,67 @@ SkeletonPtr createSingleBodySkeleton(const std::string& name)
   skel->createJointAndBodyNodePair<FreeJoint>(nullptr, jointProps, bodyProps);
 
   return skel;
+}
+
+// Restores a class-wide constraint parameter on destruction so the clamping
+// checks below cannot leak state into the other tests in this binary.
+class ScopedParameter
+{
+public:
+  ScopedParameter(void (*set)(double), double (*get)())
+    : mSet(set), mPrevious(get())
+  {
+  }
+
+  ~ScopedParameter()
+  {
+    mSet(mPrevious);
+  }
+
+private:
+  void (*mSet)(double);
+  double mPrevious;
+};
+
+// Passes an out-of-range value to a class-wide constraint parameter setter and
+// expects the getter to report the bound that the setter's warning names.
+void expectClampsToBound(
+    void (*set)(double), double (*get)(), double invalid, double bound)
+{
+  const ScopedParameter guard(set, get);
+  set(invalid);
+  EXPECT_DOUBLE_EQ(bound, get()) << "argument " << invalid;
+}
+
+template <typename Constraint>
+void expectParametersClampToBounds(const char* name)
+{
+  SCOPED_TRACE(name);
+  expectClampsToBound(
+      &Constraint::setErrorAllowance,
+      &Constraint::getErrorAllowance,
+      -0.25,
+      0.0);
+  expectClampsToBound(
+      &Constraint::setErrorReductionParameter,
+      &Constraint::getErrorReductionParameter,
+      -0.25,
+      0.0);
+  expectClampsToBound(
+      &Constraint::setErrorReductionParameter,
+      &Constraint::getErrorReductionParameter,
+      1.25,
+      1.0);
+  expectClampsToBound(
+      &Constraint::setMaxErrorReductionVelocity,
+      &Constraint::getMaxErrorReductionVelocity,
+      -0.25,
+      0.0);
+  expectClampsToBound(
+      &Constraint::setConstraintForceMixing,
+      &Constraint::getConstraintForceMixing,
+      0.0,
+      1e-9);
 }
 
 } // namespace
@@ -160,13 +227,39 @@ TEST(DynamicJointConstraint, GetBodyNodes)
 }
 
 //==============================================================================
-TEST(DynamicJointConstraint, CurrentCompatibilityForHighErrorReductionParameter)
+// Constraint Parameter Tests
+//==============================================================================
+
+// Regression test for https://github.com/dartsim/dart/issues/3501: the setters
+// warned that an out-of-range argument "is set to" a bound, but then stored the
+// argument verbatim, so the getter reported the value the warning rejected.
+TEST(ConstraintParameters, SettersStoreTheBoundNamedByTheWarning)
 {
-  const double originalErp
-      = DynamicJointConstraint::getErrorReductionParameter();
+  expectParametersClampToBounds<DynamicJointConstraint>(
+      "DynamicJointConstraint");
+  expectParametersClampToBounds<JointConstraint>("JointConstraint");
+  expectParametersClampToBounds<JointLimitConstraint>("JointLimitConstraint");
+  expectParametersClampToBounds<SoftContactConstraint>("SoftContactConstraint");
 
-  DynamicJointConstraint::setErrorReductionParameter(2.0);
-  EXPECT_DOUBLE_EQ(DynamicJointConstraint::getErrorReductionParameter(), 2.0);
+  // ContactConstraint already clamps through std::max/std::clamp. It is pinned
+  // here so the whole family keeps one contract.
+  expectParametersClampToBounds<ContactConstraint>("ContactConstraint");
 
-  DynamicJointConstraint::setErrorReductionParameter(originalErp);
+  {
+    SCOPED_TRACE("JointCoulombFrictionConstraint");
+    expectClampsToBound(
+        &JointCoulombFrictionConstraint::setConstraintForceMixing,
+        &JointCoulombFrictionConstraint::getConstraintForceMixing,
+        0.0,
+        1e-9);
+  }
+
+  {
+    SCOPED_TRACE("ServoMotorConstraint");
+    expectClampsToBound(
+        &ServoMotorConstraint::setConstraintForceMixing,
+        &ServoMotorConstraint::getConstraintForceMixing,
+        0.0,
+        1e-9);
+  }
 }
