@@ -35,7 +35,10 @@ doxygen = ">=1.13.2,<2"
 eigen = ">=5.0.1,<6"
 entt = ">=4.0.0,<5"
 ffmpeg = ">=9.0.1,<10"
-filament = ">=1.76.0,<1.77"
+# Keep the conda-forge filament build 1 packages: the build 2 recipe (1.76.0_2
+# and 1.76.1_2) deadlocks in Renderer::beginFrame (FrameSkipper ->
+# OpenGLDriver::fenceWait) when the demo viewer cycles scenes headless.
+filament = { version = "==1.76.0", build = "*_1" }
 foonathan-memory = ">=0.7.4,<0.8"
 fmt = ">=12.1.0,<13"
 gersemi = ">=0.24.0,<0.25"
