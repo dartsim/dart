@@ -509,7 +509,8 @@ compatibility remains on the active DART 6 LTS branch._
   on older GCC: the classes that inherit `Frame` virtually now declare
   `alignas` of that base so their non-virtual part is as aligned as the class,
   which GCC's base-object constructors assume; a unit test guards the rule
-  ([#3447](https://github.com/dartsim/dart/issues/3447))
+  ([#3525](https://github.com/dartsim/dart/pull/3525),
+  [#3447](https://github.com/dartsim/dart/issues/3447))
 
 #### Build, Packaging, and Developer Tooling
 
