@@ -504,6 +504,12 @@ compatibility remains on the active DART 6 LTS branch._
 - Standardized first-party headers on `#pragma once`, replacing 396 macro
   include guards; vendored code and generated files keep their upstream form,
   and `pixi run check-header-guards` enforces the convention ([#3420](https://github.com/dartsim/dart/pull/3420))
+- Fixed a crash when constructing `SimpleFrame` (for example while Gazebo
+  loads a world through gz-physics) with GCC 16, or with AVX code generation
+  on older GCC: the classes that inherit `Frame` virtually now declare
+  `alignas` of that base so their non-virtual part is as aligned as the class,
+  which GCC's base-object constructors assume; a unit test guards the rule
+  ([#3447](https://github.com/dartsim/dart/issues/3447))
 
 #### Build, Packaging, and Developer Tooling
 

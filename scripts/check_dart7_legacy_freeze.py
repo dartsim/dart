@@ -34,7 +34,11 @@ BINDING_SUFFIXES = {".cpp", ".hpp", ".h"}
 CPP_TYPE_PATTERN = re.compile(
     r"^\s*(?:template\s*<[^>]+>\s*)?"
     r"(?P<kind>class|struct|enum(?:\s+class)?|using|concept)\s+"
-    r"(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+\s+)*"
+    # Skip export macros and attribute specifiers (`alignas(...)`, `[[...]]`)
+    # that may sit between the class key and the name.
+    r"(?:(?:(?:DART|DARTPY)_[A-Z0-9_()\".,\s]+"
+    r"|alignas\((?:[^()]|\([^()]*\))*\)"
+    r"|\[\[[^\]]*\]\])\s+)*"
     r"(?P<name>[A-Za-z_]\w*)"
 )
 CPP_TYPEDEF_POINTER_PATTERN = re.compile(

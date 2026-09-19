@@ -126,6 +126,13 @@ DART now uses snake_case for public headers across the core C++ surface while pr
 - Use **PascalCase** class names
 - No "cuddled" braces for classes or functions!
 - Control-flow bodies are automatically wrapped in braces by `pixi run lint`
+- A class that inherits `Frame` (or any base aligned above 8 bytes) virtually
+  declares `alignas(<that base>)`, and a generic virtual-inheritance helper
+  such as `common::Virtual<T>` declares `alignas(T)`, so the non-virtual part
+  is as aligned as the class: GCC's base-object constructors assume the full
+  alignment of `this` (dartsim/dart#3447; see the comments at those
+  declarations). `UNIT_dynamics_FrameBaseAlignment` checks a fixed list of
+  Frame-family classes; add new ones to that list.
 - Use `#pragma once` instead of macro include guards; it cannot collide and
   cannot drift when a file is renamed. `pixi run check-header-guards` enforces
   this. Deliberately unguarded files (`-impl.hpp` textual includes, the poison

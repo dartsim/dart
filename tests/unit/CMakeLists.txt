@@ -300,6 +300,9 @@ dart_add_test("unit" UNIT_dynamics_MultiSphereConvexHullShape dynamics/test_mult
 dart_add_test("unit" UNIT_dynamics_EulerJoint dynamics/test_euler_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_PlanarJoint dynamics/test_planar_joint.cpp)
 dart_add_test("unit" UNIT_dynamics_ShapeFrame dynamics/test_shape_frame.cpp)
+dart_add_test(
+  "unit" UNIT_dynamics_FrameBaseAlignment dynamics/test_frame_base_alignment.cpp
+)
 dart_add_test("unit" UNIT_dynamics_Entity dynamics/test_entity.cpp)
 
 dart_add_test("unit" UNIT_dynamics_BodyNodePool dynamics/test_body_node_pool.cpp)
