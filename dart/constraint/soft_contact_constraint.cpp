@@ -335,7 +335,7 @@ void SoftContactConstraint::setErrorAllowance(double _allowance)
     DART_WARN(
         "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
         _allowance);
-    mErrorAllowance = 0.0;
+    _allowance = 0.0;
   }
 
   mErrorAllowance = _allowance;
@@ -355,13 +355,13 @@ void SoftContactConstraint::setErrorReductionParameter(double _erp)
     DART_WARN(
         "Error reduction parameter[{}] is lower than 0.0. It is set to 0.0.",
         _erp);
-    mErrorReductionParameter = 0.0;
+    _erp = 0.0;
   }
   if (_erp > 1.0) {
     DART_WARN(
         "Error reduction parameter[{}] is greater than 1.0. It is set to 1.0.",
         _erp);
-    mErrorReductionParameter = 1.0;
+    _erp = 1.0;
   }
 
   mErrorReductionParameter = _erp;
@@ -382,7 +382,7 @@ void SoftContactConstraint::setMaxErrorReductionVelocity(double _erv)
         "Maximum error reduction velocity[{}] is lower than 0.0. It is set to "
         "0.0.",
         _erv);
-    mMaxErrorReductionVelocity = 0.0;
+    _erv = 0.0;
   }
 
   mMaxErrorReductionVelocity = _erv;
@@ -403,7 +403,7 @@ void SoftContactConstraint::setConstraintForceMixing(double _cfm)
         "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
         "to 1e-9.",
         _cfm);
-    mConstraintForceMixing = 1e-9;
+    _cfm = 1e-9;
   }
 
   mConstraintForceMixing = _cfm;

@@ -88,7 +88,7 @@ void JointCoulombFrictionConstraint::setConstraintForceMixing(double _cfm)
         "Constraint force mixing parameter[{}] is lower than 1e-9. It is set "
         "to 1e-9.",
         _cfm);
-    mConstraintForceMixing = 1e-9;
+    _cfm = 1e-9;
   }
 
   mConstraintForceMixing = _cfm;
