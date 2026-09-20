@@ -186,6 +186,34 @@ def test_new_legacy_installed_detail_symbol_requires_bugfix_port_tag(tmp_path):
     assert any("NewPrivateLegacy" in m for m in messages)
 
 
+def test_attribute_specifier_before_class_name_is_skipped(tmp_path):
+    module = _load_module()
+    _write_required_decision_docs(tmp_path)
+    header = _write(
+        tmp_path / "dart" / "dynamics" / "legacy_frame.hpp",
+        "class DART_API ExistingFrame {};\n",
+    )
+    baseline = _baseline_current_tmp_surface(module, tmp_path)
+
+    header.write_text(
+        header.read_text(encoding="utf-8")
+        + "\nclass DART_API alignas(16) AlignedFrame {};\n"
+        + "template <class T>\n"
+        + "class alignas(alignof(T) > alignof(void*) ? alignof(T) : alignof(void*)) Holder\n"
+        + "  : public virtual T {};\n"
+        + "struct [[nodiscard]] Attributed {};\n",
+        encoding="utf-8",
+    )
+
+    messages = _messages(module.find_violations(tmp_path, baseline))
+
+    # The attribute specifiers must not be mistaken for the class name.
+    assert not any("|alignas" in m or "|nodiscard" in m for m in messages)
+    assert any("AlignedFrame" in m for m in messages)
+    assert any("Holder" in m for m in messages)
+    assert any("Attributed" in m for m in messages)
+
+
 def test_bugfix_port_tag_allows_new_legacy_cpp_symbol(tmp_path):
     module = _load_module()
     _write_required_decision_docs(tmp_path)
