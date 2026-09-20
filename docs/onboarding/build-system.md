@@ -207,8 +207,10 @@ dart/
 
 #### DART GUI Stack
 
-- **Version:** conda-forge `filament` ≥ 1.76.0, < 1.77 (pinned in `pixi.toml`;
-  matches the package's ABI run-export window).
+- **Version:** conda-forge `filament` 1.76.0, build 1 packages only (pinned in
+  `pixi.toml`; the build 2 packages deadlock the headless demo viewer, see the
+  comment there). The ABI run-export window is ≥ 1.76.0, < 1.77; widen the pin
+  back to it once a fixed build ships.
 - **Purpose:** Maintained built-in 3D visualization and interaction renderer.
 - **Windowing/UI:** GLFW3 and Dear ImGui are private backend dependencies.
 - **Options:**

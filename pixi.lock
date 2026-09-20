@@ -67,7 +67,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/epoxy-1.5.10-hb03c661_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fcl-0.7.0-hf5102b8_9.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ffmpeg-9.0.1-gpl_hc1c51de_902.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.1-h3f833be_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.0-h803e5e9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fmt-12.1.0-h76c4fd7_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fontconfig-2.18.3-h4db4eae_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/foonathan-memory-0.7.4-h54a6638_1.conda
@@ -395,7 +395,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/epoxy-1.5.10-he30d5cf_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/fcl-0.7.0-h46e8685_9.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/ffmpeg-9.0.1-gpl_h46e30a1_902.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/filament-1.76.1-h993fb3c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/filament-1.76.0-hf1f4d35_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/fmt-12.1.0-h166da81_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/fontconfig-2.18.3-ha4b22b4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/foonathan-memory-0.7.4-h7ac5ae9_1.conda
@@ -770,7 +770,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/entt-4.0.0-h1b211d0_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/fcl-0.7.0-h6f39892_9.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/ffmpeg-9.0.1-gpl_h4193ad6_102.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/filament-1.76.1-haecfa1e_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/filament-1.76.0-haecfa1e_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/fmt-12.1.0-he6aba6a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/fontconfig-2.18.3-h7f3b9c9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/foonathan-memory-0.7.4-h2fb4741_1.conda
@@ -1029,7 +1029,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/entt-4.0.0-he4f1286_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fcl-0.7.0-h1e56fed_9.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ffmpeg-9.0.1-gpl_h5f9a2c2_102.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/filament-1.76.1-h9a3f704_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/filament-1.76.0-h9a3f704_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fmt-12.1.0-h99e4e11_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fontconfig-2.18.3-h81aa574_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/foonathan-memory-0.7.4-h784d473_1.conda
@@ -1286,7 +1286,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/entt-4.0.0-h56f2b75_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/fcl-0.7.0-h413f77c_9.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ffmpeg-9.0.1-gpl_hfba0be1_902.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/filament-1.76.1-h0013d43_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/filament-1.76.0-h0013d43_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/fmt-12.1.0-h1ced75a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/fontconfig-2.18.3-hd47e2ca_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/foonathan-memory-0.7.4-h5112557_1.conda
@@ -1443,7 +1443,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/entt-4.0.0-h9e02651_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/epoxy-1.5.10-hb03c661_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ffmpeg-9.0.1-gpl_hc1c51de_902.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.1-h3f833be_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.0-h803e5e9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fmt-12.1.0-h76c4fd7_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fontconfig-2.18.3-h4db4eae_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/foonathan-memory-0.7.4-h54a6638_1.conda
@@ -1790,7 +1790,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/entt-4.0.0-h9e02651_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/epoxy-1.5.10-hb03c661_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ffmpeg-9.0.1-gpl_hc1c51de_902.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.1-h3f833be_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.0-h803e5e9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fmt-12.1.0-h76c4fd7_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fontconfig-2.18.3-h4db4eae_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/foonathan-memory-0.7.4-h54a6638_1.conda
@@ -2113,7 +2113,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/entt-4.0.0-hbd9a09b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/epoxy-1.5.10-he30d5cf_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/ffmpeg-9.0.1-gpl_h46e30a1_902.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/filament-1.76.1-h993fb3c_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/filament-1.76.0-hf1f4d35_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/fmt-12.1.0-h166da81_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/fontconfig-2.18.3-ha4b22b4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/foonathan-memory-0.7.4-h7ac5ae9_1.conda
@@ -2483,7 +2483,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/eigen-5.0.1-h8a113fb_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/entt-4.0.0-h1b211d0_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/ffmpeg-9.0.1-gpl_h4193ad6_102.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/filament-1.76.1-haecfa1e_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/filament-1.76.0-haecfa1e_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/fmt-12.1.0-he6aba6a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/fontconfig-2.18.3-h7f3b9c9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/foonathan-memory-0.7.4-h2fb4741_1.conda
@@ -2731,7 +2731,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/eigen-5.0.1-hdb59ae0_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/entt-4.0.0-he4f1286_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ffmpeg-9.0.1-gpl_h5f9a2c2_102.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/filament-1.76.1-h9a3f704_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/filament-1.76.0-h9a3f704_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fmt-12.1.0-h99e4e11_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fontconfig-2.18.3-h81aa574_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/foonathan-memory-0.7.4-h784d473_1.conda
@@ -2977,7 +2977,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/eigen-5.0.1-h5112557_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/entt-4.0.0-h56f2b75_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ffmpeg-9.0.1-gpl_hfba0be1_902.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/filament-1.76.1-h0013d43_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/filament-1.76.0-h0013d43_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/fmt-12.1.0-h1ced75a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/fontconfig-2.18.3-hd47e2ca_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/foonathan-memory-0.7.4-h5112557_1.conda
@@ -3132,7 +3132,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/epoxy-1.5.10-hb03c661_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fcl-0.7.0-hf5102b8_9.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ffmpeg-9.0.1-gpl_hc1c51de_902.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.1-h3f833be_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.0-h803e5e9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fmt-12.1.0-h76c4fd7_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fontconfig-2.18.3-h4db4eae_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/foonathan-memory-0.7.4-h54a6638_1.conda
@@ -3587,7 +3587,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/entt-4.0.0-h1b211d0_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/fcl-0.7.0-h6f39892_9.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/ffmpeg-9.0.1-gpl_h4193ad6_102.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/filament-1.76.1-haecfa1e_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/filament-1.76.0-haecfa1e_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/fmt-12.1.0-he6aba6a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/fontconfig-2.18.3-h7f3b9c9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/foonathan-memory-0.7.4-h2fb4741_1.conda
@@ -3894,7 +3894,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/entt-4.0.0-he4f1286_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fcl-0.7.0-h1e56fed_9.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ffmpeg-9.0.1-gpl_h5f9a2c2_102.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/filament-1.76.1-h9a3f704_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/filament-1.76.0-h9a3f704_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fmt-12.1.0-h99e4e11_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fontconfig-2.18.3-h81aa574_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/foonathan-memory-0.7.4-h784d473_1.conda
@@ -4198,7 +4198,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/entt-4.0.0-h56f2b75_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/fcl-0.7.0-h413f77c_9.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ffmpeg-9.0.1-gpl_hfba0be1_902.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/filament-1.76.1-h0013d43_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/filament-1.76.0-h0013d43_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/fmt-12.1.0-h1ced75a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/fontconfig-2.18.3-hd47e2ca_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/foonathan-memory-0.7.4-h5112557_1.conda
@@ -4383,7 +4383,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/entt-4.0.0-h9e02651_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/epoxy-1.5.10-hb03c661_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ffmpeg-9.0.1-gpl_hc1c51de_902.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.1-h3f833be_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.0-h803e5e9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fmt-12.1.0-h76c4fd7_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fontconfig-2.18.3-h4db4eae_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/foonathan-memory-0.7.4-h54a6638_1.conda
@@ -4835,7 +4835,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/eigen-5.0.1-h8a113fb_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/entt-4.0.0-h1b211d0_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/ffmpeg-9.0.1-gpl_h4193ad6_102.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/filament-1.76.1-haecfa1e_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-64/filament-1.76.0-haecfa1e_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/fmt-12.1.0-he6aba6a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/fontconfig-2.18.3-h7f3b9c9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/foonathan-memory-0.7.4-h2fb4741_1.conda
@@ -5106,7 +5106,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/eigen-5.0.1-hdb59ae0_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/entt-4.0.0-he4f1286_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ffmpeg-9.0.1-gpl_h5f9a2c2_102.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/filament-1.76.1-h9a3f704_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/filament-1.76.0-h9a3f704_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fmt-12.1.0-h99e4e11_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fontconfig-2.18.3-h81aa574_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/foonathan-memory-0.7.4-h784d473_1.conda
@@ -5373,7 +5373,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/eigen-5.0.1-h5112557_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/entt-4.0.0-h56f2b75_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ffmpeg-9.0.1-gpl_hfba0be1_902.conda
-      - conda: https://conda.anaconda.org/conda-forge/win-64/filament-1.76.1-h0013d43_2.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/filament-1.76.0-h0013d43_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/fmt-12.1.0-h1ced75a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/fontconfig-2.18.3-hd47e2ca_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/foonathan-memory-0.7.4-h5112557_1.conda
@@ -6347,30 +6347,28 @@ packages:
     - ffmpeg >=9.0.1,<10.0a0
   size: 13748748
   timestamp: 1788401618265
-- conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.1-h3f833be_2.conda
-  sha256: 978d4b228c0e1bfc1bdb23add71340ad10dfa0980b663358fb88c1d1c562d08e
-  md5: 1214707d08d5f36ee601afb58f605725
+- conda: https://conda.anaconda.org/conda-forge/linux-64/filament-1.76.0-h803e5e9_1.conda
+  sha256: b0ebf72e062267c46bdf5950e10c386064d9a423e91e32d0aa57b4797e3a8023
+  md5: 3ab711877e593b75d882fc564fd1d31f
   depends:
   - meshoptimizer
   - tsl_robin_map
   - zstd
+  - libstdcxx >=15
   - libgcc >=15
   - __glibc >=2.17,<3.0.a0
-  - libstdcxx >=15
   - libpng >=1.6.58,<1.7.0a0
-  - libxcb >=1.17.0,<2.0a0
-  - libzlib >=1.3.2,<2.0a0
-  - libegl >=1.7.0,<2.0a0
   - zstd >=1.5.7,<1.6.0a0
-  - xorg-libx11 >=1.8.13,<2.0a0
-  - assimp >=6.0.5,<7.0a0
+  - libzlib >=1.3.2,<2.0a0
   - libgl >=1.7.0,<2.0a0
+  - libegl >=1.7.0,<2.0a0
+  - assimp >=6.0.5,<7.0a0
   license: Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND Zlib
   run_exports:
     weak:
-    - filament >=1.76.1,<1.77.0a0
-  size: 10099309
-  timestamp: 1789332455291
+    - filament >=1.76.0,<1.77.0a0
+  size: 10087192
+  timestamp: 1787971489588
 - conda: https://conda.anaconda.org/conda-forge/linux-64/fmt-12.1.0-h76c4fd7_1.conda
   sha256: 25d14a197601fdd616f2e501431b52887e69b31e7defbc1679381d718357ceb7
   md5: a70bb6d42ad121aef456e0007e92bed6
@@ -11177,28 +11175,26 @@ packages:
     - ffmpeg >=9.0.1,<10.0a0
   size: 13224135
   timestamp: 1788401742443
-- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/filament-1.76.1-h993fb3c_2.conda
-  sha256: 7404bd1ddbe6e19456290bc8505e18e9f7d75f290288d8c6cbc346232d08740e
-  md5: 8fdb3f61336aced821225dae0acb040f
+- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/filament-1.76.0-hf1f4d35_1.conda
+  sha256: 81cdef5e350becb496c14450808125be3037bd2f0effa5f5f0c7428f564f822c
+  md5: fab3fa2cd5911fd5af555c663f1d0b82
   depends:
   - tsl_robin_map
   - zstd
-  - libgcc >=15
   - libstdcxx >=15
+  - libgcc >=15
   - libzlib >=1.3.2,<2.0a0
-  - libegl >=1.7.0,<2.0a0
-  - libpng >=1.6.58,<1.7.0a0
-  - xorg-libx11 >=1.8.13,<2.0a0
-  - zstd >=1.5.7,<1.6.0a0
   - libgl >=1.7.0,<2.0a0
+  - zstd >=1.5.7,<1.6.0a0
   - assimp >=6.0.5,<7.0a0
-  - libxcb >=1.17.0,<2.0a0
+  - libpng >=1.6.58,<1.7.0a0
+  - libegl >=1.7.0,<2.0a0
   license: Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND Zlib
   run_exports:
     weak:
-    - filament >=1.76.1,<1.77.0a0
-  size: 10099632
-  timestamp: 1789332461807
+    - filament >=1.76.0,<1.77.0a0
+  size: 10087494
+  timestamp: 1787971482272
 - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/fmt-12.1.0-h166da81_1.conda
   sha256: 9576231133ef25127cf8855492a6e34a3189e3a8986cc69ebfef6516670d4822
   md5: 2ba56bd59c36644d783ef8a8086ec0e4
@@ -16049,25 +16045,25 @@ packages:
     - ffmpeg >=9.0.1,<10.0a0
   size: 11638108
   timestamp: 1788402343997
-- conda: https://conda.anaconda.org/conda-forge/osx-64/filament-1.76.1-haecfa1e_2.conda
-  sha256: 15d18571d99e49fcfdd8cf1fa5fc4260d6abc2205b5dcb97aa3d9e310a790530
-  md5: 38dfe73e4c9d6eede6c146ef78f5c43c
+- conda: https://conda.anaconda.org/conda-forge/osx-64/filament-1.76.0-haecfa1e_1.conda
+  sha256: ed8331cdde305cfcf59a01223407544cc0291c0486ce80ce2bc6813a0bd100f7
+  md5: 7dc4ad502363310705ec78203ae03f19
   depends:
   - meshoptimizer
   - tsl_robin_map
   - zstd
   - libcxx >=21
   - __osx >=11.0
-  - zstd >=1.5.7,<1.6.0a0
   - assimp >=6.0.5,<7.0a0
+  - zstd >=1.5.7,<1.6.0a0
   - libpng >=1.6.58,<1.7.0a0
   - libzlib >=1.3.2,<2.0a0
   license: Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND Zlib
   run_exports:
     weak:
-    - filament >=1.76.1,<1.77.0a0
-  size: 8312462
-  timestamp: 1789332584184
+    - filament >=1.76.0,<1.77.0a0
+  size: 8297399
+  timestamp: 1787971682931
 - conda: https://conda.anaconda.org/conda-forge/osx-64/fmt-12.1.0-he6aba6a_1.conda
   sha256: 79eb99b8c58c208788ece6d62dbde094a29a831afcf73f89b842d11e9111ebd1
   md5: ec4e1142e56a0ff00b3e2864f134ac0b
@@ -19599,24 +19595,24 @@ packages:
     - ffmpeg >=9.0.1,<10.0a0
   size: 10717983
   timestamp: 1788403360483
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/filament-1.76.1-h9a3f704_2.conda
-  sha256: da3107f5ba6500e50acdc3c9fdcc7d03341350162b1e997eaab069101fbc8261
-  md5: b0083f12a749b1205a49793d01959d20
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/filament-1.76.0-h9a3f704_1.conda
+  sha256: ae8c4ac6f6b39ad72be51fa9d0e605cf1ffcdfd1d555fd0465cc7339fb79c7c0
+  md5: 25a2e4135865701063cb12a723e6cf38
   depends:
   - tsl_robin_map
   - zstd
-  - __osx >=11.0
   - libcxx >=21
+  - __osx >=11.0
   - libpng >=1.6.58,<1.7.0a0
-  - libzlib >=1.3.2,<2.0a0
   - assimp >=6.0.5,<7.0a0
   - zstd >=1.5.7,<1.6.0a0
+  - libzlib >=1.3.2,<2.0a0
   license: Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND Zlib
   run_exports:
     weak:
-    - filament >=1.76.1,<1.77.0a0
-  size: 7810190
-  timestamp: 1789332503792
+    - filament >=1.76.0,<1.77.0a0
+  size: 7788924
+  timestamp: 1787971537987
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/fmt-12.1.0-h99e4e11_1.conda
   sha256: ca42427b99ff92228e907bed5f10a1df868180997571d29c230faad2c38e35fd
   md5: 891b1202d7b835f215e26a4db685ec7c
@@ -23161,25 +23157,25 @@ packages:
     - ffmpeg >=9.0.1,<10.0a0
   size: 11494148
   timestamp: 1788401850521
-- conda: https://conda.anaconda.org/conda-forge/win-64/filament-1.76.1-h0013d43_2.conda
-  sha256: cd3c5d0ca5743d777613bf0afda6aed727223cbe03057ec14e71488dcbe19b24
-  md5: d9a4ab07c3b13ebb01e5f3ece4555d09
+- conda: https://conda.anaconda.org/conda-forge/win-64/filament-1.76.0-h0013d43_1.conda
+  sha256: 6a7a6c837019ede51e379a86485f3994423402bcd6f37a57f6658f841b9839dc
+  md5: 1e7d56e9fedb1c54845529e8da3a5e68
   depends:
   - tsl_robin_map
   - zstd
   - vc >=14.3,<15
   - vc14_runtime >=14.44.35208
   - ucrt >=10.0.20348.0
-  - libzlib >=1.3.2,<2.0a0
+  - assimp >=6.0.5,<7.0a0
   - zstd >=1.5.7,<1.6.0a0
   - libpng >=1.6.58,<1.7.0a0
-  - assimp >=6.0.5,<7.0a0
+  - libzlib >=1.3.2,<2.0a0
   license: Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT AND Zlib
   run_exports:
     weak:
-    - filament >=1.76.1,<1.77.0a0
-  size: 10516589
-  timestamp: 1789332451689
+    - filament >=1.76.0,<1.77.0a0
+  size: 10467727
+  timestamp: 1787971500605
 - conda: https://conda.anaconda.org/conda-forge/win-64/fmt-12.1.0-h1ced75a_1.conda
   sha256: 1d6d6f1bf284e50cf617ce9a6250e0bf70bd0d30b068568364d6b1852aad9466
   md5: ca8fa0e01ed34bb161f4e8e86dfda22e
