@@ -129,6 +129,8 @@ jobs:
         run: |
           pixi run python -m pip install pytest -U
 
+      # Validation only: this job does not publish the API docs, so scheduled
+      # runs from the default branch cannot replace the GitHub Pages site.
       - name: Build
         run: |
           CMAKE_PREFIX_PATH="$PIXI_PREFIX" ./scripts/build_docs.sh build
