@@ -29,11 +29,9 @@ Priority order is document order. Active implementation handoff remains in
 - Dimension: Research feature parity, CPU performance, and compatibility.
 - Scope (2026-07-29): DART 6 carries **one** deformable model, the Jain/Liu
   point-mass surface flesh that `SoftBodyNode` implements. The Kim/Pollard
-  volumetric-FEM lane was removed from DART 6 and retargeted to DART 7, because
-  the two papers need different discretizations and a compatibility release
-  branch should not carry two parallel deformable architectures. Whether a
-  reduced FEM is still the right DART 7 target is open given newer solvers such
-  as AVBD. Durable owner:
+  volumetric-FEM lane was removed from DART 6, because the two papers need
+  different discretizations and a compatibility release branch should not carry
+  two parallel deformable architectures. Durable owner:
   [deformable-body design](../design/dart6_deformable_body.md); working record:
   [`decisions.md`](../dev_tasks/dart6_deformable_body_performance/decisions.md);
   scope note in

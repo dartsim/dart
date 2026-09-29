@@ -114,10 +114,6 @@ INTEGRATION_StepAllocation                        PASS
 independent semantic and regression reviews      CLEAN x2
 ```
 
-This exact correction is release-only: DART 7 `main` still has point-mass mass
-aggregation disabled. The separate zero-DoF soft bias-impulse assertion fix on
-this PR does apply to `main` and remains subject to the dual-PR policy.
-
 ## Remaining gaps
 
 - `Skeleton::updateTotalMass()` sums the non-virtual `BodyNode::getMass()`,

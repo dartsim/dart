@@ -7,11 +7,9 @@ name labels — and renders them *through the DART core OSG pipeline* via a
 ``dart.gui.osg.DebugOverlay`` viewer attachment. Segments become always-on-top
 overlay lines and labels become world-anchored osgText, both drawn unlit with
 depth testing disabled in a late render bin, so the debug primitives stay
-legible on top of the geometry they annotate (matching DART 7's core debug
-overlay treatment) instead of being buried in depth or composited onto the PNG.
-The capture harness populates the overlay, renders through ``captureOffscreen``,
-then clears it. Colors and arrow geometry mirror dart::gui's debug producers so
-DART 6 and DART 7 speak the same visual language.
+legible on top of the geometry they annotate instead of being buried in depth or
+composited onto the PNG. The capture harness populates the overlay, renders
+through ``captureOffscreen``, then clears it.
 
 ``build_overlay`` and ``OverlayScene`` stay pure Python + numpy over the classic
 dartpy surface; only the rendering backend (``populate_overlay``) touches the
@@ -27,7 +25,7 @@ from typing import Any, Iterable, Sequence
 
 import numpy as np
 
-# Colors mirrored from dart/gui debug producers (DART 7 dart/gui/debug.cpp).
+# Debug layer colors.
 AXIS_X_RGB = (230, 71, 71)
 AXIS_Y_RGB = (79, 191, 110)
 AXIS_Z_RGB = (71, 120, 235)
@@ -37,13 +35,13 @@ CONTACT_FORCE_RGB = (237, 79, 171)
 LINEAR_VELOCITY_RGB = (82, 189, 250)
 ANGULAR_VELOCITY_RGB = (189, 133, 250)
 TRAJECTORY_RGB = (250, 140, 64)
-# Parity layers mirrored from DART 7 dart/gui/debug.cpp float colors.
+# Additional debug layer colors.
 GRID_RGB = (117, 125, 128)  # rgba(0.46, 0.49, 0.5)
-COM_RGB = (56, 209, 219)  # DART 7 COM teal (0.22, 0.82, 0.86)
-INERTIA_RGB = (148, 112, 242)  # DART 7 inertia purple (0.58, 0.44, 0.95)
-COLLISION_BOUNDS_RGB = (51, 219, 110)  # DART 7 bounds green (0.2, 0.86, 0.43)
+COM_RGB = (56, 209, 219)  # COM teal (0.22, 0.82, 0.86)
+INERTIA_RGB = (148, 112, 242)  # inertia purple (0.58, 0.44, 0.95)
+COLLISION_BOUNDS_RGB = (51, 219, 110)  # bounds green (0.2, 0.86, 0.43)
 # osgText labels render on the Viewer's light-gray (0.9) background, so a dark
-# slate reads far more clearly than the white DART 7 uses on its dark overlay.
+# slate reads far more clearly than white.
 LABEL_RGB = (33, 33, 40)
 
 DEBUG_LAYERS = (

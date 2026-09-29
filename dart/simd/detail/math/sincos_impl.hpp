@@ -35,8 +35,8 @@
 #include <dart/simd/config.hpp>
 #include <dart/simd/detail/math/constants.hpp>
 #include <dart/simd/detail/math/polynomial.hpp>
-// DART 7 relies on C++20 ADL finding shiftLeft/shiftRight (and their default
-// template argument) without a prior declaration (P0846); C++17 needs the
+// C++20 ADL would find shiftLeft/shiftRight (and their default template
+// argument) without a prior declaration (P0846); C++17 needs the
 // declarations in scope, so include the generic operations header rather
 // than duplicating the signatures here.
 #include <dart/simd/detail/scalar/operations.hpp>

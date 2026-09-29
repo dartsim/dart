@@ -395,47 +395,11 @@ def test_source_path_references_are_always_validated(tmp_path):
     ]
 
 
-def test_unclosed_fence_in_skill_is_reported_not_skipped(tmp_path):
-    skills = tmp_path / ".claude" / "skills" / "dart-shared"
-    skills.mkdir(parents=True)
-    (tmp_path / "docs" / "ai").mkdir(parents=True)
-    (tmp_path / "docs" / "ai" / "branch-profile.json").write_text(
-        '{"profile": "main"}\n', encoding="utf-8"
-    )
-    (skills / "SKILL.md").write_text(
-        "# Shared\n\n## DART 6 (release-6.20)\n\n```bash\nnever closed\n\n"
-        "## Back\n\nUse `dart-hidden-by-fence`.\n",
-        encoding="utf-8",
-    )
-
-    errors = sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"})
-
-    assert errors == [
-        ".claude/skills/dart-shared/SKILL.md: unclosed code fence opened at line 5"
-    ]
-
-
 def test_wrapped_hyphen_fragment_is_not_reported_as_garbage(tmp_path):
     commands = tmp_path / ".claude" / "commands"
     commands.mkdir(parents=True)
     (commands / "dart-sample.md").write_text(
         "Run the dart-fix-\nci loop from `dart-sample`.\n", encoding="utf-8"
-    )
-
-    assert sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"}) == []
-
-
-def test_unknown_capability_scan_skips_other_branch_profile_sections(tmp_path):
-    commands = tmp_path / ".claude" / "skills" / "dart-shared"
-    commands.mkdir(parents=True)
-    (tmp_path / "docs" / "ai").mkdir(parents=True)
-    (tmp_path / "docs" / "ai" / "branch-profile.json").write_text(
-        '{"profile": "release-6.20"}\n', encoding="utf-8"
-    )
-    (commands / "SKILL.md").write_text(
-        "# Shared\n\nUse `dart-sample`.\n\n"
-        "## DART 7 (main)\n\nUse `dart-main-only-flow`.\n",
-        encoding="utf-8",
     )
 
     assert sync.unknown_capability_mention_errors(tmp_path, {"dart-sample"}) == []

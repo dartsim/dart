@@ -29,8 +29,7 @@ applicable.
    gh run view <RUN_ID> --job <JOB_ID> --log
    ```
 2. Resolve the target from live state. Default to `release-6.20`; for a PR,
-   verify its base rather than trusting a stale handoff. Check whether an
-   equivalent fix already exists on `main`, but treat it as reference evidence.
+   verify its base rather than trusting a stale handoff.
 3. If continuing an existing PR, fetch and checkout that branch. Otherwise
    branch from the resolved release branch without resetting an existing local
    branch:

@@ -17,8 +17,8 @@ release-branch questions without rediscovering the branch from raw code:
 6. Which command or gate proves the current claim?
 
 The release branch optimizes for compatibility, low context cost, and stable
-links. It deliberately keeps a smaller docs tree than `main`, but it now has
-the lifecycle buckets required for AI-native maintenance work.
+links. It deliberately keeps a small docs tree, but it now has the lifecycle
+buckets required for AI-native maintenance work.
 
 ## Current Structure
 
@@ -37,11 +37,8 @@ the lifecycle buckets required for AI-native maintenance work.
 `docs/onboarding/` is the durable developer handbook path for this release
 branch. Do not rename it during ordinary maintenance.
 
-`main` carries a broader DART 7 docs structure. DART 6.20 now adopts the
-AI-infrastructure buckets that solve release-branch lifecycle problems, but it
-does not copy DART 7's contents wholesale. Clean-break DART 7 architecture,
-GPU/public API plans, and DART 7-only docs-build structure stay on `main`
-unless a dedicated release-maintenance PR justifies a scoped backport.
+DART 6.20 now adopts the AI-infrastructure buckets that solve release-branch
+lifecycle problems.
 
 `docs/python_api/` is intentionally not part of this DART 6 AI-infra split.
 The release branch still owns dartpy user docs under `docs/readthedocs/dartpy/`

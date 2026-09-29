@@ -51,7 +51,7 @@ DebugOverlay::DebugOverlay()
 
   // Debug primitives are annotations: draw them unlit, without depth testing,
   // and in a late render bin so they stay on top of the geometry they name
-  // rather than being buried inside opaque bodies (matching DART 7's overlay).
+  // rather than being buried inside opaque bodies.
   ::osg::StateSet* stateSet = mGeode->getOrCreateStateSet();
   stateSet->setMode(GL_LIGHTING, ::osg::StateAttribute::OFF);
   stateSet->setMode(GL_DEPTH_TEST, ::osg::StateAttribute::OFF);

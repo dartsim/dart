@@ -806,7 +806,7 @@ def check_branch_profile(
             )
         elif (root / relative).exists():
             errors.append(
-                f"{path.relative_to(root)}: forbidden DART 7 path exists `{forbidden}`"
+                f"{path.relative_to(root)}: forbidden path exists `{forbidden}`"
             )
 
 

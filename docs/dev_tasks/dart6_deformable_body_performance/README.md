@@ -1,7 +1,6 @@
 # DART 6 deformable body feature and performance
 
-Owner surface for restoring DART 6 deformable-body simulation quality without
-using DART 7 clean-break APIs as the implementation target.
+Owner surface for restoring DART 6 deformable-body simulation quality.
 
 ## Objective
 
@@ -10,10 +9,10 @@ to beat representative competing in-tree implementations and at least match the
 published real-time or near-real-time CPU targets of **Jain and Liu 2011**.
 
 **DART 6 scope is the Jain/Liu lane only.** Kim and Pollard's reduced volumetric
-FEM was removed from `release-6.20` on 2026-07-29 and retargeted to DART 7,
-because the two papers need different discretizations and a compatibility
-release branch should carry one deformable model. Do not restart it here. The
-durable owner of that scope is `docs/design/dart6_deformable_body.md`.
+FEM was removed from `release-6.20` on 2026-07-29, because the two papers need
+different discretizations and a compatibility release branch should carry one
+deformable model. Do not restart it here. The durable owner of that scope is
+`docs/design/dart6_deformable_body.md`.
 
 ## Current milestone - soft-foot SIMBICON
 
@@ -46,8 +45,7 @@ manipulation rows (finger flick, arm fold, pinch grasp), the four-link
 flexible-foot comparison, applying the approved competitive envelope
 (`decisions.md` item 2, confirmed 2026-07-23) to performance acceptance,
 WP-DB.07 multicore scaling, the pre-default `dart` detector coverage gates,
-a valid `bm-soft-body-paired` artifact or approved disposition, and the
-separate `main` fix for the zero-DoF soft point-mass assertion. The ordered
+and a valid `bm-soft-body-paired` artifact or approved disposition. The ordered
 list and suggested PR bundles are in `RESUME.md`.
 
 ## Reference scope
@@ -60,13 +58,12 @@ list and suggested PR bundles are in `RESUME.md`.
   contact, and LCP contact/friction coupling for controller robustness. This is
   the model `SoftBodyNode` implements.
 
-**Not DART 6 work — retargeted to DART 7 on 2026-07-29:**
+**Not DART 6 work (decided 2026-07-29):**
 
 - Kim and Pollard, "Fast Simulation of Skeleton-driven Deformable Body
   Characters" (ACM TOG 30(5), 2011): reduced nonlinear volumetric FEM, two-way
   skeleton/deformable/environment coupling, explicit integration. Retained here
-  only as the paper ledger. Whether a reduced FEM is still the right DART 7
-  target is open given newer solvers such as AVBD.
+  only as the paper ledger.
 
 Before this task, DART 6 `SoftBodyNode` resembled the Jain/Liu point-mass
 surface model without proving the coupled equations, adaptive activation,
@@ -79,8 +76,7 @@ large-scene scaling, and pre-default collision contracts stay open below.
 - Target branch: `release-6.20`.
 - Preserve existing public headers and DART 6 ABI/API behavior unless a
   maintainer explicitly accepts a breaking change.
-- GPU is not a DART 6 implementation target. Tracked release-branch evidence
-  only identifies GPU offload as DART 7-only; this task is CPU-first.
+- GPU is not a DART 6 implementation target; this task is CPU-first.
 - Performance targets must cover:
   - single-core CPU baseline (`World::setNumSimulationThreads(1)`),
   - multi-core CPU scaling (`World::setNumSimulationThreads(16)` or host-capped
@@ -136,9 +132,8 @@ large-scene scaling, and pre-default collision contracts stay open below.
   requires `COMPLETE.json` before any verdict is valid. No complete paired
   artifact exists yet; `verification.md` owns that evidence boundary.
 - `docs/design/dart6_deformable_body.md` now owns the staged DART-owned
-  soft-kernel follow-up contract, and PLAN-622 owns the separate `main`
-  zero-DoF assertion fix. These facts no longer depend on this temporary task
-  folder for survival.
+  soft-kernel follow-up contract. This fact no longer depends on this temporary
+  task folder for survival.
 - WP-DB.06 first optimization changes FCL soft meshes to retain shared vertex
   topology, prime FCL's previous-vertex update buffer at geometry creation, and
   skip BVH refits when local point-mass positions have not changed. It improves
@@ -210,7 +205,7 @@ large-scene scaling, and pre-default collision contracts stay open below.
 | --- | --- | --- |
 | WP-DB.01 baseline harness | Complete. | Headless benchmark rows cover representative soft scenes, point-mass/body counts, and thread settings (`01-baseline-evidence.md`). |
 | WP-DB.02 stability gate | Merged in #3382. | Finite-state, thread-determinism, energy, contact-force/CoP smoothness, LCP robustness, and equation gates run in `test_SoftDynamics`; the final hosted Windows and full matrices passed (`03-stability-gate.md`, `07-equation-correctness.md`, `verification.md`). |
-| WP-DB.03 paper parity matrix | Ledger complete; parity closeout still conditional. | Static paper targets now live in `docs/background/deformable_body_paper_targets.md`, and approved scope decisions live in `docs/design/dart6_deformable_body.md`. The four-link flexible-rigid-foot versus deformable-foot row is active DART 6 work and not deferred; the Kim/Pollard rows are out of DART 6 scope after being retargeted to DART 7 (`docs/design/dart6_deformable_body.md`). |
+| WP-DB.03 paper parity matrix | Ledger complete; parity closeout still conditional. | Static paper targets now live in `docs/background/deformable_body_paper_targets.md`, and approved scope decisions live in `docs/design/dart6_deformable_body.md`. The four-link flexible-rigid-foot versus deformable-foot row is active DART 6 work and not deferred; the Kim/Pollard rows are out of DART 6 scope (`docs/design/dart6_deformable_body.md`). |
 | WP-DB.04 coupled equation correctness | Merged in #3382. | Matrix/vector projection and inverse-identity gates plus the retained-acceleration independence regression pass (`07-equation-correctness.md`, `verification.md`). |
 | WP-DB.05 adaptive contact activation | Complete. | Opt-in ABI-safe activation is default-off bit-identical, deterministic when enabled, allocation-gated, and covered by two recorded review rounds (`08-adaptive-contact-activation.md`). |
 | WP-DB.06 CPU data layout and SIMD | #3382 disposition complete; follow-up research remains. | Kept cache/data-access slices produce the measured win; retained SoA mirrors and contiguous-object prototypes were rejected or parked because measurements/design gates did not justify keeping them. No unsupported SIMD speedup is claimed (`04-data-layout-and-memory-hardening.md`). |
@@ -245,8 +240,8 @@ The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
 - `SoftBodyNode` remains the DART 6 public API; implementation state stays out
   of public layouts. The completing PR uses additive non-virtual controls only.
 - The 2026-07-11 paper-scale deferral list is **retracted**. Every Jain/Liu row
-  is active DART 6 work, and the Kim/Pollard rows are out of DART 6 scope after
-  being retargeted to DART 7 on 2026-07-29. The durable owner of that scope is
+  is active DART 6 work, and the Kim/Pollard rows are out of DART 6 scope
+  (decided 2026-07-29). The durable owner of that scope is
   `docs/design/dart6_deformable_body.md`; `decisions.md` holds the working
   record.
 - The proposed formal competitive-implementation envelope is the in-tree
@@ -256,9 +251,6 @@ The paper-to-packet mapping lives in `02-paper-parity-matrix.md`.
 - The `dart` detector owns the current soft kernels. Broader coverage,
   scaling, and paired same-host evidence remain required before any default
   proposal.
-- The zero-DoF soft point-mass assertion fix in `10c6b6055e4` also applies to
-  `main` and requires the dual-PR follow-up. The current mass-matrix review fix
-  is release-only because DART 7 still has point-mass mass aggregation disabled.
 - Durable promotion has started in
   `docs/background/deformable_body_paper_targets.md`,
   `docs/design/dart6_deformable_body.md`, and PLAN-622. Before retiring this

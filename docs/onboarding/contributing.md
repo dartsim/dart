@@ -48,13 +48,11 @@ N=${DART_SAFE_JOBS:-$(python3 scripts/parallel_jobs.py)}
 DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 
-Bug fixes that apply to both DART 6 and DART 7 need both a release-branch PR
-and a `main` PR — open the release-branch PR first, then the matching `main`
-PR. (Shared AI-infrastructure and model-upgrade change sets follow the
-opposite, normally-main-first order described in `dart-model-upgrade`; the
-two rules cover different change classes.) Dependency-minimization work on
-DART 6.20 must preserve
-installed headers, package components, and downstream behavior unless a
-maintainer explicitly approves a breaking change.
+Target `release-6.20` (with the branch-matching `DART 6.20.0` milestone);
+`main` mirrors `release-6.20` and is fast-forwarded at each release, so never
+target `main`. Backports to an older maintained `release-6.*` branch use
+`dart-backport-pr`. Dependency-minimization work on DART 6.20 must preserve installed
+headers, package components, and downstream behavior unless a maintainer
+explicitly approves a breaking change.
 
 Use the branch-matching DART 6.x release milestone for release-branch PRs.

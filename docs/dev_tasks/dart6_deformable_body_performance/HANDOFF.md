@@ -62,7 +62,6 @@ ordered item list and takeover detail. Completed packet specs such as
   same-host performance gates required before any default proposal.
 - Produce a complete `bm-soft-body-paired` artifact or record an approved
   disposition.
-- Land the zero-DoF soft point-mass assertion fix separately on `main`.
 
 ## Guardrails
 

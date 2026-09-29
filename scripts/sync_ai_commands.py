@@ -22,11 +22,9 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
-PROFILE_READ_ERRORS = (OSError, json.JSONDecodeError, AttributeError)
 CODEX_NAME_LIMIT = 100
 CODEX_DESC_LIMIT = 500
 MAX_SKILL_LINES = 500
@@ -532,67 +530,6 @@ def validate_command_structure(repo_root: Path) -> bool:
     return True
 
 
-def profile_skill_lines(content: str, profile: str) -> list[tuple[int, str]]:
-    """Return numbered lines outside sections owned by the other branch."""
-    if profile not in {"main", "release-6.20"}:
-        raise ValueError(f"unknown branch profile: {profile}")
-
-    excluded_level: int | None = None
-    included: list[tuple[int, str]] = []
-    excluded_marker = "dart 6" if profile == "main" else "dart 7"
-    fence_char = ""
-    fence_length = 0
-    fence_open_line = 0
-
-    for line_number, line in enumerate(content.splitlines(), start=1):
-        stripped = line.lstrip()
-        if fence_char:
-            if re.match(rf"^{re.escape(fence_char)}{{{fence_length},}}\s*$", stripped):
-                fence_char = ""
-                fence_length = 0
-            if excluded_level is None:
-                included.append((line_number, line))
-            continue
-        fence = re.match(r"^(`{3,}|~{3,})", stripped)
-        if fence:
-            fence_char = fence.group(1)[0]
-            fence_length = len(fence.group(1))
-            fence_open_line = line_number
-            if excluded_level is None:
-                included.append((line_number, line))
-            continue
-        heading = re.match(r"^(#{1,6})\s+(.+?)\s*$", stripped)
-        if heading:
-            level = len(heading.group(1))
-            if excluded_level is not None and level <= excluded_level:
-                excluded_level = None
-            if excluded_marker in heading.group(2).casefold():
-                excluded_level = level
-        if excluded_level is None:
-            included.append((line_number, line))
-
-    if fence_char:
-        raise ValueError(f"unclosed code fence opened at line {fence_open_line}")
-    return included
-
-
-def detect_branch_profile(repo_root: Path) -> str:
-    """Return the branch profile used for branch-headed skill sections."""
-    profile_path = repo_root / "docs" / "ai" / "branch-profile.json"
-    try:
-        declared = json.loads(profile_path.read_text(encoding="utf-8")).get("profile")
-    except PROFILE_READ_ERRORS:
-        declared = None
-    if declared in {"main", "release-6.20"}:
-        return declared
-    result = subprocess.run(
-        ["git", "-C", str(repo_root), "branch", "--show-current"],
-        capture_output=True,
-        text=True,
-    )
-    return "release-6.20" if "release-6.20" in result.stdout else "main"
-
-
 # Deliberate non-capability ``dart-`` names mentioned in workflow sources
 # (for example the demos app). Extend this reviewed ledger explicitly when a
 # new non-capability name (such as a CMake component) is first mentioned;
@@ -604,29 +541,18 @@ NON_CAPABILITY_DART_NAMES = frozenset({"dart-demos"})
 def unknown_capability_mention_errors(repo_root: Path, expected: set[str]) -> list[str]:
     """Flag command/skill sources naming capabilities absent on this branch.
 
-    Guards against a main-only workflow being cited on a release branch (or
-    vice versa). Non-capability ``dart-`` names must be listed in the
+    Guards against citing a workflow that does not exist on this branch.
+    Non-capability ``dart-`` names must be listed in the
     explicit ``NON_CAPABILITY_DART_NAMES`` ledger; capability identity
     always wins, so a name that is a current capability is never exempt.
     """
     non_capability_names = NON_CAPABILITY_DART_NAMES - expected
-    profile = detect_branch_profile(repo_root)
     errors: list[str] = []
     source_paths = sorted(
         (repo_root / ".claude" / "commands").glob("dart-*.md")
     ) + sorted((repo_root / ".claude" / "skills").glob("dart-*/SKILL.md"))
     for source_path in source_paths:
         source_content = source_path.read_text(encoding="utf-8")
-        if source_path.name == "SKILL.md":
-            # Shared skills may carry sections owned by the other branch
-            # profile; scan only the lines that apply to this profile.
-            try:
-                source_content = "\n".join(
-                    line for _, line in profile_skill_lines(source_content, profile)
-                )
-            except ValueError as exc:
-                errors.append(f"{source_path.relative_to(repo_root)}: {exc}")
-                continue
         unprefixed = set(
             re.findall(r"`(dart-[a-z0-9-]*[a-z0-9])(?: [^`]*)?`", source_content)
         )
