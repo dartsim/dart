@@ -232,7 +232,7 @@ jobs:
         if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
         run: pixi run -e ${{ matrix.pixi_env }} wheel-test
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
         with:
           path: ./dist/*.whl
@@ -249,7 +249,7 @@ jobs:
   #     - name: Build SDist
   #       run: pipx run build --sdist
 
-  #     - uses: actions/upload-artifact@v4
+  #     - uses: actions/upload-artifact@v7
   #       with:
   #         path: dist/*.tar.gz
 
