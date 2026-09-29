@@ -48,9 +48,10 @@ N=${DART_SAFE_JOBS:-$(python3 scripts/parallel_jobs.py)}
 DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 
-Open every PR against `release-6.20` (with the branch-matching `DART 6.20.0`
-milestone); `main` mirrors `release-6.20` and is fast-forwarded at each
-release. Dependency-minimization work on DART 6.20 must preserve installed
+Target `release-6.20` (with the branch-matching `DART 6.20.0` milestone);
+`main` mirrors `release-6.20` and is fast-forwarded at each release, so never
+target `main`. Backports to an older maintained `release-6.*` branch use
+`dart-backport-pr`. Dependency-minimization work on DART 6.20 must preserve installed
 headers, package components, and downstream behavior unless a maintainer
 explicitly approves a breaking change.
 

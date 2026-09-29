@@ -36,8 +36,8 @@ and compatibility detail in the owner docs named by `AGENTS.md`.
 - DART 6.20 is a compatibility support lane. Preserve existing public headers,
   package components, and downstream Gazebo/gz-physics behavior unless a
   maintainer explicitly accepts a breaking change.
-- Open every PR against `release-6.20`; `main` mirrors it (see
-  `docs/onboarding/contributing.md`).
+- Target `release-6.20`, never the `main` mirror; older-release backports use
+  `dart-backport-pr` (see `docs/onboarding/contributing.md`).
 
 ## Approval Boundaries
 

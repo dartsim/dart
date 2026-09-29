@@ -33,8 +33,8 @@ configuring/building with OpenSceneGraph forcibly disabled, and the required
 tasks. Keep each required context single-owner when editing workflows.
 
 `main` mirrors `release-6.20`: after tagging each DART 6.20.x release,
-fast-forward it with `git push origin release-6.20:main`. Open every PR against
-`release-6.20`.
+fast-forward it with `git push origin release-6.20:main`. Never target `main`
+with a PR.
 
 ## Verifying Release-Branch Changes
 
