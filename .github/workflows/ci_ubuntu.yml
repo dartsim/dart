@@ -162,7 +162,7 @@ jobs:
 
       - name: Upload agent visual verification evidence
         if: matrix.build_type == 'Release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: agent-visual-smoke
           path: /tmp/dart-agent-visual-smoke
