@@ -29,7 +29,7 @@ The DART 6.20 release branch uses a small cross-agent workflow surface:
   zero-body runs.
 - `docs/ai/capabilities.json`: machine-readable workflow inventory.
 - `docs/ai/branch-profile.json`: machine-readable DART 6.20 facts, required
-  surfaces, and DART 7 exclusions.
+  surfaces, and forbidden markers and paths.
 - `docs/ai/agent-scenarios.json`: eight deterministic contracts covering
   orientation, small changes, failure diagnosis, docs, model upgrades,
   components, simulation verification, and release maintenance. The simulation

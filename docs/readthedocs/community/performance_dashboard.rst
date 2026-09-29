@@ -39,11 +39,6 @@ on the maintained DART 6 branch:
   maintained DART 6 soft-body scenes, including one-thread and sixteen-thread
   CPU rows.
 
-This dashboard is intentionally separate from the DART 7 World dashboard. DART
-7 tracks experimental ``World::step`` solver-family throughput; DART 6 tracks
-the stable LTS benchmark surfaces available on the current ``release-6.*`` line
-including the contact-rich and deformable-body DART 6 rows.
-
 Readable labels
 ---------------
 

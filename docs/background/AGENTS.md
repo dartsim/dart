@@ -14,8 +14,8 @@ DART-specific design decisions, roadmap priority, or active handoff state.
   `docs/background/README.md`.
 - Preserve attribution for material derived from papers, textbooks, PDFs, or
   external projects.
-- Keep release-branch claims compatibility-aware. DART 7 references may be
-  useful evidence, but DART 6 changes still need direct release-branch proof.
+- Keep release-branch claims compatibility-aware; DART 6 changes need direct
+  release-branch proof.
 - Put DART architecture and API tradeoffs in `docs/design/`.
 - Put priority, next steps, and acceptance gates in `docs/plans/`.
 - Put active implementation handoff state in `docs/dev_tasks/<task>/`.

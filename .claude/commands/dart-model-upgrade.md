@@ -106,8 +106,8 @@ simulation state with text-first and OSG visual/debug evidence.
    ever-growing model taxonomy.
 7. **Implement only in apply mode.** Apply the smallest supported delta.
    Preserve C++17, pybind11, `dart::utils`, OSG, public/ABI/package behavior,
-   and Gazebo/gz-physics compatibility. Do not import DART 7-only C++23,
-   nanobind, `dart::io`, solver/backend, renderer, or plan surfaces. Keep
+   and Gazebo/gz-physics compatibility. Do not import C++23, nanobind,
+   `dart::io`, or other surfaces the release profile forbids. Keep
    outcome, constraints, permissions, evidence, routing, and stopping
    conditions explicit. Edit `.claude/` sources and run
    `pixi run sync-ai-commands`; never hand-edit generated adapters. Prefer
@@ -141,19 +141,14 @@ simulation state with text-first and OSG visual/debug evidence.
    or downstream evidence.
 10. **Close out for DART 6.** Make the changelog decision in apply mode,
     promote durable guidance, and remove completing temporary task state.
-    Compare any related DART 7 PR or commit against the current release base
-    and record apply/adapt/omit for every material surface. Normally land
-    shared work on `main` first; when a maintainer explicitly requests parallel
-    release work, keep the branches independent and re-audit the final main
-    state before the DART 6 PR is published or merged. Never copy DART 7-only
-    assumptions into this intentionally smaller catalog. Pushes, PRs,
-    comments, review triggers, CI reruns, and merges require explicit
-    maintainer/user approval.
+    Pushes, PRs, comments, review triggers, CI reruns, and merges require
+    explicit maintainer/user approval.
 
 ## Output
 
 - Target, mode, branch, installed versions, primary sources, and control state
-- Preserve/update/remove/consolidate/add plus DART 7 apply/adapt/omit verdicts
+- Preserve/update/remove/consolidate/add plus apply/adapt/omit verdicts for
+  reference material
 - Durable context, session-handoff, freshness, and context-cost findings
 - Comparison matrix, limitations, prompt/config changes, and unchanged choices
 - DART 6 physics/OSG investigation, semantic visual review, artifacts, and

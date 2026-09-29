@@ -48,7 +48,7 @@ struct Vec;
 template <typename T, std::size_t Width>
 struct VecMask;
 
-// C++17 trait equivalents of the DART 7 dart/simd concepts (ScalarType,
+// C++17 trait equivalents of the dart/simd concepts (ScalarType,
 // FloatType, IntType, SignedType, ValidWidth, IsVec, IsVecMask); DART 6
 // builds with C++17, which has no `concept`.
 
@@ -128,7 +128,7 @@ struct IsVecMaskTrait : std::false_type
 {
 };
 
-// Probes use a non-const lvalue, matching the DART 7 concept's requires(M m):
+// Probes use a non-const lvalue, matching a concept's requires(M m):
 // masks with non-const all()/any() must still be detected.
 template <typename M>
 struct IsVecMaskTrait<

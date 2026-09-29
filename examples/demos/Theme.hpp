@@ -36,8 +36,7 @@
 namespace dart_demos {
 
 //==============================================================================
-/// A restrained, cool-neutral dark palette with a single blue accent, adapted
-/// from the DART 7 demos host's applyModernDarkColors. Sets
+/// A restrained, cool-neutral dark palette with a single blue accent. Sets
 /// ImGui::GetStyle().Colors[]; call once before the first frame.
 void applyModernDarkColors();
 

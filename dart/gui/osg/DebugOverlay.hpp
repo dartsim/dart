@@ -52,10 +52,10 @@ namespace osg {
 /// A debug overlay collects world-space line segments and text labels and
 /// renders them unlit, with depth testing disabled, in a late render bin, so
 /// they stay legible on top of the geometry they annotate rather than being
-/// buried inside opaque bodies. This mirrors the DART 7 core debug overlay
-/// treatment and is part of the OSG scene, so it appears in off-screen captures
-/// as well as interactive views. Contact markers, body-frame axes, velocity and
-/// force arrows, trajectories, and body names are the intended content.
+/// buried inside opaque bodies. It is part of the OSG scene, so it appears in
+/// off-screen captures as well as interactive views. Contact markers,
+/// body-frame axes, velocity and force arrows, trajectories, and body names are
+/// the intended content.
 class DebugOverlay : public ViewerAttachment
 {
 public:

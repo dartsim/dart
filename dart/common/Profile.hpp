@@ -32,7 +32,7 @@
 
 #pragma once
 
-// DART 6 profiling front-end, backported from DART 7 (dart/common/profile.hpp).
+// DART 6 profiling front-end.
 //
 // DART_PROFILE_* macros compile to nothing unless DART_BUILD_PROFILE is on.
 // When enabled, two backends can be active independently:

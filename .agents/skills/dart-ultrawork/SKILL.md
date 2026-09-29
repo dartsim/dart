@@ -76,9 +76,8 @@ the real scope materially different stops and reports back.
    implementation. If prior work exists elsewhere, first absorb or summarize
    it into the project home.
 2. **Understand and scout** - Restate the north star, final deliverable,
-   acceptance criteria, quality bar, non-goals, constraints, risks, and whether
-   the work is release-only or must also land on `main`. Scout the territory
-   first with named docs/code, read-only searches, a `dart-analyze` pass, or a
+   acceptance criteria, quality bar, non-goals, constraints, and risks. Scout
+   the territory first with named docs/code, read-only searches, a `dart-analyze` pass, or a
    focused read-only scout (`dart_scout` when running in Codex). Load
    `docs/plans/dashboard.md` for roadmap routing,
    `docs/information-architecture.md` for durable placement, and the relevant
@@ -125,7 +124,7 @@ the real scope materially different stops and reports back.
 6. **Decompose and route** - Cut work packets per the contract above and
    execute serially by default. When the user explicitly requested delegation,
    use the read-only `dart_scout` for bounded discovery, `dart_reviewer` for
-   current-state review, and `dart_release_auditor` for DART 7-to-6 comparison.
+   current-state review, and `dart_release_auditor` for reference comparison.
    Assign the same contracts to role-separated sessions in other clients.
    Implementation stays with the parent or a scoped executor. Use parallel
    writers only with explicit, disjoint ownership.
@@ -159,8 +158,7 @@ the real scope materially different stops and reports back.
     recorded, docs are current, known gaps are documented, unnecessary work is
     removed or deferred, and final state is summarized in `RESUME.md` or a
     durable owner. Promote durable artifacts out of `docs/dev_tasks/<task>/`
-    and remove the folder in the completing PR. Bug fixes follow the dual-PR
-    rule (active DART 6 LTS branch plus `main`). GitHub mutations only with
+    and remove the folder in the completing PR. GitHub mutations only with
     explicit maintainer/user approval.
 
 ## Prompt Shape

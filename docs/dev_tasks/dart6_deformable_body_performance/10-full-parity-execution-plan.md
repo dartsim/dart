@@ -1,18 +1,16 @@
 # DART 6 deformable parity — execution plan
 
 > **Scope change, 2026-07-29.** The Kim/Pollard lane has been removed from
-> DART 6 and retargeted to DART 7; see the decision record in `decisions.md`.
+> DART 6; see the decision record in `decisions.md`.
 > The two papers need different discretizations, and DART 6 should carry one
 > deformable model rather than two parallel subsystems. Everything below that
 > concerns the volumetric FEM backend (PR-2, M2.x) is therefore **not** DART 6
-> work, and whether a reduced FEM is even the right DART 7 target is open given
-> newer solvers such as AVBD. The Jain/Liu lane (PR-3) remains DART 6 work and
-> is unaffected.
+> work. The Jain/Liu lane (PR-3) remains DART 6 work and is unaffected.
 
 Status: **active for the Jain/Liu lane only.** Part A below is the DART 6 plan.
 Part B is retired: the Kim/Pollard volumetric-FEM lane was removed from DART 6 on
-2026-07-29 and retargeted to DART 7, and its sections are kept as DART 7
-reference material, **not** as instructions. Nothing in Part B is DART 6 work.
+2026-07-29, and its sections are kept as reference material, **not** as
+instructions. Nothing in Part B is DART 6 work.
 
 PR-3a soft-foot SIMBICON shipped 2026-08-01 (#3408, #3423): the biped
 push-recovery row reproduces and is gate-asserted; its motor-noise clause
@@ -36,7 +34,7 @@ while adding **zero overhead to pure rigid-body simulation** and preserving
 Done = every **Jain/Liu** row of `02-paper-parity-matrix.md` meets the matrix's
 acceptance rule with at least two clean independent review passes and a durable
 demo artifact, and none relies on a deferral. The Kim/Pollard rows in that matrix
-are **not** part of this completion rule: they are retargeted to DART 7 and
+are **not** part of this completion rule: they are out of DART 6 scope and
 marked accordingly in the matrix itself.
 
 ## 2. Constraint: additive and ABI-safe on release-6.20
@@ -49,7 +47,7 @@ dynamics subsystem.
 
 The question of whether a *second* deformable architecture could live here was
 settled on 2026-07-29: it cannot. The volumetric FEM lane was removed from DART 6
-and retargeted to DART 7 (`decisions.md`). The two papers need different
+(`decisions.md`). The two papers need different
 discretizations, and a compatibility release branch should carry one deformable
 model. That is why the FEM subsystem needed uninstalled headers, absence from the
 generated aggregate, and a Doxygen exclusion just to exist here — symptoms of
@@ -111,8 +109,7 @@ keeps runs bit-identical), so that evidence needs its own configuration.
 - **Landed foundation**: the performance/compatibility slice and the three
   already-satisfied Jain/Liu rows are part of the release branch.
 - **Kim/Pollard parity: RETIRED from DART 6.** The volumetric FEM backend was
-  removed on 2026-07-29 and retargeted to DART 7 (`decisions.md`). Do not start
-  it here.
+  removed on 2026-07-29 (`decisions.md`). Do not start it here.
 - **Active Jain/Liu series**: PR-3a shipped; continue with locomotion (3b),
   hand scenes (3c), and the flexible-foot comparison (3d), bundled into as
   few PRs as review quality allows.
@@ -218,14 +215,12 @@ What must be **built/authored** for PR-3:
 
 The Kim/Pollard sequencing that used to appear here is retired with Part B.
 
-# Part B — retired: Kim/Pollard lane (DART 7 reference only)
+# Part B — retired: Kim/Pollard lane (reference only)
 
-> Removed from DART 6 on 2026-07-29. The sections below record what was learned
-> and are kept so a DART 7 effort does not start from zero. They are **not**
-> instructions and nothing here is DART 6 work. On DART 7 the first question is
-> whether a reduced FEM in this style is still the right target at all, given
-> newer solvers such as AVBD. The implementation is preserved in the
-> `wp-db-fem-foundation` and `wp-db-fem-elastic` branches and in #3404.
+> Removed from DART 6 on 2026-07-29. The sections below record what was
+> learned. They are **not** instructions and nothing here is DART 6 work. The
+> implementation is preserved in the `wp-db-fem-foundation` and
+> `wp-db-fem-elastic` branches and in #3404.
 
 ## B.1 Kim/Pollard architecture — FEM backend design (retired)
 
@@ -259,8 +254,7 @@ Proposed additive design (no existing-layout/vtable change):
   On DART 6 this seam question was answered before the lane was retired: the
   `ConstraintBase` hook worked, `ConstraintSolver::solve()` is not virtual, and
   the hook is silently skipped once deactivation rests the scene. Those findings
-  are recorded in `11-fem-integration-seam.md`. A DART 7 effort would face a
-  different engine and should not assume any of it carries over.
+  are recorded in `11-fem-integration-seam.md`.
 - **Reduced nonlinear FEM math**: corotational or StVK element forces on the tet
   mesh, modal/subspace reduction, and Kim/Pollard's selective diagonalization
   (SVD-based, paper reports 1.16×–3.60×). Correctness gated against analytic

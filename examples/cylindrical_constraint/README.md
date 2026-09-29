@@ -20,9 +20,8 @@ constraints:
 - `CylindricalJointConstraint` keeps the bodies on one axis and leaves
   translation along that axis plus rotation about that axis free.
 - `WeldJointConstraint` removes all relative rigid-body DOFs.
-- DART 7/main `RevoluteJointConstraint` keeps a fixed anchor and leaves only
-  rotation about the shared axis free. DART 6.19 does not expose that dynamic
-  constraint, so this example uses the 6.x runtime constraints directly.
+- DART 6 does not provide a dynamic `RevoluteJointConstraint`, so this example
+  uses the 6.x runtime constraints directly.
 
 ## Build Instructions
 

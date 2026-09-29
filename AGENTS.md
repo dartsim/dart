@@ -54,10 +54,8 @@ the repository root to the working directory.
 - Preserve C++17, pybind11, `dart::utils` parsers, OSG, installed headers,
   package components, ABI-sensitive interfaces, default simulation behavior,
   and Gazebo/gz-physics compatibility unless a maintainer approves otherwise.
-- DART 7 `main` is reference evidence only. Do not import C++23, nanobind,
-  `dart::io`, or DART 7-only solver/backend workflows into this branch.
-- Bug fixes that apply to DART 6 and DART 7 require separate PRs: the
-  release-branch PR first, then the matching `main` PR.
+- `main` mirrors `release-6.20` and is fast-forwarded at each release; open
+  every PR against `release-6.20`.
 - Use `.github/PULL_REQUEST_TEMPLATE.md` and set the branch-matching DART 6.x
   release milestone (currently `DART 6.20.0`) on release-branch PRs.
 - Do not prefix commit messages or PR titles with agent tags like `[codex]`;

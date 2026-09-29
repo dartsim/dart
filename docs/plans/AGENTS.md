@@ -21,8 +21,7 @@ implementation trackers.
   guidance in `docs/onboarding/`, theory/reference material in
   `docs/background/`, user instructions in `docs/readthedocs/`, and active
   handoff state in `docs/dev_tasks/`.
-- Do not use DART 7 clean-break plan language as a release-branch decision.
-  Every DART 6 plan needs compatibility evidence for the release branch.
+- Every DART 6 plan needs compatibility evidence for the release branch.
 
 ## Verification
 

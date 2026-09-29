@@ -35,9 +35,7 @@ Read these files first:
 3. **Setup** - Choose the target branch before creating a topic branch. For
    DART 6.20 maintenance, dependency-minimization, docs, and compatibility
    work, branch from `origin/release-6.20` without tracking the release ref:
-   `git switch --no-track -c <type>/<topic> origin/release-6.20`. Bug fixes
-   that also apply to DART 7 still need a separate `main` PR after the release
-   branch fix.
+   `git switch --no-track -c <type>/<topic> origin/release-6.20`.
 4. **Implement** - Keep commits focused, follow code style
 5. **Verify** - Run `pixi run lint` before committing, then run the focused
    release-branch gate for the touched surface. Use `pixi run test-all` when
@@ -60,12 +58,11 @@ Read these files first:
 
 ## Type-Specific
 
-- **Bugfix**: Requires PRs to BOTH the active DART 6 LTS branch AND `main`
+- **Bugfix**: Target the active DART 6 LTS branch (`release-6.20`)
 - **Refactor**: No behavior changes
 - **Feature**: Add tests + docs
-- **DART 7 solver or architecture work**: Do that on `main`, not on the DART
-  6.20 support branch. Use this release branch only for compatible maintenance,
-  dependency minimization, CI, docs, and backports.
+- **Scope**: Use this release branch only for compatible maintenance,
+  dependency minimization, CI, docs, and fixes.
 
 ## Output
 

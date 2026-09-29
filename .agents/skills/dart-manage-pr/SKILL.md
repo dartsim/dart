@@ -82,10 +82,9 @@ gh pr checks <PR_NUMBER>
 
 1. Confirm scope and policy:
    - Check that the base branch, title, and PR template are correct, and that
-     the base-matching milestone is set (`DART 7.0` for a `main` base, the
-     branch-matching DART 6.x release milestone for a `release-*` base); if
-     it is missing, set it only after explicit maintainer/user approval.
-   - For bug fixes, verify the required DART 6 LTS + `main` dual-PR flow.
+     the branch-matching DART 6.x release milestone is set; if it is missing,
+     set it only after explicit maintainer/user approval.
+   - Confirm the PR targets `release-6.20`, not the `main` mirror.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
    - Confirm the PR body is readable and follows template order (Summary first

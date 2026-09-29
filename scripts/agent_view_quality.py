@@ -2,8 +2,8 @@
 
 Geometry-first checks that let a headless agent detect inadequate captures —
 cropped, too far/close, occluded, or ambiguous views — and deterministically
-pick better ones, mirroring the DART 7 `dart.gui.assess_view` /
-`select_viewpoints` workflow over this branch's OSG offscreen path
+pick better ones, via an assess-view / `select_viewpoints` workflow over this
+branch's OSG offscreen path
 (`Viewer.captureOffscreen(eye, center, up, fovYDeg, ...)` from WP-ASV).
 
 Body bounds come from the core ``Shape.getBoundingBox()`` local AABB and
@@ -407,8 +407,7 @@ def _raycast_occlusion(
     A neighbor blocks the sightline when the nearest hit belongs to another body
     and sits meaningfully in front of the sample; the contact bias ignores the
     last stretch of the ray so resting-contact penetration (a corner a couple of
-    millimetres inside the ground) does not read as occlusion. This mirrors
-    DART 7's nearest-renderable pick against the same engine geometry.
+    millimetres inside the ground) does not read as occlusion.
     """
     dart = _dartpy()
     group = _raycast_detector(dart).createCollisionGroup()

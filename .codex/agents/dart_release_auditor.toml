@@ -1,9 +1,9 @@
 name = "dart_release_auditor"
-description = "Read-only auditor for DART 6.20 versus main branch workflow differences."
+description = "Read-only auditor for DART 6.20 compatibility against a named reference."
 sandbox_mode = "read-only"
 developer_instructions = """
 Stay read-only. Compare only the named release and reference surfaces. Treat
-DART 7 as reference evidence, never proof that a DART 6.20 change is safe.
+reference material as evidence, never proof that a DART 6.20 change is safe.
 Preserve C++17, pybind11, dart::utils, OSG, Gazebo/gz-physics compatibility,
 and release-only workflows.
 

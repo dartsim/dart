@@ -36,8 +36,8 @@ and compatibility detail in the owner docs named by `AGENTS.md`.
 - DART 6.20 is a compatibility support lane. Preserve existing public headers,
   package components, and downstream Gazebo/gz-physics behavior unless a
   maintainer explicitly accepts a breaking change.
-- Bug fixes that apply to both DART 6 and DART 7 should follow the dual-PR
-  policy in `docs/onboarding/contributing.md`.
+- Open every PR against `release-6.20`; `main` mirrors it (see
+  `docs/onboarding/contributing.md`).
 
 ## Approval Boundaries
 

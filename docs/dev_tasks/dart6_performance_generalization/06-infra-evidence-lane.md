@@ -53,8 +53,8 @@ Everything the other lanes need to measure honestly and hand off cleanly.
 #### WP-PG.03 — DART 6 profiling documentation + Tracy config task
 
 - Status: done — #3337 (`wp-pg-03-profiling-doc`)
-- Objective: author `docs/onboarding/profiling.md` **for 6.20** (the main
-  doc documents DART 7-only APIs): `dart/common/Profile.hpp` text backend
+- Objective: author `docs/onboarding/profiling.md` **for 6.20**:
+  `dart/common/Profile.hpp` text backend
   (`DART_BUILD_PROFILE`, default ON in the pixi config),
   `contact_benchmark --profile`, and the Tracy opt-in recipe; add a pixi
   `config-tracy` (profile env) task so a Tracy build is one command
@@ -75,15 +75,15 @@ Everything the other lanes need to measure honestly and hand off cleanly.
 - Status: blocked on D4
 - Objective: either (a) confirm `/dart-resume` + RESUME.md as the 6.20
   executor entry point (documenting the packet-claim flow in this
-  folder), or (b) backport a 6.20-adapted `dart-execute-packet` command
-  whose required-reading list points at this folder's dashboard instead
-  of main's plans dashboard — regenerating `.codex`/`.opencode` surfaces
+  folder), or (b) add a 6.20 `dart-execute-packet` command whose
+  required-reading list points at this folder's dashboard — regenerating
+  `.codex`/`.opencode` surfaces
   (`scripts/sync_ai_commands.py --check`) in the same PR.
 - Value: lets Claude/Codex sessions claim and execute packets with zero
   extra context, which is the stated goal of this planning round.
 - Scope: `.claude/commands|skills` + generated surfaces (option b), or
   docs-only (option a).
 - Acceptance evidence: a fresh session can pick up the next packet from
-  RESUME.md (or the backported command) and find every gate command it
+  RESUME.md (or the new command) and find every gate command it
   needs without reading outside the folder.
 - Dependencies: D4.
