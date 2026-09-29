@@ -32,6 +32,9 @@ configuring/building with OpenSceneGraph forcibly disabled, and the required
 `ubuntu-latest` context, owned only by CI gz-physics and running both Gazebo
 tasks. Keep each required context single-owner when editing workflows.
 
+When `main` mirrors `release-6.20`, fast-forward it after tagging each DART
+6.20.x release: `git push origin release-6.20:main`.
+
 ## Backporting `main` (DART 7) → `release-6.20` (DART 6)
 
 Cherry-pick the source commit onto a fresh `backport/<pr>-to-release-6.20`

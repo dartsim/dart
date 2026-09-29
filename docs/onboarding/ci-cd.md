@@ -23,11 +23,11 @@ field).
 | `ci_simd.yml`                     | CI SIMD Multi-Arch          | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
 | `ci_toolchain.yml`                | CI Toolchain (Linux)        | Alternate Linux toolchain build + test           |
 | `ci_gz_physics.yml`               | CI gz-physics               | Gazebo/gz-physics downstream integration         |
-| `api_doc.yml`                     | API Documentation           | Doxygen API docs build/publish                   |
+| `api_doc.yml`                     | API Documentation           | Doxygen API docs build (validation only; not published) |
 | `codeql.yml`                      | CodeQL                      | Static security analysis — no automatic runs here (push/PR filters pin `release-6.17`/`release-6.16`); `workflow_dispatch` still allows an on-demand scan |
 | `publish_dartpy.yml`              | Publish dartpy              | Build, repair, verify, and publish Python wheels |
 | `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | Performance dashboard (push/call/dispatch)      |
-| `update_lockfiles.yml`            | Update Lock Files           | Scheduled pixi lockfile refresh PRs — currently inactive here: its target matrix pins `main`/`release-6.17` |
+| `update_lockfiles.yml`            | Update Lock Files           | Scheduled pixi lockfile refresh PRs against `release-6.20` |
 
 Useful commands:
 

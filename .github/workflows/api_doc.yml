@@ -129,36 +129,13 @@ jobs:
         run: |
           pixi run python -m pip install pytest -U
 
+      # Validation only: this job does not publish the API docs, so scheduled
+      # runs from the default branch cannot replace the GitHub Pages site.
       - name: Build
         run: |
           CMAKE_PREFIX_PATH="$PIXI_PREFIX" ./scripts/build_docs.sh build
-
-      - name: Upload documentation artifact
-        if: ${{ github.ref == 'refs/heads/main' }}
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: gh-pages
 
       - name: Cleanup
         if: always()
         run: |
           ./scripts/build_docs.sh clean
-
-  deploy:
-    if: ${{ github.ref == 'refs/heads/main' }}
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
