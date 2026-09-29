@@ -9,4 +9,4 @@ Current Codex skill discovery surface for DART 6.20.
 - Preserve unrelated skills in this shared directory. The sync tool may remove
   only paths owned by the DART-generated manifest.
 - Keep release-specific C++17, pybind11, `dart::utils`, OSG, and Gazebo
-  assumptions; do not import DART 7-only workflows.
+  assumptions.

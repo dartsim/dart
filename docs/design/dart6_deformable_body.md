@@ -15,8 +15,8 @@ active task home until closeout.
 - Existing behavior remains the default. In particular, adaptive contact
   activation and soft face-interior contact coverage are opt-in; their disabled
   paths must preserve the established simulation arithmetic and checksums.
-- DART 6 deformable-body work is CPU-first. GPU solver or offload APIs belong
-  to a clean-break development line rather than the 6.20 compatibility branch.
+- DART 6 deformable-body work is CPU-first. GPU solver or offload APIs are out
+  of scope for the DART 6 line.
 - Collision, constraint, or default-policy changes require the focused
   deformable tests plus the Gazebo/gz-physics compatibility gate before any
   default change.
@@ -133,9 +133,7 @@ architecture beside `SoftBodyNode`. A compatibility release branch should not
 carry two deformable architectures, and the subsystem that briefly existed here
 needed uninstalled headers, absence from the generated aggregate, and a Doxygen
 exclusion purely to avoid freezing an unfinished API into 6.20 — symptoms of
-being in the wrong place. The lane is retargeted to DART 7, where the first
-question is whether a reduced FEM in this style is still the right target at all
-given newer solvers such as AVBD. The implementation is preserved in the
+being in the wrong place. The implementation is preserved in the
 `wp-db-fem-foundation` and `wp-db-fem-elastic` branches and in #3404. Do not
 restart it on `release-6.20`.
 

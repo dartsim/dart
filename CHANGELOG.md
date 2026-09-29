@@ -483,8 +483,8 @@
 
 * Math
 
-  * Backport the header-only `dart/simd` SIMD abstraction module from DART 7,
-    adapted to C++17. It provides `dart::simd::Vec`/`VecMask` types with
+  * Add the header-only `dart/simd` SIMD abstraction module for C++17. It
+    provides `dart::simd::Vec`/`VecMask` types with
     compile-time backend dispatch (SSE4.2, AVX, AVX2, AVX-512, NEON, SVE, and
     a portable scalar fallback), vectorized transcendental math kernels,
     SIMD-friendly geometry and SoA batch types, aligned-memory helpers, and
@@ -673,8 +673,8 @@
 
 * Examples
 
-  * Give `dart-demos` a real dockable workspace on docking-ImGui builds
-    (adopting the DART 7 demos host design): a DockSpace over the viewport
+  * Give `dart-demos` a real dockable workspace on docking-ImGui builds:
+    a DockSpace over the viewport
     with a transparent central 3D node, a deterministic default layout
     (toolbar top, navigator left, scene panel right, diagnostics bottom),
     user-rearrangeable panels with View > "Reset layout", a stable scene
@@ -775,8 +775,8 @@
     tag so the installed `dart-external-imgui` component keeps its public
     ImGui ABI across DART 6.20.x; system-ImGui builds are unchanged.
     `parseGuiScale` now warns and clamps out-of-range values into the
-    supported `[0.5, 4]` range (matching the DART 7 viewer) instead of
-    discarding them for the fallback value:
+    supported `[0.5, 4]` range instead of discarding them for the fallback
+    value:
     [#3426](https://github.com/dartsim/dart/pull/3426)
 
   * Fix `dart::gui::osg` interaction teardown so registered handlers and
@@ -1079,9 +1079,8 @@ so invalid SDF data degrades gracefully (with a warning) instead of aborting.
 ### [DART 6.17.0 (2026-06-03)](https://github.com/dartsim/dart/milestone/85?closed=1)
 
 DART 6.17.0 is a maintenance release on the DART 6 LTS compatibility line. It
-backports bug fixes and additive improvements to the classic DART 6 API that were
-made on `main` during DART 7 development, so that DART 6 and gz-physics users
-receive them before the DART 7 clean break removes the legacy API from `main`.
+delivers bug fixes and additive improvements to the classic DART 6 API for
+DART 6 and gz-physics users.
 
 * GUI
 

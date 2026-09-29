@@ -144,8 +144,8 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
     opt.collisionDetectorName = detectorEnv;
   if (const char* threadsEnv = std::getenv("THREADS"))
     opt.simulationThreads = parseThreadCount(threadsEnv, opt.simulationThreads);
-  // Same environment seed as the shared dart::gui::osg helpers and the DART 7
-  // demos host; the --gui-scale flag below overrides it.
+  // Same environment seed as the shared dart::gui::osg helpers; the
+  // --gui-scale flag below overrides it.
   if (const char* guiScaleEnv = std::getenv("DART_GUI_SCALE");
       guiScaleEnv != nullptr && guiScaleEnv[0] != '\0') {
     opt.guiScale

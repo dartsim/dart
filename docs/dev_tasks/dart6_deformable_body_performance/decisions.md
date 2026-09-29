@@ -20,8 +20,8 @@ reversible.
 ## 2026-07-29 maintainer decision: Kim/Pollard leaves DART 6
 
 - Decision: **Remove the volumetric FEM subsystem (`dart/dynamics/fem/`) from
-  DART 6 and retarget the Kim/Pollard lane to DART 7**, keeping DART 6's
-  deformable work on the Jain/Liu model that `SoftBodyNode` already implements.
+  DART 6**, keeping DART 6's deformable work on the Jain/Liu model that
+  `SoftBodyNode` already implements.
 - Reasoning: the two papers cannot share one discretization. Jain/Liu is surface
   point masses attached to articulated rigid bodies, which *is* `SoftBodyNode`
   and which #3382 improved. Kim/Pollard is a reduced *volumetric* FEM over
@@ -34,11 +34,6 @@ reversible.
   preserved in branch and pull-request history rather than deleted outright:
   the foundation in `wp-db-fem-foundation` and the elastic element forces in
   `wp-db-fem-elastic` / #3404, which is closed rather than merged.
-- Open question, explicitly not settled here: whether a reduced FEM in the
-  Kim/Pollard style is still the right target for DART 7 at all, given newer
-  solvers such as AVBD. Decide that on DART 7's own terms before porting
-  anything; the 2011 method is not automatically the best choice fifteen years
-  later.
 - Retained knowledge: `11-fem-integration-seam.md` keeps the DART 6 findings
   that outlive the FEM code, in particular that `World::step()` returns early
   without calling `ConstraintSolver::solve()` once automatic deactivation puts
@@ -63,7 +58,7 @@ reversible.
   (soft-body may still improve).
 - Context / options considered: The design owner
   `docs/design/dart6_deformable_body.md` frames the volumetric-FEM + controller
-  work as a clean-break (`main`/DART 7) line. Offered clean-break-on-`main`,
+  work as a clean-break line for a future major release. Offered clean-break,
   additive-ABI-safe-on-`release-6.20`, or research-first. The maintainer chose
   **additive, ABI-safe on `release-6.20`** (new opt-in types/APIs only; no
   changes to existing public class layouts, vtables, or default semantics),
@@ -126,17 +121,7 @@ decision re-defers it.
    acceleration for this public matrix. Decision: use only the parent body
    response for mass and augmented-mass column assembly, keep the physical
    acceleration term in inverse dynamics, and gate the distinction with a
-   nonzero-retained-acceleration regression. This exact correction does not
-   backport to DART 7 because `main` still has point-mass mass aggregation
-   disabled.
-7. **Dual-PR applicability for the zero-DoF assertion fix (2026-07-12).** The
-   soft point-mass `Skeleton::updateBiasImpulse` overload on live
-   `origin/main` still carries the same over-strict `getNumDofs() > 0`
-   assertion removed by release commit `10c6b6055e4`. That bug therefore
-   requires a `main` follow-up under the dual-PR policy. Keep it separate from
-   #3382 stabilization and do not use the unrelated MJCF baseline failure as a
-   reason to widen this release PR. PLAN-622 now owns this cross-branch
-   follow-up after the temporary task folder is retired.
+   nonzero-retained-acceleration regression.
 
 ## Deferral list (maintainer-approved 2026-07-11) — RETRACTED 2026-07-23
 

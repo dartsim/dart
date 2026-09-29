@@ -17,9 +17,8 @@ Near-term AI-assisted work should prioritize:
 - durable decisions promoted to `docs/design/`, `docs/onboarding/`,
   `docs/background/`, or `docs/readthedocs/` before task cleanup.
 
-Do not use DART 7 clean-break assumptions as proof that a DART 6.20 removal is
-safe. Use DART 7 only as reference evidence and then prove the release-branch
-compatibility surface directly.
+Prove the release-branch compatibility surface directly before treating a DART
+6.20 removal as safe.
 
 ## Planning Surfaces
 

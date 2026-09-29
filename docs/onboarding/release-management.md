@@ -32,33 +32,11 @@ configuring/building with OpenSceneGraph forcibly disabled, and the required
 `ubuntu-latest` context, owned only by CI gz-physics and running both Gazebo
 tasks. Keep each required context single-owner when editing workflows.
 
-When `main` mirrors `release-6.20`, fast-forward it after tagging each DART
-6.20.x release: `git push origin release-6.20:main`.
+`main` mirrors `release-6.20`: after tagging each DART 6.20.x release,
+fast-forward it with `git push origin release-6.20:main`. Never target `main`
+with a PR.
 
-## Backporting `main` (DART 7) → `release-6.20` (DART 6)
-
-Cherry-pick the source commit onto a fresh `backport/<pr>-to-release-6.20`
-branch and adapt it to the DART-6 layout:
-
-- PascalCase headers (`dart/dynamics/Joint.hpp`), not snake_case; `dart/utils/…`,
-  not `dart/io/…`. pybind11, not nanobind (`python/dartpy/…`).
-- `SmartPointer.hpp` + `DART_COMMON_DECLARE_SHARED_WEAK(...)` instead of
-  `Fwd.hpp`; no `DART_API` / `<dart/Export.hpp>` on 6.20 constraint/shape classes.
-- `HAVE_BULLET` / `HAVE_ODE`, not `DART_HAVE_*`.
-- Most test dirs auto-register via `dart_build_tests(... GLOB_SOURCES)` (drop a
-  `test_*.cpp` in, no CMake edit), but some — e.g. `tests/integration/` and
-  `tests/unit/collision/` — use an explicit `SOURCES` list, so add the new file
-  there too. Drop genuinely DART-7-only infra (the ECS `ClassicRigidSolver`,
-  `MeshLoader`, the `tests/unit/gui` tree); confirm against the 6.20 tree first,
-  since much is already backported (e.g. `CouplerConstraint`).
-- For AI workflow or generated-adapter backports, compare
-  `docs/ai/capabilities.json`, `docs/ai/workflows.md`, `.claude/commands/`,
-  `.claude/skills/`, `.agents/skills/`, and `.opencode/command/` before
-  cherry-picking. If the requested outcome names a workflow that is absent on
-  this branch, add a release-tailored capability only when that is the explicit
-  request; otherwise adapt the guidance to the existing DART 6.20 workflow
-  surface and do not import main-only workflows just to make a patch apply.
-  Regenerate adapters with `pixi run sync-ai-commands`.
+## Verifying Release-Branch Changes
 
 Verify before merging: `pixi run test-all` for the complete default CMake graph.
 The branch configuration pins `BUILD_TESTING=ON`, so `ALL` builds the default

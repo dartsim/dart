@@ -450,7 +450,7 @@ TEST(ContactType, EnumValues)
   EXPECT_NE(ContactType::Patch, ContactType::Unknown);
 }
 
-// DART 6 supplementary coverage tests (not ported from DART 7)
+// DART 6 supplementary coverage tests
 TEST(ContactManifold, AccessorsAndCompatibilityFailureCases)
 {
   ContactManifold manifold;

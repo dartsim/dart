@@ -1,9 +1,8 @@
 # DART 6.20 AI Workflows
 
 This directory contains the release-branch AI operating model used by Codex,
-Claude Code, and OpenCode. It is intentionally smaller than the DART 7 `main`
-workflow surface and focuses on the workflows needed to maintain the DART 6 LTS
-line.
+Claude Code, and OpenCode. It focuses on the workflows needed to maintain the
+DART 6 LTS line.
 
 ## Visibility And Context Budget
 
@@ -31,7 +30,7 @@ Start with:
 - [`components.md`](components.md)
 - [`capabilities.json`](capabilities.json)
 - [`branch-profile.json`](branch-profile.json): machine-readable DART 6.20
-  facts, required surfaces, and DART 7 exclusions.
+  facts, required surfaces, and forbidden markers and paths.
 - [`agent-scenarios.json`](agent-scenarios.json): the eight deterministic agent
   contracts, including model upgrades and simulation verification, from
   orientation through release maintenance.
@@ -147,7 +146,4 @@ taxonomy.
 ## Release Profile
 
 `release-6.20` preserves C++17, pybind11, `dart::utils`, OSG, and
-Gazebo/gz-physics compatibility. DART 7's C++23, nanobind, `dart::io`, solver,
-and backend workflows remain on `main`. Use DART 7 as comparison evidence only;
-adapt or omit each difference instead of copying the larger workflow surface.
-The release component map is [`architecture.md`](../onboarding/architecture.md).
+Gazebo/gz-physics compatibility. The release component map is [`architecture.md`](../onboarding/architecture.md).

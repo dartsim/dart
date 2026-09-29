@@ -7,8 +7,7 @@ passes, but per-skeleton work is not data-batched: repeated per-step
 `BoxedLcpConstraintSolver.cpp`), no single-free-body fast path in
 `Skeleton::computeForwardDynamics`, AoS structures rebuilt per step, and
 per-step heap traffic in the #3227 shallow-support machinery
-(`World.cpp:159-174`, `:298`). DART 7's assessment names
-zero-steady-state-allocation as the single scaling enabler.
+(`World.cpp:159-174`, `:298`).
 
 Version-semantics constraint for the whole lane: kinematic/velocity
 version counters drive the deactivation snapshots and all-resting fast
@@ -70,11 +69,10 @@ the same versions/dirty flags the scalar path does, or sleeping breaks.
 
 - Status: done — #3297/#3307 (`wp-pg-32-frame-allocation-gate` tracker
   reconciliation)
-- Objective: port the *pattern* of main's `FrameAllocator`
-  (`dart/common/frame_allocator.hpp`) as an additive `dart::common`
-  utility; route ConstraintSolver/collision per-step scratch through it;
-  expose capacity/overflow counters; add an allocation-count regression
-  gate to CI (modeled on main #3103/#2504) using the guard scenes. Current
+- Objective: add a frame-arena `FrameAllocator` as an additive
+  `dart::common` utility; route ConstraintSolver/collision per-step scratch
+  through it; expose capacity/overflow counters; add an allocation-count
+  regression gate to CI using the guard scenes. Current
   `release-6.20` already contains this implementation from merged #3297 and
   #3307, so this packet is closed by recording the live evidence and avoiding a
   duplicate allocator branch.

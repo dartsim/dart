@@ -194,11 +194,9 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
 - SIMD rewrites of Dantzig inner loops or fixed-size `ContactConstraint`
   Eigen math (already vectorized; the cost is structural).
 - Taskflow/ComputeExecutor adoption, ECS Model/State split, SoA state
-  storage, GPU offload (DART 7-only; this workload is
-  compute_backend_research.md "Pattern B": threads + SIMD + allocation
+  storage, GPU offload (this workload is threads + SIMD + allocation
   discipline + islanding granularity).
 - Split-impulse tuning (off by default in 6.20).
-- Porting DART 7 collision-world plumbing (EnTT).
 - Re-attempting the measured-and-rejected round-1 experiments (see the
   prior-art inventory in 01-baseline-evidence.md) without new evidence.
 
@@ -224,13 +222,10 @@ PR branches. Claim packets by marking the dashboard row and RESUME.md.
   re-baseline evidence because matrix-free PGS has different solver semantics
   from Dantzig.
 - **D4 — Executor tooling**: keep `/dart-resume` + RESUME.md as the 6.20
-  entry point, or backport a 6.20-adapted `dart-execute-packet` command
-  (WP-PG.04).
+  entry point, or add a 6.20 `dart-execute-packet` command (WP-PG.04).
 - **D5 — ODE lane depth**: proposal — land the bounded set WP-PG.20/21/22
   (bookkeeping/algorithmic, behavior-preserving) and stop there pending
   WS-F phase 5 (facade decision). WP-PG.23 is governed by D8, not D5.
-- **D6 — Deactivation default divergence**: 6.20 defaults deactivation ON,
-  main defaults OFF. Flagged for awareness; no action proposed this round.
 - **D7 — Penetration-creep remediation policy**: resolved by merged #3353. The
   behavior-changing default policy promotes the evidenced contact ERV/tolerance
   values through dense-island adaptive policy, keeps ordinary single-body

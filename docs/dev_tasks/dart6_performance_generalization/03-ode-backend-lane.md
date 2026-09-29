@@ -104,7 +104,7 @@ scenes, plus the gz gate.
   ODE trimesh cylinder fallback (or any pair) emits excessive contacts,
   reduce to a representative per-pair manifold at the wrapper level
   (deepest + spread selection, mining round 1's #3135 DART
-  implementation, issue #2366, and DART 7 contact reduction)
+  implementation and issue #2366)
   instead of relying on scene-level caps.
 - Value: round 1 recorded 2.6x RTF on FCL from per-pair capping alone;
   removes the silent-contact-drop failure mode (bodies tunneling out)

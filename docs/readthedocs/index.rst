@@ -12,8 +12,7 @@ Welcome to DART documentation!
    This site documents the **DART 6** compatibility line. The current stable
    release is **DART 6.19.4**; the active maintenance branch is
    ``release-6.20``. Its source version is read from ``package.xml``, and release
-   notes are tracked in ``CHANGELOG.md``. For the in-progress DART 7 redesign,
-   use the `latest documentation <https://dart.readthedocs.io/en/latest/>`_.
+   notes are tracked in ``CHANGELOG.md``.
 
 Introduction
 ------------
@@ -122,7 +121,6 @@ If you use DART in an academic publication, please consider citing this
    dart/developer_guide/build
    dart/developer_guide/contribution
    dart/developer_guide/code_style_guide
-   dart/developer_guide/migration_guide
 
 .. toctree::
    :maxdepth: 1

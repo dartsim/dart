@@ -737,7 +737,7 @@ TEST(SphereSphere, ZeroContactLimitShortCircuitsEvenWithoutContact)
   EXPECT_EQ(result.numContacts(), 0);
 }
 
-// DART 6 supplementary coverage tests (not ported from DART 7)
+// DART 6 supplementary coverage tests
 TEST(SphereSphere, ShapeOverloadZAxisAndContactLimit)
 {
   SphereShape sphere1(1.0);

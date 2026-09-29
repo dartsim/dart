@@ -32,11 +32,10 @@
 
 #pragma once
 
-// Hierarchical, dependency-free text profiler backported from DART 7
-// (dart/common/detail/profiler.hpp). It captures scoped timings into a
-// per-thread call tree and prints an easy-to-skim, hotspot-focused summary for
-// headless, text-based inspection -- no GUI and no special kernel permissions
-// required. DART 6 targets C++17, so the DART 7 C++20 conveniences
+// Hierarchical, dependency-free text profiler. It captures scoped timings into
+// a per-thread call tree and prints an easy-to-skim, hotspot-focused summary
+// for headless, text-based inspection -- no GUI and no special kernel
+// permissions required. DART 6 targets C++17, so C++20 conveniences
 // (std::source_location, std::ranges) are intentionally omitted here; the
 // macros in dart/common/Profile.hpp always pass file/line explicitly.
 

@@ -45,8 +45,7 @@ For AI workflow docs, also read `docs/ai/principles.md`,
   in `doxygen/`.
 - Put durable reusable docs media in `assets/`; put RTD-only static assets in
   `readthedocs/_static/`.
-- Do not import DART 7-only plan/design content wholesale. Adapt each bucket to
-  the DART 6 compatibility lane and prove release-branch claims directly.
+- Prove release-branch claims directly against the DART 6 compatibility lane.
 
 See `docs/information-architecture.md` for the full release-branch placement
 matrix.

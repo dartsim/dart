@@ -67,12 +67,10 @@ Remaining items (parity rows from `02-paper-parity-matrix.md` and
 8. WP-DB.08 pre-default `dart` detector gates (coverage, allocation,
    determinism, same-host performance).
 9. A complete `bm-soft-body-paired` artifact or an approved disposition.
-10. The separate `main` PR for the zero-DoF soft point-mass assertion.
 
 Suggested bundles to keep the PR count low: the biped rows (1-4) in at most
 two scene/gate PRs; the hand/manipulation rows (5) as one PR; performance
-and closure evidence (6-9) as one PR; item 10 stays a separate `main` PR by
-policy.
+and closure evidence (6-9) as one PR.
 
 For each packet: fetch `origin/release-6.20`, create a fresh non-tracking
 topic branch, implement the smallest complete slice with text-first then
@@ -117,6 +115,5 @@ parallelism when the host is shared.
 - Do not change public layouts, defaults, or installed compatibility surfaces
   without explicit approval and the corresponding acceptance evidence.
 - Do not make `dart` the default detector from this packet.
-- Keep the `main` zero-DoF soft point-mass assertion fix in a separate PR.
 - GitHub mutations, pushes, review requests, and branch deletion require the
   authorization defined by the repository instructions.
