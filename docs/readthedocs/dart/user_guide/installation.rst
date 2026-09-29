@@ -71,6 +71,8 @@ Package availability
 For an up-to-date view of every distribution that packages DART, refer to
 Repology:
 
-.. image:: https://repology.org/badge/vertical-allrepos/dart-sim.svg
-   :target: https://repology.org/project/dart-sim/versions
-   :alt: Packaging status
+.. only:: not epub
+
+   .. image:: https://repology.org/badge/vertical-allrepos/dart-sim.svg
+      :target: https://repology.org/project/dart-sim/versions
+      :alt: Packaging status
