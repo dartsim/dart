@@ -14,10 +14,10 @@ Sources:
 - Jain and Liu ACM DOI:
   <https://dl.acm.org/doi/10.1145/2024156.2024197>
 
-## Kim and Pollard 2011 — retargeted to DART 7, not DART 6 scope
+## Kim and Pollard 2011 — not DART 6 scope
 
 > **These rows are not DART 6 work (decided 2026-07-29).** The volumetric FEM
-> lane was removed from `release-6.20` and retargeted to DART 7; see
+> lane was removed from `release-6.20`; see
 > `docs/design/dart6_deformable_body.md`. They are retained here as the paper
 > ledger, not as DART 6 acceptance targets, and are excluded from the DART 6
 > completion rule.
@@ -65,9 +65,9 @@ The 2026-07-11 maintainer-approved deferral list is **retracted**. Nothing in
 this matrix is deferred any more; each row is either active DART 6 work or out of
 DART 6 scope:
 
-- **Kim/Pollard rows are out of DART 6 scope**, retargeted to DART 7 on
-  2026-07-29. They are retained above as the paper ledger and are excluded from
-  the DART 6 completion rule.
+- **Kim/Pollard rows are out of DART 6 scope** (decided 2026-07-29). They are
+  retained above as the paper ledger and are excluded from the DART 6
+  completion rule.
 - **Every Jain/Liu row is active DART 6 work**, including the SIMBICON and
   controller rows (biped push recovery, noisy floor, biped walk), the hand scenes
   (finger flick, arm fold, pinch grasp), and the four-link flexible-rigid-foot

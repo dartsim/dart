@@ -117,8 +117,8 @@ public:
   }
 };
 
-// Note: the DART 7 version takes std::span<const Eigen::Vector3<T>>; this
-// C++17 port takes a (pointer, count) pair instead.
+// Note: this C++17 version takes a (pointer, count) pair instead of
+// std::span<const Eigen::Vector3<T>>.
 template <typename T, std::size_t N>
 class SimdChunksView
 {

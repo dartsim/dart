@@ -1,6 +1,6 @@
 ---
 name: dart-contribute
-description: "DART Contribute: branching, PRs, review workflow, and dual-PR bugfixes"
+description: "DART Contribute: branching, PRs, and review workflow"
 ---
 
 # DART Contribution Workflow
@@ -43,9 +43,7 @@ git push -u origin "HEAD:${branch}"
 gh pr create --draft --base <target-branch> --milestone "<milestone>"
 ```
 
-Use the branch-matching DART 6.x release milestone for release-branch PRs. Use
-`--base main --milestone "DART 7.0"` only for the separate DART 7 companion PR
-when a bug fix also applies to `main`.
+Use the branch-matching DART 6.x release milestone for release-branch PRs.
 
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are included.
 
@@ -73,29 +71,21 @@ approval:
 
 | Target Branch                          | Milestone                      |
 | -------------------------------------- | ------------------------------ |
-| `main`                                 | `DART 7.0` (or next major)     |
 | Active DART 6 LTS `release-6.*` branch | Branch-matching DART 6.x release |
 
 ```bash
 # After explicit maintainer/user approval, set milestone on existing PR
-gh pr edit <PR#> --milestone "DART 7.0"
+gh pr edit <PR#> --milestone "DART 6.20.0"
 
 # List available milestones
 gh api repos/dartsim/dart/milestones --jq '.[] | .title'
 ```
 
-## CRITICAL: Bug Fix Dual-PR
+## Bug Fixes
 
-Bug fixes require PRs to **BOTH** release lines:
-
-1. **Active DART 6 LTS `release-6.*` branch** - Current DART 6 maintenance line
-2. **`main`** - Next release
-
-Steps:
-
-1. Fix on the active DART 6 LTS branch first
-2. Cherry-pick to `main`
-3. After explicit maintainer/user approval, create separate PRs for each
+After explicit maintainer/user approval, open bug-fix PRs against the active
+DART 6 LTS `release-6.*` branch (currently `release-6.20`). `main` mirrors that
+branch and is fast-forwarded at each release; never target `main`.
 
 ## CHANGELOG (After Approved PR Exists)
 

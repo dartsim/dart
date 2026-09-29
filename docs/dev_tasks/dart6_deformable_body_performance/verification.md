@@ -89,9 +89,8 @@ PLAN-622 still requires:
 - representative multicore scaling evidence or an approved negative
   disposition;
 - the `dart` detector coverage, determinism, allocation, and same-host
-  performance gates needed before any default proposal;
-- a complete paired benchmark artifact or approved disposition; and
-- verification for the separate `main` zero-DoF assertion fix.
+  performance gates needed before any default proposal; and
+- a complete paired benchmark artifact or approved disposition.
 
 Each new behavior-bearing packet must add its exact commands, revision,
 results, review evidence, and visual oracle here before completion.

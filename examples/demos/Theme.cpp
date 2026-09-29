@@ -145,7 +145,7 @@ void applyModernDarkColors()
   colors[ImGuiCol_NavCursor] = accent;
 
 #ifdef IMGUI_HAS_DOCK
-  // Docking-branch-only slots, matching the DART 7 demos host theme.
+  // Docking-branch-only slots.
   colors[ImGuiCol_DockingPreview] = accentSoft;
   colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.07f, 0.08f, 0.09f, 1.0f);
 #endif

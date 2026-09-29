@@ -30,8 +30,9 @@ Hard rules:
 - **Fewer, bolder PRs.** No evidence-only / intermediate-scaffold PRs (the user
   rejected #3270 for this). A PR must be a real perf-code improvement with its
   evidence table inline.
-- DART 6 = `release-6.20` LTS, **C++17**. DART 7 = `main`, C++23. Dual-PR to
-  `main` only if the same code exists there.
+- DART 6 = `release-6.20` LTS, **C++17**. Open every PR against
+  `release-6.20` (with the branch-matching `DART 6.20.0` milestone); `main`
+  mirrors `release-6.20` and is fast-forwarded at each release.
 - Determinism guard: bit-identical `contact_benchmark` final-state hashes per
   collision detector; untouched detectors must stay bit-identical.
 

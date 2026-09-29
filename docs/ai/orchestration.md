@@ -1,8 +1,7 @@
 # Orchestrator / Executor Operating Model
 
-This file owns the DART 6.20 AI work-packet contract. The model is adapted from
-DART 7, but the release branch keeps a smaller workflow surface and a stricter
-compatibility envelope.
+This file owns the DART 6.20 AI work-packet contract. The release branch keeps
+a small workflow surface and a strict compatibility envelope.
 
 ## Roles
 
@@ -31,8 +30,8 @@ reasoning over delegating. Use delegated parallel specialists only for
 independently parallelizable discovery or review when the user authorized
 delegation: `dart_scout` gathers repository evidence,
 `dart_reviewer` reviews the current diff and gates, and
-`dart_release_auditor` classifies DART 7 material as apply/adapt/omit for this
-branch. They inherit the parent model, stay read-only, and must receive explicit
+`dart_release_auditor` classifies reference material as apply/adapt/omit for
+this branch. They inherit the parent model, stay read-only, and must receive explicit
 inputs and output contracts. Implementation remains with the parent or a
 separately scoped executor; do not give multiple agents overlapping write
 ownership.
@@ -101,7 +100,7 @@ workflow must state whether it can affect:
 - dartpy bindings or published user documentation.
 
 If any answer is yes, acceptance evidence needs the matching release-branch
-gate. DART 7 clean-break behavior is reference material only.
+gate.
 
 ## Lifecycle
 

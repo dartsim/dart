@@ -57,8 +57,8 @@ them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
 
 ## Key Patterns
 
-- DART 6.20 uses pybind11 under `python/dartpy/`; do not import DART 7
-  nanobind guidance.
+- DART 6.20 uses pybind11 under `python/dartpy/`; do not import nanobind
+  guidance.
 - Follow the existing DART 6 camelCase binding names used in `python/examples`
   and `python/tests`.
 - NumPy arrays auto-convert to Eigen types

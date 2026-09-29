@@ -1342,7 +1342,7 @@ TEST(BoxBoxBatch, boxbox_batch_determinism_vs_single)
   }
 }
 
-// DART 6 supplementary coverage tests (not ported from DART 7)
+// DART 6 supplementary coverage tests
 TEST(BoxBox, BinaryCheckShapeOverloadLeavesResultEmpty)
 {
   BoxShape boxA(Eigen::Vector3d::Ones());

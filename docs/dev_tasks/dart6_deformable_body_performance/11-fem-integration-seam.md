@@ -1,8 +1,8 @@
 # DART 6 per-step extension seam — findings
 
 > **Retained after the 2026-07-29 scope change.** The volumetric FEM subsystem
-> this investigation was written for has been removed from DART 6 and retargeted
-> to DART 7 (`decisions.md`). The findings below are kept because they are facts
+> this investigation was written for has been removed from DART 6
+> (`decisions.md`). The findings below are kept because they are facts
 > about **DART 6 itself**, not about FEM: they constrain any future attempt to
 > hang per-step work off the constraint solver, and the deactivation early-out
 > in particular is a trap worth knowing about.
@@ -125,10 +125,10 @@ demo was never built, since the lane was retired before that point.
 
 This document originally recommended proceeding with an additive
 volumetric-FEM backend on `release-6.20` via the `ConstraintBase` hook. **That
-recommendation is withdrawn.** The subsystem was removed from DART 6 and
-retargeted to DART 7, because the two reference papers need different
-discretizations and a compatibility release branch should not carry two parallel
-deformable architectures (`decisions.md`). Do not act on it.
+recommendation is withdrawn.** The subsystem was removed from DART 6, because
+the two reference papers need different discretizations and a compatibility
+release branch should not carry two parallel deformable architectures
+(`decisions.md`). Do not act on it.
 
 What survives is the mechanism knowledge above, which is about DART 6 rather
 than about FEM: the constraint solver's manual-constraint `update()` is the only

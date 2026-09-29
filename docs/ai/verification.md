@@ -163,7 +163,7 @@ readable alongside their contact markers and collision bounds.
 
   Available `--layers`: `grid`, `world_frame`, `body_frames`, `contacts`,
   `velocities`, `coms`, `inertia_boxes`, `collision_bounds`, `trajectories`,
-  `labels` (matching DART 7's overlay set).
+  `labels`.
 
   `scripts/agent_view_quality.py` assesses a camera before rendering
   (coverage/crop, subject size, core-raycast occlusion, ambiguity; issues named
@@ -182,11 +182,10 @@ readable alongside their contact markers and collision bounds.
   become always-on-top overlay lines and labels become world-anchored osgText
   — all drawn unlit, with depth
   testing disabled, in a late render bin, so the debug primitives stay legible
-  on top of the geometry they annotate (matching DART 7's core debug overlay)
-  instead of being buried in depth or composited in image space. The harness
-  populates the overlay, renders through `captureOffscreen`, then clears it. No
-  GL context is needed for assessment itself. Overlay colors match the DART 7
-  debug producers.
+  on top of the geometry they annotate instead of being buried in depth or
+  composited in image space. The harness populates the overlay, renders through
+  `captureOffscreen`, then clears it. No GL context is needed for assessment
+  itself.
 
 - Select a small claim-tied evidence set and generate the PR section:
 

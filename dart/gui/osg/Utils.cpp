@@ -206,7 +206,7 @@ double parseGuiScale(
 
   if (parsed < kMinGuiScale || parsed > kMaxGuiScale) {
     // Clamp instead of discarding: a user asking for 5 wants "as large as
-    // possible", not the 1.0 default. Same semantics as the DART 7 viewer.
+    // possible", not the 1.0 default.
     const double clamped = std::clamp(parsed, kMinGuiScale, kMaxGuiScale);
     if (errorStream) {
       *errorStream << "--gui-scale " << value

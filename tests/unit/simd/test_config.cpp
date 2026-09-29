@@ -40,10 +40,10 @@
 
 using namespace dart::simd;
 
-// Compile-time checks for the C++17 trait ports of the DART 7 concepts: a
+// Compile-time checks for the C++17 trait ports of the concepts: a
 // width member that is not a constant expression must yield false (not a
 // hard error), and non-const all()/any() must still be detected, matching
-// the DART 7 IsVec/IsVecMask semantics.
+// the IsVec/IsVecMask concept semantics.
 namespace {
 
 struct NonConstantWidth
@@ -117,7 +117,7 @@ static_assert(is_vec_mask_v<VecMask4f>, "VecMask4f must satisfy is_vec_mask_v");
 static_assert(!is_vec_mask_v<int>, "int must not satisfy is_vec_mask_v");
 static_assert(
     is_vec_mask_v<NonConstMask>,
-    "non-const all()/any() must be detected, matching DART 7's requires(M m)");
+    "non-const all()/any() must be detected, matching requires(M m)");
 
 TEST(SimdConfig, BackendName)
 {

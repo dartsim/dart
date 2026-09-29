@@ -6,7 +6,7 @@
 # detection in DART 6 wheel builds, so find_package(GLUT) fails, dart-gui is
 # skipped, and dartpy aborts with "Cannot find the library dart-gui".
 # The Pixi wheel tasks use the Pixi CMake package directly.
-requires = ["setuptools>=42", "wheel", "ninja", "cmake>=4.4.3,<4.4.4"]
+requires = ["setuptools>=84.0.0", "wheel", "ninja", "cmake>=4.4.3,<4.4.4"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]

@@ -285,7 +285,7 @@ std::vector<MemoryMapRegion> makeObjectAddressAtlas(
     std::vector<AddressAtlasExtent> extents,
     const HostPageSizeReading& pageSizeReading);
 
-/// Opt-in sampling state shared by the DART 6 and DART 7 demo panels.
+/// Opt-in sampling state shared by the demo panels.
 class DiagnosticSession
 {
 public:

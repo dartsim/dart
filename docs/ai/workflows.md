@@ -8,8 +8,8 @@ supported AI tools.
 - `.claude/commands/` and `.claude/skills/` are the editable source.
 - `.opencode/command/` and `.agents/skills/` are generated.
 
-`branch-profile.json` owns machine-readable DART 6.20 facts and DART 7
-exclusions. `agent-scenarios.json` owns the eight deterministic orientation,
+`branch-profile.json` owns machine-readable DART 6.20 facts and forbidden
+surfaces. `agent-scenarios.json` owns the eight deterministic orientation,
 small-change, failure-diagnosis, documentation-update, model-upgrade,
 component-work, simulation-verification, and release-maintenance contracts
 exercised by the infrastructure checker.

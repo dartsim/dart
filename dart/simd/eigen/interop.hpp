@@ -42,7 +42,7 @@
 
 namespace dart::simd {
 
-// C++17 trait equivalents of the DART 7 concepts EigenDenseBase and
+// C++17 trait equivalents of the concepts EigenDenseBase and
 // EigenVectorXpr; DART 6 builds with C++17, which has no `concept`.
 
 template <typename Derived>

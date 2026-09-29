@@ -89,8 +89,6 @@ Performance alone is insufficient evidence for any stage.
 
 - DART 6.20 does not flip the default detector.
 - DART 6.20 does not deprecate or remove FCL, Bullet, or ODE.
-- DART 7's EnTT/C++23 world layer is reference material, not a DART 6
-  compatibility argument.
 
 ## Evidence owners
 

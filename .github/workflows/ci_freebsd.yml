@@ -69,7 +69,7 @@ jobs:
           echo /usr/sbin >> "$GITHUB_PATH"
 
       - name: Build and test DART on FreeBSD
-        uses: cross-platform-actions/action@v1.2.0
+        uses: cross-platform-actions/action@v1.6.0
         with:
           operating_system: freebsd
           # Latest FreeBSD 14.x production release. The action's pinned builder
