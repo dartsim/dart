@@ -80,7 +80,7 @@ jobs:
 
       - name: Install system dependencies
         if: matrix.run_build
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.0
+        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: 1.0
