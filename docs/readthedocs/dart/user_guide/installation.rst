@@ -76,3 +76,7 @@ Repology:
    .. image:: https://repology.org/badge/vertical-allrepos/dart-sim.svg
       :target: https://repology.org/project/dart-sim/versions
       :alt: Packaging status
+
+.. only:: epub
+
+   `Packaging status <https://repology.org/project/dart-sim/versions>`_
