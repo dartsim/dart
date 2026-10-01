@@ -2,10 +2,13 @@
 # All rights reserved.
 
 [build-system]
-# Pin fallback PyPA CMake below 4.3.4: that release regressed GLUT/OpenGL
-# detection in DART 6 wheel builds, so find_package(GLUT) fails, dart-gui is
-# skipped, and dartpy aborts with "Cannot find the library dart-gui".
-# The Pixi wheel tasks use the Pixi CMake package directly.
+# Fallback PyPA CMake for isolated source builds (`pip install .`). The Pixi
+# wheel tasks use the Pixi CMake package directly, so CI does not exercise it.
+# CMake 4.3.4 regressed GLUT/OpenGL detection in DART 6 wheel builds:
+# find_package(GLUT) failed, dart-gui was skipped, and dartpy aborted with
+# "Cannot find the library dart-gui". The 4.4.3 pin is not yet validated in
+# that wheel build environment; confirm GLUT detection there before relying
+# on or changing it.
 requires = ["setuptools>=84.0.0", "wheel", "ninja", "cmake>=4.4.3,<4.4.4"]
 build-backend = "setuptools.build_meta"
 
