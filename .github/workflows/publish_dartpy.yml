@@ -50,7 +50,7 @@ jobs:
     name: Check format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.sha }}
 
@@ -151,7 +151,7 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "15.0"
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.DARTPY_CHECKOUT_REF }}
 
@@ -244,7 +244,7 @@ jobs:
   #   name: Build source distribution
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v6
+  #     - uses: actions/checkout@v7
 
   #     - name: Build SDist
   #       run: pipx run build --sdist

@@ -58,7 +58,7 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # cross-platform-actions invokes `fdisk` on the host to size the VM disk.
       # It is present on GitHub-hosted runners; install it only as a fallback,
