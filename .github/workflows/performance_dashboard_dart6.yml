@@ -115,7 +115,7 @@ jobs:
           printf 'benchmark_ref=%s\n' "${benchmark_ref}" >> "${GITHUB_OUTPUT}"
 
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.dart6-branch.outputs.checkout_ref }}
 

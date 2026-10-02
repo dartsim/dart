@@ -71,7 +71,7 @@ jobs:
       SIMD_CMAKE_FLAGS: ${{ matrix.simd_level.cmake_flags }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.10.2
