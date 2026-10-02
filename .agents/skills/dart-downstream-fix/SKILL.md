@@ -67,6 +67,6 @@ visual exception when OSG/Xvfb is unavailable or not applicable.
 ## Output
 
 - Root cause and fix summary
-- Main PR URL and release PR URL, if applicable
+- Release-branch PR URL, if one was opened
 - Tests run and CI status
 - Link back to the downstream issue

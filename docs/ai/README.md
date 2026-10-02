@@ -124,21 +124,20 @@ bounded entry per validated lane:
   everyday or read-heavy work, and Luna for clear repeatable work. Max spends
   more reasoning on one difficult task; Ultra is useful only for independently
   parallelizable work when delegation is authorized. Most tasks need neither.
-- **Claude Code — current Claude models.** Use Fable 5 (`claude-fable-5`, the
-  Mythos-class tier above Opus) for the hardest ambiguous or long-horizon
-  work; Opus 5 (`claude-opus-5`) as the everyday strong default for
-  substantial maintenance work (Claude Code fast mode, toggled with `/fast`
-  on Opus 5/4.8, also runs on Opus); Sonnet 5 (`claude-sonnet-5`) for
-  standard bounded work; and Haiku 4.5 (`claude-haiku-4-5-20251001`) for
-  quick lookups. Reasoning effort is a session-level setting; reserve `max`
-  effort for one hard task rather than making it a default. Fable 5 ships
-  additional safety measures for dual-use capabilities that can occasionally
-  refuse dual-use content; treat such a refusal as expected model behavior
-  rather than a DART harness defect. (Mythos 5 is the same underlying model
-  without those measures, restricted to approved organizations — do not try
-  to select it.) If the refused task is legitimate DART work, restate it
-  with its physics/simulation context made explicit, and surface it to a
-  maintainer if it still refuses.
+- **Claude Code — current Claude models.** Use Fable 5.1 (`claude-fable-5-1`,
+  the tier above Opus) for the hardest ambiguous or long-horizon work; Opus
+  5.5 (`claude-opus-5-5`) as the everyday strong default for substantial
+  maintenance work (Claude Code fast mode, toggled with `/fast`, runs Opus
+  with faster output); Sonnet 5.5 (`claude-sonnet-5-5`) for standard bounded
+  work; and Haiku 4.5 (`claude-haiku-4-5-20251001`) for quick lookups.
+  Reasoning effort is a session-level setting; reserve `max` effort for one
+  hard task rather than making it a default. Fable 5.1, Opus 5.5, and Sonnet
+  5.5 run safety classifiers that can occasionally decline dual-use content;
+  treat such a refusal as expected model behavior rather than a DART harness
+  defect. (Mythos-class models are restricted to approved organizations — do
+  not try to select one.) If the refused task is legitimate DART work,
+  restate it with its physics/simulation context made explicit, and surface
+  it to a maintainer if it still refuses.
 
 Treat these entries as replaceable versioned guidance, not a permanent model
 taxonomy.

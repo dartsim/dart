@@ -30,13 +30,13 @@ For CI/CD troubleshooting: `docs/onboarding/ci-cd.md`
 
 - Unit tests: `tests/unit/`
 - Integration tests: `tests/integration/`
-- Regression tests: Near the code they test
+- Regression tests: `tests/regression/` (start from `test_Issue000Template.cpp`)
 
 ## Writing Tests
 
 1. Follow existing patterns in the test directory
 2. Use GoogleTest framework
-3. Name tests descriptively: `TEST(ClassName, MethodName_Condition_ExpectedResult)`
+3. Name tests descriptively, in the style of the neighboring tests in that file
 
 ## CI Validation
 
@@ -76,4 +76,4 @@ only when capture is unavailable or not applicable.
   with `pixi run lint`; use `pixi run test` or `pixi run test-py` for focused
   reruns and clearer failure attribution.
 - For package, collision, constraint, or dependency changes that could affect
-  downstream users, run `pixi run -e gazebo test-gz` when practical.
+  downstream users, run `pixi run -e gazebo test-gz`.

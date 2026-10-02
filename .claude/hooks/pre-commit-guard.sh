@@ -983,7 +983,6 @@ if ! (cd "$repo_root" && "$python_cmd" scripts/check_agent_hook.py --profile sta
     echo "DART guard: 'python3 scripts/check_agent_hook.py --profile staged' FAILED — commit blocked." >&2
     echo "  Run 'pixi run lint', re-stage, then retry the commit." >&2
     echo "  One-time install of the git hook: pixi run install-hooks" >&2
-    echo "  Emergency bypass: set DART_SKIP_HOOKS=1." >&2
     exit 2
 fi
 

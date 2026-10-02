@@ -42,8 +42,7 @@ For build system internals (CMake, dependencies): `docs/onboarding/build-system.
 - This DART 6.20 support branch prioritizes compatibility with installed
   headers, package exports, and downstream Gazebo/gz-physics behavior.
 - For package, collision, constraint, or dependency changes that could affect
-  downstream users, run the Gazebo gate when practical:
-  `pixi run -e gazebo test-gz`.
+  downstream users, run the Gazebo gate: `pixi run -e gazebo test-gz`.
 
 ## Pixi Lockfiles
 

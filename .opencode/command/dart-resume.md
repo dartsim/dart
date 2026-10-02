@@ -60,7 +60,6 @@ evidence ledger first, not as cleanup inventory:
 
 ### Step 3: Execute to completion
 
-- Propose a 3-6 step plan before editing.
 - Continue by executing the reconstructed plan until the task's acceptance
   criteria and verification methods are satisfied, or until the same real
   blocker has been proven and recorded. Preserve existing user changes.
