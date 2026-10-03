@@ -2167,6 +2167,91 @@ TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
 }
 
 //==============================================================================
+// Only a solve evaluates manual constraints. One added between bodies on the
+// all-resting fast path must still be solved, which wakes them.
+TEST(IslandDeactivation, ManualConstraintAddedWhileRestingWakesIsland)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto makeBox = [](const std::string& name, double x) {
+    auto box = createFreeBox(
+        name,
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(x, 0, kHalf));
+    box->getBodyNode(0)->setMass(8.0);
+    return box;
+  };
+  auto boxA = makeBox("a", 0.0);
+  auto boxB = makeBox("b", 0.5);
+  world->addSkeleton(boxA);
+  world->addSkeleton(boxB);
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), boxA));
+  ASSERT_TRUE(boxB->isResting());
+
+  auto* bodyA = boxA->getBodyNode(0);
+  auto* bodyB = boxB->getBodyNode(0);
+  const double xA = bodyA->getTransform().translation().x();
+  const double xB = bodyB->getTransform().translation().x();
+  // Asks for A 0.3 m from B while they are 0.5 m apart.
+  auto weld = std::make_shared<constraint::WeldJointConstraint>(bodyA, bodyB);
+  Eigen::Isometry3d relative = Eigen::Isometry3d::Identity();
+  relative.translation().x() = -0.3;
+  weld->setRelativeTransform(relative);
+  world->getConstraintSolver()->addConstraint(weld);
+
+  for (int i = 0; i < 200; ++i)
+    world->step();
+
+  EXPECT_FALSE(boxA->isResting());
+  EXPECT_FALSE(boxB->isResting());
+  EXPECT_GT(bodyA->getTransform().translation().x() - xA, 0.05)
+      << "the manual constraint was never solved";
+  EXPECT_LT(bodyB->getTransform().translation().x() - xB, -0.05)
+      << "the manual constraint was never solved";
+}
+
+//==============================================================================
+// Refusing the fast path while a manual constraint exists must keep the
+// all-resting pose validation: a box lifted between steps must fall back even
+// while an inactive constraint (between two static bodies) is installed.
+TEST(IslandDeactivation, InactiveManualConstraintKeepsPoseValidation)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto anchorA = createWeldedBox(
+      "anchor_a",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(3, 0, 1));
+  auto anchorB = createWeldedBox(
+      "anchor_b",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(4, 0, 1));
+  anchorA->setMobile(false);
+  anchorB->setMobile(false);
+  world->addSkeleton(anchorA);
+  world->addSkeleton(anchorB);
+  auto weld = std::make_shared<constraint::WeldJointConstraint>(
+      anchorA->getBodyNode(0), anchorB->getBodyNode(0));
+  world->getConstraintSolver()->addConstraint(weld);
+
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), box));
+
+  Eigen::VectorXd positions = box->getPositions();
+  positions[5] += 0.3;
+  box->setPositions(positions);
+
+  const std::size_t steps = stepUntil(world.get(), 600, [&]() {
+    return box->getBodyNode(0)->getTransform().translation().z() < kHalf + 0.01;
+  });
+  EXPECT_LT(steps, 600u) << "the lifted box stayed frozen in the air";
+}
+
+//==============================================================================
 // Joint-frame edits can change world geometry without changing generalized
 // positions. The all-resting snapshot must invalidate on the kinematic version
 // change and run a real collision pass.

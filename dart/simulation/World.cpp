@@ -2104,6 +2104,12 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return false;
   };
 
+  // Only a solve evaluates manual constraints, so the fast path is refused
+  // while any exist; one added between resting bodies then reaches the
+  // solver, whose island pass wakes the bodies. The pose validation below
+  // still runs, so an edit on such a step still wakes the world. Worlds with
+  // a permanently inactive manual constraint therefore lose the fast path;
+  // snapshotting the constraint list would restore it.
   if (!mAllRestingKinematicSnapshotValid) {
     for (const auto& skel : mSkeletons) {
       if (skel->isMobile() && skel->isResting()) {
@@ -2175,7 +2181,7 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       mAllRestingSnapshotResetCommand = true;
     }
 
-    return true;
+    return mConstraintSolver->getNumConstraints() == 0u;
   }
 
   if (!collisionDetectorUnchanged || !collisionFilterUnchanged
@@ -2245,7 +2251,7 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     mAllRestingSnapshotResetCommand = true;
   }
 
-  return hasMobileSkeleton;
+  return hasMobileSkeleton && mConstraintSolver->getNumConstraints() == 0u;
 }
 
 //==============================================================================

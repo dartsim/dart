@@ -672,7 +672,8 @@
     limit, a pose or collision filter edit, removing a manual constraint, or
     adding or removing a skeleton) now also restart the sleep delay of bodies
     that were about to rest, so a body that starts moving slowly after the
-    change is no longer frozen:
+    change is no longer frozen. A manual constraint added between resting
+    bodies is now solved:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Keep resting bodies asleep when a `World`'s or `Skeleton`'s gravity is set
