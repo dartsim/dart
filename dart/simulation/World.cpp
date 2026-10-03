@@ -61,6 +61,7 @@
 #include <condition_variable>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -84,6 +85,78 @@ constexpr double kFinalSleepAngularRatio = 0.2;
 constexpr std::size_t kDenseContactJitterMinIslandSize = 3;
 constexpr double kDefaultSleepContactPenetrationTolerance = 1e-5;
 constexpr double kAdaptivePlaneSleepContactPenetrationTolerance = 0.005;
+
+// Largest angle (rad) between a support normal and gravity that still counts
+// as a level support (about 0.06 degrees). Gravity drives motion along a
+// steeper support, so the first-frame dwell credit does not apply there.
+// Analytic shape pairs report exact normals on level supports; a noisier normal
+// only forgoes the shortcut.
+constexpr double kMaxLevelSupportNormalTilt = 1e-3;
+
+bool isTiltedSupportNormal(
+    const Eigen::Vector3d& normal, const Eigen::Vector3d& up)
+{
+  return normal.cross(up).norm() > kMaxLevelSupportNormalTilt * normal.norm();
+}
+
+// Fraction of |g| dt, the speed that one step of gravity adds, below which the
+// first-frame dwell credit counts a body as at rest (see
+// computeInitialRestSpeeds()).
+constexpr double kInitialRestSpeedRatio = 1e-2;
+
+// Largest growth of any of those speeds of a body between the first and the
+// second solve that the first-frame dwell credit still counts as at rest, also
+// as a fraction of |g| dt. The credit is only for bodies that start at rest,
+// and such a body gains its acceleration times dt when it accelerates steadily,
+// so none that accelerates steadily along its support, downward or in turning
+// faster than 1e-6 |g| gets it, whatever the time step. The first solves leave
+// settled bodies well below that, while a 4 m cube whose center of mass is
+// 0.1 mm past an edge already tips at 3e-5 |g|.
+constexpr double kInitialRestMaxSpeedGrowthRatio = 1e-6;
+
+// The speeds of a body that the first-frame dwell credit checks: those of its
+// origin along the support and downward, and its turning, as the tip speed of a
+// 1 m lever arm. Upward speed is ignored: it is the Baumgarte velocity that
+// corrects an initial penetration, which grows as the time step shrinks. A
+// non-finite velocity counts as infinitely fast.
+Eigen::Vector3d computeInitialRestSpeeds(
+    const dynamics::BodyNode& bodyNode, const Eigen::Vector3d& up)
+{
+  const Eigen::Vector3d velocity = bodyNode.getLinearVelocity();
+  const double upwardSpeed = velocity.dot(up);
+  const Eigen::Vector3d speeds(
+      (velocity - upwardSpeed * up).norm(),
+      std::max(-upwardSpeed, 0.0),
+      bodyNode.getAngularVelocity().norm());
+  if (!speeds.allFinite())
+    return Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity());
+  return speeds;
+}
+
+std::size_t countBodyNodes(const std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  std::size_t count = 0u;
+  for (const auto& skeleton : skeletons)
+    count += skeleton ? skeleton->getNumBodyNodes() : 0u;
+  return count;
+}
+
+// Whether a joint with degrees of freedom couples bodies of the skeleton to
+// each other, or joins one of them to the world other than through a free
+// joint, as gz-physics builds an SDF joint whose parent is the world.
+bool hasJointCoupledBodies(const dynamics::Skeleton& skeleton)
+{
+  std::size_t rootJointDofs = 0u;
+  for (std::size_t i = 0; i < skeleton.getNumTrees(); ++i) {
+    const auto* rootJoint = skeleton.getRootJoint(i);
+    if (rootJoint->getNumDofs() > 0u
+        && dynamic_cast<const dynamics::FreeJoint*>(rootJoint) == nullptr) {
+      return true;
+    }
+    rootJointDofs += rootJoint->getNumDofs();
+  }
+  return skeleton.getNumDofs() > rootJointDofs;
+}
 
 bool contactTouchesPlaneShape(const collision::Contact& contact)
 {
@@ -445,8 +518,11 @@ void World::reserveMemoryManagerForSimulationShape()
   mShallowSupportedFreeRootScratch.reserve(numSkeletons);
   mSkeletonIndexScratch.reserve(numSkeletons);
   mDisturbedThisStepScratch.reserve(numSkeletons);
-  mDeepInitialContactSkeletonScratch.reserve(numSkeletons);
+  mUnsettledInitialContactSkeletonScratch.reserve(numSkeletons);
   mSupportedInitialContactSkeletonScratch.reserve(numSkeletons);
+  mIslandInitialEquilibriumScratch.reserve(numSkeletons);
+  mInitiallyMovingSkeletonScratch.reserve(numSkeletons);
+  mInitialRestSpeedLimits.reserve(countBodyNodes(mSkeletons));
   mIslandHasMobileSkeletonScratch.reserve(numSkeletons);
   mIslandAllFinalSleepCandidateReadyScratch.reserve(numSkeletons);
   mIslandAllBelowWakeScratch.reserve(numSkeletons);
@@ -460,6 +536,10 @@ void World::enterSimulationMode()
   if (isInSimulationMode())
     return;
 
+  // The first-frame dwell credit's speed limits belong to the skeletons and
+  // bodies that the first solve saw, so a change between the first two steps
+  // drops a pending confirmation.
+  mInitialRestSpeedLimits.clear();
   refreshSkeletonDofIndices();
   syncShallowSupportFreeRootVelocityStates();
   reserveMemoryManagerForSimulationShape();
@@ -1270,6 +1350,7 @@ void World::reset()
 {
   mTime = 0.0;
   mFrame = 0;
+  mInitialRestSpeedLimits.clear();
   mRecording->clear();
   mConstraintSolver->clearLastCollisionResult();
   invalidateAllRestingKinematicSnapshot();
@@ -1422,6 +1503,15 @@ void World::step(bool _resetCommand)
   {
     if (trackDisturbances)
       disturbedThisStep.assign(mSkeletons.size(), false);
+  }
+
+  // The first-frame dwell credit is only for bodies that start at rest (see
+  // updateRestStates()), so note which skeletons start the first step moving.
+  if (mFrame == 0) {
+    auto& initiallyMoving = mInitiallyMovingSkeletonScratch;
+    initiallyMoving.assign(mSkeletons.size(), 0);
+    for (std::size_t i = 0; i < mSkeletons.size(); ++i)
+      initiallyMoving[i] = hasNonzeroGeneralizedVelocity(*mSkeletons[i]);
   }
 
   // Integrate velocity for unconstrained skeletons
@@ -1700,10 +1790,23 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
     return bodyHeightAboveSupport >= -contactSleepPenetrationTolerance;
   };
 
-  auto& deepInitialContactSkeletons = mDeepInitialContactSkeletonScratch;
+  // The first-frame dwell credit (see islandInInitialEquilibrium below) is
+  // checked on the first solve and confirmed on the second.
+  const bool confirmingInitialRest
+      = mFrame == 1
+        && mInitialRestSpeedLimits.size() == countBodyNodes(mSkeletons);
+  const bool checkingInitialRest = mFrame == 0 || confirmingInitialRest;
+
+  // Skeletons whose contacts on those frames cannot certify a settled body: a
+  // deep contact, or a support tilted enough for gravity to drive motion along
+  // it. A contact is deep beyond the strict tolerance even on a PlaneShape:
+  // the adaptive one lets a settled body rest up to 5 mm into a plane, but a
+  // body that starts that deep has yet to be pushed out.
+  auto& unsettledInitialContactSkeletons
+      = mUnsettledInitialContactSkeletonScratch;
   auto& supportedInitialContactSkeletons
       = mSupportedInitialContactSkeletonScratch;
-  deepInitialContactSkeletons.clear();
+  unsettledInitialContactSkeletons.clear();
   supportedInitialContactSkeletons.clear();
   const auto containsSkeleton
       = [](const std::vector<const dynamics::Skeleton*>& skeletons,
@@ -1730,32 +1833,35 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       skeleton->setSleepCandidate(false);
     }
   };
-  if (mFrame == 0) {
+  if (checkingInitialRest) {
     for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
       const auto& contact = contacts.getContact(i);
       const double contactSleepContactPenetrationTolerance
           = getSleepContactPenetrationTolerance(contact);
       const auto bodyNode1 = contact.getBodyNodePtr1();
       const auto bodyNode2 = contact.getBodyNodePtr2();
-      if (contact.penetrationDepth > contactSleepContactPenetrationTolerance) {
-        markMobileSkeleton(bodyNode1, deepInitialContactSkeletons);
-        markMobileSkeleton(bodyNode2, deepInitialContactSkeletons);
+      if (contact.penetrationDepth > sleepContactPenetrationTolerance) {
+        markMobileSkeleton(bodyNode1, unsettledInitialContactSkeletons);
+        markMobileSkeleton(bodyNode2, unsettledInitialContactSkeletons);
         continue;
       }
 
+      auto& initialSupportSkeletons = isTiltedSupportNormal(contact.normal, up)
+                                          ? unsettledInitialContactSkeletons
+                                          : supportedInitialContactSkeletons;
       if (isShallowSupportContact(
               bodyNode1,
               bodyNode2,
               contact.normal,
               contactSleepContactPenetrationTolerance)) {
-        markMobileSkeleton(bodyNode1, supportedInitialContactSkeletons);
+        markMobileSkeleton(bodyNode1, initialSupportSkeletons);
       }
       if (isShallowSupportContact(
               bodyNode2,
               bodyNode1,
               contact.normal,
               contactSleepContactPenetrationTolerance)) {
-        markMobileSkeleton(bodyNode2, supportedInitialContactSkeletons);
+        markMobileSkeleton(bodyNode2, initialSupportSkeletons);
       }
     }
   }
@@ -1771,6 +1877,99 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       ++islandedMobileSkeletonCount;
       islandCount = std::max(
           islandCount, static_cast<std::size_t>(island) + std::size_t{1});
+    }
+  }
+
+  // The first-frame shortcut credits the full dwell only to bodies that are
+  // essentially stationary at load time (pre-settled imported scenes). The
+  // smoothed speeds are only alpha times the first solved speed, and one step
+  // of gravity adds just |g| * dt, so a body that the first solve left
+  // rolling, sliding, tipping, or dropping still looks quiet. The dense-island
+  // rule below also makes a whole island sleep once one member has the full
+  // dwell. So credit an island only if the first solve left every mobile
+  // member in equilibrium (slower than kInitialRestSpeedRatio of the speed one
+  // step of gravity adds; see computeInitialRestSpeeds()) and none started on
+  // a deep or tilted contact.
+  //
+  // A large body whose center of mass is just past an edge passes that check:
+  // a step of tipping adds less than 1% of |g| dt while the overhang is below
+  // about 0.4% of its size. Its speed doubles on the next step, while that of a
+  // settled body does not grow. So the credit waits for the second solve: the
+  // island must still pass the check, and no speed of a member's body may have
+  // grown by more than kInitialRestMaxSpeedGrowthRatio of |g| dt since the
+  // first solve. That growth is the body's acceleration times dt only if the
+  // body starts at rest: one that starts moving can slow down while gravity
+  // accelerates it, as a body seeded to slide uphill does. So every member must
+  // also start the first step at rest. Each body is compared with itself,
+  // because a body that the first solve set moving at a steady speed, such as
+  // one pushed out of a wall, would hide the growth of another body of its
+  // skeleton behind the skeleton's largest speeds.
+  //
+  // Nor may a member have bodies coupled by a joint with degrees of freedom,
+  // to each other or to the world. Its contacts can hold an internal force,
+  // such as friction that a joint reaction balances, which the first solves
+  // have only started to relax although nothing moves (3.6 N on a 1 kg flap
+  // hinged to a base, decaying over about a second). A frozen island keeps
+  // reporting the forces of the solve that froze it through
+  // BodyNode::getBodyForce(), which gives the joint transmitted wrench, and
+  // through its contacts, so such an island takes the normal dwell.
+  auto& islandInInitialEquilibrium = mIslandInitialEquilibriumScratch;
+  if (checkingInitialRest) {
+    const double initialRestMaxSpeed
+        = kInitialRestSpeedRatio * gravityNorm * mTimeStep;
+    islandInInitialEquilibrium.assign(islandCount, 1);
+    std::size_t numPrecedingBodyNodes = 0u;
+    for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+      const auto& skel = mSkeletons[i];
+      const std::size_t firstBodyNode = numPrecedingBodyNodes;
+      numPrecedingBodyNodes += skel->getNumBodyNodes();
+      const int island = skel->isMobile() ? skel->getIslandIndex() : -1;
+      if (island < 0)
+        continue;
+
+      const bool startedMoving = mFrame == 0
+                                 && i < mInitiallyMovingSkeletonScratch.size()
+                                 && mInitiallyMovingSkeletonScratch[i];
+      bool inEquilibrium
+          = !startedMoving
+            && !containsSkeleton(unsettledInitialContactSkeletons, skel.get())
+            && !hasJointCoupledBodies(*skel);
+      for (std::size_t j = 0; inEquilibrium && j < skel->getNumBodyNodes();
+           ++j) {
+        const Eigen::Vector3d speeds
+            = computeInitialRestSpeeds(*skel->getBodyNode(j), up);
+        inEquilibrium
+            = (speeds.array() < initialRestMaxSpeed).all()
+              && (!confirmingInitialRest
+                  || (speeds.array()
+                      <= mInitialRestSpeedLimits[firstBodyNode + j].array())
+                         .all());
+      }
+      if (!inEquilibrium)
+        islandInInitialEquilibrium[static_cast<std::size_t>(island)] = 0;
+    }
+  }
+
+  // On the first solve, record the speeds that the second may leave on each
+  // body of a member of an island in equilibrium; the bodies of a skeleton
+  // outside such an island get limits that no speed meets.
+  if (mFrame == 0) {
+    const double initialRestMaxSpeedGrowth
+        = kInitialRestMaxSpeedGrowthRatio * gravityNorm * mTimeStep;
+    mInitialRestSpeedLimits.clear();
+    for (const auto& skel : mSkeletons) {
+      const int island = skel->isMobile() ? skel->getIslandIndex() : -1;
+      const bool inEquilibrium
+          = island >= 0
+            && islandInInitialEquilibrium[static_cast<std::size_t>(island)];
+      for (std::size_t j = 0; j < skel->getNumBodyNodes(); ++j) {
+        Eigen::Vector3d limits = Eigen::Vector3d::Constant(-1.0);
+        if (inEquilibrium) {
+          limits = computeInitialRestSpeeds(*skel->getBodyNode(j), up).array()
+                   + initialRestMaxSpeedGrowth;
+        }
+        mInitialRestSpeedLimits.push_back(limits);
+      }
     }
   }
 
@@ -1845,22 +2044,20 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
         const bool finalQuiet = linSpeed < finalSleepLinearSpeed
                                 && angSpeed < finalSleepAngularSpeed;
         double dwell = skel->getRestDwellTime() + mTimeStep;
-        const bool deepInitialContact
-            = containsSkeleton(deepInitialContactSkeletons, skel.get());
         const bool supportedInitialContact
             = containsSkeleton(supportedInitialContactSkeletons, skel.get());
-        // The first-frame shortcut credits the full dwell only to bodies that
-        // are essentially stationary at load time (pre-settled imported
-        // scenes). It deliberately keeps these near-zero fixed bounds instead
-        // of the threshold-scaled candidacy gate above, so raising the
-        // thresholds cannot skip the configured dwell for a supported body
-        // with real initial motion.
+        // The first-frame credit (see islandInInitialEquilibrium) deliberately
+        // keeps these near-zero fixed bounds instead of the threshold-scaled
+        // candidacy gate above, so raising the thresholds cannot skip the
+        // configured dwell for a supported body with real initial motion.
         constexpr double kInitialRestMaxLinearSpeed = 1e-3;
         constexpr double kInitialRestMaxAngularSpeed = 1e-2;
         const bool initialRestQuiet = linSpeed < kInitialRestMaxLinearSpeed
                                       && angSpeed < kInitialRestMaxAngularSpeed;
-        if (mFrame == 0 && islanded && initialRestQuiet && !deepInitialContact
-            && supportedInitialContact) {
+        if (confirmingInitialRest && islanded && initialRestQuiet
+            && supportedInitialContact
+            && islandInInitialEquilibrium[static_cast<std::size_t>(
+                skel->getIslandIndex())]) {
           dwell = std::max(dwell, mDeactivationOptions.mTimeUntilSleep);
         }
         skel->setRestDwellTime(dwell);

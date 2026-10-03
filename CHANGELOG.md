@@ -601,10 +601,15 @@
     [#3071](https://github.com/dartsim/dart/pull/3071)
 
   * Accelerate large imported worlds that begin with zero-velocity bodies on
-    shallow support contacts by allowing the initial contact pass to consume the
-    configured quiet dwell before the normal final solved impulse freezes the
-    island, improving the exact 3003-body issue scene while preserving
-    micrometer-scale agreement with the always-active path:
+    shallow support contacts by allowing the initial contact passes to consume
+    the configured quiet dwell before the normal final solved impulse freezes
+    the island, improving the exact 3003-body issue scene while preserving
+    micrometer-scale agreement with the always-active path. Only contact
+    islands whose bodies start at rest and stay still on level supports over
+    the first two steps take this shortcut; a body that starts moving or sunk
+    into its support, or starts to roll, slide, drop, or tip (its speed growing
+    at more than 1e-6 g), and a model whose links are joined by a movable
+    joint, keep the normal sleep delay:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up cached all-resting steps by tracking explicit joint-velocity edits

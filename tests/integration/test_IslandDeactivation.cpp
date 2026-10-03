@@ -148,6 +148,23 @@ SkeletonPtr createFreeBox(
 }
 
 //==============================================================================
+// Builds a free box with the inertia of a solid box of the given mass, so that
+// tipping takes realistic time.
+SkeletonPtr createSolidFreeBox(
+    const std::string& name,
+    const Eigen::Vector3d& size,
+    double mass,
+    const Eigen::Vector3d& position)
+{
+  auto box = createFreeBox(name, size, position);
+  dynamics::Inertia inertia;
+  inertia.setMass(mass);
+  inertia.setMoment(BoxShape::computeInertia(size, mass));
+  box->getBodyNode(0)->setInertia(inertia);
+  return box;
+}
+
+//==============================================================================
 SkeletonPtr createWeldedBox(
     const std::string& name,
     const Eigen::Vector3d& size,
@@ -581,32 +598,165 @@ TEST(IslandDeactivation, SleepTransitionFreezesLastSolvedPoseAndVelocity)
 // Some imported worlds, including large generated SDF scenes, start with many
 // zero-velocity bodies already shallowly supported by static geometry. They
 // should not spend the full dwell horizon proving rest from t=0, but they still
-// need the normal final contact solve before the island is frozen.
+// need the normal final contact solve before the island is frozen. The second
+// solve confirms the credit of the first, so the box becomes a sleep candidate
+// at step 2 and freezes at step 3. A smaller time step makes the upward
+// Baumgarte velocity that corrects the initial penetration larger, which must
+// not cost the credit.
 TEST(IslandDeactivation, InitiallySettledShallowContactCanSleepPromptly)
 {
+  for (const double timeStep : {1e-3, 1e-4}) {
+    SCOPED_TRACE(timeStep);
+    auto world = makeSleepWorld();
+    world->setTimeStep(timeStep);
+    world->addSkeleton(createFloor());
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf - 5e-7));
+    world->addSkeleton(box);
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(box->isSleepCandidate())
+        << "the initial rest credit must wait for the second solve";
+
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_TRUE(box->isSleepCandidate());
+    EXPECT_FALSE(box->isResting())
+        << "the initial rest credit must still allow one final solved impulse";
+    EXPECT_GE(
+        box->getRestDwellTime(),
+        world->getDeactivationOptions().mTimeUntilSleep);
+
+    world->step();
+
+    EXPECT_TRUE(box->isResting());
+    EXPECT_TRUE(box->isSleepCandidate());
+    EXPECT_NEAR(box->getBodyNode(0)->getLinearVelocity().norm(), 0.0, 1e-12);
+    EXPECT_NEAR(box->getBodyNode(0)->getAngularVelocity().norm(), 0.0, 1e-12);
+  }
+}
+
+//==============================================================================
+// A box that starts 1e-4 m into a PlaneShape is not settled, although a body
+// at rest may sit up to 5 mm into a plane: the first-frame credit must not
+// freeze it at that depth. It rises out of the plane first and sleeps after the
+// normal dwell.
+TEST(IslandDeactivation, InitialCreditSkipsDeepPlaneContact)
+{
   auto world = makeSleepWorld();
-  world->addSkeleton(createFloor());
+  world->addSkeleton(createPlaneFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf - 1e-4));
+  world->addSkeleton(box);
+
+  for (std::size_t i = 0; i < 3; ++i)
+    world->step();
+  EXPECT_FALSE(box->isResting()) << "frozen 1e-4 m deep on the first frame";
+
+  const std::size_t steps
+      = stepUntil(world.get(), 2000, [&]() { return box->isResting(); });
+  EXPECT_LT(steps, 2000u);
+  EXPECT_GT(
+      box->getBodyNode(0)->getTransform().translation().z(), kHalf - 1e-5);
+}
+
+//==============================================================================
+// The first-frame credit is only for bodies that start at rest. A seeded body
+// takes the normal dwell, also when the first two solves leave it slower than
+// 1e-2 |g| dt and do not speed it up: a box seeded to slide at 5e-6 m/s on a
+// frictionless floor keeps sliding past step 3, and the normal dwell stops it
+// after 0.5 s, as DART 6.19.4 does.
+TEST(IslandDeactivation, InitialCreditSkipsSeededMotion)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  floor->getBodyNode(0)->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(
+      0.0);
+  world->addSkeleton(floor);
   auto box = createFreeBox(
       "box",
       Eigen::Vector3d::Constant(kBoxSize),
       Eigen::Vector3d(0, 0, kHalf - 5e-7));
+  box->getBodyNode(0)->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(
+      0.0);
   world->addSkeleton(box);
+  constexpr double kSpeed = 5e-6;
+  static_cast<FreeJoint*>(box->getJoint(0))
+      ->setLinearVelocity(
+          Eigen::Vector3d(kSpeed, 0.0, 0.0), Frame::World(), Frame::World());
 
-  world->step();
+  for (std::size_t i = 0; i < 100; ++i)
+    world->step();
+  EXPECT_FALSE(box->isResting()) << "frozen by the first-frame credit";
+  EXPECT_NEAR(box->getBodyNode(0)->getLinearVelocity().x(), kSpeed, 1e-8);
 
-  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
-  EXPECT_TRUE(box->isSleepCandidate());
-  EXPECT_FALSE(box->isResting())
-      << "the initial rest credit must still allow one final solved impulse";
-  EXPECT_GE(
-      box->getRestDwellTime(), world->getDeactivationOptions().mTimeUntilSleep);
+  const std::size_t steps
+      = stepUntil(world.get(), 1000, [&]() { return box->isResting(); });
+  EXPECT_LT(steps, 1000u) << "the normal dwell did not stop the slide";
+}
 
-  world->step();
+//==============================================================================
+// The second solve confirms the first-frame credit only for the bodies that the
+// first solve checked. Swapping a skeleton in between drops the pending
+// confirmation, even when the new one rests where the old one did, so no body
+// is credited after a single solve. So does moving a body to another skeleton,
+// which keeps the number of bodies but not their order.
+TEST(IslandDeactivation, InitialCreditConfirmationRestartsWhenSkeletonsChange)
+{
+  const Eigen::Vector3d cube = Eigen::Vector3d::Constant(kBoxSize);
+  {
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto first
+        = createFreeBox("first", cube, Eigen::Vector3d(0, 0, kHalf - 5e-7));
+    auto other
+        = createFreeBox("other", cube, Eigen::Vector3d(1, 0, kHalf - 5e-7));
+    world->addSkeleton(first);
+    world->addSkeleton(other);
 
-  EXPECT_TRUE(box->isResting());
-  EXPECT_TRUE(box->isSleepCandidate());
-  EXPECT_NEAR(box->getBodyNode(0)->getLinearVelocity().norm(), 0.0, 1e-12);
-  EXPECT_NEAR(box->getBodyNode(0)->getAngularVelocity().norm(), 0.0, 1e-12);
+    world->step();
+    world->removeSkeleton(first);
+    auto swapped
+        = createFreeBox("swapped", cube, Eigen::Vector3d(0, 0, kHalf - 5e-7));
+    world->addSkeleton(swapped);
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(swapped->isSleepCandidate()) << "credited after one solve";
+    EXPECT_FALSE(other->isSleepCandidate()) << "confirmed a stale first solve";
+  }
+
+  {
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto pair
+        = createFreeBox("pair", cube, Eigen::Vector3d(0, 0, kHalf - 5e-7));
+    auto* moved = pair->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
+    moved->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+        std::make_shared<BoxShape>(cube));
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = Eigen::Vector3d(1, 0, kHalf - 5e-7);
+    FreeJoint::setTransformOf(moved->getParentJoint(), tf);
+    auto single
+        = createFreeBox("single", cube, Eigen::Vector3d(2, 0, kHalf - 5e-7));
+    world->addSkeleton(pair);
+    world->addSkeleton(single);
+
+    world->step();
+    moved->moveTo(single, nullptr);
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(pair->isSleepCandidate()) << "confirmed a stale first solve";
+    EXPECT_FALSE(single->isSleepCandidate()) << "confirmed a stale first solve";
+  }
 }
 
 //==============================================================================
@@ -662,6 +812,325 @@ TEST(IslandDeactivation, InitialWallContactDoesNotSleepPromptly)
   world->step();
 
   EXPECT_FALSE(box->isResting());
+}
+
+//==============================================================================
+// A contact island of three or more bodies sleeps as soon as one member has the
+// full dwell and the others are below the wake band (the dense-island rule). So
+// the first-frame dwell credit must certify the whole island: a still,
+// level-supported box must not freeze a neighbor that starts to tip. A
+// balanced stack still sleeps at step 3, once the second solve has confirmed
+// the credit.
+TEST(IslandDeactivation, InitialCreditKeepsTippingNeighborsAwake)
+{
+  constexpr double kPenetration = 1e-6;
+  const Eigen::Vector3d cube = Eigen::Vector3d::Constant(kBoxSize);
+  const auto stackHeight = [&](int level) {
+    return kHalf - kPenetration + level * (kBoxSize - kPenetration);
+  };
+
+  // Three-box stacks, balanced or with the top box's center of mass 15 mm past
+  // the edge of the box below.
+  for (const double overhang : {0.0, 0.015}) {
+    SCOPED_TRACE(overhang);
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    std::vector<SkeletonPtr> stack;
+    for (int i = 0; i < 3; ++i) {
+      const double x = i == 2 && overhang > 0.0 ? kHalf + overhang : 0.0;
+      stack.push_back(createSolidFreeBox(
+          "box" + std::to_string(i),
+          cube,
+          1.0,
+          Eigen::Vector3d(x, 0.0, stackHeight(i))));
+      world->addSkeleton(stack.back());
+    }
+
+    for (std::size_t i = 0; i < 3; ++i)
+      world->step();
+    if (overhang == 0.0) {
+      for (const auto& box : stack)
+        EXPECT_TRUE(box->isResting());
+      continue;
+    }
+
+    for (std::size_t i = 0; i < 2000; ++i)
+      world->step();
+    EXPECT_LT(
+        stack[2]->getBodyNode(0)->getTransform().translation().z(),
+        stackHeight(2) - 0.3)
+        << "the overhanging top box was frozen on the first frame";
+  }
+
+  // A heavy table block carrying a balanced box and a box whose center of mass
+  // is 15 mm past the table edge.
+  {
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    world->addSkeleton(createSolidFreeBox(
+        "table",
+        Eigen::Vector3d(1.0, 1.0, 0.5),
+        20.0,
+        Eigen::Vector3d(0.0, 0.0, 0.25 - kPenetration)));
+    const double topHeight = 0.5 + kHalf - 2.0 * kPenetration;
+    world->addSkeleton(createSolidFreeBox(
+        "balanced", cube, 1.0, Eigen::Vector3d(0.0, 0.0, topHeight)));
+    auto overhanging = createSolidFreeBox(
+        "overhanging", cube, 1.0, Eigen::Vector3d(0.515, 0.0, topHeight));
+    world->addSkeleton(overhanging);
+
+    for (std::size_t i = 0; i < 2000; ++i)
+      world->step();
+    EXPECT_LT(
+        overhanging->getBodyNode(0)->getTransform().translation().z(),
+        topHeight - 0.4)
+        << "the overhanging box was frozen on the first frame";
+  }
+}
+
+//==============================================================================
+// The first-frame credit also needs every island member to be at rest along
+// gravity: a still, level-supported box must not freeze a touching box that
+// starts 1 mm above the floor.
+TEST(IslandDeactivation, InitialCreditKeepsDroppingNeighborsAwake)
+{
+  constexpr double kPenetration = 1e-6;
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  std::vector<SkeletonPtr> row;
+  for (int i = 0; i < 3; ++i) {
+    row.push_back(createSolidFreeBox(
+        "box" + std::to_string(i),
+        Eigen::Vector3d::Constant(kBoxSize),
+        1.0,
+        Eigen::Vector3d(
+            i * (kBoxSize - kPenetration),
+            0.0,
+            kHalf - kPenetration + (i == 1 ? 1e-3 : 0.0))));
+    world->addSkeleton(row.back());
+  }
+
+  const double start = row[1]->getBodyNode(0)->getTransform().translation().z();
+  for (std::size_t i = 0; i < 1000; ++i)
+    world->step();
+  EXPECT_LT(
+      row[1]->getBodyNode(0)->getTransform().translation().z(), start - 9e-4)
+      << "the raised box was frozen on the first frame";
+}
+
+//==============================================================================
+// A sleeping model keeps reporting the forces of the solve that froze it: the
+// joint transmitted wrench (BodyNode::getBodyForce(), which gz-physics and
+// gz-sim's force-torque sensor read) and the contact forces. A hinged two-link
+// model placed exactly on the floor, as SDF worlds place models, starts with an
+// internal force that the first solves have only started to relax although
+// nothing moves: friction holds the flap against its hinge with 3.6 N, which
+// decays over about a second. So the first-frame dwell credit must not freeze
+// it within the first steps, and after the normal dwell, what the sleeping
+// model reports must match a deactivation-off run within 1% of the flap's
+// weight. The same holds for a flap joined to the world by a ball joint, as
+// gz-physics builds an SDF joint whose parent is the world. With the flap
+// welded to the base there is no such transient: once the second solve has
+// confirmed the credit, the model still sleeps at step 3 and matches the
+// deactivation-off run within the contact's own settling (1e-5 N).
+TEST(IslandDeactivation, InitialCreditWaitsForJointCoupledForcesToSettle)
+{
+  struct Scene
+  {
+    WorldPtr world;
+    SkeletonPtr model;
+    BodyNode* base = nullptr;
+    BodyNode* flap = nullptr;
+  };
+
+  // A 5 kg base and a 1 kg flap, both 0.5 x 0.5 x 0.1 m boxes, lie side by
+  // side on the floor, joined at mid height along their shared edge. Without
+  // the base, the flap's edge is joined to the world there.
+  enum class Mount
+  {
+    Hinge,
+    Weld,
+    WorldBall
+  };
+  const Eigen::Vector3d size(0.5, 0.5, 0.1);
+  const auto createScene = [&](Mount mount, bool deactivation) {
+    Scene scene;
+    scene.world = World::create();
+    auto options = scene.world->getDeactivationOptions();
+    options.mEnabled = deactivation;
+    scene.world->setDeactivationOptions(options);
+    scene.world->addSkeleton(createFloor());
+
+    BodyNode::Properties flapProperties(
+        BodyNode::AspectProperties(std::string("flap")));
+    flapProperties.mInertia.setMass(1.0);
+    flapProperties.mInertia.setMoment(BoxShape::computeInertia(size, 1.0));
+    const Eigen::Vector3d edge(0.5 * size.x(), 0.0, 0.0);
+    if (mount == Mount::WorldBall) {
+      scene.model = Skeleton::create("model");
+      BallJoint::Properties joint;
+      joint.mT_ParentBodyToJoint.translation()
+          = edge + Eigen::Vector3d(0.0, 0.0, 0.5 * size.z());
+      joint.mT_ChildBodyToJoint.translation() = -edge;
+      scene.flap = scene.model
+                       ->createJointAndBodyNodePair<BallJoint>(
+                           nullptr, joint, flapProperties)
+                       .second;
+    } else {
+      scene.model = createSolidFreeBox(
+          "model", size, 5.0, Eigen::Vector3d(0.0, 0.0, 0.5 * size.z()));
+      scene.base = scene.model->getBodyNode(0);
+    }
+    if (mount == Mount::Hinge) {
+      RevoluteJoint::Properties joint;
+      joint.mAxis = Eigen::Vector3d::UnitY();
+      joint.mT_ParentBodyToJoint.translation() = edge;
+      joint.mT_ChildBodyToJoint.translation() = -edge;
+      scene.flap = scene.model
+                       ->createJointAndBodyNodePair<RevoluteJoint>(
+                           scene.base, joint, flapProperties)
+                       .second;
+    } else if (mount == Mount::Weld) {
+      WeldJoint::Properties joint;
+      joint.mT_ParentBodyToJoint.translation() = edge;
+      joint.mT_ChildBodyToJoint.translation() = -edge;
+      scene.flap = scene.model
+                       ->createJointAndBodyNodePair<WeldJoint>(
+                           scene.base, joint, flapProperties)
+                       .second;
+    }
+    scene.flap->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+        std::make_shared<BoxShape>(size));
+    scene.world->addSkeleton(scene.model);
+    return scene;
+  };
+
+  // The force a link receives from its contacts in the last collision result.
+  const auto contactForce = [](const Scene& scene, const BodyNode* body) {
+    Eigen::Vector3d force = Eigen::Vector3d::Zero();
+    const auto& result = scene.world->getLastCollisionResult();
+    for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+      const auto& contact = result.getContact(i);
+      if (contact.getBodyNodePtr1().get() == body)
+        force += contact.force;
+      else if (contact.getBodyNodePtr2().get() == body)
+        force -= contact.force;
+    }
+    return force;
+  };
+
+  for (const Mount mount : {Mount::Hinge, Mount::Weld, Mount::WorldBall}) {
+    const bool welded = mount == Mount::Weld;
+    SCOPED_TRACE(
+        mount == Mount::Hinge ? "hinged flap"
+                              : (welded ? "welded flap" : "world ball joint"));
+    const Scene asleep = createScene(mount, true);
+    const Scene awake = createScene(mount, false);
+
+    // The world reports the contact forces of a sleeping island only for the
+    // solve that froze it, so keep those.
+    std::size_t sleepStep = 0;
+    Eigen::Vector3d frozenBaseForce = Eigen::Vector3d::Zero();
+    Eigen::Vector3d frozenFlapForce = Eigen::Vector3d::Zero();
+    for (std::size_t i = 1; i <= 2000; ++i) {
+      asleep.world->step();
+      awake.world->step();
+      if (sleepStep == 0 && asleep.model->isResting()) {
+        sleepStep = i;
+        frozenBaseForce = contactForce(asleep, asleep.base);
+        frozenFlapForce = contactForce(asleep, asleep.flap);
+      }
+    }
+
+    ASSERT_TRUE(asleep.model->isResting());
+    if (welded) {
+      EXPECT_EQ(3u, sleepStep);
+    }
+    // The other models fall asleep after the 0.5 s dwell with about 0.06 N of
+    // the internal force left.
+    const double tolerance = welded ? 1e-5 : 0.01 * 9.81;
+    const auto expectSettled =
+        [&](const auto& asleepValue, const auto& awakeValue, const char* what) {
+          EXPECT_LT((asleepValue - awakeValue).cwiseAbs().maxCoeff(), tolerance)
+              << what << " while asleep: " << asleepValue.transpose()
+              << "\nwithout deactivation: " << awakeValue.transpose();
+        };
+    expectSettled(
+        asleep.flap->getBodyForce(),
+        awake.flap->getBodyForce(),
+        "transmitted wrench");
+    if (asleep.base != nullptr) {
+      expectSettled(
+          frozenBaseForce,
+          contactForce(awake, awake.base),
+          "base contact force");
+    }
+    expectSettled(
+        frozenFlapForce, contactForce(awake, awake.flap), "flap contact force");
+  }
+}
+
+//==============================================================================
+// gz-sim's friction.sdf: boxes start at rest on a 30 degree incline. The first
+// step leaves them barely moving, so the first-frame dwell credit must not
+// freeze the sliding ones; only the box that friction holds may sleep.
+TEST(IslandDeactivation, InitialInclineContactSleepsOnlyWhenFrictionHolds)
+{
+  auto world = makeSleepWorld();
+
+  const Eigen::Matrix3d tilt
+      = Eigen::AngleAxisd(
+            -math::constantsd::pi() / 6.0, Eigen::Vector3d::UnitX())
+            .toRotationMatrix();
+  const Eigen::Vector3d normal = tilt * Eigen::Vector3d::UnitZ();
+
+  // A static 1 m thick slab whose top face passes through the origin.
+  auto incline = createWeldedBox(
+      "incline", Eigen::Vector3d(10.0, 10.0, 1.0), Eigen::Vector3d::Zero());
+  Eigen::Isometry3d inclineTf = Eigen::Isometry3d::Identity();
+  inclineTf.linear() = tilt;
+  inclineTf.translation() = -0.5 * normal;
+  incline->getJoint(0)->setTransformFromParentBodyNode(inclineTf);
+  incline->setMobile(false);
+  world->addSkeleton(incline);
+
+  const double frictions[] = {0.01, 0.1, 1.0};
+  std::vector<SkeletonPtr> boxes;
+  for (std::size_t i = 0; i < 3; ++i) {
+    auto box = createFreeBox(
+        "box" + std::to_string(i),
+        Eigen::Vector3d::Constant(1.0),
+        Eigen::Vector3d(2.0 * i - 2.0, 0.0, 0.0) + 0.5 * normal);
+    Eigen::Isometry3d tf = box->getBodyNode(0)->getTransform();
+    tf.linear() = tilt;
+    box->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
+    box->getBodyNode(0)->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(
+        frictions[i]);
+    world->addSkeleton(box);
+    boxes.push_back(box);
+  }
+
+  std::vector<Eigen::Vector3d> start;
+  for (const auto& box : boxes)
+    start.push_back(box->getBodyNode(0)->getTransform().translation());
+
+  for (std::size_t i = 0; i < 700; ++i)
+    world->step();
+
+  for (std::size_t i = 0; i < 2; ++i) {
+    SCOPED_TRACE(frictions[i]);
+    EXPECT_FALSE(boxes[i]->isResting());
+    EXPECT_GT(
+        (boxes[i]->getBodyNode(0)->getTransform().translation() - start[i])
+            .norm(),
+        0.1)
+        << "a sliding box was frozen on the first frame";
+  }
+  EXPECT_TRUE(boxes[2]->isResting());
+  EXPECT_LT(
+      (boxes[2]->getBodyNode(0)->getTransform().translation() - start[2])
+          .norm(),
+      1e-3);
 }
 
 //==============================================================================

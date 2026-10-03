@@ -650,9 +650,24 @@ protected:
   std::vector<std::pair<const dynamics::Skeleton*, std::size_t>>
       mSkeletonIndexScratch;
   std::vector<char> mDisturbedThisStepScratch;
-  std::vector<const dynamics::Skeleton*> mDeepInitialContactSkeletonScratch;
+  std::vector<const dynamics::Skeleton*>
+      mUnsettledInitialContactSkeletonScratch;
   std::vector<const dynamics::Skeleton*>
       mSupportedInitialContactSkeletonScratch;
+  std::vector<char> mIslandInitialEquilibriumScratch;
+
+  /// Per skeleton, indexed like mSkeletons: whether it started the world's
+  /// first step with a nonzero velocity, which keeps its contact island from
+  /// the first-frame dwell credit. Written and read on frame 0 only.
+  std::vector<char> mInitiallyMovingSkeletonScratch;
+
+  /// Per body node, skeleton by skeleton in the order of mSkeletons: the
+  /// largest speeds that the second solve may leave for the first-frame dwell
+  /// credit to apply, recorded on the first. Read on frame 1 only, and cleared
+  /// by reset() and by enterSimulationMode(), so that adding or removing a
+  /// skeleton or changing a skeleton's bodies in between drops it.
+  std::vector<Eigen::Vector3d> mInitialRestSpeedLimits;
+
   std::vector<char> mIslandHasMobileSkeletonScratch;
   std::vector<char> mIslandAllFinalSleepCandidateReadyScratch;
   std::vector<char> mIslandAllBelowWakeScratch;
