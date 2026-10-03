@@ -33,8 +33,9 @@ The project does not pin a model or reasoning effort. Model and reasoning
 routing lives in `docs/ai/README.md` § "Updating Models And Coding Agents";
 do not duplicate or pin it here. The three read-only project agents inherit
 the selected parent model: `dart_scout` gathers evidence, `dart_reviewer`
-audits the current diff, and `dart_release_auditor` compares `main` with the
-DART 6.20 compatibility surface.
+audits the current diff, and `dart_release_auditor` classifies named
+reference material as apply/adapt/omit against the DART 6.20 compatibility
+surface.
 
 **Tested Versions**: Claude Code CLI 2.1.252 (Claude Fable 5), Codex CLI
 0.151.0, OpenCode 1.18.21, 2026-08-31 — discovery, config, and hook checks

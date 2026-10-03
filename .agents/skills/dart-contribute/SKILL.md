@@ -55,7 +55,7 @@ Use `.github/PULL_REQUEST_TEMPLATE.md` and keep DART's default order: Summary, M
 
 Write PR descriptions for a user or downstream maintainer who is not already familiar with the implementation. Lead Summary and Motivation with what changes for them, what stays compatible, how they opt in or migrate, and why the evidence matters; keep implementation mechanics in Changes unless they explain user-visible risk.
 
-Write the body for a human skimming it: bullets, highlights only, and roughly 300 words in total; state the mechanism in one sentence and leave further detail to the code, a design doc, or the linked issue. In Testing, list only checks that CI does not run on the PR (a reproduction with a reporter's toolchain, a negative check that proves a new test bites, hardware-specific runs, independent review passes), not the lint, unit, gate, or platform jobs that the PR's CI runs anyway.
+Write the body for a human skimming it: bullets and highlights only; state the mechanism in one sentence and leave further detail to the code, a design doc, or the linked issue. In Testing, list only checks that CI does not run on the PR (a reproduction with a reporter's toolchain, a negative check that proves a new test bites, hardware-specific runs, independent review passes), not the lint, unit, gate, or platform jobs that the PR's CI runs anyway.
 
 When a PR has meaningful user-facing API, workflow, behavior, or performance impact, add a concise Before / After section. Cover only relevant dimensions, phrase rows as user-visible before/after outcomes, and for performance claims name the baseline explicitly: CPU path, parent commit, `main`, or prior implementation, plus workload, metric, and important limitations.
 
@@ -126,7 +126,8 @@ merge them into one human-readable release-note entry.
 
 ## Code Review
 
-- Address all feedback
+- Investigate each review finding; fix it, track it as a follow-up, or record
+  a no-fix rationale (`docs/ai/orchestration.md` § Review Loop)
 - Keep changes minimal
 - Update tests if behavior changed
 - Run full validation, then ask for explicit maintainer/user approval before

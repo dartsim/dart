@@ -53,7 +53,7 @@ Use these practices:
   name the baseline explicitly: CPU path, parent commit, `main`, or prior
   implementation, plus workload, metric, and important limitations.
 - Write the body for a human skimming it: bullets that each carry one
-  highlight, about 300 words; mechanism in one sentence, details elsewhere.
+  highlight; mechanism in one sentence, details elsewhere.
 - In Testing, list only checks that CI does not run on the PR (a reporter's
   toolchain reproduction, a negative check proving a new test bites, hardware
   runs, independent review passes), not jobs CI runs anyway; the local gates
@@ -66,7 +66,7 @@ Use these practices:
   text correctness oracle and include assessed, claim-tied OSG/debug-overlay
   evidence when applicable (an image alone is not correctness proof):
   - Prefer an existing headless example path such as `--headless`,
-    `--frames`, `--width`, `--height`, and `--screenshot` over manual
+    `--frames`, `--width`, `--height`, and `--shot` over manual
     screenshots.
   - Capture the before image from the base branch or by temporarily restoring
     the replaced sample/assets, then capture the after image from the final

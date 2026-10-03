@@ -43,9 +43,10 @@ applicable.
      git switch --no-track -c "$BRANCH" "origin/$RELEASE_BRANCH"
    fi
    ```
-4. Adapt a proven `main` fix only when its assumptions exist here. Preserve
-   C++17, pybind11, `dart::utils`, OSG, and downstream Gazebo/gz-physics
-   behavior; otherwise make the smallest release-scoped fix.
+4. If a proven fix exists in a named reference, adapt it only when its
+   assumptions exist here. Preserve C++17, pybind11, `dart::utils`, OSG, and
+   downstream Gazebo/gz-physics behavior; otherwise make the smallest
+   release-scoped fix.
 5. Explain why the failure was not caught earlier and whether workflow coverage should change.
 6. Run `pixi run lint` and release-relevant build/tests.
 7. Ask for explicit maintainer/user approval before pushing, creating, or
