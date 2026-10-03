@@ -1799,6 +1799,73 @@ Ramp addRampWithBox(World* world, double gap)
   return r;
 }
 
+//==============================================================================
+// Shaped like gz-physics' contact-surface handler: calls the parent chain,
+// then drives contacts on the belt with a surface velocity along +x, like a
+// gz-sim TrackController conveyor. The speed changes no DART state.
+class BeltHandler : public constraint::ContactSurfaceHandler
+{
+public:
+  explicit BeltHandler(const BodyNode* belt) : mBelt(belt) {}
+
+  void setSpeed(double speed)
+  {
+    mSpeed = speed;
+  }
+
+  std::size_t getNumCalls() const
+  {
+    return mNumCalls;
+  }
+
+  constraint::ContactSurfaceParams createParams(
+      const Contact& contact,
+      std::size_t numContactsOnCollisionObject) const override
+  {
+    ++mNumCalls;
+    auto params = ContactSurfaceHandler::createParams(
+        contact, numContactsOnCollisionObject);
+    if (contact.getBodyNodePtr1().get() == mBelt
+        || contact.getBodyNodePtr2().get() == mBelt) {
+      params.mFirstFrictionalDirection = Eigen::Vector3d::UnitX();
+      params.mContactSurfaceMotionVelocity = Eigen::Vector3d(0.0, mSpeed, 0.0);
+    }
+    return params;
+  }
+
+private:
+  const BodyNode* mBelt;
+  double mSpeed = 0.0;
+  mutable std::size_t mNumCalls = 0u;
+};
+
+//==============================================================================
+// Calls the parent chain, then raises the friction of every contact to 1.
+class HighFrictionHandler : public constraint::ContactSurfaceHandler
+{
+public:
+  constraint::ContactSurfaceParams createParams(
+      const Contact& contact,
+      std::size_t numContactsOnCollisionObject) const override
+  {
+    auto params = ContactSurfaceHandler::createParams(
+        contact, numContactsOnCollisionObject);
+    params.mPrimaryFrictionCoeff = 1.0;
+    params.mSecondaryFrictionCoeff = 1.0;
+    return params;
+  }
+};
+
+//==============================================================================
+// A static 5 m x 0.2 m conveyor belt with its top face at z = 0.
+SkeletonPtr createBelt()
+{
+  auto belt = createWeldedBox(
+      "belt", Eigen::Vector3d(5.0, 0.2, 0.1), Eigen::Vector3d(0, 0, -0.05));
+  belt->setMobile(false);
+  return belt;
+}
+
 Eigen::Vector3d getPosition(const SkeletonPtr& skel)
 {
   return skel->getBodyNode(0)->getTransform().translation();
@@ -2249,6 +2316,101 @@ TEST(IslandDeactivation, InactiveManualConstraintKeepsPoseValidation)
     return box->getBodyNode(0)->getTransform().translation().z() < kHalf + 0.01;
   });
   EXPECT_LT(steps, 600u) << "the lifted box stayed frozen in the air";
+}
+
+//==============================================================================
+// A custom contact surface handler can move a body through state DART cannot
+// see (a conveyor's belt speed), so its contacts must never freeze.
+TEST(IslandDeactivation, CustomContactSurfaceHandlerKeepsPayloadMoving)
+{
+  auto world = makeSleepWorld();
+  auto belt = createBelt();
+  world->addSkeleton(belt);
+  auto box = createFreeBox(
+      "box", Eigen::Vector3d::Constant(0.1), Eigen::Vector3d(0, 0, 0.06));
+  world->addSkeleton(box);
+  auto handler = std::make_shared<BeltHandler>(belt->getBodyNode(0));
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+
+  std::size_t restingSteps = 0;
+  for (int i = 0; i < 2000; ++i) {
+    world->step();
+    restingSteps += box->isResting() ? 1u : 0u;
+  }
+  EXPECT_EQ(0u, restingSteps) << "the box fell asleep on the belt";
+
+  const Eigen::Vector3d start = getPosition(box);
+  const std::size_t callsBefore = handler->getNumCalls();
+  handler->setSpeed(0.5);
+  for (int i = 0; i < 1000; ++i)
+    world->step();
+  EXPECT_GT(handler->getNumCalls(), callsBefore)
+      << "the handler was no longer consulted";
+  EXPECT_GT((getPosition(box) - start).norm(), 0.25)
+      << "the started belt did not carry the box";
+}
+
+//==============================================================================
+// Adding a custom handler must wake a resting body so the handler can act on
+// it; once it is removed, the body can sleep again.
+TEST(IslandDeactivation, AddingContactSurfaceHandlerWakesRestingIsland)
+{
+  auto world = makeSleepWorld();
+  auto belt = createBelt();
+  world->addSkeleton(belt);
+  auto box = createFreeBox(
+      "box", Eigen::Vector3d::Constant(0.1), Eigen::Vector3d(0, 0, 0.06));
+  world->addSkeleton(box);
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), box));
+
+  const Eigen::Vector3d start = getPosition(box);
+  auto handler = std::make_shared<BeltHandler>(belt->getBodyNode(0));
+  handler->setSpeed(0.5);
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+  world->step();
+  EXPECT_FALSE(box->isResting()) << "adding a handler did not wake the box";
+  EXPECT_GT(handler->getNumCalls(), 0u) << "the handler was never consulted";
+
+  for (int i = 0; i < 500; ++i)
+    world->step();
+  EXPECT_GT((getPosition(box) - start).norm(), 0.1)
+      << "the belt did not carry the box";
+
+  world->getConstraintSolver()->removeContactSurfaceHandler(handler);
+  const std::size_t steps
+      = stepUntil(world.get(), 5000, [&]() { return box->isResting(); });
+  EXPECT_LT(steps, 5000u)
+      << "the box never slept after the handler was removed";
+}
+
+//==============================================================================
+// While a handler holds a box on a slope by friction, the box must not gather
+// quiet dwell: once the handler is removed, the box slides instead of
+// freezing on dwell from the held phase.
+TEST(IslandDeactivation, RemovedContactSurfaceHandlerLetsHeldBoxSlide)
+{
+  auto world = makeSleepWorld();
+  const auto box = addRampWithBox(world.get(), 0.0).box;
+
+  auto handler = std::make_shared<HighFrictionHandler>();
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+  std::size_t restingSteps = 0;
+  for (int i = 0; i < 2000; ++i) {
+    world->step();
+    restingSteps += box->isResting() ? 1u : 0u;
+  }
+  EXPECT_EQ(0u, restingSteps) << "the held box fell asleep";
+
+  const Eigen::Vector3d start = getPosition(box);
+  world->getConstraintSolver()->removeContactSurfaceHandler(handler);
+  restingSteps = 0;
+  for (int i = 0; i < 1000; ++i) {
+    world->step();
+    restingSteps += box->isResting() ? 1u : 0u;
+  }
+  EXPECT_EQ(0u, restingSteps) << "the sliding box fell asleep";
+  EXPECT_GT((getPosition(box) - start).norm(), 0.2)
+      << "the box did not slide once the handler was removed";
 }
 
 //==============================================================================

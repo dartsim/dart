@@ -51,6 +51,7 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/ContactSurface.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
@@ -330,6 +331,21 @@ void findShallowSupportedFreeRoots(
 bool hasFiniteNonzeroVelocity(const Eigen::Vector3d& velocity)
 {
   return velocity.allFinite() && velocity.squaredNorm() > 0.0;
+}
+
+// A ContactSurfaceHandler other than the solver's built-in default can derive
+// contact parameters from state World cannot observe, e.g. a conveyor's
+// surface velocity (gz-sim TrackController). A frozen island would never
+// consult it again, so islands may sleep only while the built-in default
+// handler is the whole chain.
+bool usesBuiltInContactSurfaceHandler(
+    const constraint::ConstraintSolver& solver)
+{
+  const auto chain = solver.getLastContactSurfaceHandler();
+  auto* handler = chain.get();
+  return handler != nullptr
+         && typeid(*handler) == typeid(constraint::DefaultContactSurfaceHandler)
+         && handler->getParent() == nullptr;
 }
 
 // Mobile skeletons that are frozen, or that the next solve may freeze.
@@ -1684,6 +1700,10 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // stricter constant.
   const double finalSleepLinearSpeed = kFinalSleepLinearRatio * linSleep;
   const double finalSleepAngularSpeed = kFinalSleepAngularRatio * angSleep;
+  // While a custom handler is installed, every quiet dwell stays 0: no body
+  // becomes a candidate (every rest path needs candidacy), and removing the
+  // handler restarts the full sleep delay (#3056).
+  const bool canSleep = usesBuiltInContactSurfaceHandler(*mConstraintSolver);
   constexpr double kSupportNormalMinVerticalComponent = 0.5;
   const auto& contacts = mConstraintSolver->getLastCollisionResult();
   const double gravityNorm = mGravity.norm();
@@ -1863,7 +1883,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
     } else {
       const bool canAccumulateDwell = islanded || skel->isSleepCandidate()
                                       || skel->getRestDwellTime() > 0.0;
-      const bool quiet = canAccumulateDwell && (linSpeed < linSleep)
+      const bool quiet = canSleep && canAccumulateDwell && (linSpeed < linSleep)
                          && (angSpeed < angSleep) && !disturbed;
       if (quiet) {
         const bool finalQuiet = linSpeed < finalSleepLinearSpeed
@@ -2440,8 +2460,11 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
     return;
   }
 
+  // Adding a custom contact surface handler wakes resting bodies and clears
+  // candidacy; see usesBuiltInContactSurfaceHandler().
   const bool worldStateUnchanged
       = recordedStateUnchanged
+        && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
         && mLastStepRestingWorldStateCollisionFilterTrackable
         && isCollisionFilterSnapshotTrackable(collisionFilter);
 

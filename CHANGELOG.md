@@ -681,6 +681,12 @@
     before every step, as gz-sim 10 does, can sleep:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Keep bodies awake while a custom `ContactSurfaceHandler` is installed, so
+    motion that only the handler drives, such as a conveyor belt (gz-sim
+    TrackController), keeps responding. Once only the built-in default handler
+    remains, bodies can sleep again after the usual sleep delay:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
 * Python
 
   * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with
