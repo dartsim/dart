@@ -2396,6 +2396,21 @@ void ConstraintSolver::buildConstrainedGroups()
         }
       }
     }
+  } else if (ContactConstraint::mMaxErrorReductionVelocityUserConfigured) {
+    // A contact surface handler can set the limit while this step creates its
+    // contact constraints (gz-physics does when a contact-properties callback
+    // asks for it). Apply the final value to every contact of the step, as
+    // when the limit is set before the step, rather than only to the contacts
+    // created after the change.
+    for (const auto& group : mConstrainedGroups) {
+      for (const auto& constraint : group.mConstraints) {
+        auto* contact = dynamic_cast<ContactConstraint*>(constraint.get());
+        if (contact) {
+          contact->mEffectiveMaxErrorReductionVelocity
+              = ContactConstraint::mMaxErrorReductionVelocity;
+        }
+      }
+    }
   }
 
   //----------------------------------------------------------------------------
