@@ -93,5 +93,6 @@ large, multi-session, or explicitly autonomous work. Its project home is
 - Use `dart-changelog` to decide whether `CHANGELOG.md` needs an entry.
 - Promote durable facts and remove a completing `docs/dev_tasks/<task>/` folder.
 - Run `pixi run install-hooks` once per clone. Its fast staged safety check is
-  not a substitute for the full lint requirement; `DART_SKIP_HOOKS=1` is the
-  emergency bypass.
+  not a substitute for the full lint requirement. When it blocks a commit, fix
+  the reported failure; `DART_SKIP_HOOKS=1` is a maintainer emergency bypass
+  to use only when a maintainer explicitly asks.

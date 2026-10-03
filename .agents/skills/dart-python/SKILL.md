@@ -62,7 +62,7 @@ them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
 - Follow the existing DART 6 camelCase binding names used in `python/examples`
   and `python/tests`.
 - NumPy arrays auto-convert to Eigen types
-- GUI requires `DART_BUILD_GUI=ON`
+- dartpy requires the OSG GUI library; keep `DART_BUILD_GUI_OSG=ON` (the default)
 
 ## Key Files
 

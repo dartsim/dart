@@ -36,11 +36,9 @@ state why and name the replacement evidence. Never use an image as the
 
 ## Image-capable Review Loop
 
-All current routed targets are image-capable (the GPT-5.6 family in Codex;
-all current Claude lanes — Fable 5, Opus 5, Sonnet 5, Haiku 4.5 — in Claude
-Code) and support native image input and original-detail inspection.
-Keep this loop capability-based so a future `dart-model-upgrade` audit can
-replace the target-specific note without cloning the skill.
+Every model lane routed in `docs/ai/README.md` § "Updating Models And Coding
+Agents" supports native image input and original-detail inspection. Keep this
+loop capability-based; update model facts in that owner doc, not here.
 
 1. State one claim, its expected visible observation, and the text oracle that
    decides correctness.

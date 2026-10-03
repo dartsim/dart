@@ -224,7 +224,7 @@
     },
     {
       "id": "release-maintenance",
-      "prompt_class": "Adapt a proven main fix to release-6.20 compatibility constraints",
+      "prompt_class": "Backport a merged release-6.20 fix to an older DART 6 release branch",
       "start_dir": "docs/plans",
       "instruction_chain": [
         "AGENTS.md",
@@ -243,7 +243,7 @@
         "docs/onboarding/changelog.md"
       ],
       "permitted_scopes": [
-        "release-6.20 topic worktree",
+        "older release-branch topic worktree",
         "files named by the source fix",
         "release-specific tests and changelog"
       ],

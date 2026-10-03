@@ -78,11 +78,11 @@ entry still matches nearby `CHANGELOG.md` style after adding the PR link.
      UPSTREAM_REF="$(git rev-parse --abbrev-ref --symbolic-full-name @{upstream} 2>/dev/null || true)"
      for REF in "$CURRENT_BRANCH" "${UPSTREAM_REF#origin/}"; do
        case "$REF" in
-         main|release-*) BASE_REF="$REF"; break ;;
+         release-*) BASE_REF="$REF"; break ;;
        esac
      done
    fi
-   BASE_REF="${BASE_REF:-main}"
+   BASE_REF="${BASE_REF:-release-6.20}"
    git fetch origin "$BASE_REF"
    git diff --stat "origin/$BASE_REF...HEAD"
    gh pr diff --name-only 2>/dev/null || true
@@ -90,7 +90,7 @@ entry still matches nearby `CHANGELOG.md` style after adding the PR link.
    ```
    Use the base comparison or PR diff even when the worktree is clean. If a PR,
    issue, release, or target branch is named, inspect that live object before
-   writing and prefer its base over the `main` fallback.
+   writing and prefer its base over the `release-6.20` fallback.
 2. Read `docs/onboarding/changelog.md` and the relevant `CHANGELOG.md` release
    section. Compare nearby bullets before drafting so wording, section choice,
    and level of detail match the current file.

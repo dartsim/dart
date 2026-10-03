@@ -49,7 +49,7 @@ and compatibility detail in the owner docs named by `AGENTS.md`.
 ## Scope Control
 
 - Keep PRs focused. For dependency minimization, prefer one dependency or one
-  `dart/external` tree per PR unless a shared mechanical step is required.
+  vendored tree per PR unless a shared mechanical step is required.
 - Use `docs/dev_tasks/<task>/` for multi-session state. Promote durable facts to
   the owner selected by `docs/information-architecture.md` before retiring a
   task folder.
