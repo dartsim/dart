@@ -1,0 +1,32 @@
+# Expected failures: jetty lane: gz-physics9_9.5.2 + gz-sim10_10.5.0, DART 6.19.4
+# Generated 2026-10-03 on AMD Ryzen Threadripper 3970X 32-Core Processor, Linux 6.8.0-142-generic
+# by tools/gazebo/compat/compare_failures.py --write-baseline
+# (see tools/gazebo/README.md). max-seconds limits are 2x the measured time
+# on that host; scale them with GZ_COMPAT_MAX_SECONDS_SCALE elsewhere.
+
+# Reviewed differences from DART 6.19.4 (kept on regeneration)
+gz-physics COMMON_TEST_simulation_features_dartsim SimulationFeaturesRayIntersectionTest/0.UnsupportedRayIntersections  # accepted: the dart detector supports raycasts since #3355; gz-physics needs a version-guarded test update (#3056)
+
+# gz-physics
+max-seconds gz-physics COMMON_TEST_simulation_features_dartsim SimulationFeaturesStepTest/0.StepWorld 6.1
+
+# gz-sim
+gz-sim INTEGRATION_buoyancy BuoyancyTest.UniformWorldMovement
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/plugin_command_actor
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/plugin_custom_component
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/plugin_custom_sensor_system
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/plugin_hello_world
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/plugin_priority_printer_plugin
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/plugin_rendering_plugins
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/plugin_reset_plugin
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/plugin_system_plugin
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/standalone_acoustic_comms_demo
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/standalone_custom_server
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/standalone_each_performance
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/standalone_external_ecm
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/standalone_gtest_setup
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/standalone_light_control
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/standalone_lrauv_control
+gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/standalone_multi_lrauv_race
+gz-sim INTEGRATION_log_system  # SEGFAULT
+gz-sim INTEGRATION_tracked_vehicle_system TrackedVehicleTest.PublishCmd
