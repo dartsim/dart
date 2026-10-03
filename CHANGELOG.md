@@ -313,10 +313,9 @@
     velocity work, and avoiding threaded contact allocation on cold starts:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Speed up ODE-backed settled cylinder workloads by falling back from native
-    ODE cylinders when exact support contacts are unreliable and by
-    supplementing exact cylinder-vs-plane support contacts that ODE's broadphase
-    can skip:
+  * Speed up ODE-backed settled cylinder workloads on `PlaneShape` grounds by
+    adding the exact-tangency cylinder-vs-plane support contact that ODE does
+    not report:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up collision transform setup in the `dart` detector for

@@ -46,6 +46,8 @@
 #include <iostream>
 #if HAVE_ODE
   #include "dart/collision/ode/ode.hpp"
+
+  #include <ode/ode.h>
 #endif
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
@@ -3787,6 +3789,103 @@ TEST(Issue3056, OdeReportsTangentCylinderPlaneContact)
   result.clear();
   EXPECT_FALSE(group->collide(option, &result));
   EXPECT_EQ(0u, result.getNumContacts());
+}
+
+namespace {
+
+//==============================================================================
+bool hasAxisAlignedOdeNormal(
+    const dContactGeom* contacts, int numContacts, int axis)
+{
+  for (auto i = 0; i < numContacts; ++i) {
+    const Eigen::Vector3d normal(
+        contacts[i].normal[0], contacts[i].normal[1], contacts[i].normal[2]);
+    if (!normal.allFinite())
+      continue;
+
+    auto maxOther = 0.0;
+    for (auto j = 0; j < 3; ++j) {
+      if (j != axis)
+        maxOther = std::max(maxOther, std::abs(normal[j]));
+    }
+
+    if (std::abs(normal[axis]) >= 0.9 && maxOther <= 0.2)
+      return true;
+  }
+
+  return false;
+}
+
+//==============================================================================
+// Mirrors probeCylinderCollisionSupport() in OdeCollisionObject.cpp with raw
+// ODE calls: ODE ports whose native cylinder contacts have misoriented normals
+// (see #2388) make DART fall back to OdeCylinderMesh. ODE must be initialized,
+// e.g. by creating an OdeCollisionDetector first.
+bool odeNativeCylinderNormalsAreReliable()
+{
+  dContactGeom contacts[4];
+
+  dGeomID cylinder1 = dCreateCylinder(nullptr, 1.0, 1.0);
+  dGeomID cylinder2 = dCreateCylinder(nullptr, 0.5, 1.0);
+  dGeomSetPosition(cylinder2, 0.75, 0.0, 0.0);
+  auto numContacts
+      = dCollide(cylinder1, cylinder2, 4, contacts, sizeof(contacts[0]));
+  const bool cylinderCylinderOk
+      = hasAxisAlignedOdeNormal(contacts, numContacts, 0);
+  dGeomDestroy(cylinder1);
+  dGeomDestroy(cylinder2);
+
+  dGeomID cylinder = dCreateCylinder(nullptr, 1.0, 1.0);
+  dGeomID plane = dCreatePlane(nullptr, 0.0, 0.0, 1.0, 0.0);
+  dGeomSetPosition(cylinder, 0.0, 0.0, 0.4);
+  numContacts = dCollide(cylinder, plane, 4, contacts, sizeof(contacts[0]));
+  const bool cylinderPlaneOk
+      = hasAxisAlignedOdeNormal(contacts, numContacts, 2);
+  dGeomDestroy(cylinder);
+  dGeomDestroy(plane);
+
+  return cylinderCylinderOk && cylinderPlaneOk;
+}
+
+} // namespace
+
+//==============================================================================
+TEST(Issue3056, OdeUsesNativeCylinderContactsOnGazeboGroundBox)
+{
+  auto detector = OdeCollisionDetector::create();
+  if (!odeNativeCylinderNormalsAreReliable()) {
+    GTEST_SKIP() << "ODE " << dODE_VERSION << " (" << dGetConfiguration()
+                 << ") reports misoriented native cylinder normals, so DART "
+                    "uses the OdeCylinderMesh fallback (see #2388).";
+  }
+
+  // gz-physics builds an SDF <plane> as a 2100 m box with its top face at z=0.
+  auto groundFrame = SimpleFrame::createShared(Frame::World());
+  groundFrame->setShape(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Constant(2100.0)));
+  groundFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, -1050.0));
+
+  auto cylinderFrame = SimpleFrame::createShared(Frame::World());
+  cylinderFrame->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+  cylinderFrame->setTranslation(Eigen::Vector3d(0.0, 0.0, 0.5 - 1e-4));
+
+  auto group
+      = detector->createCollisionGroup(groundFrame.get(), cylinderFrame.get());
+
+  CollisionOption option;
+  option.enableContact = true;
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+
+  // A native ODE cylinder yields at most 8 contacts here. The OdeCylinderMesh
+  // fallback yields several times as many (49 with ODE 0.16.6), which
+  // overflows contact budgets such as gz-physics' 10000-contact cap in
+  // Gazebo's 3k_shapes world.
+  EXPECT_LE(result.getNumContacts(), 8u);
+  for (const auto& contact : result.getContacts()) {
+    EXPECT_NEAR(
+        1.0, std::abs(contact.normal.dot(Eigen::Vector3d::UnitZ())), 1e-6);
+  }
 }
 
 //==============================================================================
