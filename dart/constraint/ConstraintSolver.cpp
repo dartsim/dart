@@ -185,6 +185,53 @@ bool isExactDefaultContactSurfaceHandler(
   return isExactDynamicType<DefaultContactSurfaceHandler>(handler.get());
 }
 
+namespace {
+
+//==============================================================================
+/// Puts a contact surface handler in place and restores the previous one when
+/// it goes out of scope, including when an exception unwinds the stack.
+class ScopedContactSurfaceHandler final
+{
+public:
+  ScopedContactSurfaceHandler(
+      ContactSurfaceHandlerPtr& slot, ContactSurfaceHandlerPtr handler)
+    : mSlot(slot), mPrevious(std::exchange(slot, std::move(handler)))
+  {
+    // Do nothing
+  }
+
+  ~ScopedContactSurfaceHandler()
+  {
+    mSlot = std::move(mPrevious);
+  }
+
+  ScopedContactSurfaceHandler(const ScopedContactSurfaceHandler&) = delete;
+  ScopedContactSurfaceHandler& operator=(const ScopedContactSurfaceHandler&)
+      = delete;
+
+private:
+  ContactSurfaceHandlerPtr& mSlot;
+  ContactSurfaceHandlerPtr mPrevious;
+};
+
+//==============================================================================
+/// A contact surface handler without a parent or state: it builds contact
+/// constraints from stock parameters and never runs user code. Being local to
+/// this file keeps its shared instance out of libdart's exported symbols.
+class StatelessContactSurfaceHandler final : public ContactSurfaceHandler
+{
+};
+
+//==============================================================================
+ContactSurfaceHandlerPtr getStatelessContactSurfaceHandler()
+{
+  static const auto handler
+      = std::make_shared<StatelessContactSurfaceHandler>();
+  return handler;
+}
+
+} // namespace
+
 //==============================================================================
 bool isRandomizedPgsSolver(const ConstBoxedLcpSolverPtr& solver)
 {
@@ -913,11 +960,32 @@ void ConstraintSolver::prepareForSimulation()
   const auto lastCollisionContacts = mCollisionResult.getContacts();
   const std::size_t collisionGroupContentVersion
       = mCollisionGroup ? mCollisionGroup->getContentVersion() : 0u;
-  constexpr int kPreparationPasses = 2;
-  for (int pass = 0; pass < kPreparationPasses; ++pass) {
-    updateConstraints(false);
-    buildConstrainedGroups();
-    reserveConstrainedGroupsScratch();
+
+  // The passes below only grow solver buffers and discard the contact
+  // constraints they build, so they must not reach a user contact surface
+  // handler: it runs once per contact per step, and gz-physics counts its
+  // contact-properties callbacks. Unless the solver uses only the built-in
+  // default handler, the passes build these constraints through a stateless
+  // handler instead. Like a user handler chain, and unlike the built-in default
+  // handler, it creates every constraint anew instead of reusing the previous
+  // step's, so the passes still reach the allocation high-water mark of the
+  // steps that follow. Its stock parameters enable friction, which gives each
+  // contact constraint its largest dimension.
+  const bool usesOnlyDefaultContactSurfaceHandler
+      = isExactDefaultContactSurfaceHandler(mContactSurfaceHandler)
+        && mContactSurfaceHandler->mParent == nullptr;
+  {
+    const ScopedContactSurfaceHandler preparationContactSurfaceHandler(
+        mContactSurfaceHandler,
+        usesOnlyDefaultContactSurfaceHandler
+            ? mContactSurfaceHandler
+            : getStatelessContactSurfaceHandler());
+    constexpr int kPreparationPasses = 2;
+    for (int pass = 0; pass < kPreparationPasses; ++pass) {
+      updateConstraints(false);
+      buildConstrainedGroups();
+      reserveConstrainedGroupsScratch();
+    }
   }
   mCollisionResult.clear();
   if (!mCollisionGroup
