@@ -664,9 +664,15 @@
     [#3501](https://github.com/dartsim/dart/issues/3501)
 
   * Fix automatic deactivation freezing bodies whose dynamics change while they
-    rest. Joint spring stiffness, rest position, damping and Coulomb friction
-    changes, `BodyNode::setGravityMode()`, a changed `Skeleton::setGravity()`,
-    and revolute/prismatic axis changes now wake resting bodies:
+    rest or are about to rest. Joint spring stiffness, rest position, damping
+    and Coulomb friction changes, `BodyNode::setGravityMode()`, a changed
+    `Skeleton::setGravity()`, and revolute/prismatic axis changes now wake
+    resting bodies, and so does `World::reset()`. These and other changes
+    between steps that can set a body in motion (for example a relaxed joint
+    limit, a pose or collision filter edit, removing a manual constraint, or
+    adding or removing a skeleton) now also restart the sleep delay of bodies
+    that were about to rest, so a body that starts moving slowly after the
+    change is no longer frozen:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Keep resting bodies asleep when a `World`'s or `Skeleton`'s gravity is set

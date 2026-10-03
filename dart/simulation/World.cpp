@@ -332,6 +332,28 @@ bool hasFiniteNonzeroVelocity(const Eigen::Vector3d& velocity)
   return velocity.allFinite() && velocity.squaredNorm() > 0.0;
 }
 
+// Mobile skeletons that are frozen, or that the next solve may freeze.
+bool hasRestingOrCandidateMobileSkeleton(
+    const std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  for (const auto& skel : skeletons) {
+    if (skel->isMobile() && (skel->isResting() || skel->isSleepCandidate()))
+      return true;
+  }
+  return false;
+}
+
+// Mobile skeletons with quiet dwell that a between-step change must restart.
+bool hasDwellingMobileSkeleton(
+    const std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  for (const auto& skel : skeletons) {
+    if (skel->isMobile() && skel->getRestDwellTime() > 0.0)
+      return true;
+  }
+  return false;
+}
+
 void restoreVelocityActuatorCommands(
     dynamics::FreeJoint& joint, const Eigen::VectorXd& commands)
 {
@@ -452,6 +474,7 @@ void World::reserveMemoryManagerForSimulationShape()
   mIslandAllBelowWakeScratch.reserve(numSkeletons);
   mIslandMobileSkeletonCountScratch.reserve(numSkeletons);
   mIslandDwellWakeReadyCountScratch.reserve(numSkeletons);
+  mLastStepRestingWorldSkeletonStates.reserve(numSkeletons);
 }
 
 //==============================================================================
@@ -1272,8 +1295,9 @@ void World::reset()
   mFrame = 0;
   mRecording->clear();
   mConstraintSolver->clearLastCollisionResult();
-  invalidateAllRestingKinematicSnapshot();
-  invalidateLastStepRestingWorldState();
+  // Also clears sleep candidacy and dwell: the next step start cannot compare
+  // against the state before reset() (#3056).
+  wakeRestingSkeletonsForWorldChange();
   clearUnsupportedShallowSupportFreeRootVelocityStates({});
   updateShallowSupportFreeRootVelocityVersions();
   captureResetShallowSupportFreeRootVelocityTargets();
@@ -2336,22 +2360,24 @@ bool World::hasRestingMobileSkeleton() const
 //==============================================================================
 void World::wakeRestingSkeletonsIfStepStateChanged()
 {
-  if (!mLastStepRestingWorldStateValid || !hasRestingMobileSkeleton())
-    return;
-
   const auto collisionDetector = mConstraintSolver->getCollisionDetector();
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   const auto* collisionFilter = collisionOption.collisionFilter.get();
-  const bool collisionFilterTrackable
-      = isCollisionFilterSnapshotTrackable(collisionFilter);
+  // A sleep candidate is checked like a resting body: the next solve may
+  // freeze it on evidence gathered before the change.
+  const bool restingOrCandidate
+      = mLastStepRestingWorldStateValid
+        && hasRestingOrCandidateMobileSkeleton(mSkeletons);
   // Before the no-contact kinematic snapshot exists, this guard is the only
   // place that can notice support pose edits made between the sleep transition
   // and the next step. Once the full snapshot exists, let its exact
   // pose/transform validation distinguish real kinematic edits from visual-only
-  // version changes.
+  // version changes. Skeletons are recorded only while something can use them
+  // (see updateLastStepRestingWorldState()).
   bool skeletonStateUnchanged = true;
-  if (!mAllRestingKinematicSnapshotValid) {
+  if (!mLastStepRestingWorldSkeletonStates.empty()
+      && (!restingOrCandidate || !mAllRestingKinematicSnapshotValid)) {
     skeletonStateUnchanged
         = mLastStepRestingWorldSkeletonStates.size() == mSkeletons.size();
     if (skeletonStateUnchanged) {
@@ -2369,9 +2395,8 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
     }
   }
 
-  const bool worldStateUnchanged
-      = mLastStepRestingWorldStateCollisionFilterTrackable
-        && collisionFilterTrackable && skeletonStateUnchanged
+  const bool recordedStateUnchanged
+      = skeletonStateUnchanged
         && mLastStepRestingWorldStateDeactivationStateVersion
                == dynamics::Skeleton::getGlobalDeactivationStateVersion()
         && mLastStepRestingWorldStateCollisionDetector
@@ -2391,6 +2416,29 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
         && mLastStepRestingWorldStateCollisionFilterRevision
                == getCollisionFilterSnapshotRevision(collisionFilter);
 
+  if (!restingOrCandidate) {
+    // Dwell rule: a between-step change (a relaxed joint limit, a spring
+    // edit, a moved support, a collision filter edit; also another World's
+    // sleep transitions, since the deactivation-state version is
+    // process-global) restarts the quiet dwell of awake non-candidates.
+    // Otherwise dwell gathered under the old dynamics lets the next rest pass
+    // grant candidacy after one smoothed step of the new motion, and the
+    // following solve freezes the body (#3056). Candidacy set by hand between
+    // steps is kept.
+    if (!recordedStateUnchanged) {
+      for (auto& skel : mSkeletons) {
+        if (skel->isMobile() && !skel->isResting() && !skel->isSleepCandidate())
+          skel->setRestDwellTime(0.0);
+      }
+    }
+    return;
+  }
+
+  const bool worldStateUnchanged
+      = recordedStateUnchanged
+        && mLastStepRestingWorldStateCollisionFilterTrackable
+        && isCollisionFilterSnapshotTrackable(collisionFilter);
+
   if (!worldStateUnchanged)
     wakeRestingSkeletonsForWorldChange();
 }
@@ -2398,11 +2446,9 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
 //==============================================================================
 void World::updateLastStepRestingWorldState()
 {
-  if (!hasRestingMobileSkeleton()) {
-    invalidateLastStepRestingWorldState();
-    return;
-  }
-
+  // The next step start compares the world with this record: in full while a
+  // mobile skeleton rests or is a sleep candidate, and for the dwell rule
+  // otherwise.
   const auto collisionDetector = mConstraintSolver->getCollisionDetector();
   mLastStepRestingWorldStateCollisionDetector = collisionDetector.get();
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
@@ -2429,17 +2475,24 @@ void World::updateLastStepRestingWorldState()
                 mLastStepRestingWorldStateCollisionFilter)
             : 0u;
   mLastStepRestingWorldSkeletonStates.clear();
-  mLastStepRestingWorldSkeletonStates.reserve(mSkeletons.size());
-  for (const auto& skel : mSkeletons) {
-    mLastStepRestingWorldSkeletonStates.push_back(RestingWorldSkeletonState{
-        skel.get(),
-        skel->getVersion(),
-        skel->getKinematicVersion(),
-        skel->getNumBodyNodes()});
+  const bool restingOrCandidate
+      = hasRestingOrCandidateMobileSkeleton(mSkeletons);
+  // Skeletons matter only while a body rests, is a candidate, or has quiet
+  // dwell that a between-step edit must restart. Entering simulation mode
+  // reserves the buffer (reserveMemoryManagerForSimulationShape()), so
+  // recording allocates nothing.
+  if (restingOrCandidate || hasDwellingMobileSkeleton(mSkeletons)) {
+    for (const auto& skel : mSkeletons) {
+      mLastStepRestingWorldSkeletonStates.push_back(RestingWorldSkeletonState{
+          skel.get(),
+          skel->getVersion(),
+          skel->getKinematicVersion(),
+          skel->getNumBodyNodes()});
+    }
   }
   mLastStepRestingWorldStateDeactivationStateVersion
       = dynamics::Skeleton::getGlobalDeactivationStateVersion();
-  mLastStepRestingWorldStateValid = true;
+  mLastStepRestingWorldStateValid = restingOrCandidate;
 }
 
 //==============================================================================
@@ -2484,13 +2537,17 @@ void World::invalidateAllRestingKinematicSnapshot()
 void World::wakeRestingSkeletonsForWorldChange()
 {
   for (auto& skel : mSkeletons) {
-    if (!skel->isMobile() || !skel->isResting())
+    if (!skel->isMobile())
       continue;
 
-    skel->setResting(false);
+    if (skel->isResting()) {
+      skel->setResting(false);
+      skel->setIslandIndex(-1);
+    }
+    // Clears candidacy and restarts the quiet dwell (setSleepCandidate(false)
+    // zeroes it), so nothing freezes on evidence gathered before the change
+    // (#3056). Bumps the version only for a real candidate.
     skel->setSleepCandidate(false);
-    skel->setIslandIndex(-1);
-    skel->setRestDwellTime(0.0);
   }
 
   invalidateAllRestingKinematicSnapshot();

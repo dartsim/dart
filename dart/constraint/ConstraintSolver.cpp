@@ -541,6 +541,24 @@ void ConstraintSolver::addConstraint(const ConstraintBasePtr& constraint)
   mManualConstraints.push_back(constraint);
 }
 
+namespace {
+
+// A body that a removed manual constraint held may start moving slowly.
+// Restarting the sleep candidacy and quiet dwell of awake skeletons
+// (setSleepCandidate(false) zeroes the dwell) keeps the next solves from
+// freezing it on evidence gathered while it was held (#3056). Resting
+// skeletons keep their state: no active constraint holds a frozen island.
+void restartAwakeSleepCandidacy(
+    const std::vector<dynamics::SkeletonPtr>& skeletons)
+{
+  for (const auto& skeleton : skeletons) {
+    if (skeleton->isMobile() && !skeleton->isResting())
+      skeleton->setSleepCandidate(false);
+  }
+}
+
+} // namespace
+
 //==============================================================================
 void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
 {
@@ -555,12 +573,17 @@ void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
   mManualConstraints.erase(
       remove(mManualConstraints.begin(), mManualConstraints.end(), constraint),
       mManualConstraints.end());
+  restartAwakeSleepCandidacy(mSkeletons);
 }
 
 //==============================================================================
 void ConstraintSolver::removeAllConstraints()
 {
+  if (mManualConstraints.empty())
+    return;
+
   mManualConstraints.clear();
+  restartAwakeSleepCandidacy(mSkeletons);
 }
 
 //==============================================================================

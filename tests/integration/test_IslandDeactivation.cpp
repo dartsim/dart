@@ -680,9 +680,9 @@ TEST(IslandDeactivation, UnconvergedContactClearsSleepCandidate)
   Eigen::Vector6d residualVelocity = Eigen::Vector6d::Zero();
   residualVelocity[3] = 0.005;
   box->getJoint(0)->setVelocities(residualVelocity);
+  world->addSkeleton(box);
   box->setSleepCandidate(true);
   box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
-  world->addSkeleton(box);
 
   world->step();
 
@@ -704,9 +704,9 @@ TEST(IslandDeactivation, ContactPenetrationToleranceIsConfigurable)
         "box",
         Eigen::Vector3d::Constant(kBoxSize),
         Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    world->addSkeleton(box);
     box->setSleepCandidate(true);
     box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
-    world->addSkeleton(box);
     return std::make_pair(world, box);
   };
 
@@ -747,9 +747,9 @@ TEST(IslandDeactivation, ExplicitDefaultToleranceKeepsPlaneContactStrict)
         "box",
         Eigen::Vector3d::Constant(kBoxSize),
         Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    world->addSkeleton(box);
     box->setSleepCandidate(true);
     box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
-    world->addSkeleton(box);
     return std::make_pair(world, box);
   };
 
@@ -789,9 +789,9 @@ TEST(IslandDeactivation, PlaneContactMissFallbackUsesAdaptiveDefaultTolerance)
         "box",
         Eigen::Vector3d::Constant(kBoxSize),
         Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    world->addSkeleton(box);
     box->setSleepCandidate(true);
     box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
-    world->addSkeleton(box);
     return std::make_pair(world, box);
   };
 
@@ -1709,6 +1709,101 @@ RevoluteJoint* addFlapModel(World* world)
   return pair.first;
 }
 
+//==============================================================================
+// A 20 kg base plate on the floor with a 1 kg flap hinged about +y on its +x
+// edge, lifted `tilt` rad and held there by the hinge's upper position limit
+// (0). Without the limit the flap falls onto the floor, at q close to `tilt`.
+RevoluteJoint* addLiftedFlap(World* world, double tilt)
+{
+  const Eigen::Vector3d size(0.5, 0.5, 0.1);
+  auto skel = Skeleton::create("lifted_flap");
+
+  BodyNode::Properties baseProps(
+      BodyNode::AspectProperties(std::string("base")));
+  baseProps.mInertia.setMass(20.0);
+  baseProps.mInertia.setMoment(BoxShape::computeInertia(size, 20.0));
+  auto* base = skel->createJointAndBodyNodePair<FreeJoint>(
+                       nullptr, FreeJoint::Properties(), baseProps)
+                   .second;
+  base->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(size));
+
+  RevoluteJoint::Properties hingeProps;
+  hingeProps.mName = "hinge";
+  hingeProps.mAxis = Eigen::Vector3d::UnitY();
+  hingeProps.mT_ParentBodyToJoint
+      = Eigen::Translation3d(0.25, 0.0, 0.0)
+        * Eigen::AngleAxisd(-tilt, Eigen::Vector3d::UnitY());
+  hingeProps.mT_ChildBodyToJoint
+      = Eigen::Isometry3d(Eigen::Translation3d(-0.25, 0.0, 0.0));
+  hingeProps.mPositionLowerLimits[0] = -1.0;
+  hingeProps.mPositionUpperLimits[0] = 0.0;
+  hingeProps.mIsPositionLimitEnforced = true;
+  BodyNode::Properties flapProps(
+      BodyNode::AspectProperties(std::string("flap")));
+  flapProps.mInertia.setMass(1.0);
+  flapProps.mInertia.setMoment(BoxShape::computeInertia(size, 1.0));
+  auto pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      base, hingeProps, flapProps);
+  pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(size));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation().z() = 0.05;
+  skel->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
+  world->addSkeleton(skel);
+  return pair.first;
+}
+
+//==============================================================================
+// A static 20 degree ramp with a 1 kg box `gap` m above it. With friction 0.3
+// on both, the box slides down the ramp (+x in the ramp frame) at about
+// 0.59 m/s^2 unless something holds it.
+struct Ramp
+{
+  Eigen::Matrix3d tilt;
+  SkeletonPtr box;
+};
+
+Ramp addRampWithBox(World* world, double gap)
+{
+  Ramp r;
+  r.tilt = Eigen::AngleAxisd(math::toRadian(20.0), Eigen::Vector3d::UnitY())
+               .toRotationMatrix();
+  auto ramp = Skeleton::create("ramp");
+  auto* rampBody = ramp->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+  rampBody
+      ->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          std::make_shared<BoxShape>(Eigen::Vector3d(4.0, 2.0, 0.1)))
+      ->getDynamicsAspect()
+      ->setFrictionCoeff(0.3);
+  Eigen::Isometry3d rampTf = Eigen::Isometry3d::Identity();
+  rampTf.linear() = r.tilt;
+  rampBody->getParentJoint()->setTransformFromParentBodyNode(rampTf);
+  ramp->setMobile(false);
+  world->addSkeleton(ramp);
+
+  const Eigen::Vector3d size = Eigen::Vector3d::Constant(kBoxSize);
+  r.box = createFreeBox("box", size, Eigen::Vector3d::Zero());
+  auto* boxBody = r.box->getBodyNode(0);
+  boxBody->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(0.3);
+  // The box's own inertia, so that a held box comes to rest instead of
+  // rocking slowly.
+  const Eigen::Matrix3d inertia = BoxShape::computeInertia(size, 1.0);
+  boxBody->setMomentOfInertia(inertia(0, 0), inertia(1, 1), inertia(2, 2));
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.linear() = r.tilt;
+  boxTf.translation() = r.tilt * Eigen::Vector3d(0.0, 0.0, 0.05 + kHalf + gap);
+  r.box->getJoint(0)->setPositions(FreeJoint::convertToPositions(boxTf));
+  world->addSkeleton(r.box);
+  return r;
+}
+
+Eigen::Vector3d getPosition(const SkeletonPtr& skel)
+{
+  return skel->getBodyNode(0)->getTransform().translation();
+}
+
 } // namespace
 
 //==============================================================================
@@ -1899,6 +1994,176 @@ TEST(IslandDeactivation, UnchangedGravityWriteKeepsRestingFastPath)
   EXPECT_GT(solverResult.getNumContacts(), 0u)
       << "a gravity change reused the all-resting fast path";
   EXPECT_FALSE(box->isResting()) << "a gravity change did not wake the box";
+}
+
+//==============================================================================
+// The active limit row keeps the lifted flap's island awake, so the flap is a
+// sleep candidate for one step boundary per dwell period. Relaxing the limit
+// in that window, or one step before candidacy would be granted, must not let
+// candidacy or dwell gathered under the old limit freeze the falling flap, also
+// after World::reset().
+TEST(IslandDeactivation, RelaxedJointLimitDoesNotFreezeFlap)
+{
+  struct Row
+  {
+    const char* name;
+    double tilt;
+    double upperLimit;
+    bool editAtCandidate;
+    bool resetBeforeEdit;
+  };
+  for (const auto& row : {
+           Row{"edit while a sleep candidate", 0.6, 1.0, true, false},
+           Row{"edit one step before candidacy", 1.0, 3.0, false, false},
+           Row{"edit after World::reset() while a candidate",
+               0.6,
+               1.0,
+               true,
+               true},
+       }) {
+    SCOPED_TRACE(row.name);
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto* joint = addLiftedFlap(world.get(), row.tilt);
+    const auto skel = joint->getSkeleton();
+    for (int i = 0; i < 3000; ++i)
+      world->step();
+
+    const double timeUntilSleep
+        = world->getDeactivationOptions().mTimeUntilSleep;
+    const double dt = world->getTimeStep();
+    const std::size_t steps = stepUntil(world.get(), 2000, [&]() {
+      if (skel->isResting())
+        return false;
+      if (row.editAtCandidate)
+        return skel->isSleepCandidate();
+      return !skel->isSleepCandidate()
+             && std::abs(skel->getRestDwellTime() - (timeUntilSleep - dt))
+                    < 0.5 * dt;
+    });
+    ASSERT_LT(steps, 2000u) << "the flap never reached the edit window";
+
+    if (row.resetBeforeEdit)
+      world->reset();
+    joint->setPositionUpperLimit(0, row.upperLimit);
+    for (int i = 0; i < 1000; ++i) {
+      world->step();
+      if (skel->isResting() && joint->getPosition(0) < 0.9 * row.tilt) {
+        ADD_FAILURE() << "the flap froze at q = " << joint->getPosition(0)
+                      << " " << i + 1 << " steps after the edit";
+        break;
+      }
+    }
+    EXPECT_GT(joint->getPosition(0), 0.9 * row.tilt)
+        << "the flap did not fall onto the floor";
+  }
+}
+
+//==============================================================================
+// A box held on the ramp, released while it is a sleep candidate or one step
+// before candidacy would be granted, must slide. Moving the static stopper or
+// ignoring its contact leaves the deactivation-state version unchanged, and
+// removing a manual constraint changes no version at all, so neither
+// candidacy nor quiet dwell gathered while the box was held may survive the
+// release.
+TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
+{
+  enum class Release
+  {
+    MoveStopper,
+    IgnoreStopper,
+    RemoveWeld,
+  };
+  struct Row
+  {
+    const char* name;
+    Release release;
+    bool editAtCandidate;
+  };
+  for (const auto& row : {
+           Row{"stopper moved one step before candidacy",
+               Release::MoveStopper,
+               false},
+           Row{"stopper contact ignored one step before candidacy",
+               Release::IgnoreStopper,
+               false},
+           Row{"weld removed while a sleep candidate",
+               Release::RemoveWeld,
+               true},
+           Row{"weld removed one step before candidacy",
+               Release::RemoveWeld,
+               false},
+       }) {
+    SCOPED_TRACE(row.name);
+    auto world = makeSleepWorld();
+    const bool weld = row.release == Release::RemoveWeld;
+    // The welded box overlaps the ramp so that its contact keeps it islanded.
+    const auto ramp = addRampWithBox(world.get(), weld ? -1e-6 : 1e-3);
+    auto* boxBody = ramp.box->getBodyNode(0);
+
+    // A static plate just downhill of the box, or a weld to the world.
+    auto stopper = createWeldedBox(
+        "stopper", Eigen::Vector3d(0.1, 2.0, 0.3), Eigen::Vector3d::Zero());
+    auto placeStopper = [&](double x) {
+      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+      tf.linear() = ramp.tilt;
+      tf.translation() = ramp.tilt * Eigen::Vector3d(x, 0.0, 0.21);
+      stopper->getJoint(0)->setTransformFromParentBodyNode(tf);
+    };
+    auto holder = std::make_shared<constraint::WeldJointConstraint>(boxBody);
+    if (weld) {
+      world->getConstraintSolver()->addConstraint(holder);
+      // While the weld is active, the box is granted candidacy once per sleep
+      // delay and loses it in the next solve. Skip the first grant, which the
+      // first-frame shortcut makes.
+      for (int i = 0; i < 1000; ++i)
+        world->step();
+    } else {
+      placeStopper(kHalf + 0.05 + 1e-4);
+      stopper->setMobile(false);
+      world->addSkeleton(stopper);
+    }
+
+    const double timeUntilSleep
+        = world->getDeactivationOptions().mTimeUntilSleep;
+    const double dt = world->getTimeStep();
+    const std::size_t steps = stepUntil(world.get(), 6000, [&]() {
+      if (ramp.box->isResting())
+        return false;
+      if (row.editAtCandidate)
+        return ramp.box->isSleepCandidate();
+      return !ramp.box->isSleepCandidate()
+             && std::abs(ramp.box->getRestDwellTime() - (timeUntilSleep - dt))
+                    < 0.5 * dt;
+    });
+    ASSERT_LT(steps, 6000u) << "the box never reached the release window";
+
+    switch (row.release) {
+      case Release::MoveStopper:
+        placeStopper(1.0 + kHalf + 0.05);
+        break;
+      case Release::IgnoreStopper: {
+        auto filter = std::dynamic_pointer_cast<BodyNodeCollisionFilter>(
+            world->getConstraintSolver()->getCollisionOption().collisionFilter);
+        ASSERT_NE(filter, nullptr);
+        filter->addBodyNodePairToBlackList(boxBody, stopper->getBodyNode(0));
+        break;
+      }
+      case Release::RemoveWeld:
+        world->getConstraintSolver()->removeConstraint(holder);
+        break;
+    }
+
+    const Eigen::Vector3d start = getPosition(ramp.box);
+    std::size_t restingSteps = 0;
+    for (int i = 0; i < 1000; ++i) {
+      world->step();
+      restingSteps += ramp.box->isResting() ? 1u : 0u;
+    }
+    EXPECT_EQ(0u, restingSteps) << "the released box froze";
+    EXPECT_GT((getPosition(ramp.box) - start).norm(), 0.2)
+        << "the released box did not slide";
+  }
 }
 
 //==============================================================================
@@ -2332,8 +2597,6 @@ TEST(IslandDeactivation, UngroupedAwakeBodyVetoesNewContactIslandResting)
       "sleeper",
       Eigen::Vector3d::Constant(kBoxSize),
       Eigen::Vector3d(0, 0, kHalf - 1.0e-6));
-  sleeper->setSleepCandidate(true);
-  sleeper->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
   world->addSkeleton(sleeper);
 
   auto awake = createFreeBox(
@@ -2346,6 +2609,8 @@ TEST(IslandDeactivation, UngroupedAwakeBodyVetoesNewContactIslandResting)
       = 2.0 * opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
   awake->getJoint(0)->setVelocities(movingVelocity);
   world->addSkeleton(awake);
+  sleeper->setSleepCandidate(true);
+  sleeper->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
 
   world->step();
 
