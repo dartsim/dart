@@ -2541,12 +2541,22 @@ const std::string& World::getName() const
 //==============================================================================
 void World::setGravity(const Eigen::Vector3d& _gravity)
 {
+  // A host may re-apply an unchanged gravity before every step (gz-sim 10
+  // does); that must not wake resting bodies (#3056). A skeleton whose gravity
+  // differs, for example after a direct Skeleton::setGravity(), is still
+  // synced, which wakes them as before.
+  bool changed = mGravity != _gravity;
   mGravity = _gravity;
-  for (std::vector<dynamics::SkeletonPtr>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end();
-       ++it) {
-    (*it)->setGravity(_gravity);
+  for (auto& skel : mSkeletons) {
+    if (skel->getGravity() != _gravity) {
+      skel->setGravity(_gravity);
+      changed = true;
+    }
   }
+
+  if (!changed)
+    return;
+
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
 }

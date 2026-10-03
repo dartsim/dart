@@ -1867,6 +1867,41 @@ TEST(IslandDeactivation, JointSpringEditLiftsRestingFlap)
 }
 
 //==============================================================================
+// gz-sim 10 re-applies the world gravity before every step. Writing the
+// current gravity changes nothing, so resting bodies must stay asleep; a real
+// change must still wake them.
+TEST(IslandDeactivation, UnchangedGravityWriteKeepsRestingFastPath)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), box));
+
+  const auto& solverResult
+      = world->getConstraintSolver()->getLastCollisionResult();
+  for (int i = 0; i < 1000; ++i) {
+    world->setGravity(world->getGravity());
+    box->setGravity(box->getGravity());
+    world->step();
+    ASSERT_TRUE(box->isResting())
+        << "an unchanged gravity write woke the box at step " << i;
+    ASSERT_EQ(0u, solverResult.getNumContacts())
+        << "an unchanged gravity write left the all-resting fast path at step "
+        << i;
+  }
+
+  world->setGravity(Eigen::Vector3d(1.0, 0.0, -9.81));
+  world->step();
+  EXPECT_GT(solverResult.getNumContacts(), 0u)
+      << "a gravity change reused the all-resting fast path";
+  EXPECT_FALSE(box->isResting()) << "a gravity change did not wake the box";
+}
+
+//==============================================================================
 // Joint-frame edits can change world geometry without changing generalized
 // positions. The all-resting snapshot must invalidate on the kinematic version
 // change and run a real collision pass.

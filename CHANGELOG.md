@@ -669,6 +669,11 @@
     and revolute/prismatic axis changes now wake resting bodies:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Keep resting bodies asleep when a `World`'s or `Skeleton`'s gravity is set
+    to its current value, so worlds whose host re-applies an unchanged gravity
+    before every step, as gz-sim 10 does, can sleep:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
 * Python
 
   * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with
