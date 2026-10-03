@@ -663,6 +663,12 @@
     [#3511](https://github.com/dartsim/dart/pull/3511),
     [#3501](https://github.com/dartsim/dart/issues/3501)
 
+  * Fix automatic deactivation freezing bodies whose dynamics change while they
+    rest. Joint spring stiffness, rest position, damping and Coulomb friction
+    changes, `BodyNode::setGravityMode()`, a changed `Skeleton::setGravity()`,
+    and revolute/prismatic axis changes now wake resting bodies:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
 * Python
 
   * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with

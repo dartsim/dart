@@ -876,10 +876,15 @@ double Skeleton::getTimeStep() const
 //==============================================================================
 void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 {
+  // Unchanged: the gravity caches stay valid, and resting bodies stay asleep.
+  if (mAspectProperties.mGravity == _gravity)
+    return;
+
   mAspectProperties.mGravity = _gravity;
   SET_ALL_FLAGS(mGravityForces);
   SET_ALL_FLAGS(mCoriolisAndGravityForces);
   ON_ALL_TREES(dirtySupportPolygon);
+  incrementDeactivationStateVersion();
 }
 
 //==============================================================================

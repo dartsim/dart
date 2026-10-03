@@ -125,10 +125,18 @@ void RevoluteJoint::setAxis(const Eigen::Vector3d& _axis)
   if (_axis == mAspectProperties.mAxis)
     return;
 
-  mAspectProperties.mAxis = _axis.normalized();
+  // A same-direction axis of another length changes nothing either, so it
+  // must not wake resting bodies.
+  const Eigen::Vector3d axis = _axis.normalized();
+  if (axis == mAspectProperties.mAxis)
+    return;
+
+  mAspectProperties.mAxis = axis;
   Joint::notifyPositionUpdated();
   updateRelativeJacobian();
   Joint::incrementVersion();
+  // Wakes resting bodies even when the pose is unchanged (at q = 0).
+  Joint::notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================

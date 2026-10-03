@@ -49,6 +49,7 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <functional>
 #include <iostream>
 
 #include <cmath>
@@ -1663,6 +1664,206 @@ TEST(IslandDeactivation, WakeOnAutomaticJointLimitChange)
   joint->setPositionLowerLimit(0, joint->getPosition(0) + 0.05);
 
   expectSolverRunsAfterRestingConstraintEdit(world.get(), sleeper);
+}
+
+namespace {
+
+//==============================================================================
+// A 1 kg base plate with a 0.5 kg flap hinged about +y on its +x edge, both
+// lying on the floor and overlapping it by 5e-9 m. Returns the flap's joint.
+RevoluteJoint* addFlapModel(World* world)
+{
+  const Eigen::Vector3d size(0.5, 0.5, 0.1);
+  auto skel = Skeleton::create("flap_model");
+
+  BodyNode::Properties baseProps(
+      BodyNode::AspectProperties(std::string("base")));
+  baseProps.mInertia.setMass(1.0);
+  baseProps.mInertia.setMoment(BoxShape::computeInertia(size, 1.0));
+  auto* base = skel->createJointAndBodyNodePair<FreeJoint>(
+                       nullptr, FreeJoint::Properties(), baseProps)
+                   .second;
+  base->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(size));
+
+  RevoluteJoint::Properties hingeProps;
+  hingeProps.mName = "hinge";
+  hingeProps.mAxis = Eigen::Vector3d::UnitY();
+  hingeProps.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.25, 0.0, -0.05);
+  hingeProps.mT_ChildBodyToJoint.translation()
+      = Eigen::Vector3d(-0.25, 0.0, -0.05);
+  BodyNode::Properties flapProps(
+      BodyNode::AspectProperties(std::string("flap")));
+  flapProps.mInertia.setMass(0.5);
+  flapProps.mInertia.setMoment(BoxShape::computeInertia(size, 0.5));
+  auto pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      base, hingeProps, flapProps);
+  pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(size));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.05 - 5e-9);
+  skel->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
+  world->addSkeleton(skel);
+  return pair.first;
+}
+
+} // namespace
+
+//==============================================================================
+// Joint spring, damping and friction, gravity and axis edits change the forces
+// on a resting body without changing its pose, so each must wake it. Writing
+// the current value back changes nothing, so it must not.
+TEST(IslandDeactivation, WakeOnJointDynamicsEdit)
+{
+  struct Edit
+  {
+    const char* name;
+    // Writes the current value back, which changes nothing.
+    std::function<void(RevoluteJoint*)> rewrite;
+    std::function<void(RevoluteJoint*)> apply;
+  };
+  const std::vector<Edit> edits = {
+      {"setSpringStiffness",
+       [](RevoluteJoint* joint) {
+         joint->setSpringStiffness(0, joint->getSpringStiffness(0));
+       },
+       [](RevoluteJoint* joint) {
+         joint->setSpringStiffness(0, 50.0);
+       }},
+      {"setRestPosition",
+       [](RevoluteJoint* joint) {
+         joint->setRestPosition(0, joint->getRestPosition(0));
+       },
+       [](RevoluteJoint* joint) {
+         joint->setRestPosition(0, -1.0);
+       }},
+      {"setRestPositions",
+       [](RevoluteJoint* joint) {
+         joint->setRestPositions(joint->getRestPositions());
+       },
+       [](RevoluteJoint* joint) {
+         joint->setRestPositions(Eigen::VectorXd::Constant(1, -1.0));
+       }},
+      {"setDampingCoefficient",
+       [](RevoluteJoint* joint) {
+         joint->setDampingCoefficient(0, joint->getDampingCoefficient(0));
+       },
+       [](RevoluteJoint* joint) {
+         joint->setDampingCoefficient(0, 5.0);
+       }},
+      {"setCoulombFriction",
+       [](RevoluteJoint* joint) {
+         joint->setCoulombFriction(0, joint->getCoulombFriction(0));
+       },
+       [](RevoluteJoint* joint) {
+         joint->setCoulombFriction(0, 0.2);
+       }},
+      {"setGravityMode",
+       [](RevoluteJoint* joint) {
+         auto* body = joint->getChildBodyNode();
+         body->setGravityMode(body->getGravityMode());
+       },
+       [](RevoluteJoint* joint) {
+         joint->getChildBodyNode()->setGravityMode(false);
+       }},
+      {"Skeleton::setGravity",
+       [](RevoluteJoint* joint) {
+         const auto skel = joint->getSkeleton();
+         skel->setGravity(skel->getGravity());
+       },
+       [](RevoluteJoint* joint) {
+         joint->getSkeleton()->setGravity(Eigen::Vector3d(0.0, 0.0, -5.0));
+       }},
+      {"setAxis",
+       // The same direction at twice the length.
+       [](RevoluteJoint* joint) { joint->setAxis(2.0 * joint->getAxis()); },
+       [](RevoluteJoint* joint) {
+         joint->setAxis(Eigen::Vector3d::UnitX());
+       }},
+  };
+
+  for (const auto& edit : edits) {
+    SCOPED_TRACE(edit.name);
+    // Without gravity, and frozen by its first solve (which integrates no
+    // positions), the flap keeps every joint exactly still: the axis edit then
+    // happens at q = 0, where the pose check cannot see it, and the flap can
+    // rest with joint friction, whose constraint keeps an island awake while
+    // the joint moves.
+    auto world = makeSleepWorld();
+    world->setGravity(Eigen::Vector3d::Zero());
+    world->addSkeleton(createFloor());
+    auto* joint = addFlapModel(world.get());
+    joint->setCoulombFriction(0, 0.1);
+    const auto skel = joint->getSkeleton();
+    skel->setSleepCandidate(true);
+
+    ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), skel));
+    ASSERT_EQ(0.0, joint->getPosition(0));
+    const auto& solverResult
+        = world->getConstraintSolver()->getLastCollisionResult();
+
+    edit.rewrite(joint);
+    world->step();
+    EXPECT_EQ(0u, solverResult.getNumContacts())
+        << "writing the current value left the all-resting fast path";
+    EXPECT_TRUE(skel->isResting()) << "writing the current value woke the flap";
+
+    edit.apply(joint);
+    world->step();
+    EXPECT_GT(solverResult.getNumContacts(), 0u)
+        << "the edit reused the all-resting fast path";
+    EXPECT_FALSE(skel->isResting()) << "the edit did not wake the flap";
+  }
+}
+
+//==============================================================================
+// A spring edit on a resting flap must lift it, whether everything rests or
+// another body keeps the world partly awake.
+TEST(IslandDeactivation, JointSpringEditLiftsRestingFlap)
+{
+  for (const bool partial : {false, true}) {
+    SCOPED_TRACE(partial ? "partly awake world" : "all-resting world");
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto* joint = addFlapModel(world.get());
+    const auto skel = joint->getSkeleton();
+    SkeletonPtr mover;
+    if (partial) {
+      mover = createFreeBox(
+          "mover", Eigen::Vector3d::Constant(0.5), Eigen::Vector3d(3, 0, 0.25));
+      world->addSkeleton(mover);
+    }
+    // Pushes the mover back and forth so it never sleeps.
+    std::size_t steps = 0;
+    auto step = [&]() {
+      if (mover) {
+        const double force = (steps / 200) % 2 == 0 ? 15.0 : -15.0;
+        mover->getBodyNode(0)->addExtForce(Eigen::Vector3d(force, 0, 0));
+      }
+      world->step();
+      ++steps;
+    };
+
+    // Long enough for an all-resting world to reach the all-resting fast path.
+    while (steps < 3000)
+      step();
+    ASSERT_TRUE(skel->isResting());
+    ASSERT_FALSE(mover && mover->isResting());
+    const double z0
+        = joint->getChildBodyNode()->getTransform().translation().z();
+
+    joint->setSpringStiffness(0, 50.0);
+    joint->setRestPosition(0, -1.0);
+    double zMax = z0;
+    for (int i = 0; i < 500; ++i) {
+      step();
+      zMax = std::max(
+          zMax, joint->getChildBodyNode()->getTransform().translation().z());
+    }
+    EXPECT_GT(zMax - z0, 0.1) << "the spring edit did not lift the flap";
+  }
 }
 
 //==============================================================================

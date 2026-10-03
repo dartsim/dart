@@ -1500,6 +1500,8 @@ void GenericJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
   }
 
   GenericJoint_SET_IF_DIFFERENT(mSpringStiffnesses[index], k);
+  // Also bumps the deactivation-state version, so resting bodies wake.
+  this->notifyAutomaticConstraintPropertiesUpdated();
 
   // dt * d + dt^2 * k is folded into the cached implicit articulated inertia
   // (updateInvProjArtInertiaImplicitDynamic), which is otherwise refreshed
@@ -1530,6 +1532,7 @@ void GenericJoint<ConfigSpaceT>::setRestPosition(size_t index, double q0)
   }
 
   GenericJoint_SET_IF_DIFFERENT(mRestPositions[index], q0);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -1555,6 +1558,7 @@ void GenericJoint<ConfigSpaceT>::setRestPositions(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mRestPositions, restPositions);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
@@ -1584,6 +1588,7 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
   }
 
   GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients[index], d);
+  this->notifyAutomaticConstraintPropertiesUpdated();
 
   // See setSpringStiffness(): the implicit damping term is cached too.
   if (this->mChildBodyNode)
@@ -1647,13 +1652,13 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
   const bool hadFriction = Base::mAspectProperties.mFrictions[index] > 0.0;
   const bool hasFriction = friction > 0.0;
   GenericJoint_SET_IF_DIFFERENT(mFrictions[index], friction);
-  if (hadFriction && !hasFriction) {
+  if (hadFriction && !hasFriction)
     --Joint::mNumNonzeroCoulombFrictionDofs;
-    this->notifyAutomaticConstraintPropertiesUpdated();
-  } else if (!hadFriction && hasFriction) {
+  else if (!hadFriction && hasFriction)
     ++Joint::mNumNonzeroCoulombFrictionDofs;
-    this->notifyAutomaticConstraintPropertiesUpdated();
-  }
+  // Any change moves the friction constraint's bounds, so resting bodies wake
+  // on every change, not only when friction turns on or off.
+  this->notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
