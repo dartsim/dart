@@ -33,6 +33,7 @@
 #include "AllocationCounting.hpp"
 #include "TestHelpers.hpp"
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
@@ -1237,6 +1238,113 @@ TEST(ConstraintSolver, PrepareForSimulationDoesNotUpdateManualConstraints)
 
   solver.solve();
   EXPECT_EQ(1u, manualConstraint->getNumUpdates());
+}
+
+//==============================================================================
+namespace {
+
+// Steps a world so that its last collision result holds contacts of the
+// "changed" box, applies a change that frees the collision objects those
+// contacts point to, and steps again.
+template <typename Change>
+void expectStepAfterChangeReportsOnlyLiveContacts(
+    const char* name, const Change& change)
+{
+  SCOPED_TRACE(name);
+
+  auto world = createWorld();
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::DARTCollisionDetector::create());
+  world->addSkeleton(createSolverTestPlane("ground"));
+  world->addSkeleton(createSolverTestBox(
+      "kept",
+      Eigen::Vector3d::Constant(0.2),
+      Eigen::Vector3d(0.0, 0.0, 0.1),
+      true));
+  auto changed = createSolverTestBox(
+      "changed",
+      Eigen::Vector3d::Constant(0.2),
+      Eigen::Vector3d(1.0, 0.0, 0.1),
+      true);
+  world->addSkeleton(changed);
+
+  world->step();
+  // Match frames directly: inCollision() would materialize the result's lookup
+  // caches and change how the next step records contacts.
+  const dynamics::ShapeFrame* changedShape
+      = changed->getBodyNode(0)->getShapeNode(0);
+  std::size_t numChangedContacts = 0u;
+  for (const auto& contact : world->getLastCollisionResult().getContacts()) {
+    if (contact.getShapeFrame1() == changedShape
+        || contact.getShapeFrame2() == changedShape) {
+      ++numChangedContacts;
+    }
+  }
+  ASSERT_GT(numChangedContacts, 0u);
+
+  change(*world, changed);
+  world->step();
+
+  const auto group = world->getConstraintSolver()->getCollisionGroup();
+  const auto& result = world->getLastCollisionResult();
+  EXPECT_GT(result.getNumContacts(), 0u);
+  for (const auto& contact : result.getContacts()) {
+    EXPECT_TRUE(group->hasShapeFrame(contact.getShapeFrame1()));
+    EXPECT_TRUE(group->hasShapeFrame(contact.getShapeFrame2()));
+  }
+}
+
+} // namespace
+
+//==============================================================================
+// The first step after each of these changes used to rebuild the previous
+// step's contacts with CollisionResult::addContact() while preparing the
+// simulation, which read the collision objects the change had just freed
+// (reported by ASAN and valgrind).
+TEST(ConstraintSolver, StepAfterStructuralChangeReportsOnlyLiveContacts)
+{
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "removeSkeleton", [](World& world, SkeletonPtr& skeleton) {
+        world.removeSkeleton(skeleton);
+        skeleton.reset();
+      });
+
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "removeAllSkeletons", [](World& world, SkeletonPtr& skeleton) {
+        world.removeAllSkeletons();
+        skeleton.reset();
+        world.addSkeleton(createSolverTestPlane("new_ground"));
+        world.addSkeleton(createSolverTestBox(
+            "new_box",
+            Eigen::Vector3d::Constant(0.2),
+            Eigen::Vector3d(0.0, 0.0, 0.1),
+            true));
+      });
+
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "BodyNode::remove", [](World&, SkeletonPtr& skeleton) {
+        skeleton->getBodyNode(0)->remove();
+      });
+
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "ShapeNode::remove", [](World&, SkeletonPtr& skeleton) {
+        skeleton->getBodyNode(0)->getShapeNode(0)->remove();
+      });
+
+  // Moving a body out of the world frees its collision objects as soon as
+  // anything updates the collision group before the next step.
+  const auto outside = dynamics::Skeleton::create("outside");
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "BodyNode::moveTo", [&](World& world, SkeletonPtr& skeleton) {
+        skeleton->getBodyNode(0)->moveTo(outside, nullptr);
+        world.checkCollision();
+      });
+
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "setCollisionDetector", [](World& world, SkeletonPtr&) {
+        world.getConstraintSolver()->setCollisionDetector(
+            collision::DARTCollisionDetector::create());
+      });
 }
 
 //==============================================================================
