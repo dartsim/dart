@@ -1,0 +1,89 @@
+// End-to-end gz-sim benchmark: run an SDF world headless in a gz::sim::Server
+// for a number of iterations and report wall-clock time per iteration. Use a
+// world with <real_time_factor>0</real_time_factor> so the server is not
+// throttled to real time.
+//
+// usage: gz_sim_server_bench [--engine <physics-plugin.so>] <world.sdf>
+//            <iterations> [chunk]
+//
+// Prints the time per iteration for every chunk of iterations, then a summary
+// (the real-time factor assumes the 1 ms step of the gz-sim example worlds).
+#include <gz/common/Console.hh>
+#include <gz/sim/Server.hh>
+#include <gz/sim/ServerConfig.hh>
+
+#include <algorithm>
+#include <chrono>
+#include <string>
+
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+
+int main(int argc, char** argv)
+{
+  std::string engine;
+  int arg = 1;
+  if (argc > 2 && std::string(argv[1]) == "--engine") {
+    engine = argv[2];
+    arg = 3;
+  }
+  if (argc - arg < 2) {
+    std::fprintf(
+        stderr,
+        "usage: %s [--engine <physics-plugin.so>] <world.sdf> <iterations> "
+        "[chunk]\n",
+        argv[0]);
+    return 2;
+  }
+  const std::string world = argv[arg];
+  const long iterations = std::atol(argv[arg + 1]);
+  const long chunk
+      = argc - arg > 2 ? std::max(1L, std::atol(argv[arg + 2])) : iterations;
+  if (iterations <= 0) {
+    std::fprintf(stderr, "iterations must be positive\n");
+    return 2;
+  }
+
+  // Errors only: the server's progress messages would swamp the timings.
+  gz::common::Console::SetVerbosity(1);
+  gz::sim::ServerConfig config;
+  config.SetSdfFile(world);
+  if (!engine.empty())
+    config.SetPhysicsEngine(engine);
+
+  using Clock = std::chrono::steady_clock;
+  const auto loadStart = Clock::now();
+  gz::sim::Server server(config);
+  std::printf(
+      "world=%s engine=%s load_s=%.3f\n",
+      world.c_str(),
+      engine.empty() ? "default" : engine.c_str(),
+      std::chrono::duration<double>(Clock::now() - loadStart).count());
+  std::fflush(stdout);
+
+  long done = 0;
+  double total = 0.0;
+  while (done < iterations) {
+    const long n = std::min(chunk, iterations - done);
+    const auto start = Clock::now();
+    server.Run(true, static_cast<std::uint64_t>(n), false);
+    const double seconds
+        = std::chrono::duration<double>(Clock::now() - start).count();
+    total += seconds;
+    done += n;
+    std::printf(
+        "iter=%ld chunk_ms_per_iter=%.4f chunk_rtf=%.3f\n",
+        done,
+        1e3 * seconds / static_cast<double>(n),
+        1e-3 * static_cast<double>(n) / seconds);
+    std::fflush(stdout);
+  }
+  std::printf(
+      "SUMMARY iterations=%ld wall_s=%.3f ms_per_iter=%.4f rtf=%.3f\n",
+      iterations,
+      total,
+      1e3 * total / static_cast<double>(iterations),
+      1e-3 * static_cast<double>(iterations) / total);
+  return 0;
+}
