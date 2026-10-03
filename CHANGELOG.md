@@ -407,6 +407,10 @@
 
 * Dynamics
 
+  * Fix `setSpringStiffness()` and `setDampingCoefficient()` changes not taking
+    effect until the joint's configuration changes; they now take effect on the
+    next step: [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Fix `dart::utils::SdfParser` loading every SDF `<soft_shape>` link as a
     rigid `BodyNode`: the parser forwarded only the joint type to
     `createJointAndBodyNodePair`, so the body-node type defaulted to `BodyNode`

@@ -1500,6 +1500,12 @@ void GenericJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
   }
 
   GenericJoint_SET_IF_DIFFERENT(mSpringStiffnesses[index], k);
+
+  // dt * d + dt^2 * k is folded into the cached implicit articulated inertia
+  // (updateInvProjArtInertiaImplicitDynamic), which is otherwise refreshed
+  // only when the configuration changes.
+  if (this->mChildBodyNode)
+    this->mChildBodyNode->dirtyArticulatedInertia();
 }
 
 //==============================================================================
@@ -1578,6 +1584,10 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
   }
 
   GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients[index], d);
+
+  // See setSpringStiffness(): the implicit damping term is cached too.
+  if (this->mChildBodyNode)
+    this->mChildBodyNode->dirtyArticulatedInertia();
 }
 
 //==============================================================================
