@@ -32,6 +32,13 @@ the release branch before the change), a failure that is not expected but
 that the base has too (the identical failure: the same failing case, or for a
 test-level failure, a test-level failure of the same test) is reported as BASE
 instead of NEW, so a change is gated only on the failures it introduces.
+
+The run must include every test the expected-failure file names, and every
+case with a max-seconds limit unless its test failed at the test level.
+Otherwise the comparison stops with an error, as for missing or unreadable
+results: a run that a test filter or a renamed test emptied would pass and
+skip the time limits. (lane.sh clears GoogleTest's GTEST_* variables, such as
+an inherited GTEST_FILTER, before it runs the suites.)
 """
 
 import argparse
@@ -188,7 +195,7 @@ def parse_expected(path):
         line = raw.split("#", 1)[0].split()
         if not line:
             continue
-        if line[0] == "max-seconds" and len(line) == 5:
+        if line[0] == "max-seconds" and len(line) == 5 and line[1] in SUITES:
             expected.max_seconds[(line[1], line[2], line[3])] = float(line[4])
         elif line[0] in SUITES and len(line) in (2, 3):
             expected.entries.add(tuple(line))
@@ -198,6 +205,30 @@ def parse_expected(path):
         else:
             raise ValueError(f"{path}:{number}: cannot parse '{raw}'")
     return expected
+
+
+def check_inventory(results, expected):
+    """Raise ValueError if the results lack a test or timed case `expected`
+    names. The cases of a test-level failure are missing or stale, so its
+    timed case may be missing; compare reports the failure itself."""
+    for entry in sorted(expected.entries | expected.max_seconds.keys()):
+        suite, test = entry[:2]
+        run = results[suite]
+        if test not in run.tests:
+            missing = entry[:2]
+        elif (
+            entry in expected.max_seconds
+            and entry[1:] not in run.durations
+            and entry[:2] not in run.entries(suite)
+        ):
+            missing = entry
+        else:
+            continue
+        raise ValueError(
+            f"{' '.join(missing)} is missing from the results but named in "
+            "the expected failures (a test filter such as GTEST_FILTER, or a "
+            "renamed test?)"
+        )
 
 
 def covers(entries, entry):
@@ -393,6 +424,8 @@ def main(argv=None):
         if args.base_results:
             base = {suite: load_suite(args.base_results, suite) for suite in SUITES}
         expected = parse_expected(args.expected)
+        if not args.write_baseline:
+            check_inventory(results, expected)
     except (FileNotFoundError, ValueError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2

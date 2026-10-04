@@ -1,6 +1,7 @@
 """Tests for the Gazebo compatibility lane failure comparison."""
 
 import importlib.util
+import shutil
 import sys
 from pathlib import Path
 
@@ -31,7 +32,9 @@ def _write_run(results, suite, tests, log=""):
     """
     junit = []
     gtest_dir = results / f"{suite}-gtest"
-    gtest_dir.mkdir(parents=True, exist_ok=True)
+    # Like lane.sh, drop the XML of an earlier run into the same directory.
+    shutil.rmtree(gtest_dir, ignore_errors=True)
+    gtest_dir.mkdir(parents=True)
     for test, outcome in tests.items():
         if isinstance(outcome, tuple):
             message, cases = outcome
@@ -345,6 +348,7 @@ def test_base_results_gate_only_failures_the_candidate_introduces(tmp_path, caps
         _step_world(100.0),
         {
             "INTEGRATION_imu": {"Imu.Rotating": (1.0, True)},
+            "INTEGRATION_entity": {"Entity.Cmd": (1.0, True)},
             "INTEGRATION_new": {"New.Case": (1.0, True)},
         },
     )
@@ -412,6 +416,35 @@ def test_retries_and_stale_accepted_entries_are_reported(tmp_path, capsys):
 
 def test_missing_results_is_an_error(tmp_path):
     assert _compare(tmp_path, tmp_path / "x.txt") == 2
+
+
+def test_a_test_or_timed_case_missing_from_the_results_is_an_error(tmp_path, capsys):
+    expected = tmp_path / "expected.txt"
+    expected.write_text(
+        "gz-sim INTEGRATION_log_system  # SEGFAULT\n"
+        f"max-seconds gz-physics {STEP_WORLD} Step/0.StepWorld 5.4\n"
+    )
+    sim = {"INTEGRATION_log_system": ("SEGFAULT", None)}
+    candidate = tmp_path / "candidate"
+    _write_lane(candidate, _step_world(2.0), sim)
+    assert _compare(candidate, expected) == 0
+    assert "PASS" in capsys.readouterr().out
+
+    timed = f"gz-physics {STEP_WORLD} Step/0.StepWorld is missing"
+    for name, physics, sim_tests, missing in [
+        # A GTEST_FILTER left out the timed case, which then passes unjudged.
+        ("filtered", {STEP_WORLD: {"Ray.Ok": (0.1, False)}}, sim, timed),
+        ("no gz-physics tests", {}, sim, f"gz-physics {STEP_WORLD} is missing"),
+        ("no gz-sim tests", _step_world(2.0), {}, "INTEGRATION_log_system is"),
+    ]:
+        _write_lane(candidate, physics, sim_tests)
+        assert _compare(candidate, expected) == 2, name
+        assert missing in capsys.readouterr().err, name
+
+    # A crash leaves no timed case; it is a failure, not missing results.
+    _write_lane(candidate, {STEP_WORLD: ("SEGFAULT", None)}, sim)
+    assert _compare(candidate, expected) == 1
+    assert f"NEW        gz-physics {STEP_WORLD} (SEGFAULT)\n" in capsys.readouterr().out
 
 
 def test_unreadable_results_are_an_error_naming_the_file(tmp_path, capsys):

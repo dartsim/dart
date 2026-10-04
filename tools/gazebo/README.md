@@ -126,6 +126,13 @@ lane:
 | `STALE` | an accepted difference that now passes; drop the entry |
 | `FIXED` | an expected failure that ran and passed |
 
+`compare` stops with an error (exit status 2, as for missing or unreadable
+results) when the run lacks a test that the expected-failure file names, or a
+`max-seconds` case whose test did not fail at the test level: a run that a
+test filter or a renamed test emptied would otherwise pass and skip the time
+limit. `lane.sh` itself clears GoogleTest's `GTEST_*` variables, so an
+inherited `GTEST_FILTER` or sharding cannot run only part of the suites.
+
 On release-6.20 the lanes fail until the issue #3056 fixes land,
 so a change on release-6.20 is judged against its base. Build and test the
 base once per lane as its own variant, then compare the change with it:

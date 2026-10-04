@@ -44,6 +44,10 @@
 # gz-cmake gives every gz-physics and gz-sim GoogleTest test a 240 s TIMEOUT
 # property, which `ctest --timeout` cannot raise.
 set -euo pipefail
+# An inherited GTEST_FILTER, sharding or GTEST_FAIL_FAST would run only part of
+# the gz-physics and gz-sim suites, which compare cannot always tell from a
+# full run.
+unset "${!GTEST_@}"
 
 usage() {
   sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//'
