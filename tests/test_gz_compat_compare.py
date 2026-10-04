@@ -1,12 +1,15 @@
 """Tests for the Gazebo compatibility lane failure comparison."""
 
 import importlib.util
+import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "tools" / "gazebo" / "compat" / "compare_failures.py"
+LANE = ROOT / "tools" / "gazebo" / "compat" / "lane.sh"
 
 STEP_WORLD = "COMMON_TEST_simulation_features_dartsim"
 
@@ -388,6 +391,25 @@ def test_a_base_failure_covers_only_the_same_failure(tmp_path, capsys):
         out = capsys.readouterr().out
         assert f"NEW        gz-sim {test} UserCommandsTest.Remove\n" in out, name
         assert "BASE" not in out and "REGRESSED" not in out, name
+
+
+def test_the_lane_rejects_the_candidate_as_its_own_base(tmp_path):
+    # compare would read the candidate's results as the base's, so every new
+    # failure would be BASE.
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GZ_COMPAT_")}
+    env.update(CONDA_PREFIX=str(tmp_path), GZ_COMPAT_DIR=str(tmp_path))
+    for variant in ({}, {"GZ_COMPAT_VARIANT": "base"}):
+        name = variant.get("GZ_COMPAT_VARIANT", "candidate")
+        run = subprocess.run(
+            ["bash", str(LANE), "ionic", "compare"],
+            env={**env, **variant, "GZ_COMPAT_BASE_VARIANT": name},
+            capture_output=True,
+            text=True,
+        )
+        assert run.returncode == 2, name
+        assert f"GZ_COMPAT_BASE_VARIANT names the candidate variant ({name})" in (
+            run.stderr
+        )
 
 
 def test_retries_and_stale_accepted_entries_are_reported(tmp_path, capsys):

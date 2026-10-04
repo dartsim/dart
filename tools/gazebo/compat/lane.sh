@@ -35,9 +35,9 @@
 #                          (default: candidate); each variant gets its own
 #                          gz-physics and gz-sim builds
 #   GZ_COMPAT_BASE_VARIANT variant holding the candidate's base (for example
-#                          the release branch before the change); compare
-#                          then reports failures the base also has instead
-#                          of failing on them
+#                          the release branch before the change), never the
+#                          candidate's own; compare then reports failures
+#                          the base also has instead of failing on them
 #   DART_PARALLEL_JOBS     build jobs (default: nproc)
 #   GZ_COMPAT_TEST_JOBS    parallel gz-physics tests (default: build jobs)
 #
@@ -92,8 +92,6 @@ esac
 : "${CONDA_PREFIX:?run lane.sh through pixi (pixi run gz-compat-$lane)}"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 compat_dir="$repo_root/tools/gazebo/compat"
-work_dir="$(realpath -m "${GZ_COMPAT_DIR:-$repo_root/.deps/gz-compat/$lane}")"
-dart_source="$(realpath "${GZ_COMPAT_DART_SOURCE:-$repo_root}")"
 variant="${GZ_COMPAT_VARIANT:-candidate}"
 base_variant="${GZ_COMPAT_BASE_VARIANT:-}"
 # Variants name directories under the work directory, and a candidate's DART
@@ -106,6 +104,17 @@ for name in "$variant" "$base_variant"; do
       ;;
   esac
 done
+# compare would read the candidate's results as the base's and report every
+# new failure as a failure the base also has.
+if [ -n "$base_variant" ] && [ "$base_variant" = "$variant" ]; then
+  echo "GZ_COMPAT_BASE_VARIANT names the candidate variant ($variant);" \
+    "set it to the variant built from the base" >&2
+  exit 2
+fi
+# After the name checks, which test-gz-compat-tools runs on every platform:
+# `realpath -m` is GNU-only.
+work_dir="$(realpath -m "${GZ_COMPAT_DIR:-$repo_root/.deps/gz-compat/$lane}")"
+dart_source="$(realpath "${GZ_COMPAT_DART_SOURCE:-$repo_root}")"
 jobs="${DART_PARALLEL_JOBS:-$(nproc)}"
 test_jobs="${GZ_COMPAT_TEST_JOBS:-$jobs}"
 

@@ -65,7 +65,7 @@ Environment variables:
 | --- | --- | --- |
 | `GZ_COMPAT_DART_SOURCE` | this checkout | DART source tree to build |
 | `GZ_COMPAT_VARIANT` | `candidate` | name of that DART build; each variant gets its own gz-physics and gz-sim builds |
-| `GZ_COMPAT_BASE_VARIANT` | unset | variant holding the change's base, for the comparison below |
+| `GZ_COMPAT_BASE_VARIANT` | unset | variant holding the change's base, for the comparison below; the lane stops when it names the candidate's own variant |
 | `GZ_COMPAT_DIR` | `.deps/gz-compat/<lane>` | work directory |
 | `DART_PARALLEL_JOBS` | `nproc` | build jobs |
 | `GZ_COMPAT_TEST_JOBS` | build jobs | parallel gz-physics tests |
