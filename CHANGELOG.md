@@ -411,7 +411,7 @@
     freed collision record, or crashing, when a removed aspect was created
     again or when a collision shape was added to a body after another of its
     `ShapeNode`s had been removed while still referenced:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3553](https://github.com/dartsim/dart/pull/3553)
 
 * Dynamics
 
