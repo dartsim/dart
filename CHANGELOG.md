@@ -683,7 +683,7 @@
     boxes, a 10000-contact cap, the ODE detector with gz-sim's per-pair limit,
     and a `BodyNodeCollisionFilter` subclass) and reports contact demand
     against the cap, cap-starved pairs, sunk bodies, and changed poses:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3548](https://github.com/dartsim/dart/pull/3548)
 
   * Give `dart-demos` a real dockable workspace on docking-ImGui builds:
     a DockSpace over the viewport
