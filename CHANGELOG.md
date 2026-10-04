@@ -407,6 +407,12 @@
 
 * Dynamics
 
+  * Speed up `MetaSkeleton::getPositions()` and the other DOF getters and
+    setters, with unchanged results. `getPositions()`, which gz-physics calls
+    for every model after every step, now takes about a quarter fewer
+    instructions:
+    [#3056](https://github.com/dartsim/dart/issues/3056)
+
   * Fix `dart::utils::SdfParser` loading every SDF `<soft_shape>` link as a
     rigid `BodyNode`: the parser forwarded only the joint type to
     `createJointAndBodyNodePair`, so the body-node type defaulted to `BodyNode`

@@ -47,7 +47,7 @@ namespace dynamics {
 static bool checkIndexArrayValidity(
     const MetaSkeleton* skel,
     const std::vector<std::size_t>& _indices,
-    const std::string& _fname)
+    const char* _fname)
 {
   std::size_t dofs = skel->getNumDofs();
   for (std::size_t i = 0; i < _indices.size(); ++i) {
@@ -75,8 +75,8 @@ static bool checkIndexArrayAgreement(
     const MetaSkeleton* skel,
     const std::vector<std::size_t>& _indices,
     const Eigen::VectorXd& _values,
-    const std::string& _fname,
-    const std::string& _vname)
+    const char* _fname,
+    const char* _vname)
 {
   if (static_cast<int>(_indices.size()) != _values.size()) {
     dterr << "[Skeleton::" << _fname << "] Mismatch between _indices size ("
@@ -96,8 +96,8 @@ static void setValuesFromVector(
     MetaSkeleton* skel,
     const std::vector<std::size_t>& _indices,
     const Eigen::VectorXd& _values,
-    const std::string& _fname,
-    const std::string& _vname)
+    const char* _fname,
+    const char* _vname)
 {
   if (!checkIndexArrayAgreement(skel, _indices, _values, _fname, _vname))
     return;
@@ -122,11 +122,11 @@ template <void (DegreeOfFreedom::*setValue)(double _value)>
 static void setAllValuesFromVector(
     MetaSkeleton* skel,
     const Eigen::VectorXd& _values,
-    const std::string& _fname,
-    const std::string& _vname)
+    const char* _fname,
+    const char* _vname)
 {
   std::size_t nDofs = skel->getNumDofs();
-  if (_values.size() != static_cast<int>(skel->getNumDofs())) {
+  if (_values.size() != static_cast<int>(nDofs)) {
     dterr << "[MetaSkeleton::" << _fname << "] Invalid number of entries ("
           << _values.size() << ") in " << _vname << " for MetaSkeleton named ["
           << skel->getName() << "] (" << skel << "). Must be equal to ("
@@ -156,7 +156,7 @@ template <double (DegreeOfFreedom::*getValue)() const>
 static Eigen::VectorXd getValuesFromVector(
     const MetaSkeleton* skel,
     const std::vector<std::size_t>& _indices,
-    const std::string& _fname)
+    const char* _fname)
 {
   Eigen::VectorXd values(_indices.size());
 
@@ -190,7 +190,7 @@ static Eigen::VectorXd getValuesFromVector(
 //==============================================================================
 template <double (DegreeOfFreedom::*getValue)() const>
 static Eigen::VectorXd getValuesFromAllDofs(
-    const MetaSkeleton* skel, const std::string& _fname)
+    const MetaSkeleton* skel, const char* _fname)
 {
   std::size_t nDofs = skel->getNumDofs();
   Eigen::VectorXd values(nDofs);
@@ -198,7 +198,7 @@ static Eigen::VectorXd getValuesFromAllDofs(
   for (std::size_t i = 0; i < nDofs; ++i) {
     const DegreeOfFreedom* dof = skel->getDof(i);
     if (dof) {
-      values[i] = (skel->getDof(i)->*getValue)();
+      values[i] = (dof->*getValue)();
     } else {
       dterr << "[MetaSkeleton::" << _fname << "] DegreeOfFreedom #" << i
             << " has expired! ReferentialSkeletons should call update() after "
@@ -227,10 +227,7 @@ static void applyToAllDofs(MetaSkeleton* skel)
 //==============================================================================
 template <void (DegreeOfFreedom::*setValue)(double _value)>
 static void setValueFromIndex(
-    MetaSkeleton* skel,
-    std::size_t _index,
-    double _value,
-    const std::string& _fname)
+    MetaSkeleton* skel, std::size_t _index, double _value, const char* _fname)
 {
   if (_index >= skel->getNumDofs()) {
     if (skel->getNumDofs() > 0)
@@ -262,7 +259,7 @@ static void setValueFromIndex(
 //==============================================================================
 template <double (DegreeOfFreedom::*getValue)() const>
 static double getValueFromIndex(
-    const MetaSkeleton* skel, std::size_t _index, const std::string& _fname)
+    const MetaSkeleton* skel, std::size_t _index, const char* _fname)
 {
   if (_index >= skel->getNumDofs()) {
     if (skel->getNumDofs() > 0)
@@ -282,7 +279,7 @@ static double getValueFromIndex(
 
   const DegreeOfFreedom* dof = skel->getDof(_index);
   if (dof) {
-    return (skel->getDof(_index)->*getValue)();
+    return (dof->*getValue)();
   }
 
   dterr << "[MetaSkeleton::" << _fname << "] DegreeOfFreedom #" << _index
