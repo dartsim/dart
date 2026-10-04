@@ -38,10 +38,14 @@
 // freeze, island-level granularity, wake-on-contact, wake-on-force, and the
 // no-op-when-disabled guarantee.
 
+#include "dart/config.hpp"
 #include "dart/simulation/DeactivationOptions.hpp"
 
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
+#if HAVE_ODE
+  #include <dart/collision/ode/OdeCollisionDetector.hpp>
+#endif
 
 #include <dart/dart.hpp>
 
@@ -889,6 +893,314 @@ TEST(IslandDeactivation, InitialCreditKeepsTippingNeighborsAwake)
 }
 
 //==============================================================================
+// One step of tipping adds less than 1% of |g| dt to a large cube whose center
+// of mass is just past an edge, so the first solve leaves it looking at rest.
+// Its speed doubles on the next step, so the first-frame dwell credit must not
+// freeze it: a 0.5 m cube 1 mm past the edge of a table, a 1 m cube 3 mm past
+// it, and a 2 m cube 1 mm past it tip off, as in DART 6.19.4, with the default
+// collision detector and with ODE. So does the 2 m cube at a 0.1 ms step, where
+// its speed grows by only 5.9e-7 rad/s from the first step to the second.
+TEST(IslandDeactivation, InitialCreditKeepsSlowlyTippingCubesAwake)
+{
+  struct Cube
+  {
+    double size;
+    double overhang;
+    double timeStep;
+  };
+
+  std::vector<std::string> detectors{"default"};
+#if HAVE_ODE
+  detectors.emplace_back("ode");
+#endif
+  for (const auto& detector : detectors) {
+    for (const Cube& cube :
+         {Cube{0.5, 1e-3, 1e-3},
+          Cube{1.0, 3e-3, 1e-3},
+          Cube{2.0, 1e-3, 1e-3},
+          Cube{2.0, 1e-3, 1e-4}}) {
+      SCOPED_TRACE(detector);
+      SCOPED_TRACE(cube.size);
+      SCOPED_TRACE(cube.timeStep);
+      auto world = makeSleepWorld();
+      world->setTimeStep(cube.timeStep);
+#if HAVE_ODE
+      if (detector == "ode") {
+        world->getConstraintSolver()->setCollisionDetector(
+            OdeCollisionDetector::create());
+      }
+#endif
+      auto table = createWeldedBox(
+          "table",
+          Eigen::Vector3d(1.0, 1.0, 0.5),
+          Eigen::Vector3d(0.0, 0.0, 0.25));
+      table->setMobile(false);
+      world->addSkeleton(table);
+      auto box = createSolidFreeBox(
+          "box",
+          Eigen::Vector3d::Constant(cube.size),
+          1.0,
+          Eigen::Vector3d(
+              0.5 + cube.overhang, 0.0, 0.5 + 0.5 * cube.size - 1e-6));
+      world->addSkeleton(box);
+
+      // The 2 m cube, the slowest, drops by 1 cm in about 2.3 s.
+      const auto* body = box->getBodyNode(0);
+      const double start = body->getTransform().translation().z();
+      const auto maxSteps
+          = static_cast<std::size_t>(std::lround(4.0 / cube.timeStep));
+      const std::size_t steps = stepUntil(world.get(), maxSteps, [&]() {
+        return body->getTransform().translation().z() < start - 0.01;
+      });
+      EXPECT_LT(steps, maxSteps) << "the tipping cube was frozen at the start";
+    }
+  }
+}
+
+//==============================================================================
+// The second solve credits an island only if no member's speed grew by more
+// than 1e-6 |g| dt, the speed that an acceleration of 1e-6 |g| adds in one
+// step. Bodies that accelerate faster must not be frozen from step 3, at a 1 ms
+// or a 0.1 ms step: a 4 m cube whose center of mass is 0.1 mm past the edge of
+// a table tips at 3e-5 |g|, a sphere of radius 1 m rolls down a 1e-4 rad slope
+// at 7.1e-5 |g|, and a frictionless box slides down it at 1e-4 |g|. They stay
+// slower than the final quiet speed through the 0.5 s dwell, which then puts
+// them to sleep, so check the first 100 steps.
+TEST(IslandDeactivation, InitialCreditKeepsBarelyAcceleratingBodiesAwake)
+{
+  enum class Motion
+  {
+    Tip,
+    Roll,
+    Slide
+  };
+
+  constexpr double kSlope = 1e-4;
+  constexpr std::size_t kSteps = 100;
+  for (const double timeStep : {1e-3, 1e-4}) {
+    for (const Motion motion : {Motion::Tip, Motion::Roll, Motion::Slide}) {
+      SCOPED_TRACE(timeStep);
+      SCOPED_TRACE(static_cast<int>(motion));
+      auto world = makeSleepWorld();
+      world->setTimeStep(timeStep);
+
+      SkeletonPtr body;
+      double acceleration = 0.0;
+      if (motion == Motion::Tip) {
+        auto table = createWeldedBox(
+            "table",
+            Eigen::Vector3d(1.0, 1.0, 0.5),
+            Eigen::Vector3d(0.0, 0.0, 0.25));
+        table->setMobile(false);
+        world->addSkeleton(table);
+        body = createSolidFreeBox(
+            "cube",
+            Eigen::Vector3d::Constant(4.0),
+            1.0,
+            Eigen::Vector3d(0.5 + 1e-4, 0.0, 2.5 - 1e-6));
+        // The cube turns about the edge at 12 g d / (5 s^2), and its center of
+        // mass is 2 m above it.
+        acceleration = 2.0 * 12.0 * 9.81 * 1e-4 / (5.0 * 16.0);
+      } else {
+        world->setGravity(
+            9.81 * Eigen::Vector3d(std::sin(kSlope), 0.0, -std::cos(kSlope)));
+        auto floor = createFloor();
+        world->addSkeleton(floor);
+        if (motion == Motion::Roll) {
+          body = Skeleton::create("sphere");
+          auto* sphere
+              = body->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
+          auto shape = std::make_shared<SphereShape>(1.0);
+          sphere->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+          dynamics::Inertia inertia;
+          inertia.setMass(1.0);
+          inertia.setMoment(shape->computeInertia(1.0));
+          sphere->setInertia(inertia);
+          Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+          tf.translation().z() = 1.0 - 1e-6;
+          body->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
+          acceleration = 5.0 / 7.0 * 9.81 * std::sin(kSlope);
+        } else {
+          floor->getBodyNode(0)
+              ->getShapeNode(0)
+              ->getDynamicsAspect()
+              ->setFrictionCoeff(0.0);
+          body = createFreeBox(
+              "box",
+              Eigen::Vector3d::Constant(kBoxSize),
+              Eigen::Vector3d(0.0, 0.0, kHalf - 1e-6));
+          body->getBodyNode(0)
+              ->getShapeNode(0)
+              ->getDynamicsAspect()
+              ->setFrictionCoeff(0.0);
+          acceleration = 9.81 * std::sin(kSlope);
+        }
+      }
+      world->addSkeleton(body);
+
+      for (std::size_t i = 0; i < kSteps; ++i)
+        world->step();
+
+      EXPECT_FALSE(body->isResting()) << "frozen by the first-frame credit";
+      const double time = static_cast<double>(kSteps) * timeStep;
+      EXPECT_GT(
+          body->getBodyNode(0)->getLinearVelocity().norm(),
+          0.5 * acceleration * time);
+    }
+  }
+}
+
+//==============================================================================
+// Gravity slows a body seeded to slide uphill, so its speed shrinks from the
+// first solve to the second although it accelerates at g sin(slope). A
+// frictionless box seeded at half of 1e-2 |g| dt up a 5e-4 rad slope, which
+// counts as level for the first-frame credit, must not be frozen from step 3,
+// at a 1 ms or a 0.1 ms step: it stops and slides back down, soon faster than
+// the final quiet speed, so the normal dwell does not stop it either.
+TEST(IslandDeactivation, InitialCreditKeepsSeededUphillSlideAwake)
+{
+  constexpr double kSlope = 5e-4;
+  constexpr std::size_t kSteps = 100;
+  for (const double timeStep : {1e-3, 1e-4}) {
+    SCOPED_TRACE(timeStep);
+    auto world = makeSleepWorld();
+    world->setTimeStep(timeStep);
+    // Downhill is +x.
+    world->setGravity(
+        9.81 * Eigen::Vector3d(std::sin(kSlope), 0.0, -std::cos(kSlope)));
+    auto floor = createFloor();
+    floor->getBodyNode(0)
+        ->getShapeNode(0)
+        ->getDynamicsAspect()
+        ->setFrictionCoeff(0.0);
+    world->addSkeleton(floor);
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0.0, 0.0, kHalf - 1e-6));
+    box->getBodyNode(0)->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(
+        0.0);
+    world->addSkeleton(box);
+    const double seed = 0.5 * 1e-2 * 9.81 * timeStep;
+    static_cast<FreeJoint*>(box->getJoint(0))
+        ->setLinearVelocity(
+            Eigen::Vector3d(-seed, 0.0, 0.0), Frame::World(), Frame::World());
+
+    for (std::size_t i = 0; i < kSteps; ++i)
+      world->step();
+
+    EXPECT_FALSE(box->isResting()) << "frozen by the first-frame credit";
+    const double time = static_cast<double>(kSteps) * timeStep;
+    EXPECT_GT(
+        box->getBodyNode(0)->getLinearVelocity().x(),
+        0.5 * (9.81 * std::sin(kSlope) * time - seed));
+  }
+}
+
+//==============================================================================
+// gz-physics builds each unjointed link of a model as a free tree of the
+// model's skeleton. A tree that moves at a steady speed must not hide another
+// tree of the model that starts to move from the first-frame credit: a 2 m
+// cube 1 mm past a table edge must tip while the model's other link is seeded
+// to slide and spin on a frictionless floor at half of 1e-2 |g| dt, and a
+// frictionless box must slide down a 5e-4 rad slope while the other link,
+// started slightly into a wall, is pushed out of it at about that speed, at a
+// 1 ms and a 0.1 ms step.
+TEST(IslandDeactivation, InitialCreditChecksEveryTreeOfAModel)
+{
+  constexpr double kSlope = 5e-4;
+  constexpr std::size_t kSteps = 100;
+  const auto addTree = [](const SkeletonPtr& model,
+                          const Eigen::Vector3d& size,
+                          const Eigen::Vector3d& position) {
+    auto* body = model->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
+    auto shape = std::make_shared<BoxShape>(size);
+    body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+    dynamics::Inertia inertia;
+    inertia.setMass(1.0);
+    inertia.setMoment(shape->computeInertia(1.0));
+    body->setInertia(inertia);
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = position;
+    FreeJoint::setTransformOf(body->getParentJoint(), tf);
+    return body;
+  };
+  const auto setFriction = [](BodyNode* body, double friction) {
+    body->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(friction);
+  };
+
+  for (const double timeStep : {1e-3, 1e-4}) {
+    for (const bool seeded : {true, false}) {
+      SCOPED_TRACE(timeStep);
+      SCOPED_TRACE(seeded ? "seeded link, tipping cube" : "pushed link, slide");
+      auto world = makeSleepWorld();
+      world->setTimeStep(timeStep);
+      auto floor = createFloor();
+      setFriction(floor->getBodyNode(0), 0.0);
+      world->addSkeleton(floor);
+      auto model = Skeleton::create("model");
+      const double speed = 0.5 * 1e-2 * 9.81 * timeStep;
+      BodyNode* mover = nullptr;
+      double acceleration = 0.0;
+      if (seeded) {
+        auto table = createWeldedBox(
+            "table",
+            Eigen::Vector3d(1.0, 1.0, 0.5),
+            Eigen::Vector3d(0.0, 0.0, 0.25));
+        table->setMobile(false);
+        world->addSkeleton(table);
+        auto* link = addTree(
+            model,
+            Eigen::Vector3d::Constant(kBoxSize),
+            Eigen::Vector3d(-3.0, 0.0, kHalf - 1e-6));
+        setFriction(link, 0.0);
+        mover = addTree(
+            model,
+            Eigen::Vector3d::Constant(2.0),
+            Eigen::Vector3d(0.5 + 1e-3, 0.0, 1.5 - 1e-6));
+        world->addSkeleton(model);
+        auto* joint = static_cast<FreeJoint*>(link->getParentJoint());
+        joint->setLinearVelocity(
+            Eigen::Vector3d(speed, 0.0, 0.0), Frame::World(), Frame::World());
+        joint->setAngularVelocity(
+            Eigen::Vector3d(0.0, 0.0, speed), Frame::World(), Frame::World());
+        // The cube turns about the edge at 12 g d / (5 s^2), and its center
+        // of mass is 1 m above it.
+        acceleration = 12.0 * 9.81 * 1e-3 / (5.0 * 4.0);
+      } else {
+        // Downhill, toward the wall, is -x.
+        world->setGravity(
+            9.81 * Eigen::Vector3d(-std::sin(kSlope), 0.0, -std::cos(kSlope)));
+        auto wall = createWall();
+        setFriction(wall->getBodyNode(0), 0.0);
+        world->addSkeleton(wall);
+        // Contacts push a body out at 0.01 times their depth per time step.
+        const double depth = speed * timeStep / 1e-2;
+        auto* link = addTree(
+            model,
+            Eigen::Vector3d::Constant(kBoxSize),
+            Eigen::Vector3d(kHalf - depth, 0.0, kHalf - 1e-6));
+        setFriction(link, 0.0);
+        mover = addTree(
+            model,
+            Eigen::Vector3d::Constant(kBoxSize),
+            Eigen::Vector3d(2.0, 0.0, kHalf - 1e-6));
+        setFriction(mover, 0.0);
+        world->addSkeleton(model);
+        acceleration = 9.81 * std::sin(kSlope);
+      }
+
+      for (std::size_t i = 0; i < kSteps; ++i)
+        world->step();
+
+      EXPECT_FALSE(model->isResting()) << "frozen by the first-frame credit";
+      const double time = static_cast<double>(kSteps) * timeStep;
+      EXPECT_GT(mover->getLinearVelocity().norm(), 0.5 * acceleration * time);
+    }
+  }
+}
+
+//==============================================================================
 // The first-frame credit also needs every island member to be at rest along
 // gravity: a still, level-supported box must not freeze a touching box that
 // starts 1 mm above the floor.
@@ -1131,6 +1443,219 @@ TEST(IslandDeactivation, InitialInclineContactSleepsOnlyWhenFrictionHolds)
       (boxes[2]->getBodyNode(0)->getTransform().translation() - start[2])
           .norm(),
       1e-3);
+}
+
+//==============================================================================
+// On a 0.3 degree slope, the first step leaves a frictionless box slower than
+// the first-frame equilibrium bound, and each step adds less than 2e-4 m/s.
+// Nothing may treat that support as level: the box must slide as in DART
+// 6.19.4, whether deactivation is on or off. A 5e-4 rad slope counts as level
+// for the first-frame credit, so only the speed growth between the first two
+// solves shows the sliding there, also at a 0.1 ms step, where one step adds
+// just 4.9e-7 m/s.
+TEST(IslandDeactivation, GentleSlopeSlidingIsNotFrozen)
+{
+  struct Slope
+  {
+    double angle;
+    double timeStep;
+  };
+
+  for (const Slope& slope :
+       {Slope{0.3 * math::constantsd::pi() / 180.0, 1e-3}, Slope{5e-4, 1e-4}}) {
+    const Eigen::Matrix3d tilt
+        = Eigen::AngleAxisd(-slope.angle, Eigen::Vector3d::UnitX())
+              .toRotationMatrix();
+    const Eigen::Vector3d normal = tilt * Eigen::Vector3d::UnitZ();
+
+    for (const bool deactivation : {true, false}) {
+      SCOPED_TRACE(slope.angle);
+      SCOPED_TRACE(deactivation ? "deactivation on" : "deactivation off");
+      auto world = makeSleepWorld();
+      world->setTimeStep(slope.timeStep);
+      auto options = world->getDeactivationOptions();
+      options.mEnabled = deactivation;
+      world->setDeactivationOptions(options);
+
+      auto incline = createWeldedBox(
+          "incline", Eigen::Vector3d(10.0, 10.0, 1.0), Eigen::Vector3d::Zero());
+      Eigen::Isometry3d inclineTf = Eigen::Isometry3d::Identity();
+      inclineTf.linear() = tilt;
+      inclineTf.translation() = -0.5 * normal;
+      incline->getJoint(0)->setTransformFromParentBodyNode(inclineTf);
+      incline->getBodyNode(0)
+          ->getShapeNode(0)
+          ->getDynamicsAspect()
+          ->setFrictionCoeff(0.0);
+      incline->setMobile(false);
+      world->addSkeleton(incline);
+
+      // 1 um into the slope, so that the first solve has the contact.
+      auto box = createFreeBox(
+          "box", Eigen::Vector3d::Constant(kBoxSize), (kHalf - 1e-6) * normal);
+      Eigen::Isometry3d tf = box->getBodyNode(0)->getTransform();
+      tf.linear() = tilt;
+      box->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
+      box->getBodyNode(0)
+          ->getShapeNode(0)
+          ->getDynamicsAspect()
+          ->setFrictionCoeff(0.0);
+      world->addSkeleton(box);
+
+      const Eigen::Vector3d start
+          = box->getBodyNode(0)->getTransform().translation();
+      constexpr std::size_t kSteps = 2000;
+      for (std::size_t i = 0; i < kSteps; ++i)
+        world->step();
+
+      // Frictionless sliding: d(t) = g sin(slope) t^2 / 2.
+      const double time = static_cast<double>(kSteps) * world->getTimeStep();
+      const double expected = 0.5 * 9.81 * std::sin(slope.angle) * time * time;
+      EXPECT_FALSE(box->isResting());
+      EXPECT_NEAR(
+          (box->getBodyNode(0)->getTransform().translation() - start).norm(),
+          expected,
+          0.01 * expected);
+    }
+  }
+}
+
+//==============================================================================
+// A sphere rests on a 0.3 degree slope against a box that, with a second box on
+// top, rests on a level pedestal. The first-frame credit of that otherwise
+// still island must not keep the sphere from rolling down.
+TEST(IslandDeactivation, GentleSlopeRollingNeighborIsNotFrozen)
+{
+  constexpr double kPenetration = 1e-6;
+  const Eigen::Vector3d cube = Eigen::Vector3d::Constant(kBoxSize);
+  auto world = makeSleepWorld();
+  world->addSkeleton(createWeldedBox(
+      "pedestal",
+      Eigen::Vector3d(1.0, 1.0, 0.2),
+      Eigen::Vector3d(-0.4, 0.0, -0.1)));
+  world->getSkeleton("pedestal")->setMobile(false);
+
+  const double slope = 0.3 * math::constantsd::pi() / 180.0;
+  const Eigen::Matrix3d tilt
+      = Eigen::AngleAxisd(slope, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  // The slope's top face passes through (0.2, 0, 0) and descends along +x.
+  auto incline = createWeldedBox(
+      "incline", Eigen::Vector3d(2.0, 1.0, 0.2), Eigen::Vector3d::Zero());
+  Eigen::Isometry3d inclineTf = Eigen::Isometry3d::Identity();
+  inclineTf.linear() = tilt;
+  inclineTf.translation()
+      = Eigen::Vector3d(0.2, 0.0, 0.0) + tilt * Eigen::Vector3d(0.95, 0, -0.1);
+  incline->getJoint(0)->setTransformFromParentBodyNode(inclineTf);
+  incline->setMobile(false);
+  world->addSkeleton(incline);
+
+  world->addSkeleton(createSolidFreeBox(
+      "bottom", cube, 5.0, Eigen::Vector3d(0.0, 0.0, kHalf - kPenetration)));
+  world->addSkeleton(createSolidFreeBox(
+      "top",
+      cube,
+      1.0,
+      Eigen::Vector3d(0.0, 0.0, kHalf + kBoxSize - 2.0 * kPenetration)));
+
+  constexpr double kRadius = 0.1;
+  auto sphere = Skeleton::create("sphere");
+  auto* body = sphere->createJointAndBodyNodePair<FreeJoint>(nullptr).second;
+  auto shape = std::make_shared<SphereShape>(kRadius);
+  body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(shape);
+  dynamics::Inertia inertia;
+  inertia.setMass(1.0);
+  inertia.setMoment(shape->computeInertia(1.0));
+  body->setInertia(inertia);
+  // Touch the bottom box's side and rest on the slope.
+  const double x = kHalf + kRadius - kPenetration;
+  const double z = (kRadius - kPenetration - (x - 0.2) * std::sin(slope))
+                   / std::cos(slope);
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(x, 0.0, z);
+  sphere->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
+  world->addSkeleton(sphere);
+
+  const Eigen::Vector3d start = body->getTransform().translation();
+  constexpr std::size_t kSteps = 2000;
+  for (std::size_t i = 0; i < kSteps; ++i)
+    world->step();
+
+  // Rolling without slipping: d(t) = (5 / 7) g sin(slope) t^2 / 2.
+  const double time = static_cast<double>(kSteps) * world->getTimeStep();
+  const double rolling
+      = 0.5 * (5.0 / 7.0) * 9.81 * std::sin(slope) * time * time;
+  EXPECT_FALSE(sphere->isResting());
+  EXPECT_GT((body->getTransform().translation() - start).norm(), 0.5 * rolling)
+      << "the sphere on the slope was frozen";
+}
+
+//==============================================================================
+// gz-sim's ImuTest.RotatingBody (imu_rotating_demo.sdf): a light sphere starts
+// on level ground under gravity (0, 0.1, -0.1), so it must roll from the first
+// step. Nothing may freeze it, with DART's filter or with a custom
+// BodyNodeCollisionFilter such as the one gz-physics installs.
+TEST(IslandDeactivation, SphereRollsUnderLateralGravity)
+{
+  struct CustomFilter : BodyNodeCollisionFilter
+  {
+  };
+
+  constexpr double kRadius = 1.0;
+  constexpr double kMass = 0.1;
+  constexpr double kMoment = 1.66667e-4;
+  constexpr double kLateralGravity = 0.1;
+  constexpr std::size_t kSteps = 1550;
+
+  for (const bool customFilter : {false, true}) {
+    SCOPED_TRACE(customFilter ? "custom filter" : "default filter");
+    auto world = makeSleepWorld();
+    world->setTimeStep(1e-3);
+    world->setGravity(Eigen::Vector3d(0.0, kLateralGravity, -0.1));
+    if (customFilter) {
+      world->getConstraintSolver()->getCollisionOption().collisionFilter
+          = std::make_shared<CustomFilter>();
+    }
+    world->addSkeleton(createFloor());
+
+    auto sphere = Skeleton::create("sphere");
+    BodyNode::Properties bodyProps(BodyNode::AspectProperties("sphere_body"));
+    bodyProps.mInertia.setMass(kMass);
+    bodyProps.mInertia.setMoment(kMoment * Eigen::Matrix3d::Identity());
+    auto* body = sphere
+                     ->createJointAndBodyNodePair<FreeJoint>(
+                         nullptr, FreeJoint::Properties(), bodyProps)
+                     .second;
+    body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+        std::make_shared<SphereShape>(kRadius));
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation().z() = kRadius;
+    sphere->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
+    world->addSkeleton(sphere);
+
+    Eigen::Matrix3d rotationAtStep50 = Eigen::Matrix3d::Identity();
+    for (std::size_t i = 1; i <= kSteps; ++i) {
+      world->step();
+      if (i == 50)
+        rotationAtStep50 = body->getTransform().linear();
+    }
+
+    // Rolling without slipping: omega(t) = g_t t / (r (1 + I / (m r^2))),
+    // 0.1547 rad/s here, which DART 6.19.4 reproduces.
+    const double time = static_cast<double>(kSteps) * world->getTimeStep();
+    const double expectedAngularSpeed
+        = kLateralGravity * time
+          / (kRadius * (1.0 + kMoment / (kMass * kRadius * kRadius)));
+    EXPECT_FALSE(sphere->isResting());
+    EXPECT_NEAR(
+        body->getAngularVelocity().norm(),
+        expectedAngularSpeed,
+        0.01 * expectedAngularSpeed);
+    EXPECT_GT(
+        Eigen::AngleAxisd(
+            body->getTransform().linear() * rotationAtStep50.transpose())
+            .angle(),
+        0.04);
+  }
 }
 
 //==============================================================================

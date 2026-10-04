@@ -59,7 +59,6 @@
 
 #include <algorithm>
 #include <condition_variable>
-#include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -217,23 +216,6 @@ CollisionDetectorPtr tryCreateCollisionDetector(CollisionDetectorType type)
   return tryCreateCollisionDetector(toCollisionDetectorKey(type));
 }
 
-const dynamics::BodyNode* getRootBodyNodeIfAny(
-    const dynamics::Skeleton& skeleton)
-{
-  if (skeleton.getNumTrees() == 0u)
-    return nullptr;
-
-  return skeleton.getRootBodyNode();
-}
-
-dynamics::BodyNode* getRootBodyNodeIfAny(dynamics::Skeleton& skeleton)
-{
-  if (skeleton.getNumTrees() == 0u)
-    return nullptr;
-
-  return skeleton.getRootBodyNode();
-}
-
 void copySkeletonPositions(
     const dynamics::Skeleton& skeleton, Eigen::VectorXd& positions)
 {
@@ -283,139 +265,6 @@ CollisionDetectorPtr resolveCollisionDetector(const WorldConfig& config)
       "available. Keeping the world's default collision detector.",
       requestedKey);
   return nullptr;
-}
-
-void findShallowSupportedFreeRoots(
-    const std::vector<dynamics::SkeletonPtr>& skeletons,
-    const collision::CollisionResult& contacts,
-    const Eigen::Vector3d& gravity,
-    std::vector<char>& supported,
-    std::vector<std::pair<const dynamics::Skeleton*, std::size_t>>&
-        skeletonIndexScratch)
-{
-  supported.clear();
-  supported.resize(skeletons.size(), false);
-
-  const double gravityNorm = gravity.norm();
-  if (contacts.getNumContacts() == 0u || gravityNorm <= 0.0)
-    return;
-
-  const Eigen::Vector3d up = -gravity / gravityNorm;
-  constexpr double kSupportContactPenetrationTolerance = 1e-4;
-  constexpr double kSupportNormalMinVerticalComponent = 0.5;
-
-  skeletonIndexScratch.clear();
-  skeletonIndexScratch.reserve(skeletons.size());
-  for (std::size_t i = 0; i < skeletons.size(); ++i) {
-    if (skeletons[i])
-      skeletonIndexScratch.emplace_back(skeletons[i].get(), i);
-  }
-  const std::less<const dynamics::Skeleton*> skeletonLess;
-  std::sort(
-      skeletonIndexScratch.begin(),
-      skeletonIndexScratch.end(),
-      [&](const auto& lhs, const auto& rhs) {
-        return skeletonLess(lhs.first, rhs.first);
-      });
-
-  const auto findSkeletonIndex
-      = [&](const dynamics::Skeleton* skeleton) -> std::size_t {
-    const auto search = std::lower_bound(
-        skeletonIndexScratch.begin(),
-        skeletonIndexScratch.end(),
-        skeleton,
-        [&](const auto& entry, const dynamics::Skeleton* value) {
-          return skeletonLess(entry.first, value);
-        });
-    if (search != skeletonIndexScratch.end() && search->first == skeleton)
-      return search->second;
-
-    return skeletons.size();
-  };
-
-  auto markIfSupportedRoot = [&](const auto& bodyNode,
-                                 const auto& supportBodyNode,
-                                 const Eigen::Vector3d& normal,
-                                 double penetrationDepth) {
-    // Mirror the constraint solver's contact gating: a contact with a
-    // non-finite or negative penetration depth (e.g. a Bullet proximity hit
-    // kept by allowNegativePenetrationDepthContacts) never creates a contact
-    // constraint, so it cannot inject the Baumgarte correction this
-    // suppression compensates for.
-    if (!bodyNode || !supportBodyNode || !std::isfinite(penetrationDepth)
-        || penetrationDepth < 0.0
-        || penetrationDepth > kSupportContactPenetrationTolerance) {
-      return;
-    }
-
-    const auto* skeleton = bodyNode->getSkeletonRawPtr();
-    if (skeleton == nullptr || !skeleton->isMobile())
-      return;
-
-    if (bodyNode != getRootBodyNodeIfAny(*skeleton))
-      return;
-
-    const auto* supportSkeleton = supportBodyNode->getSkeletonRawPtr();
-    const bool supportRestingAndUnperturbed
-        = supportSkeleton != nullptr && supportSkeleton->isResting()
-          && !supportSkeleton->isImpulseApplied();
-    const bool supportInactive = supportSkeleton == nullptr
-                                 || !supportSkeleton->isMobile()
-                                 || supportRestingAndUnperturbed;
-    if (!supportInactive)
-      return;
-
-    const double normalNorm = normal.norm();
-    if (!normal.allFinite() || normalNorm <= 0.0)
-      return;
-
-    const double verticalComponent = normal.dot(up) / normalNorm;
-    if (verticalComponent < kSupportNormalMinVerticalComponent)
-      return;
-
-    // Same relative-height guard as the resting support check: only a contact
-    // that supports the root from below qualifies. A shallow contact with the
-    // underside of a ceiling or overhang must not clamp legitimate small
-    // lateral or tilt motion.
-    const double bodyHeightAboveSupport
-        = (bodyNode->getTransform().translation()
-           - supportBodyNode->getTransform().translation())
-              .dot(up);
-    if (bodyHeightAboveSupport < -kSupportContactPenetrationTolerance)
-      return;
-
-    const auto index = findSkeletonIndex(skeleton);
-    if (index < supported.size())
-      supported[index] = true;
-  };
-
-  for (std::size_t i = 0; i < contacts.getNumContacts(); ++i) {
-    const auto& contact = contacts.getContact(i);
-    const auto bodyNode1 = contact.getBodyNodePtr1();
-    const auto bodyNode2 = contact.getBodyNodePtr2();
-    markIfSupportedRoot(
-        bodyNode1, bodyNode2, contact.normal, contact.penetrationDepth);
-    markIfSupportedRoot(
-        bodyNode2, bodyNode1, -contact.normal, contact.penetrationDepth);
-  }
-}
-
-bool hasFiniteNonzeroVelocity(const Eigen::Vector3d& velocity)
-{
-  return velocity.allFinite() && velocity.squaredNorm() > 0.0;
-}
-
-void restoreVelocityActuatorCommands(
-    dynamics::FreeJoint& joint, const Eigen::VectorXd& commands)
-{
-  for (std::size_t i = 0; i < joint.getNumDofs(); ++i) {
-    if (joint.getActuatorType(i) != dynamics::Joint::VELOCITY)
-      continue;
-
-    const auto index = static_cast<Eigen::Index>(i);
-    if (index < commands.size() && joint.getCommand(i) != commands[index])
-      joint.setCommand(i, commands[index]);
-  }
 }
 
 common::MemoryAllocator& resolveWorldMemoryBaseAllocator(
@@ -514,9 +363,6 @@ void World::reserveMemoryManagerForSimulationShape()
     (void)frameAllocator.allocate(frameReservation);
   frameAllocator.reset();
 
-  mPreSolveFreeRootVelocityScratch.reserve(numSkeletons);
-  mShallowSupportedFreeRootScratch.reserve(numSkeletons);
-  mSkeletonIndexScratch.reserve(numSkeletons);
   mDisturbedThisStepScratch.reserve(numSkeletons);
   mUnsettledInitialContactSkeletonScratch.reserve(numSkeletons);
   mSupportedInitialContactSkeletonScratch.reserve(numSkeletons);
@@ -541,7 +387,6 @@ void World::enterSimulationMode()
   // drops a pending confirmation.
   mInitialRestSpeedLimits.clear();
   refreshSkeletonDofIndices();
-  syncShallowSupportFreeRootVelocityStates();
   reserveMemoryManagerForSimulationShape();
   if (mConstraintSolver)
     mConstraintSolver->prepareForSimulation();
@@ -634,367 +479,6 @@ const common::MemoryManager& World::getMemoryManager() const
 {
   DART_ASSERT(mMemoryManager != nullptr);
   return *mMemoryManager;
-}
-
-//==============================================================================
-void World::syncShallowSupportFreeRootVelocityStates()
-{
-  mShallowSupportFreeRootVelocityStates.resize(mSkeletons.size());
-
-  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
-    auto& state = mShallowSupportFreeRootVelocityStates[i];
-    const auto* skeleton = mSkeletons[i].get();
-    if (state.mSkeleton == skeleton)
-      continue;
-
-    state = ShallowSupportFreeRootVelocityState{};
-    state.mSkeleton = skeleton;
-  }
-}
-
-//==============================================================================
-bool World::hasAnyShallowSupportFreeRootCandidate() const
-{
-  for (const auto& skeleton : mSkeletons) {
-    if (skeleton && skeleton->isMobile()
-        && skeleton->getCachedRootFreeJoint() != nullptr) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-//==============================================================================
-const std::vector<World::FreeRootVelocitySnapshot>&
-World::snapshotFreeRootVelocities()
-{
-  syncShallowSupportFreeRootVelocityStates();
-
-  mPreSolveFreeRootVelocityScratch.clear();
-  mPreSolveFreeRootVelocityScratch.resize(mSkeletons.size());
-
-  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
-    const auto& skeleton = mSkeletons[i];
-    if (!skeleton || !skeleton->isMobile())
-      continue;
-
-    const auto* rootBody = getRootBodyNodeIfAny(*skeleton);
-    if (rootBody == nullptr)
-      continue;
-
-    // WP-PG.30: cached per-skeleton (keyed on structural version) instead of
-    // repeating this dynamic_cast every step; see
-    // Skeleton::getCachedRootFreeJoint().
-    if (skeleton->getCachedRootFreeJoint() == nullptr)
-      continue;
-
-    const auto& state = mShallowSupportFreeRootVelocityStates[i];
-    auto& snapshot = mPreSolveFreeRootVelocityScratch[i];
-    snapshot.mSkeleton = skeleton.get();
-    snapshot.mValid = true;
-    snapshot.mVelocityEditedSinceLastStep
-        = skeleton->getVelocityVersion() != state.mObservedVelocityVersion;
-    snapshot.mExternallyDisturbed = skeleton->hasExternalDisturbance();
-    snapshot.mLinear = rootBody->getLinearVelocity();
-    snapshot.mAngular = rootBody->getAngularVelocity();
-  }
-
-  return mPreSolveFreeRootVelocityScratch;
-}
-
-//==============================================================================
-void World::clearUnsupportedShallowSupportFreeRootVelocityStates(
-    const std::vector<char>& shallowSupportedFreeRoots,
-    const std::vector<FreeRootVelocitySnapshot>& preSolveVelocities)
-{
-  syncShallowSupportFreeRootVelocityStates();
-
-  const bool canStoreUnsupportedVelocities = mGravity.squaredNorm() > 0.0;
-  Eigen::Vector3d up = Eigen::Vector3d::Zero();
-  if (canStoreUnsupportedVelocities)
-    up = -mGravity.normalized();
-
-  for (std::size_t i = 0; i < mShallowSupportFreeRootVelocityStates.size();
-       ++i) {
-    if (i < shallowSupportedFreeRoots.size() && shallowSupportedFreeRoots[i])
-      continue;
-
-    auto& state = mShallowSupportFreeRootVelocityStates[i];
-    state.mPreserveLateralVelocity = false;
-    state.mPreserveTiltVelocity = false;
-    state.mLateralVelocity.setZero();
-    state.mTiltVelocity.setZero();
-    state.mHasUnsupportedLateralVelocity = false;
-    state.mHasUnsupportedTiltVelocity = false;
-    state.mHasResetLateralVelocity = false;
-    state.mHasResetTiltVelocity = false;
-    state.mUnsupportedLateralVelocity.setZero();
-    state.mUnsupportedTiltVelocity.setZero();
-    state.mResetLateralVelocity.setZero();
-    state.mResetTiltVelocity.setZero();
-
-    if (!canStoreUnsupportedVelocities || i >= preSolveVelocities.size())
-      continue;
-
-    const auto& snapshot = preSolveVelocities[i];
-    if (!snapshot.mValid || snapshot.mSkeleton != state.mSkeleton)
-      continue;
-
-    const Eigen::Vector3d verticalVelocity = up * snapshot.mLinear.dot(up);
-    const Eigen::Vector3d lateralVelocity = snapshot.mLinear - verticalVelocity;
-    if (hasFiniteNonzeroVelocity(lateralVelocity)) {
-      state.mHasUnsupportedLateralVelocity = true;
-      state.mUnsupportedLateralVelocity = lateralVelocity;
-    }
-
-    const Eigen::Vector3d yawVelocity = up * snapshot.mAngular.dot(up);
-    const Eigen::Vector3d tiltVelocity = snapshot.mAngular - yawVelocity;
-    if (hasFiniteNonzeroVelocity(tiltVelocity)) {
-      state.mHasUnsupportedTiltVelocity = true;
-      state.mUnsupportedTiltVelocity = tiltVelocity;
-    }
-  }
-}
-
-//==============================================================================
-void World::updateShallowSupportFreeRootVelocityVersions()
-{
-  syncShallowSupportFreeRootVelocityStates();
-
-  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
-    const auto& skeleton = mSkeletons[i];
-    if (skeleton)
-      mShallowSupportFreeRootVelocityStates[i].mObservedVelocityVersion
-          = skeleton->getVelocityVersion();
-  }
-}
-
-//==============================================================================
-void World::captureResetShallowSupportFreeRootVelocityTargets()
-{
-  syncShallowSupportFreeRootVelocityStates();
-
-  if (mGravity.squaredNorm() == 0.0)
-    return;
-
-  const Eigen::Vector3d up = -mGravity.normalized();
-  for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
-    const auto& skeleton = mSkeletons[i];
-    if (!skeleton || !skeleton->isMobile())
-      continue;
-
-    const auto* rootBody = getRootBodyNodeIfAny(*skeleton);
-    if (rootBody == nullptr)
-      continue;
-
-    const auto* freeJoint
-        = dynamic_cast<const dynamics::FreeJoint*>(rootBody->getParentJoint());
-    if (freeJoint == nullptr)
-      continue;
-
-    auto& state = mShallowSupportFreeRootVelocityStates[i];
-    const Eigen::Vector3d linearVelocity = rootBody->getLinearVelocity();
-    const Eigen::Vector3d verticalVelocity = up * linearVelocity.dot(up);
-    const Eigen::Vector3d lateralVelocity = linearVelocity - verticalVelocity;
-    if (hasFiniteNonzeroVelocity(lateralVelocity)) {
-      state.mHasResetLateralVelocity = true;
-      state.mResetLateralVelocity = lateralVelocity;
-    }
-
-    const Eigen::Vector3d angularVelocity = rootBody->getAngularVelocity();
-    const Eigen::Vector3d yawVelocity = up * angularVelocity.dot(up);
-    const Eigen::Vector3d tiltVelocity = angularVelocity - yawVelocity;
-    if (hasFiniteNonzeroVelocity(tiltVelocity)) {
-      state.mHasResetTiltVelocity = true;
-      state.mResetTiltVelocity = tiltVelocity;
-    }
-  }
-}
-
-// DART 6 keeps Baumgarte contact correction in the velocity solve by default.
-// On shallow support contacts, small contact-manifold asymmetry can leak that
-// vertical correction into lateral free-root velocity or roll/pitch drift. Keep
-// the observable upward correction, yaw, and explicitly seeded pre-solve
-// lateral/tilt motion, but remove only tiny lateral/tilt deltas introduced by
-// support contacts.
-//==============================================================================
-void World::suppressShallowSupportedFreeRootDrift(
-    const dynamics::SkeletonPtr& skeleton,
-    const Eigen::Vector3d& gravity,
-    const FreeRootVelocitySnapshot& preSolveVelocity,
-    ShallowSupportFreeRootVelocityState& state)
-{
-  state.mSkeleton = skeleton.get();
-
-  if (!skeleton || !skeleton->isMobile() || gravity.squaredNorm() <= 0.0)
-    return;
-
-  auto* rootBody = getRootBodyNodeIfAny(*skeleton);
-  if (rootBody == nullptr)
-    return;
-
-  // WP-PG.30: cached per-skeleton (keyed on structural version) instead of
-  // repeating this dynamic_cast every step; see
-  // Skeleton::getCachedRootFreeJoint().
-  auto* freeJoint = skeleton->getCachedRootFreeJoint();
-  if (freeJoint == nullptr)
-    return;
-
-  if (!preSolveVelocity.mValid
-      || preSolveVelocity.mSkeleton != skeleton.get()) {
-    state.mPreserveLateralVelocity = false;
-    state.mPreserveTiltVelocity = false;
-    state.mLateralVelocity.setZero();
-    state.mTiltVelocity.setZero();
-    return;
-  }
-
-  const Eigen::Vector3d up = -gravity.normalized();
-  constexpr double kRootLinearDriftSpeedCap = 2e-4;
-  constexpr double kRootLinearDriftFinalQuietRatio = 0.5;
-  // Use the configured final-quiet threshold when deactivation is enabled, so
-  // callers can tighten this gate by tuning DeactivationOptions. The legacy
-  // always-awake path has no threshold, so it keeps the bounded platform-jitter
-  // cap that absorbs FreeBSD VM-backed cross-axis Baumgarte leakage.
-  double rootLinearDriftSpeed = kRootLinearDriftSpeedCap;
-  if (mDeactivationOptions.mEnabled) {
-    const double finalQuietLinearSpeed = std::max(
-        0.0,
-        kFinalSleepLinearRatio * mDeactivationOptions.mLinearSpeedThreshold);
-    rootLinearDriftSpeed = std::min(
-        kRootLinearDriftSpeedCap,
-        kRootLinearDriftFinalQuietRatio * finalQuietLinearSpeed);
-  }
-  constexpr double kRootAngularDriftSpeed = 5e-4;
-  const bool preSolveClearsStoredTarget
-      = preSolveVelocity.mVelocityEditedSinceLastStep
-        || preSolveVelocity.mExternallyDisturbed;
-  Eigen::VectorXd velocityActuatorCommands;
-  bool restoreCommands = false;
-
-  auto captureVelocityActuatorCommands = [&]() {
-    if (restoreCommands)
-      return;
-
-    velocityActuatorCommands = freeJoint->getCommands();
-    restoreCommands = true;
-  };
-
-  Eigen::Vector3d linearVelocity = rootBody->getLinearVelocity();
-  const Eigen::Vector3d verticalVelocity = up * linearVelocity.dot(up);
-  const Eigen::Vector3d lateralVelocity = linearVelocity - verticalVelocity;
-  const Eigen::Vector3d preSolveVerticalVelocity
-      = up * preSolveVelocity.mLinear.dot(up);
-  const Eigen::Vector3d preSolveLateralVelocity
-      = preSolveVelocity.mLinear - preSolveVerticalVelocity;
-  Eigen::Vector3d targetLateralVelocity = Eigen::Vector3d::Zero();
-  bool targetPreservesLateralVelocity = false;
-  // Unedited shallow-contact residuals inside the same platform drift band are
-  // contact leakage, not a new intentional baseline.
-  const bool preservePreSolveLateralVelocity
-      = hasFiniteNonzeroVelocity(preSolveLateralVelocity)
-        && (preSolveClearsStoredTarget
-            || preSolveLateralVelocity.norm() > rootLinearDriftSpeed);
-  if (preservePreSolveLateralVelocity) {
-    targetLateralVelocity = preSolveLateralVelocity;
-    targetPreservesLateralVelocity = true;
-  } else if (
-      !preSolveClearsStoredTarget && state.mPreserveLateralVelocity
-      && state.mLateralVelocity.allFinite()) {
-    targetLateralVelocity = state.mLateralVelocity;
-    targetPreservesLateralVelocity
-        = hasFiniteNonzeroVelocity(targetLateralVelocity);
-  } else if (
-      !preSolveClearsStoredTarget && state.mHasUnsupportedLateralVelocity
-      && state.mUnsupportedLateralVelocity.allFinite()) {
-    targetLateralVelocity = state.mUnsupportedLateralVelocity;
-    targetPreservesLateralVelocity
-        = hasFiniteNonzeroVelocity(targetLateralVelocity);
-  } else if (
-      !preSolveClearsStoredTarget && state.mHasResetLateralVelocity
-      && state.mResetLateralVelocity.allFinite()) {
-    targetLateralVelocity = state.mResetLateralVelocity;
-    targetPreservesLateralVelocity
-        = hasFiniteNonzeroVelocity(targetLateralVelocity);
-  }
-
-  const bool clampedLateralVelocity
-      = targetLateralVelocity.allFinite()
-        && (lateralVelocity - targetLateralVelocity).norm()
-               <= rootLinearDriftSpeed;
-  if (clampedLateralVelocity) {
-    captureVelocityActuatorCommands();
-    freeJoint->setLinearVelocity(
-        verticalVelocity + targetLateralVelocity,
-        dynamics::Frame::World(),
-        dynamics::Frame::World());
-  }
-
-  state.mPreserveLateralVelocity
-      = clampedLateralVelocity && targetPreservesLateralVelocity;
-  state.mLateralVelocity = state.mPreserveLateralVelocity
-                               ? targetLateralVelocity
-                               : Eigen::Vector3d::Zero();
-
-  Eigen::Vector3d angularVelocity = rootBody->getAngularVelocity();
-  const Eigen::Vector3d yawVelocity = up * angularVelocity.dot(up);
-  const Eigen::Vector3d tiltVelocity = angularVelocity - yawVelocity;
-  const Eigen::Vector3d preSolveYawVelocity
-      = up * preSolveVelocity.mAngular.dot(up);
-  const Eigen::Vector3d preSolveTiltVelocity
-      = preSolveVelocity.mAngular - preSolveYawVelocity;
-  Eigen::Vector3d targetTiltVelocity = Eigen::Vector3d::Zero();
-  bool targetPreservesTiltVelocity = false;
-  if (preSolveClearsStoredTarget) {
-    if (hasFiniteNonzeroVelocity(preSolveTiltVelocity)) {
-      targetTiltVelocity = preSolveTiltVelocity;
-      targetPreservesTiltVelocity = true;
-    }
-  } else if (
-      !preSolveClearsStoredTarget && state.mPreserveTiltVelocity
-      && state.mTiltVelocity.allFinite()) {
-    targetTiltVelocity = state.mTiltVelocity;
-    targetPreservesTiltVelocity = hasFiniteNonzeroVelocity(targetTiltVelocity);
-  } else if (
-      !preSolveClearsStoredTarget && state.mHasUnsupportedTiltVelocity
-      && state.mUnsupportedTiltVelocity.allFinite()) {
-    targetTiltVelocity = state.mUnsupportedTiltVelocity;
-    targetPreservesTiltVelocity = hasFiniteNonzeroVelocity(targetTiltVelocity);
-  } else if (
-      !preSolveClearsStoredTarget && state.mHasResetTiltVelocity
-      && state.mResetTiltVelocity.allFinite()) {
-    targetTiltVelocity = state.mResetTiltVelocity;
-    targetPreservesTiltVelocity = hasFiniteNonzeroVelocity(targetTiltVelocity);
-  }
-
-  const bool clampedTiltVelocity
-      = targetTiltVelocity.allFinite()
-        && (tiltVelocity - targetTiltVelocity).norm() <= kRootAngularDriftSpeed;
-  if (clampedTiltVelocity) {
-    captureVelocityActuatorCommands();
-    freeJoint->setAngularVelocity(
-        yawVelocity + targetTiltVelocity,
-        dynamics::Frame::World(),
-        dynamics::Frame::World());
-  }
-
-  state.mPreserveTiltVelocity
-      = clampedTiltVelocity && targetPreservesTiltVelocity;
-  state.mTiltVelocity = state.mPreserveTiltVelocity ? targetTiltVelocity
-                                                    : Eigen::Vector3d::Zero();
-
-  if (restoreCommands)
-    restoreVelocityActuatorCommands(*freeJoint, velocityActuatorCommands);
-
-  state.mHasUnsupportedLateralVelocity = false;
-  state.mHasUnsupportedTiltVelocity = false;
-  state.mHasResetLateralVelocity = false;
-  state.mHasResetTiltVelocity = false;
-  state.mUnsupportedLateralVelocity.setZero();
-  state.mUnsupportedTiltVelocity.setZero();
-  state.mResetLateralVelocity.setZero();
-  state.mResetTiltVelocity.setZero();
 }
 
 //==============================================================================
@@ -1355,9 +839,6 @@ void World::reset()
   mConstraintSolver->clearLastCollisionResult();
   invalidateAllRestingKinematicSnapshot();
   invalidateLastStepRestingWorldState();
-  clearUnsupportedShallowSupportFreeRootVelocityStates({});
-  updateShallowSupportFreeRootVelocityVersions();
-  captureResetShallowSupportFreeRootVelocityTargets();
 
   for (auto& skel : mSkeletons) {
     skel->clearConstraintImpulses();
@@ -1396,30 +877,9 @@ void World::step(bool _resetCommand)
           });
     }
 
-    const bool hasShallowSupportFreeRootCandidate
-        = hasAnyShallowSupportFreeRootCandidate();
-    if (!hasShallowSupportFreeRootCandidate)
-      mPreSolveFreeRootVelocityScratch.clear();
-    const auto& preSolveFreeRootVelocities
-        = hasShallowSupportFreeRootCandidate ? snapshotFreeRootVelocities()
-                                             : mPreSolveFreeRootVelocityScratch;
-
     {
       mConstraintSolver->solve();
     }
-
-    if (hasShallowSupportFreeRootCandidate) {
-      findShallowSupportedFreeRoots(
-          mSkeletons,
-          mConstraintSolver->getLastCollisionResult(),
-          mGravity,
-          mShallowSupportedFreeRootScratch,
-          mSkeletonIndexScratch);
-    } else {
-      mShallowSupportedFreeRootScratch.clear();
-    }
-    clearUnsupportedShallowSupportFreeRootVelocityStates(
-        mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
     {
       parallelForIndexRange(
@@ -1434,15 +894,6 @@ void World::step(bool _resetCommand)
             if (skel->isImpulseApplied()) {
               skel->computeImpulseForwardDynamics();
               skel->setImpulseApplied(false);
-            }
-
-            if (i < mShallowSupportedFreeRootScratch.size()
-                && mShallowSupportedFreeRootScratch[i]) {
-              suppressShallowSupportedFreeRootDrift(
-                  skel,
-                  mGravity,
-                  preSolveFreeRootVelocities[i],
-                  mShallowSupportFreeRootVelocityStates[i]);
             }
 
             if (skel->isPositionImpulseApplied()) {
@@ -1464,7 +915,6 @@ void World::step(bool _resetCommand)
 
     mTime += mTimeStep;
     mFrame++;
-    updateShallowSupportFreeRootVelocityVersions();
     invalidateAllRestingKinematicSnapshot();
     invalidateLastStepRestingWorldState();
     return;
@@ -1484,7 +934,6 @@ void World::step(bool _resetCommand)
   if (deactivationEnabled && lastStepHadNoContacts && allRestingFastPathReady) {
     mTime += mTimeStep;
     mFrame++;
-    updateShallowSupportFreeRootVelocityVersions();
     if (!mLastStepRestingWorldStateValid)
       updateLastStepRestingWorldState();
     return;
@@ -1578,31 +1027,10 @@ void World::step(bool _resetCommand)
         });
   }
 
-  const bool hasShallowSupportFreeRootCandidate
-      = hasAnyShallowSupportFreeRootCandidate();
-  if (!hasShallowSupportFreeRootCandidate)
-    mPreSolveFreeRootVelocityScratch.clear();
-  const auto& preSolveFreeRootVelocities
-      = hasShallowSupportFreeRootCandidate ? snapshotFreeRootVelocities()
-                                           : mPreSolveFreeRootVelocityScratch;
-
   // Detect activated constraints and compute constraint impulses
   {
     mConstraintSolver->solve();
   }
-
-  if (hasShallowSupportFreeRootCandidate) {
-    findShallowSupportedFreeRoots(
-        mSkeletons,
-        mConstraintSolver->getLastCollisionResult(),
-        mGravity,
-        mShallowSupportedFreeRootScratch,
-        mSkeletonIndexScratch);
-  } else {
-    mShallowSupportedFreeRootScratch.clear();
-  }
-  clearUnsupportedShallowSupportFreeRootVelocityStates(
-      mShallowSupportedFreeRootScratch, preSolveFreeRootVelocities);
 
   {
     parallelForIndexRange(
@@ -1648,15 +1076,6 @@ void World::step(bool _resetCommand)
             skel->setImpulseApplied(false);
           }
 
-          if (i < mShallowSupportedFreeRootScratch.size()
-              && mShallowSupportedFreeRootScratch[i]) {
-            suppressShallowSupportedFreeRootDrift(
-                skel,
-                mGravity,
-                preSolveFreeRootVelocities[i],
-                mShallowSupportFreeRootVelocityStates[i]);
-          }
-
           if (!preservingFinalSleepSolve) {
             if (skel->isPositionImpulseApplied()) {
               skel->integratePositions(
@@ -1692,7 +1111,6 @@ void World::step(bool _resetCommand)
 
   mTime += mTimeStep;
   mFrame++;
-  updateShallowSupportFreeRootVelocityVersions();
 
   if (deactivationEnabled
       && mConstraintSolver->getLastCollisionResult().getNumContacts() == 0) {
@@ -2814,7 +2232,6 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
 
   refreshSkeletonDofIndices();
   mConstraintSolver->addSkeleton(_skeleton);
-  syncShallowSupportFreeRootVelocityStates();
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
   invalidateSimulationMode();
@@ -2863,7 +2280,6 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
       remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
       mSkeletons.end());
   refreshSkeletonDofIndices();
-  syncShallowSupportFreeRootVelocityStates();
   invalidateSimulationMode();
 
   // Disconnect the name change monitor
