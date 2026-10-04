@@ -318,8 +318,12 @@ const Frame* DynamicsAspect::getFirstFrictionDirectionFrame() const
 //==============================================================================
 void DynamicsAspect::notifyContactDynamicsPropertiesUpdated()
 {
-  notifyPropertiesUpdated();
-
+  // Contact materials are read whenever contact constraints are built, so an
+  // edit only needs to wake resting bodies. It deliberately does not bump the
+  // ShapeFrame version: that version propagates to the Skeleton's structural
+  // version, which makes World prepare for simulation again on the next step,
+  // and gz-sim's WheelSlip system sets slip compliance every iteration. The
+  // solver's only version-keyed cache of them lasts one constraint update.
   auto* shapeFrame = getComposite();
   if (shapeFrame == nullptr)
     return;
