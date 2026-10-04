@@ -238,6 +238,9 @@ void CollisionAspect::setComposite(common::Composite* newComposite)
   if (nullptr == bodyNode)
     return;
 
+  // Collision groups re-sync a BodyNode's collision shapes only when its
+  // version changes.
+  shapeNode->incrementVersion();
   bodyNode->handleCollisionShapeStateChange(
       shapeNode, false, mProperties.mCollidable);
 }
@@ -254,8 +257,10 @@ void CollisionAspect::loseComposite(common::Composite* oldComposite)
 
   const bool wasCollidable = mProperties.mCollidable;
 
-  if (nullptr != bodyNode)
+  if (nullptr != bodyNode) {
+    shapeNode->incrementVersion();
     bodyNode->handleCollisionShapeStateChange(shapeNode, wasCollidable, false);
+  }
 
   AspectImplementation::loseComposite(oldComposite);
 }
