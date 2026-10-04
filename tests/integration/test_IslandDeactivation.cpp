@@ -51,6 +51,7 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <string_view>
 
 #include <cmath>
 
@@ -1881,7 +1882,7 @@ TEST(IslandDeactivation, WakeOnJointDynamicsEdit)
 {
   struct Edit
   {
-    const char* name;
+    std::string_view name;
     // Writes the current value back, which changes nothing.
     std::function<void(RevoluteJoint*)> rewrite;
     std::function<void(RevoluteJoint*)> apply;
@@ -2073,7 +2074,7 @@ TEST(IslandDeactivation, RelaxedJointLimitDoesNotFreezeFlap)
 {
   struct Row
   {
-    const char* name;
+    std::string_view name;
     double tilt;
     double upperLimit;
     bool editAtCandidate;
@@ -2143,7 +2144,7 @@ TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
   };
   struct Row
   {
-    const char* name;
+    std::string_view name;
     Release release;
     bool editAtCandidate;
   };
