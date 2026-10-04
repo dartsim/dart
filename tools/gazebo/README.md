@@ -48,6 +48,11 @@ feature instead of the default feature.
 4. runs [`compat/compare_failures.py`](compat/compare_failures.py) (see
    below).
 
+The lanes clone gz-physics and gz-sim once into `.deps/gz-compat/<lane>/src/`
+and stop when a clone is not at its pinned tag or has local changes, which
+they would otherwise build as the released sources. Run
+`git reset --hard && git clean -fd` in the clone, or delete it, to restore it.
+
 Pass a step to run one stage, for example
 `pixi run gz-compat-jetty test-gz-sim` or `pixi run gz-compat-jetty compare`.
 The steps are `dart`, `gz-physics`, `test-gz-physics`, `gz-sim`,

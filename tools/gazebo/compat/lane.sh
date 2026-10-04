@@ -143,6 +143,16 @@ clone() {
     echo "$src_dir/$name is at '${actual:-unknown}', expected $ref" >&2
     exit 1
   fi
+  # The tag still matches after local edits, which the lane would build and
+  # report as the released, unpatched sources. An untracked dartsim/src/*.cc
+  # is built too, so list untracked files whatever status.showUntrackedFiles
+  # says.
+  if [ -n "$(git -C "$src_dir/$name" status --porcelain --untracked-files=normal)" ]; then
+    echo "$src_dir/$name has local changes; restore $ref with" \
+      "'git -C $src_dir/$name reset --hard && git -C $src_dir/$name clean -fd'" \
+      "or delete the directory to clone it again" >&2
+    exit 1
+  fi
 }
 
 step_dart() {
