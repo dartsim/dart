@@ -1543,6 +1543,69 @@ TEST(IslandDeactivation, WakeOnContactMaterialChange)
 }
 
 //==============================================================================
+// A CollisionAspect flagged non-collidable still takes part in collision
+// detection, so editing its contact material must wake resting bodies too,
+// both before and after the all-resting snapshot exists.
+TEST(IslandDeactivation, WakeOnNonCollidableShapeMaterialChange)
+{
+  for (const bool fastPathReady : {true, false}) {
+    auto world = makeSleepWorld();
+    auto floor = createFloor();
+    auto* floorShape = floor->getBodyNode(0)->getShapeNode(0);
+    floorShape->get<CollisionAspect>()->setCollidable(false);
+    world->addSkeleton(floor);
+
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(sleeper);
+
+    if (fastPathReady) {
+      ASSERT_NO_FATAL_FAILURE(
+          stepUntilRestingFastPathReady(world.get(), sleeper));
+    } else {
+      ASSERT_NO_FATAL_FAILURE(
+          stepUntilRestingWithContacts(world.get(), sleeper));
+    }
+
+    floorShape->get<DynamicsAspect>()->setFrictionCoeff(0.0);
+    world->step();
+    EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+        << "contact material edit reused the all-resting fast path";
+    EXPECT_FALSE(sleeper->isResting())
+        << "contact material edit did not wake the sleeping body";
+  }
+}
+
+//==============================================================================
+// Moving a non-collidable support shape out from under a resting body must wake
+// it. The move changes no Shape, so the collision group's content version does
+// not tell the all-resting fast path about it.
+TEST(IslandDeactivation, WakeOnNonCollidableShapeTransformChange)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  auto* floorShape = floor->getBodyNode(0)->getShapeNode(0);
+  floorShape->get<CollisionAspect>()->setCollidable(false);
+  world->addSkeleton(floor);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  Eigen::Isometry3d moved = Eigen::Isometry3d::Identity();
+  moved.translation() = Eigen::Vector3d(0.0, 0.0, -0.25);
+  floorShape->setRelativeTransform(moved);
+
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
 // Inertia edits change the dynamics and cached contact-force response without
 // changing pose, collision geometry, or command state. The all-resting fast
 // path must wake and recompute the solver state after those edits.
