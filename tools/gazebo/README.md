@@ -32,8 +32,9 @@ feature instead of the default feature.
 `pixi run gz-compat-<lane>` runs [`compat/lane.sh`](compat/lane.sh)
 `<lane> test`, which:
 
-1. builds DART from this checkout into
-   `.deps/gz-compat/<lane>/candidate/dart`;
+1. builds DART from this checkout and installs it into an emptied
+   `.deps/gz-compat/<lane>/candidate/dart`, so no file an earlier build
+   installed is left behind (the build directory is kept);
 2. builds the released gz-physics with its tests against that DART and runs
    its CTest suite (`PERFORMANCE_` tests excluded);
 3. builds gz-sim with its tests against that gz-physics and runs every

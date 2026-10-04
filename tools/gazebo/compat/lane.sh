@@ -8,7 +8,7 @@
 # Steps (default: test):
 #   test              dart, gz-physics, test-gz-physics, gz-sim, test-gz-sim,
 #                     then compare (the gate)
-#   dart              build DART and install it into the variant prefix
+#   dart              build DART and install it into the emptied variant prefix
 #   gz-physics        build and install gz-physics with its tests
 #   test-gz-physics   run the gz-physics suite (PERFORMANCE_ tests excluded)
 #   gz-sim            build gz-sim with its tests and install it
@@ -96,6 +96,16 @@ work_dir="$(realpath -m "${GZ_COMPAT_DIR:-$repo_root/.deps/gz-compat/$lane}")"
 dart_source="$(realpath "${GZ_COMPAT_DART_SOURCE:-$repo_root}")"
 variant="${GZ_COMPAT_VARIANT:-candidate}"
 base_variant="${GZ_COMPAT_BASE_VARIANT:-}"
+# Variants name directories under the work directory, and a candidate's DART
+# prefix is deleted before each install.
+for name in "$variant" "$base_variant"; do
+  case "$name" in
+    */* | . | ..)
+      echo "Variant names must be plain names: $name" >&2
+      exit 2
+      ;;
+  esac
+done
 jobs="${DART_PARALLEL_JOBS:-$(nproc)}"
 test_jobs="${GZ_COMPAT_TEST_JOBS:-$jobs}"
 
@@ -175,6 +185,11 @@ step_dart() {
     -DDART_SKIP_IPOPT=ON \
     -DDART_SKIP_NLOPT=ON \
     -DDART_SKIP_pagmo=ON
+  # Install into an empty prefix: a reused one keeps the headers, libraries
+  # and CMake files an earlier candidate installed and this one does not,
+  # which gz-physics would find. Only DART installs there; the build
+  # directory stays for incremental builds.
+  rm -rf "$dart_prefix"
   cmake --build "$variant_dir/dart-build" --parallel "$jobs" --target install
 }
 
