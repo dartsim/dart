@@ -187,7 +187,8 @@ int main(int argc, char** argv)
     windowChanged += static_cast<long>(changed.size());
     for (const auto& worldPose : changed) {
       poses[worldPose.body] = worldPose.pose;
-      finite = finite && worldPose.pose.Pos().IsFinite();
+      // Position and all four quaternion components.
+      finite = finite && worldPose.pose.IsFinite();
     }
 
     if (i % window != 0 && i != steps)
