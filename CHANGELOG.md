@@ -563,7 +563,7 @@
     per-pair contact count passed to `ContactSurfaceHandler` (which scales
     slip compliance) is the number kept, and detection costs more because it
     no longer stops at the cap:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3551](https://github.com/dartsim/dart/pull/3551)
 
   * Derive the deactivation final-quiet candidacy gate from the configured
     sleep thresholds (10% of the linear threshold, 20% of the angular
