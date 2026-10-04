@@ -52,11 +52,15 @@
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 
+#include <tinyxml2.h>
+
 #include <algorithm>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -214,9 +218,10 @@ private:
 };
 
 /// Stands in for gz-physics BitmaskContactFilter, the BodyNodeCollisionFilter
-/// subclass gz-physics installs in every world. Without SDF collide bitmasks it
-/// makes the same decisions as its base class; what matters for DART is that
-/// the world's filter is a subclass rather than BodyNodeCollisionFilter itself.
+/// subclass gz-physics installs in every world. Without SDF bitmasks that can
+/// filter a pair (see findGazeboFilteringBitmask()) it makes the same
+/// decisions as its base class; what matters for DART is that the world's
+/// filter is a subclass rather than BodyNodeCollisionFilter itself.
 class GazeboContactFilter final : public collision::BodyNodeCollisionFilter
 {
 public:
@@ -228,6 +233,36 @@ public:
         object1, object2);
   }
 };
+
+/// gz-physics BitmaskContactFilter ignores a pair of collisions when neither
+/// one's SDF <category_bitmask> (default: its <collide_bitmask>) shares a bit
+/// with the other's <collide_bitmask> (default 0xff). DART's SdfParser does not
+/// read the masks, so GazeboContactFilter cannot apply them; it is sure to
+/// match gz-physics only when every mask has all the bits of 0xff, which every
+/// pair then shares, and is at most INT_MAX once sdformat stores it as an
+/// unsigned int: gz-physics reads it with Get<int>, which yields 0 for larger
+/// values such as 0xffffffff or -1. Returns the first mask element under
+/// `node` that fails this, as "<name> <value>", or nothing.
+inline std::optional<std::string> findGazeboFilteringBitmask(
+    const tinyxml2::XMLNode& node)
+{
+  for (const auto* element = node.FirstChildElement(); element;
+       element = element->NextSiblingElement()) {
+    const std::string_view name = element->Name();
+    unsigned mask = 0u;
+    if (name != "collide_bitmask" && name != "category_bitmask") {
+      if (auto found = findGazeboFilteringBitmask(*element))
+        return found;
+    } else if (
+        element->QueryUnsignedText(&mask) != tinyxml2::XML_SUCCESS
+        || (mask & 0xffu) != 0xffu
+        || mask > static_cast<unsigned>(std::numeric_limits<int>::max())) {
+      const char* value = element->GetText();
+      return std::string(name) + " " + (value ? value : "");
+    }
+  }
+  return std::nullopt;
+}
 
 /// Rebuilds one collision PlaneShape as the box gz-physics builds for an SDF
 /// <plane> (SDFFeatures ConstructPlane): a 2100 m cube rotated from +Z onto

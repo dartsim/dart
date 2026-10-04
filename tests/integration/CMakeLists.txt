@@ -51,10 +51,14 @@ if(TARGET dart-collision-ode)
   target_link_libraries(INTEGRATION_StepAllocation PRIVATE dart-collision-ode)
 endif()
 dart_add_test("integration" test_IslandDeactivation)
-if(TARGET dart-collision-ode)
+if(TARGET dart-collision-ode AND TARGET dart-utils)
   # Covers the `contact_benchmark --gz-preset` helpers.
   dart_add_test("integration" test_ContactBenchmarkGazeboPreset)
-  target_link_libraries(test_ContactBenchmarkGazeboPreset dart-collision-ode)
+  target_link_libraries(
+    test_ContactBenchmarkGazeboPreset
+    dart-collision-ode
+    dart-utils
+  )
   target_include_directories(
     test_ContactBenchmarkGazeboPreset
     PRIVATE "${PROJECT_SOURCE_DIR}/examples/contact_benchmark"

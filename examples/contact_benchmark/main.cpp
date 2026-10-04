@@ -72,6 +72,7 @@
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIEventHandler>
 #include <osgViewer/ViewerBase>
+#include <tinyxml2.h>
 
 #include <algorithm>
 #include <array>
@@ -330,6 +331,11 @@ void printUsage(const std::string& programName)
          "starved pairs, sunk bodies,\n"
       << "                            and changed poses (their cost is "
          "excluded from the times).\n"
+      << "                            Rejects worlds with an SDF collide or "
+         "category bitmask that\n"
+      << "                            lacks a bit of 0xff or exceeds "
+         "0x7fffffff: it does not model\n"
+      << "                            gz-physics' bitmask filter.\n"
       << "  --gz-pair-max-contacts N  gz-sim per-pair contact limit for "
          "--gz-preset (SDF\n"
       << "                            <max_contacts>); default 20.\n"
@@ -2949,6 +2955,19 @@ int main(int argc, char* argv[])
     const std::string absoluteSdfPath = p.string();
 
     std::cout << "Loading SDF world file: " << absoluteSdfPath << "\n";
+
+    if (options.gzPreset) {
+      tinyxml2::XMLDocument sdf;
+      sdf.LoadFile(absoluteSdfPath.c_str());
+      if (const auto mask = contact_scene::findGazeboFilteringBitmask(sdf)) {
+        std::cerr << "--gz-preset does not model gz-physics' collision "
+                     "bitmask filter, which "
+                  << absoluteSdfPath << " uses (" << *mask
+                  << "); only masks up to 0x7fffffff with all the bits of 0xff "
+                     "are supported\n";
+        return 1;
+      }
+    }
 
     dart::utils::SdfParser::Options parserOptions;
     // --gz-preset loads planes as PlaneShape so they can be rebuilt below.

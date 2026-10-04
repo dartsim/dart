@@ -42,9 +42,11 @@
 #include <dart/dart.hpp>
 
 #include <gtest/gtest.h>
+#include <tinyxml2.h>
 
 #include <limits>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <cmath>
@@ -347,6 +349,45 @@ TEST(ContactBenchmarkGazeboPreset, JudgesStarvationAtTheStateTheStepDetected)
   EXPECT_EQ(demand.pairs, 0u);
   EXPECT_EQ(countStarvedPairs(demand, world->getLastCollisionResult()), 0u);
   EXPECT_EQ(measureGazeboContactDemand(*world).pairs, 1u);
+}
+
+//==============================================================================
+TEST(ContactBenchmarkGazeboPreset, FindsBitmasksThatCanFilterAPair)
+{
+  const auto find = [](const std::string& contact) {
+    const std::string sdf
+        = "<sdf><world><model><link><collision/><collision><surface><contact>"
+          + contact + "</contact></surface></collision></link></model></world>"
+          + "</sdf>";
+    tinyxml2::XMLDocument document;
+    EXPECT_EQ(document.Parse(sdf.c_str()), tinyxml2::XML_SUCCESS);
+    return findGazeboFilteringBitmask(document);
+  };
+
+  // gz-physics' defaults, and masks that keep all their bits, filter nothing.
+  EXPECT_FALSE(find(""));
+  EXPECT_FALSE(find("<collide_bitmask>0xff</collide_bitmask>"));
+  EXPECT_FALSE(
+      find("<collide_bitmask>65535</collide_bitmask>"
+           "<category_bitmask> 0x1FF </category_bitmask>"));
+
+  EXPECT_EQ(
+      find("<collide_bitmask>0x01</collide_bitmask>"), "collide_bitmask 0x01");
+  EXPECT_EQ(
+      find("<collide_bitmask>0xff</collide_bitmask>"
+           "<category_bitmask>254</category_bitmask>"),
+      "category_bitmask 254");
+  EXPECT_EQ(
+      find("<collide_bitmask>all</collide_bitmask>"), "collide_bitmask all");
+
+  // gz-physics reads masks above INT_MAX as 0; sdformat stores -1 as
+  // 0xffffffff.
+  EXPECT_FALSE(find("<collide_bitmask>2147483647</collide_bitmask>"));
+  EXPECT_EQ(
+      find("<collide_bitmask>0xffffffff</collide_bitmask>"),
+      "collide_bitmask 0xffffffff");
+  EXPECT_EQ(
+      find("<category_bitmask>-1</category_bitmask>"), "category_bitmask -1");
 }
 
 //==============================================================================

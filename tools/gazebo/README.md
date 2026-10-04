@@ -267,7 +267,13 @@ gz-sim.
 rows: it loads an SDF world with the collision setup gz-physics builds (see
 `examples/contact_benchmark/GazeboPreset.hpp`) and reports contact demand
 against the cap, starved pairs, sunk bodies and changed poses, keeping that
-census out of its step times.
+census out of its step times. DART's SDF parser does not read
+`<collide_bitmask>` or `<category_bitmask>`, so the preset cannot apply
+gz-physics' bitmask filter, which drops a pair when neither collision's
+category mask shares a bit with the other's collide mask (default `0xff`).
+It rejects a world with a mask that lacks a bit of `0xff`, or that sdformat
+stores as more than `0x7fffffff` (such as `0xffffffff` or `-1`), which
+gz-physics reads as 0; without one, the filter drops nothing.
 
 ## Not covered yet
 
