@@ -293,6 +293,9 @@ inline std::optional<double> rebuildPlanesLikeGazebo(simulation::World& world)
     auto* solver = world.getConstraintSolver();
     solver->setCollisionDetector(
         solver->getCollisionDetector()->cloneWithoutCollisionObjects());
+    // The last collision result still points at the old detector's collision
+    // objects, which the swap destroyed.
+    solver->clearLastCollisionResult();
   }
   return groundTop;
 }
