@@ -75,6 +75,7 @@
 #include <new>
 #include <set>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
@@ -1248,7 +1249,7 @@ namespace {
 // contacts point to, and steps again.
 template <typename Change>
 void expectStepAfterChangeReportsOnlyLiveContacts(
-    const char* name, const Change& change)
+    std::string_view name, const Change& change)
 {
   SCOPED_TRACE(name);
 
