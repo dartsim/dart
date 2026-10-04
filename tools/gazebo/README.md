@@ -190,8 +190,10 @@ gz-sim.
   arguments replace the defaults (`<world.sdf> <steps> [options]`), and
   `--max-contacts 4` gives the per-pair-4 row.
 - `gz_sim_server_bench` runs a world in a `gz::sim::Server` and reports time
-  per iteration. `pixi run gz-compat-<lane> bench-gz-sim` runs `3k_shapes.sdf`
-  with its real-time factor set to 0 for 1000 iterations.
+  per iteration; it fails when the server did not run every iteration (a
+  world that did not load, or a server stopped by a signal).
+  `pixi run gz-compat-<lane> bench-gz-sim` runs `3k_shapes.sdf` with its
+  real-time factor set to 0 for 1000 iterations.
 - `pixi run gz-compat-<lane> worlds` writes the benchmark worlds derived
   from `3k_shapes.sdf` into `.deps/gz-compat/<lane>/worlds/`
   ([`bench/make_worlds.py`](bench/make_worlds.py)), all with real-time factor

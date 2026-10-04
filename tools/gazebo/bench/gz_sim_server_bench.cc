@@ -66,10 +66,24 @@ int main(int argc, char** argv)
   double total = 0.0;
   while (done < iterations) {
     const long n = std::min(chunk, iterations - done);
+    const auto before = server.IterationCount();
     const auto start = Clock::now();
-    server.Run(true, static_cast<std::uint64_t>(n), false);
+    const bool ok = server.Run(true, static_cast<std::uint64_t>(n), false);
     const double seconds
         = std::chrono::duration<double>(Clock::now() - start).count();
+    // Run() also returns true when a signal stopped the server early, and a
+    // world that failed to load has no iteration count.
+    const auto after = server.IterationCount();
+    const std::uint64_t ran = before && after ? *after - *before : 0u;
+    if (!ok || ran != static_cast<std::uint64_t>(n)) {
+      std::fprintf(
+          stderr,
+          "error: the server ran %llu of %ld iterations after iteration %ld\n",
+          static_cast<unsigned long long>(ran),
+          n,
+          done);
+      return 1;
+    }
     total += seconds;
     done += n;
     std::printf(
