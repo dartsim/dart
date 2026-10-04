@@ -409,7 +409,7 @@
 
   * Fix `setSpringStiffness()` and `setDampingCoefficient()` changes not taking
     effect until the joint's configuration changes; they now take effect on the
-    next step: [#3056](https://github.com/dartsim/dart/issues/3056)
+    next step: [#3552](https://github.com/dartsim/dart/pull/3552)
 
   * Fix `dart::utils::SdfParser` loading every SDF `<soft_shape>` link as a
     rigid `BodyNode`: the parser forwarded only the joint type to
@@ -674,18 +674,18 @@
     that were about to rest, so a body that starts moving slowly after the
     change is no longer frozen. A manual constraint added between resting
     bodies is now solved:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3552](https://github.com/dartsim/dart/pull/3552)
 
   * Keep resting bodies asleep when a `World`'s or `Skeleton`'s gravity is set
     to its current value, so worlds whose host re-applies an unchanged gravity
     before every step, as gz-sim 10 does, can sleep:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3552](https://github.com/dartsim/dart/pull/3552)
 
   * Keep bodies awake while a custom `ContactSurfaceHandler` is installed, so
     motion that only the handler drives, such as a conveyor belt (gz-sim
     TrackController), keeps responding. Once only the built-in default handler
     remains, bodies can sleep again after the usual sleep delay:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3552](https://github.com/dartsim/dart/pull/3552)
 
 * Python
 
