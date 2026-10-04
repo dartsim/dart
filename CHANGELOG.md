@@ -411,7 +411,7 @@
     setters, with unchanged results. `getPositions()`, which gz-physics calls
     for every model after every step, now takes about a quarter fewer
     instructions:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3554](https://github.com/dartsim/dart/pull/3554)
 
   * Fix `dart::utils::SdfParser` loading every SDF `<soft_shape>` link as a
     rigid `BodyNode`: the parser forwarded only the joint type to
