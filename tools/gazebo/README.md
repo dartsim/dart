@@ -228,7 +228,8 @@ gz-sim.
   and after the mutation, and the contact counts (with/without sleeping, at
   the mutation and at the end). A `MISMATCH` names what differed (`poses`,
   `contacts`): DART's deactivation changed what Gazebo sees, sometimes even
-  with nothing asleep. A row with `nothing asleep`, or whose mutation was
+  with nothing asleep. A pose or contact point that is not finite (a run that
+  blew up) always differs. A row with `nothing asleep`, or whose mutation was
   `inert` (moved nothing), is `UNEXERCISED`: it cannot reveal a missed wake.
   Mutations that cannot move a body at rest add a kick, so a stale parameter
   still shows; a third run applies the kick alone, and `moved` is how far the

@@ -14,7 +14,8 @@
 // and compares, step by step, the link poses gz-physics published
 // (ChangedWorldPoses, what gz-sim sees), and the contacts it reported when the
 // mutation was applied and at the end. A difference beyond --tolerance is
-// a MISMATCH: sleeping changed the simulation. The table also reports how
+// a MISMATCH: sleeping changed the simulation. A pose or contact point that
+// is not finite (a run blew up) always differs. The table also reports how
 // many bodies were resting when the mutation was applied and how far the
 // mutation moved the reference run. A mutation that cannot move a body at rest
 // comes with a kick, so a stale parameter still shows; a third run applies the
@@ -815,13 +816,22 @@ Outcome simulate(
   return outcome;
 }
 
+// |a - b|, or infinity when either is not finite: std::max and std::min skip a
+// NaN, so a run that blew up would otherwise match.
+double absDifference(double a, double b)
+{
+  const double difference = std::abs(a - b);
+  return std::isfinite(difference) ? difference
+                                   : std::numeric_limits<double>::infinity();
+}
+
 double maxDifference(const std::vector<double>& a, const std::vector<double>& b)
 {
   if (a.size() != b.size())
     return std::numeric_limits<double>::infinity();
   double difference = 0.0;
   for (std::size_t i = 0; i < a.size(); ++i)
-    difference = std::max(difference, std::abs(a[i] - b[i]));
+    difference = std::max(difference, absDifference(a[i], b[i]));
   return difference;
 }
 
@@ -865,9 +875,9 @@ double contactPointDistance(
       nearest = std::min(
           nearest,
           std::max(
-              {std::abs(p[0] - q[0]),
-               std::abs(p[1] - q[1]),
-               std::abs(p[2] - q[2])}));
+              {absDifference(p[0], q[0]),
+               absDifference(p[1], q[1]),
+               absDifference(p[2], q[2])}));
     }
     distance = std::max(distance, nearest);
   }
