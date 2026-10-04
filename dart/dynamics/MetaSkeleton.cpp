@@ -39,6 +39,7 @@
 #include "dart/dynamics/JacobianNode.hpp"
 
 #include <algorithm>
+#include <string_view>
 
 namespace dart {
 namespace dynamics {
@@ -47,7 +48,7 @@ namespace dynamics {
 static bool checkIndexArrayValidity(
     const MetaSkeleton* skel,
     const std::vector<std::size_t>& _indices,
-    const char* _fname)
+    std::string_view _fname)
 {
   std::size_t dofs = skel->getNumDofs();
   for (std::size_t i = 0; i < _indices.size(); ++i) {
@@ -75,8 +76,8 @@ static bool checkIndexArrayAgreement(
     const MetaSkeleton* skel,
     const std::vector<std::size_t>& _indices,
     const Eigen::VectorXd& _values,
-    const char* _fname,
-    const char* _vname)
+    std::string_view _fname,
+    std::string_view _vname)
 {
   if (static_cast<int>(_indices.size()) != _values.size()) {
     dterr << "[Skeleton::" << _fname << "] Mismatch between _indices size ("
@@ -96,8 +97,8 @@ static void setValuesFromVector(
     MetaSkeleton* skel,
     const std::vector<std::size_t>& _indices,
     const Eigen::VectorXd& _values,
-    const char* _fname,
-    const char* _vname)
+    std::string_view _fname,
+    std::string_view _vname)
 {
   if (!checkIndexArrayAgreement(skel, _indices, _values, _fname, _vname))
     return;
@@ -122,8 +123,8 @@ template <void (DegreeOfFreedom::*setValue)(double _value)>
 static void setAllValuesFromVector(
     MetaSkeleton* skel,
     const Eigen::VectorXd& _values,
-    const char* _fname,
-    const char* _vname)
+    std::string_view _fname,
+    std::string_view _vname)
 {
   std::size_t nDofs = skel->getNumDofs();
   if (_values.size() != static_cast<int>(nDofs)) {
@@ -156,7 +157,7 @@ template <double (DegreeOfFreedom::*getValue)() const>
 static Eigen::VectorXd getValuesFromVector(
     const MetaSkeleton* skel,
     const std::vector<std::size_t>& _indices,
-    const char* _fname)
+    std::string_view _fname)
 {
   Eigen::VectorXd values(_indices.size());
 
@@ -190,7 +191,7 @@ static Eigen::VectorXd getValuesFromVector(
 //==============================================================================
 template <double (DegreeOfFreedom::*getValue)() const>
 static Eigen::VectorXd getValuesFromAllDofs(
-    const MetaSkeleton* skel, const char* _fname)
+    const MetaSkeleton* skel, std::string_view _fname)
 {
   std::size_t nDofs = skel->getNumDofs();
   Eigen::VectorXd values(nDofs);
@@ -227,7 +228,10 @@ static void applyToAllDofs(MetaSkeleton* skel)
 //==============================================================================
 template <void (DegreeOfFreedom::*setValue)(double _value)>
 static void setValueFromIndex(
-    MetaSkeleton* skel, std::size_t _index, double _value, const char* _fname)
+    MetaSkeleton* skel,
+    std::size_t _index,
+    double _value,
+    std::string_view _fname)
 {
   if (_index >= skel->getNumDofs()) {
     if (skel->getNumDofs() > 0)
@@ -259,7 +263,7 @@ static void setValueFromIndex(
 //==============================================================================
 template <double (DegreeOfFreedom::*getValue)() const>
 static double getValueFromIndex(
-    const MetaSkeleton* skel, std::size_t _index, const char* _fname)
+    const MetaSkeleton* skel, std::size_t _index, std::string_view _fname)
 {
   if (_index >= skel->getNumDofs()) {
     if (skel->getNumDofs() > 0)
