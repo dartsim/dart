@@ -42,7 +42,8 @@ directly on `main`; its `nightly-failure` issues track `main`.
 
 Verify before merging: `pixi run test-all` for the complete default CMake graph.
 The branch configuration pins `BUILD_TESTING=ON`, so `ALL` builds the default
-targets and invokes `tests_and_run` and `pytest`. Use `pixi run test` or
+targets and invokes `tests_and_run` and `pytest`. `ALL_NO_RUN` builds the
+same targets without running them. Use `pixi run test` or
 `pixi run test-py` for focused failure attribution; both use the same sanitized
 CTest/pytest runners as the aggregate. Run `pixi run lint` separately because
 `test-all` does not format or check lint. For any
