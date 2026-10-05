@@ -3388,7 +3388,6 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
         "pixi run check-lint\n"
         "pixi run test-ai-infra\n"
         "      - name: Agent visual verification smoke\n"
-        "if: matrix.build_type == 'Release'\n"
         "xvfb-run\n"
         "bash -eu -o pipefail <<'VISUAL_SMOKE'\n"
         "pixi run agent-capture\n"
@@ -3554,41 +3553,21 @@ def test_ci_wiring_requires_visual_verification_smoke(tmp_path, marker):
 
 
 @pytest.mark.parametrize(
-    ("mutation", "expected"),
+    ("line", "expected"),
     (
-        ("condition", "exactly the Release matrix entry"),
-        ("condition-suffix", "exactly the Release matrix entry"),
-        ("soft-fail", "must not use continue-on-error"),
+        ("if: false", "must run unconditionally"),
+        ("if: inputs.nightly", "must run unconditionally"),
+        ("continue-on-error: true", "must not use continue-on-error"),
     ),
 )
-def test_visual_smoke_cannot_be_skipped_or_soft_failed(tmp_path, mutation, expected):
+def test_visual_smoke_cannot_be_skipped_or_soft_failed(tmp_path, line, expected):
     workflows = tmp_path / ".github" / "workflows"
     workflows.mkdir(parents=True)
     ubuntu = (ROOT / ".github/workflows/ci_ubuntu.yml").read_text()
-    before_visual, separator, ubuntu = ubuntu.partition(
-        "- name: Agent visual verification smoke"
-    )
-    assert separator
-    ubuntu = separator + ubuntu
-    if mutation == "condition":
-        ubuntu = ubuntu.replace(
-            "if: matrix.build_type == 'Release'",
-            "if: false",
-            1,
-        )
-    elif mutation == "condition-suffix":
-        ubuntu = ubuntu.replace(
-            "if: matrix.build_type == 'Release'",
-            "if: matrix.build_type == 'Release' && false",
-            1,
-        )
-    else:
-        ubuntu = ubuntu.replace(
-            "- name: Agent visual verification smoke",
-            "- name: Agent visual verification smoke\n        continue-on-error: true",
-            1,
-        )
-    (workflows / "ci_ubuntu.yml").write_text(before_visual + ubuntu)
+    step = "- name: Agent visual verification smoke"
+    assert step in ubuntu
+    ubuntu = ubuntu.replace(step, f"{step}\n        {line}", 1)
+    (workflows / "ci_ubuntu.yml").write_text(ubuntu)
     (workflows / "ci_windows.yml").write_text(
         (ROOT / ".github/workflows/ci_windows.yml").read_text()
     )
