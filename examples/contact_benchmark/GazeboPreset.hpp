@@ -55,10 +55,13 @@
 #include <tinyxml2.h>
 
 #include <algorithm>
+#include <charconv>
 #include <functional>
+#include <initializer_list>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -81,6 +84,9 @@ constexpr std::size_t kGazeboMaxNumContacts = 10000;
 /// Per-pair limit gz-sim passes to SetCollisionPairMaxContacts: the SDF
 /// <physics><max_contacts> default.
 constexpr std::size_t kGazeboDefaultCollisionPairMaxContacts = 20;
+
+/// Gravity inserted by sdformat's world XML schema when it is omitted.
+constexpr double kGazeboDefaultGravity = -9.8;
 
 /// Reads <max_contacts> from the first world's first physics profile, which
 /// released gz-sim selects with PhysicsByIndex(0), even if a later profile is
@@ -236,7 +242,7 @@ private:
 
 /// Stands in for gz-physics BitmaskContactFilter, the BodyNodeCollisionFilter
 /// subclass gz-physics installs in every world. Without SDF bitmasks that can
-/// filter a pair (see findGazeboFilteringBitmask()) it makes the same
+/// filter a pair (see findUnsupportedGazeboPresetSdf()) it makes the same
 /// decisions as its base class; what matters for DART is that the world's
 /// filter is a subclass rather than BodyNodeCollisionFilter itself.
 class GazeboContactFilter final : public collision::BodyNodeCollisionFilter
@@ -251,79 +257,539 @@ public:
   }
 };
 
-/// gz-physics BitmaskContactFilter ignores a pair of collisions when neither
-/// one's SDF <category_bitmask> (default: its <collide_bitmask>) shares a bit
-/// with the other's <collide_bitmask> (default 0xff). DART's SdfParser does not
-/// read the masks, so GazeboContactFilter cannot apply them; it is sure to
-/// match gz-physics only when every mask has all the bits of 0xff, which every
-/// pair then shares, and is at most INT_MAX once sdformat stores it as an
-/// unsigned int: gz-physics reads it with Get<int>, which yields 0 for larger
-/// values such as 0xffffffff or -1. Returns the first mask element under
-/// `node` that fails this, as "<name> <value>", or nothing.
-inline std::optional<std::string> findGazeboFilteringBitmask(
-    const tinyxml2::XMLNode& node)
+namespace detail {
+
+inline bool isOneOf(
+    std::string_view value, std::initializer_list<std::string_view> choices)
 {
-  for (const auto* element = node.FirstChildElement(); element;
-       element = element->NextSiblingElement()) {
-    const std::string_view name = element->Name();
-    unsigned mask = 0u;
-    if (name != "collide_bitmask" && name != "category_bitmask") {
-      if (auto found = findGazeboFilteringBitmask(*element))
-        return found;
-    } else if (
-        element->QueryUnsignedText(&mask) != tinyxml2::XML_SUCCESS
-        || (mask & 0xffu) != 0xffu
-        || mask > static_cast<unsigned>(std::numeric_limits<int>::max())) {
-      const char* value = element->GetText();
-      return std::string(name) + " " + (value ? value : "");
+  return std::find(choices.begin(), choices.end(), value) != choices.end();
+}
+
+// This is an allowlist of XML edges, not of names anywhere in the document.
+// SdfParser::readWorld/readBodyNode/readShape/readJoint and released
+// gz-physics dartsim SDFFeatures::ConstructSdf* are the two owners. In
+// particular, capsule/ellipsoid are absent from DART's rigid shape reader,
+// screw pitch differs, and gz-physics falls back to fixed for revolute2.
+inline bool supportsGazeboSdfChild(
+    std::string_view parent, std::string_view name)
+{
+  if (parent.empty())
+    return name == "sdf";
+  if (parent == "sdf")
+    return name == "world";
+  if (parent == "world")
+    return isOneOf(
+        name,
+        {"physics", "gravity", "model", "light", "scene", "gui", "plugin"});
+  if (parent == "physics")
+    return isOneOf(
+        name,
+        {"max_step_size",
+         "real_time_factor",
+         "real_time_update_rate",
+         "max_contacts"});
+  if (parent == "model")
+    return isOneOf(name, {"static", "pose", "link", "joint", "self_collide"});
+  if (parent == "link")
+    return isOneOf(
+        name,
+        {"pose",
+         "inertial",
+         "collision",
+         "visual",
+         "sensor",
+         "gravity",
+         "self_collide",
+         "kinematic"});
+  if (parent == "inertial")
+    return isOneOf(name, {"mass", "inertia", "pose"});
+  if (parent == "inertia")
+    return isOneOf(name, {"ixx", "iyy", "izz", "ixy", "ixz", "iyz"});
+  if (parent == "collision")
+    return isOneOf(name, {"pose", "geometry", "surface"});
+  if (parent == "geometry")
+    return isOneOf(name, {"box", "sphere", "cylinder", "plane"});
+  if (parent == "visual_geometry")
+    return name == "mesh";
+  if (parent == "mesh")
+    return isOneOf(name, {"uri", "scale"});
+  if (parent == "box")
+    return name == "size";
+  if (parent == "sphere")
+    return name == "radius";
+  if (parent == "cylinder")
+    return isOneOf(name, {"radius", "length"});
+  if (parent == "plane")
+    return isOneOf(name, {"normal", "size"});
+  if (parent == "surface")
+    return isOneOf(name, {"contact", "friction", "bounce"});
+  if (parent == "friction")
+    return name == "ode";
+  if (parent == "ode")
+    return isOneOf(name, {"mu", "mu2", "slip1", "slip2", "fdir1"});
+  if (parent == "bounce")
+    return name == "restitution_coefficient";
+  if (parent == "contact")
+    return isOneOf(name, {"collide_bitmask", "category_bitmask"});
+  if (parent == "joint")
+    return isOneOf(name, {"parent", "child", "pose", "axis", "axis2"});
+  if (isOneOf(parent, {"axis", "axis2"}))
+    return isOneOf(
+        name, {"xyz", "use_parent_model_frame", "dynamics", "limit"});
+  if (parent == "dynamics")
+    return isOneOf(
+        name, {"damping", "friction", "spring_reference", "spring_stiffness"});
+  if (parent == "limit")
+    return isOneOf(name, {"lower", "upper", "effort", "velocity"});
+  return false;
+}
+
+inline std::optional<std::string> findUnsupportedGazeboSdfElement(
+    const tinyxml2::XMLElement& element,
+    std::string_view parent,
+    std::string_view elementPath);
+
+inline std::optional<std::string> findUnsupportedIgnoredGazeboSdf(
+    const tinyxml2::XMLElement& element, std::string_view elementPath)
+{
+  const std::string path(elementPath);
+  // gz-sim also loads plugins attached to visuals and sensors as systems;
+  // those subtrees are passive only in their absence.
+  if (std::string_view(element.Name()) == "plugin")
+    return path + " can load a system that alters dynamics";
+  for (const auto* child = element.FirstChildElement(); child;
+       child = child->NextSiblingElement()) {
+    if (auto unsupported
+        = findUnsupportedIgnoredGazeboSdf(*child, path + "/" + child->Name()))
+      return unsupported;
+  }
+  if (std::string_view(element.Name()) == "visual") {
+    // SdfParser still parses visuals while loading. Check the fields it
+    // reads to prevent malformed/unsupported pose encodings from throwing
+    // or overflowing its fixed six-component pose vector; their rendering
+    // properties otherwise do not constrain the physics subset.
+    const auto* geometry = element.FirstChildElement("geometry");
+    if (!geometry)
+      return path + "/geometry is required by DART's visual loader";
+    if (const auto* pose = element.FirstChildElement("pose")) {
+      if (auto unsupported
+          = findUnsupportedGazeboSdfElement(*pose, "collision", path + "/pose"))
+        return unsupported;
+    }
+    for (const auto* shape = geometry->FirstChildElement(); shape;
+         shape = shape->NextSiblingElement()) {
+      const std::string_view shapeName = shape->Name();
+      if (isOneOf(shapeName, {"box", "sphere", "cylinder", "plane", "mesh"})) {
+        if (auto unsupported = findUnsupportedGazeboSdfElement(
+                *shape,
+                shapeName == "mesh" ? "visual_geometry" : "geometry",
+                path + "/geometry/" + shape->Name()))
+          return unsupported;
+      }
+    }
+    const auto* material = element.FirstChildElement("material");
+    const auto* diffuse
+        = material ? material->FirstChildElement("diffuse") : nullptr;
+    if (diffuse) {
+      std::istringstream stream(diffuse->GetText() ? diffuse->GetText() : "");
+      double component = 0.0;
+      std::size_t count = 0;
+      while (stream >> component) {
+        if (!std::isfinite(component))
+          break;
+        ++count;
+      }
+      if (!stream.eof() || (count != 3u && count != 4u))
+        return path
+               + "/material/diffuse must contain three or four finite numbers";
     }
   }
   return std::nullopt;
 }
 
-/// DART's SdfParser reads only the <model> elements of a world and the <link>
-/// and <joint> elements of a model, so a model that sdformat includes (an
-/// <include> in a world or a model) or that gz-physics builds nested in a model
-/// would be missing. It also skips world-level joints connecting models.
-/// It ignores <frame> elements and non-empty pose relative_to attributes,
-/// which can place geometry differently from Gazebo.
-/// Returns the first such element under `node`, as "<include> <uri>",
-/// "nested <model> <name>", "world <joint> <name>", "<frame> <name>" or
-/// "<pose relative_to=\"<frame>\">", or nothing.
-inline std::optional<std::string> findSdfSkippedModel(
-    const tinyxml2::XMLNode& node)
+inline std::optional<std::string> findUnsupportedGazeboSdfElement(
+    const tinyxml2::XMLElement& element,
+    std::string_view parent,
+    std::string_view elementPath)
 {
-  const auto* parent = node.ToElement();
-  const bool inModel = parent && std::string_view(parent->Name()) == "model";
-  const bool inWorld = parent && std::string_view(parent->Name()) == "world";
-  for (const auto* element = node.FirstChildElement(); element;
-       element = element->NextSiblingElement()) {
-    const std::string_view name = element->Name();
-    if (name == "frame") {
-      const char* frameName = element->Attribute("name");
-      return std::string("<frame> ") + (frameName ? frameName : "");
-    }
-    if (name == "pose") {
-      const char* relativeTo = element->Attribute("relative_to");
-      if (relativeTo && !std::string_view(relativeTo).empty())
-        return std::string("<pose relative_to=\"") + relativeTo + "\">";
-    }
-    if (name == "include") {
-      const auto* uri = element->FirstChildElement("uri");
-      const char* text = uri ? uri->GetText() : nullptr;
-      return std::string("<include> ") + (text ? text : "");
-    }
-    if (inModel && name == "model") {
-      const char* modelName = element->Attribute("name");
-      return std::string("nested <model> ") + (modelName ? modelName : "");
-    }
-    if (inWorld && name == "joint") {
-      const char* jointName = element->Attribute("name");
-      return std::string("world <joint> ") + (jointName ? jointName : "");
-    }
-    if (auto found = findSdfSkippedModel(*element))
-      return found;
+  const std::string path(elementPath);
+  const std::string_view name = element.Name();
+  if (!supportsGazeboSdfChild(parent, name))
+    return path + " is outside the supported physics subset";
+
+  // These subtrees create no physics entities or forces in the dartsim
+  // builder. DART may load visuals, but they have no collision aspect.
+  if (isOneOf(name, {"light", "scene", "gui", "visual", "sensor"}))
+    return findUnsupportedIgnoredGazeboSdf(element, path);
+
+  for (const auto* attribute = element.FirstAttribute(); attribute;
+       attribute = attribute->Next()) {
+    const std::string_view key = attribute->Name();
+    const std::string_view value = attribute->Value();
+    bool supported = false;
+    if (key == "name")
+      supported = isOneOf(
+                      name,
+                      {"world",
+                       "physics",
+                       "model",
+                       "link",
+                       "collision",
+                       "joint",
+                       "plugin"})
+                  && !value.empty();
+    else if (name == "sdf" && key == "version")
+      supported = isOneOf(value, {"1.4", "1.5", "1.6"});
+    else if (name == "pose") {
+      supported = (isOneOf(key, {"relative_to", "frame"}) && value.empty())
+                  || (key == "degrees" && isOneOf(value, {"false", "0"}))
+                  || (key == "rotation_format" && value == "euler_rpy");
+    } else if (name == "xyz" && key == "expressed_in")
+      supported = value.empty();
+    else if (
+        name == "model" && isOneOf(key, {"canonical_link", "placement_frame"}))
+      supported = value.empty();
+    else if (name == "inertial" && key == "auto")
+      supported = isOneOf(value, {"false", "0"});
+    else if (name == "physics") {
+      supported
+          = (key == "type"
+             && isOneOf(value, {"ignored", "ode", "bullet", "simbody", "dart"}))
+            || (key == "default"
+                && isOneOf(value, {"true", "false", "1", "0"}));
+    } else if (name == "joint" && key == "type")
+      supported = isOneOf(
+          value, {"fixed", "revolute", "prismatic", "universal", "ball"});
+    else if (name == "plugin" && key == "filename")
+      supported = true; // The filename/name pair is checked below.
+    if (!supported)
+      return path + "/@" + std::string(key) + "=\"" + std::string(value)
+             + "\" is outside the supported physics subset";
   }
+
+  if (name == "sdf" && !element.Attribute("version"))
+    return path + "/@version is required";
+  if (name == "plugin") {
+    const char* filename = element.Attribute("filename");
+    const char* pluginName = element.Attribute("name");
+    bool supported = false;
+    // Accept only the empty standard systems in the benchmark worlds. Even
+    // Physics configuration can select another engine, detector or solver.
+    for (const auto system :
+         {"physics", "user-commands", "scene-broadcaster"}) {
+      const std::string_view className
+          = std::string_view(system) == "physics"         ? "Physics"
+            : std::string_view(system) == "user-commands" ? "UserCommands"
+                                                          : "SceneBroadcaster";
+      for (const bool legacy : {false, true}) {
+        const std::string library
+            = std::string(legacy ? "ignition-gazebo-" : "gz-sim-") + system
+              + "-system";
+        const std::string plugin
+            = std::string(
+                  legacy ? "ignition::gazebo::systems::" : "gz::sim::systems::")
+              + std::string(className);
+        supported = supported
+                    || (filename && pluginName && filename == library
+                        && pluginName == plugin);
+      }
+    }
+    if (!supported)
+      return path + " filename/name is not a supported standard system";
+  }
+
+  const auto text = element.GetText();
+  const std::string_view value = text ? text : "";
+  if (isOneOf(name, {"self_collide", "kinematic"})) {
+    if (!isOneOf(value, {"false", "0"}))
+      return path + " must be false";
+  } else if (
+      isOneOf(name, {"static", "use_parent_model_frame"})
+      || (parent == "link" && name == "gravity")) {
+    if (!isOneOf(value, {"true", "false", "1", "0"}))
+      return path + " must be a boolean";
+  }
+
+  if (isOneOf(name, {"collide_bitmask", "category_bitmask"})) {
+    // gz-physics Get<int> yields zero above INT_MAX. Retain all default
+    // 0xff bits so its category/collide filter cannot drop any pair.
+    unsigned mask = 0u;
+    std::string_view token = value;
+    const auto first = token.find_first_not_of(" \t\r\n");
+    token = first == std::string_view::npos ? "" : token.substr(first);
+    const auto last = token.find_last_not_of(" \t\r\n");
+    token = last == std::string_view::npos ? "" : token.substr(0, last + 1);
+    int base = 10;
+    if (token.size() > 2 && token[0] == '0'
+        && (token[1] == 'x' || token[1] == 'X')) {
+      base = 16;
+      token.remove_prefix(2);
+    }
+    const auto parsed = std::from_chars(
+        token.data(), token.data() + token.size(), mask, base);
+    if (parsed.ec != std::errc() || parsed.ptr != token.data() + token.size()
+        || (mask & 0xffu) != 0xffu
+        || mask > static_cast<unsigned>(std::numeric_limits<int>::max()))
+      return path + " " + std::string(value) + " can filter collision pairs";
+  }
+
+  if (name == "pose" || (parent == "world" && name == "gravity")
+      || name == "fdir1" || name == "xyz" || name == "normal" || name == "size"
+      || name == "scale") {
+    const std::size_t count = name == "pose"                        ? 6u
+                              : name == "size" && parent == "plane" ? 2u
+                                                                    : 3u;
+    std::vector<double> values(count);
+    std::istringstream stream{std::string(value)};
+    for (auto& component : values) {
+      if (!(stream >> component) || !std::isfinite(component))
+        return path + " must contain " + std::to_string(count)
+               + " finite numbers";
+    }
+    if (!(stream >> std::ws).eof())
+      return path + " has extra components";
+    if (parent == "inertial" && name == "pose"
+        && (values[3] != 0.0 || values[4] != 0.0 || values[5] != 0.0))
+      return path + " rotation is ignored by DART's SDF parser";
+    if (name == "fdir1"
+        && (values[0] != 0.0 || values[1] != 0.0 || values[2] != 0.0))
+      return path + " must be the default 0 0 0";
+    if (parent == "world" && name == "gravity"
+        && (values[0] != 0.0 || values[1] != 0.0
+            || values[2] != kGazeboDefaultGravity))
+      return path + " must equal the Gazebo default 0 0 -9.8; DART's SDF parser ignores world gravity";
+    if (name == "size"
+        && std::any_of(values.begin(), values.end(), [](double size) {
+             return size <= 0.0;
+           }))
+      return path + " must be positive";
+    if (name == "normal" || name == "xyz") {
+      const double squaredNorm = values[0] * values[0] + values[1] * values[1]
+                                 + values[2] * values[2];
+      if (!std::isfinite(squaredNorm) || squaredNorm == 0.0
+          || (name == "xyz" && squaredNorm <= 1e-12))
+        return path + " must be a finite nonzero vector";
+      if (name == "xyz") {
+        const auto* joint = element.Parent()->Parent()->ToElement();
+        // Revolute/Prismatic normalize in DART; Universal does not, whereas
+        // sdformat resolves a unit vector for the gz-physics builder.
+        if (joint->Attribute("type", "universal")
+            && std::abs(squaredNorm - 1.0) > 1e-12)
+          return path + " must be a unit axis for a universal joint";
+      }
+    }
+  }
+
+  if (isOneOf(
+          name,
+          {"mass",
+           "radius",
+           "length",
+           "max_step_size",
+           "real_time_factor",
+           "real_time_update_rate",
+           "ixx",
+           "iyy",
+           "izz",
+           "ixy",
+           "ixz",
+           "iyz",
+           "damping",
+           "spring_reference",
+           "spring_stiffness",
+           "lower",
+           "upper",
+           "effort",
+           "velocity",
+           "mu",
+           "mu2",
+           "slip1",
+           "slip2",
+           "restitution_coefficient"})
+      || (parent == "dynamics" && name == "friction")) {
+    double number = 0.0;
+    std::istringstream stream{std::string(value)};
+    if (!(stream >> number) || !std::isfinite(number)
+        || !(stream >> std::ws).eof())
+      return path + " must contain one finite number";
+    if (isOneOf(name, {"mass", "radius", "length", "max_step_size"})
+        && number <= 0.0)
+      return path + " must be positive";
+    if (name == "mass") {
+      if (number < 1e-9)
+        return path + " would be clamped by DART's SDF parser";
+      if (!element.Parent()->FirstChildElement("inertia") && number != 1.0)
+        return path + " without inertia differs from sdformat's unit inertia";
+    }
+    if ((name == "lower" && number > 0.0) || (name == "upper" && number < 0.0))
+      return path + " excludes zero; DART changes the initial joint position";
+    if (isOneOf(name, {"effort", "velocity"}) && number >= 0.0)
+      return path + " limit is ignored by DART's SDF parser";
+    if ((isOneOf(name, {"mu", "mu2"}) && number != 1.0)
+        || (isOneOf(name, {"slip1", "slip2", "restitution_coefficient"})
+            && number != 0.0))
+      return path + " must retain the default contact material; DART's SDF parser ignores surface overrides";
+  }
+  if (name == "max_contacts") {
+    int contacts = 0;
+    std::istringstream stream{std::string(value)};
+    if (!(stream >> contacts) || !(stream >> std::ws).eof() || contacts < 0)
+      return path + " must be a nonnegative int";
+  }
+
+  if (parent == "joint" && isOneOf(name, {"axis", "axis2"})) {
+    const auto* joint = element.Parent()->ToElement();
+    const std::string_view type
+        = joint->Attribute("type") ? joint->Attribute("type") : "";
+    if (!isOneOf(type, {"revolute", "prismatic", "universal"})
+        || (name == "axis2" && type != "universal"))
+      return path + " is unsupported for joint type " + std::string(type);
+    const auto* sdf = element.GetDocument()->FirstChildElement("sdf");
+    if (sdf && sdf->Attribute("version", "1.4"))
+      return path + " uses SDF 1.4's implicit model-frame axis, which DART's SDF parser does not convert";
+  }
+  if (parent == "joint" && isOneOf(name, {"parent", "child"})) {
+    const auto* model = element.Parent()->Parent();
+    bool found = name == "parent" && value == "world";
+    for (const auto* link = model->FirstChildElement("link"); link;
+         link = link->NextSiblingElement("link")) {
+      const char* linkName = link->Attribute("name");
+      found = found || (linkName && value == linkName);
+    }
+    if (!found)
+      return path + " must reference a link in this model (or world as parent)";
+  }
+
+  // Require fields whose absence either asserts in SdfParser or uses a
+  // different default. This is deliberately not a complete SDF schema.
+  const auto require = [&](const char* child) -> std::optional<std::string> {
+    if (!element.FirstChildElement(child))
+      return path + "/" + std::string(child) + " is required";
+    return std::nullopt;
+  };
+  if (isOneOf(name, {"world", "model", "link", "collision", "joint"})
+      && !element.Attribute("name"))
+    return path + "/@name is required";
+  if (name == "joint") {
+    if (!element.Attribute("type"))
+      return path + "/@type is required";
+    for (const auto child : {"parent", "child"}) {
+      if (auto unsupported = require(child))
+        return unsupported;
+    }
+    const std::string_view type = element.Attribute("type");
+    if (isOneOf(type, {"revolute", "prismatic", "universal"})) {
+      if (auto unsupported = require("axis"))
+        return unsupported;
+    }
+    if (type == "universal") {
+      if (auto unsupported = require("axis2"))
+        return unsupported;
+    }
+  }
+  if (name == "inertia") {
+    for (const auto child : {"ixx", "iyy", "izz", "ixy", "ixz", "iyz"}) {
+      if (auto unsupported = require(child))
+        return unsupported;
+    }
+  }
+  if (name == "sdf" || name == "collision" || name == "box" || name == "sphere"
+      || name == "cylinder" || name == "axis" || name == "axis2") {
+    const char* child = name == "sdf"                           ? "world"
+                        : name == "collision"                   ? "geometry"
+                        : name == "box"                         ? "size"
+                        : isOneOf(name, {"sphere", "cylinder"}) ? "radius"
+                                                                : "xyz";
+    if (auto unsupported = require(child))
+      return unsupported;
+    if (name == "cylinder") {
+      if (auto unsupported = require("length"))
+        return unsupported;
+    }
+  }
+  if (name == "geometry" && !element.FirstChildElement())
+    return path + " requires a supported primitive";
+
+  std::unordered_map<std::string_view, std::unordered_set<std::string_view>>
+      childNames;
+  for (const auto* child = element.FirstChildElement(); child;
+       child = child->NextSiblingElement()) {
+    const std::string childPath = path + "/" + child->Name();
+    // Only one world/geometry/field is built. Repeated profiles and named
+    // entities are the exceptions (both loaders use the first physics).
+    if (!isOneOf(
+            child->Name(),
+            {"physics",
+             "model",
+             "link",
+             "joint",
+             "collision",
+             "visual",
+             "sensor",
+             "light",
+             "plugin"})
+        && element.FirstChildElement(child->Name()) != child)
+      return childPath + " is repeated";
+    if (name == "geometry" && child != element.FirstChildElement())
+      return childPath + " is an extra geometry";
+    if (const char* childName = child->Attribute("name")) {
+      if (!childNames[child->Name()].insert(childName).second)
+        return childPath + "/@name=\"" + childName + "\" is repeated";
+    }
+    if (auto unsupported
+        = findUnsupportedGazeboSdfElement(*child, name, childPath))
+      return unsupported;
+  }
+  if (name == "model") {
+    // Both builders require a tree. DART otherwise follows an unbuilt
+    // parent forever, while gz-physics rejects the closing joint.
+    std::unordered_map<std::string_view, std::string_view> parents;
+    for (const auto* joint = element.FirstChildElement("joint"); joint;
+         joint = joint->NextSiblingElement("joint")) {
+      const std::string_view child
+          = joint->FirstChildElement("child")->GetText();
+      const std::string_view parentName
+          = joint->FirstChildElement("parent")->GetText();
+      if (!parents.emplace(child, parentName).second)
+        return path + "/joint/child " + std::string(child)
+               + " has multiple parent joints";
+    }
+    for (const auto& [child, parentName] : parents) {
+      std::string_view ancestor = parentName;
+      for (std::size_t depth = 0; depth <= parents.size(); ++depth) {
+        if (ancestor == child)
+          return path + "/joint/child " + std::string(child)
+                 + " closes a joint chain";
+        const auto next = parents.find(ancestor);
+        if (next == parents.end())
+          break;
+        ancestor = next->second;
+      }
+    }
+  }
+  return std::nullopt;
+}
+
+} // namespace detail
+
+/// Returns the first element path or attribute outside the physics subset
+/// built equivalently by DART's SdfParser and released gz-physics dartsim.
+/// Rendering and passive sensor subtrees are ignored; everything else must
+/// have an explicitly supported parent, attributes and value.
+inline std::optional<std::string> findUnsupportedGazeboPresetSdf(
+    const tinyxml2::XMLDocument& document)
+{
+  if (document.Error())
+    return std::string("XML: ") + document.ErrorStr();
+  const auto* root = document.FirstChildElement();
+  if (!root)
+    return "missing /sdf";
+  if (auto unsupported = detail::findUnsupportedGazeboSdfElement(
+          *root, "", std::string("/") + root->Name()))
+    return unsupported;
+  if (root->NextSiblingElement())
+    return std::string("/") + root->NextSiblingElement()->Name()
+           + " is an extra document root";
   return std::nullopt;
 }
 

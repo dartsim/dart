@@ -331,18 +331,25 @@ void printUsage(const std::string& programName)
          "starved pairs, sunk bodies,\n"
       << "                            and changed poses (their cost is "
          "excluded from the times).\n"
-      << "                            Rejects worlds with an SDF collide or "
-         "category bitmask that\n"
-      << "                            lacks a bit of 0xff or exceeds "
-         "0x7fffffff: it does not model\n"
-      << "                            gz-physics' bitmask filter.\n"
-      << "                            Rejects worlds with an <include> or a "
-         "nested <model>, or\n"
-      << "                            a world-level <joint>, which DART's SDF "
-         "parser skips.\n"
-      << "                            Rejects <frame> elements and non-empty "
-         "pose relative_to\n"
-      << "                            attributes, which its parser ignores.\n"
+      << "                            Accepts only the shared SDF physics "
+         "subset: flat models,\n"
+      << "                            plain poses, mass/inertia (unrotated), "
+         "box/sphere/cylinder/plane\n"
+      << "                            collisions and fixed/revolute/prismatic/"
+         "universal/ball joints.\n"
+      << "                            Physics supports step size and "
+         "max_contacts; "
+         "gravity defaults to -9.8.\n"
+      << "                            Rendering and passive sensors are "
+         "ignored; "
+         "only empty standard\n"
+      << "                            Physics/UserCommands/SceneBroadcaster "
+         "systems "
+         "are accepted.\n"
+      << "                            Other elements, attributes and dynamics "
+         "overrides are rejected\n"
+      << "                            with the first unsupported XML path. See "
+         "tools/gazebo/README.md.\n"
       << "  --gz-pair-max-contacts N  gz-sim per-pair contact limit for "
          "--gz-preset (SDF\n"
       << "                            <max_contacts>); defaults to the active "
@@ -1728,6 +1735,8 @@ void applyOptions(
   }
 
   if (options.gzPreset) {
+    world->setGravity(
+        Eigen::Vector3d(0.0, 0.0, contact_scene::kGazeboDefaultGravity));
     world->getConstraintSolver()->getCollisionOption().collisionFilter
         = std::make_shared<contact_scene::GazeboContactFilter>();
   }
@@ -2741,10 +2750,14 @@ int runHeadless(
     const Options& options,
     const std::optional<double>& groundTop)
 {
+  contact_scene::ChangedPoseTracker changedPoseTracker;
   if (options.warmup > 0) {
     std::cout << "\nWarming up " << options.warmup << " steps...\n";
-    for (std::size_t step = 0; step < options.warmup; ++step)
+    for (std::size_t step = 0; step < options.warmup; ++step) {
       world->step();
+      if (options.gzPreset)
+        changedPoseTracker.update(*world);
+    }
   }
 
   std::cout << "\nSimulating " << options.steps << " steps...\n";
@@ -2761,10 +2774,7 @@ int runHeadless(
   using Clock = std::chrono::steady_clock;
   Clock::duration gazeboDiagnosticsTime{};
   contact_scene::GazeboContactDemand gazeboDemand;
-  contact_scene::ChangedPoseTracker changedPoseTracker;
   std::size_t changedPoses = 0;
-  if (options.gzPreset)
-    changedPoseTracker.update(*world);
   const auto startTime = Clock::now();
 
   {
@@ -2964,19 +2974,12 @@ int main(int argc, char* argv[])
     if (options.gzPreset) {
       tinyxml2::XMLDocument sdf;
       sdf.LoadFile(absoluteSdfPath.c_str());
-      if (const auto skipped = contact_scene::findSdfSkippedModel(sdf)) {
-        std::cerr
-            << "--gz-preset does not support " << absoluteSdfPath
-            << ": DART's SDF parser skips or ignores its " << *skipped
-            << ", so entities or geometry poses could differ from Gazebo\n";
-        return 1;
-      }
-      if (const auto mask = contact_scene::findGazeboFilteringBitmask(sdf)) {
-        std::cerr << "--gz-preset does not model gz-physics' collision "
-                     "bitmask filter, which "
-                  << absoluteSdfPath << " uses (" << *mask
-                  << "); only masks up to 0x7fffffff with all the bits of 0xff "
-                     "are supported\n";
+      if (const auto unsupported
+          = contact_scene::findUnsupportedGazeboPresetSdf(sdf)) {
+        std::cerr << "--gz-preset does not support " << absoluteSdfPath << ": "
+                  << *unsupported
+                  << ", so physics entities, geometry poses or contact "
+                     "behavior could differ from Gazebo\n";
         return 1;
       }
       if (!options.gzCollisionPairMaxContacts.has_value()) {

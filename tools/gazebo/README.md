@@ -276,21 +276,31 @@ gz-sim.
 rows: it loads an SDF world with the collision setup gz-physics builds (see
 `examples/contact_benchmark/GazeboPreset.hpp`) and reports contact demand
 against the cap, starved pairs, sunk bodies and changed poses, keeping that
-census out of its step times. DART's SDF parser does not read
-`<collide_bitmask>` or `<category_bitmask>`, so the preset cannot apply
-gz-physics' bitmask filter, which drops a pair when neither collision's
-category mask shares a bit with the other's collide mask (default `0xff`).
-It rejects a world with a mask that lacks a bit of `0xff`, or that sdformat
-stores as more than `0x7fffffff` (such as `0xffffffff` or `-1`), which
-gz-physics reads as 0; without one, the filter drops nothing. It also rejects
-a world with an `<include>` (in the world or in a model) or a model nested in
-a model, or a world-level `<joint>` connecting models: DART's SDF parser
-skips these, so those entities would be missing. It rejects `<frame>`
-elements and poses with a non-empty `relative_to` attribute: DART reads only
-the numeric pose, ignoring SDF frame semantics. An omitted or empty
-`relative_to` is accepted. gz-sim's `3k_shapes.sdf`
-and the generated worlds contain none of these unsupported elements or
-attributes.
+census out of its step times. Its SDF allowlist accepts one world (SDF
+1.4–1.6), physics step size and `max_contacts`, scheduling-only real-time
+settings, and flat models with names, static flags, plain six-number poses,
+links, and fixed/revolute/prismatic/universal/ball joints. Links support
+gravity flags, mass and a complete inertia tensor, inertial translation,
+and box/sphere/cylinder/plane collisions; the preset uses Gazebo's default
+world gravity `0 0 -9.8` and accepts only that explicit world gravity.
+Joint axes support XYZ, damping, friction, springs, and position limits
+containing zero, with explicit model-frame axes supported in SDF 1.5–1.6;
+SDF 1.4 axis joints, closed joint chains, finite effort/velocity limits,
+screw/revolute2 joints, and non-default frame or pose attributes are
+rejected. Surface values must
+retain the default material (`mu`/`mu2` 1, slip and restitution 0, zero
+`fdir1` without a frame); collision masks must contain all `0xff` bits and
+not exceed `0x7fffffff`. Light, scene, GUI, visual and passive sensor
+contents may be ignored, but their embedded plugins are rejected; visual
+geometry and poses must still be safely readable by DART. Only empty
+standard world-level Physics, UserCommands and SceneBroadcaster
+systems are accepted. Everything else, including includes, nested models,
+world joints, frames, self-collision, rotated inertia, meshes, capsules,
+ellipsoids, heightmaps and engine-specific physics overrides, is rejected
+with the first unsupported XML path. Capsules and ellipsoids are absent
+from DART's rigid SDF shape reader; screw pitch and revolute2 construction
+differ from gz-physics. gz-sim's `3k_shapes.sdf` and all generated benchmark
+worlds fit this subset.
 
 The preset's per-pair contact limit comes from the active SDF physics
 profile's `<max_contacts>` (20 when omitted). Released gz-sim selects the
