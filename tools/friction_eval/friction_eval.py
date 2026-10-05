@@ -18,6 +18,7 @@ import io
 import math
 import os
 import re
+import shutil
 import statistics
 import subprocess
 import sys
@@ -139,10 +140,23 @@ def command(binary, scene, params, config, detector, flags):
     return cmd + (["--param", params] if params else [])
 
 
+def check_output(out, flags):
+    """Why a cell's CSV is unusable, or "": rows missing or a non-finite state."""
+    metrics = {r["metric"]: r["value"] for r in csv.DictReader(io.StringIO(out))}
+    if "--bisect" in flags:
+        required = ("at_lo", "at_hi")
+        if metrics.get("at_lo") != metrics.get("at_hi"):
+            required += ("threshold",)
+    else:
+        required = ("steps", "state_hash")
+    missing = [m for m in ("finite",) + required if m not in metrics]
+    if missing:
+        return f"missing rows {missing}"
+    return "" if metrics["finite"] == "1" else "non-finite state (finite = 0)"
+
+
 def run_cell(binaries, cell, out_dir):
     scene, params, config, detector, flags = cell
-    if "--pending" in flags:
-        return "", f"pending {flags[flags.index('--pending') + 1]}: {cell}\n"
     cmd = command(binaries[CONFIGS[config][0]], scene, params, config, detector, flags)
     prefix = []
     ir_file = None
@@ -156,8 +170,14 @@ def run_cell(binaries, cell, out_dir):
             "--toggle-collect=dart::simulation::World::step(bool)",
             f"--callgrind-out-file={ir_file}",
         ]
-    proc = subprocess.run(prefix + cmd, capture_output=True, text=True)
+    try:
+        proc = subprocess.run(prefix + cmd, capture_output=True, text=True)
+    except OSError as e:  # e.g. a missing binary: a failed cell, not a crash
+        return "", f"{e}: {' '.join(cmd)}\n"
     out = proc.stdout
+    problem = (
+        f"exit {proc.returncode}" if proc.returncode != 0 else check_output(out, flags)
+    )
     if ir_file:
         # Keep only the instruction count; the --perf cell has the other rows.
         with open(ir_file) as f:
@@ -169,15 +189,29 @@ def run_cell(binaries, cell, out_dir):
         steps = next((float(r[-1]) for r in rows if r[-2] == "steps"), 0.0)
         out = (
             ",".join(rows[0][:-2] + ["ir_per_step", f"{total / steps:.6g}"]) + "\n"
-            if rows and steps
+            if rows and steps and total
             else ""
         )
-    err = (
-        ""
-        if proc.returncode == 0
-        else f"exit {proc.returncode}: {' '.join(cmd)}\n{proc.stderr}"
-    )
+        problem = problem or ("" if out else "no Callgrind instruction count")
+    err = f"{problem}: {' '.join(cmd)}\n{proc.stderr}" if problem else ""
     return out, err
+
+
+def plan(cells, have_valgrind):
+    """Split cells into a parallel phase, a serial phase for the wall-clock
+    (--perf without --ir) cells, and skipped cells with their reasons."""
+    parallel, serial, skipped = [], [], []
+    for cell in cells:
+        flags = cell[4]
+        if "--pending" in flags:
+            skipped.append((f"pending {flags[flags.index('--pending') + 1]}", cell))
+        elif "--ir" in flags and not have_valgrind:
+            skipped.append(("valgrind not found", cell))
+        elif "--perf" in flags and "--ir" not in flags:
+            serial.append(cell)
+        else:
+            parallel.append(cell)
+    return parallel, serial, skipped
 
 
 COLUMNS_LINE = ",".join(COLUMNS) + "\n"
@@ -191,28 +225,41 @@ def cmd_run(args):
     # Heavy cells first so the pool stays busy.
     heavy = ("R2", "R6", "C4", "R5", "R1", "P1")
     cells.sort(key=lambda c: heavy.index(c[0]) if c[0] in heavy else len(heavy))
+    parallel, serial, skipped = plan(cells, shutil.which("valgrind") is not None)
+    with open(os.path.join(args.out, "skipped.txt"), "w") as f:
+        f.writelines(f"{reason}: {cell}\n" for reason, cell in skipped)
     errors = []
+    done = 0
+    total = len(parallel) + len(serial)
     # Rows are written as cells finish, so an interrupted run keeps its data.
     with open(os.path.join(args.out, "cells.csv"), "w") as f:
         f.write(COLUMNS_LINE)
+
+        def record(result):
+            nonlocal done
+            out, err = result
+            f.writelines(
+                line + "\n"
+                for line in out.splitlines()
+                if not line.startswith("label,")
+            )
+            f.flush()
+            if err:
+                errors.append(err)
+            done += 1
+            print(f"{done}/{total}", file=sys.stderr, flush=True)
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-            futures = [pool.submit(run_cell, binaries, c, args.out) for c in cells]
-            for i, future in enumerate(concurrent.futures.as_completed(futures), 1):
-                out, err = future.result()
-                f.writelines(
-                    line + "\n"
-                    for line in out.splitlines()
-                    if not line.startswith("label,")
-                )
-                f.flush()
-                if err:
-                    errors.append(err)
-                print(f"{i}/{len(cells)}", file=sys.stderr, flush=True)
+            futures = [pool.submit(run_cell, binaries, c, args.out) for c in parallel]
+            for future in concurrent.futures.as_completed(futures):
+                record(future.result())
+        # Wall-clock cells run alone, after the CPU-heavy parallel phase.
+        for cell in serial:
+            record(run_cell(binaries, cell, args.out))
     with open(os.path.join(args.out, "errors.txt"), "w") as f:
         f.writelines(errors)
-    failed = sum(not e.startswith("pending") for e in errors)
-    print(f"{len(cells)} cells, {failed} failed")
-    return 1 if failed else 0
+    print(f"{total} cells run, {len(errors)} failed, {len(skipped)} skipped")
+    return 1 if errors else 0
 
 
 #
@@ -253,7 +300,9 @@ def class_score(base_ok, cand_ok):
 def fmt(v):
     if isinstance(v, str):
         return v
-    if v is None or (isinstance(v, float) and math.isnan(v)):
+    if v is None:
+        return "-"
+    if isinstance(v, float) and math.isnan(v):
         return "nan"
     return f"{v:.4g}"
 
@@ -343,15 +392,20 @@ KEY_METRICS = {
     "R5": ("standing_1s", "moved"),
     "R6": ("collapsed", "max_disp"),
     "R9": ("yaw_rate", "speed"),
-    "P1": ("resting", "contacts_max"),
+    "P1": ("resting", "contacts_max", "ir_per_step", "wall_ms_per_step"),
 }
+# Wall time on a shared host only indicates; instruction counts gate.
+INDICATIVE = {"wall_ms_per_step"}
 
 
 def differs(a, b, rel=1e-6):
-    if isinstance(a, str) or isinstance(b, str):
+    """True unless both values are present and equal to rel. Undefined
+    metrics are omitted from the CSV, so a NaN is a failed measurement and
+    never equal to anything, NaN included."""
+    if a is None or b is None or isinstance(a, str) or isinstance(b, str):
         return a != b
-    if not (math.isfinite(a) and math.isfinite(b)):
-        return not (a == b or (math.isnan(a) and math.isnan(b)))
+    if math.isnan(a) or math.isnan(b) or math.isinf(a) or math.isinf(b):
+        return not (a == b and math.isinf(a))
     return abs(a - b) > rel * max(1.0, abs(a), abs(b))
 
 
@@ -361,7 +415,10 @@ def compare(
     scenes=None,
     metrics_extra=("nat_res_max", "box_viol_max", "fallbacks"),
 ):
-    """Rows of config vs B620 for every cell both have."""
+    """Rows of config vs B620 for every cell both have; a metric that only
+    one side reports shows "-" on the other and counts as a difference.
+    Params name split and deactivation when on, so P1's count cells
+    (deactivation on) and timing cells read apart."""
     rows = []
     for key in sorted(data, key=lambda k: (k[1], k[2], k[3], k[4])):
         if key[0] != config or (scenes and key[1] not in scenes):
@@ -370,19 +427,17 @@ def compare(
         if not base:
             continue
         m = data[key]
+        params = key[2] + "".join(
+            f";{name}=on"
+            for name, v in zip(("split", "deactivation"), key[5:])
+            if v == "on"
+        )
         for metric in KEY_METRICS.get(key[1], ()) + metrics_extra:
-            if metric in m and metric in base:
+            if metric in m or metric in base:
+                label = metric + (" (indicative)" if metric in INDICATIVE else "")
+                a, b = base.get(metric), m.get(metric)
                 rows.append(
-                    (
-                        key[1],
-                        key[2],
-                        key[3],
-                        key[4],
-                        metric,
-                        base[metric],
-                        m[metric],
-                        differs(base[metric], m[metric]),
-                    )
+                    (key[1], params, key[3], key[4], label, a, b, differs(a, b))
                 )
     return rows
 
@@ -401,6 +456,7 @@ def report(data, out):
     w("# E1 tables\n\nGenerated by `tools/friction_eval/friction_eval.py report`.\n\n")
     keys = [k for k in data if k[0] == "B619"]
     drift = compare(data, "B619")
+    # Indicative rows carry a suffixed label, so wall time never counts here.
     changed = sorted(
         {r[:4] for r in drift if r[7] and r[4] in KEY_METRICS.get(r[0], ())}
     )
@@ -505,6 +561,15 @@ def cmd_report(args):
     path = os.path.join(args.dir, "cells.csv")
     if os.path.exists(path):
         report(load(path), sys.stdout)
+    for name, title in (
+        ("skipped.txt", "Skipped cells"),
+        ("errors.txt", "Failed cells"),
+    ):
+        path = os.path.join(args.dir, name)
+        lines = open(path).read().splitlines() if os.path.exists(path) else []
+        if lines:
+            sys.stdout.write(f"\n## {title}\n\n")
+            sys.stdout.writelines(f"- {line}\n" for line in lines if line)
     for name in sorted(os.listdir(args.dir)):
         if name.startswith("l1") and name.endswith(".csv"):
             sys.stdout.write(f"\n## L1 bank: {name}\n\n")
@@ -525,7 +590,33 @@ def self_test(binary=None):
     assert class_score(True, False) == -1.0 and class_score(False, True) == 1.0
     assert grid(a=(1, 2), b=(3,)) == ["a=1,b=3", "a=2,b=3"]
     nan = float("nan")
-    assert differs(1.0, nan) and differs(1.0, math.inf) and not differs(nan, nan)
+    assert differs(1.0, nan) and differs(1.0, math.inf) and differs(nan, nan)
+    assert differs(None, 1.0) and not differs(2.0, 2.0)
+    # Cell outputs: a non-finite state or missing rows fail the cell.
+    row = "B620,6.20-line,A5,mu=0,dantzig,ode,0.001,off,off,{},{}\n"
+    ok = COLUMNS_LINE + "".join(
+        row.format(m, v)
+        for m, v in (("finite", 1), ("steps", 5), ("state_hash", "0x1"))
+    )
+    assert check_output(ok, ()) == ""
+    assert "non-finite" in check_output(ok.replace("finite,1", "finite,0"), ())
+    assert "missing" in check_output(COLUMNS_LINE + row.format("steps", 5), ())
+    bisect = COLUMNS_LINE + "".join(
+        row.format(m, v) for m, v in (("finite", 1), ("at_lo", 0), ("at_hi", 1))
+    )
+    assert "threshold" in check_output(bisect, ("--bisect",))
+    assert check_output(bisect.replace("at_hi,1", "at_hi,0"), ("--bisect",)) == ""
+    # Scheduling: timing cells run serially; --ir needs Valgrind.
+    cells = [
+        ("P1", "n=90", "B620", "ode", ("--perf",)),
+        ("P1", "n=90", "B620", "ode", ("--perf", "--ir")),
+        ("R1", "n=5", "B620", "ode", ("--split", "on", "--pending", "PR-0")),
+        ("A5", "mu=0", "B620", "ode", ()),
+    ]
+    parallel, serial, skipped = plan(cells, have_valgrind=False)
+    assert parallel == cells[3:] and serial == cells[:1]
+    assert [r for r, _ in skipped] == ["valgrind not found", "pending PR-0"]
+    assert plan(cells, have_valgrind=True)[0] == [cells[1], cells[3]]
     errs = accuracy_errors("A5", {"dist_ratio": 0.707, "lateral": 0.0})
     assert errs[0][0] == "dist_ratio" and abs(errs[0][1] - 0.293) < 1e-12
     assert accuracy_errors(
@@ -559,6 +650,13 @@ def self_test(binary=None):
         assert (
             "| A5 | phi=45 | ode | 0.001 | dist_ratio | 0.7064 | 1 |" in text.getvalue()
         )
+        # A metric only one side reports is a difference shown as "-".
+        data[("VA", "A5", "phi=45", "ode", "0.001", "off", "off")]["creep"] = 0.0
+        rows = [r for r in compare(data, "VA") if r[4] == "creep"]
+        assert rows == [("A5", "phi=45", "ode", "0.001", "creep", None, 0.0, True)]
+        on = {("B620", "P1", "n=90", "ode", "0.001", "off", "on"): {"resting": 90.0}}
+        on[("DZ+R",) + next(iter(on))[1:]] = {"resting": 0.0}
+        assert compare(on, "DZ+R")[0][1] == "n=90;deactivation=on"
     assert len(e1_cells()) > 1000
     if binary:
         proc = subprocess.run([binary, "--self-test"], capture_output=True, text=True)

@@ -52,7 +52,11 @@ Options: `--solver dantzig|pgs|pgs100|pgs-tight|dzr|mf-pgs`,
 `--label`, and `--perf`, which drops the wrapper and the audit for timing.
 `friction_eval --list` prints the scene ids: A1-A13 analytic, C1-C5 coupled
 thresholds, R1-R9 robustness and P1 (contact_benchmark's generated objects).
-One process runs one cell, because ERP, CFM and ERV are process-wide.
+One process runs one cell, because ERP, CFM and ERV are process-wide. The
+runner fails a cell that exits nonzero, reports a non-finite state, or lacks
+its result rows. It runs the wall-clock cells (`--perf` without `--ir`)
+alone after the parallel phase, and skips the Callgrind cells (`--ir`) when
+Valgrind is not installed. `report` lists skipped and failed cells.
 
 ## Output
 
@@ -71,7 +75,9 @@ Each cell prints `label,dart,scene,params,solver,detector,dt,split,deactivation,
   `state_hash`.
 
 A metric that is undefined for a run (an onset that never happened, a ratio
-without samples) is omitted, so a NaN marks a failed measurement.
+without samples) is omitted, so a NaN marks a failed measurement. `report`
+never treats a NaN as equal, and counts a metric that only one side reports
+as a difference.
 
 PGS-tight and DZ+R stop on the box-law residual (at most 1e-6 m/s, 10-sweep
 chunks, 1000-sweep cap); PGS's own relative-change test stops early on stacks
