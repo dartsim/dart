@@ -20,7 +20,8 @@
 // usage: gz_raycast_probe <dartsim-plugin.so> [--detector ode|bullet]
 //            [--tolerance X]
 //
-// Exit status: 0 when every ray matches, 1 on any mismatch.
+// Exit status: 0 when every ray matches, 1 on any mismatch or when the plugin
+// does not switch to the requested detector.
 
 #include <gz/physics/ForwardStep.hh>
 #include <gz/physics/GetBatchRayIntersection.hh>
@@ -233,12 +234,19 @@ Result toResult(const RayIntersection& intersection)
       intersection.fraction};
 }
 
+// maxCoeff and std::max skip a NaN, so a hit with a non-finite point or normal
+// would match.
+bool isFinite(const Result& result)
+{
+  return result.point.allFinite() && result.normal.allFinite();
+}
+
 // Largest error of `result` against the exact intersection of `ray`.
 double error(const Ray& ray, const Result& result)
 {
   if (!ray.point)
     return result.hit ? INFINITY : 0.0;
-  if (!result.hit)
+  if (!result.hit || !isFinite(result))
     return INFINITY;
   const double fraction
       = (*ray.point - ray.from).norm() / (ray.to - ray.from).norm();
@@ -254,6 +262,8 @@ double difference(const Result& a, const Result& b)
     return INFINITY;
   if (!a.hit)
     return 0.0;
+  if (!isFinite(a) || !isFinite(b))
+    return INFINITY;
   return std::max(
       {(a.point - b.point).cwiseAbs().maxCoeff(),
        (a.normal - b.normal).cwiseAbs().maxCoeff(),
@@ -290,6 +300,10 @@ int main(int argc, char** argv)
     else
       return usage(argv[0]);
   }
+  // The probe covers the detectors gz-physics 9 casts rays with, ODE and
+  // Bullet; with FCL every ray misses, single and batched alike, and matches.
+  if (detector != "ode" && detector != "bullet")
+    return usage(argv[0]);
 
   gz::plugin::Loader loader;
   std::string pluginName;
@@ -317,6 +331,16 @@ int main(int argc, char** argv)
   }
   const auto world = engine->ConstructWorld(*root.WorldByIndex(0));
   world->SetCollisionDetector(detector);
+  // The plugin keeps its detector when it cannot switch, and the rays would be
+  // judged as if they had gone through the requested one.
+  if (world->GetCollisionDetector() != detector) {
+    std::fprintf(
+        stderr,
+        "the dartsim plugin uses the %s detector, not %s\n",
+        world->GetCollisionDetector().c_str(),
+        detector.c_str());
+    return 1;
+  }
 
   // Rays query the collision group of the last step.
   physics::ForwardStep::Output output;

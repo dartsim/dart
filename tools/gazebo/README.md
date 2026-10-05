@@ -262,7 +262,9 @@ gz-sim.
   what Gazebo's rays hit; the gz-physics suite only casts rays at spheres.
   With `--detector bullet` only batched against single rays is gated:
   Bullet's convex raycasts are approximate (also with DART 6.19.4), so compare
-  those rows with another DART build.
+  those rows with another DART build. `--detector` takes only `ode` (the
+  default) and `bullet`, the detectors gz-physics 9 casts rays with, and the
+  probe stops when the plugin does not switch to the requested one.
 
 `contact_benchmark --gz-preset` is the DART-only counterpart for benchmark
 rows: it loads an SDF world with the collision setup gz-physics builds (see
