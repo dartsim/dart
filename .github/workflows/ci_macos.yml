@@ -82,8 +82,8 @@ jobs:
           pixi run test-all
 
       - name: Install
-        # Nightly only: install rebuilds a separate Release tree; CI Linux
-        # checks installation on every PR.
+        # Nightly only: install rebuilds a separate Release tree; CI
+        # gz-physics installs DART and builds against it on every PR.
         if: inputs.nightly
         run: |
           DART_VERBOSE=ON \
