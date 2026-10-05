@@ -3769,9 +3769,17 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
     except tomllib.TOMLDecodeError:
         tasks = {}  # The pixi.toml checks report unparsable manifests.
     lint = tasks.get("check-lint")
-    if isinstance(lint, dict):
+    if lint is not None:
+        # String/list shorthand tasks have no dependencies at all.
+        depends_on = lint.get("depends-on", []) if isinstance(lint, dict) else []
+        if isinstance(depends_on, (str, dict)):
+            depends_on = [depends_on]
+        dependencies = [
+            entry.get("task") if isinstance(entry, dict) else entry
+            for entry in depends_on
+        ]
         for task in ("check-ai-commands", "check-ai-infra"):
-            if task not in lint.get("depends-on", []):
+            if task not in dependencies:
                 errors.append(
                     f"pixi.toml: `check-lint` must depend on `{task}` "
                     "(CI Linux runs the AI checks through it)"

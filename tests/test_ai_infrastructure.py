@@ -3481,6 +3481,28 @@ def test_ci_wiring_requires_check_lint_to_run_the_semantic_ai_check(tmp_path):
     assert not any("must depend on `check-ai-commands`" in error for error in errors)
 
 
+def test_ci_wiring_rejects_a_shorthand_check_lint_without_the_ai_checks(tmp_path):
+    workflow = tmp_path / ".github" / "workflows" / "ci_ubuntu.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        (ROOT / ".github/workflows/ci_ubuntu.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (tmp_path / "pixi.toml").write_text(
+        '[tasks]\ncheck-lint = "codespell --config .codespellrc"\n',
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_ci_wiring(tmp_path, errors)
+
+    for task in ("check-ai-commands", "check-ai-infra"):
+        assert (
+            f"pixi.toml: `check-lint` must depend on `{task}` "
+            "(CI Linux runs the AI checks through it)"
+        ) in errors
+
+
 @pytest.mark.parametrize(
     "marker",
     (
