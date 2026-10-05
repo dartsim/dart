@@ -7,38 +7,10 @@
 name: CodeQL
 
 on:
-  push:
-    branches:
-      - "release-6.17"
-      - "release-6.16"
-    paths-ignore:
-      - "docs/**"
-      - ".github/workflows/update_lockfiles.yml"
-      - ".readthedocs.yml"
-      - "tutorials/**"
-      - "**/*.md"
-      - "**/*.rst"
-      - "**/*.po"
-      - "**/*.pot"
-  pull_request:
-    branches:
-      - "release-6.17"
-      - "release-6.16"
-    paths-ignore:
-      - "docs/**"
-      - ".github/workflows/update_lockfiles.yml"
-      - ".readthedocs.yml"
-      - "tutorials/**"
-      - "**/*.md"
-      - "**/*.rst"
-      - "**/*.po"
-      - "**/*.pot"
-  # Note: no `schedule:` trigger. GitHub only runs scheduled workflows from the
-  # default branch (main), so a cron here on the release line would never scan
-  # release-6.17/release-6.16 and would give a false sense of weekly coverage.
-  # Scanning runs on every push/PR to the release branches; use workflow_dispatch
-  # for an on-demand scan.
+  # Nightly (nightly.yml) scans release-6.20 every night; dispatch this for an
+  # on-demand scan of another ref.
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   actions: read
@@ -46,7 +18,7 @@ permissions:
   security-events: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:

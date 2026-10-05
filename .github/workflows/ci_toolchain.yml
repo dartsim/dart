@@ -15,18 +15,10 @@
 name: CI Toolchain (Linux)
 
 on:
-  push:
-    # Feature-branch validation happens via pull_request; run on push only for
-    # the release lines so PR branches are not built twice per push.
-    branches:
-      - "release-*"
-  pull_request:
-    branches:
-      - "**"
-  schedule:
-    # Run every Monday at 05:00 UTC (matches the former Alt Linux schedule).
-    - cron: "0 5 * * 1"
+  # Nightly only: nightly.yml calls this every night; dispatch it to check a
+  # branch on demand.
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -37,18 +29,16 @@ concurrency:
   # run-specific group on release refs while keeping PR/topic refs cancellable.
   group: >-
     ${{ startsWith(github.ref, 'refs/heads/release-')
-        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
-        || format('{0}-{1}', github.workflow, github.ref) }}
+        && format('ci-toolchain-{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || format('ci-toolchain-{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: ${{ github.event_name != 'schedule' && !startsWith(github.ref, 'refs/heads/release-') }}
 
 jobs:
   toolchain:
     name: ${{ matrix.name }}
     runs-on: ubuntu-24.04
-    # Advisory: a brand-new compiler release may surface transient breakage, so
-    # this should not block merges (the former Alt Linux job was likewise
-    # continue-on-error).
-    continue-on-error: true
+    # A brand-new compiler can surface breakage; as a nightly-only job it never
+    # blocks merges, and a failure opens a nightly-failure issue instead.
     timeout-minutes: 120
     strategy:
       fail-fast: false
