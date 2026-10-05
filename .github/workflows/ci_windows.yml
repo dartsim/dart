@@ -85,8 +85,10 @@ jobs:
         with:
           path: ${{ env.SCCACHE_DIR }}
           key: sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-${{ hashFiles('pixi.lock') }}-${{ steps.sccache-config.outputs.date }}
+          # A lockfile bump still reuses objects whose headers did not change.
           restore-keys: |
             sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-${{ hashFiles('pixi.lock') }}-
+            sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-
 
       - name: Native Windows hook smoke
         shell: powershell
