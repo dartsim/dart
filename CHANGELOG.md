@@ -2,7 +2,13 @@
 
 ## DART 6
 
-### [DART 6.19.5 (Unreleased)](https://github.com/dartsim/dart/milestone/104)
+### [DART 6.19.5 (2026-10-04)](https://github.com/dartsim/dart/milestone/104?closed=1)
+
+DART 6.19.5 is a focused patch release on the DART 6 LTS line. It backports
+the ODE collision detector's contact-history speedup from the DART 6.20 line,
+so contact-heavy scenes like those Gazebo runs step about 2x faster while
+producing results bit-identical to DART 6.19.4. There is no API or ABI
+change: plugins built against 6.19.4, such as gz-physics, run unchanged.
 
 * Performance
 
