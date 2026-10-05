@@ -48,6 +48,8 @@
 #include <string>
 #include <thread>
 #include <utility>
+
+#include <cstring>
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif
@@ -182,7 +184,321 @@ std::size_t countConcurrentIndependentSolves(bool randomizePgs)
   return solverPtr->getMaxConcurrentSolves();
 }
 
+//==============================================================================
+WorldPtr createCloneContactWorld()
+{
+  auto world = World::create();
+  world->setCollisionDetector(CollisionDetectorType::Dart);
+  DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  auto ground = createBox(
+      Eigen::Vector3d(5.0, 5.0, 0.1), Eigen::Vector3d(0.0, 0.0, -0.05));
+  ground->setMobile(false);
+  world->addSkeleton(ground);
+  auto sphere = createSphere(0.5, Eigen::Vector3d(0.0, 0.0, 0.55));
+  sphere->setVelocity(3, 0.2);
+  world->addSkeleton(sphere);
+  return world;
+}
+
+//==============================================================================
+void expectCloneContactStepsIdentical(
+    const WorldPtr& source, const WorldPtr& clone)
+{
+  bool hadContacts = false;
+  for (int step = 0; step < 200; ++step) {
+    SCOPED_TRACE(step);
+    source->step();
+    clone->step();
+    ASSERT_EQ(source->getNumSkeletons(), clone->getNumSkeletons());
+    for (std::size_t i = 0; i < source->getNumSkeletons(); ++i) {
+      const auto original = source->getSkeleton(i);
+      const auto copy = clone->getSkeleton(i);
+      const auto expectBitsEqual = [](const Eigen::VectorXd& a,
+                                      const Eigen::VectorXd& b) {
+        ASSERT_EQ(a.size(), b.size());
+        ASSERT_TRUE(a.allFinite());
+        ASSERT_TRUE(b.allFinite());
+        EXPECT_EQ(
+            0, std::memcmp(a.data(), b.data(), a.size() * sizeof(double)));
+      };
+      expectBitsEqual(original->getPositions(), copy->getPositions());
+      expectBitsEqual(original->getVelocities(), copy->getVelocities());
+      expectBitsEqual(original->getAccelerations(), copy->getAccelerations());
+      expectBitsEqual(
+          original->getConstraintForces(), copy->getConstraintForces());
+    }
+    const auto& originalContacts
+        = source->getConstraintSolver()->getLastCollisionResult();
+    const auto& clonedContacts
+        = clone->getConstraintSolver()->getLastCollisionResult();
+    ASSERT_EQ(
+        originalContacts.getNumContacts(), clonedContacts.getNumContacts());
+    hadContacts = hadContacts || originalContacts.getNumContacts() > 0u;
+  }
+  EXPECT_TRUE(hadContacts);
+}
+
+//==============================================================================
+void expectPgsOptionsEqual(
+    const constraint::ConstBoxedLcpSolverPtr& backend,
+    const constraint::PgsBoxedLcpSolver::Option& expected)
+{
+  const auto pgs
+      = std::dynamic_pointer_cast<const constraint::PgsBoxedLcpSolver>(backend);
+  ASSERT_NE(nullptr, pgs);
+  const auto& actual = pgs->getOption();
+  EXPECT_EQ(expected.mMaxIteration, actual.mMaxIteration);
+  EXPECT_EQ(expected.mDeltaXThreshold, actual.mDeltaXThreshold);
+  EXPECT_EQ(expected.mRelativeDeltaXTolerance, actual.mRelativeDeltaXTolerance);
+  EXPECT_EQ(expected.mEpsilonForDivision, actual.mEpsilonForDivision);
+  EXPECT_EQ(
+      expected.mRandomizeConstraintOrder, actual.mRandomizeConstraintOrder);
+}
+
+// A derived built-in is still a custom backend and must not be sliced.
+class CustomCloneBackend : public constraint::DantzigBoxedLcpSolver
+{
+public:
+  const std::string& getType() const override
+  {
+    static const std::string type = "CustomCloneBackend";
+    return type;
+  }
+};
+
+class CustomCloneConstraintSolver : public constraint::ConstraintSolver
+{
+protected:
+  void solveConstrainedGroup(constraint::ConstrainedGroup&) override {}
+};
+
 } // namespace
+
+//==============================================================================
+TEST(World, ClonePgsSolverOptions)
+{
+  auto source = createCloneContactWorld();
+  auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+      source->getConstraintSolver());
+  auto pgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  const constraint::PgsBoxedLcpSolver::Option options(
+      75, 1e-8, 2e-5, 1e-10, false);
+  pgs->setOption(options);
+  solver->setBoxedLcpSolver(pgs);
+  solver->setSecondaryBoxedLcpSolver(nullptr);
+
+  auto clone = source->clone();
+  const auto* copy = dynamic_cast<const constraint::BoxedLcpConstraintSolver*>(
+      clone->getConstraintSolver());
+  ASSERT_NE(nullptr, copy);
+  expectPgsOptionsEqual(copy->getBoxedLcpSolver(), options);
+  EXPECT_NE(pgs, copy->getBoxedLcpSolver());
+  EXPECT_EQ(nullptr, copy->getSecondaryBoxedLcpSolver());
+  expectCloneContactStepsIdentical(source, clone);
+
+  pgs->setOption(constraint::PgsBoxedLcpSolver::Option{});
+  expectPgsOptionsEqual(copy->getBoxedLcpSolver(), options);
+}
+
+//==============================================================================
+TEST(World, CloneRandomizedPgsSolverOptions)
+{
+  auto source = World::create();
+  auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+      source->getConstraintSolver());
+  auto pgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  const constraint::PgsBoxedLcpSolver::Option options(
+      65, 2e-8, 3e-5, 2e-10, true);
+  pgs->setOption(options);
+  solver->setBoxedLcpSolver(pgs);
+  auto clone = source->clone();
+  const auto* copy = static_cast<const constraint::BoxedLcpConstraintSolver*>(
+      clone->getConstraintSolver());
+  expectPgsOptionsEqual(copy->getBoxedLcpSolver(), options);
+}
+
+//==============================================================================
+TEST(World, CloneDantzigPgsSolverOptions)
+{
+  auto source = createCloneContactWorld();
+  auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+      source->getConstraintSolver());
+  auto dantzig = std::make_shared<constraint::DantzigBoxedLcpSolver>();
+  auto pgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  const constraint::PgsBoxedLcpSolver::Option options(
+      90, 3e-8, 4e-5, 3e-10, false);
+  pgs->setOption(options);
+  solver->setBoxedLcpSolver(dantzig);
+  solver->setSecondaryBoxedLcpSolver(pgs);
+  auto clone = source->clone();
+  const auto* copy = static_cast<const constraint::BoxedLcpConstraintSolver*>(
+      clone->getConstraintSolver());
+  EXPECT_NE(
+      nullptr,
+      dynamic_cast<const constraint::DantzigBoxedLcpSolver*>(
+          copy->getBoxedLcpSolver().get()));
+  EXPECT_NE(dantzig, copy->getBoxedLcpSolver());
+  EXPECT_NE(pgs, copy->getSecondaryBoxedLcpSolver());
+  expectPgsOptionsEqual(copy->getSecondaryBoxedLcpSolver(), options);
+  expectCloneContactStepsIdentical(source, clone);
+}
+
+//==============================================================================
+TEST(World, ClonePgsDantzigSolvers)
+{
+  auto source = createCloneContactWorld();
+  auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+      source->getConstraintSolver());
+  auto pgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
+  auto dantzig = std::make_shared<constraint::DantzigBoxedLcpSolver>();
+  solver->setBoxedLcpSolver(pgs);
+  solver->setSecondaryBoxedLcpSolver(dantzig);
+  auto clone = source->clone();
+  const auto* copy = static_cast<const constraint::BoxedLcpConstraintSolver*>(
+      clone->getConstraintSolver());
+  expectPgsOptionsEqual(copy->getBoxedLcpSolver(), pgs->getOption());
+  EXPECT_NE(pgs, copy->getBoxedLcpSolver());
+  EXPECT_NE(
+      nullptr,
+      dynamic_cast<const constraint::DantzigBoxedLcpSolver*>(
+          copy->getSecondaryBoxedLcpSolver().get()));
+  EXPECT_NE(dantzig, copy->getSecondaryBoxedLcpSolver());
+  expectCloneContactStepsIdentical(source, clone);
+}
+
+//==============================================================================
+TEST(World, CloneSplitImpulse)
+{
+  auto source = createCloneContactWorld();
+  source->getConstraintSolver()->setSplitImpulseEnabled(true);
+  auto clone = source->clone();
+  EXPECT_TRUE(clone->getConstraintSolver()->isSplitImpulseEnabled());
+  expectCloneContactStepsIdentical(source, clone);
+}
+
+//==============================================================================
+TEST(World, CloneMatrixFreeSolverOptions)
+{
+  auto source = createCloneContactWorld();
+  auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+      source->getConstraintSolver());
+  constraint::BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions options;
+  options.mEnabled = true;
+  options.mMinRows = 3u;
+  options.mMaxIterations = 80;
+  options.mSor = 0.75;
+  options.mDeltaTolerance = 2e-8;
+  options.mRelativeDeltaTolerance = 5e-5;
+  options.mEpsilonForDivision = 4e-10;
+  solver->setMatrixFreeContactSolverOptions(options);
+  auto clone = source->clone();
+  const auto* copy = static_cast<const constraint::BoxedLcpConstraintSolver*>(
+      clone->getConstraintSolver());
+  const auto actual = copy->getMatrixFreeContactSolverOptions();
+  EXPECT_EQ(options.mEnabled, actual.mEnabled);
+  EXPECT_EQ(options.mMinRows, actual.mMinRows);
+  EXPECT_EQ(options.mMaxIterations, actual.mMaxIterations);
+  EXPECT_EQ(options.mSor, actual.mSor);
+  EXPECT_EQ(options.mDeltaTolerance, actual.mDeltaTolerance);
+  EXPECT_EQ(options.mRelativeDeltaTolerance, actual.mRelativeDeltaTolerance);
+  EXPECT_EQ(options.mEpsilonForDivision, actual.mEpsilonForDivision);
+  expectCloneContactStepsIdentical(source, clone);
+}
+
+//==============================================================================
+TEST(World, CloneCollisionOptions)
+{
+  auto source = createCloneContactWorld();
+  auto& options = source->getConstraintSolver()->getCollisionOption();
+  options.enableContact = false;
+  options.maxNumContacts = 23u;
+  options.maxNumContactsPerPair = 2u;
+  options.allowNegativePenetrationDepthContacts = true;
+  auto clone = source->clone();
+  const auto& actual = clone->getConstraintSolver()->getCollisionOption();
+  EXPECT_EQ(options.enableContact, actual.enableContact);
+  EXPECT_EQ(options.maxNumContacts, actual.maxNumContacts);
+  EXPECT_EQ(options.maxNumContactsPerPair, actual.maxNumContactsPerPair);
+  EXPECT_EQ(
+      options.allowNegativePenetrationDepthContacts,
+      actual.allowNegativePenetrationDepthContacts);
+  EXPECT_NE(options.collisionFilter, actual.collisionFilter);
+
+  options.enableContact = true;
+  clone = source->clone();
+  expectCloneContactStepsIdentical(source, clone);
+}
+
+//==============================================================================
+TEST(World, CloneSolverTimeStepAndThreads)
+{
+  auto source = World::create();
+  source->getConstraintSolver()->setTimeStep(0.002);
+  source->getConstraintSolver()->setNumSimulationThreads(2u);
+  auto clone = source->clone();
+  EXPECT_EQ(source->getTimeStep(), clone->getTimeStep());
+  EXPECT_EQ(
+      source->getNumSimulationThreads(), clone->getNumSimulationThreads());
+  EXPECT_EQ(0.002, clone->getConstraintSolver()->getTimeStep());
+  EXPECT_EQ(2u, clone->getConstraintSolver()->getNumSimulationThreads());
+}
+
+//==============================================================================
+TEST(World, CloneCustomBackendKeepsDefaultWithWarning)
+{
+  for (bool primary : {true, false}) {
+    SCOPED_TRACE(primary);
+    auto source = createCloneContactWorld();
+    auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+        source->getConstraintSolver());
+    auto custom = std::make_shared<CustomCloneBackend>();
+    if (primary)
+      solver->setBoxedLcpSolver(custom);
+    else
+      solver->setSecondaryBoxedLcpSolver(custom);
+
+    testing::internal::CaptureStderr();
+    auto clone = source->clone();
+    const auto warning = testing::internal::GetCapturedStderr();
+    EXPECT_NE(std::string::npos, warning.find("CustomCloneBackend"));
+    const auto firstWarning = warning.find("[World::clone]");
+    ASSERT_NE(std::string::npos, firstWarning);
+    EXPECT_EQ(
+        std::string::npos, warning.find("[World::clone]", firstWarning + 1u));
+    const auto* copy = static_cast<const constraint::BoxedLcpConstraintSolver*>(
+        clone->getConstraintSolver());
+    EXPECT_EQ(
+        constraint::DantzigBoxedLcpSolver::getStaticType(),
+        copy->getBoxedLcpSolver()->getType());
+    EXPECT_EQ(
+        constraint::PgsBoxedLcpSolver::getStaticType(),
+        copy->getSecondaryBoxedLcpSolver()->getType());
+    expectCloneContactStepsIdentical(source, clone);
+  }
+}
+
+//==============================================================================
+TEST(World, CloneNonBoxedConstraintSolverKeepsDefault)
+{
+  auto source = World::create();
+  source->setConstraintSolver(std::make_unique<CustomCloneConstraintSolver>());
+  source->getConstraintSolver()->setSplitImpulseEnabled(true);
+  source->getConstraintSolver()->getCollisionOption().maxNumContacts = 17u;
+  testing::internal::CaptureStderr();
+  auto clone = source->clone();
+  const auto warning = testing::internal::GetCapturedStderr();
+  EXPECT_TRUE(warning.empty());
+  EXPECT_NE(
+      nullptr,
+      dynamic_cast<constraint::BoxedLcpConstraintSolver*>(
+          clone->getConstraintSolver()));
+  EXPECT_FALSE(clone->getConstraintSolver()->isSplitImpulseEnabled());
+  EXPECT_EQ(
+      1000u, clone->getConstraintSolver()->getCollisionOption().maxNumContacts);
+}
 
 //==============================================================================
 TEST(World, AddingAndRemovingSkeletons)

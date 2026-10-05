@@ -51,6 +51,8 @@
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
@@ -64,6 +66,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
@@ -78,6 +81,29 @@ namespace {
 
 using dart::collision::CollisionDetector;
 using dart::collision::CollisionDetectorPtr;
+
+constraint::BoxedLcpSolverPtr cloneBoxedLcpSolver(
+    const constraint::ConstBoxedLcpSolverPtr& solver, std::string_view role)
+{
+  const auto* backend = solver.get();
+  if (backend == nullptr)
+    return nullptr;
+
+  // Match exact types so custom subclasses are not sliced into built-ins.
+  if (typeid(*backend) == typeid(constraint::DantzigBoxedLcpSolver))
+    return std::make_shared<constraint::DantzigBoxedLcpSolver>();
+
+  if (typeid(*backend) == typeid(constraint::PgsBoxedLcpSolver)) {
+    auto clone = std::make_shared<constraint::PgsBoxedLcpSolver>();
+    clone->setOption(static_cast<const constraint::PgsBoxedLcpSolver*>(backend)
+                         ->getOption());
+    return clone;
+  }
+
+  dtwarn << "[World::clone] Cannot clone " << role << " boxed LCP solver type '"
+         << solver->getType() << "'. Keeping the default solver.\n";
+  return nullptr;
+}
 
 constexpr double kFinalSleepLinearRatio = 0.1;
 constexpr double kFinalSleepAngularRatio = 0.2;
@@ -1179,6 +1205,40 @@ WorldPtr World::clone() const
   auto cd = getConstraintSolver()->getCollisionDetector();
   if (cd) {
     worldClone->setCollisionDetector(cd->cloneWithoutCollisionObjects());
+  }
+
+  if (const auto* solver
+      = dynamic_cast<const constraint::BoxedLcpConstraintSolver*>(
+          getConstraintSolver())) {
+    // World::create() always installs a BoxedLcpConstraintSolver.
+    auto* cloneSolver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+        worldClone->getConstraintSolver());
+    if (auto primary
+        = cloneBoxedLcpSolver(solver->getBoxedLcpSolver(), "primary"))
+      cloneSolver->setBoxedLcpSolver(std::move(primary));
+
+    const auto secondary = solver->getSecondaryBoxedLcpSolver();
+    if (auto backend = cloneBoxedLcpSolver(secondary, "secondary"))
+      cloneSolver->setSecondaryBoxedLcpSolver(std::move(backend));
+    else if (!secondary)
+      cloneSolver->setSecondaryBoxedLcpSolver(nullptr);
+
+    cloneSolver->setSplitImpulseEnabled(solver->isSplitImpulseEnabled());
+    cloneSolver->setMatrixFreeContactSolverOptions(
+        solver->getMatrixFreeContactSolverOptions());
+    cloneSolver->setTimeStep(solver->getTimeStep());
+    cloneSolver->setNumSimulationThreads(solver->getNumSimulationThreads());
+
+    const auto& options = solver->getCollisionOption();
+    auto& cloneOptions = cloneSolver->getCollisionOption();
+    cloneOptions.enableContact = options.enableContact;
+    cloneOptions.maxNumContacts = options.maxNumContacts;
+    cloneOptions.maxNumContactsPerPair = options.maxNumContactsPerPair;
+    cloneOptions.allowNegativePenetrationDepthContacts
+        = options.allowNegativePenetrationDepthContacts;
+    // Filters, handler chains and manual constraints can reference the original
+    // bodies or user state and have no clone/remapping API. Keep fresh
+    // defaults, as for collision results, contact caches and solver scratch.
   }
 
   // Clone and add each Skeleton
