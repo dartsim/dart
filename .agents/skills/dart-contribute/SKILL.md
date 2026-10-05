@@ -47,6 +47,8 @@ git push -u origin "HEAD:${branch}"
 gh pr create --draft --base <target-branch> --milestone "<milestone>"
 ```
 
+Then follow `docs/onboarding/ai-tools.md` § "PR Lifecycle" from draft to merge.
+
 Use the branch-matching DART 6.x release milestone for release-branch PRs.
 
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are included.

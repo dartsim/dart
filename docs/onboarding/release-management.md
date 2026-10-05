@@ -19,6 +19,14 @@ Release-branch PRs should:
 
 ## DART 6 Release Closeout
 
+A DART 6.x.y patch release is packaged by one "Packaging 6.x.y" PR on its
+`release-6.x` branch. It bumps `package.xml` and the `pixi.toml` workspace
+version, dates the release's `CHANGELOG.md` heading, links that heading to the
+closed milestone (`?closed=1`), and adds a short release summary under it. Its
+squash commit is the release candidate: once the gates below pass, tag it
+`v6.x.y` (annotated, message `DART 6.x.y`) and publish the GitHub release
+`DART 6.x.y`.
+
 Before tagging any DART 6.x.y release, record passing compatibility evidence on
 the exact candidate SHA for the forced optional-dependency-off gate and
 `pixi run -e gazebo test-gz`, confirming that both `test-gz-physics` and
