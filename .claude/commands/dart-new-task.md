@@ -33,12 +33,12 @@ Read these files first:
    roadmap scope, record an owner-local `Decision needed` block instead of
    silently choosing.
 3. **Setup** - Choose the target branch before creating a topic branch. For
-   DART 6.20 maintenance, dependency-minimization, docs, and compatibility
-   work, branch from `origin/release-6.20` without tracking the release ref:
-   `git switch --no-track -c <type>/<topic> origin/release-6.20`.
+   DART 6.20 development, dependency-minimization, docs, and compatibility
+   work, branch from `origin/main` without tracking the development ref:
+   `git switch --no-track -c <type>/<topic> origin/main`.
 4. **Implement** - Keep commits focused, follow code style
 5. **Verify** - Run `pixi run lint` before committing, then run the focused
-   release-branch gate for the touched surface. Use `pixi run test-all` when
+   branch gate for the touched surface. Use `pixi run test-all` when
    feasible, and `pixi run -e gazebo test-gz` for package, collision,
    constraint, or downstream Gazebo/gz-physics compatibility work. If the
    claim depends on scene structure, simulation, dynamics, collision/contact,
@@ -58,10 +58,10 @@ Read these files first:
 
 ## Type-Specific
 
-- **Bugfix**: Target the active DART 6 LTS branch (`release-6.20`)
+- **Bugfix**: Target the development branch (`main`)
 - **Refactor**: No behavior changes
 - **Feature**: Add tests + docs
-- **Scope**: Use this release branch only for compatible maintenance,
+- **Scope**: Use this development branch only for compatible maintenance,
   dependency minimization, CI, docs, and fixes.
 
 ## Output

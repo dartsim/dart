@@ -33,6 +33,7 @@
 #include "AllocationCounting.hpp"
 #include "TestHelpers.hpp"
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
@@ -87,6 +88,7 @@
 #include <new>
 #include <set>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
@@ -357,6 +359,49 @@ public:
   }
 
   mutable std::size_t mNumCreateConstraintCalls{0u};
+};
+
+// Mirrors gz-physics' contact-properties handler: it keeps the previous handler
+// as its parent and runs a user callback each time it creates the surface
+// parameters of a contact.
+class CountingContactSurfaceHandler final
+  : public constraint::ContactSurfaceHandler
+{
+public:
+  constraint::ContactSurfaceParams createParams(
+      const collision::Contact& contact,
+      const size_t numContactsOnCollisionObject) const override
+  {
+    ++mNumCreateParamsCalls;
+    return ContactSurfaceHandler::createParams(
+        contact, numContactsOnCollisionObject);
+  }
+
+  mutable std::size_t mNumCreateParamsCalls{0u};
+};
+
+// Like gz-physics' contact-properties handler when a callback asks for a
+// maximum error reduction velocity: it sets the global limit after creating
+// each contact constraint.
+class ErrorReductionVelocityContactSurfaceHandler final
+  : public constraint::ContactSurfaceHandler
+{
+public:
+  constraint::ContactConstraintPtr createConstraint(
+      collision::Contact& contact,
+      const size_t numContactsOnCollisionObject,
+      const double timeStep) const override
+  {
+    auto constraint = ContactSurfaceHandler::createConstraint(
+        contact, numContactsOnCollisionObject, timeStep);
+    if (mMaxErrorReductionVelocity >= 0.0) {
+      constraint::ContactConstraint::setMaxErrorReductionVelocity(
+          mMaxErrorReductionVelocity);
+    }
+    return constraint;
+  }
+
+  double mMaxErrorReductionVelocity{-1.0};
 };
 
 class FakeCollisionObject final : public collision::CollisionObject
@@ -1226,6 +1271,114 @@ TEST(ConstraintSolver, RemovedCustomContactSurfaceHandlerDoesNotReuseConstraint)
 }
 
 //==============================================================================
+TEST(ConstraintSolver, SimulationPreparationDoesNotRunContactSurfaceHandlers)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  solver->setNumSimulationThreads(1u);
+
+  auto handler = std::make_shared<CountingContactSurfaceHandler>();
+  solver->addContactSurfaceHandler(handler);
+  ASSERT_NE(nullptr, handler->getParent());
+
+  world->addSkeleton(createSolverTestPlane("ground"));
+  world->addSkeleton(createSolverTestBox(
+      "box", Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.49), true));
+
+  // The first step enters simulation mode. Its preparation must not call the
+  // handler, so the step calls it exactly once per contact.
+  ASSERT_FALSE(world->isInSimulationMode());
+  world->step();
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_EQ(
+      world->getLastCollisionResult().getNumContacts(),
+      handler->mNumCreateParamsCalls);
+
+  // Adding a skeleton makes the next step prepare again.
+  world->addSkeleton(createSolverTestBox(
+      "box2", Eigen::Vector3d::Ones(), Eigen::Vector3d(3.0, 0.0, 0.49), true));
+  ASSERT_FALSE(world->isInSimulationMode());
+  handler->mNumCreateParamsCalls = 0u;
+  world->step();
+  EXPECT_EQ(
+      world->getLastCollisionResult().getNumContacts(),
+      handler->mNumCreateParamsCalls);
+
+  // An explicit preparation calls no handler and keeps the handler chain.
+  world->addSkeleton(createSolverTestBox(
+      "box3", Eigen::Vector3d::Ones(), Eigen::Vector3d(-3.0, 0.0, 0.49), true));
+  handler->mNumCreateParamsCalls = 0u;
+  world->enterSimulationMode();
+  EXPECT_EQ(0u, handler->mNumCreateParamsCalls);
+  EXPECT_EQ(handler, solver->getLastContactSurfaceHandler());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactHandlerErrorReductionVelocityAppliesToWholeStep)
+{
+  const auto createBoxWorld
+      = [](const std::shared_ptr<ErrorReductionVelocityContactSurfaceHandler>&
+               handler) {
+          auto world = createWorld();
+          world->setTimeStep(0.001);
+
+          simulation::DeactivationOptions deactivation;
+          deactivation.mEnabled = false;
+          world->setDeactivationOptions(deactivation);
+
+          auto* solver = world->getConstraintSolver();
+          solver->setCollisionDetector(
+              collision::DARTCollisionDetector::create());
+          solver->setNumSimulationThreads(1u);
+          solver->addContactSurfaceHandler(handler);
+
+          world->addSkeleton(createSolverTestPlane("ground"));
+          world->addSkeleton(createSolverTestBox(
+              "box",
+              Eigen::Vector3d::Ones(),
+              Eigen::Vector3d(0.0, 0.0, 0.49),
+              true));
+          return world;
+        };
+
+  constraint::ContactConstraint::resetMaxErrorReductionVelocity();
+  auto settingHandler
+      = std::make_shared<ErrorReductionVelocityContactSurfaceHandler>();
+  auto settingWorld = createBoxWorld(settingHandler);
+  auto presetWorld = createBoxWorld(
+      std::make_shared<ErrorReductionVelocityContactSurfaceHandler>());
+  settingWorld->step();
+  presetWorld->step();
+
+  // Correcting the 1 cm penetration needs far more than this limit.
+  constexpr double kMaxErrorReductionVelocity = 1e-4;
+
+  // One world's handler sets the limit while the step creates the contact
+  // constraints; the other world has it set before the step.
+  settingHandler->mMaxErrorReductionVelocity = kMaxErrorReductionVelocity;
+  settingWorld->step();
+  constraint::ContactConstraint::setMaxErrorReductionVelocity(
+      kMaxErrorReductionVelocity);
+  presetWorld->step();
+  constraint::ContactConstraint::resetMaxErrorReductionVelocity();
+
+  const Eigen::VectorXd presetVelocities
+      = presetWorld->getSkeleton("box")->getVelocities();
+  const Eigen::VectorXd settingVelocities
+      = settingWorld->getSkeleton("box")->getVelocities();
+  EXPECT_TRUE(presetVelocities == settingVelocities)
+      << "set before the step: " << presetVelocities.transpose()
+      << "\nset by the handler: " << settingVelocities.transpose();
+}
+
+//==============================================================================
 TEST(ConstraintSolver, DirectSimulationThreadSettingSolvesGroupsInParallel)
 {
   ExposedThreadedConstraintSolver solver;
@@ -1250,6 +1403,113 @@ TEST(ConstraintSolver, PrepareForSimulationDoesNotUpdateManualConstraints)
 
   solver.solve();
   EXPECT_EQ(1u, manualConstraint->getNumUpdates());
+}
+
+//==============================================================================
+namespace {
+
+// Steps a world so that its last collision result holds contacts of the
+// "changed" box, applies a change that frees the collision objects those
+// contacts point to, and steps again.
+template <typename Change>
+void expectStepAfterChangeReportsOnlyLiveContacts(
+    std::string_view name, const Change& change)
+{
+  SCOPED_TRACE(name);
+
+  auto world = createWorld();
+  world->getConstraintSolver()->setCollisionDetector(
+      collision::DARTCollisionDetector::create());
+  world->addSkeleton(createSolverTestPlane("ground"));
+  world->addSkeleton(createSolverTestBox(
+      "kept",
+      Eigen::Vector3d::Constant(0.2),
+      Eigen::Vector3d(0.0, 0.0, 0.1),
+      true));
+  auto changed = createSolverTestBox(
+      "changed",
+      Eigen::Vector3d::Constant(0.2),
+      Eigen::Vector3d(1.0, 0.0, 0.1),
+      true);
+  world->addSkeleton(changed);
+
+  world->step();
+  // Match frames directly: inCollision() would materialize the result's lookup
+  // caches and change how the next step records contacts.
+  const dynamics::ShapeFrame* changedShape
+      = changed->getBodyNode(0)->getShapeNode(0);
+  std::size_t numChangedContacts = 0u;
+  for (const auto& contact : world->getLastCollisionResult().getContacts()) {
+    if (contact.getShapeFrame1() == changedShape
+        || contact.getShapeFrame2() == changedShape) {
+      ++numChangedContacts;
+    }
+  }
+  ASSERT_GT(numChangedContacts, 0u);
+
+  change(*world, changed);
+  world->step();
+
+  const auto group = world->getConstraintSolver()->getCollisionGroup();
+  const auto& result = world->getLastCollisionResult();
+  EXPECT_GT(result.getNumContacts(), 0u);
+  for (const auto& contact : result.getContacts()) {
+    EXPECT_TRUE(group->hasShapeFrame(contact.getShapeFrame1()));
+    EXPECT_TRUE(group->hasShapeFrame(contact.getShapeFrame2()));
+  }
+}
+
+} // namespace
+
+//==============================================================================
+// The first step after each of these changes used to rebuild the previous
+// step's contacts with CollisionResult::addContact() while preparing the
+// simulation, which read the collision objects the change had just freed
+// (reported by ASAN and valgrind).
+TEST(ConstraintSolver, StepAfterStructuralChangeReportsOnlyLiveContacts)
+{
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "removeSkeleton", [](World& world, SkeletonPtr& skeleton) {
+        world.removeSkeleton(skeleton);
+        skeleton.reset();
+      });
+
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "removeAllSkeletons", [](World& world, SkeletonPtr& skeleton) {
+        world.removeAllSkeletons();
+        skeleton.reset();
+        world.addSkeleton(createSolverTestPlane("new_ground"));
+        world.addSkeleton(createSolverTestBox(
+            "new_box",
+            Eigen::Vector3d::Constant(0.2),
+            Eigen::Vector3d(0.0, 0.0, 0.1),
+            true));
+      });
+
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "BodyNode::remove", [](World&, SkeletonPtr& skeleton) {
+        skeleton->getBodyNode(0)->remove();
+      });
+
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "ShapeNode::remove", [](World&, SkeletonPtr& skeleton) {
+        skeleton->getBodyNode(0)->getShapeNode(0)->remove();
+      });
+
+  // Moving a body out of the world frees its collision objects as soon as
+  // anything updates the collision group before the next step.
+  const auto outside = dynamics::Skeleton::create("outside");
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "BodyNode::moveTo", [&](World& world, SkeletonPtr& skeleton) {
+        skeleton->getBodyNode(0)->moveTo(outside, nullptr);
+        world.checkCollision();
+      });
+
+  expectStepAfterChangeReportsOnlyLiveContacts(
+      "setCollisionDetector", [](World& world, SkeletonPtr&) {
+        world.getConstraintSolver()->setCollisionDetector(
+            collision::DARTCollisionDetector::create());
+      });
 }
 
 //==============================================================================

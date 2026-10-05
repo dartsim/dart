@@ -35,6 +35,7 @@
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/BoxedLcpSolver.hpp"
+#include "dart/constraint/ContactSurface.hpp"
 #include "dart/dynamics/dynamics.hpp"
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 #include "dart/simulation/World.hpp"
@@ -1209,6 +1210,30 @@ TEST(StepAllocation, NativeImplicitSecondStepHasNoGlobalOrBaseAllocatorGrowth)
 {
   expectNativeGlobalAndBaseAllocatorGate(
       PreparationMode::Implicit, "native_dart_implicit_second_step_gate");
+}
+
+TEST(
+    StepAllocation,
+    NativeContactHandlerExplicitFirstPostBakeHasNoGlobalOrBaseAllocatorGrowth)
+{
+  // With a user contact surface handler (gz-physics installs one), every step
+  // builds its contact constraints anew from a process-wide pool, so the
+  // preparation must grow that pool for a whole step without running the
+  // handler. The pool keeps what earlier tests in this process grew it to, so
+  // this gate relies on them not having needed more than this scene does.
+  const std::string label = "native_dart_contact_handler_first_post_bake_gate";
+  dart::test::CountingMemoryAllocator allocator;
+  auto world = createCountedStackedBoxesWorld(
+      label, dart::collision::DARTCollisionDetector::create(), allocator);
+  world->getConstraintSolver()->addContactSurfaceHandler(
+      std::make_shared<dart::constraint::ContactSurfaceHandler>());
+  world->enterSimulationMode();
+
+  const auto measurement = measureWorldStepsNow(world, allocator, 1);
+  reportMeasurement(label, measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
 }
 
 TEST(

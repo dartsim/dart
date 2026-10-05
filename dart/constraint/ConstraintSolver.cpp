@@ -187,6 +187,53 @@ bool isExactDefaultContactSurfaceHandler(
   return isExactDynamicType<DefaultContactSurfaceHandler>(handler.get());
 }
 
+namespace {
+
+//==============================================================================
+/// Puts a contact surface handler in place and restores the previous one when
+/// it goes out of scope, including when an exception unwinds the stack.
+class ScopedContactSurfaceHandler final
+{
+public:
+  ScopedContactSurfaceHandler(
+      ContactSurfaceHandlerPtr& slot, ContactSurfaceHandlerPtr handler)
+    : mSlot(slot), mPrevious(std::exchange(slot, std::move(handler)))
+  {
+    // Do nothing
+  }
+
+  ~ScopedContactSurfaceHandler()
+  {
+    mSlot = std::move(mPrevious);
+  }
+
+  ScopedContactSurfaceHandler(const ScopedContactSurfaceHandler&) = delete;
+  ScopedContactSurfaceHandler& operator=(const ScopedContactSurfaceHandler&)
+      = delete;
+
+private:
+  ContactSurfaceHandlerPtr& mSlot;
+  ContactSurfaceHandlerPtr mPrevious;
+};
+
+//==============================================================================
+/// A contact surface handler without a parent or state: it builds contact
+/// constraints from stock parameters and never runs user code. Being local to
+/// this file keeps its shared instance out of libdart's exported symbols.
+class StatelessContactSurfaceHandler final : public ContactSurfaceHandler
+{
+};
+
+//==============================================================================
+ContactSurfaceHandlerPtr getStatelessContactSurfaceHandler()
+{
+  static const auto handler
+      = std::make_shared<StatelessContactSurfaceHandler>();
+  return handler;
+}
+
+} // namespace
+
 //==============================================================================
 bool isRandomizedPgsSolver(const ConstBoxedLcpSolverPtr& solver)
 {
@@ -1285,20 +1332,52 @@ void ConstraintSolver::prepareForSimulation()
   const bool activeSingleReactiveContactsNeedSharedDependencyScan
       = mActiveSingleReactiveContactsNeedSharedDependencyScan;
   const auto collidingState = snapshotCollidingState(mSkeletons);
-  const auto lastCollisionContacts = mCollisionResult.getContacts();
+  // Restore the previous result by value: its contacts may point to collision
+  // objects freed since the last step (by a skeleton removal, a collision
+  // detector change, a destroyed shape frame, or a collision group update that
+  // dropped their shape frames), so they must not be dereferenced here as
+  // CollisionResult::addContact() would. Until the next solve() replaces them,
+  // only their count is used.
+  const auto lastCollisionResult = mCollisionResult;
   const std::size_t collisionGroupContentVersion
       = mCollisionGroup ? mCollisionGroup->getContentVersion() : 0u;
-  constexpr int kPreparationPasses = 2;
-  for (int pass = 0; pass < kPreparationPasses; ++pass) {
-    updateConstraints(false);
-    buildConstrainedGroups();
-    reserveConstrainedGroupsScratch();
+
+  // The passes below only grow solver buffers and discard the contact
+  // constraints they build, so they must not reach a user contact surface
+  // handler: it runs once per contact per step, and gz-physics counts its
+  // contact-properties callbacks. Unless the solver uses only the built-in
+  // default handler, the passes build these constraints through a stateless
+  // handler instead. Like a user handler chain, and unlike the built-in default
+  // handler, it creates every constraint anew instead of reusing the previous
+  // step's, so the passes still reach the allocation high-water mark of the
+  // steps that follow. Its stock parameters enable friction, which gives each
+  // contact constraint its largest dimension.
+  const bool usesOnlyDefaultContactSurfaceHandler
+      = isExactDefaultContactSurfaceHandler(mContactSurfaceHandler)
+        && mContactSurfaceHandler->mParent == nullptr;
+  {
+    const ScopedContactSurfaceHandler preparationContactSurfaceHandler(
+        mContactSurfaceHandler,
+        usesOnlyDefaultContactSurfaceHandler
+            ? mContactSurfaceHandler
+            : getStatelessContactSurfaceHandler());
+    constexpr int kPreparationPasses = 2;
+    for (int pass = 0; pass < kPreparationPasses; ++pass) {
+      updateConstraints(false);
+      buildConstrainedGroups();
+      reserveConstrainedGroupsScratch();
+    }
   }
-  mCollisionResult.clear();
   if (!mCollisionGroup
       || mCollisionGroup->getContentVersion() == collisionGroupContentVersion) {
-    for (const auto& contact : lastCollisionContacts)
-      mCollisionResult.addContact(contact);
+    // Copy assignment keeps the vectors' warmed capacity. It can shrink the
+    // lookup sets' bucket arrays, but the sets fill only once a caller has
+    // queried them, and from then on every step allocates their nodes anyway.
+    mCollisionResult = lastCollisionResult;
+  } else {
+    // Not a memory-safety guard: it only makes the next step see no previous
+    // contacts after the passes updated the collision group.
+    mCollisionResult.clear();
   }
   restoreCollidingState(collidingState);
   mActiveConstraints = activeConstraints;
@@ -2699,6 +2778,21 @@ void ConstraintSolver::buildConstrainedGroups()
         if (contact) {
           contact->mEffectiveMaxErrorReductionVelocity
               = effectiveMaxErrorReductionVelocity;
+        }
+      }
+    }
+  } else if (ContactConstraint::mMaxErrorReductionVelocityUserConfigured) {
+    // A contact surface handler can set the limit while this step creates its
+    // contact constraints (gz-physics does when a contact-properties callback
+    // asks for it). Apply the final value to every contact of the step, as
+    // when the limit is set before the step, rather than only to the contacts
+    // created after the change.
+    for (const auto& group : mConstrainedGroups) {
+      for (const auto& constraint : group.mConstraints) {
+        auto* contact = dynamic_cast<ContactConstraint*>(constraint.get());
+        if (contact) {
+          contact->mEffectiveMaxErrorReductionVelocity
+              = ContactConstraint::mMaxErrorReductionVelocity;
         }
       }
     }
