@@ -472,7 +472,7 @@ def test_scenario_malformed_lists_return_errors(field, value, expected):
         ("instruction_chain", ["../AGENTS.md"], "instruction_chain"),
         ("owner_docs", ["/etc/passwd"], "owner doc"),
         ("recovery", "../outside.md", "recovery pointer"),
-        ("forbidden_paths", ["docs/../main-only"], "forbidden path"),
+        ("forbidden_paths", ["docs/../unsupported"], "forbidden path"),
     ],
 )
 def test_scenario_paths_cannot_escape_or_be_non_normalized(field, unsafe, expected):
@@ -495,7 +495,7 @@ def test_scenario_route_path_cannot_escape_repository():
 
 def test_unknown_scenario_route_is_rejected():
     data = copy.deepcopy(_scenario_data())
-    data["scenarios"][1]["expected_route"]["name"] = "dart-main-only"
+    data["scenarios"][1]["expected_route"]["name"] = "dart-unsupported"
 
     errors = infra.exercise_scenarios(ROOT, data, emit=False)
 
@@ -2895,7 +2895,7 @@ def test_test_gate_contract_rejects_stale_task_handoff_semantics(tmp_path):
     ]
 
 
-def test_test_gate_contract_rejects_main_only_nanobind_cache_advice(tmp_path):
+def test_test_gate_contract_rejects_unsupported_nanobind_cache_advice(tmp_path):
     _copy_test_gate_contract(tmp_path)
     packet = tmp_path / "docs/dev_tasks/example/07-work-packet.md"
     packet.parent.mkdir(parents=True)
@@ -2908,7 +2908,7 @@ def test_test_gate_contract_rejects_main_only_nanobind_cache_advice(tmp_path):
     infra.check_test_gate_contract(tmp_path, errors)
 
     assert errors == [
-        "docs/dev_tasks/example/07-work-packet.md:1: remove stale main-only "
+        "docs/dev_tasks/example/07-work-packet.md:1: remove unsupported "
         "nanobind cache guidance"
     ]
 
@@ -3211,7 +3211,7 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
 
     assert report["schema_version"] == 1
     assert report["profile"] == {
-        "name": "release-6.20",
+        "name": "main",
         "cpp_standard": "C++17",
         "python_binding": "pybind11",
         "io_namespace": "dart::utils",
@@ -3385,10 +3385,8 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
     workflows = tmp_path / ".github" / "workflows"
     workflows.mkdir(parents=True)
     (workflows / "ci_ubuntu.yml").write_text(
-        "pixi run check-ai-commands\n"
-        "pixi run check-ai-infra\n"
+        "pixi run check-lint\n"
         "pixi run test-ai-infra\n"
-        "scripts/check_ai_infrastructure.py --scenarios\n"
         "      - name: Agent visual verification smoke\n"
         "if: matrix.build_type == 'Release'\n"
         "xvfb-run\n"
@@ -3441,17 +3439,13 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
     ]
 
 
-def test_ci_wiring_requires_semantic_ai_completion_task(tmp_path):
+def test_ci_wiring_requires_the_check_lint_aggregate(tmp_path):
     workflow = tmp_path / ".github" / "workflows" / "ci_ubuntu.yml"
     workflow.parent.mkdir(parents=True)
     workflow.write_text(
         (ROOT / ".github/workflows/ci_ubuntu.yml")
         .read_text(encoding="utf-8")
-        .replace(
-            "pixi run check-ai-infra",
-            "pixi run python scripts/check_ai_infrastructure.py --check",
-            1,
-        ),
+        .replace("pixi run check-lint", "pixi run check-lint-cpp"),
         encoding="utf-8",
     )
     errors = []
@@ -3460,9 +3454,53 @@ def test_ci_wiring_requires_semantic_ai_completion_task(tmp_path):
 
     assert any(
         ".github/workflows/ci_ubuntu.yml: missing AI check "
-        "`pixi run check-ai-infra`" in error
+        "`pixi run check-lint`" in error
         for error in errors
     )
+
+
+def test_ci_wiring_requires_check_lint_to_run_the_semantic_ai_check(tmp_path):
+    workflow = tmp_path / ".github" / "workflows" / "ci_ubuntu.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        (ROOT / ".github/workflows/ci_ubuntu.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (tmp_path / "pixi.toml").write_text(
+        '[tasks]\ncheck-lint = { depends-on = ["check-ai-commands"] }\n',
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_ci_wiring(tmp_path, errors)
+
+    assert (
+        "pixi.toml: `check-lint` must depend on `check-ai-infra` "
+        "(CI Linux runs the AI checks through it)"
+    ) in errors
+    assert not any("must depend on `check-ai-commands`" in error for error in errors)
+
+
+def test_ci_wiring_rejects_a_shorthand_check_lint_without_the_ai_checks(tmp_path):
+    workflow = tmp_path / ".github" / "workflows" / "ci_ubuntu.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        (ROOT / ".github/workflows/ci_ubuntu.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (tmp_path / "pixi.toml").write_text(
+        '[tasks]\ncheck-lint = "codespell --config .codespellrc"\n',
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_ci_wiring(tmp_path, errors)
+
+    for task in ("check-ai-commands", "check-ai-infra"):
+        assert (
+            f"pixi.toml: `check-lint` must depend on `{task}` "
+            "(CI Linux runs the AI checks through it)"
+        ) in errors
 
 
 @pytest.mark.parametrize(
@@ -3527,6 +3565,11 @@ def test_visual_smoke_cannot_be_skipped_or_soft_failed(tmp_path, mutation, expec
     workflows = tmp_path / ".github" / "workflows"
     workflows.mkdir(parents=True)
     ubuntu = (ROOT / ".github/workflows/ci_ubuntu.yml").read_text()
+    before_visual, separator, ubuntu = ubuntu.partition(
+        "- name: Agent visual verification smoke"
+    )
+    assert separator
+    ubuntu = separator + ubuntu
     if mutation == "condition":
         ubuntu = ubuntu.replace(
             "if: matrix.build_type == 'Release'",
@@ -3545,7 +3588,7 @@ def test_visual_smoke_cannot_be_skipped_or_soft_failed(tmp_path, mutation, expec
             "- name: Agent visual verification smoke\n        continue-on-error: true",
             1,
         )
-    (workflows / "ci_ubuntu.yml").write_text(ubuntu)
+    (workflows / "ci_ubuntu.yml").write_text(before_visual + ubuntu)
     (workflows / "ci_windows.yml").write_text(
         (ROOT / ".github/workflows/ci_windows.yml").read_text()
     )

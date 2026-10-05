@@ -31,11 +31,11 @@ Stop without editing when all are true:
 
 ## Workflow
 
-1. Search existing release-branch docs before adding content.
+1. Search existing branch docs before adding content.
 2. Inventory the completed work before routing lessons. Consider compatibility,
    downstream/Gazebo impact, CI/review failure modes, workflow friction, and
    cleanup or handoff steps separately.
-3. Decide whether each lesson is general enough for release-branch AI infra.
+3. Decide whether each lesson is general enough for DART 6 AI infra.
    Do not update AI docs after every session.
 4. Prefer updating an existing owner doc over adding a new file. Use
    `docs/information-architecture.md` to choose the owner.

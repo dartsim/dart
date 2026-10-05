@@ -1,6 +1,6 @@
 # AI Components
 
-The DART 6.20 release branch uses a small cross-agent workflow surface:
+The DART 6.20 development branch uses a small cross-agent workflow surface:
 
 - `.claude/commands/`: editable workflow command sources.
 - `.claude/skills/`: editable domain-skill sources.
@@ -37,9 +37,9 @@ The DART 6.20 release branch uses a small cross-agent workflow surface:
 - `docs/ai/workflows.md`: human-readable workflow map and gates.
 - `docs/ai/terminology.md`: canonical AI-facing vocabulary.
 - `docs/ai/orchestration.md`: work-packet and orchestrator/executor contract.
-- `docs/plans/dashboard.md`: release-branch operating plan state.
-- `docs/information-architecture.md`: release-branch docs placement owner.
-- `docs/onboarding/architecture.md`: release component layering and
+- `docs/plans/dashboard.md`: development-branch operating plan state.
+- `docs/information-architecture.md`: DART 6 docs placement owner.
+- `docs/onboarding/architecture.md`: DART 6 component layering and
   compatibility-boundary owner.
 
 AI docs are agent context, not a dumping ground. Keep always-loaded entrypoints
@@ -62,6 +62,6 @@ Use `.claude/` as the editable source. Do not hand-edit generated `.agents/` or
 `.opencode/` files; rerun the sync script instead. `.codex/` is maintained
 runtime configuration, not generated adapter output.
 
-Use `dart-retro` after a completed release-branch session only when the
+Use `dart-retro` after a completed DART 6 session only when the
 learning is general enough to improve future DART 6.20 maintenance work. Skip
 routine work, one-off local choices, and review-only narrative.
