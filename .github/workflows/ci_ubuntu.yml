@@ -52,17 +52,10 @@ jobs:
           cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
-      - name: Check generated AI adapters
-        run: pixi run check-ai-commands
-
-      - name: Check AI infrastructure
-        run: pixi run check-ai-infra
-
+      # check-ai-commands and check-ai-infra run in the Release job's
+      # check-lint; test-ai-infra also exercises the agent scenarios.
       - name: Test AI infrastructure
         run: pixi run test-ai-infra
-
-      - name: Exercise agent scenarios
-        run: pixi run python scripts/check_ai_infrastructure.py --scenarios
 
   coverage:
     # Nightly only; codecov tracks main from the nightly upload.

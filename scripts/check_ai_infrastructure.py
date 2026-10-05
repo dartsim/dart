@@ -3763,18 +3763,31 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
 
 def check_ci_wiring(root: Path, errors: list[str]) -> None:
     workflow = root / ".github" / "workflows" / "ci_ubuntu.yml"
+    pixi_path = root / "pixi.toml"
+    try:
+        tasks = read_toml(pixi_path).get("tasks", {}) if pixi_path.exists() else {}
+    except tomllib.TOMLDecodeError:
+        tasks = {}  # The pixi.toml checks report unparsable manifests.
+    lint = tasks.get("check-lint")
+    if isinstance(lint, dict):
+        for task in ("check-ai-commands", "check-ai-infra"):
+            if task not in lint.get("depends-on", []):
+                errors.append(
+                    f"pixi.toml: `check-lint` must depend on `{task}` "
+                    "(CI Linux runs the AI checks through it)"
+                )
     if not workflow.exists():
         errors.append(".github/workflows/ci_ubuntu.yml: missing workflow")
     else:
         content = workflow.read_text(encoding="utf-8")
+        # check-lint runs check-ai-commands and check-ai-infra (verified
+        # above); test-ai-infra also exercises the agent scenarios.
         expected_commands = (
-            "pixi run check-ai-commands",
-            "pixi run check-ai-infra",
+            "pixi run check-lint",
             "pixi run test-ai-infra",
-            "scripts/check_ai_infrastructure.py --scenarios",
         )
         for command in expected_commands:
-            if command not in content:
+            if not re.search(re.escape(command) + r"(?![\w-])", content):
                 errors.append(
                     f".github/workflows/ci_ubuntu.yml: missing AI check `{command}`"
                 )
