@@ -75,6 +75,7 @@ void reportContacts(
     OdeCollisionObject* b2,
     const CollisionOption& option,
     CollisionResult& result,
+    std::size_t numPriorContacts,
     std::vector<OdeCollisionDetector::ContactHistoryItem>* history);
 
 Contact convertContact(
@@ -203,13 +204,19 @@ struct OdeCollisionCallbackData
   /// result.
   std::size_t numContacts;
 
+  /// The number of contacts the result already held before this collide()
+  /// call. collide() does not clear the result, so a caller may pass one that
+  /// still holds contacts from an earlier call.
+  std::size_t numPriorContacts;
+
   OdeCollisionCallbackData(
       const CollisionOption& option, CollisionResult* result)
     : option(option),
       result(result),
       history(nullptr),
       done(false),
-      numContacts(0u)
+      numContacts(0u),
+      numPriorContacts(result ? result->getNumContacts() : 0u)
   {
     // Do nothing
   }
@@ -444,7 +451,14 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
 
   if (result) {
     reportContacts(
-        numc, odeResult, collObj1, collObj2, option, *result, cdData->history);
+        numc,
+        odeResult,
+        collObj1,
+        collObj2,
+        option,
+        *result,
+        cdData->numPriorContacts,
+        cdData->history);
   }
 }
 
@@ -456,6 +470,7 @@ void reportContacts(
     OdeCollisionObject* b2,
     const CollisionOption& option,
     CollisionResult& result,
+    std::size_t numPriorContacts,
     std::vector<OdeCollisionDetector::ContactHistoryItem>* history)
 {
   if (0u == numContacts)
@@ -541,7 +556,21 @@ void reportContacts(
   const auto pair = MakeNewPair(b1, b2);
   const std::size_t pairSpanEnd
       = pairContactsBegin + static_cast<std::size_t>(contactsToCopy);
-  const std::size_t pairContactCount = pairSpanEnd - pairContactsBegin;
+  // collide() does not clear `result`, so a caller may pass one that already
+  // holds contacts for `pair` from an earlier call (e.g., colliding the same
+  // group twice into one result). Those precede the span and still count as
+  // this pair's current contacts, so scan from the front in that case.
+  const std::size_t pairScanBegin
+      = numPriorContacts == 0u ? pairContactsBegin : 0u;
+  const auto isPairContact = [&pair](const Contact& contact) {
+    return MakeNewPair(contact.collisionObject1, contact.collisionObject2)
+           == pair;
+  };
+  std::size_t pairContactCount = 0u;
+  for (std::size_t i = pairScanBegin; i < pairSpanEnd; ++i) {
+    if (isPairContact(result.getContact(i)))
+      ++pairContactCount;
+  }
   const std::size_t pairTarget
       = std::min<std::size_t>(3u, option.getEffectiveMaxNumContactsPerPair());
 
@@ -563,8 +592,11 @@ void reportContacts(
 
   bool sliding = false;
   constexpr double slidingThreshold = 1e-3;
-  for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
+  for (std::size_t i = pairScanBegin; i < pairSpanEnd; ++i) {
     const auto& curr_cont = result.getContact(i);
+    if (!isPairContact(curr_cont))
+      continue;
+
     if (computeTangentialSpeed(curr_cont) > slidingThreshold) {
       sliding = true;
       break;
@@ -596,8 +628,11 @@ void reportContacts(
        ++it) {
     auto past_cont = *it;
     bool matchesCurrentContact = false;
-    for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
+    for (std::size_t i = pairScanBegin; i < pairSpanEnd; ++i) {
       const auto& curr_cont = result.getContact(i);
+      if (!isPairContact(curr_cont))
+        continue;
+
       auto dist_v = past_cont.point - curr_cont.point;
       const auto dist_m = (dist_v.transpose() * dist_v).coeff(0, 0);
       if (dist_m < 0.01) {
@@ -617,8 +652,10 @@ void reportContacts(
     if (--missing == 0u)
       break;
   }
-  for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
-    pastContacsVec.push_back(result.getContact(i));
+  for (std::size_t i = pairScanBegin; i < pairSpanEnd; ++i) {
+    const auto& curr_cont = result.getContact(i);
+    if (isPairContact(curr_cont))
+      pastContacsVec.push_back(curr_cont);
   }
 
   const auto size = pastContacsVec.size();
