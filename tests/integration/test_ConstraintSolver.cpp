@@ -40,6 +40,7 @@
 #include "dart/collision/dart/PersistentManifoldCache.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/config.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -61,8 +62,16 @@
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/simulation/DeactivationOptions.hpp"
 #include "dart/simulation/World.hpp"
+
+#if HAVE_BULLET
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+#endif
+#if HAVE_ODE
+  #include "dart/collision/ode/OdeCollisionDetector.hpp"
+#endif
 
 #include <gtest/gtest.h>
 
@@ -75,6 +84,7 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <tuple>
 #include <type_traits>
 #include <typeinfo>
 #include <vector>
@@ -1361,6 +1371,322 @@ TEST(ConstraintSolver, ContactHandlerErrorReductionVelocityAppliesToWholeStep)
   EXPECT_TRUE(presetVelocities == settingVelocities)
       << "set before the step: " << presetVelocities.transpose()
       << "\nset by the handler: " << settingVelocities.transpose();
+}
+
+//==============================================================================
+namespace {
+
+// Rejects the contacts between two bodies, like a user handler that lets one
+// body pass through another, and builds stock constraints for the others.
+class PairRejectingContactSurfaceHandler final
+  : public constraint::ContactSurfaceHandler
+{
+public:
+  PairRejectingContactSurfaceHandler(
+      const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
+    : mBodyNode1(bodyNode1), mBodyNode2(bodyNode2)
+  {
+    // Do nothing
+  }
+
+  constraint::ContactConstraintPtr createConstraint(
+      collision::Contact& contact,
+      const size_t numContactsOnCollisionObject,
+      const double timeStep) const override
+  {
+    const auto* bodyNode1 = contact.collisionObject1->getBodyNode();
+    const auto* bodyNode2 = contact.collisionObject2->getBodyNode();
+    if ((bodyNode1 == mBodyNode1 && bodyNode2 == mBodyNode2)
+        || (bodyNode1 == mBodyNode2 && bodyNode2 == mBodyNode1)) {
+      return nullptr;
+    }
+
+    return ContactSurfaceHandler::createConstraint(
+        contact, numContactsOnCollisionObject, timeStep);
+  }
+
+private:
+  const dynamics::BodyNode* mBodyNode1;
+  const dynamics::BodyNode* mBodyNode2;
+};
+
+// One detector of each built-in kind, to clone for each world.
+std::vector<collision::CollisionDetectorPtr> createCollisionDetectorPrototypes()
+{
+  std::vector<collision::CollisionDetectorPtr> detectors{
+      collision::DARTCollisionDetector::create(),
+      collision::FCLCollisionDetector::create()};
+#if HAVE_BULLET
+  detectors.push_back(collision::BulletCollisionDetector::create());
+#endif
+#if HAVE_ODE
+  detectors.push_back(collision::OdeCollisionDetector::create());
+#endif
+  return detectors;
+}
+
+// A box ground whose top face is at z = 0, like the one gz-physics builds.
+dynamics::SkeletonPtr createSleepTestGround()
+{
+  return createSolverTestBox(
+      "ground",
+      Eigen::Vector3d(20.0, 20.0, 1.0),
+      Eigen::Vector3d(0.0, 0.0, -0.5),
+      false);
+}
+
+// A frictionless sphere sliding along +x on the ground.
+dynamics::SkeletonPtr createSlidingPuck(
+    const std::string& name, double x, double speed)
+{
+  constexpr double radius = 0.2;
+  auto puck = dynamics::Skeleton::create(name);
+  dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties(name + "_body"));
+  bodyProperties.mInertia.setMass(1.0);
+  auto pair = puck->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr, dynamics::FreeJoint::Properties(), bodyProperties);
+  auto* shapeNode = pair.second->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::SphereShape>(radius));
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.0);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(x, 0.0, radius - 5e-4);
+  pair.first->setPositions(dynamics::FreeJoint::convertToPositions(transform));
+  Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+  velocity[3] = speed;
+  pair.first->setVelocities(velocity);
+  return puck;
+}
+
+// Makes the world enter simulation mode again on its next step without
+// changing anything the step-start sleep check compares: either a skeleton of
+// another World changes (the structural version is process-wide), or the
+// thread count changes.
+void invalidateSimulationModeFromOutside(
+    simulation::World& world,
+    simulation::World& otherWorld,
+    bool changeOtherWorld)
+{
+  if (changeOtherWorld) {
+    auto* body = otherWorld.getSkeleton(0)->getBodyNode(0);
+    body->setName(body->getName() + "_renamed");
+  } else {
+    world.setNumSimulationThreads(world.getNumSimulationThreads() + 1u);
+  }
+}
+
+bool hasContactBetween(
+    const collision::CollisionResult& result,
+    const dynamics::BodyNode* bodyNode1,
+    const dynamics::BodyNode* bodyNode2)
+{
+  for (const auto& contact : result.getContacts()) {
+    const auto* contactBodyNode1 = contact.collisionObject1->getBodyNode();
+    const auto* contactBodyNode2 = contact.collisionObject2->getBodyNode();
+    if ((contactBodyNode1 == bodyNode1 && contactBodyNode2 == bodyNode2)
+        || (contactBodyNode1 == bodyNode2 && contactBodyNode2 == bodyNode1)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// The resting flag, sleep candidacy, island index and quiet dwell of every
+// skeleton.
+std::vector<std::tuple<bool, bool, int, double>> getSleepStates(
+    const simulation::World& world)
+{
+  std::vector<std::tuple<bool, bool, int, double>> states;
+  for (std::size_t i = 0u; i < world.getNumSkeletons(); ++i) {
+    const auto skeleton = world.getSkeleton(i);
+    states.emplace_back(
+        skeleton->isResting(),
+        skeleton->isSleepCandidate(),
+        skeleton->getIslandIndex(),
+        skeleton->getRestDwellTime());
+  }
+  return states;
+}
+
+} // namespace
+
+//==============================================================================
+// A frictionless puck slides through a resting box, and the handler rejects
+// their contacts. Preparing for simulation builds constraints for those
+// contacts through a stateless handler; it must not use them to wake the box.
+TEST(
+    ConstraintSolver,
+    SimulationPreparationKeepsBodyAsleepThroughRejectedContacts)
+{
+  for (const auto& detector : createCollisionDetectorPrototypes()) {
+    for (const bool changeOtherWorld : {true, false}) {
+      SCOPED_TRACE(
+          detector->getType()
+          + (changeOtherWorld ? ", other World changed"
+                              : ", thread count changed"));
+
+      auto otherWorld = createWorld();
+      otherWorld->addSkeleton(createSolverTestBox(
+          "other_box",
+          Eigen::Vector3d::Ones(),
+          Eigen::Vector3d(0.0, 0.0, 0.5),
+          true));
+
+      auto world = createWorld();
+      world->setTimeStep(0.001);
+      auto* solver = world->getConstraintSolver();
+      solver->setCollisionDetector(detector->cloneWithoutCollisionObjects());
+      world->addSkeleton(createSleepTestGround());
+      auto box = createSolverTestBox(
+          "box",
+          Eigen::Vector3d::Constant(0.5),
+          Eigen::Vector3d(0.0, 0.0, 0.2495),
+          true);
+      world->addSkeleton(box);
+      auto puck = createSlidingPuck("puck", -0.6, 0.1);
+      world->addSkeleton(puck);
+      solver->addContactSurfaceHandler(
+          std::make_shared<PairRejectingContactSurfaceHandler>(
+              puck->getBodyNode(0), box->getBodyNode(0)));
+
+      // The box sleeps after about a second; the puck is inside it at 2.5 s.
+      for (int i = 0; i < 2500; ++i)
+        world->step();
+      ASSERT_TRUE(box->isResting());
+      ASSERT_TRUE(hasContactBetween(
+          world->getLastCollisionResult(),
+          puck->getBodyNode(0),
+          box->getBodyNode(0)));
+
+      invalidateSimulationModeFromOutside(
+          *world, *otherWorld, changeOtherWorld);
+      ASSERT_FALSE(world->isInSimulationMode());
+      const auto sleepStates = getSleepStates(*world);
+      world->enterSimulationMode();
+      EXPECT_EQ(sleepStates, getSleepStates(*world));
+
+      const Eigen::VectorXd boxPositions = box->getPositions();
+      for (int i = 0; i < 10; ++i)
+        world->step();
+      EXPECT_TRUE(box->isResting());
+      EXPECT_EQ(boxPositions, box->getPositions());
+    }
+  }
+}
+
+//==============================================================================
+// Boxes A and B rest, and a frictionless puck slides into A. The step on which
+// the puck reaches A wakes A, and only A. Entering simulation mode right
+// before that step must not change any sleep state, so that B stays asleep:
+// with the default contact surface handler, preparation would otherwise wake A
+// early, and that change of sleep state makes World wake every resting body.
+TEST(ConstraintSolver, SimulationPreparationLeavesSleepStateUntouched)
+{
+  const auto createScene = [](const collision::CollisionDetectorPtr& detector) {
+    auto world = createWorld();
+    world->setTimeStep(0.001);
+    world->getConstraintSolver()->setCollisionDetector(
+        detector->cloneWithoutCollisionObjects());
+    world->addSkeleton(createSleepTestGround());
+    world->addSkeleton(createSolverTestBox(
+        "box_a",
+        Eigen::Vector3d::Constant(0.5),
+        Eigen::Vector3d(0.0, 0.0, 0.2495),
+        true));
+    world->addSkeleton(createSolverTestBox(
+        "box_b",
+        Eigen::Vector3d::Constant(0.5),
+        Eigen::Vector3d(5.0, 0.0, 0.2495),
+        true));
+    world->addSkeleton(createSlidingPuck("puck", -2.5, 1.0));
+    return world;
+  };
+
+  for (const auto& detector : createCollisionDetectorPrototypes()) {
+    SCOPED_TRACE(detector->getType());
+
+    // The step on which the puck wakes A when nothing re-enters. This world
+    // finishes before the next one steps, so its sleep-state changes cannot
+    // wake anything there.
+    int wakeStep = 0;
+    {
+      auto world = createScene(detector);
+      const auto boxA = world->getSkeleton("box_a");
+      bool rested = false;
+      for (int i = 1; i <= 5000 && wakeStep == 0; ++i) {
+        world->step();
+        rested = rested || boxA->isResting();
+        if (rested && !boxA->isResting())
+          wakeStep = i;
+      }
+    }
+    ASSERT_GT(wakeStep, 0);
+
+    for (const bool changeOtherWorld : {true, false}) {
+      SCOPED_TRACE(
+          changeOtherWorld ? "other World changed" : "thread count changed");
+
+      auto otherWorld = createWorld();
+      otherWorld->addSkeleton(createSolverTestBox(
+          "other_box",
+          Eigen::Vector3d::Ones(),
+          Eigen::Vector3d(0.0, 0.0, 0.5),
+          true));
+      auto world = createScene(detector);
+      const auto boxA = world->getSkeleton("box_a");
+      const auto boxB = world->getSkeleton("box_b");
+      for (int i = 1; i < wakeStep; ++i)
+        world->step();
+      ASSERT_TRUE(boxA->isResting());
+      ASSERT_TRUE(boxB->isResting());
+
+      invalidateSimulationModeFromOutside(
+          *world, *otherWorld, changeOtherWorld);
+      ASSERT_FALSE(world->isInSimulationMode());
+      const auto sleepStates = getSleepStates(*world);
+      world->enterSimulationMode();
+      EXPECT_EQ(sleepStates, getSleepStates(*world));
+
+      const Eigen::VectorXd boxBPositions = boxB->getPositions();
+      world->step();
+      EXPECT_FALSE(boxA->isResting());
+      EXPECT_TRUE(boxB->isResting());
+      EXPECT_EQ(boxBPositions, boxB->getPositions());
+    }
+  }
+}
+
+//==============================================================================
+// Island indices are stamped only while automatic sleeping is enabled.
+// Entering simulation mode after sleeping was disabled must not stamp them
+// with the previous step's setting.
+TEST(
+    ConstraintSolver,
+    SimulationPreparationStampsNoIslandWhileSleepingIsDisabled)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+  world->addSkeleton(createSleepTestGround());
+  auto box = createSolverTestBox(
+      "box",
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Vector3d(0.0, 0.0, 0.2495),
+      true);
+  world->addSkeleton(box);
+  world->step();
+  ASSERT_GE(box->getIslandIndex(), 0);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+  ASSERT_EQ(-1, box->getIslandIndex());
+
+  world->setNumSimulationThreads(world->getNumSimulationThreads() + 1u);
+  world->step();
+  EXPECT_EQ(-1, box->getIslandIndex());
 }
 
 //==============================================================================
