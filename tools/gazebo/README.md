@@ -213,7 +213,8 @@ gz-sim.
   the plugin's `RetrieveWorld` feature: settle, mutate, step 500 more, then
   compare the published link poses step by step and the reported contacts
   (their counts on the first step after the mutation and at the end, and the
-  final contact points). The scenarios cover joint spring stiffness and
+  final contact points, paired one-to-one so a repeated point must occur as
+  often in both runs). The scenarios cover joint spring stiffness and
   reference, damping and friction (gz-physics 8 and later), position, velocity and
   effort limits, velocity commands, force, position and velocity, and the
   joint-to-child transform; link and model gravity flags; world gravity;

@@ -14,17 +14,18 @@
 // and compares, step by step, the link poses gz-physics published
 // (ChangedWorldPoses, what gz-sim sees), and the contacts it reported on the
 // first step after the mutation and at the end. A difference beyond --tolerance
-// is a MISMATCH: sleeping changed the simulation. A pose or contact point that
-// is not finite (a run blew up) always differs. The table also reports how
-// many bodies were resting when the mutation was applied and how far the
-// mutation moved the reference run. A mutation that cannot move a body at rest
-// comes with a kick, so a stale parameter still shows; a third run applies the
-// kick alone, and "moved" is then how far the mutation moved the kicked
-// reference run away from it. A scenario with nothing asleep, or whose
-// mutation moved nothing, is UNEXERCISED: it could not have revealed a missed
-// wake. Scenarios whose body DART keeps awake by design (held by a joint
-// constraint, or driven) are marked as such instead; they check that
-// deactivation leaves awake bodies alone.
+// is a MISMATCH: sleeping changed the simulation. Final contact points must
+// pair up one-to-one, so a repeated point counts as often as it occurs. A pose
+// or contact point that is not finite (a run blew up) always differs. The
+// table also reports how many bodies were resting when the mutation was
+// applied and how far the mutation moved the reference run. A mutation that
+// cannot move a body at rest comes with a kick, so a stale parameter still
+// shows; a third run applies the kick alone, and "moved" is then how far the
+// mutation moved the kicked reference run away from it. A scenario with
+// nothing asleep, or whose mutation moved nothing, is UNEXERCISED: it could
+// not have revealed a missed wake. Scenarios whose body DART keeps awake by
+// design (held by a joint constraint, or driven) are marked as such instead;
+// they check that deactivation leaves awake bodies alone.
 //
 // Scenarios cover joint spring stiffness and reference, damping and friction
 // (gz-physics 8 and later), position, velocity and effort limits, velocity
@@ -863,40 +864,57 @@ double displacement(const Outcome& run, std::size_t begin, std::size_t end)
   return difference;
 }
 
-// Largest distance from a contact point in `a` to the nearest one in `b`.
-double contactPointDistance(
+// Whether the contact points pair up one-to-one with every coordinate of each
+// pair within `tolerance`, so a repeated point must occur equally often in
+// both. Kuhn's augmenting paths find such a pairing whenever one exists;
+// pairing sorted points by rank would not, because noise below the tolerance
+// can swap points whose leading coordinates are nearly equal. A coordinate
+// that is not finite never pairs.
+bool contactPointsMatch(
     const std::vector<std::array<double, 3>>& a,
-    const std::vector<std::array<double, 3>>& b)
+    const std::vector<std::array<double, 3>>& b,
+    double tolerance)
 {
-  double distance = 0.0;
-  for (const auto& p : a) {
-    double nearest = std::numeric_limits<double>::infinity();
-    for (const auto& q : b) {
-      nearest = std::min(
-          nearest,
-          std::max(
-              {absDifference(p[0], q[0]),
-               absDifference(p[1], q[1]),
-               absDifference(p[2], q[2])}));
+  if (a.size() != b.size())
+    return false;
+  const auto close = [&](std::size_t i, std::size_t j) {
+    for (std::size_t k = 0; k < 3; ++k) {
+      if (!(absDifference(a[i][k], b[j][k]) <= tolerance))
+        return false;
     }
-    distance = std::max(distance, nearest);
+    return true;
+  };
+  constexpr std::size_t kUnpaired = std::numeric_limits<std::size_t>::max();
+  std::vector<std::size_t> pairOfB(b.size(), kUnpaired);
+  std::vector<bool> visited;
+  const std::function<bool(std::size_t)> augment = [&](std::size_t i) {
+    for (std::size_t j = 0; j < b.size(); ++j) {
+      if (visited[j] || !close(i, j))
+        continue;
+      visited[j] = true;
+      if (pairOfB[j] == kUnpaired || augment(pairOfB[j])) {
+        pairOfB[j] = i;
+        return true;
+      }
+    }
+    return false;
+  };
+  for (std::size_t i = 0; i < a.size(); ++i) {
+    visited.assign(b.size(), false);
+    if (!augment(i))
+      return false;
   }
-  return distance;
+  return true;
 }
 
 // Compares the contact counts on the first step after the mutation and at
 // the end, and the final contact points. Counts in between are not compared:
 // a contact may flicker on a pose difference far below the tolerance.
-double contactDifference(
-    const Outcome& a, const Outcome& b, std::size_t mutated)
+bool contactsMatch(
+    const Outcome& a, const Outcome& b, std::size_t mutated, double tolerance)
 {
-  if (a.contactCounts[mutated] != b.contactCounts[mutated]
-      || a.finalContacts.size() != b.finalContacts.size()) {
-    return std::numeric_limits<double>::infinity();
-  }
-  return std::max(
-      contactPointDistance(a.finalContacts, b.finalContacts),
-      contactPointDistance(b.finalContacts, a.finalContacts));
+  return a.contactCounts[mutated] == b.contactCounts[mutated]
+         && contactPointsMatch(a.finalContacts, b.finalContacts, tolerance);
 }
 
 int usage(const char* program)
@@ -1028,10 +1046,10 @@ int main(int argc, char** argv)
     }
     const double pre = trajectoryDifference(sleeping, reference, 0, mutated);
     const double post = trajectoryDifference(sleeping, reference, mutated, end);
-    const double contacts = contactDifference(sleeping, reference, mutated);
 
     const bool posesDiffer = pre > tolerance || post > tolerance;
-    const bool contactsDiffer = contacts > tolerance;
+    const bool contactsDiffer
+        = !contactsMatch(sleeping, reference, mutated, tolerance);
     const bool asleep = sleeping.resting > 0;
     const bool inert = moved <= tolerance;
     std::vector<std::string> notes;

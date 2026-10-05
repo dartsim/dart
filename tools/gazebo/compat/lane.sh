@@ -424,10 +424,17 @@ step_bench() {
 
 world_3k="$src_dir/gz-sim/examples/worlds/3k_shapes.sdf"
 
-step_worlds() {
+step_worlds() (
   clone gz-sim "$gz_sim_ref"
-  python "$repo_root/tools/gazebo/bench/make_worlds.py" "$world_3k" "$worlds_dir"
-}
+  # Variants share worlds. Publish complete files atomically so concurrent
+  # generators and benchmark consumers never open a partially written world.
+  local staging_dir
+  staging_dir="$(mktemp -d "$work_dir/worlds.XXXXXX")"
+  trap 'rm -rf "$staging_dir"' EXIT
+  python "$repo_root/tools/gazebo/bench/make_worlds.py" "$world_3k" "$staging_dir"
+  mkdir -p "$worlds_dir"
+  mv "$staging_dir/"*.sdf "$worlds_dir/"
+)
 
 # The driver steps rebuild the drivers first (a no-op when they are current),
 # so they never run a stale binary; build output goes to stderr.

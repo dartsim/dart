@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -415,6 +416,87 @@ def test_the_lane_rejects_the_candidate_as_its_own_base(tmp_path):
 
 
 @pytest.mark.skipif(sys.platform != "linux", reason="compat lanes require Linux")
+@pytest.mark.parametrize("pause", ["before-write", "during-write"])
+def test_parallel_bench_variants_read_complete_worlds(tmp_path, pause):
+    work = tmp_path / "work"
+    (work / "src" / "gz-sim" / ".git").mkdir(parents=True)
+    shim = tmp_path / "bin"
+    shim.mkdir()
+    (shim / "git").write_text(
+        '#!/bin/bash\nif [ "$3" = describe ]; then echo gz-sim9_9.5.0; fi\n'
+    )
+    (shim / "cmake").write_text("#!/bin/bash\nexit 0\n")
+    # Pause either before creating the file (both variants need generation)
+    # or after opening it (a file exists, but is not ready for a consumer).
+    (shim / "python").write_text(
+        '#!/bin/bash\nmkdir -p "$3"\necho "$3" >> "$WORLD_CALLS"\n'
+        'if [ "$WORLD_PAUSE" = during-write ]; then\n'
+        '  echo partial > "$3/3k_shapes.sdf"\nfi\n'
+        'touch "$WORLD_STARTED"\n'
+        'if [ "$GZ_COMPAT_VARIANT" = base ]; then\n'
+        '  touch "$WORLD_OBSERVED"\nelse\n'
+        '  timeout 10 bash -c \'until [ -e "$WORLD_OBSERVED" ]; '
+        "do sleep 0.01; done'\nfi\n"
+        'echo complete > "$3/3k_shapes.sdf"\n'
+    )
+    for path in shim.iterdir():
+        path.chmod(0o755)
+    for variant in ("candidate", "base"):
+        (work / variant / "gz-sim").mkdir(parents=True)
+        bench = work / variant / "bench-build"
+        bench.mkdir()
+        driver = bench / "gz_sim_server_bench"
+        driver.write_text(
+            '#!/bin/bash\nworld="$(cat "$3")"\n'
+            '[ "$GZ_COMPAT_VARIANT" != base ] || touch "$WORLD_OBSERVED"\n'
+            '[ "$world" = complete ] || exit 1\n'
+            'echo "read complete world"\n'
+        )
+        driver.chmod(0o755)
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GZ_COMPAT_")}
+    env.update(
+        CONDA_PREFIX=str(tmp_path),
+        GZ_COMPAT_DIR=str(work),
+        DART_PARALLEL_JOBS="1",
+        PATH=str(shim) + os.pathsep + env["PATH"],
+        WORLD_CALLS=str(tmp_path / "world-calls"),
+        WORLD_STARTED=str(tmp_path / "world-started"),
+        WORLD_OBSERVED=str(tmp_path / "world-observed"),
+        WORLD_PAUSE=pause,
+    )
+    command = ["bash", str(LANE), "ionic", "bench-gz-sim"]
+    runs = []
+    try:
+        for variant in ("candidate", "base"):
+            runs.append(
+                subprocess.Popen(
+                    command,
+                    env={**env, "GZ_COMPAT_VARIANT": variant},
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+            )
+            if variant == "candidate":
+                deadline = time.monotonic() + 10
+                while not (tmp_path / "world-started").exists():
+                    assert runs[0].poll() is None, runs[0].communicate()
+                    assert time.monotonic() < deadline, "generator did not start"
+                    time.sleep(0.01)
+        for run in runs:
+            stdout, stderr = run.communicate(timeout=20)
+            assert run.returncode == 0, stdout + stderr
+            assert "read complete world" in stdout
+    finally:
+        for run in runs:
+            if run.poll() is None:
+                run.kill()
+                run.communicate()
+    calls = (tmp_path / "world-calls").read_text().splitlines()
+    assert len(calls) == len(set(calls)), "generators wrote into the same directory"
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="compat lanes require Linux")
 def test_parallel_variants_share_one_clean_tagged_clone(tmp_path):
     git = shutil.which("git")
     remote = tmp_path / "remote"
@@ -447,7 +529,9 @@ def test_parallel_variants_share_one_clean_tagged_clone(tmp_path):
         '"$CLONE_REMOTE" "${@: -1}"\nfi\nexec "$REAL_GIT" "$@"\n'
     )
     # The worlds step calls Python after cloning; this test covers the clone.
-    (shim / "python").write_text("#!/bin/bash\nexit 0\n")
+    (shim / "python").write_text(
+        '#!/bin/bash\nmkdir -p "$3"\ntouch "$3/3k_shapes.sdf"\n'
+    )
     for path in shim.iterdir():
         path.chmod(0o755)
     env = {k: v for k, v in os.environ.items() if not k.startswith("GZ_COMPAT_")}
