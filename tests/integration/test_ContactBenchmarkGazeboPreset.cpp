@@ -400,7 +400,8 @@ TEST(ContactBenchmarkGazeboPreset, FindsModelsTheSdfParserSkips)
     return findSdfSkippedModel(document);
   };
 
-  EXPECT_FALSE(find("<model><link><collision/></link></model><model/>"));
+  EXPECT_FALSE(
+      find("<model><link><collision/></link><joint/></model><model/>"));
   // sdformat does not build models from <population> either.
   EXPECT_FALSE(find("<population><model name=\"box\"/></population>"));
   EXPECT_EQ(
@@ -415,6 +416,42 @@ TEST(ContactBenchmarkGazeboPreset, FindsModelsTheSdfParserSkips)
       find("<model name=\"outer\"><link/><model name=\"inner\"><link/></model>"
            "</model>"),
       "nested <model> inner");
+  EXPECT_EQ(
+      find("<model name=\"a\"><link name=\"link\"/></model>"
+           "<model name=\"b\"><link name=\"link\"/></model>"
+           "<joint name=\"weld\" type=\"fixed\"><parent>a::link</parent>"
+           "<child>b::link</child></joint>"),
+      "world <joint> weld");
+  EXPECT_EQ(find("<joint/>"), "world <joint> ");
+}
+
+//==============================================================================
+TEST(ContactBenchmarkGazeboPreset, ReadsActivePhysicsContactLimit)
+{
+  const auto limit = [](const std::string& physics) {
+    const std::string sdf = "<sdf><world>" + physics + "</world></sdf>";
+    tinyxml2::XMLDocument document;
+    EXPECT_EQ(document.Parse(sdf.c_str()), tinyxml2::XML_SUCCESS);
+    return sdfCollisionPairMaxContacts(document);
+  };
+
+  EXPECT_EQ(limit(""), 20u);
+  EXPECT_EQ(limit("<physics/>"), 20u);
+  EXPECT_EQ(limit("<physics><max_contacts>4</max_contacts></physics>"), 4u);
+  EXPECT_EQ(limit("<physics><max_contacts>0</max_contacts></physics>"), 0u);
+  EXPECT_EQ(
+      limit("<physics><max_contacts>4</max_contacts></physics>"
+            "<physics><max_contacts>8</max_contacts></physics>"),
+      4u);
+  EXPECT_EQ(
+      limit("<physics><max_contacts>4</max_contacts></physics>"
+            "<physics default=\"true\"><max_contacts>8</max_contacts></physics>"
+            "<physics default=\"1\"><max_contacts>12</max_contacts></physics>"),
+      4u);
+  EXPECT_EQ(
+      limit("<physics/>"
+            "<physics default=\"1\"><max_contacts>8</max_contacts></physics>"),
+      20u);
 }
 
 //==============================================================================

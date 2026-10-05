@@ -12,9 +12,9 @@
 //      like gz-sim's systems do),
 //   4. step --steps more,
 // and compares, step by step, the link poses gz-physics published
-// (ChangedWorldPoses, what gz-sim sees), and the contacts it reported when the
-// mutation was applied and at the end. A difference beyond --tolerance is
-// a MISMATCH: sleeping changed the simulation. A pose or contact point that
+// (ChangedWorldPoses, what gz-sim sees), and the contacts it reported on the
+// first step after the mutation and at the end. A difference beyond --tolerance
+// is a MISMATCH: sleeping changed the simulation. A pose or contact point that
 // is not finite (a run blew up) always differs. The table also reports how
 // many bodies were resting when the mutation was applied and how far the
 // mutation moved the reference run. A mutation that cannot move a body at rest
@@ -884,14 +884,13 @@ double contactPointDistance(
   return distance;
 }
 
-// Compares the contact counts when the mutation was applied (when sleeping
-// bodies are asleep) and at the end, and the final contact points. Counts in
-// between are not compared: a contact may flicker on a pose difference far
-// below the tolerance.
+// Compares the contact counts on the first step after the mutation and at
+// the end, and the final contact points. Counts in between are not compared:
+// a contact may flicker on a pose difference far below the tolerance.
 double contactDifference(
     const Outcome& a, const Outcome& b, std::size_t mutated)
 {
-  if (a.contactCounts[mutated - 1] != b.contactCounts[mutated - 1]
+  if (a.contactCounts[mutated] != b.contactCounts[mutated]
       || a.finalContacts.size() != b.finalContacts.size()) {
     return std::numeric_limits<double>::infinity();
   }
@@ -1059,11 +1058,11 @@ int main(int argc, char** argv)
 
     const std::string resting = std::to_string(sleeping.resting) + "/"
                                 + std::to_string(sleeping.mobile);
-    // Contact counts with sleeping and without, when the mutation was applied
+    // Contact counts with sleeping and without, on the first post-mutation step
     // and at the end.
     const std::string contactCounts
-        = std::to_string(sleeping.contactCounts[mutated - 1]) + "/"
-          + std::to_string(reference.contactCounts[mutated - 1]) + ","
+        = std::to_string(sleeping.contactCounts[mutated]) + "/"
+          + std::to_string(reference.contactCounts[mutated]) + ","
           + std::to_string(sleeping.finalContacts.size()) + "/"
           + std::to_string(reference.finalContacts.size());
     std::printf(

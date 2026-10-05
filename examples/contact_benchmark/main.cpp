@@ -337,11 +337,14 @@ void printUsage(const std::string& programName)
          "0x7fffffff: it does not model\n"
       << "                            gz-physics' bitmask filter.\n"
       << "                            Rejects worlds with an <include> or a "
-         "nested <model>, which\n"
-      << "                            DART's SDF parser skips.\n"
+         "nested <model>, or\n"
+      << "                            a world-level <joint>, which DART's SDF "
+         "parser skips.\n"
       << "  --gz-pair-max-contacts N  gz-sim per-pair contact limit for "
          "--gz-preset (SDF\n"
-      << "                            <max_contacts>); default 20.\n"
+      << "                            <max_contacts>); defaults to the active "
+         "physics profile's value\n"
+      << "                            (20 if omitted).\n"
       << "  --disable-deactivation    Disable automatic "
          "sleeping/deactivation.\n"
       << "  --disable-secondary-lcp   Disable the boxed-LCP fallback solver "
@@ -588,10 +591,6 @@ void normalizeGazeboPresetOptions(Options& options)
     options.collisionEngine = CollisionEngine::Ode;
   if (!options.maxContacts.has_value())
     options.maxContacts = contact_scene::kGazeboMaxNumContacts;
-  if (!options.gzCollisionPairMaxContacts.has_value()) {
-    options.gzCollisionPairMaxContacts
-        = contact_scene::kGazeboDefaultCollisionPairMaxContacts;
-  }
 }
 
 Options parseOptions(int argc, char* argv[])
@@ -2965,7 +2964,7 @@ int main(int argc, char* argv[])
       if (const auto skipped = contact_scene::findSdfSkippedModel(sdf)) {
         std::cerr << "--gz-preset does not support " << absoluteSdfPath
                   << ": DART's SDF parser skips its " << *skipped
-                  << ", so that model would be missing\n";
+                  << ", so that entity would be missing\n";
         return 1;
       }
       if (const auto mask = contact_scene::findGazeboFilteringBitmask(sdf)) {
@@ -2975,6 +2974,10 @@ int main(int argc, char* argv[])
                   << "); only masks up to 0x7fffffff with all the bits of 0xff "
                      "are supported\n";
         return 1;
+      }
+      if (!options.gzCollisionPairMaxContacts.has_value()) {
+        options.gzCollisionPairMaxContacts
+            = contact_scene::sdfCollisionPairMaxContacts(sdf);
       }
     }
 

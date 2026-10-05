@@ -206,9 +206,9 @@ gz-sim.
   DART's deactivation enabled and disabled, reaching DART's `World` through
   the plugin's `RetrieveWorld` feature: settle, mutate, step 500 more, then
   compare the published link poses step by step and the reported contacts
-  (their counts when the mutation was applied and at the end, and the final
-  contact points). The scenarios cover joint spring stiffness and reference,
-  damping and friction (gz-physics 8 and later), position, velocity and
+  (their counts on the first step after the mutation and at the end, and the
+  final contact points). The scenarios cover joint spring stiffness and
+  reference, damping and friction (gz-physics 8 and later), position, velocity and
   effort limits, velocity commands, force, position and velocity, and the
   joint-to-child transform; link and model gravity flags; world gravity;
   free-group pose and linear velocity; link wrenches; model static and
@@ -226,8 +226,8 @@ gz-sim.
   shows how many bodies were resting when the mutation was applied, how far
   the mutation moved the reference run, the largest pose difference before
   and after the mutation, and the contact counts (with/without sleeping, at
-  the mutation and at the end). A `MISMATCH` names what differed (`poses`,
-  `contacts`): DART's deactivation changed what Gazebo sees, sometimes even
+  the first post-mutation step and at the end). A `MISMATCH` names what differed
+  (`poses`, `contacts`): DART's deactivation changed what Gazebo sees, sometimes even
   with nothing asleep. A pose or contact point that is not finite (a run that
   blew up) always differs. A row with `nothing asleep`, or whose mutation was
   `inert` (moved nothing), is `UNEXERCISED`: it cannot reveal a missed wake.
@@ -278,8 +278,15 @@ It rejects a world with a mask that lacks a bit of `0xff`, or that sdformat
 stores as more than `0x7fffffff` (such as `0xffffffff` or `-1`), which
 gz-physics reads as 0; without one, the filter drops nothing. It also rejects
 a world with an `<include>` (in the world or in a model) or a model nested in
-a model: DART's SDF parser skips both, so those models would be missing.
-gz-sim's `3k_shapes.sdf` and the generated worlds have neither.
+a model, or a world-level `<joint>` connecting models: DART's SDF parser
+skips these, so those entities would be missing. gz-sim's `3k_shapes.sdf`
+and the generated worlds contain none of these skipped entities.
+
+The preset's per-pair contact limit comes from the active SDF physics
+profile's `<max_contacts>` (20 when omitted). Released gz-sim selects the
+first profile, even if a later one is marked `default`.
+`--gz-pair-max-contacts N` overrides that value; the global contact cap
+remains 10000.
 
 ## Not covered yet
 

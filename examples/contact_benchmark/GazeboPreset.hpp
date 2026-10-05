@@ -82,6 +82,23 @@ constexpr std::size_t kGazeboMaxNumContacts = 10000;
 /// <physics><max_contacts> default.
 constexpr std::size_t kGazeboDefaultCollisionPairMaxContacts = 20;
 
+/// Reads <max_contacts> from the first world's first physics profile, which
+/// released gz-sim selects with PhysicsByIndex(0), even if a later profile is
+/// marked default. Missing values use sdformat's default of 20.
+inline std::size_t sdfCollisionPairMaxContacts(
+    const tinyxml2::XMLDocument& document)
+{
+  const auto* sdf = document.FirstChildElement("sdf");
+  const auto* world = sdf ? sdf->FirstChildElement("world") : nullptr;
+  const auto* physics = world ? world->FirstChildElement("physics") : nullptr;
+  const auto* maxContacts
+      = physics ? physics->FirstChildElement("max_contacts") : nullptr;
+  int limit = kGazeboDefaultCollisionPairMaxContacts;
+  if (maxContacts)
+    maxContacts->QueryIntText(&limit);
+  return static_cast<std::size_t>(limit);
+}
+
 /// Side of the cube gz-physics SDFFeatures ConstructPlane builds for an SDF
 /// <plane>.
 constexpr double kGazeboPlaneBoxSize = 2100.0;
@@ -267,13 +284,15 @@ inline std::optional<std::string> findGazeboFilteringBitmask(
 /// DART's SdfParser reads only the <model> elements of a world and the <link>
 /// and <joint> elements of a model, so a model that sdformat includes (an
 /// <include> in a world or a model) or that gz-physics builds nested in a model
-/// would be missing. Returns the first such element under `node`, as
-/// "<include> <uri>" or "nested <model> <name>", or nothing.
+/// would be missing. It also skips world-level joints connecting models.
+/// Returns the first such element under `node`, as "<include> <uri>",
+/// "nested <model> <name>" or "world <joint> <name>", or nothing.
 inline std::optional<std::string> findSdfSkippedModel(
     const tinyxml2::XMLNode& node)
 {
   const auto* parent = node.ToElement();
   const bool inModel = parent && std::string_view(parent->Name()) == "model";
+  const bool inWorld = parent && std::string_view(parent->Name()) == "world";
   for (const auto* element = node.FirstChildElement(); element;
        element = element->NextSiblingElement()) {
     const std::string_view name = element->Name();
@@ -285,6 +304,10 @@ inline std::optional<std::string> findSdfSkippedModel(
     if (inModel && name == "model") {
       const char* modelName = element->Attribute("name");
       return std::string("nested <model> ") + (modelName ? modelName : "");
+    }
+    if (inWorld && name == "joint") {
+      const char* jointName = element->Attribute("name");
+      return std::string("world <joint> ") + (jointName ? jointName : "");
     }
     if (auto found = findSdfSkippedModel(*element))
       return found;
