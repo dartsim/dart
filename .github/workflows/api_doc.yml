@@ -11,10 +11,12 @@ on:
   pull_request:
     branches:
       - "**"
-  schedule:
-    # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
-    - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
   workflow_dispatch:
+  # Nightly (nightly.yml) runs this workflow on release-6.20 every night.
+  workflow_call:
+
+permissions:
+  contents: read
 
 concurrency:
   # Protected release branches should finish every post-merge validation run.
@@ -22,8 +24,8 @@ concurrency:
   # run-specific group on release refs while keeping PR/topic refs cancellable.
   group: >-
     ${{ startsWith(github.ref, 'refs/heads/release-')
-        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
-        || format('{0}-{1}', github.workflow, github.ref) }}
+        && format('api-doc-{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || format('api-doc-{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: ${{ github.event_name != 'schedule' && !startsWith(github.ref, 'refs/heads/release-') }}
 
 jobs:
@@ -32,32 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BUILD_TYPE: Release
-      COMPILER: gcc
-      BUILD_DOCS: ON
     steps:
-      # Extract branch name
-      - name: Extract branch name
-        if: github.event_name != 'pull_request'
-        shell: bash
-        run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
-        id: extract_branch
-
-      # Extract branch name on pull request
-      # Note: build_docs.sh clones from dartsim/dart, so fork PR head refs may
-      # not exist there. Use the base ref to ensure the checkout succeeds.
-      - name: Set docs branch for pull requests
-        if: github.event_name == 'pull_request'
-        run: echo "BRANCH_NAME=${GITHUB_BASE_REF}" >> $GITHUB_ENV
-
-      - name: Detect passwordless sudo
-        run: |
-          if command -v sudo && sudo -n true 2>/dev/null; then
-            echo "SUDO_AVAILABLE=true" >> "$GITHUB_ENV"
-          else
-            echo "SUDO_AVAILABLE=false" >> "$GITHUB_ENV"
-            echo "Passwordless sudo unavailable; skipping apt-based setup."
-          fi
-
       - name: Checkout
         uses: actions/checkout@v7
 
@@ -67,75 +44,15 @@ jobs:
           cache: true
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
-      - name: Install pixi environment
-        run: pixi install --locked
-
-      - name: Record pixi prefix
-        run: |
-          PIXI_PREFIX=$(pixi -q run python -c "import sys; print(sys.prefix)")
-          echo "PIXI_PREFIX=${PIXI_PREFIX}" >> "$GITHUB_ENV"
-
-      - name: Prework for installing packages using cache
-        if: env.SUDO_AVAILABLE == 'true'
-        run: |
-          sudo -n apt update
-          sudo -n apt install -y cmake
-
-      - name: Install Dependencies with cache
-        if: env.SUDO_AVAILABLE == 'true'
+      - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
-          packages: >
-            build-essential
-            libboost-all-dev
-            clang
-            clang-format-14
-            cmake
-            curl
-            doxygen
-            gcovr
-            git
-            lcov
-            lsb-release
-            pkg-config
-            software-properties-common
-            valgrind
-            libassimp-dev
-            libeigen3-dev
-            libfcl-dev
-            libfmt-dev
-            freeglut3-dev
-            libxi-dev
-            libxmu-dev
-            libbullet-dev
-            libtinyxml2-dev
-            liburdfdom-dev
-            liburdfdom-headers-dev
-            libopenscenegraph-dev
-            liboctomap-dev
-            libode-dev
-            libspdlog-dev
-            ocl-icd-opencl-dev
-            libpython3-dev
-            pybind11-dev
-            python3
-            python3-dev
-            python3-numpy
-            python3-pip
-            python3-setuptools
-          version: 1.2
+          packages: libgl1-mesa-dev libglu1-mesa-dev
+          version: "2"
 
-      - name: Install Python dependencies
+      # Validation only: build this checkout's Doxygen docs; nothing is
+      # published. scripts/build_docs.sh builds the released versions instead.
+      - name: Build API docs
         run: |
-          pixi run python -m pip install pytest -U
-
-      # Validation only: this job does not publish the API docs, so scheduled
-      # runs from the default branch cannot replace the GitHub Pages site.
-      - name: Build
-        run: |
-          CMAKE_PREFIX_PATH="$PIXI_PREFIX" ./scripts/build_docs.sh build
-
-      - name: Cleanup
-        if: always()
-        run: |
-          ./scripts/build_docs.sh clean
+          pixi run config
+          pixi run -- cmake --build "build/default/cpp/$BUILD_TYPE" --target docs

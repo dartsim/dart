@@ -10,13 +10,17 @@ on:
     # Branch validation happens via pull_request; only run on push for the
     # mainline refs to avoid duplicate push+PR runs on feature branches.
     branches:
-      - "main"
       - "release-*"
     paths:
       - "CMakeLists.txt"
+      - "cmake/**"
+      - "pixi.lock"
+      - "pixi.toml"
       - "dart/CMakeLists.txt"
       - "dart/simd/**"
       - "dart/collision/dart/**"
+      - "tests/CMakeLists.txt"
+      - "tests/unit/CMakeLists.txt"
       - "tests/unit/simd/**"
       - "tests/unit/collision/test_DARTCollisionDetector.cpp"
       - "tests/benchmark/CMakeLists.txt"
@@ -27,15 +31,22 @@ on:
       - "**"
     paths:
       - "CMakeLists.txt"
+      - "cmake/**"
+      - "pixi.lock"
+      - "pixi.toml"
       - "dart/CMakeLists.txt"
       - "dart/simd/**"
       - "dart/collision/dart/**"
+      - "tests/CMakeLists.txt"
+      - "tests/unit/CMakeLists.txt"
       - "tests/unit/simd/**"
       - "tests/unit/collision/test_DARTCollisionDetector.cpp"
       - "tests/benchmark/CMakeLists.txt"
       - "tests/benchmark/simd/**"
       - ".github/workflows/ci_simd.yml"
   workflow_dispatch:
+  # Nightly (nightly.yml) runs every SIMD level on release-6.20 every night.
+  workflow_call:
 
 permissions:
   contents: read
@@ -46,8 +57,8 @@ concurrency:
   # run-specific group on release refs while keeping PR/topic refs cancellable.
   group: >-
     ${{ startsWith(github.ref, 'refs/heads/release-')
-        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
-        || format('{0}-{1}', github.workflow, github.ref) }}
+        && format('ci-simd-{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || format('ci-simd-{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads/release-') }}
 
 jobs:
