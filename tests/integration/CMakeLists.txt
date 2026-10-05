@@ -50,6 +50,19 @@ endif()
 if(TARGET dart-collision-ode)
   target_link_libraries(INTEGRATION_StepAllocation PRIVATE dart-collision-ode)
 endif()
+# T0 of the friction-solver evaluation. Its scenes are shared with the
+# standalone harness in tools/friction_eval, formatted with this tree.
+dart_add_test("integration" test_FrictionAnalytic)
+target_include_directories(
+  test_FrictionAnalytic
+  PRIVATE "${PROJECT_SOURCE_DIR}/tools/friction_eval"
+)
+foreach(collision_engine dart-collision-bullet dart-collision-ode)
+  if(TARGET ${collision_engine})
+    target_link_libraries(test_FrictionAnalytic ${collision_engine})
+  endif()
+endforeach()
+dart_format_add("${PROJECT_SOURCE_DIR}/tools/friction_eval/friction_scenes.hpp")
 dart_add_test("integration" test_IslandDeactivation)
 dart_add_test("integration" test_Issue719)
 dart_add_test("integration" test_GenericJoints)
