@@ -3385,10 +3385,8 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
     workflows = tmp_path / ".github" / "workflows"
     workflows.mkdir(parents=True)
     (workflows / "ci_ubuntu.yml").write_text(
-        "pixi run check-ai-commands\n"
-        "pixi run check-ai-infra\n"
+        "pixi run check-lint\n"
         "pixi run test-ai-infra\n"
-        "scripts/check_ai_infrastructure.py --scenarios\n"
         "      - name: Agent visual verification smoke\n"
         "if: matrix.build_type == 'Release'\n"
         "xvfb-run\n"
@@ -3441,17 +3439,13 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
     ]
 
 
-def test_ci_wiring_requires_semantic_ai_completion_task(tmp_path):
+def test_ci_wiring_requires_the_check_lint_aggregate(tmp_path):
     workflow = tmp_path / ".github" / "workflows" / "ci_ubuntu.yml"
     workflow.parent.mkdir(parents=True)
     workflow.write_text(
         (ROOT / ".github/workflows/ci_ubuntu.yml")
         .read_text(encoding="utf-8")
-        .replace(
-            "pixi run check-ai-infra",
-            "pixi run python scripts/check_ai_infrastructure.py --check",
-            1,
-        ),
+        .replace("pixi run check-lint", "pixi run check-lint-cpp"),
         encoding="utf-8",
     )
     errors = []
@@ -3460,9 +3454,53 @@ def test_ci_wiring_requires_semantic_ai_completion_task(tmp_path):
 
     assert any(
         ".github/workflows/ci_ubuntu.yml: missing AI check "
-        "`pixi run check-ai-infra`" in error
+        "`pixi run check-lint`" in error
         for error in errors
     )
+
+
+def test_ci_wiring_requires_check_lint_to_run_the_semantic_ai_check(tmp_path):
+    workflow = tmp_path / ".github" / "workflows" / "ci_ubuntu.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        (ROOT / ".github/workflows/ci_ubuntu.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (tmp_path / "pixi.toml").write_text(
+        '[tasks]\ncheck-lint = { depends-on = ["check-ai-commands"] }\n',
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_ci_wiring(tmp_path, errors)
+
+    assert (
+        "pixi.toml: `check-lint` must depend on `check-ai-infra` "
+        "(CI Linux runs the AI checks through it)"
+    ) in errors
+    assert not any("must depend on `check-ai-commands`" in error for error in errors)
+
+
+def test_ci_wiring_rejects_a_shorthand_check_lint_without_the_ai_checks(tmp_path):
+    workflow = tmp_path / ".github" / "workflows" / "ci_ubuntu.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        (ROOT / ".github/workflows/ci_ubuntu.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (tmp_path / "pixi.toml").write_text(
+        '[tasks]\ncheck-lint = "codespell --config .codespellrc"\n',
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_ci_wiring(tmp_path, errors)
+
+    for task in ("check-ai-commands", "check-ai-infra"):
+        assert (
+            f"pixi.toml: `check-lint` must depend on `{task}` "
+            "(CI Linux runs the AI checks through it)"
+        ) in errors
 
 
 @pytest.mark.parametrize(
