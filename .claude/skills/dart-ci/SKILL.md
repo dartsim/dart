@@ -63,6 +63,10 @@ The CI workflows that a failing PR check belongs to (full 12-workflow index:
 | `ci_gz_physics.yml` | Gazebo integration                     | Ubuntu     |
 | `api_doc.yml`       | Doxygen API docs build                 | Ubuntu     |
 
+FreeBSD, toolchain, CodeQL, wheels, Linux ASan/coverage/Eigen alignment, and
+macOS Debug run only in `nightly.yml`; their failures arrive as
+`nightly-failure` issues, not PR checks.
+
 ## Downstream Compatibility Policy
 
 Package, exported-target, collision, constraint, and dependency changes can
