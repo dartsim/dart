@@ -1,13 +1,13 @@
 # DART 6.20 AI Workflows
 
-This directory contains the release-branch AI operating model used by Codex,
+This directory contains the DART 6 AI operating model used by Codex,
 Claude Code, and OpenCode. It focuses on the workflows needed to maintain the
 DART 6 LTS line.
 
 ## Visibility And Context Budget
 
 `AGENTS.md`, this start list, and workflow `Required Reading` blocks are the
-visibility contract for release-branch agents. Do not copy the same rule into
+visibility contract for DART 6 agents. Do not copy the same rule into
 every workflow; move it to the owner doc, then add only the pointer needed for
 the workflow to load it.
 
@@ -83,11 +83,11 @@ For documentation placement, use
 For living roadmap state, use [`docs/plans/dashboard.md`](../plans/dashboard.md).
 
 Use `$dart-ultrawork` in Codex or `/dart-ultrawork` in
-Claude/OpenCode when DART 6 work should run as an autonomous release-branch
+Claude/OpenCode when DART 6 work should run as an autonomous
 project from either a provided brief or one up-front decision interview. The
 workflow keeps `docs/dev_tasks/<task>/` as the project home and records
 acceptance criteria, risks, decisions, verification, progress, and handoff
-state before routing bounded work through the release-branch
+state before routing bounded work through the DART 6
 orchestrator/executor model. Use `dart-new-task` for ordinary bounded
 single-session work unless the user explicitly asks for autonomous project
 handling.
@@ -142,7 +142,8 @@ bounded entry per validated lane:
 Treat these entries as replaceable versioned guidance, not a permanent model
 taxonomy.
 
-## Release Profile
+## Development Profile
 
-`release-6.20` preserves C++17, pybind11, `dart::utils`, OSG, and
-Gazebo/gz-physics compatibility. The release component map is [`architecture.md`](../onboarding/architecture.md).
+`main` develops the next release (currently DART 6.20) and preserves C++17,
+pybind11, `dart::utils`, OSG, and Gazebo/gz-physics compatibility. The DART 6
+component map is [`architecture.md`](../onboarding/architecture.md).

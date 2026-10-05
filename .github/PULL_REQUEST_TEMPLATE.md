@@ -37,7 +37,7 @@
 
 #### Checklist
 
-- [ ] Milestone set (`DART 6.20.0` for `release-6.20`)
+- [ ] Milestone set (`DART 6.20.0` for `main`)
 - [ ] CHANGELOG.md updated if required
 - [ ] Add unit tests for new functionality
 - [ ] Document new methods and classes

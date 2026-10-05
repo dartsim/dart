@@ -7,7 +7,7 @@
 name: CodeQL
 
 on:
-  # Nightly (nightly.yml) scans release-6.20 every night; dispatch this for an
+  # Nightly (nightly.yml) scans main every night; dispatch this for an
   # on-demand scan of another ref.
   workflow_dispatch:
   workflow_call:
