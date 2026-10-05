@@ -47,12 +47,12 @@ jobs:
           # GCC 16 is not in Ubuntu 24.04; it comes from the Ubuntu toolchain
           # PPA. It is the compiler that exposed dartsim/dart#3447 (aligned
           # vector stores in base-object constructors of Frame-derived classes).
-          - name: gcc (newest)
+          - name: gcc 16
             family: gcc
             version: "16"
             cc: gcc-16
             cxx: g++-16
-          - name: clang (newest)
+          - name: clang 19
             family: clang
             version: "19"
             cc: clang-19
@@ -92,9 +92,8 @@ jobs:
         run: |
           set -euo pipefail
           "${CC}" --version
-          # CC/CXX are honored by the `config` task's cmake invocation (it does
-          # not pin a compiler), so the whole tree is compiled with the selected
-          # toolchain.
-          pixi run config
+          # CC/CXX are honored by the `config` task that `build-tests` runs
+          # first (it does not pin a compiler), so the whole tree is compiled
+          # with the selected toolchain.
           pixi run build-tests
           pixi run -- bash -c 'ctest --test-dir "build/${PIXI_ENVIRONMENT_NAME}/cpp/Release" --output-on-failure -j2'

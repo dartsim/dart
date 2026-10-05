@@ -12,6 +12,7 @@ on:
   pull_request:
     # CI changes get the whole matrix; the report only dry-runs on PRs.
     paths:
+      - ".github/codeql/**"
       - ".github/workflows/**"
       - "scripts/nightly_ci_report.py"
 

@@ -47,7 +47,6 @@ jobs:
   build_wheels:
     name: ${{ matrix.os }}-${{ matrix.build }}
     runs-on: ${{ matrix.runner }}
-    continue-on-error: ${{ matrix.experimental }}
     timeout-minutes: 120
     defaults:
       run:
@@ -64,28 +63,24 @@ jobs:
             runner: ubuntu-24.04
             build: "cp313-manylinux_x86_64"
             pixi_env: py313-wheel
-            experimental: false
             release_only: false
 
           - os: linux
             runner: ubuntu-24.04
             build: "cp312-manylinux_x86_64"
             pixi_env: py312-wheel
-            experimental: false
             release_only: true
 
           - os: linux
             runner: ubuntu-24.04
             build: "cp311-manylinux_x86_64"
             pixi_env: py311-wheel
-            experimental: false
             release_only: true
 
           - os: linux
             runner: ubuntu-24.04
             build: "cp310-manylinux_x86_64"
             pixi_env: py310-wheel
-            experimental: false
             release_only: true
 
           # Pin macOS to macos-15 (not macos-latest): dependency packages are
@@ -95,35 +90,30 @@ jobs:
             runner: macos-15
             build: "cp313-macosx_arm64"
             pixi_env: py313-wheel
-            experimental: false
             release_only: false
 
           - os: macos
             runner: macos-15
             build: "cp312-macosx_arm64"
             pixi_env: py312-wheel
-            experimental: false
             release_only: true
 
           - os: windows
             runner: windows-2025-vs2026
             build: "cp313-win_amd64"
             pixi_env: py313-wheel
-            experimental: false
             release_only: false
 
           - os: windows
             runner: windows-2025-vs2026
             build: "cp312-win_amd64"
             pixi_env: py312-wheel
-            experimental: false
             release_only: true
 
     env:
       CMAKE_BUILD_PARALLEL_LEVEL: 8
       CMAKE_GENERATOR: ${{ matrix.os == 'windows' && 'Visual Studio 18 2026' || '' }}
       CMAKE_TOOLCHAIN_FILE: ""
-      DART_PARALLEL_JOBS: 8
       DARTPY_REF: ${{ github.event.inputs.ref || github.ref }}
       DARTPY_CHECKOUT_REF: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.sha }}
       MACOSX_DEPLOYMENT_TARGET: "15.0"
@@ -133,8 +123,10 @@ jobs:
         with:
           ref: ${{ env.DARTPY_CHECKOUT_REF }}
 
+      # Every publishing run (tag push or publish=true dispatch) must build a
+      # tag whose version matches package.xml.
       - name: Validate publish inputs
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' }}
+        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true') }}
         run: |
           case "${DARTPY_REF}" in
             v*|refs/tags/v*) ;;
