@@ -98,7 +98,7 @@ the PR.
 
 ## Dashboard Surface
 
-The release-branch dashboard runner builds and executes the bounded CPU
+The DART 6 dashboard runner builds and executes the bounded CPU
 benchmark surfaces that are safe to publish from GitHub Actions:
 
 ```bash
@@ -182,14 +182,13 @@ one.
 ## Revision Comparisons
 
 Use the soft-body comparison script for PR evidence that must compare the
-current commit against both its parent and the release-branch base on the same
-host:
+current commit against both its parent and the `main` base on the same host:
 
 ```bash
 python3 scripts/compare_soft_body_performance.py \
   --current HEAD \
   --parent HEAD^ \
-  --base origin/release-6.20 \
+  --base origin/main \
   --detectors dart,fcl \
   --threads 1,16 \
   --benchmark-min-time 1s \
