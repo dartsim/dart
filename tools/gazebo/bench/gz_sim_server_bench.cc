@@ -8,7 +8,10 @@
 //
 // Prints the time per iteration for every chunk of iterations, then a summary
 // (the real-time factor assumes the 1 ms step of the gz-sim example worlds).
+// An explicit --engine must load and register a dartsim plugin before the
+// server starts, so an unloadable plugin cannot yield timings without physics.
 #include <gz/common/Console.hh>
+#include <gz/plugin/Loader.hh>
 #include <gz/sim/Server.hh>
 #include <gz/sim/ServerConfig.hh>
 
@@ -60,8 +63,17 @@ int main(int argc, char** argv)
     std::fprintf(stderr, "world file must not be empty\n");
     return 2;
   }
-  if (!engine.empty())
+  gz::plugin::Loader loader;
+  if (!engine.empty()) {
+    const auto plugins = loader.LoadLib(engine);
+    if (std::none_of(plugins.begin(), plugins.end(), [](const auto& name) {
+          return name.find("dartsim") != std::string::npos;
+        })) {
+      std::fprintf(stderr, "no dartsim plugin in %s\n", engine.c_str());
+      return 2;
+    }
     config.SetPhysicsEngine(engine);
+  }
 
   using Clock = std::chrono::steady_clock;
   const auto loadStart = Clock::now();

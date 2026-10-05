@@ -62,7 +62,7 @@ target_link_libraries(gz_physics_step_bench PRIVATE ${gz_physics_libraries})
 add_executable(gz_sim_server_bench gz_sim_server_bench.cc)
 target_link_libraries(
   gz_sim_server_bench
-  PRIVATE ${gz_sim}::${gz_sim} ${gz_common}::${gz_common}
+  PRIVATE ${gz_sim}::${gz_sim} ${gz_common}::${gz_common} ${gz_plugin}::loader
 )
 
 add_executable(gz_sleep_oracle gz_sleep_oracle.cc)

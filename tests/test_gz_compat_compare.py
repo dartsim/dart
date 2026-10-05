@@ -143,12 +143,18 @@ def test_baseline_lists_cases_and_only_caseless_failures_by_test(tmp_path, capsy
     assert "gz-sim INTEGRATION_user_commands UserCommandsTest.Create\n" in text
     # A test explained by its failing cases gets no test-level entry, which
     # would accept any later crash of that test.
-    assert "gz-sim INTEGRATION_user_commands\n" not in text
+    assert "gz-sim INTEGRATION_user_commands" not in text.splitlines()
     assert f"max-seconds gz-physics {STEP_WORLD} Step/0.StepWorld 5.4\n" in text
-    assert "# gz-physics\ntests gz-physics 2\n" in text
-    assert "# gz-sim\ntests gz-sim 3\n" in text
+    assert text.endswith(
+        "# CTest tests of the baseline run (compare requires each one)\n"
+        "test gz-physics COMMON_TEST_simulation_features_bullet\n"
+        f"test gz-physics {STEP_WORLD}\n"
+        "test gz-sim INTEGRATION_imu\n"
+        "test gz-sim INTEGRATION_log_system\n"
+        "test gz-sim INTEGRATION_user_commands\n"
+    )
     # Only DART's own StepWorld case gets a time limit.
-    assert "COMMON_TEST_simulation_features_bullet" not in text
+    assert "max-seconds gz-physics COMMON_TEST_simulation_features_bullet" not in text
 
     # Fixing a 6.19.4 failure, hitting an accepted difference, and repeating
     # a 6.19.4 crash all pass, and the accepted difference stays visible.
@@ -614,7 +620,9 @@ def test_missing_expected_is_an_error_unless_writing_baseline(tmp_path, capsys):
     assert str(expected) in output.err
     assert "PASS" not in output.out
     assert _compare(tmp_path, expected, "--write-baseline") == 0
-    assert "tests gz-physics 0" in expected.read_text()
+    assert expected.read_text().endswith(
+        "# CTest tests of the baseline run (compare requires each one)\n"
+    )
 
 
 @pytest.mark.parametrize("value", ["inf", "nan", "0", "-1", "1oops", "oops"])
@@ -646,13 +654,11 @@ def test_invalid_timing_multipliers_are_argparse_errors(
 def test_invalid_expected_numbers_are_errors(tmp_path, capsys, value):
     _write_lane(tmp_path, _step_world(2.0), {})
     expected = tmp_path / "expected.txt"
-    for line in (
-        f"max-seconds gz-physics {STEP_WORLD} Step/0.StepWorld {value}\n",
-        f"tests gz-physics {value}\n",
-    ):
-        expected.write_text(line)
-        assert _compare(tmp_path, expected) == 2
-        assert "PASS" not in capsys.readouterr().out
+    expected.write_text(
+        f"max-seconds gz-physics {STEP_WORLD} Step/0.StepWorld {value}\n"
+    )
+    assert _compare(tmp_path, expected) == 2
+    assert "PASS" not in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("seconds", [float("inf"), float("nan"), -1, "oops"])
@@ -730,9 +736,10 @@ def test_a_test_or_timed_case_missing_from_the_results_is_an_error(tmp_path, cap
     assert f"NEW        gz-physics {STEP_WORLD} (SEGFAULT)\n" in capsys.readouterr().out
 
 
-def test_a_test_that_stops_registering_is_an_error(tmp_path, capsys):
+@pytest.mark.parametrize("replacement", [False, True])
+def test_a_test_that_stops_registering_is_an_error(tmp_path, capsys, replacement):
     expected = tmp_path / "expected.txt"
-    expected.write_text("tests gz-sim 2\n")
+    expected.write_text("test gz-sim INTEGRATION_entity\ntest gz-sim INTEGRATION_imu\n")
     imu = {"INTEGRATION_imu": {"Imu.Rotating": (1.0, False)}}
     sim = {**imu, "INTEGRATION_entity": {"Entity.Cmd": (1.0, False)}}
     base = tmp_path / "base"
@@ -743,12 +750,30 @@ def test_a_test_that_stops_registering_is_an_error(tmp_path, capsys):
     capsys.readouterr()
 
     # A passing test that no longer registers is in no expected-failure entry.
-    _write_lane(candidate, _step_world(2.0), imu)
+    remaining = dict(imu)
+    if replacement:
+        remaining["INTEGRATION_new"] = {"New.Case": (1.0, False)}
+    _write_lane(candidate, _step_world(2.0), remaining)
     assert _compare(candidate, expected) == 2
-    assert "gz-sim ran 1 CTest tests, fewer than the 2" in capsys.readouterr().err
+    assert "missing from the results: INTEGRATION_entity" in capsys.readouterr().err
     expected.write_text("")
     assert _compare(candidate, expected, "--base-results", str(base)) == 2
     assert "missing from the results: INTEGRATION_entity" in capsys.readouterr().err
+
+
+def test_extra_registered_tests_are_allowed(tmp_path, capsys):
+    expected = tmp_path / "expected.txt"
+    expected.write_text("test gz-sim INTEGRATION_imu\n")
+    _write_lane(
+        tmp_path,
+        _step_world(2.0),
+        {
+            "INTEGRATION_imu": {"Imu.Rotating": (1.0, False)},
+            "INTEGRATION_new": {"New.Case": (1.0, False)},
+        },
+    )
+    assert _compare(tmp_path, expected) == 0
+    assert "PASS" in capsys.readouterr().out
 
 
 def test_unreadable_results_are_an_error_naming_the_file(tmp_path, capsys):

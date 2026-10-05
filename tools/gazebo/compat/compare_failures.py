@@ -22,8 +22,7 @@ Expected-failure file format (one entry per line; `#` starts a comment):
                                          failure of that test
     <suite> <ctest test> <gtest case>    the GoogleTest case fails
     max-seconds <suite> <ctest test> <gtest case> <seconds>
-    tests <suite> <count>                the number of CTest tests the
-                                         baseline run registered
+    test <suite> <ctest test>           a CTest test the baseline registered
 
 where <suite> is `gz-physics` or `gz-sim`. Entries carrying an inline
 `# accepted: <reason>` comment are reviewed differences from DART 6.19.4;
@@ -35,14 +34,15 @@ that the base has too (the identical failure: the same failing case, or for a
 test-level failure, a test-level failure of the same test) is reported as BASE
 instead of NEW, so a change is gated only on the failures it introduces.
 
+The final section, headed `# CTest tests of the baseline run (compare requires
+each one)`, lists the baseline's registered tests, sorted by suite then name.
 The run must include every test the expected-failure file names, every
-case with a max-seconds limit unless its test failed at the test level, at
-least as many CTest tests per suite as the baseline run registered, and, with
---base-results, every CTest test the base ran. Otherwise the comparison stops
+case with a max-seconds limit unless its test failed at the test level, and,
+with --base-results, every CTest test the base ran. Otherwise the comparison stops
 with an error, as for missing or unreadable results: a run that a test filter,
 a renamed test or a test that stopped registering emptied would pass and skip
-that coverage. (lane.sh clears GoogleTest's GTEST_* variables, such as
-an inherited GTEST_FILTER, before it runs the suites.)
+that coverage. Extra tests are allowed. (lane.sh clears GoogleTest's GTEST_*
+variables, such as an inherited GTEST_FILTER, before it runs the suites.)
 """
 
 import argparse
@@ -213,11 +213,8 @@ def parse_expected(path, allow_missing=False):
                     f"{path}:{number}: max-seconds must be finite and nonnegative"
                 )
             expected.max_seconds[(line[1], line[2], line[3])] = seconds
-        elif line[0] == "tests" and len(line) == 3 and line[1] in SUITES:
-            count = int(line[2])
-            if count < 0:
-                raise ValueError(f"{path}:{number}: tests count must be nonnegative")
-            expected.tests[line[1]] = count
+        elif line[0] == "test" and len(line) == 3 and line[1] in SUITES:
+            expected.tests.setdefault(line[1], set()).add(line[2])
         elif line[0] in SUITES and len(line) in (2, 3):
             expected.entries.add(tuple(line))
             if ACCEPTED in raw:
@@ -230,7 +227,7 @@ def parse_expected(path, allow_missing=False):
 
 def check_inventory(results, expected, base=None):
     """Raise ValueError if the results lack a test or timed case `expected`
-    names, have fewer CTest tests than the baseline run, or lack a CTest test
+    names, including the baseline's registered tests, or lack a CTest test
     that ran on `base`. The cases of a test-level failure are missing or
     stale, so its timed case may be missing; compare reports the failure
     itself."""
@@ -252,12 +249,13 @@ def check_inventory(results, expected, base=None):
             "the expected failures (a test filter such as GTEST_FILTER, or a "
             "renamed test?)"
         )
-    for suite, count in sorted(expected.tests.items()):
-        if len(results[suite].tests) < count:
+    for suite, tests in sorted(expected.tests.items()):
+        missing = sorted(tests - results[suite].tests.keys())
+        if missing:
             raise ValueError(
-                f"{suite} ran {len(results[suite].tests)} CTest tests, fewer "
-                f"than the {count} of the baseline run (a test that stopped "
-                "registering, or a test filter?)"
+                f"{suite} tests registered by the baseline are missing from the "
+                f"results: {', '.join(missing)} (a test that stopped "
+                "registering, a renamed test, or a test filter?)"
             )
     for suite, run in sorted((base or {}).items()):
         missing = sorted(run.tests.keys() - results[suite].tests.keys())
@@ -411,7 +409,7 @@ def write_baseline(path, results, previous, describe, timed_cases, factor):
         lines += ["", "# Reviewed differences from DART 6.19.4 (kept on regeneration)"]
         lines += previous.accepted_lines
     for suite, run in results.items():
-        lines += ["", f"# {suite}", f"tests {suite} {len(run.tests)}"]
+        lines += ["", f"# {suite}"]
         entries = run.entries(suite)
         for entry in sorted(entries):
             if entry in previous.accepted or (len(entry) == 3 and entry[:2] in entries):
@@ -424,6 +422,9 @@ def write_baseline(path, results, previous, describe, timed_cases, factor):
             if timed.search(f"{test} {case}"):
                 limit = math.ceil(seconds * factor * 10) / 10
                 lines.append(f"max-seconds {suite} {test} {case} {limit:.1f}")
+    lines += ["", "# CTest tests of the baseline run (compare requires each one)"]
+    for suite, run in sorted(results.items()):
+        lines += [f"test {suite} {test}" for test in sorted(run.tests)]
     path.write_text("\n".join(lines) + "\n")
 
 

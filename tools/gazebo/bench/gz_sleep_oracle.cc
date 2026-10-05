@@ -1114,6 +1114,10 @@ int main(int argc, char** argv)
     std::fprintf(stderr, "unknown scenario: %s\n", only.c_str());
     return 2;
   }
+  if (ran == 0 && skipped > 0) {
+    std::fprintf(stderr, "the selected scenarios were all skipped\n");
+    return 2;
+  }
   std::printf(
       "SUMMARY scenarios=%zu skipped=%zu mismatches=%zu unexercised=%zu%s\n",
       ran,

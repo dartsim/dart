@@ -137,17 +137,17 @@ lane:
 `--write-baseline` may create a missing one. Timing multipliers
 (`--max-seconds-scale`, including its environment default, and
 `--max-seconds-factor`) must be finite and positive. Expected `max-seconds`
-limits and recorded case times must be finite and nonnegative, and baseline
-test counts must be nonnegative. Missing GoogleTest result directories are
-errors, even when no failures are recorded.
+limits and recorded case times must be finite and nonnegative. Missing
+GoogleTest result directories are errors, even when no failures are recorded.
 
 `compare` stops with an error (exit status 2, as for missing or unreadable
 inputs) when the run lacks a test that the expected-failure file names, a
 `max-seconds` case whose test did not fail at the test level, or a CTest test
-that the base ran (with a base), or when a suite registered fewer CTest tests
-than the `tests <suite> <count>` line records for the 6.19.4 run: a run that a
+that the base ran (with a base), or any test listed by a
+`test <suite> <ctest test>` line from the 6.19.4 run: a run that a
 test filter, a renamed test or a test that stopped registering emptied would
-otherwise pass and skip that coverage. `lane.sh` itself clears GoogleTest's `GTEST_*` variables, so an
+otherwise pass and skip that coverage. Extra tests in the results are allowed.
+`lane.sh` itself clears GoogleTest's `GTEST_*` variables, so an
 inherited `GTEST_FILTER` or sharding cannot run only part of the suites.
 
 On release-6.20 the lanes fail until the issue #3056 fixes land,
@@ -175,7 +175,10 @@ for step in dart gz-physics test-gz-physics test-gz-sim baseline; do
 done
 ```
 
-`baseline` also writes a `max-seconds` limit of twice the measured time for
+`baseline` writes every CTest test the run registered as a
+`test <suite> <ctest test>` line, sorted by suite then name, in a final section
+headed `# CTest tests of the baseline run (compare requires each one)`.
+It also writes a `max-seconds` limit of twice the measured time for
 the dartsim `StepWorld` case; it is the only gate here that catches a large
 slowdown that still passes (it took 16 times longer with DART 6.20's trimesh
 ODE cylinders). Entries carrying an inline
