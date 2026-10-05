@@ -3794,6 +3794,199 @@ TEST(Issue3056, OdeReportsTangentCylinderPlaneContact)
 namespace {
 
 //==============================================================================
+std::vector<Contact> getContactsOf(
+    const CollisionResult& result, const ShapeFrame* frame)
+{
+  std::vector<Contact> contacts;
+  for (const auto& contact : result.getContacts()) {
+    if (contact.collisionObject1->getShapeFrame() == frame
+        || contact.collisionObject2->getShapeFrame() == frame) {
+      contacts.push_back(contact);
+    }
+  }
+  return contacts;
+}
+
+//==============================================================================
+// Expects the same contacts, bit for bit, from two detectors' results.
+void expectSameContacts(
+    const std::vector<Contact>& expected, const std::vector<Contact>& actual)
+{
+  ASSERT_EQ(expected.size(), actual.size());
+  for (std::size_t i = 0u; i < expected.size(); ++i) {
+    EXPECT_EQ(
+        expected[i].collisionObject1->getShapeFrame(),
+        actual[i].collisionObject1->getShapeFrame());
+    EXPECT_EQ(
+        expected[i].collisionObject2->getShapeFrame(),
+        actual[i].collisionObject2->getShapeFrame());
+    EXPECT_TRUE(expected[i].point == actual[i].point);
+    EXPECT_TRUE(expected[i].normal == actual[i].normal);
+    EXPECT_EQ(expected[i].penetrationDepth, actual[i].penetrationDepth);
+  }
+}
+
+} // namespace
+
+//==============================================================================
+TEST(Issue3056, OdeTangentCylinderPlaneContactsOfManyCylinders)
+{
+  // Enough cylinders that the support pass indexes its result lookups; a
+  // detector that sees a single cylinder only ever scans them.
+  constexpr std::size_t numCylinders = 200u;
+
+  auto planeFrame = std::make_shared<SimpleFrame>(Frame::World(), "plane");
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup(planeFrame.get());
+
+  std::vector<std::shared_ptr<SimpleFrame>> cylinderFrames;
+  std::vector<std::shared_ptr<OdeCollisionDetector>> singleDetectors;
+  std::vector<std::unique_ptr<CollisionGroup>> singleGroups;
+  for (std::size_t i = 0u; i < numCylinders; ++i) {
+    // Most cylinders rest exactly on the plane, where ODE reports nothing and
+    // the support pass adds a contact. Every third sinks in, so ODE reports
+    // its contacts and the pass must not add another.
+    const bool sunk = i % 3u == 0u;
+    cylinderFrames.push_back(
+        std::make_shared<SimpleFrame>(Frame::World(), "cylinder"));
+    cylinderFrames.back()->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+    cylinderFrames.back()->setTranslation(
+        Eigen::Vector3d(2.0 * i, 0.0, sunk ? 0.5 - 1e-3 : 0.5));
+    group->addShapeFrame(cylinderFrames.back().get());
+
+    singleDetectors.push_back(OdeCollisionDetector::create());
+    singleGroups.push_back(singleDetectors.back()->createCollisionGroup(
+        planeFrame.get(), cylinderFrames.back().get()));
+  }
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u * numCylinders;
+  option.maxNumContactsPerPair = 4u;
+
+  CollisionResult result;
+  std::vector<CollisionResult> singleResults(numCylinders);
+  const auto compare = [&]() {
+    for (std::size_t i = 0u; i < numCylinders; ++i) {
+      const auto contacts = getContactsOf(result, cylinderFrames[i].get());
+      expectSameContacts(
+          getContactsOf(singleResults[i], cylinderFrames[i].get()), contacts);
+      if (i % 3u != 0u) {
+        EXPECT_EQ(1u, contacts.size());
+      }
+    }
+  };
+
+  ASSERT_TRUE(group->collide(option, &result));
+  for (std::size_t i = 0u; i < numCylinders; ++i)
+    singleGroups[i]->collide(option, &singleResults[i]);
+  compare();
+
+  // Colliding a group with itself runs the support pass twice; the second
+  // pass finds the contacts the first one added.
+  result.clear();
+  ASSERT_TRUE(group->collide(group.get(), option, &result));
+  for (std::size_t i = 0u; i < numCylinders; ++i) {
+    singleResults[i].clear();
+    singleGroups[i]->collide(singleGroups[i].get(), option, &singleResults[i]);
+  }
+  compare();
+
+  // Contacts already in the result also keep the pass from adding another.
+  ASSERT_TRUE(group->collide(option, &result));
+  for (std::size_t i = 0u; i < numCylinders; ++i)
+    singleGroups[i]->collide(option, &singleResults[i]);
+  compare();
+}
+
+namespace {
+
+//==============================================================================
+// Overwrites one contact of a result while the cylinder-plane support pass
+// asks it about the trigger frame.
+struct OverwriteContactFilter : CollisionFilter
+{
+  CollisionResult* result;
+  const ShapeFrame* trigger;
+  std::size_t overwritten;
+  mutable std::size_t numTriggerCalls = 0u;
+
+  OverwriteContactFilter(
+      CollisionResult* result,
+      const ShapeFrame* trigger,
+      std::size_t overwritten)
+    : result(result), trigger(trigger), overwritten(overwritten)
+  {
+  }
+
+  bool ignoresCollision(
+      const CollisionObject* object1,
+      const CollisionObject* object2) const override
+  {
+    if (object1->getShapeFrame() != trigger
+        && object2->getShapeFrame() != trigger) {
+      return false;
+    }
+
+    // The first call comes from ODE's broadphase, the second from the pass.
+    if (++numTriggerCalls == 2u) {
+      const auto contacts = result->getContacts();
+      result->clear();
+      for (std::size_t i = 0u; i < contacts.size(); ++i)
+        result->addContact(contacts[i == overwritten ? i - 1u : i]);
+    }
+    return false;
+  }
+};
+
+} // namespace
+
+//==============================================================================
+TEST(Issue3056, OdeCylinderPlaneSupportSeesResultRewrittenByFilter)
+{
+  constexpr std::size_t numCylinders = 20u;
+
+  auto planeFrame = std::make_shared<SimpleFrame>(Frame::World(), "plane");
+  planeFrame->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup(planeFrame.get());
+
+  std::vector<std::shared_ptr<SimpleFrame>> cylinderFrames;
+  for (std::size_t i = 0u; i < numCylinders; ++i) {
+    cylinderFrames.push_back(
+        std::make_shared<SimpleFrame>(Frame::World(), "cylinder"));
+    cylinderFrames.back()->setShape(std::make_shared<CylinderShape>(0.5, 1.0));
+    cylinderFrames.back()->setTranslation(Eigen::Vector3d(2.0 * i, 0.0, 0.5));
+    group->addShapeFrame(cylinderFrames.back().get());
+  }
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u * numCylinders;
+
+  // Every cylinder rests exactly on the plane, so the support pass adds one
+  // contact per cylinder, in order.
+  CollisionResult result;
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_EQ(numCylinders, result.getNumContacts());
+
+  // Collide again into the same result. Midway through the pass, a filter
+  // overwrites cylinder 15's contact with cylinder 14's, so the pass must add a
+  // contact for cylinder 15 again.
+  option.collisionFilter = std::make_shared<OverwriteContactFilter>(
+      &result, cylinderFrames[12].get(), 15u);
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_EQ(numCylinders + 1u, result.getNumContacts());
+  EXPECT_EQ(1u, getContactsOf(result, cylinderFrames[15].get()).size());
+}
+
+namespace {
+
+//==============================================================================
 bool hasAxisAlignedOdeNormal(
     const dContactGeom* contacts, int numContacts, int axis)
 {
@@ -4168,6 +4361,209 @@ TEST(Issue1654, OdeContactHistoryCountsContactsAlreadyInResult)
   // the pair's contact target, so nothing more is supplemented.
   ASSERT_TRUE(group->collide(option, &result));
   EXPECT_EQ(3u, result.getNumContacts());
+}
+
+//==============================================================================
+TEST(Issue1654, OdeContactHistoryOfManyPairsMatchesSinglePairs)
+{
+  // Enough pairs that collide() indexes its contact-history and result
+  // lookups; a detector that sees a single pair only ever scans them.
+  constexpr std::size_t numCapsules = 100u;
+
+  auto ground = Skeleton::create("many_pairs_ground");
+  auto groundBody = ground->createJointAndBodyNodePair<WeldJoint>().second;
+  groundBody->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(1000.0, 1000.0, 1.0)));
+  Eigen::Isometry3d groundPose = Eigen::Isometry3d::Identity();
+  groundPose.translation().z() = -0.5;
+  groundBody->getParentJoint()->setTransformFromParentBodyNode(groundPose);
+
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+  group->addShapeFramesOf(groundBody);
+
+  std::vector<SkeletonPtr> capsules;
+  std::vector<FreeJoint*> capsuleJoints;
+  std::vector<const ShapeFrame*> capsuleFrames;
+  std::vector<std::shared_ptr<OdeCollisionDetector>> singleDetectors;
+  std::vector<std::unique_ptr<CollisionGroup>> singleGroups;
+  for (std::size_t i = 0u; i < numCapsules; ++i) {
+    capsules.push_back(Skeleton::create("many_pairs_capsule"));
+    auto pair = capsules.back()->createJointAndBodyNodePair<FreeJoint>();
+    capsuleJoints.push_back(pair.first);
+    capsuleFrames.push_back(pair.second->createShapeNodeWith<CollisionAspect>(
+        std::make_shared<CapsuleShape>(0.1, 1.0)));
+    group->addShapeFramesOf(pair.second);
+
+    singleDetectors.push_back(OdeCollisionDetector::create());
+    singleGroups.push_back(singleDetectors.back()->createCollisionGroup());
+    singleGroups.back()->addShapeFramesOf(groundBody);
+    singleGroups.back()->addShapeFramesOf(pair.second);
+  }
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u * numCapsules;
+
+  // Lays every capsule along x, tilted so that only one end touches the
+  // ground as in OdeContactHistoryCountsContactsAlreadyInResult, or lifted
+  // clear of it.
+  const auto placeCapsules = [&](double tilt, bool liftEveryThird) {
+    for (std::size_t i = 0u; i < numCapsules; ++i) {
+      const bool lifted = liftEveryThird && i % 3u == 0u;
+      Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+      pose.translation() = Eigen::Vector3d(2.0 * i, 0.0, lifted ? 1.1 : 0.102);
+      pose.linear()
+          = Eigen::AngleAxisd(
+                0.5 * constantsd::pi() + tilt, Eigen::Vector3d::UnitY())
+                .toRotationMatrix();
+      capsuleJoints[i]->setRelativeTransform(pose);
+    }
+  };
+
+  CollisionResult result;
+  std::vector<CollisionResult> singleResults(numCapsules);
+  const auto collideAndCompare = [&](bool keepPriorContacts) {
+    if (!keepPriorContacts)
+      result.clear();
+    group->collide(option, &result);
+    for (std::size_t i = 0u; i < numCapsules; ++i) {
+      if (!keepPriorContacts)
+        singleResults[i].clear();
+      singleGroups[i]->collide(option, &singleResults[i]);
+      expectSameContacts(
+          getContactsOf(singleResults[i], capsuleFrames[i]),
+          getContactsOf(result, capsuleFrames[i]));
+    }
+  };
+
+  placeCapsules(0.01, false);
+  collideAndCompare(false);
+  EXPECT_EQ(numCapsules, result.getNumContacts());
+
+  // The other end touches; each history supplements the first end.
+  placeCapsules(-0.01, false);
+  collideAndCompare(false);
+  EXPECT_EQ(2u * numCapsules, result.getNumContacts());
+
+  // Contacts already in the result count toward each pair's target.
+  collideAndCompare(true);
+  EXPECT_EQ(3u * numCapsules, result.getNumContacts());
+
+  // Lifted capsules lose their history, so nothing stale is supplemented when
+  // they touch down again.
+  placeCapsules(-0.01, true);
+  collideAndCompare(false);
+  placeCapsules(-0.01, false);
+  collideAndCompare(false);
+  for (std::size_t i = 0u; i < numCapsules; i += 3u) {
+    EXPECT_EQ(1u, getContactsOf(result, capsuleFrames[i]).size());
+  }
+
+  placeCapsules(0.01, false);
+  collideAndCompare(false);
+}
+
+namespace {
+
+//==============================================================================
+// Ignores every other pair it is asked about.
+struct IgnoreEveryOtherPair : CollisionFilter
+{
+  mutable std::size_t numCalls = 0u;
+
+  bool ignoresCollision(
+      const CollisionObject*, const CollisionObject*) const override
+  {
+    return numCalls++ % 2u != 0u;
+  }
+};
+
+//==============================================================================
+// Removes a shape frame from a group once it has been asked about some pairs.
+struct RemoveShapeFrameMidCollide : CollisionFilter
+{
+  CollisionGroup* group;
+  const ShapeFrame* frame;
+  std::size_t removeOnCall;
+  mutable std::size_t numCalls = 0u;
+
+  RemoveShapeFrameMidCollide(
+      CollisionGroup* group, const ShapeFrame* frame, std::size_t removeOnCall)
+    : group(group), frame(frame), removeOnCall(removeOnCall)
+  {
+  }
+
+  bool ignoresCollision(
+      const CollisionObject*, const CollisionObject*) const override
+  {
+    if (++numCalls == removeOnCall)
+      group->removeShapeFrame(frame);
+    return false;
+  }
+};
+
+} // namespace
+
+//==============================================================================
+TEST(Issue1654, OdeContactHistoryHandlesEntriesErasedMidCollide)
+{
+  constexpr std::size_t numCapsules = 100u;
+
+  auto detector = OdeCollisionDetector::create();
+
+  auto ground = Skeleton::create("erased_mid_collide_ground");
+  auto groundBody = ground->createJointAndBodyNodePair<WeldJoint>().second;
+  auto* groundFrame = groundBody->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(1000.0, 1000.0, 1.0)));
+  Eigen::Isometry3d groundPose = Eigen::Isometry3d::Identity();
+  groundPose.translation().z() = -0.5;
+  groundBody->getParentJoint()->setTransformFromParentBodyNode(groundPose);
+
+  auto group = detector->createCollisionGroup(groundFrame);
+  std::vector<SkeletonPtr> capsules;
+  std::vector<const ShapeFrame*> capsuleFrames;
+  for (std::size_t i = 0u; i < numCapsules; ++i) {
+    capsules.push_back(Skeleton::create("erased_mid_collide_capsule"));
+    auto pair = capsules.back()->createJointAndBodyNodePair<FreeJoint>();
+    capsuleFrames.push_back(pair.second->createShapeNodeWith<CollisionAspect>(
+        std::make_shared<CapsuleShape>(0.1, 1.0)));
+    // Only one end touches the ground, so each pair has one contact.
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.translation() = Eigen::Vector3d(2.0 * i, 0.0, 0.102);
+    pose.linear() = Eigen::AngleAxisd(
+                        0.5 * constantsd::pi() + 0.01, Eigen::Vector3d::UnitY())
+                        .toRotationMatrix();
+    pair.first->setRelativeTransform(pose);
+    group->addShapeFrame(capsuleFrames.back());
+  }
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u * numCapsules;
+  CollisionResult result;
+
+  // The first history entry belongs to another group of the same detector.
+  auto otherGroup
+      = detector->createCollisionGroup(groundFrame, capsuleFrames[0]);
+  ASSERT_TRUE(otherGroup->collide(option, &result));
+
+  // Give half of the pairs a history entry, so the next collide() adds the
+  // other half after its history lookups are indexed.
+  result.clear();
+  option.collisionFilter = std::make_shared<IgnoreEveryOtherPair>();
+  ASSERT_TRUE(group->collide(option, &result));
+
+  // Midway, removing the ground from the other group erases that group's
+  // history entry, which shifts every other entry.
+  result.clear();
+  option.collisionFilter = std::make_shared<RemoveShapeFrameMidCollide>(
+      otherGroup.get(), groundFrame, numCapsules / 2u);
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_EQ(numCapsules, result.getNumContacts());
+  for (const auto* frame : capsuleFrames) {
+    EXPECT_EQ(1u, getContactsOf(result, frame).size());
+  }
 }
 
 //==============================================================================
