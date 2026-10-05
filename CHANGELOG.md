@@ -2,6 +2,15 @@
 
 ## DART 6
 
+### [DART 6.19.5 (Unreleased)](https://github.com/dartsim/dart/milestone/104)
+
+* Performance
+
+  * Speed up the ODE collision detector in contact-heavy scenes: a 3,000-body
+    Gazebo-style scene steps about 2x faster, with bit-exact results:
+    [#3555](https://github.com/dartsim/dart/pull/3555),
+    [#3329](https://github.com/dartsim/dart/pull/3329)
+
 ### [DART 6.19.4 (2026-07-18)](https://github.com/dartsim/dart/milestone/103?closed=1)
 
 DART 6.19.4 is a focused patch release on the DART 6 LTS line. It restores
