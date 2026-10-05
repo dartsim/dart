@@ -134,10 +134,12 @@ lane:
 | `FIXED` | an expected failure that ran and passed |
 
 `compare` stops with an error (exit status 2, as for missing or unreadable
-results) when the run lacks a test that the expected-failure file names, or a
-`max-seconds` case whose test did not fail at the test level: a run that a
-test filter or a renamed test emptied would otherwise pass and skip the time
-limit. `lane.sh` itself clears GoogleTest's `GTEST_*` variables, so an
+results) when the run lacks a test that the expected-failure file names, a
+`max-seconds` case whose test did not fail at the test level, or a CTest test
+that the base ran (with a base), or when a suite registered fewer CTest tests
+than the `tests <suite> <count>` line records for the 6.19.4 run: a run that a
+test filter, a renamed test or a test that stopped registering emptied would
+otherwise pass and skip that coverage. `lane.sh` itself clears GoogleTest's `GTEST_*` variables, so an
 inherited `GTEST_FILTER` or sharding cannot run only part of the suites.
 
 On release-6.20 the lanes fail until the issue #3056 fixes land,

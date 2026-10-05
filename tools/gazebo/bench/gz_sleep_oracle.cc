@@ -980,7 +980,9 @@ int main(int argc, char** argv)
     return 0;
   }
 
-  if (settle < 1 || steps < 1)
+  // A non-finite contact point or pose measures as infinity, which an
+  // infinite tolerance would accept.
+  if (settle < 1 || steps < 1 || !std::isfinite(tolerance) || tolerance < 0.0)
     return usage(argv[0]);
 
   gz::plugin::Loader loader;

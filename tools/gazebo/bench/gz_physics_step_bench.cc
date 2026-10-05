@@ -12,6 +12,8 @@
 // changed poses per step (what gz-sim has to copy into its ECM). With
 // --sunk-z, it also counts links of non-static models whose last published
 // height is below Z (0.45 for 3k_shapes.sdf, whose bodies rest at 0.5).
+// The run fails with exit status 4 if the first step does not publish every
+// link of the non-static models, and with 3 if a published pose is not finite.
 #include <gz/math/Pose3.hh>
 #include <gz/physics/ForwardStep.hh>
 #include <gz/physics/GetContacts.hh>
@@ -205,6 +207,22 @@ int main(int argc, char** argv)
       poses[worldPose.body] = worldPose.pose;
       // Position and all four quaternion components.
       finite = finite && worldPose.pose.IsFinite();
+    }
+    // gz-physics has no previous pose to compare with on the first step, so it
+    // publishes every link; a link missing then is never seen by gz-sim.
+    if (i == 1) {
+      const auto unpublished = std::count_if(
+          mobileLinks.begin(), mobileLinks.end(), [&](std::size_t id) {
+            return poses.count(id) == 0u;
+          });
+      if (unpublished > 0) {
+        std::fprintf(
+            stderr,
+            "%ld of %zu mobile links were not published on the first step\n",
+            static_cast<long>(unpublished),
+            mobileLinks.size());
+        return 4;
+      }
     }
 
     std::string extra;

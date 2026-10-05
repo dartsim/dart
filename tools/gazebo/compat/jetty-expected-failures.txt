@@ -8,9 +8,11 @@
 gz-physics COMMON_TEST_simulation_features_dartsim SimulationFeaturesRayIntersectionTest/0.UnsupportedRayIntersections  # accepted: the dart detector supports raycasts since #3355; gz-physics needs a version-guarded test update (#3056)
 
 # gz-physics
+tests gz-physics 207
 max-seconds gz-physics COMMON_TEST_simulation_features_dartsim SimulationFeaturesStepTest/0.StepWorld 6.1
 
 # gz-sim
+tests gz-sim 121
 gz-sim INTEGRATION_buoyancy BuoyancyTest.UniformWorldMovement
 gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/plugin_command_actor
 gz-sim INTEGRATION_examples_build Plugins/ExamplesBuild.Build/plugin_custom_component

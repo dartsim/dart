@@ -304,6 +304,9 @@ int main(int argc, char** argv)
   // Bullet; with FCL every ray misses, single and batched alike, and matches.
   if (detector != "ode" && detector != "bullet")
     return usage(argv[0]);
+  // Every failure measures as infinity, which an infinite tolerance accepts.
+  if (!std::isfinite(tolerance) || tolerance < 0.0)
+    return usage(argv[0]);
 
   gz::plugin::Loader loader;
   std::string pluginName;

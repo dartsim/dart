@@ -145,6 +145,8 @@ def test_baseline_lists_cases_and_only_caseless_failures_by_test(tmp_path, capsy
     # would accept any later crash of that test.
     assert "gz-sim INTEGRATION_user_commands\n" not in text
     assert f"max-seconds gz-physics {STEP_WORLD} Step/0.StepWorld 5.4\n" in text
+    assert "# gz-physics\ntests gz-physics 2\n" in text
+    assert "# gz-sim\ntests gz-sim 3\n" in text
     # Only DART's own StepWorld case gets a time limit.
     assert "COMMON_TEST_simulation_features_bullet" not in text
 
@@ -157,7 +159,10 @@ def test_baseline_lists_cases_and_only_caseless_failures_by_test(tmp_path, capsy
             STEP_WORLD: {
                 "Step/0.StepWorld": (2.3, False),
                 "Ray.Unsupported": (0.1, True),
-            }
+            },
+            "COMMON_TEST_simulation_features_bullet": {
+                "Step/0.StepWorld": (0.1, False)
+            },
         },
         {
             "INTEGRATION_log_system": ("SEGFAULT", None),
@@ -165,6 +170,7 @@ def test_baseline_lists_cases_and_only_caseless_failures_by_test(tmp_path, capsy
                 "UserCommandsTest.Create": (1.0, False),
                 "UserCommandsTest.Remove": (1.0, False),
             },
+            "INTEGRATION_imu": {"Imu.Rotating": (1.0, False)},
         },
     )
     assert _compare(candidate, expected) == 0
@@ -627,6 +633,27 @@ def test_a_test_or_timed_case_missing_from_the_results_is_an_error(tmp_path, cap
     _write_lane(candidate, {STEP_WORLD: ("SEGFAULT", None)}, sim)
     assert _compare(candidate, expected) == 1
     assert f"NEW        gz-physics {STEP_WORLD} (SEGFAULT)\n" in capsys.readouterr().out
+
+
+def test_a_test_that_stops_registering_is_an_error(tmp_path, capsys):
+    expected = tmp_path / "expected.txt"
+    expected.write_text("tests gz-sim 2\n")
+    imu = {"INTEGRATION_imu": {"Imu.Rotating": (1.0, False)}}
+    sim = {**imu, "INTEGRATION_entity": {"Entity.Cmd": (1.0, False)}}
+    base = tmp_path / "base"
+    _write_lane(base, _step_world(2.0), sim)
+    candidate = tmp_path / "candidate"
+    _write_lane(candidate, _step_world(2.0), sim)
+    assert _compare(candidate, expected, "--base-results", str(base)) == 0
+    capsys.readouterr()
+
+    # A passing test that no longer registers is in no expected-failure entry.
+    _write_lane(candidate, _step_world(2.0), imu)
+    assert _compare(candidate, expected) == 2
+    assert "gz-sim ran 1 CTest tests, fewer than the 2" in capsys.readouterr().err
+    expected.write_text("")
+    assert _compare(candidate, expected, "--base-results", str(base)) == 2
+    assert "missing from the results: INTEGRATION_entity" in capsys.readouterr().err
 
 
 def test_unreadable_results_are_an_error_naming_the_file(tmp_path, capsys):
