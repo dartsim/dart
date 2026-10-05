@@ -32,8 +32,6 @@ jobs:
   test_gazebo:
     name: ubuntu-latest
     runs-on: ubuntu-latest
-    env:
-      DART_PARALLEL_JOBS: 8
     steps:
       - name: Checkout
         uses: actions/checkout@v7

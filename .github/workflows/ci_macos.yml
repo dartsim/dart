@@ -39,7 +39,7 @@ concurrency:
 
 jobs:
   build:
-    name: ${{ matrix.os == 'macos-latest-large' && 'x86_64' || 'arm64' }}-${{ matrix.build_type }}
+    name: arm64-${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

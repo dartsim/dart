@@ -68,8 +68,6 @@ jobs:
     if: inputs.nightly
     name: coverage
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -214,7 +212,7 @@ jobs:
 
       - name: Build with assertions (no -DNDEBUG)
         run: |
-          # NOTE: pixi tasks on release-6.16 set BUILD_TYPE internally, so we
+          # NOTE: pixi tasks set BUILD_TYPE internally, so we
           # configure this variant explicitly to ensure NDEBUG is not defined.
           pixi run -- bash -lc '
             set -euo pipefail
