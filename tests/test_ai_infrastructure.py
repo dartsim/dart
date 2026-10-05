@@ -3385,12 +3385,9 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
     workflows = tmp_path / ".github" / "workflows"
     workflows.mkdir(parents=True)
     (workflows / "ci_ubuntu.yml").write_text(
-        "pixi run check-ai-commands\n"
-        "pixi run check-ai-infra\n"
+        "pixi run check-lint\n"
         "pixi run test-ai-infra\n"
-        "scripts/check_ai_infrastructure.py --scenarios\n"
         "      - name: Agent visual verification smoke\n"
-        "if: matrix.build_type == 'Release'\n"
         "xvfb-run\n"
         "bash -eu -o pipefail <<'VISUAL_SMOKE'\n"
         "pixi run agent-capture\n"
@@ -3441,17 +3438,13 @@ def test_ci_wiring_requires_native_windows_hook_smoke(tmp_path):
     ]
 
 
-def test_ci_wiring_requires_semantic_ai_completion_task(tmp_path):
+def test_ci_wiring_requires_the_check_lint_aggregate(tmp_path):
     workflow = tmp_path / ".github" / "workflows" / "ci_ubuntu.yml"
     workflow.parent.mkdir(parents=True)
     workflow.write_text(
         (ROOT / ".github/workflows/ci_ubuntu.yml")
         .read_text(encoding="utf-8")
-        .replace(
-            "pixi run check-ai-infra",
-            "pixi run python scripts/check_ai_infrastructure.py --check",
-            1,
-        ),
+        .replace("pixi run check-lint", "pixi run check-lint-cpp"),
         encoding="utf-8",
     )
     errors = []
@@ -3460,9 +3453,53 @@ def test_ci_wiring_requires_semantic_ai_completion_task(tmp_path):
 
     assert any(
         ".github/workflows/ci_ubuntu.yml: missing AI check "
-        "`pixi run check-ai-infra`" in error
+        "`pixi run check-lint`" in error
         for error in errors
     )
+
+
+def test_ci_wiring_requires_check_lint_to_run_the_semantic_ai_check(tmp_path):
+    workflow = tmp_path / ".github" / "workflows" / "ci_ubuntu.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        (ROOT / ".github/workflows/ci_ubuntu.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (tmp_path / "pixi.toml").write_text(
+        '[tasks]\ncheck-lint = { depends-on = ["check-ai-commands"] }\n',
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_ci_wiring(tmp_path, errors)
+
+    assert (
+        "pixi.toml: `check-lint` must depend on `check-ai-infra` "
+        "(CI Linux runs the AI checks through it)"
+    ) in errors
+    assert not any("must depend on `check-ai-commands`" in error for error in errors)
+
+
+def test_ci_wiring_rejects_a_shorthand_check_lint_without_the_ai_checks(tmp_path):
+    workflow = tmp_path / ".github" / "workflows" / "ci_ubuntu.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        (ROOT / ".github/workflows/ci_ubuntu.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (tmp_path / "pixi.toml").write_text(
+        '[tasks]\ncheck-lint = "codespell --config .codespellrc"\n',
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_ci_wiring(tmp_path, errors)
+
+    for task in ("check-ai-commands", "check-ai-infra"):
+        assert (
+            f"pixi.toml: `check-lint` must depend on `{task}` "
+            "(CI Linux runs the AI checks through it)"
+        ) in errors
 
 
 @pytest.mark.parametrize(
@@ -3516,41 +3553,21 @@ def test_ci_wiring_requires_visual_verification_smoke(tmp_path, marker):
 
 
 @pytest.mark.parametrize(
-    ("mutation", "expected"),
+    ("line", "expected"),
     (
-        ("condition", "exactly the Release matrix entry"),
-        ("condition-suffix", "exactly the Release matrix entry"),
-        ("soft-fail", "must not use continue-on-error"),
+        ("if: false", "must run unconditionally"),
+        ("if: inputs.nightly", "must run unconditionally"),
+        ("continue-on-error: true", "must not use continue-on-error"),
     ),
 )
-def test_visual_smoke_cannot_be_skipped_or_soft_failed(tmp_path, mutation, expected):
+def test_visual_smoke_cannot_be_skipped_or_soft_failed(tmp_path, line, expected):
     workflows = tmp_path / ".github" / "workflows"
     workflows.mkdir(parents=True)
     ubuntu = (ROOT / ".github/workflows/ci_ubuntu.yml").read_text()
-    before_visual, separator, ubuntu = ubuntu.partition(
-        "- name: Agent visual verification smoke"
-    )
-    assert separator
-    ubuntu = separator + ubuntu
-    if mutation == "condition":
-        ubuntu = ubuntu.replace(
-            "if: matrix.build_type == 'Release'",
-            "if: false",
-            1,
-        )
-    elif mutation == "condition-suffix":
-        ubuntu = ubuntu.replace(
-            "if: matrix.build_type == 'Release'",
-            "if: matrix.build_type == 'Release' && false",
-            1,
-        )
-    else:
-        ubuntu = ubuntu.replace(
-            "- name: Agent visual verification smoke",
-            "- name: Agent visual verification smoke\n        continue-on-error: true",
-            1,
-        )
-    (workflows / "ci_ubuntu.yml").write_text(before_visual + ubuntu)
+    step = "- name: Agent visual verification smoke"
+    assert step in ubuntu
+    ubuntu = ubuntu.replace(step, f"{step}\n        {line}", 1)
+    (workflows / "ci_ubuntu.yml").write_text(ubuntu)
     (workflows / "ci_windows.yml").write_text(
         (ROOT / ".github/workflows/ci_windows.yml").read_text()
     )
