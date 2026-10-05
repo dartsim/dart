@@ -541,15 +541,15 @@
     contact-heavy scenes while preserving an explicit deactivation opt-out. A
     settled island does not fall asleep while another mobile body is awake
     outside every constraint island, for example while it is still falling.
-    A free rigid body that was in an island one step earlier and still moves
-    as slowly as a resting body may be ignored for its first step outside
-    every island, so a resting contact that the collision detector misses for
-    one step, as Bullet does for resting spheres and cylinders, does not keep
-    other islands awake. Such a body cannot be told from one that has just
-    started to fall, for example because its support was removed, so an
-    island that becomes eligible at that step can fall asleep while it falls.
-    A body on a joint, such as a pendulum swinging back from its joint limit,
-    always counts:
+    A free rigid body that was in an island one step earlier and, apart from
+    one step of falling, still moves inside the wake band may be ignored for
+    its first step outside every island, so a resting contact that the
+    collision detector misses for one step, as Bullet does for resting spheres
+    and cylinders, does not keep other islands awake. Such a body cannot be
+    told from one that has just started to fall, for example because its
+    support was removed, so an island that becomes eligible at that step can
+    fall asleep while it falls. A body on a joint, such as a pendulum swinging
+    back from its joint limit, always counts:
     [#3086](https://github.com/dartsim/dart/pull/3086),
     [#3273](https://github.com/dartsim/dart/pull/3273),
     [#3353](https://github.com/dartsim/dart/pull/3353),

@@ -1080,31 +1080,35 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
            "island awake";
   }
 
-  // With gravity, the speed checked includes the step's gravity, so a body
-  // half a step of gravity past the wake band does not count yet, unless
-  // gravity is off for it. The sleeper starts settled on the floor, so the
+  // With gravity, the speed checked leaves out up to one step of gravity along
+  // gravity, unless gravity is off for the body. The leaver touches a wall in
+  // the air and moves away from it, so it is in a contact island after the
+  // first step and outside every island after the second, where it moves at
+  // the given velocity. The sleeper starts settled on the floor, so the
   // initial-rest credit makes it a sleep candidate at the first step.
-  const auto checkLeaverHalfAStepPastWakeBand = [](bool leaverGravity) {
+  const auto checkLeaverExit = [](const Eigen::Vector3d& exitVelocity,
+                                  bool leaverGravity,
+                                  bool expectHeldAwake,
+                                  const char* message) {
     auto world = makeSleepWorld();
     world->addSkeleton(createFloor());
+    world->addSkeleton(createWall());
     auto sleeper = createFreeBox(
         "sleeper",
         Eigen::Vector3d::Constant(kBoxSize),
-        Eigen::Vector3d(0, 0, kHalf - 1.0e-6));
+        Eigen::Vector3d(3.0, 0, kHalf - 1.0e-6));
     world->addSkeleton(sleeper);
     auto leaver = createFreeBox(
         "leaver",
         Eigen::Vector3d::Constant(kBoxSize),
-        Eigen::Vector3d(3.0, 0, kHalf - 1.0e-6));
+        Eigen::Vector3d(kHalf - 1.0e-6, 0, 2.0));
     leaver->getBodyNode(0)->setGravityMode(leaverGravity);
-    // Gravity slows the leaver by two steps of gravity before its first step
-    // outside every island.
-    const auto& opts = world->getDeactivationOptions();
-    const double oneStepOfGravity
-        = world->getGravity().norm() * world->getTimeStep();
+    // Gravity acts on the leaver for two steps before its first step outside
+    // every island.
     Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
-    velocity[5] = opts.mWakeThresholdScale * opts.mLinearSpeedThreshold
-                  + (leaverGravity ? 2.5 : 0.5) * oneStepOfGravity;
+    velocity.tail<3>() = exitVelocity;
+    if (leaverGravity)
+      velocity.tail<3>() -= 2.0 * world->getGravity() * world->getTimeStep();
     leaver->getJoint(0)->setVelocities(velocity);
     world->addSkeleton(leaver);
 
@@ -1113,18 +1117,42 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
     ASSERT_TRUE(sleeper->isSleepCandidate());
     world->step();
     ASSERT_LT(leaver->getIslandIndex(), 0);
-    if (leaverGravity) {
-      EXPECT_TRUE(sleeper->isResting())
-          << "a body one step out of its island within one step of gravity "
-             "of the wake band held the island awake";
-    } else {
-      EXPECT_FALSE(sleeper->isResting())
-          << "a body without gravity past the wake band did not hold the "
-             "island awake";
-    }
+    EXPECT_EQ(sleeper->isResting(), !expectHeldAwake) << message;
   };
-  checkLeaverHalfAStepPastWakeBand(true);
-  checkLeaverHalfAStepPastWakeBand(false);
+  const DeactivationOptions opts;
+  const double band = opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
+  const auto defaultWorld = World::create();
+  const double oneStepOfGravity
+      = defaultWorld->getGravity().norm() * defaultWorld->getTimeStep();
+  const Eigen::Vector3d away = Eigen::Vector3d::UnitX();
+  const Eigen::Vector3d down = -Eigen::Vector3d::UnitZ();
+  // Leaving the wall needs some speed away from it.
+  const Eigen::Vector3d off = 0.25 * band * away;
+  const Eigen::Vector3d fallingPastBand
+      = off + (band + 0.5 * oneStepOfGravity) * down;
+  checkLeaverExit(
+      fallingPastBand,
+      true,
+      false,
+      "a body falling one step out of its island within one step of gravity "
+      "of the wake band held the island awake");
+  checkLeaverExit(
+      fallingPastBand,
+      false,
+      true,
+      "a body without gravity past the wake band did not hold the island "
+      "awake");
+  checkLeaverExit(
+      1.1 * band * away + oneStepOfGravity * down,
+      true,
+      true,
+      "a body leaving sideways past the wake band did not hold the island "
+      "awake");
+  checkLeaverExit(
+      off - (band + 0.5 * oneStepOfGravity) * down,
+      true,
+      true,
+      "a body rising past the wake band did not hold the island awake");
 }
 
 //==============================================================================

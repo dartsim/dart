@@ -2512,14 +2512,29 @@ void ConstraintSolver::buildConstrainedGroups()
     }
 
     {
-      // The speed one step of gravity adds to a body whose contact is missed,
-      // or none if gravity is off for any of its bodies.
-      const auto oneStepOfGravity = [this](const Skeleton& skeleton) {
+      // Whether every body moves inside the linear wake band once up to one
+      // step of gravity along gravity is taken off its velocity, as a body
+      // whose contact is missed falls freely for that step. Nothing is taken
+      // off if gravity is off for any of its bodies.
+      const auto fallsInsideWakeBand = [&](const Skeleton& skeleton) {
+        const Eigen::Vector3d& gravity = skeleton.getGravity();
+        double oneStepOfGravity = gravity.norm() * mTimeStep;
         for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
           if (!skeleton.getBodyNode(i)->getGravityMode())
-            return 0.0;
+            oneStepOfGravity = 0.0;
         }
-        return skeleton.getGravity().norm() * mTimeStep;
+        Eigen::Vector3d down = Eigen::Vector3d::Zero();
+        if (oneStepOfGravity > 0.0)
+          down = gravity.normalized();
+        for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
+          const Eigen::Vector3d velocity
+              = skeleton.getBodyNode(i)->getLinearVelocity();
+          const double fall
+              = std::clamp(velocity.dot(down), 0.0, oneStepOfGravity);
+          if ((velocity - fall * down).norm() > kMissedContactQuietLinearSpeed)
+            return false;
+        }
+        return true;
       };
       // A FreeJoint and no other degrees of freedom, with no joint constraint
       // or spring that could pull the body back once it leaves its island.
@@ -2558,22 +2573,22 @@ void ConstraintSolver::buildConstrainedGroups()
         // that was in an island at the previous build counts only from its
         // second build outside every island if it moves like that: its smoothed
         // speeds are inside the wake band, it spins no faster than the band
-        // allows, its linear speed exceeds the band by at most one step of
-        // gravity, and no force or command drives it (World never counts a
-        // driven body as quiet either). Such a body cannot be told from one
-        // that is starting to fall, released from a hold or at the top of a
-        // flight (the smoothed speeds catch a flight's top only while three
-        // steps of gravity exceed the band, that is, at steps of about 0.66 ms
-        // or more under Earth gravity), so an island that becomes eligible at
-        // that build can freeze while the body falls onto it. Any other body
-        // counts at once: at the turning point of a swing against a joint
-        // limit, an obstacle or another body, a body on a joint or a spring
-        // leaves its island just as slowly and then swings freely. Body speeds
-        // miss the point masses of soft bodies, so a soft body always counts
-        // too. Pass 2 has not yet restamped the island index, so it still holds
-        // the previous build's island. On simulation-mode re-entry steps the
-        // preparation passes restamp it first; they group a body that only
-        // contacts hold by the same contacts as this build, so such a body
+        // allows, apart from up to one step of falling it moves inside the band
+        // (fallsInsideWakeBand above), and no force or command drives it (World
+        // never counts a driven body as quiet either). Such a body cannot be
+        // told from one that is starting to fall, released from a hold or at
+        // the top of a flight (the smoothed speeds catch a flight's top only
+        // while three steps of gravity exceed the band, that is, at steps of
+        // about 0.66 ms or more under Earth gravity), so an island that becomes
+        // eligible at that build can freeze while the body falls onto it. Any
+        // other body counts at once: at the turning point of a swing against a
+        // joint limit, an obstacle or another body, a body on a joint or a
+        // spring leaves its island just as slowly and then swings freely. Body
+        // speeds miss the point masses of soft bodies, so a soft body always
+        // counts too. Pass 2 has not yet restamped the island index, so it
+        // still holds the previous build's island. On simulation-mode re-entry
+        // steps the preparation passes restamp it first; they group a body that
+        // only contacts hold by the same contacts as this build, so such a body
         // leaving its island counts at once on those steps.
         const bool movesLikeMissedContact
             = skeleton->getIslandIndex() >= 0 && isFreeRigidBody(*skeleton)
@@ -2582,9 +2597,7 @@ void ConstraintSolver::buildConstrainedGroups()
                      <= kMissedContactQuietLinearSpeed
               && skeleton->getSmoothedAngularSpeed()
                      <= kMissedContactQuietAngularSpeed
-              && skeleton->computeMaxBodyLinearSpeed()
-                     <= kMissedContactQuietLinearSpeed
-                            + oneStepOfGravity(*skeleton)
+              && fallsInsideWakeBand(*skeleton)
               && skeleton->computeMaxBodyAngularSpeed()
                      <= kMissedContactQuietAngularSpeed
               && !skeleton->hasExternalDisturbance();
