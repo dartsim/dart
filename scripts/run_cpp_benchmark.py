@@ -18,8 +18,7 @@ CANONICAL_BENCHMARKS = {
     "soft-body": "BM_INTEGRATION_soft_body",
     "inverse_dynamics": "BM_INTEGRATION_inverse_dynamics",
     "inverse-dynamics": "BM_INTEGRATION_inverse_dynamics",
-    # Added by PR #3209. Keeping the alias here lets the dashboard pick it up
-    # automatically once that target lands on the DART 6 branch.
+    # Added by PR #3209.
     "contact_container": "BM_INTEGRATION_contact_container",
     "contact-container": "BM_INTEGRATION_contact_container",
 }

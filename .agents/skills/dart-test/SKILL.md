@@ -70,7 +70,7 @@ only when capture is unavailable or not applicable.
 
 - `pixi run build` builds libraries only, NOT every test binary. If you run
   `ctest` directly, build the relevant test target first; `pixi run build-tests`
-  builds the release-branch test targets.
+  builds the branch test targets.
 - `pixi run test-all` builds the default CMake `ALL` graph. The branch config
   pins `BUILD_TESTING=ON`, so that graph also runs CTest and pytest. Pair it
   with `pixi run lint`; use `pixi run test` or `pixi run test-py` for focused
