@@ -3527,6 +3527,11 @@ def test_visual_smoke_cannot_be_skipped_or_soft_failed(tmp_path, mutation, expec
     workflows = tmp_path / ".github" / "workflows"
     workflows.mkdir(parents=True)
     ubuntu = (ROOT / ".github/workflows/ci_ubuntu.yml").read_text()
+    before_visual, separator, ubuntu = ubuntu.partition(
+        "- name: Agent visual verification smoke"
+    )
+    assert separator
+    ubuntu = separator + ubuntu
     if mutation == "condition":
         ubuntu = ubuntu.replace(
             "if: matrix.build_type == 'Release'",
@@ -3545,7 +3550,7 @@ def test_visual_smoke_cannot_be_skipped_or_soft_failed(tmp_path, mutation, expec
             "- name: Agent visual verification smoke\n        continue-on-error: true",
             1,
         )
-    (workflows / "ci_ubuntu.yml").write_text(ubuntu)
+    (workflows / "ci_ubuntu.yml").write_text(before_visual + ubuntu)
     (workflows / "ci_windows.yml").write_text(
         (ROOT / ".github/workflows/ci_windows.yml").read_text()
     )
