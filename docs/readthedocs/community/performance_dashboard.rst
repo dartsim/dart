@@ -22,7 +22,7 @@ Scope
 -----
 
 The DART 6 dashboard tracks bounded, CPU-only Google Benchmark rows that exist
-on the maintained DART 6 branch:
+on ``main``, the development branch for the next DART 6 release:
 
 * **Benchmark baseline** - the empty Google Benchmark target, used as runner
   overhead context.
@@ -54,11 +54,11 @@ How it works
 
 The ``DART 6 Performance Dashboard`` workflow
 (``.github/workflows/performance_dashboard_dart6.yml``) runs on pushes to
-``release-6.*`` branches that touch benchmark-relevant paths, on manual
-dispatch, and as a reusable workflow for a default-branch scheduler. Push runs
-benchmark the pushed release branch; manual and reusable runs may optionally
-name a DART 6 release branch, otherwise they discover the newest
-``release-6.*`` branch. Each run:
+``main`` and maintained ``release-6.*`` branches that touch benchmark-relevant
+paths, on manual dispatch, and as a reusable workflow for a default-branch
+scheduler. Push runs benchmark the pushed branch; manual and reusable runs
+may optionally name a maintained DART 6 branch, otherwise they use ``main``.
+Each run:
 
 #. configures the release build with Pixi;
 #. runs the bounded benchmark surfaces with
@@ -76,8 +76,8 @@ token, or third-party service to maintain.
 
 GitHub Actions only runs ``schedule`` triggers from workflows present on the
 repository default branch. Keep recurring DART 6 dashboard publication in a
-default-branch scheduler that calls this release workflow with
-``workflow_call``; do not add a release-branch-only cron and expect it to run.
+scheduler on ``main`` that calls this workflow with ``workflow_call``;
+cron schedules on maintenance branches do not run.
 
 Preview a run locally
 ---------------------
