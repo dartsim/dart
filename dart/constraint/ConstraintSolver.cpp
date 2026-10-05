@@ -357,6 +357,7 @@ struct ContactTrimScratch
   std::vector<collision::CollisionObject*> pairObjects2;
   std::vector<std::size_t> pairBuckets;  // open-addressing pair lookup
   std::vector<std::size_t> pairCounts;   // contacts of each pair
+  std::vector<std::size_t> pairSolvable; // solvable contacts of each pair
   std::vector<std::size_t> pairOffsets;  // pairMembers range of each pair
   std::vector<std::size_t> pairMembers;  // contacts grouped by pair
   std::vector<std::size_t> contactPairs; // pair of each contact
@@ -485,10 +486,13 @@ void keepSpreadContacts(
 //==============================================================================
 // Trims `result` to `cap` contacts without starving a pair while there are no
 // more pairs than `cap`. Pairs (unordered CollisionObject pairs, in order of
-// first appearance) get one more contact per round while the budget allows;
-// what is left after the last full round goes to the first pairs that still
-// have contacts. Within a pair, keepSpreadContacts() chooses. Kept contacts
-// stay in the detector's order. Returns the number of colliding pairs.
+// first appearance) get one more solvable contact per round while the budget
+// allows; what is left after the last full round goes to the first pairs that
+// still have solvable contacts. Contacts the solver skips (non-finite or
+// negative depth) get only the budget the solvable ones leave, in detector
+// order, so they cannot starve a pair the solver needs. Within a pair,
+// keepSpreadContacts() chooses. Kept contacts stay in the detector's order.
+// Returns the number of colliding pairs.
 //
 // Allocation-free once the per-thread scratch has grown to the scene.
 std::size_t trimContactsFairly(
@@ -509,6 +513,7 @@ std::size_t trimContactsFairly(
   scratch.pairObjects1.clear();
   scratch.pairObjects2.clear();
   scratch.pairCounts.clear();
+  scratch.pairSolvable.clear();
   scratch.contactPairs.resize(numContacts);
   const auto isPair = [&](std::size_t p, const ObjectPair& pair) {
     return scratch.pairObjects1[p] == pair.first
@@ -528,11 +533,14 @@ std::size_t trimContactsFairly(
         scratch.pairObjects1.push_back(pair.first);
         scratch.pairObjects2.push_back(pair.second);
         scratch.pairCounts.push_back(0u);
+        scratch.pairSolvable.push_back(0u);
       }
       p = scratch.pairBuckets[bucket];
     }
     scratch.contactPairs[i] = p;
     ++scratch.pairCounts[p];
+    if (isSolvableContact(contacts[i]))
+      ++scratch.pairSolvable[p];
   }
   const std::size_t numPairs = scratch.pairObjects1.size();
 
@@ -551,32 +559,37 @@ std::size_t trimContactsFairly(
     scratch.pairMembers[scratch.pairOffsets[p] + scratch.pairCounts[p]++] = i;
   }
 
-  // Full rounds that fit: the largest r with sum_p min(count_p, r) <= cap,
-  // found by bisection between 0 rounds (fits) and the largest pair's count
-  // (keeps every contact, so it does not fit).
+  // Full rounds of solvable contacts that fit: the largest r with
+  // sum_p min(solvable_p, r) <= cap, found by bisection between 0 rounds
+  // (fits) and the largest pair's solvable count (keeps every solvable
+  // contact, so it does not fit unless they all do).
   const auto numKeptAfter = [&](std::size_t rounds) {
     std::size_t total = 0u;
-    for (const std::size_t count : scratch.pairCounts)
-      total += std::min(count, rounds);
+    for (const std::size_t solvable : scratch.pairSolvable)
+      total += std::min(solvable, rounds);
     return total;
   };
-  std::size_t rounds = 0u;
-  std::size_t tooMany
-      = *std::max_element(scratch.pairCounts.begin(), scratch.pairCounts.end());
-  while (rounds + 1u < tooMany) {
-    const std::size_t mid = rounds + (tooMany - rounds) / 2u;
-    if (numKeptAfter(mid) <= cap)
-      rounds = mid;
-    else
-      tooMany = mid;
+  std::size_t rounds = *std::max_element(
+      scratch.pairSolvable.begin(), scratch.pairSolvable.end());
+  if (numKeptAfter(rounds) > cap) {
+    std::size_t tooMany = rounds;
+    rounds = 0u;
+    while (rounds + 1u < tooMany) {
+      const std::size_t mid = rounds + (tooMany - rounds) / 2u;
+      if (numKeptAfter(mid) <= cap)
+        rounds = mid;
+      else
+        tooMany = mid;
+    }
   }
   std::size_t leftover = cap - numKeptAfter(rounds);
 
   scratch.keep.assign(numContacts, 0);
   for (std::size_t p = 0u; p < numPairs; ++p) {
     const std::size_t count = scratch.pairCounts[p];
-    std::size_t quota = std::min(count, rounds);
-    if (count > rounds && leftover > 0u) {
+    const std::size_t solvable = scratch.pairSolvable[p];
+    std::size_t quota = std::min(solvable, rounds);
+    if (solvable > rounds && leftover > 0u) {
       ++quota;
       --leftover;
     }
@@ -588,6 +601,14 @@ std::size_t trimContactsFairly(
         scratch.keep[members[k]] = 1;
     } else if (quota > 0u) {
       keepSpreadContacts(contacts, members, count, quota, scratch);
+    }
+  }
+
+  // Budget the solvable contacts left goes to skipped ones, in detector order.
+  for (std::size_t i = 0u; i < numContacts && leftover > 0u; ++i) {
+    if (!scratch.keep[i]) {
+      scratch.keep[i] = 1;
+      --leftover;
     }
   }
 

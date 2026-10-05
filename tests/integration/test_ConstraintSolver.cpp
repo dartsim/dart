@@ -3703,6 +3703,61 @@ TEST(ConstraintSolver, ContactCapOverflowKeepsDeepestSolvableContacts)
 }
 
 //==============================================================================
+// #3056: contacts the solver skips get only the budget the solvable ones leave,
+// so a pair the detector reports first with only skipped contacts (proximity
+// contacts of allowNegativePenetrationDepthContacts, or non-finite ones) cannot
+// starve a pair the solver needs.
+TEST(ConstraintSolver, ContactCapOverflowGivesSolvableContactsTheBudgetFirst)
+{
+  auto world = createCapTestWorld(0.0);
+  // Gives every contact of the first pair in detector order a negative depth.
+  auto detector = PostFilteringDetector::create(
+      [](const collision::CollisionOption& /*option*/,
+         collision::CollisionResult& result) {
+        if (result.getNumContacts() == 0u)
+          return;
+        const auto first = shapeFramePair(result.getContact(0));
+        for (std::size_t i = 0u; i < result.getNumContacts(); ++i) {
+          if (shapeFramePair(result.getContact(i)) == first)
+            result.getContact(i).penetrationDepth = -0.01;
+        }
+      });
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(detector);
+
+  world->step();
+  const auto demand = contactsByPair(solver->getLastCollisionResult());
+  ASSERT_EQ(demand.size(), kCapTestBoxes);
+  std::size_t numSkipped = 0u;
+  for (const auto& contact : solver->getLastCollisionResult().getContacts())
+    numSkipped += contact.penetrationDepth < 0.0 ? 1u : 0u;
+  const std::size_t numSolvable
+      = solver->getLastCollisionResult().getNumContacts() - numSkipped;
+  ASSERT_GE(numSkipped, 2u);
+
+  // Fewer slots than pairs: every pair with a solvable contact keeps one.
+  solver->getCollisionOption().maxNumContacts = kCapTestBoxes - 1u;
+  world->step();
+  const auto& result = solver->getLastCollisionResult();
+  EXPECT_EQ(result.getNumContacts(), kCapTestBoxes - 1u);
+  EXPECT_EQ(contactsByPair(result).size(), kCapTestBoxes - 1u)
+      << "a pair with solvable contacts was starved";
+  for (const auto& contact : result.getContacts())
+    EXPECT_GE(contact.penetrationDepth, 0.0);
+
+  // Room for every solvable contact and one more: the spare slot goes to a
+  // skipped contact, which the result still reports.
+  solver->getCollisionOption().maxNumContacts = numSolvable + 1u;
+  world->step();
+  std::size_t numKeptSkipped = 0u;
+  for (const auto& contact : solver->getLastCollisionResult().getContacts())
+    numKeptSkipped += contact.penetrationDepth < 0.0 ? 1u : 0u;
+  EXPECT_EQ(
+      solver->getLastCollisionResult().getNumContacts(), numSolvable + 1u);
+  EXPECT_EQ(numKeptSkipped, 1u);
+}
+
+//==============================================================================
 // #3056: a detector that drops contacts per pair after its parent's collide()
 // (gz-physics does) must still see every pair; a capped parent collide would
 // stop in broadphase order and the post-filter would hide the saturation.
