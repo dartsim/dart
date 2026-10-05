@@ -1156,6 +1156,69 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
 }
 
 //==============================================================================
+// A body leaving its island beyond the wake band of the World's
+// DeactivationOptions holds a newly eligible island awake at once, even inside
+// the default wake band. Wider thresholds do not widen the band.
+TEST(IslandDeactivation, TunedWakeBandBoundsOneStepContactMiss)
+{
+  const auto checkLeaverWithThresholds = [](double linearThreshold,
+                                            double angularThreshold,
+                                            const Eigen::Vector6d& velocity,
+                                            const char* message) {
+    auto scene = makeZeroGravitySleeperScene();
+    auto opts = scene.world->getDeactivationOptions();
+    opts.mLinearSpeedThreshold = linearThreshold;
+    opts.mAngularSpeedThreshold = angularThreshold;
+    scene.world->setDeactivationOptions(opts);
+    // The leaver touches the floor and moves away from it, as in
+    // OneStepContactMissDoesNotHoldIslandsAwake.
+    auto leaver = createFreeBox(
+        "leaver",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(3.0, 0, kHalf - 1.0e-6));
+    leaver->getJoint(0)->setVelocities(velocity);
+    scene.world->addSkeleton(leaver);
+
+    scene.world->step();
+    ASSERT_GE(leaver->getIslandIndex(), 0);
+    makeSleepEligible(*scene.world, *scene.sleeper);
+    scene.world->step();
+    ASSERT_LT(leaver->getIslandIndex(), 0);
+    EXPECT_FALSE(scene.sleeper->isResting()) << message;
+  };
+
+  const DeactivationOptions defaults;
+  const double linearBand
+      = defaults.mWakeThresholdScale * defaults.mLinearSpeedThreshold;
+  const double angularBand
+      = defaults.mWakeThresholdScale * defaults.mAngularSpeedThreshold;
+  Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+  velocity[5] = 0.75 * linearBand;
+  checkLeaverWithThresholds(
+      0.5 * defaults.mLinearSpeedThreshold,
+      defaults.mAngularSpeedThreshold,
+      velocity,
+      "a body leaving past a tightened linear wake band did not hold the "
+      "island awake");
+  velocity[2] = 0.75 * angularBand;
+  velocity[5] = 0.5 * linearBand;
+  checkLeaverWithThresholds(
+      defaults.mLinearSpeedThreshold,
+      0.5 * defaults.mAngularSpeedThreshold,
+      velocity,
+      "a body spinning past a tightened angular wake band did not hold the "
+      "island awake");
+  velocity[2] = 0.0;
+  velocity[5] = 1.25 * linearBand;
+  checkLeaverWithThresholds(
+      2.0 * defaults.mLinearSpeedThreshold,
+      2.0 * defaults.mAngularSpeedThreshold,
+      velocity,
+      "a body leaving past the default wake band did not hold the island "
+      "awake under wider thresholds");
+}
+
+//==============================================================================
 // A body on a joint can be at the turning point of a swing, against its joint
 // limit, an obstacle or another body, when it leaves its island. It leaves as
 // slowly as a body whose contact was missed but then swings freely, so it holds

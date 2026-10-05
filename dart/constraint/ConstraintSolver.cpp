@@ -88,8 +88,9 @@ constexpr double kSmallContactIslandMaxErrorReductionVelocity = 1e-3;
 constexpr std::size_t kDenseContactIslandMinMobileSkeletons = 3u;
 // The wake band of the default DeactivationOptions (twice the sleep
 // thresholds). World keeps a sleep candidate across a missed contact while its
-// speed stays inside this band. The solver cannot read the World's options, so
-// this band does not follow thresholds a user tunes.
+// speed stays inside the wake band of its options. A body may count as resting
+// on a missed contact only inside that band and this one: a wider band would
+// also take in a body at the top of a flight.
 constexpr double kMissedContactQuietLinearSpeed = 0.02; // m/s
 constexpr double kMissedContactQuietAngularSpeed = 0.1; // rad/s
 double gSleepContactPenetrationTolerance
@@ -2512,6 +2513,10 @@ void ConstraintSolver::buildConstrainedGroups()
     }
 
     {
+      const double linearWakeSpeed
+          = std::min(kMissedContactQuietLinearSpeed, mLinearWakeSpeed);
+      const double angularWakeSpeed
+          = std::min(kMissedContactQuietAngularSpeed, mAngularWakeSpeed);
       // Whether every body moves inside the linear wake band once up to one
       // step of gravity along gravity is taken off its velocity, as a body
       // whose contact is missed falls freely for that step. Nothing is taken
@@ -2531,7 +2536,7 @@ void ConstraintSolver::buildConstrainedGroups()
               = skeleton.getBodyNode(i)->getLinearVelocity();
           const double fall
               = std::clamp(velocity.dot(down), 0.0, oneStepOfGravity);
-          if ((velocity - fall * down).norm() > kMissedContactQuietLinearSpeed)
+          if ((velocity - fall * down).norm() > linearWakeSpeed)
             return false;
         }
         return true;
@@ -2572,14 +2577,15 @@ void ConstraintSolver::buildConstrainedGroups()
         // freely for that step. So a free rigid body (isFreeRigidBody above)
         // that was in an island at the previous build counts only from its
         // second build outside every island if it moves like that: its smoothed
-        // speeds are inside the wake band, it spins no faster than the band
-        // allows, apart from up to one step of falling it moves inside the band
-        // (fallsInsideWakeBand above), and no force or command drives it (World
-        // never counts a driven body as quiet either). Such a body cannot be
-        // told from one that is starting to fall, released from a hold or at
-        // the top of a flight (the smoothed speeds catch a flight's top only
-        // while three steps of gravity exceed the band, that is, at steps of
-        // about 0.66 ms or more under Earth gravity), so an island that becomes
+        // speeds are inside the wake band (the World's, capped at the default
+        // one), it spins no faster than the band allows, apart from up to one
+        // step of falling it moves inside the band (fallsInsideWakeBand above),
+        // and no force or command drives it (World never counts a driven body
+        // as quiet either). Such a body cannot be told from one that is
+        // starting to fall, released from a hold or at the top of a flight (the
+        // smoothed speeds catch a flight's top only while three steps of
+        // gravity exceed the band, that is, at steps of about 0.66 ms or more
+        // under Earth gravity and the default band), so an island that becomes
         // eligible at that build can freeze while the body falls onto it. Any
         // other body counts at once: at the turning point of a swing against a
         // joint limit, an obstacle or another body, a body on a joint or a
@@ -2593,13 +2599,10 @@ void ConstraintSolver::buildConstrainedGroups()
         const bool movesLikeMissedContact
             = skeleton->getIslandIndex() >= 0 && isFreeRigidBody(*skeleton)
               && skeleton->getNumSoftBodyNodes() == 0u
-              && skeleton->getSmoothedLinearSpeed()
-                     <= kMissedContactQuietLinearSpeed
-              && skeleton->getSmoothedAngularSpeed()
-                     <= kMissedContactQuietAngularSpeed
+              && skeleton->getSmoothedLinearSpeed() <= linearWakeSpeed
+              && skeleton->getSmoothedAngularSpeed() <= angularWakeSpeed
               && fallsInsideWakeBand(*skeleton)
-              && skeleton->computeMaxBodyAngularSpeed()
-                     <= kMissedContactQuietAngularSpeed
+              && skeleton->computeMaxBodyAngularSpeed() <= angularWakeSpeed
               && !skeleton->hasExternalDisturbance();
         if (!movesLikeMissedContact) {
           hasUngroupedAwakeMobileSkeleton = true;

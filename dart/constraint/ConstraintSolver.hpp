@@ -43,6 +43,7 @@
 
 #include <Eigen/Dense>
 
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -53,6 +54,10 @@ class Joint;
 class Skeleton;
 class ShapeNodeCollisionObject;
 } // namespace dynamics
+
+namespace simulation {
+class World;
+} // namespace simulation
 
 namespace constraint {
 
@@ -475,6 +480,15 @@ protected:
 
   /// Factory for ContactSurfaceParams for each contact
   ContactSurfaceHandlerPtr mContactSurfaceHandler;
+
+private:
+  friend class simulation::World;
+
+  /// The wake band of the World's DeactivationOptions (the wake threshold scale
+  /// times each sleep threshold), which World sets every step. Island sleeping
+  /// reads it; until World sets it, it is unbounded.
+  double mLinearWakeSpeed = std::numeric_limits<double>::infinity();
+  double mAngularWakeSpeed = std::numeric_limits<double>::infinity();
 };
 
 } // namespace constraint
