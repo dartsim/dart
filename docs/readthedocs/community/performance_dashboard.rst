@@ -74,10 +74,10 @@ The action stores history on the ``gh-pages`` branch under ``performance/dart6``
 and renders an interactive Chart.js page. There is no external account, API
 token, or third-party service to maintain.
 
-GitHub Actions only runs ``schedule`` triggers from workflows present on the
-repository default branch. Keep recurring DART 6 dashboard publication in a
-scheduler on ``main`` that calls this workflow with ``workflow_call``;
-cron schedules on maintenance branches do not run.
+The dashboard publishes on pushes to ``main`` and on manual dispatch. To publish
+on a schedule, add a ``schedule`` trigger to this workflow on ``main``: GitHub
+Actions only runs ``schedule`` triggers from the default branch, so cron
+schedules on maintenance branches do not run.
 
 Preview a run locally
 ---------------------
