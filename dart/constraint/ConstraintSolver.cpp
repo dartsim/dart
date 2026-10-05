@@ -960,7 +960,7 @@ void ConstraintSolver::prepareForSimulation()
   // The passes clear this flag whenever they find no active constraint; this
   // guard puts the previous solve's value back when the function returns or
   // unwinds.
-  const ScopedAssignment hadDeactivationGroups(
+  const ScopedAssignment<bool> hadDeactivationGroups(
       mHadDeactivationGroups, mHadDeactivationGroups);
   const auto collidingState = snapshotCollidingState(mSkeletons);
   const auto lastCollisionContacts = mCollisionResult.getContacts();
@@ -981,11 +981,12 @@ void ConstraintSolver::prepareForSimulation()
       = isExactDefaultContactSurfaceHandler(mContactSurfaceHandler)
         && mContactSurfaceHandler->mParent == nullptr;
   {
-    const ScopedAssignment preparationContactSurfaceHandler(
-        mContactSurfaceHandler,
-        usesOnlyDefaultContactSurfaceHandler
-            ? mContactSurfaceHandler
-            : getStatelessContactSurfaceHandler());
+    const ScopedAssignment<ContactSurfaceHandlerPtr>
+        preparationContactSurfaceHandler(
+            mContactSurfaceHandler,
+            usesOnlyDefaultContactSurfaceHandler
+                ? mContactSurfaceHandler
+                : getStatelessContactSurfaceHandler());
     // The passes build constrained groups with automatic deactivation off.
     // Which islands sleep, and the sleep candidacy, resting flag and island
     // index of each skeleton, are for the next step's solve to decide: the
@@ -999,7 +1000,8 @@ void ConstraintSolver::prepareForSimulation()
     for (int pass = 0; pass < kPreparationPasses; ++pass) {
       updateConstraints(false);
       {
-        const ScopedAssignment deactivationActive(mDeactivationActive, false);
+        const ScopedAssignment<bool> deactivationActive(
+            mDeactivationActive, false);
         buildConstrainedGroups();
       }
       reserveConstrainedGroupsScratch();
