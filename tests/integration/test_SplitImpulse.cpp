@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/CollisionResult.hpp"
 #include "dart/config.hpp"
 #if HAVE_BULLET
@@ -40,8 +41,10 @@
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Inertia.hpp"
+#include "dart/dynamics/PointMass.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
 #include "dart/simulation/World.hpp"
 
@@ -230,6 +233,106 @@ TEST(Issue201, SplitImpulseKeepsRestingContactVelocityZero)
 
   EXPECT_NEAR(body->getLinearVelocity().z(), 0.0, 1e-6);
   EXPECT_GT(body->getTransform().translation().z(), initialHeight + 1e-6);
+}
+
+//==============================================================================
+// The position pass must not discard the velocity-phase contact response: under
+// gravity a box resting on the floor stays supported instead of free-falling.
+TEST(Issue201, SplitImpulseKeepsVelocityPhaseContactImpulse)
+{
+  auto world = createPenetratingWorld(/*splitImpulse=*/true);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  const auto* body = world->getSkeleton("box")->getRootBodyNode();
+
+  for (std::size_t i = 0; i < 500; ++i)
+    world->step();
+
+  EXPECT_NEAR(body->getLinearVelocity().z(), 0.0, 1e-6);
+  EXPECT_GT(
+      body->getTransform().translation().z(), kBoxSize / 2.0 - kPenetration);
+}
+
+//==============================================================================
+// A rigid contact's position pass clears the entire skeleton, including soft
+// contacts that do not participate in position correction. Their point-mass
+// impulses and integrated velocities must match the velocity-only solve.
+TEST(Issue201, SplitImpulseKeepsSoftContactImpulseOnMixedSkeleton)
+{
+  // Independent roots and zero springs isolate the soft response from the
+  // rigid contact's Baumgarte correction in the velocity-only reference.
+  const auto createWorld = [](bool splitImpulse) {
+    auto world = simulation::World::create();
+    world->setTimeStep(0.001);
+    world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+    world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+    world->getConstraintSolver()->setSplitImpulseEnabled(splitImpulse);
+    auto skeleton = createBox(kBoxSize / 2.0 - kPenetration);
+    const auto uniqueProperties = SoftBodyNodeHelper::makeBoxProperties(
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Isometry3d::Identity(),
+        1.0,
+        0.0,
+        0.0,
+        0.0);
+    const SoftBodyNode::Properties softProperties(
+        BodyNode::Properties(BodyNode::AspectProperties("soft")),
+        uniqueProperties);
+    auto softPair
+        = skeleton->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+            nullptr, FreeJoint::Properties(), softProperties);
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.translation() = Eigen::Vector3d(1.0, 0.0, kBoxSize / 2.0 - kPenetration);
+    FreeJoint::setTransformOf(softPair.first, tf);
+    world->addSkeleton(createFloor());
+    world->addSkeleton(skeleton);
+    return world;
+  };
+
+  auto velocityWorld = createWorld(false);
+  auto splitWorld = createWorld(true);
+  velocityWorld->step();
+  splitWorld->step();
+
+  const auto skeleton = splitWorld->getSkeleton("box");
+  const auto* rigidBody = skeleton->getRootBodyNode();
+  const auto* softBody = skeleton->getSoftBodyNode(0);
+  const auto* velocitySoftBody
+      = velocityWorld->getSkeleton("box")->getSoftBodyNode(0);
+  bool rigidContact = false;
+  bool softContact = false;
+  for (const auto& contact :
+       splitWorld->getLastCollisionResult().getContacts()) {
+    const auto* body1 = contact.collisionObject1->getBodyNode();
+    const auto* body2 = contact.collisionObject2->getBodyNode();
+    rigidContact = rigidContact || body1 == rigidBody || body2 == rigidBody;
+    softContact = softContact || body1 == softBody || body2 == softBody;
+  }
+  ASSERT_TRUE(rigidContact);
+  ASSERT_TRUE(softContact);
+  EXPECT_NEAR(rigidBody->getLinearVelocity().z(), 0.0, 1e-6);
+  EXPECT_GT(
+      rigidBody->getTransform().translation().z(),
+      kBoxSize / 2.0 - kPenetration);
+
+  ASSERT_GT(softBody->getNumPointMasses(), 0u);
+  double impulseSum = 0.0;
+  for (std::size_t i = 0; i < softBody->getNumPointMasses(); ++i) {
+    const auto* pointMass = softBody->getPointMass(i);
+    const auto* velocityPointMass = velocitySoftBody->getPointMass(i);
+    impulseSum += velocityPointMass->getConstraintImpulses().norm();
+    EXPECT_LE(
+        (pointMass->getConstraintImpulses()
+         - velocityPointMass->getConstraintImpulses())
+            .norm(),
+        1e-12)
+        << "point mass " << i;
+    EXPECT_LE(
+        (pointMass->getVelocities() - velocityPointMass->getVelocities())
+            .norm(),
+        1e-12)
+        << "point mass " << i;
+  }
+  EXPECT_GT(impulseSum, 1e-6);
 }
 
 //==============================================================================

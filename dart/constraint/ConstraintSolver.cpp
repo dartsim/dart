@@ -2763,11 +2763,33 @@ void ConstraintSolver::solvePositionConstrainedGroup(
 //==============================================================================
 void ConstraintSolver::solvePositionConstrainedGroups()
 {
-  // Preserve velocity-impulse flags across the position pass.
+  // The position pass builds its LCP with the same unit-impulse tests as the
+  // velocity pass, and applyUnitImpulse() clears every touched skeleton's
+  // accumulated constraint impulses. World::step() integrates the
+  // velocity-phase impulses only after solve() returns, so preserve them, and
+  // the impulse-applied flags, across the position pass.
+  // ponytail: per-step local vectors; move to solver scratch if split-impulse
+  // worlds show allocation cost.
   std::vector<bool> impulseAppliedStates;
+  std::vector<Eigen::Vector6d> bodyImpulses;
+  std::vector<double> jointImpulses;
+  std::vector<Eigen::Vector3d> pointMassImpulses;
   impulseAppliedStates.reserve(mSkeletons.size());
   for (const auto& skeleton : mSkeletons) {
-    impulseAppliedStates.push_back(skeleton->isImpulseApplied());
+    const bool applied = skeleton->isImpulseApplied();
+    impulseAppliedStates.push_back(applied);
+    if (!applied)
+      continue;
+    for (auto* bodyNode : skeleton->getBodyNodes()) {
+      bodyImpulses.push_back(bodyNode->getConstraintImpulse());
+      const auto* joint = bodyNode->getParentJoint();
+      for (std::size_t i = 0; i < joint->getNumDofs(); ++i)
+        jointImpulses.push_back(joint->getConstraintImpulse(i));
+      if (const auto* softBodyNode = bodyNode->asSoftBodyNode()) {
+        for (const auto* pointMass : softBodyNode->getPointMasses())
+          pointMassImpulses.push_back(pointMass->getConstraintImpulses());
+      }
+    }
   }
 
   for (auto& constraintGroup : mConstrainedGroups) {
@@ -2780,9 +2802,30 @@ void ConstraintSolver::solvePositionConstrainedGroups()
     }
   }
 
+  // Restore after computePositionVelocityChanges() so the pseudo-velocity
+  // solve sees only position impulses.
+  std::size_t bodyIndex = 0u;
+  std::size_t jointIndex = 0u;
+  std::size_t pointMassIndex = 0u;
   for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
-    mSkeletons[i]->setImpulseApplied(impulseAppliedStates[i]);
+    const auto& skeleton = mSkeletons[i];
+    if (!impulseAppliedStates[i])
+      continue;
+    for (auto* bodyNode : skeleton->getBodyNodes()) {
+      bodyNode->setConstraintImpulse(bodyImpulses[bodyIndex++]);
+      auto* joint = bodyNode->getParentJoint();
+      for (std::size_t j = 0; j < joint->getNumDofs(); ++j)
+        joint->setConstraintImpulse(j, jointImpulses[jointIndex++]);
+      if (auto* softBodyNode = bodyNode->asSoftBodyNode()) {
+        for (auto* pointMass : softBodyNode->getPointMasses()) {
+          pointMass->setConstraintImpulse(
+              pointMassImpulses[pointMassIndex++], /*_isLocal=*/true);
+        }
+      }
+    }
   }
+  for (std::size_t i = 0; i < mSkeletons.size(); ++i)
+    mSkeletons[i]->setImpulseApplied(impulseAppliedStates[i]);
 }
 
 //==============================================================================
