@@ -18,6 +18,7 @@ on:
       - "CMakeLists.txt"
       - "cmake/**"
       - "dart/**"
+      - "data/**"
       - "examples/contact_benchmark/**"
       - "pixi.lock"
       - "pixi.toml"
@@ -159,7 +160,7 @@ jobs:
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: performance/dart6
           ref: ${{ steps.dart6-branch.outputs.benchmark_ref }}
-          auto-push: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/heads/release-6.') }}
+          auto-push: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/heads/release-6.') }}
           # Keep the default explicit: release push validations rely on the
           # action fetching gh-pages before writing and retrying remote-rejected
           # pushes when another release validation publishes first.
