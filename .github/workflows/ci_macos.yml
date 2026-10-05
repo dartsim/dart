@@ -48,8 +48,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest]
-        # Debug runs nightly only.
-        build_type: ${{ fromJSON(inputs.nightly && '["Release", "Debug"]' || '["Release"]') }}
+        # pixi tasks pin BUILD_TYPE=Release, so a Debug leg would only rebuild
+        # Release; CI Linux's nightly coverage job is the Debug build.
+        build_type: ["Release"]
     steps:
       - name: Checkout
         uses: actions/checkout@v7

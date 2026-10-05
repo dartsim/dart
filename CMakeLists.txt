@@ -617,15 +617,6 @@ foreach(target_candidate ${tutorials})
 endforeach()
 add_custom_target(ALL DEPENDS ${all_targets})
 
-# 'ALL' without running anything: builds the tests instead of running them
-# (CI's assertions gate compiles everything this way).
-set(all_no_run_targets ${all_targets})
-list(REMOVE_ITEM all_no_run_targets tests_and_run pytest)
-if(TARGET tests)
-  list(APPEND all_no_run_targets tests)
-endif()
-add_custom_target(ALL_NO_RUN DEPENDS ${all_no_run_targets})
-
 #===============================================================================
 # CMake configuration files for components and targets
 #===============================================================================

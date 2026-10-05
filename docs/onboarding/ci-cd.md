@@ -15,8 +15,8 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 
 | Workflow file                     | Workflow name                | Runs                            | Purpose |
 | --------------------------------- | ---------------------------- | ------------------------------- | ------- |
-| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release/Debug build + test, no-OSG asserts gate; nightly adds ASan, coverage, and Eigen 64-byte alignment |
-| `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test; nightly adds Debug and install |
+| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, no-OSG assertions build + test; nightly adds ASan, coverage (the Debug build), and Eigen 64-byte alignment |
+| `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test; nightly adds install |
 | `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release build + test |
 | `ci_gz_physics.yml`               | CI gz-physics                | PR, push, nightly               | Gazebo/gz-physics downstream integration |
 | `api_doc.yml`                     | API Documentation            | PR, push, nightly               | Doxygen API docs build (validation only; not published) |
@@ -29,7 +29,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Performance dashboard |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main` |
 
-Required checks on `main`: `Release`, `Debug`, and
+Required checks on `main`: `Release` and
 `Asserts enabled (no -DNDEBUG)` (CI Linux), `arm64-Release` (CI macOS),
 `windows-Release` (CI Windows), `ubuntu-latest` (CI gz-physics),
 `API Documentation`, and the two Read the Docs builds. Never require a
@@ -41,8 +41,10 @@ Build jobs restore an sccache compiler cache saved from `main` at most once a
 day per configuration, and pixi environment caches are also written only from
 `main`: PR runs read both but never write, which keeps the repository's 10 GB
 Actions cache for main-branch entries. Each job prints `sccache --show-stats`.
-CTest runs in parallel (`CTEST_PARALLEL_LEVEL`). The assertions gate builds
-`ALL_NO_RUN`, which builds everything `ALL` does without running the tests.
+CTest runs in parallel (`CTEST_PARALLEL_LEVEL`). Nightly-only configurations
+never save, so they build cold. Pixi build tasks pin `BUILD_TYPE=Release`, so
+a job that needs another build type configures CMake itself, as the assertions
+gate does.
 
 ## Nightly
 
