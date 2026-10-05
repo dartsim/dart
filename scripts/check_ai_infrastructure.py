@@ -3808,11 +3808,10 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
         visual_section = content.partition(visual_step_name)[2].partition(
             "\n      - name:"
         )[0]
-        conditions = re.findall(r"(?m)^\s*if:\s*(.*?)\s*$", visual_section)
-        if conditions != ["matrix.build_type == 'Release'"]:
+        if re.search(r"(?m)^\s*if:", visual_section):
             errors.append(
-                ".github/workflows/ci_ubuntu.yml: visual smoke must run for "
-                "exactly the Release matrix entry"
+                ".github/workflows/ci_ubuntu.yml: visual smoke must run "
+                "unconditionally in the Release job"
             )
         if "continue-on-error" in visual_section:
             errors.append(
