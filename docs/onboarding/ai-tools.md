@@ -144,11 +144,13 @@ approval.
 4. Merge only after a maintainer (currently `jslee02`) adds a +1 reaction to
    the PR description (`gh api repos/dartsim/dart/issues/<PR>/reactions`).
    That reaction is explicit approval for the agent or the maintainer to merge
-   that PR, including the step 5 base update. The +1 that
-   `chatgpt-codex-connector[bot]` adds after a clean review is not. Agents
-   merge through the `dart-manage-pr` `mode=merge` gate. Squash-merge: the
-   repository allows squash and rebase merges, not merge commits. Fix AI
-   review findings that arrive afterwards in a follow-up PR.
+   that PR, including the step 5 base update and fixes for AI review findings
+   raised after the reaction. Any other change pushed after the reaction needs
+   a fresh +1. The +1 that `chatgpt-codex-connector[bot]` adds after a clean
+   review is not approval. Agents merge through the `dart-manage-pr`
+   `mode=merge` gate. Squash-merge: the repository allows squash and rebase
+   merges, not merge commits. Fix AI review findings that arrive afterwards in
+   a follow-up PR.
 5. Merge a series in dependency order, noted in each PR body. Release branches
    require PR branches to be up to date, so before merging each PR, merge the
    latest base into its branch as "PR Branches" describes, push it under the

@@ -42,9 +42,11 @@ configuring/building with OpenSceneGraph forcibly disabled, and the required
 `ubuntu-latest` context, owned only by CI gz-physics and running both Gazebo
 tasks. Keep each required context single-owner when editing workflows.
 
-At a release, tag `main`. Cut a `release-6.x` branch from the tag only when
-patch releases must diverge from `main`. The `Nightly` workflow is scheduled
-directly on `main`; its `nightly-failure` issues track `main`.
+At a new minor release (for example 6.20.0), tag `main`. Cut a `release-6.x`
+branch from the tag only when patch releases must diverge from `main`; a patch
+release then tags its packaging squash commit on that branch, as above, never
+`main`. The `Nightly` workflow is scheduled directly on `main`; its
+`nightly-failure` issues track `main`.
 
 ## Verifying DART 6 Changes
 
