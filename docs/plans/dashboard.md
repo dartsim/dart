@@ -46,7 +46,7 @@ Priority order is document order. Active implementation handoff remains in
   acceptance items whose own text offers one. The ordered inventory of
   remaining items and the suggested PR bundles live in the task `RESUME.md`
   (single owner); this dashboard deliberately does not duplicate that list.
-  **Do not restart the volumetric FEM subsystem on `release-6.20`.** New GUI
+  **Do not restart the volumetric FEM subsystem on the DART 6 line (`main`).** New GUI
   examples belong in `dart-demos`.
 - Gate: `pixi run lint`; focused soft-body integration tests; headless
   soft-body benchmarks with exact commands/raw rows; one-thread and host-capped

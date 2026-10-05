@@ -16,7 +16,7 @@ documentation after the work completes; promote durable content first.
 ## Autonomous Project Sessions
 
 `dart-ultrawork` is the DART 6 entrypoint for large, multi-session,
-team-scale, or explicitly autonomous release-branch work. It still uses
+team-scale, or explicitly autonomous DART 6 work. It still uses
 `docs/dev_tasks/<task>/` as the project home; do not create a parallel generic
 project directory.
 

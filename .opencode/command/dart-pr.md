@@ -110,12 +110,13 @@ Use these practices:
 2. Exclude unrelated dirty files unless the user explicitly includes them.
 3. Choose the target branch and milestone:
 
-   | Target                          | Milestone                      |
-   | ------------------------------- | ------------------------------ |
-   | Active DART 6 LTS `release-6.*` | Branch-matching DART 6.x release |
+   | Target                    | Milestone                                       |
+   | ------------------------- | ----------------------------------------------- |
+   | `main`                    | Next DART 6.x release (currently `DART 6.20.0`) |
+   | Maintenance `release-6.*` | Branch-matching DART 6.x release                |
 
-4. Open bug fixes against the active DART 6 LTS branch; never target the `main`
-   mirror.
+4. After explicit maintainer/user approval, open bug-fix PRs against `main`;
+   backports to `release-6.19` use `dart-backport-pr`.
 5. Before every commit, run:
    ```bash
    pixi run lint
@@ -128,7 +129,7 @@ Use these practices:
    ```
 7. Commit only intended files with a plain descriptive commit title.
 8. Ask for explicit maintainer/user approval before pushing or opening the draft
-   PR. Never push directly to `release-*`. If approved:
+   PR. Never push directly to `main` or `release-*`. If approved:
    ```bash
    branch=$(git branch --show-current)
    git push -u origin "HEAD:${branch}"

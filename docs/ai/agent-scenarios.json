@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "profile": "release-6.20",
+  "profile": "main",
   "scenarios": [
     {
       "id": "orientation",
@@ -58,7 +58,7 @@
     },
     {
       "id": "failure-diagnosis",
-      "prompt_class": "Diagnose a failing release-6.20 CI run before changing code",
+      "prompt_class": "Diagnose a failing main CI run before changing code",
       "start_dir": ".github/workflows",
       "instruction_chain": ["AGENTS.md"],
       "expected_route": {
@@ -224,7 +224,7 @@
     },
     {
       "id": "release-maintenance",
-      "prompt_class": "Backport a merged release-6.20 fix to an older DART 6 release branch",
+      "prompt_class": "Backport a merged main fix to an older DART 6 release branch",
       "start_dir": "docs/plans",
       "instruction_chain": [
         "AGENTS.md",

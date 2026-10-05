@@ -1,7 +1,9 @@
 # Release Management
 
-DART 6.20 work targets `release-6.20` and the branch-matching DART 6.x
-release milestone (currently `DART 6.20.0`).
+`main` is the development branch for the next release, currently DART 6.20.
+PRs target `main` and the matching DART 6.x release milestone (currently
+`DART 6.20.0`). `release-6.19` stays the maintenance branch; backports use
+`dart-backport-pr`.
 
 Version note: `package.xml` on this branch carries the latest published
 DART 6.19.x point release forward (so a configured build can report a
@@ -9,7 +11,7 @@ DART 6.19.x point release forward (so a configured build can report a
 change. The `CHANGELOG.md` section "DART 6.20.0 (Unreleased)" is the
 authoritative statement of what this branch is becoming.
 
-Release-branch PRs should:
+DART 6 PRs should:
 
 - preserve DART 6 compatibility unless explicitly approved otherwise;
 - document package and dependency changes clearly;
@@ -26,20 +28,17 @@ the exact candidate SHA for the forced optional-dependency-off gate and
 activating a new `release-6.x` branch, confirm its branch protection requires
 uniquely named contexts for both gates.
 
-`release-6.20` enforces these gates through the required
+`main` enforces these gates through the required
 `Asserts enabled (no -DNDEBUG)` context, owned only by CI Linux and
 configuring/building with OpenSceneGraph forcibly disabled, and the required
 `ubuntu-latest` context, owned only by CI gz-physics and running both Gazebo
 tasks. Keep each required context single-owner when editing workflows.
 
-`main` mirrors `release-6.20`: after tagging each DART 6.20.x release,
-fast-forward it with `git push origin release-6.20:main`. Never target `main`
-with a PR. Fast-forwarding also activates schedule
-changes, since the `Nightly` workflow fires from `main`. When activating a new
-`release-6.x` branch, update `NIGHTLY_BRANCH` in `nightly.yml` along with the
-branch protection checks.
+At a release, tag `main`. Cut a `release-6.x` branch from the tag only when
+patch releases must diverge from `main`. The `Nightly` workflow is scheduled
+directly on `main`; its `nightly-failure` issues track `main`.
 
-## Verifying Release-Branch Changes
+## Verifying DART 6 Changes
 
 Verify before merging: `pixi run test-all` for the complete default CMake graph.
 The branch configuration pins `BUILD_TESTING=ON`, so `ALL` builds the default
