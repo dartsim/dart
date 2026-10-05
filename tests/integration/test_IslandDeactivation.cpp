@@ -1670,9 +1670,12 @@ TEST(IslandDeactivation, WakeOnAutomaticJointLimitChange)
 namespace {
 
 //==============================================================================
-// A 1 kg base plate with a 0.5 kg flap hinged about +y on its +x edge, both
-// lying on the floor and overlapping it by 5e-9 m. Returns the flap's joint.
-RevoluteJoint* addFlapModel(World* world)
+// A 1 kg base plate with a 0.5 kg flap jointed to its +x edge along `axis` (by
+// default hinged about +y), both lying on the floor and overlapping it by
+// 5e-9 m. Returns the flap's joint.
+template <typename JointT = RevoluteJoint>
+JointT* addFlapModel(
+    World* world, const Eigen::Vector3d& axis = Eigen::Vector3d::UnitY())
 {
   const Eigen::Vector3d size(0.5, 0.5, 0.1);
   auto skel = Skeleton::create("flap_model");
@@ -1687,9 +1690,9 @@ RevoluteJoint* addFlapModel(World* world)
   base->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
       std::make_shared<BoxShape>(size));
 
-  RevoluteJoint::Properties hingeProps;
+  typename JointT::Properties hingeProps;
   hingeProps.mName = "hinge";
-  hingeProps.mAxis = Eigen::Vector3d::UnitY();
+  hingeProps.mAxis = axis;
   hingeProps.mT_ParentBodyToJoint.translation()
       = Eigen::Vector3d(0.25, 0.0, -0.05);
   hingeProps.mT_ChildBodyToJoint.translation()
@@ -1698,9 +1701,9 @@ RevoluteJoint* addFlapModel(World* world)
       BodyNode::AspectProperties(std::string("flap")));
   flapProps.mInertia.setMass(0.5);
   flapProps.mInertia.setMoment(BoxShape::computeInertia(size, 0.5));
-  auto pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
-      base, hingeProps, flapProps);
-  pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+  auto pair
+      = skel->createJointAndBodyNodePair<JointT>(base, hingeProps, flapProps);
+  pair.second->template createShapeNodeWith<CollisionAspect, DynamicsAspect>(
       std::make_shared<BoxShape>(size));
 
   Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
@@ -1872,22 +1875,98 @@ Eigen::Vector3d getPosition(const SkeletonPtr& skel)
   return skel->getBodyNode(0)->getTransform().translation();
 }
 
+//==============================================================================
+template <typename JointT>
+struct JointEdit
+{
+  std::string_view name;
+  // Writes the current value back, which changes nothing.
+  std::function<void(JointT*)> rewrite;
+  std::function<void(JointT*)> apply;
+};
+
+//==============================================================================
+// For each edit, rests a flap model whose joint runs along `axis`, then expects
+// the rewrite to keep it resting and the edit to wake it.
+template <typename JointT>
+void expectEditsWakeRestingFlap(
+    const std::vector<JointEdit<JointT>>& edits, const Eigen::Vector3d& axis)
+{
+  for (const auto& edit : edits) {
+    SCOPED_TRACE(edit.name);
+    // Without gravity, and frozen by its first solve (which integrates no
+    // positions), the flap keeps every joint exactly still: the axis edit then
+    // happens at q = 0, where the pose check cannot see it, and the flap can
+    // rest with joint friction, whose constraint keeps an island awake while
+    // the joint moves.
+    auto world = makeSleepWorld();
+    world->setGravity(Eigen::Vector3d::Zero());
+    world->addSkeleton(createFloor());
+    auto* joint = addFlapModel<JointT>(world.get(), axis);
+    joint->setCoulombFriction(0, 0.1);
+    const auto skel = joint->getSkeleton();
+    skel->setSleepCandidate(true);
+
+    ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), skel));
+    ASSERT_EQ(0.0, joint->getPosition(0));
+    const auto& solverResult
+        = world->getConstraintSolver()->getLastCollisionResult();
+
+    edit.rewrite(joint);
+    world->step();
+    EXPECT_EQ(0u, solverResult.getNumContacts())
+        << "writing the current value left the all-resting fast path";
+    EXPECT_TRUE(skel->isResting()) << "writing the current value woke the flap";
+
+    edit.apply(joint);
+    world->step();
+    EXPECT_GT(solverResult.getNumContacts(), 0u)
+        << "the edit reused the all-resting fast path";
+    EXPECT_FALSE(skel->isResting()) << "the edit did not wake the flap";
+  }
+}
+
+//==============================================================================
+// Normalizing a rescaled non-cardinal axis can land a few ULPs off the stored
+// axis, which is no change of direction, while a sign flip or a 1e-12 rad turn
+// is one.
+template <typename JointT>
+void expectOnlyAxisTurnsWakeRestingFlap()
+{
+  const std::vector<JointEdit<JointT>> edits = {
+      {"setAxis(2 * axis), then flip it",
+       [](JointT* joint) { joint->setAxis(2.0 * joint->getAxis()); },
+       [](JointT* joint) {
+         joint->setAxis(-joint->getAxis());
+       }},
+      {"setAxis(3 * axis), then turn it 1e-12 rad",
+       [](JointT* joint) { joint->setAxis(3.0 * joint->getAxis()); },
+       [](JointT* joint) {
+         const Eigen::Vector3d axis = joint->getAxis();
+         joint->setAxis(Eigen::AngleAxisd(1e-12, axis.unitOrthogonal()) * axis);
+       }},
+  };
+  // Normalizing twice or three times either stored axis does not reproduce it
+  // bit for bit (with SSE2 doubles).
+  for (const Eigen::Vector3d& axis :
+       {Eigen::Vector3d(1.0, 1.0, 0.0), Eigen::Vector3d(1.0, 3.0, 3.0)}) {
+    SCOPED_TRACE(
+        ::testing::Message()
+        << JointT::getStaticType() << " along " << axis.transpose());
+    expectEditsWakeRestingFlap(edits, axis);
+  }
+}
+
 } // namespace
 
 //==============================================================================
 // Joint spring, damping and friction, gravity and axis edits change the forces
 // on a resting body without changing its pose, so each must wake it. Writing
-// the current value back changes nothing, so it must not.
+// the current value back changes nothing, so it must not, even when it only
+// rescales the axis.
 TEST(IslandDeactivation, WakeOnJointDynamicsEdit)
 {
-  struct Edit
-  {
-    std::string_view name;
-    // Writes the current value back, which changes nothing.
-    std::function<void(RevoluteJoint*)> rewrite;
-    std::function<void(RevoluteJoint*)> apply;
-  };
-  const std::vector<Edit> edits = {
+  const std::vector<JointEdit<RevoluteJoint>> edits = {
       {"setSpringStiffness",
        [](RevoluteJoint* joint) {
          joint->setSpringStiffness(0, joint->getSpringStiffness(0));
@@ -1946,39 +2025,10 @@ TEST(IslandDeactivation, WakeOnJointDynamicsEdit)
          joint->setAxis(Eigen::Vector3d::UnitX());
        }},
   };
+  expectEditsWakeRestingFlap(edits, Eigen::Vector3d::UnitY());
 
-  for (const auto& edit : edits) {
-    SCOPED_TRACE(edit.name);
-    // Without gravity, and frozen by its first solve (which integrates no
-    // positions), the flap keeps every joint exactly still: the axis edit then
-    // happens at q = 0, where the pose check cannot see it, and the flap can
-    // rest with joint friction, whose constraint keeps an island awake while
-    // the joint moves.
-    auto world = makeSleepWorld();
-    world->setGravity(Eigen::Vector3d::Zero());
-    world->addSkeleton(createFloor());
-    auto* joint = addFlapModel(world.get());
-    joint->setCoulombFriction(0, 0.1);
-    const auto skel = joint->getSkeleton();
-    skel->setSleepCandidate(true);
-
-    ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), skel));
-    ASSERT_EQ(0.0, joint->getPosition(0));
-    const auto& solverResult
-        = world->getConstraintSolver()->getLastCollisionResult();
-
-    edit.rewrite(joint);
-    world->step();
-    EXPECT_EQ(0u, solverResult.getNumContacts())
-        << "writing the current value left the all-resting fast path";
-    EXPECT_TRUE(skel->isResting()) << "writing the current value woke the flap";
-
-    edit.apply(joint);
-    world->step();
-    EXPECT_GT(solverResult.getNumContacts(), 0u)
-        << "the edit reused the all-resting fast path";
-    EXPECT_FALSE(skel->isResting()) << "the edit did not wake the flap";
-  }
+  expectOnlyAxisTurnsWakeRestingFlap<RevoluteJoint>();
+  expectOnlyAxisTurnsWakeRestingFlap<PrismaticJoint>();
 }
 
 //==============================================================================

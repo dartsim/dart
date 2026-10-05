@@ -2266,3 +2266,35 @@ TEST_F(JOINTS, JacobianMethodGradientConversionDoesNotModifySkeletonState)
   EXPECT_VECTOR_NEAR(positionsBefore, skel->getPositions(), 0.0);
   EXPECT_VECTOR_NEAR(velocitiesBefore, skel->getVelocities(), 0.0);
 }
+
+//==============================================================================
+// Building a joint stores its axis exactly as normalize() leaves it, even when
+// the axis differs from the default +Z only by rounding residue. gz-physics
+// builds joints this way, so a same-direction check in setAxis() that let such
+// an axis count as +Z would silently change Gazebo's joint axes.
+template <typename JointType>
+void expectNearCardinalAxisIsStored()
+{
+  for (const Eigen::Vector3d& axis :
+       {Eigen::Vector3d(1e-17, -2e-17, 1.0),
+        Eigen::Vector3d(3e-18, 0.0, 1.0)}) {
+    typename JointType::Properties properties;
+    properties.mAxis = axis;
+    auto skel = Skeleton::create("skel");
+    auto* joint = skel->template createJointAndBodyNodePair<JointType>(
+                          nullptr, properties)
+                      .first;
+    const Eigen::Vector3d expected = axis.normalized();
+    EXPECT_EQ(joint->getAxis(), expected);
+    const auto clone = skel->cloneSkeleton();
+    EXPECT_EQ(
+        static_cast<const JointType*>(clone->getJoint(0))->getAxis(), expected);
+  }
+}
+
+//==============================================================================
+TEST_F(JOINTS, BuildingAJointKeepsNearCardinalAxes)
+{
+  expectNearCardinalAxisIsStored<RevoluteJoint>();
+  expectNearCardinalAxisIsStored<PrismaticJoint>();
+}
