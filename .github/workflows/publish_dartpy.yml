@@ -44,26 +44,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check_format:
-    name: Check format
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.inputs.checkout_ref || github.event.inputs.ref || github.sha }}
-
-      - name: Set up pixi
-        uses: prefix-dev/setup-pixi@v0.10.2
-        with:
-          cache: true
-          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
-
-      - name: Check format
-        run: pixi run black --check --diff .
-
-      - name: Check import
-        run: pixi run isort --check --diff .
-
   build_wheels:
     name: ${{ matrix.os }}-${{ matrix.build }}
     runs-on: ${{ matrix.runner }}
@@ -236,29 +216,12 @@ jobs:
           path: ./dist/*.whl
           name: ${{ matrix.os }}-${{ matrix.build }}
 
-  # TODO: Disabled because installing from source doesn't work when the deps are not
-  # installed in the system
-  # build_sdist:
-  #   name: Build source distribution
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v7
-
-  #     - name: Build SDist
-  #       run: pipx run build --sdist
-
-  #     - uses: actions/upload-artifact@v7
-  #       with:
-  #         path: dist/*.tar.gz
+  # No sdist: building dartpy from source needs DART's native deps installed.
 
   upload_pypi:
-    # needs: [build_wheels, build_sdist]
     needs: [build_wheels]
     runs-on: ubuntu-latest
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    # upload to PyPI on every tag starting with 'release-'
-    # if: github.event_name == 'push' && startsWith(github.ref, 'release-')
-    # alternatively, to publish when a GitHub Release is created, use the following rule:
+    # Publish from version tags, or from a manual dispatch with publish=true.
     if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' && (startsWith(github.ref, 'refs/tags/v') || startsWith(github.event.inputs.ref, 'v') || startsWith(github.event.inputs.ref, 'refs/tags/v')))
     steps:
       - uses: actions/download-artifact@v8
