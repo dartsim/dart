@@ -181,6 +181,10 @@ one.
 
 ## Revision Comparisons
 
+Use `pixi run perf-compare --base origin/main --head HEAD` for deterministic
+instruction and allocation deltas and behavior-guard checks, measured with the
+system Valgrind; wall time is advisory only.
+
 Use the soft-body comparison script for PR evidence that must compare the
 current commit against both its parent and the `main` base on the same host:
 
