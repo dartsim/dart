@@ -11,10 +11,9 @@ on:
   pull_request:
     branches:
       - "**"
-  schedule:
-    # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
-    - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
   workflow_dispatch:
+  # Nightly (nightly.yml) runs this workflow on release-6.20 every night.
+  workflow_call:
 
 concurrency:
   # Protected release branches should finish every post-merge validation run.
@@ -22,8 +21,8 @@ concurrency:
   # run-specific group on release refs while keeping PR/topic refs cancellable.
   group: >-
     ${{ startsWith(github.ref, 'refs/heads/release-')
-        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
-        || format('{0}-{1}', github.workflow, github.ref) }}
+        && format('api-doc-{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || format('api-doc-{0}-{1}', github.workflow, github.ref) }}
   cancel-in-progress: ${{ github.event_name != 'schedule' && !startsWith(github.ref, 'refs/heads/release-') }}
 
 jobs:

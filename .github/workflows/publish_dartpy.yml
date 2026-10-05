@@ -2,14 +2,12 @@
 name: Publish dartpy
 
 'on':
+  # Release tags build and publish; nightly.yml builds and tests the wheels
+  # every night (publishing stays tag/dispatch only).
   push:
-    branches:
-      - "main"
-      - "release-*"
     tags:
       - "v*.*.*"
-  schedule:
-    - cron: "0 10 * * 0,3"
+  workflow_call:
   workflow_dispatch:
     inputs:
       ref:
@@ -34,16 +32,11 @@ permissions:
 
 concurrency:
   # Include the event name so a manual workflow_dispatch (used to publish a
-  # release) is not cancelled by the push-triggered build of the same ref, and
-  # vice versa. Protected release branch push validations should also finish
-  # every post-merge run, so use a run-specific group only for release push
-  # events while keeping manual publish dispatches and other same-event runs
-  # cancellable.
-  group: >-
-    ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-')
-        && format('{0}-{1}-{2}-{3}', github.workflow, github.ref, github.event_name, github.run_id)
-        || format('{0}-{1}-{2}', github.workflow, github.ref, github.event_name) }}
-  cancel-in-progress: ${{ !(github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-')) }}
+  # release) is not cancelled by the tag-push build of the same ref, and vice
+  # versa. The fixed prefix keeps nightly calls apart: under workflow_call,
+  # github.workflow is the caller's name ("Nightly").
+  group: publish-dartpy-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
 
 jobs:
   check_format:
