@@ -135,7 +135,7 @@ needed uninstalled headers, absence from the generated aggregate, and a Doxygen
 exclusion purely to avoid freezing an unfinished API into 6.20 — symptoms of
 being in the wrong place. The implementation is preserved in the
 `wp-db-fem-foundation` and `wp-db-fem-elastic` branches and in #3404. Do not
-restart it on `release-6.20`.
+restart it on the DART 6 line (`main`).
 
 **The Jain/Liu deferrals were retracted (2026-07-23).** The SIMBICON/controller
 rows (biped push recovery, noisy floor, biped walking) and the hand scenes
