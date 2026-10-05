@@ -16,7 +16,7 @@ Perform mechanical refactor: $ARGUMENTS
 
 1. Define the exact transformation and scope before editing.
 2. Create a topic branch from the target branch, for example
-   `git switch --no-track -c refactor/<topic> origin/release-6.20`.
+   `git switch --no-track -c refactor/<topic> origin/main`.
 3. Prefer scriptable or automated edits when the transformation is repetitive.
 4. Keep behavior unchanged; do not mix in feature work or cleanup outside scope.
 5. If reorganizing files, update CMake, pixi tasks, generated indexes, and docs.

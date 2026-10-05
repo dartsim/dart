@@ -5,8 +5,9 @@ name: CI macOS
 on:
   push:
     # Feature-branch validation happens via pull_request; run on push only for
-    # the release lines so PR branches are not built twice per push.
+    # main and the release lines so PR branches are not built twice per push.
     branches:
+      - "main"
       - "release-*"
   pull_request:
     branches:
@@ -28,14 +29,14 @@ permissions:
   contents: read
 
 concurrency:
-  # Protected release branches should finish every post-merge validation run.
+  # Protected branches (main, release-*) should finish every post-merge run.
   # GitHub's default concurrency queue keeps only one pending run, so use a
   # run-specific group on release refs while keeping PR/topic refs cancellable.
   group: >-
-    ${{ startsWith(github.ref, 'refs/heads/release-')
+    ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-'))
         && format('ci-macos-{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
         || format('ci-macos-{0}-{1}', github.workflow, github.ref) }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' && !startsWith(github.ref, 'refs/heads/release-') }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' && !(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-')) }}
 
 jobs:
   build:

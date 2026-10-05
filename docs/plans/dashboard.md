@@ -12,10 +12,10 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Now
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
-- Next step: Re-baseline the DART workload matrix and `dart` detector
-  rows on the current merged base, then use that evidence to select one
-  consolidated implementation gap or the closeout route. Keep the task active
-  while #3056 remains open.
+- Next step: Refresh representative DART workload and `dart` detector rows
+  against parent/base revisions on the same host, then use that evidence to
+  select one consolidated implementation gap or the closeout route. Keep the
+  task active while #3056 remains open.
 - Gate: `pixi run lint`; capped C++ build; detector-specific final-state
   hash guards; benchmark evidence in the task-required report shape;
   `pixi run -e gazebo test-gz` for collision, solver, or `World::step`
@@ -46,7 +46,7 @@ Priority order is document order. Active implementation handoff remains in
   acceptance items whose own text offers one. The ordered inventory of
   remaining items and the suggested PR bundles live in the task `RESUME.md`
   (single owner); this dashboard deliberately does not duplicate that list.
-  **Do not restart the volumetric FEM subsystem on `release-6.20`.** New GUI
+  **Do not restart the volumetric FEM subsystem on the DART 6 line (`main`).** New GUI
   examples belong in `dart-demos`.
 - Gate: `pixi run lint`; focused soft-body integration tests; headless
   soft-body benchmarks with exact commands/raw rows; one-thread and host-capped

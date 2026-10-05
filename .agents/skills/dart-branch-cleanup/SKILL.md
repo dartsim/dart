@@ -62,7 +62,7 @@ Default to `analyze` if the requested mode is ambiguous.
    git ls-remote --heads https://github.com/dartsim/dart.git <BRANCH>
    ```
 3. Determine the target/base branch from the PR or task, usually
-   `origin/release-6.20` for this release lane.
+   `origin/main` for development work.
 4. For each branch:
    ```bash
    git rev-list --left-right --count <TARGET>...<BRANCH>

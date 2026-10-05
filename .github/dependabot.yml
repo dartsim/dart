@@ -8,19 +8,19 @@ updates:
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
-    target-branch: "release-6.20"
+    target-branch: "main"
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "docker"
     # Devcontainer Dockerfile lives under the hidden .devcontainer directory.
     directory: "/.devcontainer"
-    target-branch: "release-6.20"
+    target-branch: "main"
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "pip"
     directory: "/"
-    target-branch: "release-6.20"
+    target-branch: "main"
     schedule:
       interval: "weekly"

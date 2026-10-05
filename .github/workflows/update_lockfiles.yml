@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        base: [release-6.20]
+        base: [main]
     steps:
       - uses: actions/checkout@v7
         with:

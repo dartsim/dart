@@ -93,7 +93,7 @@ for scenes using the `dart` detector. Bullet, ODE, and other external collision
 backends may allocate internally, so their allocation coverage should be scoped
 to the World-owned base allocator surface instead of global heap counters.
 
-For release-branch simulation changes, also run:
+For DART 6 simulation changes, also run:
 
 ```bash
 pixi run test-all
