@@ -995,6 +995,9 @@ void ConstraintSolver::prepareForSimulation()
   }
   if (!mCollisionGroup
       || mCollisionGroup->getContentVersion() == collisionGroupContentVersion) {
+    // Copy assignment keeps the vectors' warmed capacity. It can shrink the
+    // lookup sets' bucket arrays, but the sets fill only once a caller has
+    // queried them, and from then on every step allocates their nodes anyway.
     mCollisionResult = lastCollisionResult;
   } else {
     // Not a memory-safety guard: it only makes the next step see no previous
