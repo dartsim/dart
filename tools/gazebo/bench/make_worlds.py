@@ -14,6 +14,7 @@ as it can; the gz-physics driver ignores the factor.
 """
 
 import copy
+import math
 import pathlib
 import sys
 import xml.etree.ElementTree as ET
@@ -50,6 +51,8 @@ def bodies(world):
 def move(model, dy=0.0, dz=0.0):
     pose = model.find("pose")
     values = [float(v) for v in pose.text.split()]
+    if len(values) != 6 or not all(math.isfinite(v) for v in values):
+        raise ValueError(f"{model.get('name')}: pose must contain six finite numbers")
     values[1] += dy
     values[2] += dz
     pose.text = " ".join(f"{v:.15g}" for v in values)
@@ -96,7 +99,11 @@ def main(argv):
             print(f"{source}: expected 3003 bodies, found {count}", file=sys.stderr)
             return 1
         if change:
-            change(world)
+            try:
+                change(world)
+            except ValueError as error:
+                print(f"{source}: {error}", file=sys.stderr)
+                return 2
         tree.write(out_dir / name, xml_declaration=True, encoding="unicode")
         print(f"wrote {out_dir / name} ({len(bodies(world))} non-static models)")
     return 0

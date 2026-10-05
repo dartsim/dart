@@ -5,6 +5,8 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "tools" / "gazebo" / "bench" / "make_worlds.py"
 
@@ -80,3 +82,14 @@ def test_rejects_an_unexpected_world(tmp_path, capsys):
     _shapes_world(source, bodies=30)
     assert make_worlds.main(["make_worlds.py", str(source), str(tmp_path)]) == 1
     assert "expected 3003 bodies, found 30" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("pose", ["0 0 nan 0 0 0", "0 inf 0 0 0 0", "0 0 0"])
+def test_rejects_unusable_model_poses(tmp_path, capsys, pose):
+    source = tmp_path / "3k_shapes.sdf"
+    _shapes_world(source)
+    tree = ET.parse(source)
+    tree.getroot().find("world/model[@name='box_0']/pose").text = pose
+    tree.write(source)
+    assert make_worlds.main(["make_worlds.py", str(source), str(tmp_path)]) == 2
+    assert "pose must contain six finite numbers" in capsys.readouterr().err

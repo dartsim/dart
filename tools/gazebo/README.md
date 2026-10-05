@@ -70,7 +70,7 @@ Environment variables:
 | `GZ_COMPAT_DIR` | `.deps/gz-compat/<lane>` | work directory |
 | `DART_PARALLEL_JOBS` | `nproc` | build jobs |
 | `GZ_COMPAT_TEST_JOBS` | build jobs | parallel gz-physics tests |
-| `GZ_COMPAT_MAX_SECONDS_SCALE` | 1 | multiplier for `max-seconds` limits on slower hosts |
+| `GZ_COMPAT_MAX_SECONDS_SCALE` | 1 | finite, positive multiplier for `max-seconds` limits on slower hosts |
 
 gz-cmake gives every gz-physics and gz-sim GoogleTest test a fixed 240 s
 `TIMEOUT`, which `ctest --timeout` cannot raise. Its `check_<test>` writes a
@@ -133,8 +133,16 @@ lane:
 | `STALE` | an accepted difference that now passes; drop the entry |
 | `FIXED` | an expected failure that ran and passed |
 
+`compare` requires an existing, readable expected-failure file; only
+`--write-baseline` may create a missing one. Timing multipliers
+(`--max-seconds-scale`, including its environment default, and
+`--max-seconds-factor`) must be finite and positive. Expected `max-seconds`
+limits and recorded case times must be finite and nonnegative, and baseline
+test counts must be nonnegative. Missing GoogleTest result directories are
+errors, even when no failures are recorded.
+
 `compare` stops with an error (exit status 2, as for missing or unreadable
-results) when the run lacks a test that the expected-failure file names, a
+inputs) when the run lacks a test that the expected-failure file names, a
 `max-seconds` case whose test did not fail at the test level, or a CTest test
 that the base ran (with a base), or when a suite registered fewer CTest tests
 than the `tests <suite> <count>` line records for the 6.19.4 run: a run that a
@@ -197,11 +205,19 @@ gz-sim.
   `--contacts-every K` samples every K steps independently of `--window`.
   Samples between timing rows print `step=N contacts=C`; coincident samples
   keep the `contacts=C` field on the timing row.
+  Steps must be positive integers; explicit contact limits and sampling
+  intervals must be nonnegative integers (0 disables contacts or sampling).
+  `--sunk-z` must be finite; negative heights are supported. These inputs
+  reject trailing characters.
 - `gz_sim_server_bench` runs a world in a `gz::sim::Server` and reports time
   per iteration; it fails when the server did not run every iteration (a
   world that did not load, or a server stopped by a signal).
   `pixi run gz-compat-<lane> bench-gz-sim` runs `3k_shapes.sdf` with its
   real-time factor set to 0 for 1000 iterations.
+  Iterations must be a positive integer without trailing characters.
+  The world filename must not be empty, and an explicit `--engine` must
+  name an existing plugin file; otherwise gz-sim can run iterations using
+  a default world or without physics.
 - `pixi run gz-compat-<lane> worlds` writes the benchmark worlds derived
   from `3k_shapes.sdf` into `.deps/gz-compat/<lane>/worlds/`
   ([`bench/make_worlds.py`](bench/make_worlds.py)), all with real-time factor
@@ -209,6 +225,7 @@ gz-sim.
   ground), `6k_shapes.sdf` (a second copy 4.5 m along +y) and
   `3k_shapes_pendulum.sdf` (plus a contact-free pendulum 500 m away, which
   keeps one body awake).
+  Model poses transformed by the generator must contain six finite numbers.
 - `gz_sleep_oracle` is the differential sleep oracle. Each scenario applies
   one state mutation the dartsim plugin exposes and runs the same script with
   DART's deactivation enabled and disabled, reaching DART's `World` through
@@ -231,7 +248,10 @@ gz-sim.
   a shape's size.
 
   `pixi run gz-compat-<lane> sleep-oracle` runs all scenarios (`--list`,
-  `--scenario NAME`, `--settle N`, `--steps N`, `--tolerance X`). Each row
+  `--scenario NAME`, `--settle N`, `--steps N`, `--tolerance X`). Settle and
+  post-mutation step counts must be positive integers. Both this oracle and
+  the raycast probe require finite, nonnegative tolerances; these numeric
+  inputs reject trailing characters. Each row
   shows how many bodies were resting when the mutation was applied, how far
   the mutation moved the reference run, the largest pose difference before
   and after the mutation, and the contact counts (with/without sleeping, at

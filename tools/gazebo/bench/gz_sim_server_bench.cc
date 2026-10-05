@@ -14,9 +14,11 @@
 
 #include <algorithm>
 #include <chrono>
+#include <filesystem>
 #include <string>
 
 #include <cstdint>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 
@@ -26,6 +28,10 @@ int main(int argc, char** argv)
   int arg = 1;
   if (argc > 2 && std::string(argv[1]) == "--engine") {
     engine = argv[2];
+    if (!std::filesystem::is_regular_file(engine)) {
+      std::fprintf(stderr, "engine must name an existing plugin file\n");
+      return 2;
+    }
     arg = 3;
   }
   if (argc - arg < 2) {
@@ -37,18 +43,23 @@ int main(int argc, char** argv)
     return 2;
   }
   const std::string world = argv[arg];
-  const long iterations = std::atol(argv[arg + 1]);
-  const long chunk
-      = argc - arg > 2 ? std::max(1L, std::atol(argv[arg + 2])) : iterations;
-  if (iterations <= 0) {
+  char* end;
+  errno = 0;
+  const long iterations = std::strtol(argv[arg + 1], &end, 10);
+  if (errno != 0 || end == argv[arg + 1] || *end != '\0' || iterations <= 0) {
     std::fprintf(stderr, "iterations must be positive\n");
     return 2;
   }
+  const long chunk
+      = argc - arg > 2 ? std::max(1L, std::atol(argv[arg + 2])) : iterations;
 
   // Errors only: the server's progress messages would swamp the timings.
   gz::common::Console::SetVerbosity(1);
   gz::sim::ServerConfig config;
-  config.SetSdfFile(world);
+  if (!config.SetSdfFile(world)) {
+    std::fprintf(stderr, "world file must not be empty\n");
+    return 2;
+  }
   if (!engine.empty())
     config.SetPhysicsEngine(engine);
 

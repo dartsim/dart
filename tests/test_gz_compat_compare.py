@@ -606,6 +606,101 @@ def test_missing_results_is_an_error(tmp_path):
     assert _compare(tmp_path, tmp_path / "x.txt") == 2
 
 
+def test_missing_expected_is_an_error_unless_writing_baseline(tmp_path, capsys):
+    _write_lane(tmp_path, {}, {})
+    expected = tmp_path / "missing.txt"
+    assert _compare(tmp_path, expected) == 2
+    output = capsys.readouterr()
+    assert str(expected) in output.err
+    assert "PASS" not in output.out
+    assert _compare(tmp_path, expected, "--write-baseline") == 0
+    assert "tests gz-physics 0" in expected.read_text()
+
+
+@pytest.mark.parametrize("value", ["inf", "nan", "0", "-1", "1oops", "oops"])
+@pytest.mark.parametrize(
+    "option", ["--max-seconds-scale", "--max-seconds-factor", "env"]
+)
+def test_invalid_timing_multipliers_are_argparse_errors(
+    tmp_path, capsys, monkeypatch, value, option
+):
+    _write_lane(tmp_path, _step_world(2.0), {})
+    expected = tmp_path / "expected.txt"
+    expected.write_text("")
+    if option == "env":
+        monkeypatch.setenv("GZ_COMPAT_MAX_SECONDS_SCALE", value)
+        extra = []
+    else:
+        extra = [option, value]
+    for mode in ([], ["--write-baseline"]):
+        with pytest.raises(SystemExit) as error:
+            _compare(tmp_path, expected, *extra, *mode)
+        assert error.value.code == 2
+        output = capsys.readouterr()
+        assert "--max-seconds-" in output.err
+        assert "PASS" not in output.out
+        assert expected.read_text() == ""
+
+
+@pytest.mark.parametrize("value", ["inf", "nan", "-1", "1oops"])
+def test_invalid_expected_numbers_are_errors(tmp_path, capsys, value):
+    _write_lane(tmp_path, _step_world(2.0), {})
+    expected = tmp_path / "expected.txt"
+    for line in (
+        f"max-seconds gz-physics {STEP_WORLD} Step/0.StepWorld {value}\n",
+        f"tests gz-physics {value}\n",
+    ):
+        expected.write_text(line)
+        assert _compare(tmp_path, expected) == 2
+        assert "PASS" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("seconds", [float("inf"), float("nan"), -1, "oops"])
+def test_invalid_case_times_are_errors(tmp_path, capsys, seconds):
+    _write_lane(tmp_path, _step_world(seconds), {})
+    expected = tmp_path / "expected.txt"
+    expected.write_text("")
+    assert _compare(tmp_path, expected, "--write-baseline") == 2
+    assert "PASS" not in capsys.readouterr().out
+    assert expected.read_text() == ""
+
+
+def test_missing_case_time_is_an_error(tmp_path, capsys):
+    _write_lane(tmp_path, _step_world(2.0), {})
+    expected = tmp_path / "expected.txt"
+    expected.write_text("")
+    xml = tmp_path / "gz-physics-gtest" / f"{STEP_WORLD}.xml"
+    xml.write_text(xml.read_text().replace(' time="2.0"', ""))
+    assert _compare(tmp_path, expected) == 2
+    assert "time must be finite" in capsys.readouterr().err
+
+
+def test_missing_gtest_directory_is_an_error(tmp_path, capsys):
+    _write_lane(tmp_path, {}, {})
+    expected = tmp_path / "expected.txt"
+    expected.write_text("")
+    shutil.rmtree(tmp_path / "gz-physics-gtest")
+    assert _compare(tmp_path, expected) == 2
+    assert "missing" in capsys.readouterr().err
+
+
+def test_expected_directory_is_an_error_even_when_writing_baseline(tmp_path):
+    _write_lane(tmp_path, {}, {})
+    assert _compare(tmp_path, tmp_path) == 2
+    assert _compare(tmp_path, tmp_path, "--write-baseline") == 2
+
+
+def test_timing_overflow_is_an_error(tmp_path, capsys):
+    _write_lane(tmp_path, _step_world(1e308), {})
+    expected = tmp_path / "expected.txt"
+    expected.write_text(f"max-seconds gz-physics {STEP_WORLD} Step/0.StepWorld 1e308\n")
+    assert _compare(tmp_path, expected, "--max-seconds-scale", "2") == 2
+    assert "scaled max-seconds must be finite" in capsys.readouterr().err
+    previous = expected.read_text()
+    assert _compare(tmp_path, expected, "--write-baseline") == 2
+    assert expected.read_text() == previous
+
+
 def test_a_test_or_timed_case_missing_from_the_results_is_an_error(tmp_path, capsys):
     expected = tmp_path / "expected.txt"
     expected.write_text(

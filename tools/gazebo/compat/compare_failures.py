@@ -138,7 +138,10 @@ def load_suite(results_dir, suite):
             message = None
         results.tests[case.get("name")] = message
 
-    for xml in sorted((results_dir / f"{suite}-gtest").glob("*.xml")):
+    gtest_dir = results_dir / f"{suite}-gtest"
+    if not gtest_dir.is_dir():
+        raise FileNotFoundError(f"missing {gtest_dir}; run the {suite} tests first")
+    for xml in sorted(gtest_dir.glob("*.xml")):
         test = xml.stem
         for case in parse_xml(xml).iter("testcase"):
             if (
@@ -148,7 +151,10 @@ def load_suite(results_dir, suite):
             ):
                 continue
             name = f"{case.get('classname')}.{case.get('name')}"
-            results.durations[(test, name)] = float(case.get("time", "0"))
+            seconds = float(case.get("time", "nan"))
+            if not math.isfinite(seconds) or seconds < 0:
+                raise ValueError(f"{xml}: {name}: time must be finite and nonnegative")
+            results.durations[(test, name)] = seconds
             failed = case.find("failure") is not None or case.find("error") is not None
             results.cases[(test, name)] = not failed
 
@@ -192,18 +198,26 @@ class Expected:
         self.tests = {}
 
 
-def parse_expected(path):
+def parse_expected(path, allow_missing=False):
     expected = Expected()
-    if not path.is_file():
+    if allow_missing and not path.exists():
         return expected
     for number, raw in enumerate(path.read_text().splitlines(), start=1):
         line = raw.split("#", 1)[0].split()
         if not line:
             continue
         if line[0] == "max-seconds" and len(line) == 5 and line[1] in SUITES:
-            expected.max_seconds[(line[1], line[2], line[3])] = float(line[4])
+            seconds = float(line[4])
+            if not math.isfinite(seconds) or seconds < 0:
+                raise ValueError(
+                    f"{path}:{number}: max-seconds must be finite and nonnegative"
+                )
+            expected.max_seconds[(line[1], line[2], line[3])] = seconds
         elif line[0] == "tests" and len(line) == 3 and line[1] in SUITES:
-            expected.tests[line[1]] = int(line[2])
+            count = int(line[2])
+            if count < 0:
+                raise ValueError(f"{path}:{number}: tests count must be nonnegative")
+            expected.tests[line[1]] = count
         elif line[0] in SUITES and len(line) in (2, 3):
             expected.entries.add(tuple(line))
             if ACCEPTED in raw:
@@ -321,6 +335,10 @@ def compare(results, expected, max_seconds_scale, factor, base=None):
     for (suite, test, case), limit in sorted(expected.max_seconds.items()):
         seconds = results[suite].durations.get((test, case))
         limit *= max_seconds_scale
+        if not math.isfinite(limit):
+            raise ValueError(
+                f"{suite} {test} {case}: scaled max-seconds must be finite"
+            )
         if seconds is None or seconds <= limit:
             continue
         text = f"{suite} {test} {case} took {seconds:.2f} s (limit {limit:.2f} s"
@@ -328,7 +346,12 @@ def compare(results, expected, max_seconds_scale, factor, base=None):
         # Already over the limit on the base: gate only a further slowdown.
         if base_seconds is not None and limit < base_seconds:
             text += f", base {base_seconds:.2f} s)"
-            if seconds <= base_seconds * factor:
+            base_limit = base_seconds * factor
+            if not math.isfinite(base_limit):
+                raise ValueError(
+                    f"{suite} {test} {case}: scaled base time must be finite"
+                )
+            if seconds <= base_limit:
                 report.add("BASE SLOW", text)
                 continue
         else:
@@ -404,6 +427,13 @@ def write_baseline(path, results, previous, describe, timed_cases, factor):
     path.write_text("\n".join(lines) + "\n")
 
 
+def positive_finite(value):
+    number = float(value)
+    if not math.isfinite(number) or number <= 0:
+        raise argparse.ArgumentTypeError("must be finite and positive")
+    return number
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--results", required=True, type=pathlib.Path)
@@ -416,8 +446,8 @@ def main(argv=None):
     )
     parser.add_argument(
         "--max-seconds-scale",
-        type=float,
-        default=float(os.environ.get("GZ_COMPAT_MAX_SECONDS_SCALE", 1)),
+        type=positive_finite,
+        default=os.environ.get("GZ_COMPAT_MAX_SECONDS_SCALE", "1"),
         help="multiplier for max-seconds limits (default: "
         "$GZ_COMPAT_MAX_SECONDS_SCALE or 1)",
     )
@@ -431,7 +461,7 @@ def main(argv=None):
     )
     parser.add_argument(
         "--max-seconds-factor",
-        type=float,
+        type=positive_finite,
         default=2.0,
         help="max-seconds limit as a multiple of the baseline time; with "
         "--base-results, also how much slower than the base a case that is "
@@ -446,28 +476,29 @@ def main(argv=None):
         base = None
         if args.base_results:
             base = {suite: load_suite(args.base_results, suite) for suite in SUITES}
-        expected = parse_expected(args.expected)
+        expected = parse_expected(args.expected, allow_missing=args.write_baseline)
         if not args.write_baseline:
             check_inventory(results, expected, base)
-    except (FileNotFoundError, ValueError) as error:
+            report = compare(
+                results, expected, args.max_seconds_scale, args.max_seconds_factor, base
+            )
+        else:
+            write_baseline(
+                args.expected,
+                results,
+                expected,
+                args.describe,
+                args.timed_cases,
+                args.max_seconds_factor,
+            )
+    except (OSError, ValueError, OverflowError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
 
     if args.write_baseline:
-        write_baseline(
-            args.expected,
-            results,
-            expected,
-            args.describe,
-            args.timed_cases,
-            args.max_seconds_factor,
-        )
         print(f"wrote {args.expected}")
         return 0
 
-    report = compare(
-        results, expected, args.max_seconds_scale, args.max_seconds_factor, base
-    )
     for suite, run in results.items():
         failing = [t for t, message in run.tests.items() if message is not None]
         cases = [c for c, ok in run.cases.items() if not ok]

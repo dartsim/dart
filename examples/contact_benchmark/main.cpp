@@ -454,7 +454,9 @@ bool isHelpRequest(int argc, char* argv[])
 std::size_t parseSize(const std::string& value, const std::string& name)
 {
   try {
-    if (!value.empty() && (value.front() == '-' || value.front() == '+'))
+    const auto first = value.find_first_not_of(" \t\r\n\f\v");
+    if (first != std::string::npos
+        && (value[first] == '-' || value[first] == '+'))
       throw std::invalid_argument("signed value");
 
     std::size_t consumed = 0;

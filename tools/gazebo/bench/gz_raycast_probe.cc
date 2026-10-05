@@ -295,9 +295,12 @@ int main(int argc, char** argv)
       return usage(argv[0]);
     if (key == "--detector")
       detector = argv[i + 1];
-    else if (key == "--tolerance")
-      tolerance = std::atof(argv[i + 1]);
-    else
+    else if (key == "--tolerance") {
+      char* end;
+      tolerance = std::strtod(argv[i + 1], &end);
+      if (end == argv[i + 1] || *end != '\0')
+        return usage(argv[0]);
+    } else
       return usage(argv[0]);
   }
   // The probe covers the detectors gz-physics 9 casts rays with, ODE and

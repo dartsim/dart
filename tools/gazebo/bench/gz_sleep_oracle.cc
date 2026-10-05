@@ -94,6 +94,7 @@
 #include <string>
 #include <vector>
 
+#include <cerrno>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -936,6 +937,12 @@ int main(int argc, char** argv)
     return usage(argv[0]);
 
   const std::string pluginLib = argv[1];
+  const auto parseLong = [](const char* value, long& number) {
+    char* end;
+    errno = 0;
+    number = std::strtol(value, &end, 10);
+    return errno == 0 && end != value && *end == '\0';
+  };
   std::string only;
   long settle = 3000;
   long steps = 500;
@@ -962,13 +969,18 @@ int main(int argc, char** argv)
     const char* value = argv[++i];
     if (key == "--scenario")
       only = value;
-    else if (key == "--settle")
-      settle = std::atol(value);
-    else if (key == "--steps")
-      steps = std::atol(value);
-    else if (key == "--tolerance")
-      tolerance = std::atof(value);
-    else
+    else if (key == "--settle") {
+      if (!parseLong(value, settle))
+        return usage(argv[0]);
+    } else if (key == "--steps") {
+      if (!parseLong(value, steps))
+        return usage(argv[0]);
+    } else if (key == "--tolerance") {
+      char* end;
+      tolerance = std::strtod(value, &end);
+      if (end == value || *end != '\0')
+        return usage(argv[0]);
+    } else
       return usage(argv[0]);
   }
 

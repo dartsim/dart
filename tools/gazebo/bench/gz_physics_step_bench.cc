@@ -37,6 +37,8 @@
 #include <vector>
 
 #include <cstdint>
+#include <cerrno>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -81,7 +83,15 @@ int main(int argc, char** argv)
 
   const std::string pluginLib = argv[1];
   const std::string worldFile = argv[2];
-  const long steps = std::atol(argv[3]);
+  const auto parseLong = [](const char* value, long& number) {
+    char* end;
+    errno = 0;
+    number = std::strtol(value, &end, 10);
+    return errno == 0 && end != value && *end == '\0';
+  };
+  long steps;
+  if (!parseLong(argv[3], steps) || steps <= 0)
+    return usage(argv[0]);
   std::string detector;
   long maxContacts = -1; // -1: the SDF world's <max_contacts>, like gz-sim
   long window = 1000;
@@ -97,19 +107,22 @@ int main(int argc, char** argv)
       if (detector != "ode" && detector != "bullet" && detector != "fcl"
           && detector != "dart")
         return usage(argv[0]);
-    } else if (key == "--max-contacts")
-      maxContacts = std::atol(value);
-    else if (key == "--window")
+    } else if (key == "--max-contacts") {
+      if (!parseLong(value, maxContacts) || maxContacts < 0)
+        return usage(argv[0]);
+    } else if (key == "--window")
       window = std::max(1L, std::atol(value));
-    else if (key == "--contacts-every")
-      contactsEvery = std::atol(value);
-    else if (key == "--sunk-z")
-      sunkZ = std::atof(value);
-    else
+    else if (key == "--contacts-every") {
+      if (!parseLong(value, contactsEvery) || contactsEvery < 0)
+        return usage(argv[0]);
+    } else if (key == "--sunk-z") {
+      char* end;
+      sunkZ = std::strtod(value, &end);
+      if (end == value || *end != '\0' || !std::isfinite(*sunkZ))
+        return usage(argv[0]);
+    } else
       return usage(argv[0]);
   }
-  if (steps <= 0)
-    return usage(argv[0]);
 
   using Clock = std::chrono::steady_clock;
   const auto loadStart = Clock::now();
