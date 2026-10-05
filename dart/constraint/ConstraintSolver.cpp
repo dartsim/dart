@@ -945,10 +945,11 @@ void ConstraintSolver::solve()
 void ConstraintSolver::prepareForSimulation()
 {
   // solve() uses a non-empty previous active set as evidence that constraint
-  // impulses may need clearing, and clears stale freeze flags on a solve
-  // without active constraints only if the previous solve built islands.
-  // Preparation deliberately skips manual constraints and sleep decisions, so
-  // preserve this bookkeeping across these state-neutral preparation passes.
+  // impulses may need clearing, and clears stale freeze flags and island
+  // indices on a solve without active constraints only if the previous solve
+  // built islands. Preparation deliberately skips manual constraints and sleep
+  // decisions, so preserve this bookkeeping across these state-neutral
+  // preparation passes.
   const auto activeConstraints = mActiveConstraints;
   const bool activeConstraintsAllSingleReactiveContacts
       = mActiveConstraintsAllSingleReactiveContacts;
@@ -956,6 +957,9 @@ void ConstraintSolver::prepareForSimulation()
       = mActiveConstraintsHaveCustomContactConstraint;
   const bool activeSingleReactiveContactsNeedSharedDependencyScan
       = mActiveSingleReactiveContactsNeedSharedDependencyScan;
+  // The passes clear this flag whenever they find no active constraint; this
+  // guard puts the previous solve's value back when the function returns or
+  // unwinds.
   const ScopedAssignment hadDeactivationGroups(
       mHadDeactivationGroups, mHadDeactivationGroups);
   const auto collidingState = snapshotCollidingState(mSkeletons);
@@ -988,6 +992,9 @@ void ConstraintSolver::prepareForSimulation()
     // passes may see constraints the user's handler rejects, and any change
     // they made would also advance the global deactivation-state version,
     // which makes World wake every resting skeleton at the start of the step.
+    // updateConstraints() keeps the real flag, so its resting-contact filter
+    // skips the pairs the step skips: the passes collide only what the step
+    // collides, which keeps re-entry cheap in resting worlds.
     constexpr int kPreparationPasses = 2;
     for (int pass = 0; pass < kPreparationPasses; ++pass) {
       updateConstraints(false);

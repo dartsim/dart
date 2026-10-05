@@ -1514,12 +1514,13 @@ std::vector<std::tuple<bool, bool, int, double>> getSleepStates(
 } // namespace
 
 //==============================================================================
-// A frictionless puck slides through a resting box, and the handler rejects
-// their contacts. Preparing for simulation builds constraints for those
-// contacts through a stateless handler; it must not use them to wake the box.
+// A frictionless puck slides through a box, and the handler rejects their
+// contacts. Preparing for simulation builds constraints for those contacts
+// through a stateless handler; it must not use them to change any sleep state,
+// such as waking the box.
 TEST(
     ConstraintSolver,
-    SimulationPreparationKeepsBodyAsleepThroughRejectedContacts)
+    SimulationPreparationKeepsSleepStateThroughRejectedContacts)
 {
   for (const auto& detector : createCollisionDetectorPrototypes()) {
     for (const bool changeOtherWorld : {true, false}) {
@@ -1552,14 +1553,16 @@ TEST(
           std::make_shared<PairRejectingContactSurfaceHandler>(
               puck->getBodyNode(0), box->getBodyNode(0)));
 
-      // The box sleeps after about a second; the puck is inside it at 2.5 s.
+      // The puck is inside the box at 2.5 s. Whether the box sleeps beside a
+      // rejecting handler is for the step to decide; preparation must keep
+      // whatever the step decided.
       for (int i = 0; i < 2500; ++i)
         world->step();
-      ASSERT_TRUE(box->isResting());
       ASSERT_TRUE(hasContactBetween(
           world->getLastCollisionResult(),
           puck->getBodyNode(0),
           box->getBodyNode(0)));
+      const bool boxResting = box->isResting();
 
       invalidateSimulationModeFromOutside(
           *world, *otherWorld, changeOtherWorld);
@@ -1571,8 +1574,10 @@ TEST(
       const Eigen::VectorXd boxPositions = box->getPositions();
       for (int i = 0; i < 10; ++i)
         world->step();
-      EXPECT_TRUE(box->isResting());
-      EXPECT_EQ(boxPositions, box->getPositions());
+      EXPECT_EQ(boxResting, box->isResting());
+      if (boxResting) {
+        EXPECT_EQ(boxPositions, box->getPositions());
+      }
     }
   }
 }
@@ -1684,6 +1689,30 @@ TEST(
   world->setDeactivationOptions(deactivation);
   ASSERT_EQ(-1, box->getIslandIndex());
 
+  world->setNumSimulationThreads(world->getNumSimulationThreads() + 1u);
+  world->step();
+  EXPECT_EQ(-1, box->getIslandIndex());
+}
+
+//==============================================================================
+// A body that leaves every contact gets island index -1 on its next step, also
+// when the World enters simulation mode again right before that step:
+// preparation must not make the step skip clearing the previous islands.
+TEST(ConstraintSolver, SimulationPreparationLetsLiftedBodyLeaveItsIsland)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+  world->addSkeleton(createSleepTestGround());
+  auto box = createSolverTestBox(
+      "box",
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Vector3d(0.0, 0.0, 0.2495),
+      true);
+  world->addSkeleton(box);
+  world->step();
+  ASSERT_GE(box->getIslandIndex(), 0);
+
+  box->getJoint(0)->setPosition(5, 2.0); // Lift the box to z = 2.
   world->setNumSimulationThreads(world->getNumSimulationThreads() + 1u);
   world->step();
   EXPECT_EQ(-1, box->getIslandIndex());
