@@ -62,7 +62,10 @@ foreach(collision_engine dart-collision-bullet dart-collision-ode)
     target_link_libraries(test_FrictionAnalytic ${collision_engine})
   endif()
 endforeach()
-dart_format_add("${PROJECT_SOURCE_DIR}/tools/friction_eval/friction_scenes.hpp")
+dart_format_add(
+  "${PROJECT_SOURCE_DIR}/tools/friction_eval/friction_eval.cpp"
+  "${PROJECT_SOURCE_DIR}/tools/friction_eval/friction_scenes.hpp"
+)
 dart_add_test("integration" test_IslandDeactivation)
 dart_add_test("integration" test_Issue719)
 dart_add_test("integration" test_GenericJoints)
