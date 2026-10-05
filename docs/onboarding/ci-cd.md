@@ -25,7 +25,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `ci_toolchain.yml`                | CI Toolchain (Linux)         | nightly, dispatch               | Newest gcc/clang build + test |
 | `codeql.yml`                      | CodeQL                       | nightly, dispatch               | Static security analysis |
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
-| `nightly.yml`                     | Nightly                      | daily, PRs that change CI       | Everything above on `main`; files `nightly-failure` issues |
+| `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above on `main`; files `nightly-failure` issues |
 | `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Performance dashboard |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main` |
 
@@ -57,8 +57,10 @@ Its `report` job (`scripts/nightly_ci_report.py`) groups jobs by their
 open `nightly-failure` issue per failing group tracking `main`. It opens the
 issue with log excerpts, fixing steps, and a prompt for an AI agent; comments
 on it each night the group still fails; and closes it on the first night the group
-succeeds. PRs that change CI run the whole nightly matrix, with the report in
-dry-run mode. Test the reporter with
+succeeds. PRs do not run it, so the full matrix never delays the per-PR
+checks; to try a CI change against it, run
+`gh workflow run nightly.yml --ref <branch>` (off `main` the report only
+dry-runs). Test the reporter with
 `pixi run python -I scripts/run_pytest.py tests/test_nightly_ci_report.py`.
 
 Useful commands:
