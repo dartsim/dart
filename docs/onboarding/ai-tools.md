@@ -130,7 +130,11 @@ approval.
    `github-code-quality[bot]` covers only the default branch (`main`).
    Compare the `Reviewed commit` in Codex's result with the PR head; if a push
    moved the head past it, post a new `@codex review` for the new head before
-   leaving draft. Fix findings as "AI Review Comments" describes.
+   leaving draft. Fix findings as "AI Review Comments" describes. Address every
+   Codex review on the PR, not only the one you requested: opening a PR for
+   review and marking it ready also trigger reviews, one head can get several
+   reviews with different findings, and findings arrive either as inline
+   suggestions in a "Codex Review" review or as a top-level comment.
 3. When that gate passes, run `gh pr ready <PR>`. This hands the PR to the
    maintainer and triggers one more Codex review, listed as
    `Draft marked ready` in Codex's review summary comment. Do not merge until
