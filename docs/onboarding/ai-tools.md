@@ -147,4 +147,6 @@ approval.
 5. Merge a series in dependency order, noted in each PR body. Release branches
    require PR branches to be up to date, so before merging each PR, merge the
    latest base into its branch as "PR Branches" describes, push it under the
-   same explicit approval, and wait for green CI.
+   same explicit approval, post a new `@codex review` for that head, and wait
+   for green CI and a clean Codex review of it: a base merge also changes the
+   reviewed head.
