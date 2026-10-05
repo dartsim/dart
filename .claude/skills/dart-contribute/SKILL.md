@@ -23,13 +23,9 @@ For code style: `docs/onboarding/code-style.md`
 ## PR Workflow
 
 ```bash
-# DART 6.20 maintenance work starts from the release branch without tracking it
-git fetch origin release-6.20
-git switch --no-track -c <type>/<topic> origin/release-6.20
-
-# Bug fixes that apply to the current release line start from the active DART 6 LTS branch
-DART6_LTS_BRANCH=$(git branch -r --list 'origin/release-6.*' | sed 's|.*/||' | sort -V | tail -1)
-git switch --no-track -c "fix/<topic>-${DART6_LTS_BRANCH#release-}" "origin/$DART6_LTS_BRANCH"
+# DART 6.20 development and bug fixes start from main without tracking it
+git fetch origin main
+git switch --no-track -c <type>/<topic> origin/main
 
 # Make changes, then
 pixi run lint
@@ -45,7 +41,8 @@ gh pr create --draft --base <target-branch> --milestone "<milestone>"
 
 Then follow `docs/onboarding/ai-tools.md` § "PR Lifecycle" from draft to merge.
 
-Use the branch-matching DART 6.x release milestone for release-branch PRs.
+Use the next DART 6.x release milestone for `main` PRs (currently
+`DART 6.20.0`) and the branch-matching milestone for maintenance PRs.
 
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are included.
 
@@ -71,9 +68,10 @@ follow. Rebase or force-push only when the maintainer explicitly requests it.
 Always set a milestone when creating PRs after explicit maintainer/user
 approval:
 
-| Target Branch                          | Milestone                      |
-| -------------------------------------- | ------------------------------ |
-| Active DART 6 LTS `release-6.*` branch | Branch-matching DART 6.x release |
+| Target Branch                    | Milestone                                       |
+| -------------------------------- | ----------------------------------------------- |
+| `main`                           | Next DART 6.x release (currently `DART 6.20.0`) |
+| Maintenance `release-6.*` branch | Branch-matching DART 6.x release                |
 
 ```bash
 # After explicit maintainer/user approval, set milestone on existing PR
@@ -85,9 +83,9 @@ gh api repos/dartsim/dart/milestones --jq '.[] | .title'
 
 ## Bug Fixes
 
-After explicit maintainer/user approval, open bug-fix PRs against the active
-DART 6 LTS `release-6.*` branch (currently `release-6.20`). `main` mirrors that
-branch and is fast-forwarded at each release; never target `main`.
+After explicit maintainer/user approval, open bug-fix PRs against `main`, the
+development branch for the next release (currently DART 6.20). Backports to
+`release-6.19`, the maintenance branch, use `dart-backport-pr`.
 
 ## CHANGELOG (After Approved PR Exists)
 

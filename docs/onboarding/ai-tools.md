@@ -1,6 +1,6 @@
 # AI Tooling And Review Rules
 
-This release branch supports Claude Code, OpenCode, and Codex workflow
+This development branch supports Claude Code, OpenCode, and Codex workflow
 entrypoints generated from `.claude/` sources.
 
 ## Source And Generated Files
@@ -99,12 +99,12 @@ Before every approved push to a published PR branch, fetch and merge the latest
 target base branch into the topic branch. Use merge, not rebase, unless a
 maintainer explicitly requests history rewriting.
 
-Never push directly to `release-*` branches. Create a topic branch from the
-release base without tracking the release ref:
+Never push directly to `main` or `release-*` branches. Create a topic branch
+from `main` without tracking the base ref:
 
 ```bash
-git fetch origin release-6.20
-git switch --no-track -c <type>/<topic> origin/release-6.20
+git fetch origin main
+git switch --no-track -c <type>/<topic> origin/main
 ```
 
 After explicit maintainer/user approval, push the topic branch with the same
@@ -118,16 +118,16 @@ git push -u origin "HEAD:${branch}"
 
 ## PR Lifecycle
 
-Agent-authored PRs on `release-6.*` branches follow these steps. Each GitHub
+Agent-authored PRs on `main` and `release-6.*` follow these steps. Each GitHub
 mutation still needs explicit maintainer/user approval: a `manage <PR>` request
 covers the routine ones (see `dart-manage-pr`), and step 4 defines merge
 approval.
 
 1. Open the PR as a draft and post one top-level `@codex review`.
 2. Leave draft only when Codex has reviewed the current head without findings
-   and CI is green. Codex is the only AI reviewer on these branches: Copilot
-   review requests are ignored for this repository, and
-   `github-code-quality[bot]` covers only the default branch (`main`).
+   and CI is green. Copilot review requests are ignored for this repository.
+   `github-code-quality[bot]` reviews only PRs to the default branch
+   (`main`); address its findings there too.
    Compare the `Reviewed commit` in Codex's result with the PR head; if a push
    moved the head past it, post a new `@codex review` for the new head before
    leaving draft. Fix findings as "AI Review Comments" describes. Address every
