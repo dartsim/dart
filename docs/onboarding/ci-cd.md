@@ -6,28 +6,53 @@ runtime, package, or downstream behavior changes.
 
 ## Workflow Index
 
-All files live in `.github/workflows/` on this branch. The first eight rows
-are PR-triggered; the remaining rows run on push, workflow call, dispatch, or
-schedule (CodeQL runs here only via manual dispatch). Note that
-`gh pr checks` lists job-level check names (for example `coverage` under the
-`CI Linux` workflow); map a failing check to its workflow via the run's
-workflow name shown here (`gh pr checks` exposes it in the `workflow` JSON
-field).
+All files live in `.github/workflows/` on this branch. "PR, push" means pull
+requests and pushes to `release-*`; "nightly" means the `Nightly` workflow
+below. Note that `gh pr checks` lists job-level check names (for example
+`Release` under the `CI Linux` workflow); map a failing check to its workflow
+via the run's workflow name shown here (`gh pr checks` exposes it in the
+`workflow` JSON field).
 
-| Workflow file                     | Workflow name               | Purpose                                          |
-| --------------------------------- | --------------------------- | ------------------------------------------------ |
-| `ci_ubuntu.yml`                   | CI Linux                    | Linux AI checks, lint, build, test, coverage     |
-| `ci_macos.yml`                    | CI macOS                    | macOS lint, build, test                          |
-| `ci_windows.yml`                  | CI Windows                  | Windows lint, build, test                        |
-| `ci_freebsd.yml`                  | CI FreeBSD (VM)             | FreeBSD build + test in a VM                     |
-| `ci_simd.yml`                     | CI SIMD Multi-Arch          | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
-| `ci_toolchain.yml`                | CI Toolchain (Linux)        | Alternate Linux toolchain build + test           |
-| `ci_gz_physics.yml`               | CI gz-physics               | Gazebo/gz-physics downstream integration         |
-| `api_doc.yml`                     | API Documentation           | Doxygen API docs build (validation only; not published) |
-| `codeql.yml`                      | CodeQL                      | Static security analysis — no automatic runs here (push/PR filters pin `release-6.17`/`release-6.16`); `workflow_dispatch` still allows an on-demand scan |
-| `publish_dartpy.yml`              | Publish dartpy              | Build, repair, verify, and publish Python wheels |
-| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | Performance dashboard (push/call/dispatch)      |
-| `update_lockfiles.yml`            | Update Lock Files           | Scheduled pixi lockfile refresh PRs against `release-6.20` |
+| Workflow file                     | Workflow name                | Runs                            | Purpose |
+| --------------------------------- | ---------------------------- | ------------------------------- | ------- |
+| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release/Debug build + test, no-OSG asserts gate; nightly adds ASan, coverage, and Eigen 64-byte alignment |
+| `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test; nightly adds Debug |
+| `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release build + test |
+| `ci_gz_physics.yml`               | CI gz-physics                | PR, push, nightly               | Gazebo/gz-physics downstream integration |
+| `api_doc.yml`                     | API Documentation            | PR, push, nightly               | Doxygen API docs build (validation only; not published) |
+| `ci_simd.yml`                     | CI SIMD Multi-Arch           | PR/push touching SIMD, nightly  | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
+| `ci_freebsd.yml`                  | CI FreeBSD (VM)              | nightly, dispatch               | FreeBSD build + test in a VM |
+| `ci_toolchain.yml`                | CI Toolchain (Linux)         | nightly, dispatch               | Newest gcc/clang build + test |
+| `codeql.yml`                      | CodeQL                       | nightly, dispatch               | Static security analysis |
+| `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
+| `nightly.yml`                     | Nightly                      | daily, PRs that change CI       | Everything above on `release-6.20`; files `nightly-failure` issues |
+| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, call, dispatch            | Performance dashboard |
+| `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `release-6.20` |
+
+Required checks on `release-6.20`: `Release`, `Debug`, and
+`Asserts enabled (no -DNDEBUG)` (CI Linux), `arm64-Release` (CI macOS),
+`windows-Release` (CI Windows), `ubuntu-latest` (CI gz-physics),
+`API Documentation`, and the two Read the Docs builds. Never require a
+nightly-only job: it never reports on PRs, so it would block every merge.
+
+## Nightly
+
+`nightly.yml` runs every workflow in the index except the performance
+dashboard and lockfile refresh against `release-6.20` each night at 08:00 UTC,
+including the nightly-only jobs. GitHub fires schedules only on the default
+branch, so the scheduled run on `main` just dispatches the real run on
+`release-6.20`; changes to the schedule itself take effect once `main` is
+fast-forwarded. Run it on demand with
+`gh workflow run nightly.yml --ref release-6.20`.
+
+Its `report` job (`scripts/nightly_ci_report.py`) groups jobs by their
+`nightly.yml` caller (`linux`, `macos`, `freebsd`, ...) and keeps at most one
+open `nightly-failure` issue per failing group. It opens the issue with log
+excerpts, fixing steps, and a prompt for an AI agent; comments on it each
+night the group still fails; and closes it on the first night the group
+succeeds. PRs that change CI run the whole nightly matrix, with the report in
+dry-run mode. Test the reporter with
+`pixi run python -I scripts/run_pytest.py tests/test_nightly_ci_report.py`.
 
 Useful commands:
 

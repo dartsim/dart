@@ -34,7 +34,10 @@ tasks. Keep each required context single-owner when editing workflows.
 
 `main` mirrors `release-6.20`: after tagging each DART 6.20.x release,
 fast-forward it with `git push origin release-6.20:main`. Never target `main`
-with a PR.
+with a PR. Fast-forwarding also activates schedule
+changes, since the `Nightly` workflow fires from `main`. When activating a new
+`release-6.x` branch, update `NIGHTLY_BRANCH` in `nightly.yml` along with the
+branch protection checks.
 
 ## Verifying Release-Branch Changes
 
