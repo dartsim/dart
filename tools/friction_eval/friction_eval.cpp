@@ -671,9 +671,11 @@ public:
   void report(fe::Metrics& m) const
   {
     m["cone_viol_max"] = mConeViolation;
-    m["slip_dir_err_mean_deg"] = mSliding ? mSlipDirSum / mSliding : fe::kNaN;
-    m["slip_dir_err_max_deg"] = mSliding ? mSlipDirMax : fe::kNaN;
-    m["dilatancy_mean"] = mSliding ? mDilatancySum / mSliding : fe::kNaN;
+    if (mSliding) {
+      m["slip_dir_err_mean_deg"] = mSlipDirSum / mSliding;
+      m["slip_dir_err_max_deg"] = mSlipDirMax;
+      m["dilatancy_mean"] = mDilatancySum / mSliding;
+    }
     m["stick_slip_max"] = mStickSlip;
     m["un_min"] = mMinNormalVelocity;
     m["fl_eligible_frac"]
@@ -911,7 +913,9 @@ void printHeader()
 }
 
 /// One cell, or --bisect key=lo:hi:metric: the threshold of a boolean scene
-/// metric in six halvings of the bracket (1/64 resolution, D §8.2).
+/// metric in six halvings of the bracket (1/64 resolution, D §8.2). A bisection
+/// prints the metric at both ends, omits the threshold when they agree, and
+/// reports finite = 0 if any of its runs ended with a non-finite state.
 int runCellOrBisect(const Options& o)
 {
   printHeader();
@@ -924,9 +928,11 @@ int runCellOrBisect(const Options& o)
     return 0;
   }
   fe::Params params = o.params;
+  bool finite = true;
   const auto at = [&](double value) {
     params[o.bisectKey] = value;
     const auto result = runCell(o, params);
+    finite = finite && result.metrics.at("finite") != 0.0;
     const auto it = result.metrics.find(o.bisectMetric);
     if (it == result.metrics.end())
       throw std::runtime_error("no metric " + o.bisectMetric);
@@ -935,18 +941,18 @@ int runCellOrBisect(const Options& o)
   double lo = o.bisectLo, hi = o.bisectHi;
   const auto [atLo, metrics] = at(lo);
   const bool atHi = at(hi).first;
-  double threshold = fe::kNaN;
+  params.erase(o.bisectKey);
+  const auto label = paramString(params) + ";bisect=" + o.bisectKey;
   if (atLo != atHi) {
     for (int i = 0; i < 6; ++i) {
       const double mid = 0.5 * (lo + hi);
       (at(mid).first == atLo ? lo : hi) = mid;
     }
-    threshold = 0.5 * (lo + hi);
+    printRow(o, o.scene, label, "threshold", number(0.5 * (lo + hi)));
   }
-  params.erase(o.bisectKey);
-  const auto label = paramString(params) + ";bisect=" + o.bisectKey;
-  printRow(o, o.scene, label, "threshold", number(threshold));
   printRow(o, o.scene, label, "at_lo", number(atLo));
+  printRow(o, o.scene, label, "at_hi", number(atHi));
+  printRow(o, o.scene, label, "finite", number(finite));
   for (const auto& [metric, value] : metrics) {
     if (metric.rfind("pred_", 0) == 0)
       printRow(o, o.scene, label, metric, number(value));
@@ -1217,6 +1223,22 @@ int selfTest()
             false);
     return terms.x;
   };
+
+  // The discrete slide reference matches semi-implicit Euler with the last
+  // friction impulse capped, with and without a stop inside the horizon.
+  bool slideOk = true;
+  for (const auto& [a, n] :
+       {std::pair{4.905, 300}, std::pair{4.905, 100}, std::pair{0.0, 300}}) {
+    double v = 1.0, x = 0.0;
+    for (int k = 0; k < n; ++k) {
+      v = std::max(0.0, v - a * 1e-3);
+      x += 1e-3 * v;
+    }
+    slideOk
+        = slideOk
+          && std::abs(x - fe::discreteSlideDistance(1.0, a, 1e-3, n)) < 1e-12;
+  }
+  check(slideOk, "discrete slide reference with and without a stop");
 
   // W = I, b = (1, 2, 0), mu 0.5: x = (1, 0.5, 0). Perturbing x_t to 0.7 gives
   // a natural-map residual of 0.2 m/s and a box-law violation of 0.4.

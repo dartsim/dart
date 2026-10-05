@@ -82,11 +82,11 @@ protected:
 TEST_P(FrictionAnalytic, InclineAlongTheBasis)
 {
   auto m = run("A1", {{"mu", 0.3}, {"T", 0.3}});
-  EXPECT_EQ(m["slides"], 1.0);
-  EXPECT_NEAR(m["accel"] / m["pred_exact_accel"], 1.0, 1e-3);
+  EXPECT_EQ(m.at("slides"), 1.0);
+  EXPECT_NEAR(m.at("accel") / m.at("pred_exact_accel"), 1.0, 1e-3);
   m = run("A1", {{"mu", 0.6}, {"T", 0.3}});
-  EXPECT_EQ(m["slides"], 0.0);
-  EXPECT_LT(m["creep"], 1e-5);
+  EXPECT_EQ(m.at("slides"), 0.0);
+  EXPECT_LT(m.at("creep"), 1e-5);
 }
 
 // A4: the box holds up to 1/max(|cos|, |sin|) = 1.414 mu m g at 45 degrees,
@@ -94,12 +94,12 @@ TEST_P(FrictionAnalytic, InclineAlongTheBasis)
 TEST_P(FrictionAnalytic, IsotropyPush)
 {
   auto m = run("A4", {{"phi", 45.0}, {"k", 1.2}, {"T", 0.2}});
-  EXPECT_EQ(m["pred_exact_slides"], 1.0);
-  EXPECT_EQ(m["pred_box_slides"], 0.0);
-  EXPECT_EQ(m["slides"], 0.0);
+  EXPECT_EQ(m.at("pred_exact_slides"), 1.0);
+  EXPECT_EQ(m.at("pred_box_slides"), 0.0);
+  EXPECT_EQ(m.at("slides"), 0.0);
   m = run("A4", {{"phi", 30.0}, {"k", 1.5}, {"T", 0.2}});
-  EXPECT_NEAR(m["force_ratio"], m["pred_box_force_ratio"], 1e-3);
-  EXPECT_NEAR(m["vel_dir_err_deg"], m["pred_box_vel_dir_err_deg"], 0.1);
+  EXPECT_NEAR(m.at("force_ratio"), m.at("pred_box_force_ratio"), 1e-3);
+  EXPECT_NEAR(m.at("vel_dir_err_deg"), m.at("pred_box_vel_dir_err_deg"), 0.1);
 }
 
 // A5: each axis decelerates on its own: the stop distance scales by
@@ -108,9 +108,9 @@ TEST_P(FrictionAnalytic, SlideToStop)
 {
   for (const double phi : {30.0, 45.0}) {
     auto m = run("A5", {{"phi", phi}, {"v0", 1.0}, {"T", 0.25}});
-    EXPECT_NEAR(m["dist_ratio"], m["pred_box_dist_ratio"], 1e-3) << phi;
-    EXPECT_NEAR(m["dir_deg"], m["pred_box_dir_deg"], 0.1) << phi;
-    EXPECT_LT(m["creep"], 1e-6) << phi;
+    EXPECT_NEAR(m.at("dist_ratio"), m.at("pred_box_dist_ratio"), 1e-3) << phi;
+    EXPECT_NEAR(m.at("dir_deg"), m.at("pred_box_dir_deg"), 0.1) << phi;
+    EXPECT_LT(m.at("creep"), 1e-6) << phi;
   }
 }
 
@@ -121,8 +121,8 @@ TEST_P(FrictionAnalytic, BackspinSphere)
        {fe::Params{{"v0", 4.0}, {"w0", 0.0}, {"T", 0.3}},
         fe::Params{{"v0", 1.0}, {"w0", -20.0}, {"T", 0.4}}}) {
     auto m = run("A7", params);
-    EXPECT_LT(m["v_roll_err"], 1e-4);
-    EXPECT_NEAR(m["roll_step"], m["pred_roll_step"], 1.0);
+    EXPECT_LT(m.at("v_roll_err"), 1e-4);
+    EXPECT_NEAR(m.at("roll_step"), m.at("pred_roll_step"), 1.0);
   }
 }
 
@@ -132,8 +132,8 @@ TEST_P(FrictionAnalytic, Conveyor)
 {
   for (const double beta : {0.0, 45.0}) {
     auto m = run("A10", {{"beta", beta}, {"mu", 0.6}, {"T", 0.2}});
-    EXPECT_NEAR(m["sync_time"], m["pred_box_sync_time"], 1.5e-3) << beta;
-    EXPECT_LT(m["v_err"], 1e-5) << beta;
+    EXPECT_NEAR(m.at("sync_time"), m.at("pred_box_sync_time"), 1.5e-3) << beta;
+    EXPECT_LT(m.at("v_err"), 1e-5) << beta;
   }
 }
 
@@ -152,19 +152,19 @@ TEST_P(FrictionAnalytic, SlipCompliance)
 TEST_P(FrictionAnalytic, PainleveBox)
 {
   auto m = run("C1", {{"mu", 0.4}, {"v0", 1.5}, {"T", 0.4}});
-  EXPECT_EQ(m["tipped"], 0.0);
-  EXPECT_NEAR(m["front_share"], m["pred_front_share"], 1e-3);
+  EXPECT_EQ(m.at("tipped"), 0.0);
+  EXPECT_NEAR(m.at("front_share"), m.at("pred_front_share"), 1e-3);
   m = run("C1", {{"mu", 0.6}, {"v0", 1.5}, {"T", 0.4}});
-  EXPECT_EQ(m["pred_tips"], 1.0);
-  EXPECT_EQ(m["tipped"], pgs() ? 1.0 : 0.0);
+  EXPECT_EQ(m.at("pred_tips"), 1.0);
+  EXPECT_EQ(m.at("tipped"), pgs() ? 1.0 : 0.0);
 }
 
 // R1: a resting stack; PGS30 truncation lets it drift.
 TEST_P(FrictionAnalytic, Stack)
 {
   auto m = run("R1", {{"n", 2.0}, {"T", 0.3}});
-  EXPECT_LT(m["max_disp"], 1e-3);
-  EXPECT_LT(m["top_drift"], pgs() ? 1e-4 : 1e-6);
+  EXPECT_LT(m.at("max_disp"), 1e-3);
+  EXPECT_LT(m.at("top_drift"), pgs() ? 1e-4 : 1e-6);
 }
 
 INSTANTIATE_TEST_SUITE_P(

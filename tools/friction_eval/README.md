@@ -70,6 +70,9 @@ Each cell prints `label,dart,scene,params,solver,detector,dt,split,deactivation,
 - `finite`, `contacts_*`, `energy_rise_max`, `wall_ms_per_step` and
   `state_hash`.
 
+A metric that is undefined for a run (an onset that never happened, a ratio
+without samples) is omitted, so a NaN marks a failed measurement.
+
 PGS-tight and DZ+R stop on the box-law residual (at most 1e-6 m/s, 10-sweep
 chunks, 1000-sweep cap); PGS's own relative-change test stops early on stacks
 and never passes on rows near zero.

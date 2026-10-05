@@ -36,7 +36,9 @@
 // used. Ids follow the evaluation design: A analytic, C coupled thresholds,
 // R robustness, P performance. Angles in Params are degrees. Each scene
 // reports measured metrics next to "pred_exact_*" (exact Coulomb) and
-// "pred_box_*" (DART's box law on its fixed tangent basis) references.
+// "pred_box_*" (DART's box law on its fixed tangent basis) references. A
+// metric that is undefined for a run (an onset that never happened, a ratio
+// without samples) is omitted, so NaN only ever marks a failure.
 
 #ifndef DART_TOOLS_FRICTION_EVAL_FRICTION_SCENES_HPP_
 #define DART_TOOLS_FRICTION_EVAL_FRICTION_SCENES_HPP_
@@ -169,14 +171,18 @@ inline double boxFactor(double angle)
   return 1.0 / std::max(std::abs(std::cos(angle)), std::abs(std::sin(angle)));
 }
 
-/// Discrete stop distance of semi-implicit Euler from v0 at deceleration a
-/// (D App. A): the last friction impulse is smaller, so v_K = 0 exactly.
-inline double discreteStopDistance(double v0, double a, double h)
+/// Distance semi-implicit Euler covers in n steps from v0 at deceleration a
+/// (D App. A). The block stops at step K = ceil(v0/(a h)) with v_K = 0 exactly,
+/// because the last friction impulse is smaller; without a stop in the horizon
+/// (including a = 0) it is h sum_{k=1..n} (v0 - k a h).
+inline double discreteSlideDistance(double v0, double a, double h, int n)
 {
   if (v0 <= 0.0)
     return 0.0;
-  const double k = std::ceil(v0 / (a * h));
-  return h * ((k - 1.0) * v0 - a * h * (k - 1.0) * k / 2.0);
+  const double k = a > 0.0 ? std::ceil(v0 / (a * h)) : n + 1.0;
+  if (k <= n)
+    return h * ((k - 1.0) * v0 - a * h * (k - 1.0) * k / 2.0);
+  return h * (n * v0 - a * h * n * (n + 1.0) / 2.0);
 }
 
 /// Detectors by harness name; FCL uses its analytic primitives on both lines
@@ -440,7 +446,8 @@ inline Scene tilt(const Params& p, double dt)
     return false;
   };
   s.finish = [=](Metrics& m) {
-    m["onset_deg"] = deg(*onset);
+    if (!std::isnan(*onset))
+      m["onset_deg"] = deg(*onset);
     m["pred_exact_deg"] = deg(exact);
     m["pred_box_deg"] = deg(box);
   };
@@ -504,8 +511,10 @@ inline Scene push(const Params& p, double dt)
                         + (sn > 1e-12 ? sn * sn * mu * mu / (mu2 * mu2) : 0.0));
     m["pred_box_slides"] = k > m["pred_box_cap"];
     m["pred_exact_slides"] = k > m["pred_exact_cap"];
-    m["force_ratio"] = (*sums)(2) > 0.0 ? (*sums)(0) / (*sums)(2) : kNaN;
-    m["dir_err_deg"] = (*sums)(2) > 0.0 ? (*sums)(1) / (*sums)(2) : kNaN;
+    if ((*sums)(2) > 0.0) {
+      m["force_ratio"] = (*sums)(0) / (*sums)(2);
+      m["dir_err_deg"] = (*sums)(1) / (*sums)(2);
+    }
     m["vel_dir_err_deg"] = angleDeg(planar(box->getLinearVelocity()), dir);
     // Box law on a translating block: each axis slides on its own once the
     // push along it exceeds mu_i N (axis snapping, D App. B).
@@ -513,10 +522,11 @@ inline Scene push(const Params& p, double dt)
     const Eigen::Vector3d accel(
         std::max(0.0, fx - mu), std::max(0.0, fy - mu2), 0.0);
     const double friction = std::hypot(std::min(fx, mu), std::min(fy, mu2));
-    m["pred_box_force_ratio"] = accel.norm() > 0.0 ? friction / mu : kNaN;
-    m["pred_box_vel_dir_err_deg"]
-        = accel.norm() > 0.0 ? angleDeg(accel, Eigen::Vector3d(c, sn, 0.0))
-                             : kNaN;
+    if (accel.norm() > 0.0) {
+      m["pred_box_force_ratio"] = friction / mu;
+      m["pred_box_vel_dir_err_deg"]
+          = angleDeg(accel, Eigen::Vector3d(c, sn, 0.0));
+    }
   };
   return s;
 }
@@ -555,13 +565,14 @@ inline Scene slide(const Params& p, double dt)
   const int n = s.steps;
   s.finish = [=](Metrics& m) {
     const Eigen::Vector3d d = planar(position(box) - start);
-    const double exact = discreteStopDistance(v0, mu * kGravity, dt);
+    const double exact = discreteSlideDistance(v0, mu * kGravity, dt, n);
     const Eigen::Vector3d boxD(
         std::copysign(
-            discreteStopDistance(v0 * std::abs(dir.x()), mu * kGravity, dt),
+            discreteSlideDistance(v0 * std::abs(dir.x()), mu * kGravity, dt, n),
             dir.x()),
         std::copysign(
-            discreteStopDistance(v0 * std::abs(dir.y()), mu2 * kGravity, dt),
+            discreteSlideDistance(
+                v0 * std::abs(dir.y()), mu2 * kGravity, dt, n),
             dir.y()),
         0.0);
     m["dist"] = d.norm();
@@ -572,12 +583,12 @@ inline Scene slide(const Params& p, double dt)
     m["pred_box_dir_deg"] = deg(std::atan2(boxD.y(), boxD.x()));
     m["lateral"] = (*st)(0);
     m["pred_box_lateral"] = std::abs(boxD.dot(perp));
-    m["stop_time"] = (*st)(1) * dt;
-    // Drift between the stop and the end.
-    m["creep"]
-        = (*st)(1) >= 0.0 && (*st)(1) < n
-              ? (d.head<2>() - st->tail<2>()).norm() / ((n - (*st)(1)) * dt)
-              : kNaN;
+    // Stop time and the drift between the stop and the end exist only when
+    // the block stopped inside the horizon (never for mu = 0).
+    if ((*st)(1) >= 0.0 && (*st)(1) < n) {
+      m["stop_time"] = (*st)(1) * dt;
+      m["creep"] = (d.head<2>() - st->tail<2>()).norm() / ((n - (*st)(1)) * dt);
+    }
   };
   return s;
 }
@@ -639,10 +650,12 @@ inline Scene spin(const Params& p, double dt)
   };
   s.finish = [=](Metrics& m) {
     const auto& v = *st;
-    m["alpha_ratio_mean"] = v[5] > 0 ? v[1] / v[5] : kNaN;
-    m["alpha_ratio_min"] = v[5] > 0 ? v[2] : kNaN;
-    m["alpha_ratio_max"] = v[5] > 0 ? v[3] : kNaN;
-    m["box_err_max"] = v[5] > 0 ? v[4] : kNaN;
+    if (v[5] > 0) {
+      m["alpha_ratio_mean"] = v[1] / v[5];
+      m["alpha_ratio_min"] = v[2];
+      m["alpha_ratio_max"] = v[3];
+      m["box_err_max"] = v[4];
+    }
     m["pred_box_ratio_mean_rim"] = 4.0 / kPi;
     m["pred_exact_ratio"] = 1.0;
   };
@@ -717,7 +730,8 @@ inline Scene backspin(const Params& p, double dt)
     m["v_roll"] = ball->getLinearVelocity().dot(dir);
     m["pred_v_roll"] = vRoll;
     m["v_roll_err"] = std::abs(m["v_roll"] - vRoll) / std::abs(vRoll);
-    m["roll_step"] = (*st)(0);
+    if ((*st)(0) >= 0.0)
+      m["roll_step"] = (*st)(0);
     m["pred_roll_step"] = rollSteps;
     m["lateral"] = (*st)(1);
     m["pred_box_lateral"] = boxLateral;
@@ -811,7 +825,8 @@ inline Scene conveyor(const Params& p, double dt)
   };
   s.finish = [=](Metrics& m) {
     const double step = mu * kGravity * dt;
-    m["sync_time"] = *sync;
+    if (*sync >= 0.0)
+      m["sync_time"] = *sync;
     m["pred_exact_sync_time"] = std::ceil(vb / step) * dt;
     m["pred_box_sync_time"]
         = std::ceil(std::max(target.x(), target.y()) / step) * dt;
@@ -985,8 +1000,10 @@ inline Scene painleve(const Params& p, double dt)
     m["max_pitch_deg"] = (*st)(0);
     m["tipped"] = (*st)(0) > 5.0;
     m["pred_tips"] = mu > w / h;
-    m["front_share"] = (*st)(2) > 0.0 ? (*st)(1) / (*st)(2) : kNaN;
-    m["pred_front_share"] = share < 1.0 ? share : kNaN;
+    if ((*st)(2) > 0.0)
+      m["front_share"] = (*st)(1) / (*st)(2);
+    if (share < 1.0)
+      m["pred_front_share"] = share;
   };
   return s;
 }
@@ -1146,7 +1163,8 @@ inline Scene arch(const Params& p, double dt)
   s.finish = [=](Metrics& m) {
     m["max_disp"] = (*collapse)(0);
     m["collapsed"] = (*collapse)(0) > thick / 3;
-    m["collapse_time"] = (*collapse)(1);
+    if (!std::isnan((*collapse)(1)))
+      m["collapse_time"] = (*collapse)(1);
     m["pred_mu_star"] = 0.3657;
   };
   return s;
@@ -1226,7 +1244,8 @@ inline Scene stack(const Params& p, double dt)
     for (const auto* box : boxes)
       speed = std::max(speed, box->getLinearVelocity().norm());
     m["speed_end"] = speed;
-    m["rest_time"] = *rest;
+    if (!std::isnan(*rest))
+      m["rest_time"] = *rest;
   };
   return s;
 }
@@ -1346,7 +1365,8 @@ inline Scene cardHouse(const Params& p, double dt)
   s.steps = steps(param(p, "T", 2.0), dt);
   s.finish = [=](Metrics& m) {
     report(m);
-    m["standing_1s"] = *standing;
+    if (!std::isnan(*standing))
+      m["standing_1s"] = *standing;
   };
   return s;
 }
@@ -1417,9 +1437,10 @@ inline Scene diffDrive(const Params& p, double dt)
     return true;
   };
   s.finish = [=](Metrics& m) {
-    const double rate = ((*yaw)(1) - (*yaw)(2)) / (time - 2.0);
+    // The yaw rate is measured after the 2 s spin-up.
+    if (!std::isnan((*yaw)(2)))
+      m["yaw_rate"] = ((*yaw)(1) - (*yaw)(2)) / (time - 2.0);
     const double speed = planar(chassis->getLinearVelocity()).norm();
-    m["yaw_rate"] = rate;
     m["pred_yaw_rate"] = radius * (wr - wl) / track;
     m["speed"] = speed;
     m["pred_speed"] = radius * (wl + wr) / 2.0;
