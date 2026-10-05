@@ -18,7 +18,7 @@ import re
 import subprocess
 
 LABEL = "nightly-failure"
-FAILED = {"failure", "timed_out", "cancelled", "startup_failure"}
+FAILED = {"failure", "timed_out", "cancelled", "startup_failure", "stale"}
 EXCERPT_LINES = 40
 EXCERPT_CHARS = 4000
 EXCERPT_BUDGET = 40000  # GitHub caps issue bodies and comments at 65536 chars.
@@ -30,6 +30,18 @@ def gh(*args: str, stdin: str | None = None) -> str:
     return subprocess.run(
         ["gh", *args], input=stdin, capture_output=True, text=True, check=True
     ).stdout
+
+
+def job_log(repo: str, job_id: int) -> str:
+    path = f"repos/{repo}/actions/jobs/{job_id}/logs"
+    # Newer gh refuses to print logs with escape sequences unless this flag is
+    # given; older gh rejects the flag but prints the log without it.
+    for args in (["--allow-escape-sequences", path], [path]):
+        try:
+            return gh("api", *args)
+        except subprocess.CalledProcessError:
+            pass
+    return ""  # e.g. startup failures have no log
 
 
 def marker(branch: str, group: str) -> str:
@@ -168,18 +180,7 @@ def main() -> None:
     if not actions:
         print("nothing to report")
     for action, group, issue, failed in actions:
-        logs = {}
-        for job in failed:
-            try:
-                logs[job["id"]] = excerpt(
-                    gh(
-                        "api",
-                        "--allow-escape-sequences",
-                        f"repos/{repo}/actions/jobs/{job['id']}/logs",
-                    )
-                )
-            except subprocess.CalledProcessError:
-                pass  # e.g. startup failures have no log
+        logs = {job["id"]: excerpt(job_log(repo, job["id"])) for job in failed}
         if action == "close":
             body = f"`{group}` passed in {run['html_url']} on `{run['head_sha'][:12]}`; closing."
         else:

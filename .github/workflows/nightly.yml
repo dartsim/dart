@@ -89,6 +89,8 @@ jobs:
   dartpy-wheels:
     if: github.event_name != 'schedule'
     uses: ./.github/workflows/publish_dartpy.yml
+    with:
+      nightly: true
 
   report:
     needs:

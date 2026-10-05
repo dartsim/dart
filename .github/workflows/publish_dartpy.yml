@@ -8,6 +8,11 @@ name: Publish dartpy
     tags:
       - "v*.*.*"
   workflow_call:
+    inputs:
+      nightly:
+        description: "Build every wheel row, whatever the ref"
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       ref:
@@ -178,7 +183,7 @@ jobs:
         id: wheel_gate
         run: |
           enabled=false
-          if [ "${{ matrix.release_only }}" = "false" ]; then
+          if [ "${{ matrix.release_only }}" = "false" ] || [ "${{ inputs.nightly }}" = "true" ]; then
             enabled=true
           else
             case "${DARTPY_REF}" in

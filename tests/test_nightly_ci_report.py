@@ -49,6 +49,25 @@ def test_plan_comments_on_an_open_issue_for_a_still_failing_group():
     assert [(a, n) for a, _, n, _ in actions] == [("comment", 3)]
 
 
+def test_plan_keeps_a_group_failing_while_a_job_is_stale():
+    jobs = [
+        job("macos / arm64-Release", "success"),
+        job("macos / arm64-Debug", "stale"),
+    ]
+    actions = report.plan(jobs, [issue(5, "macos")], "release-6.20")
+    assert [(a, n) for a, _, n, _ in actions] == [("comment", 5)]
+
+
+def test_job_log_retries_without_the_flag_older_gh_rejects(monkeypatch):
+    def fake_gh(*args, stdin=None):
+        if "--allow-escape-sequences" in args:
+            raise report.subprocess.CalledProcessError(1, args)
+        return "log text"
+
+    monkeypatch.setattr(report, "gh", fake_gh)
+    assert report.job_log("o/r", 1) == "log text"
+
+
 def test_excerpt_keeps_the_lines_before_the_first_error():
     log = "\n".join(
         [f"2026-10-05T08:00:{i:02d}.0000000Z line {i}" for i in range(100)]
