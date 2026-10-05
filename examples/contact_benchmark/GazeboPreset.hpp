@@ -285,8 +285,11 @@ inline std::optional<std::string> findGazeboFilteringBitmask(
 /// and <joint> elements of a model, so a model that sdformat includes (an
 /// <include> in a world or a model) or that gz-physics builds nested in a model
 /// would be missing. It also skips world-level joints connecting models.
+/// It ignores <frame> elements and non-empty pose relative_to attributes,
+/// which can place geometry differently from Gazebo.
 /// Returns the first such element under `node`, as "<include> <uri>",
-/// "nested <model> <name>" or "world <joint> <name>", or nothing.
+/// "nested <model> <name>", "world <joint> <name>", "<frame> <name>" or
+/// "<pose relative_to=\"<frame>\">", or nothing.
 inline std::optional<std::string> findSdfSkippedModel(
     const tinyxml2::XMLNode& node)
 {
@@ -296,6 +299,15 @@ inline std::optional<std::string> findSdfSkippedModel(
   for (const auto* element = node.FirstChildElement(); element;
        element = element->NextSiblingElement()) {
     const std::string_view name = element->Name();
+    if (name == "frame") {
+      const char* frameName = element->Attribute("name");
+      return std::string("<frame> ") + (frameName ? frameName : "");
+    }
+    if (name == "pose") {
+      const char* relativeTo = element->Attribute("relative_to");
+      if (relativeTo && !std::string_view(relativeTo).empty())
+        return std::string("<pose relative_to=\"") + relativeTo + "\">";
+    }
     if (name == "include") {
       const auto* uri = element->FirstChildElement("uri");
       const char* text = uri ? uri->GetText() : nullptr;

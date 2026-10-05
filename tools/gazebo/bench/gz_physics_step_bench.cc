@@ -63,7 +63,8 @@ int usage(const char* program)
 {
   std::fprintf(
       stderr,
-      "usage: %s <dartsim-plugin.so> <world.sdf> <steps> [--detector NAME] "
+      "usage: %s <dartsim-plugin.so> <world.sdf> <steps> "
+      "[--detector ode|bullet|fcl|dart] "
       "[--max-contacts N] [--window K] [--contacts-every K] [--sunk-z Z]\n",
       program);
   return 2;
@@ -89,9 +90,12 @@ int main(int argc, char** argv)
     if (i + 1 >= argc)
       return usage(argv[0]);
     const char* value = argv[i + 1];
-    if (key == "--detector")
+    if (key == "--detector") {
       detector = value;
-    else if (key == "--max-contacts")
+      if (detector != "ode" && detector != "bullet" && detector != "fcl"
+          && detector != "dart")
+        return usage(argv[0]);
+    } else if (key == "--max-contacts")
       maxContacts = std::atol(value);
     else if (key == "--window")
       window = std::max(1L, std::atol(value));
@@ -126,16 +130,28 @@ int main(int argc, char** argv)
   }
 
   sdf::Root root;
-  for (const auto& error : root.Load(worldFile))
+  const auto errors = root.Load(worldFile);
+  for (const auto& error : errors)
     std::fprintf(stderr, "sdf: %s\n", error.Message().c_str());
+  if (!errors.empty())
+    return 1;
   const sdf::World* sdfWorld = root.WorldByIndex(0);
   if (!sdfWorld) {
     std::fprintf(stderr, "no world in %s\n", worldFile.c_str());
     return 1;
   }
   auto world = engine->ConstructWorld(*sdfWorld);
-  if (!detector.empty())
+  if (!detector.empty()) {
     world->SetCollisionDetector(detector);
+    if (world->GetCollisionDetector() != detector) {
+      std::fprintf(
+          stderr,
+          "the dartsim plugin uses the %s detector, not %s\n",
+          world->GetCollisionDetector().c_str(),
+          detector.c_str());
+      return 1;
+    }
+  }
   const sdf::Physics* physics = sdfWorld->PhysicsByIndex(0);
   if (maxContacts < 0)
     maxContacts = physics ? static_cast<long>(physics->MaxContacts()) : 20;
@@ -191,15 +207,20 @@ int main(int argc, char** argv)
       finite = finite && worldPose.pose.IsFinite();
     }
 
-    if (i % window != 0 && i != steps)
-      continue;
-
-    const long n = (i % window == 0) ? window : (i % window);
     std::string extra;
     if (contactsEvery > 0 && i % contactsEvery == 0) {
       extra += " contacts="
                + std::to_string(world->GetContactsFromLastStep().size());
     }
+    if (i % window != 0 && i != steps) {
+      if (!extra.empty()) {
+        std::printf("step=%ld%s\n", i, extra.c_str());
+        std::fflush(stdout);
+      }
+      continue;
+    }
+
+    const long n = (i % window == 0) ? window : (i % window);
     if (sunkZ) {
       long sunk = 0;
       double minMobileZ = std::numeric_limits<double>::infinity();

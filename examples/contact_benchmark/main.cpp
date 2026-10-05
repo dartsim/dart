@@ -340,6 +340,9 @@ void printUsage(const std::string& programName)
          "nested <model>, or\n"
       << "                            a world-level <joint>, which DART's SDF "
          "parser skips.\n"
+      << "                            Rejects <frame> elements and non-empty "
+         "pose relative_to\n"
+      << "                            attributes, which its parser ignores.\n"
       << "  --gz-pair-max-contacts N  gz-sim per-pair contact limit for "
          "--gz-preset (SDF\n"
       << "                            <max_contacts>); defaults to the active "
@@ -2962,9 +2965,10 @@ int main(int argc, char* argv[])
       tinyxml2::XMLDocument sdf;
       sdf.LoadFile(absoluteSdfPath.c_str());
       if (const auto skipped = contact_scene::findSdfSkippedModel(sdf)) {
-        std::cerr << "--gz-preset does not support " << absoluteSdfPath
-                  << ": DART's SDF parser skips its " << *skipped
-                  << ", so that entity would be missing\n";
+        std::cerr
+            << "--gz-preset does not support " << absoluteSdfPath
+            << ": DART's SDF parser skips or ignores its " << *skipped
+            << ", so entities or geometry poses could differ from Gazebo\n";
         return 1;
       }
       if (const auto mask = contact_scene::findGazeboFilteringBitmask(sdf)) {

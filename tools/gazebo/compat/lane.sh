@@ -149,8 +149,13 @@ runtime_library_path() {
   echo "$dart_prefix/lib:$gz_physics_prefix/lib:$gz_sim_prefix/lib:$CONDA_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 }
 
-clone() {
+clone() (
   local name=$1 ref=$2
+  mkdir -p "$src_dir"
+  # Variants share released sources. Hold the lock through validation so a
+  # concurrent variant cannot inspect a clone that is still being populated.
+  exec 9> "$work_dir/clone.lock"
+  flock 9
   if [ ! -d "$src_dir/$name/.git" ]; then
     log "cloning $name $ref"
     git clone --quiet --depth 1 --branch "$ref" \
@@ -172,7 +177,7 @@ clone() {
       "or delete the directory to clone it again" >&2
     exit 1
   fi
-}
+)
 
 step_dart() {
   log "building DART from $dart_source"

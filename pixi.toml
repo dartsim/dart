@@ -1200,6 +1200,7 @@ test-gz = { depends-on = ["test-gz-physics", "test-gz-sim"] }
 # gz-physics suite and the full gz-sim INTEGRATION suite, and compares the
 # failures with tools/gazebo/compat/ionic-expected-failures.txt. Pass a step
 # (for example `sleep-oracle`) to run one stage; see tools/gazebo/README.md.
+[feature.gazebo.target.linux-64.tasks]
 gz-compat-ionic = { cmd = "bash tools/gazebo/compat/lane.sh ionic" }
 
 #=============================================

@@ -426,6 +426,37 @@ TEST(ContactBenchmarkGazeboPreset, FindsModelsTheSdfParserSkips)
 }
 
 //==============================================================================
+TEST(ContactBenchmarkGazeboPreset, FindsUnsupportedSdfFrameSemantics)
+{
+  const auto find = [](const std::string& world) {
+    const std::string sdf
+        = "<sdf version=\"1.7\"><world>" + world + "</world></sdf>";
+    tinyxml2::XMLDocument document;
+    EXPECT_EQ(document.Parse(sdf.c_str()), tinyxml2::XML_SUCCESS);
+    return findSdfSkippedModel(document);
+  };
+
+  EXPECT_EQ(find("<frame name=\"offset\"/>"), "<frame> offset");
+  EXPECT_EQ(find("<model><frame name=\"offset\"/></model>"), "<frame> offset");
+  EXPECT_EQ(find("<frame/>"), "<frame> ");
+  EXPECT_EQ(
+      find("<model><pose relative_to=\"other\">1 0 0 0 0 0</pose></model>"),
+      "<pose relative_to=\"other\">");
+  EXPECT_EQ(
+      find("<model><link><pose relative_to=\"other\">1 0 0 0 0 0</pose>"
+           "</link></model>"),
+      "<pose relative_to=\"other\">");
+  EXPECT_EQ(
+      find("<model><link><collision><pose relative_to=\"other\">1 0 0 0 0 0"
+           "</pose></collision></link></model>"),
+      "<pose relative_to=\"other\">");
+  EXPECT_FALSE(
+      find("<model><pose>1 0 0 0 0 0</pose><link><collision>"
+           "<pose relative_to=\"\">0 0 0 0 0 0</pose>"
+           "</collision></link></model>"));
+}
+
+//==============================================================================
 TEST(ContactBenchmarkGazeboPreset, ReadsActivePhysicsContactLimit)
 {
   const auto limit = [](const std::string& physics) {

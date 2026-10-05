@@ -27,7 +27,7 @@ The other Gazebo libraries come from conda-forge. Ionic uses gz-sim 9.5.0
 because 9.6.0 needs a newer gz-common6 than conda-forge ships. Harmonic and
 Jetty pin newer urdfdom, fmt and spdlog than DART's default environment, so
 their environments take DART's build dependencies from the `gz-compat-base`
-feature instead of the default feature.
+feature instead of the default feature. The lane tasks require Linux.
 
 `pixi run gz-compat-<lane>` runs [`compat/lane.sh`](compat/lane.sh)
 `<lane> test`, which:
@@ -49,7 +49,8 @@ feature instead of the default feature.
 4. runs [`compat/compare_failures.py`](compat/compare_failures.py) (see
    below).
 
-The lanes clone gz-physics and gz-sim once into `.deps/gz-compat/<lane>/src/`
+The lanes serialize cloning with `flock` and share gz-physics and gz-sim in
+`.deps/gz-compat/<lane>/src/`
 and stop when a clone is not at its pinned tag or has local changes, which
 they would otherwise build as the released sources. Run
 `git reset --hard && git clean -fd` in the clone, or delete it, to restore it.
@@ -189,6 +190,11 @@ gz-sim.
   bench-gz-physics` runs gz-sim's `3k_shapes.sdf` for 3000 steps; extra
   arguments replace the defaults (`<world.sdf> <steps> [options]`), and
   `--max-contacts 4` gives the per-pair-4 row.
+  `--detector` accepts `ode`, `bullet`, `fcl` and `dart`; the driver fails
+  on SDF load errors or if the plugin does not select the requested detector.
+  `--contacts-every K` samples every K steps independently of `--window`.
+  Samples between timing rows print `step=N contacts=C`; coincident samples
+  keep the `contacts=C` field on the timing row.
 - `gz_sim_server_bench` runs a world in a `gz::sim::Server` and reports time
   per iteration; it fails when the server did not run every iteration (a
   world that did not load, or a server stopped by a signal).
@@ -279,8 +285,12 @@ stores as more than `0x7fffffff` (such as `0xffffffff` or `-1`), which
 gz-physics reads as 0; without one, the filter drops nothing. It also rejects
 a world with an `<include>` (in the world or in a model) or a model nested in
 a model, or a world-level `<joint>` connecting models: DART's SDF parser
-skips these, so those entities would be missing. gz-sim's `3k_shapes.sdf`
-and the generated worlds contain none of these skipped entities.
+skips these, so those entities would be missing. It rejects `<frame>`
+elements and poses with a non-empty `relative_to` attribute: DART reads only
+the numeric pose, ignoring SDF frame semantics. An omitted or empty
+`relative_to` is accepted. gz-sim's `3k_shapes.sdf`
+and the generated worlds contain none of these unsupported elements or
+attributes.
 
 The preset's per-pair contact limit comes from the active SDF physics
 profile's `<max_contacts>` (20 when omitted). Released gz-sim selects the
