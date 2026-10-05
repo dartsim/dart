@@ -957,7 +957,13 @@ void ConstraintSolver::prepareForSimulation()
   const bool activeSingleReactiveContactsNeedSharedDependencyScan
       = mActiveSingleReactiveContactsNeedSharedDependencyScan;
   const auto collidingState = snapshotCollidingState(mSkeletons);
-  const auto lastCollisionContacts = mCollisionResult.getContacts();
+  // Restore the previous result by value: its contacts may point to collision
+  // objects freed since the last step (by a skeleton removal, a collision
+  // detector change, a destroyed shape frame, or a collision group update that
+  // dropped their shape frames), so they must not be dereferenced here as
+  // CollisionResult::addContact() would. Until the next solve() replaces them,
+  // only their count is used.
+  const auto lastCollisionResult = mCollisionResult;
   const std::size_t collisionGroupContentVersion
       = mCollisionGroup ? mCollisionGroup->getContentVersion() : 0u;
 
@@ -987,11 +993,16 @@ void ConstraintSolver::prepareForSimulation()
       reserveConstrainedGroupsScratch();
     }
   }
-  mCollisionResult.clear();
   if (!mCollisionGroup
       || mCollisionGroup->getContentVersion() == collisionGroupContentVersion) {
-    for (const auto& contact : lastCollisionContacts)
-      mCollisionResult.addContact(contact);
+    // Copy assignment keeps the vectors' warmed capacity. It can shrink the
+    // lookup sets' bucket arrays, but the sets fill only once a caller has
+    // queried them, and from then on every step allocates their nodes anyway.
+    mCollisionResult = lastCollisionResult;
+  } else {
+    // Not a memory-safety guard: it only makes the next step see no previous
+    // contacts after the passes updated the collision group.
+    mCollisionResult.clear();
   }
   restoreCollidingState(collidingState);
   mActiveConstraints = activeConstraints;
