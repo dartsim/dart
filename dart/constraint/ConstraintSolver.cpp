@@ -55,6 +55,7 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PointMass.hpp"
@@ -85,6 +86,12 @@ constexpr double kDefaultSleepContactPenetrationTolerance = 1e-5;
 constexpr double kDenseContactIslandSleepContactPenetrationTolerance = 0.005;
 constexpr double kSmallContactIslandMaxErrorReductionVelocity = 1e-3;
 constexpr std::size_t kDenseContactIslandMinMobileSkeletons = 3u;
+// The wake band of the default DeactivationOptions (twice the sleep
+// thresholds). World keeps a sleep candidate across a missed contact while its
+// speed stays inside this band. The solver cannot read the World's options, so
+// this band does not follow thresholds a user tunes.
+constexpr double kMissedContactQuietLinearSpeed = 0.02; // m/s
+constexpr double kMissedContactQuietAngularSpeed = 0.1; // rad/s
 double gSleepContactPenetrationTolerance
     = kDefaultSleepContactPenetrationTolerance;
 bool gSleepContactPenetrationToleranceUserConfigured = false;
@@ -2411,6 +2418,31 @@ void ConstraintSolver::buildConstrainedGroups()
     }
 
     {
+      // The speed one step of gravity adds to a body whose contact is missed,
+      // or none if gravity is off for any of its bodies.
+      const auto oneStepOfGravity = [this](const Skeleton& skeleton) {
+        for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
+          if (!skeleton.getBodyNode(i)->getGravityMode())
+            return 0.0;
+        }
+        return skeleton.getGravity().norm() * mTimeStep;
+      };
+      // A FreeJoint and no other degrees of freedom, with no joint constraint
+      // or spring that could pull the body back once it leaves its island.
+      const auto isFreeRigidBody = [this](const Skeleton& skeleton) {
+        if (skeleton.getNumDofs() != 6u)
+          return false;
+        const auto* joint = skeleton.getRootJoint();
+        if (dynamic_cast<const FreeJoint*>(joint) == nullptr
+            || canJointCreateAutomaticConstraint(joint)) {
+          return false;
+        }
+        for (std::size_t i = 0; i < 6u; ++i) {
+          if (joint->getSpringStiffness(i) != 0.0)
+            return false;
+        }
+        return true;
+      };
       bool hasUngroupedAwakeMobileSkeleton = false;
       for (const auto& skeleton : mSkeletons) {
         if (!skeleton->isMobile())
@@ -2420,8 +2452,49 @@ void ConstraintSolver::buildConstrainedGroups()
         const auto groupIndex = root->mUnionIndex;
         const bool grouped = groupIndex != invalidUnionIndex
                              && groupIndex < mGroupResting.size();
-        if (!grouped && !skeleton->isResting()
-            && !skeleton->isSleepCandidate()) {
+        if (grouped || skeleton->isResting() || skeleton->isSleepCandidate())
+          continue;
+
+        // An awake body outside every island may be falling onto one. While
+        // one exists, no island newly freezes, and candidates in islands that
+        // cannot rest lose their candidacy and dwell (pass 2 below). A
+        // collision backend can miss a resting contact for a single step
+        // (Bullet does for spheres and cylinders), and the body then falls
+        // freely for that step. So a free rigid body (isFreeRigidBody above)
+        // that was in an island at the previous build counts only from its
+        // second build outside every island if it moves like that: its smoothed
+        // speeds are inside the wake band, it spins no faster than the band
+        // allows, its linear speed exceeds the band by at most one step of
+        // gravity, and no force or command drives it (World never counts a
+        // driven body as quiet either). Such a body cannot be told from one
+        // that is starting to fall, released from a hold or at the top of a
+        // flight (the smoothed speeds catch a flight's top only while three
+        // steps of gravity exceed the band, that is, at steps of about 0.66 ms
+        // or more under Earth gravity), so an island that becomes eligible at
+        // that build can freeze while the body falls onto it. Any other body
+        // counts at once: at the turning point of a swing against a joint
+        // limit, an obstacle or another body, a body on a joint or a spring
+        // leaves its island just as slowly and then swings freely. Body speeds
+        // miss the point masses of soft bodies, so a soft body always counts
+        // too. Pass 2 has not yet restamped the island index, so it still holds
+        // the previous build's island. On simulation-mode re-entry steps the
+        // preparation passes restamp it first; they group a body that only
+        // contacts hold by the same contacts as this build, so such a body
+        // leaving its island counts at once on those steps.
+        const bool movesLikeMissedContact
+            = skeleton->getIslandIndex() >= 0 && isFreeRigidBody(*skeleton)
+              && skeleton->getNumSoftBodyNodes() == 0u
+              && skeleton->getSmoothedLinearSpeed()
+                     <= kMissedContactQuietLinearSpeed
+              && skeleton->getSmoothedAngularSpeed()
+                     <= kMissedContactQuietAngularSpeed
+              && skeleton->computeMaxBodyLinearSpeed()
+                     <= kMissedContactQuietLinearSpeed
+                            + oneStepOfGravity(*skeleton)
+              && skeleton->computeMaxBodyAngularSpeed()
+                     <= kMissedContactQuietAngularSpeed
+              && !skeleton->hasExternalDisturbance();
+        if (!movesLikeMissedContact) {
           hasUngroupedAwakeMobileSkeleton = true;
           break;
         }
