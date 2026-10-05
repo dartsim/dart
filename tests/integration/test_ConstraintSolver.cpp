@@ -348,6 +348,49 @@ public:
   mutable std::size_t mNumCreateConstraintCalls{0u};
 };
 
+// Mirrors gz-physics' contact-properties handler: it keeps the previous handler
+// as its parent and runs a user callback each time it creates the surface
+// parameters of a contact.
+class CountingContactSurfaceHandler final
+  : public constraint::ContactSurfaceHandler
+{
+public:
+  constraint::ContactSurfaceParams createParams(
+      const collision::Contact& contact,
+      const size_t numContactsOnCollisionObject) const override
+  {
+    ++mNumCreateParamsCalls;
+    return ContactSurfaceHandler::createParams(
+        contact, numContactsOnCollisionObject);
+  }
+
+  mutable std::size_t mNumCreateParamsCalls{0u};
+};
+
+// Like gz-physics' contact-properties handler when a callback asks for a
+// maximum error reduction velocity: it sets the global limit after creating
+// each contact constraint.
+class ErrorReductionVelocityContactSurfaceHandler final
+  : public constraint::ContactSurfaceHandler
+{
+public:
+  constraint::ContactConstraintPtr createConstraint(
+      collision::Contact& contact,
+      const size_t numContactsOnCollisionObject,
+      const double timeStep) const override
+  {
+    auto constraint = ContactSurfaceHandler::createConstraint(
+        contact, numContactsOnCollisionObject, timeStep);
+    if (mMaxErrorReductionVelocity >= 0.0) {
+      constraint::ContactConstraint::setMaxErrorReductionVelocity(
+          mMaxErrorReductionVelocity);
+    }
+    return constraint;
+  }
+
+  double mMaxErrorReductionVelocity{-1.0};
+};
+
 class FakeCollisionObject final : public collision::CollisionObject
 {
 public:
@@ -1212,6 +1255,114 @@ TEST(ConstraintSolver, RemovedCustomContactSurfaceHandlerDoesNotReuseConstraint)
   world->step();
   EXPECT_EQ(firstStepCalls, customHandler->mNumCreateConstraintCalls);
   EXPECT_EQ(firstStepCalls, CustomContactConstraint::mNumDestroyed.load());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, SimulationPreparationDoesNotRunContactSurfaceHandlers)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  solver->setNumSimulationThreads(1u);
+
+  auto handler = std::make_shared<CountingContactSurfaceHandler>();
+  solver->addContactSurfaceHandler(handler);
+  ASSERT_NE(nullptr, handler->getParent());
+
+  world->addSkeleton(createSolverTestPlane("ground"));
+  world->addSkeleton(createSolverTestBox(
+      "box", Eigen::Vector3d::Ones(), Eigen::Vector3d(0.0, 0.0, 0.49), true));
+
+  // The first step enters simulation mode. Its preparation must not call the
+  // handler, so the step calls it exactly once per contact.
+  ASSERT_FALSE(world->isInSimulationMode());
+  world->step();
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  EXPECT_EQ(
+      world->getLastCollisionResult().getNumContacts(),
+      handler->mNumCreateParamsCalls);
+
+  // Adding a skeleton makes the next step prepare again.
+  world->addSkeleton(createSolverTestBox(
+      "box2", Eigen::Vector3d::Ones(), Eigen::Vector3d(3.0, 0.0, 0.49), true));
+  ASSERT_FALSE(world->isInSimulationMode());
+  handler->mNumCreateParamsCalls = 0u;
+  world->step();
+  EXPECT_EQ(
+      world->getLastCollisionResult().getNumContacts(),
+      handler->mNumCreateParamsCalls);
+
+  // An explicit preparation calls no handler and keeps the handler chain.
+  world->addSkeleton(createSolverTestBox(
+      "box3", Eigen::Vector3d::Ones(), Eigen::Vector3d(-3.0, 0.0, 0.49), true));
+  handler->mNumCreateParamsCalls = 0u;
+  world->enterSimulationMode();
+  EXPECT_EQ(0u, handler->mNumCreateParamsCalls);
+  EXPECT_EQ(handler, solver->getLastContactSurfaceHandler());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactHandlerErrorReductionVelocityAppliesToWholeStep)
+{
+  const auto createBoxWorld
+      = [](const std::shared_ptr<ErrorReductionVelocityContactSurfaceHandler>&
+               handler) {
+          auto world = createWorld();
+          world->setTimeStep(0.001);
+
+          simulation::DeactivationOptions deactivation;
+          deactivation.mEnabled = false;
+          world->setDeactivationOptions(deactivation);
+
+          auto* solver = world->getConstraintSolver();
+          solver->setCollisionDetector(
+              collision::DARTCollisionDetector::create());
+          solver->setNumSimulationThreads(1u);
+          solver->addContactSurfaceHandler(handler);
+
+          world->addSkeleton(createSolverTestPlane("ground"));
+          world->addSkeleton(createSolverTestBox(
+              "box",
+              Eigen::Vector3d::Ones(),
+              Eigen::Vector3d(0.0, 0.0, 0.49),
+              true));
+          return world;
+        };
+
+  constraint::ContactConstraint::resetMaxErrorReductionVelocity();
+  auto settingHandler
+      = std::make_shared<ErrorReductionVelocityContactSurfaceHandler>();
+  auto settingWorld = createBoxWorld(settingHandler);
+  auto presetWorld = createBoxWorld(
+      std::make_shared<ErrorReductionVelocityContactSurfaceHandler>());
+  settingWorld->step();
+  presetWorld->step();
+
+  // Correcting the 1 cm penetration needs far more than this limit.
+  constexpr double kMaxErrorReductionVelocity = 1e-4;
+
+  // One world's handler sets the limit while the step creates the contact
+  // constraints; the other world has it set before the step.
+  settingHandler->mMaxErrorReductionVelocity = kMaxErrorReductionVelocity;
+  settingWorld->step();
+  constraint::ContactConstraint::setMaxErrorReductionVelocity(
+      kMaxErrorReductionVelocity);
+  presetWorld->step();
+  constraint::ContactConstraint::resetMaxErrorReductionVelocity();
+
+  const Eigen::VectorXd presetVelocities
+      = presetWorld->getSkeleton("box")->getVelocities();
+  const Eigen::VectorXd settingVelocities
+      = settingWorld->getSkeleton("box")->getVelocities();
+  EXPECT_TRUE(presetVelocities == settingVelocities)
+      << "set before the step: " << presetVelocities.transpose()
+      << "\nset by the handler: " << settingVelocities.transpose();
 }
 
 //==============================================================================
