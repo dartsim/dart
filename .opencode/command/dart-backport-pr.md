@@ -1,5 +1,5 @@
 ---
-description: backport a merged release-6.20 PR to an older release branch
+description: backport a merged main PR to a maintenance release branch
 argument-hint: "<pr-number> [release-branch]"
 agent: build
 ---
@@ -19,21 +19,23 @@ Backport PR or commits: $ARGUMENTS
 
 ## Workflow
 
+The current maintenance target is `release-6.19`.
+
 For a source change involving model/scene structure, physics behavior, or OSG
 output, use the release branch's `dart-verify-sim` workflow to preserve the text
 oracle and assessed visual evidence. Document a visual exception when the
 release branch cannot render the claim.
 
-1. Verify the source PR or commit is merged to `release-6.20`:
+1. Verify the source PR or commit is merged to `main`:
    ```bash
    gh pr view <SOURCE_PR> --json state,mergedAt,baseRefName,mergeCommit
    ```
 2. Check whether an equivalent change already exists on the release branch:
    ```bash
-   git fetch origin <RELEASE_BRANCH> release-6.20
-   git cherry -v --abbrev=40 origin/<RELEASE_BRANCH> origin/release-6.20 | grep <COMMIT_HASH>
+   git fetch origin <RELEASE_BRANCH> main
+   git cherry -v --abbrev=40 origin/<RELEASE_BRANCH> origin/main | grep <COMMIT_HASH>
    ```
-3. Create a release branch from the release target without resetting an
+3. Create a topic branch from the release target without resetting an
    existing local branch:
    ```bash
    BRANCH=backport/<SOURCE_PR>-to-<RELEASE_BRANCH>

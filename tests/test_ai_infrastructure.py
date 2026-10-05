@@ -472,7 +472,7 @@ def test_scenario_malformed_lists_return_errors(field, value, expected):
         ("instruction_chain", ["../AGENTS.md"], "instruction_chain"),
         ("owner_docs", ["/etc/passwd"], "owner doc"),
         ("recovery", "../outside.md", "recovery pointer"),
-        ("forbidden_paths", ["docs/../main-only"], "forbidden path"),
+        ("forbidden_paths", ["docs/../unsupported"], "forbidden path"),
     ],
 )
 def test_scenario_paths_cannot_escape_or_be_non_normalized(field, unsafe, expected):
@@ -495,7 +495,7 @@ def test_scenario_route_path_cannot_escape_repository():
 
 def test_unknown_scenario_route_is_rejected():
     data = copy.deepcopy(_scenario_data())
-    data["scenarios"][1]["expected_route"]["name"] = "dart-main-only"
+    data["scenarios"][1]["expected_route"]["name"] = "dart-unsupported"
 
     errors = infra.exercise_scenarios(ROOT, data, emit=False)
 
@@ -2895,7 +2895,7 @@ def test_test_gate_contract_rejects_stale_task_handoff_semantics(tmp_path):
     ]
 
 
-def test_test_gate_contract_rejects_main_only_nanobind_cache_advice(tmp_path):
+def test_test_gate_contract_rejects_unsupported_nanobind_cache_advice(tmp_path):
     _copy_test_gate_contract(tmp_path)
     packet = tmp_path / "docs/dev_tasks/example/07-work-packet.md"
     packet.parent.mkdir(parents=True)
@@ -2908,7 +2908,7 @@ def test_test_gate_contract_rejects_main_only_nanobind_cache_advice(tmp_path):
     infra.check_test_gate_contract(tmp_path, errors)
 
     assert errors == [
-        "docs/dev_tasks/example/07-work-packet.md:1: remove stale main-only "
+        "docs/dev_tasks/example/07-work-packet.md:1: remove unsupported "
         "nanobind cache guidance"
     ]
 
@@ -3211,7 +3211,7 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
 
     assert report["schema_version"] == 1
     assert report["profile"] == {
-        "name": "release-6.20",
+        "name": "main",
         "cpp_standard": "C++17",
         "python_binding": "pybind11",
         "io_namespace": "dart::utils",

@@ -12,7 +12,7 @@ Audit or update DART 6.20's AI infrastructure for: $ARGUMENTS
 
 ## Objective
 
-Use live primary guidance and representative release-branch tasks to decide
+Use live primary guidance and representative DART 6 tasks to decide
 what to preserve, update, remove, consolidate, or add. Prefer the smallest
 change that improves the target without weakening DART 6 compatibility,
 safety, evidence, public paths, or cross-tool capability parity. The reusable

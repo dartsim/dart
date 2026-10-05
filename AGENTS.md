@@ -49,16 +49,16 @@ the repository root to the working directory.
 
 ## DART 6.20 Compatibility Rules
 
-- Branch from `origin/release-6.20` into a non-tracking topic branch; never
-  commit directly to `release-*`.
+- Branch from `origin/main` into a non-tracking topic branch; never
+  commit directly to `main` or `release-*`.
 - Preserve C++17, pybind11, `dart::utils` parsers, OSG, installed headers,
   package components, ABI-sensitive interfaces, default simulation behavior,
   and Gazebo/gz-physics compatibility unless a maintainer approves otherwise.
-- `main` mirrors `release-6.20` and is fast-forwarded at each release. Target
-  `release-6.20` (older-release backports use `dart-backport-pr`); never target
-  `main`.
+- `main` is the development branch for the next release (currently DART 6.20).
+  PRs target `main`. `release-6.19` remains the maintenance branch; backports
+  use `dart-backport-pr`.
 - Use `.github/PULL_REQUEST_TEMPLATE.md` and set the branch-matching DART 6.x
-  release milestone (currently `DART 6.20.0`) on release-branch PRs.
+  release milestone (currently `DART 6.20.0`) on PRs.
 - Do not prefix commit messages or PR titles with agent tags like `[codex]`;
   use plain descriptive titles.
 - Before every approved push to a published PR branch, first merge the latest
