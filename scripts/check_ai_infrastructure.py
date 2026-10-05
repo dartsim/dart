@@ -724,8 +724,8 @@ def check_branch_profile(
 
     expected = {
         "schema_version": 1,
-        "profile": "release-6.20",
-        "base_ref": "origin/release-6.20",
+        "profile": "main",
+        "base_ref": "origin/main",
         "cpp_standard": "C++17",
         "python_binding": "pybind11",
         "io_namespace": "dart::utils",
@@ -1760,8 +1760,8 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 plain,
             ):
                 errors.append(
-                    f"{path.relative_to(root)}:{line_number}: remove stale "
-                    "main-only nanobind cache guidance"
+                    f"{path.relative_to(root)}:{line_number}: remove "
+                    "unsupported nanobind cache guidance"
                 )
             if "test-all" not in plain:
                 continue
@@ -3730,8 +3730,8 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
     release_fix = (root / ".claude" / "commands" / "dart-release-ci-fix.md").read_text(
         encoding="utf-8"
     )
-    if "release-6.20" not in release_fix or "release-6.19" in release_fix:
-        errors.append("dart-release-ci-fix: release default must be release-6.20")
+    if "Default to `main`" not in release_fix or "release-6.19" in release_fix:
+        errors.append("dart-release-ci-fix: development default must be main")
 
     for path in source_paths(root):
         if not path.exists():
@@ -4511,7 +4511,7 @@ def exercise_scenarios(
                 )
                 continue
             if (root / relative).exists():
-                local_errors.append(f"forbidden main-only path exists `{forbidden}`")
+                local_errors.append(f"forbidden path exists `{forbidden}`")
             if forbidden in route_and_scope:
                 local_errors.append(
                     f"forbidden path leaks into route/scope `{forbidden}`"
@@ -4821,7 +4821,7 @@ def doctor_report(root: Path) -> dict[str, Any]:
         "root": str(root),
         "branch": branch or "(detached)",
         "profile": {
-            "name": "release-6.20",
+            "name": "main",
             "cpp_standard": "C++17",
             "python_binding": "pybind11",
             "io_namespace": "dart::utils",

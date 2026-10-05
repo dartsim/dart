@@ -1,10 +1,10 @@
 ---
-description: debug and fix CI failures on the DART 6.20 release branch
-argument-hint: "<pr-number|run-id> [release-branch=release-6.20]"
+description: debug and fix CI failures on the DART 6.20 development branch
+argument-hint: "<pr-number|run-id> [target-branch=main]"
 agent: build
 ---
 
-Fix release-branch CI: $ARGUMENTS
+Fix DART 6 CI: $ARGUMENTS
 
 ## Required Reading
 
@@ -24,19 +24,19 @@ applicable.
    gh run view <RUN_ID> --log-failed
    gh run view <RUN_ID> --job <JOB_ID> --log
    ```
-2. Resolve the target from live state. Default to `release-6.20`; for a PR,
+2. Resolve the target from live state. Default to `main`; for a PR,
    verify its base rather than trusting a stale handoff.
 3. If continuing an existing PR, fetch and checkout that branch. Otherwise
-   branch from the resolved release branch without resetting an existing local
+   branch from the resolved target branch without resetting an existing local
    branch:
    ```bash
-   RELEASE_BRANCH=${RELEASE_BRANCH:-release-6.20}
-   git fetch origin "$RELEASE_BRANCH"
-   BRANCH=fix/<issue>-${RELEASE_BRANCH}
+   TARGET_BRANCH=${TARGET_BRANCH:-main}
+   git fetch origin "$TARGET_BRANCH"
+   BRANCH=fix/<issue>-${TARGET_BRANCH}
    if git show-ref --verify --quiet "refs/heads/$BRANCH"; then
      git switch "$BRANCH"
    else
-     git switch --no-track -c "$BRANCH" "origin/$RELEASE_BRANCH"
+     git switch --no-track -c "$BRANCH" "origin/$TARGET_BRANCH"
    fi
    ```
 4. If a proven fix exists in a named reference, adapt it only when its
@@ -46,7 +46,7 @@ applicable.
 5. Explain why the failure was not caught earlier and whether workflow coverage should change.
 6. Run `pixi run lint` and release-relevant build/tests.
 7. Ask for explicit maintainer/user approval before pushing, creating, or
-   updating the release-branch PR; after approval, use the current release
+   updating the PR; after approval, use the current release
    milestone and PR template.
 8. Monitor CI until green.
 

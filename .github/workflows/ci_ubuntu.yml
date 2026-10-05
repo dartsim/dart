@@ -5,29 +5,38 @@ name: CI Linux
 on:
   push:
     # Feature-branch validation happens via pull_request; run on push only for
-    # the release lines so PR branches are not built twice per push.
+    # main and the release lines so PR branches are not built twice per push.
     branches:
+      - "main"
       - "release-*"
   pull_request:
     branches:
       - "**"
-  schedule:
-    # Cron syntax: [minute hour day_of_the_month month day_of_the_week]
-    - cron: "0 2 * * 0,3" # Run every Sunday and Wednesday at 02:00
   workflow_dispatch:
+    inputs:
+      nightly:
+        description: "Also run the nightly-only jobs"
+        type: boolean
+        default: false
+  # Nightly (nightly.yml) calls this with `nightly: true` every night.
+  workflow_call:
+    inputs:
+      nightly:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  # Protected release branches should finish every post-merge validation run.
+  # Protected branches (main, release-*) should finish every post-merge run.
   # GitHub's default concurrency queue keeps only one pending run, so use a
   # run-specific group on release refs while keeping PR/topic refs cancellable.
   group: >-
-    ${{ startsWith(github.ref, 'refs/heads/release-')
-        && format('{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
-        || format('{0}-{1}', github.workflow, github.ref) }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' && !startsWith(github.ref, 'refs/heads/release-') }}
+    ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-'))
+        && format('ci-linux-{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
+        || format('ci-linux-{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' && !(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-')) }}
 
 jobs:
   ai-infrastructure:
@@ -56,11 +65,10 @@ jobs:
         run: pixi run python scripts/check_ai_infrastructure.py --scenarios
 
   coverage:
-    if: github.event_name != 'workflow_dispatch'
+    # Nightly only; codecov tracks main from the nightly upload.
+    if: inputs.nightly
     name: coverage
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -123,6 +131,7 @@ jobs:
           version: "2"
 
       - name: Check Lint
+        if: matrix.build_type == 'Release'
         run: |
           DART_VERBOSE=ON \
           BUILD_TYPE=${{ matrix.build_type }} \
@@ -169,7 +178,8 @@ jobs:
           if-no-files-found: error
 
       - name: Test with AddressSanitizer
-        if: matrix.build_type == 'Release'
+        # Nightly only: a second full build (~1 h) on the shared runner fleet.
+        if: matrix.build_type == 'Release' && inputs.nightly
         run: |
           DART_VERBOSE=ON \
           pixi run test-asan
@@ -203,7 +213,7 @@ jobs:
 
       - name: Build with assertions (no -DNDEBUG)
         run: |
-          # NOTE: pixi tasks on release-6.16 set BUILD_TYPE internally, so we
+          # NOTE: pixi tasks set BUILD_TYPE internally, so we
           # configure this variant explicitly to ensure NDEBUG is not defined.
           pixi run -- bash -lc '
             set -euo pipefail
@@ -233,6 +243,7 @@ jobs:
 
   eigen-overalignment:
     name: Eigen 64-byte alignment
+    if: inputs.nightly
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

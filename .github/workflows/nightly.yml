@@ -1,0 +1,105 @@
+# Nightly: the full CI matrix on main, including the slow or niche jobs
+# that do not run per PR (see docs/onboarding/ci-cd.md). A failing night opens
+# or updates one `nightly-failure` issue with fixing instructions; the next
+# green night closes it.
+
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # Daily at 08:00 UTC
+  workflow_dispatch:
+  pull_request:
+    # CI changes get the whole matrix; the report only dry-runs on PRs.
+    paths:
+      - ".github/codeql/**"
+      - ".github/workflows/**"
+      - "scripts/nightly_ci_report.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NIGHTLY_BRANCH: main
+
+jobs:
+  linux:
+    uses: ./.github/workflows/ci_ubuntu.yml
+    with:
+      nightly: true
+    secrets: inherit
+
+  macos:
+    uses: ./.github/workflows/ci_macos.yml
+    with:
+      nightly: true
+
+  windows:
+    uses: ./.github/workflows/ci_windows.yml
+
+  freebsd:
+    uses: ./.github/workflows/ci_freebsd.yml
+
+  toolchain:
+    uses: ./.github/workflows/ci_toolchain.yml
+
+  simd:
+    uses: ./.github/workflows/ci_simd.yml
+
+  gz-physics:
+    uses: ./.github/workflows/ci_gz_physics.yml
+
+  api-doc:
+    uses: ./.github/workflows/api_doc.yml
+
+  codeql:
+    uses: ./.github/workflows/codeql.yml
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+  dartpy-wheels:
+    uses: ./.github/workflows/publish_dartpy.yml
+    with:
+      nightly: true
+
+  report:
+    needs:
+      - linux
+      - macos
+      - windows
+      - freebsd
+      - toolchain
+      - simd
+      - gz-physics
+      - api-doc
+      - codeql
+      - dartpy-wheels
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts/nightly_ci_report.py
+          sparse-checkout-cone-mode: false
+
+      - name: Open, update, or close nightly-failure issues
+        run: |
+          # Only real nightly runs touch issues; PRs and other refs dry-run.
+          dry_run=--dry-run
+          if [ "$GITHUB_EVENT_NAME" = schedule ] || { [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF_NAME" = "$NIGHTLY_BRANCH" ]; }; then
+            dry_run=
+          fi
+          python3 scripts/nightly_ci_report.py --repo "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" --branch "$NIGHTLY_BRANCH" $dry_run
+        env:
+          GH_TOKEN: ${{ github.token }}
