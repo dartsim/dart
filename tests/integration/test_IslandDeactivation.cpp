@@ -1219,6 +1219,65 @@ TEST(IslandDeactivation, TunedWakeBandBoundsOneStepContactMiss)
 }
 
 //==============================================================================
+// World puts a sleep candidate to rest outside every island when the collision
+// detector reports no constraint for it, and gives it island 0 so that it stays
+// at rest. Once it is woken, by a velocity write or by a caller through the
+// public setters, it was not in an island at the previous build, so it holds a
+// newly eligible island awake at once.
+TEST(IslandDeactivation, BodyWokenFromRestOutsideIslandsHoldsIslandsAwake)
+{
+  const auto checkWokenFloater = [](bool wakeThroughSetters,
+                                    const char* message) {
+    // The sleeper starts settled on the floor, so the initial-rest credit
+    // makes it a sleep candidate at the first step. The floater hovers,
+    // touching nothing and without gravity, as a candidate whose dwell is
+    // complete, so World puts it to rest at the first step.
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf - 1.0e-6));
+    world->addSkeleton(sleeper);
+    auto floater = createFreeBox(
+        "floater",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(3.0, 0, 2.0));
+    floater->getBodyNode(0)->setGravityMode(false);
+    world->addSkeleton(floater);
+    makeSleepEligible(*world, *floater);
+
+    world->step();
+    ASSERT_TRUE(sleeper->isSleepCandidate());
+    ASSERT_TRUE(floater->isResting());
+    ASSERT_GE(floater->getIslandIndex(), 0);
+
+    if (wakeThroughSetters) {
+      floater->setResting(false);
+      floater->setSleepCandidate(false);
+    }
+    // A velocity write inside the wake band sets the floater moving, and wakes
+    // it at the next step if it still rests.
+    const auto& opts = world->getDeactivationOptions();
+    Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+    velocity[3] = 0.5 * opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
+    floater->getJoint(0)->setVelocities(velocity);
+    world->step();
+    ASSERT_FALSE(floater->isResting());
+    ASSERT_LT(floater->getIslandIndex(), 0);
+    EXPECT_FALSE(sleeper->isResting()) << message;
+  };
+  checkWokenFloater(
+      false,
+      "a body that a velocity write woke from rest outside every island did "
+      "not hold the island awake");
+  checkWokenFloater(
+      true,
+      "a body woken through the setters from rest outside every island did "
+      "not hold the island awake");
+}
+
+//==============================================================================
 // A body on a joint can be at the turning point of a swing, against its joint
 // limit, an obstacle or another body, when it leaves its island. It leaves as
 // slowly as a body whose contact was missed but then swings freely, so it holds

@@ -489,6 +489,13 @@ private:
   /// reads it; until World sets it, it is unbounded.
   double mLinearWakeSpeed = std::numeric_limits<double>::infinity();
   double mAngularWakeSpeed = std::numeric_limits<double>::infinity();
+
+  /// For each skeleton in mSkeletons, the skeleton itself if the last build of
+  /// constrained groups put it in an island, or null. A build without islands
+  /// or with deactivation inactive empties it, and so does removing a
+  /// skeleton. Unlike the island index, which World also sets, only builds
+  /// fill it.
+  std::vector<const dynamics::Skeleton*> mIslandSkeletons;
 };
 
 } // namespace constraint

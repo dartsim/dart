@@ -519,6 +519,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
+  mIslandSkeletons.reserve(mSkeletons.size());
 
   // A newly subscribed skeleton may carry constraint state from another
   // solver. Clear it once at insertion so steady-state solve() can derive its
@@ -565,6 +566,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
   mConstrainedGroups.reserve(mSkeletons.size());
+  mIslandSkeletons.clear();
 }
 
 //==============================================================================
@@ -580,6 +582,7 @@ void ConstraintSolver::removeAllSkeletons()
 {
   mCollisionGroup->removeAllShapeFrames();
   mSkeletons.clear();
+  mIslandSkeletons.clear();
 }
 
 //==============================================================================
@@ -1117,6 +1120,7 @@ bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& skeleton)
 {
   if (!hasSkeleton(skeleton)) {
     mSkeletons.push_back(skeleton);
+    mIslandSkeletons.reserve(mSkeletons.size());
     return true;
   } else {
     dtwarn << "Skeleton [" << skeleton->getName()
@@ -2165,6 +2169,7 @@ bool ConstraintSolver::clearInactiveConstrainedGroups()
   mGroupResting.clear();
   mGroupAllSleepCandidates.clear();
   mGroupPreserveSleepCandidates.clear();
+  mIslandSkeletons.clear();
 
   // With no active constraints, no island can be frozen. Clear any stale
   // freeze flags so a body that just lost all of its contacts resumes
@@ -2558,7 +2563,8 @@ void ConstraintSolver::buildConstrainedGroups()
         return true;
       };
       bool hasUngroupedAwakeMobileSkeleton = false;
-      for (const auto& skeleton : mSkeletons) {
+      for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+        const auto& skeleton = mSkeletons[i];
         if (!skeleton->isMobile())
           continue;
 
@@ -2591,13 +2597,20 @@ void ConstraintSolver::buildConstrainedGroups()
         // joint limit, an obstacle or another body, a body on a joint or a
         // spring leaves its island just as slowly and then swings freely. Body
         // speeds miss the point masses of soft bodies, so a soft body always
-        // counts too. Pass 2 has not yet restamped the island index, so it
-        // still holds the previous build's island. On simulation-mode re-entry
-        // steps the preparation passes restamp it first; they group a body that
-        // only contacts hold by the same contacts as this build, so such a body
-        // leaving its island counts at once on those steps.
+        // counts too. The previous build must have put the body in an island.
+        // Pass 2 has not yet restamped the island index, so it still holds that
+        // build's island, but World also gives island 0 to a sleep candidate
+        // that it puts to rest outside every island, and the body keeps it when
+        // it wakes, so the body must also be in that build's record of islands
+        // (mIslandSkeletons). On simulation-mode re-entry steps the preparation
+        // passes build first; they group a body that only contacts hold by the
+        // same contacts as this build, so such a body leaving its island counts
+        // at once on those steps.
+        const bool leftIsland = skeleton->getIslandIndex() >= 0
+                                && i < mIslandSkeletons.size()
+                                && mIslandSkeletons[i] == skeleton.get();
         const bool movesLikeMissedContact
-            = skeleton->getIslandIndex() >= 0 && isFreeRigidBody(*skeleton)
+            = leftIsland && isFreeRigidBody(*skeleton)
               && skeleton->getNumSoftBodyNodes() == 0u
               && skeleton->getSmoothedLinearSpeed() <= linearWakeSpeed
               && skeleton->getSmoothedAngularSpeed() <= angularWakeSpeed
@@ -2648,6 +2661,7 @@ void ConstraintSolver::buildConstrainedGroups()
       // it freezes so observable force caches (e.g. transmitted wrench queries)
       // keep the last solved constraint forces instead of an unconstrained
       // forward-dynamics value.
+      mIslandSkeletons.clear();
       for (const auto& skeleton : mSkeletons) {
         const auto root = ConstraintBase::getRootSkeleton(skeleton);
         const auto groupIndex = root->mUnionIndex;
@@ -2667,8 +2681,13 @@ void ConstraintSolver::buildConstrainedGroups()
         }
         skeleton->setResting(groupCanRest && skeleton->isResting());
         skeleton->setIslandIndex(grouped ? static_cast<int>(groupIndex) : -1);
+        const dynamics::Skeleton* const islandSkeleton
+            = grouped ? skeleton.get() : nullptr;
+        mIslandSkeletons.push_back(islandSkeleton);
       }
     }
+  } else {
+    mIslandSkeletons.clear();
   }
 
   //----------------------------------------------------------------------------
@@ -3147,6 +3166,7 @@ void ConstraintSolver::reserveConstrainedGroupsScratch()
   mGroupMobileSkeletonCountScratch.reserve(groupCount);
   mGroupAlreadyRestingScratch.reserve(groupCount);
   mGroupSolvedToRestScratch.reserve(groupCount);
+  mIslandSkeletons.reserve(mSkeletons.size());
 
   for (const auto& group : mConstrainedGroups) {
     reserveConstrainedGroupScratch(group);
