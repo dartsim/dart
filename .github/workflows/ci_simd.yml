@@ -109,6 +109,7 @@ jobs:
             -DDART_BUILD_GUI_OSG=OFF \
             -DDART_USE_SYSTEM_GOOGLETEST=ON \
             -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+            -DDART_BENCHMARK_NATIVE_ARCH=OFF \
             "$SIMD_CMAKE_FLAGS"'
 
       - name: Build SIMD tests and benchmarks

@@ -55,9 +55,9 @@ How it works
 The ``DART 6 Performance Dashboard`` workflow
 (``.github/workflows/performance_dashboard_dart6.yml``) runs on pushes to
 ``main`` and maintained ``release-6.*`` branches that touch benchmark-relevant
-paths, on manual dispatch, and as a reusable workflow for a default-branch
-scheduler. Push runs benchmark the pushed branch; manual and reusable runs
-may optionally name a maintained DART 6 branch, otherwise they use ``main``.
+paths, and on manual dispatch. Push runs benchmark the pushed branch; manual
+runs may optionally name a maintained DART 6 branch, otherwise they use
+``main``.
 Each run:
 
 #. configures the release build with Pixi;
@@ -74,10 +74,9 @@ The action stores history on the ``gh-pages`` branch under ``performance/dart6``
 and renders an interactive Chart.js page. There is no external account, API
 token, or third-party service to maintain.
 
-GitHub Actions only runs ``schedule`` triggers from workflows present on the
-repository default branch. Keep recurring DART 6 dashboard publication in a
-scheduler on ``main`` that calls this workflow with ``workflow_call``;
-cron schedules on maintenance branches do not run.
+To also publish on a schedule, add a ``schedule`` trigger to this workflow on
+``main``: GitHub Actions only runs ``schedule`` triggers from the default branch,
+so cron schedules on maintenance branches do not run.
 
 Preview a run locally
 ---------------------
