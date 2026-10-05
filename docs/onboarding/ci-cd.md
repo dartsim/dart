@@ -26,7 +26,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `codeql.yml`                      | CodeQL                       | nightly, dispatch               | Static security analysis |
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
 | `nightly.yml`                     | Nightly                      | daily, PRs that change CI       | Everything above on `main`; files `nightly-failure` issues |
-| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, call, dispatch            | Performance dashboard |
+| `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Performance dashboard |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main` |
 
 Required checks on `main`: `Release`, `Debug`, and
