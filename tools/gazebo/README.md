@@ -273,7 +273,10 @@ gz-physics' bitmask filter, which drops a pair when neither collision's
 category mask shares a bit with the other's collide mask (default `0xff`).
 It rejects a world with a mask that lacks a bit of `0xff`, or that sdformat
 stores as more than `0x7fffffff` (such as `0xffffffff` or `-1`), which
-gz-physics reads as 0; without one, the filter drops nothing.
+gz-physics reads as 0; without one, the filter drops nothing. It also rejects
+a world with an `<include>` (in the world or in a model) or a model nested in
+a model: DART's SDF parser skips both, so those models would be missing.
+gz-sim's `3k_shapes.sdf` and the generated worlds have neither.
 
 ## Not covered yet
 

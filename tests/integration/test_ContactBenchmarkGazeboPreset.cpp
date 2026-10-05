@@ -391,6 +391,33 @@ TEST(ContactBenchmarkGazeboPreset, FindsBitmasksThatCanFilterAPair)
 }
 
 //==============================================================================
+TEST(ContactBenchmarkGazeboPreset, FindsModelsTheSdfParserSkips)
+{
+  const auto find = [](const std::string& world) {
+    const std::string sdf = "<sdf><world>" + world + "</world></sdf>";
+    tinyxml2::XMLDocument document;
+    EXPECT_EQ(document.Parse(sdf.c_str()), tinyxml2::XML_SUCCESS);
+    return findSdfSkippedModel(document);
+  };
+
+  EXPECT_FALSE(find("<model><link><collision/></link></model><model/>"));
+  // sdformat does not build models from <population> either.
+  EXPECT_FALSE(find("<population><model name=\"box\"/></population>"));
+  EXPECT_EQ(
+      find("<model/><include><uri>model://ground_plane</uri></include>"),
+      "<include> model://ground_plane");
+  // A model included into a model.
+  EXPECT_EQ(
+      find("<model><include><uri>model://arm</uri></include></model>"),
+      "<include> model://arm");
+  EXPECT_EQ(find("<include/>"), "<include> ");
+  EXPECT_EQ(
+      find("<model name=\"outer\"><link/><model name=\"inner\"><link/></model>"
+           "</model>"),
+      "nested <model> inner");
+}
+
+//==============================================================================
 TEST(ContactBenchmarkGazeboPreset, PublishesChangedPosesLikeGazebo)
 {
   auto world = simulation::World::create();

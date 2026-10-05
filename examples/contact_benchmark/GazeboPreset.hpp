@@ -264,6 +264,34 @@ inline std::optional<std::string> findGazeboFilteringBitmask(
   return std::nullopt;
 }
 
+/// DART's SdfParser reads only the <model> elements of a world and the <link>
+/// and <joint> elements of a model, so a model that sdformat includes (an
+/// <include> in a world or a model) or that gz-physics builds nested in a model
+/// would be missing. Returns the first such element under `node`, as
+/// "<include> <uri>" or "nested <model> <name>", or nothing.
+inline std::optional<std::string> findSdfSkippedModel(
+    const tinyxml2::XMLNode& node)
+{
+  const auto* parent = node.ToElement();
+  const bool inModel = parent && std::string_view(parent->Name()) == "model";
+  for (const auto* element = node.FirstChildElement(); element;
+       element = element->NextSiblingElement()) {
+    const std::string_view name = element->Name();
+    if (name == "include") {
+      const auto* uri = element->FirstChildElement("uri");
+      const char* text = uri ? uri->GetText() : nullptr;
+      return std::string("<include> ") + (text ? text : "");
+    }
+    if (inModel && name == "model") {
+      const char* modelName = element->Attribute("name");
+      return std::string("nested <model> ") + (modelName ? modelName : "");
+    }
+    if (auto found = findSdfSkippedModel(*element))
+      return found;
+  }
+  return std::nullopt;
+}
+
 /// Rebuilds one collision PlaneShape as the box gz-physics builds for an SDF
 /// <plane> (SDFFeatures ConstructPlane): a 2100 m cube rotated from +Z onto
 /// the plane normal and shifted down by half its side, so its top face is the

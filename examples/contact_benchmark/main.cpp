@@ -336,6 +336,9 @@ void printUsage(const std::string& programName)
       << "                            lacks a bit of 0xff or exceeds "
          "0x7fffffff: it does not model\n"
       << "                            gz-physics' bitmask filter.\n"
+      << "                            Rejects worlds with an <include> or a "
+         "nested <model>, which\n"
+      << "                            DART's SDF parser skips.\n"
       << "  --gz-pair-max-contacts N  gz-sim per-pair contact limit for "
          "--gz-preset (SDF\n"
       << "                            <max_contacts>); default 20.\n"
@@ -2959,6 +2962,12 @@ int main(int argc, char* argv[])
     if (options.gzPreset) {
       tinyxml2::XMLDocument sdf;
       sdf.LoadFile(absoluteSdfPath.c_str());
+      if (const auto skipped = contact_scene::findSdfSkippedModel(sdf)) {
+        std::cerr << "--gz-preset does not support " << absoluteSdfPath
+                  << ": DART's SDF parser skips its " << *skipped
+                  << ", so that model would be missing\n";
+        return 1;
+      }
       if (const auto mask = contact_scene::findGazeboFilteringBitmask(sdf)) {
         std::cerr << "--gz-preset does not model gz-physics' collision "
                      "bitmask filter, which "
