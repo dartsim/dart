@@ -50,19 +50,13 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
-      - name: Check generated AI adapters
-        run: pixi run check-ai-commands
-
-      - name: Check AI infrastructure
-        run: pixi run check-ai-infra
-
+      # check-ai-commands and check-ai-infra run in the Release job's
+      # check-lint; test-ai-infra also exercises the agent scenarios.
       - name: Test AI infrastructure
         run: pixi run test-ai-infra
-
-      - name: Exercise agent scenarios
-        run: pixi run python scripts/check_ai_infrastructure.py --scenarios
 
   coverage:
     # Nightly only; codecov tracks main from the nightly upload.
@@ -77,6 +71,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
@@ -108,13 +103,13 @@ jobs:
           plugins: noop
           fail_ci_if_error: false
 
+  # pixi tasks pin BUILD_TYPE=Release, so a BUILD_TYPE=Debug leg would only
+  # rebuild Release; the nightly coverage job is the Debug build.
   build:
-    name: ${{ matrix.build_type }}
+    name: Release
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        build_type: ["Release", "Debug"]
+    env:
+      CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -123,7 +118,21 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      # Compiler cache: restored on every run, saved from main at most once a
+      # day per configuration (the repository's Actions cache is 10 GB).
+      - name: Restore compiler cache
+        run: |
+          echo "SCCACHE_DIR=${{ runner.temp }}/sccache" >> "$GITHUB_ENV"
+          echo "SCCACHE_CACHE_SIZE=1G" >> "$GITHUB_ENV"
+          echo "SCCACHE_DAY=$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
+      - uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/sccache
+          key: sccache-linux-Release-${{ env.SCCACHE_DAY }}
+          restore-keys: sccache-linux-Release-
 
       - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
@@ -131,20 +140,16 @@ jobs:
           version: "2"
 
       - name: Check Lint
-        if: matrix.build_type == 'Release'
         run: |
           DART_VERBOSE=ON \
-          BUILD_TYPE=${{ matrix.build_type }} \
           pixi run check-lint
 
       - name: Test DART and dartpy
         run: |
           DART_VERBOSE=ON \
-          BUILD_TYPE=${{ matrix.build_type }} \
           pixi run test-all
 
       - name: Agent visual verification smoke
-        if: matrix.build_type == 'Release'
         run: |
           rm -rf /tmp/dart-agent-visual-smoke
           xvfb-run -a -s '-screen 0 640x480x24' \
@@ -170,7 +175,6 @@ jobs:
             pixi run test-agent-debug-overlay
 
       - name: Upload agent visual verification evidence
-        if: matrix.build_type == 'Release'
         uses: actions/upload-artifact@v7
         with:
           name: agent-visual-smoke
@@ -179,7 +183,7 @@ jobs:
 
       - name: Test with AddressSanitizer
         # Nightly only: a second full build (~1 h) on the shared runner fleet.
-        if: matrix.build_type == 'Release' && inputs.nightly
+        if: inputs.nightly
         run: |
           DART_VERBOSE=ON \
           pixi run test-asan
@@ -187,14 +191,26 @@ jobs:
       - name: Install
         run: |
           DART_VERBOSE=ON \
-          BUILD_TYPE=${{ matrix.build_type }} \
           pixi run install
 
-  # Catch compile failures when assertions are enabled but we're not in a Debug
+      - name: Compiler cache stats
+        if: always()
+        run: pixi run sccache --show-stats || true
+
+      - name: Save compiler cache
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/sccache
+          key: sccache-linux-Release-${{ env.SCCACHE_DAY }}
+
+  # Catch compile and test failures when assertions are enabled outside a Debug
   # build type (e.g., downstream builds that drop -DNDEBUG in Release).
   build-asserts:
     name: Asserts enabled (no -DNDEBUG)
     runs-on: ubuntu-latest
+    env:
+      CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -203,7 +219,21 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      # Compiler cache: restored on every run, saved from main at most once a
+      # day per configuration (the repository's Actions cache is 10 GB).
+      - name: Restore compiler cache
+        run: |
+          echo "SCCACHE_DIR=${{ runner.temp }}/sccache" >> "$GITHUB_ENV"
+          echo "SCCACHE_CACHE_SIZE=1G" >> "$GITHUB_ENV"
+          echo "SCCACHE_DAY=$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
+      - uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/sccache
+          key: sccache-linux-asserts-${{ env.SCCACHE_DAY }}
+          restore-keys: sccache-linux-asserts-
 
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
@@ -211,7 +241,7 @@ jobs:
           packages: libgl1-mesa-dev libglu1-mesa-dev
           version: "2"
 
-      - name: Build with assertions (no -DNDEBUG)
+      - name: Build and test with assertions (no -DNDEBUG)
         run: |
           # NOTE: pixi tasks set BUILD_TYPE internally, so we
           # configure this variant explicitly to ensure NDEBUG is not defined.
@@ -219,15 +249,17 @@ jobs:
             set -euo pipefail
             BUILD_TYPE=None
             DART_VERBOSE=ON
-            # DART 6 dartpy requires dart-gui-osg. The normal Debug job covers
-            # dartpy with assertions; this required variant validates the C++
-            # no-OSG contract without defining NDEBUG.
+            # DART 6 dartpy requires dart-gui-osg, so this required variant
+            # runs the C++ tests with assertions and validates the no-OSG
+            # contract. -O2 keeps NDEBUG undefined; at -O0 the tests take hours.
             cmake \
               -G Ninja \
               -S . \
               -B build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
               -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
               -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+              -DCMAKE_C_FLAGS=-O2 \
+              -DCMAKE_CXX_FLAGS=-O2 \
               -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
               -DCMAKE_DISABLE_FIND_PACKAGE_OpenSceneGraph=TRUE \
               -DDART_BUILD_DARTPY=OFF \
@@ -241,6 +273,17 @@ jobs:
             cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE -j --target ALL
           '
 
+      - name: Compiler cache stats
+        if: always()
+        run: pixi run sccache --show-stats || true
+
+      - name: Save compiler cache
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/sccache
+          key: sccache-linux-asserts-${{ env.SCCACHE_DAY }}
+
   eigen-overalignment:
     name: Eigen 64-byte alignment
     if: inputs.nightly
@@ -253,6 +296,7 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
       - name: Install system dependencies
