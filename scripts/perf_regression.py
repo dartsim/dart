@@ -405,13 +405,16 @@ def measure(row: Row, args, world: Path) -> dict:
                     if row.det
                     else micro_perturb(row, args, world, config)
                 )
+                # Requested bytes gate too, so they must not depend on layout.
                 stable = all(
-                    altered[key] == metrics[key] for key in ("guards", "allocs")
+                    altered.get(key) == metrics.get(key)
+                    for key in ("guards", "allocs", "bytes")
                 )
                 result["perturbations"][config] = {
                     "stable": stable,
                     "guards": altered["guards"],
                     "allocs": altered["allocs"],
+                    "bytes": altered.get("bytes"),
                 }
             result["gated"] = all(
                 item["stable"] for item in result["perturbations"].values()

@@ -786,6 +786,13 @@ def test_measure_gates_only_on_its_own_perturbation_pass(monkeypatch, tmp_path):
         lambda row, args, world, config="": {**metrics, "allocs": int(bool(config))},
     )
     assert module.measure(row, args, tmp_path)["gated"] is False
+    # Requested bytes that change with the heap layout also disqualify the row.
+    monkeypatch.setattr(
+        module,
+        "native",
+        lambda row, args, world, config="": {**metrics, "bytes": 64 + bool(config)},
+    )
+    assert module.measure(row, args, tmp_path)["gated"] is False
 
 
 def test_environment_ignores_inherited_library_path(monkeypatch, tmp_path):
