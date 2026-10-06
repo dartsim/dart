@@ -57,10 +57,11 @@ the 6.20 line. The design's A9, C3 and R4 are not implemented; its R7 (dt) and
 R8 (mu edge cases) are runner sweeps over other scenes. One process runs one
 cell, because ERP, CFM and ERV are process-wide. The runner fails a cell that
 exits nonzero, reports a non-finite state, or lacks its result rows, and writes
-its rows to `failed.csv` instead of `cells.csv`, so they reach no table or
-score. It runs the wall-clock cells (`--perf` without `--ir`) alone after the
-parallel phase, and skips the Callgrind cells (`--ir`) when Valgrind is not
-installed. `report` lists skipped and failed cells.
+its rows to `failed.csv` instead of `cells.csv`, so they reach no table; the
+accuracy score counts a failed cell as measuring nothing (-1 for each
+measurement B620 made). It runs the wall-clock cells (`--perf` without `--ir`)
+alone after the parallel phase, and skips the Callgrind cells (`--ir`) when
+Valgrind is not installed. `report` lists skipped and failed cells.
 
 ## Output
 
@@ -77,7 +78,9 @@ Each cell prints `label,dart,scene,params,solver,detector,dt,split,deactivation,
   `box_viol_max` relative to the final normal impulse, `cfm_floor_max`), and
   `tight_*` and `dzr_refreshed` for PGS-tight and DZ+R;
 - `finite`, `contacts_*`, `energy_rise_max`, `wall_ms_per_step` and
-  `state_hash`.
+  `state_hash`;
+- `started`, printed first and flushed, so a cell that crashes still leaves its
+  key.
 
 A metric that is undefined for a run (an onset that never happened, a ratio
 without samples) is omitted, so a NaN marks a failed measurement. `report`

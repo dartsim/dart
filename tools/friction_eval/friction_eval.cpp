@@ -928,15 +928,21 @@ void printHeader()
 int runCellOrBisect(const Options& o)
 {
   printHeader();
+  fe::Params params = o.params;
+  params.erase(o.bisectKey);
+  const auto label = paramString(params)
+                     + (o.bisectKey.empty() ? "" : ";bisect=" + o.bisectKey);
+  // The cell's key goes out first, so a cell that crashes still leaves a row
+  // the runner can file its failure under.
+  printRow(o, o.scene, label, "started", "1");
+  std::fflush(stdout);
   if (o.bisectKey.empty()) {
     const auto result = runCell(o, o.params);
-    const auto params = paramString(o.params);
     for (const auto& [metric, value] : result.metrics)
-      printRow(o, o.scene, params, metric, number(value));
-    printRow(o, o.scene, params, "state_hash", result.hash);
+      printRow(o, o.scene, label, metric, number(value));
+    printRow(o, o.scene, label, "state_hash", result.hash);
     return 0;
   }
-  fe::Params params = o.params;
   bool finite = true;
   const auto at = [&](double value) {
     params[o.bisectKey] = value;
@@ -950,8 +956,6 @@ int runCellOrBisect(const Options& o)
   double lo = o.bisectLo, hi = o.bisectHi;
   const auto [atLo, metrics] = at(lo);
   const bool atHi = at(hi).first;
-  params.erase(o.bisectKey);
-  const auto label = paramString(params) + ";bisect=" + o.bisectKey;
   if (atLo != atHi) {
     for (int i = 0; i < 6; ++i) {
       const double mid = 0.5 * (lo + hi);
