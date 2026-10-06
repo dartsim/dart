@@ -96,7 +96,9 @@ claiming any packet that overlaps them**.
    scene keeps bit-identical hashes for untouched detectors.
 4. **General evidence trigger**: issue-specific wins are insufficient. The
    final report must include broad tests, benchmark matrices, and GUI/headless
-   example evidence proving the optimized path is not overfit to one fixture.
+   example evidence across representative arm, humanoid, many-object, resting,
+   and dynamic workloads, comparing DART revisions on the same host to prove
+   the optimized path is not overfit to one fixture.
 5. **Completion trigger**: criteria 1–4 met (or maintainer-approved
    exceptions recorded), D3/D4/D5/D7/D8 resolved with their packets landed
    or explicitly deferred, issue #3056 ready for closure, then the closeout
@@ -144,7 +146,22 @@ gz dartsim plugin subclasses `OdeCollisionDetector` and
   Do not use `pixi run test-all` as the capped substitute: that task still
   runs an unbounded `cmake --build ... -j --target ALL` (see `pixi.toml`).
 - `pixi run -e gazebo test-gz` for anything touching collision, constraint,
-  solver, `World::step`, or public headers.
+  solver, `World::step`, or public headers. It is the forward lane: it
+  patches gz-physics first, so it does not prove compatibility with released
+  Gazebo.
+- **Gazebo-path rows (mandatory for ODE, collision, contact-budget, and
+  sleeping changes):** `contact_benchmark --gz-preset` rows for the affected
+  scenes (at least `3k_shapes.sdf` with ODE), reporting contacts against
+  demand and cap, starved pairs, sunk bodies, changed poses, resting count,
+  and hash; the gz-physics driver row
+  (`pixi run gz-compat-ionic bench-gz-physics`); and the unpatched lane
+  (`pixi run gz-compat-ionic`, plus Jetty and Harmonic before a release) with
+  no failure that DART 6.19.4 and the packet's base both pass
+  (`GZ_COMPAT_BASE_VARIANT`). Changes that can let bodies sleep in Gazebo
+  worlds also run `pixi run gz-compat-ionic sleep-oracle` (which also fails
+  when a scenario puts nothing to sleep) and explain every mismatch; ODE and
+  collision-group changes also run
+  `pixi run gz-compat-jetty raycast-probe`. See `tools/gazebo/README.md`.
 - Determinism guard: `contact_benchmark` final-state hash + contact/pair/
   resting counts vs the recorded baseline for **every** detector (`dart`,
   FCL, Bullet, ODE) — untouched backends must be bit-identical.
@@ -156,9 +173,11 @@ gz dartsim plugin subclasses `OdeCollisionDetector` and
   before/after graphs when the table is non-trivial, and a full raw matrix
   with samples, mean/median timing, speedup/change, contacts/resting/cap or
   final-hash guard columns as applicable. Label non-equivalent detector rows
-  as diagnostic instead of counting them as winners/regressions. ODE rows are
-  only valid with `--max-contacts-per-pair 4` (#3209 finding 3). RTF-only or
-  best-row-only acceptance is banned.
+  as diagnostic instead of counting them as winners/regressions. Rows with
+  `--max-contacts-per-pair 4`, a raised contact cap, or an analytic plane
+  ground are guard rows only: Gazebo runs none of those settings, and such
+  rows hid the round-3 contact starvation. RTF-only or best-row-only
+  acceptance is banned.
 - Packet metadata: compiler, CPU/governor, pixi env, exact commands, and
   which optional detectors were built (per the collision-backend design).
 - `pixi run test-eigen-overalignment` when allocation/alignment changes.
@@ -186,6 +205,41 @@ the collision-backend lifecycle design.
 One packet = one branch (`wp-pg-<nn>-<slug>`) = one PR
 (`WP-PG.<nn>: ...`) = one verification story. Never stack PRs on parent
 PR branches. Claim packets by marking the dashboard row and RESUME.md.
+
+## Round 3: the Gazebo path (#3056 reopened)
+
+Rounds 1 and 2 were measured on configurations Gazebo never runs. Through
+the real gz-physics dartsim plugin (gz cap of 10,000 contacts, per-pair
+limit 20, SDF `<plane>` built as a 2100 m box, gz-physics' own
+`BodyNodeCollisionFilter` subclass), `3k_shapes.sdf` on release-6.20 still
+runs at RTF about 0.005, about 1,700 bodies sink, and nothing sleeps. Three
+DART-side causes: contact-budget starvation (demand 24,025 against the cap,
+so late pairs get no contact), the ODE cylinder probe regression from #3203
+(trimesh cylinders), and sleeping disabled by any custom collision filter.
+Two unreleased 6.20 heuristics (#3112 frame-0 dwell shortcut, #3227 drift
+suppression) also freeze driven motion (gz-sim `imu_system`).
+
+| Packet | Scope | Kind | Depends on | Status |
+| --- | --- | --- | --- | --- |
+| PR-A | `contact_benchmark --gz-preset`, unpatched Harmonic/Ionic/Jetty lanes compared with 6.19.4 and the packet's base, gz-physics/gz-sim drivers and worlds, differential sleep oracle, Jetty raycast probe, these gates | tooling, behavior-preserving | — | in review |
+| PR-B | revert #3203's ODE cylinder tangency probes (native cylinders again) | restores 6.19.4 behavior | PR-A | open |
+| PR-C | fair-share contact budget in `ConstraintSolver` above the cap | behavior change above the cap | PR-A | open |
+| PR-C′ | 6.19.5 backport: ODE history spans (#3329), then PR-C | backport | PR-C | open |
+| PR-D1 | deactivation follows dynamics edits: joint, gravity and axis edits wake resting bodies, same-value gravity writes do not, changes between steps restart the sleep delay, custom contact handlers keep islands awake | behavior change | — | open |
+| PR-D2 | sleeping with custom collision filters (decision replay, resting-contact retention, kill switch) | behavior change | PR-B, PR-C, PR-D1, PR-F, PR-G, PR-H, PR-I, a clean sleep oracle | open |
+| PR-E | closeout report and promotions | docs | all | open |
+| PR-F | use-after-free in `prepareForSimulation` after removal, detector swap, or `moveTo` | bug fix | — | open |
+| PR-G | equilibrium-aware frame-0 gate; remove #3227's drift suppression (6.19.4 behavior) | behavior change | PR-A; merge after PR-B | open |
+| PR-H | simulation-mode preparation must not run user contact handlers (gz-physics `ContactPropertiesCallback` sees three callbacks per contact on the first step; DART 6.19.4: one) | bug fix | — | open |
+| PR-I | contact-material writes (gz-sim WheelSlip, every iteration) no longer re-prepare the simulation | bug fix | — | open |
+| PR-J | `MetaSkeleton` DOF accessors without a `std::string` per call | performance | — | open |
+
+Each packet's evidence uses the Gazebo-path gates above. Proposed #3056
+closure gate (awaiting maintainer ratification): on Ionic and Jetty with
+unpatched gz-physics, gz-sim end-to-end no slower than 6.19.4 in any phase,
+steady state within 1.5x of bullet-featherstone, and zero sunk bodies;
+gz-physics and gz-sim pass sets that contain 6.19.4's on Harmonic, Ionic, and
+Jetty; and no unexplained sleep-oracle mismatch.
 
 ## Non-goals (explicit, evidence-backed)
 

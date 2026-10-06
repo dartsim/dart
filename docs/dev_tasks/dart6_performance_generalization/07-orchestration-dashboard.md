@@ -13,9 +13,11 @@ Related open queue at last refresh: none blocking (enablers merged:
 with the first real SIMD-kernel PR.
 
 Current handoff (2026-07-10): the completion audit ran (see RESUME.md —
-criteria 1-3 MET on the merged head). Criterion 4 needs representative
-DART revision comparisons on the same host. #3366 (dartpy getDofs ownership bugfix), #3368 (`dart` detector AABB-tree broadphase), and #3369 (MJCF
-stacked joints and collision fidelity) have merged. The `dart` detector
+criteria 1-3 MET on the merged head). Criterion 4 still needs representative
+workload evidence with same-host DART revision comparisons and GUI/headless
+checks. #3366 (dartpy getDofs ownership bugfix), #3368 (`dart` detector
+AABB-tree broadphase), and #3369 (MJCF stacked joints and collision fidelity)
+have merged. The `dart` detector
 small-scene overhead WP-SS family remains in flight; the S6 `dart`
 resting-profile row is resolved by the accepted completion audit.
 
@@ -29,6 +31,7 @@ resting-profile row is resolved by the accepted completion audit.
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
 | WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02 #3327; PG.03 #3337; PG.04 blocked D4) |
 | WS-F DART collision backend | ../../design/dart6_collision_backends.md | lifecycle | delivered for DART 6.20 by #3381; any default or dependency change is later-release work |
+| Round 3 Gazebo path | README.md (Round 3) | PR-A–PR-J | active (PR-A tooling in review; PR-B–PR-J follow its gates) |
 
 ## Packet board
 

@@ -75,6 +75,15 @@ pixi run test-py
 pixi run -e gazebo test-gz
 ```
 
+`ci_gz_physics.yml` runs the forward lane, which patches gz-physics before
+testing and configures it once, so gz-physics' contact-callback test
+expectations are not compiled in. The unpatched Gazebo lanes
+(`pixi run gz-compat-ionic`, `gz-compat-jetty`, `gz-compat-harmonic`; see
+`tools/gazebo/README.md`) are not in CI yet: each builds DART, gz-physics, and
+gz-sim from source and runs a serial suite, and on release-6.20 they
+currently report the known DART 6.20 Gazebo regressions from issue #3056. Run
+them locally for downstream-sensitive changes and before releases.
+
 For failing CI, inspect the exact run and job logs before changing code. Prefer
 reproducing locally, but document when a hosted-platform failure cannot be
 reproduced on the current machine.
