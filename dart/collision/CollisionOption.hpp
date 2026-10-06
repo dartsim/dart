@@ -53,6 +53,18 @@ struct CollisionOption
   /// Maximum number of contacts to detect. Once the contacts are found up to
   /// this number, the collision checking will terminate at that moment. Set
   /// this to 1 for binary check.
+  ///
+  /// ConstraintSolver treats a finite value above 1 in its own collision
+  /// option as a contact budget instead. It detects up to
+  /// max(8 * maxNumContacts, 100) contacts (the detection bound) and, if it
+  /// finds more than maxNumContacts, shares the budget across the colliding
+  /// pairs: each pair keeps its deepest contact first, then spatially spread
+  /// ones. Results within the budget are unchanged. A pair gets no contacts
+  /// only beyond the detection bound or when there are more pairs than
+  /// maxNumContacts.
+  /// Contacts that a detector drops per pair after its base class's collide()
+  /// (as gz-physics does) still count toward the bound. The contact count
+  /// passed to ContactSurfaceHandler is the number kept for the pair.
   std::size_t maxNumContacts;
 
   /// Maximum number of contacts to keep for each collision object pair. Set
