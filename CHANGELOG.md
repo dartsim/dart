@@ -230,6 +230,10 @@
 
 * Collision
 
+  * Fix a crash in the ODE collision backend when replacing or resizing a
+    shape already in a collision group, and preserve shape updates when
+    switching collision detectors after skeletons have been added to a world.
+
   * Provide the DART-owned collision backend through the built-in `dart`
     detector, including soft-body, ellipsoid, cone, and capsule coverage. The
     released `DARTCollide` entry points and detector ABI remain compatible, as
