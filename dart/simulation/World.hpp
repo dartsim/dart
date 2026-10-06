@@ -489,6 +489,14 @@ protected:
   /// Returns true if any mobile skeleton is currently in the resting state.
   bool hasRestingMobileSkeleton() const;
 
+  /// Returns whether a skeleton in this World or its constraint solver, or one
+  /// that owns a frame in collisionGroup, changed deactivation state after
+  /// Skeleton::getGlobalDeactivationStateVersion() returned globalVersion.
+  /// Changes to other skeletons, such as another World's, do not count.
+  bool hasDeactivationStateChangedSince(
+      const collision::CollisionGroup& collisionGroup,
+      std::size_t globalVersion) const;
+
   /// Wakes resting skeletons when world/contact state changed between steps.
   void wakeRestingSkeletonsIfStepStateChanged();
 

@@ -2210,13 +2210,9 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return false;
   }
 
-  // Only skeletons in this World or its constraint solver count; another
-  // World's changes move only the global version.
-  if (dynamics::Skeleton::hasDeactivationStateChangedSince(
-          mSkeletons, mAllRestingSnapshotDeactivationStateVersion)
-      || dynamics::Skeleton::hasDeactivationStateChangedSince(
-          mConstraintSolver->getSkeletons(),
-          mAllRestingSnapshotDeactivationStateVersion)) {
+  // Another World's changes move only the global version.
+  if (hasDeactivationStateChangedSince(
+          *collisionGroup, mAllRestingSnapshotDeactivationStateVersion)) {
     markSnapshotStale();
     return false;
   }
@@ -2389,6 +2385,45 @@ bool World::hasRestingMobileSkeleton() const
 }
 
 //==============================================================================
+bool World::hasDeactivationStateChangedSince(
+    const collision::CollisionGroup& collisionGroup,
+    std::size_t globalVersion) const
+{
+  // Each change stamps its skeleton with the global version it produced, so a
+  // change made after globalVersion was read left a stamp in (globalVersion,
+  // current]. Comparing offsets from globalVersion survives a counter wrap.
+  const std::size_t window
+      = dynamics::Skeleton::getGlobalDeactivationStateVersion() - globalVersion;
+  if (window == 0u)
+    return false;
+
+  const auto changed = [&](const dynamics::Skeleton* skel) {
+    return skel != nullptr
+           && skel->mDeactivationStateVersion - globalVersion - 1u < window;
+  };
+  for (const auto& skel : mSkeletons) {
+    if (changed(skel.get()))
+      return true;
+  }
+
+  // A support may be registered only with the constraint solver, or only in
+  // its collision group.
+  for (const auto& skel : mConstraintSolver->getSkeletons()) {
+    if (changed(skel.get()))
+      return true;
+  }
+
+  for (std::size_t i = 0; i < collisionGroup.getNumShapeFrames(); ++i) {
+    if (changed(dynamics::Skeleton::getSkeletonOf(
+            *collisionGroup.getShapeFrame(i)))) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+//==============================================================================
 void World::wakeRestingSkeletonsIfStepStateChanged()
 {
   const auto collisionDetector = mConstraintSolver->getCollisionDetector();
@@ -2426,16 +2461,11 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
     }
   }
 
-  // Only skeletons in this World or its constraint solver (a support may be
-  // registered only there) count; another World's changes move only the
-  // global version. If none changed, catch the record up so that the next
-  // steps compare in O(1) again.
-  const bool deactivationStateChanged
-      = dynamics::Skeleton::hasDeactivationStateChangedSince(
-            mSkeletons, mLastStepRestingWorldStateDeactivationStateVersion)
-        || dynamics::Skeleton::hasDeactivationStateChangedSince(
-            mConstraintSolver->getSkeletons(),
-            mLastStepRestingWorldStateDeactivationStateVersion);
+  // Another World's changes move only the global version. If none of this
+  // World's skeletons changed, catch the record up so that the next steps
+  // compare in O(1) again.
+  const bool deactivationStateChanged = hasDeactivationStateChangedSince(
+      *collisionGroup, mLastStepRestingWorldStateDeactivationStateVersion);
   if (!deactivationStateChanged) {
     mLastStepRestingWorldStateDeactivationStateVersion
         = dynamics::Skeleton::getGlobalDeactivationStateVersion();
@@ -2463,12 +2493,13 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
   if (!restingOrCandidate) {
     // Dwell rule: a between-step change to this World (a relaxed joint limit,
     // a spring edit, a moved support, a collision filter edit) restarts the
-    // quiet dwell of awake non-candidates. Another World's edits and sleep
-    // transitions do not: they change none of this World's skeletons.
-    // Otherwise dwell gathered under the old dynamics lets the next rest pass
-    // grant candidacy after one smoothed step of the new motion, and the
-    // following solve freezes the body (#3056). Candidacy set by hand between
-    // steps is kept.
+    // quiet dwell of awake non-candidates. Otherwise dwell gathered under the
+    // old dynamics lets the next rest pass grant candidacy after one smoothed
+    // step of the new motion, and the following solve freezes the body
+    // (#3056). Candidacy set by hand between steps is kept. Another World's
+    // sleep transitions and deactivation-state edits stamp none of the
+    // skeletons checked here, so they do not restart it. (A structural edit
+    // in any World still re-prepares every World; see isInSimulationMode().)
     if (!recordedStateUnchanged) {
       for (auto& skel : mSkeletons) {
         if (skel->isMobile() && !skel->isResting() && !skel->isSleepCandidate())

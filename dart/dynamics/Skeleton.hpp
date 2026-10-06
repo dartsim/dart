@@ -1296,11 +1296,9 @@ protected:
   static std::size_t getGlobalDeactivationStateVersion();
   static std::size_t getGlobalVelocityVersion();
 
-  /// Returns whether any of the skeletons changed deactivation state after
-  /// getGlobalDeactivationStateVersion() returned globalVersion. Changes to
-  /// other skeletons do not count. O(1) while the global version is unchanged.
-  static bool hasDeactivationStateChangedSince(
-      const std::vector<SkeletonPtr>& skeletons, std::size_t globalVersion);
+  /// Returns the skeleton that owns frame, or nullptr if frame is not a
+  /// ShapeNode. Unlike ShapeNode::getSkeleton(), takes no reference.
+  static const Skeleton* getSkeletonOf(const ShapeFrame& frame);
 
   //  /// Update damping force vector.
   //  virtual void updateDampingForceVector();

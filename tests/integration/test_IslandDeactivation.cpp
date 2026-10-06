@@ -452,6 +452,30 @@ void expectSleeperFallsAfterSupportEdit(
       << "unsupported body did not resume falling";
 }
 
+// A support takes part in a World's contacts whether it is a World skeleton or
+// is registered only with the constraint solver or only in its collision group.
+struct SupportRegistration
+{
+  const char* name;
+  void (*add)(World& world, const SkeletonPtr& support);
+};
+
+const SupportRegistration kSupportRegistrations[] = {
+    {"World support",
+     [](World& world, const SkeletonPtr& support) {
+       world.addSkeleton(support);
+     }},
+    {"solver-only support",
+     [](World& world, const SkeletonPtr& support) {
+       world.getConstraintSolver()->addSkeleton(support);
+     }},
+    {"collision-group-only support",
+     [](World& world, const SkeletonPtr& support) {
+       world.getConstraintSolver()->getCollisionGroup()->addShapeFramesOf(
+           support.get());
+     }},
+};
+
 void expectSolverRunsAfterRestingConstraintEdit(
     World* world, const SkeletonPtr& sleeper)
 {
@@ -1246,18 +1270,15 @@ TEST(IslandDeactivation, WakeOnSupportRemoved)
 
 //==============================================================================
 // Disabling collision on an immobile support changes the physical contact set
-// even though the support skeleton itself is not mobile. A support registered
-// only with the constraint solver takes part in the contacts too.
+// even though the support skeleton itself is not mobile. This holds for every
+// way of registering the support (see kSupportRegistrations).
 TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabled)
 {
-  for (const bool solverOnly : {false, true}) {
-    SCOPED_TRACE(solverOnly ? "solver-only support" : "World support");
+  for (const auto& registration : kSupportRegistrations) {
+    SCOPED_TRACE(registration.name);
     auto world = makeSleepWorld();
     auto floor = createFloor();
-    if (solverOnly)
-      world->getConstraintSolver()->addSkeleton(floor);
-    else
-      world->addSkeleton(floor);
+    registration.add(*world, floor);
 
     auto sleeper = createFreeBox(
         "sleeper",
@@ -1280,14 +1301,11 @@ TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabled)
 // flags.
 TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabledBeforeFastPath)
 {
-  for (const bool solverOnly : {false, true}) {
-    SCOPED_TRACE(solverOnly ? "solver-only support" : "World support");
+  for (const auto& registration : kSupportRegistrations) {
+    SCOPED_TRACE(registration.name);
     auto world = makeSleepWorld();
     auto floor = createFloor();
-    if (solverOnly)
-      world->getConstraintSolver()->addSkeleton(floor);
-    else
-      world->addSkeleton(floor);
+    registration.add(*world, floor);
 
     auto sleeper = createFreeBox(
         "sleeper",

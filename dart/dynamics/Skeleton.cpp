@@ -4286,20 +4286,15 @@ std::size_t Skeleton::getGlobalDeactivationStateVersion()
 }
 
 //==============================================================================
-bool Skeleton::hasDeactivationStateChangedSince(
-    const std::vector<SkeletonPtr>& skeletons, std::size_t globalVersion)
+const Skeleton* Skeleton::getSkeletonOf(const ShapeFrame& frame)
 {
-  // Each change records the global version it produced on its skeleton, so a
-  // change after globalVersion was read left a larger one there.
-  if (loadGlobal(gDeactivationStateVersion) == globalVersion)
-    return false;
+  // Reads Node::mBodyNode: getBodyNodePtr() would take a reference, which
+  // writes to the BodyNode.
+  const ShapeNode* shapeNode = frame.asShapeNode();
+  if (shapeNode == nullptr || shapeNode->mBodyNode == nullptr)
+    return nullptr;
 
-  for (const auto& skeleton : skeletons) {
-    if (skeleton->mDeactivationStateVersion > globalVersion)
-      return true;
-  }
-
-  return false;
+  return shapeNode->mBodyNode->getSkeletonRawPtr();
 }
 
 //==============================================================================
