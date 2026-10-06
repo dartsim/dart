@@ -1,6 +1,7 @@
 # AI Principles
 
-These principles apply to AI-assisted work on the DART 6.20 support branch.
+These principles apply to AI-assisted work on `main`, the development branch
+for the next release (currently DART 6.20).
 Keep this file short: it spends always-loaded agent context, so put procedures
 and compatibility detail in the owner docs named by `AGENTS.md`.
 
@@ -11,8 +12,8 @@ and compatibility detail in the owner docs named by `AGENTS.md`.
 - Treat live GitHub state and current command output as authoritative.
 - Do not rely on stale branch notes when a current checkout or PR can be
   inspected.
-- Before substantial or consequential work, read enough release-branch context
-  to understand the real invariant: `AGENTS.md`,
+- Before substantial or consequential work, read enough development-branch
+  context to understand the real invariant: `AGENTS.md`,
   `docs/information-architecture.md`, owner docs, affected modules and call
   paths, current release/PR state, and the verification bar. Use that context to
   choose the smallest compatibility-preserving change, not an ad hoc local
@@ -36,8 +37,9 @@ and compatibility detail in the owner docs named by `AGENTS.md`.
 - DART 6.20 is a compatibility support lane. Preserve existing public headers,
   package components, and downstream Gazebo/gz-physics behavior unless a
   maintainer explicitly accepts a breaking change.
-- Target `release-6.20`, never the `main` mirror; older-release backports use
-  `dart-backport-pr` (see `docs/onboarding/contributing.md`).
+- Target `main`, where new patches land; backports to a `release-6.*` branch
+  cut from a release tag use `dart-backport-pr` (see
+  `docs/onboarding/contributing.md`).
 
 ## Approval Boundaries
 

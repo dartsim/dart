@@ -24,7 +24,7 @@ Update documentation: $ARGUMENTS
 ## Workflow
 
 1. Create a branch from the target branch, for example:
-   `git switch --no-track -c docs/<topic> origin/release-6.20`
+   `git switch --no-track -c docs/<topic> origin/main`
 2. Edit docs and AI workflow sources only:
    - Regular docs: `docs/**`, `README.md`, `AGENTS.md`, `CONTRIBUTING.md`
    - AI source files: `.claude/commands/**`, `.claude/skills/**`

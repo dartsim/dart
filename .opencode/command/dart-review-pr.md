@@ -76,24 +76,18 @@ activity signal or submitted review, do not post a duplicate trigger.
 5. If approved, resolve only the review threads that were actually reviewed
    and addressed (thread resolution is approval-gated; see
    `docs/onboarding/ai-tools.md` § "Approval Boundaries")
-6. After the approved push, if the fixes addressed Codex review comments, ask
-   for explicit maintainer/user approval for the PR comment, then re-trigger:
+6. After the approved push moves the head, ask for explicit maintainer/user
+   approval for the PR comment, then re-trigger Codex for the new head:
    `gh pr comment $1 --body "@codex review"`
 7. Also handle `github-code-quality[bot]` review comments with the same
    no-inline-reply loop. Fix valid findings locally and push silently after
-   approval; do not re-trigger Codex solely for non-Codex bot findings unless
-   Codex comments were also addressed.
+   approval.
 8. Monitor CI: `gh pr checks $1`
 9. Check for new review, repeat until no actionable comments remain
-10. For draft PRs, mark ready after explicit approval once Codex is clean and
-    local validation passes on the current head: `pixi run test-all` for the
-    default build plus C++/Python runtime aggregate, focused `pixi run test` or
-    `pixi run test-py` when clearer attribution is useful, plus lint and the
-    Gazebo gate when the touched surface requires them; merge still waits for
-    required hosted checks unless a maintainer explicitly approves a policy
-    bypass
+10. Mark a draft ready, and merge, only as `docs/onboarding/ai-tools.md`
+    § "PR Lifecycle" describes, after explicit maintainer/user approval
 
-Review rules owner: `docs/onboarding/ai-tools.md` § "AI Review Comments" and § "Approval Boundaries"
+Review rules owner: `docs/onboarding/ai-tools.md` § "AI Review Comments", § "Approval Boundaries", and § "PR Lifecycle"
 
 ## Output
 

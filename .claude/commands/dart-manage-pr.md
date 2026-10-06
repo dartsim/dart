@@ -15,8 +15,8 @@ mutations: $ARGUMENTS
 
 - `status`: report-only; no mutations.
 - `mode=manage` (default): run the full loop below to the next terminal state.
-- `mode=merge`: maintainer-only; merges happen only under this mode, through
-  the step 5 pre-merge gate and explicit maintainer/user approval to merge.
+- `mode=merge`: merges happen only under this mode, through the step 5
+  pre-merge gate and explicit maintainer/user approval to merge.
 
 ## Invocation Contract
 
@@ -32,8 +32,9 @@ loop to the next terminal state:
 
 This explicit approval covers routine PR-maintenance mutations for that loop:
 additive fix commits and pushes, description/metadata corrections, resolving
-already-addressed review threads, rerunning failed CI jobs, and requesting a
-fresh AI review after follow-up fixes. It does **not** cover merging (see
+already-addressed review threads, rerunning failed CI jobs, requesting a fresh
+`@codex review` for a new head, and marking a draft ready once the
+"PR Lifecycle" step 2 gate passes. It does **not** cover merging (see
 `mode=merge`), force-pushes, branch deletion, PR closure, base-branch changes,
 or human reviewer requests; ask separately for those.
 
@@ -63,8 +64,8 @@ gh pr checks <PR_NUMBER>
    - Check that the base branch, title, and PR template are correct, and that
      the branch-matching DART 6.x release milestone is set; if it is missing,
      set it only after explicit maintainer/user approval.
-   - Confirm the PR targets `release-6.20` (or an older maintained `release-6.*`
-     branch for a `dart-backport-pr` backport), never the `main` mirror.
+   - Confirm the PR targets `main` (or, for a `dart-backport-pr` backport, a
+     maintained `release-6.*` branch; none exists right now).
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
    - Confirm the PR body is readable and follows template order (Summary first
@@ -128,15 +129,13 @@ gh pr checks <PR_NUMBER>
    - Never reply to AI-generated review comments from bot users such as
      `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`,
      `github-actions[bot]`, or `copilot[bot]`.
-   - When a draft PR is first published, request Codex review with a top-level
-     `@codex review` once explicit maintainer/user approval covers PR comments;
-     it can run while the PR remains draft. If Codex already shows an activity
-     signal or submitted review, do not post a duplicate trigger.
-   - Apply AI-review fixes silently. After explicit maintainer/user approval
-     and after the branch is ready, push, resolve reviewed and addressed
-     threads, and request a fresh AI review only when the approved follow-up
-     push addressed Codex review comments, or when the first trigger has a
-     concrete timeout/blocker:
+   - Request Codex review as `docs/onboarding/ai-tools.md` § "PR Lifecycle"
+     describes once explicit maintainer/user approval covers PR comments. If
+     Codex already shows an activity signal or a review of the current head,
+     do not post a duplicate trigger.
+   - Apply AI-review fixes silently. After explicit maintainer/user approval,
+     push, resolve reviewed and addressed threads, and request a fresh review
+     for the new head:
      ```bash
      gh pr comment <PR_NUMBER> --body "@codex review"
      ```
@@ -148,28 +147,21 @@ gh pr checks <PR_NUMBER>
      when a question needs clarification.
    - After posting `@codex review`, keep monitoring until a submitted review,
      a visible activity signal, or a concrete timeout/blocker is observed.
-5. Mark ready or merge only when appropriate:
-   - Confirm review requirements are satisfied and local validation matches the
-     intended transition.
-   - If the PR is draft, mark it ready after explicit approval once Codex is
-     clean and local validation passed on the current head (`pixi run
-     test-all`; focused `pixi run test`/`test-py` and the Gazebo gate as the
-     touched surface requires). Hosted CI may still be pending.
-   - `mode=merge` gate (maintainer-only): before any merge, re-run local
-     validation on the current head after the latest pushed change
-     (`pixi run test-all`, plus the Gazebo gate when downstream compatibility
-     could be affected); merge only when required hosted checks and review are
-     green, the milestone is set, an independent review recorded a clean
-     result on the current post-fix head (after findings, a clean re-review;
-     the step 4 docs-only/mechanical exemption also satisfies this), the
-     PR is not draft and GitHub reports it mergeable, and explicit merge
-     approval is given.
+5. Mark ready or merge only through `docs/onboarding/ai-tools.md`
+   § "PR Lifecycle":
    - PR comments, review re-triggers, thread resolution, reviewer requests,
      ready-for-review transitions, merges, and branch deletion are external
      mutations and require explicit maintainer/user approval.
-   - Confirm the merge method from repository settings or the user (recent
-     DART PRs prefer squash/rebase single-parent PR-title commits) and use the
-     current head SHA when merging so a moved branch cannot be merged
+   - If the PR is draft and lifecycle step 2 passes, mark it ready with
+     `gh pr ready <PR_NUMBER>`.
+   - `mode=merge` gate: before any merge, re-run local validation on the
+     current head after the latest pushed change (`pixi run test-all`, plus
+     the Gazebo gate when downstream compatibility could be affected); merge
+     only when lifecycle steps 3-5 hold, the milestone is set, an
+     independent review recorded a clean result on the current post-fix head
+     (after findings, a clean re-review; the docs-only/mechanical exemption
+     in step 4 above also satisfies this), and GitHub reports it mergeable.
+   - Use the current head SHA when merging so a moved branch cannot be merged
      accidentally.
 6. Clean up after merge:
    - Confirm the PR merged and identify the head branch before deleting. After
@@ -178,7 +170,6 @@ gh pr checks <PR_NUMBER>
      ```bash
      gh pr merge <PR_NUMBER> --squash --match-head-commit <HEAD_SHA> --delete-branch
      ```
-     Use `--rebase` or `--merge` instead of `--squash` when requested.
    - After explicit maintainer/user approval, otherwise delete only the PR
      branch after confirming it has landed (`git push origin --delete
      <HEAD_BRANCH>`, then update the local checkout); force-delete locally

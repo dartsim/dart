@@ -93,7 +93,7 @@ for scenes using the `dart` detector. Bullet, ODE, and other external collision
 backends may allocate internally, so their allocation coverage should be scoped
 to the World-owned base allocator surface instead of global heap counters.
 
-For release-branch simulation changes, also run:
+For DART 6 simulation changes, also run:
 
 ```bash
 pixi run test-all
@@ -103,4 +103,32 @@ pixi run -e gazebo test-gz
 `pixi run -e gazebo test-gz` builds and tests the pinned gz-physics suite, then
 builds the pinned gz-sim smoke test against the source-built DART plugin. Treat
 it as the downstream compatibility gate for additive `World` API and
-simulation-loop behavior changes.
+simulation-loop behavior changes. It is the forward lane: it applies
+`tools/gazebo/patches/` to gz-physics first, so it does not prove that released
+Gazebo still works.
+
+For collision, contact, constraint-solver, sleeping, or `World::step` changes,
+and before a release, also run the unpatched lanes, which build released
+gz-physics and gz-sim against this checkout, run both full suites, and fail on
+any failure DART 6.19.4 did not have:
+
+```bash
+pixi run gz-compat-ionic       # gz-physics 8.4.0, gz-sim 9.5.0
+pixi run gz-compat-jetty       # gz-physics 9.5.2, gz-sim 10.5.0
+pixi run gz-compat-harmonic    # gz-physics 7.8.0, gz-sim 8.10.0
+```
+
+A first run of a lane builds DART, gz-physics, and gz-sim (about 15 minutes
+with 12 build jobs on a 32-core workstation) and then runs the gz-sim suite
+serially (13 to 16 minutes); later runs rebuild incrementally. On
+release-6.20 the lanes report the known DART 6.20 Gazebo regressions from
+issue #3056, so build the change's base as a second variant and set
+`GZ_COMPAT_BASE_VARIANT`: failures the base also has are then reported
+without failing the lane. Changes that can let bodies sleep in Gazebo worlds
+must also run `pixi run gz-compat-ionic sleep-oracle` (it also fails when a
+scenario puts nothing to sleep) and explain every mismatch; ODE or
+collision-group changes run
+`pixi run gz-compat-jetty raycast-probe`. `tools/gazebo/README.md` covers the
+steps, the comparison, the expected-failure files, and the benchmark drivers;
+`pixi run test-gz-compat-tools` tests the comparison script and the benchmark
+world generator.

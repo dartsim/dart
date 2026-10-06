@@ -1,4 +1,4 @@
-"""Headless off-screen capture tests for the release-6.20 dartpy OSG bindings
+"""Headless off-screen capture tests for the DART 6.20 dartpy OSG bindings
 (WP-ASV.10). They exercise the setUpOffscreen / captureOffscreen /
 defaultAgentCamera bindings added on top of the WP-ASV.9 C++ helper.
 

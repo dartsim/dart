@@ -1,6 +1,6 @@
 # DART 6.20 Architecture
 
-This document owns the release branch's component map and change-routing
+This document owns the development branch's component map and change-routing
 boundaries. DART 6.20 is a compatibility lane: architecture changes must
 preserve C++17, installed APIs, package components, ABI-sensitive interfaces,
 and downstream Gazebo/gz-physics behavior unless explicitly approved.

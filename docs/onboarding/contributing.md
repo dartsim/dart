@@ -1,14 +1,15 @@
 # Contributing On The DART 6.20 Branch
 
-Keep changes focused and branch from the target release branch:
+Keep changes focused and branch from `main`, the development branch for the next
+release (currently DART 6.20):
 
 ```bash
-git fetch origin release-6.20
-git switch --no-track -c <type>/<topic> origin/release-6.20
+git fetch origin main
+git switch --no-track -c <type>/<topic> origin/main
 ```
 
-Do not push directly to `release-*`. After explicit maintainer or user approval,
-push topic branches with matching local and remote names:
+Do not push directly to `main` or `release-*`. After explicit maintainer or
+user approval, push topic branches with matching local and remote names:
 
 ```bash
 branch=$(git branch --show-current)
@@ -48,11 +49,10 @@ N=${DART_SAFE_JOBS:-$(python3 scripts/parallel_jobs.py)}
 DART_PARALLEL_JOBS=$N CTEST_PARALLEL_LEVEL=$N pixi run -e gazebo test-gz
 ```
 
-Target `release-6.20` (with the branch-matching `DART 6.20.0` milestone);
-`main` mirrors `release-6.20` and is fast-forwarded at each release, so never
-target `main`. Backports to an older maintained `release-6.*` branch use
-`dart-backport-pr`. Dependency-minimization work on DART 6.20 must preserve installed
-headers, package components, and downstream behavior unless a maintainer
-explicitly approves a breaking change.
+Target `main` (with the `DART 6.20.0` milestone); new patches land there, and
+there is no maintenance branch. Backports to a `release-6.*` branch cut from a
+release tag use `dart-backport-pr`. Dependency-minimization
+work on DART 6.20 must preserve installed headers, package components, and
+downstream behavior unless a maintainer explicitly approves a breaking change.
 
-Use the branch-matching DART 6.x release milestone for release-branch PRs.
+Use the matching DART 6.x release milestone for PRs.

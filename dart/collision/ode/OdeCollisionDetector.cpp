@@ -56,6 +56,7 @@
 #include <deque>
 #include <functional>
 #include <limits>
+#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -66,6 +67,8 @@ namespace collision {
 
 namespace {
 
+class PairIndex;
+
 void CollisionCallback(void* data, dGeomID o1, dGeomID o2);
 
 void reportContacts(
@@ -75,7 +78,10 @@ void reportContacts(
     OdeCollisionObject* b2,
     const CollisionOption& option,
     CollisionResult& result,
-    std::vector<OdeCollisionDetector::ContactHistoryItem>* history);
+    std::size_t numPriorContacts,
+    std::vector<OdeCollisionDetector::ContactHistoryItem>* history,
+    PairIndex& historyPairs,
+    std::size_t numObjects);
 
 Contact convertContact(
     const dContactGeom& fclContact,
@@ -88,7 +94,13 @@ std::size_t reportCylinderPlaneSupportContacts(
     const std::vector<OdeCollisionObject*>& planes,
     const CollisionOption& option,
     CollisionResult* result,
+    PairIndex& resultPairs,
     bool cylinderFirst = true);
+
+void pruneHistory(
+    std::vector<OdeCollisionDetector::ContactHistoryItem>& history,
+    const CollisionResult& result,
+    PairIndex& resultPairs);
 
 #if DART_ODE_HAS_LIBCCD_BOX_CYL
 void alignBoxCylinderNormal(Contact& contact);
@@ -112,6 +124,161 @@ OdeCollisionDetector::CollObjPair MakeNewPair(
     std::swap(o1, o2);
   }
   return std::make_pair(o1, o2);
+}
+
+OdeCollisionDetector::CollObjPair pairOf(const Contact& contact)
+{
+  return MakeNewPair(contact.collisionObject1, contact.collisionObject2);
+}
+
+OdeCollisionDetector::CollObjPair pairOf(
+    const OdeCollisionDetector::ContactHistoryItem& item)
+{
+  return item.pair;
+}
+
+bool lessPair(
+    const OdeCollisionDetector::CollObjPair& a,
+    const OdeCollisionDetector::CollObjPair& b)
+{
+  const std::less<CollisionObject*> less;
+  return less(a.first, b.first)
+         || (a.first == b.first && less(a.second, b.second));
+}
+
+/// Finds collision-object pairs during one collide() call in a sequence that
+/// the call appends to: the contact history, or the contacts in the result.
+///
+/// The first lookups of a call scan the sequence like a plain loop, which is
+/// cheapest when a call makes only a few. Later lookups binary-search a sorted
+/// index of the sequence's pairs. Entries appended after the index was built
+/// form a short unsorted tail that lookups scan until it is folded in. The
+/// index order only serves exact-match lookups, so no result depends on
+/// pointer order.
+class PairIndex
+{
+public:
+  using Entry = std::pair<OdeCollisionDetector::CollObjPair, std::size_t>;
+
+  static constexpr std::size_t npos = std::numeric_limits<std::size_t>::max();
+
+  /// Borrows `storage`, a thread-local buffer, for this collide() call so that
+  /// steady-state calls reuse its capacity instead of allocating. Swapping
+  /// instead of aliasing gives a nested collide() on the same thread (e.g.,
+  /// from a collision filter) its own buffer. If the sequence can also lose
+  /// entries, `eraseCount` must change whenever it does.
+  explicit PairIndex(
+      std::vector<Entry>& storage, const std::size_t* eraseCount = nullptr)
+    : mStorage(storage), mEraseCount(eraseCount)
+  {
+    mEntries.swap(mStorage);
+    mEntries.clear();
+  }
+
+  ~PairIndex()
+  {
+    mEntries.swap(mStorage);
+  }
+
+  PairIndex(const PairIndex&) = delete;
+  PairIndex& operator=(const PairIndex&) = delete;
+
+  /// Returns the position in `items` of an entry whose pair is `pair`, or
+  /// npos if there is none.
+  template <typename Items>
+  std::size_t find(
+      const Items& items, const OdeCollisionDetector::CollObjPair& pair)
+  {
+    std::size_t scanBegin = 0u;
+    if (mNumLinearLookups < kNumLinearLookups) {
+      ++mNumLinearLookups;
+    } else {
+      if (!isCurrent(items) || items.size() - mNumIndexed > kMaxTailSize)
+        build(items);
+      const auto it = std::lower_bound(
+          mEntries.begin(),
+          mEntries.end(),
+          pair,
+          [](const Entry& entry, const OdeCollisionDetector::CollObjPair& key) {
+            return lessPair(entry.first, key);
+          });
+      if (it != mEntries.end() && it->first == pair)
+        return it->second;
+      scanBegin = mNumIndexed;
+    }
+
+    for (std::size_t i = scanBegin; i < items.size(); ++i) {
+      if (pairOf(items[i]) == pair)
+        return i;
+    }
+    return npos;
+  }
+
+private:
+  /// Lookups per collide() call answered by a plain scan before indexing.
+  static constexpr std::size_t kNumLinearLookups = 8u;
+
+  /// Unindexed entries a lookup may scan before the index is rebuilt.
+  static constexpr std::size_t kMaxTailSize = 64u;
+
+  /// Returns whether the indexed entries are still at their indexed positions.
+  /// Appended entries form the tail. Erased entries shift the rest, so an
+  /// erasure (signaled by mEraseCount) invalidates the index.
+  template <typename Items>
+  bool isCurrent(const Items& items) const
+  {
+    return mIsBuilt && items.size() >= mNumIndexed
+           && (!mEraseCount || *mEraseCount == mBuiltEraseCount);
+  }
+
+  template <typename Items>
+  void build(const Items& items)
+  {
+    mEntries.clear();
+    for (std::size_t i = 0u; i < items.size(); ++i) {
+      const auto pair = pairOf(items[i]);
+      // A pair's contacts are contiguous, so this drops most duplicates.
+      if (mEntries.empty() || mEntries.back().first != pair)
+        mEntries.emplace_back(pair, i);
+    }
+    std::sort(
+        mEntries.begin(), mEntries.end(), [](const Entry& a, const Entry& b) {
+          return lessPair(a.first, b.first);
+        });
+    mNumIndexed = items.size();
+    if (mEraseCount)
+      mBuiltEraseCount = *mEraseCount;
+    mIsBuilt = true;
+  }
+
+  std::vector<Entry>& mStorage;
+  const std::size_t* mEraseCount;
+  std::vector<Entry> mEntries;
+  std::size_t mNumIndexed = 0u;
+  std::size_t mBuiltEraseCount = 0u;
+  std::size_t mNumLinearLookups = 0u;
+  bool mIsBuilt = false;
+};
+
+std::vector<PairIndex::Entry>& historyPairStorage()
+{
+  thread_local std::vector<PairIndex::Entry> storage;
+  return storage;
+}
+
+std::vector<PairIndex::Entry>& resultPairStorage()
+{
+  thread_local std::vector<PairIndex::Entry> storage;
+  return storage;
+}
+
+/// Counts erasures from contact histories on this thread. Mid-call erasures
+/// happen when, e.g., a collision filter removes an object from another group
+/// of the same detector or runs a nested collide().
+std::size_t& historyEraseCount()
+{
+  thread_local std::size_t count = 0u;
+  return count;
 }
 
 bool hasTransformMoved(
@@ -147,24 +314,21 @@ void refreshHistoryTransforms(OdeCollisionDetector::ContactHistoryItem& item)
   // several small kinematic pose changes still invalidate stale world points.
 }
 
-OdeCollisionDetector::ContactHistoryItem& FindPairInHist(
+void addHistoryItem(
     std::vector<OdeCollisionDetector::ContactHistoryItem>& cache,
-    const OdeCollisionDetector::CollObjPair& pair)
+    const OdeCollisionDetector::CollObjPair& pair,
+    std::size_t numObjects)
 {
-  for (auto& item : cache) {
-    if (pair.first == item.pair.first && pair.second == item.pair.second) {
-      return item;
-    }
-  }
-
-  OdeCollisionDetector::ContactHistoryItem newItem;
+  // Regrowing the history copies every entry's deque, so grow it straight to
+  // one entry per collision object, and construct the entry in place rather
+  // than copying a temporary.
+  if (cache.size() == cache.capacity())
+    cache.reserve(std::max(2u * cache.size(), numObjects));
+  auto& newItem = cache.emplace_back();
   newItem.pair = pair;
   newItem.transform1 = Eigen::Isometry3d::Identity();
   newItem.transform2 = Eigen::Isometry3d::Identity();
   newItem.hasTransforms = false;
-  cache.push_back(newItem);
-
-  return cache.back();
 }
 
 void eraseHistoryForObject(
@@ -182,6 +346,7 @@ void eraseHistoryForObject(
             return item.pair.first == object || item.pair.second == object;
           }),
       cache.end());
+  ++historyEraseCount();
 }
 
 struct OdeCollisionCallbackData
@@ -203,13 +368,31 @@ struct OdeCollisionCallbackData
   /// result.
   std::size_t numContacts;
 
+  /// The number of contacts the result already held before this collide()
+  /// call. collide() does not clear the result, so a caller may pass one that
+  /// still holds contacts from an earlier call.
+  std::size_t numPriorContacts;
+
+  /// The number of collision objects in the collided group(s).
+  std::size_t numObjects;
+
+  /// Finds pairs in *history.
+  PairIndex historyPairs;
+
+  /// Finds pairs among all contacts in *result, including the prior ones.
+  PairIndex resultPairs;
+
   OdeCollisionCallbackData(
       const CollisionOption& option, CollisionResult* result)
     : option(option),
       result(result),
       history(nullptr),
       done(false),
-      numContacts(0u)
+      numContacts(0u),
+      numPriorContacts(result ? result->getNumContacts() : 0u),
+      numObjects(0u),
+      historyPairs(historyPairStorage(), &historyEraseCount()),
+      resultPairs(resultPairStorage())
   {
     // Do nothing
   }
@@ -278,6 +461,7 @@ bool OdeCollisionDetector::collide(
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
   data.history = &mContactHistory;
+  data.numObjects = odeGroup->getNumShapeFrames();
 
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
   data.numContacts += reportCylinderPlaneSupportContacts(
@@ -285,10 +469,11 @@ bool OdeCollisionDetector::collide(
       odeGroup->getPlaneCollisionObjects(),
       option,
       result,
+      data.resultPairs,
       true);
 
   if (result) {
-    pruneContactHistory(*result);
+    pruneHistory(mContactHistory, *result, data.resultPairs);
   }
 
   return data.numContacts > 0;
@@ -310,6 +495,8 @@ bool OdeCollisionDetector::collide(
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
   data.history = &mContactHistory;
+  data.numObjects
+      = odeGroup1->getNumShapeFrames() + odeGroup2->getNumShapeFrames();
 
   dSpaceCollide2(
       reinterpret_cast<dGeomID>(odeGroup1->getOdeSpaceId()),
@@ -321,16 +508,18 @@ bool OdeCollisionDetector::collide(
       odeGroup2->getPlaneCollisionObjects(),
       option,
       result,
+      data.resultPairs,
       true);
   data.numContacts += reportCylinderPlaneSupportContacts(
       odeGroup2->getCylinderCollisionObjects(),
       odeGroup1->getPlaneCollisionObjects(),
       option,
       result,
+      data.resultPairs,
       false);
 
   if (result) {
-    pruneContactHistory(*result);
+    pruneHistory(mContactHistory, *result, data.resultPairs);
   }
 
   return data.numContacts > 0;
@@ -444,7 +633,16 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
 
   if (result) {
     reportContacts(
-        numc, odeResult, collObj1, collObj2, option, *result, cdData->history);
+        numc,
+        odeResult,
+        collObj1,
+        collObj2,
+        option,
+        *result,
+        cdData->numPriorContacts,
+        cdData->history,
+        cdData->historyPairs,
+        cdData->numObjects);
   }
 }
 
@@ -456,7 +654,10 @@ void reportContacts(
     OdeCollisionObject* b2,
     const CollisionOption& option,
     CollisionResult& result,
-    std::vector<OdeCollisionDetector::ContactHistoryItem>* history)
+    std::size_t numPriorContacts,
+    std::vector<OdeCollisionDetector::ContactHistoryItem>* history,
+    PairIndex& historyPairs,
+    std::size_t numObjects)
 {
   if (0u == numContacts)
     return;
@@ -541,30 +742,44 @@ void reportContacts(
   const auto pair = MakeNewPair(b1, b2);
   const std::size_t pairSpanEnd
       = pairContactsBegin + static_cast<std::size_t>(contactsToCopy);
-  const std::size_t pairContactCount = pairSpanEnd - pairContactsBegin;
+  // collide() does not clear `result`, so a caller may pass one that already
+  // holds contacts for `pair` from an earlier call (e.g., colliding the same
+  // group twice into one result). Those precede the span and still count as
+  // this pair's current contacts, so scan from the front in that case.
+  const std::size_t pairScanBegin
+      = numPriorContacts == 0u ? pairContactsBegin : 0u;
+  const auto isPairContact = [&pair](const Contact& contact) {
+    return MakeNewPair(contact.collisionObject1, contact.collisionObject2)
+           == pair;
+  };
+  std::size_t pairContactCount = 0u;
+  for (std::size_t i = pairScanBegin; i < pairSpanEnd; ++i) {
+    if (isPairContact(result.getContact(i)))
+      ++pairContactCount;
+  }
   const std::size_t pairTarget
       = std::min<std::size_t>(3u, option.getEffectiveMaxNumContactsPerPair());
 
-  auto foundHistory = std::find_if(
-      history->begin(),
-      history->end(),
-      [&pair](const OdeCollisionDetector::ContactHistoryItem& item) {
-        return pair.first == item.pair.first && pair.second == item.pair.second;
-      });
-  if (pairContactCount >= pairTarget && foundHistory == history->end()) {
+  auto historyPos = historyPairs.find(*history, pair);
+  if (pairContactCount >= pairTarget && historyPos == PairIndex::npos) {
     return;
   }
 
-  auto& historyItem = foundHistory != history->end()
-                          ? *foundHistory
-                          : FindPairInHist(*history, pair);
+  if (historyPos == PairIndex::npos) {
+    historyPos = history->size();
+    addHistoryItem(*history, pair, numObjects);
+  }
+  auto& historyItem = (*history)[historyPos];
   refreshHistoryTransforms(historyItem);
   auto& pastContacsVec = historyItem.history;
 
   bool sliding = false;
   constexpr double slidingThreshold = 1e-3;
-  for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
+  for (std::size_t i = pairScanBegin; i < pairSpanEnd; ++i) {
     const auto& curr_cont = result.getContact(i);
+    if (!isPairContact(curr_cont))
+      continue;
+
     if (computeTangentialSpeed(curr_cont) > slidingThreshold) {
       sliding = true;
       break;
@@ -596,8 +811,11 @@ void reportContacts(
        ++it) {
     auto past_cont = *it;
     bool matchesCurrentContact = false;
-    for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
+    for (std::size_t i = pairScanBegin; i < pairSpanEnd; ++i) {
       const auto& curr_cont = result.getContact(i);
+      if (!isPairContact(curr_cont))
+        continue;
+
       auto dist_v = past_cont.point - curr_cont.point;
       const auto dist_m = (dist_v.transpose() * dist_v).coeff(0, 0);
       if (dist_m < 0.01) {
@@ -617,8 +835,10 @@ void reportContacts(
     if (--missing == 0u)
       break;
   }
-  for (std::size_t i = pairContactsBegin; i < pairSpanEnd; ++i) {
-    pastContacsVec.push_back(result.getContact(i));
+  for (std::size_t i = pairScanBegin; i < pairSpanEnd; ++i) {
+    const auto& curr_cont = result.getContact(i);
+    if (isPairContact(curr_cont))
+      pastContacsVec.push_back(curr_cont);
   }
 
   const auto size = pastContacsVec.size();
@@ -657,19 +877,21 @@ Contact convertContact(
 //==============================================================================
 bool resultHasContactForPair(
     const CollisionResult* result,
-    const OdeCollisionObject* object1,
-    const OdeCollisionObject* object2)
+    OdeCollisionObject* object1,
+    OdeCollisionObject* object2,
+    PairIndex* resultPairs)
 {
   if (!result)
     return false;
 
+  const auto pair = MakeNewPair(object1, object2);
+  // resultPairs also covers the contacts this pass has added so far.
+  if (resultPairs)
+    return resultPairs->find(result->getContacts(), pair) != PairIndex::npos;
+
   for (const auto& contact : result->getContacts()) {
-    if ((contact.collisionObject1 == object1
-         && contact.collisionObject2 == object2)
-        || (contact.collisionObject1 == object2
-            && contact.collisionObject2 == object1)) {
+    if (pairOf(contact) == pair)
       return true;
-    }
   }
 
   return false;
@@ -681,6 +903,7 @@ bool reportCylinderPlaneSupportContact(
     OdeCollisionObject* planeObject,
     const CollisionOption& option,
     CollisionResult* result,
+    PairIndex* resultPairs,
     bool cylinderFirst)
 {
   const auto* cylinderShape
@@ -697,7 +920,7 @@ bool reportCylinderPlaneSupportContact(
   if (option.getEffectiveMaxNumContactsPerPair() == 0u)
     return false;
 
-  if (resultHasContactForPair(result, cylinderObject, planeObject))
+  if (resultHasContactForPair(result, cylinderObject, planeObject, resultPairs))
     return false;
 
   const Eigen::Vector3d rawNormal
@@ -770,16 +993,26 @@ std::size_t reportCylinderPlaneSupportContacts(
     const std::vector<OdeCollisionObject*>& planes,
     const CollisionOption& option,
     CollisionResult* result,
+    PairIndex& resultPairs,
     bool cylinderFirst)
 {
   if (cylinders.empty() || planes.empty())
     return 0u;
 
+  // The collision filter runs before each lookup below. DART's own
+  // BodyNodeCollisionFilter only reads state, but any other filter could
+  // rewrite the result in between, so then scan the result instead.
+  const auto* filter = option.collisionFilter.get();
+  PairIndex* pairs
+      = (!filter || typeid(*filter) == typeid(BodyNodeCollisionFilter))
+            ? &resultPairs
+            : nullptr;
+
   std::size_t reported = 0u;
   for (auto* cylinder : cylinders) {
     for (auto* plane : planes) {
       if (reportCylinderPlaneSupportContact(
-              cylinder, plane, option, result, cylinderFirst)) {
+              cylinder, plane, option, result, pairs, cylinderFirst)) {
         ++reported;
       }
     }
@@ -1075,34 +1308,39 @@ bool shouldUseContactHistory(
   return hasTrackedBody(object1) && hasTrackedBody(object2);
 }
 
+void pruneHistory(
+    std::vector<OdeCollisionDetector::ContactHistoryItem>& history,
+    const CollisionResult& result,
+    PairIndex& resultPairs)
+{
+  if (history.empty())
+    return;
+
+  if (result.getNumContacts() == 0u) {
+    history.clear();
+    ++historyEraseCount();
+    return;
+  }
+
+  // Check every contact in the result, including the ones a caller put there
+  // before this collide() call.
+  for (auto& pastContact : history) {
+    if (resultPairs.find(result.getContacts(), pastContact.pair)
+        == PairIndex::npos) {
+      pastContact.history.clear();
+    }
+  }
+}
+
 } // anonymous namespace
 
 //==============================================================================
 void OdeCollisionDetector::pruneContactHistory(const CollisionResult& result)
 {
-  if (mContactHistory.empty())
-    return;
-
-  if (result.getNumContacts() == 0u) {
-    mContactHistory.clear();
-    return;
-  }
-
-  const auto& contacts = result.getContacts();
-  for (auto& pastContact : mContactHistory) {
-    bool clear = true;
-    for (const auto& current : contacts) {
-      auto currentPair
-          = MakeNewPair(current.collisionObject1, current.collisionObject2);
-      if (pastContact.pair == currentPair) {
-        clear = false;
-        break;
-      }
-    }
-    if (clear) {
-      pastContact.history.clear();
-    }
-  }
+  // collide() calls pruneHistory() directly so that the prune shares one pair
+  // index with the cylinder-plane pass.
+  PairIndex resultPairs(resultPairStorage());
+  pruneHistory(mContactHistory, result, resultPairs);
 }
 
 //==============================================================================
@@ -1115,6 +1353,7 @@ void OdeCollisionDetector::clearContactHistoryFor(const CollisionObject* object)
 void OdeCollisionDetector::clearContactHistory()
 {
   mContactHistory.clear();
+  ++historyEraseCount();
 }
 
 } // namespace collision

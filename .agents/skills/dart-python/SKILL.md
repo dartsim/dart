@@ -46,7 +46,7 @@ pixi run test-py         # Run Python tests
 
 ## Wheel Building
 
-This release branch ships Pixi-managed wheel tasks. The core tasks are
+This development branch ships Pixi-managed wheel tasks. The core tasks are
 `wheel-build-core`, `wheel-repair-linux-core`, `wheel-repair-macos-core`,
 `wheel-repair-windows-core`, `wheel-verify-core`, and `wheel-test-core`;
 the per-Python environments `py310-wheel` through `py313-wheel` expose

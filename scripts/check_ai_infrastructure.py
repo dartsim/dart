@@ -724,8 +724,8 @@ def check_branch_profile(
 
     expected = {
         "schema_version": 1,
-        "profile": "release-6.20",
-        "base_ref": "origin/release-6.20",
+        "profile": "main",
+        "base_ref": "origin/main",
         "cpp_standard": "C++17",
         "python_binding": "pybind11",
         "io_namespace": "dart::utils",
@@ -1760,8 +1760,8 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 plain,
             ):
                 errors.append(
-                    f"{path.relative_to(root)}:{line_number}: remove stale "
-                    "main-only nanobind cache guidance"
+                    f"{path.relative_to(root)}:{line_number}: remove "
+                    "unsupported nanobind cache guidance"
                 )
             if "test-all" not in plain:
                 continue
@@ -3730,8 +3730,8 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
     release_fix = (root / ".claude" / "commands" / "dart-release-ci-fix.md").read_text(
         encoding="utf-8"
     )
-    if "release-6.20" not in release_fix or "release-6.19" in release_fix:
-        errors.append("dart-release-ci-fix: release default must be release-6.20")
+    if "Default to `main`" not in release_fix or "release-6.19" in release_fix:
+        errors.append("dart-release-ci-fix: development default must be main")
 
     for path in source_paths(root):
         if not path.exists():
@@ -3763,18 +3763,39 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
 
 def check_ci_wiring(root: Path, errors: list[str]) -> None:
     workflow = root / ".github" / "workflows" / "ci_ubuntu.yml"
+    pixi_path = root / "pixi.toml"
+    try:
+        tasks = read_toml(pixi_path).get("tasks", {}) if pixi_path.exists() else {}
+    except tomllib.TOMLDecodeError:
+        tasks = {}  # The pixi.toml checks report unparsable manifests.
+    lint = tasks.get("check-lint")
+    if lint is not None:
+        # String/list shorthand tasks have no dependencies at all.
+        depends_on = lint.get("depends-on", []) if isinstance(lint, dict) else []
+        if isinstance(depends_on, (str, dict)):
+            depends_on = [depends_on]
+        dependencies = [
+            entry.get("task") if isinstance(entry, dict) else entry
+            for entry in depends_on
+        ]
+        for task in ("check-ai-commands", "check-ai-infra"):
+            if task not in dependencies:
+                errors.append(
+                    f"pixi.toml: `check-lint` must depend on `{task}` "
+                    "(CI Linux runs the AI checks through it)"
+                )
     if not workflow.exists():
         errors.append(".github/workflows/ci_ubuntu.yml: missing workflow")
     else:
         content = workflow.read_text(encoding="utf-8")
+        # check-lint runs check-ai-commands and check-ai-infra (verified
+        # above); test-ai-infra also exercises the agent scenarios.
         expected_commands = (
-            "pixi run check-ai-commands",
-            "pixi run check-ai-infra",
+            "pixi run check-lint",
             "pixi run test-ai-infra",
-            "scripts/check_ai_infrastructure.py --scenarios",
         )
         for command in expected_commands:
-            if command not in content:
+            if not re.search(re.escape(command) + r"(?![\w-])", content):
                 errors.append(
                     f".github/workflows/ci_ubuntu.yml: missing AI check `{command}`"
                 )
@@ -3787,11 +3808,10 @@ def check_ci_wiring(root: Path, errors: list[str]) -> None:
         visual_section = content.partition(visual_step_name)[2].partition(
             "\n      - name:"
         )[0]
-        conditions = re.findall(r"(?m)^\s*if:\s*(.*?)\s*$", visual_section)
-        if conditions != ["matrix.build_type == 'Release'"]:
+        if re.search(r"(?m)^\s*if:", visual_section):
             errors.append(
-                ".github/workflows/ci_ubuntu.yml: visual smoke must run for "
-                "exactly the Release matrix entry"
+                ".github/workflows/ci_ubuntu.yml: visual smoke must run "
+                "unconditionally in the Release job"
             )
         if "continue-on-error" in visual_section:
             errors.append(
@@ -4511,7 +4531,7 @@ def exercise_scenarios(
                 )
                 continue
             if (root / relative).exists():
-                local_errors.append(f"forbidden main-only path exists `{forbidden}`")
+                local_errors.append(f"forbidden path exists `{forbidden}`")
             if forbidden in route_and_scope:
                 local_errors.append(
                     f"forbidden path leaks into route/scope `{forbidden}`"
@@ -4821,7 +4841,7 @@ def doctor_report(root: Path) -> dict[str, Any]:
         "root": str(root),
         "branch": branch or "(detached)",
         "profile": {
-            "name": "release-6.20",
+            "name": "main",
             "cpp_standard": "C++17",
             "python_binding": "pybind11",
             "io_namespace": "dart::utils",

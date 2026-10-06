@@ -1,6 +1,6 @@
 [workspace]
 name = "DART"
-version = "6.19.4"
+version = "6.19.5"
 description = "Dynamic Animation and Robotics Toolkit"
 authors = ["Jeongseok Lee <jslee02@gmail.com>"]
 channels = ["conda-forge"]
@@ -205,6 +205,17 @@ test-ai-infra = { cmd = [
   "tests/test_sync_ai_commands.py",
   "tests/test_ai_infrastructure.py",
   "tests/test_install_git_hooks.py",
+  "-q",
+] }
+
+# The Gazebo compatibility lanes' failure comparison and benchmark world
+# generator (tools/gazebo); run after changing either.
+test-gz-compat-tools = { cmd = [
+  "python",
+  "-I",
+  "scripts/run_pytest.py",
+  "tests/test_gz_compat_compare.py",
+  "tests/test_gz_bench_worlds.py",
   "-q",
 ] }
 
@@ -1184,6 +1195,89 @@ test-gz-sim = { cmd = "bash scripts/run_gz_sim_task.sh test", depends-on = [
 
 test-gz = { depends-on = ["test-gz-physics", "test-gz-sim"] }
 
+# Unpatched Gazebo compatibility lane (Ionic). Unlike `test-gz`, it builds
+# released gz-physics/gz-sim without `tools/gazebo/patches`, runs the full
+# gz-physics suite and the full gz-sim INTEGRATION suite, and compares the
+# failures with tools/gazebo/compat/ionic-expected-failures.txt. Pass a step
+# (for example `sleep-oracle`) to run one stage; see tools/gazebo/README.md.
+[feature.gazebo.target.linux-64.tasks]
+gz-compat-ionic = { cmd = "bash tools/gazebo/compat/lane.sh ionic" }
+
+#=============================================
+# Features: unpatched Gazebo compatibility lanes
+#=============================================
+# Harmonic and Jetty pin newer urdfdom/fmt/spdlog than the default feature, so
+# their environments skip the default feature and take DART's build
+# dependencies from `gz-compat-base` instead.
+
+[feature.gz-compat-base]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[feature.gz-compat-base.dependencies]
+assimp = "*"
+backward-cpp = ">=1.6"
+bullet-cpp = ">=3.25"
+c-compiler = "*"
+cmake = ">=4.0.2,<4.3.4"
+console_bridge = "*"
+cxx-compiler = "*"
+eigen = ">=3.4.0,<4"
+fcl = ">=0.7.0,<0.8"
+fmt = "*"
+git = ">=1"
+libboost-devel = "*"
+libode = ">=0.16.2"
+ninja = ">=1.12.1,<2"
+octomap = "*"
+pkg-config = "*"
+python = ">=3.10"
+spdlog = ">=1.15.3,<2"
+tinyxml2 = "*"
+urdfdom = "*"
+
+[feature.gazebo-harmonic]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[feature.gazebo-harmonic.dependencies]
+libgz-cmake3 = ">=3.5.5,<4"
+libgz-common5 = ">=5.7.1,<6"
+libgz-fuel-tools9 = ">=9.1.1,<10"
+libgz-gui8 = ">=8.4.0,<9"
+libgz-math7 = ">=7.7.0,<8"
+libgz-msgs10 = ">=10.3.2,<11"
+libgz-plugin2 = ">=2.0.4,<3"
+libgz-rendering8 = ">=8.2.2,<9"
+libgz-sensors8 = ">=8.2.2,<9"
+libgz-transport13 = ">=13.5.0,<14"
+libgz-utils2 = ">=2.2.1,<3"
+libsdformat14 = ">=14.8.0,<15"
+
+[feature.gazebo-harmonic.tasks]
+gz-compat-harmonic = { cmd = "bash tools/gazebo/compat/lane.sh harmonic" }
+
+[feature.gazebo-jetty]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[feature.gazebo-jetty.dependencies]
+libgz-cmake = ">=5.1.1,<6"
+libgz-common = ">=7.3.0,<8"
+libgz-fuel-tools = ">=11.0.0,<12"
+libgz-gui = ">=10.0.0,<11"
+libgz-math = ">=9.2.0,<10"
+libgz-msgs = ">=12.0.2,<13"
+libgz-plugin = ">=4.0.0,<5"
+libgz-rendering = ">=10.0.2,<11"
+libgz-sensors = ">=10.1.0,<11"
+libgz-transport = ">=15.1.0,<16"
+libgz-utils = ">=4.0.0,<5"
+libsdformat = ">=16.1.0,<17"
+
+[feature.gazebo-jetty.tasks]
+gz-compat-jetty = { cmd = "bash tools/gazebo/compat/lane.sh jetty" }
+
 #==============
 # Features
 #==============
@@ -1512,6 +1606,14 @@ wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp313"] }] }
 [environments]
 default = ["assimp6", "default-python"]
 gazebo = ["gazebo"]
+gazebo-harmonic = { features = [
+  "gz-compat-base",
+  "gazebo-harmonic",
+], no-default-feature = true }
+gazebo-jetty = { features = [
+  "gz-compat-base",
+  "gazebo-jetty",
+], no-default-feature = true }
 mujoco = { features = ["mujoco"], no-default-feature = true }
 py310-wheel = ["assimp6", "py310-wheel"]
 py311-wheel = ["assimp6", "py311-wheel"]

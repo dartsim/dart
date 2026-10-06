@@ -800,6 +800,36 @@ StepAllocationMeasurement measureNativeSoftAdaptiveActivationSteadyState(
       world, allocator, kSoftSkelContactWarmupSteps);
 }
 
+// The stacked boxes with CollisionOption::maxNumContacts at half their contact
+// demand, so ConstraintSolver trims the contacts to the budget every step
+// (#3056). Deactivation is off so no step skips the solver.
+StepAllocationMeasurement measureSaturatedContactBudgetSteadyState(
+    const std::string& name, dart::test::CountingMemoryAllocator& allocator)
+{
+  auto world = createCountedStackedBoxesWorld(
+      name, dart::collision::DARTCollisionDetector::create(), allocator);
+  dart::simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+  for (int i = 0; i < kWarmupSteps; ++i) {
+    world->step();
+  }
+
+  const std::size_t demand = world->getLastCollisionResult().getNumContacts();
+  auto& option = world->getConstraintSolver()->getCollisionOption();
+  option.maxNumContacts = demand / 2u;
+  EXPECT_GT(option.maxNumContacts, 1u);
+  for (int i = 0; i < kWarmupSteps; ++i) {
+    world->step();
+  }
+
+  const auto measurement = measureWorldStepsNow(
+      world, allocator, kMeasuredSteps, 2 * kWarmupSteps);
+  EXPECT_EQ(measurement.lastStepContacts, option.maxNumContacts)
+      << "the scene no longer exceeds its contact budget";
+  return measurement;
+}
+
 ::testing::AssertionResult hasNoGlobalHeapAllocations(
     const StepAllocationMeasurement& measurement)
 {
@@ -1108,6 +1138,37 @@ TEST(StepAllocation, AllocationGateRejectsInjectedAllocationMeasurement)
   EXPECT_FALSE(hasNoCountingAllocatorGrowth(measurement));
 }
 
+// The DOF accessors pass their own name down for error messages, which must
+// not cost a std::string per call. The long-named accessors checked here
+// exceed any small-string buffer, so a std::string would heap-allocate. The
+// returned Eigen vectors use malloc, which this counter does not see.
+TEST(StepAllocation, MetaSkeletonDofAccessorsHaveNoOperatorNewAllocations)
+{
+  const char* skipReason = strictGlobalHeapGateSkipReason();
+  if (skipReason[0] != '\0') {
+    GTEST_SKIP() << skipReason;
+  }
+
+  auto skeleton = dart::dynamics::Skeleton::create();
+  skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  const std::vector<std::size_t> indices{0u, 5u};
+  Eigen::VectorXd all;
+  Eigen::VectorXd some;
+
+  dart::test::ScopedHeapAllocationCounter counter;
+  all = skeleton->getAccelerationLowerLimits();
+  some = skeleton->getAccelerationLowerLimits(indices);
+  skeleton->setAccelerationLowerLimits(all);
+  skeleton->setAccelerationLowerLimits(indices, some);
+  skeleton->setAccelerationLowerLimit(
+      0u, skeleton->getAccelerationLowerLimit(0u));
+  counter.stop();
+
+  EXPECT_EQ(counter.allocationCount(), 0u);
+  EXPECT_EQ(all.size(), 6);
+  EXPECT_EQ(some.size(), 2);
+}
+
 TEST(
     StepAllocation, NativeExplicitFirstPostBakeHasNoGlobalOrBaseAllocatorGrowth)
 {
@@ -1260,6 +1321,37 @@ TEST(StepAllocation, NativeSoftStackSteadyStateHasNoRawMallocWhenAvailable)
 {
   expectNativeSoftStackRawHeapGate(
       "native_dart_soft_stack_steady_state_raw_gate");
+}
+
+TEST(
+    StepAllocation,
+    NativeSaturatedContactBudgetSteadyStateHasNoGlobalOrBaseAllocatorGrowth)
+{
+  const std::string label = "native_dart_saturated_contact_budget_gate";
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement
+      = measureSaturatedContactBudgetSteadyState(label, allocator);
+  reportMeasurement(label, measurement, "contact demand above the budget");
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+}
+
+TEST(
+    StepAllocation,
+    NativeSaturatedContactBudgetSteadyStateHasNoRawMallocWhenAvailable)
+{
+  const std::string label = "native_dart_saturated_contact_budget_raw_gate";
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement
+      = measureSaturatedContactBudgetSteadyState(label, allocator);
+  reportMeasurement(label, measurement, "contact demand above the budget");
+  if (measurement.rawHeap.skipped) {
+    recordProperty(label + "_raw_malloc_skipped", "true");
+    recordProperty(
+        label + "_raw_malloc_skip_reason", measurement.rawHeap.skipReason);
+    GTEST_SKIP() << measurement.rawHeap.skipReason;
+  }
+  EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
 }
 
 TEST(
