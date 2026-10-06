@@ -32,6 +32,7 @@ resting-profile row is resolved by the accepted completion audit.
 | WS-D SIMD enablement | 05-simd-enablement-lane.md | PG.40–PG.42 | active (PG.40 folded into PG.42; PG.41 waits for PG.10 seam evidence) |
 | WS-E infra/evidence | 06-infra-evidence-lane.md | PG.01–PG.04 | open (PG.01 done; PG.02 #3327; PG.03 #3337; PG.04 blocked D4) |
 | WS-F DART collision backend | ../../design/dart6_collision_backends.md | lifecycle | delivered for DART 6.20 by #3381; any default or dependency change is later-release work |
+| Round 3 Gazebo path | README.md (Round 3) | PR-A–PR-J | active (PR-A tooling in review; PR-B–PR-J follow its gates) |
 
 ## Packet board
 
