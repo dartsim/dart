@@ -19,6 +19,7 @@ def test_compare_classification_and_thresholds():
     env = {
         "valgrind": "3.22.0",
         "compiler": "test",
+        "compiler_provenance": "dart-perf-build/1",
         "glibc": "2.39",
         "preset": "perf-1",
         "fingerprint": "test",
@@ -228,11 +229,229 @@ def _load_runner():
     return module
 
 
+def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "installed",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--rows",
+            "pend",
+        ]
+    )
+    args.bin_dir = tmp_path / "bin"
+    args.bin_dir.mkdir()
+    for name in ("portable_step_bench", "contact_benchmark"):
+        (args.bin_dir / name).write_bytes(b"measured driver")
+    args.shim = tmp_path / "allocshim.so"
+    args.shim.write_bytes(b"measured shim")
+    (tmp_path / "share/dart").mkdir(parents=True)
+    (tmp_path / "lib").mkdir()
+    library = tmp_path / "lib/libdart.so"
+    library.write_bytes(b"measured artifact")
+    stamp = {
+        "schema": "dart-perf-build/1",
+        "commit": "installed",
+        "compiler": "Clang 18.1.8",
+        "pixi_lock_sha": "installed lock",
+        "preset": "installed preset",
+        "libdart_sha": module.sha(library.read_bytes()),
+        "binaries": {
+            name: module.sha(b"measured driver")
+            for name in ("portable_step_bench", "contact_benchmark")
+        },
+    }
+    path = tmp_path / "share/dart/perf-build.json"
+    module.write_json(path, stamp)
+    monkeypatch.setattr(module, "execute", lambda *args: "Guest CPU: test\n")
+
+    def command_output(command):
+        assert command[0] in (module.VALGRIND, "getconf")
+        return "valgrind-3.22.0" if command[0] == module.VALGRIND else "glibc 2.39"
+
+    monkeypatch.setattr(module, "command_output", command_output)
+    first = module.fingerprint(args)
+    for key in ("compiler", "pixi_lock_sha", "preset"):
+        assert first[key] == stamp[key]
+    stamp["compiler"] = "GNU 13.3.0"
+    module.write_json(path, stamp)
+    second = module.fingerprint(args)
+    assert first["fingerprint"] != second["fingerprint"]
+    result = module.compare(
+        {"run": {"commit": "base", "env": first}},
+        {"run": {"commit": "head", "env": second}},
+    )
+    assert result["verdict"]["status"] == "ERROR"
+    assert "compiler" in result["verdict"]["failures"][0]
+    driver = args.bin_dir / "contact_benchmark"
+    driver.write_bytes(b"replaced driver")
+    with pytest.raises(ValueError, match="driver hash differs"):
+        module.fingerprint(args)
+    driver.write_bytes(b"measured driver")
+    args.shim.write_bytes(b"different shim")
+    assert module.fingerprint(args)["fingerprint"] != second["fingerprint"]
+    for key, value, reason in (
+        ("compiler", "", "invalid installed build provenance"),
+        ("compiler", None, "invalid installed build provenance"),
+        ("schema", "other", "invalid installed build provenance"),
+        ("binaries", None, "invalid installed build provenance"),
+        ("pixi_lock_sha", "", "invalid installed build provenance"),
+        ("preset", "", "invalid installed build provenance"),
+        ("commit", "other", "commit differs"),
+        ("libdart_sha", "stale", "libdart hash differs"),
+    ):
+        module.write_json(path, {**stamp, key: value})
+        with pytest.raises(ValueError, match=reason):
+            module.fingerprint(args)
+    module.write_json(path, [])
+    with pytest.raises(ValueError, match="invalid installed build provenance"):
+        module.fingerprint(args)
+    module.write_json(path, stamp)
+    library.write_bytes(b"replaced artifact")
+    with pytest.raises(ValueError, match="libdart hash differs"):
+        module.fingerprint(args)
+    path.unlink()
+    with pytest.raises(ValueError, match="missing installed compiler provenance"):
+        module.fingerprint(args)
+
+
+@pytest.mark.parametrize("missing", ["base", "head", "both"])
+@pytest.mark.parametrize("field", ["compiler", "compiler_provenance"])
+def test_saved_records_require_compiler_provenance(missing, field):
+    module = _load_runner()
+    base = _micro_record(module, "dyn")
+    base["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    head = copy.deepcopy(base)
+    for record in (
+        [base, head] if missing == "both" else [base if missing == "base" else head]
+    ):
+        record["run"]["env"].pop(field)
+    result = module.compare(base, head)
+    assert result["verdict"]["status"] == "ERROR"
+    assert "compiler provenance" in result["verdict"]["failures"][0]
+    assert "compiler provenance" in module.markdown(result)
+
+
+@pytest.mark.parametrize(
+    "ir,allocs,gated,body,status,summary",
+    [
+        (100, 0, True, "", "PASS", "neutral"),
+        (99, 0, True, "", "PASS", "improved"),
+        (100.001, 0, True, "", "PASS", "regressed"),
+        (100.3, 0, True, "", "WARN", "regressed"),
+        (100.5, 0, True, "", "FAIL", "regressed"),
+        (101, 0, True, "", "FAIL", "regressed"),
+        (99, 1, True, "", "FAIL", "regressed"),
+        (None, 1, True, "", "FAIL", "regressed"),
+        (99, 0, False, "", "FAIL", "regressed"),
+        (
+            101,
+            1,
+            True,
+            "Perf-Regression-Rationale: dyn: intended work",
+            "WARN",
+            "regressed",
+        ),
+    ],
+)
+def test_summary_separates_gated_regressions(ir, allocs, gated, body, status, summary):
+    module = _load_runner()
+    base = _micro_record(module, "dyn")
+    base["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    head = copy.deepcopy(base)
+    head["results"][0]["head"].update(ir_per_step=ir, allocs_per_step=allocs)
+    head["results"][0]["gated"] = gated
+    if ir is None:
+        for record in (base, head):
+            record["results"][0]["method"] = "native"
+            record["results"][0]["head"].pop("ir_per_step")
+    result = module.compare(base, head, body)
+    assert result["verdict"]["status"] == status
+    report = module.markdown(result)
+    assert f"1 {summary}." in report
+    if summary == "regressed":
+        assert "1 neutral" not in report and "1 improved" not in report
+
+
+def test_allocation_shims_count_each_entry_once(tmp_path):
+    import os
+    import re
+    import subprocess
+    import sys
+
+    if sys.platform != "linux" or not Path("/usr/bin/cc").is_file():
+        pytest.skip("the harness shims require GNU libc and the system C compiler")
+    sources = Path(__file__).resolve().parents[1] / "tools/perf"
+    for name in ("allocshim", "heappad", "allocation_probe"):
+        command = [
+            "/usr/bin/cc",
+            "-O2",
+            "-o",
+            str(tmp_path / name),
+            str(sources / f"{name}.c"),
+            "-ldl",
+        ]
+        if name != "allocation_probe":
+            command += ["-shared", "-fPIC"]
+        subprocess.run(command, check=True, capture_output=True)
+    env = os.environ.copy()
+    for key in ("LD_PRELOAD", "HEAPPAD", "PERF_WARMUP", "PERF_WINDOW"):
+        env.pop(key, None)
+    module = _load_runner()
+    for mode in ("", "unset", *module.PERTURBATIONS):
+        current = {**env, "LD_PRELOAD": str(tmp_path / "allocshim")}
+        if mode == "tcache0":
+            current["GLIBC_TUNABLES"] = "glibc.malloc.tcache_count=0"
+        elif mode:
+            current["LD_PRELOAD"] = f"{tmp_path}/allocshim:{tmp_path}/heappad"
+            if mode != "unset":
+                current["HEAPPAD"] = mode
+        for entry in (
+            "malloc",
+            "calloc",
+            "realloc",
+            "memalign",
+            "aligned_alloc",
+            "posix_memalign",
+        ):
+            result = subprocess.run(
+                [str(tmp_path / "allocation_probe"), entry],
+                env=current,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            counts = re.search(
+                r"STEPALLOC steps=(\d+) measured=(\d+) allocs=(\d+) bytes=(\d+)",
+                result.stderr,
+            )
+            assert counts and tuple(map(int, counts.groups())) == (1, 1, 1, 64), (
+                mode,
+                entry,
+                result.stderr,
+            )
+    print(
+        "Allocation probe: all 6 entry points count once (64 requested bytes), baseline and all 7 perturbations"
+    )
+
+
 @pytest.mark.parametrize("version", [1, 2])
 def test_changed_input_requires_rebaseline_without_deltas(version):
     module = _load_runner()
     base = {
-        "run": {"commit": "base", "env": {"fingerprint": "same"}},
+        "run": {
+            "commit": "base",
+            "env": {
+                "fingerprint": "same",
+                "compiler": "test",
+                "compiler_provenance": "dart-perf-build/1",
+            },
+        },
         "results": [
             {
                 "row": "pend",
@@ -410,6 +629,7 @@ def test_compare_and_local_infrastructure_exit_two(monkeypatch, tmp_path, capsys
         "fingerprint": "same",
         "valgrind": "test",
         "compiler": "test",
+        "compiler_provenance": "dart-perf-build/1",
         "glibc": "test",
         "preset": "perf-1",
     }
@@ -448,7 +668,14 @@ def _micro_record(module, name):
         else ["BM_Dynamics/10"]
     )
     return {
-        "run": {"commit": "HEAD", "env": {"fingerprint": "same"}},
+        "run": {
+            "commit": "HEAD",
+            "env": {
+                "fingerprint": "same",
+                "compiler": "test",
+                "compiler_provenance": "dart-perf-build/1",
+            },
+        },
         "results": [
             {
                 "row": name,
@@ -703,17 +930,25 @@ def test_micro_perturbations_compare_real_metrics(monkeypatch, tmp_path, name, c
     assert all(not sample["stable"] for sample in result["perturbations"].values())
 
 
-def test_local_uses_independent_source_and_cmake_caches(monkeypatch, tmp_path):
+@pytest.mark.parametrize("revision", ["HEAD", "annotated-release"])
+def test_local_uses_independent_source_and_cmake_caches(
+    monkeypatch, tmp_path, revision
+):
     import io
     import tarfile
     from types import SimpleNamespace
 
     module = _load_runner()
     args = module.parser().parse_args(
-        ["local", "--base", "HEAD", "--head", "HEAD", "--output-dir", str(tmp_path)]
+        ["local", "--base", revision, "--head", revision, "--output-dir", str(tmp_path)]
     )
     monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
-    monkeypatch.setattr(module, "command_output", lambda command: "HEAD")
+
+    def command_output(command):
+        # An annotated tag names a tag object unless explicitly peeled.
+        return "tag-object" if command[-1] == "annotated-release" else "commit"
+
+    monkeypatch.setattr(module, "command_output", command_output)
     monkeypatch.setattr(
         module.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(returncode=0)
     )
@@ -732,6 +967,11 @@ def test_local_uses_independent_source_and_cmake_caches(monkeypatch, tmp_path):
             source = Path(command[command.index("-S") + 1])
             build = Path(command[command.index("-B") + 1])
             build.mkdir()
+            compiler = build / "CMakeFiles/4.0/CMakeCXXCompiler.cmake"
+            compiler.parent.mkdir(parents=True)
+            compiler.write_text(
+                'set(CMAKE_CXX_COMPILER_ID "GNU")\nset(CMAKE_CXX_COMPILER_VERSION "13.3.0")\n'
+            )
             if source.name.startswith("src-"):
                 assert (source / "CMakeLists.txt").is_file()
                 assert not (build / "CMakeCache.txt").exists()
@@ -742,11 +982,24 @@ def test_local_uses_independent_source_and_cmake_caches(monkeypatch, tmp_path):
             if build.name.startswith("driver-"):
                 (build / "portable_step_bench").write_text("driver")
         elif command[:2] == ["cmake", "--install"]:
-            Path(command[command.index("--prefix") + 1]).mkdir()
+            prefix = Path(command[command.index("--prefix") + 1])
+            (prefix / "share/dart").mkdir(parents=True)
+            (prefix / "lib").mkdir()
+            (prefix / "lib/libdart.so").write_bytes(b"installed DART")
         return ""
 
     monkeypatch.setattr(module, "execute", execute)
-    monkeypatch.setattr(module, "run_arm", lambda arm: {"commit": arm.commit})
+
+    def run_arm(arm):
+        assert arm.commit == "commit"
+        stamp = module.installed_provenance(arm)
+        assert stamp["compiler"] == "GNU 13.3.0"
+        assert stamp["pixi_lock_sha"] == module.sha(
+            (module.ROOT / "pixi.lock").read_bytes()
+        )
+        return {"commit": arm.commit}
+
+    monkeypatch.setattr(module, "run_arm", run_arm)
     assert len(module.local_arms(args)) == 2
     assert configurations == [
         (tmp_path / f"src-{arm}", tmp_path / f"build-{arm}") for arm in ("a", "b")

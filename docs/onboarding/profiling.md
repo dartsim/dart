@@ -194,6 +194,12 @@ row's qualification and thread count. Comparisons require matching
 environment fingerprints. Exit status 1 means a policy failure; status 2 means
 an infrastructure error. When measuring an existing install with
 `scripts/perf_regression.py run`, supply `--commit` for its installed revision.
+The install must also contain `share/dart/perf-build.json`, written by `local`
+with the CMake compiler ID/version, build preset, Pixi lock hash, commit, and
+installed libdart and driver hashes. `run` checks this stamp against the artifacts
+and commit; missing or stale provenance is an infrastructure error. Saved records without
+compiler provenance cannot pass comparison. Gated rows with positive Ir deltas,
+allocation increases, or gate failures count as regressed in the summary.
 
 Use the soft-body comparison script for PR evidence that must compare the
 current commit against both its parent and the `main` base on the same host:

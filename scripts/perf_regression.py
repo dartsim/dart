@@ -541,7 +541,53 @@ def select_rows(names: str) -> list[Row]:
     return selected
 
 
+def cmake_compiler(build: Path) -> str:
+    files = list((build / "CMakeFiles").glob("*/CMakeCXXCompiler.cmake"))
+    if len(files) != 1:
+        raise ValueError(f"missing or ambiguous CMake compiler provenance: {build}")
+    text = files[0].read_text(encoding="utf-8")
+    parts = []
+    for key in ("ID", "VERSION"):
+        match = re.search(
+            rf'^set\(CMAKE_CXX_COMPILER_{key} "([^"]+)"\)$', text, re.MULTILINE
+        )
+        if not match:
+            raise ValueError(f"missing CMake compiler {key}: {build}")
+        parts.append(match[1])
+    return " ".join(parts)
+
+
+def installed_provenance(args) -> dict:
+    path = args.prefix / "share/dart/perf-build.json"
+    if not path.is_file():
+        raise ValueError(
+            f"missing installed compiler provenance: {path}; use local to build and stamp the install"
+        )
+    stamp = json.loads(path.read_text(encoding="utf-8"))
+    if (
+        not isinstance(stamp, dict)
+        or stamp.get("schema") != "dart-perf-build/1"
+        or not isinstance(stamp.get("binaries"), dict)
+        or any(
+            not isinstance(stamp.get(key), str) or not stamp[key].strip()
+            for key in ("compiler", "pixi_lock_sha", "preset")
+        )
+    ):
+        raise ValueError(f"invalid installed build provenance: {path}")
+    if stamp.get("commit") != args.commit:
+        raise ValueError("installed build provenance commit differs from --commit")
+    if stamp.get("libdart_sha") != sha((args.prefix / "lib/libdart.so").read_bytes()):
+        raise ValueError("installed build provenance libdart hash differs")
+    return stamp
+
+
 def fingerprint(args) -> dict:
+    provenance = installed_provenance(args)
+    for name in {PB, *(row.driver for row in select_rows(args.rows))}:
+        if provenance.get("binaries", {}).get(name) != sha(
+            (args.bin_dir / name).read_bytes()
+        ):
+            raise ValueError(f"installed build provenance driver hash differs: {name}")
     env = environment(args.prefix)
     driver = str(args.bin_dir / "portable_step_bench")
     guest = execute(
@@ -552,7 +598,6 @@ def fingerprint(args) -> dict:
     )
     cpu = field(guest, "Guest CPU")
     version = command_output([VALGRIND, "--version"]).removeprefix("valgrind-")
-    lock = sha((ROOT / "pixi.lock").read_bytes())
     harness = sha(
         Path(__file__).read_bytes()
         + b"".join(
@@ -564,11 +609,14 @@ def fingerprint(args) -> dict:
     values = {
         "valgrind": version,
         "valgrind_guest_cpu": cpu,
-        "compiler": command_output(["/usr/bin/c++", "--version"]).splitlines()[0],
+        "compiler": provenance["compiler"],
+        "compiler_provenance": provenance["schema"],
         "glibc": command_output(["getconf", "GNU_LIBC_VERSION"]).split()[-1],
-        "pixi_lock_sha": lock,
-        "preset": "perf-1",
+        "pixi_lock_sha": provenance["pixi_lock_sha"],
+        "preset": provenance["preset"],
         "harness_sha": harness,
+        "allocshim_sha": sha(args.shim.read_bytes()),
+        "heappad_sha": sha(args.heappad.read_bytes()) if args.perturb else None,
     }
     values["runner"] = {
         "environment": os.environ.get("RUNNER_ENVIRONMENT", "local"),
@@ -604,6 +652,8 @@ def run_arm(args) -> dict:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     args.shim = args.shim.resolve()
     args.heappad = args.heappad.resolve()
+    args.commit = commit
+    env_fingerprint = fingerprint(args)
     inputs = args.output_dir.parent / "inputs"
     inputs.mkdir(exist_ok=True)
     world = inputs / "3k_shapes.sdf"
@@ -646,7 +696,7 @@ def run_arm(args) -> dict:
                 ["git", "describe", "--tags", "--match", "v6*", "--always", commit]
             ),
             "time": datetime.now(timezone.utc).isoformat(),
-            "env": fingerprint(args),
+            "env": env_fingerprint,
             "accepted": [],
         },
         "results": results,
@@ -747,6 +797,13 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         if key not in ("fingerprint", "runner")
         and base_env.get(key) != head_env.get(key)
     ]
+    if any(
+        env.get("compiler_provenance") != "dart-perf-build/1"
+        or not isinstance(env.get("compiler"), str)
+        or not env["compiler"].strip()
+        for env in (base_env, head_env)
+    ):
+        differing.append("compiler provenance (missing or invalid)")
     if (
         not base_env.get("fingerprint")
         or not head_env.get("fingerprint")
@@ -1005,7 +1062,7 @@ def markdown(record: dict) -> str:
     )
     lines = [
         f"Perf A/B: {record['run']['parent']} → {record['run']['commit']} — {verdict['status']}",
-        f"{method}; {thread_text}; Valgrind {env['valgrind']}; {env['compiler']}; glibc {env['glibc']}; {env['preset']}",
+        f"{method}; {thread_text}; Valgrind {env['valgrind']}; {env.get('compiler') or 'compiler unavailable'}; glibc {env['glibc']}; {env['preset']}",
         "",
     ]
     counts = {}
@@ -1013,10 +1070,18 @@ def markdown(record: dict) -> str:
         classification = row["delta"]["class"]
         if classification == "gated":
             classification = (
-                "improved"
-                if row["delta"]["ir"] is not None
-                and at_least(-row["delta"]["ir"], 0.01)
-                else "neutral"
+                "regressed"
+                if row["failures"]
+                or any(
+                    row["delta"][key] is not None and row["delta"][key] > 0
+                    for key in ("ir", "allocs")
+                )
+                else (
+                    "improved"
+                    if row["delta"]["ir"] is not None
+                    and at_least(-row["delta"]["ir"], 0.01)
+                    else "neutral"
+                )
             )
         counts[classification] = counts.get(classification, 0) + 1
     lines += [", ".join(f"{count} {kind}" for kind, count in counts.items()) + ".", ""]
@@ -1149,7 +1214,8 @@ def local_arms(args) -> tuple[dict, dict]:
             args.timeout,
         )
     revisions = [
-        command_output(["git", "rev-parse", rev]) for rev in (args.base, args.head)
+        command_output(["git", "rev-parse", "--verify", f"{rev}^{{commit}}"])
+        for rev in (args.base, args.head)
     ]
     portable_only = any(
         not subprocess.run(
@@ -1266,6 +1332,25 @@ def local_arms(args) -> tuple[dict, dict]:
             )
             shutil.copy2(
                 driver_build / "portable_step_bench", binary / "portable_step_bench"
+            )
+            compiler = cmake_compiler(build)
+            if cmake_compiler(driver_build) != compiler:
+                raise ValueError("DART and portable driver compiler provenance differs")
+            write_json(
+                prefix / "share/dart/perf-build.json",
+                {
+                    "schema": "dart-perf-build/1",
+                    "commit": revision,
+                    "compiler": compiler,
+                    "pixi_lock_sha": sha((ROOT / "pixi.lock").read_bytes()),
+                    "preset": "perf-1",
+                    "libdart_sha": sha((prefix / "lib/libdart.so").read_bytes()),
+                    "binaries": {
+                        path.name: sha(path.read_bytes())
+                        for path in binary.iterdir()
+                        if path.is_file()
+                    },
+                },
             )
         except (OSError, ValueError) as error:
             if label == "a":

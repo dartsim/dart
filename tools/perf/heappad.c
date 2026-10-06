@@ -87,22 +87,27 @@ void* realloc(void* pointer, size_t size)
   return count < size ? NULL : __libc_realloc(pointer, count);
 }
 
-void* memalign(size_t alignment, size_t size)
+static void* padded_memalign(size_t alignment, size_t size)
 {
   size_t count = padded(size);
   return count < size ? NULL : __libc_memalign(alignment, count);
 }
 
+void* memalign(size_t alignment, size_t size)
+{
+  return padded_memalign(alignment, size);
+}
+
 void* aligned_alloc(size_t alignment, size_t size)
 {
-  return memalign(alignment, size);
+  return padded_memalign(alignment, size);
 }
 
 int posix_memalign(void** output, size_t alignment, size_t size)
 {
   if (alignment < sizeof(void*) || (alignment & (alignment - 1)))
     return EINVAL;
-  void* pointer = memalign(alignment, size);
+  void* pointer = padded_memalign(alignment, size);
   if (!pointer)
     return ENOMEM;
   *output = pointer;
