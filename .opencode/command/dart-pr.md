@@ -116,7 +116,7 @@ Use these practices:
    | Maintenance `release-6.*` | Branch-matching DART 6.x release                |
 
 4. After explicit maintainer/user approval, open bug-fix PRs against `main`;
-   backports to `release-6.19` use `dart-backport-pr`.
+   backports to a `release-6.*` branch (none right now) use `dart-backport-pr`.
 5. Before every commit, run:
    ```bash
    pixi run lint

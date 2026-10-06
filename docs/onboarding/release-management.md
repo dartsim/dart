@@ -2,8 +2,9 @@
 
 `main` is the development branch for the next release, currently DART 6.20.
 PRs target `main` and the matching DART 6.x release milestone (currently
-`DART 6.20.0`). `release-6.19` stays the maintenance branch; backports use
-`dart-backport-pr`.
+`DART 6.20.0`). There is no maintenance branch: new patches land on `main`,
+and `dart-backport-pr` applies only to a `release-6.x` branch cut as described
+below.
 
 Version note: `package.xml` on this branch carries the latest published
 DART 6.19.x point release forward (so a configured build can report a
