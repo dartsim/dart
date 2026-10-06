@@ -30,9 +30,9 @@ makes it accurate and stable.
 > package below.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/dartsim/dart/main/docs/assets/dart_demos.gif" alt="Four dart-demos scenes: an Atlas humanoid walking under a SIMBICON controller, 125 boxes dropping onto the ground, a soft-body worm crawling, and a soft ball landing with adaptive soft contact">
+  <img src="https://raw.githubusercontent.com/dartsim/dart/main/docs/assets/dart_demos.gif" alt="Four DART demos: an Atlas humanoid walking under a SIMBICON controller, a Unitree G1 humanoid posed with inverse kinematics, a soft-body worm crawling, and a soft ball landing with adaptive soft contact">
   <br>
-  <sub>Scenes from the <code>dart-demos</code> app (<code>pixi run demos</code>)</sub>
+  <sub>Atlas, soft-worm, and soft-contact scenes from <code>dart-demos</code> (<code>pixi run demos</code>), plus a Unitree G1 IK puppet</sub>
 </p>
 
 ## Why DART?
