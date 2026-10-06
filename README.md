@@ -32,7 +32,7 @@ makes it accurate and stable.
 <p align="center">
   <img src="https://raw.githubusercontent.com/dartsim/dart/main/docs/assets/dart_demos.gif" alt="Four DART demos: an Atlas humanoid walking under a SIMBICON controller, a Unitree G1 humanoid posed with inverse kinematics, a soft-body worm crawling, and a soft ball landing with adaptive soft contact">
   <br>
-  <sub>Atlas, soft-worm, and soft-contact scenes from <code>dart-demos</code> (<code>pixi run demos</code>), plus a Unitree G1 IK puppet</sub>
+  <sub>Atlas, soft-worm, and soft-contact scenes from <code>dart-demos</code> (<code>pixi run demos</code>), plus a Unitree G1 IK puppet from an earlier example</sub>
 </p>
 
 ## Why DART?
@@ -102,7 +102,11 @@ int main()
 ```
 
 ```cmake
+# CMakeLists.txt next to main.cpp
+cmake_minimum_required(VERSION 3.22.1)
+project(my_app CXX)
 find_package(DART REQUIRED CONFIG)
+add_executable(my_app main.cpp)
 target_link_libraries(my_app PUBLIC dart)
 ```
 
