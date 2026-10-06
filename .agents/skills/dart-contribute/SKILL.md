@@ -43,6 +43,8 @@ git push -u origin "HEAD:${branch}"
 gh pr create --draft --base <target-branch> --milestone "<milestone>"
 ```
 
+Then follow `docs/onboarding/ai-tools.md` § "PR Lifecycle" from draft to merge.
+
 Use the next DART 6.x release milestone for `main` PRs (currently
 `DART 6.20.0`) and the branch-matching milestone for maintenance PRs.
 
@@ -86,8 +88,9 @@ gh api repos/dartsim/dart/milestones --jq '.[] | .title'
 ## Bug Fixes
 
 After explicit maintainer/user approval, open bug-fix PRs against `main`, the
-development branch for the next release (currently DART 6.20). Backports to
-`release-6.19`, the maintenance branch, use `dart-backport-pr`.
+development branch for the next release (currently DART 6.20). There is no
+maintenance branch right now; backports to a `release-6.*` branch cut from a
+release tag use `dart-backport-pr`.
 
 ## CHANGELOG (After Approved PR Exists)
 

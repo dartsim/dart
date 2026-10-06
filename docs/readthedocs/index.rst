@@ -11,7 +11,7 @@ Welcome to DART documentation!
 
    This site documents the **DART 6** compatibility line. The current stable
    release is **DART 6.19.5**; ``main`` is the development branch for the next
-   release, currently DART 6.20, and ``release-6.19`` is the maintenance branch.
+   release, currently DART 6.20, and receives all new patches.
    The source version is read from ``package.xml``, and release notes are tracked
    in ``CHANGELOG.md``.
 

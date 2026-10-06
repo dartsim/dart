@@ -115,3 +115,45 @@ branch=$(git branch --show-current)
 # Requires explicit maintainer/user approval.
 git push -u origin "HEAD:${branch}"
 ```
+
+## PR Lifecycle
+
+Agent-authored PRs on `main` and `release-6.*` follow these steps. Each GitHub
+mutation still needs explicit maintainer/user approval: a `manage <PR>` request
+covers the routine ones (see `dart-manage-pr`), and step 4 defines merge
+approval.
+
+1. Open the PR as a draft and post one top-level `@codex review`.
+2. Leave draft only when Codex has reviewed the current head without findings
+   and CI is green. Copilot review requests are ignored for this repository.
+   `github-code-quality[bot]` reviews only PRs to the default branch
+   (`main`); address its findings there too.
+   Compare the `Reviewed commit` in Codex's result with the PR head; if a push
+   moved the head past it, post a new `@codex review` for the new head before
+   leaving draft. Fix findings as "AI Review Comments" describes. Address every
+   Codex review on the PR, not only the one you requested: Codex also reviews
+   automatically when a PR starts out ready for review and when it leaves
+   draft, one head can get several reviews with different findings, and
+   findings arrive either as inline suggestions in a "Codex Review" review or
+   as a top-level comment.
+3. When that gate passes, run `gh pr ready <PR>`. This hands the PR to the
+   maintainer and triggers one more Codex review, listed as
+   `Draft marked ready` in Codex's review summary comment. Do not merge until
+   it completes. Unaddressed AI review findings block the merge even after the
+   maintainer's +1: fix them and get a clean re-review of the new head first.
+4. Merge only after a maintainer (currently `jslee02`) adds a +1 reaction to
+   the PR description (`gh api repos/dartsim/dart/issues/<PR>/reactions`).
+   That reaction is explicit approval for the agent or the maintainer to merge
+   that PR, including the step 5 base update and fixes for AI review findings
+   raised after the reaction. Any other change pushed after the reaction needs
+   a fresh +1. The +1 that `chatgpt-codex-connector[bot]` adds after a clean
+   review is not approval. Agents merge through the `dart-manage-pr`
+   `mode=merge` gate. Squash-merge: the repository allows squash and rebase
+   merges, not merge commits. Fix AI review findings that arrive afterwards in
+   a follow-up PR.
+5. Merge a series in dependency order, noted in each PR body. Release branches
+   require PR branches to be up to date, so before merging each PR, merge the
+   latest base into its branch as "PR Branches" describes, push it under the
+   same explicit approval, post a new `@codex review` for that head, and wait
+   for green CI and a clean Codex review of it: a base merge also changes the
+   reviewed head.
