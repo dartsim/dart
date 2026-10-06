@@ -1246,23 +1246,31 @@ TEST(IslandDeactivation, WakeOnSupportRemoved)
 
 //==============================================================================
 // Disabling collision on an immobile support changes the physical contact set
-// even though the support skeleton itself is not mobile.
+// even though the support skeleton itself is not mobile. A support registered
+// only with the constraint solver takes part in the contacts too.
 TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabled)
 {
-  auto world = makeSleepWorld();
-  auto floor = createFloor();
-  world->addSkeleton(floor);
+  for (const bool solverOnly : {false, true}) {
+    SCOPED_TRACE(solverOnly ? "solver-only support" : "World support");
+    auto world = makeSleepWorld();
+    auto floor = createFloor();
+    if (solverOnly)
+      world->getConstraintSolver()->addSkeleton(floor);
+    else
+      world->addSkeleton(floor);
 
-  auto sleeper = createFreeBox(
-      "sleeper",
-      Eigen::Vector3d::Constant(kBoxSize),
-      Eigen::Vector3d(0, 0, kHalf + 0.02));
-  world->addSkeleton(sleeper);
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(sleeper);
 
-  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+    ASSERT_NO_FATAL_FAILURE(
+        stepUntilRestingFastPathReady(world.get(), sleeper));
 
-  floor->getBodyNode(0)->setCollidable(false);
-  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+    floor->getBodyNode(0)->setCollidable(false);
+    expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+  }
 }
 
 //==============================================================================
@@ -1272,20 +1280,26 @@ TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabled)
 // flags.
 TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabledBeforeFastPath)
 {
-  auto world = makeSleepWorld();
-  auto floor = createFloor();
-  world->addSkeleton(floor);
+  for (const bool solverOnly : {false, true}) {
+    SCOPED_TRACE(solverOnly ? "solver-only support" : "World support");
+    auto world = makeSleepWorld();
+    auto floor = createFloor();
+    if (solverOnly)
+      world->getConstraintSolver()->addSkeleton(floor);
+    else
+      world->addSkeleton(floor);
 
-  auto sleeper = createFreeBox(
-      "sleeper",
-      Eigen::Vector3d::Constant(kBoxSize),
-      Eigen::Vector3d(0, 0, kHalf + 0.02));
-  world->addSkeleton(sleeper);
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(sleeper);
 
-  ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
+    ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
 
-  floor->getBodyNode(0)->setCollidable(false);
-  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+    floor->getBodyNode(0)->setCollidable(false);
+    expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+  }
 }
 
 //==============================================================================

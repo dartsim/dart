@@ -2210,10 +2210,13 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return false;
   }
 
-  // Only this World's skeletons count; another World's changes move only the
-  // global version.
+  // Only skeletons in this World or its constraint solver count; another
+  // World's changes move only the global version.
   if (dynamics::Skeleton::hasDeactivationStateChangedSince(
-          mSkeletons, mAllRestingSnapshotDeactivationStateVersion)) {
+          mSkeletons, mAllRestingSnapshotDeactivationStateVersion)
+      || dynamics::Skeleton::hasDeactivationStateChangedSince(
+          mConstraintSolver->getSkeletons(),
+          mAllRestingSnapshotDeactivationStateVersion)) {
     markSnapshotStale();
     return false;
   }
@@ -2423,10 +2426,23 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
     }
   }
 
-  const bool recordedStateUnchanged
-      = skeletonStateUnchanged
-        && !dynamics::Skeleton::hasDeactivationStateChangedSince(
+  // Only skeletons in this World or its constraint solver (a support may be
+  // registered only there) count; another World's changes move only the
+  // global version. If none changed, catch the record up so that the next
+  // steps compare in O(1) again.
+  const bool deactivationStateChanged
+      = dynamics::Skeleton::hasDeactivationStateChangedSince(
             mSkeletons, mLastStepRestingWorldStateDeactivationStateVersion)
+        || dynamics::Skeleton::hasDeactivationStateChangedSince(
+            mConstraintSolver->getSkeletons(),
+            mLastStepRestingWorldStateDeactivationStateVersion);
+  if (!deactivationStateChanged) {
+    mLastStepRestingWorldStateDeactivationStateVersion
+        = dynamics::Skeleton::getGlobalDeactivationStateVersion();
+  }
+
+  const bool recordedStateUnchanged
+      = skeletonStateUnchanged && !deactivationStateChanged
         && mLastStepRestingWorldStateCollisionDetector
                == collisionDetector.get()
         && mLastStepRestingWorldStateCollisionGroup == collisionGroup.get()
