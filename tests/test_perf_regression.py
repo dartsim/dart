@@ -4,6 +4,8 @@ import copy
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 
 def test_compare_classification_and_thresholds():
     path = Path(__file__).resolve().parents[1] / "scripts/perf_regression.py"
@@ -19,6 +21,7 @@ def test_compare_classification_and_thresholds():
         "compiler": "test",
         "glibc": "2.39",
         "preset": "perf-1",
+        "fingerprint": "test",
     }
     metric = {
         "ir_per_step": 100_000,
@@ -176,3 +179,165 @@ def test_compare_classification_and_thresholds():
     assert module.compare(empty, empty)["verdict"]["status"] == "FAIL"
     assert "Wall time" in module.markdown(same)
     assert "-0.0001%" in module.markdown(check(ir=99_999.9))
+
+    # Environment incompatibility rejects the entire comparison before deltas.
+    for key in ("compiler", "valgrind", "pixi_lock_sha", "host_cpu", "harness_sha"):
+        head = copy.deepcopy(base)
+        head["run"]["env"].update({key: "different", "fingerprint": "different"})
+        record = module.compare(base, head)
+        assert record["verdict"]["status"] == "ERROR"
+        assert record["results"] == []
+        assert key in module.markdown(record)
+    for value in (None, "different"):
+        head = copy.deepcopy(base)
+        head["run"]["env"]["fingerprint"] = value
+        assert module.compare(base, head)["verdict"]["status"] == "ERROR"
+
+    multiple["results"][1]["threads"] = 4
+    report = module.markdown(module.compare(multiple, multiple))
+    assert "1/4 threads" in report
+    assert "| b/dart | 4 |" in report
+    assert "base perturbation check passed" in report
+    report = module.markdown(module.compare(diagnostic, diagnostic))
+    assert "perturbation check not run" in report
+    unstable = copy.deepcopy(diagnostic)
+    unstable["results"][0]["perturbations"] = {"start4k": {"stable": False}}
+    for parent, child in ((unstable, diagnostic), (diagnostic, unstable)):
+        record = module.compare(parent, child)
+        assert record["verdict"]["status"] == "FAIL"
+        assert "perturbation check failed" in module.markdown(record)
+
+    infrastructure = copy.deepcopy(base)
+    infrastructure["results"][0].update(
+        status="broken", error_kind="infrastructure", error="binary missing"
+    )
+    for parent, child in ((base, infrastructure), (infrastructure, base)):
+        record = module.compare(parent, child)
+        assert record["verdict"]["status"] == "ERROR"
+        assert "binary missing" in module.markdown(record)
+
+
+def _load_runner():
+    import sys
+
+    path = Path(__file__).resolve().parents[1] / "scripts/perf_regression.py"
+    spec = importlib.util.spec_from_file_location("perf_regression", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_run_requires_installed_commit():
+    module = _load_runner()
+    command = ["run", "--prefix", "/install", "--output-dir", "/output"]
+    with pytest.raises(SystemExit) as error:
+        module.parser().parse_args(command)
+    assert error.value.code == 2
+    assert (
+        module.parser().parse_args([*command, "--commit", "installed"]).commit
+        == "installed"
+    )
+    assert module.parser().parse_args(["local"]).head == "HEAD"
+
+
+def test_measure_gates_on_recorded_or_current_perturbation_pass(monkeypatch, tmp_path):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--native-only",
+        ]
+    )
+    row = module.select_rows("pend")[0]
+    metrics = {"guards": {"finite": True}, "allocs": 0}
+    monkeypatch.setattr(module, "native", lambda *args: copy.deepcopy(metrics))
+    # A recorded row gates without rerunning the perturbations; others do not.
+    assert row.key in module.QUALIFIED_ROWS
+    assert module.measure(row, args, tmp_path)["gated"] is True
+    monkeypatch.setattr(module, "QUALIFIED_ROWS", frozenset())
+    assert module.measure(row, args, tmp_path)["gated"] is False
+    args.perturb = True
+    measured = module.measure(row, args, tmp_path)
+    assert measured["gated"] is True
+    assert set(measured["perturbations"]) == set(module.PERTURBATIONS)
+    monkeypatch.setattr(
+        module,
+        "native",
+        lambda row, args, world, config="": {**metrics, "allocs": int(bool(config))},
+    )
+    assert module.measure(row, args, tmp_path)["gated"] is False
+
+
+@pytest.mark.parametrize(
+    "error",
+    [OSError("binary missing"), ValueError("timeout"), ValueError("Valgrind failed")],
+)
+def test_execution_errors_exit_two_with_reason(monkeypatch, tmp_path, capsys, error):
+    module = _load_runner()
+    argv = [
+        "run",
+        "--commit",
+        "HEAD",
+        "--prefix",
+        str(tmp_path),
+        "--output-dir",
+        str(tmp_path),
+    ]
+    args = module.parser().parse_args(argv)
+
+    def fail(*args):
+        raise error
+
+    monkeypatch.setattr(module, "native", fail)
+    broken = module.measure(module.select_rows("pend")[0], args, tmp_path)
+    assert broken["status"] == "broken"
+    assert broken["error_kind"] == "infrastructure"
+    assert broken["error"] == str(error)
+    monkeypatch.setattr(module, "run_arm", lambda args: {"results": [broken]})
+    assert module.main(argv) == 2
+    assert str(error) in capsys.readouterr().out
+    broken.pop("error_kind")
+    assert module.main(argv) == 1
+
+
+def test_compare_and_local_infrastructure_exit_two(monkeypatch, tmp_path, capsys):
+    module = _load_runner()
+    env = {
+        "fingerprint": "same",
+        "valgrind": "test",
+        "compiler": "test",
+        "glibc": "test",
+        "preset": "perf-1",
+    }
+    record = {
+        "schema": "dart-perf/1",
+        "run": {"commit": "HEAD", "env": env},
+        "results": [
+            {
+                "row": "pend",
+                "det": "dart",
+                "status": "broken",
+                "method": "native",
+                "error_kind": "infrastructure",
+                "error": "timeout",
+                "head": {},
+            }
+        ],
+    }
+    monkeypatch.setattr(module, "local_arms", lambda args: (record, record))
+    assert module.main(["local"]) == 2
+    assert "timeout" in capsys.readouterr().out
+    base, head = tmp_path / "base.json", tmp_path / "head.json"
+    module.write_json(base, record)
+    altered = copy.deepcopy(record)
+    altered["run"]["env"].update(fingerprint="different", compiler="other")
+    module.write_json(head, altered)
+    assert module.main(["compare", "--base", str(base), "--head", str(head)]) == 2
+    assert "compiler" in capsys.readouterr().out

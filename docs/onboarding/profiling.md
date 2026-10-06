@@ -184,6 +184,13 @@ one.
 Use `pixi run perf-compare --base origin/main --head HEAD` for deterministic
 instruction and allocation deltas and behavior-guard checks, measured with the
 system Valgrind; wall time is advisory only.
+Rows gate when `QUALIFIED_ROWS` in the script records that they passed the
+seven heap-layout checks; other rows are diagnostic. `--perturb` reruns the
+checks, and its result replaces the record for that run; the report names each
+row's qualification and thread count. Comparisons require matching
+environment fingerprints. Exit status 1 means a policy failure; status 2 means
+an infrastructure error. When measuring an existing install with
+`scripts/perf_regression.py run`, supply `--commit` for its installed revision.
 
 Use the soft-body comparison script for PR evidence that must compare the
 current commit against both its parent and the `main` base on the same host:

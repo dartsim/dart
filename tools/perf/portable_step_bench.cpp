@@ -39,8 +39,13 @@
 
 // Toggle this exact signature; a wildcard can also toggle nested functions.
 // Consume every transform to include the lazy pose work done by gz-physics.
+extern "C" void perf_alloc_begin() __attribute__((weak));
+extern "C" void perf_alloc_end() __attribute__((weak));
+
 __attribute__((noinline)) double stepAndRead(dart::simulation::World* world)
 {
+  if (perf_alloc_begin)
+    perf_alloc_begin();
   world->step();
   double poses = 0.0;
   for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
@@ -48,6 +53,8 @@ __attribute__((noinline)) double stepAndRead(dart::simulation::World* world)
     for (std::size_t b = 0; b < skeleton->getNumBodyNodes(); ++b)
       poses += skeleton->getBodyNode(b)->getWorldTransform().matrix().sum();
   }
+  if (perf_alloc_end)
+    perf_alloc_end();
   return poses;
 }
 

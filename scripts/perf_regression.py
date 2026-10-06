@@ -112,6 +112,32 @@ ROWS += [
     )
     for name in ("s3w", "s1p")
 ]
+# Rows whose guards and allocation counts stayed identical under all seven
+# heap-layout perturbations, in both arms of the P1 qualification run
+# (2026-10-05, 238 stable checks). They gate on this record; a --perturb run
+# re-checks them and its result replaces the record for that run. Add a row here
+# only after it passes such a run.
+QUALIFIED_ROWS = frozenset(
+    {
+        "s3w/dart",
+        "s3w/ode",
+        "s2r/dart",
+        "s2r/ode",
+        "s1p/dart",
+        "s1p/ode",
+        "s5a/dart",
+        "s5a/fcl",
+        "s5a/bullet",
+        "s5a/ode",
+        "pend/dart",
+        "gzb/ode",
+        "robot/dart",
+        "dyn",
+        "lcp",
+        "mt4-s3w/dart",
+        "mt4-s1p/dart",
+    }
+)
 
 
 def sha(data: bytes) -> str:
@@ -146,7 +172,7 @@ def identity(path: str, prefix: Path) -> None:
 
 def environment(prefix: Path) -> dict[str, str]:
     env = os.environ.copy()
-    for key in ("LD_PRELOAD", "HEAPPAD", "PERF_WARMUP"):
+    for key in ("LD_PRELOAD", "HEAPPAD", "PERF_WARMUP", "PERF_WINDOW"):
         env.pop(key, None)
     env.update(LC_ALL="C", GLIBC_TUNABLES="glibc.cpu.hwcaps=-FMA")
     paths = [str(prefix / "lib"), env.get("LD_LIBRARY_PATH", "")]
@@ -215,6 +241,8 @@ def perturb_environment(env: dict, args, config: str) -> dict:
 def native(row: Row, args, world: Path, config: str = "") -> dict:
     env = perturb_environment(environment(args.prefix), args, config)
     env["PERF_WARMUP"] = str(row.warmup)
+    if row.driver == PB:
+        env["PERF_WINDOW"] = "stepAndRead"
     tag = row.key.replace("/", ".") + ".native" + (f".{config}" if config else "")
     text = execute(
         [
@@ -331,8 +359,9 @@ def measure(row: Row, args, world: Path) -> dict:
         "row": row.row,
         "det": row.det,
         "version": row.version,
-        "gated": True,
+        "gated": row.key in QUALIFIED_ROWS,
         "status": "ok",
+        "threads": row.threads,
         "window": {"warmup": row.warmup, "steps": row.steps},
         "method": "slope" if row.ir and not args.native_only else "native",
         "expected_ir": row.ir and not args.native_only,
@@ -400,9 +429,11 @@ def measure(row: Row, args, world: Path) -> dict:
                     sum(counts[key] for key in ("Ir", "Dr", "Dw")) + 4 * l1 + 30 * ll
                 ) / row.steps
         if metrics.get("guards", {}).get("finite") is False:
-            raise ValueError("non-finite state")
+            result.update(status="broken", error="non-finite state")
     except (OSError, ValueError, KeyError) as error:
-        result.update(status="broken", error=str(error))
+        result.update(
+            status="broken", gated=False, error=str(error), error_kind="infrastructure"
+        )
     return result
 
 
@@ -483,7 +514,6 @@ def fingerprint(args) -> dict:
         "preset": "perf-1",
         "harness_sha": harness,
     }
-    values["fingerprint"] = sha(json.dumps(values, sort_keys=True).encode())
     values["runner"] = {
         "environment": os.environ.get("RUNNER_ENVIRONMENT", "local"),
         "name": os.environ.get("RUNNER_NAME", os.uname().nodename),
@@ -498,6 +528,12 @@ def fingerprint(args) -> dict:
             if line.startswith("model name")
         ),
         "unknown",
+    )
+    values["fingerprint"] = sha(
+        json.dumps(
+            {key: value for key, value in values.items() if key != "runner"},
+            sort_keys=True,
+        ).encode()
     )
     return values
 
@@ -626,6 +662,37 @@ def complete(row: dict, metrics: dict) -> bool:
 
 def compare(base: dict, head: dict, body: str = "") -> dict:
     accepted = rationales(body)
+    base_env, head_env = base["run"]["env"], head["run"]["env"]
+    differing = [
+        key
+        for key in sorted(base_env.keys() | head_env.keys())
+        if key not in ("fingerprint", "runner")
+        and base_env.get(key) != head_env.get(key)
+    ]
+    if (
+        not base_env.get("fingerprint")
+        or not head_env.get("fingerprint")
+        or base_env["fingerprint"] != head_env["fingerprint"]
+        or differing
+    ):
+        return {
+            "schema": "dart-perf/1",
+            "run": {
+                **head["run"],
+                "parent": base["run"]["commit"],
+                "accepted": accepted,
+            },
+            "results": [],
+            "verdict": {
+                "status": "ERROR",
+                "failures": [
+                    "incompatible environment fingerprints: "
+                    + ", ".join(differing or ["fingerprint (missing or unequal)"])
+                ],
+                "warnings": [],
+                "ir_geomean": None,
+            },
+        }
 
     def acknowledgment(kind, key):
         return next(
@@ -640,6 +707,7 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
     parents = {row_key(row): row for row in base["results"]}
     children = {row_key(row): row for row in head["results"]}
     results, ratios, failures, warnings = [], [], [], []
+    infrastructure = False
     if not parents and not children:
         failures.append("measurement record has no rows")
     for key in dict.fromkeys([*parents, *children]):
@@ -647,6 +715,12 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         bm = parent.get("head", {}) if parent else {}
         hm = child.get("head", {}) if child else {}
         result = {**(child or parent), "parent": bm, "head": hm}
+        for arm, row in (("base", parent), ("head", child)):
+            if row and row.get("error_kind") == "infrastructure":
+                infrastructure = True
+                failures.append(f"{key}: {arm} infrastructure error: {row['error']}")
+            elif row and row.get("perturbations") and not row.get("gated"):
+                failures.append(f"{key}: {arm} perturbation check failed")
         ir = (
             delta(bm["ir_per_step"], hm["ir_per_step"])
             if "ir_per_step" in bm and "ir_per_step" in hm
@@ -739,6 +813,19 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
             "advisory": True,
         }
         result["failures"] = reasons
+        result["gate_reason"] = (
+            "base perturbation check passed; base gate remains active"
+            if classification == "gated"
+            else (
+                "perturbation check passed; row is " + classification
+                if result.get("gated")
+                else (
+                    "perturbation check failed"
+                    if result.get("perturbations")
+                    else "perturbation check not run"
+                )
+            )
+        )
         failures += [f"{key}: {reason}" for reason in reasons]
         results.append(result)
     geomean = (
@@ -761,7 +848,11 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         "run": {**head["run"], "parent": base["run"]["commit"], "accepted": accepted},
         "results": results,
         "verdict": {
-            "status": "FAIL" if failures else "WARN" if warnings else "PASS",
+            "status": (
+                "ERROR"
+                if infrastructure
+                else "FAIL" if failures else "WARN" if warnings else "PASS"
+            ),
             "failures": failures,
             "warnings": warnings,
             "ir_geomean": geomean,
@@ -778,9 +869,15 @@ def markdown(record: dict) -> str:
         if any(row["method"] == "slope" for row in record["results"])
         else "Native only (no Ir gate)"
     )
+    threads = sorted({row.get("threads", 1) for row in record["results"]})
+    thread_text = (
+        "no measured rows"
+        if not threads
+        else "/".join(map(str, threads)) + (" thread" if threads == [1] else " threads")
+    )
     lines = [
         f"Perf A/B: {record['run']['parent']} → {record['run']['commit']} — {verdict['status']}",
-        f"{method}; 1 thread; Valgrind {env['valgrind']}; {env['compiler']}; glibc {env['glibc']}; {env['preset']}",
+        f"{method}; {thread_text}; Valgrind {env['valgrind']}; {env['compiler']}; glibc {env['glibc']}; {env['preset']}",
         "",
     ]
     counts = {}
@@ -800,8 +897,8 @@ def markdown(record: dict) -> str:
         lines += [f"Ir geomean: {percent(verdict['ir_geomean'])}."]
     lines += [
         "",
-        "| Row | Base Ir/step | Head Ir/step | Delta | Allocs/step | Guards | Class |",
-        "|---|---:|---:|---:|---:|---|---|",
+        "| Row | Threads | Base Ir/step | Head Ir/step | Delta | Allocs/step | Guards | Class | Gate qualification |",
+        "|---|---:|---:|---:|---:|---:|---|---|---|",
     ]
 
     def number(value):
@@ -811,7 +908,7 @@ def markdown(record: dict) -> str:
         bm, hm, change = row["parent"], row["head"], row["delta"]
         change_text = percent(change["ir"])
         lines.append(
-            f"| {row_key(row)} | {number(bm.get('ir_per_step'))} | {number(hm.get('ir_per_step'))} | {change_text} | {number(bm.get('allocs_per_step'))} → {number(hm.get('allocs_per_step'))} | {'same' if change['guards_equal'] else 'changed'} | {change['class']} |"
+            f"| {row_key(row)} | {row.get('threads', 1)} | {number(bm.get('ir_per_step'))} | {number(hm.get('ir_per_step'))} | {change_text} | {number(bm.get('allocs_per_step'))} → {number(hm.get('allocs_per_step'))} | {'same' if change['guards_equal'] else 'changed'} | {change['class']} | {row['gate_reason']} |"
         )
     lines += [
         "",
@@ -846,7 +943,7 @@ def parser() -> argparse.ArgumentParser:
     run = sub.add_parser("run", help="measure an installed arm")
     run.add_argument("--prefix", type=Path, required=True)
     run.add_argument("--bin-dir", type=Path)
-    run.add_argument("--commit", default="HEAD")
+    run.add_argument("--commit", required=True, help="revision installed in --prefix")
     local = sub.add_parser("local", help="build revisions and compare them")
     local.add_argument("--base", default="origin/main")
     local.add_argument("--head", default="HEAD")
@@ -1045,7 +1142,10 @@ def local_arms(args) -> tuple[dict, dict]:
                         {
                             **row,
                             "status": "broken",
+                            "gated": False,
+                            "perturbations": {},
                             "error": f"head build failed: {error}",
+                            "error_kind": "infrastructure",
                             "head": {},
                         }
                         for row in records[0]["results"]
@@ -1075,6 +1175,10 @@ def main(argv: list[str] | None = None) -> int:
                     f"{row_key(row)}: {row['status']}"
                     + (f" — {row['error']}" if row.get("error") else "")
                 )
+            if any(
+                row.get("error_kind") == "infrastructure" for row in record["results"]
+            ):
+                return 2
             return int(
                 any(
                     row["status"] != "ok" or args.perturb and not row["gated"]
@@ -1096,7 +1200,11 @@ def main(argv: list[str] | None = None) -> int:
             write_json(args.json, record)
         if args.markdown:
             args.markdown.write_text(report, encoding="utf-8")
-        return int(record["verdict"]["status"] == "FAIL")
+        return (
+            2
+            if record["verdict"]["status"] == "ERROR"
+            else int(record["verdict"]["status"] == "FAIL")
+        )
     except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as error:
         print(f"perf: {error}", file=sys.stderr)
         return 2
