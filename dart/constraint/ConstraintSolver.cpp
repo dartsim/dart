@@ -55,6 +55,7 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/PointMass.hpp"
@@ -63,6 +64,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <condition_variable>
 #include <limits>
 #include <mutex>
@@ -72,6 +74,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include <cmath>
 #include <cstdint>
@@ -85,6 +88,13 @@ constexpr double kDefaultSleepContactPenetrationTolerance = 1e-5;
 constexpr double kDenseContactIslandSleepContactPenetrationTolerance = 0.005;
 constexpr double kSmallContactIslandMaxErrorReductionVelocity = 1e-3;
 constexpr std::size_t kDenseContactIslandMinMobileSkeletons = 3u;
+// The wake band of the default DeactivationOptions (twice the sleep
+// thresholds). World keeps a sleep candidate across a missed contact while its
+// speed stays inside the wake band of its options. A body may count as resting
+// on a missed contact only inside that band and this one: a wider band would
+// also take in a body at the top of a flight.
+constexpr double kMissedContactQuietLinearSpeed = 0.02; // m/s
+constexpr double kMissedContactQuietAngularSpeed = 0.1; // rad/s
 double gSleepContactPenetrationTolerance
     = kDefaultSleepContactPenetrationTolerance;
 bool gSleepContactPenetrationToleranceUserConfigured = false;
@@ -188,30 +198,29 @@ bool isExactDefaultContactSurfaceHandler(
 namespace {
 
 //==============================================================================
-/// Puts a contact surface handler in place and restores the previous one when
-/// it goes out of scope, including when an exception unwinds the stack.
-class ScopedContactSurfaceHandler final
+/// Assigns a temporary value and restores the previous one when it goes out
+/// of scope, including when an exception unwinds the stack.
+template <typename T>
+class ScopedAssignment final
 {
 public:
-  ScopedContactSurfaceHandler(
-      ContactSurfaceHandlerPtr& slot, ContactSurfaceHandlerPtr handler)
-    : mSlot(slot), mPrevious(std::exchange(slot, std::move(handler)))
+  ScopedAssignment(T& slot, T value)
+    : mSlot(slot), mPrevious(std::exchange(slot, std::move(value)))
   {
     // Do nothing
   }
 
-  ~ScopedContactSurfaceHandler()
+  ~ScopedAssignment()
   {
     mSlot = std::move(mPrevious);
   }
 
-  ScopedContactSurfaceHandler(const ScopedContactSurfaceHandler&) = delete;
-  ScopedContactSurfaceHandler& operator=(const ScopedContactSurfaceHandler&)
-      = delete;
+  ScopedAssignment(const ScopedAssignment&) = delete;
+  ScopedAssignment& operator=(const ScopedAssignment&) = delete;
 
 private:
-  ContactSurfaceHandlerPtr& mSlot;
-  ContactSurfaceHandlerPtr mPrevious;
+  T& mSlot;
+  T mPrevious;
 };
 
 //==============================================================================
@@ -286,6 +295,414 @@ void configureDARTCollisionThreads(
   if (dartCollisionDetector != nullptr)
     dartCollisionDetector->setNumCollisionThreads(numThreads);
 }
+
+namespace {
+
+//==============================================================================
+// Contact budget of the solver's collision query (#3056); see
+// collideWithContactBudget().
+
+// FCLCollisionDetector requests max(100, maxNumContacts) contacts per pair when
+// maxNumContactsPerPair is 0, and then drops repeated and collinear ones.
+constexpr std::size_t kLegacyPerPairContactRequest = 100u;
+
+// Farthest-point picks per pair before the rest of a larger quota is filled
+// deepest-first. This bounds the trim at O(kMaxSpreadPicksPerPair) work per
+// detected contact even when one pair reports thousands of contacts.
+constexpr std::size_t kMaxSpreadPicksPerPair = 16u;
+
+//==============================================================================
+// The number of contacts detection may report: 8 * cap, and at least FCL's
+// legacy per-pair request so the global bound never cuts the per-pair request
+// of makeContactDetectionOption().
+std::size_t getContactDetectionBound(std::size_t cap)
+{
+  constexpr auto kUnlimited = std::numeric_limits<std::size_t>::max();
+  const std::size_t scaled = cap <= kUnlimited / 8u ? 8u * cap : kUnlimited;
+  return std::max(scaled, kLegacyPerPairContactRequest);
+}
+
+//==============================================================================
+// The solver's collision option with the global budget raised to `bound`. Each
+// detector keeps the per-pair request it derives from the user's option, so a
+// result within the budget (which never stopped detection) is unchanged:
+// - 0 (only maxNumContacts limits) becomes max(100, cap): exactly what FCL
+//   requests per pair, and at least cap, which is all ODE, Bullet, and the
+//   dart detector need;
+// - an explicit per-pair cap keeps its effective value min(perPair, cap);
+// - SIZE_MAX keeps the dart detector's full-manifold sentinel and becomes cap,
+//   its effective value, for every other detector.
+collision::CollisionOption makeContactDetectionOption(
+    collision::CollisionGroup& group,
+    const collision::CollisionOption& option,
+    std::size_t bound)
+{
+  constexpr auto kUnlimited = std::numeric_limits<std::size_t>::max();
+  collision::CollisionOption detectionOption = option;
+  detectionOption.maxNumContacts = bound;
+  if (option.maxNumContactsPerPair == 0u) {
+    detectionOption.maxNumContactsPerPair
+        = std::max(kLegacyPerPairContactRequest, option.maxNumContacts);
+  } else if (
+      option.maxNumContactsPerPair != kUnlimited
+      || dynamic_cast<const collision::DARTCollisionDetector*>(
+             group.getCollisionDetector().get())
+             == nullptr) {
+    detectionOption.maxNumContactsPerPair
+        = option.getEffectiveMaxNumContactsPerPair();
+  }
+  return detectionOption;
+}
+
+//==============================================================================
+// Retained per-thread scratch of trimContactsFairly(). It only uses vector
+// element types libdart already instantiates, so it exports no new symbols.
+struct ContactTrimScratch
+{
+  // Pairs by first appearance: pair p is (pairObjects1[p], pairObjects2[p]).
+  std::vector<collision::CollisionObject*> pairObjects1;
+  std::vector<collision::CollisionObject*> pairObjects2;
+  std::vector<std::size_t> pairBuckets;  // open-addressing pair lookup
+  std::vector<std::size_t> pairCounts;   // contacts of each pair
+  std::vector<std::size_t> pairSolvable; // solvable contacts of each pair
+  std::vector<std::size_t> pairOffsets;  // pairMembers range of each pair
+  std::vector<std::size_t> pairMembers;  // contacts grouped by pair
+  std::vector<std::size_t> contactPairs; // pair of each contact
+  std::vector<char> keep;                // whether each contact is kept
+  std::vector<double> spread; // squared distance to the nearest kept contact
+  std::vector<std::size_t> deepest; // candidates after the spread picks
+  std::vector<collision::Contact> kept;
+};
+
+using ObjectPair
+    = std::pair<collision::CollisionObject*, collision::CollisionObject*>;
+
+//==============================================================================
+// The contact's two objects in address order.
+ObjectPair makeObjectPair(const collision::Contact& contact)
+{
+  collision::CollisionObject* a = contact.collisionObject1;
+  collision::CollisionObject* b = contact.collisionObject2;
+  return std::less<collision::CollisionObject*>()(b, a) ? ObjectPair(b, a)
+                                                        : ObjectPair(a, b);
+}
+
+//==============================================================================
+std::size_t hashObjectPair(const ObjectPair& pair)
+{
+  auto h = static_cast<std::uint64_t>(
+      reinterpret_cast<std::uintptr_t>(pair.first));
+  h ^= static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(pair.second))
+       + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+  h ^= h >> 33u;
+  h *= 0xff51afd7ed558ccdULL;
+  h ^= h >> 33u;
+  return static_cast<std::size_t>(h);
+}
+
+//==============================================================================
+// Whether the contact can become an active constraint: updateConstraints()
+// skips contacts with non-finite geometry, a zero normal, a missing collision
+// object, ShapeNode or BodyNode, or a negative depth, and ContactConstraint
+// deactivates one between two bodies that cannot react (immobile or driven
+// only by prescribed-motion joints).
+bool isSolvableContact(const collision::Contact& contact)
+{
+  const auto hasBody = [](const collision::CollisionObject* object) {
+    return object != nullptr && object->getShapeNode() != nullptr
+           && object->getBodyNode() != nullptr;
+  };
+  return std::isfinite(contact.penetrationDepth)
+         && contact.penetrationDepth >= 0.0 && contact.point.allFinite()
+         && contact.normal.allFinite()
+         && !collision::Contact::isZeroNormal(contact.normal)
+         && hasBody(contact.collisionObject1)
+         && hasBody(contact.collisionObject2)
+         && (contact.collisionObject1->getBodyNode()->isReactive()
+             || contact.collisionObject2->getBodyNode()->isReactive());
+}
+
+//==============================================================================
+// Keeps `quota` of a pair's `count` contacts (`members`, in detector order):
+// the deepest solvable contact, then repeatedly the solvable contact farthest
+// from the kept ones (ties go to the deeper, then the earlier contact). After
+// kMaxSpreadPicksPerPair picks the deepest remaining solvable contacts fill the
+// quota, and contacts the solver skips come last.
+void keepSpreadContacts(
+    const std::vector<collision::Contact>& contacts,
+    const std::size_t* members,
+    std::size_t count,
+    std::size_t quota,
+    ContactTrimScratch& scratch)
+{
+  auto& keep = scratch.keep;
+  auto& spread = scratch.spread;
+  spread.resize(count);
+  std::fill(
+      spread.begin(), spread.end(), std::numeric_limits<double>::infinity());
+
+  std::size_t numKept = 0u;
+  std::size_t last = count;
+  const std::size_t numSpreadPicks = std::min(quota, kMaxSpreadPicksPerPair);
+  while (numKept < numSpreadPicks) {
+    std::size_t best = count;
+    for (std::size_t k = 0u; k < count; ++k) {
+      const auto& contact = contacts[members[k]];
+      if (keep[members[k]] || !isSolvableContact(contact))
+        continue;
+
+      if (last < count) {
+        spread[k] = std::min(
+            spread[k],
+            (contact.point - contacts[members[last]].point).squaredNorm());
+      }
+      if (best == count || spread[k] > spread[best]
+          || (spread[k] == spread[best]
+              && contact.penetrationDepth
+                     > contacts[members[best]].penetrationDepth)) {
+        best = k;
+      }
+    }
+    if (best == count)
+      break; // no solvable contact left
+
+    keep[members[best]] = 1;
+    last = best;
+    ++numKept;
+  }
+
+  if (numKept == quota)
+    return;
+
+  auto& deepest = scratch.deepest;
+  deepest.clear();
+  for (std::size_t k = 0u; k < count; ++k) {
+    if (!keep[members[k]] && isSolvableContact(contacts[members[k]]))
+      deepest.push_back(members[k]);
+  }
+  const std::size_t numDeepest = std::min(deepest.size(), quota - numKept);
+  std::nth_element(
+      deepest.begin(),
+      deepest.begin() + numDeepest,
+      deepest.end(),
+      [&](std::size_t a, std::size_t b) {
+        const double depthA = contacts[a].penetrationDepth;
+        const double depthB = contacts[b].penetrationDepth;
+        return depthA > depthB || (depthA == depthB && a < b);
+      });
+  for (std::size_t k = 0u; k < numDeepest; ++k)
+    keep[deepest[k]] = 1;
+  numKept += numDeepest;
+
+  for (std::size_t k = 0u; numKept < quota; ++k) {
+    if (!keep[members[k]]) {
+      keep[members[k]] = 1;
+      ++numKept;
+    }
+  }
+}
+
+//==============================================================================
+// Trims `result` to `cap` contacts without starving a pair while there are no
+// more pairs than `cap`. Pairs (unordered CollisionObject pairs, in order of
+// first appearance) get one more solvable contact per round while the budget
+// allows; what is left after the last full round goes to the first pairs that
+// still have solvable contacts. Contacts the solver skips (non-finite or
+// negative depth) get only the budget the solvable ones leave, in detector
+// order, so they cannot starve a pair the solver needs. Within a pair,
+// keepSpreadContacts() chooses. Kept contacts stay in the detector's order.
+// Returns the number of colliding pairs.
+//
+// Allocation-free once the per-thread scratch has grown to the scene, for a
+// result whose colliding-object lookup caches no caller has queried. Once a
+// caller queries them, every step allocates their set nodes, trimmed or not.
+std::size_t trimContactsFairly(
+    collision::CollisionResult& result, std::size_t cap)
+{
+  static thread_local ContactTrimScratch scratch;
+  constexpr auto kNoPair = std::numeric_limits<std::size_t>::max();
+
+  const auto& contacts = result.getContacts();
+  const std::size_t numContacts = contacts.size();
+
+  // Number the pairs by first appearance.
+  std::size_t numBuckets = 2u;
+  while (numBuckets < 2u * numContacts)
+    numBuckets <<= 1u;
+  const std::size_t bucketMask = numBuckets - 1u;
+  scratch.pairBuckets.assign(numBuckets, kNoPair);
+  scratch.pairObjects1.clear();
+  scratch.pairObjects2.clear();
+  scratch.pairCounts.clear();
+  scratch.pairSolvable.clear();
+  scratch.contactPairs.resize(numContacts);
+  const auto isPair = [&](std::size_t p, const ObjectPair& pair) {
+    return scratch.pairObjects1[p] == pair.first
+           && scratch.pairObjects2[p] == pair.second;
+  };
+  for (std::size_t i = 0u; i < numContacts; ++i) {
+    const auto pair = makeObjectPair(contacts[i]);
+    std::size_t p = i > 0u ? scratch.contactPairs[i - 1u] : kNoPair;
+    if (p == kNoPair || !isPair(p, pair)) {
+      std::size_t bucket = hashObjectPair(pair) & bucketMask;
+      while (scratch.pairBuckets[bucket] != kNoPair
+             && !isPair(scratch.pairBuckets[bucket], pair)) {
+        bucket = (bucket + 1u) & bucketMask;
+      }
+      if (scratch.pairBuckets[bucket] == kNoPair) {
+        scratch.pairBuckets[bucket] = scratch.pairObjects1.size();
+        scratch.pairObjects1.push_back(pair.first);
+        scratch.pairObjects2.push_back(pair.second);
+        scratch.pairCounts.push_back(0u);
+        scratch.pairSolvable.push_back(0u);
+      }
+      p = scratch.pairBuckets[bucket];
+    }
+    scratch.contactPairs[i] = p;
+    ++scratch.pairCounts[p];
+    if (isSolvableContact(contacts[i]))
+      ++scratch.pairSolvable[p];
+  }
+  const std::size_t numPairs = scratch.pairObjects1.size();
+
+  // Group the contacts by pair, keeping the detector order within a pair. The
+  // counts serve as fill cursors and end up as counts again.
+  scratch.pairOffsets.resize(numPairs + 1u);
+  scratch.pairOffsets[0] = 0u;
+  for (std::size_t p = 0u; p < numPairs; ++p) {
+    scratch.pairOffsets[p + 1u]
+        = scratch.pairOffsets[p] + scratch.pairCounts[p];
+  }
+  std::fill(scratch.pairCounts.begin(), scratch.pairCounts.end(), 0u);
+  scratch.pairMembers.resize(numContacts);
+  for (std::size_t i = 0u; i < numContacts; ++i) {
+    const std::size_t p = scratch.contactPairs[i];
+    scratch.pairMembers[scratch.pairOffsets[p] + scratch.pairCounts[p]++] = i;
+  }
+
+  // Full rounds of solvable contacts that fit: the largest r with
+  // sum_p min(solvable_p, r) <= cap, found by bisection between 0 rounds
+  // (fits) and the largest pair's solvable count (keeps every solvable
+  // contact, so it does not fit unless they all do).
+  const auto numKeptAfter = [&](std::size_t rounds) {
+    std::size_t total = 0u;
+    for (const std::size_t solvable : scratch.pairSolvable)
+      total += std::min(solvable, rounds);
+    return total;
+  };
+  std::size_t rounds = *std::max_element(
+      scratch.pairSolvable.begin(), scratch.pairSolvable.end());
+  if (numKeptAfter(rounds) > cap) {
+    std::size_t tooMany = rounds;
+    rounds = 0u;
+    while (rounds + 1u < tooMany) {
+      const std::size_t mid = rounds + (tooMany - rounds) / 2u;
+      if (numKeptAfter(mid) <= cap)
+        rounds = mid;
+      else
+        tooMany = mid;
+    }
+  }
+  std::size_t leftover = cap - numKeptAfter(rounds);
+
+  scratch.keep.assign(numContacts, 0);
+  for (std::size_t p = 0u; p < numPairs; ++p) {
+    const std::size_t count = scratch.pairCounts[p];
+    const std::size_t solvable = scratch.pairSolvable[p];
+    std::size_t quota = std::min(solvable, rounds);
+    if (solvable > rounds && leftover > 0u) {
+      ++quota;
+      --leftover;
+    }
+
+    const std::size_t* members
+        = scratch.pairMembers.data() + scratch.pairOffsets[p];
+    if (quota == count) {
+      for (std::size_t k = 0u; k < count; ++k)
+        scratch.keep[members[k]] = 1;
+    } else if (quota > 0u) {
+      keepSpreadContacts(contacts, members, count, quota, scratch);
+    }
+  }
+
+  // Budget the solvable contacts left goes to skipped ones, in detector order.
+  for (std::size_t i = 0u; i < numContacts && leftover > 0u; ++i) {
+    if (!scratch.keep[i]) {
+      scratch.keep[i] = 1;
+      --leftover;
+    }
+  }
+
+  scratch.kept.clear();
+  for (std::size_t i = 0u; i < numContacts; ++i) {
+    if (scratch.keep[i])
+      scratch.kept.push_back(contacts[i]);
+  }
+  result.clear();
+  for (const auto& contact : scratch.kept)
+    result.addContact(contact);
+
+  return numPairs;
+}
+
+//==============================================================================
+// The solver's collision query (#3056). A finite maxNumContacts used to stop
+// detection once that many contacts were found, in broadphase order, so every
+// later pair got no contact and its bodies fell through their support. Now
+// detection runs up to getContactDetectionBound() contacts and an over-budget
+// result is trimmed fairly; within the budget the result is unchanged. The
+// budget is applied after collide() returns because detectors may drop
+// contacts per pair after their base class's collide() (gz-physics'
+// GzOdeCollisionDetector does), which hides saturation from the base class.
+void collideWithContactBudget(
+    collision::CollisionGroup& group,
+    const collision::CollisionOption& option,
+    collision::CollisionResult& result)
+{
+  const std::size_t cap = option.maxNumContacts;
+  if (cap <= 1u || cap == std::numeric_limits<std::size_t>::max()) {
+    // Binary checks and unlimited budgets have nothing to share.
+    group.collide(option, &result);
+    return;
+  }
+
+  const std::size_t bound = getContactDetectionBound(cap);
+  group.collide(makeContactDetectionOption(group, option, bound), &result);
+
+  const std::size_t demand = result.getNumContacts();
+  if (demand <= cap)
+    return;
+
+  const std::size_t numPairs = trimContactsFairly(result, cap);
+
+  static std::atomic<bool> warnedOverBudget{false};
+  if (!warnedOverBudget.exchange(true, std::memory_order_relaxed)) {
+    dtwarn << "[ConstraintSolver] Contact demand (" << demand
+           << " contacts over " << numPairs
+           << " colliding pairs) exceeds CollisionOption::maxNumContacts ("
+           << cap
+           << "), so the pairs share the budget. Each pair keeps at least its "
+              "deepest contact while there are no more colliding pairs than "
+              "maxNumContacts; beyond that, the pairs found last get none. "
+              "Raise maxNumContacts to keep every contact; the host "
+              "application may set it (gz-physics uses 10000). This warning "
+              "is printed once per process.\n";
+  }
+
+  if (demand >= bound) {
+    static std::atomic<bool> warnedAtBound{false};
+    if (!warnedAtBound.exchange(true, std::memory_order_relaxed)) {
+      dtwarn << "[ConstraintSolver] Contact detection stopped at its bound of "
+             << bound << " contacts for CollisionOption::maxNumContacts ("
+             << cap
+             << "). Pairs beyond the bound get no contacts and their bodies "
+                "may fall through their support. Raise maxNumContacts. This "
+                "warning is printed once per process.\n";
+    }
+  }
+}
+
+} // namespace
 
 //==============================================================================
 class ConstraintThreadPool
@@ -511,6 +928,7 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
   mConstrainedGroups.reserve(mSkeletons.size());
+  mIslandSkeletons.reserve(mSkeletons.size());
 
   // A newly subscribed skeleton may carry constraint state from another
   // solver. Clear it once at insertion so steady-state solve() can derive its
@@ -557,6 +975,7 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
   mConstrainedGroups.reserve(mSkeletons.size());
+  mIslandSkeletons.clear();
 }
 
 //==============================================================================
@@ -572,6 +991,7 @@ void ConstraintSolver::removeAllSkeletons()
 {
   mCollisionGroup->removeAllShapeFrames();
   mSkeletons.clear();
+  mIslandSkeletons.clear();
 }
 
 //==============================================================================
@@ -775,7 +1195,7 @@ void ConstraintSolver::setCollisionDetector(
   mCollisionGroup = mCollisionDetector->createCollisionGroupAsSharedPtr();
 
   for (const auto& skeleton : mSkeletons)
-    mCollisionGroup->addShapeFramesOf(skeleton.get());
+    mCollisionGroup->subscribeTo(skeleton);
 }
 
 //==============================================================================
@@ -946,9 +1366,11 @@ void ConstraintSolver::solve()
 void ConstraintSolver::prepareForSimulation()
 {
   // solve() uses a non-empty previous active set as evidence that constraint
-  // impulses may need clearing. Preparation deliberately skips manual
-  // constraints, so preserve the active-set bookkeeping across these
-  // state-neutral preparation passes.
+  // impulses may need clearing, and clears stale freeze flags and island
+  // indices on a solve without active constraints only if the previous solve
+  // built islands. Preparation deliberately skips manual constraints and sleep
+  // decisions, so preserve this bookkeeping across these state-neutral
+  // preparation passes.
   const auto activeConstraints = mActiveConstraints;
   const bool activeConstraintsAllSingleReactiveContacts
       = mActiveConstraintsAllSingleReactiveContacts;
@@ -956,6 +1378,11 @@ void ConstraintSolver::prepareForSimulation()
       = mActiveConstraintsHaveCustomContactConstraint;
   const bool activeSingleReactiveContactsNeedSharedDependencyScan
       = mActiveSingleReactiveContactsNeedSharedDependencyScan;
+  // The passes clear this flag whenever they find no active constraint; this
+  // guard puts the previous solve's value back when the function returns or
+  // unwinds.
+  const ScopedAssignment<bool> hadDeactivationGroups(
+      mHadDeactivationGroups, mHadDeactivationGroups);
   const auto collidingState = snapshotCollidingState(mSkeletons);
   // Restore the previous result by value: its contacts may point to collision
   // objects freed since the last step (by a skeleton removal, a collision
@@ -981,15 +1408,29 @@ void ConstraintSolver::prepareForSimulation()
       = isExactDefaultContactSurfaceHandler(mContactSurfaceHandler)
         && mContactSurfaceHandler->mParent == nullptr;
   {
-    const ScopedContactSurfaceHandler preparationContactSurfaceHandler(
-        mContactSurfaceHandler,
-        usesOnlyDefaultContactSurfaceHandler
-            ? mContactSurfaceHandler
-            : getStatelessContactSurfaceHandler());
+    const ScopedAssignment<ContactSurfaceHandlerPtr>
+        preparationContactSurfaceHandler(
+            mContactSurfaceHandler,
+            usesOnlyDefaultContactSurfaceHandler
+                ? mContactSurfaceHandler
+                : getStatelessContactSurfaceHandler());
+    // The passes build constrained groups with automatic deactivation off.
+    // Which islands sleep, and the sleep candidacy, resting flag and island
+    // index of each skeleton, are for the next step's solve to decide: the
+    // passes may see constraints the user's handler rejects, and any change
+    // they made would also advance the global deactivation-state version,
+    // which makes World wake every resting skeleton at the start of the step.
+    // updateConstraints() keeps the real flag, so its resting-contact filter
+    // skips the pairs the step skips: the passes collide only what the step
+    // collides, which keeps re-entry cheap in resting worlds.
     constexpr int kPreparationPasses = 2;
     for (int pass = 0; pass < kPreparationPasses; ++pass) {
       updateConstraints(false);
-      buildConstrainedGroups();
+      {
+        const ScopedAssignment<bool> deactivationActive(
+            mDeactivationActive, false);
+        buildConstrainedGroups();
+      }
       reserveConstrainedGroupsScratch();
     }
   }
@@ -1109,6 +1550,7 @@ bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& skeleton)
 {
   if (!hasSkeleton(skeleton)) {
     mSkeletons.push_back(skeleton);
+    mIslandSkeletons.reserve(mSkeletons.size());
     return true;
   } else {
     dtwarn << "Skeleton [" << skeleton->getName()
@@ -1184,9 +1626,8 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
         mDeactivationActive, hasAwakeMobileSkeleton);
   }
 
-  {
-    mCollisionGroup->collide(mCollisionOption, &mCollisionResult);
-  }
+  collideWithContactBudget(
+      *mCollisionGroup, mCollisionOption, mCollisionResult);
 
   if (restingContactFilter != nullptr)
     restingContactFilter->setSolverRestingContactFilterActive(false, false);
@@ -2157,6 +2598,7 @@ bool ConstraintSolver::clearInactiveConstrainedGroups()
   mGroupResting.clear();
   mGroupAllSleepCandidates.clear();
   mGroupPreserveSleepCandidates.clear();
+  mIslandSkeletons.clear();
 
   // With no active constraints, no island can be frozen. Clear any stale
   // freeze flags so a body that just lost all of its contacts resumes
@@ -2505,8 +2947,61 @@ void ConstraintSolver::buildConstrainedGroups()
     }
 
     {
+      const double linearWakeSpeed
+          = std::min(kMissedContactQuietLinearSpeed, mLinearWakeSpeed);
+      const double angularWakeSpeed
+          = std::min(kMissedContactQuietAngularSpeed, mAngularWakeSpeed);
+      // Whether every body moves inside the linear wake band once up to one
+      // step of gravity along gravity is taken off its velocity, as a body
+      // whose contact is missed falls freely for that step. Nothing is taken
+      // off if gravity is off for any of its bodies.
+      const auto fallsInsideWakeBand = [&](const Skeleton& skeleton) {
+        const Eigen::Vector3d& gravity = skeleton.getGravity();
+        double oneStepOfGravity = gravity.norm() * mTimeStep;
+        for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
+          if (!skeleton.getBodyNode(i)->getGravityMode())
+            oneStepOfGravity = 0.0;
+        }
+        Eigen::Vector3d down = Eigen::Vector3d::Zero();
+        if (oneStepOfGravity > 0.0)
+          down = gravity.normalized();
+        for (std::size_t i = 0; i < skeleton.getNumBodyNodes(); ++i) {
+          const Eigen::Vector3d velocity
+              = skeleton.getBodyNode(i)->getLinearVelocity();
+          const double fall
+              = std::clamp(velocity.dot(down), 0.0, oneStepOfGravity);
+          if ((velocity - fall * down).norm() > linearWakeSpeed)
+            return false;
+        }
+        return true;
+      };
+      // A FreeJoint and no other degrees of freedom, with no joint constraint
+      // or spring that could pull the body back once it leaves its island, and
+      // only force or passive actuators, so that forces alone move it: a joint
+      // that follows an acceleration, velocity or lock command moves as
+      // commanded, a servo drives its joint toward a commanded velocity even
+      // when that is zero, and a mimic joint follows another joint.
+      const auto isFreeRigidBody = [this](const Skeleton& skeleton) {
+        if (skeleton.getNumDofs() != 6u)
+          return false;
+        const auto* joint = skeleton.getRootJoint();
+        if (dynamic_cast<const FreeJoint*>(joint) == nullptr
+            || canJointCreateAutomaticConstraint(joint)) {
+          return false;
+        }
+        for (std::size_t i = 0; i < 6u; ++i) {
+          const auto actuatorType = joint->getActuatorType(i);
+          if ((actuatorType != dynamics::Joint::FORCE
+               && actuatorType != dynamics::Joint::PASSIVE)
+              || joint->getSpringStiffness(i) != 0.0) {
+            return false;
+          }
+        }
+        return true;
+      };
       bool hasUngroupedAwakeMobileSkeleton = false;
-      for (const auto& skeleton : mSkeletons) {
+      for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
+        const auto& skeleton = mSkeletons[i];
         if (!skeleton->isMobile())
           continue;
 
@@ -2514,8 +3009,52 @@ void ConstraintSolver::buildConstrainedGroups()
         const auto groupIndex = root->mUnionIndex;
         const bool grouped = groupIndex != invalidUnionIndex
                              && groupIndex < mGroupResting.size();
-        if (!grouped && !skeleton->isResting()
-            && !skeleton->isSleepCandidate()) {
+        if (grouped || skeleton->isResting() || skeleton->isSleepCandidate())
+          continue;
+
+        // An awake body outside every island may be falling onto one. While
+        // one exists, no island newly freezes, and candidates in islands that
+        // cannot rest lose their candidacy and dwell (pass 2 below). A
+        // collision backend can miss a resting contact for a single step
+        // (Bullet does for spheres and cylinders), and the body then falls
+        // freely for that step. So a free rigid body (isFreeRigidBody above)
+        // that was in an island at the previous build counts only from its
+        // second build outside every island if it moves like that: its smoothed
+        // speeds are inside the wake band (the World's, capped at the default
+        // one), it spins no faster than the band allows, apart from up to one
+        // step of falling it moves inside the band (fallsInsideWakeBand above),
+        // and no force or command drives it (World never counts a driven body
+        // as quiet either). Such a body cannot be told from one that is
+        // starting to fall, released from a hold or at the top of a flight (the
+        // smoothed speeds catch a flight's top only while three steps of
+        // gravity exceed the band, that is, at steps of about 0.66 ms or more
+        // under Earth gravity and the default band), so an island that becomes
+        // eligible at that build can freeze while the body falls onto it. Any
+        // other body counts at once: at the turning point of a swing against a
+        // joint limit, an obstacle or another body, a body on a joint or a
+        // spring leaves its island just as slowly and then swings freely. Body
+        // speeds miss the point masses of soft bodies, so a soft body always
+        // counts too. The previous build must have put the body in an island.
+        // Pass 2 has not yet restamped the island index, so it still holds that
+        // build's island, but World also gives island 0 to a sleep candidate
+        // that it puts to rest outside every island, and the body keeps it when
+        // it wakes, so the body must also be in that build's record of islands
+        // (mIslandSkeletons). On simulation-mode re-entry steps the preparation
+        // passes build first; they group a body that only contacts hold by the
+        // same contacts as this build, so such a body leaving its island counts
+        // at once on those steps.
+        const bool leftIsland = skeleton->getIslandIndex() >= 0
+                                && i < mIslandSkeletons.size()
+                                && mIslandSkeletons[i] == skeleton.get();
+        const bool movesLikeMissedContact
+            = leftIsland && isFreeRigidBody(*skeleton)
+              && skeleton->getNumSoftBodyNodes() == 0u
+              && skeleton->getSmoothedLinearSpeed() <= linearWakeSpeed
+              && skeleton->getSmoothedAngularSpeed() <= angularWakeSpeed
+              && fallsInsideWakeBand(*skeleton)
+              && skeleton->computeMaxBodyAngularSpeed() <= angularWakeSpeed
+              && !skeleton->hasExternalDisturbance();
+        if (!movesLikeMissedContact) {
           hasUngroupedAwakeMobileSkeleton = true;
           break;
         }
@@ -2559,6 +3098,7 @@ void ConstraintSolver::buildConstrainedGroups()
       // it freezes so observable force caches (e.g. transmitted wrench queries)
       // keep the last solved constraint forces instead of an unconstrained
       // forward-dynamics value.
+      mIslandSkeletons.clear();
       for (const auto& skeleton : mSkeletons) {
         const auto root = ConstraintBase::getRootSkeleton(skeleton);
         const auto groupIndex = root->mUnionIndex;
@@ -2578,8 +3118,13 @@ void ConstraintSolver::buildConstrainedGroups()
         }
         skeleton->setResting(groupCanRest && skeleton->isResting());
         skeleton->setIslandIndex(grouped ? static_cast<int>(groupIndex) : -1);
+        const dynamics::Skeleton* const islandSkeleton
+            = grouped ? skeleton.get() : nullptr;
+        mIslandSkeletons.push_back(islandSkeleton);
       }
     }
+  } else {
+    mIslandSkeletons.clear();
   }
 
   //----------------------------------------------------------------------------
@@ -3101,6 +3646,7 @@ void ConstraintSolver::reserveConstrainedGroupsScratch()
   mGroupMobileSkeletonCountScratch.reserve(groupCount);
   mGroupAlreadyRestingScratch.reserve(groupCount);
   mGroupSolvedToRestScratch.reserve(groupCount);
+  mIslandSkeletons.reserve(mSkeletons.size());
 
   for (const auto& group : mConstrainedGroups) {
     reserveConstrainedGroupScratch(group);

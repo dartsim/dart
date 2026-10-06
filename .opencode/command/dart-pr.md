@@ -116,7 +116,7 @@ Use these practices:
    | Maintenance `release-6.*` | Branch-matching DART 6.x release                |
 
 4. After explicit maintainer/user approval, open bug-fix PRs against `main`;
-   backports to `release-6.19` use `dart-backport-pr`.
+   backports to a `release-6.*` branch (none right now) use `dart-backport-pr`.
 5. Before every commit, run:
    ```bash
    pixi run lint
@@ -176,21 +176,9 @@ Use these practices:
 Never reply to AI-generated review comments from bot users such as
 `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`,
 `github-actions[bot]`, or `copilot[bot]`.
-When a draft PR is first published, a top-level `@codex review` is the preferred
-fast path once explicit maintainer/user approval covers PR comments; it can run
-while the PR remains draft. Make fixes silently. Push and ask for a new AI review
-with `@codex review` only after explicit maintainer/user approval and only when
-the approved follow-up push addressed Codex review comments, or when the first
-trigger has a concrete timeout/blocker.
-
-After Codex returns no actionable issues and local validation passes on the
-current head (`pixi run test-all` for the default build plus C++/Python runtime
-aggregate, focused `pixi run test` or `pixi run test-py` when clearer
-attribution is useful, plus lint and the Gazebo gate when the touched surface
-requires them), a draft PR is ready to mark ready for human review after
-explicit approval even if hosted CI is still pending. Do not merge until
-branch protection and required checks pass unless a maintainer explicitly
-approves a policy bypass.
+Make fixes silently. Re-request Codex review, mark the draft ready, and merge
+only as `docs/onboarding/ai-tools.md` § "PR Lifecycle" describes, each after
+explicit maintainer/user approval.
 
 ## Output
 

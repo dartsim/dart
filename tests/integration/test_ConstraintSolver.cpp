@@ -41,6 +41,7 @@
 #include "dart/collision/dart/PersistentManifoldCache.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Profile.hpp"
+#include "dart/config.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
@@ -56,20 +57,32 @@
 #include "dart/constraint/ServoMotorConstraint.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 #include "dart/simulation/DeactivationOptions.hpp"
 #include "dart/simulation/World.hpp"
 
+#if HAVE_BULLET
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+#endif
+#if HAVE_ODE
+  #include "dart/collision/ode/OdeCollisionDetector.hpp"
+#endif
+
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <functional>
 #include <limits>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <new>
@@ -77,6 +90,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <tuple>
 #include <type_traits>
 #include <typeinfo>
 #include <vector>
@@ -1363,6 +1377,351 @@ TEST(ConstraintSolver, ContactHandlerErrorReductionVelocityAppliesToWholeStep)
   EXPECT_TRUE(presetVelocities == settingVelocities)
       << "set before the step: " << presetVelocities.transpose()
       << "\nset by the handler: " << settingVelocities.transpose();
+}
+
+//==============================================================================
+namespace {
+
+// Rejects the contacts between two bodies, like a user handler that lets one
+// body pass through another, and builds stock constraints for the others.
+class PairRejectingContactSurfaceHandler final
+  : public constraint::ContactSurfaceHandler
+{
+public:
+  PairRejectingContactSurfaceHandler(
+      const dynamics::BodyNode* bodyNode1, const dynamics::BodyNode* bodyNode2)
+    : mBodyNode1(bodyNode1), mBodyNode2(bodyNode2)
+  {
+    // Do nothing
+  }
+
+  constraint::ContactConstraintPtr createConstraint(
+      collision::Contact& contact,
+      const size_t numContactsOnCollisionObject,
+      const double timeStep) const override
+  {
+    const auto* bodyNode1 = contact.collisionObject1->getBodyNode();
+    const auto* bodyNode2 = contact.collisionObject2->getBodyNode();
+    if ((bodyNode1 == mBodyNode1 && bodyNode2 == mBodyNode2)
+        || (bodyNode1 == mBodyNode2 && bodyNode2 == mBodyNode1)) {
+      return nullptr;
+    }
+
+    return ContactSurfaceHandler::createConstraint(
+        contact, numContactsOnCollisionObject, timeStep);
+  }
+
+private:
+  const dynamics::BodyNode* mBodyNode1;
+  const dynamics::BodyNode* mBodyNode2;
+};
+
+// One detector of each built-in kind, to clone for each world.
+std::vector<collision::CollisionDetectorPtr> createCollisionDetectorPrototypes()
+{
+  std::vector<collision::CollisionDetectorPtr> detectors{
+      collision::DARTCollisionDetector::create(),
+      collision::FCLCollisionDetector::create()};
+#if HAVE_BULLET
+  detectors.push_back(collision::BulletCollisionDetector::create());
+#endif
+#if HAVE_ODE
+  detectors.push_back(collision::OdeCollisionDetector::create());
+#endif
+  return detectors;
+}
+
+// A box ground whose top face is at z = 0, like the one gz-physics builds.
+dynamics::SkeletonPtr createSleepTestGround()
+{
+  return createSolverTestBox(
+      "ground",
+      Eigen::Vector3d(20.0, 20.0, 1.0),
+      Eigen::Vector3d(0.0, 0.0, -0.5),
+      false);
+}
+
+// A frictionless sphere sliding along +x on the ground.
+dynamics::SkeletonPtr createSlidingPuck(
+    const std::string& name, double x, double speed)
+{
+  constexpr double radius = 0.2;
+  auto puck = dynamics::Skeleton::create(name);
+  dynamics::BodyNode::Properties bodyProperties(
+      dynamics::BodyNode::AspectProperties(name + "_body"));
+  bodyProperties.mInertia.setMass(1.0);
+  auto pair = puck->createJointAndBodyNodePair<dynamics::FreeJoint>(
+      nullptr, dynamics::FreeJoint::Properties(), bodyProperties);
+  auto* shapeNode = pair.second->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(
+      std::make_shared<dynamics::SphereShape>(radius));
+  shapeNode->getDynamicsAspect()->setFrictionCoeff(0.0);
+
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation() = Eigen::Vector3d(x, 0.0, radius - 5e-4);
+  pair.first->setPositions(dynamics::FreeJoint::convertToPositions(transform));
+  Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+  velocity[3] = speed;
+  pair.first->setVelocities(velocity);
+  return puck;
+}
+
+// Makes the world enter simulation mode again on its next step without
+// changing anything the step-start sleep check compares: either a skeleton of
+// another World changes (the structural version is process-wide), or the
+// thread count changes.
+void invalidateSimulationModeFromOutside(
+    simulation::World& world,
+    simulation::World& otherWorld,
+    bool changeOtherWorld)
+{
+  if (changeOtherWorld) {
+    auto* body = otherWorld.getSkeleton(0)->getBodyNode(0);
+    body->setName(body->getName() + "_renamed");
+  } else {
+    world.setNumSimulationThreads(world.getNumSimulationThreads() + 1u);
+  }
+}
+
+bool hasContactBetween(
+    const collision::CollisionResult& result,
+    const dynamics::BodyNode* bodyNode1,
+    const dynamics::BodyNode* bodyNode2)
+{
+  for (const auto& contact : result.getContacts()) {
+    const auto* contactBodyNode1 = contact.collisionObject1->getBodyNode();
+    const auto* contactBodyNode2 = contact.collisionObject2->getBodyNode();
+    if ((contactBodyNode1 == bodyNode1 && contactBodyNode2 == bodyNode2)
+        || (contactBodyNode1 == bodyNode2 && contactBodyNode2 == bodyNode1)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// The resting flag, sleep candidacy, island index and quiet dwell of every
+// skeleton.
+std::vector<std::tuple<bool, bool, int, double>> getSleepStates(
+    const simulation::World& world)
+{
+  std::vector<std::tuple<bool, bool, int, double>> states;
+  for (std::size_t i = 0u; i < world.getNumSkeletons(); ++i) {
+    const auto skeleton = world.getSkeleton(i);
+    states.emplace_back(
+        skeleton->isResting(),
+        skeleton->isSleepCandidate(),
+        skeleton->getIslandIndex(),
+        skeleton->getRestDwellTime());
+  }
+  return states;
+}
+
+} // namespace
+
+//==============================================================================
+// A frictionless puck slides through a box, and the handler rejects their
+// contacts. Preparing for simulation builds constraints for those contacts
+// through a stateless handler; it must not use them to change any sleep state,
+// such as waking the box.
+TEST(
+    ConstraintSolver,
+    SimulationPreparationKeepsSleepStateThroughRejectedContacts)
+{
+  for (const auto& detector : createCollisionDetectorPrototypes()) {
+    for (const bool changeOtherWorld : {true, false}) {
+      SCOPED_TRACE(
+          detector->getType()
+          + (changeOtherWorld ? ", other World changed"
+                              : ", thread count changed"));
+
+      auto otherWorld = createWorld();
+      otherWorld->addSkeleton(createSolverTestBox(
+          "other_box",
+          Eigen::Vector3d::Ones(),
+          Eigen::Vector3d(0.0, 0.0, 0.5),
+          true));
+
+      auto world = createWorld();
+      world->setTimeStep(0.001);
+      auto* solver = world->getConstraintSolver();
+      solver->setCollisionDetector(detector->cloneWithoutCollisionObjects());
+      world->addSkeleton(createSleepTestGround());
+      auto box = createSolverTestBox(
+          "box",
+          Eigen::Vector3d::Constant(0.5),
+          Eigen::Vector3d(0.0, 0.0, 0.2495),
+          true);
+      world->addSkeleton(box);
+      auto puck = createSlidingPuck("puck", -0.6, 0.1);
+      world->addSkeleton(puck);
+      solver->addContactSurfaceHandler(
+          std::make_shared<PairRejectingContactSurfaceHandler>(
+              puck->getBodyNode(0), box->getBodyNode(0)));
+
+      // The puck is inside the box at 2.5 s. Whether the box sleeps beside a
+      // rejecting handler is for the step to decide; preparation must keep
+      // whatever the step decided.
+      for (int i = 0; i < 2500; ++i)
+        world->step();
+      ASSERT_TRUE(hasContactBetween(
+          world->getLastCollisionResult(),
+          puck->getBodyNode(0),
+          box->getBodyNode(0)));
+      const bool boxResting = box->isResting();
+
+      invalidateSimulationModeFromOutside(
+          *world, *otherWorld, changeOtherWorld);
+      ASSERT_FALSE(world->isInSimulationMode());
+      const auto sleepStates = getSleepStates(*world);
+      world->enterSimulationMode();
+      EXPECT_EQ(sleepStates, getSleepStates(*world));
+
+      const Eigen::VectorXd boxPositions = box->getPositions();
+      for (int i = 0; i < 10; ++i)
+        world->step();
+      EXPECT_EQ(boxResting, box->isResting());
+      if (boxResting) {
+        EXPECT_EQ(boxPositions, box->getPositions());
+      }
+    }
+  }
+}
+
+//==============================================================================
+// Boxes A and B rest, and a frictionless puck slides into A. The step on which
+// the puck reaches A wakes A, and only A. Entering simulation mode right
+// before that step must not change any sleep state, so that B stays asleep:
+// with the default contact surface handler, preparation would otherwise wake A
+// early, and that change of sleep state makes World wake every resting body.
+TEST(ConstraintSolver, SimulationPreparationLeavesSleepStateUntouched)
+{
+  const auto createScene = [](const collision::CollisionDetectorPtr& detector) {
+    auto world = createWorld();
+    world->setTimeStep(0.001);
+    world->getConstraintSolver()->setCollisionDetector(
+        detector->cloneWithoutCollisionObjects());
+    world->addSkeleton(createSleepTestGround());
+    world->addSkeleton(createSolverTestBox(
+        "box_a",
+        Eigen::Vector3d::Constant(0.5),
+        Eigen::Vector3d(0.0, 0.0, 0.2495),
+        true));
+    world->addSkeleton(createSolverTestBox(
+        "box_b",
+        Eigen::Vector3d::Constant(0.5),
+        Eigen::Vector3d(5.0, 0.0, 0.2495),
+        true));
+    world->addSkeleton(createSlidingPuck("puck", -2.5, 1.0));
+    return world;
+  };
+
+  for (const auto& detector : createCollisionDetectorPrototypes()) {
+    SCOPED_TRACE(detector->getType());
+
+    // The step on which the puck wakes A when nothing re-enters. This world
+    // finishes before the next one steps, so its sleep-state changes cannot
+    // wake anything there.
+    int wakeStep = 0;
+    {
+      auto world = createScene(detector);
+      const auto boxA = world->getSkeleton("box_a");
+      bool rested = false;
+      for (int i = 1; i <= 5000 && wakeStep == 0; ++i) {
+        world->step();
+        rested = rested || boxA->isResting();
+        if (rested && !boxA->isResting())
+          wakeStep = i;
+      }
+    }
+    ASSERT_GT(wakeStep, 0);
+
+    for (const bool changeOtherWorld : {true, false}) {
+      SCOPED_TRACE(
+          changeOtherWorld ? "other World changed" : "thread count changed");
+
+      auto otherWorld = createWorld();
+      otherWorld->addSkeleton(createSolverTestBox(
+          "other_box",
+          Eigen::Vector3d::Ones(),
+          Eigen::Vector3d(0.0, 0.0, 0.5),
+          true));
+      auto world = createScene(detector);
+      const auto boxA = world->getSkeleton("box_a");
+      const auto boxB = world->getSkeleton("box_b");
+      for (int i = 1; i < wakeStep; ++i)
+        world->step();
+      ASSERT_TRUE(boxA->isResting());
+      ASSERT_TRUE(boxB->isResting());
+
+      invalidateSimulationModeFromOutside(
+          *world, *otherWorld, changeOtherWorld);
+      ASSERT_FALSE(world->isInSimulationMode());
+      const auto sleepStates = getSleepStates(*world);
+      world->enterSimulationMode();
+      EXPECT_EQ(sleepStates, getSleepStates(*world));
+
+      const Eigen::VectorXd boxBPositions = boxB->getPositions();
+      world->step();
+      EXPECT_FALSE(boxA->isResting());
+      EXPECT_TRUE(boxB->isResting());
+      EXPECT_EQ(boxBPositions, boxB->getPositions());
+    }
+  }
+}
+
+//==============================================================================
+// Island indices are stamped only while automatic sleeping is enabled.
+// Entering simulation mode after sleeping was disabled must not stamp them
+// with the previous step's setting.
+TEST(
+    ConstraintSolver,
+    SimulationPreparationStampsNoIslandWhileSleepingIsDisabled)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+  world->addSkeleton(createSleepTestGround());
+  auto box = createSolverTestBox(
+      "box",
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Vector3d(0.0, 0.0, 0.2495),
+      true);
+  world->addSkeleton(box);
+  world->step();
+  ASSERT_GE(box->getIslandIndex(), 0);
+
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+  ASSERT_EQ(-1, box->getIslandIndex());
+
+  world->setNumSimulationThreads(world->getNumSimulationThreads() + 1u);
+  world->step();
+  EXPECT_EQ(-1, box->getIslandIndex());
+}
+
+//==============================================================================
+// A body that leaves every contact gets island index -1 on its next step, also
+// when the World enters simulation mode again right before that step:
+// preparation must not make the step skip clearing the previous islands.
+TEST(ConstraintSolver, SimulationPreparationLetsLiftedBodyLeaveItsIsland)
+{
+  auto world = createWorld();
+  world->setTimeStep(0.001);
+  world->addSkeleton(createSleepTestGround());
+  auto box = createSolverTestBox(
+      "box",
+      Eigen::Vector3d::Constant(0.5),
+      Eigen::Vector3d(0.0, 0.0, 0.2495),
+      true);
+  world->addSkeleton(box);
+  world->step();
+  ASSERT_GE(box->getIslandIndex(), 0);
+
+  box->getJoint(0)->setPosition(5, 2.0); // Lift the box to z = 2.
+  world->setNumSimulationThreads(world->getNumSimulationThreads() + 1u);
+  world->step();
+  EXPECT_EQ(-1, box->getIslandIndex());
 }
 
 //==============================================================================
@@ -3321,4 +3680,819 @@ TEST(ConstraintSolver, ParameterSettersClampInvalidValues)
       &constraint::ServoMotorConstraint::getConstraintForceMixing,
       0.0,
       1e-9);
+}
+
+//==============================================================================
+// #3056: ConstraintSolver treats CollisionOption::maxNumContacts as a contact
+// budget that the colliding pairs share.
+namespace {
+
+constexpr std::size_t kCapTestBoxes = 8u;
+
+// A box ground and kCapTestBoxes unit boxes 1 cm deep in it. Box i is tilted
+// about x by tiltStep * (i + 1), which gives every pair distinct depths.
+std::shared_ptr<World> createCapTestWorld(double tiltStep)
+{
+  auto world = createWorld();
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+  // Box ground: box-box manifolds carry per-point depths.
+  world->addSkeleton(createSolverTestBox(
+      "ground",
+      Eigen::Vector3d(40.0, 4.0, 1.0),
+      Eigen::Vector3d(7.0, 0.0, -0.5),
+      false));
+  for (std::size_t i = 0u; i < kCapTestBoxes; ++i) {
+    auto box = createSolverTestBox(
+        "box_" + std::to_string(i),
+        Eigen::Vector3d::Ones(),
+        Eigen::Vector3d::Zero(),
+        true);
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    tf.linear()
+        = Eigen::AngleAxisd(tiltStep * (i + 1.0), Eigen::Vector3d::UnitX())
+              .toRotationMatrix();
+    tf.translation() = Eigen::Vector3d(2.0 * i, 0.0, 0.49);
+    box->getJoint(0)->setPositions(dynamics::FreeJoint::convertToPositions(tf));
+    world->addSkeleton(box);
+  }
+  return world;
+}
+
+using CapTestPair = std::pair<const void*, const void*>;
+
+CapTestPair shapeFramePair(const collision::Contact& contact)
+{
+  const void* a = contact.collisionObject1->getShapeFrame();
+  const void* b = contact.collisionObject2->getShapeFrame();
+  return std::less<const void*>()(b, a) ? CapTestPair(b, a) : CapTestPair(a, b);
+}
+
+std::map<CapTestPair, std::vector<collision::Contact>> contactsByPair(
+    const collision::CollisionResult& result)
+{
+  std::map<CapTestPair, std::vector<collision::Contact>> pairs;
+  for (const auto& contact : result.getContacts())
+    pairs[shapeFramePair(contact)].push_back(contact);
+  return pairs;
+}
+
+// A dart detector that rewrites its result after the parent's collide(), like
+// gz-physics' GzOdeCollisionDetector::LimitCollisionPairMaxContacts does. The
+// filter also gets the option the detector was called with.
+class PostFilteringDetector : public collision::DARTCollisionDetector
+{
+public:
+  using Filter = std::function<void(
+      const collision::CollisionOption&, collision::CollisionResult&)>;
+
+  static std::shared_ptr<PostFilteringDetector> create(Filter filter)
+  {
+    return std::shared_ptr<PostFilteringDetector>(
+        new PostFilteringDetector(std::move(filter)));
+  }
+
+  using collision::DARTCollisionDetector::collide;
+
+  bool collide(
+      collision::CollisionGroup* group,
+      const collision::CollisionOption& option,
+      collision::CollisionResult* result) override
+  {
+    const bool collided
+        = collision::DARTCollisionDetector::collide(group, option, result);
+    if (result != nullptr)
+      mFilter(option, *result);
+    return collided;
+  }
+
+private:
+  explicit PostFilteringDetector(Filter filter) : mFilter(std::move(filter))
+  {
+    // Do nothing
+  }
+
+  Filter mFilter;
+};
+
+void keepFirstContactPerPair(
+    const collision::CollisionOption& /*option*/,
+    collision::CollisionResult& result)
+{
+  const auto all = result.getContacts();
+  result.clear();
+  std::set<CapTestPair> seen;
+  for (const auto& contact : all) {
+    if (seen.insert(shapeFramePair(contact)).second)
+      result.addContact(contact);
+  }
+}
+
+// Records the option of every collide() call.
+template <typename Detector>
+class OptionRecordingDetector : public Detector
+{
+public:
+  static std::shared_ptr<OptionRecordingDetector> create()
+  {
+    return std::shared_ptr<OptionRecordingDetector>(
+        new OptionRecordingDetector());
+  }
+
+  using Detector::collide;
+
+  bool collide(
+      collision::CollisionGroup* group,
+      const collision::CollisionOption& option,
+      collision::CollisionResult* result) override
+  {
+    mOptions.push_back(option);
+    return Detector::collide(group, option, result);
+  }
+
+  std::vector<collision::CollisionOption> mOptions;
+};
+
+dynamics::SkeletonPtr createCapTestBody(
+    const std::string& name,
+    const dynamics::ShapePtr& shape,
+    const Eigen::Vector3d& position,
+    const Eigen::Matrix3d& rotation = Eigen::Matrix3d::Identity())
+{
+  auto skeleton = dynamics::Skeleton::create(name);
+  auto* body
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>().second;
+  body->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(shape);
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.linear() = rotation;
+  tf.translation() = position;
+  skeleton->getJoint(0)->setPositions(
+      dynamics::FreeJoint::convertToPositions(tf));
+  return skeleton;
+}
+
+// Boxes, a sphere, and a cylinder a few millimeters deep in a box ground; one
+// box slides.
+std::shared_ptr<World> createMixedCapTestWorld()
+{
+  auto world = createWorld();
+  simulation::DeactivationOptions deactivation;
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+  world->addSkeleton(createSolverTestBox(
+      "ground",
+      Eigen::Vector3d(10.0, 4.0, 1.0),
+      Eigen::Vector3d(2.0, 0.0, -0.5),
+      false));
+
+  auto slidingBox = createCapTestBody(
+      "sliding_box",
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d(0.0, 0.0, 0.245));
+  static_cast<dynamics::FreeJoint*>(slidingBox->getJoint(0))
+      ->setLinearVelocity(Eigen::Vector3d(0.5, 0.0, 0.0));
+  world->addSkeleton(slidingBox);
+
+  constexpr double kTilt = 0.1;
+  world->addSkeleton(createCapTestBody(
+      "tilted_box",
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Constant(0.5)),
+      Eigen::Vector3d(
+          1.0, 0.0, 0.25 * (std::cos(kTilt) + std::sin(kTilt)) - 0.003),
+      Eigen::AngleAxisd(kTilt, Eigen::Vector3d::UnitX()).toRotationMatrix()));
+  world->addSkeleton(createCapTestBody(
+      "sphere",
+      std::make_shared<dynamics::SphereShape>(0.2),
+      Eigen::Vector3d(2.0, 0.0, 0.198)));
+  world->addSkeleton(createCapTestBody(
+      "cylinder",
+      std::make_shared<dynamics::CylinderShape>(0.2, 0.4),
+      Eigen::Vector3d(3.0, 0.0, 0.198)));
+  return world;
+}
+
+std::string capTestObjectName(const collision::CollisionObject* object)
+{
+  return object->getBodyNode()->getSkeleton()->getName();
+}
+
+void expectSameContacts(
+    const collision::CollisionResult& actual,
+    const collision::CollisionResult& expected)
+{
+  ASSERT_EQ(actual.getNumContacts(), expected.getNumContacts());
+  for (std::size_t i = 0u; i < actual.getNumContacts(); ++i) {
+    const auto& a = actual.getContact(i);
+    const auto& e = expected.getContact(i);
+    EXPECT_EQ(
+        capTestObjectName(a.collisionObject1),
+        capTestObjectName(e.collisionObject1))
+        << "contact " << i;
+    EXPECT_EQ(
+        capTestObjectName(a.collisionObject2),
+        capTestObjectName(e.collisionObject2))
+        << "contact " << i;
+    EXPECT_TRUE(a.point == e.point) << "contact " << i;
+    EXPECT_TRUE(a.normal == e.normal) << "contact " << i;
+    EXPECT_EQ(a.penetrationDepth, e.penetrationDepth) << "contact " << i;
+  }
+}
+
+} // namespace
+
+//==============================================================================
+// #3056: when the contact demand exceeds CollisionOption::maxNumContacts, every
+// colliding pair keeps its deepest contact, the remaining budget is shared
+// round-robin, and a pair's second contact is the one farthest from its first
+// (instead of starving the pairs late in broadphase order).
+TEST(ConstraintSolver, ContactCapOverflowSharesBudgetAcrossPairs)
+{
+  auto world = createCapTestWorld(0.002);
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+
+  // Full demand from an independent detector (same geometry, no cap).
+  auto referenceGroup = collision::DARTCollisionDetector::create()
+                            ->createCollisionGroupAsSharedPtr();
+  for (std::size_t i = 0u; i < world->getNumSkeletons(); ++i)
+    referenceGroup->addShapeFramesOf(world->getSkeleton(i).get());
+  collision::CollisionResult reference;
+  referenceGroup->collide(
+      collision::CollisionOption(true, 100000u), &reference);
+  auto demand = contactsByPair(reference);
+  ASSERT_EQ(demand.size(), kCapTestBoxes);
+  ASSERT_GT(reference.getNumContacts(), kCapTestBoxes + 3u);
+  for (const auto& [pair, contacts] : demand) {
+    ASSERT_GE(contacts.size(), 2u);
+    const auto depth = [](const auto& x, const auto& y) {
+      return x.penetrationDepth < y.penetrationDepth;
+    };
+    ASSERT_NE(
+        std::max_element(contacts.begin(), contacts.end(), depth)
+            ->penetrationDepth,
+        std::min_element(contacts.begin(), contacts.end(), depth)
+            ->penetrationDepth)
+        << "need distinct depths within a pair";
+  }
+
+  solver->getCollisionOption().maxNumContacts = kCapTestBoxes + 3u;
+  world->step();
+
+  const auto& result = solver->getLastCollisionResult();
+  EXPECT_EQ(result.getNumContacts(), kCapTestBoxes + 3u);
+  const auto kept = contactsByPair(result);
+  EXPECT_EQ(kept.size(), kCapTestBoxes) << "a colliding pair was starved";
+  std::size_t pairsWithTwo = 0u;
+  for (const auto& [pair, contacts] : kept) {
+    ASSERT_EQ(demand.count(pair), 1u);
+    const auto& all = demand[pair];
+    ASSERT_LE(contacts.size(), 2u);
+    const auto deeper = [](const auto& x, const auto& y) {
+      return x.penetrationDepth < y.penetrationDepth;
+    };
+    const auto& deepest
+        = *std::max_element(contacts.begin(), contacts.end(), deeper);
+    EXPECT_DOUBLE_EQ(
+        deepest.penetrationDepth,
+        std::max_element(all.begin(), all.end(), deeper)->penetrationDepth);
+    if (contacts.size() == 2u) {
+      ++pairsWithTwo;
+      double farthest = 0.0;
+      for (const auto& contact : all)
+        farthest = std::max(farthest, (contact.point - deepest.point).norm());
+      EXPECT_NEAR(
+          (contacts[0].point - contacts[1].point).norm(), farthest, 1e-9)
+          << "second contact is not the farthest from the deepest";
+    }
+  }
+  EXPECT_EQ(pairsWithTwo, 3u);
+
+  // Below the cap nothing is trimmed.
+  solver->getCollisionOption().maxNumContacts = 1000u;
+  world->step();
+  EXPECT_EQ(
+      solver->getLastCollisionResult().getNumContacts(),
+      reference.getNumContacts());
+}
+
+//==============================================================================
+// #3056: within a pair the trim keeps contacts the solver can use before ones
+// it skips (non-finite or negative depth), keeps the deepest ones once the
+// spread no longer separates them, and keeps the detector's order.
+TEST(ConstraintSolver, ContactCapOverflowKeepsDeepestSolvableContacts)
+{
+  constexpr std::size_t kStackedContacts = 40u;
+  constexpr std::size_t kCap = 45u;
+
+  auto world = createCapTestWorld(0.0);
+  const auto* firstBox = world->getSkeleton("box_0")->getBodyNode(0);
+  // Replaces the first box's contacts with kStackedContacts contacts at one
+  // point with increasing depths, after a NaN-depth and a negative-depth one.
+  auto detector = PostFilteringDetector::create(
+      [firstBox](
+          const collision::CollisionOption& /*option*/,
+          collision::CollisionResult& result) {
+        const auto all = result.getContacts();
+        result.clear();
+        bool replaced = false;
+        for (const auto& contact : all) {
+          if (contact.collisionObject1->getBodyNode() != firstBox
+              && contact.collisionObject2->getBodyNode() != firstBox) {
+            result.addContact(contact);
+            continue;
+          }
+          if (replaced)
+            continue;
+          replaced = true;
+          auto stacked = contact;
+          stacked.penetrationDepth = std::numeric_limits<double>::quiet_NaN();
+          result.addContact(stacked);
+          stacked.penetrationDepth = -0.01;
+          result.addContact(stacked);
+          for (std::size_t k = 1u; k <= kStackedContacts; ++k) {
+            stacked.penetrationDepth = 1e-3 * static_cast<double>(k);
+            result.addContact(stacked);
+          }
+        }
+      });
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(detector);
+  solver->getCollisionOption().maxNumContacts = kCap;
+
+  world->step();
+
+  const auto& result = solver->getLastCollisionResult();
+  EXPECT_EQ(result.getNumContacts(), kCap);
+  const auto kept = contactsByPair(result);
+  EXPECT_EQ(kept.size(), kCapTestBoxes) << "a colliding pair was starved";
+  std::vector<double> stackedDepths;
+  for (const auto& contact : result.getContacts()) {
+    if (contact.collisionObject1->getBodyNode() == firstBox
+        || contact.collisionObject2->getBodyNode() == firstBox) {
+      stackedDepths.push_back(contact.penetrationDepth);
+    }
+  }
+  // The other boxes keep their few contacts and the stacked pair the rest of
+  // the budget: more than the 16 farthest-point picks, all of them from the
+  // deepest solvable contacts, in detector order.
+  ASSERT_GT(stackedDepths.size(), 16u);
+  ASSERT_LE(stackedDepths.size(), kStackedContacts);
+  const std::size_t firstKept = kStackedContacts - stackedDepths.size() + 1u;
+  for (std::size_t k = 0u; k < stackedDepths.size(); ++k) {
+    EXPECT_DOUBLE_EQ(
+        stackedDepths[k], 1e-3 * static_cast<double>(firstKept + k))
+        << "kept contact " << k;
+  }
+}
+
+//==============================================================================
+// #3056: contacts the solver skips get only the budget the solvable ones leave,
+// so a pair the detector reports first with only skipped contacts (proximity
+// contacts of allowNegativePenetrationDepthContacts, or non-finite ones) cannot
+// starve a pair the solver needs.
+TEST(ConstraintSolver, ContactCapOverflowGivesSolvableContactsTheBudgetFirst)
+{
+  auto world = createCapTestWorld(0.0);
+  // Gives every contact of the first pair in detector order a negative depth.
+  auto detector = PostFilteringDetector::create(
+      [](const collision::CollisionOption& /*option*/,
+         collision::CollisionResult& result) {
+        if (result.getNumContacts() == 0u)
+          return;
+        const auto first = shapeFramePair(result.getContact(0));
+        for (std::size_t i = 0u; i < result.getNumContacts(); ++i) {
+          if (shapeFramePair(result.getContact(i)) == first)
+            result.getContact(i).penetrationDepth = -0.01;
+        }
+      });
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(detector);
+
+  world->step();
+  const auto demand = contactsByPair(solver->getLastCollisionResult());
+  ASSERT_EQ(demand.size(), kCapTestBoxes);
+  std::size_t numSkipped = 0u;
+  for (const auto& contact : solver->getLastCollisionResult().getContacts())
+    numSkipped += contact.penetrationDepth < 0.0 ? 1u : 0u;
+  const std::size_t numSolvable
+      = solver->getLastCollisionResult().getNumContacts() - numSkipped;
+  ASSERT_GE(numSkipped, 2u);
+
+  // Fewer slots than pairs: every pair with a solvable contact keeps one.
+  solver->getCollisionOption().maxNumContacts = kCapTestBoxes - 1u;
+  world->step();
+  const auto& result = solver->getLastCollisionResult();
+  EXPECT_EQ(result.getNumContacts(), kCapTestBoxes - 1u);
+  EXPECT_EQ(contactsByPair(result).size(), kCapTestBoxes - 1u)
+      << "a pair with solvable contacts was starved";
+  for (const auto& contact : result.getContacts())
+    EXPECT_GE(contact.penetrationDepth, 0.0);
+
+  // Room for every solvable contact and one more: the spare slot goes to a
+  // skipped contact, which the result still reports.
+  solver->getCollisionOption().maxNumContacts = numSolvable + 1u;
+  world->step();
+  std::size_t numKeptSkipped = 0u;
+  for (const auto& contact : solver->getLastCollisionResult().getContacts())
+    numKeptSkipped += contact.penetrationDepth < 0.0 ? 1u : 0u;
+  EXPECT_EQ(
+      solver->getLastCollisionResult().getNumContacts(), numSolvable + 1u);
+  EXPECT_EQ(numKeptSkipped, 1u);
+}
+
+//==============================================================================
+// #3056: a contact between bodies that cannot react, such as a velocity-driven
+// box on the static ground, never becomes an active constraint, so it gets
+// only the budget the reactive pairs leave.
+TEST(ConstraintSolver, ContactCapOverflowGivesReactivePairsTheBudgetFirst)
+{
+  auto world = createCapTestWorld(0.0);
+  auto* driven = world->getSkeleton("box_0")->getJoint(0);
+  driven->setActuatorType(dynamics::Joint::VELOCITY);
+  const auto* drivenBody = world->getSkeleton("box_0")->getBodyNode(0);
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  world->step();
+  ASSERT_EQ(
+      contactsByPair(solver->getLastCollisionResult()).size(), kCapTestBoxes);
+
+  solver->getCollisionOption().maxNumContacts = kCapTestBoxes - 1u;
+  world->step();
+  const auto& result = solver->getLastCollisionResult();
+  EXPECT_EQ(result.getNumContacts(), kCapTestBoxes - 1u);
+  EXPECT_EQ(contactsByPair(result).size(), kCapTestBoxes - 1u)
+      << "a pair with a reactive body was starved";
+  for (const auto& contact : result.getContacts()) {
+    EXPECT_NE(contact.collisionObject1->getBodyNode(), drivenBody);
+    EXPECT_NE(contact.collisionObject2->getBodyNode(), drivenBody);
+  }
+}
+
+//==============================================================================
+// #3056: a detector that drops contacts per pair after its parent's collide()
+// (gz-physics does) must still see every pair; a capped parent collide would
+// stop in broadphase order and the post-filter would hide the saturation.
+TEST(ConstraintSolver, ContactCapAppliesAfterDetectorPostFilter)
+{
+  auto world = createCapTestWorld(0.0);
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(
+      PostFilteringDetector::create(&keepFirstContactPerPair));
+  solver->getCollisionOption().maxNumContacts = kCapTestBoxes + 3u;
+
+  world->step();
+  EXPECT_EQ(
+      contactsByPair(solver->getLastCollisionResult()).size(), kCapTestBoxes)
+      << "a colliding pair was starved";
+
+  // A supported box stays near its rest height of 0.5 m; a starved one falls
+  // about 0.2 m in these 0.2 s.
+  for (int i = 0; i < 200; ++i)
+    world->step();
+  for (std::size_t i = 1u; i <= kCapTestBoxes; ++i) {
+    EXPECT_GT(
+        world->getSkeleton(i)->getBodyNode(0)->getTransform().translation().z(),
+        0.45)
+        << "box " << i << " fell through the ground";
+  }
+}
+
+//==============================================================================
+// #3056: detection stops at its bound (8 * cap here) the way it used to stop at
+// the cap, so a scene whose raw demand reaches the bound is incomplete: the
+// pairs found before the bound share the budget and each keeps a contact, and
+// the pairs found later get none (the documented limit).
+TEST(ConstraintSolver, ContactCapAtDetectionBoundSharesDetectedPairs)
+{
+  constexpr std::size_t kCap = 20u;
+  constexpr std::size_t kBound = 8u * kCap;
+  constexpr std::size_t kContactsPerPair = 30u;
+  // The pairs that get contacts before detection stops at the bound.
+  constexpr std::size_t kDetectedPairs
+      = (kBound + kContactsPerPair - 1u) / kContactsPerPair;
+  static_assert(kDetectedPairs < kCapTestBoxes, "pairs must follow the bound");
+  static_assert(kDetectedPairs <= kCap, "every detected pair fits the budget");
+
+  auto world = createCapTestWorld(0.0);
+  std::size_t requested = 0u;
+  std::size_t detected = 0u;
+  std::vector<CapTestPair> detectedPairs;
+  // Reports kContactsPerPair contacts per colliding pair and, like the
+  // built-in detectors, stops once it has found option.maxNumContacts.
+  auto detector = PostFilteringDetector::create(
+      [&](const collision::CollisionOption& option,
+          collision::CollisionResult& result) {
+        requested = option.maxNumContacts;
+        const auto all = result.getContacts();
+        result.clear();
+        detectedPairs.clear();
+        for (const auto& contact : all) {
+          const auto pair = shapeFramePair(contact);
+          if (std::find(detectedPairs.begin(), detectedPairs.end(), pair)
+              != detectedPairs.end()) {
+            continue;
+          }
+          if (result.getNumContacts() >= option.maxNumContacts)
+            break;
+          detectedPairs.push_back(pair);
+          for (std::size_t k = 0u;
+               k < kContactsPerPair
+               && result.getNumContacts() < option.maxNumContacts;
+               ++k) {
+            auto copy = contact;
+            copy.point.x() += 0.005 * static_cast<double>(k);
+            result.addContact(copy);
+          }
+        }
+        detected = result.getNumContacts();
+      });
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(detector);
+  auto& option = solver->getCollisionOption();
+  option.maxNumContacts = kCap;
+
+  world->step();
+
+  EXPECT_EQ(requested, kBound);
+  EXPECT_EQ(detected, kBound);
+  ASSERT_EQ(detectedPairs.size(), kDetectedPairs);
+  const auto& result = solver->getLastCollisionResult();
+  EXPECT_EQ(result.getNumContacts(), kCap);
+  const auto kept = contactsByPair(result);
+  EXPECT_EQ(kept.size(), kDetectedPairs)
+      << "a pair found before the bound was starved, or one after it was kept";
+  for (const auto& pair : detectedPairs) {
+    ASSERT_EQ(kept.count(pair), 1u) << "a pair found before the bound starved";
+    EXPECT_GE(kept.at(pair).size(), kCap / kDetectedPairs);
+  }
+  EXPECT_EQ(option.maxNumContacts, kCap);
+  EXPECT_EQ(option.maxNumContactsPerPair, 0u);
+}
+
+//==============================================================================
+// #3056: ContactSurfaceHandler::createParams() receives each pair's number of
+// kept contacts, which DefaultContactSurfaceHandler multiplies slip compliance
+// by, so a trimmed pair's count drops with its contacts.
+TEST(ConstraintSolver, ContactCapCountsKeptContactsForSurfaceHandlers)
+{
+  class CountRecordingHandler : public constraint::ContactSurfaceHandler
+  {
+  public:
+    constraint::ContactSurfaceParams createParams(
+        const collision::Contact& contact,
+        const size_t numContactsOnCollisionObject) const override
+    {
+      mCounts[shapeFramePair(contact)].push_back(numContactsOnCollisionObject);
+      return ContactSurfaceHandler::createParams(
+          contact, numContactsOnCollisionObject);
+    }
+
+    mutable std::map<CapTestPair, std::vector<std::size_t>> mCounts;
+  };
+
+  auto world = createCapTestWorld(0.002);
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  auto handler = std::make_shared<CountRecordingHandler>();
+  solver->addContactSurfaceHandler(handler);
+  solver->getCollisionOption().maxNumContacts = kCapTestBoxes + 3u;
+
+  world->step();
+
+  const auto kept = contactsByPair(solver->getLastCollisionResult());
+  ASSERT_EQ(kept.size(), kCapTestBoxes) << "a colliding pair was starved";
+  ASSERT_EQ(handler->mCounts.size(), kCapTestBoxes);
+  for (const auto& [pair, contacts] : kept) {
+    for (const auto count : handler->mCounts[pair])
+      EXPECT_EQ(count, contacts.size());
+  }
+}
+
+//==============================================================================
+// #3056: the solver's query reaches the detector with every field the built-in
+// detectors read keeping its effect below the budget: the user's flags and
+// filter; the per-pair request (FCL asks max(100, cap) per pair when
+// maxNumContactsPerPair is 0, ODE, Bullet, and the dart detector use
+// getEffectiveMaxNumContactsPerPair() and need at least the cap, and the dart
+// detector keeps a full manifold for SIZE_MAX); and maxNumContacts raised to
+// the detection bound. Binary checks and unlimited budgets pass unchanged.
+TEST(ConstraintSolver, ContactCapDetectionOptionKeepsDetectorSemantics)
+{
+  constexpr auto kUnlimited = std::numeric_limits<std::size_t>::max();
+  const auto fclPerPairRequest = [](const collision::CollisionOption& option) {
+    return option.maxNumContactsPerPair > 0u
+               ? option.getEffectiveMaxNumContactsPerPair()
+               : std::max<std::size_t>(100u, option.maxNumContacts);
+  };
+
+  struct Case
+  {
+    std::size_t cap;
+    std::size_t perPair;
+    bool dartDetector;
+    std::size_t expectedBound;
+    std::size_t expectedPerPair;
+  };
+  const Case cases[] = {
+      {60u, 0u, false, 480u, 100u},
+      {11u, 0u, false, 100u, 100u}, // the bound never cuts FCL's 100
+      {11u, 0u, true, 100u, 100u},
+      {60u, 4u, false, 480u, 4u},
+      {60u, 200u, false, 480u, 60u},
+      {60u, kUnlimited, true, 480u, kUnlimited},
+      {60u, kUnlimited, false, 480u, 60u},
+      {1u, 0u, true, 1u, 0u},
+      {0u, 0u, false, 0u, 0u},
+      {kUnlimited, 0u, true, kUnlimited, 0u},
+  };
+  for (const auto& c : cases) {
+    SCOPED_TRACE(
+        "cap " + std::to_string(c.cap) + " perPair " + std::to_string(c.perPair)
+        + (c.dartDetector ? " dart" : " fcl"));
+    auto world = createCapTestWorld(0.0);
+    auto* solver = world->getConstraintSolver();
+    const std::vector<collision::CollisionOption>* received = nullptr;
+    if (c.dartDetector) {
+      auto detector
+          = OptionRecordingDetector<collision::DARTCollisionDetector>::create();
+      received = &detector->mOptions;
+      solver->setCollisionDetector(detector);
+    } else {
+      auto detector
+          = OptionRecordingDetector<collision::FCLCollisionDetector>::create();
+      received = &detector->mOptions;
+      solver->setCollisionDetector(detector);
+    }
+    auto& option = solver->getCollisionOption();
+    option.maxNumContacts = c.cap;
+    option.maxNumContactsPerPair = c.perPair;
+    option.allowNegativePenetrationDepthContacts = true;
+
+    world->step();
+
+    ASSERT_FALSE(received->empty());
+    for (const auto& seen : *received) {
+      EXPECT_EQ(seen.maxNumContacts, c.expectedBound);
+      EXPECT_EQ(seen.maxNumContactsPerPair, c.expectedPerPair);
+      EXPECT_EQ(seen.enableContact, option.enableContact);
+      EXPECT_EQ(
+          seen.allowNegativePenetrationDepthContacts,
+          option.allowNegativePenetrationDepthContacts);
+      EXPECT_EQ(seen.collisionFilter, option.collisionFilter);
+      if (!c.dartDetector) {
+        EXPECT_EQ(fclPerPairRequest(seen), fclPerPairRequest(option));
+      }
+      EXPECT_GE(
+          seen.getEffectiveMaxNumContactsPerPair(),
+          option.getEffectiveMaxNumContactsPerPair());
+      // The dart detector's solver-facing manifold target.
+      EXPECT_EQ(
+          std::min<std::size_t>(seen.getEffectiveMaxNumContactsPerPair(), 3u),
+          std::min<std::size_t>(
+              option.getEffectiveMaxNumContactsPerPair(), 3u));
+    }
+    EXPECT_EQ(option.maxNumContacts, c.cap);
+    EXPECT_EQ(option.maxNumContactsPerPair, c.perPair);
+  }
+}
+
+//==============================================================================
+// #3056: within the budget the solver's contacts are bit-identical to the
+// legacy capped query for every built-in detector. Each detector runs at cap 99
+// (below FCL's legacy per-pair request of 100 and ODE's per-pair maximum of
+// 250; ODE's trimesh cylinder alone reports dozens of contacts) and then at a
+// cap just above that run's largest demand. There the legacy query comes
+// closest to stopping, and its requests differ most from the solver's: ODE asks
+// for cap instead of 100 contacts per pair, and a small cap gets the detection
+// bound's floor of 100 instead of 8 * cap. A twin world answers the legacy
+// query on the same state every step, so ODE's contact history evolves the
+// same way in both.
+TEST(ConstraintSolver, ContactCapWithinBudgetMatchesLegacyQuery)
+{
+  const std::vector<
+      std::pair<std::string, std::function<collision::CollisionDetectorPtr()>>>
+      detectors
+      = { {"fcl",
+           [] {
+             return collision::FCLCollisionDetector::create();
+           }},
+          {"fcl_mesh",
+           [] {
+             auto detector = collision::FCLCollisionDetector::create();
+             detector->setPrimitiveShapeType(
+                 collision::FCLCollisionDetector::MESH);
+             return detector;
+           }},
+          {"dart",
+           [] {
+             return collision::DARTCollisionDetector::create();
+           }},
+#if HAVE_BULLET
+          {"bullet",
+           [] {
+             return collision::BulletCollisionDetector::create();
+           }},
+#endif
+#if HAVE_ODE
+          {"ode",
+           [] {
+             return collision::OdeCollisionDetector::create();
+           }},
+#endif
+        };
+
+  // Steps a world at `cap`, compares every step with the legacy query, and
+  // records the largest legacy demand.
+  const auto expectLegacyContacts =
+      [](const std::function<collision::CollisionDetectorPtr()>& createDetector,
+         std::size_t cap,
+         std::size_t& maxDemand) {
+        SCOPED_TRACE("cap " + std::to_string(cap));
+        auto world = createMixedCapTestWorld();
+        auto twin = createMixedCapTestWorld();
+        for (auto* w : {world.get(), twin.get()}) {
+          w->getConstraintSolver()->setCollisionDetector(createDetector());
+          w->getConstraintSolver()->getCollisionOption().maxNumContacts = cap;
+          w->enterSimulationMode();
+        }
+
+        auto* twinSolver = twin->getConstraintSolver();
+        maxDemand = 0u;
+        for (int step = 0; step < 30; ++step) {
+          SCOPED_TRACE("step " + std::to_string(step));
+          for (std::size_t i = 0u; i < world->getNumSkeletons(); ++i) {
+            twin->getSkeleton(i)->setPositions(
+                world->getSkeleton(i)->getPositions());
+            twin->getSkeleton(i)->setVelocities(
+                world->getSkeleton(i)->getVelocities());
+          }
+          collision::CollisionResult legacy;
+          twinSolver->getCollisionGroup()->collide(
+              twinSolver->getCollisionOption(), &legacy);
+          ASSERT_LT(legacy.getNumContacts(), cap);
+          maxDemand = std::max(maxDemand, legacy.getNumContacts());
+
+          world->step();
+          expectSameContacts(
+              world->getConstraintSolver()->getLastCollisionResult(), legacy);
+        }
+      };
+
+  for (const auto& [name, createDetector] : detectors) {
+    SCOPED_TRACE(name);
+    std::size_t maxDemand = 0u;
+    expectLegacyContacts(createDetector, 99u, maxDemand);
+    ASSERT_FALSE(HasFatalFailure());
+    expectLegacyContacts(createDetector, maxDemand + 1u, maxDemand);
+  }
+}
+
+//==============================================================================
+// #3056: the trim keeps its scratch per thread, so worlds stepped concurrently
+// on different threads trim independently and end in the same state as a world
+// stepped alone.
+TEST(ConstraintSolver, ContactCapTrimsConcurrentWorldsIndependently)
+{
+  constexpr std::size_t kWorlds = 4u;
+  constexpr std::size_t kCap = kCapTestBoxes + 3u;
+  const auto createSaturatedWorld = [] {
+    auto world = createCapTestWorld(0.002);
+    auto* solver = world->getConstraintSolver();
+    solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+    solver->getCollisionOption().maxNumContacts = kCap;
+    return world;
+  };
+  const auto stepAndGetState = [](World& world) {
+    for (int i = 0; i < 100; ++i)
+      world.step();
+    std::vector<double> state;
+    for (std::size_t i = 0u; i < world.getNumSkeletons(); ++i) {
+      const Eigen::VectorXd q = world.getSkeleton(i)->getPositions();
+      const Eigen::VectorXd v = world.getSkeleton(i)->getVelocities();
+      state.insert(state.end(), q.data(), q.data() + q.size());
+      state.insert(state.end(), v.data(), v.data() + v.size());
+    }
+    return state;
+  };
+
+  auto reference = createSaturatedWorld();
+  const auto expected = stepAndGetState(*reference);
+  ASSERT_EQ(reference->getLastCollisionResult().getNumContacts(), kCap)
+      << "the scene no longer exceeds its contact budget";
+
+  std::vector<std::shared_ptr<World>> worlds;
+  for (std::size_t i = 0u; i < kWorlds; ++i)
+    worlds.push_back(createSaturatedWorld());
+  std::vector<std::vector<double>> states(kWorlds);
+  std::vector<std::thread> threads;
+  for (std::size_t i = 0u; i < kWorlds; ++i)
+    threads.emplace_back([&, i] { states[i] = stepAndGetState(*worlds[i]); });
+  for (auto& thread : threads)
+    thread.join();
+
+  for (std::size_t i = 0u; i < kWorlds; ++i)
+    EXPECT_TRUE(states[i] == expected) << "world " << i;
 }

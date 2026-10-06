@@ -35,11 +35,19 @@ foreach(collision_engine dart-collision-bullet dart-collision-ode)
 endforeach()
 dart_add_test("integration" test_ConstraintSolver)
 target_sources(test_ConstraintSolver PRIVATE AllocationCounting.cpp)
+foreach(collision_engine dart-collision-bullet dart-collision-ode)
+  if(TARGET ${collision_engine})
+    target_link_libraries(test_ConstraintSolver ${collision_engine})
+  endif()
+endforeach()
 if(DART_CODECOV)
   target_compile_definitions(test_ConstraintSolver PRIVATE DART_CODECOV=1)
 endif()
 dart_add_test("integration" test_ContactConstraint)
 dart_add_test("integration" test_SplitImpulse)
+if(TARGET dart-collision-ode)
+  target_link_libraries(test_SplitImpulse dart-collision-ode)
+endif()
 if(TARGET dart-collision-bullet)
   target_link_libraries(test_SplitImpulse dart-collision-bullet)
   target_link_libraries(
@@ -51,6 +59,19 @@ if(TARGET dart-collision-ode)
   target_link_libraries(INTEGRATION_StepAllocation PRIVATE dart-collision-ode)
 endif()
 dart_add_test("integration" test_IslandDeactivation)
+if(TARGET dart-collision-ode AND TARGET dart-utils)
+  # Covers the `contact_benchmark --gz-preset` helpers.
+  dart_add_test("integration" test_ContactBenchmarkGazeboPreset)
+  target_link_libraries(
+    test_ContactBenchmarkGazeboPreset
+    dart-collision-ode
+    dart-utils
+  )
+  target_include_directories(
+    test_ContactBenchmarkGazeboPreset
+    PRIVATE "${PROJECT_SOURCE_DIR}/examples/contact_benchmark"
+  )
+endif()
 dart_add_test("integration" test_Issue719)
 dart_add_test("integration" test_GenericJoints)
 dart_add_test("integration" test_Inertia)
@@ -59,6 +80,9 @@ dart_add_test("integration" test_LocalResourceRetriever)
 dart_add_test("integration" test_Optimizer)
 dart_add_test("integration" test_ScrewJoint)
 dart_add_test("integration" test_Subscriptions)
+if(TARGET dart-collision-ode)
+  target_link_libraries(test_IslandDeactivation dart-collision-ode)
+endif()
 
 set(
   soft_demo_model_test_sources

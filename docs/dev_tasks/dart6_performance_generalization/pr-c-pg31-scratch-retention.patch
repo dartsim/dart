@@ -1,3 +1,6 @@
+Superseded (2026-10-04, #3056): the #3227 drift suppression that this patch
+reworks was removed from World, so it no longer applies.
+
 diff --git a/dart/simulation/World.cpp b/dart/simulation/World.cpp
 index c732d1022a9..aff88936706 100644
 --- a/dart/simulation/World.cpp

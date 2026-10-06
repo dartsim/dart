@@ -15,7 +15,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 
 | Workflow file                     | Workflow name                | Runs                            | Purpose |
 | --------------------------------- | ---------------------------- | ------------------------------- | ------- |
-| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, no-OSG assertions build + test; nightly adds ASan, coverage (the Debug build), and Eigen 64-byte alignment |
+| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, no-OSG assertions build + test; nightly adds install, ASan, coverage (the Debug build), and Eigen 64-byte alignment |
 | `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test; nightly adds install |
 | `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release build + test |
 | `ci_gz_physics.yml`               | CI gz-physics                | PR, push, nightly               | Gazebo/gz-physics downstream integration |
@@ -49,7 +49,7 @@ gate does.
 ## Nightly
 
 `nightly.yml` runs every workflow in the index except the performance
-dashboard and lockfile refresh against `main` each night at 08:00 UTC,
+dashboard and lockfile refresh against `main` each night at 08:17 UTC,
 including the nightly-only jobs. It is scheduled directly on `main`, the
 default branch, with no dispatcher. Run it on demand with
 `gh workflow run nightly.yml --ref main`.
@@ -74,6 +74,15 @@ pixi run test
 pixi run test-py
 pixi run -e gazebo test-gz
 ```
+
+`ci_gz_physics.yml` runs the forward lane, which patches gz-physics before
+testing and configures it once, so gz-physics' contact-callback test
+expectations are not compiled in. The unpatched Gazebo lanes
+(`pixi run gz-compat-ionic`, `gz-compat-jetty`, `gz-compat-harmonic`; see
+`tools/gazebo/README.md`) are not in CI yet: each builds DART, gz-physics, and
+gz-sim from source and runs a serial suite, and on release-6.20 they
+currently report the known DART 6.20 Gazebo regressions from issue #3056. Run
+them locally for downstream-sensitive changes and before releases.
 
 For failing CI, inspect the exact run and job logs before changing code. Prefer
 reproducing locally, but document when a hosted-platform failure cannot be

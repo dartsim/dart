@@ -25,9 +25,10 @@ host-contention OOM.
 ## Canonical guard scenes (exact commands)
 
 `CB=./build/default/cpp/Release/bin/contact_benchmark`; `<det>` ranges
-over `dart fcl bullet ode` unless a row pins it. **ODE rows are only
-valid with `--max-contacts-per-pair 4`** (#3209 finding 3: the trimesh
-cylinder fallback floods larger caps and silently drops contacts).
+over `dart fcl bullet ode` unless a row pins it. The ODE guard rows keep
+`--max-contacts-per-pair 4` so they stay comparable with the recorded
+hashes (#3209 finding 3), but they do not represent Gazebo: ODE, collision,
+and sleeping changes also need `--gz-preset` rows (README gates).
 
 - **S1 — active container (primary fixture)**:
   `BM_INTEGRATION_contact_container` full suite,
@@ -162,6 +163,108 @@ both produced `S4_fcl = 0xea9b68f8b062600d` (contacts 1800, pairs 900,
 resting 450/900) and `S5_fcl = 0x8277be4f0c14212` (contacts 180, pairs 90,
 resting 44/90). Treat these as current-base drift pending a full guard-table
 refresh or maintainer re-baseline.
+
+ODE cylinder re-baseline note (2026-10-03, #3056): restoring native ODE
+cylinders (dropping #3203's exact-tangency probes, which forced the
+`OdeCylinderMesh` trimesh on mainstream ODE builds) re-baselines only the ODE
+rows of scenes with cylinders. Measured on `8d31ba7a239` (old) against the
+change (new), AMD Threadripper 3970X, GCC 13.3. Every `dart`, `fcl`, and
+`bullet` row and `S2_ode` stayed bit-identical between the old and new builds.
+
+| Row | Old contacts / resting / hash | New contacts / resting / hash |
+| --- | --- | --- |
+| S3_ode | 9009 / 0/3003 / `0x4904c09a93a36442` | 9009 / 0/3003 / `0xab62daa1d4bdabc3` |
+| S4_ode | 0 / 900/900 / `0x429b65bc5c4a14b6` | 2700 / 600/900 / `0x82c3f2f30c4eb9c0` |
+| S5_ode | 0 / 90/90 / `0x5f2afc7230ee8d10` | 270 / 60/90 / `0xa10831c24f3f5c11` |
+
+The generated S4/S5 cylinders start exactly tangent to the ground box, where
+native ODE reports no first-step contact, so they sleep only after the default
+0.5 s dwell, which is past the 300-step window.
+
+Separately, six S2–S5 rows of the old build already differ from the table
+above, besides the WP-PG.10 FCL rows. The change leaves them untouched; treat
+them as current-base drift pending a full guard-table refresh:
+
+| Row | Table contacts / resting / hash | `8d31ba7a239` contacts / resting / hash |
+| --- | --- | --- |
+| S2_dart | 0 / 3003/3003 / `0x8ddc9a81f2d28a7f` | 0 / 3003/3003 / `0x266da31836a314a6` |
+| S3_dart | 5005 / 0/3003 / `0xcf0ba6eaa97be038` | 3003 / 0/3003 / `0x6088ea0177efa6a` |
+| S4_dart | 1800 / 600/900 / `0x76205ad68f4293bb` | 0 / 900/900 / `0x55bf77ebc1c491b2` |
+| S5_dart | 180 / 60/90 / `0x726d1ff51bdb717` | 0 / 90/90 / `0x4f265a803b596035` |
+| S4_bullet | 2353 / 269/900 / `0x2a5577952e2de925` | 2569 / 0/900 / `0x6a2e46e1a9ba76a6` |
+| S5_bullet | 210 / 56/90 / `0xf78e3bd075780c83` | 210 / 55/90 / `0xc9ab9e07e0a8501e` |
+
+Sleep and drift heuristic re-baseline note (2026-10-04, #3056): the first-frame
+dwell credit (#3112) now needs bodies that start at rest on level supports, a
+first step that leaves every body of the contact island nearly still and none on
+a deep contact, and a second step that confirms it with no body's speed growing
+faster than 1e-6 g, so a credited island freezes at step 3 instead of 2. The
+unreleased shallow-support drift suppression (#3227) is removed, as DART 6.19.4
+has none. Fourteen of the sixteen S2–S5 rows and `S6_dart` re-baseline:
+
+- `S2_dart` and `S2_fcl`: the second-step confirmation. All 3003 bodies still
+  rest, but one solve later, so the final state differs.
+- `S2_ode`: the growth check. The triangle-mesh ODE cylinders of the 6.20
+  branch rock on the plane from the first steps, so they take the normal
+  sleep dwell: the boxes and spheres rest from step 3 and all 3003 bodies by
+  step 600 (old: all at step 2). That raises the row's average step time from
+  about 0.1 ms to about 11 ms on a shared host.
+- `S4_fcl` and `S5_fcl`: both changes. Resting counts are unchanged; credited
+  bodies freeze one solve later, and resting bodies keep the small velocities
+  that the suppression reset.
+- `S2_bullet`: mainly the equilibrium check. Bullet's first solve leaves the
+  supported cylinders and spheres moving at up to about 2e-3 m/s and
+  4e-3 rad/s, so they take the normal sleep dwell: 1001/3003 bodies rest at
+  step 100 and all of them by step 600 (old: all at step 2). That raises the
+  row's average step time over its 3000 steps from about 0.3 ms to about
+  8 ms on a shared host.
+- `S4_dart`, `S5_dart`, `S4_ode`, and `S5_ode`: the generated scenes'
+  upright cylinders. From step 2 on they rock on a single contact point with
+  the `dart` detector, and on the triangle-mesh ODE cylinders of the 6.20
+  branch. The suppression held them, and the first-frame credit froze them at
+  step 2. Now they are no longer credited and keep rocking: 600/900 and 60/90
+  bodies rest at step 300 (old: all), and no cylinder rests within 2 s.
+- `S5_bullet`: both changes. Its spheres roll slowly from the first steps,
+  faster than the growth check allows, so 1/90 bodies rest at step 300 (old:
+  55/90 from the first steps); all 90 rest by step 1000 in both builds.
+- `S3_bullet`, `S3_ode`, and `S4_bullet`: the removed drift suppression.
+  Without it, the small lateral and tilt velocities that the contact solve
+  leaves on resting bodies are no longer reset, so the final states differ.
+  Contacts, pairs, and resting counts are unchanged, except that `S4_bullet`
+  ends with 2617 contacts in 899 pairs.
+- `S6_dart`: the removed drift suppression. The 71-object container pile ends
+  with 163 contacts in 120 pairs and a maximum penetration of 4.09e-3 m (old:
+  161, 129, 4.33e-3 m); it rests in neither build.
+
+Measured on `6469dffe724` (old), whose rows equal those of `8d31ba7a239` in
+every structural column, against the change (new), AMD Threadripper 3970X,
+GCC 13.3. `S3_dart`, `S3_fcl`, and the four S1 CLI captures stayed
+bit-identical between the old and new builds.
+
+| Row | Old contacts / resting / hash | New contacts / resting / hash |
+| --- | --- | --- |
+| S2_dart | 0 / 3003/3003 / `0x266da31836a314a6` | 0 / 3003/3003 / `0x9308c8e0b3367e8f` |
+| S2_fcl | 0 / 3003/3003 / `0x266da31836a314a6` | 0 / 3003/3003 / `0x9308c8e0b3367e8f` |
+| S2_bullet | 0 / 3003/3003 / `0x2375f1927218cd43` | 0 / 3003/3003 / `0xe5f943c127942b5b` |
+| S2_ode | 0 / 3003/3003 / `0x10f80b0408cede90` | 0 / 3003/3003 / `0x4ed301f5e444f5a9` |
+| S3_bullet | 5005 / 0/3003 / `0x22e27960cbabe83e` | 5005 / 0/3003 / `0x11fdd70a9952f98e` |
+| S3_ode | 9009 / 0/3003 / `0x4904c09a93a36442` | 9009 / 0/3003 / `0x29d16ba5fca8f228` |
+| S4_dart | 0 / 900/900 / `0x55bf77ebc1c491b2` | 1500 / 600/900 / `0x1bb28bbf848c133` |
+| S4_fcl | 1800 / 450/900 / `0xea9b68f8b062600d` | 1800 / 450/900 / `0xe40b88e5fa8a845f` |
+| S4_bullet | 2569 / 0/900 / `0x6a2e46e1a9ba76a6` | 2617 / 0/900 / `0x153fca01ac923b1c` |
+| S4_ode | 0 / 900/900 / `0x429b65bc5c4a14b6` | 2700 / 600/900 / `0xfa142c51799b9298` |
+| S5_dart | 0 / 90/90 / `0x4f265a803b596035` | 150 / 60/90 / `0x9efd689085a07e11` |
+| S5_fcl | 180 / 44/90 / `0x8277be4f0c14212` | 180 / 44/90 / `0xe8fdb31f9112653` |
+| S5_bullet | 210 / 55/90 / `0xc9ab9e07e0a8501e` | 268 / 1/90 / `0x6fdece31ffa17457` |
+| S5_ode | 0 / 90/90 / `0x5f2afc7230ee8d10` | 270 / 60/90 / `0x98108b267f3290b6` |
+| S6_dart | 161 / 0/71 / `0x3fecba33246bc342` | 163 / 0/71 / `0xe9d912922bb95bf6` |
+
+The native ODE cylinder change re-baselines the ODE rows as well, and its
+cylinders are credited on the plane again. With both changes, `S2_ode` reads
+0 / 3003/3003 / `0x1b08c3c93face3fa` (all at step 3), `S3_ode` 9009 / 0/3003
+/ `0xc4df3c2c4cdcf997`, `S4_ode` 2696 contacts in 899 pairs / 600/900 /
+`0x5b4b4ecbf8030da5`, and `S5_ode` 270 / 60/90 / `0x854d9b18640ce232`; every
+other S2–S5 row matches the new column above.
 
 ### WP-PG.15 D7 default-remediation A/B (candidate)
 

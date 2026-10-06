@@ -50,8 +50,10 @@ applicable.
 5. Explain why the failure was not caught earlier and whether workflow coverage should change.
 6. Run `pixi run lint` and release-relevant build/tests.
 7. Ask for explicit maintainer/user approval before pushing, creating, or
-   updating the PR; after approval, use the current release
-   milestone and PR template.
+   updating the PR. After approval, push to the existing PR when step 3
+   continued one; otherwise open a new draft PR with the current release
+   milestone and PR template. Then follow `docs/onboarding/ai-tools.md`
+   § "PR Lifecycle".
 8. Monitor CI until green.
 
 ## Output
