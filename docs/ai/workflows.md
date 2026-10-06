@@ -1,6 +1,6 @@
 # AI Workflow Map
 
-DART 6.20 exposes a release-branch subset of the DART AI workflows across
+DART 6.20 exposes a subset of the DART AI workflows across
 supported AI tools.
 
 - Claude Code and OpenCode use `/dart-*` commands.

@@ -1,6 +1,6 @@
 # AI Tooling And Review Rules
 
-This release branch supports Claude Code, OpenCode, and Codex workflow
+This development branch supports Claude Code, OpenCode, and Codex workflow
 entrypoints generated from `.claude/` sources.
 
 ## Source And Generated Files
@@ -99,12 +99,12 @@ Before every approved push to a published PR branch, fetch and merge the latest
 target base branch into the topic branch. Use merge, not rebase, unless a
 maintainer explicitly requests history rewriting.
 
-Never push directly to `release-*` branches. Create a topic branch from the
-release base without tracking the release ref:
+Never push directly to `main` or `release-*` branches. Create a topic branch
+from `main` without tracking the base ref:
 
 ```bash
-git fetch origin release-6.20
-git switch --no-track -c <type>/<topic> origin/release-6.20
+git fetch origin main
+git switch --no-track -c <type>/<topic> origin/main
 ```
 
 After explicit maintainer/user approval, push the topic branch with the same

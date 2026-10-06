@@ -1,7 +1,7 @@
 # Orchestrator / Executor Operating Model
 
-This file owns the DART 6.20 AI work-packet contract. The release branch keeps
-a small workflow surface and a strict compatibility envelope.
+This file owns the DART 6.20 AI work-packet contract. The development branch
+keeps a small workflow surface and a strict compatibility envelope.
 
 ## Roles
 
@@ -11,7 +11,7 @@ DART AI work can split into two roles when the task is large enough:
   The orchestrator reads the north star, the plan dashboard, and relevant owner
   docs; turns roadmap intent into bounded work packets; and reviews executor
   output against acceptance evidence. Large, team-scale, or explicitly
-  autonomous release-branch work enters through `dart-ultrawork`, which
+  autonomous DART 6 work enters through `dart-ultrawork`, which
   uses `docs/dev_tasks/<task>/` as the project home and starts from either a
   provided brief or one up-front decision interview.
 - **Executor** - owns implementation of one packet at a time. The executor
@@ -38,7 +38,7 @@ ownership.
 
 ## Review Loop
 
-Review is part of the release-branch work cycle, not a final courtesy pass.
+Review is part of the DART 6 work cycle, not a final courtesy pass.
 For every meaningful implementation chunk, the orchestrator runs an independent
 review lane after verification and again after cleanup or fixes. A packet is
 done only after the current post-fix state has at least two clean review passes
@@ -99,7 +99,7 @@ workflow must state whether it can affect:
 - Gazebo/gz-physics or gz-sim downstream behavior;
 - dartpy bindings or published user documentation.
 
-If any answer is yes, acceptance evidence needs the matching release-branch
+If any answer is yes, acceptance evidence needs the matching DART 6
 gate.
 
 ## Lifecycle

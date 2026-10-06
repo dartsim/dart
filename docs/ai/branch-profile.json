@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "profile": "release-6.20",
-  "base_ref": "origin/release-6.20",
+  "profile": "main",
+  "base_ref": "origin/main",
   "cpp_standard": "C++17",
   "python_binding": "pybind11",
   "io_namespace": "dart::utils",

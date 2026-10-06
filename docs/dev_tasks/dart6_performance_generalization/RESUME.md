@@ -9,6 +9,19 @@ packet that overlaps the `origin/perf/dart6-*` experiment branches.
 
 ## Next packets
 
+**Round 3 (issue #3056 reopened, Gazebo path):** start from the Round 3
+section of [README.md](README.md). PR-A adds the measuring tools every other
+round-3 packet needs: `contact_benchmark --gz-preset`, the unpatched
+Gazebo lanes (`pixi run gz-compat-ionic`, `pixi run gz-compat-jetty`,
+`pixi run gz-compat-harmonic`), and the sleep oracle
+(`tools/gazebo/README.md`). On release-6.20 the lanes report the known
+regressions (ODE `StepWorld` time, gz-sim `imu_system` and
+`ackermann_steering_system`), which PR-B and PR-G target, plus one they
+newly expose, which PR-H targets: gz-physics `ContactPropertiesCallback`
+sees three contact-properties callbacks per contact on the first step
+instead of one. Judge each packet against its base with
+`GZ_COMPAT_BASE_VARIANT` until those land.
+
 **2026-07-10: completion audit RAN at the then-current head** (release-6.20 @
 `db255a08e8e`, 2026-07-09 — dozens of commits behind the branch tip by late
 August 2026; re-run before treating these numbers as current; artifacts `/tmp/audit_head_20260710T011207Z`):

@@ -49,7 +49,7 @@ surface affects shared behavior.
   release routing and unavailable-hook fallbacks without network or model
   calls.
 
-- For ordinary docs-only changes on this release branch, run `pixi run lint`.
+- For ordinary docs-only changes on this development branch, run `pixi run lint`.
 - For docs placement, AI operating-model, plan/dashboard, or workflow-source
   changes, also run `pixi run check-ai-commands`; run
   `pixi run sync-ai-commands` first when `.claude/` sources changed.
@@ -89,7 +89,7 @@ is set.
   pixi run capture ssik_ik_gui arm.png
   ```
 
-- Or capture from dartpy (release-6.20 offscreen bindings):
+- Or capture from dartpy (DART 6.20 offscreen bindings):
 
   ```python
   import dartpy as dart

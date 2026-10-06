@@ -25,9 +25,10 @@ host-contention OOM.
 ## Canonical guard scenes (exact commands)
 
 `CB=./build/default/cpp/Release/bin/contact_benchmark`; `<det>` ranges
-over `dart fcl bullet ode` unless a row pins it. **ODE rows are only
-valid with `--max-contacts-per-pair 4`** (#3209 finding 3: the trimesh
-cylinder fallback floods larger caps and silently drops contacts).
+over `dart fcl bullet ode` unless a row pins it. The ODE guard rows keep
+`--max-contacts-per-pair 4` so they stay comparable with the recorded
+hashes (#3209 finding 3), but they do not represent Gazebo: ODE, collision,
+and sleeping changes also need `--gz-preset` rows (README gates).
 
 - **S1 — active container (primary fixture)**:
   `BM_INTEGRATION_contact_container` full suite,
@@ -162,6 +163,36 @@ both produced `S4_fcl = 0xea9b68f8b062600d` (contacts 1800, pairs 900,
 resting 450/900) and `S5_fcl = 0x8277be4f0c14212` (contacts 180, pairs 90,
 resting 44/90). Treat these as current-base drift pending a full guard-table
 refresh or maintainer re-baseline.
+
+ODE cylinder re-baseline note (2026-10-03, #3056): restoring native ODE
+cylinders (dropping #3203's exact-tangency probes, which forced the
+`OdeCylinderMesh` trimesh on mainstream ODE builds) re-baselines only the ODE
+rows of scenes with cylinders. Measured on `8d31ba7a239` (old) against the
+change (new), AMD Threadripper 3970X, GCC 13.3. Every `dart`, `fcl`, and
+`bullet` row and `S2_ode` stayed bit-identical between the old and new builds.
+
+| Row | Old contacts / resting / hash | New contacts / resting / hash |
+| --- | --- | --- |
+| S3_ode | 9009 / 0/3003 / `0x4904c09a93a36442` | 9009 / 0/3003 / `0xab62daa1d4bdabc3` |
+| S4_ode | 0 / 900/900 / `0x429b65bc5c4a14b6` | 2700 / 600/900 / `0x82c3f2f30c4eb9c0` |
+| S5_ode | 0 / 90/90 / `0x5f2afc7230ee8d10` | 270 / 60/90 / `0xa10831c24f3f5c11` |
+
+The generated S4/S5 cylinders start exactly tangent to the ground box, where
+native ODE reports no first-step contact, so they sleep only after the default
+0.5 s dwell, which is past the 300-step window.
+
+Separately, six S2–S5 rows of the old build already differ from the table
+above, besides the WP-PG.10 FCL rows. The change leaves them untouched; treat
+them as current-base drift pending a full guard-table refresh:
+
+| Row | Table contacts / resting / hash | `8d31ba7a239` contacts / resting / hash |
+| --- | --- | --- |
+| S2_dart | 0 / 3003/3003 / `0x8ddc9a81f2d28a7f` | 0 / 3003/3003 / `0x266da31836a314a6` |
+| S3_dart | 5005 / 0/3003 / `0xcf0ba6eaa97be038` | 3003 / 0/3003 / `0x6088ea0177efa6a` |
+| S4_dart | 1800 / 600/900 / `0x76205ad68f4293bb` | 0 / 900/900 / `0x55bf77ebc1c491b2` |
+| S5_dart | 180 / 60/90 / `0x726d1ff51bdb717` | 0 / 90/90 / `0x4f265a803b596035` |
+| S4_bullet | 2353 / 269/900 / `0x2a5577952e2de925` | 2569 / 0/900 / `0x6a2e46e1a9ba76a6` |
+| S5_bullet | 210 / 56/90 / `0xf78e3bd075780c83` | 210 / 55/90 / `0xc9ab9e07e0a8501e` |
 
 ### WP-PG.15 D7 default-remediation A/B (candidate)
 

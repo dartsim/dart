@@ -1,86 +1,58 @@
-# Nightly: the full CI matrix on release-6.20, including the slow or niche jobs
+# Nightly: the full CI matrix on main, including the slow or niche jobs
 # that do not run per PR (see docs/onboarding/ci-cd.md). A failing night opens
 # or updates one `nightly-failure` issue with fixing instructions; the next
-# green night closes it.
+# green night closes it. To try a CI change against the whole matrix, dispatch
+# it on the branch (`gh workflow run nightly.yml --ref <branch>`); the report
+# only dry-runs off main.
 
 name: Nightly
 
 on:
   schedule:
-    - cron: "0 8 * * *" # Daily at 08:00 UTC
+    # Off the top of the hour, when GitHub delays or drops scheduled runs.
+    - cron: "17 8 * * *" # Daily at 08:17 UTC
   workflow_dispatch:
-  pull_request:
-    # CI changes get the whole matrix; the report only dry-runs on PRs.
-    paths:
-      - ".github/codeql/**"
-      - ".github/workflows/**"
-      - "scripts/nightly_ci_report.py"
 
 permissions:
   contents: read
 
 concurrency:
   group: nightly-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  NIGHTLY_BRANCH: release-6.20
+  NIGHTLY_BRANCH: main
 
 jobs:
-  # Schedules only fire on the default branch (`main`, which mirrors
-  # release-6.20 and is fast-forwarded only at releases), so the scheduled run
-  # re-dispatches this workflow on release-6.20 itself.
-  dispatch:
-    if: github.event_name == 'schedule'
-    # GitHub-hosted (current gh): the self-hosted fleet also takes ubuntu-latest.
-    runs-on: ubuntu-24.04
-    permissions:
-      actions: write
-    steps:
-      - name: Dispatch the nightly run on ${{ env.NIGHTLY_BRANCH }}
-        run: gh workflow run nightly.yml --repo "$GITHUB_REPOSITORY" --ref "$NIGHTLY_BRANCH"
-        env:
-          GH_TOKEN: ${{ github.token }}
-
   linux:
-    if: github.event_name != 'schedule'
     uses: ./.github/workflows/ci_ubuntu.yml
     with:
       nightly: true
     secrets: inherit
 
   macos:
-    if: github.event_name != 'schedule'
     uses: ./.github/workflows/ci_macos.yml
     with:
       nightly: true
 
   windows:
-    if: github.event_name != 'schedule'
     uses: ./.github/workflows/ci_windows.yml
 
   freebsd:
-    if: github.event_name != 'schedule'
     uses: ./.github/workflows/ci_freebsd.yml
 
   toolchain:
-    if: github.event_name != 'schedule'
     uses: ./.github/workflows/ci_toolchain.yml
 
   simd:
-    if: github.event_name != 'schedule'
     uses: ./.github/workflows/ci_simd.yml
 
   gz-physics:
-    if: github.event_name != 'schedule'
     uses: ./.github/workflows/ci_gz_physics.yml
 
   api-doc:
-    if: github.event_name != 'schedule'
     uses: ./.github/workflows/api_doc.yml
 
   codeql:
-    if: github.event_name != 'schedule'
     uses: ./.github/workflows/codeql.yml
     permissions:
       actions: read
@@ -88,14 +60,12 @@ jobs:
       security-events: write
 
   dartpy-wheels:
-    if: github.event_name != 'schedule'
     uses: ./.github/workflows/publish_dartpy.yml
     with:
       nightly: true
 
   report:
     needs:
-      - dispatch
       - linux
       - macos
       - windows
@@ -106,8 +76,6 @@ jobs:
       - api-doc
       - codeql
       - dartpy-wheels
-    # Also runs after the scheduled dispatch, so a failed dispatch opens an
-    # issue (and a later successful one closes it).
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     permissions:
@@ -122,7 +90,7 @@ jobs:
 
       - name: Open, update, or close nightly-failure issues
         run: |
-          # Only real nightly runs touch issues; PRs and other refs dry-run.
+          # Only real nightly runs touch issues; other refs dry-run.
           dry_run=--dry-run
           if [ "$GITHUB_EVENT_NAME" = schedule ] || { [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$GITHUB_REF_NAME" = "$NIGHTLY_BRANCH" ]; }; then
             dry_run=

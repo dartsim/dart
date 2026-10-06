@@ -5,33 +5,37 @@ name: CI gz-physics
 on:
   push:
     # Feature-branch validation happens via pull_request; run on push only for
-    # the release lines so PR branches are not built twice per push.
+    # main and the release lines so PR branches are not built twice per push.
     branches:
+      - "main"
       - "release-*"
   pull_request:
     branches:
       - "**"
   workflow_dispatch:
-  # Nightly (nightly.yml) runs this workflow on release-6.20 every night.
+  # Nightly (nightly.yml) runs this workflow on main every night.
   workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  # Protected release branches should finish every post-merge validation run.
+  # Protected branches (main, release-*) should finish every post-merge run.
   # GitHub's default concurrency queue keeps only one pending run, so use a
   # run-specific group on release refs while keeping PR/topic refs cancellable.
   group: >-
-    ${{ startsWith(github.ref, 'refs/heads/release-')
+    ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-'))
         && format('ci-gz-physics-{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
         || format('ci-gz-physics-{0}-{1}', github.workflow, github.ref) }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' && !startsWith(github.ref, 'refs/heads/release-') }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' && !(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-')) }}
 
 jobs:
   test_gazebo:
     name: ubuntu-latest
     runs-on: ubuntu-latest
+    env:
+      CMAKE_C_COMPILER_LAUNCHER: sccache
+      CMAKE_CXX_COMPILER_LAUNCHER: sccache
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -40,7 +44,21 @@ jobs:
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      # Compiler cache: restored on every run, saved from main at most once a
+      # day per configuration (the repository's Actions cache is 10 GB).
+      - name: Restore compiler cache
+        run: |
+          echo "SCCACHE_DIR=${{ runner.temp }}/sccache" >> "$GITHUB_ENV"
+          echo "SCCACHE_CACHE_SIZE=1G" >> "$GITHUB_ENV"
+          echo "SCCACHE_DAY=$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
+      - uses: actions/cache/restore@v6
+        with:
+          path: ${{ runner.temp }}/sccache
+          key: sccache-gz-physics-${{ env.SCCACHE_DAY }}
+          restore-keys: sccache-gz-physics-
 
       - name: Install apt packages
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
@@ -51,3 +69,15 @@ jobs:
       - name: Test gz-physics
         run: |
           pixi r -e gazebo test-gz
+
+      - name: Compiler cache stats
+        if: always()
+        run: pixi run sccache --show-stats || true
+
+      - name: Save compiler cache
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ runner.temp }}/sccache
+          key: sccache-gz-physics-${{ env.SCCACHE_DAY }}
+

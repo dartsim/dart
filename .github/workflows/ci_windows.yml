@@ -5,28 +5,29 @@ name: CI Windows
 on:
   push:
     # Feature-branch validation happens via pull_request; run on push only for
-    # the release lines so PR branches are not built twice per push.
+    # main and the release lines so PR branches are not built twice per push.
     branches:
+      - "main"
       - "release-*"
   pull_request:
     branches:
       - "**"
   workflow_dispatch:
-  # Nightly (nightly.yml) runs this workflow on release-6.20 every night.
+  # Nightly (nightly.yml) runs this workflow on main every night.
   workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  # Protected release branches should finish every post-merge validation run.
+  # Protected branches (main, release-*) should finish every post-merge run.
   # GitHub's default concurrency queue keeps only one pending run, so use a
   # run-specific group on release refs while keeping PR/topic refs cancellable.
   group: >-
-    ${{ startsWith(github.ref, 'refs/heads/release-')
+    ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-'))
         && format('ci-windows-{0}-{1}-{2}', github.workflow, github.ref, github.run_id)
         || format('ci-windows-{0}-{1}', github.workflow, github.ref) }}
-  cancel-in-progress: ${{ github.event_name != 'schedule' && !startsWith(github.ref, 'refs/heads/release-') }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' && !(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-')) }}
 
 jobs:
   build:
@@ -34,19 +35,23 @@ jobs:
     name: windows-${{ matrix.build_type }}
     runs-on: windows-2025-vs2026
     env:
-      CMAKE_GENERATOR: Visual Studio 18 2026
+      CMAKE_GENERATOR: Ninja
+      CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+      CC: cl
+      CXX: cl
+      BUILD_TYPE: ${{ matrix.build_type }}
+      DART_VERBOSE: "ON"
+      DART_COMPILER_CACHE: sccache
+      SCCACHE_CACHE_SIZE: "1G"
+      # Preserve build counters through long links and test runs.
+      SCCACHE_IDLE_TIMEOUT: "0"
+      CTEST_PARALLEL_LEVEL: "4"
       # Whole-program optimization (/GL) runs an expensive link-time /LTCG
       # codegen pass that makes the MSVC Release build run for hours, overrunning
       # the job timeout. Disable it for the CI C++/dartpy test build; the
       # published wheels (publish_dartpy.yml) keep it on and are still tested.
       DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION: "ON"
-    # Keep the job bounded, but allow large native-collision PRs enough time
-    # for MSVC Release test linking on hosted runners. Release-branch Windows
-    # builds can exceed three hours on cold hosted runners after the DART 6.20
-    # native-collision test expansion, and passed five hours (still linking)
-    # after the July 2026 pixi.lock refresh; this branch builds cold every run
-    # (no compiler cache under the Visual Studio generator), so use the full
-    # six-hour hosted-runner budget.
+    # Keep room for cold caches; the warm-cache target is under 25 minutes.
     timeout-minutes: 360
     strategy:
       fail-fast: false
@@ -56,11 +61,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1.13.0
+        with:
+          arch: x64
+
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
           cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi.exe
+
+      - name: Initialize sccache
+        id: sccache-config
+        run: |
+          "SCCACHE_DIR=$(Join-Path $env:RUNNER_TEMP 'sccache')" >> $env:GITHUB_ENV
+          "date=$([DateTime]::UtcNow.ToString('yyyy-MM-dd'))" >> $env:GITHUB_OUTPUT
+
+      - name: Restore sccache
+        id: sccache-restore
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-${{ hashFiles('pixi.lock') }}-${{ steps.sccache-config.outputs.date }}
+          # A lockfile bump still reuses objects whose headers did not change.
+          restore-keys: |
+            sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-${{ hashFiles('pixi.lock') }}-
+            sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-
 
       - name: Native Windows hook smoke
         shell: powershell
@@ -107,20 +135,29 @@ jobs:
           }
           cmd.exe /c exit 0
 
+      - name: Configure DART
+        # Default MSVC Release flags omit /Zi, so sccache can cache objects.
+        # Disable pybind11's implicit /GL and /LTCG as well as DART's tuning.
+        run: pixi run config -- -DDART_MSVC_DEFAULT_OPTIONS=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
+
       - name: Check Lint
-        run: |
-          pixi run check-lint
+        run: pixi run check-lint
 
       - name: Test DART and dartpy
-        run: |
-          $env:DART_VERBOSE = "ON"
-          $env:BUILD_TYPE = "${{ matrix.build_type }}"
-          # Static DART test executables repeat expensive LTCG links with /GL.
-          # Use Visual Studio's default Release tuning in hosted CI so the
-          # unchanged full target and test set fits within the runner limit.
-          pixi run config -- -DDART_MSVC_DEFAULT_OPTIONS=ON
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          pixi run test-all
+        run: pixi run test-all
+
+      # Cache keys are immutable: publish at most one successful main snapshot
+      # per UTC day/configuration, including after a prefix-only restore.
+      - name: Save sccache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.sccache-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ steps.sccache-restore.outputs.cache-primary-key }}
+
+      - name: Sccache statistics
+        if: always()
+        run: pixi run sccache --show-stats
 
       # Linux CI covers install. On Windows, pixi run install configures a
       # separate install build tree after test-all has already passed, which
