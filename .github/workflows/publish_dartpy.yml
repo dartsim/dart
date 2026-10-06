@@ -36,7 +36,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Include the event name so a manual workflow_dispatch (used to publish a
+  # release) is not cancelled by the push-triggered build of the same ref, and
+  # vice versa. Same-event runs on a ref still supersede each other.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 # This workflow will install Python dependencies, run tests and lint with a
@@ -106,14 +109,18 @@ jobs:
             experimental: false
             release_only: true
 
+          # Pin macOS to macos-15 (not macos-latest): Homebrew builds bottles for
+          # the runner OS, and macos-latest migrated to macOS 26, so its 26.0-min
+          # dylibs fail delocate against MACOSX_DEPLOYMENT_TARGET=15.0 below. A
+          # macos-15 runner yields 15.0-min bottles matching the macosx_15_0 wheel.
           - os: macos-latest
-            runner: macos-latest
+            runner: macos-15
             build: "cp313-macosx_arm64"
             experimental: false
             release_only: false
 
           - os: macos-latest
-            runner: macos-latest
+            runner: macos-15
             build: "cp312-macosx_arm64"
             experimental: false
             release_only: true
