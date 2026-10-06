@@ -28,6 +28,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above on `main`; files `nightly-failure` issues |
 | `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Performance dashboard |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main` |
+| `maintainer_approval.yml`         | Maintainer Approval          | PR pushes                       | Removes the `maintainer-approved` label unless the push only adds conflict-free merges of the base branch ([PR Lifecycle](ai-tools.md#pr-lifecycle)) |
 
 Required checks on `main`: `Release` and
 `Asserts enabled (no -DNDEBUG)` (CI Linux), `arm64-Release` (CI macOS),
@@ -49,9 +50,9 @@ gate does.
 ## Nightly
 
 `nightly.yml` runs every workflow in the index except the performance
-dashboard and lockfile refresh against `main` each night at 08:17 UTC,
-including the nightly-only jobs. It is scheduled directly on `main`, the
-default branch, with no dispatcher. Run it on demand with
+dashboard, lockfile refresh, and maintainer approval against `main` each night
+at 08:17 UTC, including the nightly-only jobs. It is scheduled directly on
+`main`, the default branch, with no dispatcher. Run it on demand with
 `gh workflow run nightly.yml --ref main`.
 
 Its `report` job (`scripts/nightly_ci_report.py`) groups jobs by their

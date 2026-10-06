@@ -140,17 +140,22 @@ approval.
    maintainer and triggers one more Codex review, listed as
    `Draft marked ready` in Codex's review summary comment. Do not merge until
    it completes. Unaddressed AI review findings block the merge even after the
-   maintainer's +1: fix them and get a clean re-review of the new head first.
-4. Merge only after a maintainer (currently `jslee02`) adds a +1 reaction to
-   the PR description (`gh api repos/dartsim/dart/issues/<PR>/reactions`).
-   That reaction is explicit approval for the agent or the maintainer to merge
-   that PR, including the step 5 base update and fixes for AI review findings
-   raised after the reaction. Any other change pushed after the reaction needs
-   a fresh +1. The +1 that `chatgpt-codex-connector[bot]` adds after a clean
-   review is not approval. Agents merge through the `dart-manage-pr`
-   `mode=merge` gate. Squash-merge: the repository allows squash and rebase
-   merges, not merge commits. Fix AI review findings that arrive afterwards in
-   a follow-up PR.
+   maintainer approves (step 4): fix them and get a clean re-review first.
+4. Merge only while the PR has the `maintainer-approved` label, which a
+   maintainer (currently `jslee02`) adds after reviewing the current head.
+   The label is explicit approval to merge that head. It adds to the other
+   steps and never replaces them: the head being merged still needs green CI
+   and every review comment addressed. Agents never add or re-add the label,
+   even when they act through the maintainer's account. When new commits are
+   pushed, the `Maintainer Approval` workflow removes the label unless every
+   new commit is a conflict-free merge of the base branch (step 5). Any other
+   change, including a fix for a review finding or a merge that resolves
+   conflicts, needs a fresh label. The +1 that `chatgpt-codex-connector[bot]`
+   adds after a clean review is not approval. Agents merge only through the
+   `dart-manage-pr` `mode=merge` gate, with the label as explicit approval.
+   Squash-merge: the repository allows squash and rebase merges, not merge
+   commits. Fix AI review findings that arrive after the merge in a follow-up
+   PR.
 5. Merge a series in dependency order, noted in each PR body. Release branches
    require PR branches to be up to date, so before merging each PR, merge the
    latest base into its branch as "PR Branches" describes, push it under the

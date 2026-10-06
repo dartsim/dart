@@ -1,0 +1,67 @@
+# The maintainer-approved label approves merging the PR head the maintainer
+# reviewed (docs/onboarding/ai-tools.md, "PR Lifecycle"). When new commits are
+# pushed, this workflow removes the label unless every new commit is a
+# conflict-free merge of the base branch: a two-parent merge of commits already
+# on the base whose result matches what git would produce automatically.
+#
+# pull_request_target lets the job edit labels on fork PRs too. It never checks
+# out or runs PR code: it only fetches commits and compares them with git.
+
+name: Maintainer Approval
+
+on:
+  pull_request_target:
+    types: [synchronize]
+
+permissions: {}
+
+jobs:
+  revoke-stale-approval:
+    name: Revoke stale approval
+    if: contains(github.event.pull_request.labels.*.name, 'maintainer-approved')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Remove maintainer-approved unless only clean base merges were pushed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+        run: |
+          # Any failure below counts as "not only clean base merges".
+          only_clean_base_merges() {
+            git init -q approval && cd approval || return 1
+            git remote add origin "https://github.com/$REPO" || return 1
+            git fetch -q --filter=blob:none origin \
+              "+refs/heads/$BASE:refs/base" "$BEFORE" "$AFTER" || return 1
+            if ! git merge-base --is-ancestor "$BEFORE" "$AFTER"; then
+              echo "The push rewrote the branch history."
+              return 1
+            fi
+            commits=$(git rev-list "$BEFORE..$AFTER" --not refs/base) || return 1
+            for c in $commits; do
+              parents=$(git rev-list --parents -n 1 "$c") || return 1
+              read -r _ _ merged extra <<< "$parents"
+              if [ -z "$merged" ] || [ -n "$extra" ] \
+                || ! git merge-base --is-ancestor "$merged" refs/base; then
+                echo "$c is not a merge of commits already on $BASE."
+                return 1
+              fi
+              diff=$(git show --remerge-diff --format= "$c") || return 1
+              if [ -n "$diff" ]; then
+                echo "$c differs from the automatic merge (conflict resolution or other edits)."
+                return 1
+              fi
+            done
+          }
+          if only_clean_base_merges; then
+            echo "Only conflict-free merges of $BASE were pushed; keeping maintainer-approved."
+          else
+            gh api -X DELETE "repos/$REPO/issues/$PR/labels/maintainer-approved" > /dev/null
+            echo "Removed maintainer-approved: the new commits need a fresh maintainer review."
+          fi
