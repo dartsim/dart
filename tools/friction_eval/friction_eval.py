@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import contextlib
 import csv
 import io
 import math
@@ -231,19 +232,25 @@ def cmd_run(args):
     errors = []
     done = 0
     total = len(parallel) + len(serial)
-    # Rows are written as cells finish, so an interrupted run keeps its data.
-    with open(os.path.join(args.out, "cells.csv"), "w") as f:
+    # Rows are written as cells finish, so an interrupted run keeps its data. A
+    # failed cell's rows go to failed.csv for diagnosis, never to cells.csv, so
+    # they stay out of every table and score; report lists it as failed.
+    with open(os.path.join(args.out, "cells.csv"), "w") as f, open(
+        os.path.join(args.out, "failed.csv"), "w"
+    ) as failed:
         f.write(COLUMNS_LINE)
+        failed.write(COLUMNS_LINE)
 
         def record(result):
             nonlocal done
             out, err = result
-            f.writelines(
+            dest = failed if err else f
+            dest.writelines(
                 line + "\n"
                 for line in out.splitlines()
                 if not line.startswith("label,")
             )
-            f.flush()
+            dest.flush()
             if err:
                 errors.append(err)
             done += 1
@@ -612,6 +619,21 @@ def self_test(binary=None):
     )
     assert "threshold" in check_output(bisect, ("--bisect",))
     assert check_output(bisect.replace("at_hi,1", "at_hi,0"), ("--bisect",)) == ""
+    # A failed cell's rows land in failed.csv, never in cells.csv.
+    with tempfile.TemporaryDirectory() as tmp:
+        fake = os.path.join(tmp, "fake_friction_eval")
+        with open(fake, "w") as f:
+            f.write(f"#!/bin/sh\nprintf '%s' '{ok.replace('finite,1', 'finite,0')}'\n")
+        os.chmod(fake, 0o755)
+        run = argparse.Namespace(
+            bin=[f"B620={fake}"], out=tmp, jobs=1, only="^A5 mu=0 B620 ode"
+        )
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+            io.StringIO()
+        ):
+            assert cmd_run(run) == 1
+        assert not load(os.path.join(tmp, "cells.csv"))
+        assert len(load(os.path.join(tmp, "failed.csv"))) == 1
     # Scheduling: timing cells run serially; --ir needs Valgrind.
     cells = [
         ("P1", "n=90", "B620", "ode", ("--perf",)),

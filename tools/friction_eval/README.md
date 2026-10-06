@@ -54,9 +54,11 @@ Options: `--solver dantzig|pgs|pgs100|pgs-tight|dzr|mf-pgs`,
 thresholds, R1-R9 robustness and P1 (contact_benchmark's generated objects).
 One process runs one cell, because ERP, CFM and ERV are process-wide. The
 runner fails a cell that exits nonzero, reports a non-finite state, or lacks
-its result rows. It runs the wall-clock cells (`--perf` without `--ir`)
-alone after the parallel phase, and skips the Callgrind cells (`--ir`) when
-Valgrind is not installed. `report` lists skipped and failed cells.
+its result rows, and writes its rows to `failed.csv` instead of `cells.csv`,
+so they reach no table or score. It runs the wall-clock cells (`--perf`
+without `--ir`) alone after the parallel phase, and skips the Callgrind cells
+(`--ir`) when Valgrind is not installed. `report` lists skipped and failed
+cells.
 
 ## Output
 
