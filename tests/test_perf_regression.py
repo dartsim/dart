@@ -27,6 +27,7 @@ def test_compare_classification_and_thresholds():
     metric = {
         "ir_per_step": 100_000,
         "allocs_per_step": 10,
+        "bytes_per_step": 100,
         "guards": {
             "hash": "0x1",
             "contacts": 1,
@@ -67,6 +68,7 @@ def test_compare_classification_and_thresholds():
     assert same["results"][0]["delta"] == {
         "ir": 0,
         "allocs": 0,
+        "bytes": 0,
         "guards_equal": True,
         "class": "gated",
     }
@@ -597,6 +599,7 @@ def test_changed_input_requires_rebaseline_without_deltas(version):
                 "head": {
                     "ir_per_step": 100,
                     "allocs_per_step": 0,
+                    "bytes_per_step": 0,
                     "max_rss_kb": 100,
                     "guards": {
                         "hash": "same",
@@ -632,6 +635,7 @@ def test_changed_input_requires_rebaseline_without_deltas(version):
         assert record["results"][0]["delta"] == {
             "ir": None,
             "allocs": None,
+            "bytes": None,
             "guards_equal": True,
             "class": "behaviour-change",
         }
@@ -688,6 +692,62 @@ def test_run_requires_installed_commit():
         == "installed"
     )
     assert module.parser().parse_args(["local"]).head == "HEAD"
+
+
+@pytest.mark.parametrize(
+    "changed", [None, "hash", "contacts", "cap_hit", "resting", "finite"]
+)
+def test_multithread_parity_compares_all_guards(monkeypatch, tmp_path, changed):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path / "run"),
+            "--rows",
+            "mt4-s3w",
+            "--no-perturb",
+            "--shim",
+            str(tmp_path / "allocshim.so"),
+        ]
+    )
+    args.shim.write_bytes(b"shim")
+    monkeypatch.setattr(module, "command_output", lambda command: "HEAD")
+    monkeypatch.setattr(module, "fingerprint", lambda args: {})
+
+    def measure(row, args, world):
+        guards = dict(
+            hash="same", contacts=1, cap_hit=False, resting="0/1", finite=True
+        )
+        if row.parity and changed:
+            guards[changed] = {
+                "hash": "different",
+                "contacts": 2,
+                "cap_hit": True,
+                "resting": "1/1",
+                "finite": False,
+            }[changed]
+        return {
+            "row": row.row,
+            "det": row.det,
+            "parity": row.parity,
+            "status": "ok",
+            "head": {"guards": guards},
+        }
+
+    monkeypatch.setattr(module, "measure", measure)
+    results = module.run_arm(args)["results"]
+    assert len(results) == 2  # The serial counterpart is added automatically.
+    parallel = next(result for result in results if result["parity"])
+    serial = next(result for result in results if not result["parity"])
+    assert serial["status"] == "ok"
+    assert parallel["status"] == ("broken" if changed else "ok")
+    if changed:
+        assert parallel["error"] == "mt4 guard parity missing or unequal"
 
 
 def test_measure_gates_only_on_its_own_perturbation_pass(monkeypatch, tmp_path):
@@ -797,6 +857,7 @@ def test_unsupported_driver_rows_are_not_infrastructure_errors(
         },
         "allocs": 0,
         "allocs_per_step": 0,
+        "bytes_per_step": 0,
     }
 
     def popen(command, **kwargs):
@@ -999,6 +1060,7 @@ def _micro_record(module, name):
                 "head": {
                     "ir_per_step": 100,
                     "allocs_per_step": 0,
+                    "bytes_per_step": 0,
                     "cases": cases,
                     "guards": {
                         "hash": {case: "0x0123456789abcdef" for case in cases},
@@ -1058,6 +1120,60 @@ def test_micro_checksums_and_allocations_gate_comparison(name):
     record = module.compare(base, head)
     assert record["verdict"]["status"] == "FAIL"
     assert "allocations +1/step" in record["verdict"]["failures"][0]
+
+
+def test_requested_bytes_gate_report_and_missing_measurements():
+    module = _load_runner()
+    base = _micro_record(module, "dyn")
+    base["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    base["results"][0]["head"]["bytes_per_step"] = 100
+    head = copy.deepcopy(base)
+    head["results"][0]["head"]["bytes_per_step"] = 128
+    result = module.compare(base, head)
+    assert result["verdict"]["status"] == "FAIL"
+    assert result["results"][0]["delta"]["allocs"] == 0
+    assert result["results"][0]["delta"]["bytes"] == 28
+    assert result["verdict"]["failures"] == ["dyn: requested bytes +28/step"]
+    report = module.markdown(result)
+    assert "Bytes/step delta" in report and "| +28 |" in report
+    assert "1 regressed." in report
+    for row, status in (("dyn", "PASS"), ("lcp", "FAIL")):
+        result = module.compare(
+            base, head, f"Perf-Regression-Rationale: {row}: intended"
+        )
+        assert result["verdict"]["status"] == status
+        assert "1 regressed." in module.markdown(result)
+    head["results"][0]["head"]["bytes_per_step"] = 72
+    result = module.compare(base, head)
+    assert result["verdict"]["status"] == "PASS"
+    assert result["results"][0]["delta"]["bytes"] == -28
+    assert "| -28 |" in module.markdown(result)
+    head["results"][0]["head"]["bytes_per_step"] = 128
+    base["results"][0]["gated"] = False
+    assert module.compare(base, head)["verdict"]["status"] == "PASS"
+    base["results"][0]["gated"] = True
+
+    # Missing/invalid bytes follow the same policy as allocation counts on either arm.
+    for field in ("allocs_per_step", "bytes_per_step"):
+        for invalid in ("missing", None, -1, float("nan"), float("inf")):
+            for arms in (("base",), ("head",), ("base", "head")):
+                records = {"base": copy.deepcopy(base), "head": copy.deepcopy(head)}
+                for arm in arms:
+                    row = records[arm]["results"][0]
+                    if invalid == "missing":
+                        row["head"].pop(field)
+                    else:
+                        row["head"][field] = invalid
+                    assert not module.complete(row, row["head"])
+                result = module.compare(
+                    records["base"],
+                    records["head"],
+                    "Perf-Regression-Rationale: dyn: intended",
+                )
+                assert result["verdict"]["status"] == "FAIL"
+                assert result["results"][0]["delta"]["class"] == "broken"
+                assert result["results"][0]["delta"]["bytes"] is None
+                assert "Bytes/step delta" in module.markdown(result)
 
 
 @pytest.mark.parametrize("name", ["dyn", "lcp"])

@@ -204,8 +204,12 @@ supply. `--no-perturb` does not require heappad. The install must also contain
 ID/version, build preset, Pixi lock hash, commit, and installed libdart and
 driver hashes. `run` checks this stamp against the artifacts and commit; missing
 or stale provenance is an infrastructure error. Saved records without compiler
-provenance cannot pass comparison. Gated rows with positive Ir deltas,
-allocation increases, or gate failures count as regressed in the summary.
+provenance cannot pass comparison. Gated rows fail on increases in either
+allocations per step or requested bytes per step unless acknowledged with a
+matching `Perf-Regression-Rationale`. The report includes requested-byte deltas;
+missing or invalid byte measurements are handled like allocation counts.
+Gated rows with positive Ir deltas, allocation-count or requested-byte increases,
+or gate failures count as regressed in the summary.
 
 Use the soft-body comparison script for PR evidence that must compare the
 current commit against both its parent and the `main` base on the same host:

@@ -692,13 +692,14 @@ def run_arm(args) -> dict:
     for result in results:
         if result["parity"] and result["status"] == "ok":
             serial = by_key.get(result["parity"])
+            # Compare every guard, including contacts, cap hit, resting and finite.
             if (
                 not serial
                 or serial["status"] != "ok"
-                or serial["head"]["guards"]["hash"] != result["head"]["guards"]["hash"]
+                or serial["head"]["guards"] != result["head"]["guards"]
             ):
                 result.update(
-                    status="broken", error="mt4 hash parity missing or unequal"
+                    status="broken", error="mt4 guard parity missing or unequal"
                 )
     record = {
         "schema": "dart-perf/1",
@@ -780,10 +781,15 @@ def complete(row: dict, metrics: dict) -> bool:
                     "bytes_per_step",
                 )
             )
-        value = metrics.get("allocs_per_step")
+        for key in ("allocs_per_step", "bytes_per_step"):
+            value = metrics.get(key)
+            if (
+                not isinstance(value, (float, int))
+                or not math.isfinite(value)
+                or value < 0
+            ):
+                return False
         guard = metrics.get("guards")
-        if not isinstance(value, (float, int)) or not math.isfinite(value) or value < 0:
-            return False
         if not isinstance(guard, dict) or not guard.get("hash"):
             return False
         if guard.get("finite") is not True:
@@ -914,6 +920,15 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
             and "allocs_per_step" in hm
             else None
         )
+        size = (
+            hm["bytes_per_step"] - bm["bytes_per_step"]
+            if valid_measurements
+            and not input_changed
+            and not missing_micro
+            and "bytes_per_step" in bm
+            and "bytes_per_step" in hm
+            else None
+        )
         equal = (
             None
             if missing_micro
@@ -990,12 +1005,16 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
                 reasons.append("missing or invalid Ir measurement on base or head")
             if "allocs_per_step" in bm and "allocs_per_step" not in hm:
                 reasons.append("missing head allocation measurement")
+            if "bytes_per_step" in bm and "bytes_per_step" not in hm:
+                reasons.append("missing head requested-byte measurement")
             if (
                 allocs is not None
                 and allocs > 0
                 and not acknowledgment("regression", key)
             ):
                 reasons.append(f"allocations +{allocs:g}/step")
+            if size is not None and size > 0 and not acknowledgment("regression", key):
+                reasons.append(f"requested bytes +{size:g}/step")
             if ir is not None:
                 ratios.append((key, hm["ir_per_step"] / bm["ir_per_step"]))
                 if at_least(ir, 0.01) and not acknowledgment("regression", key):
@@ -1014,6 +1033,7 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         result["delta"] = {
             "ir": ir,
             "allocs": allocs,
+            "bytes": size,
             "guards_equal": equal,
             "class": classification,
         }
@@ -1105,7 +1125,7 @@ def markdown(record: dict) -> str:
                 if row["failures"]
                 or any(
                     row["delta"][key] is not None and row["delta"][key] > 0
-                    for key in ("ir", "allocs")
+                    for key in ("ir", "allocs", "bytes")
                 )
                 else (
                     "improved"
@@ -1121,8 +1141,8 @@ def markdown(record: dict) -> str:
         lines += [f"Ir geomean: {percent(verdict['ir_geomean'])}."]
     lines += [
         "",
-        "| Row | Threads | Base Ir/step | Head Ir/step | Delta | Allocs/step | Guards | Class | Gate qualification |",
-        "|---|---:|---:|---:|---:|---:|---|---|---|",
+        "| Row | Threads | Base Ir/step | Head Ir/step | Delta | Allocs/step | Bytes/step delta | Guards | Class | Gate qualification |",
+        "|---|---:|---:|---:|---:|---:|---:|---|---|---|",
     ]
 
     def number(value):
@@ -1131,13 +1151,14 @@ def markdown(record: dict) -> str:
     for row in record["results"]:
         bm, hm, change = row["parent"], row["head"], row["delta"]
         change_text = percent(change["ir"])
+        bytes_text = f"{change['bytes']:+g}" if change["bytes"] is not None else "—"
         guard_text = (
             "unavailable"
             if change["guards_equal"] is None
             else "same" if change["guards_equal"] else "changed"
         )
         lines.append(
-            f"| {row_key(row)} | {row.get('threads', 1)} | {number(bm.get('ir_per_step'))} | {number(hm.get('ir_per_step'))} | {change_text} | {number(bm.get('allocs_per_step'))} → {number(hm.get('allocs_per_step'))} | {guard_text} | {change['class']} | {row['gate_reason']} |"
+            f"| {row_key(row)} | {row.get('threads', 1)} | {number(bm.get('ir_per_step'))} | {number(hm.get('ir_per_step'))} | {change_text} | {number(bm.get('allocs_per_step'))} → {number(hm.get('allocs_per_step'))} | {bytes_text} | {guard_text} | {change['class']} | {row['gate_reason']} |"
         )
     lines += [
         "",

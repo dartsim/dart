@@ -272,17 +272,17 @@ int main(int argc, char** argv)
     std::size_t mobile = 0, resting = 0;
     for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
       const auto skeleton = world->getSkeleton(s);
-      if (!skeleton->isMobile())
-        continue;
-      ++mobile;
-      resting += skeleton->isResting();
-      const Eigen::VectorXd q = skeleton->getPositions();
-      const Eigen::VectorXd v = skeleton->getVelocities();
-      finite = finite && q.allFinite() && v.allFinite();
-      for (Eigen::Index j = 0; j < q.size(); ++j)
-        hash = mix(hash, q[j]);
-      for (Eigen::Index j = 0; j < v.size(); ++j)
-        hash = mix(hash, v[j]);
+      if (skeleton->isMobile()) {
+        ++mobile;
+        resting += skeleton->isResting();
+        const Eigen::VectorXd q = skeleton->getPositions();
+        const Eigen::VectorXd v = skeleton->getVelocities();
+        finite = finite && q.allFinite() && v.allFinite();
+        for (Eigen::Index j = 0; j < q.size(); ++j)
+          hash = mix(hash, q[j]);
+        for (Eigen::Index j = 0; j < v.size(); ++j)
+          hash = mix(hash, v[j]);
+      }
       for (std::size_t b = 0; b < skeleton->getNumBodyNodes(); ++b) {
         const auto& transform
             = skeleton->getBodyNode(b)->getWorldTransform().matrix();
