@@ -348,7 +348,9 @@ def accuracy_errors(scene, m):
 
 
 def scores(data, config, detectors=("ode",)):
-    """Mean D-score per scene of a configuration against B620 (accuracy)."""
+    """Mean D-score per scene of a configuration against B620 (accuracy). A
+    measurement only one side made (an event the other never reached, or a
+    failed one) is scored as a classification, so a failure counts -1."""
     per_scene = defaultdict(list)
     for key, m in data.items():
         if key[0] != config or key[3] not in detectors or key[4] != "0.001":
@@ -356,15 +358,19 @@ def scores(data, config, detectors=("ode",)):
         base = data.get(("B620",) + key[1:])
         if not base:
             continue
-        b = {k: (e, eps) for k, e, eps in accuracy_errors(key[1], base)}
-        for metric, e, eps in accuracy_errors(key[1], m):
-            if metric not in b:
+        b = {k: e for k, e, _ in accuracy_errors(key[1], base)}
+        c = {k: e for k, e, _ in accuracy_errors(key[1], m)}
+        for metric, _, eps in ACCURACY.get(key[1], []):
+            if metric in b and metric in c:
+                s = (
+                    class_score(b[metric] == 0, c[metric] == 0)
+                    if eps is None
+                    else score(b[metric], c[metric], eps)
+                )
+            elif metric in b or metric in c:
+                s = class_score(metric in b, metric in c)
+            else:
                 continue
-            s = (
-                class_score(b[metric][0] == 0, e == 0)
-                if eps is None
-                else score(b[metric][0], e, eps)
-            )
             per_scene[key[1]].append(s)
     return {s: statistics.mean(v) for s, v in sorted(per_scene.items())}
 
@@ -657,6 +663,14 @@ def self_test(binary=None):
         on = {("B620", "P1", "n=90", "ode", "0.001", "off", "on"): {"resting": 90.0}}
         on[("DZ+R",) + next(iter(on))[1:]] = {"resting": 0.0}
         assert compare(on, "DZ+R")[0][1] == "n=90;deactivation=on"
+        # An event only one side reaches scores as a classification.
+        a10 = ("A10", "beta=0", "ode", "0.001", "off", "off")
+        synced = {"sync_time": 0.17, "pred_exact_sync_time": 0.17}
+        never = {"pred_exact_sync_time": 0.17}
+        one_sided = {("B620",) + a10: synced, ("VA",) + a10: never}
+        assert scores(one_sided, "VA") == {"A10": -1.0}
+        one_sided = {("B620",) + a10: never, ("VA",) + a10: synced}
+        assert scores(one_sided, "VA") == {"A10": 1.0}
     assert len(e1_cells()) > 1000
     if binary:
         proc = subprocess.run([binary, "--self-test"], capture_output=True, text=True)
