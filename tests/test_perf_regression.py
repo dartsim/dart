@@ -438,3 +438,375 @@ def test_compare_and_local_infrastructure_exit_two(monkeypatch, tmp_path, capsys
     module.write_json(head, altered)
     assert module.main(["compare", "--base", str(base), "--head", str(head)]) == 2
     assert "compiler" in capsys.readouterr().out
+
+
+def _micro_record(module, name):
+    row = module.select_rows(name)[0]
+    cases = (
+        ["solveNative/boxed_coupled_96", "solveNative/friction_32"]
+        if name == "lcp"
+        else ["BM_Dynamics/10"]
+    )
+    return {
+        "run": {"commit": "HEAD", "env": {"fingerprint": "same"}},
+        "results": [
+            {
+                "row": name,
+                "det": "",
+                "version": row.version,
+                "status": "ok",
+                "gated": True,
+                "method": "slope",
+                "head": {
+                    "ir_per_step": 100,
+                    "allocs_per_step": 0,
+                    "cases": cases,
+                    "guards": {
+                        "hash": {case: "0x0123456789abcdef" for case in cases},
+                        "finite": True,
+                    },
+                },
+            }
+        ],
+    }
+
+
+@pytest.mark.parametrize("name", ["dyn", "lcp"])
+def test_micro_checksums_and_allocations_gate_comparison(name):
+    module = _load_runner()
+    base = _micro_record(module, name)
+    same = module.compare(base, copy.deepcopy(base))
+    assert same["verdict"]["status"] == "PASS"
+    assert same["results"][0]["delta"]["class"] == "gated"
+    assert same["results"][0]["delta"]["guards_equal"] is True
+    for case in base["results"][0]["head"]["cases"]:
+        head = copy.deepcopy(base)
+        head["results"][0]["head"]["guards"]["hash"][case] = "0xfedcba9876543210"
+        record = module.compare(base, head)
+        assert record["verdict"]["status"] == "FAIL"
+        assert record["results"][0]["delta"]["class"] == "behaviour-change"
+        assert record["results"][0]["delta"]["guards_equal"] is False
+    head = copy.deepcopy(base)
+    head["results"][0]["head"]["allocs_per_step"] = 1
+    record = module.compare(base, head)
+    assert record["verdict"]["status"] == "FAIL"
+    assert "allocations +1/step" in record["verdict"]["failures"][0]
+
+
+@pytest.mark.parametrize("name", ["dyn", "lcp"])
+@pytest.mark.parametrize("missing", ["base", "head", "both"])
+def test_micro_instrumentation_availability(name, missing):
+    module = _load_runner()
+    base = _micro_record(module, name)
+    head = copy.deepcopy(base)
+    head["results"][0]["head"]["ir_per_step"] = 200
+    for record in (
+        [base, head] if missing == "both" else [base if missing == "base" else head]
+    ):
+        metrics = record["results"][0]["head"]
+        metrics.update(
+            micro_instrumented=False,
+            guards=None,
+            allocs=None,
+            bytes=None,
+            allocs_per_step=None,
+            bytes_per_step=None,
+        )
+        assert module.complete(record["results"][0], metrics)
+    result = module.compare(base, head, f"Rebaseline-Rationale: {name}: +100% intended")
+    row = result["results"][0]
+    assert row["delta"]["ir"] == 1
+    assert row["delta"]["allocs"] is None
+    assert row["delta"]["guards_equal"] is None
+    assert result["verdict"]["ir_geomean"] is None
+    if missing == "head":
+        assert result["verdict"]["status"] == "FAIL"
+        assert row["delta"]["class"] == "broken"
+        assert row["failures"] == ["head lacks micro instrumentation present in base"]
+        head["results"][0]["version"] += 1
+        assert module.compare(base, head)["verdict"]["status"] == "FAIL"
+    else:
+        assert result["verdict"]["status"] == "PASS"
+        assert row["delta"]["class"] == "diagnostic"
+        assert row["gated"] is False
+    for arm in (["base", "head"] if missing == "both" else [missing]):
+        assert f"{arm} lacks micro instrumentation" in row["gate_reason"]
+    result["run"]["env"].update(
+        valgrind="test", compiler="test", glibc="test", preset="perf-1"
+    )
+    report = module.markdown(result)
+    assert "unavailable" in report
+    assert row["gate_reason"] in report
+
+
+@pytest.mark.parametrize("name", ["dyn", "lcp"])
+@pytest.mark.parametrize("arm", ["base", "head", "both"])
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "missing allocation",
+        "null allocation",
+        "negative allocation",
+        "missing guards",
+        "null guards",
+        "missing checksum",
+        "partial checksum",
+        "non-finite",
+    ],
+)
+def test_micro_incomplete_metrics_never_pass(name, arm, defect):
+    module = _load_runner()
+    base = _micro_record(module, name)
+    head = copy.deepcopy(base)
+    for record in (
+        [base, head] if arm == "both" else [base if arm == "base" else head]
+    ):
+        row = record["results"][0]
+        metrics = row["head"]
+        if defect == "missing allocation":
+            metrics.pop("allocs_per_step")
+        elif defect == "null allocation":
+            metrics["allocs_per_step"] = None
+        elif defect == "negative allocation":
+            metrics["allocs_per_step"] = -1
+        elif defect == "missing guards":
+            metrics.pop("guards")
+        elif defect == "null guards":
+            metrics["guards"] = None
+        elif defect == "missing checksum":
+            metrics["guards"].pop("hash")
+        elif defect == "partial checksum":
+            metrics["guards"]["hash"].pop(metrics["cases"][0])
+        else:
+            metrics["guards"]["finite"] = False
+        assert not module.complete(row, metrics)
+    result = module.compare(base, head, f"Rebaseline-Rationale: {name}: intended")
+    assert result["verdict"]["status"] == "FAIL"
+    assert result["results"][0]["delta"]["class"] == "broken"
+
+
+@pytest.mark.parametrize("name", ["dyn", "lcp"])
+def test_micro_native_slope_and_explicit_windows(monkeypatch, tmp_path, name):
+    module = _load_runner()
+    row = module.select_rows(name)[0]
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--native-only",
+        ]
+    )
+    args.bin_dir = tmp_path
+    cases = _micro_record(module, name)["results"][0]["head"]["cases"]
+    defect = ""
+
+    def execute(command, env, log, timeout):
+        assert env["PERF_WINDOW"] == "micro"
+        assert env["PERF_MICRO"] == "1"
+        assert env["PERF_WARMUP"] == "0"
+        steps = int(
+            next(
+                item for item in command if item.startswith("--benchmark_min_time=")
+            ).split("=")[1][:-1]
+        )
+        output = Path(
+            next(
+                item.split("=", 1)[1]
+                for item in command
+                if item.startswith("--benchmark_out=")
+            )
+        )
+        module.write_json(
+            output,
+            {"benchmarks": [{"name": case, "iterations": steps} for case in cases]},
+        )
+        measured = (
+            len(cases) if defect not in ("missing window", "uninstrumented") else 0
+        )
+        allocs, size = (
+            (0, 0) if defect == "uninstrumented" else (50 + 3 * steps, 200 + 12 * steps)
+        )
+        text = f"STEPALLOC steps={measured} measured={measured} allocs={allocs} bytes={size} libdart={tmp_path}/libdart.so\n"
+        if defect not in ("missing checksum", "uninstrumented"):
+            text += "".join(
+                f"PERFGUARD case={case} hash=0x0123456789abcdef finite=true\n"
+                for case in cases
+            )
+        if defect == "duplicate checksum":
+            text += f"PERFGUARD case={cases[0]} hash=0x0123456789abcdef finite=true\n"
+        log.write_text(text)
+        return text
+
+    monkeypatch.setattr(module, "execute", execute)
+    metrics = module.micro_perturb(row, args, tmp_path, "")
+    assert metrics["allocs"] == 3 * row.steps
+    assert metrics["bytes"] == 12 * row.steps
+    assert metrics["allocs_per_step"] == 3
+    assert metrics["bytes_per_step"] == 12
+    assert metrics["cases"] == cases
+    assert metrics["guards"] == module.native_guards(args, row)
+    defect = "uninstrumented"
+    result = module.measure(row, args, tmp_path)
+    assert result["status"] == "ok"
+    metrics = result["head"]
+    assert metrics["micro_instrumented"] is False
+    assert metrics["cases"] == cases
+    assert all(
+        metrics[key] is None
+        for key in ("guards", "allocs", "bytes", "allocs_per_step", "bytes_per_step")
+    )
+    assert module.native_guards(args, row) is None
+    assert module.complete(result, metrics)
+    for defect in ("missing window", "missing checksum", "duplicate checksum"):
+        with pytest.raises(ValueError):
+            module.micro_perturb(row, args, tmp_path, "")
+
+
+@pytest.mark.parametrize("name", ["dyn", "lcp"])
+@pytest.mark.parametrize("changed", ["hash", "allocs"])
+def test_micro_perturbations_compare_real_metrics(monkeypatch, tmp_path, name, changed):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--native-only",
+            "--perturb",
+        ]
+    )
+    baseline = _micro_record(module, name)["results"][0]["head"]
+    baseline["allocs"] = 0
+
+    def measure(row, args, world, config):
+        metrics = copy.deepcopy(baseline)
+        if config:
+            if changed == "hash":
+                metrics["guards"]["hash"][metrics["cases"][0]] = "0xfedcba9876543210"
+            else:
+                metrics["allocs"] = 1
+        return metrics
+
+    monkeypatch.setattr(module, "micro_perturb", measure)
+    result = module.measure(module.select_rows(name)[0], args, tmp_path)
+    assert result["status"] == "ok"
+    assert result["gated"] is False
+    assert all(not sample["stable"] for sample in result["perturbations"].values())
+
+
+def test_local_uses_independent_source_and_cmake_caches(monkeypatch, tmp_path):
+    import io
+    import tarfile
+    from types import SimpleNamespace
+
+    module = _load_runner()
+    args = module.parser().parse_args(
+        ["local", "--base", "HEAD", "--head", "HEAD", "--output-dir", str(tmp_path)]
+    )
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
+    monkeypatch.setattr(module, "command_output", lambda command: "HEAD")
+    monkeypatch.setattr(
+        module.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(returncode=0)
+    )
+    archive = io.BytesIO()
+    with tarfile.open(fileobj=archive, mode="w") as contents:
+        entry = tarfile.TarInfo("CMakeLists.txt")
+        entry.size = 0
+        contents.addfile(entry, io.BytesIO())
+    monkeypatch.setattr(
+        module.subprocess, "check_output", lambda *args, **kwargs: archive.getvalue()
+    )
+    configurations = []
+
+    def execute(command, env, log, timeout):
+        if command[:3] == ["cmake", "-G", "Ninja"]:
+            source = Path(command[command.index("-S") + 1])
+            build = Path(command[command.index("-B") + 1])
+            build.mkdir()
+            if source.name.startswith("src-"):
+                assert (source / "CMakeLists.txt").is_file()
+                assert not (build / "CMakeCache.txt").exists()
+                (build / "CMakeCache.txt").write_text(source.name)
+                configurations.append((source, build))
+        elif command[:2] == ["cmake", "--build"]:
+            build = Path(command[2])
+            if build.name.startswith("driver-"):
+                (build / "portable_step_bench").write_text("driver")
+        elif command[:2] == ["cmake", "--install"]:
+            Path(command[command.index("--prefix") + 1]).mkdir()
+        return ""
+
+    monkeypatch.setattr(module, "execute", execute)
+    monkeypatch.setattr(module, "run_arm", lambda arm: {"commit": arm.commit})
+    assert len(module.local_arms(args)) == 2
+    assert configurations == [
+        (tmp_path / f"src-{arm}", tmp_path / f"build-{arm}") for arm in ("a", "b")
+    ]
+    for source, build in configurations:
+        assert (build / "CMakeCache.txt").read_text() == source.name
+
+
+@pytest.mark.parametrize("name", ["dyn", "lcp"])
+def test_micro_callgrind_requires_native_guard_and_library_parity(
+    monkeypatch, tmp_path, name
+):
+    module = _load_runner()
+    row = module.select_rows(name)[0]
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir = tmp_path
+    cases = module.MICRO_CASES[name]
+    native_text = (
+        f"STEPALLOC steps=1 measured=1 allocs=0 bytes=0 libdart={tmp_path}/libdart.so\n"
+    )
+    native_text += "".join(
+        f"PERFGUARD case={case} hash=0x0123456789abcdef finite=true\n" for case in cases
+    )
+    module.native_log(args, row).write_text(native_text)
+    defect = ""
+
+    def execute(command, env, log, timeout):
+        assert env["PERF_MICRO"] == "1"
+        assert f"--toggle-collect={module.COLLECTION_SIGNATURES[row.driver]}" in command
+        output = next(
+            item.split("=", 1)[1]
+            for item in command
+            if item.startswith("--callgrind-out-file=")
+        )
+        library = "other/libdart.so" if defect == "library" else "libdart.so"
+        Path(output.replace("%p", "123")).write_text(
+            f"events: Ir\nsummary: 1000\nob={tmp_path}/{library}\n"
+        )
+        return (
+            native_text.replace("0x0123456789abcdef", "0xfedcba9876543210")
+            if defect == "checksum"
+            else native_text
+        )
+
+    monkeypatch.setattr(module, "execute", execute)
+    assert module.callgrind(row, args, tmp_path, row.warmup + row.steps) == {"Ir": 1000}
+    for defect in ("checksum", "library"):
+        with pytest.raises(ValueError, match="differs|differ"):
+            module.callgrind(row, args, tmp_path, row.warmup + row.steps)
+    defect = ""
+    native_text = native_text.split("PERFGUARD", 1)[0]
+    module.native_log(args, row).write_text(native_text)
+    assert module.callgrind(row, args, tmp_path, row.warmup + row.steps) == {"Ir": 1000}

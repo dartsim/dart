@@ -1,3 +1,4 @@
+#include "benchmark/PerfGuard.hpp"
 #include "unit/lcpsolver/DantzigProblemCases.hpp"
 
 #include <benchmark/benchmark.h>
@@ -6,6 +7,7 @@ namespace {
 
 void solveNative(benchmark::State& state, int caseIndex)
 {
+  const dart::test::PerfWindow window;
   const auto cases = dart::test::makeDantzigPerformanceCases();
   const auto& problem = cases[static_cast<std::size_t>(caseIndex)];
   dart::lcpsolver::dantzig::DantzigLcpScratch<double> scratch;
@@ -21,6 +23,15 @@ void solveNative(benchmark::State& state, int caseIndex)
   }
 
   benchmark::DoNotOptimize(checksum);
+
+  if (window.enabled()) {
+    dart::test::PerfChecksum result;
+    for (const auto& values : {workspace.x, workspace.w}) {
+      for (double value : values)
+        result.add(value);
+    }
+    result.report(state.name().c_str());
+  }
 }
 
 void solveLegacy(benchmark::State& state, int caseIndex)

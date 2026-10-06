@@ -92,6 +92,10 @@ ROWS = [
 GZ_ARGS = tuple("{world} --ground gzbox --max-contacts 10000".split())
 DYN_ARGS = ("--benchmark_filter=BM_Dynamics/10$",)
 LCP_ARGS = ("--benchmark_filter=solveNative/(boxed_coupled_96|friction_32)$",)
+MICRO_CASES = {
+    "dyn": ["BM_Dynamics/10"],
+    "lcp": ["solveNative/boxed_coupled_96", "solveNative/friction_32"],
+}
 ROWS += [
     Row("gzb", "ode", PB, GZ_ARGS, 2, 3),
     Row("robot", "dart", PB, ("--robot", "atlas"), 300, 100),
@@ -165,6 +169,23 @@ def guards(text: str) -> dict:
     }
 
 
+def micro_guards(text: str) -> dict | None:
+    if not re.search(r"^PERFGUARD\b", text, re.MULTILINE):
+        return None
+    samples = re.findall(
+        r"^PERFGUARD case=(\S+) hash=(0x[0-9a-f]{16}) finite=(true|false)$",
+        text,
+        re.MULTILINE,
+    )
+    hashes = {name.split("/iterations:")[0]: value for name, value, _ in samples}
+    if not samples or len(hashes) != len(samples):
+        raise ValueError("missing or duplicate micro checksum")
+    return {
+        "hash": hashes,
+        "finite": all(finite == "true" for _, _, finite in samples),
+    }
+
+
 def identity(path: str, prefix: Path) -> None:
     if not Path(path).resolve().is_relative_to(prefix.resolve()):
         raise ValueError(f"arm identity: {path} is outside {prefix}")
@@ -172,7 +193,7 @@ def identity(path: str, prefix: Path) -> None:
 
 def environment(prefix: Path) -> dict[str, str]:
     env = os.environ.copy()
-    for key in ("LD_PRELOAD", "HEAPPAD", "PERF_WARMUP", "PERF_WINDOW"):
+    for key in ("LD_PRELOAD", "HEAPPAD", "PERF_WARMUP", "PERF_WINDOW", "PERF_MICRO"):
         env.pop(key, None)
     env.update(LC_ALL="C", GLIBC_TUNABLES="glibc.cpu.hwcaps=-FMA")
     paths = [str(prefix / "lib"), env.get("LD_LIBRARY_PATH", "")]
@@ -304,9 +325,12 @@ def callgrind(row: Row, args, world: Path, steps: int) -> dict[str, int]:
             "--D1=32768,8,64",
             "--LL=16777216,16,64",
         ]
+    env = environment(args.prefix)
+    if not row.det:
+        env["PERF_MICRO"] = "1"
     text = execute(
         [*command, *row_command(row, args, world, 0, steps)],
-        environment(args.prefix),
+        env,
         args.output_dir / f"{tag}.log",
         args.timeout,
     )
@@ -322,36 +346,33 @@ def callgrind(row: Row, args, world: Path, steps: int) -> dict[str, int]:
             continue
         for obj in objects:
             identity(obj, args.prefix)
-            if row.det:
-                native_lib = re.search(
-                    r"^STEPALLOC .* libdart=(.+)$",
-                    (
-                        args.output_dir / (row.key.replace("/", ".") + ".native.log")
-                    ).read_text(),
-                    re.MULTILINE,
-                )
-                if (
-                    not native_lib
-                    or Path(obj).resolve() != Path(native_lib[1]).resolve()
-                ):
-                    raise ValueError(
-                        f"callgrind/native libdart identity differs: {obj}"
-                    )
+            native_lib = re.search(
+                r"^STEPALLOC .* libdart=(.+)$",
+                native_log(args, row).read_text(),
+                re.MULTILINE,
+            )
+            if not native_lib or Path(obj).resolve() != Path(native_lib[1]).resolve():
+                raise ValueError(f"callgrind/native libdart identity differs: {obj}")
         samples.append(dict(zip(events[1].split(), map(int, summary[1].split()))))
     if not samples:
         raise ValueError(f"missing callgrind counts or libdart identity: {tag}")
-    if row.det and steps == row.warmup + row.steps:
-        if guards(text) != native_guards(args, row):
+    if steps == row.warmup + row.steps:
+        observed = guards(text) if row.det else micro_guards(text)
+        if observed != native_guards(args, row):
             raise ValueError(f"native/valgrind guards differ: {row.key}")
     return max(samples, key=lambda sample: sample["Ir"])
 
 
-def native_guards(args, row: Row) -> dict:
-    return guards(
-        (args.output_dir / (row.key.replace("/", ".") + ".native.log")).read_text(
-            encoding="utf-8", errors="replace"
-        )
-    )
+def native_log(args, row: Row) -> Path:
+    tag = row.key.replace("/", ".") + ".native"
+    if not row.det:
+        tag += f".{row.warmup + row.steps}"
+    return args.output_dir / f"{tag}.log"
+
+
+def native_guards(args, row: Row) -> dict | None:
+    text = native_log(args, row).read_text(encoding="utf-8", errors="replace")
+    return guards(text) if row.det else micro_guards(text)
 
 
 def measure(row: Row, args, world: Path) -> dict:
@@ -390,28 +411,25 @@ def measure(row: Row, args, world: Path) -> dict:
         )
     try:
         metrics = (
-            native(row, args, world)
-            if row.det
-            else {"cases": micro_perturb(row, args, world, "")["cases"]}
+            native(row, args, world) if row.det else micro_perturb(row, args, world, "")
         )
         result["head"] = metrics
         if args.perturb:
             result["perturbations"] = {}
             for config in PERTURBATIONS:
-                if row.det:
-                    altered = native(row, args, world, config)
-                    stable = all(
-                        altered[key] == metrics[key] for key in ("guards", "allocs")
-                    )
-                    result["perturbations"][config] = {
-                        "stable": stable,
-                        "guards": altered["guards"],
-                        "allocs": altered["allocs"],
-                    }
-                else:
-                    result["perturbations"][config] = micro_perturb(
-                        row, args, world, config
-                    )
+                altered = (
+                    native(row, args, world, config)
+                    if row.det
+                    else micro_perturb(row, args, world, config)
+                )
+                stable = all(
+                    altered[key] == metrics[key] for key in ("guards", "allocs")
+                )
+                result["perturbations"][config] = {
+                    "stable": stable,
+                    "guards": altered["guards"],
+                    "allocs": altered["allocs"],
+                }
             result["gated"] = all(
                 item["stable"] for item in result["perturbations"].values()
             )
@@ -428,7 +446,7 @@ def measure(row: Row, args, world: Path) -> dict:
                 metrics["est_cycles_per_step"] = (
                     sum(counts[key] for key in ("Ir", "Dr", "Dw")) + 4 * l1 + 30 * ll
                 ) / row.steps
-        if metrics.get("guards", {}).get("finite") is False:
+        if (metrics.get("guards") or {}).get("finite") is False:
             result.update(status="broken", error="non-finite state")
     except (OSError, ValueError, KeyError) as error:
         result.update(
@@ -440,33 +458,71 @@ def measure(row: Row, args, world: Path) -> dict:
 def micro_perturb(row: Row, args, world: Path, config: str) -> dict:
     counts = []
     for steps in (row.warmup, row.warmup + row.steps):
-        path = args.output_dir / f"{row.row}.{steps}.{config}.json"
+        tag = f"{row.row}.native.{steps}" + (f".{config}" if config else "")
+        path = args.output_dir / f"{tag}.json"
         command = [
             *row_command(row, args, world, 0, steps),
             "--benchmark_out_format=json",
             f"--benchmark_out={path}",
         ]
+        env = perturb_environment(environment(args.prefix), args, config)
+        env.update(PERF_MICRO="1", PERF_WINDOW="micro", PERF_WARMUP="0")
         text = execute(
             command,
-            perturb_environment(environment(args.prefix), args, config),
+            env,
             path.with_suffix(".log"),
             args.timeout,
         )
-        match = re.search(r"^STEPALLOC .* libdart=(.+)$", text, re.MULTILINE)
+        match = re.search(
+            r"^STEPALLOC steps=(\d+) measured=(\d+) allocs=(\d+) bytes=(\d+) libdart=(.+)$",
+            text,
+            re.MULTILINE,
+        )
         if not match:
             raise ValueError(f"missing micro native identity: {row.key}")
-        identity(match[1], args.prefix)
+        identity(match[5], args.prefix)
         data = json.loads(path.read_text(encoding="utf-8"))
         cases = data.get("benchmarks", [])
         if not cases or any(
             item.get("error_occurred") or item["iterations"] != steps for item in cases
         ):
             raise ValueError(f"micro iteration count or case failure: {row.key}")
-        counts.append([item["name"].split("/iterations:")[0] for item in cases])
-    expected = 2 if row.row == "lcp" else 1
-    if len(counts[0]) != expected or counts[0] != counts[1]:
-        raise ValueError(f"micro cases differ: {row.key}")
-    return {"stable": True, "cases": counts[0], "guards": None, "allocs": None}
+        names = [item["name"].split("/iterations:")[0] for item in cases]
+        observed = micro_guards(text)
+        if names != MICRO_CASES[row.row] or (
+            observed is not None and list(observed["hash"]) != names
+        ):
+            raise ValueError(f"micro cases or checksums differ: {row.key}")
+        instrumented = observed is not None
+        # Older archives have neither checksums nor explicit allocation hooks.
+        # Partial instrumentation still fails rather than hiding a broken hook.
+        expected = (len(names), len(names)) if instrumented else (0, 0)
+        if tuple(map(int, match.groups()[:2])) != expected or (
+            not instrumented and any(int(match[index]) for index in (3, 4))
+        ):
+            raise ValueError(f"micro allocation window count differs: {row.key}")
+        counts.append(
+            {
+                "cases": names,
+                "micro_instrumented": instrumented,
+                "guards": observed,
+                "allocs": int(match[3]) if instrumented else None,
+                "bytes": int(match[4]) if instrumented else None,
+            }
+        )
+    result = counts[1]
+    if counts[0]["micro_instrumented"] != result["micro_instrumented"]:
+        raise ValueError(f"micro instrumentation differs between runs: {row.key}")
+    if not result["micro_instrumented"]:
+        result.update(allocs_per_step=None, bytes_per_step=None)
+        return result
+    for key in ("allocs", "bytes"):
+        result[key] -= counts[0][key]
+        if result[key] < 0:
+            raise ValueError(f"negative micro {key} slope: {row.key}")
+    result["allocs_per_step"] = result["allocs"] / row.steps
+    result["bytes_per_step"] = result["bytes"] / row.steps
+    return result
 
 
 def select_rows(names: str) -> list[Row]:
@@ -646,16 +702,38 @@ def complete(row: dict, metrics: dict) -> bool:
             or value <= 0
         ):
             return False
-    if row.get("det"):
+    if row.get("det") or row.get("row") in ("dyn", "lcp"):
+        if not row.get("det") and metrics.get("micro_instrumented") is False:
+            return metrics.get("cases") == MICRO_CASES[row["row"]] and all(
+                key in metrics and metrics[key] is None
+                for key in (
+                    "guards",
+                    "allocs",
+                    "bytes",
+                    "allocs_per_step",
+                    "bytes_per_step",
+                )
+            )
         value = metrics.get("allocs_per_step")
-        guard = metrics.get("guards", {})
+        guard = metrics.get("guards")
         if not isinstance(value, (float, int)) or not math.isfinite(value) or value < 0:
             return False
-        if not all(
-            key in guard for key in ("hash", "finite", "contacts", "cap_hit", "resting")
-        ):
+        if not isinstance(guard, dict) or not guard.get("hash"):
             return False
-        if guard["finite"] is not True:
+        if guard.get("finite") is not True:
+            return False
+        if row.get("det"):
+            if not all(key in guard for key in ("contacts", "cap_hit", "resting")):
+                return False
+        elif (
+            not isinstance(guard["hash"], dict)
+            or metrics.get("cases") != MICRO_CASES[row["row"]]
+            or set(guard["hash"]) != set(metrics["cases"])
+            or any(
+                not isinstance(value, str) or not re.fullmatch(r"0x[0-9a-f]{16}", value)
+                for value in guard["hash"].values()
+            )
+        ):
             return False
     return bool(metrics)
 
@@ -724,17 +802,36 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
                 failures.append(f"{key}: {arm} infrastructure error: {row['error']}")
             elif row and row.get("perturbations") and not row.get("gated"):
                 failures.append(f"{key}: {arm} perturbation check failed")
+        valid_measurements = bool(
+            parent and child and complete(parent, bm) and complete(child, hm)
+        )
+        missing_micro = [
+            arm
+            for arm, metrics in (("base", bm), ("head", hm))
+            if metrics.get("micro_instrumented") is False
+        ]
         ir = (
             delta(bm["ir_per_step"], hm["ir_per_step"])
-            if not input_changed and "ir_per_step" in bm and "ir_per_step" in hm
+            if valid_measurements
+            and not input_changed
+            and "ir_per_step" in bm
+            and "ir_per_step" in hm
             else None
         )
         allocs = (
-            hm.get("allocs_per_step", 0) - bm.get("allocs_per_step", 0)
-            if not input_changed
+            hm["allocs_per_step"] - bm["allocs_per_step"]
+            if valid_measurements
+            and not input_changed
+            and not missing_micro
+            and "allocs_per_step" in bm
+            and "allocs_per_step" in hm
             else None
         )
-        equal = bm.get("guards") == hm.get("guards")
+        equal = (
+            None
+            if missing_micro
+            else bool(bm.get("guards") and bm.get("guards") == hm.get("guards"))
+        )
         reasons = []
         required_missing = bool(
             parent
@@ -751,18 +848,30 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         ):
             classification = "broken"
             reasons.append(result.get("error", "missing or failed head measurement"))
-        elif parent and bm.get("guards", {}).get("finite") is False:
+        elif parent and (bm.get("guards") or {}).get("finite") is False:
             classification = "broken"
             reasons.append("base state is non-finite")
+        elif parent and "head" in missing_micro and bm.get("guards"):
+            # Losing an established guard is a policy failure, like a missing
+            # required head measurement; a rationale cannot waive it.
+            classification = "broken"
+            reasons.append("head lacks micro instrumentation present in base")
         elif (
             not parent
             or parent.get("status") == "unsupported"
-            or (parent.get("version") != child.get("version") and not input_changed)
+            or (
+                parent.get("version") != child.get("version")
+                and not input_changed
+                and not missing_micro
+            )
         ):
             classification = "new"
         elif parent.get("status") != "ok" or not complete(parent, bm):
             classification = "broken"
             reasons.append("missing or failed base measurement")
+        elif missing_micro:
+            classification = "diagnostic"
+            result["gated"] = False
         elif input_changed or not equal:
             classification = "behaviour-change"
             rationale = acknowledgment("rebaseline", key)
@@ -793,7 +902,11 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
                 reasons.append("missing or invalid head Ir measurement")
             if "allocs_per_step" in bm and "allocs_per_step" not in hm:
                 reasons.append("missing head allocation measurement")
-            if allocs > 0 and not acknowledgment("regression", key):
+            if (
+                allocs is not None
+                and allocs > 0
+                and not acknowledgment("regression", key)
+            ):
                 reasons.append(f"allocations +{allocs:g}/step")
             if ir is not None:
                 ratios.append((key, hm["ir_per_step"] / bm["ir_per_step"]))
@@ -837,6 +950,10 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         )
         if input_changed:
             result["gate_reason"] += "; input_sha changed"
+        if missing_micro:
+            result["gate_reason"] = "; ".join(
+                f"{arm} lacks micro instrumentation" for arm in missing_micro
+            )
         failures += [f"{key}: {reason}" for reason in reasons]
         results.append(result)
     geomean = (
@@ -918,8 +1035,13 @@ def markdown(record: dict) -> str:
     for row in record["results"]:
         bm, hm, change = row["parent"], row["head"], row["delta"]
         change_text = percent(change["ir"])
+        guard_text = (
+            "unavailable"
+            if change["guards_equal"] is None
+            else "same" if change["guards_equal"] else "changed"
+        )
         lines.append(
-            f"| {row_key(row)} | {row.get('threads', 1)} | {number(bm.get('ir_per_step'))} | {number(hm.get('ir_per_step'))} | {change_text} | {number(bm.get('allocs_per_step'))} → {number(hm.get('allocs_per_step'))} | {'same' if change['guards_equal'] else 'changed'} | {change['class']} | {row['gate_reason']} |"
+            f"| {row_key(row)} | {row.get('threads', 1)} | {number(bm.get('ir_per_step'))} | {number(hm.get('ir_per_step'))} | {change_text} | {number(bm.get('allocs_per_step'))} → {number(hm.get('allocs_per_step'))} | {guard_text} | {change['class']} | {row['gate_reason']} |"
         )
     lines += [
         "",
@@ -1005,8 +1127,6 @@ def local_arms(args) -> tuple[dict, dict]:
         )
     if output == default_output:
         marker.write_text("dart-perf/1\n", encoding="utf-8")
-    source, build = output / "src", output / "build"
-    source.mkdir()
     dependency = os.environ.get("CONDA_PREFIX")
     if not dependency:
         raise ValueError("local requires the active Pixi environment (CONDA_PREFIX)")
@@ -1051,17 +1171,11 @@ def local_arms(args) -> tuple[dict, dict]:
         args.rows = "gzb,robot"
     records = []
     for label, revision in zip(("a", "b"), revisions):
-        if any(source.iterdir()):
-            shutil.rmtree(source)
-            source.mkdir()
+        source, build = output / f"src-{label}", output / f"build-{label}"
+        source.mkdir()
         archive = subprocess.check_output(["git", "archive", revision], cwd=ROOT)
         with tarfile.open(fileobj=io.BytesIO(archive)) as contents:
             contents.extractall(source, filter="data")
-        # Git archives preserve commit times; reused Ninja objects must not mask
-        # a historical source change behind a newer object file.
-        for path in source.rglob("*"):
-            if path.is_file() and not path.is_symlink():
-                path.touch()
         prefix = output / label
         options = [
             "-DCMAKE_BUILD_TYPE=Release",

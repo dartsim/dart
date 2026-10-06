@@ -1,5 +1,5 @@
 // Native allocation counts inside the collection window, excluding warmup.
-// GNU libc only; World::step interposition or explicit stepAndRead hooks.
+// GNU libc only; World::step interposition or explicit driver/benchmark hooks.
 #define _GNU_SOURCE
 #include <dlfcn.h>
 #include <errno.h>
@@ -47,7 +47,9 @@ __attribute__((constructor)) static void initialize(void)
   const char* warmup = getenv("PERF_WARMUP");
   skip = warmup ? strtoul(warmup, NULL, 10) : 0;
   const char* window = getenv("PERF_WINDOW");
-  explicit_window = window && strcmp(window, "stepAndRead") == 0;
+  explicit_window = window
+                    && (strcmp(window, "stepAndRead") == 0
+                        || strcmp(window, "micro") == 0);
   // Micro rows may never step, but must still identify their loaded libdart.
   resolve_step();
 }

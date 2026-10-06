@@ -43,6 +43,7 @@ endif()
 
 add_subdirectory(unit)
 add_subdirectory(integration)
+dart_format_add(PerfGuard.hpp)
 
 # ==============================================================================
 # SIMD benchmarks (header-only dart/simd module; not registered with ctest,

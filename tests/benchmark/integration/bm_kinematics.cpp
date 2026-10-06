@@ -30,6 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "benchmark/PerfGuard.hpp"
+
 #include <dart/utils/utils.hpp>
 
 #include <dart/simulation/simulation.hpp>
@@ -174,6 +176,7 @@ void runDynamicsTest(
 
 static void BM_Dynamics(benchmark::State& state)
 {
+  const dart::test::PerfWindow window;
   std::vector<dart::simulation::WorldPtr> worlds = getWorlds();
 
   // Get the input value to be passed to the Kinematics function
@@ -182,6 +185,24 @@ static void BM_Dynamics(benchmark::State& state)
   // Call the Kinematics function and measure the time it takes
   for (auto _ : state) {
     runDynamicsTest(worlds, n);
+  }
+
+  // Read the final numerical state once, without adding work to the timed loop.
+  if (window.enabled()) {
+    dart::test::PerfChecksum checksum;
+    for (const auto& world : worlds) {
+      for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
+        const auto skeleton = world->getSkeleton(s);
+        for (const auto& values :
+             {skeleton->getPositions(),
+              skeleton->getVelocities(),
+              skeleton->getAccelerations()}) {
+          for (Eigen::Index i = 0; i < values.size(); ++i)
+            checksum.add(values[i]);
+        }
+      }
+    }
+    checksum.report((state.name() + "/" + std::to_string(n)).c_str());
   }
 }
 
