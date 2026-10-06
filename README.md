@@ -176,9 +176,9 @@ Contributions are welcome; start with the
 ### Branches
 
 `main` is the development branch for the next release: pull requests target it,
-all new patches land on it, and releases are tagged from it. Stable versions are
-available as [tagged releases](https://github.com/dartsim/dart/releases) and as
-the packages above.
+and all new patches land on it. Stable versions are available as
+[tagged releases](https://github.com/dartsim/dart/releases) and as the packages
+above.
 
 ## Citation
 
