@@ -35,7 +35,8 @@ Backport PR or commits: $ARGUMENTS
 
 ## Workflow
 
-The current maintenance target is `release-6.19`.
+There is no maintenance branch right now: new patches land on `main`. Use this
+workflow only for a `release-6.*` branch cut from a release tag.
 
 For a source change involving model/scene structure, physics behavior, or OSG
 output, use the release branch's `dart-verify-sim` workflow to preserve the text
