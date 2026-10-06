@@ -1,4 +1,4 @@
-"""One regression check for performance classification and rationale coverage."""
+"""Regression checks for performance comparison and local execution."""
 
 import copy
 import importlib.util
@@ -226,6 +226,103 @@ def _load_runner():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.mark.parametrize("version", [1, 2])
+def test_changed_input_requires_rebaseline_without_deltas(version):
+    module = _load_runner()
+    base = {
+        "run": {"commit": "base", "env": {"fingerprint": "same"}},
+        "results": [
+            {
+                "row": "pend",
+                "det": "dart",
+                "version": 1,
+                "input_sha": "base input",
+                "gated": True,
+                "status": "ok",
+                "method": "slope",
+                "head": {
+                    "ir_per_step": 100,
+                    "allocs_per_step": 0,
+                    "max_rss_kb": 100,
+                    "guards": {
+                        "hash": "same",
+                        "finite": True,
+                        "contacts": 0,
+                        "cap_hit": False,
+                        "resting": "0/1",
+                    },
+                },
+            }
+        ],
+    }
+    # Report metadata is identical across arms, as is the environment fingerprint.
+    base["run"]["env"].update(
+        valgrind="test", compiler="test", glibc="test", preset="perf-1"
+    )
+    head = copy.deepcopy(base)
+    head["results"][0]["version"] = version
+    head["results"][0]["input_sha"] = "head input"
+    head["results"][0]["head"].update(
+        ir_per_step=200, allocs_per_step=10, max_rss_kb=200
+    )
+    for body, status in (
+        ("", "FAIL"),
+        ("Perf-Regression-Rationale: pend/dart: changed input", "FAIL"),
+        ("Rebaseline-Rationale: robot/dart: changed input", "FAIL"),
+        ("Rebaseline-Rationale: pend/dart: changed input", "PASS"),
+    ):
+        record = module.compare(base, head, body)
+        assert record["verdict"]["status"] == status
+        assert record["verdict"]["ir_geomean"] is None
+        assert record["verdict"]["warnings"] == []
+        assert record["results"][0]["delta"] == {
+            "ir": None,
+            "allocs": None,
+            "guards_equal": True,
+            "class": "behaviour-change",
+        }
+        assert "input_sha changed" in module.markdown(record)
+
+
+def test_local_resets_only_marked_default_output(monkeypatch, tmp_path):
+    module = _load_runner()
+    monkeypatch.setattr(module, "ROOT", tmp_path)
+    monkeypatch.delenv("CONDA_PREFIX", raising=False)
+    output = tmp_path / "build/perf-compare"
+    args = module.parser().parse_args(["local"])
+    # Stop before building; initialization still marks the default directory.
+    for _ in range(2):
+        with pytest.raises(ValueError, match="active Pixi environment"):
+            module.local_arms(args)
+        assert (output / ".perf-compare-owned").is_file()
+        assert not (output / "stale").exists()
+        (output / "stale").write_text("previous run", encoding="utf-8")
+    (output / ".perf-compare-owned").unlink()
+    with pytest.raises(ValueError, match="must be empty"):
+        module.local_arms(args)
+    assert (output / "stale").read_text(encoding="utf-8") == "previous run"
+    (output / ".perf-compare-owned").symlink_to(output / "stale")
+    with pytest.raises(ValueError, match="must be empty"):
+        module.local_arms(args)
+    assert (output / "stale").is_file()
+    (output / ".perf-compare-owned").unlink()
+    (output / ".perf-compare-owned").write_text("dart-perf/1\n", encoding="utf-8")
+    alias = tmp_path / "alias"
+    alias.symlink_to(output, target_is_directory=True)
+    args.output_dir = alias
+    with pytest.raises(ValueError, match="must be empty"):
+        module.local_arms(args)
+    assert (output / "stale").is_file()
+
+    custom = tmp_path / "custom"
+    custom.mkdir()
+    (custom / ".perf-compare-owned").write_text("dart-perf/1\n", encoding="utf-8")
+    args.output_dir = custom
+    with pytest.raises(ValueError, match="must be empty"):
+        module.local_arms(args)
+    assert (custom / ".perf-compare-owned").is_file()
 
 
 def test_run_requires_installed_commit():

@@ -184,6 +184,9 @@ one.
 Use `pixi run perf-compare --base origin/main --head HEAD` for deterministic
 instruction and allocation deltas and behavior-guard checks, measured with the
 system Valgrind; wall time is advisory only.
+The default `build/perf-compare` directory is reset only when it contains the
+`.perf-compare-owned` marker written by the harness; custom output directories
+must be empty.
 Rows gate when `QUALIFIED_ROWS` in the script records that they passed the
 seven heap-layout checks; other rows are diagnostic. `--perturb` reruns the
 checks, and its result replaces the record for that run; the report names each

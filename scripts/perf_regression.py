@@ -715,6 +715,9 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         bm = parent.get("head", {}) if parent else {}
         hm = child.get("head", {}) if child else {}
         result = {**(child or parent), "parent": bm, "head": hm}
+        input_changed = bool(
+            parent and child and parent.get("input_sha") != child.get("input_sha")
+        )
         for arm, row in (("base", parent), ("head", child)):
             if row and row.get("error_kind") == "infrastructure":
                 infrastructure = True
@@ -723,10 +726,14 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
                 failures.append(f"{key}: {arm} perturbation check failed")
         ir = (
             delta(bm["ir_per_step"], hm["ir_per_step"])
-            if "ir_per_step" in bm and "ir_per_step" in hm
+            if not input_changed and "ir_per_step" in bm and "ir_per_step" in hm
             else None
         )
-        allocs = hm.get("allocs_per_step", 0) - bm.get("allocs_per_step", 0)
+        allocs = (
+            hm.get("allocs_per_step", 0) - bm.get("allocs_per_step", 0)
+            if not input_changed
+            else None
+        )
         equal = bm.get("guards") == hm.get("guards")
         reasons = []
         required_missing = bool(
@@ -750,17 +757,18 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         elif (
             not parent
             or parent.get("status") == "unsupported"
-            or parent.get("version") != child.get("version")
+            or (parent.get("version") != child.get("version") and not input_changed)
         ):
             classification = "new"
         elif parent.get("status") != "ok" or not complete(parent, bm):
             classification = "broken"
             reasons.append("missing or failed base measurement")
-        elif not equal:
+        elif input_changed or not equal:
             classification = "behaviour-change"
             rationale = acknowledgment("rebaseline", key)
             if not rationale:
-                reasons.append("guards changed; Rebaseline-Rationale required")
+                changed = "input_sha" if input_changed else "guards"
+                reasons.append(f"{changed} changed; Rebaseline-Rationale required")
             elif (
                 ir is not None
                 and ir > 0.01
@@ -794,7 +802,8 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
                 elif at_least(ir, 0.003):
                     warnings.append(f"{key}: Ir {ir:+.2%}")
         if (
-            bm.get("max_rss_kb")
+            not input_changed
+            and bm.get("max_rss_kb")
             and hm.get("max_rss_kb")
             and at_least(delta(bm["max_rss_kb"], hm["max_rss_kb"]), 0.05)
         ):
@@ -826,6 +835,8 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
                 )
             )
         )
+        if input_changed:
+            result["gate_reason"] += "; input_sha changed"
         failures += [f"{key}: {reason}" for reason in reasons]
         results.append(result)
     geomean = (
@@ -978,11 +989,22 @@ def parser() -> argparse.ArgumentParser:
 
 def local_arms(args) -> tuple[dict, dict]:
     output = args.output_dir.resolve()
+    default_output = ROOT / "build/perf-compare"
+    marker = output / ".perf-compare-owned"
+    if (
+        output == default_output
+        and not args.output_dir.is_symlink()
+        and marker.is_file()
+        and not marker.is_symlink()
+    ):
+        shutil.rmtree(output)
     output.mkdir(parents=True, exist_ok=True)
     if any(output.iterdir()):
         raise ValueError(
             "local output directory must be empty (choose a fresh scratch directory)"
         )
+    if output == default_output:
+        marker.write_text("dart-perf/1\n", encoding="utf-8")
     source, build = output / "src", output / "build"
     source.mkdir()
     dependency = os.environ.get("CONDA_PREFIX")
