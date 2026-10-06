@@ -219,11 +219,38 @@ def plan(cells, have_valgrind):
 COLUMNS_LINE = ",".join(COLUMNS) + "\n"
 
 
+def preflight(binaries):
+    """Why a harness binary cannot start, or "". A cell whose binary never
+    starts prints no key, so scores() could not count it as failed."""
+    for label, binary in sorted(binaries.items()):
+        try:
+            proc = subprocess.run(
+                [binary, "--list"], capture_output=True, text=True, timeout=120
+            )
+        except (OSError, subprocess.TimeoutExpired) as e:
+            return f"{label} binary {binary} does not start: {e}"
+        if proc.returncode:
+            return f"{label} binary {binary} does not start: exit {proc.returncode}"
+    return ""
+
+
 def cmd_run(args):
     binaries = dict(b.split("=", 1) for b in args.bin)
-    os.makedirs(args.out, exist_ok=True)
+    unknown = sorted(set(binaries) - {config[0] for config in CONFIGS.values()})
+    if unknown:
+        print(f"unknown --bin labels {unknown}", file=sys.stderr)
+        return 2
     cells = [c for c in e1_cells() if re.search(args.only, " ".join(map(str, c)))]
     cells = [c for c in cells if CONFIGS[c[2]][0] in binaries]
+    if not cells:
+        print("no cells selected: check --only and --bin", file=sys.stderr)
+        return 2
+    used = {CONFIGS[c[2]][0] for c in cells}
+    problem = preflight({k: v for k, v in binaries.items() if k in used})
+    if problem:
+        print(problem, file=sys.stderr)
+        return 2
+    os.makedirs(args.out, exist_ok=True)
     # Heavy cells first so the pool stays busy.
     heavy = ("R2", "R6", "C4", "R5", "R1", "P1")
     cells.sort(key=lambda c: heavy.index(c[0]) if c[0] in heavy else len(heavy))
@@ -393,7 +420,7 @@ KEY_METRICS = {
     "A1": ("accel", "creep"),
     "A2": ("slides", "accel", "dir_err_deg"),
     "A3": ("onset_deg",),
-    "A4": ("threshold", "force_ratio", "vel_dir_err_deg"),
+    "A4": ("threshold", "force_ratio", "dir_err_deg", "vel_dir_err_deg"),
     "A12": ("threshold",),
     "A5": ("dist_ratio", "dir_deg", "lateral", "creep"),
     "A6": ("alpha_ratio_mean", "alpha_ratio_min", "alpha_ratio_max"),
@@ -646,7 +673,11 @@ def self_test(binary=None):
         done = subprocess.CompletedProcess([], code, out, "")
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
             subprocess, "run", return_value=done
-        ), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+        ), mock.patch.object(
+            sys.modules[__name__], "preflight", return_value=""
+        ), contextlib.redirect_stdout(
+            io.StringIO()
+        ), contextlib.redirect_stderr(
             io.StringIO()
         ):
             run = argparse.Namespace(
@@ -655,6 +686,18 @@ def self_test(binary=None):
             assert cmd_run(run) == 1 - good
             assert len(load(os.path.join(tmp, "cells.csv"))) == good
             assert len(load(os.path.join(tmp, "failed.csv"))) == 1 - good
+    # An empty selection, an unknown label or a binary that cannot start runs
+    # nothing and fails, instead of reporting an empty but successful run.
+    for bins, only in (
+        (["B620=friction_eval"], "^no such cell"),
+        (["B62O=friction_eval"], ""),
+        (["B620=/nonexistent/friction_eval"], "^A5 mu=0 B620 ode"),
+    ):
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stderr(
+            io.StringIO()
+        ):
+            run = argparse.Namespace(bin=bins, out=tmp, jobs=1, only=only)
+            assert cmd_run(run) == 2 and not os.listdir(tmp)
     # Scheduling: timing cells run serially; --ir needs Valgrind.
     cells = [
         ("P1", "n=90", "B620", "ode", ("--perf",)),
