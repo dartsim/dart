@@ -266,6 +266,7 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         "preset": "installed preset",
         "libdart_sha": module.sha(library.read_bytes()),
         "libraries": {"lib/libdart.so": module.sha(library.read_bytes())},
+        "workload_sources": {module.CB: module.sha(b"installed workload")},
         "binaries": {
             name: module.sha(b"measured driver")
             for name in ("portable_step_bench", "contact_benchmark")
@@ -305,6 +306,13 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         ("compiler", None, "invalid installed build provenance"),
         ("schema", "other", "invalid installed build provenance"),
         ("binaries", None, "invalid installed build provenance"),
+        ("workload_sources", None, "invalid installed build provenance"),
+        ("workload_sources", {}, "invalid installed build provenance"),
+        (
+            "workload_sources",
+            {module.CB: "invalid"},
+            "invalid installed build provenance",
+        ),
         ("pixi_lock_sha", "", "invalid installed build provenance"),
         ("preset", "", "invalid installed build provenance"),
         ("commit", "other", "commit differs"),
@@ -314,6 +322,11 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         with pytest.raises(ValueError, match=reason):
             module.fingerprint(args)
     module.write_json(path, [])
+    with pytest.raises(ValueError, match="invalid installed build provenance"):
+        module.fingerprint(args)
+    module.write_json(
+        path, {key: value for key, value in stamp.items() if key != "workload_sources"}
+    )
     with pytest.raises(ValueError, match="invalid installed build provenance"):
         module.fingerprint(args)
     module.write_json(path, stamp)
@@ -361,6 +374,7 @@ def test_installed_provenance_verifies_all_dart_libraries(tmp_path, defect):
             "lib/libdart-collision-ode.so": module.sha(b"collision"),
         },
         "binaries": {},
+        "workload_sources": {},
     }
     path = tmp_path / "share/dart/perf-build.json"
     path.parent.mkdir(parents=True)
@@ -642,6 +656,164 @@ def test_changed_input_requires_rebaseline_without_deltas(version):
         assert "input_sha changed" in module.markdown(record)
 
 
+@pytest.mark.parametrize("name", ["s1p/dart", "dyn", "lcp", "gzb", "robot"])
+@pytest.mark.parametrize("changed", [False, True])
+def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, changed):
+    module = _load_runner()
+    row = module.select_rows(name)[0]
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "installed",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path / "run"),
+            "--rows",
+            name,
+            "--no-perturb",
+            "--shim",
+            str(tmp_path / "allocshim.so"),
+        ]
+    )
+    args.shim.write_bytes(b"shim")
+    library = tmp_path / "lib/libdart.so"
+    library.parent.mkdir()
+    library.write_bytes(b"DART")
+    drivers = {module.PB, row.driver}
+    stamp = {
+        "schema": "dart-perf-build/1",
+        "commit": "installed",
+        "compiler": "test",
+        "pixi_lock_sha": "lock",
+        "preset": "perf-1",
+        "libdart_sha": module.sha(b"DART"),
+        "libraries": {"lib/libdart.so": module.sha(b"DART")},
+        "binaries": {driver: module.sha(b"binary") for driver in drivers},
+        "workload_sources": {
+            driver: module.sha(b"base workload")
+            for driver in drivers & module.WORKLOAD_SOURCES.keys()
+        },
+    }
+    path = tmp_path / "share/dart/perf-build.json"
+    path.parent.mkdir(parents=True)
+    module.write_json(path, stamp)
+    monkeypatch.setattr(module, "command_output", lambda command: "installed")
+    monkeypatch.setattr(
+        module,
+        "fingerprint",
+        lambda args, provenance: {
+            "fingerprint": "same",
+            "compiler": "test",
+            "compiler_provenance": "dart-perf-build/1",
+        },
+    )
+    metrics = (
+        _micro_record(module, name)["results"][0]["head"]
+        if not row.det
+        else {
+            "ir_per_step": 100,
+            "allocs_per_step": 0,
+            "bytes_per_step": 0,
+            "guards": {
+                "hash": "same",
+                "finite": True,
+                "contacts": 0,
+                "cap_hit": False,
+                "resting": "0/1",
+            },
+        }
+    )
+    monkeypatch.setattr(
+        module,
+        "measure",
+        lambda row, args, world: {
+            "row": row.row,
+            "det": row.det,
+            "version": row.version,
+            "parity": "",
+            "status": "ok",
+            "gated": True,
+            "method": "slope",
+            "input_sha": "scene input",
+            "head": copy.deepcopy(metrics),
+        },
+    )
+    base = module.run_arm(args)
+    if changed:
+        stamp["workload_sources"] = {
+            driver: module.sha(b"head workload") for driver in stamp["workload_sources"]
+        }
+        module.write_json(path, stamp)
+    head = module.run_arm(args)
+    result = module.compare(base, head)
+    workload_changed = changed and row.driver != module.PB
+    assert result["verdict"]["status"] == ("FAIL" if workload_changed else "PASS")
+    delta = result["results"][0]["delta"]
+    assert delta["class"] == ("behaviour-change" if workload_changed else "gated")
+    if row.driver == module.PB:
+        assert head["results"][0]["input_sha"] == "scene input"
+        assert "workload_sha" not in head["results"][0]
+    else:
+        assert (
+            head["results"][0]["workload_sha"] == stamp["workload_sources"][row.driver]
+        )
+    if workload_changed:
+        assert all(delta[key] is None for key in ("ir", "allocs", "bytes"))
+        assert "Rebaseline-Rationale required" in result["verdict"]["failures"][0]
+        assert (
+            module.compare(
+                base, head, f"Perf-Regression-Rationale: {row.key}: workload changed"
+            )["verdict"]["status"]
+            == "FAIL"
+        )
+        assert (
+            module.compare(
+                base, head, f"Rebaseline-Rationale: {row.key}: workload changed"
+            )["verdict"]["status"]
+            == "PASS"
+        )
+    stamp.pop("workload_sources")
+    module.write_json(path, stamp)
+    with pytest.raises(ValueError, match="invalid installed build provenance"):
+        module.run_arm(args)
+
+
+@pytest.mark.parametrize(
+    "changed_path",
+    sorted(
+        {path for paths in _load_runner().WORKLOAD_SOURCES.values() for path in paths}
+    ),
+)
+def test_workload_hashes_cover_sources_and_headers(tmp_path, changed_path):
+    module = _load_runner()
+    for paths in module.WORKLOAD_SOURCES.values():
+        for name in paths:
+            path = tmp_path / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"workload")
+    drivers = [*module.WORKLOAD_SOURCES, module.PB]
+    base = module.workload_hashes(tmp_path, drivers)
+    assert module.PB not in base
+    # Library implementation changes are what the harness measures.
+    library = tmp_path / "dart/library.cpp"
+    library.parent.mkdir()
+    library.write_bytes(b"changed DART")
+    assert module.workload_hashes(tmp_path, drivers) == base
+    path = tmp_path / changed_path
+    path.write_bytes(b"changed workload")
+    head = module.workload_hashes(tmp_path, drivers)
+    for driver, paths in module.WORKLOAD_SOURCES.items():
+        assert (base[driver] != head[driver]) == (changed_path in paths)
+    if path.suffix == ".hpp":
+        path.unlink()
+        assert module.workload_hashes(tmp_path, drivers) != base
+    added = tmp_path / "examples/contact_benchmark/new_case.hpp"
+    added.write_bytes(b"new case")
+    assert module.workload_hashes(tmp_path, drivers)[module.CB] != head[module.CB]
+
+
 def test_local_resets_only_marked_default_output(monkeypatch, tmp_path):
     module = _load_runner()
     monkeypatch.setattr(module, "ROOT", tmp_path)
@@ -717,7 +889,12 @@ def test_multithread_parity_compares_all_guards(monkeypatch, tmp_path, changed):
     )
     args.shim.write_bytes(b"shim")
     monkeypatch.setattr(module, "command_output", lambda command: "HEAD")
-    monkeypatch.setattr(module, "fingerprint", lambda args: {})
+    monkeypatch.setattr(module, "fingerprint", lambda args, provenance: {})
+    monkeypatch.setattr(
+        module,
+        "installed_provenance",
+        lambda args: {"workload_sources": {module.CB: module.sha(b"workload")}},
+    )
 
     def measure(row, args, world):
         guards = dict(
@@ -736,6 +913,7 @@ def test_multithread_parity_compares_all_guards(monkeypatch, tmp_path, changed):
             "det": row.det,
             "parity": row.parity,
             "status": "ok",
+            "input_sha": "scene input",
             "head": {"guards": guards},
         }
 
@@ -947,7 +1125,8 @@ def test_run_resolves_shims_and_reports_missing_options(
     )
     monkeypatch.setattr(module, "ROOT", root)
     monkeypatch.setattr(module, "command_output", lambda command: "HEAD")
-    monkeypatch.setattr(module, "fingerprint", lambda args: {})
+    monkeypatch.setattr(module, "fingerprint", lambda args, provenance: {})
+    monkeypatch.setattr(module, "installed_provenance", lambda args: {})
     monkeypatch.setattr(
         module,
         "measure",
@@ -1420,6 +1599,13 @@ def test_local_uses_independent_source_and_cmake_caches(
         entry = tarfile.TarInfo("CMakeLists.txt")
         entry.size = 0
         contents.addfile(entry, io.BytesIO())
+        for name in sorted(
+            {path for paths in module.WORKLOAD_SOURCES.values() for path in paths}
+        ):
+            data = f"archived {name}".encode()
+            entry = tarfile.TarInfo(name)
+            entry.size = len(data)
+            contents.addfile(entry, io.BytesIO(data))
     monkeypatch.setattr(
         module.subprocess, "check_output", lambda *args, **kwargs: archive.getvalue()
     )
@@ -1444,6 +1630,10 @@ def test_local_uses_independent_source_and_cmake_caches(
             build = Path(command[2])
             if build.name.startswith("driver-"):
                 (build / "portable_step_bench").write_text("driver")
+            else:
+                (build / "bin").mkdir()
+                for driver in module.WORKLOAD_SOURCES:
+                    (build / "bin" / driver).write_bytes(b"archived driver")
         elif command[:2] == ["cmake", "--install"]:
             prefix = Path(command[command.index("--prefix") + 1])
             (prefix / "share/dart").mkdir(parents=True)
@@ -1459,6 +1649,13 @@ def test_local_uses_independent_source_and_cmake_caches(
         assert stamp["compiler"] == "GNU 13.3.0"
         assert stamp["pixi_lock_sha"] == module.sha(
             (module.ROOT / "pixi.lock").read_bytes()
+        )
+        source = tmp_path / f"src-{arm.prefix.name}"
+        assert stamp["workload_sources"] == module.workload_hashes(
+            source, module.WORKLOAD_SOURCES
+        )
+        assert stamp["workload_sources"] != module.workload_hashes(
+            module.ROOT, module.WORKLOAD_SOURCES
         )
         return {"commit": arm.commit}
 

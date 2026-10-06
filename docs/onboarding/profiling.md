@@ -202,8 +202,22 @@ Otherwise it falls back to `build/perf/liballocshim.so` and
 supply. `--no-perturb` does not require heappad. The install must also contain
 `share/dart/perf-build.json`, written by `local` with the CMake compiler
 ID/version, build preset, Pixi lock hash, commit, and installed libdart and
-driver hashes. `run` checks this stamp against the artifacts and commit; missing
-or stale provenance is an infrastructure error. Saved records without compiler
+driver hashes, plus per-driver workload source hashes from the archived revision.
+`contact_benchmark` hashes its CMake-globbed `.cpp`/`.hpp` files;
+`BM_INTEGRATION_kinematics` hashes `bm_kinematics.cpp` and `PerfGuard.hpp`;
+`BM_UNIT_dantzig_lcp` hashes `bm_dantzig_lcp.cpp`, `PerfGuard.hpp`, and
+`tests/unit/lcpsolver/DantzigProblemCases.hpp`, which defines its generated cases.
+DART library sources are excluded because they are the code being measured.
+Each row's `input_sha` combines its scene/model input with its driver's workload
+hash, also recorded as `workload_sha`. A workload or input change between arms is
+a `behaviour-change`: performance deltas are withheld and a matching
+`Rebaseline-Rationale` is required, just as for changed behavior guards.
+`portable_step_bench` rows retain their existing input hashes because both arms
+use the common driver source from this checkout, covered by the environment's
+harness hash. `run` reads workload hashes from the install stamp, rather than
+from the current checkout. `run` checks the stamp against the artifacts and
+commit; missing or stale provenance, including missing workload hashes, is an
+infrastructure error. Saved records without compiler
 provenance cannot pass comparison. Gated rows fail on increases in either
 allocations per step or requested bytes per step unless acknowledged with a
 matching `Perf-Regression-Rationale`. The report includes requested-byte deltas;

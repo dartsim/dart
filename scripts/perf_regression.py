@@ -61,6 +61,24 @@ class Row:
 
 CB = "contact_benchmark"
 PB = "portable_step_bench"
+# Workload files from the CMake targets and their local includes. DART library
+# sources are measured code, not inputs. PB uses this checkout for both arms.
+WORKLOAD_SOURCES = {
+    CB: (
+        "examples/contact_benchmark/main.cpp",
+        "examples/contact_benchmark/ContactContainerScene.hpp",
+        "examples/contact_benchmark/GazeboPreset.hpp",
+    ),
+    "BM_INTEGRATION_kinematics": (
+        "tests/benchmark/integration/bm_kinematics.cpp",
+        "tests/benchmark/PerfGuard.hpp",
+    ),
+    "BM_UNIT_dantzig_lcp": (
+        "tests/benchmark/unit/bm_dantzig_lcp.cpp",
+        "tests/benchmark/PerfGuard.hpp",
+        "tests/unit/lcpsolver/DantzigProblemCases.hpp",
+    ),
+}
 # Exact micro wrappers exclude timing/report formatting from the slope.
 COLLECTION_SIGNATURES = {
     CB: "dart::simulation::World::step(bool)",
@@ -559,6 +577,31 @@ def library_hashes(prefix: Path) -> dict[str, str]:
     }
 
 
+def workload_hashes(source: Path, drivers) -> dict[str, str]:
+    hashes = {}
+    for driver in sorted(set(drivers) & WORKLOAD_SOURCES.keys()):
+        paths = WORKLOAD_SOURCES[driver]
+        if not (source / paths[0]).is_file():
+            raise ValueError(f"missing workload source: {paths[0]}")
+        if driver == CB:
+            # Match the target's glob, including newly added source files.
+            paths = sorted(
+                path.relative_to(source).as_posix()
+                for pattern in ("*.cpp", "*.hpp")
+                for path in (source / "examples/contact_benchmark").glob(pattern)
+            )
+        manifest = {
+            name: (
+                sha((source / name).read_bytes()) if (source / name).is_file() else None
+            )
+            for name in paths
+        }
+        # Older archives may lack instrumentation/case headers; their absence
+        # must differ from adding them, without reading this checkout's files.
+        hashes[driver] = sha(json.dumps(manifest, sort_keys=True).encode())
+    return hashes
+
+
 def installed_provenance(args) -> dict:
     path = args.prefix / "share/dart/perf-build.json"
     if not path.is_file():
@@ -571,6 +614,15 @@ def installed_provenance(args) -> dict:
         or stamp.get("schema") != "dart-perf-build/1"
         or not isinstance(stamp.get("binaries"), dict)
         or not isinstance(stamp.get("libraries"), dict)
+        or not isinstance(stamp.get("workload_sources"), dict)
+        or any(
+            not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value)
+            for value in stamp.get("workload_sources", {}).values()
+        )
+        or any(
+            driver not in stamp["workload_sources"]
+            for driver in stamp["binaries"].keys() & WORKLOAD_SOURCES.keys()
+        )
         or any(
             not isinstance(stamp.get(key), str) or not stamp[key].strip()
             for key in ("compiler", "pixi_lock_sha", "preset")
@@ -586,8 +638,9 @@ def installed_provenance(args) -> dict:
     return stamp
 
 
-def fingerprint(args) -> dict:
-    provenance = installed_provenance(args)
+def fingerprint(args, provenance: dict | None = None) -> dict:
+    if provenance is None:
+        provenance = installed_provenance(args)
     for name in {PB, *(row.driver for row in select_rows(args.rows))}:
         if provenance.get("binaries", {}).get(name) != sha(
             (args.bin_dir / name).read_bytes()
@@ -672,7 +725,8 @@ def run_arm(args) -> dict:
             raise ValueError(f"--{option} file is missing: {path}")
         setattr(args, option, path)
     args.commit = commit
-    env_fingerprint = fingerprint(args)
+    provenance = installed_provenance(args)
+    env_fingerprint = fingerprint(args, provenance)
     inputs = args.output_dir.parent / "inputs"
     inputs.mkdir(exist_ok=True)
     world = inputs / "3k_shapes.sdf"
@@ -691,6 +745,12 @@ def run_arm(args) -> dict:
             rows.append(next(other for other in ROWS if other.key == row.parity))
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         results = list(pool.map(lambda row: measure(row, args, world), rows))
+    for row, result in zip(rows, results):
+        if row.driver in WORKLOAD_SOURCES:
+            result["workload_sha"] = provenance["workload_sources"][row.driver]
+            result["input_sha"] = sha(
+                json.dumps([result["input_sha"], result["workload_sha"]]).encode()
+            )
     by_key = {row_key(result): result for result in results}
     for result in results:
         if result["parity"] and result["status"] == "ok":
@@ -1401,6 +1461,9 @@ def local_arms(args) -> tuple[dict, dict]:
                     "preset": "perf-1",
                     "libdart_sha": sha((prefix / "lib/libdart.so").read_bytes()),
                     "libraries": library_hashes(prefix),
+                    "workload_sources": workload_hashes(
+                        source, (path.name for path in binary.iterdir())
+                    ),
                     "binaries": {
                         path.name: sha(path.read_bytes())
                         for path in binary.iterdir()
