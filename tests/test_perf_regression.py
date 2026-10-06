@@ -812,6 +812,15 @@ def test_workload_hashes_cover_sources_and_headers(tmp_path, changed_path):
     added = tmp_path / "examples/contact_benchmark/new_case.hpp"
     added.write_bytes(b"new case")
     assert module.workload_hashes(tmp_path, drivers)[module.CB] != head[module.CB]
+    # The target globs its sources, so a renamed entry point is a change, not
+    # a missing source; a directory without sources is.
+    main = tmp_path / "examples/contact_benchmark/main.cpp"
+    main.rename(main.with_name("entry.cpp"))
+    renamed = module.workload_hashes(tmp_path, drivers)[module.CB]
+    assert renamed != head[module.CB]
+    main.with_name("entry.cpp").unlink()
+    with pytest.raises(ValueError, match="missing workload source"):
+        module.workload_hashes(tmp_path, drivers)
 
 
 def test_local_resets_only_marked_default_output(monkeypatch, tmp_path):
@@ -1360,6 +1369,32 @@ def test_requested_bytes_gate_report_and_missing_measurements():
                 assert result["results"][0]["delta"]["class"] == "broken"
                 assert result["results"][0]["delta"]["bytes"] is None
                 assert "Bytes/step delta" in module.markdown(result)
+
+
+@pytest.mark.parametrize("name", ["dyn", "lcp"])
+def test_changed_workload_needs_rationale_without_micro_instrumentation(name):
+    module = _load_runner()
+    base = _micro_record(module, name)
+    head = copy.deepcopy(base)
+    base["results"][0]["head"].update(
+        micro_instrumented=False,
+        guards=None,
+        allocs=None,
+        bytes=None,
+        allocs_per_step=None,
+        bytes_per_step=None,
+    )
+    head["results"][0]["input_sha"] = "changed workload"
+    result = module.compare(base, head)
+    row = result["results"][0]
+    assert result["verdict"]["status"] == "FAIL"
+    assert row["delta"]["class"] == "behaviour-change"
+    assert row["failures"] == ["input_sha changed; Rebaseline-Rationale required"]
+    acknowledged = module.compare(
+        base, head, f"Rebaseline-Rationale: {name}: new workload"
+    )
+    assert acknowledged["verdict"]["status"] == "PASS"
+    assert acknowledged["results"][0]["gated"] is False
 
 
 @pytest.mark.parametrize("name", ["dyn", "lcp"])

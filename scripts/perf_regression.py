@@ -581,15 +581,17 @@ def workload_hashes(source: Path, drivers) -> dict[str, str]:
     hashes = {}
     for driver in sorted(set(drivers) & WORKLOAD_SOURCES.keys()):
         paths = WORKLOAD_SOURCES[driver]
-        if not (source / paths[0]).is_file():
-            raise ValueError(f"missing workload source: {paths[0]}")
         if driver == CB:
-            # Match the target's glob, including newly added source files.
+            # Match the target's glob, so added or renamed files count too.
             paths = sorted(
                 path.relative_to(source).as_posix()
                 for pattern in ("*.cpp", "*.hpp")
                 for path in (source / "examples/contact_benchmark").glob(pattern)
             )
+            if not any(path.endswith(".cpp") for path in paths):
+                raise ValueError("missing workload source: examples/contact_benchmark")
+        elif not (source / paths[0]).is_file():
+            raise ValueError(f"missing workload source: {paths[0]}")
         manifest = {
             name: (
                 sha((source / name).read_bytes()) if (source / name).is_file() else None
@@ -1034,6 +1036,13 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         elif parent.get("status") != "ok" or not complete(parent, bm):
             classification = "broken"
             reasons.append("missing or failed base measurement")
+        elif missing_micro and input_changed:
+            # A changed workload still needs a rationale; with an uninstrumented
+            # side there is no delta to report.
+            classification = "behaviour-change"
+            result["gated"] = False
+            if not acknowledgment("rebaseline", key):
+                reasons.append("input_sha changed; Rebaseline-Rationale required")
         elif missing_micro:
             classification = "diagnostic"
             result["gated"] = False
