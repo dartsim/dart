@@ -376,6 +376,22 @@ def test_base_results_gate_only_failures_the_candidate_introduces(tmp_path, caps
     assert "SLOW       gz-physics" in out and "base 48.00 s" in out
 
 
+def test_a_crashed_base_leaves_no_base_time_for_a_slow_case(tmp_path, capsys):
+    expected = tmp_path / "expected.txt"
+    expected.write_text(f"max-seconds gz-physics {STEP_WORLD} Step/0.StepWorld 5.4\n")
+    # The base's timed test crashed after an earlier attempt left 100 s of XML.
+    base = tmp_path / "base"
+    _write_lane(
+        base, {STEP_WORLD: ("SEGFAULT", {"Step/0.StepWorld": (100.0, False)})}, {}
+    )
+    candidate = tmp_path / "candidate"
+    _write_lane(candidate, _step_world(10.0), {})
+    assert _compare(candidate, expected, "--base-results", str(base)) == 1
+    out = capsys.readouterr().out
+    assert f"SLOW       gz-physics {STEP_WORLD} Step/0.StepWorld took 10.00 s" in out
+    assert "BASE SLOW" not in out
+
+
 def test_a_base_failure_covers_only_the_same_failure(tmp_path, capsys):
     expected = tmp_path / "expected.txt"
     expected.write_text("gz-sim INTEGRATION_user_commands UserCommandsTest.Create\n")

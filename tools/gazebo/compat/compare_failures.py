@@ -340,7 +340,13 @@ def compare(results, expected, max_seconds_scale, factor, base=None):
         if seconds is None or seconds <= limit:
             continue
         text = f"{suite} {test} {case} took {seconds:.2f} s (limit {limit:.2f} s"
-        base_seconds = base[suite].durations.get((test, case)) if base else None
+        # A base whose timed case crashed, timed out or failed left no usable
+        # time for it: XML from an earlier attempt can hold a stale one.
+        base_seconds = (
+            base[suite].durations.get((test, case))
+            if base is not None and passed(base[suite], (suite, test, case))
+            else None
+        )
         # Already over the limit on the base: gate only a further slowdown.
         if base_seconds is not None and limit < base_seconds:
             text += f", base {base_seconds:.2f} s)"
