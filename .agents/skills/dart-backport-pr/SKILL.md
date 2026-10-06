@@ -75,8 +75,9 @@ release branch cannot render the claim.
    push. Do not skip the changelog decision just because this is a backport.
 7. Run `pixi run lint` and the smallest relevant release-branch checks.
 8. Ask for explicit maintainer/user approval before pushing or opening the PR.
-   After approval, open the PR against the release branch with milestone
-   matching that release branch and use the PR template. If the changelog
+   After approval, open it as a draft against the release branch with the
+   milestone matching that release branch and the PR template, then follow
+   `docs/onboarding/ai-tools.md` § "PR Lifecycle". If the changelog
    decision was deferred for the PR number, run `/dart-changelog finalize` or
    `$dart-changelog finalize` and push the follow-up only after explicit
    approval.
