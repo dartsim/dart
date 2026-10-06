@@ -50,15 +50,17 @@ Options: `--solver dantzig|pgs|pgs100|pgs-tight|dzr|mf-pgs`,
 `--dt`, `--erp`, `--cfm`, `--max-erv`, `--deactivation on|off` (default off),
 `--split on|off`, `--threads`, `--max-contacts`, `--max-contacts-per-pair`,
 `--label`, and `--perf`, which drops the wrapper and the audit for timing.
-`friction_eval --list` prints the scene ids: A1-A13 analytic, C1-C5 coupled
-thresholds, R1-R9 robustness and P1 (contact_benchmark's generated objects).
-One process runs one cell, because ERP, CFM and ERV are process-wide. The
-runner fails a cell that exits nonzero, reports a non-finite state, or lacks
-its result rows, and writes its rows to `failed.csv` instead of `cells.csv`,
-so they reach no table or score. It runs the wall-clock cells (`--perf`
-without `--ir`) alone after the parallel phase, and skips the Callgrind cells
-(`--ir`) when Valgrind is not installed. `report` lists skipped and failed
-cells.
+`friction_eval --list` prints the scene ids: A1-A8 and A10-A13 analytic, C1,
+C2, C4 and C5 coupled thresholds, R1-R3, R5, R6 and R9 robustness, and P1
+(contact_benchmark's generated objects). C4 and R6, the masonry arches, need
+the 6.20 line. The design's A9, C3 and R4 are not implemented; its R7 (dt) and
+R8 (mu edge cases) are runner sweeps over other scenes. One process runs one
+cell, because ERP, CFM and ERV are process-wide. The runner fails a cell that
+exits nonzero, reports a non-finite state, or lacks its result rows, and writes
+its rows to `failed.csv` instead of `cells.csv`, so they reach no table or
+score. It runs the wall-clock cells (`--perf` without `--ir`) alone after the
+parallel phase, and skips the Callgrind cells (`--ir`) when Valgrind is not
+installed. `report` lists skipped and failed cells.
 
 ## Output
 
