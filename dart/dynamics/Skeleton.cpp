@@ -4231,7 +4231,7 @@ void Skeleton::incrementExternalDisturbanceVersion()
 //==============================================================================
 void Skeleton::incrementDeactivationStateVersion()
 {
-  incrementGlobal(gDeactivationStateVersion);
+  mDeactivationStateVersion = incrementGlobal(gDeactivationStateVersion);
 }
 
 //==============================================================================
@@ -4283,6 +4283,23 @@ std::size_t Skeleton::getGlobalExternalDisturbanceVersion()
 std::size_t Skeleton::getGlobalDeactivationStateVersion()
 {
   return loadGlobal(gDeactivationStateVersion);
+}
+
+//==============================================================================
+bool Skeleton::hasDeactivationStateChangedSince(
+    const std::vector<SkeletonPtr>& skeletons, std::size_t globalVersion)
+{
+  // Each change records the global version it produced on its skeleton, so a
+  // change after globalVersion was read left a larger one there.
+  if (loadGlobal(gDeactivationStateVersion) == globalVersion)
+    return false;
+
+  for (const auto& skeleton : skeletons) {
+    if (skeleton->mDeactivationStateVersion > globalVersion)
+      return true;
+  }
+
+  return false;
 }
 
 //==============================================================================

@@ -2882,6 +2882,64 @@ TEST(IslandDeactivation, IndependentQuietIslandSleepsWhileOtherBodyMoves)
 }
 
 //==============================================================================
+// Worlds sleep independently. A World stepped in turn with another World whose
+// box keeps falling asleep and being poked awake must step exactly as it does
+// alone: the other World's sleep transitions must neither restart its quiet
+// dwell nor wake it once it rests.
+TEST(IslandDeactivation, OtherWorldSleepTransitionsDoNotAffectSleep)
+{
+  auto makeWorld = [](double timeUntilSleep) {
+    auto world = makeSleepWorld();
+    auto opts = world->getDeactivationOptions();
+    opts.mTimeUntilSleep = timeUntilSleep;
+    world->setDeactivationOptions(opts);
+    world->addSkeleton(createFloor());
+    world->addSkeleton(createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02)));
+    return world;
+  };
+  constexpr std::size_t kNumSteps = 2000;
+  constexpr double kTimeUntilSleep = 0.5;
+
+  struct State
+  {
+    Eigen::VectorXd positions;
+    bool resting;
+  };
+  std::vector<State> statesAlone;
+  {
+    auto world = makeWorld(kTimeUntilSleep);
+    const auto box = world->getSkeleton("box");
+    for (std::size_t i = 0; i < kNumSteps; ++i) {
+      world->step();
+      statesAlone.push_back({box->getPositions(), box->isResting()});
+    }
+    ASSERT_TRUE(box->isResting()) << "the box never slept alone";
+  }
+
+  auto world = makeWorld(kTimeUntilSleep);
+  const auto box = world->getSkeleton("box");
+  // The other box sleeps 0.01 s after it settles and is poked awake each time.
+  auto other = makeWorld(0.01);
+  const auto otherBox = other->getSkeleton("box");
+  std::size_t numOtherSleeps = 0;
+  for (std::size_t i = 0; i < kNumSteps; ++i) {
+    world->step();
+    ASSERT_EQ(statesAlone[i].resting, box->isResting()) << "at step " << i;
+    ASSERT_EQ(statesAlone[i].positions, box->getPositions()) << "at step " << i;
+
+    if (otherBox->isResting()) {
+      ++numOtherSleeps;
+      otherBox->getBodyNode(0)->addExtForce(Eigen::Vector3d::UnitX());
+    }
+    other->step();
+  }
+  EXPECT_GE(numOtherSleeps, 20u) << "the other World stopped transitioning";
+}
+
+//==============================================================================
 // A just-eligible contact island must not be marked resting while a separate
 // ungrouped mobile body is awake. The veto must reach the group-level
 // solve-to-rest flag, not just the per-skeleton pre-solve resting flag.

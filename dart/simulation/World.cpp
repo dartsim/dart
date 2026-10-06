@@ -2210,8 +2210,10 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return false;
   }
 
-  if (mAllRestingSnapshotDeactivationStateVersion
-      != dynamics::Skeleton::getGlobalDeactivationStateVersion()) {
+  // Only this World's skeletons count; another World's changes move only the
+  // global version.
+  if (dynamics::Skeleton::hasDeactivationStateChangedSince(
+          mSkeletons, mAllRestingSnapshotDeactivationStateVersion)) {
     markSnapshotStale();
     return false;
   }
@@ -2423,8 +2425,8 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
 
   const bool recordedStateUnchanged
       = skeletonStateUnchanged
-        && mLastStepRestingWorldStateDeactivationStateVersion
-               == dynamics::Skeleton::getGlobalDeactivationStateVersion()
+        && !dynamics::Skeleton::hasDeactivationStateChangedSince(
+            mSkeletons, mLastStepRestingWorldStateDeactivationStateVersion)
         && mLastStepRestingWorldStateCollisionDetector
                == collisionDetector.get()
         && mLastStepRestingWorldStateCollisionGroup == collisionGroup.get()
@@ -2443,10 +2445,10 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
                == getCollisionFilterSnapshotRevision(collisionFilter);
 
   if (!restingOrCandidate) {
-    // Dwell rule: a between-step change (a relaxed joint limit, a spring
-    // edit, a moved support, a collision filter edit; also another World's
-    // sleep transitions, since the deactivation-state version is
-    // process-global) restarts the quiet dwell of awake non-candidates.
+    // Dwell rule: a between-step change to this World (a relaxed joint limit,
+    // a spring edit, a moved support, a collision filter edit) restarts the
+    // quiet dwell of awake non-candidates. Another World's edits and sleep
+    // transitions do not: they change none of this World's skeletons.
     // Otherwise dwell gathered under the old dynamics lets the next rest pass
     // grant candidacy after one smoothed step of the new motion, and the
     // following solve freezes the body (#3056). Candidacy set by hand between

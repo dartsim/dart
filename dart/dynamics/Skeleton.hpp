@@ -1271,7 +1271,7 @@ protected:
   void incrementExternalDisturbanceVersion();
 
   /// Increments when deactivation state that affects all-resting fast paths
-  /// changes.
+  /// changes, and records the new global version on this skeleton.
   void incrementDeactivationStateVersion();
 
   /// Increments when joint velocities change.
@@ -1295,6 +1295,12 @@ protected:
   static std::size_t getGlobalExternalDisturbanceVersion();
   static std::size_t getGlobalDeactivationStateVersion();
   static std::size_t getGlobalVelocityVersion();
+
+  /// Returns whether any of the skeletons changed deactivation state after
+  /// getGlobalDeactivationStateVersion() returned globalVersion. Changes to
+  /// other skeletons do not count. O(1) while the global version is unchanged.
+  static bool hasDeactivationStateChangedSince(
+      const std::vector<SkeletonPtr>& skeletons, std::size_t globalVersion);
 
   //  /// Update damping force vector.
   //  virtual void updateDampingForceVector();
@@ -1554,6 +1560,12 @@ public:
 
   ///
   std::size_t mUnionIndex;
+
+private:
+  /// Global deactivation-state version that this skeleton's latest
+  /// deactivation-state change produced, or 0 if none. Declared last so the
+  /// offsets of the members above stay unchanged.
+  std::size_t mDeactivationStateVersion = 0;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
