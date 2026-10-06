@@ -1454,7 +1454,8 @@ inline Scene diffDrive(const Params& p, double dt)
     // The yaw rate is measured after the 2 s spin-up.
     if (!std::isnan((*yaw)(2)))
       m["yaw_rate"] = ((*yaw)(1) - (*yaw)(2)) / (time - 2.0);
-    const double speed = planar(chassis->getLinearVelocity()).norm();
+    const double speed = chassis->getLinearVelocity().dot(
+        chassis->getWorldTransform().linear().col(0));
     m["pred_yaw_rate"] = radius * (wr - wl) / track;
     m["speed"] = speed;
     m["pred_speed"] = radius * (wl + wr) / 2.0;

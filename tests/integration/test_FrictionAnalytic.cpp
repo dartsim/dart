@@ -36,6 +36,7 @@
 // documents today's anisotropy, frozen Dantzig friction bounds and PGS creep.
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "friction_scenes.hpp"
 
@@ -64,6 +65,9 @@ protected:
     if (GetParam() == Backend::Pgs) {
       solver->setBoxedLcpSolver(
           std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
+    } else {
+      solver->setBoxedLcpSolver(
+          std::make_shared<dart::constraint::DantzigBoxedLcpSolver>());
     }
     auto metrics = fe::run(scene);
     // Maxima over steps skip NaN, so a non-finite state must fail here.

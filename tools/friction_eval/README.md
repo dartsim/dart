@@ -41,8 +41,8 @@ friction_eval --scene A4 --param phi=45,k=1.2 --solver dantzig --detector ode
 friction_eval --scene C2 --param muw=0.5 --bisect alpha=20:70:slid --solver dzr
 friction_eval --scene R5 --dump DIR --dump-steps 100,500   # L1 problem dumps
 friction_eval --l1 [DIR/*.lcp]   # L1 bank: built-in families, or the given dumps
-friction_eval.py run --bin B619=PATH --bin B620=PATH --out DIR -j 8
-friction_eval.py report DIR > summary.md
+python3 tools/friction_eval/friction_eval.py run --bin B619=PATH --bin B620=PATH --out DIR -j 8
+python3 tools/friction_eval/friction_eval.py report DIR > summary.md
 ```
 
 Options: `--solver dantzig|pgs|pgs100|pgs-tight|dzr|mf-pgs`,
@@ -88,8 +88,8 @@ never treats a NaN as equal, and counts a metric that only one side reports
 as a difference.
 
 PGS-tight and DZ+R stop on the box-law residual (at most 1e-6 m/s, 10-sweep
-chunks, 1000-sweep cap); PGS's own relative-change test stops early on stacks
-and never passes on rows near zero.
+chunks of one-sweep calls, 1000-sweep cap); PGS's own relative-change test stops
+early on stacks and never passes on rows near zero.
 
 ## Limits
 

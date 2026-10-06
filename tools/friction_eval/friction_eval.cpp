@@ -329,12 +329,9 @@ public:
 
   explicit TightBoxSolver(bool dantzigSeed) : mDantzigSeed(dantzigSeed)
   {
-    // Negative tolerances switch off PGS's own early exit, which ignores
-    // entries near zero even at zero tolerance, so each chunk runs its kChunk
-    // sweeps and the count and the cap are real. PGS still stops early once
-    // every |x_i| <= 1e-9 (its division epsilon, which also decides the rows
-    // it skips); such impulses leave a residual of A_ii * 1e-9 at most.
-    mPgs.setOption(PgsBoxedLcpSolver::Option(kChunk, -1.0, -1.0));
+    // One sweep per call makes the count and cap exact even when PGS's own
+    // early exit ignores every iterate below its division epsilon.
+    mPgs.setOption(PgsBoxedLcpSolver::Option(1, -1.0, -1.0));
   }
 
   const std::string& getType() const override
@@ -384,18 +381,20 @@ public:
       ++mStats.refreshed;
     int sweeps = 0;
     while (bestResidual > kTolerance && sweeps < kMaxSweeps) {
-      Problem terms = pristine; // PGS normalizes A and b in place.
-      mPgs.solve(
-          n,
-          terms.A.data(),
-          x,
-          terms.b.data(),
-          nub,
-          terms.lo.data(),
-          terms.hi.data(),
-          terms.findex.data(),
-          false);
-      sweeps += kChunk;
+      for (int i = 0; i < kChunk && sweeps < kMaxSweeps; ++i) {
+        Problem terms = pristine; // PGS normalizes A and b in place.
+        mPgs.solve(
+            n,
+            terms.A.data(),
+            x,
+            terms.b.data(),
+            nub,
+            terms.lo.data(),
+            terms.hi.data(),
+            terms.findex.data(),
+            false);
+        ++sweeps;
+      }
       const Residual r = boxResidual(pristine, x, 0.0);
       if (!r.finite)
         break;
@@ -1359,7 +1358,7 @@ int selfTest()
       std::abs(refreshed[0] - 0.8) + std::abs(refreshed[1] - 0.4) < 1e-6,
       "DZ+R re-solves the box law with refreshed bounds");
 
-  // PGS-tight's chunks run all their sweeps. The normal impulse here converges
+  // PGS-tight counts every sweep. The normal impulse here converges
   // at once and the friction pair, coupled 0.99 and below 1e-9, slowly: PGS's
   // own exit at zero tolerance stopped every chunk after 2 sweeps, so the
   // 1000-sweep cap ended the solve after 200 real ones, above 1e-6 m/s.
@@ -1375,6 +1374,23 @@ int selfTest()
       slowProbes.tight->getStats().capped == 0
           && boxResidual(slow, slowTerms.x.data(), 0.0).natural <= 1e-6,
       "PGS-tight converges where PGS's own exit would end its chunks");
+
+  // Every iterate is below PGS's division epsilon, so even negative
+  // tolerances let a multi-sweep call exit after its second sweep. With
+  // coupling 0.99 the residual is 0.0005 * 0.99^(2 * sweeps - 1): it first
+  // reaches 1e-6 at sweep 310, well before the 1000-sweep cap.
+  Eigen::Matrix2d tinyW;
+  tinyW << 1e8, 0.99e8, 0.99e8, 1e8;
+  const Problem tiny
+      = contactProblem("tiny", tinyW, Eigen::Vector2d(0.05, 0.05), {});
+  Probes tinyProbes;
+  Problem tinyTerms = tiny;
+  solveOk(*makeBackend("pgs-tight", tinyProbes), tinyTerms);
+  check(
+      tinyProbes.tight->getStats().sweeps == 310
+          && tinyProbes.tight->getStats().capped == 0
+          && boxResidual(tiny, tinyTerms.x.data(), 0.0).natural <= 1e-6,
+      "PGS-tight counts actual sweeps when every iterate is below epsilon");
 
   const auto path
       = (std::filesystem::temp_directory_path() / "friction_eval_self_test.lcp")
