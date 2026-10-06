@@ -1286,9 +1286,6 @@ protected:
   /// Returns the current kinematic version.
   std::size_t getKinematicVersion() const;
 
-  /// Returns the current velocity version.
-  std::size_t getVelocityVersion() const;
-
   /// Global generation counters used by World to avoid rescanning every
   /// skeleton on steady all-resting steps. The per-skeleton validation path is
   /// still used whenever any counter has changed.
@@ -1501,9 +1498,6 @@ protected:
   /// not increment that counter.
   std::size_t mKinematicVersion = 0;
 
-  /// Monotonic counter for joint-velocity changes made through public setters.
-  std::size_t mVelocityVersion = 0;
-
   /// Monotonic counter for user-writable generalized force/command changes.
   std::size_t mExternalDisturbanceVersion = 0;
 
@@ -1521,10 +1515,9 @@ private:
   /// (WP-PG.30) Cached result of dynamic_cast<FreeJoint*> on the root body
   /// node's parent joint (nullptr if there is no root body, or its parent
   /// joint is not a FreeJoint). gz scenes are thousands of single-body
-  /// FreeJoint skeletons, and several hot per-step call sites (this
-  /// Skeleton's own impulse-FD fast path, BoxedLcpConstraintSolver's
-  /// single-reactive-body path, and World's shallow-support machinery) each
-  /// used to repeat this RTTI check every step. It only needs to be
+  /// FreeJoint skeletons, and hot per-step call sites (this Skeleton's own
+  /// impulse-FD fast path and BoxedLcpConstraintSolver's single-reactive-body
+  /// path) each used to repeat this RTTI check every step. It only needs to be
   /// recomputed when this skeleton's structural version changes, since the
   /// root body's joint type cannot change without one.
   mutable FreeJoint* mCachedRootFreeJoint = nullptr;
