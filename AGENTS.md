@@ -65,6 +65,8 @@ the repository root to the working directory.
   base branch into it — merge, never rebase a published PR branch.
 - GitHub mutations, pushes, PR changes, CI reruns, review-thread mutations, and
   branch deletion require explicit maintainer/user approval.
+- Open PRs as drafts, then mark them ready and merge them only as
+  `docs/onboarding/ai-tools.md` § "PR Lifecycle" describes.
 - Never reply to AI-generated review comments (bot users such as
   `chatgpt-codex-connector[bot]`, `github-code-quality[bot]`,
   `github-actions[bot]`, `copilot[bot]`); make approved local fixes silently.

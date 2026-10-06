@@ -43,6 +43,8 @@ git push -u origin "HEAD:${branch}"
 gh pr create --draft --base <target-branch> --milestone "<milestone>"
 ```
 
+Then follow `docs/onboarding/ai-tools.md` § "PR Lifecycle" from draft to merge.
+
 Use the next DART 6.x release milestone for `main` PRs (currently
 `DART 6.20.0`) and the branch-matching milestone for maintenance PRs.
 

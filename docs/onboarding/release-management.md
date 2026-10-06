@@ -21,6 +21,14 @@ DART 6 PRs should:
 
 ## DART 6 Release Closeout
 
+A DART 6.x.y patch release is packaged by one "Packaging 6.x.y" PR on its
+`release-6.x` branch. It bumps `package.xml` and the `pixi.toml` workspace
+version, dates the release's `CHANGELOG.md` heading, links that heading to the
+closed milestone (`?closed=1`), and adds a short release summary under it. Its
+squash commit is the release candidate: once the gates below pass, tag it
+`v6.x.y` (annotated, message `DART 6.x.y`) and publish the GitHub release
+`DART 6.x.y`.
+
 Before tagging any DART 6.x.y release, record passing compatibility evidence on
 the exact candidate SHA for the forced optional-dependency-off gate and
 `pixi run -e gazebo test-gz`, confirming that both `test-gz-physics` and
@@ -34,9 +42,11 @@ configuring/building with OpenSceneGraph forcibly disabled, and the required
 `ubuntu-latest` context, owned only by CI gz-physics and running both Gazebo
 tasks. Keep each required context single-owner when editing workflows.
 
-At a release, tag `main`. Cut a `release-6.x` branch from the tag only when
-patch releases must diverge from `main`. The `Nightly` workflow is scheduled
-directly on `main`; its `nightly-failure` issues track `main`.
+At a new minor release (for example 6.20.0), tag `main`. Cut a `release-6.x`
+branch from the tag only when patch releases must diverge from `main`; a patch
+release then tags its packaging squash commit on that branch, as above, never
+`main`. The `Nightly` workflow is scheduled directly on `main`; its
+`nightly-failure` issues track `main`.
 
 ## Verifying DART 6 Changes
 
