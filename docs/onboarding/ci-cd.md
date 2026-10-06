@@ -49,7 +49,7 @@ gate does.
 ## Nightly
 
 `nightly.yml` runs every workflow in the index except the performance
-dashboard and lockfile refresh against `main` each night at 08:00 UTC,
+dashboard and lockfile refresh against `main` each night at 08:17 UTC,
 including the nightly-only jobs. It is scheduled directly on `main`, the
 default branch, with no dispatcher. Run it on demand with
 `gh workflow run nightly.yml --ref main`.
