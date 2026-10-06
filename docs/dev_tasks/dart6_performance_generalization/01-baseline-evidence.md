@@ -25,9 +25,10 @@ host-contention OOM.
 ## Canonical guard scenes (exact commands)
 
 `CB=./build/default/cpp/Release/bin/contact_benchmark`; `<det>` ranges
-over `dart fcl bullet ode` unless a row pins it. **ODE rows are only
-valid with `--max-contacts-per-pair 4`** (#3209 finding 3: the trimesh
-cylinder fallback floods larger caps and silently drops contacts).
+over `dart fcl bullet ode` unless a row pins it. The ODE guard rows keep
+`--max-contacts-per-pair 4` so they stay comparable with the recorded
+hashes (#3209 finding 3), but they do not represent Gazebo: ODE, collision,
+and sleeping changes also need `--gz-preset` rows (README gates).
 
 - **S1 — active container (primary fixture)**:
   `BM_INTEGRATION_contact_container` full suite,

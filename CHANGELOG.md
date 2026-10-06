@@ -690,6 +690,13 @@
 
 * Examples
 
+  * Add `contact_benchmark --gz-preset`, which loads an SDF world with the
+    collision setup the gz-physics dartsim plugin uses (SDF planes as 2100 m
+    boxes, a 10000-contact cap, the ODE detector with gz-sim's per-pair limit,
+    and a `BodyNodeCollisionFilter` subclass) and reports contact demand
+    against the cap, cap-starved pairs, sunk bodies, and changed poses:
+    [#3548](https://github.com/dartsim/dart/pull/3548)
+
   * Give `dart-demos` a real dockable workspace on docking-ImGui builds:
     a DockSpace over the viewport
     with a transparent central 3D node, a deterministic default layout
