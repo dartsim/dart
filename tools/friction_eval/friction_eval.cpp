@@ -51,6 +51,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 namespace fe = friction_eval;
@@ -1047,7 +1048,14 @@ Problem randomContacts(
 {
   std::mt19937_64 rng(seed);
   std::uniform_real_distribution<double> unit(0.0, 1.0);
+  std::uniform_real_distribution<double> sym(-1.0, 1.0);
   std::normal_distribution<double> gauss(0.0, 1.0);
+  // Every draw comes from rng in a fixed order, so the seed alone fixes the
+  // problem (function arguments would leave the order to the compiler).
+  const auto draw3 = [&rng](auto& dist) {
+    const double x = dist(rng), y = dist(rng), z = dist(rng);
+    return Eigen::Vector3d(x, y, z);
+  };
   const int n = 3 * contacts;
   Eigen::VectorXd minv(6 * bodies);
   for (int k = 0; k < bodies; ++k) {
@@ -1061,12 +1069,11 @@ Problem randomContacts(
   for (int c = 0; c < contacts; ++c) {
     const int a = c % bodies;
     const int other = c % 4 == 0 ? -1 : (a + 1 + c / bodies) % bodies;
-    const Eigen::Vector3d normal
-        = Eigen::Vector3d(gauss(rng), gauss(rng), gauss(rng)).normalized();
+    const Eigen::Vector3d normal = draw3(gauss).normalized();
     const Eigen::Vector3d t1 = normal.unitOrthogonal();
     const Eigen::Vector3d t2 = normal.cross(t1);
-    const Eigen::Vector3d ra = 0.3 * Eigen::Vector3d::Random();
-    const Eigen::Vector3d rb = 0.3 * Eigen::Vector3d::Random();
+    const Eigen::Vector3d ra = 0.3 * draw3(sym);
+    const Eigen::Vector3d rb = 0.3 * draw3(sym);
     for (int k = 0; k < 3; ++k) {
       const Eigen::Vector3d d = k == 0 ? normal : (k == 1 ? t1 : t2);
       J.block<1, 3>(3 * c + k, 6 * a) = d.transpose();
@@ -1119,8 +1126,10 @@ std::vector<Problem> builtinProblems()
     for (int k = 0; k < 9; ++k)
       jt(k / 3, k % 3) = gauss(rng);
     const double mu1 = 0.2 + unit(rng), mu2 = 0.2 + unit(rng);
-    const Eigen::Vector3d q(
-        -0.5 - 1.5 * unit(rng), 3 * gauss(rng), 3 * gauss(rng));
+    // Drawn z, y, x: the order GCC used for these as constructor arguments, so
+    // E1's bank stays the same while the order no longer depends on compilers.
+    const double qz = 3 * gauss(rng), qy = 3 * gauss(rng);
+    const Eigen::Vector3d q(-0.5 - 1.5 * unit(rng), qy, qz);
     problems.push_back(contactProblem(
         "check_single_" + std::to_string(i),
         jt * jt.transpose() + 0.05 * Eigen::Matrix3d::Identity(),
@@ -1289,6 +1298,15 @@ int selfTest()
           && loaded.lo == frozen.lo && loaded.hi == frozen.hi
           && loaded.findex == frozen.findex,
       "problem dump round trip");
+
+  // Eigen's Random() and std::rand() share a global state; the bank must not.
+  std::srand(1);
+  const Problem seeded = randomContacts("seeded", 8, 3, 5);
+  std::srand(2);
+  const Problem again = randomContacts("seeded", 8, 3, 5);
+  check(
+      seeded.A == again.A && seeded.b == again.b && seeded.hi == again.hi,
+      "random contact networks depend only on their seed");
 
   // A slide 30 deg off the basis: both box rows saturate, so the default
   // friction force points 45 deg off the basis (about 15 deg off the slip);
