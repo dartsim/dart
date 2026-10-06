@@ -131,7 +131,7 @@ def test_compare_classification_and_thresholds():
         module.compare(
             base, missing, "Rebaseline-Rationale: a/dart: intended behaviour"
         )["verdict"]["status"]
-        == "FAIL"
+        == "ERROR"
     )
     missing["results"] = []
     assert module.compare(base, missing)["verdict"]["status"] == "FAIL"
@@ -261,6 +261,7 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         "pixi_lock_sha": "installed lock",
         "preset": "installed preset",
         "libdart_sha": module.sha(library.read_bytes()),
+        "libraries": {"lib/libdart.so": module.sha(library.read_bytes())},
         "binaries": {
             name: module.sha(b"measured driver")
             for name in ("portable_step_bench", "contact_benchmark")
@@ -318,6 +319,134 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
     path.unlink()
     with pytest.raises(ValueError, match="missing installed compiler provenance"):
         module.fingerprint(args)
+
+
+@pytest.mark.parametrize("defect", ["changed", "added", "removed", "missing manifest"])
+def test_installed_provenance_verifies_all_dart_libraries(tmp_path, defect):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "installed",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    library = tmp_path / "lib/libdart.so"
+    library.parent.mkdir()
+    library.write_bytes(b"core")
+    component = tmp_path / "lib/libdart-utils.so.6.20"
+    component.write_bytes(b"utils")
+    (tmp_path / "lib/libdart-utils.so").symlink_to(component.name)
+    collision = tmp_path / "lib/libdart-collision-ode.so"
+    collision.write_bytes(b"collision")
+    stamp = {
+        "schema": "dart-perf-build/1",
+        "commit": "installed",
+        "compiler": "GNU 13.3.0",
+        "pixi_lock_sha": "installed lock",
+        "preset": "perf-1",
+        "libdart_sha": module.sha(b"core"),
+        "libraries": {
+            "lib/libdart.so": module.sha(b"core"),
+            "lib/libdart-utils.so": module.sha(b"utils"),
+            "lib/libdart-utils.so.6.20": module.sha(b"utils"),
+            "lib/libdart-collision-ode.so": module.sha(b"collision"),
+        },
+        "binaries": {},
+    }
+    path = tmp_path / "share/dart/perf-build.json"
+    path.parent.mkdir(parents=True)
+    module.write_json(path, stamp)
+    assert module.installed_provenance(args) == stamp
+    if defect == "changed":
+        component.write_bytes(b"stale utils")
+    elif defect == "added":
+        (tmp_path / "lib/libdart-collision-bullet.so").write_bytes(b"mixed install")
+    elif defect == "removed":
+        collision.unlink()
+    else:
+        stamp.pop("libraries")
+        module.write_json(path, stamp)
+    assert module.sha(library.read_bytes()) == stamp["libdart_sha"]
+    reason = (
+        "invalid installed build provenance"
+        if defect == "missing manifest"
+        else "DART library hashes differ"
+    )
+    with pytest.raises(ValueError, match=reason):
+        module.installed_provenance(args)
+
+
+def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "installed",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--rows",
+            "pend",
+        ]
+    )
+    args.bin_dir = tmp_path / "bin"
+    args.bin_dir.mkdir()
+    for name in ("portable_step_bench", "contact_benchmark"):
+        (args.bin_dir / name).write_bytes(b"driver")
+    args.shim = tmp_path / "allocshim.so"
+    args.shim.write_bytes(b"shim")
+    stamp = {
+        "schema": "dart-perf-build/1",
+        "compiler": "GNU 13.3.0",
+        "pixi_lock_sha": "unchanged build lock",
+        "preset": "perf-1",
+        "binaries": {
+            name: module.sha(b"driver")
+            for name in ("portable_step_bench", "contact_benchmark")
+        },
+    }
+    monkeypatch.setattr(module, "installed_provenance", lambda args: stamp)
+    monkeypatch.setattr(module, "execute", lambda *args: "Guest CPU: test\n")
+    monkeypatch.setattr(
+        module,
+        "command_output",
+        lambda command: (
+            "valgrind-3.22.0" if command[0] == module.VALGRIND else "glibc 2.39"
+        ),
+    )
+    monkeypatch.setenv("PIXI_PROJECT_ROOT", str(tmp_path))
+    monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "default")
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / ".pixi/envs/default"))
+    lock = tmp_path / "pixi.lock"
+    lock.write_bytes(b"runtime lock")
+    first = module.fingerprint(args)
+    assert first["runtime_pixi_lock_sha"] == module.sha(b"runtime lock")
+    assert first["runtime_environment"] == "default"
+    lock.write_bytes(b"different runtime lock")
+    changed_lock = module.fingerprint(args)
+    lock.write_bytes(b"runtime lock")
+    monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "gazebo")
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / ".pixi/envs/gazebo"))
+    changed_environment = module.fingerprint(args)
+    for changed, field in (
+        (changed_lock, "runtime_pixi_lock_sha"),
+        (changed_environment, "runtime_environment"),
+    ):
+        assert changed["pixi_lock_sha"] == first["pixi_lock_sha"]
+        assert changed["fingerprint"] != first["fingerprint"]
+        result = module.compare(
+            {"run": {"commit": "base", "env": first}},
+            {"run": {"commit": "head", "env": changed}},
+        )
+        assert result["verdict"]["status"] == "ERROR"
+        assert field in result["verdict"]["failures"][0]
 
 
 @pytest.mark.parametrize("missing", ["base", "head", "both"])
@@ -696,6 +825,34 @@ def _micro_record(module, name):
             }
         ],
     }
+
+
+def test_compare_rejects_mixed_measurement_methods(tmp_path, capsys):
+    module = _load_runner()
+    slope = {"schema": "dart-perf/1", **_micro_record(module, "dyn")}
+    slope["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    native = copy.deepcopy(slope)
+    native["results"][0].update(method="native", expected_ir=False)
+    native["results"][0]["head"].pop("ir_per_step")
+    for base, head in ((native, slope), (slope, native)):
+        record = module.compare(base, head)
+        assert record["verdict"]["status"] == "ERROR"
+        assert record["results"] == []
+        assert "incompatible measurement method/expected_ir" in module.markdown(record)
+        base_path, head_path = tmp_path / "base.json", tmp_path / "head.json"
+        module.write_json(base_path, base)
+        module.write_json(head_path, head)
+        assert (
+            module.main(["compare", "--base", str(base_path), "--head", str(head_path)])
+            == 2
+        )
+        assert "incompatible measurement method/expected_ir" in capsys.readouterr().out
+    for field, value in (("method", "native"), ("expected_ir", False)):
+        head = copy.deepcopy(slope)
+        head["results"][0][field] = value
+        assert module.compare(slope, head)["verdict"]["status"] == "ERROR"
+    # Rows that are native on both sides collect no Ir and still compare.
+    assert module.compare(native, native)["verdict"]["status"] == "PASS"
 
 
 @pytest.mark.parametrize("name", ["dyn", "lcp"])

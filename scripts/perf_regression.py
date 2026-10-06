@@ -557,6 +557,14 @@ def cmake_compiler(build: Path) -> str:
     return " ".join(parts)
 
 
+def library_hashes(prefix: Path) -> dict[str, str]:
+    return {
+        path.relative_to(prefix).as_posix(): sha(path.read_bytes())
+        for path in sorted((prefix / "lib").rglob("libdart*.so*"))
+        if path.is_file()
+    }
+
+
 def installed_provenance(args) -> dict:
     path = args.prefix / "share/dart/perf-build.json"
     if not path.is_file():
@@ -568,6 +576,7 @@ def installed_provenance(args) -> dict:
         not isinstance(stamp, dict)
         or stamp.get("schema") != "dart-perf-build/1"
         or not isinstance(stamp.get("binaries"), dict)
+        or not isinstance(stamp.get("libraries"), dict)
         or any(
             not isinstance(stamp.get(key), str) or not stamp[key].strip()
             for key in ("compiler", "pixi_lock_sha", "preset")
@@ -578,6 +587,8 @@ def installed_provenance(args) -> dict:
         raise ValueError("installed build provenance commit differs from --commit")
     if stamp.get("libdart_sha") != sha((args.prefix / "lib/libdart.so").read_bytes()):
         raise ValueError("installed build provenance libdart hash differs")
+    if stamp["libraries"] != library_hashes(args.prefix):
+        raise ValueError("installed build provenance DART library hashes differ")
     return stamp
 
 
@@ -613,6 +624,12 @@ def fingerprint(args) -> dict:
         "compiler_provenance": provenance["schema"],
         "glibc": command_output(["getconf", "GNU_LIBC_VERSION"]).split()[-1],
         "pixi_lock_sha": provenance["pixi_lock_sha"],
+        "runtime_pixi_lock_sha": sha(
+            (Path(env.get("PIXI_PROJECT_ROOT", ROOT)) / "pixi.lock").read_bytes()
+        ),
+        "runtime_environment": env.get(
+            "PIXI_ENVIRONMENT_NAME", env.get("CONDA_PREFIX")
+        ),
         "preset": provenance["preset"],
         "harness_sha": harness,
         "allocshim_sha": sha(args.shim.read_bytes()),
@@ -804,12 +821,31 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         for env in (base_env, head_env)
     ):
         differing.append("compiler provenance (missing or invalid)")
+    failures = []
     if (
         not base_env.get("fingerprint")
         or not head_env.get("fingerprint")
         or base_env["fingerprint"] != head_env["fingerprint"]
         or differing
     ):
+        failures.append(
+            "incompatible environment fingerprints: "
+            + ", ".join(differing or ["fingerprint (missing or unequal)"])
+        )
+    else:
+        parents = {row_key(row): row for row in base["results"]}
+        children = {row_key(row): row for row in head["results"]}
+        for key in sorted(parents.keys() & children.keys()):
+            methods = [
+                (
+                    row.get("method"),
+                    row.get("expected_ir", row.get("method") == "slope"),
+                )
+                for row in (parents[key], children[key])
+            ]
+            if methods[0] != methods[1]:
+                failures.append(f"{key}: incompatible measurement method/expected_ir")
+    if failures:
         return {
             "schema": "dart-perf/1",
             "run": {
@@ -820,10 +856,7 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
             "results": [],
             "verdict": {
                 "status": "ERROR",
-                "failures": [
-                    "incompatible environment fingerprints: "
-                    + ", ".join(differing or ["fingerprint (missing or unequal)"])
-                ],
+                "failures": failures,
                 "warnings": [],
                 "ir_geomean": None,
             },
@@ -839,8 +872,6 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
             "",
         )
 
-    parents = {row_key(row): row for row in base["results"]}
-    children = {row_key(row): row for row in head["results"]}
     results, ratios, failures, warnings = [], [], [], []
     infrastructure = False
     if not parents and not children:
@@ -953,10 +984,11 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
                 reasons.append(
                     "head failed perturbation eligibility; base gate remains active"
                 )
-            if "ir_per_step" in bm and (
-                "ir_per_step" not in hm or hm["ir_per_step"] <= 0
+            if (
+                parent.get("expected_ir", parent.get("method") == "slope")
+                and ir is None
             ):
-                reasons.append("missing or invalid head Ir measurement")
+                reasons.append("missing or invalid Ir measurement on base or head")
             if "allocs_per_step" in bm and "allocs_per_step" not in hm:
                 reasons.append("missing head allocation measurement")
             if (
@@ -1345,6 +1377,7 @@ def local_arms(args) -> tuple[dict, dict]:
                     "pixi_lock_sha": sha((ROOT / "pixi.lock").read_bytes()),
                     "preset": "perf-1",
                     "libdart_sha": sha((prefix / "lib/libdart.so").read_bytes()),
+                    "libraries": library_hashes(prefix),
                     "binaries": {
                         path.name: sha(path.read_bytes())
                         for path in binary.iterdir()

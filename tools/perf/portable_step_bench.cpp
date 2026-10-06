@@ -283,6 +283,13 @@ int main(int argc, char** argv)
         hash = mix(hash, q[j]);
       for (Eigen::Index j = 0; j < v.size(); ++j)
         hash = mix(hash, v[j]);
+      for (std::size_t b = 0; b < skeleton->getNumBodyNodes(); ++b) {
+        const auto& transform
+            = skeleton->getBodyNode(b)->getWorldTransform().matrix();
+        finite = finite && transform.allFinite();
+        for (Eigen::Index j = 0; j < transform.size(); ++j)
+          hash = mix(hash, transform.data()[j]);
+      }
     }
     const auto finalContacts = world->getLastCollisionResult().getNumContacts();
     std::printf("Guest CPU: %s\n", cpuBrand().c_str());
