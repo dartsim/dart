@@ -1195,7 +1195,7 @@ void ConstraintSolver::setCollisionDetector(
   mCollisionGroup = mCollisionDetector->createCollisionGroupAsSharedPtr();
 
   for (const auto& skeleton : mSkeletons)
-    mCollisionGroup->addShapeFramesOf(skeleton.get());
+    mCollisionGroup->subscribeTo(skeleton);
 }
 
 //==============================================================================

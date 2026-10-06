@@ -45,6 +45,7 @@
 
 #include <iostream>
 #if HAVE_ODE
+  #include "dart/collision/ode/detail/OdeGeom.hpp"
   #include "dart/collision/ode/ode.hpp"
 
   #include <ode/ode.h>
@@ -3703,6 +3704,136 @@ TEST_F(Collision, Factory)
 }
 
 #if HAVE_ODE
+namespace {
+
+void testOdeShapeReplacement(bool detectorFirst)
+{
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  if (detectorFirst)
+    world->getConstraintSolver()->setCollisionDetector(
+        OdeCollisionDetector::create());
+
+  auto ground = Skeleton::create("ground");
+  auto* groundNode
+      = ground->createJointAndBodyNodePair<WeldJoint>()
+            .second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+                std::make_shared<BoxShape>(Eigen::Vector3d(10, 10, 1)));
+  groundNode->setRelativeTranslation(Eigen::Vector3d(0, 0, -0.5));
+  world->addSkeleton(ground);
+
+  auto body = Skeleton::create("body");
+  auto pair = body->createJointAndBodyNodePair<FreeJoint>();
+  auto* node
+      = pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  pose.translation().z() = 0.25;
+  FreeJoint::setTransformOf(pair.first, pose);
+  world->addSkeleton(body);
+  if (!detectorFirst)
+    world->getConstraintSolver()->setCollisionDetector(
+        OdeCollisionDetector::create());
+  ASSERT_TRUE(world->getConstraintSolver()->getCollisionGroup()->isSubscribedTo(
+      ground.get(), body.get()));
+
+  const auto stepWithContact = [&] {
+    FreeJoint::setTransformOf(pair.first, pose);
+    body->setVelocities(Eigen::VectorXd::Zero(body->getNumDofs()));
+    world->step();
+    const auto& result = world->getLastCollisionResult();
+    ASSERT_GT(result.getNumContacts(), 0u);
+    for (const auto& contact : result.getContacts()) {
+      const auto* frame1 = contact.collisionObject1->getShapeFrame();
+      const auto* frame2 = contact.collisionObject2->getShapeFrame();
+      EXPECT_TRUE(
+          (frame1 == groundNode && frame2 == node)
+          || (frame1 == node && frame2 == groundNode));
+    }
+    EXPECT_TRUE(body->getPositions().allFinite());
+    EXPECT_TRUE(body->getVelocities().allFinite());
+  };
+
+  // Replace a shape after the world's collision group already owns its object.
+  groundNode->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(20, 20, 1)));
+  stepWithContact();
+  node->setShape(std::make_shared<SphereShape>(0.5));
+  stepWithContact();
+
+  // Planes also keep a parent pointer for updating their transformed equation.
+  groundNode->setRelativeTranslation(Eigen::Vector3d::Zero());
+  groundNode->setShape(
+      std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0));
+  stepWithContact();
+  node->getShape()->as<SphereShape>()->setRadius(0.6);
+  stepWithContact();
+
+  // Removing and re-adding a skeleton recreates its collision objects.
+  world->removeSkeleton(body);
+  world->addSkeleton(body);
+  stepWithContact();
+  groundNode->setShape(std::make_shared<BoxShape>(Eigen::Vector3d(10, 10, 1)));
+  groundNode->setRelativeTranslation(Eigen::Vector3d(0, 0, -0.5));
+  stepWithContact();
+}
+
+} // namespace
+
+//==============================================================================
+TEST_F(Collision, OdeShapeReplacementDetectorFirst)
+{
+  testOdeShapeReplacement(true);
+}
+
+//==============================================================================
+TEST_F(Collision, OdeShapeReplacementSkeletonsFirst)
+{
+  testOdeShapeReplacement(false);
+}
+
+//==============================================================================
+TEST_F(Collision, OdeMoveAssignmentRebindsGeometry)
+{
+  class InspectableOdeCollisionObject : public OdeCollisionObject
+  {
+  public:
+    InspectableOdeCollisionObject(
+        OdeCollisionDetector* detector, const ShapeFrame* frame)
+      : OdeCollisionObject(detector, frame)
+    {
+    }
+
+    using OdeCollisionObject::getOdeBodyId;
+    using OdeCollisionObject::getOdeGeomId;
+    using OdeCollisionObject::operator=;
+
+    const OdeCollisionObject* getGeomParent() const
+    {
+      return mOdeGeom->getParentCollisionObject();
+    }
+  };
+
+  auto detector = OdeCollisionDetector::create();
+  auto frame = SimpleFrame::createShared(Frame::World());
+  frame->setShape(std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  InspectableOdeCollisionObject object(detector.get(), frame.get());
+
+  for (const ShapePtr& shape : std::vector<ShapePtr>{
+           std::make_shared<SphereShape>(0.5),
+           std::make_shared<PlaneShape>(Eigen::Vector3d::UnitZ(), 0.0),
+           std::make_shared<BoxShape>(Eigen::Vector3d::Ones())}) {
+    frame->setShape(shape);
+    {
+      InspectableOdeCollisionObject replacement(detector.get(), frame.get());
+      object = std::move(replacement);
+    }
+    EXPECT_EQ(&object, dGeomGetData(object.getOdeGeomId()));
+    EXPECT_EQ(&object, object.getGeomParent());
+    EXPECT_EQ(object.getOdeBodyId(), dGeomGetBody(object.getOdeGeomId()));
+    EXPECT_EQ(shape->is<PlaneShape>(), object.getOdeBodyId() == nullptr);
+  }
+}
+
 //==============================================================================
 TEST(Issue3056, OdeReportsTangentCylinderPlaneContact)
 {
