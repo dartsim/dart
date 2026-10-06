@@ -148,10 +148,11 @@ approval.
    and every review comment addressed. Agents never add or re-add the label,
    even when they act through the maintainer's account. When new commits are
    pushed, the `Maintainer Approval` workflow removes the label unless every
-   new commit is a conflict-free merge of the base branch (step 5). Any other
-   change, including a fix for a review finding or a merge that resolves
-   conflicts, needs a fresh label. The +1 that `chatgpt-codex-connector[bot]`
-   adds after a clean review is not approval. Agents merge only through the
+   new commit is a conflict-free merge of the base branch (step 5); it also
+   removes it when the PR is retargeted or reopened. Any other change,
+   including a fix for a review finding or a merge that resolves conflicts,
+   needs a fresh label. The +1 that `chatgpt-codex-connector[bot]` adds after
+   a clean review is not approval. Agents merge only through the
    `dart-manage-pr` `mode=merge` gate, with the label as explicit approval.
    Squash-merge: the repository allows squash and rebase merges, not merge
    commits. Fix AI review findings that arrive after the merge in a follow-up

@@ -32,6 +32,7 @@ jobs:
         run: |
           pixi update --json --no-install | pixi exec pixi-diff-to-markdown >> diff.md
       - name: Create pull request
+        id: cpr
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -43,3 +44,15 @@ jobs:
           labels: pixi
           delete-branch: true
           add-paths: pixi.lock
+      # Pushes made with GITHUB_TOKEN do not trigger maintainer_approval.yml,
+      # so revoke an approval of the replaced lockfile here.
+      - name: Remove maintainer-approved from the updated pull request
+        if: steps.cpr.outputs.pull-request-operation == 'updated'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          if gh api "repos/$REPO/issues/$PR/labels" --jq '.[].name' | grep -qx maintainer-approved; then
+            gh api -X DELETE "repos/$REPO/issues/$PR/labels/maintainer-approved" > /dev/null
+          fi
