@@ -1156,6 +1156,79 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
 }
 
 //==============================================================================
+// A body whose joint follows an acceleration, velocity or lock command moves as
+// commanded, not as gravity and contacts move it, so it is not resting on a
+// missed contact when it leaves its island, even if it was dynamic and in an
+// island at the previous build. It holds a newly eligible island awake at once.
+TEST(IslandDeactivation, BodySwitchedToKinematicActuatorHoldsIslandsAwake)
+{
+  // As in the gravity checks of OneStepContactMissDoesNotHoldIslandsAwake, the
+  // leaver touches a wall in the air and moves away from it, so it is in a
+  // contact island after the first step and outside every island after the
+  // second. From the second step its joint follows a zero acceleration command,
+  // so it keeps the velocity it had after the first step. The sleeper starts
+  // settled on the floor, so the initial-rest credit makes it a sleep candidate
+  // at the first step.
+  const auto checkLeaver = [](bool leaverGravity,
+                              double downSpeed,
+                              const char* message) {
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    world->addSkeleton(createWall());
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(3.0, 0, kHalf - 1.0e-6));
+    world->addSkeleton(sleeper);
+    auto leaver = createFreeBox(
+        "leaver",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(kHalf - 1.0e-6, 0, 2.0));
+    leaver->getBodyNode(0)->setGravityMode(leaverGravity);
+    const auto& opts = world->getDeactivationOptions();
+    Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
+    velocity[3] = 0.25 * opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
+    velocity[5] = -downSpeed;
+    if (leaverGravity)
+      velocity[5] += world->getGravity().norm() * world->getTimeStep();
+    leaver->getJoint(0)->setVelocities(velocity);
+    world->addSkeleton(leaver);
+
+    world->step();
+    ASSERT_GE(leaver->getIslandIndex(), 0);
+    ASSERT_TRUE(sleeper->isSleepCandidate());
+    leaver->getJoint(0)->setActuatorType(Joint::ACCELERATION);
+    world->step();
+    ASSERT_LT(leaver->getIslandIndex(), 0);
+    ASSERT_NEAR(
+        leaver->getBodyNode(0)->getLinearVelocity().z(), -downSpeed, 1e-12);
+    EXPECT_FALSE(sleeper->isResting()) << message;
+  };
+
+  const DeactivationOptions defaults;
+  const double band
+      = defaults.mWakeThresholdScale * defaults.mLinearSpeedThreshold;
+  const auto defaultWorld = World::create();
+  const double oneStepOfGravity
+      = defaultWorld->getGravity().norm() * defaultWorld->getTimeStep();
+  // Falling half a step of gravity past the wake band, as a body whose contact
+  // was missed falls only after a step of gravity. (The force that holds the
+  // commanded acceleration against gravity also counts as a disturbance.)
+  checkLeaver(
+      true,
+      band + 0.5 * oneStepOfGravity,
+      "a body that follows an acceleration command did not hold the island "
+      "awake when it left its island falling past the wake band");
+  // Without gravity, inside the wake band, which a body whose contact was
+  // missed may also move within.
+  checkLeaver(
+      false,
+      0.5 * band,
+      "a body that follows an acceleration command did not hold the island "
+      "awake when it left its island inside the wake band");
+}
+
+//==============================================================================
 // A body leaving its island beyond the wake band of the World's
 // DeactivationOptions holds a newly eligible island awake at once, even inside
 // the default wake band. Wider thresholds do not widen the band.

@@ -2547,7 +2547,11 @@ void ConstraintSolver::buildConstrainedGroups()
         return true;
       };
       // A FreeJoint and no other degrees of freedom, with no joint constraint
-      // or spring that could pull the body back once it leaves its island.
+      // or spring that could pull the body back once it leaves its island, and
+      // only force or passive actuators, so that forces alone move it: a joint
+      // that follows an acceleration, velocity or lock command moves as
+      // commanded, a servo drives its joint toward a commanded velocity even
+      // when that is zero, and a mimic joint follows another joint.
       const auto isFreeRigidBody = [this](const Skeleton& skeleton) {
         if (skeleton.getNumDofs() != 6u)
           return false;
@@ -2557,8 +2561,12 @@ void ConstraintSolver::buildConstrainedGroups()
           return false;
         }
         for (std::size_t i = 0; i < 6u; ++i) {
-          if (joint->getSpringStiffness(i) != 0.0)
+          const auto actuatorType = joint->getActuatorType(i);
+          if ((actuatorType != dynamics::Joint::FORCE
+               && actuatorType != dynamics::Joint::PASSIVE)
+              || joint->getSpringStiffness(i) != 0.0) {
             return false;
+          }
         }
         return true;
       };
