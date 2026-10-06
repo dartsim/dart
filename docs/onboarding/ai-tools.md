@@ -151,7 +151,9 @@ approval.
    new commit is a conflict-free merge of the base branch (step 5); it also
    removes it when the PR is retargeted or reopened. Any other change,
    including a fix for a review finding or a merge that resolves conflicts,
-   needs a fresh label. The +1 that `chatgpt-codex-connector[bot]` adds after
+   needs a fresh label. A workflow run can miss a change (for example, when it
+   is cancelled), so before merging also check that the label was added after
+   the last such push. The +1 that `chatgpt-codex-connector[bot]` adds after
    a clean review is not approval. Agents merge only through the
    `dart-manage-pr` `mode=merge` gate, with the label as explicit approval.
    Squash-merge: the repository allows squash and rebase merges, not merge

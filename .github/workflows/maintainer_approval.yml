@@ -7,7 +7,9 @@
 # produce automatically.
 #
 # Pushes made with GITHUB_TOKEN start no workflows, so workflows that update PR
-# branches that way remove the label themselves (update_lockfiles.yml).
+# branches that way remove the label themselves (update_lockfiles.yml). A run
+# can still miss a change, for example when it is cancelled before it starts, so
+# whoever merges also checks that the label postdates the head's last push.
 #
 # pull_request_target lets the job edit labels on fork PRs too. It never checks
 # out or runs PR code: it only fetches commits and compares them with git.
@@ -84,15 +86,22 @@ jobs:
           ACTION: ${{ github.event.action }}
           RUN_ID: ${{ github.run_id }}
         run: |
+          set -o pipefail
           # A run that starts late, or is rerun, must not remove an approval the
-          # maintainer gave after the event that created the run.
-          created=$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq .created_at)
+          # maintainer gave after the event that created the run. If either
+          # lookup fails, remove the label anyway. An approval given within
+          # seconds of the event can still be removed; add the label again.
+          created=$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq .created_at) || created=""
           labeled=$(gh api --paginate "repos/$REPO/issues/$PR/events" \
             --jq '.[] | select(.event == "labeled" and .label.name == "maintainer-approved") | .created_at' \
-            | sort | tail -n 1)
-          if [[ "$labeled" > "$created" ]]; then
+            | sort | tail -n 1) || labeled=""
+          if [ -n "$created" ] && [[ "$labeled" > "$created" ]]; then
             echo "maintainer-approved was added at $labeled, after this $ACTION event ($created); keeping it."
-          elif gh api "repos/$REPO/issues/$PR/labels" --jq '.[].name' | grep -qx maintainer-approved; then
-            gh api -X DELETE "repos/$REPO/issues/$PR/labels/maintainer-approved" > /dev/null
+          elif out=$(gh api -X DELETE "repos/$REPO/issues/$PR/labels/maintainer-approved" 2>&1); then
             echo "Removed maintainer-approved after the $ACTION event: the PR needs a fresh maintainer review."
+          elif grep -q "Label does not exist" <<< "$out"; then
+            echo "maintainer-approved was already removed."
+          else
+            echo "$out"
+            exit 1
           fi
