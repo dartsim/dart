@@ -394,13 +394,21 @@ std::size_t hashObjectPair(const ObjectPair& pair)
 }
 
 //==============================================================================
-// Whether updateConstraints() can turn the contact into a constraint.
+// Whether updateConstraints() can turn the contact into a constraint: it skips
+// contacts with non-finite geometry, a zero normal, a missing collision object,
+// ShapeNode or BodyNode, or a negative depth.
 bool isSolvableContact(const collision::Contact& contact)
 {
+  const auto hasBody = [](const collision::CollisionObject* object) {
+    return object != nullptr && object->getShapeNode() != nullptr
+           && object->getBodyNode() != nullptr;
+  };
   return std::isfinite(contact.penetrationDepth)
          && contact.penetrationDepth >= 0.0 && contact.point.allFinite()
          && contact.normal.allFinite()
-         && !collision::Contact::isZeroNormal(contact.normal);
+         && !collision::Contact::isZeroNormal(contact.normal)
+         && hasBody(contact.collisionObject1)
+         && hasBody(contact.collisionObject2);
 }
 
 //==============================================================================
