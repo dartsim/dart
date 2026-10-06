@@ -550,6 +550,20 @@
     guardrails rather than this settled-scene completion claim:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
+  * Share the constraint solver's contact cap
+    (`CollisionOption::maxNumContacts`; gz-physics sets 10000) across the
+    colliding pairs when a scene needs more contacts than it allows. Detection
+    used to stop at the cap, so the pairs found last got no contacts and their
+    bodies fell through their support. Now every pair keeps a contact as long
+    as there are no more colliding pairs than the cap and detection stays
+    within the bound documented on `CollisionOption::maxNumContacts`. A
+    simulation is unchanged until a step needs as many contacts as the cap
+    allows. From then on, the kept contacts can change, the
+    per-pair contact count passed to `ContactSurfaceHandler` (which scales
+    slip compliance) is the number kept, and detection costs more because it
+    no longer stops at the cap:
+    [#3551](https://github.com/dartsim/dart/pull/3551)
+
   * Derive the deactivation final-quiet candidacy gate from the configured
     sleep thresholds (10% of the linear threshold, 20% of the angular
     threshold) instead of hardcoded constants, so raising
