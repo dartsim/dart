@@ -80,7 +80,8 @@ void reportContacts(
     CollisionResult& result,
     std::size_t numPriorContacts,
     std::vector<OdeCollisionDetector::ContactHistoryItem>* history,
-    PairIndex& historyPairs);
+    PairIndex& historyPairs,
+    std::size_t numObjects);
 
 Contact convertContact(
     const dContactGeom& fclContact,
@@ -315,14 +316,19 @@ void refreshHistoryTransforms(OdeCollisionDetector::ContactHistoryItem& item)
 
 void addHistoryItem(
     std::vector<OdeCollisionDetector::ContactHistoryItem>& cache,
-    const OdeCollisionDetector::CollObjPair& pair)
+    const OdeCollisionDetector::CollObjPair& pair,
+    std::size_t numObjects)
 {
-  OdeCollisionDetector::ContactHistoryItem newItem;
+  // Regrowing the history copies every entry's deque, so grow it straight to
+  // one entry per collision object, and construct the entry in place rather
+  // than copying a temporary.
+  if (cache.size() == cache.capacity())
+    cache.reserve(std::max(2u * cache.size(), numObjects));
+  auto& newItem = cache.emplace_back();
   newItem.pair = pair;
   newItem.transform1 = Eigen::Isometry3d::Identity();
   newItem.transform2 = Eigen::Isometry3d::Identity();
   newItem.hasTransforms = false;
-  cache.push_back(newItem);
 }
 
 void eraseHistoryForObject(
@@ -367,6 +373,9 @@ struct OdeCollisionCallbackData
   /// still holds contacts from an earlier call.
   std::size_t numPriorContacts;
 
+  /// The number of collision objects in the collided group(s).
+  std::size_t numObjects;
+
   /// Finds pairs in *history.
   PairIndex historyPairs;
 
@@ -381,6 +390,7 @@ struct OdeCollisionCallbackData
       done(false),
       numContacts(0u),
       numPriorContacts(result ? result->getNumContacts() : 0u),
+      numObjects(0u),
       historyPairs(historyPairStorage(), &historyEraseCount()),
       resultPairs(resultPairStorage())
   {
@@ -451,6 +461,7 @@ bool OdeCollisionDetector::collide(
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
   data.history = &mContactHistory;
+  data.numObjects = odeGroup->getNumShapeFrames();
 
   dSpaceCollide(odeGroup->getOdeSpaceId(), &data, CollisionCallback);
   data.numContacts += reportCylinderPlaneSupportContacts(
@@ -484,6 +495,8 @@ bool OdeCollisionDetector::collide(
   OdeCollisionCallbackData data(option, result);
   data.contactGeoms = contactCollisions;
   data.history = &mContactHistory;
+  data.numObjects
+      = odeGroup1->getNumShapeFrames() + odeGroup2->getNumShapeFrames();
 
   dSpaceCollide2(
       reinterpret_cast<dGeomID>(odeGroup1->getOdeSpaceId()),
@@ -628,7 +641,8 @@ void CollisionCallback(void* data, dGeomID o1, dGeomID o2)
         *result,
         cdData->numPriorContacts,
         cdData->history,
-        cdData->historyPairs);
+        cdData->historyPairs,
+        cdData->numObjects);
   }
 }
 
@@ -642,7 +656,8 @@ void reportContacts(
     CollisionResult& result,
     std::size_t numPriorContacts,
     std::vector<OdeCollisionDetector::ContactHistoryItem>* history,
-    PairIndex& historyPairs)
+    PairIndex& historyPairs,
+    std::size_t numObjects)
 {
   if (0u == numContacts)
     return;
@@ -752,7 +767,7 @@ void reportContacts(
 
   if (historyPos == PairIndex::npos) {
     historyPos = history->size();
-    addHistoryItem(*history, pair);
+    addHistoryItem(*history, pair, numObjects);
   }
   auto& historyItem = (*history)[historyPos];
   refreshHistoryTransforms(historyItem);
