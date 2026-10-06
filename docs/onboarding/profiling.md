@@ -187,18 +187,19 @@ system Valgrind; wall time is advisory only.
 The default `build/perf-compare` directory is reset only when it contains the
 `.perf-compare-owned` marker written by the harness; custom output directories
 must be empty.
-Rows gate when `QUALIFIED_ROWS` in the script records that they passed the
-seven heap-layout checks; other rows are diagnostic. `--perturb` reruns the
-checks, and its result replaces the record for that run; the report names each
-row's qualification and thread count. Comparisons require matching
-environment fingerprints. Exit status 1 means a policy failure; status 2 means
-an infrastructure error. When measuring an existing install with
-`scripts/perf_regression.py run`, supply `--commit` for its installed revision.
-The install must also contain `share/dart/perf-build.json`, written by `local`
-with the CMake compiler ID/version, build preset, Pixi lock hash, commit, and
-installed libdart and driver hashes. `run` checks this stamp against the artifacts
-and commit; missing or stale provenance is an infrastructure error. Saved records without
-compiler provenance cannot pass comparison. Gated rows with positive Ir deltas,
+Each run repeats every row under seven heap-layout perturbations, and a row
+gates only when its guards and allocation counts stay identical under all of
+them in that run; `--no-perturb` skips the checks and leaves every row
+diagnostic. The report names each row's qualification and thread count.
+Comparisons require matching environment fingerprints. Exit status 1 means a
+policy failure; status 2 means an infrastructure error. When measuring an
+existing install with `scripts/perf_regression.py run`, supply `--commit` for
+its installed revision. The install must also contain
+`share/dart/perf-build.json`, written by `local` with the CMake compiler
+ID/version, build preset, Pixi lock hash, commit, and installed libdart and
+driver hashes. `run` checks this stamp against the artifacts and commit; missing
+or stale provenance is an infrastructure error. Saved records without compiler
+provenance cannot pass comparison. Gated rows with positive Ir deltas,
 allocation increases, or gate failures count as regressed in the summary.
 
 Use the soft-body comparison script for PR evidence that must compare the

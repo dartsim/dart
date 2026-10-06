@@ -116,32 +116,6 @@ ROWS += [
     )
     for name in ("s3w", "s1p")
 ]
-# Rows whose guards and allocation counts stayed identical under all seven
-# heap-layout perturbations, in both arms of the P1 qualification run
-# (2026-10-05, 238 stable checks). They gate on this record; a --perturb run
-# re-checks them and its result replaces the record for that run. Add a row here
-# only after it passes such a run.
-QUALIFIED_ROWS = frozenset(
-    {
-        "s3w/dart",
-        "s3w/ode",
-        "s2r/dart",
-        "s2r/ode",
-        "s1p/dart",
-        "s1p/ode",
-        "s5a/dart",
-        "s5a/fcl",
-        "s5a/bullet",
-        "s5a/ode",
-        "pend/dart",
-        "gzb/ode",
-        "robot/dart",
-        "dyn",
-        "lcp",
-        "mt4-s3w/dart",
-        "mt4-s1p/dart",
-    }
-)
 
 
 def sha(data: bytes) -> str:
@@ -196,10 +170,12 @@ def environment(prefix: Path) -> dict[str, str]:
     for key in ("LD_PRELOAD", "HEAPPAD", "PERF_WARMUP", "PERF_WINDOW", "PERF_MICRO"):
         env.pop(key, None)
     env.update(LC_ALL="C", GLIBC_TUNABLES="glibc.cpu.hwcaps=-FMA")
-    paths = [str(prefix / "lib"), env.get("LD_LIBRARY_PATH", "")]
+    # Only the arm and the active Pixi environment supply libraries; an inherited
+    # path could load other dependencies that the fingerprint does not record.
+    paths = [str(prefix / "lib")]
     if env.get("CONDA_PREFIX"):
         paths.append(str(Path(env["CONDA_PREFIX"]) / "lib"))
-    env["LD_LIBRARY_PATH"] = ":".join(path for path in paths if path)
+    env["LD_LIBRARY_PATH"] = ":".join(paths)
     return env
 
 
@@ -380,7 +356,7 @@ def measure(row: Row, args, world: Path) -> dict:
         "row": row.row,
         "det": row.det,
         "version": row.version,
-        "gated": row.key in QUALIFIED_ROWS,
+        "gated": False,
         "status": "ok",
         "threads": row.threads,
         "window": {"warmup": row.warmup, "steps": row.steps},
@@ -1188,7 +1164,11 @@ def parser() -> argparse.ArgumentParser:
         item.add_argument("--jobs", type=int, choices=range(1, 9), default=4)
         item.add_argument("--timeout", type=int, default=900)
         item.add_argument("--native-only", action="store_true")
-        item.add_argument("--perturb", action="store_true")
+        # Rows gate only on this run's heap-layout checks; --no-perturb skips
+        # them and leaves every row diagnostic.
+        item.add_argument(
+            "--perturb", action=argparse.BooleanOptionalAction, default=True
+        )
         item.add_argument("--cache-sim", action="store_true")
         item.add_argument(
             "--shim", type=Path, default=ROOT / "build/perf/liballocshim.so"

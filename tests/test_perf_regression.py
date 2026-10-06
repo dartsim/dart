@@ -250,6 +250,8 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         (args.bin_dir / name).write_bytes(b"measured driver")
     args.shim = tmp_path / "allocshim.so"
     args.shim.write_bytes(b"measured shim")
+    args.heappad = tmp_path / "heappad.so"
+    args.heappad.write_bytes(b"heappad")
     (tmp_path / "share/dart").mkdir(parents=True)
     (tmp_path / "lib").mkdir()
     library = tmp_path / "lib/libdart.so"
@@ -402,6 +404,8 @@ def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
         (args.bin_dir / name).write_bytes(b"driver")
     args.shim = tmp_path / "allocshim.so"
     args.shim.write_bytes(b"shim")
+    args.heappad = tmp_path / "heappad.so"
+    args.heappad.write_bytes(b"heappad")
     stamp = {
         "schema": "dart-perf-build/1",
         "compiler": "GNU 13.3.0",
@@ -686,7 +690,7 @@ def test_run_requires_installed_commit():
     assert module.parser().parse_args(["local"]).head == "HEAD"
 
 
-def test_measure_gates_on_recorded_or_current_perturbation_pass(monkeypatch, tmp_path):
+def test_measure_gates_only_on_its_own_perturbation_pass(monkeypatch, tmp_path):
     module = _load_runner()
     args = module.parser().parse_args(
         [
@@ -698,16 +702,20 @@ def test_measure_gates_on_recorded_or_current_perturbation_pass(monkeypatch, tmp
             "--output-dir",
             str(tmp_path),
             "--native-only",
+            "--no-perturb",
         ]
     )
     row = module.select_rows("pend")[0]
     metrics = {"guards": {"finite": True}, "allocs": 0}
     monkeypatch.setattr(module, "native", lambda *args: copy.deepcopy(metrics))
-    # A recorded row gates without rerunning the perturbations; others do not.
-    assert row.key in module.QUALIFIED_ROWS
-    assert module.measure(row, args, tmp_path)["gated"] is True
-    monkeypatch.setattr(module, "QUALIFIED_ROWS", frozenset())
+    # Without this run's heap-layout checks, no row gates.
     assert module.measure(row, args, tmp_path)["gated"] is False
+    # The checks run by default.
+    assert (
+        module.parser()
+        .parse_args(["run", "--commit", "HEAD", "--prefix", ".", "--output-dir", "."])
+        .perturb
+    )
     args.perturb = True
     measured = module.measure(row, args, tmp_path)
     assert measured["gated"] is True
@@ -718,6 +726,14 @@ def test_measure_gates_on_recorded_or_current_perturbation_pass(monkeypatch, tmp
         lambda row, args, world, config="": {**metrics, "allocs": int(bool(config))},
     )
     assert module.measure(row, args, tmp_path)["gated"] is False
+
+
+def test_environment_ignores_inherited_library_path(monkeypatch, tmp_path):
+    module = _load_runner()
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/elsewhere/lib")
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "env"))
+    env = module.environment(tmp_path / "prefix")
+    assert env["LD_LIBRARY_PATH"] == f"{tmp_path}/prefix/lib:{tmp_path}/env/lib"
 
 
 @pytest.mark.parametrize(
