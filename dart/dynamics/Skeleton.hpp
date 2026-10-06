@@ -1289,7 +1289,8 @@ protected:
 
   /// Global generation counters used by World to avoid rescanning every
   /// skeleton on steady all-resting steps. The per-skeleton validation path is
-  /// still used whenever any counter has changed.
+  /// still used whenever any counter has changed, except for deactivation-state
+  /// changes to skeletons that the World neither steps nor collides with.
   static std::size_t getGlobalStructuralVersion();
   static std::size_t getGlobalKinematicVersion();
   static std::size_t getGlobalExternalDisturbanceVersion();

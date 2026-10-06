@@ -2175,6 +2175,16 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
         && mAllRestingSnapshotCollisionGroupVersion
                == collisionGroup->getContentVersion();
 
+  // Another World's changes move only the global version. If none of this
+  // World's skeletons changed, catch the record up so that such a change
+  // alone does not force the per-skeleton validation below.
+  const bool deactivationStateChanged = hasDeactivationStateChangedSince(
+      *collisionGroup, mAllRestingSnapshotDeactivationStateVersion);
+  if (!deactivationStateChanged) {
+    mAllRestingSnapshotDeactivationStateVersion
+        = dynamics::Skeleton::getGlobalDeactivationStateVersion();
+  }
+
   if (mAllRestingSnapshotReady && mAllRestingSnapshotHasMobileSkeleton
       && mAllRestingSnapshotStructuralVersion
              == dynamics::Skeleton::getGlobalStructuralVersion()
@@ -2182,8 +2192,7 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
              == dynamics::Skeleton::getGlobalKinematicVersion()
       && mAllRestingSnapshotExternalDisturbanceVersion
              == dynamics::Skeleton::getGlobalExternalDisturbanceVersion()
-      && mAllRestingSnapshotDeactivationStateVersion
-             == dynamics::Skeleton::getGlobalDeactivationStateVersion()
+      && !deactivationStateChanged
       && mAllRestingSnapshotVelocityVersion
              == dynamics::Skeleton::getGlobalVelocityVersion()
       && collisionDetectorUnchanged && collisionFilterUnchanged
@@ -2210,9 +2219,7 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
     return false;
   }
 
-  // Another World's changes move only the global version.
-  if (hasDeactivationStateChangedSince(
-          *collisionGroup, mAllRestingSnapshotDeactivationStateVersion)) {
+  if (deactivationStateChanged) {
     markSnapshotStale();
     return false;
   }
