@@ -394,9 +394,11 @@ std::size_t hashObjectPair(const ObjectPair& pair)
 }
 
 //==============================================================================
-// Whether updateConstraints() can turn the contact into a constraint: it skips
-// contacts with non-finite geometry, a zero normal, a missing collision object,
-// ShapeNode or BodyNode, or a negative depth.
+// Whether the contact can become an active constraint: updateConstraints()
+// skips contacts with non-finite geometry, a zero normal, a missing collision
+// object, ShapeNode or BodyNode, or a negative depth, and ContactConstraint
+// deactivates one between two bodies that cannot react (immobile or driven
+// only by prescribed-motion joints).
 bool isSolvableContact(const collision::Contact& contact)
 {
   const auto hasBody = [](const collision::CollisionObject* object) {
@@ -408,7 +410,9 @@ bool isSolvableContact(const collision::Contact& contact)
          && contact.normal.allFinite()
          && !collision::Contact::isZeroNormal(contact.normal)
          && hasBody(contact.collisionObject1)
-         && hasBody(contact.collisionObject2);
+         && hasBody(contact.collisionObject2)
+         && (contact.collisionObject1->getBodyNode()->isReactive()
+             || contact.collisionObject2->getBodyNode()->isReactive());
 }
 
 //==============================================================================
@@ -502,7 +506,9 @@ void keepSpreadContacts(
 // keepSpreadContacts() chooses. Kept contacts stay in the detector's order.
 // Returns the number of colliding pairs.
 //
-// Allocation-free once the per-thread scratch has grown to the scene.
+// Allocation-free once the per-thread scratch has grown to the scene, for a
+// result whose colliding-object lookup caches no caller has queried. Once a
+// caller queries them, every step allocates their set nodes, trimmed or not.
 std::size_t trimContactsFairly(
     collision::CollisionResult& result, std::size_t cap)
 {

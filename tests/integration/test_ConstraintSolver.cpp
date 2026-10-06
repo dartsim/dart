@@ -3758,6 +3758,34 @@ TEST(ConstraintSolver, ContactCapOverflowGivesSolvableContactsTheBudgetFirst)
 }
 
 //==============================================================================
+// #3056: a contact between bodies that cannot react, such as a velocity-driven
+// box on the static ground, never becomes an active constraint, so it gets
+// only the budget the reactive pairs leave.
+TEST(ConstraintSolver, ContactCapOverflowGivesReactivePairsTheBudgetFirst)
+{
+  auto world = createCapTestWorld(0.0);
+  auto* driven = world->getSkeleton("box_0")->getJoint(0);
+  driven->setActuatorType(dynamics::Joint::VELOCITY);
+  const auto* drivenBody = world->getSkeleton("box_0")->getBodyNode(0);
+  auto* solver = world->getConstraintSolver();
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  world->step();
+  ASSERT_EQ(
+      contactsByPair(solver->getLastCollisionResult()).size(), kCapTestBoxes);
+
+  solver->getCollisionOption().maxNumContacts = kCapTestBoxes - 1u;
+  world->step();
+  const auto& result = solver->getLastCollisionResult();
+  EXPECT_EQ(result.getNumContacts(), kCapTestBoxes - 1u);
+  EXPECT_EQ(contactsByPair(result).size(), kCapTestBoxes - 1u)
+      << "a pair with a reactive body was starved";
+  for (const auto& contact : result.getContacts()) {
+    EXPECT_NE(contact.collisionObject1->getBodyNode(), drivenBody);
+    EXPECT_NE(contact.collisionObject2->getBodyNode(), drivenBody);
+  }
+}
+
+//==============================================================================
 // #3056: a detector that drops contacts per pair after its parent's collide()
 // (gz-physics does) must still see every pair; a capped parent collide would
 // stop in broadphase order and the post-filter would hide the saturation.
