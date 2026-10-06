@@ -174,7 +174,7 @@ void runDynamicsTest(
     testDynamicsSpeed(worlds[i], numIterations);
 }
 
-static void BM_Dynamics(benchmark::State& state)
+static DART_PERF_NOINLINE void BM_Dynamics(benchmark::State& state)
 {
   const dart::test::PerfWindow window;
   std::vector<dart::simulation::WorldPtr> worlds = getWorlds();

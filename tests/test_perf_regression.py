@@ -768,6 +768,173 @@ def test_execution_errors_exit_two_with_reason(monkeypatch, tmp_path, capsys, er
     assert module.main(argv) == 1
 
 
+@pytest.mark.parametrize(
+    "phase", ["native", "perturb", "callgrind-before", "callgrind-after"]
+)
+def test_unsupported_driver_rows_are_not_infrastructure_errors(
+    monkeypatch, tmp_path, capsys, phase
+):
+    module = _load_runner()
+    argv = [
+        "run",
+        "--commit",
+        "HEAD",
+        "--prefix",
+        str(tmp_path),
+        "--output-dir",
+        str(tmp_path),
+    ]
+    args = module.parser().parse_args(argv)
+    args.bin_dir = tmp_path
+    row = module.select_rows("gzb")[0]
+    metrics = {
+        "guards": {
+            "hash": "0x1",
+            "finite": True,
+            "contacts": 1,
+            "cap_hit": False,
+            "resting": "0/1",
+        },
+        "allocs": 0,
+        "allocs_per_step": 0,
+    }
+
+    def popen(command, **kwargs):
+        kwargs["stdout"].write("UNSUPPORTED: maxNumContactsPerPair\n")
+        return module.argparse.Namespace(returncode=3, wait=lambda **kwargs: None)
+
+    monkeypatch.setattr(module.subprocess, "Popen", popen)
+    native, callgrind = module.native, module.callgrind
+
+    def run_native(row, args, world, config=""):
+        if phase == "native" or phase == "perturb" and config:
+            return native(row, args, world, config)
+        return copy.deepcopy(metrics)
+
+    def run_callgrind(row, args, world, steps):
+        if phase == "callgrind-before" or steps == row.warmup + row.steps:
+            return callgrind(row, args, world, steps)
+        return {"Ir": 100}
+
+    monkeypatch.setattr(module, "native", run_native)
+    monkeypatch.setattr(module, "callgrind", run_callgrind)
+    unsupported = module.measure(row, args, tmp_path)
+    assert unsupported["status"] == "unsupported"
+    assert unsupported["error"] == "maxNumContactsPerPair"
+    assert "error_kind" not in unsupported
+    assert not unsupported["head"] and not unsupported["perturbations"]
+    monkeypatch.setattr(module, "run_arm", lambda args: {"results": [unsupported]})
+    assert module.main(argv) == 0
+    assert "maxNumContactsPerPair" in capsys.readouterr().out
+
+    env = {
+        "fingerprint": "same",
+        "compiler": "test",
+        "compiler_provenance": "dart-perf-build/1",
+    }
+    base = {"run": {"commit": "base", "env": env}, "results": [unsupported]}
+    supported = copy.deepcopy(unsupported)
+    supported.update(status="ok", gated=True, head={**metrics, "ir_per_step": 100})
+    head = {"run": {"commit": "head", "env": env}, "results": [supported]}
+    comparison = module.compare(base, head)
+    assert comparison["verdict"]["status"] == "PASS"
+    assert comparison["results"][0]["delta"]["class"] == "new"
+    # Losing support in the head remains a policy failure, not an infrastructure error.
+    assert module.compare(head, base)["verdict"]["status"] == "FAIL"
+
+
+@pytest.mark.parametrize(
+    "returncode, text", [(3, "API unavailable\n"), (1, "UNSUPPORTED: optional API\n")]
+)
+def test_unsupported_requires_exit_three_and_marker(
+    monkeypatch, tmp_path, returncode, text
+):
+    module = _load_runner()
+
+    def popen(command, **kwargs):
+        kwargs["stdout"].write(text)
+        return module.argparse.Namespace(
+            returncode=returncode, wait=lambda **kwargs: None
+        )
+
+    monkeypatch.setattr(module.subprocess, "Popen", popen)
+    with pytest.raises(ValueError, match=f"exit {returncode}") as error:
+        module.execute(["driver"], {}, tmp_path / "driver.log", 10)
+    assert not isinstance(error.value, module.UnsupportedRow)
+
+
+@pytest.mark.parametrize(
+    "layout",
+    ["local", "fallback", "explicit", "missing-shim", "missing-heappad", "no-perturb"],
+)
+def test_run_resolves_shims_and_reports_missing_options(
+    monkeypatch, tmp_path, capsys, layout
+):
+    module = _load_runner()
+    root = tmp_path / "repo"
+    world = root / "tests/benchmark/worlds/3k_shapes.sdf.gz"
+    world.parent.mkdir(parents=True)
+    world.write_bytes(
+        (module.ROOT / "tests/benchmark/worlds/3k_shapes.sdf.gz").read_bytes()
+    )
+    monkeypatch.setattr(module, "ROOT", root)
+    monkeypatch.setattr(module, "command_output", lambda command: "HEAD")
+    monkeypatch.setattr(module, "fingerprint", lambda args: {})
+    monkeypatch.setattr(
+        module,
+        "measure",
+        lambda row, args, world: {
+            "row": row.row,
+            "det": row.det,
+            "parity": "",
+            "status": "ok",
+            "gated": True,
+        },
+    )
+    prefix = tmp_path / "output/a"
+    argv = [
+        "run",
+        "--commit",
+        "HEAD",
+        "--prefix",
+        str(prefix),
+        "--output-dir",
+        str(tmp_path / "run"),
+        "--rows",
+        "gzb",
+    ]
+    chosen = {}
+    for option, name in (("shim", "allocshim"), ("heappad", "heappad")):
+        local = prefix.parent / "shims" / f"{name}.so"
+        fallback = root / "build/perf" / f"lib{name}.so"
+        path = fallback if layout in ("fallback", f"missing-{option}") else local
+        if layout == "explicit":
+            local.parent.mkdir(parents=True, exist_ok=True)
+            local.write_bytes(b"local shim")
+            path = tmp_path / f"custom-{name}.so"
+            argv += [f"--{option}", str(path)]
+        if layout != f"missing-{option}" and not (
+            layout == "no-perturb" and option == "heappad"
+        ):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"shim")
+        chosen[option] = path
+    if layout == "no-perturb":
+        argv.append("--no-perturb")
+    if layout.startswith("missing-"):
+        option = layout.removeprefix("missing-")
+        assert module.main(argv) == 2
+        error = capsys.readouterr().err
+        assert f"--{option}" in error and str(chosen[option]) in error
+    else:
+        args = module.parser().parse_args(argv)
+        record = module.run_arm(args)
+        assert record["results"][0]["status"] == "ok"
+        assert args.shim == chosen["shim"]
+        if layout != "no-perturb":
+            assert args.heappad == chosen["heappad"]
+
+
 def test_compare_and_local_infrastructure_exit_two(monkeypatch, tmp_path, capsys):
     module = _load_runner()
     env = {

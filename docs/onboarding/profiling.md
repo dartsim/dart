@@ -194,7 +194,12 @@ diagnostic. The report names each row's qualification and thread count.
 Comparisons require matching environment fingerprints. Exit status 1 means a
 policy failure; status 2 means an infrastructure error. When measuring an
 existing install with `scripts/perf_regression.py run`, supply `--commit` for
-its installed revision. The install must also contain
+its installed revision. Without `--shim` or `--heappad`, `run` uses
+`<prefix>/../shims/allocshim.so` and `<prefix>/../shims/heappad.so` when present,
+matching the `local` layout (`<output-dir>/a` and `<output-dir>/b` installs).
+Otherwise it falls back to `build/perf/liballocshim.so` and
+`build/perf/libheappad.so`; missing files report the corresponding option to
+supply. `--no-perturb` does not require heappad. The install must also contain
 `share/dart/perf-build.json`, written by `local` with the CMake compiler
 ID/version, build preset, Pixi lock hash, commit, and installed libdart and
 driver hashes. `run` checks this stamp against the artifacts and commit; missing

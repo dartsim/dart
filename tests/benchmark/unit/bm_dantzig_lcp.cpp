@@ -5,7 +5,7 @@
 
 namespace {
 
-void solveNative(benchmark::State& state, int caseIndex)
+DART_PERF_NOINLINE void solveNative(benchmark::State& state, int caseIndex)
 {
   const dart::test::PerfWindow window;
   const auto cases = dart::test::makeDantzigPerformanceCases();

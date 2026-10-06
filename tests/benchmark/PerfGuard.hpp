@@ -13,6 +13,14 @@ extern "C" void perf_alloc_begin() __attribute__((weak));
 extern "C" void perf_alloc_end() __attribute__((weak));
 #endif
 
+// Keeps a Callgrind --toggle-collect target as a real, separately named
+// function in optimized builds.
+#if defined(_MSC_VER)
+  #define DART_PERF_NOINLINE __declspec(noinline)
+#else
+  #define DART_PERF_NOINLINE __attribute__((noinline))
+#endif
+
 namespace dart::test {
 
 // Enclose the exact benchmark function, including fixed setup/teardown. The

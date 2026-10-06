@@ -179,6 +179,10 @@ def environment(prefix: Path) -> dict[str, str]:
     return env
 
 
+class UnsupportedRow(ValueError):
+    pass
+
+
 def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
     with log.open("w", encoding="utf-8") as output:
         process = subprocess.Popen(
@@ -199,6 +203,9 @@ def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
             process.wait()
             raise ValueError(f"timeout: see {log}") from error
     text = log.read_text(encoding="utf-8", errors="replace")
+    unsupported = re.search(r"^UNSUPPORTED: (.+)$", text, re.MULTILINE)
+    if process.returncode == 3 and unsupported:
+        raise UnsupportedRow(unsupported[1])
     if process.returncode:
         raise ValueError(f"exit {process.returncode}: see {log}")
     return text
@@ -424,6 +431,14 @@ def measure(row: Row, args, world: Path) -> dict:
                 ) / row.steps
         if (metrics.get("guards") or {}).get("finite") is False:
             result.update(status="broken", error="non-finite state")
+    except UnsupportedRow as error:
+        result.update(
+            status="unsupported",
+            gated=False,
+            error=str(error),
+            head={},
+            perturbations={},
+        )
     except (OSError, ValueError, KeyError) as error:
         result.update(
             status="broken", gated=False, error=str(error), error_kind="infrastructure"
@@ -643,8 +658,16 @@ def run_arm(args) -> dict:
     args.bin_dir = (args.bin_dir or args.prefix / "bin").resolve()
     args.output_dir = args.output_dir.resolve()
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    args.shim = args.shim.resolve()
-    args.heappad = args.heappad.resolve()
+    for option, name in (("shim", "allocshim"), ("heappad", "heappad")):
+        path = getattr(args, option)
+        if path is None:
+            path = args.prefix.parent / "shims" / f"{name}.so"
+            if not path.is_file():
+                path = ROOT / "build/perf" / f"lib{name}.so"
+        path = path.resolve()
+        if (option == "shim" or args.perturb) and not path.is_file():
+            raise ValueError(f"--{option} file is missing: {path}")
+        setattr(args, option, path)
     args.commit = commit
     env_fingerprint = fingerprint(args)
     inputs = args.output_dir.parent / "inputs"
@@ -1170,12 +1193,8 @@ def parser() -> argparse.ArgumentParser:
             "--perturb", action=argparse.BooleanOptionalAction, default=True
         )
         item.add_argument("--cache-sim", action="store_true")
-        item.add_argument(
-            "--shim", type=Path, default=ROOT / "build/perf/liballocshim.so"
-        )
-        item.add_argument(
-            "--heappad", type=Path, default=ROOT / "build/perf/libheappad.so"
-        )
+        item.add_argument("--shim", type=Path)
+        item.add_argument("--heappad", type=Path)
     for item in (sub.add_parser("compare", help="judge saved measurements"), local):
         if item is not local:
             item.add_argument("--base", type=Path, required=True)
@@ -1415,7 +1434,10 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             return int(
                 any(
-                    row["status"] != "ok" or args.perturb and not row["gated"]
+                    row["status"] not in ("ok", "unsupported")
+                    or row["status"] == "ok"
+                    and args.perturb
+                    and not row["gated"]
                     for row in record["results"]
                 )
             )
