@@ -4115,6 +4115,62 @@ TEST(Issue1654, OdeContactHistorySkipsDuplicateCurrentContacts)
 }
 
 //==============================================================================
+TEST(Issue1654, OdeContactHistoryCountsContactsAlreadyInResult)
+{
+  auto detector = OdeCollisionDetector::create();
+  auto group = detector->createCollisionGroup();
+
+  CollisionOption option;
+  option.enableContact = true;
+  option.maxNumContacts = 10u;
+
+  auto ground = Skeleton::create("prior_contacts_ground");
+  auto groundBody = ground->createJointAndBodyNodePair<WeldJoint>().second;
+  groundBody->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 1.0)));
+  Eigen::Isometry3d groundPose = Eigen::Isometry3d::Identity();
+  groundPose.translation().z() = -0.5;
+  groundBody->getParentJoint()->setTransformFromParentBodyNode(groundPose);
+
+  auto capsule = Skeleton::create("prior_contacts_capsule");
+  auto capsulePair = capsule->createJointAndBodyNodePair<FreeJoint>();
+  auto* capsuleJoint = capsulePair.first;
+  auto* capsuleBody = capsulePair.second;
+  capsuleBody->createShapeNodeWith<CollisionAspect>(
+      std::make_shared<CapsuleShape>(0.1, 1.0));
+
+  group->addShapeFramesOf(groundBody);
+  group->addShapeFramesOf(capsuleBody);
+
+  // Lay the capsule along x, tilted so that only one end touches the ground.
+  // ODE reports one contact per touching capsule end.
+  const auto tiltCapsule = [&](double tilt) {
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.translation().z() = 0.102;
+    pose.linear() = Eigen::AngleAxisd(
+                        0.5 * constantsd::pi() + tilt, Eigen::Vector3d::UnitY())
+                        .toRotationMatrix();
+    capsuleJoint->setRelativeTransform(pose);
+  };
+
+  CollisionResult result;
+  tiltCapsule(0.01);
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_EQ(1u, result.getNumContacts());
+
+  // The other end touches now; the history supplements the first end.
+  tiltCapsule(-0.01);
+  result.clear();
+  ASSERT_TRUE(group->collide(option, &result));
+  ASSERT_EQ(2u, result.getNumContacts());
+
+  // collide() keeps the contacts already in the result, and they count toward
+  // the pair's contact target, so nothing more is supplemented.
+  ASSERT_TRUE(group->collide(option, &result));
+  EXPECT_EQ(3u, result.getNumContacts());
+}
+
+//==============================================================================
 TEST(Issue1654, OdeHonorsMaxNumContacts)
 {
   auto detector = OdeCollisionDetector::create();
