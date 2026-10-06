@@ -189,6 +189,9 @@ jobs:
           pixi run test-asan
 
       - name: Install
+        # Nightly only: install builds a second library tree, and CI
+        # gz-physics installs DART and builds against it on every PR.
+        if: inputs.nightly
         run: |
           DART_VERBOSE=ON \
           pixi run install
