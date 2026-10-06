@@ -63,16 +63,16 @@ import dartpy as dart
 
 world = dart.simulation.World()  # 1 ms time step, gravity along -z
 
-# A free-floating 1 kg body (the default inertia), 1 m above the ground.
-box = dart.dynamics.Skeleton("box")
-box.createFreeJointAndBodyNodePair()
-box.setPosition(5, 1.0)  # FreeJoint DOFs: rotation (0-2), translation (3-5)
-world.addSkeleton(box)
+# A shapeless 1 kg rigid body (the default inertia) free-falling from z = 1 m.
+body = dart.dynamics.Skeleton("body")
+body.createFreeJointAndBodyNodePair()
+body.setPosition(5, 1.0)  # FreeJoint DOFs: rotation (0-2), translation (3-5)
+world.addSkeleton(body)
 
 for _ in range(100):
     world.step()
 
-print(f"t = {world.getTime():.3f} s, z = {box.getPosition(5):.3f} m")
+print(f"t = {world.getTime():.3f} s, z = {body.getPosition(5):.3f} m")
 # t = 0.100 s, z = 0.950 m
 ```
 
@@ -87,16 +87,16 @@ int main()
 {
   auto world = dart::simulation::World::create();
 
-  // A free-floating 1 kg body (the default inertia), 1 m above the ground.
-  auto box = dart::dynamics::Skeleton::create("box");
-  box->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
-  box->setPosition(5, 1.0); // FreeJoint DOFs: rotation (0-2), translation (3-5)
-  world->addSkeleton(box);
+  // A shapeless 1 kg rigid body (the default inertia) free-falling from z = 1 m.
+  auto body = dart::dynamics::Skeleton::create("body");
+  body->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+  body->setPosition(5, 1.0); // FreeJoint DOFs: rotation (0-2), translation (3-5)
+  world->addSkeleton(body);
 
   for (int i = 0; i < 100; ++i)
     world->step();
 
-  std::cout << "t = " << world->getTime() << " s, z = " << box->getPosition(5)
+  std::cout << "t = " << world->getTime() << " s, z = " << body->getPosition(5)
             << " m\n";
 }
 ```
