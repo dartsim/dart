@@ -1295,7 +1295,14 @@ void World::step(bool _resetCommand)
 
   // Mirror the enable flag onto the solver so its island rest-detection / LCP
   // skipping runs only when the feature is on (otherwise it is a strict no-op).
+  // Its rest detection also reads the wake band.
   mConstraintSolver->setDeactivationActive(deactivationEnabled);
+  mConstraintSolver->mLinearWakeSpeed
+      = mDeactivationOptions.mWakeThresholdScale
+        * mDeactivationOptions.mLinearSpeedThreshold;
+  mConstraintSolver->mAngularWakeSpeed
+      = mDeactivationOptions.mWakeThresholdScale
+        * mDeactivationOptions.mAngularSpeedThreshold;
   if (deactivationEnabled)
     wakeRestingSkeletonsIfStepStateChanged();
 
