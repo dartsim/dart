@@ -126,14 +126,15 @@ TEST_P(FrictionAnalytic, BackspinSphere)
   }
 }
 
-// A10: surface velocity; the box syncs each axis on its own, in
-// max(|cos|, |sin|) of the exact time.
+// A10: surface velocity; the box reaches the belt's signed velocity in the
+// friction frame, syncing each axis on its own, in max(|cos|, |sin|) of the
+// exact time.
 TEST_P(FrictionAnalytic, Conveyor)
 {
   for (const double beta : {0.0, 45.0}) {
     auto m = run("A10", {{"beta", beta}, {"mu", 0.6}, {"T", 0.2}});
-    EXPECT_NEAR(m.at("sync_time"), m.at("pred_box_sync_time"), 1.5e-3) << beta;
     EXPECT_LT(m.at("v_err"), 1e-5) << beta;
+    EXPECT_NEAR(m.at("sync_time"), m.at("pred_box_sync_time"), 1.5e-3) << beta;
   }
 }
 

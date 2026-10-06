@@ -790,14 +790,15 @@ inline Scene roll(const Params& p, double dt)
 }
 
 // A10: 1 kg box on a static belt whose surface velocity is vb at beta in the
-// friction frame; sync time vb/(mu g), box per axis (D App. B).
+// friction frame; sync time vb/(mu g), box per axis (D App. B). The oracle
+// compares signed velocities in the contact's friction frame, so a box carried
+// the wrong way fails.
 inline Scene conveyor(const Params& p, double dt)
 {
   const double mu = param(p, "mu", 0.3);
   const double vb = param(p, "vb", 1.0);
   const double beta = rad(param(p, "beta", 0.0));
-  const Eigen::Vector2d target(
-      vb * std::abs(std::cos(beta)), vb * std::abs(std::sin(beta)));
+  const Eigen::Vector2d target(vb * std::cos(beta), vb * std::sin(beta));
   Scene s;
   s.world = makeWorld(dt);
   addGround(*s.world, mu, mu);
@@ -811,15 +812,28 @@ inline Scene conveyor(const Params& p, double dt)
       mu);
   s.world->getConstraintSolver()->addContactSurfaceHandler(
       std::make_shared<SurfaceVelocityHandler>(
-          Eigen::Vector3d(0.0, vb * std::cos(beta), vb * std::sin(beta))));
+          Eigen::Vector3d(0.0, target.x(), target.y())));
   s.steps = steps(param(p, "T", vb / (mu * kGravity) + 0.5), dt);
+  // Velocity of body 1 relative to body 2 at the last step's first contact in
+  // DART's default friction frame (n x t, t), t = n x z normalized (n x x for a
+  // vertical normal), where a sticking contact reaches the surface velocity.
+  auto* world = s.world.get();
+  const auto slip = [=] {
+    const auto& result = world->getLastCollisionResult();
+    if (result.getNumContacts() == 0)
+      return Eigen::Vector2d(kNaN, kNaN);
+    const auto& c = result.getContact(0);
+    Eigen::Vector3d t = c.normal.cross(Eigen::Vector3d::UnitZ());
+    if (t.squaredNorm() < 1e-12)
+      t = c.normal.cross(Eigen::Vector3d::UnitX());
+    t.normalize();
+    const double sign = c.getBodyNodePtr1().get() == box ? 1.0 : -1.0;
+    const Eigen::Vector3d v = sign * box->getLinearVelocity();
+    return Eigen::Vector2d(v.dot(c.normal.cross(t)), v.dot(t));
+  };
   auto sync = std::make_shared<double>(-1.0);
   s.postStep = [=](int i) {
-    const Eigen::Vector3d v = box->getLinearVelocity();
-    const double err = std::max(
-        std::abs(std::abs(v.x()) - target.x()),
-        std::abs(std::abs(v.y()) - target.y()));
-    if (*sync < 0.0 && err < 1e-4)
+    if (*sync < 0.0 && (slip() - target).cwiseAbs().maxCoeff() < 1e-4)
       *sync = (i + 1) * dt;
     return true;
   };
@@ -829,8 +843,8 @@ inline Scene conveyor(const Params& p, double dt)
       m["sync_time"] = *sync;
     m["pred_exact_sync_time"] = std::ceil(vb / step) * dt;
     m["pred_box_sync_time"]
-        = std::ceil(std::max(target.x(), target.y()) / step) * dt;
-    m["v_err"] = std::abs(planar(box->getLinearVelocity()).norm() - vb);
+        = std::ceil(target.cwiseAbs().maxCoeff() / step) * dt;
+    m["v_err"] = (slip() - target).norm();
   };
   return s;
 }
