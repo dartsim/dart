@@ -31,6 +31,7 @@
  */
 
 #include "ContactContainerScene.hpp"
+#include "GazeboPreset.hpp"
 
 #include <dart/gui/osg/ImGuiHandler.hpp>
 #include <dart/gui/osg/ImGuiViewer.hpp>
@@ -71,6 +72,7 @@
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIEventHandler>
 #include <osgViewer/ViewerBase>
+#include <tinyxml2.h>
 
 #include <algorithm>
 #include <array>
@@ -145,6 +147,8 @@ struct Options
   bool profile = false;
   bool primitiveShapes = false;
   bool sdfPlaneShapes = false;
+  bool gzPreset = false;
+  std::optional<std::size_t> gzCollisionPairMaxContacts;
   bool disableDeactivation = false;
   bool disableSecondaryLcp = false;
   bool matrixFreeContactLcp = false;
@@ -317,6 +321,40 @@ void printUsage(const std::string& programName)
          "used.\n"
       << "  --sdf-plane-shapes        Parse SDF <plane> geometries as "
          "PlaneShape.\n"
+      << "  --gz-preset               Use the collision setup gz-physics "
+         "builds for an SDF world:\n"
+      << "                            planes as 2100 m boxes, a 10000-contact "
+         "cap, the ODE detector\n"
+      << "                            with gz-sim's per-pair limit, and a "
+         "BodyNodeCollisionFilter\n"
+      << "                            subclass. Reports contact demand, "
+         "starved pairs, sunk bodies,\n"
+      << "                            and changed poses (their cost is "
+         "excluded from the times).\n"
+      << "                            Accepts only the shared SDF physics "
+         "subset: flat models,\n"
+      << "                            plain poses, mass/inertia (unrotated), "
+         "box/sphere/cylinder/plane\n"
+      << "                            collisions and fixed/revolute/prismatic/"
+         "universal/ball joints.\n"
+      << "                            Physics supports step size and "
+         "max_contacts; "
+         "gravity defaults to -9.8.\n"
+      << "                            Rendering and passive sensors are "
+         "ignored; "
+         "only empty standard\n"
+      << "                            Physics/UserCommands/SceneBroadcaster "
+         "systems "
+         "are accepted.\n"
+      << "                            Other elements, attributes and dynamics "
+         "overrides are rejected\n"
+      << "                            with the first unsupported XML path. See "
+         "tools/gazebo/README.md.\n"
+      << "  --gz-pair-max-contacts N  gz-sim per-pair contact limit for "
+         "--gz-preset (SDF\n"
+      << "                            <max_contacts>); defaults to the active "
+         "physics profile's value\n"
+      << "                            (20 if omitted).\n"
       << "  --disable-deactivation    Disable automatic "
          "sleeping/deactivation.\n"
       << "  --disable-secondary-lcp   Disable the boxed-LCP fallback solver "
@@ -416,7 +454,9 @@ bool isHelpRequest(int argc, char* argv[])
 std::size_t parseSize(const std::string& value, const std::string& name)
 {
   try {
-    if (!value.empty() && (value.front() == '-' || value.front() == '+'))
+    const auto first = value.find_first_not_of(" \t\r\n\f\v");
+    if (first != std::string::npos
+        && (value[first] == '-' || value[first] == '+'))
       throw std::invalid_argument("signed value");
 
     std::size_t consumed = 0;
@@ -534,6 +574,37 @@ void normalizeContainerContactCaps(Options& options)
     options.maxContactsPerPair = 4;
 }
 
+// --gz-preset mirrors what the gz-physics dartsim plugin builds for an SDF
+// world; explicit --collision and --max-contacts values still apply on top.
+void normalizeGazeboPresetOptions(Options& options)
+{
+  if (!options.gzPreset) {
+    if (options.gzCollisionPairMaxContacts.has_value()) {
+      throw std::invalid_argument(
+          "--gz-pair-max-contacts requires --gz-preset");
+    }
+    return;
+  }
+
+  if (options.generatedObjects.has_value())
+    throw std::invalid_argument("--gz-preset requires an SDF input scene");
+  if (options.sdfPlaneShapes) {
+    throw std::invalid_argument(
+        "--gz-preset rebuilds SDF planes as gz-physics boxes; drop "
+        "--sdf-plane-shapes");
+  }
+  if (options.primitiveShapes) {
+    throw std::invalid_argument(
+        "--gz-preset uses the detectors gz-physics creates; drop "
+        "--primitive-shapes");
+  }
+
+  if (options.collisionEngine == CollisionEngine::Default)
+    options.collisionEngine = CollisionEngine::Ode;
+  if (!options.maxContacts.has_value())
+    options.maxContacts = contact_scene::kGazeboMaxNumContacts;
+}
+
 Options parseOptions(int argc, char* argv[])
 {
   Options options;
@@ -569,6 +640,10 @@ Options parseOptions(int argc, char* argv[])
       options.primitiveShapes = true;
     } else if (arg == "--sdf-plane-shapes") {
       options.sdfPlaneShapes = true;
+    } else if (arg == "--gz-preset") {
+      options.gzPreset = true;
+    } else if (arg == "--gz-pair-max-contacts") {
+      options.gzCollisionPairMaxContacts = parseSize(needValue(arg), arg);
     } else if (arg == "--disable-deactivation") {
       options.disableDeactivation = true;
     } else if (arg == "--disable-secondary-lcp") {
@@ -731,6 +806,8 @@ Options parseOptions(int argc, char* argv[])
         "--sdf-plane-shapes requires an SDF input scene");
   }
 
+  normalizeGazeboPresetOptions(options);
+
   normalizeGeneratedCapsuleCollisionOptions(options);
 
   if (options.guiCaptureExerciseWidget && !options.guiCapturePath.has_value()) {
@@ -763,6 +840,20 @@ dart::collision::CollisionDetectorPtr makeCollisionDetector(
     detector->setPrimitiveShapeType(
         dart::collision::FCLCollisionDetector::PRIMITIVE);
     return detector;
+  }
+
+  if (options.gzPreset) {
+    // gz-physics wraps only its ODE and Bullet detectors with the per-pair
+    // limit; "dart" and "fcl" are created as-is.
+    const std::size_t pairLimit = *options.gzCollisionPairMaxContacts;
+    if (engine == CollisionEngine::Ode) {
+      return contact_scene::GazeboPairLimitedDetector<
+          dart::collision::OdeCollisionDetector>::create(pairLimit);
+    }
+    if (engine == CollisionEngine::Bullet) {
+      return contact_scene::GazeboPairLimitedDetector<
+          dart::collision::BulletCollisionDetector>::create(pairLimit);
+    }
   }
 
   if (engine == CollisionEngine::Dart)
@@ -1184,6 +1275,33 @@ void printDiagnostics(
             << " below_wake " << sleep.belowWakeSpeed << " islands "
             << sleep.islands << " max_island_mobile " << sleep.maxIslandMobile
             << " disturbed " << sleep.disturbed << "\n";
+}
+
+std::string formatSunkCount(
+    const dart::simulation::World& world,
+    const std::optional<double>& groundTop)
+{
+  if (!groundTop.has_value())
+    return "n/a";
+  return std::to_string(contact_scene::countSunkSkeletons(world, *groundTop));
+}
+
+// `demand` was measured before the step that just ran.
+void printGazeboDiagnostics(
+    std::size_t step,
+    const dart::simulation::World& world,
+    const contact_scene::GazeboContactDemand& demand,
+    const std::optional<double>& groundTop,
+    std::size_t changedPoses)
+{
+  std::cout << "gz step " << step << " raw_demand " << demand.rawContacts
+            << " demand " << demand.contacts << " cap "
+            << world.getConstraintSolver()->getCollisionOption().maxNumContacts
+            << " demand_pairs " << demand.pairs << " starved_pairs "
+            << contact_scene::countStarvedPairs(
+                   demand, world.getLastCollisionResult())
+            << " sunk " << formatSunkCount(world, groundTop)
+            << " changed_poses " << changedPoses << "\n";
 }
 
 std::string jsonString(const std::string& value)
@@ -1617,6 +1735,13 @@ void applyOptions(
     world->getConstraintSolver()->getCollisionOption().maxNumContactsPerPair
         = *options.maxContactsPerPair;
   }
+
+  if (options.gzPreset) {
+    world->setGravity(
+        Eigen::Vector3d(0.0, 0.0, contact_scene::kGazeboDefaultGravity));
+    world->getConstraintSolver()->getCollisionOption().collisionFilter
+        = std::make_shared<contact_scene::GazeboContactFilter>();
+  }
 }
 
 void printWorldSummary(
@@ -1673,6 +1798,20 @@ void printWorldSummary(
     std::cout << "  SDF plane shapes: "
               << (options.sdfPlaneShapes ? "true" : "false") << "\n";
   }
+  std::cout << "  Gazebo preset: " << (options.gzPreset ? "true" : "false");
+  if (options.gzPreset) {
+    std::cout << " (collision pair max contacts "
+              << *options.gzCollisionPairMaxContacts;
+    // Settings gz-physics never uses, for what-if rows.
+    if (*options.maxContacts != contact_scene::kGazeboMaxNumContacts)
+      std::cout << "; non-Gazebo contact cap " << *options.maxContacts;
+    if (options.maxContactsPerPair.has_value()) {
+      std::cout << "; non-Gazebo max contacts per pair "
+                << *options.maxContactsPerPair;
+    }
+    std::cout << ")";
+  }
+  std::cout << "\n";
   std::cout << "  Physics pipeline: DART 6 dynamics, constraints, and solver";
   if (options.collisionEngine != CollisionEngine::Default
       || options.primitiveShapes) {
@@ -2608,12 +2747,19 @@ int runGuiCapture(
   return 0;
 }
 
-int runHeadless(const dart::simulation::WorldPtr& world, const Options& options)
+int runHeadless(
+    const dart::simulation::WorldPtr& world,
+    const Options& options,
+    const std::optional<double>& groundTop)
 {
+  contact_scene::ChangedPoseTracker changedPoseTracker;
   if (options.warmup > 0) {
     std::cout << "\nWarming up " << options.warmup << " steps...\n";
-    for (std::size_t step = 0; step < options.warmup; ++step)
+    for (std::size_t step = 0; step < options.warmup; ++step) {
       world->step();
+      if (options.gzPreset)
+        changedPoseTracker.update(*world);
+    }
   }
 
   std::cout << "\nSimulating " << options.steps << " steps...\n";
@@ -2625,40 +2771,65 @@ int runHeadless(const dart::simulation::WorldPtr& world, const Options& options)
   const double timeStep = world->getTimeStep();
   const double worldTimeBefore = world->getTime();
   const int frameBefore = world->getSimFrames();
-  const auto startTime = std::chrono::steady_clock::now();
+  // --gz-preset's contact census and pose tracking are kept out of the
+  // reported times: a census re-detects every contact in the world.
+  using Clock = std::chrono::steady_clock;
+  Clock::duration gazeboDiagnosticsTime{};
+  contact_scene::GazeboContactDemand gazeboDemand;
+  std::size_t changedPoses = 0;
+  const auto startTime = Clock::now();
 
   {
     DART_PROFILE_SCOPED_IF_N(options.profile, "contact_benchmark::runHeadless");
     for (std::size_t step = 0; step < options.steps; ++step) {
+      const std::size_t done = step + 1;
+      const bool diagnosticStep
+          = !options.quiet && options.checkpoint != 0
+            && (done % options.checkpoint == 0 || done == options.steps);
+      if (options.gzPreset && (diagnosticStep || done == options.steps)) {
+        const auto pause = Clock::now();
+        gazeboDemand = contact_scene::measureGazeboContactDemand(*world);
+        gazeboDiagnosticsTime += Clock::now() - pause;
+      }
+
       {
         DART_PROFILE_SCOPED_IF_N(options.profile, "world->step");
         world->step();
       }
 
-      const std::size_t done = step + 1;
-      const auto currentTime = std::chrono::steady_clock::now();
+      if (options.gzPreset) {
+        const auto pause = Clock::now();
+        changedPoses = changedPoseTracker.update(*world);
+        gazeboDiagnosticsTime += Clock::now() - pause;
+      }
+
+      const auto currentTime = Clock::now();
       const std::chrono::duration<double> currentWallTime
-          = currentTime - startTime;
+          = currentTime - startTime - gazeboDiagnosticsTime;
       const double currentSimTime = world->getTime() - worldTimeBefore;
       const double currentRtf = currentWallTime.count() > 0
                                     ? currentSimTime / currentWallTime.count()
                                     : 0.0;
 
-      const bool diagnosticStep
-          = !options.quiet && options.checkpoint != 0
-            && (done % options.checkpoint == 0 || done == options.steps);
       if (diagnosticStep) {
         printDiagnostics(
             done,
             currentRtf,
             collectContactStats(world),
             collectSleepStats(world));
+        if (options.gzPreset) {
+          const auto pause = Clock::now();
+          printGazeboDiagnostics(
+              done, *world, gazeboDemand, groundTop, changedPoses);
+          gazeboDiagnosticsTime += Clock::now() - pause;
+        }
       }
     }
   }
 
-  const auto endTime = std::chrono::steady_clock::now();
-  const std::chrono::duration<double> wallTime = endTime - startTime;
+  const auto endTime = Clock::now();
+  const std::chrono::duration<double> wallTime
+      = endTime - startTime - gazeboDiagnosticsTime;
   const double worldTimeAfter = world->getTime();
   const int frameAfter = world->getSimFrames();
 
@@ -2700,6 +2871,24 @@ int runHeadless(const dart::simulation::WorldPtr& world, const Options& options)
   std::cout << "Final Contact Cap Hit: " << (contactCapHit ? "true" : "false")
             << "\n";
   std::cout << "Final Contact Pairs: " << contacts.pairs << "\n";
+  if (options.gzPreset) {
+    // The census of the last step, measured before it.
+    std::cout << "Final Raw Contact Demand: " << gazeboDemand.rawContacts
+              << " (before the collision pair limit)\n";
+    std::cout << "Final Contact Demand: " << gazeboDemand.contacts << " (cap "
+              << maxContacts << ")\n";
+    std::cout << "Final Demand Pairs: " << gazeboDemand.pairs << "\n";
+    std::cout << "Final Starved Pairs: "
+              << contact_scene::countStarvedPairs(
+                     gazeboDemand, world->getLastCollisionResult())
+              << "\n";
+    std::cout << "Final Sunk Bodies:  " << formatSunkCount(*world, groundTop)
+              << " / " << sleep.mobile << " mobile skeletons\n";
+    std::cout << "Final Changed Poses: " << changedPoses << "\n";
+    std::cout << "Gazebo Diagnostics Time: "
+              << std::chrono::duration<double>(gazeboDiagnosticsTime).count()
+              << " s (excluded from the times above)\n";
+  }
   std::cout << "Final Over Sleep Tol: " << contacts.contactsOverSleepTolerance
             << "\n";
   std::cout << "Final Zero Normals:  " << contacts.zeroNormalContacts << "\n";
@@ -2784,8 +2973,27 @@ int main(int argc, char* argv[])
 
     std::cout << "Loading SDF world file: " << absoluteSdfPath << "\n";
 
+    if (options.gzPreset) {
+      tinyxml2::XMLDocument sdf;
+      sdf.LoadFile(absoluteSdfPath.c_str());
+      if (const auto unsupported
+          = contact_scene::findUnsupportedGazeboPresetSdf(sdf)) {
+        std::cerr << "--gz-preset does not support " << absoluteSdfPath << ": "
+                  << *unsupported
+                  << ", so physics entities, geometry poses or contact "
+                     "behavior could differ from Gazebo\n";
+        return 1;
+      }
+      if (!options.gzCollisionPairMaxContacts.has_value()) {
+        options.gzCollisionPairMaxContacts
+            = contact_scene::sdfCollisionPairMaxContacts(sdf);
+      }
+    }
+
     dart::utils::SdfParser::Options parserOptions;
-    parserOptions.mUsePlaneShapeForPlane = options.sdfPlaneShapes;
+    // --gz-preset loads planes as PlaneShape so they can be rebuilt below.
+    parserOptions.mUsePlaneShapeForPlane
+        = options.sdfPlaneShapes || options.gzPreset;
     if (auto detector = makeCollisionDetector(options))
       parserOptions.mCollisionDetector = detector;
 
@@ -2796,6 +3004,10 @@ int main(int argc, char* argv[])
     std::cerr << "Failed to create benchmark world\n";
     return 1;
   }
+
+  std::optional<double> groundTop;
+  if (options.gzPreset)
+    groundTop = contact_scene::rebuildPlanesLikeGazebo(*world);
 
   try {
     applyOptions(world, options);
@@ -2826,5 +3038,5 @@ int main(int argc, char* argv[])
     return 0;
   }
 
-  return runHeadless(world, options);
+  return runHeadless(world, options, groundTop);
 }
