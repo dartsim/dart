@@ -143,18 +143,81 @@ def command(binary, scene, params, config, detector, flags):
 
 
 def check_output(out, flags):
-    """Why a cell's CSV is unusable, or "": rows missing or a non-finite state."""
-    metrics = {r["metric"]: r["value"] for r in csv.DictReader(io.StringIO(out))}
+    """Why a cell's CSV is unusable, or "": missing rows or failed measurements.
+
+    Older harnesses emit NaN for unavailable metrics that newer ones omit.
+    Keep those markers valid, but reject NaN in measurements with no such case.
+    """
+    rows = list(csv.DictReader(io.StringIO(out)))
+    metrics = {r["metric"]: r["value"] for r in rows}
+    scene = rows[0]["scene"] if rows else ""
     if "--bisect" in flags:
         required = ("at_lo", "at_hi")
         if metrics.get("at_lo") != metrics.get("at_hi"):
             required += ("threshold",)
     else:
         required = ("steps", "state_hash")
+        if scene == "A10":
+            required += ("v_err",)  # No final contact means no velocity measurement.
     missing = [m for m in ("finite",) + required if m not in metrics]
     if missing:
         return f"missing rows {missing}"
-    return "" if metrics["finite"] == "1" else "non-finite state (finite = 0)"
+    if metrics["finite"] != "1":
+        return "non-finite state (finite = 0)"
+    # No qualifying samples or an event not reached within the horizon.
+    optional = {
+        "slip_dir_err_mean_deg",
+        "slip_dir_err_max_deg",
+        "dilatancy_mean",
+    } | set(
+        {
+            "A3": ("onset_deg",),
+            "A4": ("force_ratio", "dir_err_deg"),
+            "A5": ("stop_time", "creep"),
+            "A6": (
+                "alpha_ratio_mean",
+                "alpha_ratio_min",
+                "alpha_ratio_max",
+                "box_err_max",
+            ),
+            "A7": ("roll_step",),
+            "A10": ("sync_time",),
+            "A12": ("force_ratio", "dir_err_deg"),
+            "C1": ("front_share",),
+            "C4": ("collapse_time",),
+            "R1": ("rest_time",),
+            "R3": ("rest_time",),
+            "R5": ("standing_1s",),
+            "R6": ("collapse_time",),
+        }.get(scene, ())
+    )
+    if "--bisect" in flags and metrics["at_lo"] == metrics["at_hi"]:
+        optional.add("threshold")
+    params = dict(p.split("=", 1) for p in rows[0]["params"].split(";") if "=" in p)
+    # E1's older A5 reference was undefined at mu=0; zero launch speed also
+    # gives no distance reference. A7's relative error needs nonzero v_roll.
+    if scene == "A5" and (
+        float(params.get("mu", 0.5)) == 0 or float(params.get("v0", 2)) == 0
+    ):
+        optional.add("dist_ratio")
+    if scene == "A7" and float(metrics.get("pred_v_roll", "nan")) == 0:
+        optional.add("v_roll_err")
+    if scene == "R9" and float(params.get("T", 5)) <= 2:
+        optional.add("yaw_rate")  # No interval after spin-up.
+    for metric, value in metrics.items():
+        if metric == "state_hash":
+            continue
+        try:
+            value = float(value)
+        except ValueError:
+            return f"invalid measurement {scene}.{metric}: {value}"
+        if math.isinf(value) or (
+            math.isnan(value)
+            and metric not in optional
+            and not metric.startswith("pred_")
+        ):
+            return f"non-finite measurement {scene}.{metric}"
+    return ""
 
 
 def run_cell(binaries, cell, out_dir):
@@ -245,16 +308,20 @@ def cmd_run(args):
     if not cells:
         print("no cells selected: check --only and --bin", file=sys.stderr)
         return 2
-    used = {CONFIGS[c[2]][0] for c in cells}
+    # Heavy cells first so the pool stays busy.
+    heavy = ("R2", "R6", "C4", "R5", "R1", "P1")
+    cells.sort(key=lambda c: heavy.index(c[0]) if c[0] in heavy else len(heavy))
+    parallel, serial, skipped = plan(cells, shutil.which("valgrind") is not None)
+    if not parallel and not serial:
+        reasons = "; ".join(sorted({reason for reason, _ in skipped}))
+        print(f"no runnable cells: {reasons}", file=sys.stderr)
+        return 2
+    used = {CONFIGS[c[2]][0] for c in parallel + serial}
     problem = preflight({k: v for k, v in binaries.items() if k in used})
     if problem:
         print(problem, file=sys.stderr)
         return 2
     os.makedirs(args.out, exist_ok=True)
-    # Heavy cells first so the pool stays busy.
-    heavy = ("R2", "R6", "C4", "R5", "R1", "P1")
-    cells.sort(key=lambda c: heavy.index(c[0]) if c[0] in heavy else len(heavy))
-    parallel, serial, skipped = plan(cells, shutil.which("valgrind") is not None)
     with open(os.path.join(args.out, "skipped.txt"), "w") as f:
         f.writelines(f"{reason}: {cell}\n" for reason, cell in skipped)
     errors = []
@@ -447,8 +514,8 @@ INDICATIVE = {"wall_ms_per_step"}
 
 def differs(a, b, rel=1e-6):
     """True unless both values are present and equal to rel. Undefined
-    metrics are omitted from the CSV, so a NaN is a failed measurement and
-    never equal to anything, NaN included."""
+    metrics may be omitted or use legacy NaN markers. A NaN is never equal
+    to anything, NaN included."""
     if a is None or b is None or isinstance(a, str) or isinstance(b, str):
         return a != b
     if math.isnan(a) or math.isnan(b) or math.isinf(a) or math.isinf(b):
@@ -661,15 +728,43 @@ def self_test(binary=None):
     assert check_output(ok, ()) == ""
     assert "non-finite" in check_output(ok.replace("finite,1", "finite,0"), ())
     assert "missing" in check_output(COLUMNS_LINE + row.format("steps", 5), ())
+    assert check_output(ok + row.format("slip_dir_err_mean_deg", "nan"), ()) == ""
+    assert check_output(ok + row.format("dist_ratio", "nan"), ()) == ""
+    assert "dist_ratio" in check_output(
+        (ok + row.format("dist_ratio", "nan")).replace("mu=0,", "mu=0.5,"), ()
+    )
+    a10 = ok.replace(",A5,", ",A10,")
+    assert "missing" in check_output(a10, ())
+    assert check_output(a10 + row.format("v_err", 0).replace(",A5,", ",A10,"), ()) == ""
+    a10_nan = a10 + row.format("v_err", "nan").replace(",A5,", ",A10,")
+    assert "A10.v_err" in check_output(a10_nan, ())
+    for metric in ("slip_dir_err_mean_deg", "pred_box_dist_ratio"):
+        for value in ("inf", "-inf"):
+            assert metric in check_output(ok + row.format(metric, value), ())
+    assert "steps" in check_output(ok.replace("steps,5", "steps,nan"), ())
+    assert "invalid measurement" in check_output(
+        ok.replace("steps,5", "steps,broken"), ()
+    )
     bisect = COLUMNS_LINE + "".join(
         row.format(m, v) for m, v in (("finite", 1), ("at_lo", 0), ("at_hi", 1))
     )
     assert "threshold" in check_output(bisect, ("--bisect",))
     assert check_output(bisect.replace("at_hi,1", "at_hi,0"), ("--bisect",)) == ""
+    legacy_bisect = bisect + row.format("threshold", "nan")
+    assert "threshold" in check_output(legacy_bisect, ("--bisect",))
+    assert (
+        check_output(legacy_bisect.replace("at_hi,1", "at_hi,0"), ("--bisect",)) == ""
+    )
     # A failed cell's rows land in failed.csv, never in cells.csv. The process
     # is mocked, so this runs on every platform.
     finite0 = ok.replace("finite,1", "finite,0")
-    for code, out, good in ((0, ok, 1), (0, finite0, 0), (1, ok, 0)):
+    for code, out, good in (
+        (0, ok, 1),
+        (0, finite0, 0),
+        (1, ok, 0),
+        (0, a10_nan, 0),
+        (0, ok + row.format("slip_dir_err_mean_deg", "nan"), 1),
+    ):
         done = subprocess.CompletedProcess([], code, out, "")
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
             subprocess, "run", return_value=done
@@ -681,7 +776,10 @@ def self_test(binary=None):
             io.StringIO()
         ):
             run = argparse.Namespace(
-                bin=["B620=friction_eval"], out=tmp, jobs=1, only="^A5 mu=0 B620 ode"
+                bin=["B620=friction_eval"],
+                out=tmp,
+                jobs=1,
+                only="^A10 beta=0 B620 ode" if ",A10," in out else "^A5 mu=0 B620 ode",
             )
             assert cmd_run(run) == 1 - good
             assert len(load(os.path.join(tmp, "cells.csv"))) == good
@@ -709,6 +807,24 @@ def self_test(binary=None):
     assert parallel == cells[3:] and serial == cells[:1]
     assert [r for r, _ in skipped] == ["valgrind not found", "pending PR-0"]
     assert plan(cells, have_valgrind=True)[0] == [cells[1], cells[3]]
+    # A nonempty selection can still have no runnable cells after planning.
+    for only, reasons in (
+        ("--ir", ("valgrind not found",)),
+        ("--pending", ("pending PR-0",)),
+        ("--ir|--pending", ("valgrind not found", "pending PR-0")),
+    ):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            shutil, "which", return_value=None
+        ), mock.patch.object(subprocess, "run") as process, contextlib.redirect_stderr(
+            io.StringIO()
+        ) as err:
+            run = argparse.Namespace(
+                bin=["B620=friction_eval"], out=tmp, jobs=1, only=only
+            )
+            assert cmd_run(run) == 2 and not os.listdir(tmp)
+            assert "no runnable cells" in err.getvalue()
+            assert all(reason in err.getvalue() for reason in reasons)
+            process.assert_not_called()
     errs = accuracy_errors("A5", {"dist_ratio": 0.707, "lateral": 0.0})
     assert errs[0][0] == "dist_ratio" and abs(errs[0][1] - 0.293) < 1e-12
     assert accuracy_errors(

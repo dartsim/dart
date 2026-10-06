@@ -56,12 +56,15 @@ C2, C4 and C5 coupled thresholds, R1-R3, R5, R6 and R9 robustness, and P1
 the 6.20 line. The design's A9, C3 and R4 are not implemented; its R7 (dt) and
 R8 (mu edge cases) are runner sweeps over other scenes. One process runs one
 cell, because ERP, CFM and ERV are process-wide. The runner fails a cell that
-exits nonzero, reports a non-finite state, or lacks its result rows, and writes
-its rows to `failed.csv` instead of `cells.csv`, so they reach no table; the
+exits nonzero, reports a non-finite state or a failed measurement (below), or
+lacks its result rows, and writes its rows to `failed.csv` instead of
+`cells.csv`, so they reach no table; the
 accuracy score counts a failed cell as measuring nothing (-1 for each
 measurement B620 made). It runs the wall-clock cells (`--perf` without `--ir`)
 alone after the parallel phase, and skips the Callgrind cells (`--ir`) when
-Valgrind is not installed. `report` lists skipped and failed cells.
+Valgrind is not installed. If every selected cell is skipped, the runner exits
+with status 2 and prints the skip reasons, just as an empty selection fails.
+`report` lists skipped and failed cells.
 
 ## Output
 
@@ -82,10 +85,54 @@ Each cell prints `label,dart,scene,params,solver,detector,dt,split,deactivation,
 - `started`, printed first and flushed, so a cell that crashes still leaves its
   key.
 
-A metric that is undefined for a run (an onset that never happened, a ratio
-without samples) is omitted, so a NaN marks a failed measurement. `report`
-never treats a NaN as equal, and counts a metric that only one side reports
-as a difference.
+A metric that is unavailable is usually omitted; older harnesses, including
+E1's, emitted NaN instead. The runner accepts those documented no-value markers
+and rejects other NaNs. A10 must emit a finite `v_err`: without a final contact,
+its contact-frame velocity measurement failed even if the state is finite.
+All infinite metric values fail a cell. The infinities used internally for A4's
+axis bounds and L1's unbounded constraints are not intended output markers.
+`report` never treats a NaN as equal, and counts a metric that only one side
+reports as a difference.
+
+The metric classification from `friction_scenes.hpp` and `friction_eval.cpp` is:
+
+| Scene / source | Metric | Unavailable or non-finite condition | Verdict |
+| --- | --- | --- | --- |
+| All scenes, law audit | `slip_dir_err_*_deg`, `dilatancy_mean` | No qualifying sliding contacts; moving surfaces are excluded | No value; NaN allowed |
+| A3 | `onset_deg` | Sliding onset never reached | No value; NaN allowed |
+| A4, A12 | `force_ratio`, `dir_err_deg` | No loaded sliding samples | No value; NaN allowed |
+| A5 | `stop_time`, `creep` | Stop not reached, or no interval after stop | No value; NaN allowed |
+| A5 | `dist_ratio` | Older stopping-distance reference at `mu=0`, or zero launch speed | No reference; NaN allowed only at `mu=0` or `v0=0` |
+| A6 | `alpha_ratio_*`, `box_err_max` | No samples with spin above 2 rad/s and positive reference torque | No value; NaN allowed |
+| A7 | `roll_step` | Rolling not reached | No value; NaN allowed |
+| A7 | `v_roll_err` | Conserved reference `pred_v_roll` is zero | No relative-error reference; NaN allowed only when the reference is zero |
+| A8 | `speed_loss_per_m`, `vz_rms` | Invalid normalization or arithmetic despite a finite state | Measurement failed |
+| A10 | `sync_time` | Belt synchronization never reached | No value; NaN allowed |
+| A10 | `v_err` | No contact in the final collision result | Measurement failed; row required and finite |
+| A13 | `v_steady`, `v_err` | Non-finite average or error | Measurement failed |
+| C1 | `front_share` | No loaded, untipped sliding samples | No value; NaN allowed |
+| C4, R6 | `collapse_time` | Arch never collapsed | No value; NaN allowed |
+| R1, R3 | `rest_time` | Stack never rested | No value; NaN allowed |
+| R5 | `standing_1s` | Horizon ends before 1 s observation | No value; NaN allowed |
+| R9 | `yaw_rate` | No observation interval after 2 s spin-up | No value; NaN allowed only at `T <= 2` |
+| Bisection (A4, A11, A12, C2) | `threshold` | Endpoints agree, so threshold is not bracketed | No value; NaN allowed only when `at_lo == at_hi`; otherwise required and finite |
+| All predictions | `pred_*` | No applicable prediction (e.g. no predicted slide, C1 tipped regime, old A5 `mu=0` reference) | No reference; NaN allowed |
+| Solver telemetry | Means, residuals, `tight_*`, `va_aligned_frac` | No solves, audited solves, or handler calls | No value; rows omitted; emitted non-finite values are failures |
+| All other emitted metrics, including `steps`, `at_lo`, `at_hi` | Numeric metric values | Non-finite arithmetic or invalid normalization | Measurement failed |
+
+No scene intentionally emits infinity as a metric. Zero denominators in custom
+parameter runs (e.g. A4 `mu=0`, A7 zero friction, A10 zero friction, A11
+zero friction) or overflow can produce infinity; those outputs fail rather
+than masquerading as successful measurements. A5's current distance reference
+is over the finite simulation horizon, so it is finite at `mu=0` for a nonzero
+launch speed; the allowance preserves older E1 output.
+
+Auditing E1's `cells.csv` finds 3,566 NaN values, no infinities, and no new
+measurement failures under this rule; all 84 A10 cells have finite `v_err`.
+The older E1 bisection format lacks `finite` and `at_hi` in 868 cells, which
+already fail the current runner's row-presence checks. Their metric values
+also pass the new rule when the missing structural metadata is supplied for
+the audit (endpoint agreement inferred from the old NaN threshold marker).
 
 PGS-tight and DZ+R stop on the box-law residual (at most 1e-6 m/s, 10-sweep
 chunks of one-sweep calls, 1000-sweep cap); PGS's own relative-change test stops
