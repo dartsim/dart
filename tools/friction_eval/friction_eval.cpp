@@ -329,7 +329,12 @@ public:
 
   explicit TightBoxSolver(bool dantzigSeed) : mDantzigSeed(dantzigSeed)
   {
-    mPgs.setOption(PgsBoxedLcpSolver::Option(kChunk, 0.0, 0.0));
+    // Negative tolerances switch off PGS's own early exit, which ignores
+    // entries near zero even at zero tolerance, so each chunk runs its kChunk
+    // sweeps and the count and the cap are real. PGS still stops early once
+    // every |x_i| <= 1e-9 (its division epsilon, which also decides the rows
+    // it skips); such impulses leave a residual of A_ii * 1e-9 at most.
+    mPgs.setOption(PgsBoxedLcpSolver::Option(kChunk, -1.0, -1.0));
   }
 
   const std::string& getType() const override
@@ -1309,7 +1314,7 @@ int selfTest()
     }
 #endif
   };
-  const auto solveOk = [](BoxedLcpSolver& solver, Problem terms) {
+  const auto solveOk = [](BoxedLcpSolver& solver, Problem& terms) {
     return solver.solve(
         terms.n,
         terms.A.data(),
@@ -1330,7 +1335,8 @@ int selfTest()
   Telemetry nanTelemetry;
   CountingBoxedLcpSolver counting(
       std::make_shared<NanSolver>(), nanTelemetry, false);
-  solveOk(counting, unit);
+  Problem unitTerms = unit;
+  solveOk(counting, unitTerms);
   check(
       nanTelemetry.failures == 1 && nanTelemetry.nonFinite == 1
           && nanTelemetry.audited == 0,
@@ -1352,6 +1358,23 @@ int selfTest()
   check(
       std::abs(refreshed[0] - 0.8) + std::abs(refreshed[1] - 0.4) < 1e-6,
       "DZ+R re-solves the box law with refreshed bounds");
+
+  // PGS-tight's chunks run all their sweeps. The normal impulse here converges
+  // at once and the friction pair, coupled 0.99 and below 1e-9, slowly: PGS's
+  // own exit at zero tolerance stopped every chunk after 2 sweeps, so the
+  // 1000-sweep cap ended the solve after 200 real ones, above 1e-6 m/s.
+  Eigen::Matrix3d slowW;
+  slowW << 1, 0, 0, 0, 1e8, 0.99e8, 0, 0.99e8, 1e8;
+  const Problem slow = contactProblem(
+      "slow", slowW, Eigen::Vector3d(1, 0.05, 0.05), {{0.5, 0.5}});
+  Probes slowProbes;
+  const auto slowSolver = makeBackend("pgs-tight", slowProbes);
+  Problem slowTerms = slow;
+  solveOk(*slowSolver, slowTerms);
+  check(
+      slowProbes.tight->getStats().capped == 0
+          && boxResidual(slow, slowTerms.x.data(), 0.0).natural <= 1e-6,
+      "PGS-tight converges where PGS's own exit would end its chunks");
 
   const auto path
       = (std::filesystem::temp_directory_path() / "friction_eval_self_test.lcp")
