@@ -800,10 +800,12 @@ public:
   /// Returns the index of the solver island (constrained group) this skeleton
   /// belonged to on the most recent step, or -1 if it was not in any island.
   /// Populated by the constraint solver only when automatic deactivation is
-  /// enabled (otherwise -1). Intended for visualization/diagnostics.
+  /// enabled (otherwise -1). World and the constraint solver read it to decide
+  /// which islands may sleep.
   int getIslandIndex() const;
 
-  /// Sets the island index. Called by the constraint solver each step.
+  /// Sets the island index. Called by the constraint solver each step; since
+  /// automatic deactivation reads it, other callers should not set it.
   void setIslandIndex(int _index);
 
   /// Returns the accumulated time (seconds) this skeleton has remained quiet
