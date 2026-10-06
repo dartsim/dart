@@ -198,30 +198,29 @@ bool isExactDefaultContactSurfaceHandler(
 namespace {
 
 //==============================================================================
-/// Puts a contact surface handler in place and restores the previous one when
-/// it goes out of scope, including when an exception unwinds the stack.
-class ScopedContactSurfaceHandler final
+/// Assigns a temporary value and restores the previous one when it goes out
+/// of scope, including when an exception unwinds the stack.
+template <typename T>
+class ScopedAssignment final
 {
 public:
-  ScopedContactSurfaceHandler(
-      ContactSurfaceHandlerPtr& slot, ContactSurfaceHandlerPtr handler)
-    : mSlot(slot), mPrevious(std::exchange(slot, std::move(handler)))
+  ScopedAssignment(T& slot, T value)
+    : mSlot(slot), mPrevious(std::exchange(slot, std::move(value)))
   {
     // Do nothing
   }
 
-  ~ScopedContactSurfaceHandler()
+  ~ScopedAssignment()
   {
     mSlot = std::move(mPrevious);
   }
 
-  ScopedContactSurfaceHandler(const ScopedContactSurfaceHandler&) = delete;
-  ScopedContactSurfaceHandler& operator=(const ScopedContactSurfaceHandler&)
-      = delete;
+  ScopedAssignment(const ScopedAssignment&) = delete;
+  ScopedAssignment& operator=(const ScopedAssignment&) = delete;
 
 private:
-  ContactSurfaceHandlerPtr& mSlot;
-  ContactSurfaceHandlerPtr mPrevious;
+  T& mSlot;
+  T mPrevious;
 };
 
 //==============================================================================
@@ -1367,9 +1366,11 @@ void ConstraintSolver::solve()
 void ConstraintSolver::prepareForSimulation()
 {
   // solve() uses a non-empty previous active set as evidence that constraint
-  // impulses may need clearing. Preparation deliberately skips manual
-  // constraints, so preserve the active-set bookkeeping across these
-  // state-neutral preparation passes.
+  // impulses may need clearing, and clears stale freeze flags and island
+  // indices on a solve without active constraints only if the previous solve
+  // built islands. Preparation deliberately skips manual constraints and sleep
+  // decisions, so preserve this bookkeeping across these state-neutral
+  // preparation passes.
   const auto activeConstraints = mActiveConstraints;
   const bool activeConstraintsAllSingleReactiveContacts
       = mActiveConstraintsAllSingleReactiveContacts;
@@ -1377,6 +1378,11 @@ void ConstraintSolver::prepareForSimulation()
       = mActiveConstraintsHaveCustomContactConstraint;
   const bool activeSingleReactiveContactsNeedSharedDependencyScan
       = mActiveSingleReactiveContactsNeedSharedDependencyScan;
+  // The passes clear this flag whenever they find no active constraint; this
+  // guard puts the previous solve's value back when the function returns or
+  // unwinds.
+  const ScopedAssignment<bool> hadDeactivationGroups(
+      mHadDeactivationGroups, mHadDeactivationGroups);
   const auto collidingState = snapshotCollidingState(mSkeletons);
   // Restore the previous result by value: its contacts may point to collision
   // objects freed since the last step (by a skeleton removal, a collision
@@ -1402,15 +1408,29 @@ void ConstraintSolver::prepareForSimulation()
       = isExactDefaultContactSurfaceHandler(mContactSurfaceHandler)
         && mContactSurfaceHandler->mParent == nullptr;
   {
-    const ScopedContactSurfaceHandler preparationContactSurfaceHandler(
-        mContactSurfaceHandler,
-        usesOnlyDefaultContactSurfaceHandler
-            ? mContactSurfaceHandler
-            : getStatelessContactSurfaceHandler());
+    const ScopedAssignment<ContactSurfaceHandlerPtr>
+        preparationContactSurfaceHandler(
+            mContactSurfaceHandler,
+            usesOnlyDefaultContactSurfaceHandler
+                ? mContactSurfaceHandler
+                : getStatelessContactSurfaceHandler());
+    // The passes build constrained groups with automatic deactivation off.
+    // Which islands sleep, and the sleep candidacy, resting flag and island
+    // index of each skeleton, are for the next step's solve to decide: the
+    // passes may see constraints the user's handler rejects, and any change
+    // they made would also advance the global deactivation-state version,
+    // which makes World wake every resting skeleton at the start of the step.
+    // updateConstraints() keeps the real flag, so its resting-contact filter
+    // skips the pairs the step skips: the passes collide only what the step
+    // collides, which keeps re-entry cheap in resting worlds.
     constexpr int kPreparationPasses = 2;
     for (int pass = 0; pass < kPreparationPasses; ++pass) {
       updateConstraints(false);
-      buildConstrainedGroups();
+      {
+        const ScopedAssignment<bool> deactivationActive(
+            mDeactivationActive, false);
+        buildConstrainedGroups();
+      }
       reserveConstrainedGroupsScratch();
     }
   }
