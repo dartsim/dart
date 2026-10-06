@@ -839,39 +839,40 @@ CellResult runCell(const Options& o, const fe::Params& params)
   if (!o.perf) {
     audit.report(m);
     m["energy_rise_max"] = energyRise;
+    // Telemetry exists only for solves the wrapper saw: the 6.20 line's
+    // matrix-free path (mf-pgs) solves large contact-only groups past it.
     m["solves"] = telemetry.solves;
-    m["rows_mean"] = telemetry.solves ? static_cast<double>(telemetry.rows)
-                                            / telemetry.solves
-                                      : 0.0;
-    m["rows_max"] = telemetry.maxRows;
-    m["primary_failures"] = telemetry.failures;
-    m["fallbacks"] = telemetry.fallbacks;
-    m["fallback_failures"] = telemetry.fallbackFailures;
-    m["non_finite_solves"] = telemetry.nonFinite;
-    m["box_viol_max"] = telemetry.boxViolation;
-    m["nat_res_max"] = telemetry.natural;
-    m["nat_res_mean"]
-        = telemetry.audited ? telemetry.naturalSum / telemetry.audited : 0.0;
-    m["cfm_floor_max"] = telemetry.cfmFloor;
-    m["solve_us_mean"]
-        = telemetry.solves ? 1e6 * telemetry.seconds / telemetry.solves : 0.0;
-    m["dumped"] = telemetry.dumped;
+    if (telemetry.solves) {
+      m["rows_mean"] = static_cast<double>(telemetry.rows) / telemetry.solves;
+      m["rows_max"] = telemetry.maxRows;
+      m["primary_failures"] = telemetry.failures;
+      m["fallbacks"] = telemetry.fallbacks;
+      m["fallback_failures"] = telemetry.fallbackFailures;
+      m["non_finite_solves"] = telemetry.nonFinite;
+      m["solve_us_mean"] = 1e6 * telemetry.seconds / telemetry.solves;
+      m["dumped"] = telemetry.dumped;
+    }
+    if (telemetry.audited) {
+      m["box_viol_max"] = telemetry.boxViolation;
+      m["nat_res_max"] = telemetry.natural;
+      m["nat_res_mean"] = telemetry.naturalSum / telemetry.audited;
+      m["cfm_floor_max"] = telemetry.cfmFloor;
+    }
   }
   if (probes.tight) {
     const auto& stats = probes.tight->getStats();
     m["tight_solves"] = stats.solves;
-    m["tight_capped"] = stats.capped;
-    m["tight_sweeps_mean"]
-        = stats.solves ? static_cast<double>(stats.sweeps) / stats.solves : 0.0;
-    m["tight_change_max"] = stats.maxChange;
-    if (o.solver == "dzr")
-      m["dzr_refreshed"] = stats.refreshed;
+    if (stats.solves) {
+      m["tight_capped"] = stats.capped;
+      m["tight_sweeps_mean"] = static_cast<double>(stats.sweeps) / stats.solves;
+      m["tight_change_max"] = stats.maxChange;
+      if (o.solver == "dzr")
+        m["dzr_refreshed"] = stats.refreshed;
+    }
   }
-  if (probes.va) {
+  if (probes.va && probes.va->mCalls) {
     m["va_aligned_frac"]
-        = probes.va->mCalls
-              ? static_cast<double>(probes.va->mAligned) / probes.va->mCalls
-              : 0.0;
+        = static_cast<double>(probes.va->mAligned) / probes.va->mCalls;
   }
   return result;
 }

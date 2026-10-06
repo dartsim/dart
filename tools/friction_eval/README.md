@@ -93,4 +93,7 @@ and never passes on rows near zero.
   serially with it. Use `--perf` for timing rows.
 - VA is a user handler, which disables the default handler's fast paths, so
   VA rows are physics-only.
+- With `--solver mf-pgs`, the 6.20 line solves large contact-only groups of
+  free bodies matrix-free, past the wrapper, so the solver telemetry covers
+  only the other groups and is omitted when the wrapper saw no solve.
 - Split-impulse cells wait for PR-0 and are listed as pending by the runner.
