@@ -25,6 +25,7 @@ import subprocess
 import sys
 import tempfile
 from collections import defaultdict
+from unittest import mock
 
 DETECTORS = ("ode", "dart", "fcl", "bullet")
 MU_STAR = 0.3657  # C4 arch, t/R = 0.15
@@ -619,21 +620,22 @@ def self_test(binary=None):
     )
     assert "threshold" in check_output(bisect, ("--bisect",))
     assert check_output(bisect.replace("at_hi,1", "at_hi,0"), ("--bisect",)) == ""
-    # A failed cell's rows land in failed.csv, never in cells.csv.
-    with tempfile.TemporaryDirectory() as tmp:
-        fake = os.path.join(tmp, "fake_friction_eval")
-        with open(fake, "w") as f:
-            f.write(f"#!/bin/sh\nprintf '%s' '{ok.replace('finite,1', 'finite,0')}'\n")
-        os.chmod(fake, 0o755)
-        run = argparse.Namespace(
-            bin=[f"B620={fake}"], out=tmp, jobs=1, only="^A5 mu=0 B620 ode"
-        )
-        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+    # A failed cell's rows land in failed.csv, never in cells.csv. The process
+    # is mocked, so this runs on every platform.
+    finite0 = ok.replace("finite,1", "finite,0")
+    for code, out, good in ((0, ok, 1), (0, finite0, 0), (1, ok, 0)):
+        done = subprocess.CompletedProcess([], code, out, "")
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            subprocess, "run", return_value=done
+        ), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
             io.StringIO()
         ):
-            assert cmd_run(run) == 1
-        assert not load(os.path.join(tmp, "cells.csv"))
-        assert len(load(os.path.join(tmp, "failed.csv"))) == 1
+            run = argparse.Namespace(
+                bin=["B620=friction_eval"], out=tmp, jobs=1, only="^A5 mu=0 B620 ode"
+            )
+            assert cmd_run(run) == 1 - good
+            assert len(load(os.path.join(tmp, "cells.csv"))) == good
+            assert len(load(os.path.join(tmp, "failed.csv"))) == 1 - good
     # Scheduling: timing cells run serially; --ir needs Valgrind.
     cells = [
         ("P1", "n=90", "B620", "ode", ("--perf",)),
