@@ -694,6 +694,14 @@
     [#3511](https://github.com/dartsim/dart/pull/3511),
     [#3501](https://github.com/dartsim/dart/issues/3501)
 
+* Performance
+
+  * Speed up the ODE collision detector in contact-heavy scenes by finding
+    contact-history and contact pairs through sorted per-call indexes instead
+    of scanning for each pair: an awake 3,000-body Gazebo-style step runs about
+    30% fewer instructions on a `PlaneShape` ground and about 20% fewer on
+    Gazebo's box ground, with bit-exact results.
+
 * Python
 
   * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with
