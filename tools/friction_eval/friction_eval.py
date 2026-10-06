@@ -530,26 +530,37 @@ def report(data, out):
 
 
 def l1_report(path, out):
-    """Per family and solver: worst residual, worst box violation, failures."""
-    groups = defaultdict(lambda: defaultdict(list))
+    """Per family and solver: failures (the backend's, or a non-finite
+    solution) and the worst residuals of the finite solutions ("-" if none)."""
+    groups = defaultdict(list)
     with open(path) as f:
         for r in csv.DictReader(f):
             family = re.sub(r"_s\d+_g\d+$", "", r["scene"])
             family = "check_single" if family.startswith("check_single_") else family
-            groups[(family, r["solver"])][r["metric"]].append(float(r["value"]))
+            solves = groups[(family, r["solver"])]
+            # runL1 prints each solve's rows together, ok first. Scene names
+            # can repeat (dumps from different directories share basenames),
+            # so a solve is the rows from one ok to the next.
+            if r["metric"] == "ok" or not solves:
+                solves.append({})
+            solves[-1][r["metric"]] = float(r["value"])
     rows = []
-    for (family, solver), m in sorted(groups.items()):
+    for (family, solver), ps in sorted(groups.items()):
+        # Older files printed zero residuals for non-finite solutions.
+        finite = [p for p in ps if p.get("finite") == 1.0]
+        res = [p["nat_res"] for p in finite if "nat_res" in p]
+        viol = [p["box_viol"] for p in finite if "box_viol" in p]
         rows.append(
             (
                 family,
                 solver,
-                len(m["ok"]),
-                len(m["ok"]) - sum(m["ok"]),
-                max(m["nat_res"]),
-                statistics.median(m["nat_res"]),
-                max(m["box_viol"]),
-                statistics.mean(m["solve_ms"]),
-                sum(m.get("tight_capped", [0])),
+                len(ps),
+                sum(p.get("ok") != 1.0 or p.get("finite") != 1.0 for p in ps),
+                max(res, default=None),
+                statistics.median(res) if res else None,
+                max(viol, default=None),
+                statistics.mean(p["solve_ms"] for p in ps),
+                sum(p.get("tight_capped", 0.0) for p in ps),
             )
         )
     out.write(
@@ -695,6 +706,33 @@ def self_test(binary=None):
         assert scores(one_sided, "VA") == {"A10": -1.0}
         one_sided = {("B620",) + a10: never, ("VA",) + a10: synced}
         assert scores(one_sided, "VA") == {"A10": 1.0}
+    # L1: a non-finite solution is not ok and has no residual, even where an
+    # older file printed zeros for it; solves sharing a scene name stay apart.
+    l1_rows = (
+        ("fam_s1_g0", "dantzig", 1, 0.5),
+        ("fam_s1_g1", "dantzig", 0, 0.0),
+        ("fam_s1_g0", "pgs", 0, 0.0),
+        ("fam_s1_g0", "dantzig", 1, 0.5),
+    )
+    l1 = COLUMNS_LINE + "".join(
+        f"B620,6.20-line,{scene},n=3,{solver},-,0.001,off,off,{m},{v}\n"
+        for scene, solver, finite, res in l1_rows
+        for m, v in (
+            ("ok", 1),
+            ("finite", finite),
+            ("nat_res", res),
+            ("box_viol", res),
+            ("solve_ms", 1),
+        )
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "l1.csv")
+        with open(path, "w") as f:
+            f.write(l1)
+        text = io.StringIO()
+        l1_report(path, text)
+        assert "| fam | dantzig | 3 | 1 | 0.5 | 0.5 | 0.5 | 1 | 0 |" in text.getvalue()
+        assert "| fam | pgs | 1 | 1 | - | - | - | 1 | 0 |" in text.getvalue()
     assert len(e1_cells()) > 1000
     if binary:
         proc = subprocess.run([binary, "--self-test"], capture_output=True, text=True)

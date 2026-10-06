@@ -267,19 +267,21 @@ public:
     const bool ok
         = mInner->solve(n, A, x, b, nub, lo, hi, findex, earlyTermination);
     t.seconds += secondsSince(start);
+    // DART rejects a non-finite "success" and falls back, so it counts as a
+    // failure here too; it has no residual to audit.
+    const Residual r = boxResidual(pristine, x, t.cfm);
+    t.nonFinite += !r.finite;
     if (mFallback) {
       ++t.fallbacks;
-      t.fallbackFailures += !ok;
+      t.fallbackFailures += !ok || !r.finite;
     } else {
       ++t.solves;
-      t.failures += !ok;
+      t.failures += !ok || !r.finite;
       t.rows += n;
       t.maxRows = std::max<long>(t.maxRows, n);
     }
     // Audit the impulses that get applied: a finite primary success, or the
     // fallback's result (any finite fallback result is accepted).
-    const Residual r = boxResidual(pristine, x, t.cfm);
-    t.nonFinite += !r.finite;
     if (r.finite && (ok || mFallback)) {
       ++t.audited;
       t.natural = std::max(t.natural, r.natural);
@@ -364,10 +366,15 @@ public:
         return false;
       }
     }
+    // A non-finite seed (Dantzig's result or the caller's warm start) has no
+    // residual: fail the solve, so the caller falls back, as DART does.
+    const Residual seedResidual = boxResidual(pristine, x, 0.0);
+    if (!seedResidual.finite)
+      return false;
     ++mStats.solves;
     const std::vector<double> seed(x, x + n);
     std::vector<double> best = seed;
-    double bestResidual = boxResidual(pristine, x, 0.0).natural;
+    double bestResidual = seedResidual.natural;
     if (mDantzigSeed && bestResidual > kTolerance)
       ++mStats.refreshed;
     int sweeps = 0;
@@ -1193,9 +1200,12 @@ int runL1(const Options& o, const std::vector<std::string>& files)
       const auto params = "n=" + std::to_string(problem.n);
       printRow(row, problem.name, params, "ok", number(ok));
       printRow(row, problem.name, params, "finite", number(r.finite));
-      printRow(row, problem.name, params, "nat_res", number(r.natural));
-      printRow(row, problem.name, params, "box_viol", number(r.boxViolation));
-      printRow(row, problem.name, params, "cfm_floor", number(r.cfmFloor));
+      // A non-finite solution has no residual; it is a failure, not a zero.
+      if (r.finite) {
+        printRow(row, problem.name, params, "nat_res", number(r.natural));
+        printRow(row, problem.name, params, "box_viol", number(r.boxViolation));
+        printRow(row, problem.name, params, "cfm_floor", number(r.cfmFloor));
+      }
       printRow(row, problem.name, params, "solve_ms", number(ms));
       if (probes.tight)
         printRow(
@@ -1270,6 +1280,57 @@ int selfTest()
             && boxResidual(unit, x.data(), 0.0).natural < 1e-6,
         name + " solves the unit contact");
   }
+
+  // A non-finite solution is a failure, never a zero residual: PGS-tight
+  // fails on a NaN warm start, and the wrapper counts a backend's NaN
+  // "success" as a failure it does not audit.
+  struct NanSolver final : BoxedLcpSolver
+  {
+    const std::string& getType() const override
+    {
+      static const std::string type = "NanSolver";
+      return type;
+    }
+    bool solve(
+        int, double*, double* x, double*, int, double*, double*, int*, bool)
+        override
+    {
+      x[0] = fe::kNaN;
+      return true;
+    }
+#if DART_BUILD_MODE_DEBUG
+    bool canSolve(int, const double*) override
+    {
+      return true;
+    }
+#endif
+  };
+  const auto solveOk = [](BoxedLcpSolver& solver, Problem terms) {
+    return solver.solve(
+        terms.n,
+        terms.A.data(),
+        terms.x.data(),
+        terms.b.data(),
+        0,
+        terms.lo.data(),
+        terms.hi.data(),
+        terms.findex.data(),
+        false);
+  };
+  Problem nanSeed = unit;
+  nanSeed.x[0] = fe::kNaN;
+  Probes nanProbes;
+  check(
+      !solveOk(*makeBackend("pgs-tight", nanProbes), nanSeed),
+      "PGS-tight fails on a non-finite warm start");
+  Telemetry nanTelemetry;
+  CountingBoxedLcpSolver counting(
+      std::make_shared<NanSolver>(), nanTelemetry, false);
+  solveOk(counting, unit);
+  check(
+      nanTelemetry.failures == 1 && nanTelemetry.nonFinite == 1
+          && nanTelemetry.audited == 0,
+      "a backend's non-finite success counts as an unaudited failure");
 
   // F-b: the frictionless normal impulse is 1, so Dantzig freezes the bound at
   // 0.5, and the coupling then lowers the final normal impulse to 0.75 (box-law

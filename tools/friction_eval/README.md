@@ -71,7 +71,8 @@ Each cell prints `label,dart,scene,params,solver,detector,dt,split,deactivation,
   `slip_dir_err_*_deg`, `stick_slip_max`, `dilatancy_mean`, `un_min`, and
   `fl_eligible_frac`, the share of root steps the 6.20 World's drift
   suppression could edit;
-- solver telemetry from the wrapper: `solves`, `primary_failures`, `fallbacks`,
+- solver telemetry from the wrapper: `solves`, `primary_failures` (a
+  non-finite result counts, as it does for DART), `fallbacks`,
   the box-law residual of the applied impulses (`nat_res_max` in m/s,
   `box_viol_max` relative to the final normal impulse, `cfm_floor_max`), and
   `tight_*` and `dzr_refreshed` for PGS-tight and DZ+R;

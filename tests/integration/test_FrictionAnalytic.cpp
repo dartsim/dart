@@ -65,7 +65,16 @@ protected:
       solver->setBoxedLcpSolver(
           std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
     }
-    return fe::run(scene);
+    auto metrics = fe::run(scene);
+    // Maxima over steps skip NaN, so a non-finite state must fail here.
+    for (std::size_t i = 0; i < scene.world->getNumSkeletons(); ++i) {
+      const auto skeleton = scene.world->getSkeleton(i);
+      EXPECT_TRUE(
+          skeleton->getPositions().allFinite()
+          && skeleton->getVelocities().allFinite())
+          << id << ": " << skeleton->getName();
+    }
+    return metrics;
   }
 
   bool pgs() const
