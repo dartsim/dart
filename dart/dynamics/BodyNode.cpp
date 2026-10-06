@@ -567,12 +567,18 @@ void BodyNode::handleCollisionShapeUpdated(
   if (shapeNode->getBodyNodePtr().get() != this)
     return;
 
+  // Collision groups hold every ShapeNode with a CollisionAspect, flagged
+  // collidable or not, so swapping its Shape changes contacts either way.
   const auto* collision = shapeNode->get<CollisionAspect>();
-  if (collision == nullptr || !collision->getCollidable())
+  if (collision == nullptr)
     return;
 
   if (auto* skeleton = getSkeletonRawPtr())
     skeleton->incrementDeactivationStateVersion();
+
+  // The signals report collidable shapes only.
+  if (!collision->getCollidable())
+    return;
 
   if (oldShape)
     mColShapeRemovedSignal.raise(this, oldShape);

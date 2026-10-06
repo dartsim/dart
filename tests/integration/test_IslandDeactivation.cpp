@@ -2271,6 +2271,50 @@ TEST(IslandDeactivation, WakeOnNonCollidableShapeTransformChange)
 }
 
 //==============================================================================
+// Replacing a non-collidable support's Shape must wake a resting body as well:
+// the new Shape takes part in collision detection just as the old one did. A
+// slightly thicker floor keeps the contact, so only the wake moves the body.
+TEST(IslandDeactivation, WakeOnNonCollidableShapeReplacement)
+{
+  for (const bool fastPathReady : {true, false}) {
+    auto world = makeSleepWorld();
+    auto floor = createFloor();
+    auto* floorShape = floor->getBodyNode(0)->getShapeNode(0);
+    floorShape->get<CollisionAspect>()->setCollidable(false);
+    world->addSkeleton(floor);
+
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(sleeper);
+
+    if (fastPathReady) {
+      ASSERT_NO_FATAL_FAILURE(
+          stepUntilRestingFastPathReady(world.get(), sleeper));
+    } else {
+      ASSERT_NO_FATAL_FAILURE(
+          stepUntilRestingWithContacts(world.get(), sleeper));
+    }
+    const double zBefore
+        = sleeper->getBodyNode(0)->getTransform().translation().z();
+
+    floorShape->setShape(
+        std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 0.104)));
+    world->step();
+    EXPECT_FALSE(sleeper->isResting())
+        << "shape replacement did not wake the sleeping body";
+
+    for (std::size_t i = 0; i < 200; ++i)
+      world->step();
+    EXPECT_GT(
+        sleeper->getBodyNode(0)->getTransform().translation().z(),
+        zBefore + 1e-4)
+        << "the thicker floor did not push the body up";
+  }
+}
+
+//==============================================================================
 // Inertia edits change the dynamics and cached contact-force response without
 // changing pose, collision geometry, or command state. The all-resting fast
 // path must wake and recompute the solver state after those edits.
