@@ -1228,6 +1228,7 @@ void World::step(bool _resetCommand)
           }
 
           if (preservingFinalSleepSolve && skel->getNumDofs() > 0) {
+            // Same per-DOF setter path as setVelocities(), without a vector.
             for (std::size_t dof = 0; dof < skel->getNumDofs(); ++dof)
               skel->setVelocity(dof, 0.0);
             skel->computeForwardKinematics(false, true, false);

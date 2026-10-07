@@ -1048,7 +1048,7 @@ TEST(ConstraintSolver, WorldDestroyedAfterThreadSpareListIsSafe)
 }
 
 //==============================================================================
-TEST(ConstraintSolver, RetiringIslandBuffersNeverAllocatesWithExternalGroups)
+TEST(ConstraintSolver, ExternalGroupsDoNotMakeWorldRegrowthAllocate)
 {
   if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
     GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
@@ -1056,32 +1056,42 @@ TEST(ConstraintSolver, RetiringIslandBuffersNeverAllocatesWithExternalGroups)
   constexpr std::size_t kNumBoxes = 16u;
   auto world = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
   world->enterSimulationMode();
-  for (int step = 0; step < 5; ++step)
+  // Toggle mobility rather than lifting the boxes, so the contact pairs stay
+  // in the native manifold cache (its node reuse is Z1b).
+  const auto setMobile = [&](bool mobile) {
+    for (std::size_t i = 1u; i < world->getNumSkeletons(); ++i) {
+      auto* joint = static_cast<dynamics::FreeJoint*>(
+          world->getSkeleton(i)->getJoint(0));
+      Eigen::Vector6d positions = joint->getPositionsStatic();
+      positions[5] = 0.49;
+      world->getSkeleton(i)->setMobile(mobile);
+      joint->setPositionsStatic(positions);
+      joint->setVelocitiesStatic(Eigen::Vector6d::Zero());
+    }
+  };
+
+  // Groups inserted from outside the solver retire into the same spare list;
+  // the World's later regrowth must still find its buffers there.
+  for (int cycle = 0; cycle < 3; ++cycle) {
+    ExposedThreadedConstraintSolver externalSolver;
+    externalSolver.addFakeConstrainedGroups(2u * kNumBoxes, 1u);
+    EXPECT_TRUE(externalSolver.clearInactiveConstrainedGroupsForTest());
+    setMobile(false);
     world->step();
-  ASSERT_GE(world->getLastCollisionResult().getNumContacts(), kNumBoxes);
+    EXPECT_EQ(0u, world->getLastCollisionResult().getNumContacts());
 
-  ExposedThreadedConstraintSolver externalSolver;
-  externalSolver.addFakeConstrainedGroups(2u * kNumBoxes, 1u);
-  for (std::size_t i = 1u; i < world->getNumSkeletons(); ++i) {
-    auto* joint
-        = static_cast<dynamics::FreeJoint*>(world->getSkeleton(i)->getJoint(0));
-    Eigen::Vector6d positions = joint->getPositionsStatic();
-    positions[5] = 20.0;
-    joint->setPositionsStatic(positions);
-    joint->setVelocitiesStatic(Eigen::Vector6d::Zero());
+    setMobile(true);
+    dart::test::ScopedHeapAllocationCounter heapCounter;
+    dart::test::ScopedRawHeapAllocationCounter rawCounter;
+    world->step();
+    heapCounter.stop();
+    rawCounter.stop();
+    EXPECT_GE(world->getLastCollisionResult().getNumContacts(), kNumBoxes);
+    if (cycle > 0) {
+      EXPECT_EQ(0u, heapCounter.allocationCount()) << cycle;
+      EXPECT_EQ(0u, rawCounter.allocationCount()) << cycle;
+    }
   }
-
-  dart::test::ScopedHeapAllocationCounter heapCounter;
-  dart::test::ScopedRawHeapAllocationCounter rawCounter;
-  // Retire externally inserted groups, then the world's island buffers.
-  const bool cleared = externalSolver.clearInactiveConstrainedGroupsForTest();
-  world->step();
-  heapCounter.stop();
-  rawCounter.stop();
-  EXPECT_TRUE(cleared);
-  EXPECT_EQ(0u, world->getLastCollisionResult().getNumContacts());
-  EXPECT_EQ(0u, heapCounter.allocationCount());
-  EXPECT_EQ(0u, rawCounter.allocationCount());
 }
 
 //==============================================================================

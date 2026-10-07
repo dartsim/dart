@@ -210,64 +210,36 @@ void reserveGeometrically(std::vector<T>& storage, std::size_t required)
   storage.reserve(std::max(capacity, required));
 }
 
-// Set once this thread's spare list is destroyed, so a solver destroyed later
-// (for example a World in static storage at exit) frees its buffers instead.
-// Constant-initialized and trivially destructible, so it outlives the list.
-thread_local bool tRetiredGroupConstraintStorageDestroyed = false;
+// Cleared island constraint buffers, kept for the next group on this thread.
+// A retire grows the list only at a new peak of spare buffers (the Z2
+// high-water-mark rule); preparation reserves a slot for every island a World
+// can form, so its first all-asleep step stays allocation-free.
+// ponytail: capped at kMaxSpareGroupBuffers per thread, so groups inserted
+// from outside the solver cannot grow it without bound; raise the cap if a
+// thread ever runs Worlds with more islands than that.
+constexpr std::size_t kMaxSpareGroupBuffers = std::size_t{1} << 16;
 
-struct RetiredGroupConstraintStorage
+std::vector<std::vector<ConstraintBasePtr>>& retiredGroupConstraintStorage()
 {
-  std::vector<std::vector<ConstraintBasePtr>> buffers;
-  ~RetiredGroupConstraintStorage()
-  {
-    tRetiredGroupConstraintStorageDestroyed = true;
-  }
-};
-
-// Retiring never allocates; excess cleared constraint-vector buffers are freed.
-std::vector<std::vector<ConstraintBasePtr>>* retiredGroupConstraintStorage()
-{
-  if (tRetiredGroupConstraintStorageDestroyed)
-    return nullptr;
-  static thread_local RetiredGroupConstraintStorage storage;
-  return &storage.buffers;
+  static thread_local std::vector<std::vector<ConstraintBasePtr>> storage;
+  return storage;
 }
-
-// Buffers handed out to live groups, process-wide, so a solver destroyed on
-// another thread than the one that built its groups still returns its count.
-std::atomic<std::size_t> gHandedOutGroupConstraintBuffers{0u};
 
 void handOutGroupConstraintStorage(std::vector<ConstraintBasePtr>& constraints)
 {
-  auto* retired = retiredGroupConstraintStorage();
-  if (retired && !retired->empty()) {
-    constraints = std::move(retired->back());
-    retired->pop_back();
+  auto& retired = retiredGroupConstraintStorage();
+  if (!retired.empty()) {
+    constraints = std::move(retired.back());
+    retired.pop_back();
   }
-  const auto handedOut = gHandedOutGroupConstraintBuffers.fetch_add(
-                             1u, std::memory_order_relaxed)
-                         + 1u;
-  // Every live solver's buffers need spare slots, in addition to those already
-  // retired, so shrinking multiple Worlds on this thread never drops storage.
-  if (retired)
-    reserveGeometrically(*retired, retired->size() + handedOut);
 }
 
 void retireGroupConstraintStorage(std::vector<ConstraintBasePtr>& constraints)
 {
   constraints.clear();
-  // Externally inserted groups were never handed out; never go below zero.
-  auto handedOut
-      = gHandedOutGroupConstraintBuffers.load(std::memory_order_relaxed);
-  while (handedOut != 0u
-         && !gHandedOutGroupConstraintBuffers.compare_exchange_weak(
-             handedOut, handedOut - 1u, std::memory_order_relaxed)) {
-  }
-  auto* retired = retiredGroupConstraintStorage();
-  // Externally inserted groups may not have reserved a spare slot.
-  if (retired && constraints.capacity() != 0u
-      && retired->size() < retired->capacity())
-    retired->push_back(std::move(constraints));
+  auto& retired = retiredGroupConstraintStorage();
+  if (constraints.capacity() != 0u && retired.size() < kMaxSpareGroupBuffers)
+    retired.push_back(std::move(constraints));
 }
 
 //==============================================================================
@@ -991,11 +963,7 @@ ConstraintSolver::ConstraintSolver()
 }
 
 //==============================================================================
-ConstraintSolver::~ConstraintSolver()
-{
-  for (auto& group : mConstrainedGroups)
-    retireGroupConstraintStorage(group.mConstraints);
-}
+ConstraintSolver::~ConstraintSolver() = default;
 
 //==============================================================================
 void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
@@ -3783,6 +3751,11 @@ void ConstraintSolver::reserveConstrainedGroupsScratch()
   mGroupAlreadyRestingScratch.reserve(groupCount);
   mGroupSolvedToRestScratch.reserve(groupCount);
   mIslandSkeletons.reserve(mSkeletons.size());
+  // Each skeleton can form its own island, and all of them may retire at once.
+  auto& retired = retiredGroupConstraintStorage();
+  reserveGeometrically(
+      retired,
+      std::min(retired.size() + mSkeletons.size(), kMaxSpareGroupBuffers));
 
   for (const auto& group : mConstrainedGroups) {
     reserveConstrainedGroupScratch(group);
