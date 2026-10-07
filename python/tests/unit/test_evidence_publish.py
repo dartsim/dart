@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -1490,3 +1491,23 @@ def test_required_semantic_field_rejects_empty_value(tmp_path: Path) -> None:
         evidence_publish.main(args)
 
     assert caught.value.code == 2
+
+
+@pytest.mark.parametrize("alias", ["dot", "symlink", "hardlink"])
+def test_selection_rejects_aliases_of_one_artifact(tmp_path: Path, alias: str) -> None:
+    selection = _selection(tmp_path)
+    manifest = json.loads(selection.read_text(encoding="utf-8"))
+    if alias == "dot":
+        path = "./shot.png"
+    else:
+        path = "alias.png"
+        link = tmp_path / path
+        if alias == "symlink":
+            link.symlink_to(tmp_path / "shot.png")
+        else:
+            os.link(tmp_path / "shot.png", link)
+    manifest["selected"][1] = {**manifest["selected"][0], "path": path, "claims": ["C2"]}
+    selection.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="duplicated"):
+        evidence_publish._load_selection(selection)

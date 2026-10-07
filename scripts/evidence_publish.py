@@ -95,7 +95,7 @@ def _load_selection(path: Path) -> dict[str, Any]:
     selected = manifest.get("selected")
     if not isinstance(selected, list) or not selected:
         raise ValueError("selection manifest has no selected artifacts")
-    selected_paths: set[str] = set()
+    selected_files: set[tuple[int, int]] = set()
     covered_by_artifacts: set[str] = set()
     selected_bytes = 0
     for artifact in selected:
@@ -107,9 +107,6 @@ def _load_selection(path: Path) -> dict[str, Any]:
         name = Path(declared_path).name
         if not name:
             raise ValueError(f"selected artifact has invalid path {declared_path!r}")
-        if declared_path in selected_paths:
-            raise ValueError(f"selected artifact path {declared_path!r} is duplicated")
-        selected_paths.add(declared_path)
 
         kind = artifact.get("kind")
         if kind not in _ARTIFACT_KINDS:
@@ -167,7 +164,13 @@ def _load_selection(path: Path) -> dict[str, Any]:
             raise ValueError(
                 f"selected artifact is missing or not a regular file: {artifact_path}"
             )
-        actual_bytes = artifact_path.stat().st_size
+        # Compare files, not strings, so ./a.png, symlinks and hardlinks to
+        # one file cannot count as separate artifacts.
+        stat = artifact_path.stat()
+        if (stat.st_dev, stat.st_ino) in selected_files:
+            raise ValueError(f"selected artifact path {declared_path!r} is duplicated")
+        selected_files.add((stat.st_dev, stat.st_ino))
+        actual_bytes = stat.st_size
         if actual_bytes != expected_bytes:
             raise ValueError(
                 f"selected artifact {declared_path!r} changed size after "
