@@ -1,15 +1,19 @@
 """Regression checks for performance comparison and local execution."""
 
 import copy
+import fnmatch
 import importlib.util
 import json
 import os
+import re
+import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
 
 import pytest
+import yaml
 
 
 def test_compare_classification_and_thresholds():
@@ -2129,6 +2133,7 @@ def test_micro_perturbations_compare_real_metrics(monkeypatch, tmp_path, name, c
 
 
 @pytest.mark.parametrize("revision", ["HEAD", "annotated-release"])
+@pytest.mark.parametrize("smoke", [False, True])
 @pytest.mark.parametrize(
     "rows, portable_only, expected_drivers",
     [
@@ -2153,7 +2158,7 @@ def test_micro_perturbations_compare_real_metrics(monkeypatch, tmp_path, name, c
     ],
 )
 def test_local_uses_independent_source_and_cmake_caches(
-    monkeypatch, tmp_path, revision, rows, portable_only, expected_drivers
+    monkeypatch, tmp_path, revision, smoke, rows, portable_only, expected_drivers
 ):
     import io
     import tarfile
@@ -2164,19 +2169,23 @@ def test_local_uses_independent_source_and_cmake_caches(
         [
             "local",
             "--base",
-            revision,
+            "missing-base" if smoke else revision,
             "--head",
             revision,
             "--output-dir",
             str(tmp_path),
             "--rows",
             rows,
+            *(["--smoke"] if smoke else []),
         ]
     )
     monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
 
+    resolved = []
+
     def command_output(command):
         # An annotated tag names a tag object unless explicitly peeled.
+        resolved.append(command[-1])
         return "tag-object" if command[-1] == "annotated-release" else "commit"
 
     monkeypatch.setattr(module, "command_output", command_output)
@@ -2203,7 +2212,8 @@ def test_local_uses_independent_source_and_cmake_caches(
     configurations = []
     portable_hashes = []
 
-    def execute(command, env, log, timeout):
+    def execute(command, env, log, timeout, **kwargs):
+        assert kwargs.get("build", False)
         if command[:3] == ["cmake", "-G", "Ninja"]:
             assert "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" in command
             source = Path(command[command.index("-S") + 1])
@@ -2274,6 +2284,8 @@ def test_local_uses_independent_source_and_cmake_caches(
             (module.ROOT / "pixi.lock").read_bytes()
         )
         source = tmp_path / f"src-{arm.prefix.name}"
+        assert arm.source_dir == source
+        assert arm.base_arm == (arm.prefix.name == "a" and not smoke)
         build = tmp_path / f"build-{arm.prefix.name}"
         driver_build = tmp_path / f"driver-{arm.prefix.name}"
         assert stamp["workload_sources"] == (
@@ -2286,17 +2298,188 @@ def test_local_uses_independent_source_and_cmake_caches(
             )
         assert stamp["binaries"].keys() == expected_drivers | {module.PB}
         portable_hashes.append(stamp["binaries"][module.PB])
-        return {"commit": arm.commit}
+        arm.output_dir.mkdir()
+        record = {"run": {"commit": arm.commit}}
+        module.write_json(arm.output_dir / "record.json", record)
+        return record
 
     monkeypatch.setattr(module, "run_arm", run_arm)
-    assert len(module.local_arms(args)) == 2
-    assert portable_hashes == [module.sha(b"driver-a"), module.sha(b"driver-b")]
+    base, head = module.local_arms(args)
+    labels = ("a",) if smoke else ("a", "b")
+    assert resolved == [f"{revision}^{{commit}}"] * len(labels)
+    assert portable_hashes == [
+        module.sha(f"driver-{label}".encode()) for label in labels
+    ]
+    if smoke:
+        assert base is head
+        assert head["run"]["mode"] == "smoke"
+        assert (
+            json.loads((tmp_path / "a-run/record.json").read_text())["run"]["mode"]
+            == "smoke"
+        )
     assert args.rows == ("gzb,robot" if portable_only and not rows else rows)
     assert configurations == [
-        (tmp_path / f"src-{arm}", tmp_path / f"build-{arm}") for arm in ("a", "b")
+        (tmp_path / f"src-{arm}", tmp_path / f"build-{arm}") for arm in labels
     ]
     for source, build in configurations:
         assert (build / "CMakeCache.txt").read_text() == source.name
+
+
+@pytest.mark.parametrize(
+    "phase", ["allocshim", "heappad", "configure", "build", "install"]
+)
+@pytest.mark.parametrize("kind", ["build", "timeout", "os", "tool", "other"])
+@pytest.mark.parametrize("smoke", [False, True])
+def test_local_records_only_head_build_failures(
+    monkeypatch, tmp_path, capsys, phase, kind, smoke
+):
+    import io
+    import tarfile
+    from types import SimpleNamespace
+
+    module = _load_runner()
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
+    resolved = []
+
+    def command_output(command):
+        resolved.append(command[-1])
+        return (
+            "base-commit" if command[-1] == "base-revision^{commit}" else "head-commit"
+        )
+
+    monkeypatch.setattr(module, "command_output", command_output)
+    monkeypatch.setattr(
+        module.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0),
+    )
+    archive = io.BytesIO()
+    with tarfile.open(fileobj=archive, mode="w"):
+        pass
+    monkeypatch.setattr(
+        module.subprocess, "check_output", lambda *args, **kwargs: archive.getvalue()
+    )
+    monkeypatch.setattr(module, "workload_hashes", lambda *args: {})
+    monkeypatch.setattr(module, "cmake_compiler", lambda *args: {})
+    monkeypatch.setattr(module, "library_hashes", lambda *args: {})
+
+    error = {
+        "build": module.BuildFailure,
+        "timeout": ValueError,
+        "os": OSError,
+        "tool": FileNotFoundError,
+        "other": RuntimeError,
+    }[kind](f"simulated {phase} failure")
+
+    def execute(command, env, log, timeout, *, build=False):
+        head = log.name.startswith("a." if smoke else "b.")
+        selected = {"configure": "-G", "build": "--build", "install": "--install"}.get(
+            phase
+        )
+        if log.name == f"{phase}.log" or head and command[:2] == ["cmake", selected]:
+            assert build
+            raise error
+        if command[:2] == ["cmake", "--install"]:
+            prefix = Path(command[command.index("--prefix") + 1])
+            (prefix / "share/dart").mkdir(parents=True)
+            (prefix / "lib").mkdir()
+            (prefix / "lib/libdart.so").write_bytes(b"DART")
+        if command[:2] == ["cmake", "--build"] and "driver-" in command[2]:
+            driver = Path(command[2])
+            driver.mkdir()
+            (driver / "portable_step_bench").write_bytes(b"driver")
+        return ""
+
+    monkeypatch.setattr(module, "execute", execute)
+
+    def run_arm(arm):
+        assert arm.base_arm
+        assert not smoke and arm.commit == "base-commit"
+        record = _micro_record(module, "dyn")
+        record["run"]["commit"] = arm.commit
+        record["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+        arm.output_dir.mkdir()
+        module.write_json(arm.output_dir / "record.json", record)
+        return record
+
+    monkeypatch.setattr(module, "run_arm", run_arm)
+    shim = phase in ("allocshim", "heappad")
+    assert module.main(
+        [
+            "local",
+            *(["--smoke"] if smoke else []),
+            "--base",
+            "missing-base" if smoke else "base-revision",
+            "--head",
+            "head-revision",
+            "--rows",
+            "gzb",
+            "--output-dir",
+            str(tmp_path),
+        ]
+    ) == (1 if not smoke and not shim and kind == "build" else 2)
+    assert resolved == (["base-revision^{commit}"] if not smoke else []) + [
+        "head-revision^{commit}"
+    ]
+    failure = tmp_path / "build-failure.json"
+    if kind == "build" and smoke:
+        assert json.loads(failure.read_text()) == {
+            "commit": "head-commit",
+            "error": f"simulated {phase} failure",
+            "error_kind": "build",
+        }
+    else:
+        assert not failure.exists()
+    report = tmp_path / "perf.json"
+    if kind == "build" and not smoke and not shim:
+        record = json.loads(report.read_text())
+        assert record["verdict"]["status"] == "FAIL"
+        assert all(row["error_kind"] == "build" for row in record["results"])
+    else:
+        assert f"simulated {phase} failure" in capsys.readouterr().err
+        assert not report.exists()
+    assert (tmp_path / "a-run/record.json").exists() == (not smoke and not shim)
+
+
+@pytest.mark.parametrize("defect", [None, "measurement", "perturbation", "missing"])
+@pytest.mark.parametrize("perturb", [False, True])
+def test_local_smoke_reports_measurement_failures(
+    monkeypatch, tmp_path, capsys, defect, perturb
+):
+    module = _load_runner()
+    record = _micro_record(module, "dyn")
+    record["run"]["mode"] = "smoke"
+    record["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    row = record["results"][0]
+    if defect == "measurement":
+        row.update(status="broken", error="invalid measurement", head={})
+    elif defect == "perturbation":
+        row.update(gated=False, perturbations={"start4k": {"stable": False}})
+    elif defect == "missing":
+        row["gated"] = False
+
+    def local_arms(args):
+        assert args.smoke
+        return record, record
+
+    monkeypatch.setattr(module, "local_arms", local_arms)
+    path = tmp_path / "perf.json"
+    failed = bool(defect and (defect != "missing" or perturb))
+    status = "FAIL" if failed else "PASS"
+    assert (
+        module.main(
+            [
+                "local",
+                "--smoke",
+                "--json",
+                str(path),
+                *([] if perturb else ["--no-perturb"]),
+            ]
+        )
+        == failed
+    )
+    assert capsys.readouterr().out.startswith(f"Perf smoke: HEAD — {status}\n")
+    assert json.loads(path.read_text())["verdict"]["status"] == status
 
 
 @pytest.mark.parametrize("name", ["dyn", "lcp"])
@@ -2471,3 +2654,592 @@ def test_read_record_rejects_repeated_rows(tmp_path):
     module.write_json(path, record)
     with pytest.raises(ValueError, match="repeats a row"):
         module.read_record(path)
+
+
+def _perf_workflow():
+    path = Path(__file__).resolve().parents[1] / ".github/workflows/perf.yml"
+    # BaseLoader keeps GitHub's `on` key from becoming a YAML 1.1 boolean.
+    return yaml.load(path.read_text(), Loader=yaml.BaseLoader)
+
+
+def _perf_step(job, name):
+    return next(
+        step for step in _perf_workflow()["jobs"][job]["steps"] if step["name"] == name
+    )
+
+
+@pytest.mark.parametrize(
+    "paths, mode, smoke",
+    [
+        (["dart/dynamics/World.cpp", "docs/README.md"], "ab", "false"),
+        (["scripts/perf_regression.py"], "smoke", "true"),
+        (["tools/perf/driver.cpp"], "smoke", "true"),
+        (["tests/benchmark/worlds/test.world"], "smoke", "true"),
+        ([".github/workflows/perf.yml"], "smoke", "true"),
+        (["dart/dynamics/World.cpp", "scripts/perf_regression.py"], "ab", "true"),
+        (["tools/perf/driver.cpp", "dart/dynamics/World.cpp"], "ab", "true"),
+        (
+            ["dart/dynamics/World.cpp", "tests/benchmark/worlds/test.world"],
+            "ab",
+            "true",
+        ),
+        ([".github/workflows/perf.yml", "dart/dynamics/World.cpp"], "ab", "true"),
+    ],
+)
+def test_workflow_selects_smoke_and_ab_for_mixed_changes(tmp_path, paths, mode, smoke):
+    env_path = tmp_path / "env"
+    # Stub git's revision/diff output while executing the actual shell selector.
+    stub = """
+    changed_paths=("$@")
+    git() {
+      case "$1" in
+        rev-parse) printf '%s\\n' revision ;;
+        diff) printf '%s\\0' "${changed_paths[@]}" ;;
+        worktree) return 0 ;;
+      esac
+    }
+    """
+    result = subprocess.run(
+        [
+            "bash",
+            "-e",
+            "-c",
+            stub + _perf_step("measure", "Select smoke or A/B")["run"],
+            "selector",
+            *paths,
+        ],
+        env={
+            **os.environ,
+            "GITHUB_ENV": str(env_path),
+            "GITHUB_OUTPUT": str(tmp_path / "output"),
+            "RUNNER_TEMP": str(tmp_path),
+        },
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    selected = dict(line.split("=", 1) for line in env_path.read_text().splitlines())
+    assert selected["PERF_MODE"] == mode
+    assert selected["PERF_SMOKE"] == smoke
+
+
+def test_workflow_covers_every_workload_source_and_data_path():
+    module = _load_runner()
+    patterns = _perf_workflow()["on"]["pull_request"]["paths"]
+    selector = _perf_step("measure", "Select smoke or A/B")["run"]
+    cases = re.search(r"^\s+(.+?)\) mode=ab", selector, re.M)[1].split("|")
+    # run_arm() reads the pinned 3k world from the harness checkout.
+    assert "tests/benchmark/worlds/*|.github/workflows/perf.yml) smoke=true" in selector
+    sources = {name for names in module.WORKLOAD_SOURCES.values() for name in names}
+    sources |= {name for names in module.WORKLOAD_DATA.values() for name in names}
+    # Atlas hashes only referenced assets; micro scenes use dart://sample.
+    sources |= {
+        path.relative_to(module.ROOT).as_posix()
+        for path in module.robot_data_paths(module.ROOT)
+    }
+    assert "data/sdf/atlas/pelvis.stl" in sources
+    assert "data/sdf/atlas/head.stl" not in sources
+    sources |= {
+        "data/" + uri
+        for name in sources.copy()
+        if (module.ROOT / name).is_file() and not name.startswith("data/")
+        for uri in re.findall(
+            r'"dart://sample/([^"]+)"', (module.ROOT / name).read_text()
+        )
+    }
+    # The portable driver is built once from the harness checkout and run against
+    # both arms, so a driver-only change gets the head harness's smoke run.
+    driver = set(module.WORKLOAD_SOURCES[module.PB])
+    for source in sorted(sources):
+        assert any(
+            re.fullmatch(
+                re.escape(pattern).replace(r"\*\*", ".*").replace(r"\*", "[^/]*"),
+                source,
+            )
+            for pattern in patterns
+        ), source
+        assert (source in driver) != any(
+            fnmatch.fnmatchcase(source, pattern) for pattern in cases
+        ), source
+
+
+@pytest.mark.parametrize(
+    "name, changed",
+    [
+        ("pend", "data/sdf/benchmark.world"),
+        ("robot", "data/sdf/atlas/meshes/shape.stl"),
+        ("robot", "data/sdf/atlas/meshes/ground.stl"),
+    ],
+)
+def test_each_arm_reads_and_hashes_its_own_data(monkeypatch, tmp_path, name, changed):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--prefix",
+            str(tmp_path),
+            "--commit",
+            "HEAD",
+            "--output-dir",
+            str(tmp_path),
+            "--native-only",
+            "--no-perturb",
+        ]
+    )
+    args.bin_dir = tmp_path / "bin"
+    row = module.select_rows(name)[0]
+    paths = {
+        module.WORKLOAD_DATA["pend"][0]: "original",
+        module.WORKLOAD_DATA["robot"][0]: (
+            '<robot><link><visual><geometry><mesh filename="file://meshes/ground.stl"/>'
+            "</geometry></visual></link></robot>"
+        ),
+        module.WORKLOAD_DATA["robot"][1]: (
+            "<sdf><model><link><collision><geometry><mesh>"
+            "<uri>meshes/shape.stl</uri></mesh></geometry></collision></link></model></sdf>"
+        ),
+        "data/sdf/atlas/meshes/shape.stl": "original",
+        "data/sdf/atlas/meshes/ground.stl": "original",
+        "data/sdf/atlas/head.stl": "unrelated",
+    }
+    for arm in ("a", "b"):
+        for path, content in paths.items():
+            file = tmp_path / arm / path
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_text(content)
+    seen = []
+
+    def native(row, args, world):
+        command = module.row_command(row, args, world, 0, 1)
+        data = args.source_dir / "data"
+        if name == "pend":
+            assert command[1] == str(data / "sdf/benchmark.world")
+            seen.append(Path(command[1]).read_text())
+        else:
+            assert command[command.index("--data-dir") + 1] == str(data)
+            seen.append((args.source_dir / changed).read_text())
+        return {"guards": {"finite": True}, "allocs": 0}
+
+    monkeypatch.setattr(module, "native", native)
+    args.source_dir = tmp_path / "a"
+    base = module.measure(row, args, tmp_path)
+    args.source_dir = tmp_path / "b"
+    assert module.measure(row, args, tmp_path)["input_sha"] == base["input_sha"]
+    (args.source_dir / "data/sdf/atlas/head.stl").write_text("unrelated edit")
+    assert module.measure(row, args, tmp_path)["input_sha"] == base["input_sha"]
+    (args.source_dir / changed).write_text("edited head")
+    head = module.measure(row, args, tmp_path)
+    assert head["input_sha"] != base["input_sha"]
+    assert seen == ["original", "original", "original", "edited head"]
+    args.source_dir = tmp_path / "a"
+    assert module.measure(row, args, tmp_path)["input_sha"] == base["input_sha"]
+
+
+@pytest.mark.parametrize(
+    "name, path",
+    [
+        ("pend", "data/sdf/benchmark.world"),
+        ("robot", "data/sdf/atlas/ground.urdf"),
+        ("robot", "data/sdf/atlas/atlas_v3_no_head.sdf"),
+        ("robot", "data/sdf/atlas/meshes/shape.stl"),
+        ("robot", "data/sdf/atlas/meshes/ground.stl"),
+    ],
+)
+@pytest.mark.parametrize("defect", ["missing", "unreadable"])
+@pytest.mark.parametrize("arm", ["base", "head", "smoke"])
+def test_revision_input_errors_are_recorded_per_row(
+    monkeypatch, tmp_path, name, path, defect, arm
+):
+    module = _load_runner()
+    source = tmp_path / "source"
+    inputs = {
+        "data/sdf/benchmark.world": "world",
+        "data/sdf/atlas/ground.urdf": (
+            '<robot><mesh filename="file://meshes/ground.stl"/></robot>'
+        ),
+        "data/sdf/atlas/atlas_v3_no_head.sdf": (
+            "<sdf><mesh><uri>meshes/shape.stl</uri></mesh></sdf>"
+        ),
+        "data/sdf/atlas/meshes/shape.stl": "shape",
+        "data/sdf/atlas/meshes/ground.stl": "ground",
+    }
+    for relative, content in inputs.items():
+        file = source / relative
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(content)
+    shim = tmp_path / "shim.so"
+    shim.write_bytes(b"shim")
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--prefix",
+            str(tmp_path),
+            "--commit",
+            "HEAD",
+            "--source-dir",
+            str(source),
+            "--output-dir",
+            str(tmp_path / "valid-run"),
+            "--shim",
+            str(shim),
+            "--rows",
+            f"{name},gzb",
+            "--native-only",
+            "--no-perturb",
+        ]
+    )
+    monkeypatch.setattr(module, "command_output", lambda command: "HEAD")
+    env = _micro_record(module, "dyn")["run"]["env"]
+    env.update(valgrind="test", glibc="test", preset="perf-1")
+    monkeypatch.setattr(module, "fingerprint", lambda *args: env)
+    monkeypatch.setattr(
+        module,
+        "installed_provenance",
+        lambda args: {
+            "workload_sources": {module.CB: "contact", module.PB: "portable"}
+        },
+    )
+    measured = []
+
+    def native(row, *args):
+        measured.append(row.row)
+        return {
+            "allocs_per_step": 0,
+            "bytes_per_step": 0,
+            "guards": {
+                "hash": "0x1",
+                "finite": True,
+                "contacts": 1,
+                "cap_hit": True,
+                "resting": "0/1",
+            },
+        }
+
+    monkeypatch.setattr(module, "native", native)
+    valid = module.run_arm(args)
+    measured.clear()
+    damaged = source / path
+    if defect == "missing":
+        damaged.unlink()
+    else:
+        # Simulate permissions independently of the test runner's user.
+        original = Path.open
+
+        def open_file(self, *args, **kwargs):
+            if self == damaged:
+                raise PermissionError(f"unreadable input: {self}")
+            return original(self, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "open", open_file)
+    args.base_arm = arm == "base"
+    args.output_dir = tmp_path / "broken-run"
+    broken = module.run_arm(args)
+    row, healthy = broken["results"]
+    assert row["status"] == "broken" and not row["gated"]
+    assert row["input_sha"] is None
+    assert "failed to load revision inputs" in row["error"]
+    assert str(damaged) in row["error"]
+    assert (row.get("error_kind") == "infrastructure") == (arm == "base")
+    assert healthy["status"] == "ok" and measured == ["gzb"]
+    assert json.loads((args.output_dir / "record.json").read_text()) == broken
+    if arm == "smoke":
+        broken["run"]["mode"] = "smoke"
+        records = broken, broken
+    else:
+        records = (broken, valid) if arm == "base" else (valid, broken)
+    monkeypatch.setattr(module, "local_arms", lambda args: records)
+    report = tmp_path / "perf.json"
+    assert module.main(
+        [
+            "local",
+            "--json",
+            str(report),
+            "--no-perturb",
+            *(["--smoke"] if arm == "smoke" else []),
+        ]
+    ) == (2 if arm == "base" else 1)
+    verdict = json.loads(report.read_text())["verdict"]
+    assert verdict["status"] == ("ERROR" if arm == "base" else "FAIL")
+    assert any(row["error"] in failure for failure in verdict["failures"])
+
+
+@pytest.mark.parametrize("defect", ["nonzero", "timeout", "missing", "signal"])
+def test_only_completed_nonzero_builds_are_build_failures(tmp_path, defect):
+    module = _load_runner()
+    command = [
+        sys.executable,
+        "-c",
+        "print('source.cpp:1: error: missing symbol'); raise SystemExit(1)",
+    ]
+    timeout = 5
+    expected = module.BuildFailure
+    if defect == "timeout":
+        command[-1] = "import time; time.sleep(60)"
+        timeout = 0.05
+        expected = ValueError
+    elif defect == "missing":
+        command = [str(tmp_path / "missing-tool")]
+        expected = FileNotFoundError
+    elif defect == "signal":
+        command[-1] = "import os, signal; os.kill(os.getpid(), signal.SIGTERM)"
+        expected = ValueError
+    with pytest.raises(expected) as raised:
+        module.execute(
+            command, dict(os.environ), tmp_path / "build.log", timeout, build=True
+        )
+    assert isinstance(raised.value, module.BuildFailure) == (defect == "nonzero")
+    assert not module.RUNNING
+
+
+@pytest.mark.parametrize(
+    "text, source_error",
+    [
+        ("source.cpp:1: error: missing symbol", True),
+        ("source.cpp:1: fatal error: missing header", True),
+        ("ld: undefined reference to missing_symbol", True),
+        ("CMake Error at CMakeLists.txt:1 (bad_command):", True),
+        ("ninja: build stopped: subcommand failed.", False),
+        ("", False),
+        ("No space left on device", False),
+        ("c++: fatal error: Killed signal terminated program cc1plus", False),
+        ("source.cpp:1: error: No space left on device", False),
+        ("CMake Error: Cannot allocate memory", False),
+        ("source.cpp:1: error: virtual memory exhausted", False),
+        ("ld: undefined reference to symbol\nsubprocess killed by signal 9", False),
+    ],
+)
+def test_build_failure_requires_source_diagnostic_without_runner_failure(
+    tmp_path, text, source_error
+):
+    module = _load_runner()
+    command = [sys.executable, "-c", f"print({text!r}); raise SystemExit(1)"]
+    with pytest.raises(ValueError) as raised:
+        module.execute(command, dict(os.environ), tmp_path / "build.log", 5, build=True)
+    assert isinstance(raised.value, module.BuildFailure) == source_error
+    assert not module.RUNNING
+
+
+def _run_perf_snippet(job, step, tmp_path, env):
+    script = re.search(
+        r"python3 - <<'PY'\n(.*?)\nPY", _perf_step(job, step)["run"], re.S
+    )[1]
+    return subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(Path(__file__).resolve().parents[1]),
+            **env,
+        },
+        text=True,
+        capture_output=True,
+    )
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        None,
+        "missing",
+        "extra",
+        "renamed",
+        "duplicate",
+        "unqualified",
+        "harness",
+        "broken",
+        "unperturbed",
+    ],
+)
+@pytest.mark.parametrize("mixed", [False, True])
+def test_verdict_snippet_requires_complete_qualified_smoke_rows(
+    tmp_path, defect, mixed
+):
+    module = _load_runner()
+    rows = [
+        {
+            "row": row.row,
+            "det": row.det,
+            "status": "ok",
+            "gated": True,
+            "perturbations": {"test": {"stable": True}},
+        }
+        for row in module.select_rows("")
+    ]
+    if defect == "missing":
+        rows.pop()
+    elif defect == "extra":
+        rows.append({**rows[0], "row": "unexpected"})
+    elif defect == "renamed":
+        rows[0]["row"] = "renamed"
+    elif defect == "duplicate":
+        rows.append(copy.deepcopy(rows[0]))
+    elif defect == "unqualified":
+        rows[0]["gated"] = False
+    elif defect == "broken":
+        rows[0]["status"] = "broken"
+    elif defect == "unperturbed":
+        rows[0]["perturbations"] = {}
+    arm = {"schema": "dart-perf/1", "run": {"commit": "head"}, "results": rows}
+    record = {
+        "mode": "smoke",
+        "measurement_exit": 1 if defect == "harness" else 0,
+        "wall_seconds": 1,
+        "base": arm,
+        "head": arm,
+    }
+    ab_head = {"schema": "dart-perf/1", "run": {"commit": "head"}, "results": []}
+    if mixed:
+        record = {
+            "mode": "ab",
+            "measurement_exit": 0,
+            "wall_seconds": 1,
+            "base": {**ab_head, "run": {"commit": "base"}},
+            "head": ab_head,
+            "smoke": record,
+        }
+    module.write_json(tmp_path / "perf.json", record)
+    (tmp_path / "verdict-exit").write_text("2\n")
+    result = _run_perf_snippet(
+        "verdict",
+        "Apply base rules to the live PR body",
+        tmp_path,
+        {"PERF_ARTIFACT": str(tmp_path), "PERF_HEAD": "head", "PERF_BASE": "base"},
+    )
+    assert result.returncode == 0, result.stderr
+    # The comparison still runs for row diagnostics; the step's shell turns any
+    # listed smoke failure into FAIL.
+    assert json.loads((tmp_path / "head.json").read_text()) == (
+        ab_head if mixed else arm
+    )
+    assert bool((tmp_path / "smoke-failures.txt").read_text()) == bool(defect)
+
+
+@pytest.mark.parametrize("status", [0, 1, 2])
+def test_measure_snippet_preserves_mixed_smoke_exit(tmp_path, status):
+    module = _load_runner()
+    output, artifact = tmp_path / "output", tmp_path / "artifact"
+    artifact.mkdir()
+    for name, commit in (("a-run", "base"), ("b-run", "head"), ("smoke/a-run", "head")):
+        path = output / name / "record.json"
+        path.parent.mkdir(parents=True)
+        module.write_json(
+            path, {"schema": "dart-perf/1", "run": {"commit": commit}, "results": []}
+        )
+    env = {
+        "PERF_MODE": "ab",
+        "PERF_SMOKE": "true",
+        "PERF_SMOKE_STATUS": str(status),
+        "PERF_OUTPUT": str(output),
+        "PERF_ARTIFACT": str(artifact),
+        "PERF_STATUS": "0",
+        "PERF_SECONDS": "1",
+        "PERF_HEAD": "head",
+        "PERF_BASE": "base",
+    }
+    measured = _run_perf_snippet("measure", "Build and measure", tmp_path, env)
+    assert measured.returncode == (2 if status == 2 else 0), measured.stderr
+    record = json.loads((artifact / "perf.json").read_text())
+    assert record["mode"] == "ab"
+    assert record["measurement_exit"] == 0
+    assert record["smoke"]["measurement_exit"] == status
+    assert record["smoke"]["head"]["run"]["commit"] == "head"
+    judged = _run_perf_snippet(
+        "verdict", "Apply base rules to the live PR body", tmp_path, env
+    )
+    assert (judged.returncode != 0) == (status == 2), judged.stderr
+
+
+@pytest.mark.parametrize("kind", ["build", "infrastructure", None])
+@pytest.mark.parametrize("mode", ["smoke", "ab", "mixed"])
+@pytest.mark.parametrize("status", [1, 2])
+def test_measure_and_verdict_snippets_require_broken_build_kind(
+    tmp_path, kind, mode, status
+):
+    module = _load_runner()
+    output, artifact = tmp_path / "output", tmp_path / "artifact"
+    output.mkdir()
+    artifact.mkdir()
+    if mode == "mixed":
+        for name, commit in (("a-run", "base"), ("b-run", "head")):
+            (output / name).mkdir()
+            module.write_json(
+                output / name / "record.json",
+                {"schema": "dart-perf/1", "run": {"commit": commit}, "results": []},
+            )
+        (output / "smoke").mkdir()
+    failure = {"commit": "head", "error": "head build failed: simulated"}
+    if kind is not None:
+        failure["error_kind"] = kind
+    if mode in ("smoke", "mixed"):
+        module.write_json(
+            output / ("smoke" if mode == "mixed" else "") / "build-failure.json",
+            failure,
+        )
+    else:
+        (output / "a-run").mkdir()
+        module.write_json(
+            output / "a-run/record.json",
+            {"schema": "dart-perf/1", "run": {"commit": "base"}, "results": []},
+        )
+        module.write_json(
+            output / "perf.json", {"results": [{**failure, "row": "dyn", "det": ""}]}
+        )
+    env = {
+        "PERF_MODE": "ab" if mode == "mixed" else mode,
+        "PERF_SMOKE": "true" if mode == "mixed" else "false",
+        "PERF_SMOKE_STATUS": str(status),
+        "PERF_OUTPUT": str(output),
+        "PERF_ARTIFACT": str(artifact),
+        "PERF_STATUS": "0" if mode == "mixed" else str(status),
+        "PERF_SECONDS": "1",
+        "PERF_HEAD": "head",
+        "PERF_BASE": "base",
+    }
+    measured = _run_perf_snippet("measure", "Build and measure", tmp_path, env)
+    if kind != "build" or mode == "ab" and status == 2:
+        assert measured.returncode != 0
+        assert not (artifact / "perf.json").exists()
+    else:
+        assert measured.returncode == 0, measured.stderr
+        record = json.loads((artifact / "perf.json").read_text())
+        assert record["measurement_exit"] == 0
+        if mode == "ab":
+            assert record["head"]["results"][0]["error_kind"] == "build"
+        elif mode == "mixed":
+            assert record["smoke"]["measurement_exit"] == 0
+            assert record["smoke"]["broken"] == failure
+    if mode in ("smoke", "mixed"):
+        # Exercise the base verdict independently, including a forged broken record.
+        record = {
+            "mode": "smoke",
+            "measurement_exit": 0,
+            "wall_seconds": 1,
+            "broken": failure,
+        }
+        if mode == "mixed":
+            record = {
+                "mode": "ab",
+                "measurement_exit": 0,
+                "wall_seconds": 1,
+                "base": {"run": {"commit": "base"}, "results": []},
+                "head": {"run": {"commit": "head"}, "results": []},
+                "smoke": record,
+            }
+        module.write_json(artifact / "perf.json", record)
+        (tmp_path / "verdict-exit").write_text("2\n")
+        judged = _run_perf_snippet(
+            "verdict", "Apply base rules to the live PR body", tmp_path, env
+        )
+        assert (judged.returncode == 0) == (kind == "build"), judged.stderr
+        if mode == "mixed":
+            # A/B diagnostics must still run; the shell combines these failures.
+            assert (tmp_path / "verdict-exit").read_text() == "2\n"
+            if kind == "build":
+                assert (
+                    "head build failed" in (tmp_path / "smoke-failures.txt").read_text()
+                )
+                assert (tmp_path / "head.json").exists()
+        else:
+            assert (tmp_path / "verdict-exit").read_text() == (
+                "1\n" if kind == "build" else "2\n"
+            )
