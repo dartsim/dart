@@ -151,6 +151,14 @@ def field(text: str, name: str) -> str:
     return match[1].strip()
 
 
+def nonfinite_guards(text: str) -> bool:
+    """True when the output holds complete guards for a non-finite state."""
+    try:
+        return field(text, "Final State Finite") == "false" and bool(guards(text))
+    except ValueError:
+        return False  # incomplete guards: the run itself failed
+
+
 def guards(text: str) -> dict:
     return {
         "hash": field(text, "Final State Hash"),
@@ -224,14 +232,11 @@ def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
     unsupported = re.search(r"^UNSUPPORTED: (.+)$", text, re.MULTILINE)
     if process.returncode == 3 and unsupported:
         raise UnsupportedRow(unsupported[1])
-    if process.returncode == 1:
-        try:
-            if field(text, "Final State Finite") == "false":
-                # The driver reports non-finite states with complete guards.
-                guards(text)
-                return text
-        except ValueError:
-            pass
+    # Both drivers print complete guards before exiting nonzero on a non-finite
+    # state (portable_step_bench with 1, contact_benchmark with 2): a measured
+    # correctness failure, not an infrastructure one.
+    if process.returncode and nonfinite_guards(text):
+        return text
     if process.returncode:
         raise ValueError(f"exit {process.returncode}: see {log}")
     return text

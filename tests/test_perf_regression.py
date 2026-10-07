@@ -1030,7 +1030,10 @@ def test_execution_errors_exit_two_with_reason(monkeypatch, tmp_path, capsys, er
         (1, "partial", False),
         (1, "finite", False),
         (1, "invalid", False),
-        (2, "complete", False),
+        # contact_benchmark exits 2 after printing complete non-finite guards.
+        (2, "complete", True),
+        (2, "finite", False),
+        (3, "missing", False),
     ],
 )
 def test_driver_nonfinite_exit_is_correctness_failure(
