@@ -163,9 +163,9 @@ gh pr checks <PR_NUMBER>
      in step 4 above also satisfies this), and GitHub reports it mergeable.
    - The `maintainer-approved` label is the explicit approval (lifecycle step
      4): confirm it is present and that its latest `labeled` event (`gh api
-     --paginate repos/dartsim/dart/issues/<PR_NUMBER>/events`) comes after
-     the push of every commit except conflict-free base merges. Never add it
-     yourself.
+     --paginate repos/dartsim/dart/issues/<PR_NUMBER>/events`) has the
+     maintainer as `actor` and comes after the push of every commit except
+     conflict-free base merges. Never add it yourself.
    - Use the current head SHA when merging so a moved branch cannot be merged
      accidentally.
 6. Clean up after merge:

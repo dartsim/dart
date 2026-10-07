@@ -87,6 +87,16 @@ jobs:
           set -o pipefail
           prs=$(gh api "repos/$REPO/pulls?state=open&head=$OWNER:$BRANCH&base=$BASE" --jq '.[].number')
           for pr in $prs; do
+            # Keep an approval given after the generated head was committed;
+            # if a lookup fails, remove the label anyway.
+            head=$(gh api "repos/$REPO/pulls/$pr" --jq .head.sha) || head=""
+            committed=$(gh api "repos/$REPO/commits/$head" --jq .commit.committer.date) || committed=""
+            labeled=$(gh api --paginate "repos/$REPO/issues/$pr/events" \
+              --jq '.[] | select(.event == "labeled" and .label.name == "maintainer-approved") | .created_at' \
+              | sort | tail -n 1) || labeled=""
+            if [ -n "$committed" ] && [[ "$labeled" > "$committed" ]]; then
+              continue
+            fi
             if ! out=$(gh api -X DELETE "repos/$REPO/issues/$pr/labels/maintainer-approved" 2>&1) \
               && ! grep -q "Label does not exist" <<< "$out"; then
               echo "$out"
