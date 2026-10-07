@@ -25,6 +25,7 @@ import sys
 import tarfile
 import tempfile
 import threading
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -92,7 +93,26 @@ WORKLOAD_SOURCES = {
         "tests/benchmark/unit/CMakeLists.txt",
     ),
 }
-WORKLOAD_DATA = {"pend": "data/sdf/benchmark.world", "robot": "data/sdf/atlas"}
+WORKLOAD_DATA = {
+    "pend": ("data/sdf/benchmark.world",),
+    "robot": (
+        "data/sdf/atlas/ground.urdf",
+        "data/sdf/atlas/atlas_v3_no_head.sdf",
+    ),
+}
+BUILD_ERROR_MARKERS = (
+    ": error:",
+    ": fatal error:",
+    "undefined reference",
+    "cmake error",
+)
+RUNNER_ERROR_MARKERS = (
+    "no space left on device",
+    "killed signal terminated program",
+    "virtual memory exhausted",
+    "cannot allocate memory",
+    "signal 9",
+)
 # Exact micro wrappers exclude timing/report formatting from the slope.
 COLLECTION_SIGNATURES = {
     CB: "dart::simulation::World::step(bool)",
@@ -234,7 +254,7 @@ class UnsupportedRow(ValueError):
 
 
 class BuildFailure(ValueError):
-    """A configure/build/install process ran and exited nonzero."""
+    """A configure/build/install log identifies a source or configuration error."""
 
 
 # Benchmarks run in their own sessions, so a terminal's Ctrl-C does not reach
@@ -283,7 +303,13 @@ def execute(
                 RUNNING.pop(id(process), None)
     text = log.read_text(encoding="utf-8", errors="replace")
     if build and process.returncode:
-        error = BuildFailure if process.returncode > 0 else ValueError
+        lower = text.lower()
+        source_error = (
+            process.returncode > 0
+            and any(marker in lower for marker in BUILD_ERROR_MARKERS)
+            and not any(marker in lower for marker in RUNNER_ERROR_MARKERS)
+        )
+        error = BuildFailure if source_error else ValueError
         raise error(f"exit {process.returncode}: see {log}")
     unsupported = re.search(r"^UNSUPPORTED: (.+)$", text, re.MULTILINE)
     if process.returncode == 3 and unsupported:
@@ -457,6 +483,27 @@ def native_guards(args, row: Row) -> dict | None:
     return guards(text) if row.det else micro_guards(text)
 
 
+def robot_data_paths(source_dir: Path) -> list[Path]:
+    """The loaded models and their mesh/URI references in this arm's checkout."""
+    source_dir = source_dir.resolve()
+    models = [source_dir / name for name in WORKLOAD_DATA["robot"]]
+    paths = set(models)
+    for model in models:
+        root = ET.parse(model).getroot()
+        references = [node.text.strip() for node in root.iter("uri") if node.text]
+        references += [
+            node.attrib["filename"]
+            for node in root.iter("mesh")
+            if "filename" in node.attrib
+        ]
+        for reference in references:
+            path = (model.parent / reference.removeprefix("file://")).resolve()
+            # Never hash a resource from outside the selected revision.
+            path.relative_to(source_dir)
+            paths.add(path)
+    return sorted(paths)
+
+
 def measure(row: Row, args, world: Path) -> dict:
     result = {
         "row": row.row,
@@ -479,17 +526,14 @@ def measure(row: Row, args, world: Path) -> dict:
         result["input_sha"] = WORLD_SHA
     elif row.row == "pend":
         result["input_sha"] = sha(
-            (args.source_dir / WORKLOAD_DATA["pend"]).read_bytes()
+            (args.source_dir / WORKLOAD_DATA["pend"][0]).read_bytes()
         )
     elif row.row == "robot":
         result["input_sha"] = sha(
             b"".join(
-                path.relative_to(args.source_dir).as_posix().encode()
+                path.relative_to(args.source_dir.resolve()).as_posix().encode()
                 + path.read_bytes()
-                for path in sorted(
-                    (args.source_dir / WORKLOAD_DATA["robot"]).rglob("*")
-                )
-                if path.is_file()
+                for path in robot_data_paths(args.source_dir)
             )
         )
     else:

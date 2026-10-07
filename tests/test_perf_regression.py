@@ -2726,13 +2726,14 @@ def test_workflow_covers_every_workload_source_and_data_path():
     # run_arm() reads the pinned 3k world from the harness checkout.
     assert "tests/benchmark/worlds/*|.github/workflows/perf.yml) smoke=true" in selector
     sources = {name for names in module.WORKLOAD_SOURCES.values() for name in names}
-    sources |= set(module.WORKLOAD_DATA.values())
-    # Atlas includes meshes in subdirectories, and micro scenes use dart://sample.
+    sources |= {name for names in module.WORKLOAD_DATA.values() for name in names}
+    # Atlas hashes only referenced assets; micro scenes use dart://sample.
     sources |= {
         path.relative_to(module.ROOT).as_posix()
-        for path in (module.ROOT / module.WORKLOAD_DATA["robot"]).rglob("*")
-        if path.is_file()
+        for path in module.robot_data_paths(module.ROOT)
     }
+    assert "data/sdf/atlas/pelvis.stl" in sources
+    assert "data/sdf/atlas/head.stl" not in sources
     sources |= {
         "data/" + uri
         for name in sources.copy()
@@ -2757,8 +2758,15 @@ def test_workflow_covers_every_workload_source_and_data_path():
         ), source
 
 
-@pytest.mark.parametrize("name", ["pend", "robot"])
-def test_each_arm_reads_and_hashes_its_own_data(monkeypatch, tmp_path, name):
+@pytest.mark.parametrize(
+    "name, changed",
+    [
+        ("pend", "data/sdf/benchmark.world"),
+        ("robot", "data/sdf/atlas/meshes/shape.stl"),
+        ("robot", "data/sdf/atlas/meshes/ground.stl"),
+    ],
+)
+def test_each_arm_reads_and_hashes_its_own_data(monkeypatch, tmp_path, name, changed):
     module = _load_runner()
     args = module.parser().parse_args(
         [
@@ -2775,16 +2783,25 @@ def test_each_arm_reads_and_hashes_its_own_data(monkeypatch, tmp_path, name):
     )
     args.bin_dir = tmp_path / "bin"
     row = module.select_rows(name)[0]
-    paths = [
-        module.WORKLOAD_DATA["pend"],
-        "data/sdf/atlas/ground.urdf",
-        "data/sdf/atlas/meshes/shape.stl",
-    ]
+    paths = {
+        module.WORKLOAD_DATA["pend"][0]: "original",
+        module.WORKLOAD_DATA["robot"][0]: (
+            '<robot><link><visual><geometry><mesh filename="file://meshes/ground.stl"/>'
+            "</geometry></visual></link></robot>"
+        ),
+        module.WORKLOAD_DATA["robot"][1]: (
+            "<sdf><model><link><collision><geometry><mesh>"
+            "<uri>meshes/shape.stl</uri></mesh></geometry></collision></link></model></sdf>"
+        ),
+        "data/sdf/atlas/meshes/shape.stl": "original",
+        "data/sdf/atlas/meshes/ground.stl": "original",
+        "data/sdf/atlas/head.stl": "unrelated",
+    }
     for arm in ("a", "b"):
-        for path in paths:
+        for path, content in paths.items():
             file = tmp_path / arm / path
             file.parent.mkdir(parents=True, exist_ok=True)
-            file.write_text("original")
+            file.write_text(content)
     seen = []
 
     def native(row, args, world):
@@ -2795,7 +2812,7 @@ def test_each_arm_reads_and_hashes_its_own_data(monkeypatch, tmp_path, name):
             seen.append(Path(command[1]).read_text())
         else:
             assert command[command.index("--data-dir") + 1] == str(data)
-            seen.append((data / "sdf/atlas/meshes/shape.stl").read_text())
+            seen.append((args.source_dir / changed).read_text())
         return {"guards": {"finite": True}, "allocs": 0}
 
     monkeypatch.setattr(module, "native", native)
@@ -2803,11 +2820,12 @@ def test_each_arm_reads_and_hashes_its_own_data(monkeypatch, tmp_path, name):
     base = module.measure(row, args, tmp_path)
     args.source_dir = tmp_path / "b"
     assert module.measure(row, args, tmp_path)["input_sha"] == base["input_sha"]
-    changed = paths[0] if name == "pend" else paths[2]
+    (args.source_dir / "data/sdf/atlas/head.stl").write_text("unrelated edit")
+    assert module.measure(row, args, tmp_path)["input_sha"] == base["input_sha"]
     (args.source_dir / changed).write_text("edited head")
     head = module.measure(row, args, tmp_path)
     assert head["input_sha"] != base["input_sha"]
-    assert seen == ["original", "original", "edited head"]
+    assert seen == ["original", "original", "original", "edited head"]
     args.source_dir = tmp_path / "a"
     assert module.measure(row, args, tmp_path)["input_sha"] == base["input_sha"]
 
@@ -2815,7 +2833,11 @@ def test_each_arm_reads_and_hashes_its_own_data(monkeypatch, tmp_path, name):
 @pytest.mark.parametrize("defect", ["nonzero", "timeout", "missing", "signal"])
 def test_only_completed_nonzero_builds_are_build_failures(tmp_path, defect):
     module = _load_runner()
-    command = [sys.executable, "-c", "raise SystemExit(1)"]
+    command = [
+        sys.executable,
+        "-c",
+        "print('source.cpp:1: error: missing symbol'); raise SystemExit(1)",
+    ]
     timeout = 5
     expected = module.BuildFailure
     if defect == "timeout":
@@ -2833,6 +2855,34 @@ def test_only_completed_nonzero_builds_are_build_failures(tmp_path, defect):
             command, dict(os.environ), tmp_path / "build.log", timeout, build=True
         )
     assert isinstance(raised.value, module.BuildFailure) == (defect == "nonzero")
+    assert not module.RUNNING
+
+
+@pytest.mark.parametrize(
+    "text, source_error",
+    [
+        ("source.cpp:1: error: missing symbol", True),
+        ("source.cpp:1: fatal error: missing header", True),
+        ("ld: undefined reference to missing_symbol", True),
+        ("CMake Error at CMakeLists.txt:1 (bad_command):", True),
+        ("ninja: build stopped: subcommand failed.", False),
+        ("", False),
+        ("No space left on device", False),
+        ("c++: fatal error: Killed signal terminated program cc1plus", False),
+        ("source.cpp:1: error: No space left on device", False),
+        ("CMake Error: Cannot allocate memory", False),
+        ("source.cpp:1: error: virtual memory exhausted", False),
+        ("ld: undefined reference to symbol\nsubprocess killed by signal 9", False),
+    ],
+)
+def test_build_failure_requires_source_diagnostic_without_runner_failure(
+    tmp_path, text, source_error
+):
+    module = _load_runner()
+    command = [sys.executable, "-c", f"print({text!r}); raise SystemExit(1)"]
+    with pytest.raises(ValueError) as raised:
+        module.execute(command, dict(os.environ), tmp_path / "build.log", 5, build=True)
+    assert isinstance(raised.value, module.BuildFailure) == source_error
     assert not module.RUNNING
 
 
