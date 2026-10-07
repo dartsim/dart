@@ -230,6 +230,12 @@
 
 * Collision
 
+  * Build the meshes that `FCLCollisionDetector` uses for boxes, spheres,
+    ellipsoids, and cylinders in `MESH` primitive mode in double instead of
+    float precision, so their vertices can move at float rounding. The default
+    `PRIMITIVE` mode is unchanged:
+    [#3581](https://github.com/dartsim/dart/pull/3581)
+
   * Fix a crash in the ODE collision backend when replacing or resizing a
     shape already in a collision group, and preserve shape updates when
     switching collision detectors after skeletons have been added to a world.
@@ -417,6 +423,12 @@
     [#3553](https://github.com/dartsim/dart/pull/3553)
 
 * Dynamics
+
+  * Compute the `SoftBodyNodeHelper` ellipsoid and cylinder point-mass rest
+    positions in double instead of float precision (they move by at most
+    about 1e-7 relative), and the `HeightmapShape<float>` bounding box from
+    each widened height so it encloses the scaled height range:
+    [#3581](https://github.com/dartsim/dart/pull/3581)
 
   * Speed up `MetaSkeleton::getPositions()` and the other DOF getters and
     setters, with unchanged results. `getPositions()`, which gz-physics calls
