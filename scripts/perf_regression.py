@@ -224,6 +224,14 @@ def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
     unsupported = re.search(r"^UNSUPPORTED: (.+)$", text, re.MULTILINE)
     if process.returncode == 3 and unsupported:
         raise UnsupportedRow(unsupported[1])
+    if process.returncode == 1:
+        try:
+            if field(text, "Final State Finite") == "false":
+                # The driver reports non-finite states with complete guards.
+                guards(text)
+                return text
+        except ValueError:
+            pass
     if process.returncode:
         raise ValueError(f"exit {process.returncode}: see {log}")
     return text
@@ -415,6 +423,9 @@ def measure(row: Row, args, world: Path) -> dict:
             native(row, args, world) if row.det else micro_perturb(row, args, world, "")
         )
         result["head"] = metrics
+        if (metrics.get("guards") or {}).get("finite") is False:
+            result.update(status="broken", error="non-finite state")
+            return result
         if args.perturb:
             result["perturbations"] = {}
             for config in PERTURBATIONS:
@@ -450,8 +461,6 @@ def measure(row: Row, args, world: Path) -> dict:
                 metrics["est_cycles_per_step"] = (
                     sum(counts[key] for key in ("Ir", "Dr", "Dw")) + 4 * l1 + 30 * ll
                 ) / row.steps
-        if (metrics.get("guards") or {}).get("finite") is False:
-            result.update(status="broken", error="non-finite state")
     except UnsupportedRow as error:
         result.update(
             status="unsupported",

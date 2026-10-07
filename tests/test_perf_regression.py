@@ -1023,6 +1023,116 @@ def test_execution_errors_exit_two_with_reason(monkeypatch, tmp_path, capsys, er
 
 
 @pytest.mark.parametrize(
+    "returncode, guard_output, correctness",
+    [
+        (1, "complete", True),
+        (1, "missing", False),
+        (1, "partial", False),
+        (1, "finite", False),
+        (1, "invalid", False),
+        (2, "complete", False),
+    ],
+)
+def test_driver_nonfinite_exit_is_correctness_failure(
+    monkeypatch, tmp_path, capsys, returncode, guard_output, correctness
+):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir = tmp_path
+    row = module.select_rows("gzb")[0]
+    finite = "true"
+    output = "complete"
+    exit_status = 0
+
+    def popen(command, **kwargs):
+        text = (
+            "Avg Step Time: 1.0 ms/step\n"
+            f"STEPALLOC steps=5 measured=3 allocs=0 bytes=0 libdart={tmp_path}/lib/libdart.so\n"
+            "PERFTIME maxrss_kb=100\n"
+        )
+        if output != "missing":
+            text += (
+                "Final State Hash: 0x0123456789abcdef\n"
+                f"Final State Finite: {finite}\n"
+                "Final Contacts: 1\n"
+                "Final Contact Cap Hit: false\n"
+            )
+            if output != "partial":
+                text += "Final Resting: 0 / 1\n"
+        kwargs["stdout"].write(text)
+        return module.argparse.Namespace(
+            returncode=exit_status, wait=lambda **kwargs: None
+        )
+
+    monkeypatch.setattr(module.subprocess, "Popen", popen)
+    monkeypatch.setattr(
+        module, "callgrind", lambda row, args, world, steps: {"Ir": steps * 100}
+    )
+    supported = module.measure(row, args, tmp_path)
+    assert supported["status"] == "ok"
+
+    # A completed correctness failure must stop before additional measurements.
+    def unexpected_callgrind(*args):
+        pytest.fail("Callgrind ran after a non-finite state")
+
+    monkeypatch.setattr(module, "callgrind", unexpected_callgrind)
+    output, exit_status = guard_output, returncode
+    finite = (
+        "true" if output == "finite" else "invalid" if output == "invalid" else "false"
+    )
+    broken = module.measure(row, args, tmp_path)
+    assert broken["status"] == "broken"
+    if correctness:
+        assert broken["head"]["guards"]["finite"] is False
+        assert broken["error"] == "non-finite state"
+        assert "error_kind" not in broken
+        assert "perturbations" not in broken
+    else:
+        assert broken["error_kind"] == "infrastructure"
+        assert broken["error"].startswith(f"exit {returncode}:")
+
+    env = {
+        "fingerprint": "same",
+        "valgrind": "test",
+        "compiler": "test",
+        "compiler_provenance": "dart-perf-build/1",
+        "glibc": "test",
+        "preset": "perf-1",
+    }
+    base = {
+        "schema": "dart-perf/1",
+        "run": {"commit": "base", "env": env},
+        "results": [supported],
+    }
+    head = {
+        "schema": "dart-perf/1",
+        "run": {"commit": "head", "env": env},
+        "results": [broken],
+    }
+    comparison = module.compare(base, head)
+    status = "FAIL" if correctness else "ERROR"
+    assert comparison["verdict"]["status"] == status
+    assert comparison["results"][0]["delta"]["class"] == "broken"
+    base_path, head_path = tmp_path / "base.json", tmp_path / "head.json"
+    module.write_json(base_path, base)
+    module.write_json(head_path, head)
+    assert module.main(
+        ["compare", "--base", str(base_path), "--head", str(head_path)]
+    ) == (1 if correctness else 2)
+    assert status in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
     "phase", ["native", "perturb", "callgrind-before", "callgrind-after"]
 )
 def test_unsupported_driver_rows_are_not_infrastructure_errors(
