@@ -522,25 +522,34 @@ def measure(row: Row, args, world: Path) -> dict:
         ),
         "parity": row.parity,
     }
-    if "{world}" in row.args:
-        result["input_sha"] = WORLD_SHA
-    elif row.row == "pend":
-        result["input_sha"] = sha(
-            (args.source_dir / WORKLOAD_DATA["pend"][0]).read_bytes()
-        )
-    elif row.row == "robot":
-        result["input_sha"] = sha(
-            b"".join(
-                path.relative_to(args.source_dir.resolve()).as_posix().encode()
-                + path.read_bytes()
-                for path in robot_data_paths(args.source_dir)
-            )
-        )
-    else:
-        result["input_sha"] = sha(
-            json.dumps([row.row, row.args], sort_keys=True).encode()
-        )
+    result["input_sha"] = None
     try:
+        try:
+            if "{world}" in row.args:
+                result["input_sha"] = WORLD_SHA
+            elif row.row == "pend":
+                result["input_sha"] = sha(
+                    (args.source_dir / WORKLOAD_DATA["pend"][0]).read_bytes()
+                )
+            elif row.row == "robot":
+                result["input_sha"] = sha(
+                    b"".join(
+                        path.relative_to(args.source_dir.resolve()).as_posix().encode()
+                        + path.read_bytes()
+                        for path in robot_data_paths(args.source_dir)
+                    )
+                )
+            else:
+                result["input_sha"] = sha(
+                    json.dumps([row.row, row.args], sort_keys=True).encode()
+                )
+        except (OSError, ValueError, ET.ParseError) as error:
+            kind = (
+                ValueError if getattr(args, "base_arm", False) else BenchmarkCaseError
+            )
+            raise kind(
+                f"{row.key}: failed to load revision inputs from {args.source_dir}: {error}"
+            ) from error
         metrics = (
             native(row, args, world) if row.det else micro_perturb(row, args, world, "")
         )
@@ -979,9 +988,10 @@ def run_arm(args) -> dict:
     for row, result in zip(rows, results):
         if row.driver in WORKLOAD_SOURCES:
             result["workload_sha"] = provenance["workload_sources"][row.driver]
-            result["input_sha"] = sha(
-                json.dumps([result["input_sha"], result["workload_sha"]]).encode()
-            )
+            if result["input_sha"] is not None:
+                result["input_sha"] = sha(
+                    json.dumps([result["input_sha"], result["workload_sha"]]).encode()
+                )
     by_key = {row_key(result): result for result in results}
     for result in results:
         if result["parity"] and result["status"] == "ok":
@@ -1599,22 +1609,6 @@ def local_arms(args) -> tuple[dict, dict]:
         raise ValueError("local requires the active Pixi environment (CONDA_PREFIX)")
     shims = output / "shims"
     shims.mkdir()
-    for name in ("allocshim", "heappad"):
-        execute(
-            [
-                "/usr/bin/cc",
-                "-O2",
-                "-shared",
-                "-fPIC",
-                "-o",
-                str(shims / f"{name}.so"),
-                str(ROOT / f"tools/perf/{name}.c"),
-                "-ldl",
-            ],
-            os.environ.copy(),
-            shims / f"{name}.log",
-            args.timeout,
-        )
     revisions = [
         command_output(["git", "rev-parse", "--verify", f"{rev}^{{commit}}"])
         for rev in ((args.head,) if args.smoke else (args.base, args.head))
@@ -1671,6 +1665,24 @@ def local_arms(args) -> tuple[dict, dict]:
             "-DDART_DISABLE_COMPILER_CACHE=ON",
         ]
         try:
+            if label == "a":
+                for name in ("allocshim", "heappad"):
+                    execute(
+                        [
+                            "/usr/bin/cc",
+                            "-O2",
+                            "-shared",
+                            "-fPIC",
+                            "-o",
+                            str(shims / f"{name}.so"),
+                            str(ROOT / f"tools/perf/{name}.c"),
+                            "-ldl",
+                        ],
+                        os.environ.copy(),
+                        shims / f"{name}.log",
+                        args.timeout,
+                        build=True,
+                    )
             execute(
                 ["cmake", "-G", "Ninja", "-S", str(source), "-B", str(build), *options],
                 os.environ.copy(),
@@ -1795,6 +1807,7 @@ def local_arms(args) -> tuple[dict, dict]:
         arm = argparse.Namespace(**vars(args))
         arm.prefix, arm.bin_dir, arm.commit = prefix, binary, revision
         arm.source_dir = source
+        arm.base_arm = label == "a" and not args.smoke
         arm.output_dir = output / f"{label}-run"
         arm.shim, arm.heappad = shims / "allocshim.so", shims / "heappad.so"
         records.append(run_arm(arm))

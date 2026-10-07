@@ -2213,7 +2213,7 @@ def test_local_uses_independent_source_and_cmake_caches(
     portable_hashes = []
 
     def execute(command, env, log, timeout, **kwargs):
-        assert kwargs.get("build", False) == (command[0] == "cmake")
+        assert kwargs.get("build", False)
         if command[:3] == ["cmake", "-G", "Ninja"]:
             assert "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" in command
             source = Path(command[command.index("-S") + 1])
@@ -2285,6 +2285,7 @@ def test_local_uses_independent_source_and_cmake_caches(
         )
         source = tmp_path / f"src-{arm.prefix.name}"
         assert arm.source_dir == source
+        assert arm.base_arm == (arm.prefix.name == "a" and not smoke)
         build = tmp_path / f"build-{arm.prefix.name}"
         driver_build = tmp_path / f"driver-{arm.prefix.name}"
         assert stamp["workload_sources"] == (
@@ -2324,7 +2325,9 @@ def test_local_uses_independent_source_and_cmake_caches(
         assert (build / "CMakeCache.txt").read_text() == source.name
 
 
-@pytest.mark.parametrize("phase", ["configure", "build", "install"])
+@pytest.mark.parametrize(
+    "phase", ["allocshim", "heappad", "configure", "build", "install"]
+)
 @pytest.mark.parametrize("kind", ["build", "timeout", "os", "tool", "other"])
 @pytest.mark.parametrize("smoke", [False, True])
 def test_local_records_only_head_build_failures(
@@ -2370,10 +2373,10 @@ def test_local_records_only_head_build_failures(
 
     def execute(command, env, log, timeout, *, build=False):
         head = log.name.startswith("a." if smoke else "b.")
-        selected = {"configure": "-G", "build": "--build", "install": "--install"}[
+        selected = {"configure": "-G", "build": "--build", "install": "--install"}.get(
             phase
-        ]
-        if head and command[:2] == ["cmake", selected]:
+        )
+        if log.name == f"{phase}.log" or head and command[:2] == ["cmake", selected]:
             assert build
             raise error
         if command[:2] == ["cmake", "--install"]:
@@ -2390,6 +2393,7 @@ def test_local_records_only_head_build_failures(
     monkeypatch.setattr(module, "execute", execute)
 
     def run_arm(arm):
+        assert arm.base_arm
         assert not smoke and arm.commit == "base-commit"
         record = _micro_record(module, "dyn")
         record["run"]["commit"] = arm.commit
@@ -2399,6 +2403,7 @@ def test_local_records_only_head_build_failures(
         return record
 
     monkeypatch.setattr(module, "run_arm", run_arm)
+    shim = phase in ("allocshim", "heappad")
     assert module.main(
         [
             "local",
@@ -2412,7 +2417,7 @@ def test_local_records_only_head_build_failures(
             "--output-dir",
             str(tmp_path),
         ]
-    ) == (1 if not smoke and kind == "build" else 2)
+    ) == (1 if not smoke and not shim and kind == "build" else 2)
     assert resolved == (["base-revision^{commit}"] if not smoke else []) + [
         "head-revision^{commit}"
     ]
@@ -2426,14 +2431,14 @@ def test_local_records_only_head_build_failures(
     else:
         assert not failure.exists()
     report = tmp_path / "perf.json"
-    if kind == "build" and not smoke:
+    if kind == "build" and not smoke and not shim:
         record = json.loads(report.read_text())
         assert record["verdict"]["status"] == "FAIL"
         assert all(row["error_kind"] == "build" for row in record["results"])
     else:
         assert f"simulated {phase} failure" in capsys.readouterr().err
         assert not report.exists()
-    assert (tmp_path / "a-run/record.json").exists() == (not smoke)
+    assert (tmp_path / "a-run/record.json").exists() == (not smoke and not shim)
 
 
 @pytest.mark.parametrize("defect", [None, "measurement", "perturbation", "missing"])
@@ -2828,6 +2833,134 @@ def test_each_arm_reads_and_hashes_its_own_data(monkeypatch, tmp_path, name, cha
     assert seen == ["original", "original", "original", "edited head"]
     args.source_dir = tmp_path / "a"
     assert module.measure(row, args, tmp_path)["input_sha"] == base["input_sha"]
+
+
+@pytest.mark.parametrize(
+    "name, path",
+    [
+        ("pend", "data/sdf/benchmark.world"),
+        ("robot", "data/sdf/atlas/ground.urdf"),
+        ("robot", "data/sdf/atlas/atlas_v3_no_head.sdf"),
+        ("robot", "data/sdf/atlas/meshes/shape.stl"),
+        ("robot", "data/sdf/atlas/meshes/ground.stl"),
+    ],
+)
+@pytest.mark.parametrize("defect", ["missing", "unreadable"])
+@pytest.mark.parametrize("arm", ["base", "head", "smoke"])
+def test_revision_input_errors_are_recorded_per_row(
+    monkeypatch, tmp_path, name, path, defect, arm
+):
+    module = _load_runner()
+    source = tmp_path / "source"
+    inputs = {
+        "data/sdf/benchmark.world": "world",
+        "data/sdf/atlas/ground.urdf": (
+            '<robot><mesh filename="file://meshes/ground.stl"/></robot>'
+        ),
+        "data/sdf/atlas/atlas_v3_no_head.sdf": (
+            "<sdf><mesh><uri>meshes/shape.stl</uri></mesh></sdf>"
+        ),
+        "data/sdf/atlas/meshes/shape.stl": "shape",
+        "data/sdf/atlas/meshes/ground.stl": "ground",
+    }
+    for relative, content in inputs.items():
+        file = source / relative
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_text(content)
+    shim = tmp_path / "shim.so"
+    shim.write_bytes(b"shim")
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--prefix",
+            str(tmp_path),
+            "--commit",
+            "HEAD",
+            "--source-dir",
+            str(source),
+            "--output-dir",
+            str(tmp_path / "valid-run"),
+            "--shim",
+            str(shim),
+            "--rows",
+            f"{name},gzb",
+            "--native-only",
+            "--no-perturb",
+        ]
+    )
+    monkeypatch.setattr(module, "command_output", lambda command: "HEAD")
+    env = _micro_record(module, "dyn")["run"]["env"]
+    env.update(valgrind="test", glibc="test", preset="perf-1")
+    monkeypatch.setattr(module, "fingerprint", lambda *args: env)
+    monkeypatch.setattr(
+        module,
+        "installed_provenance",
+        lambda args: {
+            "workload_sources": {module.CB: "contact", module.PB: "portable"}
+        },
+    )
+    measured = []
+
+    def native(row, *args):
+        measured.append(row.row)
+        return {
+            "allocs_per_step": 0,
+            "bytes_per_step": 0,
+            "guards": {
+                "hash": "0x1",
+                "finite": True,
+                "contacts": 1,
+                "cap_hit": True,
+                "resting": "0/1",
+            },
+        }
+
+    monkeypatch.setattr(module, "native", native)
+    valid = module.run_arm(args)
+    measured.clear()
+    damaged = source / path
+    if defect == "missing":
+        damaged.unlink()
+    else:
+        # Simulate permissions independently of the test runner's user.
+        original = Path.open
+
+        def open_file(self, *args, **kwargs):
+            if self == damaged:
+                raise PermissionError(f"unreadable input: {self}")
+            return original(self, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "open", open_file)
+    args.base_arm = arm == "base"
+    args.output_dir = tmp_path / "broken-run"
+    broken = module.run_arm(args)
+    row, healthy = broken["results"]
+    assert row["status"] == "broken" and not row["gated"]
+    assert row["input_sha"] is None
+    assert "failed to load revision inputs" in row["error"]
+    assert str(damaged) in row["error"]
+    assert (row.get("error_kind") == "infrastructure") == (arm == "base")
+    assert healthy["status"] == "ok" and measured == ["gzb"]
+    assert json.loads((args.output_dir / "record.json").read_text()) == broken
+    if arm == "smoke":
+        broken["run"]["mode"] = "smoke"
+        records = broken, broken
+    else:
+        records = (broken, valid) if arm == "base" else (valid, broken)
+    monkeypatch.setattr(module, "local_arms", lambda args: records)
+    report = tmp_path / "perf.json"
+    assert module.main(
+        [
+            "local",
+            "--json",
+            str(report),
+            "--no-perturb",
+            *(["--smoke"] if arm == "smoke" else []),
+        ]
+    ) == (2 if arm == "base" else 1)
+    verdict = json.loads(report.read_text())["verdict"]
+    assert verdict["status"] == ("ERROR" if arm == "base" else "FAIL")
+    assert any(row["error"] in failure for failure in verdict["failures"])
 
 
 @pytest.mark.parametrize("defect", ["nonzero", "timeout", "missing", "signal"])
