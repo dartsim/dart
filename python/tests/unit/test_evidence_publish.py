@@ -252,7 +252,7 @@ def test_gh_release_dry_run_predicts_urls_without_uploading(tmp_path: Path) -> N
     assert "UPLOAD-PLACEHOLDER" not in text
 
 
-def test_gh_release_yes_uploads_each_artifact(
+def test_gh_release_create_includes_assets_before_immutable_publication(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     selection = _selection(tmp_path)
@@ -268,7 +268,14 @@ def test_gh_release_yes_uploads_each_artifact(
             view_count += 1
             if view_count == 1:
                 return _Completed(1, stderr="release not found")
-            return _Completed(stdout=json.dumps(_release(shot, clip)))
+            return _Completed(stdout=json.dumps(_release(shot, clip, immutable=True)))
+        assert args[:2] == ["release", "create"]
+        staged_paths = [Path(arg) for arg in args[3 : args.index("--repo")]]
+        assert [path.name for path in staged_paths] == [
+            _release_asset_name(shot),
+            _release_asset_name(clip),
+        ]
+        assert [path.read_bytes() for path in staged_paths] == [b"png", b"mp4"]
         return _Completed(0)
 
     monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
@@ -300,20 +307,12 @@ def test_gh_release_yes_uploads_each_artifact(
     assert manifest["release_tag"] == "verification-media"
     assert "note" not in manifest
     verbs = [call[:2] for call in calls]
-    assert verbs[0] == ["release", "view"]
-    assert verbs[1] == ["release", "create"]
-    assert verbs[-1] == ["release", "view"]
+    assert verbs == [
+        ["release", "view"],
+        ["release", "create"],
+        ["release", "view"],
+    ]
     assert view_count == 2
-    uploads = [call for call in calls if call[:2] == ["release", "upload"]]
-    assert len(uploads) == 1
-    assert "--clobber" not in uploads[0]
-    uploaded_names = [
-        Path(argument).name for argument in uploads[0][3 : uploads[0].index("--repo")]
-    ]
-    assert uploaded_names == [
-        _release_asset_name(tmp_path / "shot.png"),
-        _release_asset_name(tmp_path / "clip.mp4"),
-    ]
     shot_name = _release_asset_name(tmp_path / "shot.png")
     assert manifest["urls"]["shot.png"] == (
         "https://github.com/dartsim/dart/releases/download/"
@@ -321,6 +320,70 @@ def test_gh_release_yes_uploads_each_artifact(
     )
     assert manifest["status"] == "published_and_verified"
     assert manifest["url_provenance"] == "github_release_view"
+
+
+@pytest.mark.parametrize(
+    "status",
+    ["publishing", "failed_pre_mutation", "partial_or_unverified", "not_ready"],
+)
+def test_interrupted_section_write_leaves_non_passing_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, status: str
+) -> None:
+    selection = _selection(tmp_path, passing=status != "not_ready")
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    out.write_text("OLD SUCCESS URL\n", encoding="utf-8")
+    manifest_out.write_text(
+        json.dumps({"pass": True, "status": "published_and_verified"}),
+        encoding="utf-8",
+    )
+    atomic_write = evidence_publish._atomic_write_text
+    calls: list[list[str]] = []
+
+    def interrupt_section_write(path: Path, text: str) -> None:
+        atomic_write(path, text)
+        if path == out and (
+            f"**Status**: `{status}`" in text or status == "not_ready"
+        ):
+            raise KeyboardInterrupt("simulated interruption between output writes")
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        calls.append(list(args))
+        if status == "failed_pre_mutation":
+            return _Completed(1, stderr="authentication failed")
+        if args[:2] == ["release", "upload"]:
+            raise OSError("simulated partial upload")
+        assert args[:2] == ["release", "view"]
+        return _Completed(stdout=json.dumps(_release()))
+
+    monkeypatch.setattr(evidence_publish, "_atomic_write_text", interrupt_section_write)
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    with pytest.raises(KeyboardInterrupt):
+        evidence_publish.main(
+            [
+                str(selection),
+                "--backend",
+                "gh-release",
+                "--repo",
+                "dartsim/dart",
+                "--yes",
+                "--environment",
+                "Linux",
+                *_semantic_args(),
+                "--out",
+                str(out),
+                "--manifest-out",
+                str(manifest_out),
+            ]
+        )
+
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["pass"] is False
+    assert manifest["status"] == status
+    assert manifest["urls"] == {}
+    assert "OLD SUCCESS URL" not in out.read_text(encoding="utf-8")
+    if status in {"publishing", "not_ready"}:
+        assert calls == []
 
 
 def test_partial_upload_invalidates_stale_success_outputs(
@@ -496,7 +559,10 @@ def test_final_verification_failure_refreshes_observed_remote_assets(
     assert view_count == 3
 
 
-@pytest.mark.parametrize("alias", ["same-output", "selected-artifact"])
+@pytest.mark.parametrize(
+    "alias",
+    ["same-output", "selected-artifact", "case-output", "case-artifact", "case-selection"],
+)
 def test_output_aliases_fail_before_github(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -512,6 +578,13 @@ def test_output_aliases_fail_before_github(
     monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
     out = tmp_path / ("shot.png" if alias == "selected-artifact" else "section.md")
     manifest_out = out if alias == "same-output" else tmp_path / "publication.json"
+    if alias == "case-output":
+        manifest_out = tmp_path / "Section.md"
+        assert not out.exists() and not manifest_out.exists()
+    elif alias == "case-artifact":
+        out = tmp_path / "SHOT.PNG"
+    elif alias == "case-selection":
+        manifest_out = tmp_path / "SELECTION.JSON"
     code = evidence_publish.main(
         [
             str(selection),

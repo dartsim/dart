@@ -471,6 +471,7 @@ def _publish_gh_release(
                         "release",
                         "create",
                         tag,
+                        *(str(staged[name]) for name in missing),
                         "--repo",
                         repo,
                         "--title",
@@ -488,7 +489,7 @@ def _publish_gh_release(
                     attempt,
                 )
                 raise
-        if missing:
+        elif missing:
             # Content-addressed names prevent a later publication from replacing
             # bytes behind an older PR URL. Exact uploaded assets are reusable;
             # same-name incomplete or unverifiable assets deliberately block.
@@ -687,7 +688,10 @@ def _selection_passes(selection: dict[str, Any]) -> bool:
 
 
 def _paths_alias(left: Path, right: Path) -> bool:
-    if left.resolve(strict=False) == right.resolve(strict=False):
+    if (
+        str(left.resolve(strict=False)).casefold()
+        == str(right.resolve(strict=False)).casefold()
+    ):
         return True
     if left.exists() and right.exists():
         return os.path.samefile(left, right)
@@ -869,10 +873,12 @@ def _write_outputs(
     section: str,
     manifest: dict[str, Any],
 ) -> str:
-    """Atomically replace the section first and the authoritative manifest last."""
+    """Invalidate the manifest first; commit passing states after the section."""
     text = json.dumps(manifest, indent=2, sort_keys=True)
+    if manifest_out is not None and not manifest["pass"]:
+        _atomic_write_text(manifest_out, text + "\n")
     _atomic_write_text(out, section)
-    if manifest_out is not None:
+    if manifest_out is not None and manifest["pass"]:
         _atomic_write_text(manifest_out, text + "\n")
     return text
 
