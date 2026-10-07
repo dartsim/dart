@@ -308,7 +308,27 @@ int main(int argc, char** argv)
           hash = mix(hash, transform.data()[j]);
       }
     }
-    const auto finalContacts = world->getLastCollisionResult().getNumContacts();
+    const auto& collisionResult = world->getLastCollisionResult();
+    const auto finalContacts = collisionResult.getNumContacts();
+    hash = mix(hash, finalContacts);
+    for (const auto& contact : collisionResult.getContacts()) {
+      for (const auto* vector :
+           {&contact.point, &contact.normal, &contact.force}) {
+        finite = finite && vector->allFinite();
+        for (Eigen::Index j = 0; j < vector->size(); ++j)
+          hash = mix(hash, (*vector)[j]);
+      }
+      finite = finite && std::isfinite(contact.penetrationDepth);
+      hash = mix(hash, contact.penetrationDepth);
+      for (const auto* frame :
+           {contact.getShapeFrame1(), contact.getShapeFrame2()}) {
+        finite = finite && frame != nullptr;
+        const std::string name = frame ? frame->getName() : "";
+        hash = mix(hash, name.size());
+        for (unsigned char character : name)
+          hash = mix(hash, character);
+      }
+    }
     std::printf("Guest CPU: %s\n", cpuBrand().c_str());
     std::printf("Avg Step Time: %.6f ms/step\n", steps ? ms / steps : 0.0);
     std::printf(

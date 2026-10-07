@@ -25,6 +25,9 @@ def test_compare_classification_and_thresholds():
         "valgrind": "3.22.0",
         "compiler": "test",
         "compiler_provenance": "dart-perf-build/1",
+        "compiler_sha": "1" * 64,
+        "valgrind_sha": "1" * 64,
+        "callgrind_sha": "1" * 64,
         "glibc": "2.39",
         "preset": "perf-1",
         "fingerprint": "test",
@@ -236,8 +239,87 @@ def _load_runner():
     return module
 
 
+def _fake_valgrind(module, monkeypatch, tmp_path):
+    launcher = tmp_path / "valgrind/bin/valgrind"
+    launcher.parent.mkdir(parents=True)
+    launcher.write_bytes(b"launcher")
+    tool = tmp_path / "valgrind/libexec/valgrind/callgrind-amd64-linux"
+    tool.parent.mkdir(parents=True)
+    tool.write_bytes(b"callgrind")
+    link = tmp_path / "valgrind-link"
+    link.symlink_to(launcher)
+    monkeypatch.setattr(module, "VALGRIND", str(link))
+    return launcher, tool
+
+
+@pytest.mark.parametrize("defect", ["patched", "missing", "missing setting"])
+def test_cmake_compiler_hashes_resolved_executable(tmp_path, defect):
+    module = _load_runner()
+    executable = tmp_path / "compiler"
+    executable.write_bytes(b"compiler")
+    link = tmp_path / "c++"
+    link.symlink_to(executable)
+    settings = tmp_path / "CMakeFiles/4.0/CMakeCXXCompiler.cmake"
+    settings.parent.mkdir(parents=True)
+    settings.write_text(
+        f'set(CMAKE_CXX_COMPILER "{link}")\n'
+        'set(CMAKE_CXX_COMPILER_ID "GNU")\n'
+        'set(CMAKE_CXX_COMPILER_VERSION "13.3.0")\n'
+    )
+    first = module.cmake_compiler(tmp_path)
+    assert first == {"compiler": "GNU 13.3.0", "compiler_sha": module.sha(b"compiler")}
+    if defect == "patched":
+        executable.write_bytes(b"patched compiler")
+        second = module.cmake_compiler(tmp_path)
+        assert second["compiler"] == first["compiler"]
+        assert second["compiler_sha"] == module.sha(b"patched compiler")
+    elif defect == "missing":
+        executable.unlink()
+        with pytest.raises(FileNotFoundError):
+            module.cmake_compiler(tmp_path)
+    else:
+        settings.write_text(settings.read_text().split("\n", 1)[1])
+        with pytest.raises(ValueError, match="missing CMake compiler executable"):
+            module.cmake_compiler(tmp_path)
+
+
+@pytest.mark.parametrize("directory", ["libexec/valgrind", "lib/valgrind"])
+@pytest.mark.parametrize("missing", ["launcher", "tool", "tool target"])
+def test_valgrind_hashes_require_launcher_and_tool(
+    monkeypatch, tmp_path, directory, missing
+):
+    module = _load_runner()
+    launcher, tool = _fake_valgrind(module, monkeypatch, tmp_path)
+    alternate = launcher.parent.parent / directory / tool.name
+    alternate.parent.mkdir(parents=True, exist_ok=True)
+    tool.rename(alternate)
+    first = module.valgrind_hashes()
+    assert first["valgrind_sha"] == module.sha(b"launcher")
+    assert first["callgrind_sha"] == module.sha(
+        json.dumps(
+            {f"{directory}/{tool.name}": module.sha(b"callgrind")}, sort_keys=True
+        ).encode()
+    )
+    if missing == "launcher":
+        launcher.unlink()
+        with pytest.raises(FileNotFoundError):
+            module.valgrind_hashes()
+    elif missing == "tool":
+        alternate.unlink()
+        with pytest.raises(
+            ValueError, match="missing Valgrind Callgrind tool provenance"
+        ):
+            module.valgrind_hashes()
+    else:
+        alternate.unlink()
+        alternate.symlink_to(tmp_path / "missing")
+        with pytest.raises(FileNotFoundError):
+            module.valgrind_hashes()
+
+
 def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
     module = _load_runner()
+    launcher, tool = _fake_valgrind(module, monkeypatch, tmp_path)
     args = module.parser().parse_args(
         [
             "run",
@@ -267,6 +349,7 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         "schema": "dart-perf-build/1",
         "commit": "installed",
         "compiler": "Clang 18.1.8",
+        "compiler_sha": "1" * 64,
         "pixi_lock_sha": "installed lock",
         "preset": "installed preset",
         "libdart_sha": module.sha(library.read_bytes()),
@@ -290,8 +373,35 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
 
     monkeypatch.setattr(module, "command_output", command_output)
     first = module.fingerprint(args)
-    for key in ("compiler", "pixi_lock_sha", "preset"):
+    for key in ("compiler", "compiler_sha", "pixi_lock_sha", "preset"):
         assert first[key] == stamp[key]
+    for field, executable in (
+        ("compiler_sha", None),
+        ("valgrind_sha", launcher),
+        ("callgrind_sha", tool),
+    ):
+        if executable:
+            original = executable.read_bytes()
+            executable.write_bytes(b"patched tool with the same version")
+        else:
+            stamp[field] = module.sha(b"patched compiler")
+            module.write_json(path, stamp)
+        changed = module.fingerprint(args)
+        assert changed["compiler"] == first["compiler"]
+        assert changed["valgrind"] == first["valgrind"]
+        assert changed[field] != first[field]
+        assert changed["fingerprint"] != first["fingerprint"]
+        result = module.compare(
+            {"run": {"commit": "base", "env": first}},
+            {"run": {"commit": "head", "env": changed}},
+        )
+        assert result["verdict"]["status"] == "ERROR"
+        assert field in result["verdict"]["failures"][0]
+        if executable:
+            executable.write_bytes(original)
+        else:
+            stamp[field] = first[field]
+            module.write_json(path, stamp)
     stamp["compiler"] = "GNU 13.3.0"
     module.write_json(path, stamp)
     second = module.fingerprint(args)
@@ -312,6 +422,9 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
     for key, value, reason in (
         ("compiler", "", "invalid installed build provenance"),
         ("compiler", None, "invalid installed build provenance"),
+        ("compiler_sha", None, "invalid installed build provenance"),
+        ("compiler_sha", "", "invalid installed build provenance"),
+        ("compiler_sha", "invalid", "invalid installed build provenance"),
         ("schema", "other", "invalid installed build provenance"),
         ("binaries", None, "invalid installed build provenance"),
         ("workload_sources", None, "invalid installed build provenance"),
@@ -377,6 +490,7 @@ def test_installed_provenance_verifies_all_dart_libraries(tmp_path, defect):
         "schema": "dart-perf-build/1",
         "commit": "installed",
         "compiler": "GNU 13.3.0",
+        "compiler_sha": "1" * 64,
         "pixi_lock_sha": "installed lock",
         "preset": "perf-1",
         "libdart_sha": module.sha(b"core"),
@@ -414,6 +528,7 @@ def test_installed_provenance_verifies_all_dart_libraries(tmp_path, defect):
 
 def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
     module = _load_runner()
+    _fake_valgrind(module, monkeypatch, tmp_path)
     args = module.parser().parse_args(
         [
             "run",
@@ -438,6 +553,7 @@ def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
     stamp = {
         "schema": "dart-perf-build/1",
         "compiler": "GNU 13.3.0",
+        "compiler_sha": "1" * 64,
         "pixi_lock_sha": "unchanged build lock",
         "preset": "perf-1",
         "binaries": {
@@ -483,7 +599,16 @@ def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
 
 
 @pytest.mark.parametrize("missing", ["base", "head", "both"])
-@pytest.mark.parametrize("field", ["compiler", "compiler_provenance"])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "compiler",
+        "compiler_provenance",
+        "compiler_sha",
+        "valgrind_sha",
+        "callgrind_sha",
+    ],
+)
 def test_saved_records_require_compiler_provenance(missing, field):
     module = _load_runner()
     base = _micro_record(module, "dyn")
@@ -495,8 +620,13 @@ def test_saved_records_require_compiler_provenance(missing, field):
         record["run"]["env"].pop(field)
     result = module.compare(base, head)
     assert result["verdict"]["status"] == "ERROR"
-    assert "compiler provenance" in result["verdict"]["failures"][0]
-    assert "compiler provenance" in module.markdown(result)
+    reason = (
+        "compiler provenance"
+        if field in ("compiler", "compiler_provenance")
+        else "tool executable provenance"
+    )
+    assert reason in result["verdict"]["failures"][0]
+    assert reason in module.markdown(result)
 
 
 @pytest.mark.parametrize(
@@ -612,6 +742,9 @@ def test_changed_input_requires_rebaseline_without_deltas(version):
                 "fingerprint": "same",
                 "compiler": "test",
                 "compiler_provenance": "dart-perf-build/1",
+                "compiler_sha": "1" * 64,
+                "valgrind_sha": "1" * 64,
+                "callgrind_sha": "1" * 64,
             },
         },
         "results": [
@@ -673,6 +806,7 @@ def test_changed_input_requires_rebaseline_without_deltas(version):
 @pytest.mark.parametrize("changed", [False, True])
 def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, changed):
     module = _load_runner()
+    _fake_valgrind(module, monkeypatch, tmp_path)
     row = module.select_rows(name)[0]
     args = module.parser().parse_args(
         [
@@ -703,6 +837,7 @@ def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, cha
         "schema": "dart-perf-build/1",
         "commit": "installed",
         "compiler": "test",
+        "compiler_sha": "1" * 64,
         "pixi_lock_sha": "lock",
         "preset": "perf-1",
         "libdart_sha": module.sha(b"DART"),
@@ -1295,6 +1430,9 @@ def test_driver_guard_failure_exit_is_correctness_failure(
         "valgrind": "test",
         "compiler": "test",
         "compiler_provenance": "dart-perf-build/1",
+        "compiler_sha": "1" * 64,
+        "valgrind_sha": "1" * 64,
+        "callgrind_sha": "1" * 64,
         "glibc": "test",
         "preset": "perf-1",
     }
@@ -1385,6 +1523,9 @@ def test_unsupported_driver_rows_are_not_infrastructure_errors(
         "fingerprint": "same",
         "compiler": "test",
         "compiler_provenance": "dart-perf-build/1",
+        "compiler_sha": "1" * 64,
+        "valgrind_sha": "1" * 64,
+        "callgrind_sha": "1" * 64,
     }
     base = {"run": {"commit": "base", "env": env}, "results": [unsupported]}
     unchanged = module.compare(base, copy.deepcopy(base))
@@ -1507,6 +1648,9 @@ def test_compare_and_local_infrastructure_exit_two(monkeypatch, tmp_path, capsys
         "valgrind": "test",
         "compiler": "test",
         "compiler_provenance": "dart-perf-build/1",
+        "compiler_sha": "1" * 64,
+        "valgrind_sha": "1" * 64,
+        "callgrind_sha": "1" * 64,
         "glibc": "test",
         "preset": "perf-1",
     }
@@ -1551,6 +1695,9 @@ def _micro_record(module, name):
                 "fingerprint": "same",
                 "compiler": "test",
                 "compiler_provenance": "dart-perf-build/1",
+                "compiler_sha": "1" * 64,
+                "valgrind_sha": "1" * 64,
+                "callgrind_sha": "1" * 64,
             },
         },
         "results": [
@@ -2064,7 +2211,9 @@ def test_local_uses_independent_source_and_cmake_caches(
             build.mkdir()
             compiler = build / "CMakeFiles/4.0/CMakeCXXCompiler.cmake"
             compiler.parent.mkdir(parents=True)
+            (tmp_path / "c++").write_bytes(b"build compiler")
             compiler.write_text(
+                f'set(CMAKE_CXX_COMPILER "{tmp_path / "c++"}")\n'
                 'set(CMAKE_CXX_COMPILER_ID "GNU")\nset(CMAKE_CXX_COMPILER_VERSION "13.3.0")\n'
             )
             workload_source = source if source.name.startswith("src-") else module.ROOT
@@ -2120,6 +2269,7 @@ def test_local_uses_independent_source_and_cmake_caches(
         assert arm.commit == "commit"
         stamp = module.installed_provenance(arm)
         assert stamp["compiler"] == "GNU 13.3.0"
+        assert stamp["compiler_sha"] == module.sha(b"build compiler")
         assert stamp["pixi_lock_sha"] == module.sha(
             (module.ROOT / "pixi.lock").read_bytes()
         )

@@ -628,7 +628,7 @@ def select_rows(names: str) -> list[Row]:
     return selected
 
 
-def cmake_compiler(build: Path) -> str:
+def cmake_compiler(build: Path) -> dict[str, str]:
     files = list((build / "CMakeFiles").glob("*/CMakeCXXCompiler.cmake"))
     if len(files) != 1:
         raise ValueError(f"missing or ambiguous CMake compiler provenance: {build}")
@@ -641,7 +641,29 @@ def cmake_compiler(build: Path) -> str:
         if not match:
             raise ValueError(f"missing CMake compiler {key}: {build}")
         parts.append(match[1])
-    return " ".join(parts)
+    match = re.search(r'^set\(CMAKE_CXX_COMPILER "([^"]+)"\)$', text, re.MULTILINE)
+    if not match:
+        raise ValueError(f"missing CMake compiler executable: {build}")
+    return {
+        "compiler": " ".join(parts),
+        "compiler_sha": sha(Path(match[1]).resolve(strict=True).read_bytes()),
+    }
+
+
+def valgrind_hashes() -> dict[str, str]:
+    launcher = Path(VALGRIND).resolve(strict=True)
+    prefix = launcher.parent.parent
+    tools = {
+        path.relative_to(prefix).as_posix(): sha(path.resolve(strict=True).read_bytes())
+        for directory in ("libexec/valgrind", "lib/valgrind")
+        for path in sorted((prefix / directory).glob("callgrind-*-linux"))
+    }
+    if not tools:
+        raise ValueError(f"missing Valgrind Callgrind tool provenance: {prefix}")
+    return {
+        "valgrind_sha": sha(launcher.read_bytes()),
+        "callgrind_sha": sha(json.dumps(tools, sort_keys=True).encode()),
+    }
 
 
 def library_hashes(prefix: Path) -> dict[str, str]:
@@ -758,6 +780,8 @@ def installed_provenance(args) -> dict:
             not isinstance(stamp.get(key), str) or not stamp[key].strip()
             for key in ("compiler", "pixi_lock_sha", "preset")
         )
+        or not isinstance(stamp.get("compiler_sha"), str)
+        or not re.fullmatch(r"[0-9a-f]{64}", stamp["compiler_sha"])
     ):
         raise ValueError(f"invalid installed build provenance: {path}")
     if stamp.get("commit") != args.commit:
@@ -797,8 +821,10 @@ def fingerprint(args, provenance: dict | None = None) -> dict:
     )
     values = {
         "valgrind": version,
+        **valgrind_hashes(),
         "valgrind_guest_cpu": cpu,
         "compiler": provenance["compiler"],
+        "compiler_sha": provenance["compiler_sha"],
         "compiler_provenance": provenance["schema"],
         "glibc": command_output(["getconf", "GNU_LIBC_VERSION"]).split()[-1],
         "pixi_lock_sha": provenance["pixi_lock_sha"],
@@ -1026,6 +1052,12 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         for env in (base_env, head_env)
     ):
         differing.append("compiler provenance (missing or invalid)")
+    if any(
+        not isinstance(env.get(key), str) or not re.fullmatch(r"[0-9a-f]{64}", env[key])
+        for env in (base_env, head_env)
+        for key in ("compiler_sha", "valgrind_sha", "callgrind_sha")
+    ):
+        differing.append("tool executable provenance (missing or invalid)")
     failures = []
     if (
         not base_env.get("fingerprint")
@@ -1639,7 +1671,7 @@ def local_arms(args) -> tuple[dict, dict]:
                 {
                     "schema": "dart-perf-build/1",
                     "commit": revision,
-                    "compiler": compiler,
+                    **compiler,
                     "pixi_lock_sha": sha((ROOT / "pixi.lock").read_bytes()),
                     "preset": "perf-1",
                     "libdart_sha": sha((prefix / "lib/libdart.so").read_bytes()),
