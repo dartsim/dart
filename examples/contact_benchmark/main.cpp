@@ -1202,7 +1202,12 @@ FinalStateDigest collectFinalStateDigest(
     for (const auto* frame :
          {contact.getShapeFrame1(), contact.getShapeFrame2()}) {
       digest.finite = digest.finite && frame != nullptr;
-      const std::string name = frame ? frame->getName() : "";
+      // Shape node names repeat across skeletons; qualify them with the
+      // skeleton's, which is unique in a World.
+      const auto* shapeNode = frame ? frame->asShapeNode() : nullptr;
+      const std::string name = shapeNode ? shapeNode->getSkeleton()->getName()
+                                               + "/" + shapeNode->getName()
+                                         : (frame ? frame->getName() : "");
       mixDigest(digest, static_cast<std::uint64_t>(name.size()));
       for (unsigned char character : name)
         mixDigest(digest, static_cast<std::uint64_t>(character));

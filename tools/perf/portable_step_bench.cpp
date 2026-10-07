@@ -323,7 +323,12 @@ int main(int argc, char** argv)
       for (const auto* frame :
            {contact.getShapeFrame1(), contact.getShapeFrame2()}) {
         finite = finite && frame != nullptr;
-        const std::string name = frame ? frame->getName() : "";
+        // Shape node names repeat across skeletons; qualify them with the
+        // skeleton's, which is unique in a World.
+        const auto* shapeNode = frame ? frame->asShapeNode() : nullptr;
+        const std::string name = shapeNode ? shapeNode->getSkeleton()->getName()
+                                                 + "/" + shapeNode->getName()
+                                           : (frame ? frame->getName() : "");
         hash = mix(hash, name.size());
         for (unsigned char character : name)
           hash = mix(hash, character);
