@@ -186,7 +186,7 @@ gh pr checks <PR_NUMBER>
      4). It must still be on the PR (`gh pr view --json labels`); its latest
      `labeled` event (`gh api --paginate repos/dartsim/dart/issues/<PR>/events`)
      must have the maintainer as `actor` and follow any `head_ref_force_pushed`,
-     `base_ref_changed` or `reopened` event and the earliest `pull_request` run
+     `base_ref_changed` or `reopened` event and the latest `pull_request` run
      for this PR (`gh api "repos/dartsim/dart/actions/runs?event=pull_request&
      head_sha=<SHA>"`, `pull_requests[].number`) on the last commit that is not
      a conflict-free base merge, or on the first later commit with one. If none
