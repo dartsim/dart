@@ -92,6 +92,7 @@ WORKLOAD_SOURCES = {
         "tests/benchmark/unit/CMakeLists.txt",
     ),
 }
+WORKLOAD_DATA = {"pend": "data/sdf/benchmark.world", "robot": "data/sdf/atlas"}
 # Exact micro wrappers exclude timing/report formatting from the slope.
 COLLECTION_SIGNATURES = {
     CB: "dart::simulation::World::step(bool)",
@@ -113,7 +114,7 @@ SCENES = {
         100,
         ("dart", "fcl", "bullet", "ode"),
     ),
-    "pend": ((str(ROOT / "data/sdf/benchmark.world"),), 100, 1000, ("dart",)),
+    "pend": (("{data}/sdf/benchmark.world",), 100, 1000, ("dart",)),
 }
 ROWS = [
     Row(name, det, CB, args, w, n, ir=(name, det) != ("s2r", "ode"))
@@ -232,6 +233,10 @@ class UnsupportedRow(ValueError):
     pass
 
 
+class BuildFailure(ValueError):
+    """A configure/build/install process ran and exited nonzero."""
+
+
 # Benchmarks run in their own sessions, so a terminal's Ctrl-C does not reach
 # them; whoever catches the interruption stops every running group.
 RUNNING: dict[int, subprocess.Popen] = {}
@@ -251,7 +256,9 @@ def kill_running() -> None:
         kill_group(process)
 
 
-def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
+def execute(
+    command: list[str], env: dict, log: Path, timeout: int, *, build: bool = False
+) -> str:
     with log.open("w", encoding="utf-8") as output:
         process = subprocess.Popen(
             command,
@@ -275,6 +282,9 @@ def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
             with RUNNING_LOCK:
                 RUNNING.pop(id(process), None)
     text = log.read_text(encoding="utf-8", errors="replace")
+    if build and process.returncode:
+        error = BuildFailure if process.returncode > 0 else ValueError
+        raise error(f"exit {process.returncode}: see {log}")
     unsupported = re.search(r"^UNSUPPORTED: (.+)$", text, re.MULTILINE)
     if process.returncode == 3 and unsupported:
         raise UnsupportedRow(unsupported[1])
@@ -291,8 +301,17 @@ def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
 def row_command(row: Row, args, world: Path, warmup: int, steps: int) -> list[str]:
     command = [
         str(args.bin_dir / row.driver),
-        *(str(world) if item == "{world}" else item for item in row.args),
+        *(
+            (
+                str(world)
+                if item == "{world}"
+                else item.replace("{data}", str(args.source_dir / "data"))
+            )
+            for item in row.args
+        ),
     ]
+    if row.row == "robot":
+        command += ["--data-dir", str(args.source_dir / "data")]
     if not row.det:
         return [*command, f"--benchmark_min_time={steps}x"]
     command += [
@@ -459,12 +478,17 @@ def measure(row: Row, args, world: Path) -> dict:
     if "{world}" in row.args:
         result["input_sha"] = WORLD_SHA
     elif row.row == "pend":
-        result["input_sha"] = sha((ROOT / "data/sdf/benchmark.world").read_bytes())
+        result["input_sha"] = sha(
+            (args.source_dir / WORKLOAD_DATA["pend"]).read_bytes()
+        )
     elif row.row == "robot":
         result["input_sha"] = sha(
             b"".join(
-                path.relative_to(ROOT).as_posix().encode() + path.read_bytes()
-                for path in sorted((ROOT / "data/sdf/atlas").glob("*"))
+                path.relative_to(args.source_dir).as_posix().encode()
+                + path.read_bytes()
+                for path in sorted(
+                    (args.source_dir / WORKLOAD_DATA["robot"]).rglob("*")
+                )
                 if path.is_file()
             )
         )
@@ -1472,6 +1496,7 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--prefix", type=Path, required=True)
     run.add_argument("--bin-dir", type=Path)
     run.add_argument("--commit", required=True, help="revision installed in --prefix")
+    run.add_argument("--source-dir", type=Path, default=ROOT)
     local = sub.add_parser("local", help="build revisions and compare them")
     local.add_argument("--base", default="origin/main")
     local.add_argument("--head", default="HEAD")
@@ -1607,6 +1632,7 @@ def local_arms(args) -> tuple[dict, dict]:
                 os.environ.copy(),
                 output / f"{label}.configure.log",
                 args.timeout,
+                build=True,
             )
             workload_sources = workload_hashes(source, drivers, build, prefix)
             targets = ["dart-utils-urdf", *drivers]
@@ -1629,12 +1655,14 @@ def local_arms(args) -> tuple[dict, dict]:
                 os.environ.copy(),
                 output / f"{label}.build.log",
                 max(args.timeout, 3600),
+                build=True,
             )
             execute(
                 ["cmake", "--install", str(build), "--prefix", str(prefix)],
                 os.environ.copy(),
                 output / f"{label}.install.log",
                 args.timeout,
+                build=True,
             )
             binary = prefix / "bin"
             binary.mkdir(exist_ok=True)
@@ -1659,6 +1687,7 @@ def local_arms(args) -> tuple[dict, dict]:
                 os.environ.copy(),
                 output / f"{label}.driver-configure.log",
                 args.timeout,
+                build=True,
             )
             workload_sources |= workload_hashes(ROOT, [PB], driver_build, prefix)
             execute(
@@ -1666,6 +1695,7 @@ def local_arms(args) -> tuple[dict, dict]:
                 os.environ.copy(),
                 output / f"{label}.driver-build.log",
                 args.timeout,
+                build=True,
             )
             shutil.copy2(
                 driver_build / "portable_step_bench", binary / "portable_step_bench"
@@ -1691,11 +1721,11 @@ def local_arms(args) -> tuple[dict, dict]:
                     },
                 },
             )
-        except (OSError, ValueError) as error:
+        except BuildFailure as error:
             if args.smoke:
                 write_json(
                     output / "build-failure.json",
-                    {"commit": revision, "error": str(error)},
+                    {"commit": revision, "error": str(error), "error_kind": "build"},
                 )
             if label == "a":
                 raise
@@ -1710,7 +1740,7 @@ def local_arms(args) -> tuple[dict, dict]:
                             "gated": False,
                             "perturbations": {},
                             "error": f"head build failed: {error}",
-                            "error_kind": "infrastructure",
+                            "error_kind": "build",
                             "head": {},
                         }
                         for row in records[0]["results"]
@@ -1720,6 +1750,7 @@ def local_arms(args) -> tuple[dict, dict]:
             break
         arm = argparse.Namespace(**vars(args))
         arm.prefix, arm.bin_dir, arm.commit = prefix, binary, revision
+        arm.source_dir = source
         arm.output_dir = output / f"{label}-run"
         arm.shim, arm.heappad = shims / "allocshim.so", shims / "heappad.so"
         records.append(run_arm(arm))
@@ -1792,7 +1823,7 @@ def main(argv: list[str] | None = None) -> int:
             if record["verdict"]["status"] == "ERROR"
             else int(record["verdict"]["status"] == "FAIL")
         )
-    except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as error:
+    except Exception as error:
         print(f"perf: {error}", file=sys.stderr)
         return 2
 

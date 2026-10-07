@@ -8,6 +8,7 @@ on:
       - "dart/**"
       - "examples/contact_benchmark/**"
       - "tests/benchmark/**"
+      - "tests/unit/lcpsolver/DantzigProblemCases.hpp"
       - "data/**"
       - "CMakeLists.txt"
       - "cmake/**"
@@ -55,7 +56,7 @@ jobs:
           # Only perf-relevant changes choose the mode; companion docs/tests do not.
           while IFS= read -r -d '' path; do
             case "$path" in
-              dart/*|examples/contact_benchmark/*|tests/benchmark/*|data/*|CMakeLists.txt|cmake/*) mode=ab ;;
+              dart/*|examples/contact_benchmark/*|tests/benchmark/*|tests/unit/lcpsolver/DantzigProblemCases.hpp|data/*|tools/perf/*|CMakeLists.txt|cmake/*) mode=ab ;;
             esac
           done < <(git diff --no-renames --name-only -z "$base" "$head")
           echo "base=$base" >> "$GITHUB_OUTPUT"
@@ -99,8 +100,11 @@ jobs:
           output = Path(os.environ["PERF_OUTPUT"])
           failure = output / "build-failure.json"
           if os.environ["PERF_MODE"] == "smoke" and failure.exists():
+              failure = json.loads(failure.read_text())
+              if failure.get("error_kind") != "build":
+                  raise ValueError("head build infrastructure failure")
               record = {"mode": "smoke", "wall_seconds": int(os.environ["PERF_SECONDS"]),
-                        "measurement_exit": 0, "broken": json.loads(failure.read_text())}
+                        "measurement_exit": 0, "broken": failure}
               (Path(os.environ["PERF_ARTIFACT"]) / "perf.json").write_text(json.dumps(record, allow_nan=False) + "\n")
               raise SystemExit(0)
           base = json.loads((output / "a-run/record.json").read_text())
@@ -110,13 +114,13 @@ jobs:
           elif head_path.exists():
               head = json.loads(head_path.read_text())
           else:
-              # P1 local reports a head build failure without writing b-run.
+              # The base harness reports a head build failure without b-run.
               report = json.loads((output / "perf.json").read_text())
               rows = report["results"]
-              if not rows or not all(row.get("error", "").startswith("head build failed:") for row in rows):
+              if os.environ["PERF_STATUS"] != "1" or not rows or not all(row.get("error_kind") == "build" for row in rows):
                   raise ValueError("head measurement missing")
               head = {"schema": base["schema"], "run": {**base["run"], "commit": os.environ["PERF_HEAD"]},
-                      "results": [{**row, "head": {}, "status": "broken", "error_kind": "build"} for row in rows]}
+                      "results": [{**row, "head": {}, "status": "broken"} for row in rows]}
               # A broken head is data; infrastructure failures still fail measure.
               os.environ["PERF_STATUS"] = "0"
           record = {"mode": os.environ["PERF_MODE"], "wall_seconds": int(os.environ["PERF_SECONDS"]),
@@ -168,6 +172,10 @@ jobs:
           ref: ${{ needs.measure.outputs.base || github.event.pull_request.base.sha }}
           persist-credentials: false
 
+      # Re-run failed jobs starts "all failed jobs and their dependents";
+      # successful measure outputs are reused, and "any artifacts that were created
+      # in the initial run will be available in the re-run".
+      # https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-workflow-runs/re-running-workflows-and-jobs
       - name: Download measurements (including earlier attempts)
         id: download
         continue-on-error: true
@@ -191,6 +199,8 @@ jobs:
           import os
           from pathlib import Path
 
+          from scripts.perf_regression import row_key, select_rows
+
           record = json.loads((Path(os.environ["PERF_ARTIFACT"]) / "perf.json").read_text())
           if record["measurement_exit"] not in (0, 1) or record["mode"] not in ("ab", "smoke"):
               raise ValueError("failed or unsupported measurement")
@@ -198,12 +208,19 @@ jobs:
               raise ValueError("head harness smoke failed")
           if "broken" in record:
               failure = record["broken"]
+              if failure.get("error_kind") != "build":
+                  raise ValueError("head build infrastructure failure")
               if record["mode"] != "smoke" or failure["commit"] != os.environ["PERF_HEAD"]:
                   raise ValueError("broken head revision mismatch")
               Path("perf.md").write_text(f'<!-- dart-perf -->\nPerf smoke: FAIL — head build failed: {failure["error"]}\nBuild wall time: {record["wall_seconds"]} s.\n')
               Path("verdict-exit").write_text("1\n")
               raise SystemExit(0)
           if record["mode"] == "smoke":
+              keys = [row_key(row) for row in record["head"]["results"]]
+              if set(keys) != {row.key for row in select_rows("")} or len(keys) != len(set(keys)):
+                  Path("perf.md").write_text("<!-- dart-perf -->\nPerf smoke: FAIL — benchmark row set differs from base defaults.\n")
+                  Path("verdict-exit").write_text("1\n")
+                  raise SystemExit(0)
               rows = [row for row in record["head"]["results"] if row.get("status") == "ok"]
               if not rows or not all(row.get("perturbations") and row.get("gated") for row in rows):
                   Path("perf.md").write_text("<!-- dart-perf -->\nPerf smoke: FAIL — rows measured without a passing perturbation check.\n")
