@@ -2663,13 +2663,68 @@ def _perf_step(job, name):
     )
 
 
+@pytest.mark.parametrize(
+    "paths, mode, smoke",
+    [
+        (["dart/dynamics/World.cpp", "docs/README.md"], "ab", "false"),
+        (["scripts/perf_regression.py"], "smoke", "true"),
+        (["tools/perf/driver.cpp"], "smoke", "true"),
+        (["tests/benchmark/worlds/test.world"], "smoke", "true"),
+        ([".github/workflows/perf.yml"], "smoke", "true"),
+        (["dart/dynamics/World.cpp", "scripts/perf_regression.py"], "ab", "true"),
+        (["tools/perf/driver.cpp", "dart/dynamics/World.cpp"], "ab", "true"),
+        (
+            ["dart/dynamics/World.cpp", "tests/benchmark/worlds/test.world"],
+            "ab",
+            "true",
+        ),
+        ([".github/workflows/perf.yml", "dart/dynamics/World.cpp"], "ab", "true"),
+    ],
+)
+def test_workflow_selects_smoke_and_ab_for_mixed_changes(tmp_path, paths, mode, smoke):
+    env_path = tmp_path / "env"
+    # Stub git's revision/diff output while executing the actual shell selector.
+    stub = """
+    changed_paths=("$@")
+    git() {
+      case "$1" in
+        rev-parse) printf '%s\\n' revision ;;
+        diff) printf '%s\\0' "${changed_paths[@]}" ;;
+        worktree) return 0 ;;
+      esac
+    }
+    """
+    result = subprocess.run(
+        [
+            "bash",
+            "-e",
+            "-c",
+            stub + _perf_step("measure", "Select smoke or A/B")["run"],
+            "selector",
+            *paths,
+        ],
+        env={
+            **os.environ,
+            "GITHUB_ENV": str(env_path),
+            "GITHUB_OUTPUT": str(tmp_path / "output"),
+            "RUNNER_TEMP": str(tmp_path),
+        },
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    selected = dict(line.split("=", 1) for line in env_path.read_text().splitlines())
+    assert selected["PERF_MODE"] == mode
+    assert selected["PERF_SMOKE"] == smoke
+
+
 def test_workflow_covers_every_workload_source_and_data_path():
     module = _load_runner()
     patterns = _perf_workflow()["on"]["pull_request"]["paths"]
     selector = _perf_step("measure", "Select smoke or A/B")["run"]
-    cases = re.search(r'case "\$path" in\s+(.+?)\) mode=ab', selector)[1].split("|")
+    cases = re.search(r"^\s+(.+?)\) mode=ab", selector, re.M)[1].split("|")
     # run_arm() reads the pinned 3k world from the harness checkout.
-    assert '[[ "$path" == tests/benchmark/worlds/* ]] && continue' in selector
+    assert "tests/benchmark/worlds/*|.github/workflows/perf.yml) smoke=true" in selector
     sources = {name for names in module.WORKLOAD_SOURCES.values() for name in names}
     sources |= set(module.WORKLOAD_DATA.values())
     # Atlas includes meshes in subdirectories, and micro scenes use dart://sample.
@@ -2800,9 +2855,22 @@ def _run_perf_snippet(job, step, tmp_path, env):
 
 @pytest.mark.parametrize(
     "defect",
-    [None, "missing", "extra", "renamed", "duplicate", "unqualified", "harness"],
+    [
+        None,
+        "missing",
+        "extra",
+        "renamed",
+        "duplicate",
+        "unqualified",
+        "harness",
+        "broken",
+        "unperturbed",
+    ],
 )
-def test_verdict_snippet_requires_complete_qualified_smoke_rows(tmp_path, defect):
+@pytest.mark.parametrize("mixed", [False, True])
+def test_verdict_snippet_requires_complete_qualified_smoke_rows(
+    tmp_path, defect, mixed
+):
     module = _load_runner()
     rows = [
         {
@@ -2824,17 +2892,29 @@ def test_verdict_snippet_requires_complete_qualified_smoke_rows(tmp_path, defect
         rows.append(copy.deepcopy(rows[0]))
     elif defect == "unqualified":
         rows[0]["gated"] = False
+    elif defect == "broken":
+        rows[0]["status"] = "broken"
+    elif defect == "unperturbed":
+        rows[0]["perturbations"] = {}
     arm = {"schema": "dart-perf/1", "run": {"commit": "head"}, "results": rows}
-    module.write_json(
-        tmp_path / "perf.json",
-        {
-            "mode": "smoke",
-            "measurement_exit": 1 if defect == "harness" else 0,
+    record = {
+        "mode": "smoke",
+        "measurement_exit": 1 if defect == "harness" else 0,
+        "wall_seconds": 1,
+        "base": arm,
+        "head": arm,
+    }
+    ab_head = {"schema": "dart-perf/1", "run": {"commit": "head"}, "results": []}
+    if mixed:
+        record = {
+            "mode": "ab",
+            "measurement_exit": 0,
             "wall_seconds": 1,
-            "base": arm,
-            "head": arm,
-        },
-    )
+            "base": {**ab_head, "run": {"commit": "base"}},
+            "head": ab_head,
+            "smoke": record,
+        }
+    module.write_json(tmp_path / "perf.json", record)
     (tmp_path / "verdict-exit").write_text("2\n")
     result = _run_perf_snippet(
         "verdict",
@@ -2845,12 +2925,49 @@ def test_verdict_snippet_requires_complete_qualified_smoke_rows(tmp_path, defect
     assert result.returncode == 0, result.stderr
     # The comparison still runs for row diagnostics; the step's shell turns any
     # listed smoke failure into FAIL.
-    assert json.loads((tmp_path / "head.json").read_text()) == arm
+    assert json.loads((tmp_path / "head.json").read_text()) == (
+        ab_head if mixed else arm
+    )
     assert bool((tmp_path / "smoke-failures.txt").read_text()) == bool(defect)
 
 
+@pytest.mark.parametrize("status", [0, 1, 2])
+def test_measure_snippet_preserves_mixed_smoke_exit(tmp_path, status):
+    module = _load_runner()
+    output, artifact = tmp_path / "output", tmp_path / "artifact"
+    artifact.mkdir()
+    for name, commit in (("a-run", "base"), ("b-run", "head"), ("smoke/a-run", "head")):
+        path = output / name / "record.json"
+        path.parent.mkdir(parents=True)
+        module.write_json(
+            path, {"schema": "dart-perf/1", "run": {"commit": commit}, "results": []}
+        )
+    env = {
+        "PERF_MODE": "ab",
+        "PERF_SMOKE": "true",
+        "PERF_SMOKE_STATUS": str(status),
+        "PERF_OUTPUT": str(output),
+        "PERF_ARTIFACT": str(artifact),
+        "PERF_STATUS": "0",
+        "PERF_SECONDS": "1",
+        "PERF_HEAD": "head",
+        "PERF_BASE": "base",
+    }
+    measured = _run_perf_snippet("measure", "Build and measure", tmp_path, env)
+    assert measured.returncode == (2 if status == 2 else 0), measured.stderr
+    record = json.loads((artifact / "perf.json").read_text())
+    assert record["mode"] == "ab"
+    assert record["measurement_exit"] == 0
+    assert record["smoke"]["measurement_exit"] == status
+    assert record["smoke"]["head"]["run"]["commit"] == "head"
+    judged = _run_perf_snippet(
+        "verdict", "Apply base rules to the live PR body", tmp_path, env
+    )
+    assert (judged.returncode != 0) == (status == 2), judged.stderr
+
+
 @pytest.mark.parametrize("kind", ["build", "infrastructure", None])
-@pytest.mark.parametrize("mode", ["smoke", "ab"])
+@pytest.mark.parametrize("mode", ["smoke", "ab", "mixed"])
 @pytest.mark.parametrize("status", [1, 2])
 def test_measure_and_verdict_snippets_require_broken_build_kind(
     tmp_path, kind, mode, status
@@ -2859,11 +2976,22 @@ def test_measure_and_verdict_snippets_require_broken_build_kind(
     output, artifact = tmp_path / "output", tmp_path / "artifact"
     output.mkdir()
     artifact.mkdir()
+    if mode == "mixed":
+        for name, commit in (("a-run", "base"), ("b-run", "head")):
+            (output / name).mkdir()
+            module.write_json(
+                output / name / "record.json",
+                {"schema": "dart-perf/1", "run": {"commit": commit}, "results": []},
+            )
+        (output / "smoke").mkdir()
     failure = {"commit": "head", "error": "head build failed: simulated"}
     if kind is not None:
         failure["error_kind"] = kind
-    if mode == "smoke":
-        module.write_json(output / "build-failure.json", failure)
+    if mode in ("smoke", "mixed"):
+        module.write_json(
+            output / ("smoke" if mode == "mixed" else "") / "build-failure.json",
+            failure,
+        )
     else:
         (output / "a-run").mkdir()
         module.write_json(
@@ -2874,10 +3002,12 @@ def test_measure_and_verdict_snippets_require_broken_build_kind(
             output / "perf.json", {"results": [{**failure, "row": "dyn", "det": ""}]}
         )
     env = {
-        "PERF_MODE": mode,
+        "PERF_MODE": "ab" if mode == "mixed" else mode,
+        "PERF_SMOKE": "true" if mode == "mixed" else "false",
+        "PERF_SMOKE_STATUS": str(status),
         "PERF_OUTPUT": str(output),
         "PERF_ARTIFACT": str(artifact),
-        "PERF_STATUS": str(status),
+        "PERF_STATUS": "0" if mode == "mixed" else str(status),
         "PERF_SECONDS": "1",
         "PERF_HEAD": "head",
         "PERF_BASE": "base",
@@ -2892,17 +3022,41 @@ def test_measure_and_verdict_snippets_require_broken_build_kind(
         assert record["measurement_exit"] == 0
         if mode == "ab":
             assert record["head"]["results"][0]["error_kind"] == "build"
-    if mode == "smoke":
+        elif mode == "mixed":
+            assert record["smoke"]["measurement_exit"] == 0
+            assert record["smoke"]["broken"] == failure
+    if mode in ("smoke", "mixed"):
         # Exercise the base verdict independently, including a forged broken record.
-        module.write_json(
-            artifact / "perf.json",
-            {"mode": mode, "measurement_exit": 0, "wall_seconds": 1, "broken": failure},
-        )
+        record = {
+            "mode": "smoke",
+            "measurement_exit": 0,
+            "wall_seconds": 1,
+            "broken": failure,
+        }
+        if mode == "mixed":
+            record = {
+                "mode": "ab",
+                "measurement_exit": 0,
+                "wall_seconds": 1,
+                "base": {"run": {"commit": "base"}, "results": []},
+                "head": {"run": {"commit": "head"}, "results": []},
+                "smoke": record,
+            }
+        module.write_json(artifact / "perf.json", record)
         (tmp_path / "verdict-exit").write_text("2\n")
         judged = _run_perf_snippet(
             "verdict", "Apply base rules to the live PR body", tmp_path, env
         )
         assert (judged.returncode == 0) == (kind == "build"), judged.stderr
-        assert (tmp_path / "verdict-exit").read_text() == (
-            "1\n" if kind == "build" else "2\n"
-        )
+        if mode == "mixed":
+            # A/B diagnostics must still run; the shell combines these failures.
+            assert (tmp_path / "verdict-exit").read_text() == "2\n"
+            if kind == "build":
+                assert (
+                    "head build failed" in (tmp_path / "smoke-failures.txt").read_text()
+                )
+                assert (tmp_path / "head.json").exists()
+        else:
+            assert (tmp_path / "verdict-exit").read_text() == (
+                "1\n" if kind == "build" else "2\n"
+            )

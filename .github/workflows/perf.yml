@@ -31,7 +31,8 @@ concurrency:
 jobs:
   measure:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    # An A/B takes about 25-35 minutes; a mixed PR adds a head smoke build.
+    timeout-minutes: 90
     permissions:
       contents: read
     outputs:
@@ -50,12 +51,13 @@ jobs:
           base=$(git rev-parse HEAD^1)
           head=$(git rev-parse HEAD)
           mode=smoke
+          smoke=false
           # Only perf-relevant changes choose the mode; companion docs/tests do not.
           while IFS= read -r -d '' path; do
             # The 3k world is a pinned input: the harness reads it from its own
             # checkout and checks WORLD_SHA, so changing it needs the smoke run.
-            [[ "$path" == tests/benchmark/worlds/* ]] && continue
             case "$path" in
+              scripts/perf_regression.py|tools/perf/*|tests/benchmark/worlds/*|.github/workflows/perf.yml) smoke=true ;;
               dart/*|examples/contact_benchmark/*|tests/benchmark/*|tests/unit/lcpsolver/DantzigProblemCases.hpp|data/*|CMakeLists.txt|cmake/*) mode=ab ;;
             esac
           done < <(git diff --no-renames --name-only -z "$base" "$head")
@@ -64,6 +66,7 @@ jobs:
           echo "PERF_BASE=$base" >> "$GITHUB_ENV"
           echo "PERF_HEAD=$head" >> "$GITHUB_ENV"
           echo "PERF_MODE=$mode" >> "$GITHUB_ENV"
+          echo "PERF_SMOKE=$smoke" >> "$GITHUB_ENV"
           # The runner context is not available in job-level env.
           echo "PERF_OUTPUT=$RUNNER_TEMP/perf" >> "$GITHUB_ENV"
           echo "PERF_ARTIFACT=$RUNNER_TEMP/perf-artifact" >> "$GITHUB_ENV"
@@ -92,44 +95,54 @@ jobs:
           status=0
           pixi run python "$harness" local "${options[@]}" \
             --output-dir "$PERF_OUTPUT" --jobs 4 || status=$?
+          smoke_status=0
+          if [[ "$PERF_MODE" == ab && "$PERF_SMOKE" == true ]]; then
+            pixi run python scripts/perf_regression.py local \
+              --base "$PERF_BASE" --head "$PERF_HEAD" --perturb --smoke \
+              --output-dir "$PERF_OUTPUT/smoke" --jobs 4 || smoke_status=$?
+          fi
           export PERF_SECONDS=$(($(date +%s) - started))
           export PERF_STATUS=$status
+          export PERF_SMOKE_STATUS=$smoke_status
           mkdir -p "$PERF_ARTIFACT"
           python3 - <<'PY'
           import json
           import os
           from pathlib import Path
 
+          def measurement(output, mode, status):
+              record = {"mode": mode, "wall_seconds": int(os.environ["PERF_SECONDS"]),
+                        "measurement_exit": status}
+              failure = output / "build-failure.json"
+              if mode == "smoke" and failure.exists():
+                  failure = json.loads(failure.read_text())
+                  if failure.get("error_kind") != "build":
+                      raise ValueError("head build infrastructure failure")
+                  return {**record, "measurement_exit": 0, "broken": failure}
+              base = json.loads((output / "a-run/record.json").read_text())
+              head_path = output / "b-run/record.json"
+              if mode == "smoke":
+                  head = base
+              elif head_path.exists():
+                  head = json.loads(head_path.read_text())
+              else:
+                  # The base harness reports a head build failure without b-run.
+                  report = json.loads((output / "perf.json").read_text())
+                  rows = report["results"]
+                  if status != 1 or not rows or not all(row.get("error_kind") == "build" for row in rows):
+                      raise ValueError("head measurement missing")
+                  head = {"schema": base["schema"], "run": {**base["run"], "commit": os.environ["PERF_HEAD"]},
+                          "results": [{**row, "head": {}, "status": "broken"} for row in rows]}
+                  # A broken head is data; infrastructure failures still fail measure.
+                  record["measurement_exit"] = 0
+              return {**record, "base": base, "head": head}
+
           output = Path(os.environ["PERF_OUTPUT"])
-          failure = output / "build-failure.json"
-          if os.environ["PERF_MODE"] == "smoke" and failure.exists():
-              failure = json.loads(failure.read_text())
-              if failure.get("error_kind") != "build":
-                  raise ValueError("head build infrastructure failure")
-              record = {"mode": "smoke", "wall_seconds": int(os.environ["PERF_SECONDS"]),
-                        "measurement_exit": 0, "broken": failure}
-              (Path(os.environ["PERF_ARTIFACT"]) / "perf.json").write_text(json.dumps(record, allow_nan=False) + "\n")
-              raise SystemExit(0)
-          base = json.loads((output / "a-run/record.json").read_text())
-          head_path = output / "b-run/record.json"
-          if os.environ["PERF_MODE"] == "smoke":
-              head = base
-          elif head_path.exists():
-              head = json.loads(head_path.read_text())
-          else:
-              # The base harness reports a head build failure without b-run.
-              report = json.loads((output / "perf.json").read_text())
-              rows = report["results"]
-              if os.environ["PERF_STATUS"] != "1" or not rows or not all(row.get("error_kind") == "build" for row in rows):
-                  raise ValueError("head measurement missing")
-              head = {"schema": base["schema"], "run": {**base["run"], "commit": os.environ["PERF_HEAD"]},
-                      "results": [{**row, "head": {}, "status": "broken"} for row in rows]}
-              # A broken head is data; infrastructure failures still fail measure.
-              os.environ["PERF_STATUS"] = "0"
-          record = {"mode": os.environ["PERF_MODE"], "wall_seconds": int(os.environ["PERF_SECONDS"]),
-                    "measurement_exit": int(os.environ["PERF_STATUS"]), "base": base, "head": head}
+          record = measurement(output, os.environ["PERF_MODE"], int(os.environ["PERF_STATUS"]))
+          if record["mode"] == "ab" and os.environ.get("PERF_SMOKE") == "true":
+              record["smoke"] = measurement(output / "smoke", "smoke", int(os.environ["PERF_SMOKE_STATUS"]))
           (Path(os.environ["PERF_ARTIFACT"]) / "perf.json").write_text(json.dumps(record, allow_nan=False) + "\n")
-          raise SystemExit(2 if record["measurement_exit"] == 2 else 0)
+          raise SystemExit(2 if record["measurement_exit"] == 2 or record.get("smoke", {}).get("measurement_exit") == 2 else 0)
           PY
 
       - name: Upload measurements
@@ -218,13 +231,26 @@ jobs:
               raise SystemExit(0)
           # Smoke failures still get the comparison below for row diagnostics.
           failures = []
-          if record["mode"] == "smoke":
-              if record["measurement_exit"] == 1:
+          smoke_arms = [record] if record["mode"] == "smoke" else [record["smoke"]] if "smoke" in record else []
+          for smoke in smoke_arms:
+              if smoke["measurement_exit"] not in (0, 1):
+                  raise ValueError("failed smoke measurement")
+              if "broken" in smoke:
+                  failure = smoke["broken"]
+                  if failure.get("error_kind") != "build":
+                      raise ValueError("head build infrastructure failure")
+                  if failure["commit"] != os.environ["PERF_HEAD"]:
+                      raise ValueError("broken head revision mismatch")
+                  failures.append(f'head build failed: {failure["error"]}')
+                  continue
+              if smoke["head"]["run"]["commit"] != os.environ["PERF_HEAD"]:
+                  raise ValueError("smoke head revision mismatch")
+              if smoke["measurement_exit"] == 1:
                   failures.append("the head harness reported FAIL")
-              keys = [row_key(row) for row in record["head"]["results"]]
+              keys = [row_key(row) for row in smoke["head"]["results"]]
               if set(keys) != {row.key for row in select_rows("")} or len(keys) != len(set(keys)):
                   failures.append("the benchmark row set differs from the base defaults")
-              rows = record["head"]["results"]
+              rows = smoke["head"]["results"]
               if not rows or not all(row.get("status") == "ok" and row.get("perturbations") and row.get("gated") for row in rows):
                   failures.append("some rows did not run or did not pass their perturbation check")
           Path("smoke-failures.txt").write_text("".join(f"- {failure}\n" for failure in failures))
@@ -235,6 +261,8 @@ jobs:
           for arm in ("base", "head"):
               Path(arm + ".json").write_text(json.dumps(record[arm], allow_nan=False))
           mode = "Smoke (one head arm; base rules)" if record["mode"] == "smoke" else "A/B (base harness on both arms)"
+          if "smoke" in record:
+              mode += " + head smoke"
           Path("perf.md").write_text(f'<!-- dart-perf -->\n{mode}; build/measurement wall time: {record["wall_seconds"]} s.\n\n')
           PY
             if [[ "$(cat verdict-exit)" == 1 ]]; then exit 0; fi
