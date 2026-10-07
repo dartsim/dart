@@ -356,6 +356,18 @@ TEST(DantzigNative, DeprecatedOdeLcpSolverUsesNativeDantzigPath)
   EXPECT_NEAR(2.0, x[0], 1e-12);
 }
 
+TEST(DantzigNative, DeprecatedOdeLcpSolverRejectsLcpsTooLargeForIntOffsets)
+{
+  // 46341 rows pad to a stride of 46344, so the last row starts past INT_MAX.
+  // Solve only reads the row count before rejecting, so no columns are needed.
+  const Eigen::MatrixXd A(46341, 0);
+  const Eigen::VectorXd b;
+  Eigen::VectorXd x;
+  dart::lcpsolver::ODELCPSolver solver;
+
+  EXPECT_FALSE(solver.Solve(A, b, &x, 0, 0.0, 4, true));
+}
+
 TEST(DantzigNative, DantzigBoxedLcpSolverKeepsPublicLayoutStable)
 {
   EXPECT_EQ(

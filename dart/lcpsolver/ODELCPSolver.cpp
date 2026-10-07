@@ -32,10 +32,13 @@
 
 #include "dart/lcpsolver/ODELCPSolver.hpp"
 
+#include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 #include "dart/lcpsolver/dantzig/DantzigMisc.hpp"
+
+#include <limits>
 
 #include <cstdio>
 
@@ -77,6 +80,12 @@ bool ODELCPSolver::Solve(
     int nSkip = ::dart::lcpsolver::dantzig::padding(n);
     const std::size_t aSize
         = static_cast<std::size_t>(n) * static_cast<std::size_t>(nSkip);
+    // The copy below and the Dantzig solver index A with int offsets.
+    if (aSize > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+      dterr << "[ODELCPSolver::Solve] An LCP of size " << n
+            << " is too large for the Dantzig solver.\n";
+      return false;
+    }
 
     A = new double[aSize];
     b = new double[n];
