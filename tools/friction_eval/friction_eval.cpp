@@ -183,6 +183,12 @@ Residual boxResidual(const Problem& p, const double* x, double cfm)
     scale = std::max(scale, std::abs(x[i]));
     if (p.findex[i] >= 0)
       normal[p.findex[i]] = 1;
+    // These scenes have no unilateral joint limits: an independent [0, inf]
+    // row is a contact normal, including contacts with no friction rows.
+    else if (
+        p.findex[i] == -1 && p.lo[i] == 0.0
+        && p.hi[i] == std::numeric_limits<double>::infinity())
+      normal[i] = 1;
   }
   const double eps = 1e-12 + 1e-3 * scale;
   for (int i = 0; i < p.n; ++i) {
@@ -1268,6 +1274,44 @@ int selfTest()
   }
   check(slideOk, "discrete slide reference with and without a stop");
 
+  for (const double mu2 : {0.7, 150.0, 0.0001}) {
+    auto scene = fe::push({{"mu", 0.7}, {"mu2", mu2}, {"phi", 45.0}}, 1e-3);
+    fe::Metrics m;
+    scene.finish(m);
+    check(
+        (mu2 == 0.7) ? std::abs(m.at("pred_exact_accel") - 0.34335) < 1e-12
+                     : m.count("pred_exact_accel") == 0,
+        "A4 exact acceleration is available only for isotropic friction");
+  }
+
+  // Test the observer without advancing physics: motion on either axis type
+  // resets the dwell, and every box participates even with deactivation off.
+  auto stack = fe::stack({{"n", 2.0}}, 0.01);
+  auto* lower = stack.world->getSkeleton("box0")->getBodyNode(0);
+  auto* upper = stack.world->getSkeleton("box1")->getBodyNode(0);
+  for (int i = 0; i < 5; ++i)
+    stack.postStep(i);
+  fe::freeJoint(lower)->setLinearVelocity(Eigen::Vector3d(0.002, 0.0, 0.0));
+  stack.postStep(5);
+  fe::freeJoint(lower)->setLinearVelocity(Eigen::Vector3d::Zero());
+  for (int i = 6; i < 11; ++i)
+    stack.postStep(i);
+  fe::freeJoint(upper)->setAngularVelocity(Eigen::Vector3d(0.0, 0.0, 0.002));
+  stack.postStep(11);
+  fe::freeJoint(upper)->setAngularVelocity(Eigen::Vector3d::Zero());
+  for (int i = 12; i < 21; ++i)
+    stack.postStep(i);
+  fe::Metrics stackMetrics;
+  stack.finish(stackMetrics);
+  check(
+      stackMetrics.count("rest_time") == 0, "stack rest requires a full dwell");
+  stack.postStep(21);
+  stack.finish(stackMetrics);
+  check(
+      !stack.world->getDeactivationOptions().mEnabled
+          && std::abs(stackMetrics.at("rest_time") - 0.22) < 1e-12,
+      "stack rest observes linear and angular speeds without deactivation");
+
   // W = I, b = (1, 2, 0), mu 0.5: x = (1, 0.5, 0). Perturbing x_t to 0.7 gives
   // a natural-map residual of 0.2 m/s and a box-law violation of 0.4.
   const Problem unit = contactProblem(
@@ -1281,6 +1325,20 @@ int selfTest()
       std::abs(r.natural - 0.2) < 1e-12
           && std::abs(r.boxViolation - 0.4) < 1e-3,
       "box-law residual of a hand-perturbed solution");
+  Problem frictionless;
+  frictionless.n = 1;
+  frictionless.A = {2.0};
+  frictionless.x = {3.0};
+  frictionless.b = {6.0};
+  frictionless.lo = {0.0};
+  frictionless.hi = {std::numeric_limits<double>::infinity()};
+  frictionless.findex = {-1};
+  check(
+      std::abs(
+          boxResidual(frictionless, frictionless.x.data(), 0.1).cfmFloor
+          - 6.0 / 11.0)
+          < 1e-12,
+      "CFM floor includes a standalone frictionless normal row");
   for (const std::string name : {"dantzig", "pgs", "pgs-tight", "dzr"}) {
     const auto x = solveWith(name, unit);
     check(

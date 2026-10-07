@@ -564,6 +564,9 @@ BOX_MEASURED = {
     "ratio_mean_rim": "alpha_ratio_mean",
 }
 
+# pred_box_<name> -> pred_exact_<name> when the names differ.
+BOX_EXACT = {"ratio_mean_rim": "ratio"}
+
 
 def report(data, out, failed=frozenset()):
     w = out.write
@@ -618,7 +621,9 @@ def report(data, out, failed=frozenset()):
                             measured,
                             m[measured],
                             value,
-                            m.get("pred_exact_" + metric[9:]),
+                            m.get(
+                                "pred_exact_" + BOX_EXACT.get(metric[9:], metric[9:])
+                            ),
                         )
                     )
     w(
@@ -719,6 +724,18 @@ def self_test(binary=None):
     nan = float("nan")
     assert differs(1.0, nan) and differs(1.0, math.inf) and differs(nan, nan)
     assert differs(None, 1.0) and not differs(2.0, 2.0)
+    text = io.StringIO()
+    report(
+        {
+            ("B620", "A6", "mu=0.5", "ode", "0.001", "off", "off"): {
+                "alpha_ratio_mean": 1.2,
+                "pred_box_ratio_mean_rim": 1.3,
+                "pred_exact_ratio": 1.0,
+            }
+        },
+        text,
+    )
+    assert "| A6 | mu=0.5 | ode | alpha_ratio_mean | 1.2 | 1.3 | 1 |" in text.getvalue()
     # Cell outputs: a non-finite state or missing rows fail the cell.
     row = "B620,6.20-line,A5,mu=0,dantzig,ode,0.001,off,off,{},{}\n"
     ok = COLUMNS_LINE + "".join(

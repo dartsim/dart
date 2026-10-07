@@ -134,6 +134,12 @@ already fail the current runner's row-presence checks. Their metric values
 also pass the new rule when the missing structural metadata is supplied for
 the audit (endpoint agreement inferred from the old NaN threshold marker).
 
+R1 and R3 report `rest_time` at the end of the first 0.1 s interval during
+which every mobile body's linear speed is below 0.001 m/s and angular speed
+is below 0.001 rad/s, independent of deactivation. A4's `pred_exact_accel` is
+reported only for isotropic friction (`mu2 == mu`); the anisotropic static
+ellipse reference remains available as `pred_exact_cap`.
+
 PGS-tight and DZ+R stop on the box-law residual (at most 1e-6 m/s, 10-sweep
 chunks of one-sweep calls, 1000-sweep cap); PGS's own relative-change test stops
 early on stacks and never passes on rows near zero.

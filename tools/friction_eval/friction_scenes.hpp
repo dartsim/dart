@@ -500,7 +500,10 @@ inline Scene push(const Params& p, double dt)
     const double alongY = sn > 1e-12 ? (mu2 > 0.0 ? mu2 / sn : 0.0) : inf;
     m["slides"] = d.norm() > 1e-3;
     m["accel"] = 2.0 * d.dot(dir) / (dt * dt * n * (n + 1.0));
-    m["pred_exact_accel"] = std::max(0.0, (k - 1.0) * mu * kGravity);
+    // The isotropic acceleration assumes friction opposite the push; an
+    // anisotropic ellipse generally changes the sliding direction.
+    if (mu2 == mu)
+      m["pred_exact_accel"] = std::max(0.0, (k - 1.0) * mu * kGravity);
     m["pred_box_cap"] = std::min(c > 1e-12 ? mu / c : inf, alongY) / mu;
     m["pred_exact_cap"]
         = alongY == 0.0
@@ -1237,16 +1240,22 @@ inline Scene stack(const Params& p, double dt)
   auto* top = boxes.back();
   const Eigen::Vector3d topStart = position(top);
   auto rest = std::make_shared<double>(kNaN);
-  auto* world = s.world.get();
+  auto quietSteps = std::make_shared<int>(0);
+  // All mobile bodies must stay below 1e-3 m/s and 1e-3 rad/s for 0.1 s.
+  // Observe velocities without changing deactivation or the simulation.
+  const int dwellSteps = std::max(1, static_cast<int>(std::ceil(0.1 / dt)));
   s.postStep = [=](int i) {
     if (!std::isnan(*rest))
       return true;
-    for (std::size_t k = 0; k < world->getNumSkeletons(); ++k) {
-      const auto skeleton = world->getSkeleton(k);
-      if (skeleton->isMobile() && !skeleton->isResting())
+    for (const auto* box : boxes) {
+      if (!(box->getLinearVelocity().norm() < 1e-3
+            && box->getAngularVelocity().norm() < 1e-3)) {
+        *quietSteps = 0;
         return true;
+      }
     }
-    *rest = (i + 1) * dt;
+    if (++*quietSteps >= dwellSteps)
+      *rest = (i + 1) * dt;
     return true;
   };
   const auto report = displacementReport(boxes, 0.01);
