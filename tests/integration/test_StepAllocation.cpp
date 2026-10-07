@@ -32,7 +32,9 @@
 
 #include "AllocationCounting.hpp"
 #include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/CollisionObject.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
+#include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/BoxedLcpSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
@@ -51,11 +53,18 @@
 #include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <atomic>
+#include <fstream>
+#include <functional>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <cstddef>
@@ -305,6 +314,8 @@ struct StepAllocationMeasurement
   int measuredSteps = 0;
   std::size_t lastStepContacts = 0u;
   std::size_t lastStepSoftSoftContacts = 0u;
+  std::size_t maxOperatorNewPerStep = 0u;
+  std::size_t maxRawMallocPerStep = 0u;
 };
 
 struct SoftSceneStats
@@ -356,7 +367,8 @@ StepAllocationMeasurement measureWorldStepsNow(
     const dart::simulation::WorldPtr& world,
     dart::test::CountingMemoryAllocator& allocator,
     int measuredSteps,
-    int warmupSteps = 0)
+    int warmupSteps = 0,
+    const std::function<void(int)>& beforeStep = {})
 {
   // Opt-in allocation-site attribution: set DART_TEST_ALLOCATION_BACKTRACE
   // to dump aggregated backtraces of every measured operator-new call.
@@ -371,8 +383,18 @@ StepAllocationMeasurement measureWorldStepsNow(
   dart::test::ScopedRawHeapAllocationCounter rawCounter;
   dart::test::ScopedCountingMemoryAllocatorCounter allocatorCounter(allocator);
 
+  std::size_t maxOperatorNewPerStep = 0u;
+  std::size_t maxRawMallocPerStep = 0u;
   for (int i = 0; i < measuredSteps; ++i) {
+    const auto heapBefore = globalCounter.allocationCount();
+    const auto rawBefore = rawCounter.allocationCount();
+    if (beforeStep)
+      beforeStep(i);
     world->step();
+    maxOperatorNewPerStep = std::max(
+        maxOperatorNewPerStep, globalCounter.allocationCount() - heapBefore);
+    maxRawMallocPerStep = std::max(
+        maxRawMallocPerStep, rawCounter.allocationCount() - rawBefore);
   }
 
   globalCounter.stop();
@@ -391,7 +413,9 @@ StepAllocationMeasurement measureWorldStepsNow(
       warmupSteps,
       measuredSteps,
       world->getLastCollisionResult().getNumContacts(),
-      countSoftSoftContacts(world->getLastCollisionResult())};
+      countSoftSoftContacts(world->getLastCollisionResult()),
+      maxOperatorNewPerStep,
+      maxRawMallocPerStep};
 }
 
 StepAllocationMeasurement measureWorldStepAllocations(
@@ -468,6 +492,10 @@ void reportMeasurement(
   }
   recordProperty(
       prefix + "operator_new_count", measurement.globalHeap.allocationCount);
+  recordProperty(
+      prefix + "operator_new_max_per_step", measurement.maxOperatorNewPerStep);
+  recordProperty(
+      prefix + "raw_malloc_max_per_step", measurement.maxRawMallocPerStep);
   recordProperty(
       prefix + "operator_new_bytes", measurement.globalHeap.allocationBytes);
   recordProperty(
@@ -1064,6 +1092,204 @@ StepAllocationMeasurement measureScene(
   auto world = createStackedBoxesWorld(kBoxesPerSide, detector);
   installCountingDantzigSolver(world, allocator);
   return measureWorldStepAllocations(world, allocator);
+}
+
+class AllocationGateConstraintSolver final
+  : public dart::constraint::BoxedLcpConstraintSolver
+{
+public:
+  std::size_t getNumConstrainedGroups() const
+  {
+    return mConstrainedGroups.size();
+  }
+
+  bool canSolveInParallel() const
+  {
+    return canSolveConstrainedGroupsInParallel();
+  }
+};
+
+dart::dynamics::SkeletonPtr createAllocationGateBox(
+    const std::string& name,
+    const Eigen::Vector3d& pos,
+    double edge,
+    double restitution = 0.0)
+{
+  auto skel = dart::dynamics::Skeleton::create(name);
+  auto* bn
+      = skel->createJointAndBodyNodePair<dart::dynamics::FreeJoint>().second;
+  auto shape = std::make_shared<dart::dynamics::BoxShape>(
+      Eigen::Vector3d::Constant(edge));
+  auto* sn = bn->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(shape);
+  sn->getDynamicsAspect()->setRestitutionCoeff(restitution);
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = pos;
+  skel->getJoint(0)->setPositions(
+      dart::dynamics::FreeJoint::convertToPositions(tf));
+  return skel;
+}
+
+dart::dynamics::SkeletonPtr createAllocationGateGround(double width = 20.0)
+{
+  auto skel = dart::dynamics::Skeleton::create("ground");
+  skel->setMobile(false);
+  auto* bn
+      = skel->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
+  auto* sn = bn->createShapeNodeWith<
+      dart::dynamics::VisualAspect,
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d(width, width, 1.0)));
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation().z() = -0.5;
+  sn->setRelativeTransform(tf);
+  return skel;
+}
+
+dart::simulation::WorldPtr createAllocationGateWorld(
+    const dart::collision::CollisionDetectorPtr& detector,
+    bool sleeping,
+    std::size_t threads = 1u)
+{
+  auto world = dart::simulation::World::create("transient");
+  world->setNumSimulationThreads(threads);
+  if (threads > 1u) {
+    world->setConstraintSolver(
+        std::make_unique<AllocationGateConstraintSolver>());
+  }
+  world->setTimeStep(0.001);
+  world->getConstraintSolver()->setCollisionDetector(detector);
+  auto options = world->getDeactivationOptions();
+  options.mEnabled = sleeping;
+  world->setDeactivationOptions(options);
+  world->addSkeleton(createAllocationGateGround(threads > 1u ? 40.0 : 20.0));
+  return world;
+}
+
+void addGridBoxes(
+    const dart::simulation::WorldPtr& world, int layers, int width = 3)
+{
+  for (int i = 0; i < width; ++i)
+    for (int j = 0; j < width; ++j)
+      for (int k = 0; k < layers; ++k)
+        world->addSkeleton(createAllocationGateBox(
+            "b" + std::to_string(i) + std::to_string(j) + std::to_string(k),
+            Eigen::Vector3d(1.2 * i, 1.2 * j, 0.25 + 0.5 * k),
+            0.5));
+}
+
+std::size_t countResting(const dart::simulation::WorldPtr& world)
+{
+  std::size_t n = 0;
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    const auto s = world->getSkeleton(i);
+    if (s->isMobile() && s->isResting())
+      ++n;
+  }
+  return n;
+}
+
+// gz-physics look-alikes: BodyNodeCollisionFilter subclass with map lookups,
+// ContactSurfaceHandler subclass deferring to the base with a callback.
+class AllocationGateBitmaskFilter
+  : public dart::collision::BodyNodeCollisionFilter
+{
+public:
+  bool ignoresCollision(
+      const dart::collision::CollisionObject* a,
+      const dart::collision::CollisionObject* b) const override
+  {
+    if (BodyNodeCollisionFilter::ignoresCollision(a, b))
+      return true;
+    const auto i1 = mMask.find(a->getShapeFrame()->asShapeNode());
+    const auto i2 = mMask.find(b->getShapeFrame()->asShapeNode());
+    if (i1 != mMask.end() && i2 != mMask.end())
+      return !(i1->second & i2->second);
+    return false;
+  }
+  std::unordered_map<const dart::dynamics::ShapeNode*, unsigned> mMask;
+};
+
+class AllocationGateCallbackHandler
+  : public dart::constraint::ContactSurfaceHandler
+{
+public:
+  dart::constraint::ContactSurfaceParams createParams(
+      const dart::collision::Contact& contact,
+      std::size_t numContacts) const override
+  {
+    mCalls.fetch_add(1u, std::memory_order_relaxed);
+    auto params = ContactSurfaceHandler::createParams(contact, numContacts);
+    if (mCallback)
+      mCallback(params);
+    return params;
+  }
+  std::function<void(dart::constraint::ContactSurfaceParams&)> mCallback;
+  mutable std::atomic<std::size_t> mCalls{0u};
+};
+
+// A flat JSON object keeps the allocation ratchet readable without adding a
+// JSON dependency to this test. Counts are upper bounds per measured step;
+// decreases belong in the same change that removes the allocations.
+std::map<std::string, std::size_t> readAllocationGateBudgets()
+{
+  std::ifstream stream(DART_ROOT_PATH
+                       "tests/integration/step_allocation_ratchet.json");
+  std::map<std::string, std::size_t> budgets;
+  char delimiter = '\0';
+  if (!(stream >> delimiter) || delimiter != '{')
+    throw std::runtime_error("Cannot read step allocation ratchet JSON");
+
+  while (stream >> std::ws && stream.peek() != '}') {
+    std::string key;
+    std::size_t value = 0u;
+    if (stream.peek() != '"' || !(stream >> std::quoted(key) >> delimiter)
+        || delimiter != ':' || !(stream >> value)
+        || !budgets.emplace(key, value).second || !(stream >> delimiter)
+        || (delimiter != ',' && delimiter != '}')) {
+      throw std::runtime_error("Invalid step allocation ratchet JSON");
+    }
+    if (delimiter == '}') {
+      stream.unget();
+      break;
+    }
+  }
+  if (!(stream >> delimiter) || delimiter != '}'
+      || (stream >> std::ws && !stream.eof())) {
+    throw std::runtime_error("Invalid step allocation ratchet JSON ending");
+  }
+  return budgets;
+}
+
+void expectAllocationGateBudget(
+    const std::string& row,
+    const StepAllocationMeasurement& measurement,
+    bool strict = true)
+{
+  reportMeasurement(row, measurement, "Z1a allocation gate", false);
+  ASSERT_FALSE(measurement.rawHeap.skipped) << measurement.rawHeap.skipReason;
+  if (strict) {
+    EXPECT_EQ(measurement.globalHeap.allocationCount, 0u) << row;
+    EXPECT_EQ(measurement.rawHeap.allocationCount, 0u) << row;
+  }
+  static const auto budgets = readAllocationGateBudgets();
+  for (const auto& metric :
+       {std::make_pair("operator_new", measurement.maxOperatorNewPerStep),
+        std::make_pair("raw_malloc", measurement.maxRawMallocPerStep)}) {
+    const auto key = row + "_" + metric.first + "_per_step";
+    const auto found = budgets.find(key);
+    ASSERT_NE(found, budgets.end())
+        << "Missing allocation ratchet entry " << key;
+    if (strict) {
+      ASSERT_EQ(found->second, 0u) << key << " must remain a strict zero gate";
+    }
+    EXPECT_LE(metric.second, found->second)
+        << key << " increased; lower budgets when removing allocations";
+  }
 }
 
 } // namespace
@@ -1818,4 +2044,356 @@ TEST(StepAllocation, ReportsWorldStepAllocationBaseline)
   std::cout << "[StepAllocation] bullet_boxes skipped reason=\"Bullet is "
                "unavailable\"\n";
 #endif
+}
+
+// Z1: prepared, awake contact scenes retain their high-water storage on the
+// submitting thread and on the solver workers.
+TEST(StepAllocation, AwakeGridSteadyState)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  for (const std::size_t threads : {1u, 4u}) {
+    SCOPED_TRACE(threads);
+    auto world = createAllocationGateWorld(
+        dart::collision::DARTCollisionDetector::create(), false, threads);
+    ASSERT_EQ(world->getConstraintSolver()->getNumSimulationThreads(), threads);
+    // 144 independent ground-contact islands exceed the 128-group threshold
+    // for parallel LCP solving, as well as the World dispatch thresholds.
+    addGridBoxes(world, threads == 4u ? 1 : 3, threads == 4u ? 12 : 3);
+    for (int i = 0; i < 300; ++i)
+      world->step();
+    if (threads == 4u) {
+      const auto* solver = static_cast<const AllocationGateConstraintSolver*>(
+          world->getConstraintSolver());
+      ASSERT_GE(solver->getNumConstrainedGroups(), 128u);
+      ASSERT_TRUE(solver->canSolveInParallel());
+    }
+    dart::test::CountingMemoryAllocator allocator;
+    const auto measurement = measureWorldStepsNow(world, allocator, 100, 300);
+    EXPECT_GT(measurement.lastStepContacts, 0u);
+    EXPECT_EQ(countResting(world), 0u);
+    expectAllocationGateBudget(
+        "dart_awake_grid_threads_" + std::to_string(threads), measurement);
+  }
+}
+
+// Z2: explicit preparation covers both the freeze event and the first
+// all-resting snapshot; neither may allocate during subsequent steps.
+TEST(StepAllocation, SleepTransition)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  auto world = createAllocationGateWorld(
+      dart::collision::DARTCollisionDetector::create(), true);
+  addGridBoxes(world, 3);
+  ASSERT_EQ(countResting(world), 0u);
+  world->enterSimulationMode();
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measureWorldStepsNow(world, allocator, 600);
+  EXPECT_EQ(countResting(world), 27u);
+  expectAllocationGateBudget("dart_sleep_transition", measurement);
+}
+
+TEST(StepAllocation, WakeTransition)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  auto world = createAllocationGateWorld(
+      dart::collision::DARTCollisionDetector::create(), true);
+  addGridBoxes(world, 3);
+  for (int i = 0; i < 600; ++i)
+    world->step();
+  ASSERT_EQ(countResting(world), 27u);
+  auto* top = world->getSkeleton(3)->getBodyNode(0);
+  std::size_t restingAfterWake = 27u;
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement
+      = measureWorldStepsNow(world, allocator, 800, 600, [&](int step) {
+          if (step == 0)
+            top->addExtForce(Eigen::Vector3d(200.0, 0.0, 0.0));
+          if (step == 1)
+            restingAfterWake = countResting(world);
+        });
+  EXPECT_LT(restingAfterWake, 27u) << "the external push must wake an island";
+  EXPECT_EQ(countResting(world), 27u) << "the awakened stack must re-settle";
+  expectAllocationGateBudget("dart_wake_transition", measurement);
+}
+
+TEST(StepAllocation, IslandMergeSplitSecondCycle)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+#if !HAVE_BULLET
+  GTEST_SKIP() << "Bullet is required for the Z1a island-retention gate";
+#else
+  // Native manifold-cache node reuse is F9, explicitly deferred to Z1b.
+  // Bullet keeps the same merge/split fixture focused on F5 island storage.
+  const auto detector = dart::collision::BulletCollisionDetector::create();
+  auto world = createAllocationGateWorld(detector, false);
+  auto solver = std::make_unique<AllocationGateConstraintSolver>();
+  auto* inspectedSolver = solver.get();
+  world->setConstraintSolver(std::move(solver));
+  // setFromOtherConstraintSolver copies constraints and skeletons, but the
+  // replacement solver starts with its default detector.
+  inspectedSolver->setCollisionDetector(detector);
+  ASSERT_EQ(
+      inspectedSolver->getCollisionDetector()->getType(),
+      dart::collision::BulletCollisionDetector::getStaticType());
+  std::vector<dart::dynamics::SkeletonPtr> movers;
+  for (int i = 0; i < 6; ++i) {
+    for (double x : {-0.6, 0.6}) {
+      auto box = createAllocationGateBox(
+          "m" + std::to_string(i) + (x < 0 ? "a" : "b"),
+          Eigen::Vector3d(x, 1.0 * i, 0.1),
+          0.2,
+          1.0);
+      box->getBodyNode(0)
+          ->getShapeNode(0)
+          ->getDynamicsAspect()
+          ->setFrictionCoeff(0.0);
+      world->addSkeleton(box);
+      movers.push_back(box);
+    }
+  }
+  const auto kick = [&] {
+    for (std::size_t i = 0; i < movers.size(); ++i) {
+      auto* joint
+          = static_cast<dart::dynamics::FreeJoint*>(movers[i]->getJoint(0));
+      Eigen::Vector6d q = Eigen::Vector6d::Zero();
+      q[3] = (i % 2 == 0) ? -0.6 : 0.6;
+      q[4] = static_cast<double>(i / 2);
+      q[5] = 0.1;
+      joint->setPositionsStatic(q);
+      Eigen::Vector6d v = Eigen::Vector6d::Zero();
+      v[3] = (i % 2 == 0) ? 2.0 : -2.0;
+      joint->setVelocitiesStatic(v);
+    }
+  };
+  kick();
+  for (int i = 0; i < 700; ++i)
+    world->step();
+  kick();
+  bool sawMerge = false;
+  bool sawSplitAfterMerge = false;
+  std::size_t minGroups = movers.size();
+  std::size_t maxGroups = 0u;
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement
+      = measureWorldStepsNow(world, allocator, 700, 700, [&](int) {
+          const auto groups = inspectedSolver->getNumConstrainedGroups();
+          minGroups = std::min(minGroups, groups);
+          maxGroups = std::max(maxGroups, groups);
+          bool merged = false;
+          for (const auto& contact :
+               world->getLastCollisionResult().getContacts()) {
+            const auto body1 = contact.getBodyNodePtr1();
+            const auto body2 = contact.getBodyNodePtr2();
+            if (body1 && body2 && body1->getSkeleton()->isMobile()
+                && body2->getSkeleton()->isMobile()) {
+              merged = true;
+              break;
+            }
+          }
+          sawSplitAfterMerge |= sawMerge && !merged;
+          sawMerge |= merged;
+        });
+  recordProperty("merge_split_min_groups", minGroups);
+  recordProperty("merge_split_max_groups", maxGroups);
+  EXPECT_LT(minGroups, maxGroups);
+  EXPECT_TRUE(sawMerge) << "the second cycle must merge moving-body islands";
+  EXPECT_TRUE(sawSplitAfterMerge) << "the merged islands must split again";
+  expectAllocationGateBudget("bullet_merge_split_second_cycle", measurement);
+#endif
+}
+
+TEST(StepAllocation, ArticulatedJointLimitsSteadyState)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  auto world
+      = dart::utils::SkelParser::readWorld("dart://sample/skel/fullbody1.skel");
+  ASSERT_NE(world, nullptr);
+  world->setNumSimulationThreads(1u);
+  world->getConstraintSolver()->setCollisionDetector(
+      dart::collision::DARTCollisionDetector::create());
+  auto deactivation = world->getDeactivationOptions();
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+  std::size_t limitedJoints = 0u;
+  for (std::size_t i = 0; i < world->getNumSkeletons(); ++i) {
+    auto skel = world->getSkeleton(i);
+    for (std::size_t j = 0; j < skel->getNumJoints(); ++j) {
+      auto* joint = skel->getJoint(j);
+      if (joint->getNumDofs() == 0u || joint->getNumDofs() == 6u)
+        continue;
+      for (std::size_t d = 0; d < joint->getNumDofs(); ++d) {
+        joint->setPositionLowerLimit(d, -0.5);
+        joint->setPositionUpperLimit(d, 0.5);
+      }
+      joint->setLimitEnforcement(true);
+      ++limitedJoints;
+    }
+  }
+  ASSERT_EQ(limitedJoints, 19u);
+  for (int i = 0; i < 2000; ++i)
+    world->step();
+  ASSERT_EQ(countResting(world), 0u);
+  dart::test::CountingMemoryAllocator allocator;
+  expectAllocationGateBudget(
+      "dart_articulated_limits_steady",
+      measureWorldStepsNow(world, allocator, 500, 2000));
+}
+
+// Z3: structural edits may allocate in the API call and the one re-bake step.
+TEST(StepAllocation, StructuralChangeRebakesThenZero)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  auto world = createAllocationGateWorld(
+      dart::collision::DARTCollisionDetector::create(), false);
+  addGridBoxes(world, 1);
+  for (int i = 0; i < 200; ++i)
+    world->step();
+  auto extra
+      = createAllocationGateBox("extra", Eigen::Vector3d(5.0, 5.0, 0.25), 0.5);
+  world->addSkeleton(extra);
+  world->step();
+  dart::test::CountingMemoryAllocator allocator;
+  expectAllocationGateBudget(
+      "dart_after_add_skeleton",
+      measureWorldStepsNow(world, allocator, 200, 1));
+  world->removeSkeleton(extra);
+  world->step();
+  expectAllocationGateBudget(
+      "dart_after_remove_skeleton",
+      measureWorldStepsNow(world, allocator, 200, 1));
+
+  // A direct Skeleton topology edit can leave a previously valid resting
+  // snapshot with the same DOF count but a different BodyNode count.
+  auto sleepingWorld = createAllocationGateWorld(
+      dart::collision::DARTCollisionDetector::create(), true);
+  addGridBoxes(sleepingWorld, 3);
+  for (int i = 0; i < 600; ++i)
+    sleepingWorld->step();
+  ASSERT_EQ(countResting(sleepingWorld), 27u);
+  const auto changedSkeleton = sleepingWorld->getSkeleton(3);
+  const auto dofsBefore = changedSkeleton->getNumDofs();
+  const auto bodiesBefore = changedSkeleton->getNumBodyNodes();
+  changedSkeleton->createJointAndBodyNodePair<dart::dynamics::WeldJoint>(
+      changedSkeleton->getBodyNode(0));
+  ASSERT_EQ(changedSkeleton->getNumDofs(), dofsBefore);
+  ASSERT_EQ(changedSkeleton->getNumBodyNodes(), bodiesBefore + 1u);
+  EXPECT_FALSE(sleepingWorld->isInSimulationMode());
+  sleepingWorld->enterSimulationMode();
+  EXPECT_TRUE(sleepingWorld->isInSimulationMode());
+  const auto topologyMeasurement
+      = measureWorldStepsNow(sleepingWorld, allocator, 600, 1);
+  EXPECT_EQ(countResting(sleepingWorld), 27u);
+  expectAllocationGateBudget(
+      "dart_after_body_topology_change", topologyMeasurement);
+}
+
+// Bullet and dart have strict gates. FCL and ODE retain backend-internal
+// allocations, bounded by the adjacent checked-in JSON ratchet.
+TEST(StepAllocation, DetectorSwitchPerBackendSteadyState)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  auto world = createAllocationGateWorld(
+      dart::collision::DARTCollisionDetector::create(), false);
+  addGridBoxes(world, 1);
+  for (int i = 0; i < 200; ++i)
+    world->step();
+  const std::pair<const char*, dart::collision::CollisionDetectorPtr>
+      detectors[] = {
+#if HAVE_BULLET
+        {"bullet", dart::collision::BulletCollisionDetector::create()},
+#endif
+        {"fcl", dart::collision::FCLCollisionDetector::create()},
+#if HAVE_ODE
+        {"ode", dart::collision::OdeCollisionDetector::create()},
+#endif
+        {"dart", dart::collision::DARTCollisionDetector::create()},
+      };
+  for (const auto& [name, detector] : detectors) {
+    SCOPED_TRACE(name);
+    world->getConstraintSolver()->setCollisionDetector(detector);
+    for (int i = 0; i < 100; ++i)
+      world->step();
+    dart::test::CountingMemoryAllocator allocator;
+    const auto measurement = measureWorldStepsNow(world, allocator, 200, 100);
+    EXPECT_GT(measurement.lastStepContacts, 0u);
+    const std::string row = std::string(name) + "_after_switch_steady";
+    expectAllocationGateBudget(
+        row,
+        measurement,
+        std::string(name) == "bullet" || std::string(name) == "dart");
+  }
+}
+
+TEST(StepAllocation, GzLikeFilterAndHandlerSteadyState)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  for (const std::size_t threads : {1u, 4u}) {
+    for (const bool bullet : {false, true}) {
+#if !HAVE_BULLET
+      if (bullet)
+        continue;
+#endif
+      SCOPED_TRACE(threads);
+      SCOPED_TRACE(bullet);
+      dart::collision::CollisionDetectorPtr detector
+          = dart::collision::DARTCollisionDetector::create();
+#if HAVE_BULLET
+      if (bullet)
+        detector = dart::collision::BulletCollisionDetector::create();
+#endif
+      // Current main allows custom filters to sleep. Keep this row awake so
+      // every measured step invokes the filter and the handler.
+      auto world = createAllocationGateWorld(detector, false, threads);
+      ASSERT_EQ(
+          world->getConstraintSolver()->getNumSimulationThreads(), threads);
+      // The four-thread variant also exercises parallel group solving.
+      addGridBoxes(world, threads == 4u ? 1 : 2, threads == 4u ? 12 : 3);
+      auto filter = std::make_shared<AllocationGateBitmaskFilter>();
+      for (std::size_t i = 0; i < world->getNumSkeletons(); ++i)
+        filter->mMask[world->getSkeleton(i)->getBodyNode(0)->getShapeNode(0)]
+            = 0xffu;
+      auto* solver = world->getConstraintSolver();
+      solver->getCollisionOption().collisionFilter = filter;
+      auto handler = std::make_shared<AllocationGateCallbackHandler>();
+      handler->mCallback = [](dart::constraint::ContactSurfaceParams& params) {
+        params.mRestitutionCoeff = 0.0;
+      };
+      solver->addContactSurfaceHandler(handler);
+      for (int i = 0; i < 300; ++i)
+        world->step();
+      if (threads == 4u) {
+        const auto* inspectedSolver
+            = static_cast<const AllocationGateConstraintSolver*>(solver);
+        ASSERT_GE(inspectedSolver->getNumConstrainedGroups(), 128u);
+        ASSERT_TRUE(inspectedSolver->canSolveInParallel());
+      }
+      const auto callbacksBeforeMeasurement = handler->mCalls.load();
+      dart::test::CountingMemoryAllocator allocator;
+      const auto measurement = measureWorldStepsNow(world, allocator, 200, 300);
+      EXPECT_GT(handler->mCalls.load(), callbacksBeforeMeasurement)
+          << "the contact handler must execute in the measured window";
+      EXPECT_GT(measurement.lastStepContacts, 0u);
+      EXPECT_EQ(countResting(world), 0u);
+      expectAllocationGateBudget(
+          std::string(bullet ? "bullet" : "dart") + "_gzlike_threads_"
+              + std::to_string(threads),
+          measurement);
+    }
+  }
 }

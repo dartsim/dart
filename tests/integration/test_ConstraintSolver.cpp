@@ -48,11 +48,13 @@
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/JointLimitConstraint.hpp"
+#include "dart/constraint/MimicMotorConstraint.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/ServoMotorConstraint.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
@@ -65,6 +67,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SphereShape.hpp"
+#include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 #include "dart/simulation/DeactivationOptions.hpp"
 #include "dart/simulation/World.hpp"
 
@@ -96,6 +99,35 @@
 #include <vector>
 
 using namespace dart;
+
+TEST(ConstraintSolver, CopiedMimicConstraintsDoNotAllocateOnDestruction)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  auto skeleton = dynamics::Skeleton::create();
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  std::vector<dynamics::MimicDofProperties> properties(joint->getNumDofs());
+  for (auto& property : properties)
+    property.mReferenceJoint = joint;
+
+  constraint::MimicMotorConstraint motor(joint, properties);
+  constraint::CouplerConstraint coupler(joint, properties);
+  // Public implicit copies own property vectors without acquiring pool slots.
+  // Destroy more copies than the originals reserved, outside simulation setup.
+  std::vector<constraint::MimicMotorConstraint> motorCopies(32u, motor);
+  std::vector<constraint::CouplerConstraint> couplerCopies(32u, coupler);
+
+  dart::test::ScopedHeapAllocationCounter heapCounter;
+  dart::test::ScopedRawHeapAllocationCounter rawCounter;
+  motorCopies.clear();
+  couplerCopies.clear();
+  heapCounter.stop();
+  rawCounter.stop();
+  EXPECT_EQ(0u, heapCounter.allocationCount());
+  EXPECT_EQ(0u, rawCounter.allocationCount());
+}
 
 namespace {
 
@@ -927,6 +959,141 @@ std::shared_ptr<World> createManySingleFreeBodyContactWorld(
   }
 
   return world;
+}
+
+//==============================================================================
+TEST(ConstraintSolver, RetiringIslandBuffersNeverAllocatesWithTwoLiveWorlds)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  // Fresh thread-local storage prevents earlier tests from supplying spare
+  // slots.
+  std::thread thread([] {
+    constexpr std::size_t kNumBoxes = 16u;
+    // Build both worlds before preparing either so topology revisions cannot
+    // force a re-bake during measurement.
+    auto first = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
+    auto second = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
+    first->enterSimulationMode();
+    second->enterSimulationMode();
+    for (const auto& world : {first, second}) {
+      for (int step = 0; step < 5; ++step)
+        world->step();
+      ASSERT_GE(world->getLastCollisionResult().getNumContacts(), kNumBoxes);
+    }
+
+    const auto cycle = [&] {
+      bool sawExpectedContacts = true;
+      // Exercise both partial shrink and complete retirement, then regrow both
+      // worlds only after all their buffers have been retired.
+      for (const std::size_t activeBoxes :
+           {kNumBoxes / 2u, std::size_t{0}, kNumBoxes}) {
+        for (const auto& world : {first, second}) {
+          for (std::size_t i = 1u; i < world->getNumSkeletons(); ++i) {
+            auto* joint = static_cast<dynamics::FreeJoint*>(
+                world->getSkeleton(i)->getJoint(0));
+            Eigen::Vector6d positions = joint->getPositionsStatic();
+            // Keep collision pairs in the native manifold cache (F9 node reuse
+            // is Z1b); change reactive islands without removing geometry.
+            positions[5] = 0.49;
+            world->getSkeleton(i)->setMobile(i <= activeBoxes);
+            joint->setPositionsStatic(positions);
+            joint->setVelocitiesStatic(Eigen::Vector6d::Zero());
+          }
+          world->step();
+          const auto contacts
+              = world->getLastCollisionResult().getNumContacts();
+          sawExpectedContacts
+              &= activeBoxes == 0u ? contacts == 0u : contacts >= activeBoxes;
+        }
+      }
+      return sawExpectedContacts;
+    };
+    // The first cycle may grow the shared spare list once (a new high-water
+    // mark, as Z2 allows); every later cycle must not allocate.
+    ASSERT_TRUE(cycle());
+
+    for (int iteration = 0; iteration < 4; ++iteration) {
+      dart::test::ScopedHeapAllocationCounter heapCounter;
+      dart::test::ScopedRawHeapAllocationCounter rawCounter;
+      const bool sawExpectedContacts = cycle();
+      heapCounter.stop();
+      rawCounter.stop();
+      EXPECT_TRUE(sawExpectedContacts);
+      EXPECT_EQ(0u, heapCounter.allocationCount()) << iteration;
+      EXPECT_EQ(0u, rawCounter.allocationCount()) << iteration;
+    }
+  });
+  thread.join();
+}
+
+//==============================================================================
+// A World destroyed after its thread's spare-buffer list, here by a
+// thread_local built before the list and so destroyed after it, must free its
+// island buffers without touching the destroyed list.
+TEST(ConstraintSolver, WorldDestroyedAfterThreadSpareListIsSafe)
+{
+  std::thread thread([] {
+    struct Holder
+    {
+      std::shared_ptr<World> world;
+    };
+    static thread_local Holder holder;
+    auto& owner = holder; // Constructed before the spare list exists.
+    owner.world = createManySingleFreeBodyContactWorld(4u, 1u);
+    for (int step = 0; step < 5; ++step)
+      owner.world->step();
+    EXPECT_GE(owner.world->getLastCollisionResult().getNumContacts(), 4u);
+  });
+  thread.join();
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ExternalGroupsDoNotMakeWorldRegrowthAllocate)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  constexpr std::size_t kNumBoxes = 16u;
+  auto world = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
+  world->enterSimulationMode();
+  // Toggle mobility rather than lifting the boxes, so the contact pairs stay
+  // in the native manifold cache (its node reuse is Z1b).
+  const auto setMobile = [&](bool mobile) {
+    for (std::size_t i = 1u; i < world->getNumSkeletons(); ++i) {
+      auto* joint = static_cast<dynamics::FreeJoint*>(
+          world->getSkeleton(i)->getJoint(0));
+      Eigen::Vector6d positions = joint->getPositionsStatic();
+      positions[5] = 0.49;
+      world->getSkeleton(i)->setMobile(mobile);
+      joint->setPositionsStatic(positions);
+      joint->setVelocitiesStatic(Eigen::Vector6d::Zero());
+    }
+  };
+
+  // Groups inserted from outside the solver retire into the same spare list;
+  // the World's later regrowth must still find its buffers there.
+  for (int cycle = 0; cycle < 3; ++cycle) {
+    ExposedThreadedConstraintSolver externalSolver;
+    externalSolver.addFakeConstrainedGroups(2u * kNumBoxes, 1u);
+    EXPECT_TRUE(externalSolver.clearInactiveConstrainedGroupsForTest());
+    setMobile(false);
+    world->step();
+    EXPECT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+
+    setMobile(true);
+    dart::test::ScopedHeapAllocationCounter heapCounter;
+    dart::test::ScopedRawHeapAllocationCounter rawCounter;
+    world->step();
+    heapCounter.stop();
+    rawCounter.stop();
+    EXPECT_GE(world->getLastCollisionResult().getNumContacts(), kNumBoxes);
+    if (cycle > 0) {
+      EXPECT_EQ(0u, heapCounter.allocationCount()) << cycle;
+      EXPECT_EQ(0u, rawCounter.allocationCount()) << cycle;
+    }
+  }
 }
 
 //==============================================================================
@@ -1982,6 +2149,93 @@ TEST(ConstraintSolver, ParallelPreparationWarmsScratchOnWorkerThreads)
   EXPECT_EQ(130, solver.getNumSolvedGroups());
   EXPECT_GT(solver.getMaxConcurrentSolves(), 1);
   EXPECT_EQ(0, solver.getNumReserveCalls());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DantzigDiagonalSolveOnFreshThreadNeverAllocates)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  std::thread thread([] {
+    constraint::DantzigBoxedLcpSolver solver;
+    double A[12] = {2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0};
+    double x[3] = {};
+    double b[3] = {2, 4, 6};
+    double lo[3] = {0, 0, 0};
+    double hi[3] = {10, 10, 10};
+    // Caller-owned scratch proves the very first diagonal solve allocates
+    // nothing, without the C++ runtime's TLS destructor registration.
+    dart::lcpsolver::dantzig::DantzigLcpScratch<double> scratch;
+    dart::test::ScopedRawHeapAllocationCounter firstCounter;
+    const bool firstSolved = dart::lcpsolver::dantzig::solveLcpWithScratch(
+        3, A, x, b, static_cast<double*>(nullptr), 0, lo, hi, nullptr, scratch);
+    firstCounter.stop();
+    ASSERT_TRUE(firstSolved);
+    EXPECT_EQ(0u, firstCounter.allocationCount());
+    EXPECT_EQ(0u, scratch.L.capacity());
+    EXPECT_EQ(0u, scratch.stateCapacity);
+
+    // Register the boxed solver's TLS destructor outside measurement. This
+    // smaller diagonal solve must leave dense scratch unallocated, so growing
+    // to three rows still detects an eager reserve in the boxed solver.
+    double warmA[1] = {2}, warmX[1] = {}, warmB[1] = {2};
+    double warmLo[1] = {0}, warmHi[1] = {10};
+    ASSERT_TRUE(solver.solve(
+        1, warmA, warmX, warmB, 0, warmLo, warmHi, nullptr, false));
+    dart::test::ScopedHeapAllocationCounter heapCounter;
+    dart::test::ScopedRawHeapAllocationCounter rawCounter;
+    const bool solved = solver.solve(3, A, x, b, 0, lo, hi, nullptr, false);
+    heapCounter.stop();
+    rawCounter.stop();
+    EXPECT_TRUE(solved);
+    EXPECT_EQ(1.0, x[0]);
+    EXPECT_EQ(2.0, x[1]);
+    EXPECT_EQ(3.0, x[2]);
+    EXPECT_EQ(0u, heapCounter.allocationCount());
+    EXPECT_EQ(0u, rawCounter.allocationCount());
+  });
+  thread.join();
+}
+
+//==============================================================================
+TEST(ConstraintSolver, DantzigNonDiagonalSolvesRetainScratchAfterFirstSolve)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  std::thread thread([] {
+    constraint::DantzigBoxedLcpSolver solver;
+    const auto solve = [&] {
+      // Restore all mutable inputs for every solve, using padded row stride 4.
+      double A[12] = {2, -1, 0, 0, -1, 2, -1, 0, 0, -1, 2, 0};
+      double x[3] = {};
+      double b[3] = {1, 0, 1};
+      double lo[3] = {0, 0, 0};
+      double hi[3] = {10, 10, 10};
+      return solver.solve(3, A, x, b, 0, lo, hi, nullptr, false)
+             && std::all_of(std::begin(x), std::end(x), [](double value) {
+                  return std::abs(value - 1.0) < 1e-12;
+                });
+    };
+    dart::test::ScopedRawHeapAllocationCounter firstCounter;
+    const bool firstSolved = solve();
+    firstCounter.stop();
+    ASSERT_TRUE(firstSolved);
+    EXPECT_GT(firstCounter.allocationCount(), 0u);
+
+    dart::test::ScopedHeapAllocationCounter heapCounter;
+    dart::test::ScopedRawHeapAllocationCounter rawCounter;
+    bool solved = true;
+    for (int iteration = 0; iteration < 5; ++iteration)
+      solved &= solve();
+    heapCounter.stop();
+    rawCounter.stop();
+    EXPECT_TRUE(solved);
+    EXPECT_EQ(0u, heapCounter.allocationCount());
+    EXPECT_EQ(0u, rawCounter.allocationCount());
+  });
+  thread.join();
 }
 
 //==============================================================================
