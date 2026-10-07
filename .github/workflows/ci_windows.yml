@@ -128,8 +128,9 @@ jobs:
         if: env.SCCACHE_SNAPSHOT == 'pr'
         run: |
           New-Item -ItemType Directory -Force $env:SCCACHE_DIR | Out-Null
-          Get-ChildItem -Recurse -File -Name $env:SCCACHE_DIR |
-            Set-Content (Join-Path $env:RUNNER_TEMP 'sccache-main.txt')
+          # WriteAllLines also writes the file when main had no snapshot.
+          [System.IO.File]::WriteAllLines((Join-Path $env:RUNNER_TEMP 'sccache-main.txt'),
+            [string[]]@(Get-ChildItem -Recurse -File -Name $env:SCCACHE_DIR))
           if (Test-Path $env:SCCACHE_PR_DIR) {
             robocopy $env:SCCACHE_PR_DIR $env:SCCACHE_DIR /E /MOVE /NFL /NDL /NJH /NJS /NP
             if ($LASTEXITCODE -ge 8) { exit $LASTEXITCODE }
