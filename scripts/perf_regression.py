@@ -1407,6 +1407,13 @@ def read_record(path: Path) -> dict:
         not isinstance(record, dict)
         or record.get("schema") != "dart-perf/1"
         or not record.get("results")
+        or not isinstance(record["results"], list)
+        or not all(
+            isinstance(row, dict)
+            and isinstance(row.get("row"), str)
+            and isinstance(row.get("det") or "", str)
+            for row in record["results"]
+        )
     ):
         raise ValueError("missing or unsupported measurement record")
     # A comparison report has the same schema, but its rows carry the base's

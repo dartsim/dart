@@ -2234,7 +2234,18 @@ def test_workload_hashes_cover_loaded_sample_scenes(tmp_path):
     assert module.workload_hashes(tmp_path, drivers) != head
 
 
-@pytest.mark.parametrize("document", ["[]", "null", '"text"', "1"])
+@pytest.mark.parametrize(
+    "document",
+    [
+        "[]",
+        "null",
+        '"text"',
+        "1",
+        '{"schema": "dart-perf/1", "results": [null]}',
+        '{"schema": "dart-perf/1", "results": {"row": "dyn"}}',
+        '{"schema": "dart-perf/1", "results": [{"det": "dart"}]}',
+    ],
+)
 def test_read_record_rejects_non_object_json(tmp_path, document):
     module = _load_runner()
     path = tmp_path / "record.json"
