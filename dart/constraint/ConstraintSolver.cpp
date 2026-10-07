@@ -3063,9 +3063,8 @@ void ConstraintSolver::buildConstrainedGroups()
         // that it puts to rest outside every island, and the body keeps it when
         // it wakes, so the body must also be in that build's record of islands
         // (mIslandSkeletons). On simulation-mode re-entry steps the preparation
-        // passes build first; they group a body that only contacts hold by the
-        // same contacts as this build, so such a body leaving its island counts
-        // at once on those steps.
+        // passes build first with automatic deactivation off, which clears that
+        // record, so a body leaving its island counts at once on those steps.
         const bool leftIsland = skeleton->getIslandIndex() >= 0
                                 && i < mIslandSkeletons.size()
                                 && mIslandSkeletons[i] == skeleton.get();
