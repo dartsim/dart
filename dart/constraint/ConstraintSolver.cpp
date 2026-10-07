@@ -233,11 +233,9 @@ std::vector<std::vector<ConstraintBasePtr>>* retiredGroupConstraintStorage()
   return &storage.buffers;
 }
 
-std::size_t& handedOutGroupConstraintBufferCount()
-{
-  static thread_local std::size_t count = 0u;
-  return count;
-}
+// Buffers handed out to live groups, process-wide, so a solver destroyed on
+// another thread than the one that built its groups still returns its count.
+std::atomic<std::size_t> gHandedOutGroupConstraintBuffers{0u};
 
 void handOutGroupConstraintStorage(std::vector<ConstraintBasePtr>& constraints)
 {
@@ -246,8 +244,9 @@ void handOutGroupConstraintStorage(std::vector<ConstraintBasePtr>& constraints)
     constraints = std::move(retired->back());
     retired->pop_back();
   }
-  auto& handedOut = handedOutGroupConstraintBufferCount();
-  ++handedOut;
+  const auto handedOut = gHandedOutGroupConstraintBuffers.fetch_add(
+                             1u, std::memory_order_relaxed)
+                         + 1u;
   // Every live solver's buffers need spare slots, in addition to those already
   // retired, so shrinking multiple Worlds on this thread never drops storage.
   if (retired)
@@ -257,9 +256,13 @@ void handOutGroupConstraintStorage(std::vector<ConstraintBasePtr>& constraints)
 void retireGroupConstraintStorage(std::vector<ConstraintBasePtr>& constraints)
 {
   constraints.clear();
-  auto& handedOut = handedOutGroupConstraintBufferCount();
-  if (handedOut != 0u)
-    --handedOut;
+  // Externally inserted groups were never handed out; never go below zero.
+  auto handedOut
+      = gHandedOutGroupConstraintBuffers.load(std::memory_order_relaxed);
+  while (handedOut != 0u
+         && !gHandedOutGroupConstraintBuffers.compare_exchange_weak(
+             handedOut, handedOut - 1u, std::memory_order_relaxed)) {
+  }
   auto* retired = retiredGroupConstraintStorage();
   // Externally inserted groups may not have reserved a spare slot.
   if (retired && constraints.capacity() != 0u
