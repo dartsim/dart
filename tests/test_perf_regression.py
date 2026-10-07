@@ -2311,3 +2311,13 @@ def test_compare_reports_malformed_nested_values_as_infrastructure(
     argv = ["compare", "--base", str(paths[0]), "--head", str(paths[1])]
     assert module.main(argv) == 2
     assert "measurement record" in capsys.readouterr().err
+
+
+def test_read_record_rejects_repeated_rows(tmp_path):
+    module = _load_runner()
+    record = {"schema": "dart-perf/1", **_micro_record(module, "dyn")}
+    record["results"].append(copy.deepcopy(record["results"][0]))
+    path = tmp_path / "record.json"
+    module.write_json(path, record)
+    with pytest.raises(ValueError, match="repeats a row"):
+        module.read_record(path)

@@ -1419,6 +1419,9 @@ def read_record(path: Path) -> dict:
         )
     ):
         raise ValueError("missing or unsupported measurement record")
+    keys = [row_key(row) for row in record["results"]]
+    if len(keys) != len(set(keys)):
+        raise ValueError("measurement record repeats a row")
     # A comparison report has the same schema, but its rows carry the base's
     # qualification and per-arm deltas, not one revision's measurements.
     if "verdict" in record:
@@ -1508,8 +1511,8 @@ def local_arms(args) -> tuple[dict, dict]:
         command_output(["git", "rev-parse", "--verify", f"{rev}^{{commit}}"])
         for rev in (args.base, args.head)
     ]
-    portable_only = any(
-        not subprocess.run(
+    has_contact_driver = [
+        subprocess.run(
             [
                 "git",
                 "cat-file",
@@ -1523,7 +1526,12 @@ def local_arms(args) -> tuple[dict, dict]:
         ).returncode
         == 0
         for rev in revisions
-    )
+    ]
+    # Only a base that predates the contact driver narrows the default rows; a
+    # head that drops it must not hide the rows it no longer measures.
+    if has_contact_driver[0] and not has_contact_driver[1]:
+        raise ValueError("the head revision lacks examples/contact_benchmark")
+    portable_only = not has_contact_driver[0]
     if portable_only and not args.rows:
         args.rows = "gzb,robot"
     drivers = sorted({row.driver for row in select_rows(args.rows)} - {PB})
