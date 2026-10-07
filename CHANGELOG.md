@@ -51,6 +51,12 @@
     [#3504](https://github.com/dartsim/dart/pull/3504),
     [#3447](https://github.com/dartsim/dart/issues/3447)
 
+  * `Skeleton` gains a private member that records its last
+    deactivation-state change, which changes its layout. `Skeleton::create()`
+    allocates it inside the library, so only code that subclasses `Skeleton`
+    must be rebuilt against DART 6.20:
+    [#3552](https://github.com/dartsim/dart/pull/3552)
+
 * Build
 
   * Build DART as C++17 regardless of the compiler default, so GCC 16 (which
@@ -725,6 +731,11 @@
     motion that only the handler drives, such as a conveyor belt (gz-sim
     TrackController), keeps responding. Once only the built-in default handler
     remains, bodies can sleep again after the usual sleep delay:
+    [#3552](https://github.com/dartsim/dart/pull/3552)
+
+  * Keep each `World`'s automatic deactivation independent of other Worlds:
+    sleep transitions and edits in another World no longer restart this
+    World's sleep delay or turn off its all-resting fast path:
     [#3552](https://github.com/dartsim/dart/pull/3552)
 
 * Performance
