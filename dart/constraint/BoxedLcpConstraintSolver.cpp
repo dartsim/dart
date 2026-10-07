@@ -529,6 +529,7 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
 
   ConstraintInfo constInfo;
   constInfo.invTimeStep = 1.0 / mTimeStep;
+  constInfo.useSplitImpulse = isSplitImpulseEnabled();
 
   std::size_t offset = 0u;
   for (const auto& constraintPtr : constraints) {
@@ -923,6 +924,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     resetLcpTerms();
     ConstraintInfo constInfo;
     constInfo.invTimeStep = 1.0 / mTimeStep;
+    constInfo.useSplitImpulse = isSplitImpulseEnabled();
 
     if (useDirectSingleFreeBody) {
       const Eigen::Matrix6d& articulatedInertia
