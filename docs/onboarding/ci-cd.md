@@ -52,7 +52,10 @@ even after a failure or cancellation (fork PRs may not save caches). A PR
 restores the newest main snapshot plus its own, so it rebuilds only what
 changed since its last push. `windows-Release` keeps the newest run's snapshot
 per job in its ref and deletes the rest; on main pushes it also deletes PR
-snapshots unused for a day. Cache keys include the MSVC version.
+snapshots unused for a day. Cache keys include the MSVC version. Each MSVC
+compile spends most of its time parsing headers, so Windows CI builds each
+target as unity translation units (`CMAKE_UNITY_BUILD`). Keep file-local names
+unique within a target for this ([Code Style](code-style.md)).
 CTest runs in parallel (`CTEST_PARALLEL_LEVEL`). Nightly-only configurations
 never save, so they build cold. Pixi build tasks pin `BUILD_TYPE=Release`, so
 a job that needs another build type configures CMake itself, as the assertions
