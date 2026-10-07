@@ -17,6 +17,7 @@ import json
 import math
 import os
 import re
+import shlex
 import shutil
 import signal
 import subprocess
@@ -179,13 +180,16 @@ def failed_guards(text: str) -> bool:
 
 
 def guards(text: str) -> dict:
-    return {
+    result = {
         "hash": field(text, "Final State Hash"),
         "finite": field(text, "Final State Finite") == "true",
         "contacts": int(field(text, "Final Contacts")),
         "cap_hit": field(text, "Final Contact Cap Hit") == "true",
         "resting": field(text, "Final Resting").split(" mobile")[0].replace(" ", ""),
     }
+    if re.search(r"^Final Contact Pairs:", text, re.MULTILINE):
+        result["pairs"] = int(field(text, "Final Contact Pairs"))
+    return result
 
 
 def micro_guards(text: str) -> dict | None:
@@ -646,7 +650,25 @@ def library_hashes(prefix: Path) -> dict[str, str]:
     }
 
 
-def workload_hashes(source: Path, drivers) -> dict[str, str]:
+def workload_hashes(
+    source: Path, drivers, build: Path | None = None, prefix: Path | None = None
+) -> dict[str, str]:
+    commands = (
+        json.loads((build / "compile_commands.json").read_text(encoding="utf-8"))
+        if build is not None
+        else []
+    )
+
+    def normalize(command):
+        roots = [(source, "<SOURCE>"), (build, "<BUILD>"), (prefix, "<PREFIX>")]
+        for path, label in sorted(
+            ((str(path.resolve()), label) for path, label in roots if path is not None),
+            key=lambda item: len(item[0]),
+            reverse=True,
+        ):
+            command = command.replace(path, label)
+        return command
+
     hashes = {}
     for driver in sorted(set(drivers) & WORKLOAD_SOURCES.keys()):
         paths = WORKLOAD_SOURCES[driver]
@@ -681,6 +703,28 @@ def workload_hashes(source: Path, drivers) -> dict[str, str]:
             )
             for name in paths
         }
+        if build is not None:
+            compiled = {}
+            for name in paths:
+                if not name.endswith(".cpp"):
+                    continue
+                entries = [
+                    (
+                        normalize(entry["directory"]),
+                        normalize(
+                            entry["command"]
+                            if "command" in entry
+                            else shlex.join(entry["arguments"])
+                        ),
+                    )
+                    for entry in commands
+                    if (Path(entry["directory"]) / entry["file"]).resolve()
+                    == (source / name).resolve()
+                ]
+                if not entries:
+                    raise ValueError(f"missing workload compile command: {name}")
+                compiled[name] = sorted(entries)
+            manifest["compile_commands"] = compiled
         # Older archives may lack instrumentation/case headers; their absence
         # must differ from adding them, without reading this checkout's files.
         hashes[driver] = sha(json.dumps(manifest, sort_keys=True).encode())
@@ -1325,6 +1369,15 @@ def markdown(record: dict) -> str:
             if change["guards_equal"] is None
             else "same" if change["guards_equal"] else "changed"
         )
+        if row.get("det"):
+            for label, metrics in (("base", bm), ("head", hm)):
+                guard = metrics.get("guards") or {}
+                values = ", ".join(
+                    f"{key}={str(guard[key]).lower()}"
+                    for key in ("contacts", "pairs", "resting", "cap_hit")
+                    if key in guard
+                )
+                guard_text += f"; {label}: {values or 'unavailable'}"
         lines.append(
             f"| {row_key(row)} | {row.get('threads', 1)} | {number(bm.get('ir_per_step'))} | {number(hm.get('ir_per_step'))} | {change_text} | {number(bm.get('allocs_per_step'))} → {number(hm.get('allocs_per_step'))} | {bytes_text} | {guard_text} | {change['class']} | {row['gate_reason']} |"
         )
@@ -1474,6 +1527,7 @@ def local_arms(args) -> tuple[dict, dict]:
         prefix = output / label
         options = [
             "-DCMAKE_BUILD_TYPE=Release",
+            "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
             f"-DCMAKE_INSTALL_PREFIX={prefix}",
             f"-DCMAKE_PREFIX_PATH={dependency}",
             "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
@@ -1497,6 +1551,7 @@ def local_arms(args) -> tuple[dict, dict]:
                 output / f"{label}.configure.log",
                 args.timeout,
             )
+            workload_sources = workload_hashes(source, drivers, build, prefix)
             targets = ["dart-utils-urdf", *drivers]
             if CB not in drivers:
                 targets += [
@@ -1540,6 +1595,7 @@ def local_arms(args) -> tuple[dict, dict]:
                     "-B",
                     str(driver_build),
                     "-DCMAKE_BUILD_TYPE=Release",
+                    "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
                     f"-DCMAKE_PREFIX_PATH={prefix};{dependency}",
                     "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
                 ],
@@ -1547,6 +1603,7 @@ def local_arms(args) -> tuple[dict, dict]:
                 output / f"{label}.driver-configure.log",
                 args.timeout,
             )
+            workload_sources |= workload_hashes(ROOT, [PB], driver_build, prefix)
             execute(
                 ["cmake", "--build", str(driver_build), "--parallel", str(args.jobs)],
                 os.environ.copy(),
@@ -1569,11 +1626,7 @@ def local_arms(args) -> tuple[dict, dict]:
                     "preset": "perf-1",
                     "libdart_sha": sha((prefix / "lib/libdart.so").read_bytes()),
                     "libraries": library_hashes(prefix),
-                    "workload_sources": workload_hashes(
-                        source,
-                        (path.name for path in binary.iterdir() if path.name != PB),
-                    )
-                    | workload_hashes(ROOT, [PB]),
+                    "workload_sources": workload_sources,
                     "binaries": {
                         path.name: sha(path.read_bytes())
                         for path in binary.iterdir()

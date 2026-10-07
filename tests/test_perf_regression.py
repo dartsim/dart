@@ -842,6 +842,147 @@ def test_workload_hashes_cover_sources_and_headers(tmp_path, changed_path):
         module.workload_hashes(tmp_path, drivers)
 
 
+@pytest.mark.parametrize("arguments", [False, True])
+def test_workload_hashes_cover_compile_commands(tmp_path, arguments):
+    module = _load_runner()
+    drivers = list(module.WORKLOAD_SOURCES)
+
+    def arm(label):
+        source = tmp_path / label
+        build, prefix = source / "build", source / "install"
+        build.mkdir(parents=True)
+        for paths in module.WORKLOAD_SOURCES.values():
+            for name in paths:
+                path = source / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"workload")
+        # contact_benchmark globs every translation unit, not just main.cpp.
+        (source / "examples/contact_benchmark/extra.cpp").write_bytes(b"extra")
+        entries = []
+        for path in sorted(source.rglob("*.cpp")):
+            command = [
+                "/usr/bin/c++",
+                "-O3",
+                f"-I{source}/include",
+                f"-I{build}/include",
+                f"-I{prefix}/include",
+                "-o",
+                str(build / (path.stem + ".o")),
+                "-c",
+                str(path),
+            ]
+            entries.append(
+                {
+                    "directory": str(build),
+                    "file": os.path.relpath(path, build),
+                    **(
+                        {"arguments": command}
+                        if arguments
+                        else {"command": " ".join(command)}
+                    ),
+                }
+            )
+        entries.append(
+            {
+                "directory": str(build),
+                "file": str(source / "dart/library.cpp"),
+                "command": "/usr/bin/c++ -O3 -c dart/library.cpp",
+            }
+        )
+        module.write_json(build / "compile_commands.json", entries)
+        return source, build, prefix, entries
+
+    source, build, prefix, entries = arm("base")
+    base = module.workload_hashes(source, drivers, build, prefix)
+    other_source, other_build, other_prefix, other_entries = arm("head")
+    module.write_json(other_build / "compile_commands.json", other_entries[::-1])
+    assert (
+        module.workload_hashes(other_source, drivers, other_build, other_prefix) == base
+    )
+
+    # Library flags belong to measured code and must not rebaseline workloads.
+    entries[-1]["command"] = "/usr/bin/c++ -O0 -c dart/library.cpp"
+    module.write_json(build / "compile_commands.json", entries)
+    assert module.workload_hashes(source, drivers, build, prefix) == base
+
+    for entry in entries[:-1]:
+        changed = copy.deepcopy(entries)
+        index = entries.index(entry)
+        if arguments:
+            changed[index]["arguments"][1] = "-O2"
+        else:
+            changed[index]["command"] = entry["command"].replace("-O3", "-O2")
+        module.write_json(build / "compile_commands.json", changed)
+        head = module.workload_hashes(source, drivers, build, prefix)
+        name = (build / entry["file"]).resolve().relative_to(source).as_posix()
+        for driver in drivers:
+            owns_source = name in module.WORKLOAD_SOURCES[driver] or (
+                driver == module.CB and name.endswith("/extra.cpp")
+            )
+            assert (head[driver] != base[driver]) == owns_source
+
+    # A root Release flag change reaches every driver's compilation.
+    for entry in entries[:-1]:
+        if arguments:
+            entry["arguments"][1] = "-O2"
+        else:
+            entry["command"] = entry["command"].replace("-O3", "-O2")
+    module.write_json(build / "compile_commands.json", entries)
+    head = module.workload_hashes(source, drivers, build, prefix)
+    assert all(head[driver] != base[driver] for driver in drivers)
+
+    module.write_json(build / "compile_commands.json", entries[1:])
+    with pytest.raises(ValueError, match="missing workload compile command"):
+        module.workload_hashes(source, drivers, build, prefix)
+
+
+@pytest.mark.parametrize("pairs", [None, 0, 3])
+def test_contact_guard_values_survive_comparison_and_markdown(pairs):
+    module = _load_runner()
+
+    def guard(contacts, resting, cap_hit, pairs):
+        text = (
+            "Final State Hash: 0x1\nFinal State Finite: true\n"
+            f"Final Contacts: {contacts}\nFinal Resting: {resting}\n"
+            f"Final Contact Cap Hit: {cap_hit}\n"
+        )
+        if pairs is not None:
+            text += f"Final Contact Pairs: {pairs}\n"
+        return module.guards(text)
+
+    base = _micro_record(module, "dyn")
+    base["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    row = base["results"][0]
+    row.update(row="contact", det="dart")
+    row["head"]["guards"] = guard(7, "2 / 5 mobile", "false", pairs)
+    head = copy.deepcopy(base)
+    head_guard = head["results"][0]["head"]["guards"] = guard(
+        9, "3 / 5 mobile", "true", None if pairs is None else pairs + 1
+    )
+    record = module.compare(base, head)
+    saved = json.loads(json.dumps(record))["results"][0]
+    assert saved["parent"]["guards"] == row["head"]["guards"]
+    assert saved["head"]["guards"] == head_guard
+    report = module.markdown(record)
+    for label, values in (("base", (7, "2/5", "false")), ("head", (9, "3/5", "true"))):
+        contacts, resting, cap_hit = values
+        expected_pairs = (
+            pairs if label == "base" else None if pairs is None else pairs + 1
+        )
+        text = f"{label}: contacts={contacts}, "
+        if expected_pairs is not None:
+            text += f"pairs={expected_pairs}, "
+        assert text + f"resting={resting}, cap_hit={cap_hit}" in report
+    if pairs is not None:
+        # Pair accounting alone is also a correctness guard.
+        head = copy.deepcopy(base)
+        head["results"][0]["head"]["guards"]["pairs"] += 1
+        assert (
+            module.compare(base, head)["results"][0]["delta"]["class"]
+            == "behaviour-change"
+        )
+
+
 def test_local_resets_only_marked_default_output(monkeypatch, tmp_path):
     module = _load_runner()
     monkeypatch.setattr(module, "ROOT", tmp_path)
@@ -1907,6 +2048,7 @@ def test_local_uses_independent_source_and_cmake_caches(
 
     def execute(command, env, log, timeout):
         if command[:3] == ["cmake", "-G", "Ninja"]:
+            assert "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" in command
             source = Path(command[command.index("-S") + 1])
             build = Path(command[command.index("-B") + 1])
             build.mkdir()
@@ -1914,6 +2056,23 @@ def test_local_uses_independent_source_and_cmake_caches(
             compiler.parent.mkdir(parents=True)
             compiler.write_text(
                 'set(CMAKE_CXX_COMPILER_ID "GNU")\nset(CMAKE_CXX_COMPILER_VERSION "13.3.0")\n'
+            )
+            workload_source = source if source.name.startswith("src-") else module.ROOT
+            compiled_drivers = (
+                expected_drivers if source.name.startswith("src-") else {module.PB}
+            )
+            module.write_json(
+                build / "compile_commands.json",
+                [
+                    {
+                        "directory": str(build),
+                        "file": str(workload_source / name),
+                        "command": f"/usr/bin/c++ -O3 -I{workload_source} -I{build} -c {workload_source / name}",
+                    }
+                    for driver in sorted(compiled_drivers)
+                    for name in module.WORKLOAD_SOURCES[driver]
+                    if name.endswith(".cpp")
+                ],
             )
             if source.name.startswith("src-"):
                 assert (source / "CMakeLists.txt").is_file()
@@ -1955,9 +2114,11 @@ def test_local_uses_independent_source_and_cmake_caches(
             (module.ROOT / "pixi.lock").read_bytes()
         )
         source = tmp_path / f"src-{arm.prefix.name}"
+        build = tmp_path / f"build-{arm.prefix.name}"
+        driver_build = tmp_path / f"driver-{arm.prefix.name}"
         assert stamp["workload_sources"] == (
-            module.workload_hashes(source, expected_drivers)
-            | module.workload_hashes(module.ROOT, [module.PB])
+            module.workload_hashes(source, expected_drivers, build, arm.prefix)
+            | module.workload_hashes(module.ROOT, [module.PB], driver_build, arm.prefix)
         )
         if expected_drivers:
             assert stamp["workload_sources"] != module.workload_hashes(

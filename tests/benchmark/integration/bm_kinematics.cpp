@@ -44,6 +44,7 @@
 
 #include <chrono>
 #include <numeric>
+#include <utility>
 
 using namespace dart;
 
@@ -182,6 +183,12 @@ static DART_PERF_NOINLINE void BM_Dynamics(benchmark::State& state)
   // Get the input value to be passed to the Kinematics function
   int n = state.range(0);
 
+  std::vector<std::pair<double, int>> initialState;
+  if (window.enabled()) {
+    for (const auto& world : worlds)
+      initialState.emplace_back(world->getTime(), world->getSimFrames());
+  }
+
   // Call the Kinematics function and measure the time it takes
   for (auto _ : state) {
     runDynamicsTest(worlds, n);
@@ -190,7 +197,23 @@ static DART_PERF_NOINLINE void BM_Dynamics(benchmark::State& state)
   // Read the final numerical state once, without adding work to the timed loop.
   if (window.enabled()) {
     dart::test::PerfChecksum checksum;
-    for (const auto& world : worlds) {
+    const auto steps = state.iterations() * n;
+    for (std::size_t w = 0; w < worlds.size(); ++w) {
+      const auto& world = worlds[w];
+      const double time = world->getTime();
+      const int frames = world->getSimFrames();
+      const double expectedTime
+          = initialState[w].first + steps * world->getTimeStep();
+      if (frames - initialState[w].second != steps
+          || time <= initialState[w].first
+          || std::abs(time - expectedTime)
+                 > 1e-9 * std::max(1.0, std::abs(expectedTime))) {
+        state.SkipWithError(
+            "World time or simulation frames did not advance correctly");
+        return;
+      }
+      checksum.add(time);
+      checksum.add(frames);
       for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
         const auto skeleton = world->getSkeleton(s);
         for (const auto& values :
