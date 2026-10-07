@@ -1412,6 +1412,7 @@ def read_record(path: Path) -> dict:
             isinstance(row, dict)
             and isinstance(row.get("row"), str)
             and isinstance(row.get("det") or "", str)
+            and isinstance(row.get("head", {}), dict)
             for row in record["results"]
         )
     ):
@@ -1702,11 +1703,16 @@ def main(argv: list[str] | None = None) -> int:
             base, head = local_arms(args)
         else:
             base, head = read_record(args.base), read_record(args.head)
-        record = compare(
-            base,
-            head,
-            args.body_file.read_text(encoding="utf-8") if args.body_file else "",
-        )
+        try:
+            record = compare(
+                base,
+                head,
+                args.body_file.read_text(encoding="utf-8") if args.body_file else "",
+            )
+        except (AttributeError, TypeError) as error:
+            # A value of the wrong type deeper in a record than read_record()
+            # checks is still a malformed record, not a policy failure.
+            raise ValueError(f"malformed measurement record: {error}") from error
         report = markdown(record)
         print(report, end="")
         if args.json:

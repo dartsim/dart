@@ -2282,3 +2282,22 @@ def test_interrupt_stops_running_benchmark_groups(tmp_path):
     thread.join(timeout=10)
     assert not thread.is_alive()
     assert not module.RUNNING
+
+
+@pytest.mark.parametrize("field, value", [("head", None), ("head", [])])
+def test_compare_reports_malformed_nested_values_as_infrastructure(
+    tmp_path, capsys, field, value
+):
+    module = _load_runner()
+    record = {"schema": "dart-perf/1", **_micro_record(module, "dyn")}
+    record["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    bad = copy.deepcopy(record)
+    bad["results"][0][field] = value
+    paths = []
+    for name, item in (("base", record), ("head", bad)):
+        path = tmp_path / f"{name}.json"
+        module.write_json(path, item)
+        paths.append(path)
+    argv = ["compare", "--base", str(paths[0]), "--head", str(paths[1])]
+    assert module.main(argv) == 2
+    assert "measurement record" in capsys.readouterr().err
