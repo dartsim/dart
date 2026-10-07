@@ -126,9 +126,9 @@ def e1_cells():
         )
         add("P1", p1, ("B620", "DZ+R"), DETECTORS, cap + ("--perf",))
         add("P1", p1, ("B620", "DZ+R"), ("ode", "dart"), cap + ("--perf", "--ir"))
-    # Split-impulse cells wait for PR-0 (the position pass loses the velocity
-    # impulses until it merges).
-    add("R1", ["n=5,T=2"], ("B620",), gz, ("--split", "on", "--pending", "PR-0"))
+    # Split-impulse cells: the position pass keeps the velocity impulses since
+    # #3567.
+    add("R1", ["n=5,T=2"], ("B620",), gz, ("--split", "on"))
     return cells
 
 
@@ -825,11 +825,7 @@ def self_test(binary=None):
     assert [r for r, _ in skipped] == ["valgrind not found", "pending PR-0"]
     assert plan(cells, have_valgrind=True)[0] == [cells[1], cells[3]]
     # A nonempty selection can still have no runnable cells after planning.
-    for only, reasons in (
-        ("--ir", ("valgrind not found",)),
-        ("--pending", ("pending PR-0",)),
-        ("--ir|--pending", ("valgrind not found", "pending PR-0")),
-    ):
+    for only, reasons in (("--ir", ("valgrind not found",)),):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
             shutil, "which", return_value=None
         ), mock.patch.object(subprocess, "run") as process, contextlib.redirect_stderr(

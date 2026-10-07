@@ -153,4 +153,4 @@ early on stacks and never passes on rows near zero.
 - With `--solver mf-pgs`, the 6.20 line solves large contact-only groups of
   free bodies matrix-free, past the wrapper, so the solver telemetry covers
   only the other groups and is omitted when the wrapper saw no solve.
-- Split-impulse cells wait for PR-0 and are listed as pending by the runner.
+- Split-impulse cells need the split-impulse fix (#3567), which `main` has.
