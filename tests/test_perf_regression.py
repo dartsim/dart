@@ -2129,6 +2129,7 @@ def test_micro_perturbations_compare_real_metrics(monkeypatch, tmp_path, name, c
 
 
 @pytest.mark.parametrize("revision", ["HEAD", "annotated-release"])
+@pytest.mark.parametrize("smoke", [False, True])
 @pytest.mark.parametrize(
     "rows, portable_only, expected_drivers",
     [
@@ -2153,7 +2154,7 @@ def test_micro_perturbations_compare_real_metrics(monkeypatch, tmp_path, name, c
     ],
 )
 def test_local_uses_independent_source_and_cmake_caches(
-    monkeypatch, tmp_path, revision, rows, portable_only, expected_drivers
+    monkeypatch, tmp_path, revision, smoke, rows, portable_only, expected_drivers
 ):
     import io
     import tarfile
@@ -2164,19 +2165,23 @@ def test_local_uses_independent_source_and_cmake_caches(
         [
             "local",
             "--base",
-            revision,
+            "missing-base" if smoke else revision,
             "--head",
             revision,
             "--output-dir",
             str(tmp_path),
             "--rows",
             rows,
+            *(["--smoke"] if smoke else []),
         ]
     )
     monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
 
+    resolved = []
+
     def command_output(command):
         # An annotated tag names a tag object unless explicitly peeled.
+        resolved.append(command[-1])
         return "tag-object" if command[-1] == "annotated-release" else "commit"
 
     monkeypatch.setattr(module, "command_output", command_output)
@@ -2286,17 +2291,139 @@ def test_local_uses_independent_source_and_cmake_caches(
             )
         assert stamp["binaries"].keys() == expected_drivers | {module.PB}
         portable_hashes.append(stamp["binaries"][module.PB])
-        return {"commit": arm.commit}
+        arm.output_dir.mkdir()
+        record = {"run": {"commit": arm.commit}}
+        module.write_json(arm.output_dir / "record.json", record)
+        return record
 
     monkeypatch.setattr(module, "run_arm", run_arm)
-    assert len(module.local_arms(args)) == 2
-    assert portable_hashes == [module.sha(b"driver-a"), module.sha(b"driver-b")]
+    base, head = module.local_arms(args)
+    labels = ("a",) if smoke else ("a", "b")
+    assert resolved == [f"{revision}^{{commit}}"] * len(labels)
+    assert portable_hashes == [
+        module.sha(f"driver-{label}".encode()) for label in labels
+    ]
+    if smoke:
+        assert base is head
+        assert head["run"]["mode"] == "smoke"
+        assert (
+            json.loads((tmp_path / "a-run/record.json").read_text())["run"]["mode"]
+            == "smoke"
+        )
     assert args.rows == ("gzb,robot" if portable_only and not rows else rows)
     assert configurations == [
-        (tmp_path / f"src-{arm}", tmp_path / f"build-{arm}") for arm in ("a", "b")
+        (tmp_path / f"src-{arm}", tmp_path / f"build-{arm}") for arm in labels
     ]
     for source, build in configurations:
         assert (build / "CMakeCache.txt").read_text() == source.name
+
+
+@pytest.mark.parametrize("phase", ["configure", "build"])
+def test_local_smoke_records_head_build_failure(monkeypatch, tmp_path, capsys, phase):
+    import io
+    import tarfile
+    from types import SimpleNamespace
+
+    module = _load_runner()
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
+    resolved = []
+
+    def command_output(command):
+        resolved.append(command[-1])
+        return "head-commit"
+
+    monkeypatch.setattr(module, "command_output", command_output)
+    monkeypatch.setattr(
+        module.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0),
+    )
+    archive = io.BytesIO()
+    with tarfile.open(fileobj=archive, mode="w"):
+        pass
+    monkeypatch.setattr(
+        module.subprocess, "check_output", lambda *args, **kwargs: archive.getvalue()
+    )
+    monkeypatch.setattr(module, "workload_hashes", lambda *args: {})
+
+    def execute(command, *args):
+        if command[:2] == ["cmake", "-G"] and phase == "configure":
+            raise ValueError("simulated configure failure")
+        if command[:2] == ["cmake", "--build"]:
+            raise ValueError("simulated build failure")
+        return ""
+
+    monkeypatch.setattr(module, "execute", execute)
+    monkeypatch.setattr(
+        module, "run_arm", lambda args: pytest.fail("measured failed build")
+    )
+    assert (
+        module.main(
+            [
+                "local",
+                "--smoke",
+                "--base",
+                "missing-base",
+                "--head",
+                "head-revision",
+                "--rows",
+                "gzb",
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+        == 2
+    )
+    assert resolved == ["head-revision^{commit}"]
+    assert json.loads((tmp_path / "build-failure.json").read_text()) == {
+        "commit": "head-commit",
+        "error": f"simulated {phase} failure",
+    }
+    assert f"simulated {phase} failure" in capsys.readouterr().err
+    assert not (tmp_path / "src-b").exists()
+    assert not (tmp_path / "a-run/record.json").exists()
+    assert not (tmp_path / "perf.json").exists()
+
+
+@pytest.mark.parametrize("defect", [None, "measurement", "perturbation", "missing"])
+@pytest.mark.parametrize("perturb", [False, True])
+def test_local_smoke_reports_measurement_failures(
+    monkeypatch, tmp_path, capsys, defect, perturb
+):
+    module = _load_runner()
+    record = _micro_record(module, "dyn")
+    record["run"]["mode"] = "smoke"
+    record["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    row = record["results"][0]
+    if defect == "measurement":
+        row.update(status="broken", error="invalid measurement", head={})
+    elif defect == "perturbation":
+        row.update(gated=False, perturbations={"start4k": {"stable": False}})
+    elif defect == "missing":
+        row["gated"] = False
+
+    def local_arms(args):
+        assert args.smoke
+        return record, record
+
+    monkeypatch.setattr(module, "local_arms", local_arms)
+    path = tmp_path / "perf.json"
+    failed = bool(defect and (defect != "missing" or perturb))
+    status = "FAIL" if failed else "PASS"
+    assert (
+        module.main(
+            [
+                "local",
+                "--smoke",
+                "--json",
+                str(path),
+                *([] if perturb else ["--no-perturb"]),
+            ]
+        )
+        == failed
+    )
+    assert capsys.readouterr().out.startswith(f"Perf smoke: HEAD — {status}\n")
+    assert json.loads(path.read_text())["verdict"]["status"] == status
 
 
 @pytest.mark.parametrize("name", ["dyn", "lcp"])

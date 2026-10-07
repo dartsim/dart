@@ -27,7 +27,10 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
 | `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above on `main`; files `nightly-failure` issues |
 | `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Performance dashboard |
+| `perf.yml`                       | Performance regression       | PR to main touching perf paths  | Advisory `Perf A/B` counts and guards, with a head smoke run for harness/workflow-only changes |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main` |
+
+To acknowledge an intended regression, add `Perf-Regression-Rationale: <rows>: <reason>` (or `Rebaseline-Rationale: <rows>: <reason>` for changed guards, including a signed Ir percentage when above +1%) to the PR body and run `gh run rerun <run-id> --failed`; editing the body alone does not trigger a run.
 
 Required checks on `main`: `Release` and
 `Asserts enabled (no -DNDEBUG)` (CI Linux), `arm64-Release` (CI macOS),

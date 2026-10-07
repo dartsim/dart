@@ -1358,7 +1358,11 @@ def markdown(record: dict) -> str:
         else "/".join(map(str, threads)) + (" thread" if threads == [1] else " threads")
     )
     lines = [
-        f"Perf A/B: {record['run']['parent']} → {record['run']['commit']} — {verdict['status']}",
+        (
+            f"Perf smoke: {record['run']['commit']} — {verdict['status']}"
+            if record["run"].get("mode") == "smoke"
+            else f"Perf A/B: {record['run']['parent']} → {record['run']['commit']} — {verdict['status']}"
+        ),
         f"{method}; {thread_text}; Valgrind {env['valgrind']}; {env.get('compiler') or 'compiler unavailable'}; glibc {env['glibc']}; {env['preset']}",
         "",
     ]
@@ -1471,6 +1475,9 @@ def parser() -> argparse.ArgumentParser:
     local = sub.add_parser("local", help="build revisions and compare them")
     local.add_argument("--base", default="origin/main")
     local.add_argument("--head", default="HEAD")
+    local.add_argument(
+        "--smoke", action="store_true", help="build and measure only --head"
+    )
     for item in (run, local):
         item.add_argument(
             "--output-dir",
@@ -1541,7 +1548,7 @@ def local_arms(args) -> tuple[dict, dict]:
         )
     revisions = [
         command_output(["git", "rev-parse", "--verify", f"{rev}^{{commit}}"])
-        for rev in (args.base, args.head)
+        for rev in ((args.head,) if args.smoke else (args.base, args.head))
     ]
     has_contact_driver = [
         subprocess.run(
@@ -1561,7 +1568,7 @@ def local_arms(args) -> tuple[dict, dict]:
     ]
     # Only a base that predates the contact driver narrows the default rows; a
     # head that drops it must not hide the rows it no longer measures.
-    if has_contact_driver[0] and not has_contact_driver[1]:
+    if not args.smoke and has_contact_driver[0] and not has_contact_driver[1]:
         raise ValueError("the head revision lacks examples/contact_benchmark")
     portable_only = not has_contact_driver[0]
     if portable_only and not args.rows:
@@ -1685,6 +1692,11 @@ def local_arms(args) -> tuple[dict, dict]:
                 },
             )
         except (OSError, ValueError) as error:
+            if args.smoke:
+                write_json(
+                    output / "build-failure.json",
+                    {"commit": revision, "error": str(error)},
+                )
             if label == "a":
                 raise
             records.append(
@@ -1711,6 +1723,10 @@ def local_arms(args) -> tuple[dict, dict]:
         arm.output_dir = output / f"{label}-run"
         arm.shim, arm.heappad = shims / "allocshim.so", shims / "heappad.so"
         records.append(run_arm(arm))
+    if args.smoke:
+        records[0]["run"]["mode"] = "smoke"
+        write_json(output / "a-run/record.json", records[0])
+        records.append(records[0])
     if args.json is None:
         args.json = output / "perf.json"
     if args.markdown is None:
@@ -1755,6 +1771,16 @@ def main(argv: list[str] | None = None) -> int:
             # A value of the wrong type deeper in a record than read_record()
             # checks is still a malformed record, not a policy failure.
             raise ValueError(f"malformed measurement record: {error}") from error
+        if args.command == "local" and args.smoke and args.perturb:
+            if any(
+                row["status"] == "ok" and not row.get("gated")
+                for row in head["results"]
+            ):
+                record["verdict"]["failures"].append(
+                    "smoke perturbation qualification failed or missing"
+                )
+                if record["verdict"]["status"] != "ERROR":
+                    record["verdict"]["status"] = "FAIL"
         report = markdown(record)
         print(report, end="")
         if args.json:

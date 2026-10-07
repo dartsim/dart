@@ -1,0 +1,242 @@
+name: Performance regression
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - "dart/**"
+      - "examples/contact_benchmark/**"
+      - "tests/benchmark/**"
+      - "data/**"
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - "tools/perf/**"
+      - "scripts/perf_regression.py"
+      - ".github/workflows/perf.yml"
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: perf-pr-${{ github.event.pull_request.number }}
+  # A verdict rerun retains the original event; it must not cancel a new run.
+  cancel-in-progress: ${{ github.event.action == 'synchronize' && github.run_attempt == 1 }}
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      base: ${{ steps.scope.outputs.base }}
+      head: ${{ steps.scope.outputs.head }}
+    env:
+      PERF_OUTPUT: ${{ runner.temp }}/perf
+      PERF_ARTIFACT: ${{ runner.temp }}/perf-artifact
+    steps:
+      - name: Checkout merge ref
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Select smoke or A/B
+        id: scope
+        run: |
+          base=$(git rev-parse HEAD^1)
+          head=$(git rev-parse HEAD)
+          mode=smoke
+          # Only perf-relevant changes choose the mode; companion docs/tests do not.
+          while IFS= read -r -d '' path; do
+            case "$path" in
+              dart/*|examples/contact_benchmark/*|tests/benchmark/*|data/*|CMakeLists.txt|cmake/*) mode=ab ;;
+            esac
+          done < <(git diff --no-renames --name-only -z "$base" "$head")
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "head=$head" >> "$GITHUB_OUTPUT"
+          echo "PERF_BASE=$base" >> "$GITHUB_ENV"
+          echo "PERF_HEAD=$head" >> "$GITHUB_ENV"
+          echo "PERF_MODE=$mode" >> "$GITHUB_ENV"
+          git worktree add --detach "$RUNNER_TEMP/perf-harness" "$base"
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          cache: false
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+
+      - name: Build and measure
+        run: |
+          started=$(date +%s)
+          harness="$RUNNER_TEMP/perf-harness/scripts/perf_regression.py"
+          options=(--base "$PERF_BASE" --head "$PERF_HEAD")
+          if [[ "$PERF_MODE" == smoke ]]; then
+            harness=scripts/perf_regression.py
+            options+=(--smoke)
+          fi
+          status=0
+          pixi run python "$harness" local "${options[@]}" \
+            --output-dir "$PERF_OUTPUT" --jobs 4 || status=$?
+          export PERF_SECONDS=$(($(date +%s) - started))
+          export PERF_STATUS=$status
+          mkdir -p "$PERF_ARTIFACT"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          output = Path(os.environ["PERF_OUTPUT"])
+          failure = output / "build-failure.json"
+          if os.environ["PERF_MODE"] == "smoke" and failure.exists():
+              record = {"mode": "smoke", "wall_seconds": int(os.environ["PERF_SECONDS"]),
+                        "measurement_exit": 0, "broken": json.loads(failure.read_text())}
+              (Path(os.environ["PERF_ARTIFACT"]) / "perf.json").write_text(json.dumps(record, allow_nan=False) + "\n")
+              raise SystemExit(0)
+          base = json.loads((output / "a-run/record.json").read_text())
+          head_path = output / "b-run/record.json"
+          if os.environ["PERF_MODE"] == "smoke":
+              head = base
+          elif head_path.exists():
+              head = json.loads(head_path.read_text())
+          else:
+              # P1 local reports a head build failure without writing b-run.
+              report = json.loads((output / "perf.json").read_text())
+              rows = report["results"]
+              if not rows or not all(row.get("error", "").startswith("head build failed:") for row in rows):
+                  raise ValueError("head measurement missing")
+              head = {"schema": base["schema"], "run": {**base["run"], "commit": os.environ["PERF_HEAD"]},
+                      "results": [{**row, "head": {}, "status": "broken", "error_kind": "build"} for row in rows]}
+              # A broken head is data; infrastructure failures still fail measure.
+              os.environ["PERF_STATUS"] = "0"
+          record = {"mode": os.environ["PERF_MODE"], "wall_seconds": int(os.environ["PERF_SECONDS"]),
+                    "measurement_exit": int(os.environ["PERF_STATUS"]), "base": base, "head": head}
+          (Path(os.environ["PERF_ARTIFACT"]) / "perf.json").write_text(json.dumps(record, allow_nan=False) + "\n")
+          raise SystemExit(2 if record["measurement_exit"] == 2 else 0)
+          PY
+
+      - name: Upload measurements
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          # Stable across attempts: rerunning verdict reuses the successful measure.
+          name: perf-${{ github.run_id }}
+          path: ${{ env.PERF_ARTIFACT }}/perf.json
+          retention-days: 14
+          overwrite: true
+          if-no-files-found: error
+
+  verdict:
+    name: Perf A/B
+    needs: measure
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      MEASURE_RESULT: ${{ needs.measure.result }}
+      PERF_BASE: ${{ needs.measure.outputs.base }}
+      PERF_HEAD: ${{ needs.measure.outputs.head }}
+    steps:
+      - name: Checkout base rules only
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.measure.outputs.base || github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Download measurements (including earlier attempts)
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: perf-${{ github.run_id }}
+          path: ${{ runner.temp }}/perf-artifact
+
+      - name: Apply base rules to the live PR body
+        id: judge
+        env:
+          PERF_ARTIFACT: ${{ runner.temp }}/perf-artifact
+        run: |
+          # Always leave a failing summary/comment if measurement or body lookup fails.
+          echo '2' > verdict-exit
+          printf '<!-- dart-perf -->\nPerf A/B: ERROR — measurement missing/failed or verdict unavailable.\n' > perf.md
+          if [[ "$MEASURE_RESULT" == success ]]; then
+            gh pr view "$PR_NUMBER" --json body --jq '.body' > pr-body.txt
+            python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          record = json.loads((Path(os.environ["PERF_ARTIFACT"]) / "perf.json").read_text())
+          if record["measurement_exit"] not in (0, 1) or record["mode"] not in ("ab", "smoke"):
+              raise ValueError("failed or unsupported measurement")
+          if record["mode"] == "smoke" and record["measurement_exit"] != 0:
+              raise ValueError("head harness smoke failed")
+          if "broken" in record:
+              failure = record["broken"]
+              if record["mode"] != "smoke" or failure["commit"] != os.environ["PERF_HEAD"]:
+                  raise ValueError("broken head revision mismatch")
+              Path("perf.md").write_text(f'<!-- dart-perf -->\nPerf smoke: FAIL — head build failed: {failure["error"]}\nBuild wall time: {record["wall_seconds"]} s.\n')
+              Path("verdict-exit").write_text("1\n")
+              raise SystemExit(0)
+          if record["head"]["run"]["commit"] != os.environ["PERF_HEAD"]:
+              raise ValueError("head revision mismatch")
+          if record["base"]["run"]["commit"] != os.environ["PERF_HEAD" if record["mode"] == "smoke" else "PERF_BASE"]:
+              raise ValueError("base revision mismatch")
+          for arm in ("base", "head"):
+              Path(arm + ".json").write_text(json.dumps(record[arm], allow_nan=False))
+          mode = "Smoke (one head arm; base rules)" if record["mode"] == "smoke" else "A/B (base harness on both arms)"
+          Path("perf.md").write_text(f'<!-- dart-perf -->\n{mode}; build/measurement wall time: {record["wall_seconds"]} s.\n\n')
+          PY
+            if [[ "$(cat verdict-exit)" == 1 ]]; then exit 0; fi
+            status=0
+            python3 scripts/perf_regression.py compare --base base.json --head head.json \
+              --body-file pr-body.txt --json verdict.json --markdown comparison.md || status=$?
+            if [[ -f comparison.md ]]; then cat comparison.md >> perf.md; fi
+            if [[ "$status" == 2 ]]; then printf '\nERROR: comparison could not be completed.\n' >> perf.md; fi
+            echo "$status" > verdict-exit
+          fi
+
+      - name: Write job summary
+        if: ${{ always() }}
+        run: |
+          if [[ -f perf.md ]]; then
+            cat perf.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Perf A/B: ERROR — verdict setup failed.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upsert sticky PR comment
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: |
+          comments=$(gh api --paginate "repos/$GH_REPO/issues/$PR_NUMBER/comments" \
+            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- dart-perf -->"))) | .id')
+          comment=${comments%%$'\n'*}
+          jq -n --rawfile body perf.md '{body: $body}' > comment.json
+          if [[ -n "$comment" ]]; then
+            gh api --method PATCH "repos/$GH_REPO/issues/comments/$comment" --input comment.json
+          else
+            gh api --method POST "repos/$GH_REPO/issues/$PR_NUMBER/comments" --input comment.json
+          fi
+
+      - name: Enforce verdict
+        if: ${{ always() }}
+        run: |
+          [[ "$MEASURE_RESULT" == success && "${{ steps.judge.outcome }}" == success ]]
+          exit "$(cat verdict-exit)"
