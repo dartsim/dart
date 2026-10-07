@@ -52,6 +52,9 @@ jobs:
           mode=smoke
           # Only perf-relevant changes choose the mode; companion docs/tests do not.
           while IFS= read -r -d '' path; do
+            # The 3k world is a pinned input: the harness reads it from its own
+            # checkout and checks WORLD_SHA, so changing it needs the smoke run.
+            [[ "$path" == tests/benchmark/worlds/* ]] && continue
             case "$path" in
               dart/*|examples/contact_benchmark/*|tests/benchmark/*|tests/unit/lcpsolver/DantzigProblemCases.hpp|data/*|CMakeLists.txt|cmake/*) mode=ab ;;
             esac

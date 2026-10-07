@@ -2668,6 +2668,8 @@ def test_workflow_covers_every_workload_source_and_data_path():
     patterns = _perf_workflow()["on"]["pull_request"]["paths"]
     selector = _perf_step("measure", "Select smoke or A/B")["run"]
     cases = re.search(r'case "\$path" in\s+(.+?)\) mode=ab', selector)[1].split("|")
+    # run_arm() reads the pinned 3k world from the harness checkout.
+    assert '[[ "$path" == tests/benchmark/worlds/* ]] && continue' in selector
     sources = {name for names in module.WORKLOAD_SOURCES.values() for name in names}
     sources |= set(module.WORKLOAD_DATA.values())
     # Atlas includes meshes in subdirectories, and micro scenes use dart://sample.
