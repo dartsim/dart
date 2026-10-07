@@ -13,6 +13,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -354,6 +355,24 @@ TEST(DantzigNative, DeprecatedOdeLcpSolverUsesNativeDantzigPath)
   ASSERT_TRUE(solver.Solve(A, b, &x, 0, 0.0, 4, true));
   ASSERT_EQ(1, x.size());
   EXPECT_NEAR(2.0, x[0], 1e-12);
+}
+
+TEST(DantzigNative, DeprecatedOdeLcpSolverRejectsLcpsTooLargeForIntOffsets)
+{
+  // 46341 rows pad to a stride of 46344, so the last row starts past INT_MAX.
+  // INT_MAX rows overflow padding(), and a 64-bit Eigen::Index maximum narrows
+  // to an int of -1. Solve only reads the row count before rejecting, so no
+  // columns are needed.
+  const Eigen::VectorXd b;
+  Eigen::VectorXd x;
+  dart::lcpsolver::ODELCPSolver solver;
+  for (const Eigen::Index rows :
+       {Eigen::Index{46341},
+        Eigen::Index{std::numeric_limits<int>::max()},
+        std::numeric_limits<Eigen::Index>::max()}) {
+    const Eigen::MatrixXd A(rows, 0);
+    EXPECT_FALSE(solver.Solve(A, b, &x, 0, 0.0, 4, true)) << rows;
+  }
 }
 
 TEST(DantzigNative, DantzigBoxedLcpSolverKeepsPublicLayoutStable)
