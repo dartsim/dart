@@ -4232,7 +4232,6 @@ void Skeleton::incrementDeactivationStateVersion()
 //==============================================================================
 void Skeleton::incrementVelocityVersion()
 {
-  ++mVelocityVersion;
   incrementGlobal(gVelocityVersion);
 }
 
@@ -4248,12 +4247,6 @@ std::size_t Skeleton::incrementKinematicVersion()
 std::size_t Skeleton::getKinematicVersion() const
 {
   return mKinematicVersion;
-}
-
-//==============================================================================
-std::size_t Skeleton::getVelocityVersion() const
-{
-  return mVelocityVersion;
 }
 
 //==============================================================================

@@ -45,6 +45,9 @@ if(DART_CODECOV)
 endif()
 dart_add_test("integration" test_ContactConstraint)
 dart_add_test("integration" test_SplitImpulse)
+if(TARGET dart-collision-ode)
+  target_link_libraries(test_SplitImpulse dart-collision-ode)
+endif()
 if(TARGET dart-collision-bullet)
   target_link_libraries(test_SplitImpulse dart-collision-bullet)
   target_link_libraries(
@@ -77,6 +80,9 @@ dart_add_test("integration" test_LocalResourceRetriever)
 dart_add_test("integration" test_Optimizer)
 dart_add_test("integration" test_ScrewJoint)
 dart_add_test("integration" test_Subscriptions)
+if(TARGET dart-collision-ode)
+  target_link_libraries(test_IslandDeactivation dart-collision-ode)
+endif()
 
 set(
   soft_demo_model_test_sources

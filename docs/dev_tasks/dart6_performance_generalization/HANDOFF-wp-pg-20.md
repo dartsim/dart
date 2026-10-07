@@ -129,6 +129,9 @@ required crash A/B) on a quiet host before merge.
 - ~1267 `findShallowSupportedFreeRoots(...)` — serial (this is the PG.30/PG.31 area)
 - ~1278 `parallelForIndexRange(... integratePositions + suppressShallowSupportedFreeRootDrift)` — PARALLEL
 
+Superseded (2026-10-04, #3056): the #3227 drift suppression was removed, so
+the snapshot, support search, and suppression calls above no longer exist.
+
 So: collision = serial; only dynamics + LCP-group-solve = parallel.
 
 ---
