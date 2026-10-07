@@ -47,8 +47,12 @@ jobs:
         run: |
           set -o pipefail
           prs=$(gh api "repos/$REPO/pulls?state=open&head=$OWNER:$BRANCH&base=$BASE" --jq '.[].number')
-          # An unchanged lockfile leaves the PR as it is, approval included.
-          if [ -z "$prs" ] || { git fetch -q origin "$BRANCH" && git diff --quiet FETCH_HEAD -- pixi.lock; }; then
+          # create-pull-request leaves the PR as it is, approval included, only
+          # when the lockfile is unchanged and the branch is one commit on the
+          # current base; otherwise it rewrites the branch.
+          if [ -z "$prs" ] || { git fetch -q origin "$BRANCH" \
+            && git diff --quiet FETCH_HEAD -- pixi.lock \
+            && [ "$(git rev-parse FETCH_HEAD~1)" = "$(git rev-parse HEAD)" ]; }; then
             exit 0
           fi
           for pr in $prs; do
