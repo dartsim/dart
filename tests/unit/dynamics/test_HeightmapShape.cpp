@@ -113,6 +113,25 @@ TEST(HeightmapShapeValidation, RejectsNonFiniteHeightFieldAndPreservesOriginal)
 }
 
 //==============================================================================
+TEST(HeightmapShapeBoundingBox, FloatHeightsBoundTheScaledHeightRange)
+{
+  // Heights of very different magnitudes: subtracting them in float before
+  // scaling in double put the top of the box about 2% below the highest
+  // sample.
+  auto heightmap = std::make_shared<HeightmapShape<float>>();
+  heightmap->setHeightField(
+      2u, 2u, std::vector<float>{-10000.0f, 0.01f, 0.0f, 0.0f});
+  heightmap->setScale(Eigen::Vector3f(1.0f, 1.0f, 10.1f));
+
+  const auto& box = heightmap->getBoundingBox();
+  const double scaleZ = static_cast<double>(10.1f);
+  EXPECT_DOUBLE_EQ(box.getMin().z(), static_cast<double>(-10000.0f) * scaleZ);
+  EXPECT_DOUBLE_EQ(box.getMax().z(), static_cast<double>(0.01f) * scaleZ);
+  EXPECT_DOUBLE_EQ(box.getMin().x(), -1.0);
+  EXPECT_DOUBLE_EQ(box.getMax().x(), 1.0);
+}
+
+//==============================================================================
 TEST(HeightmapShapeValidation, InvalidInputsDoNotThrow)
 {
   const float inf = std::numeric_limits<float>::infinity();

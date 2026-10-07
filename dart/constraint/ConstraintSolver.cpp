@@ -3428,6 +3428,8 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   // accumulated constraint impulses. World::step() integrates the
   // velocity-phase impulses only after solve() returns, so preserve them, and
   // the impulse-applied flags, across the position pass.
+  // Clear the flags so position unit-impulse tests do not read stale velocity
+  // changes from skeletons outside the current probe.
   // ponytail: per-step local vectors; move to solver scratch if split-impulse
   // worlds show allocation cost.
   std::vector<bool> impulseAppliedStates;
@@ -3438,6 +3440,7 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   for (const auto& skeleton : mSkeletons) {
     const bool applied = skeleton->isImpulseApplied();
     impulseAppliedStates.push_back(applied);
+    skeleton->setImpulseApplied(false);
     if (!applied)
       continue;
     for (auto* bodyNode : skeleton->getBodyNodes()) {

@@ -236,6 +236,14 @@
 
 * Collision
 
+  * Build the meshes that `FCLCollisionDetector` uses for boxes, spheres,
+    ellipsoids, and cylinders in `MESH` primitive mode in double instead of
+    float precision, so their vertices can move at float rounding. In the
+    default `PRIMITIVE` mode, supported shapes are unchanged; only the
+    placeholder sphere built for an empty `ConvexMeshShape` or an unsupported
+    shape gets the same change:
+    [#3581](https://github.com/dartsim/dart/pull/3581)
+
   * Fix a crash in the ODE collision backend when replacing or resizing a
     shape already in a collision group, and preserve shape updates when
     switching collision detectors after skeletons have been added to a world.
@@ -424,6 +432,16 @@
 
 * Dynamics
 
+  * Compute the `SoftBodyNodeHelper` ellipsoid and cylinder point-mass rest
+    positions in double instead of float precision, so they move by the
+    rounding error of the old float math, and the `HeightmapShape<float>`
+    bounding box from each widened height so it encloses the scaled height
+    range.
+    `ODELCPSolver::Solve` with the ODE solver now returns `false` for an LCP
+    whose padded matrix has more than `INT_MAX` entries, instead of
+    overflowing its `int` offsets:
+    [#3581](https://github.com/dartsim/dart/pull/3581)
+
   * Fix `setSpringStiffness()` and `setDampingCoefficient()` changes not taking
     effect until the joint's configuration changes; they now take effect on the
     next step: [#3552](https://github.com/dartsim/dart/pull/3552)
@@ -521,6 +539,8 @@
     [#2490](https://github.com/dartsim/dart/pull/2490)
 
 * Simulation
+
+  * Fix split-impulse position correction failures for contacts between multiple reactive skeletons: [#3582](https://github.com/dartsim/dart/pull/3582)
 
   * Preserve built-in solver backends and their options, split impulse,
     matrix-free solver options, and collision contact settings when cloning a
