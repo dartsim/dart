@@ -1871,3 +1871,17 @@ def test_micro_callgrind_requires_native_guard_and_library_parity(
     native_text = native_text.split("PERFGUARD", 1)[0]
     module.native_log(args, row).write_text(native_text)
     assert module.callgrind(row, args, tmp_path, row.warmup + row.steps) == {"Ir": 1000}
+
+
+def test_compare_rejects_comparison_reports_as_inputs(tmp_path):
+    module = _load_runner()
+    record = {"schema": "dart-perf/1", **_micro_record(module, "dyn")}
+    path = tmp_path / "record.json"
+    module.write_json(path, record)
+    assert module.read_record(path)["results"]
+    # A comparison report shares the schema but carries the base's
+    # qualification, so it must not stand in for a measurement.
+    report = module.compare(record, record)
+    module.write_json(path, report)
+    with pytest.raises(ValueError, match="comparison report"):
+        module.read_record(path)

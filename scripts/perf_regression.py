@@ -61,22 +61,28 @@ class Row:
 
 CB = "contact_benchmark"
 PB = "portable_step_bench"
-# Workload files from the CMake targets and their local includes. DART library
-# sources are measured code, not inputs. PB uses this checkout for both arms.
+# Workload files from the CMake targets, their build definitions and their
+# local includes. DART library sources are measured code, not inputs. PB uses
+# this checkout for both arms.
 WORKLOAD_SOURCES = {
     CB: (
         "examples/contact_benchmark/main.cpp",
         "examples/contact_benchmark/ContactContainerScene.hpp",
         "examples/contact_benchmark/GazeboPreset.hpp",
+        "examples/contact_benchmark/CMakeLists.txt",
     ),
     "BM_INTEGRATION_kinematics": (
         "tests/benchmark/integration/bm_kinematics.cpp",
         "tests/benchmark/PerfGuard.hpp",
+        "tests/benchmark/CMakeLists.txt",
+        "tests/benchmark/integration/CMakeLists.txt",
     ),
     "BM_UNIT_dantzig_lcp": (
         "tests/benchmark/unit/bm_dantzig_lcp.cpp",
         "tests/benchmark/PerfGuard.hpp",
         "tests/unit/lcpsolver/DantzigProblemCases.hpp",
+        "tests/benchmark/CMakeLists.txt",
+        "tests/benchmark/unit/CMakeLists.txt",
     ),
 }
 # Exact micro wrappers exclude timing/report formatting from the slope.
@@ -599,7 +605,7 @@ def workload_hashes(source: Path, drivers) -> dict[str, str]:
             # Match the target's glob, so added or renamed files count too.
             paths = sorted(
                 path.relative_to(source).as_posix()
-                for pattern in ("*.cpp", "*.hpp")
+                for pattern in ("*.cpp", "*.hpp", "CMakeLists.txt")
                 for path in (source / "examples/contact_benchmark").glob(pattern)
             )
             if not any(path.endswith(".cpp") for path in paths):
@@ -1270,6 +1276,10 @@ def read_record(path: Path) -> dict:
     )
     if record.get("schema") != "dart-perf/1" or not record.get("results"):
         raise ValueError("missing or unsupported measurement record")
+    # A comparison report has the same schema, but its rows carry the base's
+    # qualification and per-arm deltas, not one revision's measurements.
+    if "verdict" in record:
+        raise ValueError("comparison report given where a measurement record belongs")
     return record
 
 
