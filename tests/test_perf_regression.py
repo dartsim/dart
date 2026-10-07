@@ -638,7 +638,7 @@ def test_saved_records_require_compiler_provenance(missing, field):
     [
         (100, 0, True, "", "PASS", "neutral"),
         (99, 0, True, "", "PASS", "improved"),
-        (100.001, 0, True, "", "PASS", "regressed"),
+        (100.001, 0, True, "", "PASS", "neutral"),
         (100.3, 0, True, "", "WARN", "regressed"),
         (100.5, 0, True, "", "FAIL", "regressed"),
         (101, 0, True, "", "FAIL", "regressed"),
@@ -1802,7 +1802,8 @@ def test_requested_bytes_gate_report_and_missing_measurements():
     result = module.compare(base, head)
     assert result["verdict"]["status"] == "PASS"
     assert result["results"][0]["delta"]["bytes"] == -28
-    assert "| -28 |" in module.markdown(result)
+    report = module.markdown(result)
+    assert "| -28 |" in report and "1 improved." in report
     head["results"][0]["head"]["bytes_per_step"] = 128
     base["results"][0]["gated"] = False
     assert module.compare(base, head)["verdict"]["status"] == "PASS"

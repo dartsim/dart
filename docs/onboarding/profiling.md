@@ -222,8 +222,10 @@ provenance cannot pass comparison. Gated rows fail on increases in either
 allocations per step or requested bytes per step unless acknowledged with a
 matching `Perf-Regression-Rationale`. The report includes requested-byte deltas;
 missing or invalid byte measurements are handled like allocation counts.
-Gated rows with positive Ir deltas, allocation-count or requested-byte increases,
-or gate failures count as regressed in the summary.
+Gated rows with gate failures, allocation-count or requested-byte increases, or
+Ir deltas at or above the +0.30% warning threshold count as regressed in the
+summary. Otherwise, allocation-count or requested-byte decreases, or Ir
+improvements of at least 1%, count as improved.
 
 Use the soft-body comparison script for PR evidence that must compare the
 current commit against both its parent and the `main` base on the same host:
