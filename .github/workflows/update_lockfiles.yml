@@ -32,15 +32,19 @@ jobs:
         run: |
           pixi update --json --no-install | pixi exec pixi-diff-to-markdown >> diff.md
       # Pushes made with GITHUB_TOKEN do not trigger maintainer_approval.yml,
-      # so revoke an approval of the open lockfile PR before replacing its head.
-      - name: Remove maintainer-approved from the open lockfile pull request
+      # so this job revokes approval of the open lockfile PR itself: before
+      # replacing its head, and again afterwards for a label added meanwhile.
+      - name: Remove maintainer-approved before updating the lockfile pull request
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
           BRANCH: update-pixi-${{ matrix.base }}
         run: |
           set -o pipefail
-          pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open \
+            --json number,headRepositoryOwner \
+            --jq ".[] | select(.headRepositoryOwner.login == \"$OWNER\") | .number")
           if [ -n "$pr" ] && ! out=$(gh api -X DELETE "repos/$REPO/issues/$pr/labels/maintainer-approved" 2>&1) \
             && ! grep -q "Label does not exist" <<< "$out"; then
             echo "$out"
@@ -58,3 +62,20 @@ jobs:
           labels: pixi
           delete-branch: true
           add-paths: pixi.lock
+      - name: Remove maintainer-approved after updating the lockfile pull request
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          BRANCH: update-pixi-${{ matrix.base }}
+        run: |
+          set -o pipefail
+          pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open \
+            --json number,headRepositoryOwner \
+            --jq ".[] | select(.headRepositoryOwner.login == \"$OWNER\") | .number")
+          if [ -n "$pr" ] && ! out=$(gh api -X DELETE "repos/$REPO/issues/$pr/labels/maintainer-approved" 2>&1) \
+            && ! grep -q "Label does not exist" <<< "$out"; then
+            echo "$out"
+            exit 1
+          fi

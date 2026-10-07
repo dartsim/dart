@@ -161,6 +161,10 @@ gh pr checks <PR_NUMBER>
      independent review recorded a clean result on the current post-fix head
      (after findings, a clean re-review; the docs-only/mechanical exemption
      in step 4 above also satisfies this), and GitHub reports it mergeable.
+   - The `maintainer-approved` label is the explicit approval (lifecycle step
+     4): confirm it is present and that its latest `labeled` event (`gh api
+     repos/dartsim/dart/issues/<PR_NUMBER>/events`) follows the push of every
+     commit except conflict-free base merges. Never add it yourself.
    - Use the current head SHA when merging so a moved branch cannot be merged
      accidentally.
 6. Clean up after merge:

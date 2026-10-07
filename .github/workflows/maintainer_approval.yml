@@ -26,8 +26,10 @@ jobs:
   revoke-stale-approval:
     name: Revoke stale approval
     # Title and description edits keep the approval; a base change does not.
+    # always() keeps the job's removal step alive when the run is cancelled.
     if: >-
-      contains(github.event.pull_request.labels.*.name, 'maintainer-approved')
+      always()
+      && contains(github.event.pull_request.labels.*.name, 'maintainer-approved')
       && (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-latest
     timeout-minutes: 15
