@@ -164,7 +164,8 @@ gh pr checks <PR_NUMBER>
    - The `maintainer-approved` label is the explicit approval (lifecycle step
      4): its latest `labeled` event (`gh api --paginate
      repos/dartsim/dart/issues/<PR_NUMBER>/events`) must have the maintainer
-     as `actor` and come after the earliest check suite (`gh api
+     as `actor` and come after any `head_ref_force_pushed` event there and
+     after the earliest check suite (`gh api
      repos/dartsim/dart/commits/<SHA>/check-suites`) of the last commit that
      is not a conflict-free base merge, or of the first later commit that
      has one. If none does, ask for a fresh label. Never add it yourself.
