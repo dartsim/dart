@@ -195,6 +195,18 @@ jobs:
         id: build
         run: pixi run ${{ matrix.task }}
 
+      # Print the final counters, then stop the server: after a cancellation
+      # its in-flight compiles would keep writing to the cache while it is
+      # archived, and tar fails with "file changed as we read it".
+      - name: Stop sccache
+        if: >-
+          always()
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
+        run: |
+          pixi run sccache --stop-server
+          Get-Process sccache -ErrorAction SilentlyContinue | Stop-Process -Force
+          exit 0
+
       # Keys are immutable, so each run saves under its own key. Failed and
       # cancelled runs save too: every object sccache stored is valid, and the
       # next push resumes from them. A run stopped before the build started has
@@ -223,10 +235,6 @@ jobs:
         with:
           path: ${{ env.SCCACHE_SNAPSHOT == 'pr' && env.SCCACHE_PR_DIR || env.SCCACHE_DIR }}
           key: ${{ steps.sccache-config.outputs.prefix }}-${{ env.SCCACHE_SNAPSHOT }}-${{ github.run_id }}-${{ github.run_attempt }}
-
-      - name: Sccache statistics
-        if: always()
-        run: pixi run sccache --show-stats
 
       # Linux CI covers install. On Windows, pixi run install configures a
       # separate install build tree after test-all has already passed, which
