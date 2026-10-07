@@ -25,6 +25,7 @@ import sys
 import tarfile
 import tempfile
 import threading
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -92,6 +93,26 @@ WORKLOAD_SOURCES = {
         "tests/benchmark/unit/CMakeLists.txt",
     ),
 }
+WORKLOAD_DATA = {
+    "pend": ("data/sdf/benchmark.world",),
+    "robot": (
+        "data/sdf/atlas/ground.urdf",
+        "data/sdf/atlas/atlas_v3_no_head.sdf",
+    ),
+}
+BUILD_ERROR_MARKERS = (
+    ": error:",
+    ": fatal error:",
+    "undefined reference",
+    "cmake error",
+)
+RUNNER_ERROR_MARKERS = (
+    "no space left on device",
+    "killed signal terminated program",
+    "virtual memory exhausted",
+    "cannot allocate memory",
+    "signal 9",
+)
 # Exact micro wrappers exclude timing/report formatting from the slope.
 COLLECTION_SIGNATURES = {
     CB: "dart::simulation::World::step(bool)",
@@ -113,7 +134,7 @@ SCENES = {
         100,
         ("dart", "fcl", "bullet", "ode"),
     ),
-    "pend": ((str(ROOT / "data/sdf/benchmark.world"),), 100, 1000, ("dart",)),
+    "pend": (("{data}/sdf/benchmark.world",), 100, 1000, ("dart",)),
 }
 ROWS = [
     Row(name, det, CB, args, w, n, ir=(name, det) != ("s2r", "ode"))
@@ -232,6 +253,10 @@ class UnsupportedRow(ValueError):
     pass
 
 
+class BuildFailure(ValueError):
+    """A configure/build/install log identifies a source or configuration error."""
+
+
 # Benchmarks run in their own sessions, so a terminal's Ctrl-C does not reach
 # them; whoever catches the interruption stops every running group.
 RUNNING: dict[int, subprocess.Popen] = {}
@@ -251,7 +276,9 @@ def kill_running() -> None:
         kill_group(process)
 
 
-def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
+def execute(
+    command: list[str], env: dict, log: Path, timeout: int, *, build: bool = False
+) -> str:
     with log.open("w", encoding="utf-8") as output:
         process = subprocess.Popen(
             command,
@@ -275,6 +302,15 @@ def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
             with RUNNING_LOCK:
                 RUNNING.pop(id(process), None)
     text = log.read_text(encoding="utf-8", errors="replace")
+    if build and process.returncode:
+        lower = text.lower()
+        source_error = (
+            process.returncode > 0
+            and any(marker in lower for marker in BUILD_ERROR_MARKERS)
+            and not any(marker in lower for marker in RUNNER_ERROR_MARKERS)
+        )
+        error = BuildFailure if source_error else ValueError
+        raise error(f"exit {process.returncode}: see {log}")
     unsupported = re.search(r"^UNSUPPORTED: (.+)$", text, re.MULTILINE)
     if process.returncode == 3 and unsupported:
         raise UnsupportedRow(unsupported[1])
@@ -291,8 +327,17 @@ def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
 def row_command(row: Row, args, world: Path, warmup: int, steps: int) -> list[str]:
     command = [
         str(args.bin_dir / row.driver),
-        *(str(world) if item == "{world}" else item for item in row.args),
+        *(
+            (
+                str(world)
+                if item == "{world}"
+                else item.replace("{data}", str(args.source_dir / "data"))
+            )
+            for item in row.args
+        ),
     ]
+    if row.row == "robot":
+        command += ["--data-dir", str(args.source_dir / "data")]
     if not row.det:
         return [*command, f"--benchmark_min_time={steps}x"]
     command += [
@@ -438,6 +483,27 @@ def native_guards(args, row: Row) -> dict | None:
     return guards(text) if row.det else micro_guards(text)
 
 
+def robot_data_paths(source_dir: Path) -> list[Path]:
+    """The loaded models and their mesh/URI references in this arm's checkout."""
+    source_dir = source_dir.resolve()
+    models = [source_dir / name for name in WORKLOAD_DATA["robot"]]
+    paths = set(models)
+    for model in models:
+        root = ET.parse(model).getroot()
+        references = [node.text.strip() for node in root.iter("uri") if node.text]
+        references += [
+            node.attrib["filename"]
+            for node in root.iter("mesh")
+            if "filename" in node.attrib
+        ]
+        for reference in references:
+            path = (model.parent / reference.removeprefix("file://")).resolve()
+            # Never hash a resource from outside the selected revision.
+            path.relative_to(source_dir)
+            paths.add(path)
+    return sorted(paths)
+
+
 def measure(row: Row, args, world: Path) -> dict:
     result = {
         "row": row.row,
@@ -456,23 +522,34 @@ def measure(row: Row, args, world: Path) -> dict:
         ),
         "parity": row.parity,
     }
-    if "{world}" in row.args:
-        result["input_sha"] = WORLD_SHA
-    elif row.row == "pend":
-        result["input_sha"] = sha((ROOT / "data/sdf/benchmark.world").read_bytes())
-    elif row.row == "robot":
-        result["input_sha"] = sha(
-            b"".join(
-                path.relative_to(ROOT).as_posix().encode() + path.read_bytes()
-                for path in sorted((ROOT / "data/sdf/atlas").glob("*"))
-                if path.is_file()
-            )
-        )
-    else:
-        result["input_sha"] = sha(
-            json.dumps([row.row, row.args], sort_keys=True).encode()
-        )
+    result["input_sha"] = None
     try:
+        try:
+            if "{world}" in row.args:
+                result["input_sha"] = WORLD_SHA
+            elif row.row == "pend":
+                result["input_sha"] = sha(
+                    (args.source_dir / WORKLOAD_DATA["pend"][0]).read_bytes()
+                )
+            elif row.row == "robot":
+                result["input_sha"] = sha(
+                    b"".join(
+                        path.relative_to(args.source_dir.resolve()).as_posix().encode()
+                        + path.read_bytes()
+                        for path in robot_data_paths(args.source_dir)
+                    )
+                )
+            else:
+                result["input_sha"] = sha(
+                    json.dumps([row.row, row.args], sort_keys=True).encode()
+                )
+        except (OSError, ValueError, ET.ParseError) as error:
+            kind = (
+                ValueError if getattr(args, "base_arm", False) else BenchmarkCaseError
+            )
+            raise kind(
+                f"{row.key}: failed to load revision inputs from {args.source_dir}: {error}"
+            ) from error
         metrics = (
             native(row, args, world) if row.det else micro_perturb(row, args, world, "")
         )
@@ -911,9 +988,10 @@ def run_arm(args) -> dict:
     for row, result in zip(rows, results):
         if row.driver in WORKLOAD_SOURCES:
             result["workload_sha"] = provenance["workload_sources"][row.driver]
-            result["input_sha"] = sha(
-                json.dumps([result["input_sha"], result["workload_sha"]]).encode()
-            )
+            if result["input_sha"] is not None:
+                result["input_sha"] = sha(
+                    json.dumps([result["input_sha"], result["workload_sha"]]).encode()
+                )
     by_key = {row_key(result): result for result in results}
     for result in results:
         if result["parity"] and result["status"] == "ok":
@@ -1358,7 +1436,11 @@ def markdown(record: dict) -> str:
         else "/".join(map(str, threads)) + (" thread" if threads == [1] else " threads")
     )
     lines = [
-        f"Perf A/B: {record['run']['parent']} → {record['run']['commit']} — {verdict['status']}",
+        (
+            f"Perf smoke: {record['run']['commit']} — {verdict['status']}"
+            if record["run"].get("mode") == "smoke"
+            else f"Perf A/B: {record['run']['parent']} → {record['run']['commit']} — {verdict['status']}"
+        ),
         f"{method}; {thread_text}; Valgrind {env['valgrind']}; {env.get('compiler') or 'compiler unavailable'}; glibc {env['glibc']}; {env['preset']}",
         "",
     ]
@@ -1468,9 +1550,13 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--prefix", type=Path, required=True)
     run.add_argument("--bin-dir", type=Path)
     run.add_argument("--commit", required=True, help="revision installed in --prefix")
+    run.add_argument("--source-dir", type=Path, default=ROOT)
     local = sub.add_parser("local", help="build revisions and compare them")
     local.add_argument("--base", default="origin/main")
     local.add_argument("--head", default="HEAD")
+    local.add_argument(
+        "--smoke", action="store_true", help="build and measure only --head"
+    )
     for item in (run, local):
         item.add_argument(
             "--output-dir",
@@ -1523,25 +1609,9 @@ def local_arms(args) -> tuple[dict, dict]:
         raise ValueError("local requires the active Pixi environment (CONDA_PREFIX)")
     shims = output / "shims"
     shims.mkdir()
-    for name in ("allocshim", "heappad"):
-        execute(
-            [
-                "/usr/bin/cc",
-                "-O2",
-                "-shared",
-                "-fPIC",
-                "-o",
-                str(shims / f"{name}.so"),
-                str(ROOT / f"tools/perf/{name}.c"),
-                "-ldl",
-            ],
-            os.environ.copy(),
-            shims / f"{name}.log",
-            args.timeout,
-        )
     revisions = [
         command_output(["git", "rev-parse", "--verify", f"{rev}^{{commit}}"])
-        for rev in (args.base, args.head)
+        for rev in ((args.head,) if args.smoke else (args.base, args.head))
     ]
     has_contact_driver = [
         subprocess.run(
@@ -1561,7 +1631,7 @@ def local_arms(args) -> tuple[dict, dict]:
     ]
     # Only a base that predates the contact driver narrows the default rows; a
     # head that drops it must not hide the rows it no longer measures.
-    if has_contact_driver[0] and not has_contact_driver[1]:
+    if not args.smoke and has_contact_driver[0] and not has_contact_driver[1]:
         raise ValueError("the head revision lacks examples/contact_benchmark")
     portable_only = not has_contact_driver[0]
     if portable_only and not args.rows:
@@ -1595,11 +1665,30 @@ def local_arms(args) -> tuple[dict, dict]:
             "-DDART_DISABLE_COMPILER_CACHE=ON",
         ]
         try:
+            if label == "a":
+                for name in ("allocshim", "heappad"):
+                    execute(
+                        [
+                            "/usr/bin/cc",
+                            "-O2",
+                            "-shared",
+                            "-fPIC",
+                            "-o",
+                            str(shims / f"{name}.so"),
+                            str(ROOT / f"tools/perf/{name}.c"),
+                            "-ldl",
+                        ],
+                        os.environ.copy(),
+                        shims / f"{name}.log",
+                        args.timeout,
+                        build=True,
+                    )
             execute(
                 ["cmake", "-G", "Ninja", "-S", str(source), "-B", str(build), *options],
                 os.environ.copy(),
                 output / f"{label}.configure.log",
                 args.timeout,
+                build=True,
             )
             workload_sources = workload_hashes(source, drivers, build, prefix)
             targets = ["dart-utils-urdf", *drivers]
@@ -1622,12 +1711,14 @@ def local_arms(args) -> tuple[dict, dict]:
                 os.environ.copy(),
                 output / f"{label}.build.log",
                 max(args.timeout, 3600),
+                build=True,
             )
             execute(
                 ["cmake", "--install", str(build), "--prefix", str(prefix)],
                 os.environ.copy(),
                 output / f"{label}.install.log",
                 args.timeout,
+                build=True,
             )
             binary = prefix / "bin"
             binary.mkdir(exist_ok=True)
@@ -1652,6 +1743,7 @@ def local_arms(args) -> tuple[dict, dict]:
                 os.environ.copy(),
                 output / f"{label}.driver-configure.log",
                 args.timeout,
+                build=True,
             )
             workload_sources |= workload_hashes(ROOT, [PB], driver_build, prefix)
             execute(
@@ -1659,6 +1751,7 @@ def local_arms(args) -> tuple[dict, dict]:
                 os.environ.copy(),
                 output / f"{label}.driver-build.log",
                 args.timeout,
+                build=True,
             )
             shutil.copy2(
                 driver_build / "portable_step_bench", binary / "portable_step_bench"
@@ -1684,7 +1777,12 @@ def local_arms(args) -> tuple[dict, dict]:
                     },
                 },
             )
-        except (OSError, ValueError) as error:
+        except BuildFailure as error:
+            if args.smoke:
+                write_json(
+                    output / "build-failure.json",
+                    {"commit": revision, "error": str(error), "error_kind": "build"},
+                )
             if label == "a":
                 raise
             records.append(
@@ -1698,7 +1796,7 @@ def local_arms(args) -> tuple[dict, dict]:
                             "gated": False,
                             "perturbations": {},
                             "error": f"head build failed: {error}",
-                            "error_kind": "infrastructure",
+                            "error_kind": "build",
                             "head": {},
                         }
                         for row in records[0]["results"]
@@ -1708,9 +1806,15 @@ def local_arms(args) -> tuple[dict, dict]:
             break
         arm = argparse.Namespace(**vars(args))
         arm.prefix, arm.bin_dir, arm.commit = prefix, binary, revision
+        arm.source_dir = source
+        arm.base_arm = label == "a" and not args.smoke
         arm.output_dir = output / f"{label}-run"
         arm.shim, arm.heappad = shims / "allocshim.so", shims / "heappad.so"
         records.append(run_arm(arm))
+    if args.smoke:
+        records[0]["run"]["mode"] = "smoke"
+        write_json(output / "a-run/record.json", records[0])
+        records.append(records[0])
     if args.json is None:
         args.json = output / "perf.json"
     if args.markdown is None:
@@ -1755,6 +1859,16 @@ def main(argv: list[str] | None = None) -> int:
             # A value of the wrong type deeper in a record than read_record()
             # checks is still a malformed record, not a policy failure.
             raise ValueError(f"malformed measurement record: {error}") from error
+        if args.command == "local" and args.smoke and args.perturb:
+            if any(
+                row["status"] == "ok" and not row.get("gated")
+                for row in head["results"]
+            ):
+                record["verdict"]["failures"].append(
+                    "smoke perturbation qualification failed or missing"
+                )
+                if record["verdict"]["status"] != "ERROR":
+                    record["verdict"]["status"] = "FAIL"
         report = markdown(record)
         print(report, end="")
         if args.json:
@@ -1766,7 +1880,7 @@ def main(argv: list[str] | None = None) -> int:
             if record["verdict"]["status"] == "ERROR"
             else int(record["verdict"]["status"] == "FAIL")
         )
-    except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as error:
+    except Exception as error:
         print(f"perf: {error}", file=sys.stderr)
         return 2
 
