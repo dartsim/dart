@@ -2075,11 +2075,12 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
   }
 
   // With gravity, the speed checked leaves out up to one step of gravity along
-  // gravity, unless gravity is off for the body. The leaver touches a wall in
-  // the air and moves away from it, so it is in a contact island after the
-  // first step and outside every island after the second, where it moves at
-  // the given velocity. The sleeper starts settled on the floor, so the
-  // initial-rest credit makes it a sleep candidate at the first step.
+  // gravity, unless gravity is off for the body. The leaver stays against a
+  // wall in the air for the first step, then moves away, so it is in a contact
+  // island after the second step and outside every island after the third,
+  // where it moves at the given velocity. The sleeper starts settled on the
+  // floor, so the initial-rest credit confirmed on the second solve makes it
+  // a sleep candidate at the second step.
   const auto checkLeaverExit = [](const Eigen::Vector3d& exitVelocity,
                                   bool leaverGravity,
                                   bool expectHeldAwake,
@@ -2097,14 +2098,17 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
         Eigen::Vector3d::Constant(kBoxSize),
         Eigen::Vector3d(kHalf - 1.0e-6, 0, 2.0));
     leaver->getBodyNode(0)->setGravityMode(leaverGravity);
-    // Gravity acts on the leaver for two steps before its first step outside
-    // every island.
+    world->addSkeleton(leaver);
+    world->step();
+    ASSERT_GE(leaver->getIslandIndex(), 0);
+
+    // Gravity acts for two steps after this velocity write before the
+    // leaver's first step outside every island.
     Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
     velocity.tail<3>() = exitVelocity;
     if (leaverGravity)
       velocity.tail<3>() -= 2.0 * world->getGravity() * world->getTimeStep();
     leaver->getJoint(0)->setVelocities(velocity);
-    world->addSkeleton(leaver);
 
     world->step();
     ASSERT_GE(leaver->getIslandIndex(), 0);
@@ -2157,12 +2161,12 @@ TEST(IslandDeactivation, OneStepContactMissDoesNotHoldIslandsAwake)
 TEST(IslandDeactivation, BodySwitchedToKinematicActuatorHoldsIslandsAwake)
 {
   // As in the gravity checks of OneStepContactMissDoesNotHoldIslandsAwake, the
-  // leaver touches a wall in the air and moves away from it, so it is in a
-  // contact island after the first step and outside every island after the
-  // second. From the second step its joint follows a zero acceleration command,
-  // so it keeps the velocity it had after the first step. The sleeper starts
-  // settled on the floor, so the initial-rest credit makes it a sleep candidate
-  // at the first step.
+  // leaver stays against a wall in the air for the first step, then moves away,
+  // so it is in a contact island after the second step and outside every island
+  // after the third. From the third step its joint follows a zero acceleration
+  // command, so it keeps the velocity it had after the second step. The sleeper
+  // starts settled on the floor, so the initial-rest credit confirmed on the
+  // second solve makes it a sleep candidate at the second step.
   const auto checkLeaver = [](bool leaverGravity,
                               double downSpeed,
                               const char* message) {
@@ -2179,6 +2183,10 @@ TEST(IslandDeactivation, BodySwitchedToKinematicActuatorHoldsIslandsAwake)
         Eigen::Vector3d::Constant(kBoxSize),
         Eigen::Vector3d(kHalf - 1.0e-6, 0, 2.0));
     leaver->getBodyNode(0)->setGravityMode(leaverGravity);
+    world->addSkeleton(leaver);
+    world->step();
+    ASSERT_GE(leaver->getIslandIndex(), 0);
+
     const auto& opts = world->getDeactivationOptions();
     Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
     velocity[3] = 0.25 * opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
@@ -2186,7 +2194,6 @@ TEST(IslandDeactivation, BodySwitchedToKinematicActuatorHoldsIslandsAwake)
     if (leaverGravity)
       velocity[5] += world->getGravity().norm() * world->getTimeStep();
     leaver->getJoint(0)->setVelocities(velocity);
-    world->addSkeleton(leaver);
 
     world->step();
     ASSERT_GE(leaver->getIslandIndex(), 0);
@@ -2296,9 +2303,10 @@ TEST(IslandDeactivation, BodyWokenFromRestOutsideIslandsHoldsIslandsAwake)
   const auto checkWokenFloater = [](bool wakeThroughSetters,
                                     const char* message) {
     // The sleeper starts settled on the floor, so the initial-rest credit
-    // makes it a sleep candidate at the first step. The floater hovers,
-    // touching nothing and without gravity, as a candidate whose dwell is
-    // complete, so World puts it to rest at the first step.
+    // confirmed on the second solve makes it a sleep candidate at the second
+    // step. The floater hovers, touching nothing and without gravity, as a
+    // candidate whose dwell is complete, so World puts it to rest at the first
+    // step. It stays at rest through the second step and wakes at the third.
     auto world = makeSleepWorld();
     world->addSkeleton(createFloor());
     auto sleeper = createFreeBox(
@@ -2314,6 +2322,8 @@ TEST(IslandDeactivation, BodyWokenFromRestOutsideIslandsHoldsIslandsAwake)
     world->addSkeleton(floater);
     makeSleepEligible(*world, *floater);
 
+    world->step();
+    ASSERT_TRUE(floater->isResting());
     world->step();
     ASSERT_TRUE(sleeper->isSleepCandidate());
     ASSERT_TRUE(floater->isResting());
@@ -2351,8 +2361,9 @@ TEST(IslandDeactivation, BodyWokenFromRestOutsideIslandsHoldsIslandsAwake)
 // a newly eligible island awake from its first step outside every island.
 TEST(IslandDeactivation, PendulumLeavingItsJointLimitHoldsIslandsAwake)
 {
-  // The sleeper starts settled on the floor, so the initial-rest credit makes
-  // it a sleep candidate at the first step.
+  // The sleeper starts settled on the floor, so the initial-rest credit
+  // confirmed on the second solve makes it a sleep candidate at the second
+  // step.
   auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
   auto sleeper = createFreeBox(
@@ -2361,17 +2372,22 @@ TEST(IslandDeactivation, PendulumLeavingItsJointLimitHoldsIslandsAwake)
       Eigen::Vector3d(0, 0, kHalf - 1.0e-6));
   world->addSkeleton(sleeper);
 
-  // The pendulum starts just past its upper limit, swinging back from it at a
-  // few milliradians per second, so it is in a joint-limit island after the
-  // first step and outside every island after the second.
+  // The pendulum starts just past its upper limit. After the first step, reset
+  // it there and start it swinging back at a few milliradians per second, so
+  // it is in a joint-limit island after the second step and outside every
+  // island after the third.
   auto pendulum = createPendulum(Eigen::Vector3d(3.0, 0, 2.0));
   auto* hinge = pendulum->getJoint(0);
   const double limit = math::toRadian(10.0);
   hinge->setPositionUpperLimit(0, limit);
   hinge->setLimitEnforcement(true);
   hinge->setPosition(0, limit + 1.0e-7);
-  hinge->setVelocity(0, -1.0e-3);
   world->addSkeleton(pendulum);
+
+  world->step();
+  ASSERT_GE(pendulum->getIslandIndex(), 0);
+  hinge->setPosition(0, limit + 1.0e-7);
+  hinge->setVelocity(0, -1.0e-3);
 
   world->step();
   ASSERT_GE(pendulum->getIslandIndex(), 0);
@@ -2441,11 +2457,12 @@ TEST(IslandDeactivation, BodiesFlyingTogetherHoldIslandsAwakeWhenTheySeparate)
 // when it leaves fast, and from its second step at the latest.
 TEST(IslandDeactivation, BodyKnockedOffTableHoldsIslandsAwake)
 {
-  // The rider overlaps the table edge by half a millimeter and is knocked off
-  // at 1 m/s, so it is in a contact island with the table after the first step
-  // and outside every island after the second. The sleeper starts settled on
-  // the floor, so the initial-rest credit makes it a sleep candidate at the
-  // first step.
+  // The rider overlaps the table edge by half a millimeter. After the first
+  // step it is knocked off at 1 m/s, so it is in a contact island with the
+  // table after the second step and outside every island after the third.
+  // The sleeper starts settled on the floor, so the initial-rest credit
+  // confirmed on the second solve makes it a sleep candidate at the second
+  // step.
   const auto makeScene = []() {
     auto world = makeSleepWorld();
     world->addSkeleton(createFloor());
@@ -2466,10 +2483,11 @@ TEST(IslandDeactivation, BodyKnockedOffTableHoldsIslandsAwake)
         "rider",
         Eigen::Vector3d::Constant(kBoxSize),
         Eigen::Vector3d(kHalf - 5.0e-4, 0, 1.0 + kHalf - 1.0e-6));
+    world->addSkeleton(rider);
+    world->step();
     Eigen::Vector6d velocity = Eigen::Vector6d::Zero();
     velocity[3] = 1.0;
     rider->getJoint(0)->setVelocities(velocity);
-    world->addSkeleton(rider);
     return SleeperScene{world, sleeper, rider};
   };
 
