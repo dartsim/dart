@@ -125,6 +125,15 @@ TEST_P(CollisionGroupsTest, SkeletonSubscription)
   sphereShape->setRadius(0.5);
   EXPECT_TRUE(world->checkCollision());
 
+  // Remove the collision aspect but keep the shape node, so that there should
+  // no longer be a collision
+  sn2->removeCollisionAspect();
+  EXPECT_FALSE(world->checkCollision());
+
+  // Restore the collision aspect so that there should be a collision again
+  sn2->createCollisionAspect();
+  EXPECT_TRUE(world->checkCollision());
+
   // Remove the shape node so that there should no longer be a collision
   sn2->remove();
   EXPECT_FALSE(world->checkCollision());
