@@ -2684,6 +2684,9 @@ def test_workflow_covers_every_workload_source_and_data_path():
             r'"dart://sample/([^"]+)"', (module.ROOT / name).read_text()
         )
     }
+    # The portable driver is built once from the harness checkout and run against
+    # both arms, so a driver-only change gets the head harness's smoke run.
+    driver = set(module.WORKLOAD_SOURCES[module.PB])
     for source in sorted(sources):
         assert any(
             re.fullmatch(
@@ -2692,7 +2695,9 @@ def test_workflow_covers_every_workload_source_and_data_path():
             )
             for pattern in patterns
         ), source
-        assert any(fnmatch.fnmatchcase(source, pattern) for pattern in cases), source
+        assert (source in driver) != any(
+            fnmatch.fnmatchcase(source, pattern) for pattern in cases
+        ), source
 
 
 @pytest.mark.parametrize("name", ["pend", "robot"])
