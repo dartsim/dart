@@ -179,6 +179,12 @@ static DART_PERF_NOINLINE void BM_Dynamics(benchmark::State& state)
 {
   const dart::test::PerfWindow window;
   std::vector<dart::simulation::WorldPtr> worlds = getWorlds();
+  for (const auto& world : worlds) {
+    if (!world) {
+      state.SkipWithError("Failed to parse a SKEL input world");
+      return;
+    }
+  }
 
   // Get the input value to be passed to the Kinematics function
   int n = state.range(0);

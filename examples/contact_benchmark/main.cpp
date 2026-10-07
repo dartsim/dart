@@ -1192,6 +1192,22 @@ FinalStateDigest collectFinalStateDigest(
   mixDigest(digest, static_cast<std::uint64_t>(contacts.pairs));
   mixDigest(digest, static_cast<std::uint64_t>(contacts.maxPairContacts));
   mixDigest(digest, contacts.maxPenetration);
+  for (const auto& contact : world->getLastCollisionResult().getContacts()) {
+    for (const auto* vector :
+         {&contact.point, &contact.normal, &contact.force}) {
+      for (Eigen::Index j = 0; j < vector->size(); ++j)
+        mixDigest(digest, (*vector)[j]);
+    }
+    mixDigest(digest, contact.penetrationDepth);
+    for (const auto* frame :
+         {contact.getShapeFrame1(), contact.getShapeFrame2()}) {
+      digest.finite = digest.finite && frame != nullptr;
+      const std::string name = frame ? frame->getName() : "";
+      mixDigest(digest, static_cast<std::uint64_t>(name.size()));
+      for (unsigned char character : name)
+        mixDigest(digest, static_cast<std::uint64_t>(character));
+    }
+  }
   mixDigest(digest, static_cast<std::uint64_t>(sleep.resting));
   mixDigest(digest, static_cast<std::uint64_t>(sleep.candidates));
   mixDigest(digest, static_cast<std::uint64_t>(sleep.islanded));
