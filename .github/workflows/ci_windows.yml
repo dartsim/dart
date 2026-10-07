@@ -247,7 +247,9 @@ jobs:
   windows-release:
     name: windows-Release
     needs: build
-    if: ${{ !cancelled() }}
+    # Always run: a job skipped by its condition reports success, which would
+    # let a cancelled run satisfy the required check.
+    if: always()
     runs-on: ubuntu-latest
     permissions:
       actions: write
