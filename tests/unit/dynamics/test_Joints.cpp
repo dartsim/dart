@@ -124,6 +124,29 @@ TEST(Joints, BulkPassiveForceSetters)
   EXPECT_FALSE(joint->hasCoulombFriction());
 }
 
+TEST(Joints, PassiveForceEditsPreserveAutomaticConstraintRevision)
+{
+  auto skel = Skeleton::create("passive_force_edits");
+  auto* joint = skel->createJointAndBodyNodePair<FreeJoint>().first;
+  const auto revision = Joint::getAutomaticConstraintRevision();
+
+  joint->setSpringStiffness(0, 1.0);
+  EXPECT_EQ(revision, Joint::getAutomaticConstraintRevision());
+
+  joint->setRestPosition(0, 0.25);
+  EXPECT_EQ(revision, Joint::getAutomaticConstraintRevision());
+
+  joint->setRestPositions(Eigen::VectorXd::Constant(joint->getNumDofs(), 0.5));
+  EXPECT_EQ(revision, Joint::getAutomaticConstraintRevision());
+
+  joint->setDampingCoefficient(0, 0.75);
+  EXPECT_EQ(revision, Joint::getAutomaticConstraintRevision());
+
+  joint->setDampingCoefficients(
+      Eigen::VectorXd::Constant(joint->getNumDofs(), 1.0));
+  EXPECT_EQ(revision, Joint::getAutomaticConstraintRevision());
+}
+
 TEST(Joints, TranslationalJoint2DCopyPointerUsesSource)
 {
   auto skel = Skeleton::create("translational_2d_copy");

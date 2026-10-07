@@ -906,6 +906,69 @@ TEST_F(JOINTS, SpringRestPosition)
 }
 
 //==============================================================================
+// The implicit spring and damper terms (dt * d + dt^2 * k) live in the cached
+// articulated inertia, which a still joint never refreshes. An edit must still
+// take effect on the next step.
+TEST_F(JOINTS, ImplicitSpringDamperEditTakesEffectImmediately)
+{
+  // A box link spinning about Z through its center, at rest for 10 steps so
+  // the articulated inertia is cached with zero spring and damping.
+  auto makeStillLink = []() {
+    auto world = World::create();
+    world->setGravity(Eigen::Vector3d::Zero());
+    auto options = world->getDeactivationOptions();
+    options.mEnabled = false;
+    world->setDeactivationOptions(options);
+
+    const Eigen::Vector3d size(1.0, 0.1, 0.1);
+    BodyNode::Properties bodyProps;
+    bodyProps.mInertia.setMass(1.0);
+    bodyProps.mInertia.setMoment(BoxShape::computeInertia(size, 1.0));
+    RevoluteJoint::Properties jointProps;
+    jointProps.mAxis = Eigen::Vector3d::UnitZ();
+    auto skel = Skeleton::create("link");
+    auto* joint = skel->createJointAndBodyNodePair<RevoluteJoint>(
+                          nullptr, jointProps, bodyProps)
+                      .first;
+    world->addSkeleton(skel);
+    for (int i = 0; i < 10; ++i)
+      world->step();
+    return std::make_pair(world, joint);
+  };
+
+  const double torque = 10.0;
+
+  {
+    auto [world, joint] = makeStillLink();
+    const double izz
+        = joint->getChildBodyNode()->getInertia().getMoment()(2, 2);
+    const double dt = world->getTimeStep();
+    const double damping = 50.0;
+    joint->setDampingCoefficient(0, damping);
+    joint->setForce(0, torque);
+    world->step();
+    const double expected = torque * dt / (izz + dt * damping);
+    EXPECT_NEAR(joint->getVelocity(0), expected, 1e-9 * expected)
+        << "the damping edit did not reach the implicit articulated inertia";
+  }
+
+  {
+    auto [world, joint] = makeStillLink();
+    const double izz
+        = joint->getChildBodyNode()->getInertia().getMoment()(2, 2);
+    const double dt = world->getTimeStep();
+    const double stiffness = 1e4;
+    ASSERT_EQ(joint->getPosition(0), joint->getRestPosition(0));
+    joint->setSpringStiffness(0, stiffness);
+    joint->setForce(0, torque);
+    world->step();
+    const double expected = torque * dt / (izz + dt * dt * stiffness);
+    EXPECT_NEAR(joint->getVelocity(0), expected, 1e-9 * expected)
+        << "the stiffness edit did not reach the implicit articulated inertia";
+  }
+}
+
+//==============================================================================
 void testServoMotor()
 {
   using namespace dart::math::suffixes;
@@ -2202,4 +2265,56 @@ TEST_F(JOINTS, JacobianMethodGradientConversionDoesNotModifySkeletonState)
 
   EXPECT_VECTOR_NEAR(positionsBefore, skel->getPositions(), 0.0);
   EXPECT_VECTOR_NEAR(velocitiesBefore, skel->getVelocities(), 0.0);
+}
+
+//==============================================================================
+// Building a joint stores its axis exactly as normalize() leaves it, even when
+// the axis differs from the default +Z only by rounding residue. gz-physics
+// builds joints this way, so a same-direction check in setAxis() that let such
+// an axis count as +Z would silently change Gazebo's joint axes.
+template <typename JointType>
+void expectNearCardinalAxisIsStored()
+{
+  for (const Eigen::Vector3d& axis :
+       {Eigen::Vector3d(1e-17, -2e-17, 1.0),
+        Eigen::Vector3d(3e-18, 0.0, 1.0)}) {
+    typename JointType::Properties properties;
+    properties.mAxis = axis;
+    auto skel = Skeleton::create("skel");
+    auto* joint = skel->template createJointAndBodyNodePair<JointType>(
+                          nullptr, properties)
+                      .first;
+    const Eigen::Vector3d expected = axis.normalized();
+    EXPECT_EQ(joint->getAxis(), expected);
+    const auto clone = skel->cloneSkeleton();
+    EXPECT_EQ(
+        static_cast<const JointType*>(clone->getJoint(0))->getAxis(), expected);
+  }
+}
+
+//==============================================================================
+TEST_F(JOINTS, BuildingAJointKeepsNearCardinalAxes)
+{
+  expectNearCardinalAxisIsStored<RevoluteJoint>();
+  expectNearCardinalAxisIsStored<PrismaticJoint>();
+}
+
+//==============================================================================
+// Only turning Coulomb friction on or off changes which joints get a friction
+// constraint, so only that edit makes every solver rescan its joints.
+TEST_F(JOINTS, OnlyFrictionOnOffEditsBumpAutomaticConstraintRevision)
+{
+  auto skel = Skeleton::create();
+  auto* joint = skel->createJointAndBodyNodePair<RevoluteJoint>().first;
+
+  auto revision = Joint::getAutomaticConstraintRevision();
+  joint->setCoulombFriction(0, 0.1);
+  EXPECT_NE(Joint::getAutomaticConstraintRevision(), revision);
+
+  revision = Joint::getAutomaticConstraintRevision();
+  joint->setCoulombFriction(0, 0.2);
+  EXPECT_EQ(Joint::getAutomaticConstraintRevision(), revision);
+
+  joint->setCoulombFriction(0, 0.0);
+  EXPECT_NE(Joint::getAutomaticConstraintRevision(), revision);
 }
