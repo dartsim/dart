@@ -210,11 +210,61 @@ void reserveGeometrically(std::vector<T>& storage, std::size_t required)
   storage.reserve(std::max(capacity, required));
 }
 
-// Retiring never allocates; excess cleared constraint-vector buffers are freed.
-std::vector<std::vector<ConstraintBasePtr>>& retiredGroupConstraintStorage()
+// Set once this thread's spare list is destroyed, so a solver destroyed later
+// (for example a World in static storage at exit) frees its buffers instead.
+// Constant-initialized and trivially destructible, so it outlives the list.
+thread_local bool tRetiredGroupConstraintStorageDestroyed = false;
+
+struct RetiredGroupConstraintStorage
 {
-  static thread_local std::vector<std::vector<ConstraintBasePtr>> storage;
-  return storage;
+  std::vector<std::vector<ConstraintBasePtr>> buffers;
+  ~RetiredGroupConstraintStorage()
+  {
+    tRetiredGroupConstraintStorageDestroyed = true;
+  }
+};
+
+// Retiring never allocates; excess cleared constraint-vector buffers are freed.
+std::vector<std::vector<ConstraintBasePtr>>* retiredGroupConstraintStorage()
+{
+  if (tRetiredGroupConstraintStorageDestroyed)
+    return nullptr;
+  static thread_local RetiredGroupConstraintStorage storage;
+  return &storage.buffers;
+}
+
+std::size_t& handedOutGroupConstraintBufferCount()
+{
+  static thread_local std::size_t count = 0u;
+  return count;
+}
+
+void handOutGroupConstraintStorage(std::vector<ConstraintBasePtr>& constraints)
+{
+  auto* retired = retiredGroupConstraintStorage();
+  if (retired && !retired->empty()) {
+    constraints = std::move(retired->back());
+    retired->pop_back();
+  }
+  auto& handedOut = handedOutGroupConstraintBufferCount();
+  ++handedOut;
+  // Every live solver's buffers need spare slots, in addition to those already
+  // retired, so shrinking multiple Worlds on this thread never drops storage.
+  if (retired)
+    reserveGeometrically(*retired, retired->size() + handedOut);
+}
+
+void retireGroupConstraintStorage(std::vector<ConstraintBasePtr>& constraints)
+{
+  constraints.clear();
+  auto& handedOut = handedOutGroupConstraintBufferCount();
+  if (handedOut != 0u)
+    --handedOut;
+  auto* retired = retiredGroupConstraintStorage();
+  // Externally inserted groups may not have reserved a spare slot.
+  if (retired && constraints.capacity() != 0u
+      && retired->size() < retired->capacity())
+    retired->push_back(std::move(constraints));
 }
 
 //==============================================================================
@@ -938,7 +988,11 @@ ConstraintSolver::ConstraintSolver()
 }
 
 //==============================================================================
-ConstraintSolver::~ConstraintSolver() = default;
+ConstraintSolver::~ConstraintSolver()
+{
+  for (auto& group : mConstrainedGroups)
+    retireGroupConstraintStorage(group.mConstraints);
+}
 
 //==============================================================================
 void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
@@ -2663,15 +2717,8 @@ bool ConstraintSolver::clearInactiveConstrainedGroups()
   if (!mActiveConstraints.empty())
     return false;
 
-  {
-    auto& retired = retiredGroupConstraintStorage();
-    for (auto& group : mConstrainedGroups) {
-      group.mConstraints.clear();
-      if (group.mConstraints.capacity() != 0u
-          && retired.size() < retired.capacity())
-        retired.push_back(std::move(group.mConstraints));
-    }
-  }
+  for (auto& group : mConstrainedGroups)
+    retireGroupConstraintStorage(group.mConstraints);
   mConstrainedGroups.clear();
   mGroupResting.clear();
   mGroupAllSleepCandidates.clear();
@@ -2818,14 +2865,8 @@ void ConstraintSolver::buildConstrainedGroups()
           groupIndex = numConstrainedGroups;
           if (numConstrainedGroups == mConstrainedGroups.size()) {
             mConstrainedGroups.emplace_back();
-            auto& retired = retiredGroupConstraintStorage();
-            if (!retired.empty()) {
-              mConstrainedGroups.back().mConstraints
-                  = std::move(retired.back());
-              retired.pop_back();
-            }
-            reserveGeometrically(
-                retired, retired.size() + mConstrainedGroups.size());
+            handOutGroupConstraintStorage(
+                mConstrainedGroups.back().mConstraints);
           }
 
           auto& group = mConstrainedGroups[groupIndex];
@@ -2861,14 +2902,8 @@ void ConstraintSolver::buildConstrainedGroups()
           groupIndex = numConstrainedGroups;
           if (numConstrainedGroups == mConstrainedGroups.size()) {
             mConstrainedGroups.emplace_back();
-            auto& retired = retiredGroupConstraintStorage();
-            if (!retired.empty()) {
-              mConstrainedGroups.back().mConstraints
-                  = std::move(retired.back());
-              retired.pop_back();
-            }
-            reserveGeometrically(
-                retired, retired.size() + mConstrainedGroups.size());
+            handOutGroupConstraintStorage(
+                mConstrainedGroups.back().mConstraints);
           }
 
           mConstrainedGroups[groupIndex].mRootSkeleton = skel;
@@ -2882,16 +2917,9 @@ void ConstraintSolver::buildConstrainedGroups()
       }
     }
 
-    {
-      auto& retired = retiredGroupConstraintStorage();
-      for (std::size_t i = numConstrainedGroups; i < mConstrainedGroups.size();
-           ++i) {
-        auto& constraints = mConstrainedGroups[i].mConstraints;
-        constraints.clear();
-        if (constraints.capacity() != 0u && retired.size() < retired.capacity())
-          retired.push_back(std::move(constraints));
-      }
-    }
+    for (std::size_t i = numConstrainedGroups; i < mConstrainedGroups.size();
+         ++i)
+      retireGroupConstraintStorage(mConstrainedGroups[i].mConstraints);
     mConstrainedGroups.resize(numConstrainedGroups);
   }
 

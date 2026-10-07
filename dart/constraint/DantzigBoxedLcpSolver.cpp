@@ -77,8 +77,6 @@ bool DantzigBoxedLcpSolver::solve(
     bool earlyTermination)
 {
   auto& scratch = dantzigScratch();
-  if (n > 0 && static_cast<std::size_t>(n) > scratch.stateCapacity)
-    reserve(static_cast<std::size_t>(n));
   return ::dart::lcpsolver::dantzig::solveLcpWithScratch<double>(
       n, A, x, b, nullptr, 0, lo, hi, findex, scratch, earlyTermination);
 }
