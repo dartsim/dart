@@ -15,6 +15,9 @@ concurrency:
 
 jobs:
   pixi-update:
+    # always() keeps the post-update approval cleanup alive on cancellation;
+    # the other steps still stop.
+    if: always()
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -32,9 +35,9 @@ jobs:
         run: |
           pixi update --json --no-install | pixi exec pixi-diff-to-markdown >> diff.md
       # Pushes made with GITHUB_TOKEN do not trigger maintainer_approval.yml,
-      # so this job revokes approval of the open lockfile PR itself: before
-      # replacing its head, and again afterwards for a label added meanwhile.
-      - name: Remove maintainer-approved before updating the lockfile pull request
+      # so this job revokes approval of the open lockfile PR itself: before it
+      # replaces the head with a different lockfile, and again after any update.
+      - name: Remove maintainer-approved before changing the lockfile pull request
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -43,9 +46,11 @@ jobs:
           BASE: ${{ matrix.base }}
         run: |
           set -o pipefail
-          prs=$(gh pr list --repo "$REPO" --head "$BRANCH" --base "$BASE" --state open \
-            --json number,headRepositoryOwner \
-            --jq ".[] | select(.headRepositoryOwner.login == \"$OWNER\") | .number")
+          prs=$(gh api "repos/$REPO/pulls?state=open&head=$OWNER:$BRANCH&base=$BASE" --jq '.[].number')
+          # An unchanged lockfile leaves the PR as it is, approval included.
+          if [ -z "$prs" ] || { git fetch -q origin "$BRANCH" && git diff --quiet FETCH_HEAD -- pixi.lock; }; then
+            exit 0
+          fi
           for pr in $prs; do
             if ! out=$(gh api -X DELETE "repos/$REPO/issues/$pr/labels/maintainer-approved" 2>&1) \
               && ! grep -q "Label does not exist" <<< "$out"; then
@@ -67,9 +72,11 @@ jobs:
           delete-branch: true
           add-paths: pixi.lock
       - name: Remove maintainer-approved after updating the lockfile pull request
-        # Also after a failed or cancelled update, but not when an earlier
-        # failure skipped it and the head never changed.
-        if: always() && steps.cpr.outcome != 'skipped'
+        # After an update, and after a failed or cancelled attempt, but not when
+        # an earlier failure skipped it or it found nothing to change.
+        if: >-
+          always() && steps.cpr.outcome != 'skipped'
+          && steps.cpr.outputs.pull-request-operation != 'none'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -78,9 +85,7 @@ jobs:
           BASE: ${{ matrix.base }}
         run: |
           set -o pipefail
-          prs=$(gh pr list --repo "$REPO" --head "$BRANCH" --base "$BASE" --state open \
-            --json number,headRepositoryOwner \
-            --jq ".[] | select(.headRepositoryOwner.login == \"$OWNER\") | .number")
+          prs=$(gh api "repos/$REPO/pulls?state=open&head=$OWNER:$BRANCH&base=$BASE" --jq '.[].number')
           for pr in $prs; do
             if ! out=$(gh api -X DELETE "repos/$REPO/issues/$pr/labels/maintainer-approved" 2>&1) \
               && ! grep -q "Label does not exist" <<< "$out"; then
