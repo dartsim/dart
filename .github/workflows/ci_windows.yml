@@ -96,13 +96,9 @@ jobs:
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi.exe
 
-      # TEMP defaults to the slow C: OS disk; cl.exe writes its intermediate
-      # files there. D: (RUNNER_TEMP) is the runner's fast local disk.
       - name: Initialize sccache
         id: sccache-config
         run: |
-          "TEMP=$env:RUNNER_TEMP" >> $env:GITHUB_ENV
-          "TMP=$env:RUNNER_TEMP" >> $env:GITHUB_ENV
           "SCCACHE_DIR=$(Join-Path $env:RUNNER_TEMP 'sccache')" >> $env:GITHUB_ENV
           "SCCACHE_PR_DIR=$(Join-Path $env:RUNNER_TEMP 'sccache-pr')" >> $env:GITHUB_ENV
           "prefix=sccache-v2-win-${{ matrix.part }}-$env:VCToolsVersion" >> $env:GITHUB_OUTPUT
