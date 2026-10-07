@@ -255,7 +255,7 @@ jobs:
       actions: write
     steps:
       - name: Prune superseded compiler caches
-        # A fork PR's token cannot delete caches; theirs expire after 7 days.
+        # Fork PRs save no snapshots, and their token cannot delete caches.
         if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
         continue-on-error: true
         env:
