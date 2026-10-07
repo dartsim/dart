@@ -1482,7 +1482,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // On the first solve, record the speeds that the second may leave on each
   // body of a member of an island in equilibrium; the bodies of a skeleton
   // outside such an island get limits that no speed meets.
-  if (mFrame == 0) {
+  if (mFrame == 0 && canSleep) {
     const double initialRestMaxSpeedGrowth
         = kInitialRestMaxSpeedGrowthRatio * gravityNorm * mTimeStep;
     mInitialRestSpeedLimits.clear();
@@ -2190,6 +2190,7 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
     // skeletons checked here, so they do not restart it. (A structural edit
     // in any World still re-prepares every World; see isInSimulationMode().)
     if (!recordedStateUnchanged) {
+      mInitialRestSpeedLimits.clear();
       for (auto& skel : mSkeletons) {
         if (skel->isMobile() && !skel->isResting() && !skel->isSleepCandidate())
           skel->setRestDwellTime(0.0);
@@ -2303,6 +2304,7 @@ void World::invalidateAllRestingKinematicSnapshot()
 //==============================================================================
 void World::wakeRestingSkeletonsForWorldChange()
 {
+  mInitialRestSpeedLimits.clear();
   for (auto& skel : mSkeletons) {
     if (!skel->isMobile())
       continue;

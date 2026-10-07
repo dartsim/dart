@@ -672,6 +672,49 @@ TEST(IslandDeactivation, InitiallySettledShallowContactCanSleepPromptly)
 }
 
 //==============================================================================
+// A gravity edit between the first two solves restarts dwell instead of using
+// credit from the old dynamics. Re-applying unchanged gravity keeps the credit.
+TEST(IslandDeactivation, GravityEditDiscardsInitialRestCredit)
+{
+  for (const bool worldGravity : {true, false}) {
+    SCOPED_TRACE(worldGravity ? "World gravity" : "Skeleton gravity");
+    for (const bool changed : {true, false}) {
+      SCOPED_TRACE(changed ? "changed gravity" : "unchanged gravity");
+      auto world = makeSleepWorld();
+      world->addSkeleton(createFloor());
+      auto box = createFreeBox(
+          "box",
+          Eigen::Vector3d::Constant(kBoxSize),
+          Eigen::Vector3d(0, 0, kHalf - 5e-7));
+      world->addSkeleton(box);
+
+      world->step();
+      ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+      ASSERT_FALSE(box->isSleepCandidate());
+
+      const Eigen::Vector3d gravity
+          = changed ? Eigen::Vector3d(0, 0, -9.8) : world->getGravity();
+      if (worldGravity)
+        world->setGravity(gravity);
+      else
+        box->setGravity(gravity);
+      world->step();
+
+      EXPECT_EQ(!changed, box->isSleepCandidate());
+      if (changed)
+        EXPECT_LE(box->getRestDwellTime(), world->getTimeStep());
+      else
+        EXPECT_GE(
+            box->getRestDwellTime(),
+            world->getDeactivationOptions().mTimeUntilSleep);
+
+      world->step();
+      EXPECT_EQ(!changed, box->isResting());
+    }
+  }
+}
+
+//==============================================================================
 // A box that starts 1e-4 m into a PlaneShape is not settled, although a body
 // at rest may sit up to 5 mm into a plane: the first-frame credit must not
 // freeze it at that depth. It rises out of the plane first and sleeps after the
@@ -2387,9 +2430,9 @@ TEST(IslandDeactivation, BodyWokenFromRestOutsideIslandsHoldsIslandsAwake)
 // a newly eligible island awake from its first step outside every island.
 TEST(IslandDeactivation, PendulumLeavingItsJointLimitHoldsIslandsAwake)
 {
-  // The sleeper starts settled on the floor, so the initial-rest credit
-  // confirmed on the second solve makes it a sleep candidate at the second
-  // step.
+  // The pendulum pose reset between the first two solves restarts quiet dwell.
+  // Grant the sleeper full eligibility after the second solve so the third
+  // tests the pendulum's island-exit veto.
   auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
   auto sleeper = createFreeBox(
@@ -2417,6 +2460,7 @@ TEST(IslandDeactivation, PendulumLeavingItsJointLimitHoldsIslandsAwake)
 
   world->step();
   ASSERT_GE(pendulum->getIslandIndex(), 0);
+  makeSleepEligible(*world, *sleeper);
   ASSERT_TRUE(sleeper->isSleepCandidate());
 
   world->step();
@@ -4108,6 +4152,37 @@ TEST(IslandDeactivation, CustomContactSurfaceHandlerKeepsPayloadMoving)
       << "the handler was no longer consulted";
   EXPECT_GT((getPosition(box) - start).norm(), 0.25)
       << "the started belt did not carry the box";
+}
+
+//==============================================================================
+// Removing a handler after the first solve starts the normal sleep delay; the
+// solve performed with the handler cannot supply initial rest credit.
+TEST(IslandDeactivation, InitialRestCreditDoesNotUseCustomHandlerStep)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf - 5e-7));
+  world->addSkeleton(box);
+  // Pass the parent's parameters through unchanged so only the sleep policy
+  // distinguishes this solve from one with the built-in handler alone.
+  auto handler = std::make_shared<constraint::ContactSurfaceHandler>();
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+
+  world->step();
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  ASSERT_FALSE(box->isSleepCandidate());
+  ASSERT_DOUBLE_EQ(0.0, box->getRestDwellTime());
+
+  world->getConstraintSolver()->removeContactSurfaceHandler(handler);
+  world->step();
+  EXPECT_FALSE(box->isSleepCandidate());
+  EXPECT_LE(box->getRestDwellTime(), world->getTimeStep());
+
+  world->step();
+  EXPECT_FALSE(box->isResting());
 }
 
 //==============================================================================
