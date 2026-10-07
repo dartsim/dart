@@ -400,6 +400,40 @@ void World::reserveMemoryManagerForSimulationShape()
   mIslandAllBelowWakeScratch.reserve(numSkeletons);
   mIslandMobileSkeletonCountScratch.reserve(numSkeletons);
   mIslandDwellWakeReadyCountScratch.reserve(numSkeletons);
+
+  // A direct topology edit can leave the old snapshot marked valid until the
+  // next step checks it. Detect shape mismatches now so the bake can prepare
+  // the replacement storage without disturbing valid same-topology snapshots.
+  if (mAllRestingKinematicSnapshotValid) {
+    bool snapshotShapeMatches
+        = mAllRestingKinematicSnapshot.size() == numSkeletons;
+    for (std::size_t i = 0; snapshotShapeMatches && i < numSkeletons; ++i) {
+      const auto& snapshot = mAllRestingKinematicSnapshot[i];
+      const auto& skeleton = mSkeletons[i];
+      snapshotShapeMatches
+          = snapshot.mSkeleton == skeleton.get()
+            && snapshot.mPositions.size()
+                   == static_cast<Eigen::Index>(skeleton->getNumDofs())
+            && snapshot.mNumBodyNodes == skeleton->getNumBodyNodes();
+    }
+    if (!snapshotShapeMatches)
+      invalidateAllRestingKinematicSnapshot();
+  }
+
+  // Prepare snapshot storage before the first all-resting step. A valid
+  // snapshot retains its values so changes can still be detected when waking.
+  if (!mAllRestingKinematicSnapshotValid) {
+    mAllRestingKinematicSnapshot.resize(numSkeletons);
+    for (std::size_t i = 0; i < numSkeletons; ++i) {
+      auto& snapshot = mAllRestingKinematicSnapshot[i];
+      const auto& skeleton = mSkeletons[i];
+      snapshot.mPositions.resize(
+          static_cast<Eigen::Index>(skeleton ? skeleton->getNumDofs() : 0u));
+      snapshot.mBodyTransforms.reserve(
+          skeleton ? skeleton->getNumBodyNodes() : 0u);
+    }
+  }
+  mLastStepRestingWorldSkeletonStates.reserve(numSkeletons);
 }
 
 //==============================================================================
@@ -1155,8 +1189,8 @@ void World::step(bool _resetCommand)
           }
 
           if (preservingFinalSleepSolve && skel->getNumDofs() > 0) {
-            skel->setVelocities(
-                Eigen::VectorXd::Zero(static_cast<int>(skel->getNumDofs())));
+            for (std::size_t dof = 0; dof < skel->getNumDofs(); ++dof)
+              skel->setVelocity(dof, 0.0);
             skel->computeForwardKinematics(false, true, false);
           }
 

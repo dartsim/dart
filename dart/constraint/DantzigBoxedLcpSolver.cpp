@@ -34,6 +34,9 @@
 
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
 
+#include <limits>
+#include <stdexcept>
+
 namespace dart {
 namespace constraint {
 
@@ -74,6 +77,8 @@ bool DantzigBoxedLcpSolver::solve(
     bool earlyTermination)
 {
   auto& scratch = dantzigScratch();
+  if (n > 0 && static_cast<std::size_t>(n) > scratch.stateCapacity)
+    reserve(static_cast<std::size_t>(n));
   return ::dart::lcpsolver::dantzig::solveLcpWithScratch<double>(
       n, A, x, b, nullptr, 0, lo, hi, findex, scratch, earlyTermination);
 }
@@ -85,8 +90,27 @@ void DantzigBoxedLcpSolver::reserve(std::size_t n)
     return;
 
   auto& scratch = dantzigScratch();
+  if (n <= scratch.stateCapacity)
+    return;
+
+  // Keep the logical solve size unchanged and grow only retained storage.
+  const auto maxRows
+      = static_cast<std::size_t>(std::numeric_limits<int>::max() - 3);
+  if (n > maxRows)
+    throw std::length_error("Dantzig scratch row count exceeds padded stride");
+  std::size_t rowCapacity = 1u;
+  while (rowCapacity < n) {
+    if (rowCapacity > maxRows / 2u) {
+      rowCapacity = n;
+      break;
+    }
+    rowCapacity *= 2u;
+  }
+  n = rowCapacity;
   const auto nskip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
   const auto nskipSize = static_cast<std::size_t>(nskip);
+  if (n > scratch.L.max_size() / nskipSize)
+    throw std::length_error("Dantzig scratch matrix size exceeds capacity");
   const auto ldltRemoveTmpScalars = n + 2u * nskipSize;
 
   scratch.L.reserve(n * nskipSize);

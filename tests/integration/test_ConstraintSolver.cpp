@@ -48,11 +48,13 @@
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/JointLimitConstraint.hpp"
+#include "dart/constraint/MimicMotorConstraint.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/ServoMotorConstraint.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
@@ -96,6 +98,35 @@
 #include <vector>
 
 using namespace dart;
+
+TEST(ConstraintSolver, CopiedMimicConstraintsDoNotAllocateOnDestruction)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  auto skeleton = dynamics::Skeleton::create();
+  auto [joint, body]
+      = skeleton->createJointAndBodyNodePair<dynamics::FreeJoint>();
+  std::vector<dynamics::MimicDofProperties> properties(joint->getNumDofs());
+  for (auto& property : properties)
+    property.mReferenceJoint = joint;
+
+  constraint::MimicMotorConstraint motor(joint, properties);
+  constraint::CouplerConstraint coupler(joint, properties);
+  // Public implicit copies own property vectors without acquiring pool slots.
+  // Destroy more copies than the originals reserved, outside simulation setup.
+  std::vector<constraint::MimicMotorConstraint> motorCopies(32u, motor);
+  std::vector<constraint::CouplerConstraint> couplerCopies(32u, coupler);
+
+  dart::test::ScopedHeapAllocationCounter heapCounter;
+  dart::test::ScopedRawHeapAllocationCounter rawCounter;
+  motorCopies.clear();
+  couplerCopies.clear();
+  heapCounter.stop();
+  rawCounter.stop();
+  EXPECT_EQ(0u, heapCounter.allocationCount());
+  EXPECT_EQ(0u, rawCounter.allocationCount());
+}
 
 namespace {
 
@@ -927,6 +958,83 @@ std::shared_ptr<World> createManySingleFreeBodyContactWorld(
   }
 
   return world;
+}
+
+//==============================================================================
+TEST(ConstraintSolver, RetiringIslandBuffersNeverAllocatesWithTwoLiveWorlds)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  constexpr std::size_t kNumBoxes = 16u;
+  // Build both worlds before preparing either: global topology revisions from
+  // creating the second world must not force a re-bake in the measured step.
+  auto first = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
+  auto second = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
+  first->enterSimulationMode();
+  second->enterSimulationMode();
+  for (const auto& world : {first, second}) {
+    for (int step = 0; step < 5; ++step)
+      world->step();
+    ASSERT_GE(world->getLastCollisionResult().getNumContacts(), kNumBoxes);
+    for (std::size_t i = 1u; i < world->getNumSkeletons(); ++i) {
+      auto* joint = static_cast<dynamics::FreeJoint*>(
+          world->getSkeleton(i)->getJoint(0));
+      Eigen::Vector6d positions = joint->getPositionsStatic();
+      positions[5] = 20.0;
+      joint->setPositionsStatic(positions);
+      joint->setVelocitiesStatic(Eigen::Vector6d::Zero());
+    }
+  }
+
+  // Retire both worlds' island buffers without allocating.
+  dart::test::ScopedHeapAllocationCounter heapCounter;
+  dart::test::ScopedRawHeapAllocationCounter rawCounter;
+  first->step();
+  second->step();
+  heapCounter.stop();
+  rawCounter.stop();
+  EXPECT_EQ(0u, first->getLastCollisionResult().getNumContacts());
+  EXPECT_EQ(0u, second->getLastCollisionResult().getNumContacts());
+  EXPECT_EQ(0u, heapCounter.allocationCount());
+  EXPECT_EQ(0u, rawCounter.allocationCount());
+}
+
+//==============================================================================
+TEST(ConstraintSolver, RetiringIslandBuffersNeverAllocatesWithExternalGroups)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  constexpr std::size_t kNumBoxes = 16u;
+  auto world = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
+  world->enterSimulationMode();
+  for (int step = 0; step < 5; ++step)
+    world->step();
+  ASSERT_GE(world->getLastCollisionResult().getNumContacts(), kNumBoxes);
+
+  ExposedThreadedConstraintSolver externalSolver;
+  externalSolver.addFakeConstrainedGroups(2u * kNumBoxes, 1u);
+  for (std::size_t i = 1u; i < world->getNumSkeletons(); ++i) {
+    auto* joint
+        = static_cast<dynamics::FreeJoint*>(world->getSkeleton(i)->getJoint(0));
+    Eigen::Vector6d positions = joint->getPositionsStatic();
+    positions[5] = 20.0;
+    joint->setPositionsStatic(positions);
+    joint->setVelocitiesStatic(Eigen::Vector6d::Zero());
+  }
+
+  dart::test::ScopedHeapAllocationCounter heapCounter;
+  dart::test::ScopedRawHeapAllocationCounter rawCounter;
+  // Retire externally inserted groups, then the world's island buffers.
+  const bool cleared = externalSolver.clearInactiveConstrainedGroupsForTest();
+  world->step();
+  heapCounter.stop();
+  rawCounter.stop();
+  EXPECT_TRUE(cleared);
+  EXPECT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  EXPECT_EQ(0u, heapCounter.allocationCount());
+  EXPECT_EQ(0u, rawCounter.allocationCount());
 }
 
 //==============================================================================

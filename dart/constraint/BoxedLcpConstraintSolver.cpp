@@ -128,6 +128,35 @@ BoxedLcpThreadScratch& boxedLcpThreadScratch()
   return scratch;
 }
 
+template <typename T>
+void reserveGeometric(std::vector<T>& storage, std::size_t size)
+{
+  if (size <= storage.capacity())
+    return;
+
+  std::size_t capacity = 1u;
+  while (capacity < size) {
+    if (capacity > storage.max_size() / 2u) {
+      capacity = size;
+      break;
+    }
+    capacity *= 2u;
+  }
+  storage.reserve(capacity);
+}
+
+void reserveLcpScratch(
+    BoxedLcpThreadScratch& scratch, std::size_t n, std::size_t matrixSize)
+{
+  reserveGeometric(scratch.lcpA, matrixSize);
+  reserveGeometric(scratch.lcpX, n);
+  reserveGeometric(scratch.lcpB, n);
+  reserveGeometric(scratch.lcpW, n);
+  reserveGeometric(scratch.lcpLo, n);
+  reserveGeometric(scratch.lcpHi, n);
+  reserveGeometric(scratch.lcpFIndex, n);
+}
+
 bool usesInlineLcpBuffer(std::size_t n, std::size_t matrixSize)
 {
   return n <= kInlineLcpVectorSize && matrixSize <= kInlineLcpMatrixSize;
@@ -150,15 +179,15 @@ void reserveBoxedLcpSolverScratch(
 void reserveMatrixFreeContactScratch(
     BoxedLcpThreadScratch& scratch, std::size_t numConstraints, std::size_t n)
 {
-  scratch.matrixFreeContacts.reserve(numConstraints);
-  scratch.matrixFreeOffsets.reserve(numConstraints);
-  scratch.matrixFreeRows.reserve(n);
-  scratch.matrixFreeX.reserve(n);
-  scratch.matrixFreeW.reserve(n);
-  scratch.matrixFreeLo.reserve(n);
-  scratch.matrixFreeHi.reserve(n);
-  scratch.matrixFreeB.reserve(n);
-  scratch.matrixFreeFIndex.reserve(n);
+  reserveGeometric(scratch.matrixFreeContacts, numConstraints);
+  reserveGeometric(scratch.matrixFreeOffsets, numConstraints);
+  reserveGeometric(scratch.matrixFreeRows, n);
+  reserveGeometric(scratch.matrixFreeX, n);
+  reserveGeometric(scratch.matrixFreeW, n);
+  reserveGeometric(scratch.matrixFreeLo, n);
+  reserveGeometric(scratch.matrixFreeHi, n);
+  reserveGeometric(scratch.matrixFreeB, n);
+  reserveGeometric(scratch.matrixFreeFIndex, n);
 
   const std::size_t maxReactiveBodies = std::max(n, 2u * numConstraints);
   std::size_t bodyLookupCapacity = 1u;
@@ -169,7 +198,7 @@ void reserveMatrixFreeContactScratch(
     scratch.matrixFreeBodyLookupKeys.resize(bodyLookupCapacity, nullptr);
     scratch.matrixFreeBodyLookupValues.resize(bodyLookupCapacity, 0u);
   }
-  scratch.matrixFreeBodies.reserve(maxReactiveBodies);
+  reserveGeometric(scratch.matrixFreeBodies, maxReactiveBodies);
 }
 
 using MatrixFreeContactSolverOptions
@@ -379,9 +408,9 @@ void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
 
   auto& scratch = boxedLcpThreadScratch();
   if (numConstraints > kInlineConstraintCount) {
-    scratch.constraintPtrStorage.reserve(numConstraints);
-    scratch.constraintDimStorage.reserve(numConstraints);
-    scratch.constraintOffsetStorage.reserve(numConstraints);
+    reserveGeometric(scratch.constraintPtrStorage, numConstraints);
+    reserveGeometric(scratch.constraintDimStorage, numConstraints);
+    reserveGeometric(scratch.constraintOffsetStorage, numConstraints);
   }
 
   std::size_t n = 0u;
@@ -394,15 +423,8 @@ void BoxedLcpConstraintSolver::reserveConstrainedGroupScratch(
 
   const int nSkip = ::dart::lcpsolver::dantzig::padding(static_cast<int>(n));
   const std::size_t matrixSize = n * static_cast<std::size_t>(nSkip);
-  if (!usesInlineLcpBuffer(n, matrixSize)) {
-    scratch.lcpA.reserve(matrixSize);
-    scratch.lcpX.reserve(n);
-    scratch.lcpB.reserve(n);
-    scratch.lcpW.reserve(n);
-    scratch.lcpLo.reserve(n);
-    scratch.lcpHi.reserve(n);
-    scratch.lcpFIndex.reserve(n);
-  }
+  if (!usesInlineLcpBuffer(n, matrixSize))
+    reserveLcpScratch(scratch, n, matrixSize);
 
   const auto matrixFreeOptions = getMatrixFreeContactSolverOptions();
   if (matrixFreeOptions.mEnabled && n >= matrixFreeOptions.mMinRows) {
@@ -483,9 +505,6 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
   offsets.clear();
   rows.clear();
   bodies.clear();
-  contacts.reserve(numConstraints);
-  offsets.reserve(numConstraints);
-  rows.reserve(n);
 
   x.resize(n);
   w.resize(n);
@@ -775,6 +794,9 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     constraintDims = inlineConstraintDims.data();
     constraintOffsets = inlineConstraintOffsets.data();
   } else {
+    reserveGeometric(constraintPtrStorage, numConstraints);
+    reserveGeometric(constraintDimStorage, numConstraints);
+    reserveGeometric(constraintOffsetStorage, numConstraints);
     constraintPtrStorage.resize(numConstraints);
     constraintDimStorage.resize(numConstraints);
     constraintOffsetStorage.resize(numConstraints);
@@ -836,6 +858,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     hi = inlineHi.data();
     fIndex = inlineFIndex.data();
   } else {
+    reserveLcpScratch(scratch, n, matrixSize);
     lcpA.resize(matrixSize);
     lcpX.resize(n);
     lcpB.resize(n);

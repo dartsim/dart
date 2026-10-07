@@ -67,6 +67,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <limits>
+#include <memory_resource>
 #include <mutex>
 #include <thread>
 #include <type_traits>
@@ -197,6 +198,25 @@ bool isExactDefaultContactSurfaceHandler(
 
 namespace {
 
+template <typename T>
+void reserveGeometrically(std::vector<T>& storage, std::size_t required)
+{
+  if (required <= storage.capacity())
+    return;
+
+  std::size_t capacity = 1u;
+  while (capacity < required && capacity <= storage.max_size() / 2u)
+    capacity *= 2u;
+  storage.reserve(std::max(capacity, required));
+}
+
+// Retiring never allocates; excess cleared constraint-vector buffers are freed.
+std::vector<std::vector<ConstraintBasePtr>>& retiredGroupConstraintStorage()
+{
+  static thread_local std::vector<std::vector<ConstraintBasePtr>> storage;
+  return storage;
+}
+
 //==============================================================================
 /// Assigns a temporary value and restores the previous one when it goes out
 /// of scope, including when an exception unwinds the stack.
@@ -237,6 +257,16 @@ ContactSurfaceHandlerPtr getStatelessContactSurfaceHandler()
   static const auto handler
       = std::make_shared<StatelessContactSurfaceHandler>();
   return handler;
+}
+
+//==============================================================================
+// Automatic joint constraints are rebuilt every step. Like the contact pool,
+// this process-lifetime pool also supports shared_ptr destruction on another
+// thread without changing the constraint classes or their public interfaces.
+std::pmr::memory_resource* getJointConstraintPool()
+{
+  static auto* pool = new std::pmr::synchronized_pool_resource;
+  return pool;
 }
 
 } // namespace
@@ -1722,8 +1752,10 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
     contactCandidates.clear();
 
     {
-      contactPairCounts.reserve(mCollisionResult.getNumContacts());
-      contactCandidates.reserve(mCollisionResult.getNumContacts());
+      reserveGeometrically(
+          contactPairCounts, mCollisionResult.getNumContacts());
+      reserveGeometrically(
+          contactCandidates, mCollisionResult.getNumContacts());
       const ContactPairHash contactPairHash;
       bool contactPairBucketsInitialized = false;
       const auto initializeContactPairBuckets = [&]() {
@@ -2506,16 +2538,22 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
     for (auto* joint : mAutomaticJointConstraintJoints) {
       if (joint->hasCoulombFriction()) {
         mJointCoulombFrictionConstraints.push_back(
-            std::make_shared<JointCoulombFrictionConstraint>(joint));
+            std::allocate_shared<JointCoulombFrictionConstraint>(
+                std::pmr::polymorphic_allocator<JointCoulombFrictionConstraint>(
+                    getJointConstraintPool()),
+                joint));
       }
 
       if (joint->areLimitsEnforced()
           || joint->hasActuatorType(dynamics::Joint::SERVO)) {
-        mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
+        mJointConstraints.push_back(std::allocate_shared<JointConstraint>(
+            std::pmr::polymorphic_allocator<JointConstraint>(
+                getJointConstraintPool()),
+            joint));
       }
 
       if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
-        auto mimicProps = joint->getMimicDofProperties();
+        const auto& mimicProps = joint->getMimicDofProperties();
         const auto dofCount = joint->getNumDofs();
         bool hasValidMimicDof = false;
         for (std::size_t dofIndex = 0;
@@ -2536,12 +2574,19 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 
         if (hasValidMimicDof) {
           if (joint->isUsingCouplerConstraint()) {
-            mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
-                joint, joint->getMimicDofProperties()));
+            mCouplerConstraints.push_back(
+                std::allocate_shared<CouplerConstraint>(
+                    std::pmr::polymorphic_allocator<CouplerConstraint>(
+                        getJointConstraintPool()),
+                    joint,
+                    mimicProps));
           } else {
             mMimicMotorConstraints.push_back(
-                std::make_shared<MimicMotorConstraint>(
-                    joint, joint->getMimicDofProperties()));
+                std::allocate_shared<MimicMotorConstraint>(
+                    std::pmr::polymorphic_allocator<MimicMotorConstraint>(
+                        getJointConstraintPool()),
+                    joint,
+                    mimicProps));
           }
         }
       }
@@ -2594,6 +2639,15 @@ bool ConstraintSolver::clearInactiveConstrainedGroups()
   if (!mActiveConstraints.empty())
     return false;
 
+  {
+    auto& retired = retiredGroupConstraintStorage();
+    for (auto& group : mConstrainedGroups) {
+      group.mConstraints.clear();
+      if (group.mConstraints.capacity() != 0u
+          && retired.size() < retired.capacity())
+        retired.push_back(std::move(group.mConstraints));
+    }
+  }
   mConstrainedGroups.clear();
   mGroupResting.clear();
   mGroupAllSleepCandidates.clear();
@@ -2738,8 +2792,17 @@ void ConstraintSolver::buildConstrainedGroups()
 
         if (groupIndex == invalidUnionIndex) {
           groupIndex = numConstrainedGroups;
-          if (numConstrainedGroups == mConstrainedGroups.size())
+          if (numConstrainedGroups == mConstrainedGroups.size()) {
             mConstrainedGroups.emplace_back();
+            auto& retired = retiredGroupConstraintStorage();
+            if (!retired.empty()) {
+              mConstrainedGroups.back().mConstraints
+                  = std::move(retired.back());
+              retired.pop_back();
+            }
+            reserveGeometrically(
+                retired, retired.size() + mConstrainedGroups.size());
+          }
 
           auto& group = mConstrainedGroups[groupIndex];
           group.mRootSkeleton = skel->getPtr();
@@ -2772,8 +2835,17 @@ void ConstraintSolver::buildConstrainedGroups()
 
         if (groupIndex == invalidUnionIndex) {
           groupIndex = numConstrainedGroups;
-          if (numConstrainedGroups == mConstrainedGroups.size())
+          if (numConstrainedGroups == mConstrainedGroups.size()) {
             mConstrainedGroups.emplace_back();
+            auto& retired = retiredGroupConstraintStorage();
+            if (!retired.empty()) {
+              mConstrainedGroups.back().mConstraints
+                  = std::move(retired.back());
+              retired.pop_back();
+            }
+            reserveGeometrically(
+                retired, retired.size() + mConstrainedGroups.size());
+          }
 
           mConstrainedGroups[groupIndex].mRootSkeleton = skel;
           skel->mUnionIndex = groupIndex;
@@ -2786,6 +2858,16 @@ void ConstraintSolver::buildConstrainedGroups()
       }
     }
 
+    {
+      auto& retired = retiredGroupConstraintStorage();
+      for (std::size_t i = numConstrainedGroups; i < mConstrainedGroups.size();
+           ++i) {
+        auto& constraints = mConstrainedGroups[i].mConstraints;
+        constraints.clear();
+        if (constraints.capacity() != 0u && retired.size() < retired.capacity())
+          retired.push_back(std::move(constraints));
+      }
+    }
     mConstrainedGroups.resize(numConstrainedGroups);
   }
 

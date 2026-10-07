@@ -75,13 +75,45 @@ namespace collision {
 
 namespace {
 
-std::string collisionObjectKey(const FCLCollisionObject* object)
+const std::string& collisionObjectKey(const FCLCollisionObject* object)
 {
+  static const std::string empty;
   if (!object)
-    return "";
+    return empty;
 
   return object->getKey();
 }
+
+// Borrow retained thread-local capacity without sharing the active buffer with
+// a nested collision query, as in ODE's PairIndex scratch storage.
+template <typename T>
+class ScopedPostProcessVector
+{
+public:
+  explicit ScopedPostProcessVector(std::vector<T>& storage) : mStorage(storage)
+  {
+    mValues.swap(mStorage);
+    mValues.clear();
+  }
+
+  ~ScopedPostProcessVector()
+  {
+    mValues.clear();
+    mValues.swap(mStorage);
+  }
+
+  ScopedPostProcessVector(const ScopedPostProcessVector&) = delete;
+  ScopedPostProcessVector& operator=(const ScopedPostProcessVector&) = delete;
+
+  std::vector<T>& values()
+  {
+    return mValues;
+  }
+
+private:
+  std::vector<T>& mStorage;
+  std::vector<T> mValues;
+};
 
 bool collisionCallback(
     fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata);
@@ -1912,7 +1944,10 @@ void postProcessFCL(
   const auto tol = 1e-12;
   const auto tol3 = tol * 3.0;
 
-  std::vector<bool> markForDeletion(numContacts, false);
+  static thread_local std::vector<bool> deletionStorage;
+  ScopedPostProcessVector<bool> deletionScratch(deletionStorage);
+  auto& markForDeletion = deletionScratch.values();
+  markForDeletion.assign(numContacts, false);
 
   // mark all the repeated points
   markRepeatedPoints<
@@ -1965,7 +2000,9 @@ void postProcessDART(
 
   auto numContacts = 0u;
 
-  std::vector<Contact> unfiltered;
+  static thread_local std::vector<Contact> contactStorage;
+  ScopedPostProcessVector<Contact> contactScratch(contactStorage);
+  auto& unfiltered = contactScratch.values();
   unfiltered.reserve(numFilteredContacts * 2);
 
   for (auto i = 0u; i < numFilteredContacts; ++i) {
@@ -2056,7 +2093,10 @@ void postProcessDART(
 
   const auto unfilteredSize = unfiltered.size();
 
-  std::vector<bool> markForDeletion(unfilteredSize, false);
+  static thread_local std::vector<bool> deletionStorage;
+  ScopedPostProcessVector<bool> deletionScratch(deletionStorage);
+  auto& markForDeletion = deletionScratch.values();
+  markForDeletion.assign(unfilteredSize, false);
 
   // mark all the repeated points
   markRepeatedPoints<std::vector<Contact>, Contact, &std::vector<Contact>::at>(
@@ -2350,8 +2390,8 @@ Contact convertContact(
 bool shouldSwapDeterministically(
     const FCLCollisionObject* fclObj1, const FCLCollisionObject* fclObj2)
 {
-  const auto key1 = collisionObjectKey(fclObj1);
-  const auto key2 = collisionObjectKey(fclObj2);
+  const auto& key1 = collisionObjectKey(fclObj1);
+  const auto& key2 = collisionObjectKey(fclObj2);
 
   const auto addr1 = reinterpret_cast<std::uintptr_t>(fclObj1);
   const auto addr2 = reinterpret_cast<std::uintptr_t>(fclObj2);

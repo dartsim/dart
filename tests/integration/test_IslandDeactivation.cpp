@@ -2623,6 +2623,41 @@ TEST(IslandDeactivation, AllRestingFastPathAdvancesTimeAndFrame)
 }
 
 //==============================================================================
+// Re-baking storage after a direct topology edit must preserve the wake-up
+// that the stale all-resting snapshot would have triggered on the next step.
+TEST(IslandDeactivation, TopologyRebakePreservesWakeOnNextStep)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  for (const bool addDofs : {false, true}) {
+    SCOPED_TRACE(addDofs);
+    ASSERT_NO_FATAL_FAILURE(
+        stepUntilRestingFastPathReady(world.get(), sleeper));
+
+    // Shape-less children change snapshot dimensions without changing the
+    // collision group's content or the support geometry.
+    if (addDofs)
+      floor->createJointAndBodyNodePair<FreeJoint>(floor->getBodyNode(0));
+    else
+      floor->createJointAndBodyNodePair<WeldJoint>(floor->getBodyNode(0));
+    ASSERT_FALSE(world->isInSimulationMode());
+    world->enterSimulationMode();
+    ASSERT_TRUE(world->isInSimulationMode());
+    ASSERT_TRUE(sleeper->isResting());
+    world->step();
+    EXPECT_FALSE(sleeper->isResting());
+    EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  }
+}
+
+//==============================================================================
 // GUI-only visual updates must not invalidate the all-resting fast path. The
 // sleep-state color overlay changes VisualAspect properties after a body has
 // gone to sleep; this must not look like a pose edit or wake the simulation.
