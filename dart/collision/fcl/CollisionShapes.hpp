@@ -66,7 +66,9 @@ template <class BV>
             = _mesh->mMeshes[i]
                   ->mVertices[_mesh->mMeshes[i]->mFaces[j].mIndices[k]];
         vertices[k] = dart::collision::fcl::Vector3(
-            vertex.x * _scaleX, vertex.y * _scaleY, vertex.z * _scaleZ);
+            static_cast<double>(vertex.x) * _scaleX,
+            static_cast<double>(vertex.y) * _scaleY,
+            static_cast<double>(vertex.z) * _scaleZ);
         vertices[k] = dart::collision::fcl::transform(_transform, vertices[k]);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
@@ -84,7 +86,7 @@ template <class BV>
     float _sizeZ,
     const dart::collision::fcl::Transform3& _transform)
 {
-  float v[59][3]
+  double v[59][3]
       = {{0, 0, 0},
          {0.135299, -0.461940, -0.135299},
          {0.000000, -0.461940, -0.191342},
@@ -263,14 +265,14 @@ template <class BV>
   const int CACHE_SIZE = 240;
 
   int i, j;
-  float sinCache[CACHE_SIZE];
-  float cosCache[CACHE_SIZE];
-  float angle;
-  float zBase;
-  float zLow, zHigh;
-  float sintemp, costemp;
-  float deltaRadius;
-  float radiusLow, radiusHigh;
+  double sinCache[CACHE_SIZE];
+  double cosCache[CACHE_SIZE];
+  double angle;
+  double zBase;
+  double zLow, zHigh;
+  double sintemp, costemp;
+  double deltaRadius;
+  double radiusLow, radiusHigh;
 
   if (_slices >= CACHE_SIZE)
     _slices = CACHE_SIZE - 1;
@@ -326,9 +328,12 @@ template <class BV>
     for (j = 0; j < _stacks; j++) {
       zLow = j * _height / _stacks + zBase;
       zHigh = (j + 1) * _height / _stacks + zBase;
-      radiusLow = _baseRadius - deltaRadius * (static_cast<float>(j) / _stacks);
-      radiusHigh
-          = _baseRadius - deltaRadius * (static_cast<float>(j + 1) / _stacks);
+      const double stackRatio
+          = static_cast<double>(j) / static_cast<double>(_stacks);
+      const double nextStackRatio
+          = static_cast<double>(j + 1) / static_cast<double>(_stacks);
+      radiusLow = _baseRadius - deltaRadius * stackRatio;
+      radiusHigh = _baseRadius - deltaRadius * nextStackRatio;
 
       p1 = dart::collision::fcl::Vector3(
           radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);

@@ -72,6 +72,16 @@ claim-tied capture, semantic inspection by an image-capable reviewer, and core
 review is unavailable, record that limitation. Name the replacement evidence;
 never use a screenshot as the sole correctness oracle.
 
+PRs fixing or changing dynamics, collision/contact, constraint, simulation,
+or rendering behavior include a before/after visual pair by default beside
+the text oracle. Capture the base revision and PR head using the same scene,
+camera, steps, dimensions, and renderer, compose side by side with
+`pixi run image-compose`, and publish with `pixi run evidence-publish` after
+explicit maintainer approval for uploads. Magnify small effects with a closer
+camera, side view, contrasting colors, or contact/debug layers; interpenetration
+and penetration depth need a close side view because a distant still hides
+them. Skip only with a stated reason, such as a headless-only or invisible change.
+
 ## Visual Verification (Headless Capture)
 
 DART 6 renders off-screen through the `dart::gui::osg` helper
@@ -206,14 +216,29 @@ readable alongside their contact markers and collision bounds.
   when claim coverage and the semantic text/image verdict pass, and every
   publication records at least one thing the selected evidence does not prove.
   A `gh-release --yes` run does not upload anything when either gate fails.
-  Before mutation, it validates the complete selection contract (claims,
+  Before GitHub access, it validates the complete selection contract (claims,
   artifact kinds and metadata, coverage, rejected entries, byte totals, and
   pass state), revalidates local sizes and SHA-256 digests, then stages
-  immutable content-addressed assets. A retry accepts an existing asset only
+  every selected file under its immutable content-addressed name. Duplicate
+  local basenames are safe; duplicate source paths are rejected.
+  A retry accepts an existing asset only
   when GitHub reports the exact size and SHA-256 digest with state `uploaded`;
-  missing integrity metadata fails closed. It never cross-content-clobbers an
-  existing URL, and the publication manifest binds each source path, size,
-  digest, asset name, and URL so a partial upload is safely retryable.
+  missing integrity metadata fails closed. After create/upload it re-queries
+  GitHub, verifies every selected asset, and uses only the final remote download
+  URLs validated against the repository, tag, and content-addressed name.
+  Missing or invalid URL metadata fails closed. Retries upload absent names or
+  reuse exact uploaded assets; a same-name incomplete, mismatched, or
+  unverifiable asset blocks publication. It is never deleted or clobbered
+  automatically: recovery requires explicit maintainer approval to delete that
+  exact asset or use a new tag.
+  Output paths are preflighted before GitHub access. A mutating attempt
+  atomically invalidates previous local success with a non-passing `publishing`
+  record; later failure records `partial_or_unverified`, observed remote state,
+  and bounded recovery guidance without publishable URLs. Final section and
+  manifest writes are atomic, with the authoritative manifest written last.
+  The manifest binds attempt and selection identity, repository, release tag,
+  source path, size, digest, asset name, final URL, and URL provenance. Dry-run
+  URLs are explicitly `predicted`, never remote attestations.
   Media is GitHub-hosted, never committed to the repository.
 
 For physics determinism (rather than visual appearance), use the text path that

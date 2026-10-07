@@ -1009,6 +1009,25 @@ void ConstraintSolver::addConstraint(const ConstraintBasePtr& constraint)
 }
 
 //==============================================================================
+// A body that a removed manual constraint held may start moving slowly.
+// Restarting the sleep candidacy and quiet dwell of awake skeletons
+// (setSleepCandidate(false) zeroes the dwell) keeps the next solves from
+// freezing it on evidence gathered while it was held (#3056). Resting
+// skeletons keep their state: no active constraint holds a frozen island.
+void ConstraintSolver::restartAwakeSleepCandidacy()
+{
+  for (const auto& skeleton : mSkeletons) {
+    if (skeleton->isMobile() && !skeleton->isResting()) {
+      // Clearing an existing candidate stamps the change itself. Otherwise
+      // notify World so it also discards pending first-frame dwell credit.
+      if (!skeleton->isSleepCandidate())
+        skeleton->incrementDeactivationStateVersion();
+      skeleton->setSleepCandidate(false);
+    }
+  }
+}
+
+//==============================================================================
 void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
 {
   DART_ASSERT(constraint);
@@ -1022,12 +1041,17 @@ void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
   mManualConstraints.erase(
       remove(mManualConstraints.begin(), mManualConstraints.end(), constraint),
       mManualConstraints.end());
+  restartAwakeSleepCandidacy();
 }
 
 //==============================================================================
 void ConstraintSolver::removeAllConstraints()
 {
+  if (mManualConstraints.empty())
+    return;
+
   mManualConstraints.clear();
+  restartAwakeSleepCandidacy();
 }
 
 //==============================================================================
@@ -3323,6 +3347,8 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   // accumulated constraint impulses. World::step() integrates the
   // velocity-phase impulses only after solve() returns, so preserve them, and
   // the impulse-applied flags, across the position pass.
+  // Clear the flags so position unit-impulse tests do not read stale velocity
+  // changes from skeletons outside the current probe.
   // ponytail: per-step local vectors; move to solver scratch if split-impulse
   // worlds show allocation cost.
   std::vector<bool> impulseAppliedStates;
@@ -3333,6 +3359,7 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   for (const auto& skeleton : mSkeletons) {
     const bool applied = skeleton->isImpulseApplied();
     impulseAppliedStates.push_back(applied);
+    skeleton->setImpulseApplied(false);
     if (!applied)
       continue;
     for (auto* bodyNode : skeleton->getBodyNodes()) {
