@@ -100,8 +100,19 @@ factory; do not pair a custom scene with an unrelated benchmark. Use
 `pixi run bm-boxes-headless` only when the claim is specifically about that
 benchmark's deterministic box trajectory.
 
-Use `pixi run image-compose` for before/after or diff composites and
-`pixi run image-sheet` for motion. `image-verdict` checks pixel integrity and
+PRs fixing or changing dynamics, collision/contact, constraint, simulation,
+or rendering behavior include a before/after visual pair by default next to
+the text oracle. Capture the base revision and PR head with the same scene,
+camera, steps, dimensions, and renderer; compose side by side with
+`pixi run image-compose` and publish with `pixi run evidence-publish`.
+Magnify small effects with a closer camera, side view, contrasting colors, or
+debug layers such as contacts. Interpenetration and penetration depth need a
+close side view because a distant still hides them. If the pair looks
+identical, check the text oracle on both revisions and enlarge the scene until
+the effect shows. Skip only with a stated reason, such as a headless-only or
+invisible change.
+
+Use `pixi run image-sheet` for motion. `image-verdict` checks pixel integrity and
 optional reference differences; it does not inspect meaning.
 `pixi run evidence-select` keeps a bounded claim-covering artifact set.
 `pixi run evidence-publish` requires the text oracle, visible observation,

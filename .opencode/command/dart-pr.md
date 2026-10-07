@@ -68,9 +68,18 @@ Use these practices:
   - Prefer an existing headless example path such as `--headless`,
     `--frames`, `--width`, `--height`, and `--shot` over manual
     screenshots.
-  - Capture the before image from the base branch or by temporarily restoring
-    the replaced sample/assets, then capture the after image from the final
-    branch with the same camera, dimensions, frame count, and renderer.
+  - PRs fixing or changing dynamics, collision/contact, constraint, simulation,
+    or rendering behavior include a before/after visual pair by default,
+    next to the text oracle. Capture the base revision and PR head with the
+    same scene, camera, steps, dimensions, and renderer; compose side by side
+    with `pixi run image-compose` and publish with `pixi run evidence-publish`
+    after explicit maintainer/user approval for uploads.
+  - Magnify small effects with a closer camera, side view, contrasting colors,
+    or debug layers such as contacts. Interpenetration and penetration depth
+    need a close side view: a distant still hides them. If the pair looks
+    identical, check the text oracle on both revisions and enlarge the scene
+    until the effect shows. Skip only with a stated reason, such as a
+    headless-only or invisible change.
   - Inspect the images yourself and include the commands plus any environment
     variables such as software rendering flags in the PR body.
   - Upload transient comparison images, GIFs, and videos through the GitHub

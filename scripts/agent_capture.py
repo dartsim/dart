@@ -801,8 +801,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--focus", default="")
     parser.add_argument("--auto-views", type=int, default=0)
-    parser.add_argument("--camera-azimuth", type=float, default=math.tau / 8.0)
-    parser.add_argument("--camera-elevation", type=float, default=math.tau / 12.0)
+    parser.add_argument(
+        "--camera-azimuth", type=float, default=math.tau / 8.0, help="radians"
+    )
+    parser.add_argument(
+        "--camera-elevation", type=float, default=math.tau / 12.0, help="radians"
+    )
     parser.add_argument("--camera-distance", type=float, default=None)
     parser.add_argument("--camera-target", nargs=3, type=float, default=[0.0, 0.0, 0.0])
     parser.add_argument("--frame-margin", type=float, default=2.2)
@@ -816,6 +820,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--prefix", default="capture")
     args = parser.parse_args(argv)
+    # pixi runs tasks from the project root; resolve a relative --out against
+    # the caller's directory, as --factory imports do.
+    if not args.out.is_absolute():
+        args.out = Path(os.environ.get("INIT_CWD") or Path.cwd()) / args.out
 
     try:
         sidecar = run_capture(args)
