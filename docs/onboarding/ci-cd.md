@@ -46,11 +46,13 @@ Actions cache for main-branch entries. Each job prints `sccache --show-stats`.
 Windows is the exception, because each MSVC cache miss is expensive. Its
 build runs as two parallel jobs, `windows-Release-cpp` (C++ tests) and
 `windows-Release-python` (dartpy), reported together as the required
-`windows-Release` check. Every main push and every PR run saves a snapshot,
-even after a failure or cancellation. A PR restores the newest main snapshot
-plus its own newest one, so it rebuilds only what changed since its last push.
-`windows-Release` then deletes superseded snapshots in that ref and keeps the
-newest per job. Cache keys include the MSVC version.
+`windows-Release` check. Every main push saves a snapshot of the whole cache.
+Every same-repository PR run saves only the objects that PR's runs compiled,
+even after a failure or cancellation (fork PRs may not save caches). A PR
+restores the newest main snapshot plus its own, so it rebuilds only what
+changed since its last push. `windows-Release` keeps the newest run's snapshot
+per job in its ref and deletes the rest; on main pushes it also deletes PR
+snapshots unused for a day. Cache keys include the MSVC version.
 CTest runs in parallel (`CTEST_PARALLEL_LEVEL`). Nightly-only configurations
 never save, so they build cold. Pixi build tasks pin `BUILD_TYPE=Release`, so
 a job that needs another build type configures CMake itself, as the assertions

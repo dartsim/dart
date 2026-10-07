@@ -31,9 +31,11 @@ concurrency:
 
 jobs:
   build:
-    # The two halves of `pixi run test-all` (target ALL) on parallel runners:
-    # each is ~2/3 of the cold build. The windows-Release job below reports
-    # their combined result under the required check name.
+    # The two halves of `pixi run test-all` on parallel runners, each ~2/3 of
+    # the cold build. On MSVC, target ALL is exactly tests_and_run + pytest:
+    # CMakeLists.txt adds examples and tutorials to ALL only for other
+    # compilers. The windows-Release job below reports the combined result
+    # under the required check name.
     name: windows-Release-${{ matrix.part }}
     runs-on: windows-2025-vs2026
     env:
@@ -47,6 +49,14 @@ jobs:
       # A full build of one part is ~100 MiB, so the cap holds about two builds:
       # snapshots stay small and fresh instead of growing with stale objects.
       SCCACHE_CACHE_SIZE: "250M"
+      # The compiler-cache snapshot this run saves: main pushes save the whole
+      # cache, same-repository PR runs save the objects their own runs
+      # compiled, and other runs (forks, which may not save caches) save none.
+      SCCACHE_SNAPSHOT: >-
+        ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'main'
+            || (github.event_name == 'pull_request'
+                && github.event.pull_request.head.repo.full_name == github.repository) && 'pr'
+            || '' }}
       # Preserve build counters through long links and test runs.
       SCCACHE_IDLE_TIMEOUT: "0"
       CTEST_PARALLEL_LEVEL: "4"
@@ -90,9 +100,9 @@ jobs:
           "TEMP=$env:RUNNER_TEMP" >> $env:GITHUB_ENV
           "TMP=$env:RUNNER_TEMP" >> $env:GITHUB_ENV
           "SCCACHE_DIR=$(Join-Path $env:RUNNER_TEMP 'sccache')" >> $env:GITHUB_ENV
+          "SCCACHE_PR_DIR=$(Join-Path $env:RUNNER_TEMP 'sccache-pr')" >> $env:GITHUB_ENV
           "prefix=sccache-v2-win-${{ matrix.part }}-$env:VCToolsVersion" >> $env:GITHUB_OUTPUT
 
-      # Every main push and every PR run saves a snapshot (see Save sccache).
       # PRs restore the newest main snapshot, then their own newest snapshot on
       # top, so a PR pays only for what it changed since its previous push.
       # The MSVC version in the key skips snapshots made by an older compiler.
@@ -104,12 +114,27 @@ jobs:
           restore-keys: ${{ steps.sccache-config.outputs.prefix }}-main-
 
       - name: Restore sccache (this PR)
-        if: github.event_name == 'pull_request'
+        if: env.SCCACHE_SNAPSHOT == 'pr'
         uses: actions/cache/restore@v6
         with:
-          path: ${{ env.SCCACHE_DIR }}
+          path: ${{ env.SCCACHE_PR_DIR }}
           key: ${{ steps.sccache-config.outputs.prefix }}-pr-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: ${{ steps.sccache-config.outputs.prefix }}-pr-
+
+      # Record main's objects before this PR's join them, so the PR snapshot
+      # saved below holds only what this PR's runs compiled: tens of MB rather
+      # than a copy of main's whole cache.
+      - name: Merge PR snapshot
+        if: env.SCCACHE_SNAPSHOT == 'pr'
+        run: |
+          New-Item -ItemType Directory -Force $env:SCCACHE_DIR | Out-Null
+          Get-ChildItem -Recurse -File -Name $env:SCCACHE_DIR |
+            Set-Content (Join-Path $env:RUNNER_TEMP 'sccache-main.txt')
+          if (Test-Path $env:SCCACHE_PR_DIR) {
+            robocopy $env:SCCACHE_PR_DIR $env:SCCACHE_DIR /E /MOVE /NFL /NDL /NJH /NJS /NP
+            if ($LASTEXITCODE -ge 8) { exit $LASTEXITCODE }
+          }
+          exit 0
 
       - name: Native Windows hook smoke
         if: matrix.part == 'cpp'
@@ -174,16 +199,30 @@ jobs:
       # cancelled runs save too: every object sccache stored is valid, and the
       # next push resumes from them. A run stopped before the build started has
       # nothing new and would only replace the newest snapshot with an older one.
+      - name: Collect PR snapshot
+        if: >-
+          always() && env.SCCACHE_SNAPSHOT == 'pr'
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
+        run: |
+          $main = [System.Collections.Generic.HashSet[string]]::new(
+            [string[]]@(Get-Content (Join-Path $env:RUNNER_TEMP 'sccache-main.txt')),
+            [System.StringComparer]::OrdinalIgnoreCase)
+          New-Item -ItemType Directory -Force $env:SCCACHE_PR_DIR | Out-Null
+          foreach ($file in Get-ChildItem -Recurse -File -Name $env:SCCACHE_DIR) {
+            if ($main.Contains($file)) { continue }
+            $target = Join-Path $env:SCCACHE_PR_DIR $file
+            New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
+            Copy-Item (Join-Path $env:SCCACHE_DIR $file) $target
+          }
+
       - name: Save sccache
         if: >-
-          always()
+          always() && env.SCCACHE_SNAPSHOT != ''
           && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
-          && (github.event_name == 'pull_request'
-              || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
         uses: actions/cache/save@v6
         with:
-          path: ${{ env.SCCACHE_DIR }}
-          key: ${{ steps.sccache-config.outputs.prefix }}-${{ github.event_name == 'pull_request' && 'pr' || 'main' }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.SCCACHE_SNAPSHOT == 'pr' && env.SCCACHE_PR_DIR || env.SCCACHE_DIR }}
+          key: ${{ steps.sccache-config.outputs.prefix }}-${{ env.SCCACHE_SNAPSHOT }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Sccache statistics
         if: always()
@@ -193,9 +232,9 @@ jobs:
       # separate install build tree after test-all has already passed, which
       # duplicates work and can keep the protected-branch runner busy for hours.
 
-  # The required check. It also prunes this ref's superseded compiler-cache
-  # snapshots, keeping the newest per part, so saving on every run stays within
-  # the repository's 10 GB Actions cache. It runs no repository code.
+  # The required check. It also prunes superseded compiler-cache snapshots so
+  # saving on every run stays within the repository's 10 GB Actions cache. It
+  # runs no repository code.
   windows-release:
     name: windows-Release
     needs: build
@@ -212,11 +251,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          # $part is a jq variable, not a shell one.
-          # shellcheck disable=SC2016
-          gh cache list --ref "$GITHUB_REF" --key sccache-v2-win- --sort created_at --order desc --limit 100 --json id,key \
-            --jq '("cpp", "python") as $part | [.[] | select(.key | startswith("sccache-v2-win-\($part)-"))] | .[1:][] | .id' |
+          # In this ref, keep the newest run's snapshot per part and MSVC
+          # version. Keys end in <run_id>-<run_attempt>, and run IDs follow push
+          # order, so an older main run that finishes last cannot evict a newer
+          # commit's snapshot.
+          gh cache list --ref "$GITHUB_REF" --key sccache-v2-win- --limit 100 --json id,key \
+            --jq 'group_by(.key | split("-")[3:5]) | map(sort_by(.key | split("-")[6:8] | map(tonumber)) | .[:-1][]) | .[].id' |
             xargs -r -n1 gh cache delete
+          # Main pushes also drop PR snapshots idle for a day, such as those
+          # of closed PRs.
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            # $ENV is jq's, not the shell's.
+            # shellcheck disable=SC2016
+            CUTOFF=$(date -u -d '1 day ago' +%FT%TZ) gh cache list --key sccache-v2-win- --limit 1000 --json id,ref,lastAccessedAt \
+              --jq '.[] | select((.ref | startswith("refs/pull/")) and .lastAccessedAt < $ENV.CUTOFF) | .id' |
+              xargs -r -n1 gh cache delete
+          fi
 
       - name: Check build result
         run: test "${{ needs.build.result }}" = success
