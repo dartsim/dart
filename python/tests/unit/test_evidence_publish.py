@@ -615,6 +615,23 @@ def test_remote_download_url_is_required_and_validated(
     assert failed["url_provenance"] is None
 
 
+def test_remote_url_matches_repository_case_insensitively() -> None:
+    artifact = {"path": "shot.png", "sha256": "ab" * 32}
+    name = evidence_publish._release_asset_name(artifact)
+    url = f"https://github.com/dartsim/dart/releases/download/media/{name}"
+
+    def validate(repo: str, tag: str = "media") -> str:
+        return evidence_publish._validated_remote_asset_url(
+            {"url": url}, artifact, repo, tag
+        )
+
+    assert validate("DARTsim/DART") == url
+    with pytest.raises(ValueError):
+        validate("dartsim/other")
+    with pytest.raises(ValueError):
+        validate("dartsim/dart", tag="Media")
+
+
 def test_published_urls_come_from_final_remote_asset_metadata(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

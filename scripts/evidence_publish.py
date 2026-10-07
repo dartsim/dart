@@ -253,7 +253,10 @@ def _validated_remote_asset_url(
             f"verified release asset {name!r} has no GitHub-reported download URL"
         )
     parsed = urlsplit(url)
-    expected_path = f"/{repo}/releases/download/{tag}/{name}"
+    # GitHub owner and repository names are case-insensitive and its URLs use
+    # the canonical spelling; the tag and the asset name are not.
+    path = unquote(parsed.path)
+    repo_prefix = f"/{repo}/"
     if (
         parsed.scheme != "https"
         or parsed.hostname != "github.com"
@@ -262,7 +265,8 @@ def _validated_remote_asset_url(
         or parsed.port is not None
         or parsed.query
         or parsed.fragment
-        or unquote(parsed.path) != expected_path
+        or path[: len(repo_prefix)].lower() != repo_prefix.lower()
+        or path[len(repo_prefix) :] != f"releases/download/{tag}/{name}"
     ):
         raise ValueError(
             f"verified release asset {name!r} has an unexpected GitHub-reported "
