@@ -31,18 +31,22 @@ concurrency:
 
 jobs:
   build:
-    # Unique check name: `Release` alone is CI Linux's required context.
-    name: windows-${{ matrix.build_type }}
+    # The two halves of `pixi run test-all` (target ALL) on parallel runners:
+    # each is ~2/3 of the cold build. The windows-Release job below reports
+    # their combined result under the required check name.
+    name: windows-Release-${{ matrix.part }}
     runs-on: windows-2025-vs2026
     env:
       CMAKE_GENERATOR: Ninja
-      CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+      CMAKE_BUILD_TYPE: Release
       CC: cl
       CXX: cl
-      BUILD_TYPE: ${{ matrix.build_type }}
+      BUILD_TYPE: Release
       DART_VERBOSE: "ON"
       DART_COMPILER_CACHE: sccache
-      SCCACHE_CACHE_SIZE: "1G"
+      # A full build of one part is ~100 MiB, so the cap holds about two builds:
+      # snapshots stay small and fresh instead of growing with stale objects.
+      SCCACHE_CACHE_SIZE: "250M"
       # Preserve build counters through long links and test runs.
       SCCACHE_IDLE_TIMEOUT: "0"
       CTEST_PARALLEL_LEVEL: "4"
@@ -51,12 +55,17 @@ jobs:
       # the job timeout. Disable it for the CI C++/dartpy test build; the
       # published wheels (publish_dartpy.yml) keep it on and are still tested.
       DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION: "ON"
-    # Keep room for cold caches; the warm-cache target is under 25 minutes.
+    # Keep room for cold caches; a warm run without header changes takes
+    # minutes.
     timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
-        build_type: ["Release"] # TODO: Add Debug
+        include:
+          - part: cpp
+            task: test # builds the C++ tests and runs ctest
+          - part: python
+            task: test-py # builds dartpy and runs pytest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -73,24 +82,37 @@ jobs:
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi.exe
 
+      # TEMP defaults to the slow C: OS disk; cl.exe writes its intermediate
+      # files there. D: (RUNNER_TEMP) is the runner's fast local disk.
       - name: Initialize sccache
         id: sccache-config
         run: |
+          "TEMP=$env:RUNNER_TEMP" >> $env:GITHUB_ENV
+          "TMP=$env:RUNNER_TEMP" >> $env:GITHUB_ENV
           "SCCACHE_DIR=$(Join-Path $env:RUNNER_TEMP 'sccache')" >> $env:GITHUB_ENV
-          "date=$([DateTime]::UtcNow.ToString('yyyy-MM-dd'))" >> $env:GITHUB_OUTPUT
+          "prefix=sccache-v2-win-${{ matrix.part }}-$env:VCToolsVersion" >> $env:GITHUB_OUTPUT
 
-      - name: Restore sccache
-        id: sccache-restore
+      # Every main push and every PR run saves a snapshot (see Save sccache).
+      # PRs restore the newest main snapshot, then their own newest snapshot on
+      # top, so a PR pays only for what it changed since its previous push.
+      # The MSVC version in the key skips snapshots made by an older compiler.
+      - name: Restore sccache (main)
         uses: actions/cache/restore@v6
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-${{ hashFiles('pixi.lock') }}-${{ steps.sccache-config.outputs.date }}
-          # A lockfile bump still reuses objects whose headers did not change.
-          restore-keys: |
-            sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-${{ hashFiles('pixi.lock') }}-
-            sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-
+          key: ${{ steps.sccache-config.outputs.prefix }}-main-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ${{ steps.sccache-config.outputs.prefix }}-main-
+
+      - name: Restore sccache (this PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ steps.sccache-config.outputs.prefix }}-pr-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ${{ steps.sccache-config.outputs.prefix }}-pr-
 
       - name: Native Windows hook smoke
+        if: matrix.part == 'cpp'
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
@@ -141,19 +163,27 @@ jobs:
         run: pixi run config -- -DDART_MSVC_DEFAULT_OPTIONS=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
 
       - name: Check Lint
+        if: matrix.part == 'cpp'
         run: pixi run check-lint
 
-      - name: Test DART and dartpy
-        run: pixi run test-all
+      - name: Build and test
+        id: build
+        run: pixi run ${{ matrix.task }}
 
-      # Cache keys are immutable: publish at most one successful main snapshot
-      # per UTC day/configuration, including after a prefix-only restore.
+      # Keys are immutable, so each run saves under its own key. Failed and
+      # cancelled runs save too: every object sccache stored is valid, and the
+      # next push resumes from them. A run stopped before the build started has
+      # nothing new and would only replace the newest snapshot with an older one.
       - name: Save sccache
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.sccache-restore.outputs.cache-hit != 'true'
+        if: >-
+          always()
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
+          && (github.event_name == 'pull_request'
+              || (github.event_name == 'push' && github.ref == 'refs/heads/main'))
         uses: actions/cache/save@v6
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: ${{ steps.sccache-restore.outputs.cache-primary-key }}
+          key: ${{ steps.sccache-config.outputs.prefix }}-${{ github.event_name == 'pull_request' && 'pr' || 'main' }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Sccache statistics
         if: always()
@@ -162,3 +192,31 @@ jobs:
       # Linux CI covers install. On Windows, pixi run install configures a
       # separate install build tree after test-all has already passed, which
       # duplicates work and can keep the protected-branch runner busy for hours.
+
+  # The required check. It also prunes this ref's superseded compiler-cache
+  # snapshots, keeping the newest per part, so saving on every run stays within
+  # the repository's 10 GB Actions cache. It runs no repository code.
+  windows-release:
+    name: windows-Release
+    needs: build
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Prune superseded compiler caches
+        # A fork PR's token cannot delete caches; theirs expire after 7 days.
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # $part is a jq variable, not a shell one.
+          # shellcheck disable=SC2016
+          gh cache list --ref "$GITHUB_REF" --key sccache-v2-win- --sort created_at --order desc --limit 100 --json id,key \
+            --jq '("cpp", "python") as $part | [.[] | select(.key | startswith("sccache-v2-win-\($part)-"))] | .[1:][] | .id' |
+            xargs -r -n1 gh cache delete
+
+      - name: Check build result
+        run: test "${{ needs.build.result }}" = success

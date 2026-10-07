@@ -42,6 +42,15 @@ Build jobs restore an sccache compiler cache saved from `main` at most once a
 day per configuration, and pixi environment caches are also written only from
 `main`: PR runs read both but never write, which keeps the repository's 10 GB
 Actions cache for main-branch entries. Each job prints `sccache --show-stats`.
+
+Windows is the exception, because each MSVC cache miss is expensive. Its
+build runs as two parallel jobs, `windows-Release-cpp` (C++ tests) and
+`windows-Release-python` (dartpy), reported together as the required
+`windows-Release` check. Every main push and every PR run saves a snapshot,
+even after a failure or cancellation. A PR restores the newest main snapshot
+plus its own newest one, so it rebuilds only what changed since its last push.
+`windows-Release` then deletes superseded snapshots in that ref and keeps the
+newest per job. Cache keys include the MSVC version.
 CTest runs in parallel (`CTEST_PARALLEL_LEVEL`). Nightly-only configurations
 never save, so they build cold. Pixi build tasks pin `BUILD_TYPE=Release`, so
 a job that needs another build type configures CMake itself, as the assertions

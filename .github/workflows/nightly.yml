@@ -36,6 +36,11 @@ jobs:
 
   windows:
     uses: ./.github/workflows/ci_windows.yml
+    # Its windows-Release job requests actions: write to prune compiler caches
+    # (skipped at night); a called job cannot exceed the caller's permissions.
+    permissions:
+      actions: write
+      contents: read
 
   freebsd:
     uses: ./.github/workflows/ci_freebsd.yml
