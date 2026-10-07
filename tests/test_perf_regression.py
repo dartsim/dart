@@ -2,6 +2,7 @@
 
 import copy
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -682,6 +683,10 @@ def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, cha
     library.parent.mkdir()
     library.write_bytes(b"DART")
     drivers = {module.PB, row.driver}
+    binary = tmp_path / "bin"
+    binary.mkdir()
+    for driver in drivers:
+        (binary / driver).write_bytes(b"binary")
     stamp = {
         "schema": "dart-perf-build/1",
         "commit": "installed",
@@ -699,16 +704,16 @@ def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, cha
     path = tmp_path / "share/dart/perf-build.json"
     path.parent.mkdir(parents=True)
     module.write_json(path, stamp)
-    monkeypatch.setattr(module, "command_output", lambda command: "installed")
     monkeypatch.setattr(
         module,
-        "fingerprint",
-        lambda args, provenance: {
-            "fingerprint": "same",
-            "compiler": "test",
-            "compiler_provenance": "dart-perf-build/1",
-        },
+        "command_output",
+        lambda command: (
+            "installed"
+            if command[0] == "git"
+            else "valgrind-3.22.0" if command[0] == module.VALGRIND else "glibc 2.39"
+        ),
     )
+    monkeypatch.setattr(module, "execute", lambda *args: "Guest CPU: test\n")
     metrics = (
         _micro_record(module, name)["results"][0]["head"]
         if not row.det
@@ -742,23 +747,30 @@ def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, cha
     )
     base = module.run_arm(args)
     if changed:
+        if row.driver == module.PB:
+            (binary / module.PB).write_bytes(b"head driver")
+            stamp["binaries"][module.PB] = module.sha(b"head driver")
         stamp["workload_sources"] = {
             driver: module.sha(b"head workload") for driver in stamp["workload_sources"]
         }
         module.write_json(path, stamp)
     head = module.run_arm(args)
+    assert base["run"]["env"]["harness_sha"] == head["run"]["env"]["harness_sha"]
+    assert base["run"]["env"]["fingerprint"] == head["run"]["env"]["fingerprint"]
     result = module.compare(base, head)
-    workload_changed = changed and row.driver != module.PB
+    workload_changed = changed
     assert result["verdict"]["status"] == ("FAIL" if workload_changed else "PASS")
     delta = result["results"][0]["delta"]
     assert delta["class"] == ("behaviour-change" if workload_changed else "gated")
     if row.driver == module.PB:
-        assert head["results"][0]["input_sha"] == "scene input"
-        assert "workload_sha" not in head["results"][0]
+        assert head["results"][0]["workload_sha"] == stamp["binaries"][module.PB]
     else:
         assert (
             head["results"][0]["workload_sha"] == stamp["workload_sources"][row.driver]
         )
+    assert head["results"][0]["input_sha"] == module.sha(
+        json.dumps(["scene input", head["results"][0]["workload_sha"]]).encode()
+    )
     if workload_changed:
         assert all(delta[key] is None for key in ("ir", "allocs", "bytes"))
         assert "Rebaseline-Rationale required" in result["verdict"]["failures"][0]
@@ -1033,10 +1045,14 @@ def test_execution_errors_exit_two_with_reason(monkeypatch, tmp_path, capsys, er
         # contact_benchmark exits 2 after printing complete non-finite guards.
         (2, "complete", True),
         (2, "finite", False),
+        (2, "time", True),
+        (2, "time-partial", False),
+        (2, "time-invalid", False),
+        (2, "time-nonfinite", True),
         (3, "missing", False),
     ],
 )
-def test_driver_nonfinite_exit_is_correctness_failure(
+def test_driver_guard_failure_exit_is_correctness_failure(
     monkeypatch, tmp_path, capsys, returncode, guard_output, correctness
 ):
     module = _load_runner()
@@ -1070,8 +1086,10 @@ def test_driver_nonfinite_exit_is_correctness_failure(
                 "Final Contacts: 1\n"
                 "Final Contact Cap Hit: false\n"
             )
-            if output != "partial":
+            if output not in ("partial", "time-partial"):
                 text += "Final Resting: 0 / 1\n"
+        if output.startswith("time"):
+            text += "Time Advanced:      false\n"
         kwargs["stdout"].write(text)
         return module.argparse.Namespace(
             returncode=exit_status, wait=lambda **kwargs: None
@@ -1086,18 +1104,28 @@ def test_driver_nonfinite_exit_is_correctness_failure(
 
     # A completed correctness failure must stop before additional measurements.
     def unexpected_callgrind(*args):
-        pytest.fail("Callgrind ran after a non-finite state")
+        pytest.fail("Callgrind ran after a correctness failure")
 
     monkeypatch.setattr(module, "callgrind", unexpected_callgrind)
     output, exit_status = guard_output, returncode
-    finite = (
-        "true" if output == "finite" else "invalid" if output == "invalid" else "false"
-    )
+    if output in ("finite", "time", "time-partial"):
+        finite = "true"
+    elif output in ("invalid", "time-invalid"):
+        finite = "invalid"
+    else:
+        finite = "false"
     broken = module.measure(row, args, tmp_path)
     assert broken["status"] == "broken"
     if correctness:
-        assert broken["head"]["guards"]["finite"] is False
-        assert broken["error"] == "non-finite state"
+        assert broken["head"]["guards"] == module.guards(
+            module.native_log(args, row).read_text()
+        )
+        assert broken["head"]["guards"]["finite"] == (finite == "true")
+        assert broken["error"] == (
+            "simulation time did not advance"
+            if output == "time"
+            else "non-finite state"
+        )
         assert "error_kind" not in broken
         assert "perturbations" not in broken
     else:
@@ -1248,7 +1276,9 @@ def test_run_resolves_shims_and_reports_missing_options(
     monkeypatch.setattr(module, "ROOT", root)
     monkeypatch.setattr(module, "command_output", lambda command: "HEAD")
     monkeypatch.setattr(module, "fingerprint", lambda args, provenance: {})
-    monkeypatch.setattr(module, "installed_provenance", lambda args: {})
+    monkeypatch.setattr(
+        module, "installed_provenance", lambda args: {"binaries": {module.PB: "driver"}}
+    )
     monkeypatch.setattr(
         module,
         "measure",
@@ -1258,6 +1288,7 @@ def test_run_resolves_shims_and_reports_missing_options(
             "parity": "",
             "status": "ok",
             "gated": True,
+            "input_sha": "scene input",
         },
     )
     prefix = tmp_path / "output/a"
@@ -1721,8 +1752,31 @@ def test_micro_perturbations_compare_real_metrics(monkeypatch, tmp_path, name, c
 
 
 @pytest.mark.parametrize("revision", ["HEAD", "annotated-release"])
+@pytest.mark.parametrize(
+    "rows, portable_only, expected_drivers",
+    [
+        (
+            "",
+            False,
+            {"contact_benchmark", "BM_INTEGRATION_kinematics", "BM_UNIT_dantzig_lcp"},
+        ),
+        ("gzb", False, set()),
+        ("robot", False, set()),
+        ("dyn", False, {"BM_INTEGRATION_kinematics"}),
+        ("lcp", False, {"BM_UNIT_dantzig_lcp"}),
+        ("mt4-s3w", False, {"contact_benchmark"}),
+        (
+            "dyn,lcp,pend",
+            False,
+            {"contact_benchmark", "BM_INTEGRATION_kinematics", "BM_UNIT_dantzig_lcp"},
+        ),
+        ("", True, set()),
+        ("gzb", True, set()),
+        ("dyn", True, {"BM_INTEGRATION_kinematics"}),
+    ],
+)
 def test_local_uses_independent_source_and_cmake_caches(
-    monkeypatch, tmp_path, revision
+    monkeypatch, tmp_path, revision, rows, portable_only, expected_drivers
 ):
     import io
     import tarfile
@@ -1730,7 +1784,17 @@ def test_local_uses_independent_source_and_cmake_caches(
 
     module = _load_runner()
     args = module.parser().parse_args(
-        ["local", "--base", revision, "--head", revision, "--output-dir", str(tmp_path)]
+        [
+            "local",
+            "--base",
+            revision,
+            "--head",
+            revision,
+            "--output-dir",
+            str(tmp_path),
+            "--rows",
+            rows,
+        ]
     )
     monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
 
@@ -1740,7 +1804,9 @@ def test_local_uses_independent_source_and_cmake_caches(
 
     monkeypatch.setattr(module, "command_output", command_output)
     monkeypatch.setattr(
-        module.subprocess, "run", lambda *args, **kwargs: SimpleNamespace(returncode=0)
+        module.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=int(portable_only)),
     )
     archive = io.BytesIO()
     with tarfile.open(fileobj=archive, mode="w") as contents:
@@ -1758,6 +1824,7 @@ def test_local_uses_independent_source_and_cmake_caches(
         module.subprocess, "check_output", lambda *args, **kwargs: archive.getvalue()
     )
     configurations = []
+    portable_hashes = []
 
     def execute(command, env, log, timeout):
         if command[:3] == ["cmake", "-G", "Ninja"]:
@@ -1779,8 +1846,18 @@ def test_local_uses_independent_source_and_cmake_caches(
             if build.name.startswith("driver-"):
                 (build / "portable_step_bench").write_text("driver")
             else:
+                targets = set(command[command.index("--target") + 1 :])
+                assert targets & module.WORKLOAD_SOURCES.keys() == expected_drivers
+                libraries = {"dart-utils-urdf"}
+                if module.CB not in expected_drivers:
+                    libraries |= {
+                        "dart-collision-ode",
+                        "dart-collision-bullet",
+                        "dart-gui-osg",
+                    }
+                assert targets == libraries | expected_drivers
                 (build / "bin").mkdir()
-                for driver in module.WORKLOAD_SOURCES:
+                for driver in expected_drivers:
                     (build / "bin" / driver).write_bytes(b"archived driver")
         elif command[:2] == ["cmake", "--install"]:
             prefix = Path(command[command.index("--prefix") + 1])
@@ -1800,15 +1877,20 @@ def test_local_uses_independent_source_and_cmake_caches(
         )
         source = tmp_path / f"src-{arm.prefix.name}"
         assert stamp["workload_sources"] == module.workload_hashes(
-            source, module.WORKLOAD_SOURCES
+            source, expected_drivers
         )
-        assert stamp["workload_sources"] != module.workload_hashes(
-            module.ROOT, module.WORKLOAD_SOURCES
-        )
+        if expected_drivers:
+            assert stamp["workload_sources"] != module.workload_hashes(
+                module.ROOT, expected_drivers
+            )
+        assert stamp["binaries"].keys() == expected_drivers | {module.PB}
+        portable_hashes.append(stamp["binaries"][module.PB])
         return {"commit": arm.commit}
 
     monkeypatch.setattr(module, "run_arm", run_arm)
     assert len(module.local_arms(args)) == 2
+    assert portable_hashes == [module.sha(b"driver")] * 2
+    assert args.rows == ("gzb,robot" if portable_only and not rows else rows)
     assert configurations == [
         (tmp_path / f"src-{arm}", tmp_path / f"build-{arm}") for arm in ("a", "b")
     ]

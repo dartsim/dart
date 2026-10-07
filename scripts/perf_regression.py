@@ -157,10 +157,15 @@ def field(text: str, name: str) -> str:
     return match[1].strip()
 
 
-def nonfinite_guards(text: str) -> bool:
-    """True when the output holds complete guards for a non-finite state."""
+def failed_guards(text: str) -> bool:
+    """True when complete guards describe a correctness failure."""
     try:
-        return field(text, "Final State Finite") == "false" and bool(guards(text))
+        finite = field(text, "Final State Finite")
+        return bool(guards(text)) and (
+            finite == "false"
+            or finite == "true"
+            and field(text, "Time Advanced") == "false"
+        )
     except ValueError:
         return False  # incomplete guards: the run itself failed
 
@@ -239,9 +244,9 @@ def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
     if process.returncode == 3 and unsupported:
         raise UnsupportedRow(unsupported[1])
     # Both drivers print complete guards before exiting nonzero on a non-finite
-    # state (portable_step_bench with 1, contact_benchmark with 2): a measured
-    # correctness failure, not an infrastructure one.
-    if process.returncode and nonfinite_guards(text):
+    # state; contact_benchmark also checks time/frame advancement. These are
+    # measured correctness failures, not infrastructure ones.
+    if process.returncode and failed_guards(text):
         return text
     if process.returncode:
         raise ValueError(f"exit {process.returncode}: see {log}")
@@ -314,6 +319,9 @@ def native(row: Row, args, world: Path, config: str = "") -> dict:
         raise ValueError(f"missing RSS: {tag}")
     return {
         "guards": guards(text),
+        "time_advanced": not bool(
+            re.search(r"^Time Advanced:\s*false\s*$", text, re.MULTILINE)
+        ),
         "allocs_per_step": allocs / measured,
         "bytes_per_step": size / measured,
         "allocs": allocs,
@@ -436,6 +444,9 @@ def measure(row: Row, args, world: Path) -> dict:
         result["head"] = metrics
         if (metrics.get("guards") or {}).get("finite") is False:
             result.update(status="broken", error="non-finite state")
+            return result
+        if metrics.get("time_advanced") is False:
+            result.update(status="broken", error="simulation time did not advance")
             return result
         if args.perturb:
             result["perturbations"] = {}
@@ -782,8 +793,12 @@ def run_arm(args) -> dict:
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         results = list(pool.map(lambda row: measure(row, args, world), rows))
     for row, result in zip(rows, results):
-        if row.driver in WORKLOAD_SOURCES:
-            result["workload_sha"] = provenance["workload_sources"][row.driver]
+        if row.driver == PB or row.driver in WORKLOAD_SOURCES:
+            result["workload_sha"] = (
+                provenance["binaries"][PB]
+                if row.driver == PB
+                else provenance["workload_sources"][row.driver]
+            )
             result["input_sha"] = sha(
                 json.dumps([result["input_sha"], result["workload_sha"]]).encode()
             )
@@ -1397,6 +1412,7 @@ def local_arms(args) -> tuple[dict, dict]:
     )
     if portable_only and not args.rows:
         args.rows = "gzb,robot"
+    drivers = sorted({row.driver for row in select_rows(args.rows)} - {PB})
     records = []
     for label, revision in zip(("a", "b"), revisions):
         source, build = output / f"src-{label}", output / f"build-{label}"
@@ -1430,14 +1446,8 @@ def local_arms(args) -> tuple[dict, dict]:
                 output / f"{label}.configure.log",
                 args.timeout,
             )
-            targets = ["dart-utils-urdf"]
-            if not portable_only:
-                targets += [
-                    "contact_benchmark",
-                    "BM_INTEGRATION_kinematics",
-                    "BM_UNIT_dantzig_lcp",
-                ]
-            else:
+            targets = ["dart-utils-urdf", *drivers]
+            if CB not in drivers:
                 targets += [
                     "dart-collision-ode",
                     "dart-collision-bullet",
