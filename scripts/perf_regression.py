@@ -491,8 +491,9 @@ def measure(row: Row, args, world: Path) -> dict:
                     if row.det
                     else micro_perturb(row, args, world, config)
                 )
-                # Requested bytes gate too, so they must not depend on layout.
-                stable = all(
+                # Requested bytes gate too, so they must not depend on layout,
+                # and every perturbed run must also advance time correctly.
+                stable = altered.get("time_advanced") is not False and all(
                     altered.get(key) == metrics.get(key)
                     for key in ("guards", "allocs", "bytes")
                 )
@@ -501,6 +502,7 @@ def measure(row: Row, args, world: Path) -> dict:
                     "guards": altered["guards"],
                     "allocs": altered["allocs"],
                     "bytes": altered.get("bytes"),
+                    "time_advanced": altered.get("time_advanced"),
                 }
             result["gated"] = all(
                 item["stable"] for item in result["perturbations"].values()
