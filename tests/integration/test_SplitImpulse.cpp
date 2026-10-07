@@ -44,6 +44,7 @@
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
@@ -76,6 +77,47 @@ constexpr double kBoxSize = 0.2;
 constexpr double kPenetration = 0.01;
 constexpr std::size_t kCorrectionSteps = 50;
 constexpr double kHalfPi = 1.57079632679489661923;
+
+class CountingDantzigSolver : public constraint::BoxedLcpSolver
+{
+public:
+  const std::string& getType() const override
+  {
+    return mSolver.getType();
+  }
+
+  bool solve(
+      int n,
+      double* A,
+      double* x,
+      double* b,
+      int nub,
+      double* lo,
+      double* hi,
+      int* findex,
+      bool earlyTermination) override
+  {
+    ++mSolveCalls;
+    const bool success
+        = mSolver.solve(n, A, x, b, nub, lo, hi, findex, earlyTermination);
+    if (!success)
+      ++mFailures;
+    return success;
+  }
+
+#if DART_BUILD_MODE_DEBUG
+  bool canSolve(int n, const double* A) override
+  {
+    return mSolver.canSolve(n, A);
+  }
+#endif
+
+  std::size_t mSolveCalls = 0;
+  std::size_t mFailures = 0;
+
+private:
+  constraint::DantzigBoxedLcpSolver mSolver;
+};
 
 SkeletonPtr createFloor()
 {
@@ -414,6 +456,53 @@ TEST(Issue201, SplitImpulseKeepsVelocityPhaseContactImpulse)
   EXPECT_NEAR(body->getLinearVelocity().z(), 0.0, 1e-6);
   EXPECT_GT(
       body->getTransform().translation().z(), kBoxSize / 2.0 - kPenetration);
+}
+
+//==============================================================================
+// Velocity-phase flags must not include unrelated skeletons' stale responses
+// when the position pass assembles its unit-impulse matrix for a stack.
+TEST(Issue201, SplitImpulseStackPrimarySolverSucceeds)
+{
+  auto world = simulation::World::create();
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  world->setCollisionDetector(simulation::CollisionDetectorType::Dart);
+  auto options = world->getDeactivationOptions();
+  options.mEnabled = false;
+  world->setDeactivationOptions(options);
+
+  auto* solver = dynamic_cast<constraint::BoxedLcpConstraintSolver*>(
+      world->getConstraintSolver());
+  ASSERT_NE(solver, nullptr);
+  auto primary = std::make_shared<CountingDantzigSolver>();
+  solver->setBoxedLcpSolver(primary);
+  solver->setSecondaryBoxedLcpSolver(
+      std::make_shared<constraint::PgsBoxedLcpSolver>());
+  solver->setSplitImpulseEnabled(true);
+
+  auto floor = createFloor();
+  floor->getBodyNode(0)->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(
+      0.8);
+  world->addSkeleton(floor);
+  for (std::size_t i = 0; i < 3; ++i) {
+    auto box = createBox((i + 0.5) * kBoxSize - (i + 1) * 1e-6);
+    box->getBodyNode(0)->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(
+        0.8);
+    world->addSkeleton(box);
+  }
+
+  constexpr std::size_t kSteps = 500;
+  for (std::size_t i = 0; i < kSteps; ++i)
+    world->step();
+
+  EXPECT_EQ(primary->mSolveCalls, 2 * kSteps);
+  EXPECT_EQ(primary->mFailures, 0u);
+  for (std::size_t i = 0; i < 3; ++i) {
+    const auto* body = world->getSkeleton(i + 1)->getRootBodyNode();
+    EXPECT_NEAR(body->getLinearVelocity().norm(), 0.0, 1e-5);
+    EXPECT_NEAR(
+        body->getTransform().translation().z(), (i + 0.5) * kBoxSize, 1e-5);
+  }
 }
 
 //==============================================================================

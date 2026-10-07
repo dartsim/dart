@@ -512,6 +512,8 @@
 
 * Simulation
 
+  * Fix split-impulse position correction failures for contacts between multiple reactive skeletons: [#3582](https://github.com/dartsim/dart/pull/3582)
+
   * Preserve built-in solver backends and their options, split impulse,
     matrix-free solver options, and collision contact settings when cloning a
     `World`. Custom boxed LCP backends retain the clone's default with a warning.
