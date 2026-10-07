@@ -183,7 +183,8 @@ gh pr checks <PR_NUMBER>
      (after findings, a clean re-review; the docs-only/mechanical exemption
      in step 4 above also satisfies this), and GitHub reports it mergeable.
    - The `maintainer-approved` label is the explicit approval (lifecycle step
-     4): its latest `labeled` event (`gh api --paginate
+     4): it must still be on the PR (`gh pr view --json labels`), and its
+     latest `labeled` event (`gh api --paginate
      repos/dartsim/dart/issues/<PR_NUMBER>/events`) must have the maintainer
      as `actor` and come after any `head_ref_force_pushed` event there and
      after the earliest check suite (`gh api
