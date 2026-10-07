@@ -232,8 +232,10 @@
 
   * Build the meshes that `FCLCollisionDetector` uses for boxes, spheres,
     ellipsoids, and cylinders in `MESH` primitive mode in double instead of
-    float precision, so their vertices can move at float rounding. The default
-    `PRIMITIVE` mode is unchanged:
+    float precision, so their vertices can move at float rounding. In the
+    default `PRIMITIVE` mode, supported shapes are unchanged; only the
+    placeholder sphere built for an empty `ConvexMeshShape` or an unsupported
+    shape gets the same change:
     [#3581](https://github.com/dartsim/dart/pull/3581)
 
   * Fix a crash in the ODE collision backend when replacing or resizing a
