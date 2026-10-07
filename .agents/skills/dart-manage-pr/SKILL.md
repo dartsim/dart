@@ -186,10 +186,11 @@ gh pr checks <PR_NUMBER>
      4). It must still be on the PR (`gh pr view --json labels`); its latest
      `labeled` event (`gh api --paginate repos/dartsim/dart/issues/<PR>/events`)
      must have the maintainer as `actor` and follow any `head_ref_force_pushed`,
-     `base_ref_changed` or `reopened` event and the earliest check suite (`gh
-     api repos/dartsim/dart/commits/<SHA>/check-suites`) of the last commit
-     that is not a conflict-free base merge, or of the first later commit with
-     one. If none does, ask for a fresh label. Never add it yourself.
+     `base_ref_changed` or `reopened` event and the earliest `pull_request` run
+     for this PR (`gh api "repos/dartsim/dart/actions/runs?event=pull_request&
+     head_sha=<SHA>"`, `pull_requests[].number`) on the last commit that is not
+     a conflict-free base merge, or on the first later commit with one. If none
+     does, ask for a fresh label. Never add it yourself.
    - Use the current head SHA when merging so a moved branch cannot be merged
      accidentally.
 6. Clean up after merge:
