@@ -1885,3 +1885,27 @@ def test_compare_rejects_comparison_reports_as_inputs(tmp_path):
     module.write_json(path, report)
     with pytest.raises(ValueError, match="comparison report"):
         module.read_record(path)
+
+
+def test_workload_hashes_cover_loaded_sample_scenes(tmp_path):
+    module = _load_runner()
+    for paths in module.WORKLOAD_SOURCES.values():
+        for name in paths:
+            path = tmp_path / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"workload")
+    bench = tmp_path / "tests/benchmark/integration/bm_kinematics.cpp"
+    bench.write_text('scenes.push_back("dart://sample/skel/test/a.skel");\n')
+    scene = tmp_path / "data/skel/test/a.skel"
+    scene.parent.mkdir(parents=True)
+    scene.write_bytes(b"scene")
+    drivers = ["BM_INTEGRATION_kinematics", "BM_UNIT_dantzig_lcp"]
+    base = module.workload_hashes(tmp_path, drivers)
+    # An edited scene changes the workload of the benchmark that loads it only.
+    scene.write_bytes(b"edited scene")
+    head = module.workload_hashes(tmp_path, drivers)
+    assert head["BM_INTEGRATION_kinematics"] != base["BM_INTEGRATION_kinematics"]
+    assert head["BM_UNIT_dantzig_lcp"] == base["BM_UNIT_dantzig_lcp"]
+    # A scene the revision lacks still counts, as a missing input.
+    scene.unlink()
+    assert module.workload_hashes(tmp_path, drivers) != head

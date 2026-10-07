@@ -612,6 +612,20 @@ def workload_hashes(source: Path, drivers) -> dict[str, str]:
                 raise ValueError("missing workload source: examples/contact_benchmark")
         elif not (source / paths[0]).is_file():
             raise ValueError(f"missing workload source: {paths[0]}")
+        # Scenes the sources load from the revision's own data directory
+        # (dart://sample/... resolves to data/...) are inputs too.
+        paths = sorted(
+            {*paths}
+            | {
+                "data/" + uri
+                for name in paths
+                if (source / name).is_file()
+                for uri in re.findall(
+                    r'"dart://sample/([^"]+)"',
+                    (source / name).read_text(encoding="utf-8", errors="replace"),
+                )
+            }
+        )
         manifest = {
             name: (
                 sha((source / name).read_bytes()) if (source / name).is_file() else None
