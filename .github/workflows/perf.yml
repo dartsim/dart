@@ -80,7 +80,7 @@ jobs:
         run: |
           started=$(date +%s)
           harness="$RUNNER_TEMP/perf-harness/scripts/perf_regression.py"
-          options=(--base "$PERF_BASE" --head "$PERF_HEAD")
+          options=(--base "$PERF_BASE" --head "$PERF_HEAD" --perturb)
           if [[ "$PERF_MODE" == smoke ]]; then
             harness=scripts/perf_regression.py
             options+=(--smoke)
@@ -135,6 +135,15 @@ jobs:
           retention-days: 14
           overwrite: true
           if-no-files-found: error
+
+      - name: Upload logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-logs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.PERF_OUTPUT }}/**/*.log
+          retention-days: 14
+          if-no-files-found: ignore
 
   verdict:
     name: Perf A/B
@@ -194,6 +203,12 @@ jobs:
               Path("perf.md").write_text(f'<!-- dart-perf -->\nPerf smoke: FAIL — head build failed: {failure["error"]}\nBuild wall time: {record["wall_seconds"]} s.\n')
               Path("verdict-exit").write_text("1\n")
               raise SystemExit(0)
+          if record["mode"] == "smoke":
+              rows = [row for row in record["head"]["results"] if row.get("status") == "ok"]
+              if not rows or not all(row.get("perturbations") and row.get("gated") for row in rows):
+                  Path("perf.md").write_text("<!-- dart-perf -->\nPerf smoke: FAIL — rows measured without a passing perturbation check.\n")
+                  Path("verdict-exit").write_text("1\n")
+                  raise SystemExit(0)
           if record["head"]["run"]["commit"] != os.environ["PERF_HEAD"]:
               raise ValueError("head revision mismatch")
           if record["base"]["run"]["commit"] != os.environ["PERF_HEAD" if record["mode"] == "smoke" else "PERF_BASE"]:
@@ -221,10 +236,20 @@ jobs:
             echo 'Perf A/B: ERROR — verdict setup failed.' >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      # Fork PRs get a read-only token, so they get the job summary and the
+      # artifact but no comment: there is deliberately no pull_request_target
+      # or workflow_run stage.
       - name: Upsert sticky PR comment
         if: ${{ !cancelled() }}
         continue-on-error: true
+        env:
+          EVENT_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
+          live=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)
+          if [[ "$live" != "$EVENT_HEAD" ]]; then
+            echo "The PR head moved to $live; leaving the comment to the newer run."
+            exit 0
+          fi
           comments=$(gh api --paginate "repos/$GH_REPO/issues/$PR_NUMBER/comments" \
             --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- dart-perf -->"))) | .id')
           comment=${comments%%$'\n'*}
