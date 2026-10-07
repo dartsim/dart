@@ -484,6 +484,10 @@ protected:
 private:
   friend class simulation::World;
 
+  /// Restarts awake skeletons' sleep eligibility after a manual constraint
+  /// removal and makes the change observable to World.
+  void restartAwakeSleepCandidacy();
+
   /// The wake band of the World's DeactivationOptions (the wake threshold scale
   /// times each sleep threshold), which World sets every step. Island sleeping
   /// reads it; until World sets it, it is unbounded.

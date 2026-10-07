@@ -1500,6 +1500,15 @@ void GenericJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
   }
 
   GenericJoint_SET_IF_DIFFERENT(mSpringStiffnesses[index], k);
+  // Passive forces change rest state, not automatic-constraint eligibility.
+  if (const auto skel = this->getSkeleton())
+    skel->incrementDeactivationStateVersion();
+
+  // dt * d + dt^2 * k is folded into the cached implicit articulated inertia
+  // (updateInvProjArtInertiaImplicitDynamic), which is otherwise refreshed
+  // only when the configuration changes.
+  if (this->mChildBodyNode)
+    this->mChildBodyNode->dirtyArticulatedInertia();
 }
 
 //==============================================================================
@@ -1524,6 +1533,8 @@ void GenericJoint<ConfigSpaceT>::setRestPosition(size_t index, double q0)
   }
 
   GenericJoint_SET_IF_DIFFERENT(mRestPositions[index], q0);
+  if (const auto skel = this->getSkeleton())
+    skel->incrementDeactivationStateVersion();
 }
 
 //==============================================================================
@@ -1549,6 +1560,8 @@ void GenericJoint<ConfigSpaceT>::setRestPositions(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mRestPositions, restPositions);
+  if (const auto skel = this->getSkeleton())
+    skel->incrementDeactivationStateVersion();
 }
 
 //==============================================================================
@@ -1578,6 +1591,12 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
   }
 
   GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients[index], d);
+  if (const auto skel = this->getSkeleton())
+    skel->incrementDeactivationStateVersion();
+
+  // See setSpringStiffness(): the implicit damping term is cached too.
+  if (this->mChildBodyNode)
+    this->mChildBodyNode->dirtyArticulatedInertia();
 }
 
 //==============================================================================
@@ -1637,12 +1656,18 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
   const bool hadFriction = Base::mAspectProperties.mFrictions[index] > 0.0;
   const bool hasFriction = friction > 0.0;
   GenericJoint_SET_IF_DIFFERENT(mFrictions[index], friction);
-  if (hadFriction && !hasFriction) {
-    --Joint::mNumNonzeroCoulombFrictionDofs;
+  if (hadFriction != hasFriction) {
+    // Turning friction on or off changes which joints get a friction
+    // constraint, so every solver rescans its joints.
+    if (hasFriction)
+      ++Joint::mNumNonzeroCoulombFrictionDofs;
+    else
+      --Joint::mNumNonzeroCoulombFrictionDofs;
     this->notifyAutomaticConstraintPropertiesUpdated();
-  } else if (!hadFriction && hasFriction) {
-    ++Joint::mNumNonzeroCoulombFrictionDofs;
-    this->notifyAutomaticConstraintPropertiesUpdated();
+  } else if (const auto skel = this->getSkeleton()) {
+    // Any other change only moves the constraint's bounds: wake resting
+    // bodies without a rescan.
+    skel->incrementDeactivationStateVersion();
   }
 }
 
