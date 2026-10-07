@@ -408,6 +408,14 @@
     [#3510](https://github.com/dartsim/dart/pull/3510),
     [#3500](https://github.com/dartsim/dart/issues/3500)
 
+  * Fix collision detection ignoring a `CollisionAspect` created on, or removed
+    from, an existing `ShapeNode` until some other structural edit followed
+    (the edit now takes effect at the next collision query), and reading a
+    freed collision record, or crashing, when a removed aspect was created
+    again or when a collision shape was added to a body after another of its
+    `ShapeNode`s had been removed while still referenced:
+    [#3553](https://github.com/dartsim/dart/pull/3553)
+
 * Dynamics
 
   * Speed up `MetaSkeleton::getPositions()` and the other DOF getters and

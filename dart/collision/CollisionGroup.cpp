@@ -614,6 +614,7 @@ bool CollisionGroup::updateSkeletonSource(SkeletonSources::value_type& entry)
     for (const dynamics::ShapeFrame* unused : unusedFrames) {
       updateNeeded = true;
       removeShapeFrameInternal(unused, meta.get());
+      source.mObjects.erase(unused);
       child->second.mFrames.erase(unused);
     }
   }
