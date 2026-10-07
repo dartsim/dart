@@ -51,6 +51,12 @@
     [#3504](https://github.com/dartsim/dart/pull/3504),
     [#3447](https://github.com/dartsim/dart/issues/3447)
 
+  * `Skeleton` gains a private member that records its last
+    deactivation-state change, which changes its layout. `Skeleton::create()`
+    allocates it inside the library, so only code that subclasses `Skeleton`
+    must be rebuilt against DART 6.20:
+    [#3552](https://github.com/dartsim/dart/pull/3552)
+
 * Build
 
   * Build DART as C++17 regardless of the compiler default, so GCC 16 (which
@@ -418,6 +424,10 @@
 
 * Dynamics
 
+  * Fix `setSpringStiffness()` and `setDampingCoefficient()` changes not taking
+    effect until the joint's configuration changes; they now take effect on the
+    next step: [#3552](https://github.com/dartsim/dart/pull/3552)
+
   * Speed up `MetaSkeleton::getPositions()` and the other DOF getters and
     setters, with unchanged results. `getPositions()`, which gz-physics calls
     for every model after every step, now takes about a quarter fewer
@@ -708,6 +718,35 @@
     getters now return the bound the warning names:
     [#3511](https://github.com/dartsim/dart/pull/3511),
     [#3501](https://github.com/dartsim/dart/issues/3501)
+
+  * Fix automatic deactivation freezing bodies whose dynamics change while they
+    rest or are about to rest. Joint spring stiffness, rest position, damping
+    and Coulomb friction changes, `BodyNode::setGravityMode()`, a changed
+    `Skeleton::setGravity()`, and revolute/prismatic axis changes now wake
+    resting bodies, and so does `World::reset()`. These and other changes
+    between steps that can set a body in motion (for example a relaxed joint
+    limit, a pose or collision filter edit, removing a manual constraint, or
+    adding or removing a skeleton) now also restart the sleep delay of bodies
+    that were about to rest, so a body that starts moving slowly after the
+    change is no longer frozen. A manual constraint added between resting
+    bodies is now solved:
+    [#3552](https://github.com/dartsim/dart/pull/3552)
+
+  * Keep resting bodies asleep when a `World`'s or `Skeleton`'s gravity is set
+    to its current value, so worlds whose host re-applies an unchanged gravity
+    before every step, as gz-sim 10 does, can sleep:
+    [#3552](https://github.com/dartsim/dart/pull/3552)
+
+  * Keep bodies awake while a custom `ContactSurfaceHandler` is installed, so
+    motion that only the handler drives, such as a conveyor belt (gz-sim
+    TrackController), keeps responding. Once only the built-in default handler
+    remains, bodies can sleep again after the usual sleep delay:
+    [#3552](https://github.com/dartsim/dart/pull/3552)
+
+  * Keep each `World`'s automatic deactivation independent of other Worlds:
+    sleep transitions and edits in another World no longer restart this
+    World's sleep delay or turn off its all-resting fast path:
+    [#3552](https://github.com/dartsim/dart/pull/3552)
 
 * Performance
 
