@@ -427,9 +427,9 @@
 * Dynamics
 
   * Compute the `SoftBodyNodeHelper` ellipsoid and cylinder point-mass rest
-    positions in double instead of float precision (they move by at most
-    about 1e-7 relative), and the `HeightmapShape<float>` bounding box from
-    each widened height so it encloses the scaled height range.
+    positions in double instead of float precision (they move by less than
+    1e-6 of the shape's size), and the `HeightmapShape<float>` bounding box
+    from each widened height so it encloses the scaled height range.
     `ODELCPSolver::Solve` with the ODE solver now returns `false` for an LCP
     whose padded matrix has more than `INT_MAX` entries, instead of
     overflowing its `int` offsets:
