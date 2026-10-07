@@ -1317,7 +1317,11 @@ def read_record(path: Path) -> dict:
             ValueError(f"invalid number {value}")
         ),
     )
-    if record.get("schema") != "dart-perf/1" or not record.get("results"):
+    if (
+        not isinstance(record, dict)
+        or record.get("schema") != "dart-perf/1"
+        or not record.get("results")
+    ):
         raise ValueError("missing or unsupported measurement record")
     # A comparison report has the same schema, but its rows carry the base's
     # qualification and per-arm deltas, not one revision's measurements.

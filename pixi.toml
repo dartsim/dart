@@ -221,6 +221,16 @@ test-gz-compat-tools = { cmd = [
   "-q",
 ] }
 
+# The performance regression harness (scripts/perf_regression.py, tools/perf).
+# CI Linux runs it with the AI checks.
+test-perf-regression = { cmd = [
+  "python",
+  "-I",
+  "scripts/run_pytest.py",
+  "tests/test_perf_regression.py",
+  "-q",
+] }
+
 # ssik is an optional, PyPI-only analytical IK solver used only by the
 # ssik_ik_gui scene (dart-demos, C++) and the ssik_analytical_ik (Python)
 # example. It is not a dependency of DART or dartpy; install it on demand
