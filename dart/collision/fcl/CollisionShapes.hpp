@@ -48,9 +48,9 @@ namespace collision {
 
 template <class BV>
 ::fcl::BVHModel<BV>* createMesh(
-    double _scaleX,
-    double _scaleY,
-    double _scaleZ,
+    float _scaleX,
+    float _scaleY,
+    float _scaleZ,
     const aiScene* _mesh,
     const dart::collision::fcl::Transform3& _transform)
 {
@@ -66,7 +66,9 @@ template <class BV>
             = _mesh->mMeshes[i]
                   ->mVertices[_mesh->mMeshes[i]->mFaces[j].mIndices[k]];
         vertices[k] = dart::collision::fcl::Vector3(
-            vertex.x * _scaleX, vertex.y * _scaleY, vertex.z * _scaleZ);
+            static_cast<double>(vertex.x) * _scaleX,
+            static_cast<double>(vertex.y) * _scaleY,
+            static_cast<double>(vertex.z) * _scaleZ);
         vertices[k] = dart::collision::fcl::transform(_transform, vertices[k]);
       }
       model->addTriangle(vertices[0], vertices[1], vertices[2]);
@@ -79,9 +81,9 @@ template <class BV>
 
 template <class BV>
 ::fcl::BVHModel<BV>* createEllipsoid(
-    double _sizeX,
-    double _sizeY,
-    double _sizeZ,
+    float _sizeX,
+    float _sizeY,
+    float _sizeZ,
     const dart::collision::fcl::Transform3& _transform)
 {
   double v[59][3]
@@ -192,9 +194,9 @@ template <class BV>
 // Create a cube mesh for collision detection
 template <class BV>
 ::fcl::BVHModel<BV>* createCube(
-    double _sizeX,
-    double _sizeY,
-    double _sizeZ,
+    float _sizeX,
+    float _sizeY,
+    float _sizeZ,
     const dart::collision::fcl::Transform3& _transform)
 {
   //  float n[6][3] = {
@@ -212,7 +214,7 @@ template <class BV>
          {4, 5, 1, 0},
          {5, 6, 2, 1},
          {7, 4, 0, 3}};
-  double v[8][3];
+  float v[8][3];
 
   v[0][0] = v[1][0] = v[2][0] = v[3][0] = -_sizeX / 2;
   v[4][0] = v[5][0] = v[6][0] = v[7][0] = _sizeX / 2;
