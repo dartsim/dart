@@ -48,11 +48,13 @@ def _remote_asset(
 def _release(
     *paths: Path,
     immutable: bool = False,
+    draft: bool = False,
     repo: str = "dartsim/dart",
     tag: str = "verification-media",
 ) -> dict[str, object]:
     return {
         "isImmutable": immutable,
+        "isDraft": draft,
         "assets": [_remote_asset(path, repo=repo, tag=tag) for path in paths],
     }
 
@@ -320,6 +322,74 @@ def test_gh_release_create_includes_assets_before_immutable_publication(
     )
     assert manifest["status"] == "published_and_verified"
     assert manifest["url_provenance"] == "github_release_view"
+
+
+@pytest.mark.parametrize("backend", ["manual", "dry-run", "gh-release"])
+@pytest.mark.parametrize("failure_at", ["section", "manifest"])
+@pytest.mark.parametrize("error_type", [KeyboardInterrupt, OSError])
+def test_passing_rewrite_invalidates_previous_manifest_before_section(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    backend: str,
+    failure_at: str,
+    error_type: type[BaseException],
+) -> None:
+    selection = _selection(tmp_path)
+    out = tmp_path / "section.md"
+    manifest_out = tmp_path / "publication.json"
+    out.write_text("OLD SUCCESS URL\n", encoding="utf-8")
+    manifest_out.write_text(json.dumps({"pass": True}), encoding="utf-8")
+    atomic_write = evidence_publish._atomic_write_text
+    interrupted = False
+
+    def interrupt_write(path: Path, text: str) -> None:
+        nonlocal interrupted
+        if path == out and text.startswith("## Visual verification\n"):
+            assert not manifest_out.exists()
+            atomic_write(path, text)
+            if failure_at == "section":
+                interrupted = True
+                raise error_type("simulated section write failure")
+            return
+        if path == manifest_out and json.loads(text)["pass"]:
+            interrupted = True
+            raise error_type("simulated final manifest write failure")
+        atomic_write(path, text)
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        assert backend == "gh-release"
+        assert args[:2] == ["release", "view"]
+        return _Completed(
+            stdout=json.dumps(_release(tmp_path / "shot.png", tmp_path / "clip.mp4"))
+        )
+
+    monkeypatch.setattr(evidence_publish, "_atomic_write_text", interrupt_write)
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    args = [
+        str(selection),
+        "--environment",
+        "Linux",
+        *_semantic_args(),
+        "--out",
+        str(out),
+        "--manifest-out",
+        str(manifest_out),
+    ]
+    if backend != "manual":
+        args.extend(["--backend", "gh-release", "--repo", "dartsim/dart"])
+    if backend == "gh-release":
+        args.append("--yes")
+
+    if error_type is KeyboardInterrupt:
+        with pytest.raises(KeyboardInterrupt):
+            evidence_publish.main(args)
+    else:
+        assert evidence_publish.main(args) == 2
+
+    assert interrupted
+    assert "OLD SUCCESS URL" not in out.read_text(encoding="utf-8")
+    if manifest_out.exists():
+        assert json.loads(manifest_out.read_text(encoding="utf-8"))["pass"] is False
 
 
 @pytest.mark.parametrize(
@@ -869,6 +939,7 @@ def test_existing_content_addressed_asset_mismatch_fails_before_mutation(
     calls: list[list[str]] = []
     release = {
         "isImmutable": False,
+        "isDraft": False,
         "assets": [
             {
                 "name": _release_asset_name(shot),
@@ -930,7 +1001,7 @@ def test_existing_asset_requires_verifiable_digest_and_uploaded_state(
         "state": "uploaded",
     }
     asset[field] = value
-    release = {"isImmutable": False, "assets": [asset]}
+    release = {"isImmutable": False, "isDraft": False, "assets": [asset]}
     manifest_out = tmp_path / "publication.json"
 
     def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
@@ -963,6 +1034,98 @@ def test_existing_asset_requires_verifiable_digest_and_uploaded_state(
     assert failed["status"] == "failed_pre_mutation"
     assert failed["pass"] is False
     assert "explicit maintainer approval" in failed["recovery"]
+
+
+@pytest.mark.parametrize("assets_present", [False, True])
+def test_draft_release_fails_before_upload_or_reuse(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    assets_present: bool,
+) -> None:
+    selection = _selection(tmp_path)
+    paths = (tmp_path / "shot.png", tmp_path / "clip.mp4") if assets_present else ()
+    calls: list[list[str]] = []
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        calls.append(list(args))
+        assert args[:2] == ["release", "view"]
+        assert "isDraft" in args[args.index("--json") + 1].split(",")
+        return _Completed(stdout=json.dumps(_release(*paths, draft=True)))
+
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    manifest_out = tmp_path / "publication.json"
+    out = tmp_path / "section.md"
+    code = evidence_publish.main(
+        [
+            str(selection),
+            "--backend",
+            "gh-release",
+            "--repo",
+            "dartsim/dart",
+            "--yes",
+            "--environment",
+            "Linux",
+            *_semantic_args(),
+            "--out",
+            str(out),
+            "--manifest-out",
+            str(manifest_out),
+        ]
+    )
+
+    assert code == 2
+    assert len(calls) == 1
+    manifest = json.loads(manifest_out.read_text(encoding="utf-8"))
+    assert manifest["status"] == "failed_pre_mutation"
+    assert manifest["pass"] is False
+    assert manifest["uploaded"] is False
+    assert manifest["remote_mutation_started"] is False
+    assert manifest["urls"] == {}
+    assert "target release is a draft" in manifest["error"]
+    assert "publish the draft or use another tag" in manifest["recovery"]
+    assert "publish the draft or use another tag" in out.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("draft", [None, "false", 0])
+def test_release_requires_boolean_draft_metadata(draft: object) -> None:
+    release = _release()
+    if draft is None:
+        release.pop("isDraft")
+    else:
+        release["isDraft"] = draft
+
+    with pytest.raises(ValueError, match="omitted boolean isDraft"):
+        evidence_publish._parse_release_assets(_Completed(stdout=json.dumps(release)))
+
+
+def test_final_release_verification_rejects_draft(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    selection = evidence_publish._load_selection(_selection(tmp_path))
+    view_count = 0
+
+    def fake_gh(args: list[str], *, check: bool = True) -> "_Completed":
+        nonlocal view_count
+        assert args[:2] == ["release", "view"]
+        view_count += 1
+        return _Completed(
+            stdout=json.dumps(
+                _release(
+                    tmp_path / "shot.png",
+                    tmp_path / "clip.mp4",
+                    draft=view_count > 1,
+                )
+            )
+        )
+
+    monkeypatch.setattr(evidence_publish, "_gh", fake_gh)
+    attempt = evidence_publish._PublicationAttempt(attempt_id="test-attempt")
+    with pytest.raises(ValueError, match="publish the draft or use another tag"):
+        evidence_publish._publish_gh_release(
+            selection, tmp_path, "dartsim/dart", "verification-media", attempt
+        )
+    assert view_count == 3  # Initial lookup, final verification, failure refresh.
+    assert attempt.mutation_started is False
 
 
 def test_release_lookup_failure_is_not_treated_as_missing_release(

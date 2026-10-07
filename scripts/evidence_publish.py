@@ -284,6 +284,13 @@ def _parse_release_assets(
     payload = json.loads(view.stdout)
     if not isinstance(payload, dict):
         raise ValueError("gh release view returned a non-object JSON value")
+    if type(payload.get("isDraft")) is not bool:
+        raise ValueError("gh release view omitted boolean isDraft")
+    if payload["isDraft"]:
+        raise ValueError(
+            "target release is a draft; publish the draft or use another tag "
+            "before retrying"
+        )
     if type(payload.get("isImmutable")) is not bool:
         raise ValueError("gh release view omitted boolean isImmutable")
     assets = payload.get("assets")
@@ -430,7 +437,7 @@ def _publish_gh_release(
             "--repo",
             repo,
             "--json",
-            "assets,isImmutable",
+            "assets,isImmutable,isDraft",
         ]
         view = _gh(view_arguments, check=False)
         release_exists = view.returncode == 0
@@ -875,17 +882,21 @@ def _write_outputs(
 ) -> str:
     """Invalidate the manifest first; commit passing states after the section."""
     text = json.dumps(manifest, indent=2, sort_keys=True)
-    if manifest_out is not None and not manifest["pass"]:
-        _atomic_write_text(manifest_out, text + "\n")
+    if manifest_out is not None:
+        if manifest["pass"]:
+            manifest_out.unlink(missing_ok=True)
+        else:
+            _atomic_write_text(manifest_out, text + "\n")
     _atomic_write_text(out, section)
-    if manifest_out is not None and manifest["pass"]:
+    if manifest_out is not None:
         _atomic_write_text(manifest_out, text + "\n")
     return text
 
 
 def _recovery(repo: str, tag: str) -> str:
     return (
-        f"Re-query {repo} release tag {tag!r}. Exact assets in uploaded state with "
+        f"Re-query {repo} release tag {tag!r}. If the release is a draft, publish "
+        "the draft or use another tag. Exact assets in uploaded state with "
         "matching size and SHA-256 may be reused. If a same-name asset is "
         "incomplete, unverifiable, or mismatched, do not delete or clobber it: "
         "obtain explicit maintainer approval to delete only that exact asset or "
