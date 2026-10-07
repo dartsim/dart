@@ -10,6 +10,8 @@
 > is still a required pre-merge gate, not yet run). This file is retained for
 > history only; "exonerated"/"EXONERATED" further below is older wording,
 > superseded by the corrected docs named above.
+> **Superseded (2026-10-04, #3056):** the #3227 drift suppression and the
+> WP-PG.31 scratch named below were removed from `World`.
 
 # PR-A crash investigation (working note — resolve before merge)
 

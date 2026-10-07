@@ -46,6 +46,8 @@ the same versions/dirty flags the scalar path does, or sleeping breaks.
 #### WP-PG.31 — Scratch retention for shallow-support machinery
 
 - Status: done — #3341 (`wp-pg-31-shallow-support-scratch`)
+- Superseded (2026-10-04, #3056): the #3227 drift suppression was removed,
+  with the snapshot, support search, and scratch that this packet retained.
 - Objective: current `release-6.20` already retains the
   `findShallowSupportedFreeRoots` and `snapshotFreeRootVelocities` scratch
   buffers; finish the packet by skipping the shallow-support snapshot/find pass

@@ -230,6 +230,10 @@
 
 * Collision
 
+  * Fix a crash in the ODE collision backend when replacing or resizing a
+    shape already in a collision group, and preserve shape updates when
+    switching collision detectors after skeletons have been added to a world.
+
   * Provide the DART-owned collision backend through the built-in `dart`
     detector, including soft-body, ellipsoid, cone, and capsule coverage. The
     released `DARTCollide` entry points and detector ABI remain compatible, as
@@ -410,6 +414,12 @@
     effect until the joint's configuration changes; they now take effect on the
     next step: [#3552](https://github.com/dartsim/dart/pull/3552)
 
+  * Speed up `MetaSkeleton::getPositions()` and the other DOF getters and
+    setters, with unchanged results. `getPositions()`, which gz-physics calls
+    for every model after every step, now takes about a quarter fewer
+    instructions:
+    [#3554](https://github.com/dartsim/dart/pull/3554)
+
   * Fix `dart::utils::SdfParser` loading every SDF `<soft_shape>` link as a
     rigid `BodyNode`: the parser forwarded only the joint type to
     `createJointAndBodyNodePair`, so the body-node type defaulted to `BodyNode`
@@ -498,6 +508,10 @@
 
 * Simulation
 
+  * Preserve built-in solver backends and their options, split impulse,
+    matrix-free solver options, and collision contact settings when cloning a
+    `World`. Custom boxed LCP backends retain the clone's default with a warning.
+
   * Improve MJCF loading fidelity by supporting stacked hinge/slide joint
     compositions, enforcing `contype`/`conaffinity` collision filtering, and
     applying per-geom friction while preserving automatic deactivation:
@@ -533,16 +547,24 @@
     [#3132](https://github.com/dartsim/dart/pull/3132),
     [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
 
-  * Suppress tiny lateral and tilt velocity drift introduced by shallow static
-    support contacts on free-root bodies while preserving DART 6's default
-    Baumgarte upward separation velocity:
-    [#3227](https://github.com/dartsim/dart/pull/3227),
-    [gazebosim/gz-physics#620](https://github.com/gazebosim/gz-physics/issues/620)
-
   * Enable resting-world deactivation by default with wake-aware invalidation
     and fidelity coverage against the always-active path, improving resting
-    contact-heavy scenes while preserving an explicit deactivation opt-out:
-    [#3086](https://github.com/dartsim/dart/pull/3086)
+    contact-heavy scenes while preserving an explicit deactivation opt-out. A
+    settled island does not fall asleep while another mobile body is awake
+    outside every constraint island, for example while it is still falling.
+    A free rigid body that was in an island one step earlier and, apart from
+    one step of falling, still moves inside the wake band may be ignored for
+    its first step outside every island, so a resting contact that the
+    collision detector misses for one step, as Bullet does for resting spheres
+    and cylinders, does not keep other islands awake. Such a body cannot be
+    told from one that has just started to fall, for example because its
+    support was removed, so an island that becomes eligible at that step can
+    fall asleep while it falls. A body on a joint, such as a pendulum swinging
+    back from its joint limit, always counts:
+    [#3086](https://github.com/dartsim/dart/pull/3086),
+    [#3273](https://github.com/dartsim/dart/pull/3273),
+    [#3353](https://github.com/dartsim/dart/pull/3353),
+    [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Complete the 3003-body resting-scene performance target from issue #3056:
     the maintained `contact_benchmark` path for `3k_shapes.sdf` with
@@ -618,10 +640,15 @@
     [#3071](https://github.com/dartsim/dart/pull/3071)
 
   * Accelerate large imported worlds that begin with zero-velocity bodies on
-    shallow support contacts by allowing the initial contact pass to consume the
-    configured quiet dwell before the normal final solved impulse freezes the
-    island, improving the exact 3003-body issue scene while preserving
-    micrometer-scale agreement with the always-active path:
+    shallow support contacts by allowing the initial contact passes to consume
+    the configured quiet dwell before the normal final solved impulse freezes
+    the island, improving the exact 3003-body issue scene while preserving
+    micrometer-scale agreement with the always-active path. Only contact
+    islands whose bodies start at rest and stay still on level supports over
+    the first two steps take this shortcut; a body that starts moving or sunk
+    into its support, or starts to roll, slide, drop, or tip (its speed growing
+    at more than 1e-6 g), and a model whose links are joined by a movable
+    joint, keep the normal sleep delay:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up cached all-resting steps by tracking explicit joint-velocity edits
@@ -699,6 +726,14 @@
     TrackController), keeps responding. Once only the built-in default handler
     remains, bodies can sleep again after the usual sleep delay:
     [#3552](https://github.com/dartsim/dart/pull/3552)
+
+* Performance
+
+  * Speed up the ODE collision detector in contact-heavy scenes by finding
+    contact-history and contact pairs through sorted per-call indexes instead
+    of scanning for each pair: an awake 3,000-body Gazebo-style step runs about
+    30% fewer instructions on a `PlaneShape` ground and about 20% fewer on
+    Gazebo's box ground, with bit-exact results.
 
 * Python
 
