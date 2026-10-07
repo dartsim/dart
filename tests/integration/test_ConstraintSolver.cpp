@@ -1010,6 +1010,8 @@ TEST(ConstraintSolver, RetiringIslandBuffersNeverAllocatesWithTwoLiveWorlds)
       }
       return sawExpectedContacts;
     };
+    // The first cycle may grow the shared spare list once (a new high-water
+    // mark, as Z2 allows); every later cycle must not allocate.
     ASSERT_TRUE(cycle());
 
     for (int iteration = 0; iteration < 4; ++iteration) {

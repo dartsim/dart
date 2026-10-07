@@ -3752,6 +3752,11 @@ void ConstraintSolver::reserveConstrainedGroupsScratch()
   mGroupSolvedToRestScratch.reserve(groupCount);
   mIslandSkeletons.reserve(mSkeletons.size());
   // Each skeleton can form its own island, and all of them may retire at once.
+  // This covers this World only: when several prepared Worlds share a thread,
+  // the first step whose combined retirements exceed it allocates once, a new
+  // high-water mark as Z2 allows; later shrink/regrow cycles do not. Covering
+  // every World here would need cross-World counting, which drifts when a
+  // World is destroyed on another thread.
   auto& retired = retiredGroupConstraintStorage();
   reserveGeometrically(
       retired,
