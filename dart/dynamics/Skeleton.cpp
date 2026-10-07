@@ -4039,7 +4039,10 @@ void Skeleton::setResting(bool _resting)
   // to an island the solver is freezing this step (whose constraint solve is
   // skipped), so the cleared velocity is not consumed by that step's solve.
   if (_resting && !wasResting && getNumDofs() > 0) {
-    setVelocities(Eigen::VectorXd::Zero(static_cast<int>(getNumDofs())));
+    // setVelocities() also sets each DOF through DegreeOfFreedom::setVelocity,
+    // so velocity-actuator commands behave exactly as before.
+    for (std::size_t i = 0; i < getNumDofs(); ++i)
+      setVelocity(i, 0.0);
     computeForwardKinematics(false, true, false);
   }
 }
