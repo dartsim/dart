@@ -40,17 +40,21 @@ jobs:
           REPO: ${{ github.repository }}
           OWNER: ${{ github.repository_owner }}
           BRANCH: update-pixi-${{ matrix.base }}
+          BASE: ${{ matrix.base }}
         run: |
           set -o pipefail
-          pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open \
+          prs=$(gh pr list --repo "$REPO" --head "$BRANCH" --base "$BASE" --state open \
             --json number,headRepositoryOwner \
             --jq ".[] | select(.headRepositoryOwner.login == \"$OWNER\") | .number")
-          if [ -n "$pr" ] && ! out=$(gh api -X DELETE "repos/$REPO/issues/$pr/labels/maintainer-approved" 2>&1) \
-            && ! grep -q "Label does not exist" <<< "$out"; then
-            echo "$out"
-            exit 1
-          fi
+          for pr in $prs; do
+            if ! out=$(gh api -X DELETE "repos/$REPO/issues/$pr/labels/maintainer-approved" 2>&1) \
+              && ! grep -q "Label does not exist" <<< "$out"; then
+              echo "$out"
+              exit 1
+            fi
+          done
       - name: Create pull request
+        id: cpr
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -63,19 +67,24 @@ jobs:
           delete-branch: true
           add-paths: pixi.lock
       - name: Remove maintainer-approved after updating the lockfile pull request
-        if: always()
+        # Also after a failed or cancelled update, but not when an earlier
+        # failure skipped it and the head never changed.
+        if: always() && steps.cpr.outcome != 'skipped'
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           OWNER: ${{ github.repository_owner }}
           BRANCH: update-pixi-${{ matrix.base }}
+          BASE: ${{ matrix.base }}
         run: |
           set -o pipefail
-          pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open \
+          prs=$(gh pr list --repo "$REPO" --head "$BRANCH" --base "$BASE" --state open \
             --json number,headRepositoryOwner \
             --jq ".[] | select(.headRepositoryOwner.login == \"$OWNER\") | .number")
-          if [ -n "$pr" ] && ! out=$(gh api -X DELETE "repos/$REPO/issues/$pr/labels/maintainer-approved" 2>&1) \
-            && ! grep -q "Label does not exist" <<< "$out"; then
-            echo "$out"
-            exit 1
-          fi
+          for pr in $prs; do
+            if ! out=$(gh api -X DELETE "repos/$REPO/issues/$pr/labels/maintainer-approved" 2>&1) \
+              && ! grep -q "Label does not exist" <<< "$out"; then
+              echo "$out"
+              exit 1
+            fi
+          done
