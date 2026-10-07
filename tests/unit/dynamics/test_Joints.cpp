@@ -223,10 +223,14 @@ TEST(Joints, OverflowingTimeStepPreservesImplicitInverseSanitization)
 TEST(Joints, ChildPassiveForceEditsRefreshImplicitInverseInertia)
 {
   auto skel = Skeleton::create("child_inverse_inertia");
-  auto [parentJoint, parentBody]
-      = skel->createJointAndBodyNodePair<InertiaTestFreeJoint>();
-  auto [childJoint, childBody]
-      = skel->createJointAndBodyNodePair<InertiaTestFreeJoint>(parentBody);
+  // Plain pointers: lambdas cannot capture structured bindings before C++20.
+  auto* parentJoint
+      = skel->createJointAndBodyNodePair<InertiaTestFreeJoint>().first;
+  auto* parentBody = parentJoint->getChildBodyNode();
+  auto* childJoint
+      = skel->createJointAndBodyNodePair<InertiaTestFreeJoint>(parentBody)
+            .first;
+  auto* childBody = childJoint->getChildBodyNode();
   parentBody->setLocalCOM(Eigen::Vector3d(0.1, 0.2, -0.1));
   childBody->setMass(2.7);
   childBody->setLocalCOM(Eigen::Vector3d(0.2, -0.1, 0.3));
