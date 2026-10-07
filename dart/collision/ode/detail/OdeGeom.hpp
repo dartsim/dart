@@ -44,6 +44,8 @@ namespace detail {
 
 class OdeGeom
 {
+  friend class dart::collision::OdeCollisionObject;
+
 public:
   struct GeomUserData;
 

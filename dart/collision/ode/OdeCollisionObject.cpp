@@ -240,6 +240,14 @@ OdeCollisionObject& OdeCollisionObject::operator=(OdeCollisionObject&& other)
   mOdeGeom = std::move(other.mOdeGeom);
   std::swap(mBodyId, other.mBodyId);
 
+  // The transferred geom must refer to its surviving owner, not the temporary
+  // used by refreshCollisionObject. Planes also use the stored parent pointer.
+  // An unsupported shape has no geom.
+  if (mOdeGeom) {
+    mOdeGeom->mParentCollisionObject = this;
+    dGeomSetData(mOdeGeom->getOdeGeomId(), this);
+  }
+
   return *this;
 }
 
