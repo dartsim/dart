@@ -50,6 +50,8 @@ tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
 
 [tasks]
+perf-compare = { cmd = "python scripts/perf_regression.py local" }
+
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
 
 config = { cmd = """
@@ -216,6 +218,16 @@ test-gz-compat-tools = { cmd = [
   "scripts/run_pytest.py",
   "tests/test_gz_compat_compare.py",
   "tests/test_gz_bench_worlds.py",
+  "-q",
+] }
+
+# The performance regression harness (scripts/perf_regression.py, tools/perf).
+# CI Linux runs it with the AI checks.
+test-perf-regression = { cmd = [
+  "python",
+  "-I",
+  "scripts/run_pytest.py",
+  "tests/test_perf_regression.py",
   "-q",
 ] }
 
