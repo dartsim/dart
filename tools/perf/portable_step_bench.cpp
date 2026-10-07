@@ -29,6 +29,7 @@
 #include <stdexcept>
 #include <string>
 
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -257,8 +258,12 @@ int main(int argc, char** argv)
 
     // A volatile sink keeps the pose reads observable without allocations.
     volatile double poses = 0.0;
+    const auto initialFrames = world->getSimFrames();
     for (std::size_t i = 0; i < warmup; ++i)
       poses = stepAndRead(world.get());
+    const double timeBefore = world->getTime();
+    const auto framesBefore = world->getSimFrames();
+    const double expectedTime = steps * world->getTimeStep();
     const auto start = std::chrono::steady_clock::now();
     for (std::size_t i = 0; i < steps; ++i)
       poses = stepAndRead(world.get());
@@ -267,7 +272,19 @@ int main(int argc, char** argv)
                           .count();
     (void)poses;
 
+    const double finalTime = world->getTime();
+    const auto finalFrames = world->getSimFrames();
+    const double timeTolerance
+        = std::max(1.0e-12, std::abs(expectedTime) * 1.0e-9);
+    const bool timeAdvanced
+        = std::abs(finalTime - timeBefore - expectedTime) <= timeTolerance
+          && static_cast<long long>(finalFrames) - framesBefore
+                 == static_cast<long long>(steps)
+          && static_cast<long long>(framesBefore) - initialFrames
+                 == static_cast<long long>(warmup);
     std::uint64_t hash = 1469598103934665603ULL;
+    hash = mix(hash, finalTime);
+    hash = mix(hash, finalFrames);
     bool finite = true;
     std::size_t mobile = 0, resting = 0;
     for (std::size_t s = 0; s < world->getNumSkeletons(); ++s) {
@@ -297,12 +314,15 @@ int main(int argc, char** argv)
     std::printf(
         "Final State Hash: 0x%016llx\n", static_cast<unsigned long long>(hash));
     std::printf("Final State Finite: %s\n", finite ? "true" : "false");
+    std::printf("Final Time: %.17g s\n", finalTime);
+    std::printf("Final Frames: %d\n", finalFrames);
+    std::printf("Time Advanced: %s\n", timeAdvanced ? "true" : "false");
     std::printf("Final Contacts: %zu\n", finalContacts);
     std::printf(
         "Final Contact Cap Hit: %s\n",
         finalContacts >= contacts ? "true" : "false");
     std::printf("Final Resting: %zu / %zu\n", resting, mobile);
-    return finite ? 0 : 1;
+    return finite && timeAdvanced ? 0 : 1;
   } catch (const std::exception& error) {
     std::fprintf(stderr, "%s\n", error.what());
     return 2;

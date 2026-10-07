@@ -267,7 +267,10 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         "preset": "installed preset",
         "libdart_sha": module.sha(library.read_bytes()),
         "libraries": {"lib/libdart.so": module.sha(library.read_bytes())},
-        "workload_sources": {module.CB: module.sha(b"installed workload")},
+        "workload_sources": {
+            driver: module.sha(b"installed workload")
+            for driver in (module.CB, module.PB)
+        },
         "binaries": {
             name: module.sha(b"measured driver")
             for name in ("portable_step_bench", "contact_benchmark")
@@ -309,6 +312,11 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         ("binaries", None, "invalid installed build provenance"),
         ("workload_sources", None, "invalid installed build provenance"),
         ("workload_sources", {}, "invalid installed build provenance"),
+        (
+            "workload_sources",
+            {module.CB: module.sha(b"installed workload")},
+            "invalid installed build provenance",
+        ),
         (
             "workload_sources",
             {module.CB: "invalid"},
@@ -746,14 +754,14 @@ def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, cha
         },
     )
     base = module.run_arm(args)
+    # Separate install RUNPATHs change executable bytes without changing inputs.
+    (binary / module.PB).write_bytes(b"head driver with different RUNPATH")
+    stamp["binaries"][module.PB] = module.sha((binary / module.PB).read_bytes())
     if changed:
-        if row.driver == module.PB:
-            (binary / module.PB).write_bytes(b"head driver")
-            stamp["binaries"][module.PB] = module.sha(b"head driver")
         stamp["workload_sources"] = {
             driver: module.sha(b"head workload") for driver in stamp["workload_sources"]
         }
-        module.write_json(path, stamp)
+    module.write_json(path, stamp)
     head = module.run_arm(args)
     assert base["run"]["env"]["harness_sha"] == head["run"]["env"]["harness_sha"]
     assert base["run"]["env"]["fingerprint"] == head["run"]["env"]["fingerprint"]
@@ -762,12 +770,7 @@ def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, cha
     assert result["verdict"]["status"] == ("FAIL" if workload_changed else "PASS")
     delta = result["results"][0]["delta"]
     assert delta["class"] == ("behaviour-change" if workload_changed else "gated")
-    if row.driver == module.PB:
-        assert head["results"][0]["workload_sha"] == stamp["binaries"][module.PB]
-    else:
-        assert (
-            head["results"][0]["workload_sha"] == stamp["workload_sources"][row.driver]
-        )
+    assert head["results"][0]["workload_sha"] == stamp["workload_sources"][row.driver]
     assert head["results"][0]["input_sha"] == module.sha(
         json.dumps(["scene input", head["results"][0]["workload_sha"]]).encode()
     )
@@ -807,7 +810,7 @@ def test_workload_hashes_cover_sources_and_headers(tmp_path, changed_path):
             path.write_bytes(b"workload")
     drivers = [*module.WORKLOAD_SOURCES, module.PB]
     base = module.workload_hashes(tmp_path, drivers)
-    assert module.PB not in base
+    assert module.PB in base
     # Library implementation changes are what the harness measures.
     library = tmp_path / "dart/library.cpp"
     library.parent.mkdir()
@@ -1229,6 +1232,11 @@ def test_unsupported_driver_rows_are_not_infrastructure_errors(
         "compiler_provenance": "dart-perf-build/1",
     }
     base = {"run": {"commit": "base", "env": env}, "results": [unsupported]}
+    unchanged = module.compare(base, copy.deepcopy(base))
+    assert unchanged["verdict"]["status"] == "PASS"
+    assert unchanged["verdict"]["ir_geomean"] is None
+    assert unchanged["results"][0]["delta"]["class"] == "unsupported"
+    assert unchanged["results"][0]["gated"] is False
     supported = copy.deepcopy(unsupported)
     supported.update(status="ok", gated=True, head={**metrics, "ir_per_step": 100})
     head = {"run": {"commit": "head", "env": env}, "results": [supported]}
@@ -1277,7 +1285,9 @@ def test_run_resolves_shims_and_reports_missing_options(
     monkeypatch.setattr(module, "command_output", lambda command: "HEAD")
     monkeypatch.setattr(module, "fingerprint", lambda args, provenance: {})
     monkeypatch.setattr(
-        module, "installed_provenance", lambda args: {"binaries": {module.PB: "driver"}}
+        module,
+        "installed_provenance",
+        lambda args: {"workload_sources": {module.PB: "driver source"}},
     )
     monkeypatch.setattr(
         module,
@@ -1715,6 +1725,71 @@ def test_micro_native_slope_and_explicit_windows(monkeypatch, tmp_path, name):
             module.micro_perturb(row, args, tmp_path, "")
 
 
+@pytest.mark.parametrize("defect", ["case error", "iterations", "malformed"])
+def test_micro_case_errors_are_correctness_failures(
+    monkeypatch, tmp_path, capsys, defect
+):
+    module = _load_runner()
+    row = module.select_rows("lcp")[0]
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--no-perturb",
+        ]
+    )
+    args.bin_dir = tmp_path
+    case = module.MICRO_CASES["lcp"][0]
+
+    def execute(command, env, log, timeout):
+        output = Path(
+            next(
+                item.split("=", 1)[1]
+                for item in command
+                if item.startswith("--benchmark_out=")
+            )
+        )
+        item = {"name": case, "iterations": 0}
+        if defect == "case error":
+            # Google Benchmark errors can omit the normal iteration metrics.
+            item = {
+                "name": case,
+                "error_occurred": True,
+                "error_message": "native solver failed",
+            }
+        elif defect == "malformed":
+            item.pop("iterations")
+        module.write_json(output, {"benchmarks": [item]})
+        return f"STEPALLOC steps=0 measured=0 allocs=0 bytes=0 libdart={tmp_path}/libdart.so\n"
+
+    monkeypatch.setattr(module, "execute", execute)
+    broken = module.measure(row, args, tmp_path)
+    assert broken["status"] == "broken"
+    correctness = defect == "case error"
+    assert (broken.get("error_kind") != "infrastructure") == correctness
+    if correctness:
+        assert case in broken["error"]
+        assert "native solver failed" in broken["error"]
+    base = {"schema": "dart-perf/1", **_micro_record(module, "lcp")}
+    base["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    head = {**base, "results": [broken]}
+    comparison = module.compare(base, head)
+    assert comparison["verdict"]["status"] == ("FAIL" if correctness else "ERROR")
+    assert comparison["results"][0]["delta"]["class"] == "broken"
+    base_path, head_path = tmp_path / "base.json", tmp_path / "head.json"
+    module.write_json(base_path, base)
+    module.write_json(head_path, head)
+    assert module.main(
+        ["compare", "--base", str(base_path), "--head", str(head_path)]
+    ) == (1 if correctness else 2)
+    assert ("FAIL" if correctness else "ERROR") in capsys.readouterr().out
+
+
 @pytest.mark.parametrize("name", ["dyn", "lcp"])
 @pytest.mark.parametrize("changed", ["hash", "allocs"])
 def test_micro_perturbations_compare_real_metrics(monkeypatch, tmp_path, name, changed):
@@ -1844,7 +1919,7 @@ def test_local_uses_independent_source_and_cmake_caches(
         elif command[:2] == ["cmake", "--build"]:
             build = Path(command[2])
             if build.name.startswith("driver-"):
-                (build / "portable_step_bench").write_text("driver")
+                (build / "portable_step_bench").write_text(build.name)
             else:
                 targets = set(command[command.index("--target") + 1 :])
                 assert targets & module.WORKLOAD_SOURCES.keys() == expected_drivers
@@ -1876,12 +1951,13 @@ def test_local_uses_independent_source_and_cmake_caches(
             (module.ROOT / "pixi.lock").read_bytes()
         )
         source = tmp_path / f"src-{arm.prefix.name}"
-        assert stamp["workload_sources"] == module.workload_hashes(
-            source, expected_drivers
+        assert stamp["workload_sources"] == (
+            module.workload_hashes(source, expected_drivers)
+            | module.workload_hashes(module.ROOT, [module.PB])
         )
         if expected_drivers:
             assert stamp["workload_sources"] != module.workload_hashes(
-                module.ROOT, expected_drivers
+                module.ROOT, expected_drivers | {module.PB}
             )
         assert stamp["binaries"].keys() == expected_drivers | {module.PB}
         portable_hashes.append(stamp["binaries"][module.PB])
@@ -1889,7 +1965,7 @@ def test_local_uses_independent_source_and_cmake_caches(
 
     monkeypatch.setattr(module, "run_arm", run_arm)
     assert len(module.local_arms(args)) == 2
-    assert portable_hashes == [module.sha(b"driver")] * 2
+    assert portable_hashes == [module.sha(b"driver-a"), module.sha(b"driver-b")]
     assert args.rows == ("gzb,robot" if portable_only and not rows else rows)
     assert configurations == [
         (tmp_path / f"src-{arm}", tmp_path / f"build-{arm}") for arm in ("a", "b")

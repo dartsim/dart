@@ -65,6 +65,10 @@ PB = "portable_step_bench"
 # local includes. DART library sources are measured code, not inputs. PB uses
 # this checkout for both arms.
 WORKLOAD_SOURCES = {
+    PB: (
+        "tools/perf/portable_step_bench.cpp",
+        "tools/perf/CMakeLists.txt",
+    ),
     CB: (
         "examples/contact_benchmark/main.cpp",
         "examples/contact_benchmark/ContactContainerScene.hpp",
@@ -244,7 +248,7 @@ def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
     if process.returncode == 3 and unsupported:
         raise UnsupportedRow(unsupported[1])
     # Both drivers print complete guards before exiting nonzero on a non-finite
-    # state; contact_benchmark also checks time/frame advancement. These are
+    # state or failed time/frame advancement. These are
     # measured correctness failures, not infrastructure ones.
     if process.returncode and failed_guards(text):
         return text
@@ -483,6 +487,8 @@ def measure(row: Row, args, world: Path) -> dict:
                 metrics["est_cycles_per_step"] = (
                     sum(counts[key] for key in ("Ir", "Dr", "Dw")) + 4 * l1 + 30 * ll
                 ) / row.steps
+    except BenchmarkCaseError as error:
+        result.update(status="broken", gated=False, error=str(error))
     except UnsupportedRow as error:
         result.update(
             status="unsupported",
@@ -496,6 +502,10 @@ def measure(row: Row, args, world: Path) -> dict:
             status="broken", gated=False, error=str(error), error_kind="infrastructure"
         )
     return result
+
+
+class BenchmarkCaseError(ValueError):
+    """A completed benchmark case reported a correctness failure."""
 
 
 def micro_perturb(row: Row, args, world: Path, config: str) -> dict:
@@ -526,10 +536,11 @@ def micro_perturb(row: Row, args, world: Path, config: str) -> dict:
         identity(match[5], args.prefix)
         data = json.loads(path.read_text(encoding="utf-8"))
         cases = data.get("benchmarks", [])
-        if not cases or any(
-            item.get("error_occurred") or item["iterations"] != steps for item in cases
-        ):
-            raise ValueError(f"micro iteration count or case failure: {row.key}")
+        for item in cases:
+            if item.get("error_occurred"):
+                raise BenchmarkCaseError(f"{item['name']}: {item['error_message']}")
+        if not cases or any(item["iterations"] != steps for item in cases):
+            raise ValueError(f"micro iteration count differs: {row.key}")
         names = [item["name"].split("/iterations:")[0] for item in cases]
         observed = micro_guards(text)
         if names != MICRO_CASES[row.row] or (
@@ -793,12 +804,8 @@ def run_arm(args) -> dict:
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         results = list(pool.map(lambda row: measure(row, args, world), rows))
     for row, result in zip(rows, results):
-        if row.driver == PB or row.driver in WORKLOAD_SOURCES:
-            result["workload_sha"] = (
-                provenance["binaries"][PB]
-                if row.driver == PB
-                else provenance["workload_sources"][row.driver]
-            )
+        if row.driver in WORKLOAD_SOURCES:
+            result["workload_sha"] = provenance["workload_sources"][row.driver]
             result["input_sha"] = sha(
                 json.dumps([result["input_sha"], result["workload_sha"]]).encode()
             )
@@ -1057,6 +1064,13 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
             and not complete(parent, hm)
         )
         if (
+            parent
+            and child
+            and parent.get("status") == child.get("status") == "unsupported"
+        ):
+            classification = "unsupported"
+            result["gated"] = False
+        elif (
             not child
             or child.get("status") != "ok"
             or not complete(child, hm)
@@ -1519,8 +1533,10 @@ def local_arms(args) -> tuple[dict, dict]:
                     "libdart_sha": sha((prefix / "lib/libdart.so").read_bytes()),
                     "libraries": library_hashes(prefix),
                     "workload_sources": workload_hashes(
-                        source, (path.name for path in binary.iterdir())
-                    ),
+                        source,
+                        (path.name for path in binary.iterdir() if path.name != PB),
+                    )
+                    | workload_hashes(ROOT, [PB]),
                     "binaries": {
                         path.name: sha(path.read_bytes())
                         for path in binary.iterdir()
