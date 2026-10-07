@@ -1360,17 +1360,19 @@ private:
   void handleCollisionShapeStateChange(
       const ShapeNode* shapeNode, bool wasCollidable, bool isCollidable);
 
-  /// Notify listeners when a collidable ShapeNode swaps its Shape.
+  /// Wake resting bodies when a ShapeNode with a CollisionAspect swaps its
+  /// Shape, and notify listeners if it is collidable.
   void handleCollisionShapeUpdated(
       const ShapeNode* shapeNode,
       ConstShapePtr oldShape,
       ConstShapePtr newShape);
 
-  /// Notify listeners when a collidable ShapeNode's collision geometry changed
-  /// without adding/removing the Shape itself.
+  /// Wake resting bodies when the collision geometry of a ShapeNode with a
+  /// CollisionAspect changes without adding or removing the Shape itself.
   void handleCollisionShapeGeometryUpdated(const ShapeNode* shapeNode);
 
-  /// Notify that a collidable ShapeNode's contact material properties changed.
+  /// Wake resting bodies when the contact material of a ShapeNode with a
+  /// CollisionAspect changes.
   void handleCollisionShapeDynamicsUpdated(const ShapeNode* shapeNode);
 
   friend class CollisionAspect;
