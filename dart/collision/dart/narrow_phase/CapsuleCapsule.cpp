@@ -42,7 +42,8 @@ namespace dart::collision::native {
 
 namespace {
 
-[[nodiscard]] bool hasIdentityRotation(const Eigen::Isometry3d& transform)
+[[nodiscard]] bool capsuleCapsuleHasIdentityRotation(
+    const Eigen::Isometry3d& transform)
 {
   const auto& rotation = transform.linear();
   return rotation(0, 0) == 1.0 && rotation(0, 1) == 0.0 && rotation(0, 2) == 0.0
@@ -279,7 +280,8 @@ bool collideCapsules(
     return false;
   }
 
-  if (hasIdentityRotation(transform1) && hasIdentityRotation(transform2)) {
+  if (capsuleCapsuleHasIdentityRotation(transform1)
+      && capsuleCapsuleHasIdentityRotation(transform2)) {
     return collideVerticalCapsules(
         radius1,
         radius2,

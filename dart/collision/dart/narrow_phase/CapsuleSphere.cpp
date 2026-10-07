@@ -41,7 +41,8 @@ namespace dart::collision::native {
 
 namespace {
 
-[[nodiscard]] bool hasIdentityRotation(const Eigen::Isometry3d& transform)
+[[nodiscard]] bool capsuleSphereHasIdentityRotation(
+    const Eigen::Isometry3d& transform)
 {
   const auto& rotation = transform.linear();
   return rotation(0, 0) == 1.0 && rotation(0, 1) == 0.0 && rotation(0, 2) == 0.0
@@ -188,7 +189,7 @@ bool capsuleOverlapsSphere(
   const double sumRadii = capsuleRadius + sphereRadius;
   const Eigen::Vector3d sphereCenter = sphereTransform.translation();
 
-  if (hasIdentityRotation(capsuleTransform)) {
+  if (capsuleSphereHasIdentityRotation(capsuleTransform)) {
     const Eigen::Vector3d localSphereCenter
         = sphereCenter - capsuleTransform.translation();
     const double closestZ
@@ -242,7 +243,7 @@ bool collideCapsuleSphere(
     return false;
   }
 
-  if (hasIdentityRotation(capsuleTransform)) {
+  if (capsuleSphereHasIdentityRotation(capsuleTransform)) {
     return collideVerticalCapsuleSphere(
         capsuleRadius,
         sphereRadius,

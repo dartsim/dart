@@ -439,3 +439,8 @@ bool JointLimitConstraint::isActive() const
 
 } // namespace constraint
 } // namespace dart
+
+#undef DART_ERROR_ALLOWANCE
+#undef DART_ERP
+#undef DART_MAX_ERV
+#undef DART_CFM

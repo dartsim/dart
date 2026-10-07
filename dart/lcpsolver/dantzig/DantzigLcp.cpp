@@ -141,14 +141,10 @@ rows/columns and manipulate C.
 
 */
 
-// Define macros BEFORE including headers so they're available
 // LCP debugging (mostly for fast dLCP) - this slows things down a lot
 // #define DEBUG_LCP
 
-#define dLCP_FAST // use fast dLCP object
-
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
-#undef dLCP_FAST
 
 #include "dart/common/Logging.hpp"
 #include "dart/common/Macros.hpp"
