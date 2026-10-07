@@ -551,12 +551,6 @@
     [#3132](https://github.com/dartsim/dart/pull/3132),
     [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
 
-  * Suppress tiny lateral and tilt velocity drift introduced by shallow static
-    support contacts on free-root bodies while preserving DART 6's default
-    Baumgarte upward separation velocity:
-    [#3227](https://github.com/dartsim/dart/pull/3227),
-    [gazebosim/gz-physics#620](https://github.com/gazebosim/gz-physics/issues/620)
-
   * Enable resting-world deactivation by default with wake-aware invalidation
     and fidelity coverage against the always-active path, improving resting
     contact-heavy scenes while preserving an explicit deactivation opt-out. A
@@ -650,10 +644,15 @@
     [#3071](https://github.com/dartsim/dart/pull/3071)
 
   * Accelerate large imported worlds that begin with zero-velocity bodies on
-    shallow support contacts by allowing the initial contact pass to consume the
-    configured quiet dwell before the normal final solved impulse freezes the
-    island, improving the exact 3003-body issue scene while preserving
-    micrometer-scale agreement with the always-active path:
+    shallow support contacts by allowing the initial contact passes to consume
+    the configured quiet dwell before the normal final solved impulse freezes
+    the island, improving the exact 3003-body issue scene while preserving
+    micrometer-scale agreement with the always-active path. Only contact
+    islands whose bodies start at rest and stay still on level supports over
+    the first two steps take this shortcut; a body that starts moving or sunk
+    into its support, or starts to roll, slide, drop, or tip (its speed growing
+    at more than 1e-6 g), and a model whose links are joined by a movable
+    joint, keep the normal sleep delay:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Speed up cached all-resting steps by tracking explicit joint-velocity edits
