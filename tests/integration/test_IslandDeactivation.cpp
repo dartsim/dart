@@ -3868,6 +3868,40 @@ TEST(IslandDeactivation, UnchangedGravityWriteKeepsRestingFastPath)
 }
 
 //==============================================================================
+// Re-applying unchanged deactivation options before every step must neither
+// restart the sleep delay of a settling body nor wake a resting one; a real
+// change still wakes it.
+TEST(IslandDeactivation, UnchangedDeactivationOptionsWriteKeepsSleeping)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+
+  const std::size_t settled = stepUntil(world.get(), 5000, [&]() {
+    world->setDeactivationOptions(world->getDeactivationOptions());
+    return box->isResting();
+  });
+  ASSERT_LT(settled, 5000u) << "unchanged option writes kept the box awake";
+
+  for (int i = 0; i < 100; ++i) {
+    world->setDeactivationOptions(world->getDeactivationOptions());
+    world->step();
+    ASSERT_TRUE(box->isResting())
+        << "an unchanged option write woke the box at step " << i;
+  }
+
+  auto options = world->getDeactivationOptions();
+  options.mTimeUntilSleep *= 2.0;
+  world->setDeactivationOptions(options);
+  world->step();
+  EXPECT_FALSE(box->isResting()) << "an option change did not wake the box";
+}
+
+//==============================================================================
 // The active limit row keeps the lifted flap's island awake, so the flap is a
 // sleep candidate for one step boundary per dwell period. Relaxing the limit
 // in that window, or one step before candidacy would be granted, must not let

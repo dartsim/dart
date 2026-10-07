@@ -2783,6 +2783,17 @@ const constraint::ConstraintSolver* World::getConstraintSolver() const
 //==============================================================================
 void World::setDeactivationOptions(const DeactivationOptions& options)
 {
+  // Re-applying the current options changes nothing, so it keeps resting
+  // bodies asleep and the sleep delay that awake bodies have accumulated.
+  const DeactivationOptions& current = mDeactivationOptions;
+  if (options.mEnabled == current.mEnabled
+      && options.mLinearSpeedThreshold == current.mLinearSpeedThreshold
+      && options.mAngularSpeedThreshold == current.mAngularSpeedThreshold
+      && options.mTimeUntilSleep == current.mTimeUntilSleep
+      && options.mWakeThresholdScale == current.mWakeThresholdScale) {
+    return;
+  }
+
   mDeactivationOptions = options;
   invalidateAllRestingKinematicSnapshot();
   wakeRestingSkeletonsForWorldChange();
