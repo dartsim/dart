@@ -207,8 +207,6 @@ jobs:
           record = json.loads((Path(os.environ["PERF_ARTIFACT"]) / "perf.json").read_text())
           if record["measurement_exit"] not in (0, 1) or record["mode"] not in ("ab", "smoke"):
               raise ValueError("failed or unsupported measurement")
-          if record["mode"] == "smoke" and record["measurement_exit"] != 0:
-              raise ValueError("head harness smoke failed")
           if "broken" in record:
               failure = record["broken"]
               if failure.get("error_kind") != "build":
@@ -218,17 +216,18 @@ jobs:
               Path("perf.md").write_text(f'<!-- dart-perf -->\nPerf smoke: FAIL — head build failed: {failure["error"]}\nBuild wall time: {record["wall_seconds"]} s.\n')
               Path("verdict-exit").write_text("1\n")
               raise SystemExit(0)
+          # Smoke failures still get the comparison below for row diagnostics.
+          failures = []
           if record["mode"] == "smoke":
+              if record["measurement_exit"] == 1:
+                  failures.append("the head harness reported FAIL")
               keys = [row_key(row) for row in record["head"]["results"]]
               if set(keys) != {row.key for row in select_rows("")} or len(keys) != len(set(keys)):
-                  Path("perf.md").write_text("<!-- dart-perf -->\nPerf smoke: FAIL — benchmark row set differs from base defaults.\n")
-                  Path("verdict-exit").write_text("1\n")
-                  raise SystemExit(0)
+                  failures.append("the benchmark row set differs from the base defaults")
               rows = record["head"]["results"]
               if not rows or not all(row.get("status") == "ok" and row.get("perturbations") and row.get("gated") for row in rows):
-                  Path("perf.md").write_text("<!-- dart-perf -->\nPerf smoke: FAIL — rows measured without a passing perturbation check.\n")
-                  Path("verdict-exit").write_text("1\n")
-                  raise SystemExit(0)
+                  failures.append("some rows did not run or did not pass their perturbation check")
+          Path("smoke-failures.txt").write_text("".join(f"- {failure}\n" for failure in failures))
           if record["head"]["run"]["commit"] != os.environ["PERF_HEAD"]:
               raise ValueError("head revision mismatch")
           if record["base"]["run"]["commit"] != os.environ["PERF_HEAD" if record["mode"] == "smoke" else "PERF_BASE"]:
@@ -244,6 +243,10 @@ jobs:
               --body-file pr-body.txt --json verdict.json --markdown comparison.md || status=$?
             if [[ -f comparison.md ]]; then cat comparison.md >> perf.md; fi
             if [[ "$status" == 2 ]]; then printf '\nERROR: comparison could not be completed.\n' >> perf.md; fi
+            if [[ -s smoke-failures.txt ]]; then
+              { printf '\nPerf smoke: FAIL\n'; cat smoke-failures.txt; } >> perf.md
+              [[ "$status" == 2 ]] || status=1
+            fi
             echo "$status" > verdict-exit
           fi
 

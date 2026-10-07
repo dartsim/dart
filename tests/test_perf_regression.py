@@ -2799,7 +2799,8 @@ def _run_perf_snippet(job, step, tmp_path, env):
 
 
 @pytest.mark.parametrize(
-    "defect", [None, "missing", "extra", "renamed", "duplicate", "unqualified"]
+    "defect",
+    [None, "missing", "extra", "renamed", "duplicate", "unqualified", "harness"],
 )
 def test_verdict_snippet_requires_complete_qualified_smoke_rows(tmp_path, defect):
     module = _load_runner()
@@ -2828,7 +2829,7 @@ def test_verdict_snippet_requires_complete_qualified_smoke_rows(tmp_path, defect
         tmp_path / "perf.json",
         {
             "mode": "smoke",
-            "measurement_exit": 0,
+            "measurement_exit": 1 if defect == "harness" else 0,
             "wall_seconds": 1,
             "base": arm,
             "head": arm,
@@ -2842,12 +2843,10 @@ def test_verdict_snippet_requires_complete_qualified_smoke_rows(tmp_path, defect
         {"PERF_ARTIFACT": str(tmp_path), "PERF_HEAD": "head", "PERF_BASE": "base"},
     )
     assert result.returncode == 0, result.stderr
-    if defect:
-        assert (tmp_path / "verdict-exit").read_text() == "1\n"
-        assert "FAIL" in (tmp_path / "perf.md").read_text()
-        assert not (tmp_path / "head.json").exists()
-    else:
-        assert json.loads((tmp_path / "head.json").read_text()) == arm
+    # The comparison still runs for row diagnostics; the step's shell turns any
+    # listed smoke failure into FAIL.
+    assert json.loads((tmp_path / "head.json").read_text()) == arm
+    assert bool((tmp_path / "smoke-failures.txt").read_text()) == bool(defect)
 
 
 @pytest.mark.parametrize("kind", ["build", "infrastructure", None])
