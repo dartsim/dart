@@ -3,6 +3,10 @@
 import copy
 import importlib.util
 import json
+import os
+import sys
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -2076,3 +2080,33 @@ def test_read_record_rejects_non_object_json(tmp_path, document):
     path.write_text(document, encoding="utf-8")
     with pytest.raises(ValueError, match="measurement record"):
         module.read_record(path)
+
+
+def test_interrupt_stops_running_benchmark_groups(tmp_path):
+    module = _load_runner()
+    # A worker's benchmark keeps running after the main thread is interrupted;
+    # kill_running() must end it so the pool can shut down.
+    result = {}
+
+    def worker():
+        try:
+            module.execute(
+                [sys.executable, "-c", "import time; time.sleep(60)"],
+                dict(os.environ),
+                tmp_path / "sleep.log",
+                120,
+            )
+        except ValueError as error:
+            result["error"] = error
+
+    thread = threading.Thread(target=worker)
+    thread.start()
+    for _ in range(100):
+        if module.RUNNING:
+            break
+        time.sleep(0.05)
+    assert module.RUNNING
+    module.kill_running()
+    thread.join(timeout=10)
+    assert not thread.is_alive()
+    assert not module.RUNNING

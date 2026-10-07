@@ -9,6 +9,7 @@ the system Valgrind, and the active Pixi build environment.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import gzip
 import hashlib
 import io
@@ -22,6 +23,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -118,6 +120,8 @@ ROWS = [
     for det in detectors
 ]
 GZ_ARGS = tuple("{world} --ground gzbox --max-contacts 10000".split())
+# BM_Dynamics resets positions and velocities and draws no random values (only
+# BM_Kinematics does), so its checksum is the same in every process.
 DYN_ARGS = ("--benchmark_filter=BM_Dynamics/10$",)
 LCP_ARGS = ("--benchmark_filter=solveNative/(boxed_coupled_96|friction_32)$",)
 MICRO_CASES = {
@@ -224,6 +228,25 @@ class UnsupportedRow(ValueError):
     pass
 
 
+# Benchmarks run in their own sessions, so a terminal's Ctrl-C does not reach
+# them; whoever catches the interruption stops every running group.
+RUNNING: dict[int, subprocess.Popen] = {}
+RUNNING_LOCK = threading.Lock()
+
+
+def kill_group(process: subprocess.Popen) -> None:
+    with contextlib.suppress(ProcessLookupError):  # it has already exited
+        os.killpg(process.pid, signal.SIGKILL)
+    process.wait()
+
+
+def kill_running() -> None:
+    with RUNNING_LOCK:
+        running = list(RUNNING.values())
+    for process in running:
+        kill_group(process)
+
+
 def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
     with log.open("w", encoding="utf-8") as output:
         process = subprocess.Popen(
@@ -234,15 +257,19 @@ def execute(command: list[str], env: dict, log: Path, timeout: int) -> str:
             stderr=subprocess.STDOUT,
             start_new_session=True,
         )
+        with RUNNING_LOCK:
+            RUNNING[id(process)] = process
         try:
             process.wait(timeout=timeout)
         except subprocess.TimeoutExpired as error:
-            try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-            process.wait()
+            kill_group(process)
             raise ValueError(f"timeout: see {log}") from error
+        except BaseException:
+            kill_group(process)
+            raise
+        finally:
+            with RUNNING_LOCK:
+                RUNNING.pop(id(process), None)
     text = log.read_text(encoding="utf-8", errors="replace")
     unsupported = re.search(r"^UNSUPPORTED: (.+)$", text, re.MULTILINE)
     if process.returncode == 3 and unsupported:
@@ -802,7 +829,13 @@ def run_arm(args) -> dict:
         if row.parity and all(other.key != row.parity for other in rows):
             rows.append(next(other for other in ROWS if other.key == row.parity))
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        results = list(pool.map(lambda row: measure(row, args, world), rows))
+        try:
+            results = list(pool.map(lambda row: measure(row, args, world), rows))
+        except BaseException:
+            # Workers wait on their benchmarks; stop those before the pool's
+            # shutdown waits for the workers.
+            kill_running()
+            raise
     for row, result in zip(rows, results):
         if row.driver in WORKLOAD_SOURCES:
             result["workload_sha"] = provenance["workload_sources"][row.driver]
