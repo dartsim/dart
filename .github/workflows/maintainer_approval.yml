@@ -33,6 +33,9 @@ jobs:
       && (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # Runs that Dependabot's pushes trigger start with a read-only token; this
+    # permissions key raises it, as GitHub's Dependabot troubleshooting docs
+    # describe ("use the permissions key ... to increase the access").
     permissions:
       actions: read
       pull-requests: write
