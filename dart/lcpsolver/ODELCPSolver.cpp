@@ -74,18 +74,27 @@ bool ODELCPSolver::Solve(
     DART_ASSERT(_numDir >= 4);
     DART_UNUSED(_numDir);
 
+    // The copy below and the Dantzig solver index A with int offsets, so the
+    // padded matrix must have at most INT_MAX entries. Check the row count
+    // before narrowing it to int or padding it.
+    constexpr int kMaxRows = 46340;
+    static_assert(
+        static_cast<long long>(kMaxRows)
+                * ::dart::lcpsolver::dantzig::padding(kMaxRows)
+            <= std::numeric_limits<int>::max(),
+        "The padded matrix of the largest accepted LCP must fit int offsets");
+    if (_A.rows() > kMaxRows) {
+      dterr << "[ODELCPSolver::Solve] An LCP of size " << _A.rows()
+            << " is too large for the Dantzig solver.\n";
+      return false;
+    }
+
     double *A, *b, *x, *w, *lo, *hi;
     int n = _A.rows();
 
     int nSkip = ::dart::lcpsolver::dantzig::padding(n);
     const std::size_t aSize
         = static_cast<std::size_t>(n) * static_cast<std::size_t>(nSkip);
-    // The copy below and the Dantzig solver index A with int offsets.
-    if (aSize > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
-      dterr << "[ODELCPSolver::Solve] An LCP of size " << n
-            << " is too large for the Dantzig solver.\n";
-      return false;
-    }
 
     A = new double[aSize];
     b = new double[n];
