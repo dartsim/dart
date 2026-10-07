@@ -37,6 +37,7 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
 
+#include <limits>
 #include <string>
 
 namespace dart {
@@ -124,10 +125,25 @@ void PrismaticJoint::setAxis(const Eigen::Vector3d& _axis)
   if (_axis == mAspectProperties.mAxis)
     return;
 
-  mAspectProperties.mAxis = _axis.normalized();
+  // A same-direction axis of another length changes nothing either, so it
+  // must not wake resting bodies. Its normalization can land up to about 4.5
+  // epsilons off the stored axis per component, so compare per component
+  // within 8: a sign flip, or a turn above about 2e-15 rad, still moves some
+  // component further. Unlike isApprox(), a zero component must stay zero, so
+  // rounding residue on the default +z axis is still stored as before.
+  const Eigen::Vector3d axis = _axis.normalized();
+  const Eigen::Vector3d& stored = mAspectProperties.mAxis;
+  constexpr double kTolerance = 8.0 * std::numeric_limits<double>::epsilon();
+  if (((axis - stored).array().abs() <= kTolerance * stored.array().abs())
+          .all())
+    return;
+
+  mAspectProperties.mAxis = axis;
   Joint::notifyPositionUpdated();
   updateRelativeJacobian();
   Joint::incrementVersion();
+  // Wakes resting bodies even when the pose is unchanged (at q = 0).
+  Joint::notifyAutomaticConstraintPropertiesUpdated();
 }
 
 //==============================================================================
