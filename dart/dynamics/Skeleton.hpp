@@ -58,6 +58,7 @@ class World;
 } // namespace simulation
 namespace constraint {
 class BoxedLcpConstraintSolver;
+class ConstraintSolver;
 } // namespace constraint
 namespace dynamics {
 
@@ -1108,6 +1109,7 @@ public:
   friend class collision::BodyNodeCollisionFilter;
   friend class simulation::World;
   friend class constraint::BoxedLcpConstraintSolver;
+  friend class constraint::ConstraintSolver;
 
 protected:
   struct DataCache;
@@ -1273,7 +1275,7 @@ protected:
   void incrementExternalDisturbanceVersion();
 
   /// Increments when deactivation state that affects all-resting fast paths
-  /// changes.
+  /// changes, and records the new global version on this skeleton.
   void incrementDeactivationStateVersion();
 
   /// Increments when joint velocities change.
@@ -1288,12 +1290,17 @@ protected:
 
   /// Global generation counters used by World to avoid rescanning every
   /// skeleton on steady all-resting steps. The per-skeleton validation path is
-  /// still used whenever any counter has changed.
+  /// still used whenever any counter has changed, except for deactivation-state
+  /// changes to skeletons that the World neither steps nor collides with.
   static std::size_t getGlobalStructuralVersion();
   static std::size_t getGlobalKinematicVersion();
   static std::size_t getGlobalExternalDisturbanceVersion();
   static std::size_t getGlobalDeactivationStateVersion();
   static std::size_t getGlobalVelocityVersion();
+
+  /// Returns the skeleton of frame's first BodyNode parent, or nullptr if
+  /// there is none. Unlike ShapeNode::getSkeleton(), takes no reference.
+  static const Skeleton* getSkeletonOf(const ShapeFrame& frame);
 
   //  /// Update damping force vector.
   //  virtual void updateDampingForceVector();
@@ -1549,6 +1556,12 @@ public:
 
   ///
   std::size_t mUnionIndex;
+
+private:
+  /// Global deactivation-state version that this skeleton's latest
+  /// deactivation-state change produced, or 0 if none. Declared last so the
+  /// offsets of the members above stay unchanged.
+  std::size_t mDeactivationStateVersion = 0;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 
