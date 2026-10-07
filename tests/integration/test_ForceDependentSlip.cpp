@@ -288,3 +288,83 @@ TEST(ForceDependentSlip, CylinderSlipVelocity)
     lastVel = body2->getLinearVelocity();
   }
 }
+
+//==============================================================================
+// Counts collision queries, as gz-physics' GzOdeCollisionDetector sees them.
+class CountingOdeCollisionDetector final
+  : public collision::OdeCollisionDetector
+{
+public:
+  using collision::OdeCollisionDetector::collide;
+
+  bool collide(
+      collision::CollisionGroup* group,
+      const collision::CollisionOption& option,
+      collision::CollisionResult* result) override
+  {
+    ++mNumCollideCalls;
+    return collision::OdeCollisionDetector::collide(group, option, result);
+  }
+
+  std::size_t mNumCollideCalls{0u};
+};
+
+//==============================================================================
+// gz-sim's WheelSlip system sets the slip compliance of every wheel each
+// iteration. Contact-material writes must take effect on the next step without
+// making the World prepare for simulation again, which collides twice more.
+TEST(ForceDependentSlip, PerStepMaterialWritesKeepSimulationMode)
+{
+  const double mass = 1.0;
+  const double extForce = 5.0;
+  const double slip = 0.02;
+  auto box = createBox({0.3, 0.3, 0.3}, {0, 0, 0.15});
+  auto* body = box->getRootBodyNode();
+  body->setMass(mass);
+  auto* dynamics = body->getShapeNode(0)->getDynamicsAspect();
+  dynamics->setFirstFrictionDirection(Eigen::Vector3d::UnitX());
+
+  auto detector = std::make_shared<CountingOdeCollisionDetector>();
+  auto world = simulation::World::create();
+  world->getConstraintSolver()->setCollisionDetector(detector);
+  world->addSkeleton(createFloor());
+  world->addSkeleton(box);
+
+  // The first step enters simulation mode.
+  world->step();
+  detector->mNumCollideCalls = 0u;
+
+  std::size_t numSteps = 0u;
+  std::size_t numStepsOutOfSimulationMode = 0u;
+  const auto writeMaterialsAndStep
+      = [&](double slipCompliance, double friction) {
+          dynamics->setPrimarySlipCompliance(slipCompliance);
+          dynamics->setSecondarySlipCompliance(slipCompliance);
+          dynamics->setFrictionCoeff(friction);
+          if (!world->isInSimulationMode())
+            ++numStepsOutOfSimulationMode;
+
+          body->addExtForce({extForce, 0, 0});
+          world->step();
+          ++numSteps;
+        };
+
+  // The values change every step. The box slides at F * slip.
+  for (int i = 0; i < 400; ++i)
+    writeMaterialsAndStep(slip * (1.0 + 1e-9 * (i % 2)), 1.0 - 0.05 * (i % 2));
+  EXPECT_NEAR(extForce * slip, body->getLinearVelocity().x(), 2e-5);
+
+  // Without friction, the box accelerates at F / m.
+  const double velocity = body->getLinearVelocity().x();
+  const int numFrictionlessSteps = 100;
+  for (int i = 0; i < numFrictionlessSteps; ++i)
+    writeMaterialsAndStep(slip, 0.0);
+  EXPECT_NEAR(
+      velocity + extForce / mass * numFrictionlessSteps * world->getTimeStep(),
+      body->getLinearVelocity().x(),
+      1e-6);
+
+  // One collision query per step: no step prepared for simulation again.
+  EXPECT_EQ(0u, numStepsOutOfSimulationMode);
+  EXPECT_EQ(numSteps, detector->mNumCollideCalls);
+}
