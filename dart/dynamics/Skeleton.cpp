@@ -876,10 +876,15 @@ double Skeleton::getTimeStep() const
 //==============================================================================
 void Skeleton::setGravity(const Eigen::Vector3d& _gravity)
 {
+  // Unchanged: the gravity caches stay valid, and resting bodies stay asleep.
+  if (mAspectProperties.mGravity == _gravity)
+    return;
+
   mAspectProperties.mGravity = _gravity;
   SET_ALL_FLAGS(mGravityForces);
   SET_ALL_FLAGS(mCoriolisAndGravityForces);
   ON_ALL_TREES(dirtySupportPolygon);
+  incrementDeactivationStateVersion();
 }
 
 //==============================================================================
@@ -4227,7 +4232,7 @@ void Skeleton::incrementExternalDisturbanceVersion()
 //==============================================================================
 void Skeleton::incrementDeactivationStateVersion()
 {
-  incrementGlobal(gDeactivationStateVersion);
+  mDeactivationStateVersion = incrementGlobal(gDeactivationStateVersion);
 }
 
 //==============================================================================
@@ -4272,6 +4277,25 @@ std::size_t Skeleton::getGlobalExternalDisturbanceVersion()
 std::size_t Skeleton::getGlobalDeactivationStateVersion()
 {
   return loadGlobal(gDeactivationStateVersion);
+}
+
+//==============================================================================
+const Skeleton* Skeleton::getSkeletonOf(const ShapeFrame& frame)
+{
+  // Reads Node::mBodyNode: getBodyNodePtr() would take a reference, which
+  // writes to the BodyNode.
+  const ShapeNode* shapeNode = frame.asShapeNode();
+  if (shapeNode != nullptr && shapeNode->mBodyNode != nullptr)
+    return shapeNode->mBodyNode->getSkeletonRawPtr();
+
+  for (const Frame* parent = frame.getParentFrame();
+       parent != nullptr && !parent->isWorld();
+       parent = parent->getParentFrame()) {
+    if (const auto* bodyNode = dynamic_cast<const BodyNode*>(parent))
+      return bodyNode->getSkeletonRawPtr();
+  }
+
+  return nullptr;
 }
 
 //==============================================================================

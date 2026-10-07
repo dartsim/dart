@@ -15,6 +15,9 @@ concurrency:
 
 jobs:
   pixi-update:
+    # always() keeps the post-update approval cleanup alive on cancellation;
+    # the other steps still stop.
+    if: always()
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -31,7 +34,36 @@ jobs:
       - name: Update lockfiles
         run: |
           pixi update --json --no-install | pixi exec pixi-diff-to-markdown >> diff.md
+      # Pushes made with GITHUB_TOKEN do not trigger maintainer_approval.yml,
+      # so this job revokes approval of the open lockfile PR itself: before it
+      # replaces the head with a different lockfile, and again after any update.
+      - name: Remove maintainer-approved before changing the lockfile pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          BRANCH: update-pixi-${{ matrix.base }}
+          BASE: ${{ matrix.base }}
+        run: |
+          set -o pipefail
+          prs=$(gh api "repos/$REPO/pulls?state=open&head=$OWNER:$BRANCH&base=$BASE" --jq '.[].number')
+          # create-pull-request leaves the PR as it is, approval included, only
+          # when the lockfile is unchanged and the branch is one commit on the
+          # current base; otherwise it rewrites the branch.
+          if [ -z "$prs" ] || { git fetch -q origin "$BRANCH" \
+            && git diff --quiet FETCH_HEAD -- pixi.lock \
+            && [ "$(git rev-parse FETCH_HEAD~1)" = "$(git rev-parse HEAD)" ]; }; then
+            exit 0
+          fi
+          for pr in $prs; do
+            if ! out=$(gh api -X DELETE "repos/$REPO/issues/$pr/labels/maintainer-approved" 2>&1) \
+              && ! grep -q "Label does not exist" <<< "$out"; then
+              echo "$out"
+              exit 1
+            fi
+          done
       - name: Create pull request
+        id: cpr
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -43,3 +75,28 @@ jobs:
           labels: pixi
           delete-branch: true
           add-paths: pixi.lock
+      - name: Remove maintainer-approved after updating the lockfile pull request
+        # After an update, and after a failed or cancelled attempt, but not when
+        # an earlier failure skipped it or it found nothing to change.
+        if: >-
+          always() && steps.cpr.outcome != 'skipped'
+          && steps.cpr.outputs.pull-request-operation != 'none'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+          BRANCH: update-pixi-${{ matrix.base }}
+          BASE: ${{ matrix.base }}
+        run: |
+          set -o pipefail
+          prs=$(gh api "repos/$REPO/pulls?state=open&head=$OWNER:$BRANCH&base=$BASE" --jq '.[].number')
+          # Neither the commit date nor this step's start marks when the head
+          # moved, so a label added in the seconds after the push is removed
+          # too (add it again); a label from before the push never survives.
+          for pr in $prs; do
+            if ! out=$(gh api -X DELETE "repos/$REPO/issues/$pr/labels/maintainer-approved" 2>&1) \
+              && ! grep -q "Label does not exist" <<< "$out"; then
+              echo "$out"
+              exit 1
+            fi
+          done

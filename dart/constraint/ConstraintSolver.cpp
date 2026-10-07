@@ -1039,6 +1039,25 @@ void ConstraintSolver::addConstraint(const ConstraintBasePtr& constraint)
 }
 
 //==============================================================================
+// A body that a removed manual constraint held may start moving slowly.
+// Restarting the sleep candidacy and quiet dwell of awake skeletons
+// (setSleepCandidate(false) zeroes the dwell) keeps the next solves from
+// freezing it on evidence gathered while it was held (#3056). Resting
+// skeletons keep their state: no active constraint holds a frozen island.
+void ConstraintSolver::restartAwakeSleepCandidacy()
+{
+  for (const auto& skeleton : mSkeletons) {
+    if (skeleton->isMobile() && !skeleton->isResting()) {
+      // Clearing an existing candidate stamps the change itself. Otherwise
+      // notify World so it also discards pending first-frame dwell credit.
+      if (!skeleton->isSleepCandidate())
+        skeleton->incrementDeactivationStateVersion();
+      skeleton->setSleepCandidate(false);
+    }
+  }
+}
+
+//==============================================================================
 void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
 {
   DART_ASSERT(constraint);
@@ -1052,12 +1071,17 @@ void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
   mManualConstraints.erase(
       remove(mManualConstraints.begin(), mManualConstraints.end(), constraint),
       mManualConstraints.end());
+  restartAwakeSleepCandidacy();
 }
 
 //==============================================================================
 void ConstraintSolver::removeAllConstraints()
 {
+  if (mManualConstraints.empty())
+    return;
+
   mManualConstraints.clear();
+  restartAwakeSleepCandidacy();
 }
 
 //==============================================================================

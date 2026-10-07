@@ -53,7 +53,9 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <functional>
 #include <iostream>
+#include <string_view>
 
 #include <cmath>
 
@@ -471,6 +473,30 @@ void expectSleeperFallsAfterSupportEdit(
       << "unsupported body did not resume falling";
 }
 
+// A support takes part in a World's contacts whether it is a World skeleton or
+// is registered only with the constraint solver or only in its collision group.
+struct SupportRegistration
+{
+  const char* name;
+  void (*add)(World& world, const SkeletonPtr& support);
+};
+
+const SupportRegistration kSupportRegistrations[] = {
+    {"World support",
+     [](World& world, const SkeletonPtr& support) {
+       world.addSkeleton(support);
+     }},
+    {"solver-only support",
+     [](World& world, const SkeletonPtr& support) {
+       world.getConstraintSolver()->addSkeleton(support);
+     }},
+    {"collision-group-only support",
+     [](World& world, const SkeletonPtr& support) {
+       world.getConstraintSolver()->getCollisionGroup()->addShapeFramesOf(
+           support.get());
+     }},
+};
+
 void expectSolverRunsAfterRestingConstraintEdit(
     World* world, const SkeletonPtr& sleeper)
 {
@@ -642,6 +668,105 @@ TEST(IslandDeactivation, InitiallySettledShallowContactCanSleepPromptly)
     EXPECT_TRUE(box->isSleepCandidate());
     EXPECT_NEAR(box->getBodyNode(0)->getLinearVelocity().norm(), 0.0, 1e-12);
     EXPECT_NEAR(box->getBodyNode(0)->getAngularVelocity().norm(), 0.0, 1e-12);
+  }
+}
+
+//==============================================================================
+// A gravity edit between the first two solves restarts dwell instead of using
+// credit from the old dynamics. Re-applying unchanged gravity keeps the credit.
+TEST(IslandDeactivation, GravityEditDiscardsInitialRestCredit)
+{
+  for (const bool worldGravity : {true, false}) {
+    SCOPED_TRACE(worldGravity ? "World gravity" : "Skeleton gravity");
+    for (const bool changed : {true, false}) {
+      SCOPED_TRACE(changed ? "changed gravity" : "unchanged gravity");
+      auto world = makeSleepWorld();
+      world->addSkeleton(createFloor());
+      auto box = createFreeBox(
+          "box",
+          Eigen::Vector3d::Constant(kBoxSize),
+          Eigen::Vector3d(0, 0, kHalf - 5e-7));
+      world->addSkeleton(box);
+
+      world->step();
+      ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+      ASSERT_FALSE(box->isSleepCandidate());
+
+      const Eigen::Vector3d gravity
+          = changed ? Eigen::Vector3d(0, 0, -9.8) : world->getGravity();
+      if (worldGravity)
+        world->setGravity(gravity);
+      else
+        box->setGravity(gravity);
+      world->step();
+
+      EXPECT_EQ(!changed, box->isSleepCandidate());
+      if (changed)
+        EXPECT_LE(box->getRestDwellTime(), world->getTimeStep());
+      else
+        EXPECT_GE(
+            box->getRestDwellTime(),
+            world->getDeactivationOptions().mTimeUntilSleep);
+
+      world->step();
+      EXPECT_EQ(!changed, box->isResting());
+    }
+  }
+}
+
+//==============================================================================
+// Removing a manual constraint between the first two solves must discard the
+// first solve's equilibrium credit as well as candidacy and quiet dwell. This
+// nearly level, frictionless support lets the released box move slowly enough
+// that stale first-frame measurements would otherwise give it the full dwell.
+TEST(IslandDeactivation, ManualConstraintRemovalDiscardsInitialRestCredit)
+{
+  for (const bool removeAll : {false, true}) {
+    SCOPED_TRACE(removeAll ? "removeAllConstraints" : "removeConstraint");
+    auto world = makeSleepWorld();
+    const Eigen::Matrix3d tilt
+        = Eigen::AngleAxisd(1e-7, Eigen::Vector3d::UnitY()).toRotationMatrix();
+    auto floor = createPlaneFloor();
+    floor->getBodyNode(0)
+        ->getShapeNode(0)
+        ->getDynamicsAspect()
+        ->setFrictionCoeff(0.0);
+    Eigen::Isometry3d floorTf = Eigen::Isometry3d::Identity();
+    floorTf.linear() = tilt;
+    floor->getJoint(0)->setTransformFromParentBodyNode(floorTf);
+    world->addSkeleton(floor);
+
+    auto box = createFreeBox(
+        "box", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d::Zero());
+    auto* body = box->getBodyNode(0);
+    body->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(0.0);
+    Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+    boxTf.linear() = tilt;
+    boxTf.translation() = tilt * Eigen::Vector3d(0, 0, kHalf - 5e-7);
+    box->getJoint(0)->setPositions(FreeJoint::convertToPositions(boxTf));
+    world->addSkeleton(box);
+    auto holder = std::make_shared<constraint::WeldJointConstraint>(body);
+    world->getConstraintSolver()->addConstraint(holder);
+
+    world->step();
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    ASSERT_FALSE(box->isSleepCandidate());
+    ASSERT_FALSE(box->isResting());
+
+    if (removeAll)
+      world->getConstraintSolver()->removeAllConstraints();
+    else
+      world->getConstraintSolver()->removeConstraint(holder);
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(box->isSleepCandidate());
+    EXPECT_LE(box->getRestDwellTime(), world->getTimeStep());
+
+    world->step();
+    EXPECT_FALSE(box->isResting());
+    EXPECT_GT(body->getLinearVelocity().x(), 0.0)
+        << "the slowly released box froze on the held solve's rest credit";
   }
 }
 
@@ -1673,9 +1798,9 @@ TEST(IslandDeactivation, UnconvergedContactClearsSleepCandidate)
   Eigen::Vector6d residualVelocity = Eigen::Vector6d::Zero();
   residualVelocity[3] = 0.005;
   box->getJoint(0)->setVelocities(residualVelocity);
+  world->addSkeleton(box);
   box->setSleepCandidate(true);
   box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
-  world->addSkeleton(box);
 
   world->step();
 
@@ -1697,9 +1822,9 @@ TEST(IslandDeactivation, ContactPenetrationToleranceIsConfigurable)
         "box",
         Eigen::Vector3d::Constant(kBoxSize),
         Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    world->addSkeleton(box);
     box->setSleepCandidate(true);
     box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
-    world->addSkeleton(box);
     return std::make_pair(world, box);
   };
 
@@ -1740,9 +1865,9 @@ TEST(IslandDeactivation, ExplicitDefaultToleranceKeepsPlaneContactStrict)
         "box",
         Eigen::Vector3d::Constant(kBoxSize),
         Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    world->addSkeleton(box);
     box->setSleepCandidate(true);
     box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
-    world->addSkeleton(box);
     return std::make_pair(world, box);
   };
 
@@ -1782,9 +1907,9 @@ TEST(IslandDeactivation, PlaneContactMissFallbackUsesAdaptiveDefaultTolerance)
         "box",
         Eigen::Vector3d::Constant(kBoxSize),
         Eigen::Vector3d(0, 0, kHalf - 5e-4));
+    world->addSkeleton(box);
     box->setSleepCandidate(true);
     box->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
-    world->addSkeleton(box);
     return std::make_pair(world, box);
   };
 
@@ -2361,9 +2486,9 @@ TEST(IslandDeactivation, BodyWokenFromRestOutsideIslandsHoldsIslandsAwake)
 // a newly eligible island awake from its first step outside every island.
 TEST(IslandDeactivation, PendulumLeavingItsJointLimitHoldsIslandsAwake)
 {
-  // The sleeper starts settled on the floor, so the initial-rest credit
-  // confirmed on the second solve makes it a sleep candidate at the second
-  // step.
+  // The pendulum pose reset between the first two solves restarts quiet dwell.
+  // Grant the sleeper full eligibility after the second solve so the third
+  // tests the pendulum's island-exit veto.
   auto world = makeSleepWorld();
   world->addSkeleton(createFloor());
   auto sleeper = createFreeBox(
@@ -2391,6 +2516,7 @@ TEST(IslandDeactivation, PendulumLeavingItsJointLimitHoldsIslandsAwake)
 
   world->step();
   ASSERT_GE(pendulum->getIslandIndex(), 0);
+  makeSleepEligible(*world, *sleeper);
   ASSERT_TRUE(sleeper->isSleepCandidate());
 
   world->step();
@@ -2956,23 +3082,28 @@ TEST(IslandDeactivation, WakeOnSupportRemoved)
 
 //==============================================================================
 // Disabling collision on an immobile support changes the physical contact set
-// even though the support skeleton itself is not mobile.
+// even though the support skeleton itself is not mobile. This holds for every
+// way of registering the support (see kSupportRegistrations).
 TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabled)
 {
-  auto world = makeSleepWorld();
-  auto floor = createFloor();
-  world->addSkeleton(floor);
+  for (const auto& registration : kSupportRegistrations) {
+    SCOPED_TRACE(registration.name);
+    auto world = makeSleepWorld();
+    auto floor = createFloor();
+    registration.add(*world, floor);
 
-  auto sleeper = createFreeBox(
-      "sleeper",
-      Eigen::Vector3d::Constant(kBoxSize),
-      Eigen::Vector3d(0, 0, kHalf + 0.02));
-  world->addSkeleton(sleeper);
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(sleeper);
 
-  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+    ASSERT_NO_FATAL_FAILURE(
+        stepUntilRestingFastPathReady(world.get(), sleeper));
 
-  floor->getBodyNode(0)->setCollidable(false);
-  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+    floor->getBodyNode(0)->setCollidable(false);
+    expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+  }
 }
 
 //==============================================================================
@@ -2982,20 +3113,23 @@ TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabled)
 // flags.
 TEST(IslandDeactivation, WakeOnSupportCollidabilityDisabledBeforeFastPath)
 {
-  auto world = makeSleepWorld();
-  auto floor = createFloor();
-  world->addSkeleton(floor);
+  for (const auto& registration : kSupportRegistrations) {
+    SCOPED_TRACE(registration.name);
+    auto world = makeSleepWorld();
+    auto floor = createFloor();
+    registration.add(*world, floor);
 
-  auto sleeper = createFreeBox(
-      "sleeper",
-      Eigen::Vector3d::Constant(kBoxSize),
-      Eigen::Vector3d(0, 0, kHalf + 0.02));
-  world->addSkeleton(sleeper);
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(sleeper);
 
-  ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
+    ASSERT_NO_FATAL_FAILURE(stepUntilRestingWithContacts(world.get(), sleeper));
 
-  floor->getBodyNode(0)->setCollidable(false);
-  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+    floor->getBodyNode(0)->setCollidable(false);
+    expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+  }
 }
 
 //==============================================================================
@@ -3484,6 +3618,867 @@ TEST(IslandDeactivation, WakeOnAutomaticJointLimitChange)
   expectSolverRunsAfterRestingConstraintEdit(world.get(), sleeper);
 }
 
+namespace {
+
+//==============================================================================
+// A 1 kg base plate with a 0.5 kg flap jointed to its +x edge along `axis` (by
+// default hinged about +y), both lying on the floor and overlapping it by
+// 5e-9 m. Returns the flap's joint.
+template <typename JointT = RevoluteJoint>
+JointT* addFlapModel(
+    World* world, const Eigen::Vector3d& axis = Eigen::Vector3d::UnitY())
+{
+  const Eigen::Vector3d size(0.5, 0.5, 0.1);
+  auto skel = Skeleton::create("flap_model");
+
+  BodyNode::Properties baseProps(
+      BodyNode::AspectProperties(std::string("base")));
+  baseProps.mInertia.setMass(1.0);
+  baseProps.mInertia.setMoment(BoxShape::computeInertia(size, 1.0));
+  auto* base = skel->createJointAndBodyNodePair<FreeJoint>(
+                       nullptr, FreeJoint::Properties(), baseProps)
+                   .second;
+  base->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(size));
+
+  typename JointT::Properties hingeProps;
+  hingeProps.mName = "hinge";
+  hingeProps.mAxis = axis;
+  hingeProps.mT_ParentBodyToJoint.translation()
+      = Eigen::Vector3d(0.25, 0.0, -0.05);
+  hingeProps.mT_ChildBodyToJoint.translation()
+      = Eigen::Vector3d(-0.25, 0.0, -0.05);
+  BodyNode::Properties flapProps(
+      BodyNode::AspectProperties(std::string("flap")));
+  flapProps.mInertia.setMass(0.5);
+  flapProps.mInertia.setMoment(BoxShape::computeInertia(size, 0.5));
+  auto pair
+      = skel->createJointAndBodyNodePair<JointT>(base, hingeProps, flapProps);
+  pair.second->template createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(size));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(0.0, 0.0, 0.05 - 5e-9);
+  skel->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
+  world->addSkeleton(skel);
+  return pair.first;
+}
+
+//==============================================================================
+// A 20 kg base plate on the floor with a 1 kg flap hinged about +y on its +x
+// edge, lifted `tilt` rad and held there by the hinge's upper position limit
+// (0). Without the limit the flap falls onto the floor, at q close to `tilt`.
+RevoluteJoint* addLiftedFlap(World* world, double tilt)
+{
+  const Eigen::Vector3d size(0.5, 0.5, 0.1);
+  auto skel = Skeleton::create("lifted_flap");
+
+  BodyNode::Properties baseProps(
+      BodyNode::AspectProperties(std::string("base")));
+  baseProps.mInertia.setMass(20.0);
+  baseProps.mInertia.setMoment(BoxShape::computeInertia(size, 20.0));
+  auto* base = skel->createJointAndBodyNodePair<FreeJoint>(
+                       nullptr, FreeJoint::Properties(), baseProps)
+                   .second;
+  base->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(size));
+
+  RevoluteJoint::Properties hingeProps;
+  hingeProps.mName = "hinge";
+  hingeProps.mAxis = Eigen::Vector3d::UnitY();
+  hingeProps.mT_ParentBodyToJoint
+      = Eigen::Translation3d(0.25, 0.0, 0.0)
+        * Eigen::AngleAxisd(-tilt, Eigen::Vector3d::UnitY());
+  hingeProps.mT_ChildBodyToJoint
+      = Eigen::Isometry3d(Eigen::Translation3d(-0.25, 0.0, 0.0));
+  hingeProps.mPositionLowerLimits[0] = -1.0;
+  hingeProps.mPositionUpperLimits[0] = 0.0;
+  hingeProps.mIsPositionLimitEnforced = true;
+  BodyNode::Properties flapProps(
+      BodyNode::AspectProperties(std::string("flap")));
+  flapProps.mInertia.setMass(1.0);
+  flapProps.mInertia.setMoment(BoxShape::computeInertia(size, 1.0));
+  auto pair = skel->createJointAndBodyNodePair<RevoluteJoint>(
+      base, hingeProps, flapProps);
+  pair.second->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(size));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation().z() = 0.05;
+  skel->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
+  world->addSkeleton(skel);
+  return pair.first;
+}
+
+//==============================================================================
+// A static 20 degree ramp with a 1 kg box `gap` m above it. With friction 0.3
+// on both, the box slides down the ramp (+x in the ramp frame) at about
+// 0.59 m/s^2 unless something holds it.
+struct Ramp
+{
+  Eigen::Matrix3d tilt;
+  SkeletonPtr box;
+};
+
+Ramp addRampWithBox(World* world, double gap)
+{
+  Ramp r;
+  r.tilt = Eigen::AngleAxisd(math::toRadian(20.0), Eigen::Vector3d::UnitY())
+               .toRotationMatrix();
+  auto ramp = Skeleton::create("ramp");
+  auto* rampBody = ramp->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+  rampBody
+      ->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+          std::make_shared<BoxShape>(Eigen::Vector3d(4.0, 2.0, 0.1)))
+      ->getDynamicsAspect()
+      ->setFrictionCoeff(0.3);
+  Eigen::Isometry3d rampTf = Eigen::Isometry3d::Identity();
+  rampTf.linear() = r.tilt;
+  rampBody->getParentJoint()->setTransformFromParentBodyNode(rampTf);
+  ramp->setMobile(false);
+  world->addSkeleton(ramp);
+
+  const Eigen::Vector3d size = Eigen::Vector3d::Constant(kBoxSize);
+  r.box = createFreeBox("box", size, Eigen::Vector3d::Zero());
+  auto* boxBody = r.box->getBodyNode(0);
+  boxBody->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(0.3);
+  // The box's own inertia, so that a held box comes to rest instead of
+  // rocking slowly.
+  const Eigen::Matrix3d inertia = BoxShape::computeInertia(size, 1.0);
+  boxBody->setMomentOfInertia(inertia(0, 0), inertia(1, 1), inertia(2, 2));
+  Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+  boxTf.linear() = r.tilt;
+  boxTf.translation() = r.tilt * Eigen::Vector3d(0.0, 0.0, 0.05 + kHalf + gap);
+  r.box->getJoint(0)->setPositions(FreeJoint::convertToPositions(boxTf));
+  world->addSkeleton(r.box);
+  return r;
+}
+
+//==============================================================================
+// Shaped like gz-physics' contact-surface handler: calls the parent chain,
+// then drives contacts on the belt with a surface velocity along +x, like a
+// gz-sim TrackController conveyor. The speed changes no DART state.
+class BeltHandler : public constraint::ContactSurfaceHandler
+{
+public:
+  explicit BeltHandler(const BodyNode* belt) : mBelt(belt) {}
+
+  void setSpeed(double speed)
+  {
+    mSpeed = speed;
+  }
+
+  std::size_t getNumCalls() const
+  {
+    return mNumCalls;
+  }
+
+  constraint::ContactSurfaceParams createParams(
+      const Contact& contact,
+      std::size_t numContactsOnCollisionObject) const override
+  {
+    ++mNumCalls;
+    auto params = ContactSurfaceHandler::createParams(
+        contact, numContactsOnCollisionObject);
+    if (contact.getBodyNodePtr1().get() == mBelt
+        || contact.getBodyNodePtr2().get() == mBelt) {
+      params.mFirstFrictionalDirection = Eigen::Vector3d::UnitX();
+      params.mContactSurfaceMotionVelocity = Eigen::Vector3d(0.0, mSpeed, 0.0);
+    }
+    return params;
+  }
+
+private:
+  const BodyNode* mBelt;
+  double mSpeed = 0.0;
+  mutable std::size_t mNumCalls = 0u;
+};
+
+//==============================================================================
+// Calls the parent chain, then raises the friction of every contact to 1.
+class HighFrictionHandler : public constraint::ContactSurfaceHandler
+{
+public:
+  constraint::ContactSurfaceParams createParams(
+      const Contact& contact,
+      std::size_t numContactsOnCollisionObject) const override
+  {
+    auto params = ContactSurfaceHandler::createParams(
+        contact, numContactsOnCollisionObject);
+    params.mPrimaryFrictionCoeff = 1.0;
+    params.mSecondaryFrictionCoeff = 1.0;
+    return params;
+  }
+};
+
+//==============================================================================
+// A static 5 m x 0.2 m conveyor belt with its top face at z = 0.
+SkeletonPtr createBelt()
+{
+  auto belt = createWeldedBox(
+      "belt", Eigen::Vector3d(5.0, 0.2, 0.1), Eigen::Vector3d(0, 0, -0.05));
+  belt->setMobile(false);
+  return belt;
+}
+
+Eigen::Vector3d getPosition(const SkeletonPtr& skel)
+{
+  return skel->getBodyNode(0)->getTransform().translation();
+}
+
+//==============================================================================
+template <typename JointT>
+struct JointEdit
+{
+  std::string_view name;
+  // Writes the current value back, which changes nothing.
+  std::function<void(JointT*)> rewrite;
+  std::function<void(JointT*)> apply;
+};
+
+//==============================================================================
+// For each edit, rests a flap model whose joint runs along `axis`, then expects
+// the rewrite to keep it resting and the edit to wake it.
+template <typename JointT>
+void expectEditsWakeRestingFlap(
+    const std::vector<JointEdit<JointT>>& edits, const Eigen::Vector3d& axis)
+{
+  for (const auto& edit : edits) {
+    SCOPED_TRACE(edit.name);
+    // Without gravity, and frozen by its first solve (which integrates no
+    // positions), the flap keeps every joint exactly still: the axis edit then
+    // happens at q = 0, where the pose check cannot see it, and the flap can
+    // rest with joint friction, whose constraint keeps an island awake while
+    // the joint moves.
+    auto world = makeSleepWorld();
+    world->setGravity(Eigen::Vector3d::Zero());
+    world->addSkeleton(createFloor());
+    auto* joint = addFlapModel<JointT>(world.get(), axis);
+    joint->setCoulombFriction(0, 0.1);
+    const auto skel = joint->getSkeleton();
+    skel->setSleepCandidate(true);
+
+    ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), skel));
+    ASSERT_EQ(0.0, joint->getPosition(0));
+    const auto& solverResult
+        = world->getConstraintSolver()->getLastCollisionResult();
+
+    edit.rewrite(joint);
+    world->step();
+    EXPECT_EQ(0u, solverResult.getNumContacts())
+        << "writing the current value left the all-resting fast path";
+    EXPECT_TRUE(skel->isResting()) << "writing the current value woke the flap";
+
+    edit.apply(joint);
+    world->step();
+    EXPECT_GT(solverResult.getNumContacts(), 0u)
+        << "the edit reused the all-resting fast path";
+    EXPECT_FALSE(skel->isResting()) << "the edit did not wake the flap";
+  }
+}
+
+//==============================================================================
+// Normalizing a rescaled non-cardinal axis can land a few ULPs off the stored
+// axis, which is no change of direction, while a sign flip or a 1e-12 rad turn
+// is one.
+template <typename JointT>
+void expectOnlyAxisTurnsWakeRestingFlap()
+{
+  const std::vector<JointEdit<JointT>> edits = {
+      {"setAxis(2 * axis), then flip it",
+       [](JointT* joint) { joint->setAxis(2.0 * joint->getAxis()); },
+       [](JointT* joint) {
+         joint->setAxis(-joint->getAxis());
+       }},
+      {"setAxis(3 * axis), then turn it 1e-12 rad",
+       [](JointT* joint) { joint->setAxis(3.0 * joint->getAxis()); },
+       [](JointT* joint) {
+         const Eigen::Vector3d axis = joint->getAxis();
+         joint->setAxis(Eigen::AngleAxisd(1e-12, axis.unitOrthogonal()) * axis);
+       }},
+  };
+  // Normalizing twice or three times either stored axis does not reproduce it
+  // bit for bit (with SSE2 doubles).
+  for (const Eigen::Vector3d& axis :
+       {Eigen::Vector3d(1.0, 1.0, 0.0), Eigen::Vector3d(1.0, 3.0, 3.0)}) {
+    SCOPED_TRACE(
+        ::testing::Message()
+        << JointT::getStaticType() << " along " << axis.transpose());
+    expectEditsWakeRestingFlap(edits, axis);
+  }
+}
+
+} // namespace
+
+//==============================================================================
+// Joint spring, damping and friction, gravity and axis edits change the forces
+// on a resting body without changing its pose, so each must wake it. Writing
+// the current value back changes nothing, so it must not, even when it only
+// rescales the axis.
+TEST(IslandDeactivation, WakeOnJointDynamicsEdit)
+{
+  const std::vector<JointEdit<RevoluteJoint>> edits = {
+      {"setSpringStiffness",
+       [](RevoluteJoint* joint) {
+         joint->setSpringStiffness(0, joint->getSpringStiffness(0));
+       },
+       [](RevoluteJoint* joint) {
+         joint->setSpringStiffness(0, 50.0);
+       }},
+      {"setRestPosition",
+       [](RevoluteJoint* joint) {
+         joint->setRestPosition(0, joint->getRestPosition(0));
+       },
+       [](RevoluteJoint* joint) {
+         joint->setRestPosition(0, -1.0);
+       }},
+      {"setRestPositions",
+       [](RevoluteJoint* joint) {
+         joint->setRestPositions(joint->getRestPositions());
+       },
+       [](RevoluteJoint* joint) {
+         joint->setRestPositions(Eigen::VectorXd::Constant(1, -1.0));
+       }},
+      {"setDampingCoefficient",
+       [](RevoluteJoint* joint) {
+         joint->setDampingCoefficient(0, joint->getDampingCoefficient(0));
+       },
+       [](RevoluteJoint* joint) {
+         joint->setDampingCoefficient(0, 5.0);
+       }},
+      {"setCoulombFriction",
+       [](RevoluteJoint* joint) {
+         joint->setCoulombFriction(0, joint->getCoulombFriction(0));
+       },
+       [](RevoluteJoint* joint) {
+         joint->setCoulombFriction(0, 0.2);
+       }},
+      {"setGravityMode",
+       [](RevoluteJoint* joint) {
+         auto* body = joint->getChildBodyNode();
+         body->setGravityMode(body->getGravityMode());
+       },
+       [](RevoluteJoint* joint) {
+         joint->getChildBodyNode()->setGravityMode(false);
+       }},
+      {"Skeleton::setGravity",
+       [](RevoluteJoint* joint) {
+         const auto skel = joint->getSkeleton();
+         skel->setGravity(skel->getGravity());
+       },
+       [](RevoluteJoint* joint) {
+         joint->getSkeleton()->setGravity(Eigen::Vector3d(0.0, 0.0, -5.0));
+       }},
+      {"setAxis",
+       // The same direction at twice the length.
+       [](RevoluteJoint* joint) { joint->setAxis(2.0 * joint->getAxis()); },
+       [](RevoluteJoint* joint) {
+         joint->setAxis(Eigen::Vector3d::UnitX());
+       }},
+  };
+  expectEditsWakeRestingFlap(edits, Eigen::Vector3d::UnitY());
+
+  expectOnlyAxisTurnsWakeRestingFlap<RevoluteJoint>();
+  expectOnlyAxisTurnsWakeRestingFlap<PrismaticJoint>();
+}
+
+//==============================================================================
+// A spring edit on a resting flap must lift it, whether everything rests or
+// another body keeps the world partly awake.
+TEST(IslandDeactivation, JointSpringEditLiftsRestingFlap)
+{
+  for (const bool partial : {false, true}) {
+    SCOPED_TRACE(partial ? "partly awake world" : "all-resting world");
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto* joint = addFlapModel(world.get());
+    const auto skel = joint->getSkeleton();
+    SkeletonPtr mover;
+    if (partial) {
+      mover = createFreeBox(
+          "mover", Eigen::Vector3d::Constant(0.5), Eigen::Vector3d(3, 0, 0.25));
+      world->addSkeleton(mover);
+    }
+    // Pushes the mover back and forth so it never sleeps.
+    std::size_t steps = 0;
+    auto step = [&]() {
+      if (mover) {
+        const double force = (steps / 200) % 2 == 0 ? 15.0 : -15.0;
+        mover->getBodyNode(0)->addExtForce(Eigen::Vector3d(force, 0, 0));
+      }
+      world->step();
+      ++steps;
+    };
+
+    // Long enough for an all-resting world to reach the all-resting fast path.
+    while (steps < 3000)
+      step();
+    ASSERT_TRUE(skel->isResting());
+    ASSERT_FALSE(mover && mover->isResting());
+    const double z0
+        = joint->getChildBodyNode()->getTransform().translation().z();
+
+    joint->setSpringStiffness(0, 50.0);
+    joint->setRestPosition(0, -1.0);
+    double zMax = z0;
+    for (int i = 0; i < 500; ++i) {
+      step();
+      zMax = std::max(
+          zMax, joint->getChildBodyNode()->getTransform().translation().z());
+    }
+    EXPECT_GT(zMax - z0, 0.1) << "the spring edit did not lift the flap";
+  }
+}
+
+//==============================================================================
+// gz-sim 10 re-applies the world gravity before every step. Writing the
+// current gravity changes nothing, so resting bodies must stay asleep; a real
+// change must still wake them.
+TEST(IslandDeactivation, UnchangedGravityWriteKeepsRestingFastPath)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), box));
+
+  const auto& solverResult
+      = world->getConstraintSolver()->getLastCollisionResult();
+  for (int i = 0; i < 1000; ++i) {
+    world->setGravity(world->getGravity());
+    box->setGravity(box->getGravity());
+    world->step();
+    ASSERT_TRUE(box->isResting())
+        << "an unchanged gravity write woke the box at step " << i;
+    ASSERT_EQ(0u, solverResult.getNumContacts())
+        << "an unchanged gravity write left the all-resting fast path at step "
+        << i;
+  }
+
+  world->setGravity(Eigen::Vector3d(1.0, 0.0, -9.81));
+  world->step();
+  EXPECT_GT(solverResult.getNumContacts(), 0u)
+      << "a gravity change reused the all-resting fast path";
+  EXPECT_FALSE(box->isResting()) << "a gravity change did not wake the box";
+}
+
+//==============================================================================
+// Re-applying unchanged deactivation options before every step must neither
+// restart the sleep delay of a settling body nor wake a resting one; a real
+// change still wakes it.
+TEST(IslandDeactivation, UnchangedDeactivationOptionsWriteKeepsSleeping)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+
+  const std::size_t settled = stepUntil(world.get(), 5000, [&]() {
+    world->setDeactivationOptions(world->getDeactivationOptions());
+    return box->isResting();
+  });
+  ASSERT_LT(settled, 5000u) << "unchanged option writes kept the box awake";
+
+  for (int i = 0; i < 100; ++i) {
+    world->setDeactivationOptions(world->getDeactivationOptions());
+    world->step();
+    ASSERT_TRUE(box->isResting())
+        << "an unchanged option write woke the box at step " << i;
+  }
+
+  auto options = world->getDeactivationOptions();
+  options.mTimeUntilSleep *= 2.0;
+  world->setDeactivationOptions(options);
+  world->step();
+  EXPECT_FALSE(box->isResting()) << "an option change did not wake the box";
+}
+
+//==============================================================================
+// The active limit row keeps the lifted flap's island awake, so the flap is a
+// sleep candidate for one step boundary per dwell period. Relaxing the limit
+// in that window, or one step before candidacy would be granted, must not let
+// candidacy or dwell gathered under the old limit freeze the falling flap, also
+// after World::reset().
+TEST(IslandDeactivation, RelaxedJointLimitDoesNotFreezeFlap)
+{
+  struct Row
+  {
+    std::string_view name;
+    double tilt;
+    double upperLimit;
+    bool editAtCandidate;
+    bool resetBeforeEdit;
+  };
+  for (const auto& row : {
+           Row{"edit while a sleep candidate", 0.6, 1.0, true, false},
+           Row{"edit one step before candidacy", 1.0, 3.0, false, false},
+           Row{"edit after World::reset() while a candidate",
+               0.6,
+               1.0,
+               true,
+               true},
+       }) {
+    SCOPED_TRACE(row.name);
+    auto world = makeSleepWorld();
+    world->addSkeleton(createFloor());
+    auto* joint = addLiftedFlap(world.get(), row.tilt);
+    const auto skel = joint->getSkeleton();
+    for (int i = 0; i < 3000; ++i)
+      world->step();
+
+    const double timeUntilSleep
+        = world->getDeactivationOptions().mTimeUntilSleep;
+    const double dt = world->getTimeStep();
+    const std::size_t steps = stepUntil(world.get(), 2000, [&]() {
+      if (skel->isResting())
+        return false;
+      if (row.editAtCandidate)
+        return skel->isSleepCandidate();
+      return !skel->isSleepCandidate()
+             && std::abs(skel->getRestDwellTime() - (timeUntilSleep - dt))
+                    < 0.5 * dt;
+    });
+    ASSERT_LT(steps, 2000u) << "the flap never reached the edit window";
+
+    if (row.resetBeforeEdit)
+      world->reset();
+    joint->setPositionUpperLimit(0, row.upperLimit);
+    for (int i = 0; i < 1000; ++i) {
+      world->step();
+      if (skel->isResting() && joint->getPosition(0) < 0.9 * row.tilt) {
+        ADD_FAILURE() << "the flap froze at q = " << joint->getPosition(0)
+                      << " " << i + 1 << " steps after the edit";
+        break;
+      }
+    }
+    EXPECT_GT(joint->getPosition(0), 0.9 * row.tilt)
+        << "the flap did not fall onto the floor";
+  }
+}
+
+//==============================================================================
+// A box held on the ramp, released while it is a sleep candidate or one step
+// before candidacy would be granted, must slide. Moving the static stopper or
+// ignoring its contact leaves the deactivation-state version unchanged, while
+// removing a manual constraint stamps the change. Neither candidacy nor quiet
+// dwell gathered while the box was held may survive the release.
+TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
+{
+  enum class Release
+  {
+    MoveStopper,
+    IgnoreStopper,
+    RemoveWeld,
+  };
+  struct Row
+  {
+    std::string_view name;
+    Release release;
+    bool editAtCandidate;
+  };
+  for (const auto& row : {
+           Row{"stopper moved one step before candidacy",
+               Release::MoveStopper,
+               false},
+           Row{"stopper contact ignored one step before candidacy",
+               Release::IgnoreStopper,
+               false},
+           Row{"weld removed while a sleep candidate",
+               Release::RemoveWeld,
+               true},
+           Row{"weld removed one step before candidacy",
+               Release::RemoveWeld,
+               false},
+       }) {
+    SCOPED_TRACE(row.name);
+    auto world = makeSleepWorld();
+    const bool weld = row.release == Release::RemoveWeld;
+    // The welded box overlaps the ramp so that its contact keeps it islanded.
+    const auto ramp = addRampWithBox(world.get(), weld ? -1e-6 : 1e-3);
+    auto* boxBody = ramp.box->getBodyNode(0);
+
+    // A static plate just downhill of the box, or a weld to the world.
+    auto stopper = createWeldedBox(
+        "stopper", Eigen::Vector3d(0.1, 2.0, 0.3), Eigen::Vector3d::Zero());
+    auto placeStopper = [&](double x) {
+      Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+      tf.linear() = ramp.tilt;
+      tf.translation() = ramp.tilt * Eigen::Vector3d(x, 0.0, 0.21);
+      stopper->getJoint(0)->setTransformFromParentBodyNode(tf);
+    };
+    auto holder = std::make_shared<constraint::WeldJointConstraint>(boxBody);
+    if (weld) {
+      world->getConstraintSolver()->addConstraint(holder);
+      // While the weld is active, the box is granted candidacy once per sleep
+      // delay and loses it in the next solve. Skip the first grant, which the
+      // first-frame shortcut makes.
+      for (int i = 0; i < 1000; ++i)
+        world->step();
+    } else {
+      placeStopper(kHalf + 0.05 + 1e-4);
+      stopper->setMobile(false);
+      world->addSkeleton(stopper);
+    }
+
+    const double timeUntilSleep
+        = world->getDeactivationOptions().mTimeUntilSleep;
+    const double dt = world->getTimeStep();
+    const std::size_t steps = stepUntil(world.get(), 6000, [&]() {
+      if (ramp.box->isResting())
+        return false;
+      if (row.editAtCandidate)
+        return ramp.box->isSleepCandidate();
+      return !ramp.box->isSleepCandidate()
+             && std::abs(ramp.box->getRestDwellTime() - (timeUntilSleep - dt))
+                    < 0.5 * dt;
+    });
+    ASSERT_LT(steps, 6000u) << "the box never reached the release window";
+
+    switch (row.release) {
+      case Release::MoveStopper:
+        placeStopper(1.0 + kHalf + 0.05);
+        break;
+      case Release::IgnoreStopper: {
+        auto filter = std::dynamic_pointer_cast<BodyNodeCollisionFilter>(
+            world->getConstraintSolver()->getCollisionOption().collisionFilter);
+        ASSERT_NE(filter, nullptr);
+        filter->addBodyNodePairToBlackList(boxBody, stopper->getBodyNode(0));
+        break;
+      }
+      case Release::RemoveWeld:
+        world->getConstraintSolver()->removeConstraint(holder);
+        break;
+    }
+
+    const Eigen::Vector3d start = getPosition(ramp.box);
+    std::size_t restingSteps = 0;
+    for (int i = 0; i < 1000; ++i) {
+      world->step();
+      restingSteps += ramp.box->isResting() ? 1u : 0u;
+    }
+    EXPECT_EQ(0u, restingSteps) << "the released box froze";
+    EXPECT_GT((getPosition(ramp.box) - start).norm(), 0.2)
+        << "the released box did not slide";
+  }
+}
+
+//==============================================================================
+// Only a solve evaluates manual constraints. One added between bodies on the
+// all-resting fast path must still be solved, which wakes them.
+TEST(IslandDeactivation, ManualConstraintAddedWhileRestingWakesIsland)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto makeBox = [](const std::string& name, double x) {
+    auto box = createFreeBox(
+        name,
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(x, 0, kHalf));
+    box->getBodyNode(0)->setMass(8.0);
+    return box;
+  };
+  auto boxA = makeBox("a", 0.0);
+  auto boxB = makeBox("b", 0.5);
+  world->addSkeleton(boxA);
+  world->addSkeleton(boxB);
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), boxA));
+  ASSERT_TRUE(boxB->isResting());
+
+  auto* bodyA = boxA->getBodyNode(0);
+  auto* bodyB = boxB->getBodyNode(0);
+  const double xA = bodyA->getTransform().translation().x();
+  const double xB = bodyB->getTransform().translation().x();
+  // Asks for A 0.3 m from B while they are 0.5 m apart.
+  auto weld = std::make_shared<constraint::WeldJointConstraint>(bodyA, bodyB);
+  Eigen::Isometry3d relative = Eigen::Isometry3d::Identity();
+  relative.translation().x() = -0.3;
+  weld->setRelativeTransform(relative);
+  world->getConstraintSolver()->addConstraint(weld);
+
+  for (int i = 0; i < 200; ++i)
+    world->step();
+
+  EXPECT_FALSE(boxA->isResting());
+  EXPECT_FALSE(boxB->isResting());
+  EXPECT_GT(bodyA->getTransform().translation().x() - xA, 0.05)
+      << "the manual constraint was never solved";
+  EXPECT_LT(bodyB->getTransform().translation().x() - xB, -0.05)
+      << "the manual constraint was never solved";
+}
+
+//==============================================================================
+// Refusing the fast path while a manual constraint exists must keep the
+// all-resting pose validation: a box lifted between steps must fall back even
+// while an inactive constraint (between two static bodies) is installed.
+TEST(IslandDeactivation, InactiveManualConstraintKeepsPoseValidation)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto anchorA = createWeldedBox(
+      "anchor_a",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(3, 0, 1));
+  auto anchorB = createWeldedBox(
+      "anchor_b",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(4, 0, 1));
+  anchorA->setMobile(false);
+  anchorB->setMobile(false);
+  world->addSkeleton(anchorA);
+  world->addSkeleton(anchorB);
+  auto weld = std::make_shared<constraint::WeldJointConstraint>(
+      anchorA->getBodyNode(0), anchorB->getBodyNode(0));
+  world->getConstraintSolver()->addConstraint(weld);
+
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(box);
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), box));
+
+  Eigen::VectorXd positions = box->getPositions();
+  positions[5] += 0.3;
+  box->setPositions(positions);
+
+  const std::size_t steps = stepUntil(world.get(), 600, [&]() {
+    return box->getBodyNode(0)->getTransform().translation().z() < kHalf + 0.01;
+  });
+  EXPECT_LT(steps, 600u) << "the lifted box stayed frozen in the air";
+}
+
+//==============================================================================
+// A custom contact surface handler can move a body through state DART cannot
+// see (a conveyor's belt speed), so its contacts must never freeze.
+TEST(IslandDeactivation, CustomContactSurfaceHandlerKeepsPayloadMoving)
+{
+  auto world = makeSleepWorld();
+  auto belt = createBelt();
+  world->addSkeleton(belt);
+  auto box = createFreeBox(
+      "box", Eigen::Vector3d::Constant(0.1), Eigen::Vector3d(0, 0, 0.06));
+  world->addSkeleton(box);
+  auto handler = std::make_shared<BeltHandler>(belt->getBodyNode(0));
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+
+  std::size_t restingSteps = 0;
+  for (int i = 0; i < 2000; ++i) {
+    world->step();
+    restingSteps += box->isResting() ? 1u : 0u;
+  }
+  EXPECT_EQ(0u, restingSteps) << "the box fell asleep on the belt";
+
+  const Eigen::Vector3d start = getPosition(box);
+  const std::size_t callsBefore = handler->getNumCalls();
+  handler->setSpeed(0.5);
+  for (int i = 0; i < 1000; ++i)
+    world->step();
+  EXPECT_GT(handler->getNumCalls(), callsBefore)
+      << "the handler was no longer consulted";
+  EXPECT_GT((getPosition(box) - start).norm(), 0.25)
+      << "the started belt did not carry the box";
+}
+
+//==============================================================================
+// Removing a handler after the first solve starts the normal sleep delay; the
+// solve performed with the handler cannot supply initial rest credit.
+TEST(IslandDeactivation, InitialRestCreditDoesNotUseCustomHandlerStep)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf - 5e-7));
+  world->addSkeleton(box);
+  // Pass the parent's parameters through unchanged so only the sleep policy
+  // distinguishes this solve from one with the built-in handler alone.
+  auto handler = std::make_shared<constraint::ContactSurfaceHandler>();
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+
+  world->step();
+  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  ASSERT_FALSE(box->isSleepCandidate());
+  ASSERT_DOUBLE_EQ(0.0, box->getRestDwellTime());
+
+  world->getConstraintSolver()->removeContactSurfaceHandler(handler);
+  world->step();
+  EXPECT_FALSE(box->isSleepCandidate());
+  EXPECT_LE(box->getRestDwellTime(), world->getTimeStep());
+
+  world->step();
+  EXPECT_FALSE(box->isResting());
+}
+
+//==============================================================================
+// Adding a custom handler must wake a resting body so the handler can act on
+// it; once it is removed, the body can sleep again.
+TEST(IslandDeactivation, AddingContactSurfaceHandlerWakesRestingIsland)
+{
+  auto world = makeSleepWorld();
+  auto belt = createBelt();
+  world->addSkeleton(belt);
+  auto box = createFreeBox(
+      "box", Eigen::Vector3d::Constant(0.1), Eigen::Vector3d(0, 0, 0.06));
+  world->addSkeleton(box);
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), box));
+
+  const Eigen::Vector3d start = getPosition(box);
+  auto handler = std::make_shared<BeltHandler>(belt->getBodyNode(0));
+  handler->setSpeed(0.5);
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+  world->step();
+  EXPECT_FALSE(box->isResting()) << "adding a handler did not wake the box";
+  EXPECT_GT(handler->getNumCalls(), 0u) << "the handler was never consulted";
+
+  for (int i = 0; i < 500; ++i)
+    world->step();
+  EXPECT_GT((getPosition(box) - start).norm(), 0.1)
+      << "the belt did not carry the box";
+
+  world->getConstraintSolver()->removeContactSurfaceHandler(handler);
+  const std::size_t steps
+      = stepUntil(world.get(), 5000, [&]() { return box->isResting(); });
+  EXPECT_LT(steps, 5000u)
+      << "the box never slept after the handler was removed";
+}
+
+//==============================================================================
+// While a handler holds a box on a slope by friction, the box must not gather
+// quiet dwell: once the handler is removed, the box slides instead of
+// freezing on dwell from the held phase.
+TEST(IslandDeactivation, RemovedContactSurfaceHandlerLetsHeldBoxSlide)
+{
+  auto world = makeSleepWorld();
+  const auto box = addRampWithBox(world.get(), 0.0).box;
+
+  auto handler = std::make_shared<HighFrictionHandler>();
+  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+  std::size_t restingSteps = 0;
+  for (int i = 0; i < 2000; ++i) {
+    world->step();
+    restingSteps += box->isResting() ? 1u : 0u;
+  }
+  EXPECT_EQ(0u, restingSteps) << "the held box fell asleep";
+
+  const Eigen::Vector3d start = getPosition(box);
+  world->getConstraintSolver()->removeContactSurfaceHandler(handler);
+  restingSteps = 0;
+  for (int i = 0; i < 1000; ++i) {
+    world->step();
+    restingSteps += box->isResting() ? 1u : 0u;
+  }
+  EXPECT_EQ(0u, restingSteps) << "the sliding box fell asleep";
+  EXPECT_GT((getPosition(box) - start).norm(), 0.2)
+      << "the box did not slide once the handler was removed";
+}
+
 //==============================================================================
 // Joint-frame edits can change world geometry without changing generalized
 // positions. The all-resting snapshot must invalidate on the kinematic version
@@ -3641,6 +4636,56 @@ TEST(IslandDeactivation, CollisionGroupContentChangeWakesAllRestingFastPath)
   group->removeShapeFrame(floor->getBodyNode(0)->getShapeNode(0));
 
   expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// A collision-group-only SimpleFrame can belong to a skeleton through its
+// parent frames. Edits to that skeleton must invalidate the resting snapshot
+// even though neither World nor ConstraintSolver registers the skeleton.
+TEST(IslandDeactivation, WakeOnSimpleFrameSupportEdit)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+
+  auto unrelated = createFloor();
+  SimpleFrame unowned;
+  unowned.setRelativeTranslation(Eigen::Vector3d(30.0, 0.0, 0.0));
+  unowned.setShape(std::make_shared<SphereShape>(1.0));
+  unowned.createAspect<CollisionAspect>();
+  world->getConstraintSolver()->getCollisionGroup()->addShapeFrame(&unowned);
+
+  auto support = Skeleton::create("frame_support");
+  auto* supportBody
+      = support->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+  support->setMobile(false);
+  SimpleFrame parent(supportBody, "support_parent");
+  parent.setRelativeTranslation(Eigen::Vector3d(20.0, 0.0, 0.0));
+  SimpleFrame frame(&parent, "support_collision");
+  frame.setShape(std::make_shared<SphereShape>(1.0));
+  frame.createAspect<CollisionAspect>();
+  world->getConstraintSolver()->getCollisionGroup()->addShapeFrame(&frame);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  // A world-parented frame has no owner; unrelated edits still leave this
+  // World's snapshot ready, and ancestry walking must stop at WorldFrame.
+  unrelated->getBodyNode(0)->setCollidable(false);
+  world->step();
+  ASSERT_TRUE(sleeper->isResting());
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+
+  supportBody->setCollidable(false);
+  world->step();
+  EXPECT_FALSE(sleeper->isResting())
+      << "SimpleFrame owner's edit did not wake the sleeping body";
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+      << "SimpleFrame owner's edit reused the all-resting fast path";
 }
 
 //==============================================================================
@@ -3902,6 +4947,64 @@ TEST(IslandDeactivation, IndependentQuietIslandSleepsWhileOtherBodyMoves)
 }
 
 //==============================================================================
+// Worlds sleep independently. A World stepped in turn with another World whose
+// box keeps falling asleep and being poked awake must step exactly as it does
+// alone: the other World's sleep transitions must neither restart its quiet
+// dwell nor wake it once it rests.
+TEST(IslandDeactivation, OtherWorldSleepTransitionsDoNotAffectSleep)
+{
+  auto makeWorld = [](double timeUntilSleep) {
+    auto world = makeSleepWorld();
+    auto opts = world->getDeactivationOptions();
+    opts.mTimeUntilSleep = timeUntilSleep;
+    world->setDeactivationOptions(opts);
+    world->addSkeleton(createFloor());
+    world->addSkeleton(createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02)));
+    return world;
+  };
+  constexpr std::size_t kNumSteps = 2000;
+  constexpr double kTimeUntilSleep = 0.5;
+
+  struct State
+  {
+    Eigen::VectorXd positions;
+    bool resting;
+  };
+  std::vector<State> statesAlone;
+  {
+    auto world = makeWorld(kTimeUntilSleep);
+    const auto box = world->getSkeleton("box");
+    for (std::size_t i = 0; i < kNumSteps; ++i) {
+      world->step();
+      statesAlone.push_back({box->getPositions(), box->isResting()});
+    }
+    ASSERT_TRUE(box->isResting()) << "the box never slept alone";
+  }
+
+  auto world = makeWorld(kTimeUntilSleep);
+  const auto box = world->getSkeleton("box");
+  // The other box sleeps 0.01 s after it settles and is poked awake each time.
+  auto other = makeWorld(0.01);
+  const auto otherBox = other->getSkeleton("box");
+  std::size_t numOtherSleeps = 0;
+  for (std::size_t i = 0; i < kNumSteps; ++i) {
+    world->step();
+    ASSERT_EQ(statesAlone[i].resting, box->isResting()) << "at step " << i;
+    ASSERT_EQ(statesAlone[i].positions, box->getPositions()) << "at step " << i;
+
+    if (otherBox->isResting()) {
+      ++numOtherSleeps;
+      otherBox->getBodyNode(0)->addExtForce(Eigen::Vector3d::UnitX());
+    }
+    other->step();
+  }
+  EXPECT_GE(numOtherSleeps, 20u) << "the other World stopped transitioning";
+}
+
+//==============================================================================
 // A just-eligible contact island must not be marked resting while a separate
 // mobile body is awake outside every island. This test's mover has not been in
 // an island, so it holds islands awake whatever its speed. The veto must reach
@@ -3917,8 +5020,6 @@ TEST(IslandDeactivation, UngroupedAwakeBodyVetoesNewContactIslandResting)
       "sleeper",
       Eigen::Vector3d::Constant(kBoxSize),
       Eigen::Vector3d(0, 0, kHalf - 1.0e-6));
-  sleeper->setSleepCandidate(true);
-  sleeper->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
   world->addSkeleton(sleeper);
 
   auto awake = createFreeBox(
@@ -3931,6 +5032,8 @@ TEST(IslandDeactivation, UngroupedAwakeBodyVetoesNewContactIslandResting)
       = 2.0 * opts.mWakeThresholdScale * opts.mLinearSpeedThreshold;
   awake->getJoint(0)->setVelocities(movingVelocity);
   world->addSkeleton(awake);
+  sleeper->setSleepCandidate(true);
+  sleeper->setRestDwellTime(world->getDeactivationOptions().mTimeUntilSleep);
 
   world->step();
 

@@ -508,6 +508,9 @@ void BodyNode::setGravityMode(bool _gravityMode)
   SKEL_SET_FLAGS(mCoriolisAndGravityForces);
 
   incrementVersion();
+  // Gravity acts on resting bodies too, so they must wake.
+  if (auto* skeleton = getSkeletonRawPtr())
+    skeleton->incrementDeactivationStateVersion();
 }
 
 //==============================================================================
