@@ -58,6 +58,7 @@ class World;
 } // namespace simulation
 namespace constraint {
 class BoxedLcpConstraintSolver;
+class ConstraintSolver;
 } // namespace constraint
 namespace dynamics {
 
@@ -1108,6 +1109,7 @@ public:
   friend class collision::BodyNodeCollisionFilter;
   friend class simulation::World;
   friend class constraint::BoxedLcpConstraintSolver;
+  friend class constraint::ConstraintSolver;
 
 protected:
   struct DataCache;
@@ -1296,8 +1298,8 @@ protected:
   static std::size_t getGlobalDeactivationStateVersion();
   static std::size_t getGlobalVelocityVersion();
 
-  /// Returns the skeleton that owns frame, or nullptr if frame is not a
-  /// ShapeNode. Unlike ShapeNode::getSkeleton(), takes no reference.
+  /// Returns the skeleton of frame's first BodyNode parent, or nullptr if
+  /// there is none. Unlike ShapeNode::getSkeleton(), takes no reference.
   static const Skeleton* getSkeletonOf(const ShapeFrame& frame);
 
   //  /// Update damping force vector.

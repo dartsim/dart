@@ -715,6 +715,62 @@ TEST(IslandDeactivation, GravityEditDiscardsInitialRestCredit)
 }
 
 //==============================================================================
+// Removing a manual constraint between the first two solves must discard the
+// first solve's equilibrium credit as well as candidacy and quiet dwell. This
+// nearly level, frictionless support lets the released box move slowly enough
+// that stale first-frame measurements would otherwise give it the full dwell.
+TEST(IslandDeactivation, ManualConstraintRemovalDiscardsInitialRestCredit)
+{
+  for (const bool removeAll : {false, true}) {
+    SCOPED_TRACE(removeAll ? "removeAllConstraints" : "removeConstraint");
+    auto world = makeSleepWorld();
+    const Eigen::Matrix3d tilt
+        = Eigen::AngleAxisd(1e-7, Eigen::Vector3d::UnitY()).toRotationMatrix();
+    auto floor = createPlaneFloor();
+    floor->getBodyNode(0)
+        ->getShapeNode(0)
+        ->getDynamicsAspect()
+        ->setFrictionCoeff(0.0);
+    Eigen::Isometry3d floorTf = Eigen::Isometry3d::Identity();
+    floorTf.linear() = tilt;
+    floor->getJoint(0)->setTransformFromParentBodyNode(floorTf);
+    world->addSkeleton(floor);
+
+    auto box = createFreeBox(
+        "box", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d::Zero());
+    auto* body = box->getBodyNode(0);
+    body->getShapeNode(0)->getDynamicsAspect()->setFrictionCoeff(0.0);
+    Eigen::Isometry3d boxTf = Eigen::Isometry3d::Identity();
+    boxTf.linear() = tilt;
+    boxTf.translation() = tilt * Eigen::Vector3d(0, 0, kHalf - 5e-7);
+    box->getJoint(0)->setPositions(FreeJoint::convertToPositions(boxTf));
+    world->addSkeleton(box);
+    auto holder = std::make_shared<constraint::WeldJointConstraint>(body);
+    world->getConstraintSolver()->addConstraint(holder);
+
+    world->step();
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    ASSERT_FALSE(box->isSleepCandidate());
+    ASSERT_FALSE(box->isResting());
+
+    if (removeAll)
+      world->getConstraintSolver()->removeAllConstraints();
+    else
+      world->getConstraintSolver()->removeConstraint(holder);
+    world->step();
+
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    EXPECT_FALSE(box->isSleepCandidate());
+    EXPECT_LE(box->getRestDwellTime(), world->getTimeStep());
+
+    world->step();
+    EXPECT_FALSE(box->isResting());
+    EXPECT_GT(body->getLinearVelocity().x(), 0.0)
+        << "the slowly released box froze on the held solve's rest credit";
+  }
+}
+
+//==============================================================================
 // A box that starts 1e-4 m into a PlaneShape is not settled, although a body
 // at rest may sit up to 5 mm into a plane: the first-frame credit must not
 // freeze it at that depth. It rises out of the plane first and sleeps after the
@@ -4074,10 +4130,9 @@ TEST(IslandDeactivation, RelaxedJointLimitDoesNotFreezeFlap)
 //==============================================================================
 // A box held on the ramp, released while it is a sleep candidate or one step
 // before candidacy would be granted, must slide. Moving the static stopper or
-// ignoring its contact leaves the deactivation-state version unchanged, and
-// removing a manual constraint changes no version at all, so neither
-// candidacy nor quiet dwell gathered while the box was held may survive the
-// release.
+// ignoring its contact leaves the deactivation-state version unchanged, while
+// removing a manual constraint stamps the change. Neither candidacy nor quiet
+// dwell gathered while the box was held may survive the release.
 TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
 {
   enum class Release
@@ -4546,6 +4601,56 @@ TEST(IslandDeactivation, CollisionGroupContentChangeWakesAllRestingFastPath)
   group->removeShapeFrame(floor->getBodyNode(0)->getShapeNode(0));
 
   expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+// A collision-group-only SimpleFrame can belong to a skeleton through its
+// parent frames. Edits to that skeleton must invalidate the resting snapshot
+// even though neither World nor ConstraintSolver registers the skeleton.
+TEST(IslandDeactivation, WakeOnSimpleFrameSupportEdit)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+
+  auto unrelated = createFloor();
+  SimpleFrame unowned;
+  unowned.setRelativeTranslation(Eigen::Vector3d(30.0, 0.0, 0.0));
+  unowned.setShape(std::make_shared<SphereShape>(1.0));
+  unowned.createAspect<CollisionAspect>();
+  world->getConstraintSolver()->getCollisionGroup()->addShapeFrame(&unowned);
+
+  auto support = Skeleton::create("frame_support");
+  auto* supportBody
+      = support->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
+  support->setMobile(false);
+  SimpleFrame parent(supportBody, "support_parent");
+  parent.setRelativeTranslation(Eigen::Vector3d(20.0, 0.0, 0.0));
+  SimpleFrame frame(&parent, "support_collision");
+  frame.setShape(std::make_shared<SphereShape>(1.0));
+  frame.createAspect<CollisionAspect>();
+  world->getConstraintSolver()->getCollisionGroup()->addShapeFrame(&frame);
+
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  // A world-parented frame has no owner; unrelated edits still leave this
+  // World's snapshot ready, and ancestry walking must stop at WorldFrame.
+  unrelated->getBodyNode(0)->setCollidable(false);
+  world->step();
+  ASSERT_TRUE(sleeper->isResting());
+  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+
+  supportBody->setCollidable(false);
+  world->step();
+  EXPECT_FALSE(sleeper->isResting())
+      << "SimpleFrame owner's edit did not wake the sleeping body";
+  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+      << "SimpleFrame owner's edit reused the all-resting fast path";
 }
 
 //==============================================================================

@@ -1500,8 +1500,9 @@ void GenericJoint<ConfigSpaceT>::setSpringStiffness(size_t index, double k)
   }
 
   GenericJoint_SET_IF_DIFFERENT(mSpringStiffnesses[index], k);
-  // Also bumps the deactivation-state version, so resting bodies wake.
-  this->notifyAutomaticConstraintPropertiesUpdated();
+  // Passive forces change rest state, not automatic-constraint eligibility.
+  if (const auto skel = this->getSkeleton())
+    skel->incrementDeactivationStateVersion();
 
   // dt * d + dt^2 * k is folded into the cached implicit articulated inertia
   // (updateInvProjArtInertiaImplicitDynamic), which is otherwise refreshed
@@ -1532,7 +1533,8 @@ void GenericJoint<ConfigSpaceT>::setRestPosition(size_t index, double q0)
   }
 
   GenericJoint_SET_IF_DIFFERENT(mRestPositions[index], q0);
-  this->notifyAutomaticConstraintPropertiesUpdated();
+  if (const auto skel = this->getSkeleton())
+    skel->incrementDeactivationStateVersion();
 }
 
 //==============================================================================
@@ -1558,7 +1560,8 @@ void GenericJoint<ConfigSpaceT>::setRestPositions(
   }
 
   GenericJoint_SET_IF_DIFFERENT(mRestPositions, restPositions);
-  this->notifyAutomaticConstraintPropertiesUpdated();
+  if (const auto skel = this->getSkeleton())
+    skel->incrementDeactivationStateVersion();
 }
 
 //==============================================================================
@@ -1588,7 +1591,8 @@ void GenericJoint<ConfigSpaceT>::setDampingCoefficient(size_t index, double d)
   }
 
   GenericJoint_SET_IF_DIFFERENT(mDampingCoefficients[index], d);
-  this->notifyAutomaticConstraintPropertiesUpdated();
+  if (const auto skel = this->getSkeleton())
+    skel->incrementDeactivationStateVersion();
 
   // See setSpringStiffness(): the implicit damping term is cached too.
   if (this->mChildBodyNode)

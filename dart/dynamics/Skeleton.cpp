@@ -4284,10 +4284,17 @@ const Skeleton* Skeleton::getSkeletonOf(const ShapeFrame& frame)
   // Reads Node::mBodyNode: getBodyNodePtr() would take a reference, which
   // writes to the BodyNode.
   const ShapeNode* shapeNode = frame.asShapeNode();
-  if (shapeNode == nullptr || shapeNode->mBodyNode == nullptr)
-    return nullptr;
+  if (shapeNode != nullptr && shapeNode->mBodyNode != nullptr)
+    return shapeNode->mBodyNode->getSkeletonRawPtr();
 
-  return shapeNode->mBodyNode->getSkeletonRawPtr();
+  for (const Frame* parent = frame.getParentFrame();
+       parent != nullptr && !parent->isWorld();
+       parent = parent->getParentFrame()) {
+    if (const auto* bodyNode = dynamic_cast<const BodyNode*>(parent))
+      return bodyNode->getSkeletonRawPtr();
+  }
+
+  return nullptr;
 }
 
 //==============================================================================

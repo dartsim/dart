@@ -1008,23 +1008,24 @@ void ConstraintSolver::addConstraint(const ConstraintBasePtr& constraint)
   mManualConstraints.push_back(constraint);
 }
 
-namespace {
-
+//==============================================================================
 // A body that a removed manual constraint held may start moving slowly.
 // Restarting the sleep candidacy and quiet dwell of awake skeletons
 // (setSleepCandidate(false) zeroes the dwell) keeps the next solves from
 // freezing it on evidence gathered while it was held (#3056). Resting
 // skeletons keep their state: no active constraint holds a frozen island.
-void restartAwakeSleepCandidacy(
-    const std::vector<dynamics::SkeletonPtr>& skeletons)
+void ConstraintSolver::restartAwakeSleepCandidacy()
 {
-  for (const auto& skeleton : skeletons) {
-    if (skeleton->isMobile() && !skeleton->isResting())
+  for (const auto& skeleton : mSkeletons) {
+    if (skeleton->isMobile() && !skeleton->isResting()) {
+      // Clearing an existing candidate stamps the change itself. Otherwise
+      // notify World so it also discards pending first-frame dwell credit.
+      if (!skeleton->isSleepCandidate())
+        skeleton->incrementDeactivationStateVersion();
       skeleton->setSleepCandidate(false);
+    }
   }
 }
-
-} // namespace
 
 //==============================================================================
 void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
@@ -1040,7 +1041,7 @@ void ConstraintSolver::removeConstraint(const ConstraintBasePtr& constraint)
   mManualConstraints.erase(
       remove(mManualConstraints.begin(), mManualConstraints.end(), constraint),
       mManualConstraints.end());
-  restartAwakeSleepCandidacy(mSkeletons);
+  restartAwakeSleepCandidacy();
 }
 
 //==============================================================================
@@ -1050,7 +1051,7 @@ void ConstraintSolver::removeAllConstraints()
     return;
 
   mManualConstraints.clear();
-  restartAwakeSleepCandidacy(mSkeletons);
+  restartAwakeSleepCandidacy();
 }
 
 //==============================================================================
