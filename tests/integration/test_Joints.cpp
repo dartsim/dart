@@ -2298,3 +2298,23 @@ TEST_F(JOINTS, BuildingAJointKeepsNearCardinalAxes)
   expectNearCardinalAxisIsStored<RevoluteJoint>();
   expectNearCardinalAxisIsStored<PrismaticJoint>();
 }
+
+//==============================================================================
+// Only turning Coulomb friction on or off changes which joints get a friction
+// constraint, so only that edit makes every solver rescan its joints.
+TEST_F(JOINTS, OnlyFrictionOnOffEditsBumpAutomaticConstraintRevision)
+{
+  auto skel = Skeleton::create();
+  auto* joint = skel->createJointAndBodyNodePair<RevoluteJoint>().first;
+
+  auto revision = Joint::getAutomaticConstraintRevision();
+  joint->setCoulombFriction(0, 0.1);
+  EXPECT_NE(Joint::getAutomaticConstraintRevision(), revision);
+
+  revision = Joint::getAutomaticConstraintRevision();
+  joint->setCoulombFriction(0, 0.2);
+  EXPECT_EQ(Joint::getAutomaticConstraintRevision(), revision);
+
+  joint->setCoulombFriction(0, 0.0);
+  EXPECT_NE(Joint::getAutomaticConstraintRevision(), revision);
+}

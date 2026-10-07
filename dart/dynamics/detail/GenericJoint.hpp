@@ -1656,13 +1656,19 @@ void GenericJoint<ConfigSpaceT>::setCoulombFriction(
   const bool hadFriction = Base::mAspectProperties.mFrictions[index] > 0.0;
   const bool hasFriction = friction > 0.0;
   GenericJoint_SET_IF_DIFFERENT(mFrictions[index], friction);
-  if (hadFriction && !hasFriction)
-    --Joint::mNumNonzeroCoulombFrictionDofs;
-  else if (!hadFriction && hasFriction)
-    ++Joint::mNumNonzeroCoulombFrictionDofs;
-  // Any change moves the friction constraint's bounds, so resting bodies wake
-  // on every change, not only when friction turns on or off.
-  this->notifyAutomaticConstraintPropertiesUpdated();
+  if (hadFriction != hasFriction) {
+    // Turning friction on or off changes which joints get a friction
+    // constraint, so every solver rescans its joints.
+    if (hasFriction)
+      ++Joint::mNumNonzeroCoulombFrictionDofs;
+    else
+      --Joint::mNumNonzeroCoulombFrictionDofs;
+    this->notifyAutomaticConstraintPropertiesUpdated();
+  } else if (const auto skel = this->getSkeleton()) {
+    // Any other change only moves the constraint's bounds: wake resting
+    // bodies without a rescan.
+    skel->incrementDeactivationStateVersion();
+  }
 }
 
 //==============================================================================
