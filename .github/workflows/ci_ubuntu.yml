@@ -58,6 +58,9 @@ jobs:
       - name: Test AI infrastructure
         run: pixi run test-ai-infra
 
+      - name: Test the performance regression harness
+        run: pixi run test-perf-regression
+
   coverage:
     # Nightly only; codecov tracks main from the nightly upload.
     if: inputs.nightly

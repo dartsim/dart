@@ -181,6 +181,50 @@ one.
 
 ## Revision Comparisons
 
+Use `pixi run perf-compare --base origin/main --head HEAD` for deterministic
+instruction and allocation deltas and behavior-guard checks, measured with the
+system Valgrind; wall time is advisory only.
+The default `build/perf-compare` directory is reset only when it contains the
+`.perf-compare-owned` marker written by the harness; custom output directories
+must be empty.
+Each run repeats every row under seven heap-layout perturbations, and a row
+gates only when its guards and allocation counts stay identical under all of
+them in that run; `--no-perturb` skips the checks and leaves every row
+diagnostic. The report names each row's qualification and thread count.
+Comparisons require matching environment fingerprints. Exit status 1 means a
+policy failure; status 2 means an infrastructure error. When measuring an
+existing install with `scripts/perf_regression.py run`, supply `--commit` for
+its installed revision. Without `--shim` or `--heappad`, `run` uses
+`<prefix>/../shims/allocshim.so` and `<prefix>/../shims/heappad.so` when present,
+matching the `local` layout (`<output-dir>/a` and `<output-dir>/b` installs).
+Otherwise it falls back to `build/perf/liballocshim.so` and
+`build/perf/libheappad.so`; missing files report the corresponding option to
+supply. `--no-perturb` does not require heappad. The install must also contain
+`share/dart/perf-build.json`, written by `local` with the CMake compiler
+ID/version, build preset, Pixi lock hash, commit, and installed libdart and
+driver hashes, plus per-driver workload source hashes from the archived revision.
+`contact_benchmark` hashes its CMake-globbed `.cpp`/`.hpp` files;
+`BM_INTEGRATION_kinematics` hashes `bm_kinematics.cpp` and `PerfGuard.hpp`;
+`BM_UNIT_dantzig_lcp` hashes `bm_dantzig_lcp.cpp`, `PerfGuard.hpp`, and
+`tests/unit/lcpsolver/DantzigProblemCases.hpp`, which defines its generated cases.
+DART library sources are excluded because they are the code being measured.
+Each row's `input_sha` combines its scene/model input with its driver's workload
+hash, also recorded as `workload_sha`. A workload or input change between arms is
+a `behaviour-change`: performance deltas are withheld and a matching
+`Rebaseline-Rationale` is required, just as for changed behavior guards.
+`portable_step_bench` rows retain their existing input hashes because both arms
+use the common driver source from this checkout, covered by the environment's
+harness hash. `run` reads workload hashes from the install stamp, rather than
+from the current checkout. `run` checks the stamp against the artifacts and
+commit; missing or stale provenance, including missing workload hashes, is an
+infrastructure error. Saved records without compiler
+provenance cannot pass comparison. Gated rows fail on increases in either
+allocations per step or requested bytes per step unless acknowledged with a
+matching `Perf-Regression-Rationale`. The report includes requested-byte deltas;
+missing or invalid byte measurements are handled like allocation counts.
+Gated rows with positive Ir deltas, allocation-count or requested-byte increases,
+or gate failures count as regressed in the summary.
+
 Use the soft-body comparison script for PR evidence that must compare the
 current commit against both its parent and the `main` base on the same host:
 
