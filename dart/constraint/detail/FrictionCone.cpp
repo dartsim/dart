@@ -711,8 +711,9 @@ double contactViolation(
     const double moved = argument[i] - impulse[i];
     rounding[i] = (impulse[i] - (argument[i] - moved)) + (-step[i] - moved);
   }
-  const double length = std::hypot(residual[0], residual[1], residual[2])
-                        + std::hypot(rounding[0], rounding[1], rounding[2]);
+  // stableNorm() scales before squaring on every standard library; some
+  // three-argument std::hypot implementations square subnormals to zero.
+  const double length = residual.stableNorm() + rounding.stableNorm();
   const double violation = maxDiagonal * length;
   return productRepresented(maxDiagonal, length, violation)
              ? violation

@@ -1170,9 +1170,15 @@ TEST(FrictionCone, VanishedCertificateProductsFailClosed)
     const Eigen::Vector3d impulse(1, 1e-200, 0);
     // The feasible impulse has a positive active gradient; losing H*lambda
     // must not turn that gradient into a certificate for a null-space point.
-    EXPECT_GT(
-        independentlyCertify(H, Eigen::Vector3d::Zero(), impulse, cone).worst(),
-        1e-10L);
+    // Only an extended long double keeps the product the solver loses.
+    if constexpr (
+        std::numeric_limits<long double>::min_exponent
+        < std::numeric_limits<double>::min_exponent) {
+      EXPECT_GT(
+          independentlyCertify(H, Eigen::Vector3d::Zero(), impulse, cone)
+              .worst(),
+          1e-10L);
+    }
     EXPECT_FALSE(coneQpCertificate(H, Eigen::Vector3d::Zero(), impulse, cone));
 
     const Eigen::Vector3d stationary(1, 1e-100, 0);
