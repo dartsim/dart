@@ -928,6 +928,143 @@ TEST(FrictionCone, UnrepresentableCommonScaleCannotProduceFalseCertificates)
       cone));
 }
 
+TEST(FrictionCone, FrictionCoefficientsOutsideSupportedDomainFailClosed)
+{
+  const Eigen::Matrix3d H = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d c(0, -1, 0);
+  const Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    // The first case formerly overflowed D * H * D while forming mu^2.
+    for (const double mu :
+         {1e200,
+          std::nextafter(1e100, std::numeric_limits<double>::infinity())}) {
+      SCOPED_TRACE(mu);
+      const FrictionCone cone{Eigen::Vector2d(mu, 1), law};
+      EXPECT_FALSE(solveConeQp(H, c, cone).certified);
+      EXPECT_FALSE(solveExactContact(H, c, cone).certified);
+      EXPECT_FALSE(coneQpCertificate(H, c, zero, cone));
+    }
+  }
+}
+
+TEST(FrictionCone, SupportedLargeFrictionCoefficientsRemainCertified)
+{
+  const Eigen::Matrix3d H = Eigen::Matrix3d::Identity();
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const Eigen::Vector3d c(0, -1, 0);
+    for (const double mu : {1e10, 1e100}) {
+      SCOPED_TRACE(mu);
+      const FrictionCone cone{Eigen::Vector2d(mu, 1), law};
+      std::feclearexcept(FE_OVERFLOW);
+      const auto qp = solveConeQp(H, c, cone);
+      EXPECT_EQ(std::fetestexcept(FE_OVERFLOW), 0);
+      ASSERT_TRUE(qp.certified);
+      EXPECT_TRUE(qp.impulse.allFinite());
+      // At large mu the relative primal tolerance permits a normal impulse
+      // of zero; the independent certificate checks that tolerance directly.
+      EXPECT_GE(qp.impulse[0], -1e-10);
+      EXPECT_NEAR(qp.impulse[1], 1, 1e-10);
+      EXPECT_NEAR(qp.impulse[2], 0, 1e-10);
+      EXPECT_TRUE(coneQpCertificate(H, c, qp.impulse, cone));
+      EXPECT_LE(independentlyCertify(H, c, qp.impulse, cone).worst(), 1e-10L);
+    }
+
+    // Include the supported endpoint with an interior solution and an apex.
+    const FrictionCone largestCone{Eigen::Vector2d(1e100, 1), law};
+    for (const double sign : {-1.0, 1.0}) {
+      const Eigen::Vector3d linear(sign, 0, 0);
+      for (const auto& result :
+           {solveConeQp(H, linear, largestCone),
+            solveExactContact(H, linear, largestCone)}) {
+        ASSERT_TRUE(result.certified);
+        EXPECT_DOUBLE_EQ(result.impulse[0], sign < 0 ? 1 : 0);
+        EXPECT_TRUE(result.impulse.tail<2>().isZero());
+        EXPECT_TRUE(coneQpCertificate(H, linear, result.impulse, largestCone));
+      }
+    }
+  }
+}
+
+TEST(FrictionCone, UnderflowedCertificateCoefficientsFailClosed)
+{
+  const double smallest = std::numeric_limits<double>::denorm_min();
+  const double largest = std::numeric_limits<double>::max();
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d::Ones(), law};
+    // Dividing c by the impulse scale must not erase complementarity.
+    EXPECT_FALSE(coneQpCertificate(
+        Eigen::Vector3d(0, 1, 1).asDiagonal(),
+        Eigen::Vector3d(smallest, 0, 0),
+        Eigen::Vector3d(1e308, 0, 0),
+        cone));
+    // H and the impulse are subject to the same representability rule.
+    EXPECT_FALSE(coneQpCertificate(
+        Eigen::Vector3d(smallest, 1, 1).asDiagonal(),
+        Eigen::Vector3d(largest, 0, 0),
+        Eigen::Vector3d::Zero(),
+        cone));
+    EXPECT_FALSE(coneQpCertificate(
+        Eigen::Vector3d(0, 0, 1).asDiagonal(),
+        Eigen::Vector3d::Zero(),
+        Eigen::Vector3d(1e308, smallest, 0),
+        cone));
+    const FrictionCone tinyCone{Eigen::Vector2d(smallest, 1), law};
+    const Eigen::Vector3d impulse(1, 1, 0);
+    // Finite inputs can overflow a scaled cone coordinate.
+    EXPECT_FALSE(coneQpCertificate(
+        Eigen::Matrix3d::Identity(), -impulse, impulse, tinyCone));
+    // Even a finite tolerance must not turn an overflowed limit into a pass.
+    for (const double hScale : {1.0, 1e-320}) {
+      EXPECT_FALSE(coneQpCertificate(
+          hScale * Eigen::Matrix3d::Identity(),
+          Eigen::Vector3d::Ones(),
+          Eigen::Vector3d::Zero(),
+          cone,
+          largest));
+    }
+  }
+}
+
+TEST(FrictionCone, ViolationOverflowFailsClosed)
+{
+  const double largest = std::numeric_limits<double>::max();
+  const double infinity = std::numeric_limits<double>::infinity();
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d::Ones(), law};
+    for (const bool associated : {false, true}) {
+      // lambda - shiftedVelocity / a overflows before projection.
+      EXPECT_EQ(
+          contactViolation(
+              Eigen::Vector3d(largest, 0, 0),
+              Eigen::Vector3d(-largest, 0, 0),
+              3,
+              cone,
+              associated),
+          infinity);
+    }
+    EXPECT_EQ(
+        contactViolation(
+            Eigen::Vector3d::Zero(),
+            Eigen::Vector3d(largest, largest, 0),
+            1,
+            cone),
+        infinity);
+    EXPECT_EQ(
+        contactViolation(
+            Eigen::Vector3d(-2, 0, 0), Eigen::Vector3d::Zero(), largest, cone),
+        infinity);
+    // The gauge is finite, but subtracting the negative normal overflows.
+    EXPECT_EQ(
+        coneViolation(Eigen::Vector3d(-largest, largest, 0), cone), infinity);
+    EXPECT_EQ(coneViolation(Eigen::Vector3d(nan, 0, 0), cone), infinity);
+    EXPECT_EQ(coneViolation(Eigen::Vector3d(infinity, 0, 0), cone), infinity);
+    const FrictionCone tinyCone{
+        Eigen::Vector2d(std::numeric_limits<double>::denorm_min(), 1), law};
+    EXPECT_EQ(coneViolation(Eigen::Vector3d(0, 1, 0), tinyCone), infinity);
+  }
+}
+
 TEST(FrictionCone, CertificateIsRelativeToProblemAndImpulseScales)
 {
   const Eigen::Matrix3d I = Eigen::Matrix3d::Identity();

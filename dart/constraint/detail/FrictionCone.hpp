@@ -48,6 +48,8 @@ enum class FrictionConeLaw
 
 struct FrictionCone
 {
+  /// Supported coefficients are finite and in [0, 1e100], including zero axes.
+  /// Larger values invalidate the cone; solves and certificates fail closed.
   Eigen::Vector2d mu = Eigen::Vector2d::Ones();
   FrictionConeLaw law = FrictionConeLaw::Ellipse;
 };
@@ -71,6 +73,8 @@ struct LocalSolveResult
 /// Extreme objectives use a lossless common power-of-two scale. Unrepresentable
 /// scaling or regularized caller diagonals return certified=false.
 /// Invalid inputs return certified=false.
+/// Supported cone coefficients do not imply support for every double-range
+/// objective or impulse: required scaled quantities must remain representable.
 /// All numeric paths use fixed-size storage and a deterministic iteration
 /// order.
 LocalSolveResult solveConeQp(
@@ -96,11 +100,12 @@ Eigen::Vector3d deSaxce(
     const Eigen::Vector3d& velocity, const FrictionCone& cone);
 
 /// Primal infeasibility in normal-impulse units; zero-axis tangents must be
-/// zero.
+/// zero. Invalid inputs or non-finite intermediates return positive infinity.
 double coneViolation(const Eigen::Vector3d& impulse, const FrictionCone& cone);
 
 /// a * ||lambda - projection(lambda - shiftedVelocity/a)|| in velocity units.
 /// The associated ablation uses the unshifted velocity.
+/// Invalid inputs or non-finite intermediates return positive infinity.
 double contactViolation(
     const Eigen::Vector3d& impulse,
     const Eigen::Vector3d& velocity,
@@ -114,6 +119,8 @@ double contactViolation(
 /// the impulse scale uses max(|lambda|, max|c| / max|H|) when H is nonzero.
 /// The dual scale uses |H|*|lambda| + |c|, so cancellation is judged relative
 /// to the problem data. Call with the effective regularized matrix of a solve.
+/// Returns false if normalization erases a nonzero H, c or impulse coefficient,
+/// or if any required intermediate overflows or is non-finite.
 bool coneQpCertificate(
     const Eigen::Matrix3d& H,
     const Eigen::Vector3d& c,

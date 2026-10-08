@@ -51,7 +51,17 @@ constexpr Real kTolerance = 1e-10;
 
 bool valid(const FrictionCone& cone)
 {
-  return cone.mu.allFinite() && (cone.mu.array() >= 0.0).all();
+  return (cone.mu.array() >= 0.0).all() && (cone.mu.array() <= 1e100).all();
+}
+
+Vector coneRay(const FrictionCone& cone)
+{
+  Vector d(1.0, cone.mu[0], cone.mu[1]);
+  // Uniform scaling preserves the cone and bounds quadratic/cubic products.
+  const Real largest = cone.mu.maxCoeff();
+  if (largest > 1e20)
+    d /= largest;
+  return d;
 }
 
 Real support(const Vector& v, const FrictionCone& cone)
@@ -84,7 +94,8 @@ bool certificate(
     const FrictionCone& cone,
     Real tolerance = kTolerance)
 {
-  if (!x.allFinite())
+  // Callers prepare finite H and c; exact-contact shifts change only c[0].
+  if (!x.allFinite() || !std::isfinite(c[0]))
     return false;
   const Real hScale = H.cwiseAbs().maxCoeff();
   const Real cScale = c.cwiseAbs().maxCoeff();
@@ -94,10 +105,9 @@ bool certificate(
   if (dataScale > 0.0) {
     normalizedH /= dataScale;
     normalizedC /= dataScale;
-    for (int i = 0; i < 3; ++i) {
-      if (normalizedC[i] == 0.0 && c[i] != 0.0)
-        return false;
-    }
+    if (normalizedH.cwiseAbs().minCoeff() == 0.0
+        && ((normalizedH.array() == 0.0) && (H.array() != 0.0)).any())
+      return false;
   }
   // Scale impulses too, so complementarity cannot underflow or overflow.
   Real referenceImpulse = 0.0;
@@ -106,11 +116,13 @@ bool certificate(
     if (hScale < 1.0 && cScale > largest * hScale) {
       // An opening apex needs only dual feasibility; other impulses cannot
       // safely use an unrepresentable c/H scale for complementarity.
-      return x.isZero(0.0)
-             && support(normalizedC, cone) - normalizedC[0]
-                    <= tolerance
-                           * (std::abs(normalizedC[0])
-                              + support(normalizedC.cwiseAbs(), cone));
+      if (((normalizedC.array() == 0.0) && (c.array() != 0.0)).any())
+        return false;
+      const Real limit = tolerance
+                         * (std::abs(normalizedC[0])
+                            + support(normalizedC.cwiseAbs(), cone));
+      return x.isZero(0.0) && std::isfinite(limit)
+             && support(normalizedC, cone) - normalizedC[0] <= limit;
     }
     referenceImpulse = cScale / hScale;
   }
@@ -123,15 +135,26 @@ bool certificate(
     if (hScale > 0.0)
       normalizedC /= impulseScale;
   }
+  if (primalViolation(normalizedX, cone) > tolerance)
+    return false;
+  // Both normalizations must preserve every nonzero coefficient, including
+  // disabled axes and null-space impulses that could hide complementarity.
+  if ((normalizedC.cwiseAbs().minCoeff() == 0.0
+       && ((normalizedC.array() == 0.0) && (c.array() != 0.0)).any())
+      || (impulseScale > 1.0 && normalizedX.cwiseAbs().minCoeff() == 0.0
+          && ((normalizedX.array() == 0.0) && (x.array() != 0.0)).any()))
+    return false;
+  // Scaled coefficients are bounded by one: these sums cannot overflow.
   const Vector v = normalizedH * normalizedX + normalizedC;
   const Vector magnitude = normalizedH.cwiseAbs() * normalizedX.cwiseAbs()
                            + normalizedC.cwiseAbs();
   const Real dualScale = magnitude[0] + support(magnitude, cone);
   const Real dotScale = normalizedX.cwiseAbs().dot(magnitude);
-  return v.allFinite() && magnitude.allFinite()
-         && primalViolation(normalizedX, cone) <= tolerance
-         && support(v, cone) - v[0] <= tolerance * dualScale
-         && std::abs(normalizedX.dot(v)) <= tolerance * dotScale;
+  const Real dualLimit = tolerance * dualScale;
+  const Real dotLimit = tolerance * dotScale;
+  return std::isfinite(dualLimit) && std::isfinite(dotLimit)
+         && support(v, cone) - v[0] <= dualLimit
+         && std::abs(normalizedX.dot(v)) <= dotLimit;
 }
 
 bool prepare(
@@ -167,9 +190,7 @@ bool prepare(
   if (!regularize) {
     // Certifying needs no solve-scale conversion. Preserve subnormal entries
     // when symmetrizing, including the smallest positive diagonal.
-    H = inputScale < std::numeric_limits<Real>::min()
-            ? (input + 0.5 * (input.transpose() - input)).eval()
-            : (0.5 * input + 0.5 * input.transpose()).eval();
+    H = (input + 0.5 * (input.transpose() - input)).eval();
     return true;
   }
   Matrix scaled = input;
@@ -225,8 +246,9 @@ AnglePoint anglePoint(
     const Matrix& H, const Vector& c, const FrictionCone& cone, Real theta)
 {
   const Real ct = std::cos(theta), st = std::sin(theta);
-  const Real m1 = cone.mu[0], m2 = cone.mu[1];
-  const Vector a(1.0, m1 * ct, m2 * st);
+  const Vector d = coneRay(cone);
+  const Real m1 = d[1], m2 = d[2];
+  const Vector a(d[0], m1 * ct, m2 * st);
   const Vector da(0.0, -m1 * st, m2 * ct);
   const Vector Ha = H * a;
   const Real p = c.dot(a), dp = c.dot(da);
@@ -297,7 +319,7 @@ Vector secularBoundary(
   // In y coordinates x = D*y, the boundary is y_n^2 = |y_t|^2 and
   // (D*H*D - nu*diag(1,-1,-1))*y = -D*c. Only C + nu*I is
   // inverted below: no matrix containing 1/mu^2 is formed or inverted.
-  const Vector d(1.0, cone.mu[0], cone.mu[1]);
+  const Vector d = coneRay(cone);
   const Matrix B = d.asDiagonal() * H * d.asDiagonal();
   const Vector g = d.cwiseProduct(c);
   const Eigen::Vector2d b = B.bottomLeftCorner<2, 1>();
@@ -331,7 +353,7 @@ Vector secularBoundary(
     return p;
   };
   const auto onRay = [&](const Eigen::Vector2d& tangent) -> Vector {
-    const Vector ray(1.0, d[1] * tangent[0], d[2] * tangent[1]);
+    const Vector ray(d[0], d[1] * tangent[0], d[2] * tangent[1]);
     return (-c.dot(ray) / ray.dot(H * ray)) * ray;
   };
 
@@ -401,6 +423,7 @@ Vector secularBoundary(
 
 Vector polyhedralQp(const Matrix& H, const Vector& c, const FrictionCone& cone)
 {
+  const Vector d = coneRay(cone);
   Vector best = Vector::Zero();
   Real bestValue = 0.0;
   // Each axis is free, on its negative face, or on its positive face. This
@@ -413,7 +436,7 @@ Vector polyhedralQp(const Matrix& H, const Vector& c, const FrictionCone& cone)
       if (cone.mu[1] == 0.0 && second != 0)
         continue;
       Matrix T = Matrix::Zero();
-      T.col(0) = Vector(1.0, first * cone.mu[0], second * cone.mu[1]);
+      T.col(0) = Vector(d[0], first * d[1], second * d[2]);
       int size = 1;
       if (first == 0 && cone.mu[0] > 0.0)
         T(1, size++) = 1.0;
@@ -458,20 +481,23 @@ LocalSolveResult solvePrepared(
     x = polyhedralQp(H, c, cone);
   } else {
     x = secularBoundary(H, c, cone);
-    if (!certificate(H, c, x.cast<double>().cast<Real>(), cone)) {
+    result.certified = certificate(H, c, x, cone);
+    if (!result.certified) {
       ++result.numLocalFallbacks;
       // Dense reference scan plus bisection. Increase the sampling density
       // for narrow minima at the randomized gate's highest condition numbers.
       for (int count : {720, 5760, 46080}) {
         x = scanAngles(H, c, cone, count);
-        if (certificate(H, c, x.cast<double>().cast<Real>(), cone))
+        result.certified = certificate(H, c, x, cone);
+        if (result.certified)
           break;
       }
     }
   }
   result.impulse = x.cast<double>();
-  // Certify the returned double value, not only the extended precision iterate.
-  result.certified = certificate(H, c, result.impulse.cast<Real>(), cone);
+  // The ellipse path has already certified this same double impulse.
+  result.certified
+      = result.certified || certificate(H, c, result.impulse, cone);
   return result;
 }
 
@@ -515,7 +541,9 @@ double coneViolation(const Eigen::Vector3d& impulse, const FrictionCone& cone)
 {
   if (!impulse.allFinite() || !valid(cone))
     return std::numeric_limits<double>::infinity();
-  return double(primalViolation(impulse.cast<Real>(), cone));
+  const double violation = primalViolation(impulse.cast<Real>(), cone);
+  return std::isfinite(violation) ? violation
+                                  : std::numeric_limits<double>::infinity();
 }
 
 double contactViolation(
@@ -530,9 +558,16 @@ double contactViolation(
     return std::numeric_limits<double>::infinity();
   const Eigen::Vector3d shifted
       = associated ? velocity : deSaxce(velocity, cone);
-  return maxDiagonal
-         * (impulse - projectCone(impulse - shifted / maxDiagonal, cone))
-               .norm();
+  const Eigen::Vector3d step = shifted / maxDiagonal;
+  const Eigen::Vector3d argument = impulse - step;
+  if (!shifted.allFinite() || !step.allFinite() || !argument.allFinite())
+    return std::numeric_limits<double>::infinity();
+  const Eigen::Vector3d residual = impulse - projectCone(argument, cone);
+  if (!residual.allFinite())
+    return std::numeric_limits<double>::infinity();
+  const double violation = maxDiagonal * residual.norm();
+  return std::isfinite(violation) ? violation
+                                  : std::numeric_limits<double>::infinity();
 }
 
 bool coneQpCertificate(
