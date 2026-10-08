@@ -68,7 +68,8 @@ PairKey canonicalPair(std::size_t idA, std::size_t idB)
 }
 
 //==============================================================================
-Eigen::Vector3d normalizedOrDefault(const Eigen::Vector3d& normal)
+Eigen::Vector3d normalizedManifoldCacheNormalOrDefault(
+    const Eigen::Vector3d& normal)
 {
   const double norm = normal.norm();
   if (norm < kNormalEpsilon)
@@ -340,7 +341,8 @@ void PersistentManifold::refresh(
     const Eigen::Vector3d worldB = tfB * contact.localPointB;
     const Eigen::Vector3d rel = worldB - worldA;
 
-    const Eigen::Vector3d n = normalizedOrDefault(contact.normal);
+    const Eigen::Vector3d n
+        = normalizedManifoldCacheNormalOrDefault(contact.normal);
     const double normalDistance = std::abs(rel.dot(n));
     const Eigen::Vector3d tangential = rel - n * rel.dot(n);
     const double tangentialDrift = tangential.norm();
@@ -370,6 +372,38 @@ std::size_t PairKeyHash::operator()(const PairKey& key) const
   const std::size_t h1 = std::hash<std::size_t>{}(key.idA);
   const std::size_t h2 = std::hash<std::size_t>{}(key.idB);
   return h1 ^ (h2 + 0x9e3779b97f4a7c15ULL + (h1 << 6U) + (h1 >> 2U));
+}
+
+//==============================================================================
+PersistentManifoldCache::PersistentManifoldCache(
+    const PersistentManifoldCache& other)
+  : mManifolds(other.mManifolds, mNodePool.get())
+{
+}
+
+//==============================================================================
+PersistentManifoldCache::PersistentManifoldCache(
+    PersistentManifoldCache&& other)
+  : mManifolds(std::move(other.mManifolds), mNodePool.get())
+{
+}
+
+//==============================================================================
+PersistentManifoldCache& PersistentManifoldCache::operator=(
+    const PersistentManifoldCache& other)
+{
+  if (this != &other)
+    mManifolds = other.mManifolds;
+  return *this;
+}
+
+//==============================================================================
+PersistentManifoldCache& PersistentManifoldCache::operator=(
+    PersistentManifoldCache&& other)
+{
+  if (this != &other)
+    mManifolds = std::move(other.mManifolds);
+  return *this;
 }
 
 //==============================================================================

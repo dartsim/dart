@@ -16,6 +16,635 @@ import pytest
 import yaml
 
 
+def test_nightly_rows_cover_canonical_windows_without_changing_quick_tier(tmp_path):
+    module = _load_runner()
+    quick = module.select_rows("")
+    rows = module.select_rows("nightly")
+    assert rows[: len(quick)] == quick
+    assert len(rows) == len({row.key for row in rows})
+    assert {
+        (row.row, row.det, row.threads, row.steps) for row in module.NIGHTLY_ROWS
+    } == {
+        *{
+            (f"S1-{objects}-t{threads}", det, threads, 200)
+            for objects in (60, 120)
+            for det in ("dart", "ode")
+            for threads in (1, 16)
+        },
+        *{("S2", det, 1, 3000) for det in module.DETECTORS},
+        *{
+            (f"{scene}-t{threads}", det, threads, 300)
+            for scene in ("S3", "S4")
+            for det in module.DETECTORS
+            for threads in (1, 4, 16)
+        },
+        *{("S5", det, 1, 300) for det in module.DETECTORS},
+        ("S6", "dart", 1, 20000),
+        ("mf", "dart", 1, 50),
+    }
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--nightly",
+        ]
+    )
+    args.bin_dir, args.source_dir = tmp_path, module.ROOT
+    for row in module.NIGHTLY_ROWS:
+        command = module.row_command(
+            row, args, tmp_path / "world", row.warmup, row.steps
+        )
+        if row.row.startswith("S"):
+            assert row.warmup == 0 and not row.ir and not row.perturb
+            assert ("--disable-deactivation" in command) == row.row.startswith(
+                ("S1", "S3")
+            )
+            assert ("--quiet" in command) == (row.row != "S6")
+    s6 = module.select_rows("S6")[0]
+    assert s6.checkpoint == 5000 and "--max-contacts" not in s6.args
+    assert module.select_rows("mf")[0].warmup == 50
+
+
+def test_canonical_guard_is_measured_once_and_does_not_require_perturbation(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    calls = []
+
+    def native(row, args, world, config=""):
+        calls.append(config)
+        return {"guards": {"finite": True}, "allocs": 0, "bytes": 0}
+
+    monkeypatch.setattr(module, "native", native)
+    row = module.measure(module.select_rows("S6")[0], args, tmp_path)
+    assert calls == [""]
+    assert row["status"] == "ok" and not row["gated"]
+    assert row["qualification_required"] is False
+    assert "ir_per_step" not in row["head"]
+    monkeypatch.setattr(module, "run_arm", lambda args: {"results": [row]})
+    assert (
+        module.main(
+            [
+                "run",
+                "--commit",
+                "HEAD",
+                "--prefix",
+                str(tmp_path),
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+
+
+@pytest.mark.parametrize(
+    "missing,penetration", [(False, "0.3"), (True, "0.3"), (False, "inf")]
+)
+def test_s6_capture_keeps_penetration_checkpoints(
+    monkeypatch, tmp_path, missing, penetration
+):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir, args.source_dir = tmp_path, module.ROOT
+    checkpoints = (5000, 10000, 15000) if missing else (5000, 10000, 15000, 20000)
+    output = "\n".join(
+        [
+            f"STEPALLOC steps=20000 measured=20000 allocs=0 bytes=0 libdart={tmp_path}/libdart.so",
+            "PERFTIME maxrss_kb=100",
+            "Avg Step Time: 1 ms",
+            "Final State Hash: 0x1",
+            f"Final State Finite: {'true' if penetration != 'inf' else 'false'}",
+            "Final Contacts: 1",
+            "Final Contact Cap Hit: false",
+            "Final Resting: 0/71",
+            f"Final Max Penetration: {penetration}",
+            *(
+                f"step {step} rtf 1 contacts 1 max_penetration 0.2 mobile 71 resting 0 islands 1"
+                for step in checkpoints
+            ),
+        ]
+    )
+    monkeypatch.setattr(module, "execute", lambda *args: output)
+    monkeypatch.setattr(module, "perturb_environment", lambda *args: {})
+    monkeypatch.setattr(module, "environment", lambda *args: {})
+    if missing:
+        with pytest.raises(ValueError, match="missing canonical checkpoints"):
+            module.native(module.select_rows("S6")[0], args, tmp_path)
+    else:
+        if penetration == "inf":
+            # A non-finite final penetration breaks the row on every detector.
+            with pytest.raises(module.BenchmarkCaseError, match="non-finite final"):
+                module.native(module.select_rows("S6")[0], args, tmp_path)
+            return
+        metric = module.native(module.select_rows("S6")[0], args, tmp_path)
+        assert metric["max_penetration"] == 0.3
+        assert [item["step"] for item in metric["checkpoints"]] == list(checkpoints)
+        module.write_json(tmp_path / "metric.json", metric)
+
+
+def test_s6_non_finite_checkpoint_breaks_the_row(monkeypatch, tmp_path):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir, args.source_dir = tmp_path, module.ROOT
+    output = "\n".join(
+        [
+            f"STEPALLOC steps=20000 measured=20000 allocs=0 bytes=0 libdart={tmp_path}/libdart.so",
+            "PERFTIME maxrss_kb=100",
+            "Avg Step Time: 1 ms",
+            "Final State Hash: 0x1",
+            "Final State Finite: true",
+            "Final Contacts: 1",
+            "Final Contact Cap Hit: false",
+            "Final Resting: 0/71",
+            "Final Max Penetration: 0.3",
+            *(
+                f"step {step} rtf 1 contacts 1 max_penetration "
+                f"{'nan' if step == 5000 else '0.2'} mobile 71 resting 0 islands 1"
+                for step in (5000, 10000, 15000, 20000)
+            ),
+        ]
+    )
+    monkeypatch.setattr(module, "execute", lambda *args: output)
+    monkeypatch.setattr(module, "perturb_environment", lambda *args: {})
+    monkeypatch.setattr(module, "environment", lambda *args: {})
+    # A finite final state does not cover the intermediate checkpoints.
+    with pytest.raises(module.BenchmarkCaseError, match="non-finite checkpoint"):
+        module.native(module.select_rows("S6")[0], args, tmp_path)
+
+
+def test_nightly_table_fetches_main_for_an_unknown_published_commit(monkeypatch):
+    module = _load_runner()
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command[3])
+        merge_base = sum(call == "merge-base" for call in calls)
+        code = 128 if command[3] == "merge-base" and merge_base == 1 else 0
+        return subprocess.CompletedProcess(command, code, "", "")
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+    previous = "Generated at 2026-10-08T00:00:00+00:00 for `" + "a" * 40 + "`.\n"
+    record = {"run": {"commit": "b" * 40, "time": "2026-10-08T01:00:00+00:00"}}
+    assert module.nightly_table_can_advance(record, previous)
+    assert calls == ["merge-base", "fetch", "merge-base"]
+
+
+def test_nightly_requires_complete_head_only_measurement(monkeypatch, tmp_path):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        ["local", "--nightly", "--output-dir", str(tmp_path)]
+    )
+    with pytest.raises(ValueError, match="requires --smoke"):
+        module.local_arms(args)
+    args.smoke, args.rows = True, "pend"
+    with pytest.raises(ValueError, match="complete nightly row set"):
+        module.local_arms(args)
+    monkeypatch.setattr(
+        module,
+        "run_arm",
+        lambda args: {
+            "results": [
+                {"row": "S6", "det": "dart", "status": "unsupported", "gated": False},
+            ]
+        },
+    )
+    assert (
+        module.main(
+            [
+                "run",
+                "--commit",
+                "HEAD",
+                "--prefix",
+                str(tmp_path),
+                "--output-dir",
+                str(tmp_path),
+                "--nightly",
+            ]
+        )
+        == 1
+    )
+
+
+@pytest.mark.parametrize("pairs", [None, 0, 3])
+def test_nightly_requires_contact_pairs_and_saves_failures(
+    monkeypatch, tmp_path, pairs
+):
+    module = _load_runner()
+    rows = [*module.NIGHTLY_ROWS, module.select_rows("gzb")[0]]
+    monkeypatch.setattr(module, "select_rows", lambda selection: rows)
+    monkeypatch.setattr(module, "command_output", lambda command: "a" * 40)
+    monkeypatch.setattr(
+        module, "fingerprint", lambda *args: _publication_fixture()["run"]["env"]
+    )
+    monkeypatch.setattr(
+        module,
+        "installed_provenance",
+        lambda args: {
+            "workload_sources": {module.CB: "contact", module.PB: "portable"}
+        },
+    )
+    output = "\n".join(
+        [
+            "Final State Hash: 0x1",
+            "Final State Finite: true",
+            "Final Contacts: 3",
+            "Final Contact Cap Hit: false",
+            "Final Resting: 0/3",
+            *([] if pairs is None else [f"Final Contact Pairs: {pairs}"]),
+        ]
+    )
+    monkeypatch.setattr(
+        module,
+        "native",
+        lambda *args: {
+            "guards": module.guards(output),
+            "allocs_per_step": 0,
+            "bytes_per_step": 0,
+        },
+    )
+    shim = tmp_path / "shim.so"
+    shim.write_bytes(b"shim")
+    assert module.main(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--shim",
+            str(shim),
+            "--nightly",
+            "--native-only",
+            "--no-perturb",
+        ]
+    ) == int(pairs is None)
+    record = module.publication_record(tmp_path / "record.json", "nightly")
+    for row in record["results"][:-1]:
+        assert row["status"] == ("broken" if pairs is None else "ok")
+        if pairs is None:
+            assert row["error"] == "missing contact pair count"
+            assert not row["gated"]
+        else:
+            assert row["head"]["guards"]["pairs"] == pairs
+    # The portable driver does not emit pair counts on main.
+    assert record["results"][-1]["status"] == "ok"
+    module.write_publication(tmp_path / "pages", record)
+    table = (tmp_path / "pages/performance/guards/main.md").read_text()
+    if pairs is None:
+        assert "missing contact pair count" in table and "broken" in table
+
+
+@pytest.mark.parametrize(
+    "paths,mode,smoke",
+    [
+        (["pixi.toml", "pixi.lock"], "skip", "false"),
+        (["docs/README.md"], "skip", "false"),
+        (["scripts/perf_regression.py"], "ab", "true"),
+        (["tools/perf/allocshim.c"], "ab", "true"),
+        ([".github/workflows/perf.yml"], "ab", "true"),
+        (["dart/simulation/World.cpp", "pixi.lock"], "ab", "false"),
+        (["tests/benchmark/worlds/3k_shapes.sdf.gz"], "ab", "true"),
+    ],
+)
+def test_dispatch_scope_compares_first_parent_and_skips_pixi_only(
+    tmp_path, paths, mode, smoke
+):
+    stub = """
+    changed_paths=("$@")
+    git() {
+      case "$1" in
+        rev-parse)
+          if [[ "$*" == *^1* ]]; then printf '%s\\n' parent; else printf '%s\\n' head; fi ;;
+        diff) printf '%s\\0' "${changed_paths[@]}" ;;
+        merge-base|checkout|worktree) return 0 ;;
+      esac
+    }
+    """
+    env_file = tmp_path / "env"
+    result = subprocess.run(
+        [
+            "bash",
+            "-e",
+            "-c",
+            stub
+            + _perf_step("record-measure", "Select base and measurement scope")["run"],
+            "selector",
+            *paths,
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env={
+            **os.environ,
+            "GITHUB_ENV": str(env_file),
+            "GITHUB_OUTPUT": str(tmp_path / "output"),
+            "GITHUB_STEP_SUMMARY": str(tmp_path / "summary"),
+            "RUNNER_TEMP": str(tmp_path),
+            "REQUESTED_HEAD": "",
+            "REQUESTED_BASE": "",
+            "GITHUB_EVENT_NAME": "workflow_dispatch",
+            "PUSH_BEFORE": "",
+        },
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    selected = dict(line.split("=", 1) for line in env_file.read_text().splitlines())
+    assert (selected["PERF_BASE"], selected["PERF_HEAD"]) == ("parent", "head")
+    assert (selected["PERF_MODE"], selected["PERF_SMOKE"]) == (mode, smoke)
+
+
+@pytest.mark.parametrize(
+    "event,before,requested,expected",
+    [
+        ("push", "start", "", "start"),
+        ("push", "zero", "", "parent"),
+        ("push", "", "", "parent"),
+        ("push", "missing", "", "parent"),
+        ("push", "side", "", None),
+        ("workflow_dispatch", "start", "", "parent"),
+        ("workflow_dispatch", "", "parent", "parent"),
+        ("workflow_dispatch", "", "start", None),
+        ("workflow_dispatch", "", "missing", None),
+    ],
+)
+def test_merge_scope_uses_push_range_and_validates_ancestry(
+    tmp_path, event, before, requested, expected
+):
+    source = tmp_path / "source"
+    source.mkdir()
+
+    def git(*arguments):
+        return subprocess.run(
+            ["git", "-C", str(source), *arguments],
+            check=True,
+            text=True,
+            capture_output=True,
+        ).stdout.strip()
+
+    git("init", "--initial-branch=main")
+    git("config", "user.name", "test")
+    git("config", "user.email", "test@example.com")
+    revisions = {"zero": "0" * 40, "missing": "f" * 40, "": ""}
+    # A rebase merge whose first commit changes DART and last changes only docs.
+    for name, path in (
+        ("start", "README.md"),
+        ("parent", "dart/change.cpp"),
+        ("head", "docs/change.md"),
+    ):
+        target = source / path
+        target.parent.mkdir(exist_ok=True)
+        target.write_text(name)
+        git("add", ".")
+        git("commit", "-m", name)
+        revisions[name] = git("rev-parse", "HEAD")
+    git("update-ref", "refs/remotes/origin/main", revisions["head"])
+    git("checkout", "-b", "side", revisions["start"])
+    git("commit", "--allow-empty", "-m", "unrelated history")
+    revisions["side"] = git("rev-parse", "HEAD")
+    git("checkout", "main")
+    env_file = tmp_path / "env"
+    step = _perf_step("record-measure", "Select base and measurement scope")
+    assert step["env"]["PUSH_BEFORE"] == "${{ github.event.before }}"
+    result = subprocess.run(
+        ["bash", "-e", "-o", "pipefail", "-c", step["run"]],
+        cwd=source,
+        env={
+            **os.environ,
+            "GITHUB_EVENT_NAME": event,
+            "PUSH_BEFORE": revisions[before],
+            "REQUESTED_HEAD": "",
+            "REQUESTED_BASE": revisions[requested],
+            "RUNNER_TEMP": str(tmp_path),
+            "GITHUB_ENV": str(env_file),
+            "GITHUB_OUTPUT": str(tmp_path / "output"),
+            "GITHUB_STEP_SUMMARY": str(tmp_path / "summary"),
+        },
+        text=True,
+        capture_output=True,
+    )
+    if expected is None:
+        assert result.returncode != 0
+        assert not env_file.exists()
+    else:
+        assert result.returncode == 0, result.stderr
+        selected = dict(
+            line.split("=", 1) for line in env_file.read_text().splitlines()
+        )
+        assert selected["PERF_BASE"] == revisions[expected]
+        assert selected["PERF_HEAD"] == revisions["head"]
+        assert selected["PERF_MODE"] == ("ab" if expected == "start" else "skip")
+
+
+@pytest.mark.parametrize("ambiguity", [False, True])
+def test_merge_pr_lookup_matches_merged_main_commit(tmp_path, ambiguity):
+    pr = {
+        "number": 3570,
+        "merged_at": "date",
+        "base": {"ref": "main"},
+        "merge_commit_sha": "head",
+        "body": "Perf-Regression-Rationale: s3w/ode: accepted work",
+    }
+    others = [
+        {**pr, "number": 20, "merged_at": None},
+        {**pr, "number": 21, "base": {"ref": "release-6.19"}},
+        {**pr, "number": 22, "merge_commit_sha": "another"},
+    ]
+    if ambiguity:
+        others.append({**pr, "number": 23})
+    (tmp_path / "perf-pulls.json").write_text(json.dumps([[pr], others]))
+    result = _run_perf_snippet(
+        "record-measure",
+        "Find the merged PR and its current rationale",
+        tmp_path,
+        {
+            "RUNNER_TEMP": str(tmp_path),
+            "PERF_HEAD": "head",
+            "GITHUB_OUTPUT": str(tmp_path / "output"),
+        },
+    )
+    if ambiguity:
+        assert result.returncode != 0 and "ambiguous merged PR" in result.stderr
+    else:
+        assert result.returncode == 0, result.stderr
+        assert (tmp_path / "perf-pr-body.txt").read_text() == pr["body"]
+        assert (tmp_path / "output").read_text() == "number=3570\n"
+
+
+def test_publication_permissions_keep_all_measurement_read_only():
+    workflow = _perf_workflow()
+    assert workflow["on"]["push"]["paths"] == workflow["on"]["pull_request"]["paths"]
+    assert "pull_request_target" not in workflow["on"]
+    assert "GH_TOKEN" not in workflow.get("env", {})
+    for job in ("measure", "record-measure", "nightly-measure"):
+        definition = workflow["jobs"][job]
+        permissions = {"contents": "read"}
+        if job == "record-measure":
+            permissions["pull-requests"] = "read"
+        assert definition["permissions"] == permissions
+        assert "GH_TOKEN" not in definition.get("env", {})
+        for step in definition["steps"]:
+            if "GH_TOKEN" in step.get("env", {}):
+                assert step["name"] == "Find the merged PR and its current rationale"
+            if step.get("uses", "").startswith("actions/checkout@"):
+                assert step["with"]["persist-credentials"] == "false"
+    for job in ("record", "nightly"):
+        definition = workflow["jobs"][job]
+        assert definition["permissions"]["contents"] == "write"
+        assert "refs/heads/main" in definition["if"]
+        assert "pull_request" not in definition["if"]
+        assert (
+            definition["steps"][0]["run"].splitlines()[0]
+            == 'test "$RUNNER_ENVIRONMENT" = github-hosted'
+        )
+
+
+def test_merge_writer_uses_only_main_publisher_and_saved_evidence():
+    jobs = _perf_workflow()["jobs"]
+    measure, writer = jobs["record-measure"], jobs["record"]
+    assert writer["needs"] == "record-measure"
+    assert "needs.record-measure.result == 'success'" in writer["if"]
+    assert "needs.record-measure.outputs.mode == 'ab'" in writer["if"]
+    assert writer["permissions"] == {
+        "contents": "write",
+        "pull-requests": "write",
+    }
+    assert "GH_TOKEN" not in writer["env"]
+    assert writer["env"]["PERF_HEAD"] == "${{ needs.record-measure.outputs.head }}"
+    assert writer["env"]["PERF_PR"] == "${{ needs.record-measure.outputs.pr }}"
+    checkout = _perf_step("record", "Checkout main publisher")
+    assert checkout["with"] == {"ref": "main", "persist-credentials": "false"}
+    upload = _perf_step("record-measure", "Upload merge evidence")
+    download = _perf_step(
+        "record", "Download merge measurements (including earlier attempts)"
+    )
+    assert (
+        upload["with"]["name"]
+        == "perf-merge-${{ github.run_id }}-${{ github.run_attempt }}"
+    )
+    assert (
+        measure["outputs"]["artifact"]
+        == "${{ format('perf-merge-{0}-{1}', github.run_id, github.run_attempt) }}"
+    )
+    assert download["with"]["name"] == "${{ needs.record-measure.outputs.artifact }}"
+    assert "overwrite" not in upload["with"]
+    assert "${{ env.PERF_OUTPUT }}/perf.*" in upload["with"]["path"]
+    assert download["with"]["path"] == "${{ runner.temp }}/perf"
+    assert not any(
+        step.get("uses", "").startswith("prefix-dev/") for step in writer["steps"]
+    )
+    for step in writer["steps"]:
+        script = step.get("run", "")
+        assert "pixi" not in script
+        assert " local " not in script
+        assert ("GH_TOKEN" in step.get("env", {})) == ("gh api" in script)
+    assert not any(" publish " in step.get("run", "") for step in measure["steps"])
+    publish = _perf_step("record", "Publish the merge record and chart")["run"]
+    assert (
+        'python3 scripts/perf_regression.py publish --record "$PERF_OUTPUT/perf.json"'
+        in publish
+    )
+    comment_step = _perf_step("record", "Refresh the merged PR verdict comment")
+    assert "steps.hosted.outcome == 'success'" in comment_step["if"]
+    assert "steps.download.outcome == 'success'" in comment_step["if"]
+    comment = comment_step["run"]
+    assert 'marker="<!-- dart-perf-merge:$PERF_HEAD -->"' in comment
+    assert "gh api --method PATCH" in comment and "gh api --method POST" in comment
+    names = [step["name"] for step in writer["steps"]]
+    assert (
+        names.index("Publish the merge record and chart")
+        < names.index("Refresh the merged PR verdict comment")
+        < names.index("Summarize and enforce the merged verdict")
+    )
+
+
+@pytest.mark.parametrize("status,exit_code", [("PASS", 0), ("FAIL", 1), ("ERROR", 2)])
+def test_merge_writer_enforces_saved_verdict(tmp_path, status, exit_code):
+    (tmp_path / "perf.json").write_text(json.dumps({"verdict": {"status": status}}))
+    result = _run_perf_snippet(
+        "record",
+        "Summarize and enforce the merged verdict",
+        tmp_path,
+        {"PERF_OUTPUT": str(tmp_path)},
+    )
+    assert result.returncode == exit_code, result.stderr
+
+
+def test_merge_comment_refresh_requires_successful_publication():
+    publish = _perf_step("record", "Publish the merge record and chart")
+    refresh = _perf_step("record", "Refresh the merged PR verdict comment")
+    assert publish["id"] == "publish"
+    # A failed/skipped publisher must preserve the comment, regardless of verdict.
+    # A published FAIL still needs to be reported before the enforcement step.
+    assert refresh["if"] == (
+        "${{ !cancelled() && steps.hosted.outcome == 'success' && "
+        "steps.download.outcome == 'success' && steps.publish.outcome == 'success' }}"
+    )
+
+
+@pytest.mark.parametrize(
+    "environment,exit_code", [("github-hosted", 0), ("self-hosted", 1)]
+)
+def test_merge_writer_refuses_self_hosted_before_checkout(
+    tmp_path, environment, exit_code
+):
+    result = subprocess.run(
+        [
+            "bash",
+            "-e",
+            "-c",
+            _perf_step("record", "Refuse self-hosted publication")["run"],
+        ],
+        env={
+            **os.environ,
+            "RUNNER_ENVIRONMENT": environment,
+            "RUNNER_TEMP": str(tmp_path),
+            "GITHUB_ENV": str(tmp_path / "env"),
+        },
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == exit_code, result.stderr
+    assert (tmp_path / "env").exists() == (environment == "github-hosted")
+
+
 def test_compare_classification_and_thresholds():
     path = Path(__file__).resolve().parents[1] / "scripts/perf_regression.py"
     spec = importlib.util.spec_from_file_location("perf_regression", path)
@@ -377,6 +1006,18 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
 
     monkeypatch.setattr(module, "command_output", command_output)
     first = module.fingerprint(args)
+    original_read = Path.read_text
+
+    def different_cpu(path, *args, **kwargs):
+        if str(path) == "/proc/cpuinfo":
+            return "model name : Another hosted CPU\n"
+        return original_read(path, *args, **kwargs)
+
+    with monkeypatch.context() as cpu_patch:
+        cpu_patch.setattr(Path, "read_text", different_cpu)
+        other_cpu = module.fingerprint(args)
+    assert other_cpu["host_cpu"] != first["host_cpu"]
+    assert other_cpu["fingerprint"] == first["fingerprint"]
     for key in ("compiler", "compiler_sha", "pixi_lock_sha", "preset"):
         assert first[key] == stamp[key]
     for field, executable in (
@@ -1175,7 +1816,18 @@ def test_run_requires_installed_commit():
 
 
 @pytest.mark.parametrize(
-    "changed", [None, "hash", "contacts", "cap_hit", "resting", "finite"]
+    "changed",
+    [
+        None,
+        "hash",
+        "contacts",
+        "pairs",
+        "cap_hit",
+        "resting",
+        "finite",
+        "max_penetration",
+        "checkpoints",
+    ],
 )
 def test_multithread_parity_compares_all_guards(monkeypatch, tmp_path, changed):
     module = _load_runner()
@@ -1206,15 +1858,26 @@ def test_multithread_parity_compares_all_guards(monkeypatch, tmp_path, changed):
 
     def measure(row, args, world):
         guards = dict(
-            hash="same", contacts=1, cap_hit=False, resting="0/1", finite=True
+            hash="same", contacts=1, pairs=1, cap_hit=False, resting="0/1", finite=True
         )
+        metrics = {
+            "guards": guards,
+            "max_penetration": 0.1,
+            "checkpoints": [{"step": 100, "max_penetration": 0.1}],
+        }
         if row.parity and changed:
-            guards[changed] = {
+            target = (
+                metrics if changed in ("max_penetration", "checkpoints") else guards
+            )
+            target[changed] = {
                 "hash": "different",
                 "contacts": 2,
+                "pairs": 2,
                 "cap_hit": True,
                 "resting": "1/1",
                 "finite": False,
+                "max_penetration": 0.2,
+                "checkpoints": [{"step": 100, "max_penetration": 0.2}],
             }[changed]
         return {
             "row": row.row,
@@ -1222,7 +1885,7 @@ def test_multithread_parity_compares_all_guards(monkeypatch, tmp_path, changed):
             "parity": row.parity,
             "status": "ok",
             "input_sha": "scene input",
-            "head": {"guards": guards},
+            "head": metrics,
         }
 
     monkeypatch.setattr(module, "measure", measure)
@@ -1289,6 +1952,77 @@ def test_measure_gates_only_on_its_own_perturbation_pass(monkeypatch, tmp_path):
         lambda row, args, world, config="": {**metrics, "bytes": 64 + bool(config)},
     )
     assert module.measure(row, args, tmp_path)["gated"] is False
+
+
+@pytest.mark.parametrize("field", ["max_penetration", "checkpoints"])
+def test_perturbation_checks_separately_stored_guard_evidence(
+    monkeypatch, tmp_path, field
+):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--native-only",
+        ]
+    )
+    original = {
+        "guards": {"hash": "same", "finite": True},
+        "allocs": 0,
+        "bytes": 0,
+        "max_penetration": 0.1,
+        "checkpoints": [{"step": 100, "max_penetration": 0.1}],
+    }
+    altered = copy.deepcopy(original)
+    altered[field] = (
+        0.2 if field == "max_penetration" else [{"step": 100, "max_penetration": 0.2}]
+    )
+    monkeypatch.setattr(
+        module,
+        "native",
+        lambda row, args, world, config="": copy.deepcopy(
+            altered if config else original
+        ),
+    )
+    measured = module.measure(module.select_rows("s3w/dart")[0], args, tmp_path)
+    assert measured["gated"] is False
+    assert all(
+        not sample["stable"] and sample[field] == altered[field]
+        for sample in measured["perturbations"].values()
+    )
+
+
+@pytest.mark.parametrize("field", ["max_penetration", "checkpoints"])
+def test_compare_rebaselines_separately_stored_guard_evidence(field):
+    module = _load_runner()
+    base = _publication_fixture()
+    base["run"]["env"].update(_micro_record(module, "dyn")["run"]["env"])
+    base["results"][0]["head"].update(
+        bytes_per_step=0,
+        max_penetration=0.1,
+        checkpoints=[{"step": 100, "max_penetration": 0.1}],
+    )
+    head = copy.deepcopy(base)
+    head["results"][0]["head"][field] = (
+        0.2 if field == "max_penetration" else [{"step": 100, "max_penetration": 0.2}]
+    )
+    result = module.compare(base, head)
+    assert result["verdict"]["status"] == "FAIL"
+    assert result["results"][0]["delta"]["guards_equal"] is False
+    assert result["results"][0]["failures"] == [
+        "guards changed; Rebaseline-Rationale required"
+    ]
+    assert (
+        module.compare(
+            base, head, "Rebaseline-Rationale: s3w/dart: intended guard change"
+        )["verdict"]["status"]
+        == "PASS"
+    )
 
 
 def test_environment_ignores_inherited_library_path(monkeypatch, tmp_path):
@@ -2095,6 +2829,35 @@ def test_micro_case_errors_are_correctness_failures(
         ["compare", "--base", str(base_path), "--head", str(head_path)]
     ) == (1 if correctness else 2)
     assert ("FAIL" if correctness else "ERROR") in capsys.readouterr().out
+    monkeypatch.setattr(module, "run_arm", lambda args: head)
+    assert module.main(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--nightly",
+        ]
+    ) == (1 if correctness else 2)
+    head["run"] = _publication_fixture()["run"]
+    module.write_json(head_path, head)
+    if correctness:
+        assert broken["head"] == {}
+        published = module.publication_record(head_path, "nightly")
+        module.write_publication(tmp_path / "pages", published)
+        saved = list(
+            (tmp_path / "pages/performance/records/main").glob("*/*-nightly.json")
+        )
+        assert len(saved) == 1
+        assert (
+            json.loads(saved[0].read_text())["results"][0]["error"] == broken["error"]
+        )
+    else:
+        with pytest.raises(ValueError, match="invalid or incomplete publication row"):
+            module.publication_record(head_path, "nightly")
 
 
 @pytest.mark.parametrize("name", ["dyn", "lcp"])
@@ -3244,3 +4007,1480 @@ def test_measure_and_verdict_snippets_require_broken_build_kind(
             assert (tmp_path / "verdict-exit").read_text() == (
                 "1\n" if kind == "build" else "2\n"
             )
+
+
+@pytest.mark.parametrize(
+    "status,defect",
+    [
+        (2, None),
+        (2, "missing"),
+        (2, "infrastructure"),
+        (2, "wrong-head"),
+        (2, "invalid-json"),
+        (2, "missing-error"),
+        (0, "missing"),
+        (1, "missing"),
+    ],
+)
+def test_merge_smoke_build_failure_decision_distinguishes_infrastructure(
+    tmp_path, status, defect
+):
+    module = _load_runner()
+    failure = {"commit": "head", "error_kind": "build", "error": "compiler diagnostic"}
+    if defect == "infrastructure":
+        failure["error_kind"] = "infrastructure"
+    elif defect == "wrong-head":
+        failure["commit"] = "another-head"
+    elif defect == "missing-error":
+        failure.pop("error")
+    if defect == "invalid-json":
+        (tmp_path / "build-failure.json").write_text("{")
+    elif defect != "missing":
+        module.write_json(tmp_path / "build-failure.json", failure)
+    if defect is None:
+        assert module.smoke_build_failure(tmp_path, "head", status) == failure
+    elif status != 2:
+        assert module.smoke_build_failure(tmp_path, "head", status) is None
+    else:
+        with pytest.raises(ValueError):
+            module.smoke_build_failure(tmp_path, "head", status)
+
+
+@pytest.mark.parametrize("defect", [None, "missing", "infrastructure", "wrong-head"])
+def test_merge_smoke_exit_two_saves_build_failure_verdict(tmp_path, defect):
+    module = _load_runner()
+    output = tmp_path / "perf"
+    smoke = output / "smoke"
+    smoke.mkdir(parents=True)
+    harness = tmp_path / "perf-harness"
+    harness.mkdir()
+    record = _publication_fixture()
+    record["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    record["results"][0]["gate_reason"] = "qualified"
+    record["results"][0]["failures"] = []
+    record["results"][0]["delta"]["bytes"] = 0
+    module.write_json(output / "perf.json", record)
+    failure = {
+        "commit": record["run"]["commit"],
+        "error_kind": "build",
+        "error": "compiler diagnostic",
+    }
+    if defect == "infrastructure":
+        failure["error_kind"] = "infrastructure"
+    elif defect == "wrong-head":
+        failure["commit"] = "another-head"
+    if defect != "missing":
+        module.write_json(smoke / "build-failure.json", failure)
+    # Execute the shell guard and saved-verdict code with only measurement stubbed.
+    binary = tmp_path / "bin"
+    binary.mkdir()
+    pixi = binary / "pixi"
+    pixi.write_text(
+        '#!/bin/bash\nfor arg in "$@"; do if [[ "$arg" == --smoke ]]; then exit 2; fi; done\nexit 0\n'
+    )
+    pixi.chmod(0o755)
+    result = subprocess.run(
+        [
+            "bash",
+            "-e",
+            "-c",
+            _perf_step("record-measure", "Measure and apply the parent rules")["run"],
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env={
+            **os.environ,
+            "PATH": f"{binary}:{os.environ['PATH']}",
+            "PYTHONPATH": str(Path(__file__).resolve().parents[1]),
+            "RUNNER_TEMP": str(tmp_path),
+            "PERF_OUTPUT": str(output),
+            "PERF_MODE": "ab",
+            "PERF_SMOKE": "true",
+            "PERF_HEAD": record["run"]["commit"],
+            "PERF_BASE": record["run"]["parent"],
+        },
+        text=True,
+        capture_output=True,
+    )
+    saved = json.loads((output / "perf.json").read_text())
+    if defect is None:
+        assert result.returncode == 0, result.stderr
+        assert saved["verdict"]["status"] == "FAIL"
+        assert saved["verdict"]["failures"] == [
+            "head smoke build failed: compiler diagnostic"
+        ]
+        assert "head smoke build failed" in (output / "perf.md").read_text()
+        module.publication_record(output / "perf.json", "merge")
+    else:
+        assert result.returncode != 0
+        assert saved == record
+        assert not (output / "perf.md").exists()
+
+
+@pytest.mark.parametrize("identity_change", ["none", "input", "window"])
+@pytest.mark.parametrize("verdict", ["PASS", "FAIL"])
+@pytest.mark.parametrize(
+    "row_change",
+    [None, "added", "removed", "bad-status", "no-perturbations", "not-gated"],
+)
+def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
+    tmp_path, identity_change, verdict, row_change
+):
+    module = _load_runner()
+    output = tmp_path / "perf"
+    smoke_dir = output / "smoke/a-run"
+    smoke_dir.mkdir(parents=True)
+    record = _publication_fixture()
+    record["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    record["run"]["env"]["harness_sha"] = "1" * 64
+    template = record["results"][0]
+    record["results"] = []
+    for spec in module.select_rows(""):
+        row = copy.deepcopy(template)
+        row.update(
+            row=spec.row,
+            det=spec.det,
+            threads=spec.threads,
+            workload_sha="old-workload",
+            perturbations={"test": {"stable": True}},
+            gate_reason="base perturbation check passed; base gate remains active",
+            failures=[],
+        )
+        row["delta"]["bytes"] = 0
+        record["results"].append(row)
+    if verdict == "FAIL":
+        record["results"][0]["failures"] = ["Ir +2.00% (limit +1.00%)"]
+        record["verdict"].update(
+            status="FAIL", failures=["s3w/dart: Ir +2.00% (limit +1.00%)"]
+        )
+    smoke = copy.deepcopy(record)
+    smoke.pop("verdict")
+    smoke["run"]["env"].update(fingerprint="2" * 64, harness_sha="2" * 64)
+    smoke["results"].reverse()
+    for row in smoke["results"]:
+        for key in ("parent", "delta", "gate_reason", "failures"):
+            row.pop(key)
+        row["head"].update(
+            ir_per_step=200_000,
+            allocs_per_step=5,
+            bytes_per_step=40,
+            wall_ms_per_step=24.6,
+        )
+        if identity_change == "input" and row["row"] in ("dyn", "lcp"):
+            row.update(input_sha="f" * 64, workload_sha="new-workload")
+        elif identity_change == "window" and row["row"] in ("dyn", "lcp"):
+            # Settings change without a workload change keeps input_sha.
+            row["window"] = {"warmup": 7, "steps": 9}
+    if row_change == "removed":
+        smoke["results"].pop()
+    elif row_change is not None:
+        added = copy.deepcopy(smoke["results"][0])
+        added.update(row="new-benchmark", det="")
+        if row_change == "bad-status":
+            added["status"] = "failed"
+        elif row_change == "no-perturbations":
+            added.pop("perturbations")
+        elif row_change == "not-gated":
+            added["gated"] = False
+        smoke["results"].append(added)
+    module.write_json(output / "perf.json", record)
+    module.write_json(smoke_dir / "record.json", smoke)
+    # Run the record-construction snippet, which imports the parent's rules in CI.
+    script = re.findall(
+        r"python3 - <<'PY'\n(.*?)\nPY",
+        _perf_step("record-measure", "Measure and apply the parent rules")["run"],
+        re.S,
+    )[-1]
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(Path(__file__).resolve().parents[1]),
+            "PERF_OUTPUT": str(output),
+            "PERF_SMOKE": "true",
+            "PERF_SMOKE_STATUS": "0",
+            "PERF_HEAD": record["run"]["commit"],
+            "PERF_BASE": record["run"]["parent"],
+        },
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    saved = json.loads((output / "perf.json").read_text())
+    assert saved["run"] == record["run"]
+    expected_verdict = copy.deepcopy(record["verdict"])
+    if row_change == "removed":
+        expected_verdict["status"] = "FAIL"
+        expected_verdict["failures"].append(
+            "head smoke benchmark rows omit parent defaults or repeat rows"
+        )
+    elif row_change not in (None, "added"):
+        expected_verdict["status"] = "FAIL"
+        expected_verdict["failures"].append(
+            "head smoke rows did not pass their perturbation checks"
+        )
+    assert saved["verdict"] == expected_verdict
+    smoke_rows = {module.row_key(row): row for row in smoke["results"]}
+    for original, row in zip(record["results"], saved["results"]):
+        head = smoke_rows.get(module.row_key(original))
+        if head is None or (head["input_sha"], head.get("window")) == (
+            original["input_sha"],
+            original.get("window"),
+        ):
+            assert row == original
+        else:
+            assert row["input_sha"] == head["input_sha"]
+            assert row.get("window") == head.get("window")
+            assert row["workload_sha"] == head["workload_sha"]
+            assert row["head"] == head["head"]
+            assert row["head_env"] == smoke["run"]["env"]
+            assert row["perturbations"] == head["perturbations"]
+            assert row["parent"] == original["parent"]
+            assert row["failures"] == original["failures"]
+            assert row["gated"] is False
+            assert row["delta"] == {
+                "ir": None,
+                "allocs": None,
+                "bytes": None,
+                "guards_equal": None,
+                "class": "behaviour-change",
+            }
+            assert "measurement identity changed" in row["gate_reason"]
+            assert row["wall_ms_per_step"] == {
+                "parent": 12.3,
+                "head": 24.6,
+                "advisory": True,
+            }
+    assert len(saved["results"]) == len(record["results"]) + (row_change == "added")
+    if row_change == "added":
+        added = saved["results"][-1]
+        assert added["row"] == "new-benchmark"
+        assert added["head"] == smoke_rows["new-benchmark"]["head"]
+        assert added["head_env"] == smoke["run"]["env"]
+        assert added["parent"] == {}
+        assert added["gated"] is False
+        assert added["perturbations"] == smoke_rows["new-benchmark"]["perturbations"]
+        assert added["delta"] == {
+            "ir": None,
+            "allocs": None,
+            "bytes": None,
+            "guards_equal": None,
+            "class": "new",
+        }
+        assert "new row" in (output / "perf.md").read_text()
+    published = module.publication_record(output / "perf.json", "merge")
+    pages = tmp_path / "pages"
+    (pages / "performance/dart6").mkdir(parents=True)
+    (pages / "performance/dart6/index.html").write_text("chart")
+    module.chart_data(pages, published)
+    chart = (pages / "performance/dart6-ir/data.js").read_text()
+    point = json.loads(chart.removeprefix("window.BENCHMARK_DATA = "))["entries"][
+        "DART 6 deterministic counts"
+    ][0]
+    assert point["commit"]["id"] == record["run"]["commit"]
+    benches = {bench["name"]: bench["value"] for bench in point["benches"]}
+    replaced = identity_change != "none"
+    suffix = "ffffffff" if identity_change == "input" else "01234567"
+    assert benches[f"dyn@1:{suffix} Ir"] == (200_000 if replaced else 100_000)
+    assert benches[f"dyn@1:{suffix} allocations"] == (5 if replaced else 0)
+    assert benches["s3w/dart@1:01234567 Ir"] == 100_000
+    for bench in point["benches"]:
+        smoke_derived = (
+            replaced and bench["name"].startswith(("dyn@", "lcp@"))
+        ) or bench["name"].startswith("new-benchmark@")
+        expected_fingerprint = ("2" if smoke_derived else "1") * 64
+        assert bench["fingerprint"] == expected_fingerprint
+        assert f"fingerprint: {expected_fingerprint}" in bench["extra"]
+    if row_change == "added":
+        added_suffix = smoke_rows["new-benchmark"]["input_sha"][:8]
+        assert benches[f"new-benchmark@1:{added_suffix} Ir"] == 200_000
+        assert benches[f"new-benchmark@1:{added_suffix} allocations"] == 5
+    # The next ordinary merge uses the head harness for all rows.
+    following = copy.deepcopy(published)
+    following["run"].update(commit="c" * 40, time="2026-10-08T09:00:00+00:00")
+    following["run"]["env"] = smoke["run"]["env"]
+    for row in following["results"]:
+        row.pop("head_env", None)
+    module.chart_data(pages, following)
+    for bench in _chart_points(pages)[-1]["benches"]:
+        smoke_derived = (
+            replaced and bench["name"].startswith(("dyn@", "lcp@"))
+        ) or bench["name"].startswith("new-benchmark@")
+        assert ("fingerprint changed" in bench["extra"]) is not smoke_derived
+
+
+def _publication_fixture():
+    metrics = {
+        "ir_per_step": 100_000,
+        "allocs_per_step": 0,
+        "wall_ms_per_step": 12.3,
+        "guards": {
+            "hash": "0x123456789abcdef0",
+            "contacts": 3,
+            "resting": "0/3",
+            "finite": True,
+            "cap_hit": False,
+        },
+    }
+    return {
+        "schema": "dart-perf/1",
+        "run": {
+            "tier": "local",
+            "commit": "a" * 40,
+            "parent": "b" * 40,
+            "branch": "topic",
+            "describe": "v6.19.4-270-gaaaaaaaaaaaa",
+            "time": "2026-10-08T08:00:00Z",
+            "env": {
+                "fingerprint": "1" * 64,
+                "runner": {"environment": "github-hosted", "name": "hosted"},
+            },
+            "accepted": [],
+        },
+        "results": [
+            {
+                "row": "s3w",
+                "det": "dart",
+                "version": 1,
+                "input_sha": "01234567" + "a" * 56,
+                "gated": True,
+                "status": "ok",
+                "method": "slope",
+                "parent": copy.deepcopy(metrics),
+                "head": metrics,
+                "delta": {"ir": 0, "allocs": 0, "guards_equal": True, "class": "gated"},
+            }
+        ],
+        "verdict": {"status": "PASS", "failures": [], "warnings": [], "ir_geomean": 0},
+    }
+
+
+def _trusted_publication(monkeypatch, event="push"):
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", "github-hosted")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", event)
+    monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
+
+
+@pytest.mark.parametrize("tier", ["merge", "nightly"])
+def test_publication_schema_normalizes_tier_and_advisory_wall(tmp_path, tier):
+    module = _load_runner()
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, tier, 3570)
+    assert record["run"]["tier"] == tier
+    assert record["run"]["branch"] == "main"
+    assert record["run"]["pr"] == 3570
+    assert record["run"]["time"] == "2026-10-08T08:00:00+00:00"
+    row = record["results"][0]
+    assert row["wall_ms_per_step"] == {
+        "parent": 12.3 if tier == "merge" else None,
+        "head": 12.3,
+        "advisory": True,
+    }
+    if tier == "nightly":
+        assert record["run"]["parent"] is None
+        assert "parent" not in row and "delta" not in row
+        assert "verdict" not in record
+
+
+@pytest.mark.parametrize(
+    "event,ref,runner,tier,allowed",
+    [
+        ("push", "main", "github-hosted", "merge", True),
+        ("workflow_dispatch", "main", "github-hosted", "merge", True),
+        ("schedule", "main", "github-hosted", "nightly", True),
+        ("workflow_dispatch", "main", "github-hosted", "nightly", True),
+        ("pull_request", "main", "github-hosted", "merge", False),
+        ("pull_request", "main", "github-hosted", "nightly", False),
+        ("workflow_call", "main", "github-hosted", "nightly", False),
+        ("schedule", "topic", "github-hosted", "nightly", False),
+        ("push", "main", "self-hosted", "merge", False),
+        ("schedule", "main", "local", "nightly", False),
+        ("schedule", "main", "github-hosted", "merge", False),
+        ("push", "main", "github-hosted", "nightly", False),
+    ],
+)
+def test_publication_context_refuses_untrusted_writes(
+    monkeypatch, event, ref, runner, tier, allowed
+):
+    module = _load_runner()
+    _trusted_publication(monkeypatch, event)
+    monkeypatch.setenv("GITHUB_REF", f"refs/heads/{ref}")
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", runner)
+    if allowed:
+        module.publication_guard(tier)
+    else:
+        with pytest.raises(ValueError):
+            module.publication_guard(tier)
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "schema",
+        "runner",
+        "commit",
+        "parent",
+        "fingerprint",
+        "head-fingerprint",
+        "head-runner",
+        "time",
+        "verdict",
+        "nan",
+        "duplicate",
+        "infrastructure",
+    ],
+)
+def test_publication_rejects_invalid_measurement_before_git(tmp_path, defect):
+    module = _load_runner()
+    record = _publication_fixture()
+    if defect == "schema":
+        record["schema"] = "unexpected"
+    elif defect == "runner":
+        record["run"]["env"]["runner"]["environment"] = "self-hosted"
+    elif defect in ("commit", "parent", "time"):
+        record["run"][defect] = "invalid"
+    elif defect == "fingerprint":
+        record["run"]["env"]["fingerprint"] = "invalid"
+    elif defect in ("head-fingerprint", "head-runner"):
+        env = copy.deepcopy(record["run"]["env"])
+        if defect == "head-fingerprint":
+            env["fingerprint"] = "invalid"
+        else:
+            env["runner"]["environment"] = "self-hosted"
+        record["results"][0]["head_env"] = env
+    elif defect == "verdict":
+        record["verdict"]["status"] = "ERROR"
+    elif defect == "nan":
+        record["results"][0]["head"]["ir_per_step"] = float("nan")
+    elif defect == "duplicate":
+        record["results"] *= 2
+    elif defect == "infrastructure":
+        record["results"][0]["error_kind"] = "infrastructure"
+    path = tmp_path / "record.json"
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError):
+        module.publication_record(path, "merge")
+
+
+def _stock_chart_template(pages):
+    template = pages / "performance/dart6/index.html"
+    template.parent.mkdir(parents=True, exist_ok=True)
+    template.write_text('<script src="data.js"></script>stock page\n')
+
+
+def _chart_points(pages):
+    data = (pages / "performance/dart6-ir/data.js").read_text()
+    return json.loads(data.removeprefix("window.BENCHMARK_DATA = "))["entries"][
+        "DART 6 deterministic counts"
+    ]
+
+
+@pytest.mark.parametrize(
+    "status,previous_kind,method",
+    [
+        ("FAIL", "none", "POST"),
+        ("PASS", "none", None),
+        ("WARN", "none", None),
+        ("PASS", "legacy", "PATCH"),
+        ("WARN", "legacy", "PATCH"),
+        ("PASS", "failed", "PATCH"),
+        ("FAIL", "newer", None),
+        ("FAIL", "same-time-pass", None),
+        ("FAIL", "older-pass", "PATCH"),
+        ("PASS", "identical", None),
+    ],
+)
+def test_merge_comment_shell_refreshes_saved_verdict_without_stale_rollback(
+    tmp_path, status, previous_kind, method
+):
+    module = _load_runner()
+    record = _publication_fixture()
+    record["verdict"]["status"] = status
+    report = "Saved comparison report\n"
+    previous = ""
+    if previous_kind == "legacy":
+        previous = (
+            f"<!-- dart-perf-merge:{record['run']['commit']} -->\n"
+            "Post-merge performance check failed.\n"
+        )
+    elif previous_kind != "none":
+        saved = copy.deepcopy(record)
+        saved["verdict"]["status"] = "FAIL" if previous_kind == "failed" else "PASS"
+        if previous_kind in ("failed", "older-pass"):
+            saved["run"]["time"] = "2026-10-08T07:00:00+00:00"
+        elif previous_kind == "newer":
+            saved["run"]["time"] = "2026-10-08T09:00:00+00:00"
+        previous = module.merge_comment(saved, report, "existing comment")
+    module.write_json(tmp_path / "perf.json", record)
+    (tmp_path / "perf.md").write_text(report)
+    (tmp_path / "previous.json").write_text(json.dumps({"body": previous}))
+    stub = """
+    gh() {
+      if [[ "$*" == *--paginate* ]]; then
+        if [[ "$HAS_PREVIOUS" == true ]]; then echo 42; fi
+      elif [[ "$*" == *--method* ]]; then
+        printf '%s\\n' "$*" > "$RUNNER_TEMP/mutation"
+        cp "$RUNNER_TEMP/perf-comment.json" "$RUNNER_TEMP/submitted.json"
+      else
+        cat "$RUNNER_TEMP/previous.json"
+      fi
+    }
+    """
+    result = subprocess.run(
+        [
+            "bash",
+            "-e",
+            "-o",
+            "pipefail",
+            "-c",
+            stub + _perf_step("record", "Refresh the merged PR verdict comment")["run"],
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env={
+            **os.environ,
+            "PERF_OUTPUT": str(tmp_path),
+            "RUNNER_TEMP": str(tmp_path),
+            "PERF_HEAD": record["run"]["commit"],
+            "PERF_PR": "3570",
+            "GH_REPO": "dartsim/dart",
+            "HAS_PREVIOUS": "true" if previous else "false",
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    mutation = tmp_path / "mutation"
+    assert mutation.exists() is (method is not None)
+    if method:
+        assert f"--method {method}" in mutation.read_text()
+        body = json.loads((tmp_path / "submitted.json").read_text())["body"]
+        assert body.startswith(f"<!-- dart-perf-merge:{record['run']['commit']} -->")
+        assert body.endswith(report)
+        assert ("check failed" if status == "FAIL" else "check now passes") in body
+
+
+@pytest.mark.parametrize(
+    "change,rationales",
+    [
+        ("allocations", ["Perf-Regression-Rationale"]),
+        ("bytes", ["Perf-Regression-Rationale"]),
+        ("ir", ["Perf-Regression-Rationale"]),
+        ("geomean", ["Perf-Regression-Rationale"]),
+        ("input", ["Rebaseline-Rationale"]),
+        ("guards", ["Rebaseline-Rationale"]),
+        ("signed-percentage", ["Rebaseline-Rationale"]),
+        ("perturbation", []),
+        ("missing-head", []),
+        ("missing-base", []),
+        ("nonfinite", []),
+        ("build", []),
+        ("smoke-perturbation", []),
+        ("empty", []),
+        ("unknown", []),
+        ("mixed", ["Perf-Regression-Rationale", "Rebaseline-Rationale"]),
+    ],
+)
+def test_merge_failure_comment_guidance_follows_comparison_policy(change, rationales):
+    module = _load_runner()
+    base = _micro_record(module, "dyn")
+    head = copy.deepcopy(base)
+    head["run"].update(commit="a" * 40, time="2026-10-08T08:00:00Z")
+    row = head["results"][0]
+    body = ""
+    if change == "allocations":
+        row["head"]["allocs_per_step"] = 1
+    elif change == "bytes":
+        row["head"]["bytes_per_step"] = 1
+    elif change in ("ir", "geomean"):
+        row["head"]["ir_per_step"] = 102 if change == "ir" else 100.6
+    elif change == "input":
+        row["input_sha"] = "changed workload"
+    elif change in ("guards", "signed-percentage"):
+        row["head"]["guards"]["hash"] = {"BM_Dynamics/10": "0x1123456789abcdef"}
+        if change == "signed-percentage":
+            row["head"]["ir_per_step"] = 102
+            body = "Rebaseline-Rationale: dyn: intended work"
+    elif change == "perturbation":
+        row.update(gated=False, perturbations={"start4k": {"stable": False}})
+    elif change == "missing-head":
+        row["head"].pop("ir_per_step")
+    elif change == "missing-base":
+        base["results"][0]["head"].pop("ir_per_step")
+    elif change == "nonfinite":
+        row["head"]["guards"]["finite"] = False
+    elif change == "empty":
+        base["results"] = head["results"] = []
+    elif change == "mixed":
+        row["head"]["allocs_per_step"] = 1
+        changed_input = copy.deepcopy(row)
+        changed_input.update(row="changed-input", input_sha="new workload")
+        base["results"].append({**copy.deepcopy(row), "row": "changed-input"})
+        head["results"].append(changed_input)
+    record = module.compare(base, head, body)
+    extra_failures = {
+        "build": "head smoke build failed: compiler error",
+        "mixed": "head smoke build failed: compiler error",
+        "smoke-perturbation": "head smoke rows did not pass their perturbation checks",
+        "unknown": "unrecognized evidence failure",
+    }
+    if change in extra_failures:
+        record["verdict"]["failures"].append(extra_failures[change])
+        record["verdict"]["status"] = "FAIL"
+    assert record["verdict"]["status"] == "FAIL"
+    comment = module.merge_comment(record, "Saved comparison report")
+    guidance = comment.split("Rerun the full workflow", 1)[0]
+    assert "Post-merge performance check failed" in guidance
+    assert ("Add the applicable" in guidance) == bool(rationales)
+    for kind in ("Perf-Regression-Rationale", "Rebaseline-Rationale"):
+        assert (kind in guidance) == (kind in rationales)
+    needs_fix = change in (
+        "perturbation",
+        "missing-head",
+        "missing-base",
+        "nonfinite",
+        "build",
+        "smoke-perturbation",
+        "empty",
+        "unknown",
+        "mixed",
+    )
+    assert ("Fix the non-waivable failures" in guidance) == needs_fix
+    if needs_fix:
+        assert record["verdict"]["failures"][0 if change != "mixed" else -1] in guidance
+    assert "including measurement" in comment
+
+
+@pytest.mark.parametrize("change", [None, "commit", "fingerprint", "results", "guards"])
+def test_nightly_records_skip_only_unchanged_latest_measurement(tmp_path, change):
+    module = _load_runner()
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, "nightly")
+    module.write_publication(tmp_path, record)
+    original = list((tmp_path / "performance/records/main/2026").glob("*.json"))[0]
+    saved = original.read_bytes()
+    record["run"]["time"] = "2026-10-09T08:00:00+00:00"
+    if change == "commit":
+        record["run"]["commit"] = "c" * 40
+    elif change == "fingerprint":
+        record["run"]["env"]["fingerprint"] = "2" * 64
+    elif change == "results":
+        record["results"][0]["head"]["ir_per_step"] += 1
+    elif change == "guards":
+        record["results"][0]["head"]["guards"]["contacts"] += 1
+    # Ancestry is covered separately; isolate immutable-record selection here.
+    module.nightly_table_can_advance = lambda *_: change != "commit"
+    changed = module.write_publication(tmp_path, record)
+    records = list((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert len(records) == (1 if change is None else 2)
+    assert original.read_bytes() == saved
+    if change is None:
+        assert changed == ["performance/guards/main.md"]
+        assert record["run"]["time"] in (tmp_path / changed[0]).read_text()
+
+
+def test_chart_writer_rerun_does_not_duplicate_commit_and_fingerprint(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    module.chart_data(tmp_path, record)
+    data_path = tmp_path / "performance/dart6-ir/data.js"
+    saved = data_path.read_bytes()
+    record["run"]["time"] = "2026-10-09T08:00:00+00:00"
+    module.chart_data(tmp_path, record)
+    assert data_path.read_bytes() == saved
+
+
+@pytest.mark.parametrize("writer", ["record", "chart"])
+def test_smoke_provenance_distinguishes_reruns_and_preserves_counts(tmp_path, writer):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    record["run"]["tier"] = "merge"
+    env = copy.deepcopy(record["run"]["env"])
+    env.update(fingerprint="2" * 64, harness_sha="2" * 64)
+    record["results"][0]["head_env"] = env
+    write = module.write_publication if writer == "record" else module.chart_data
+    write(tmp_path, record)
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    env["runner"]["name"] = "another hosted runner"
+    write(tmp_path, record)
+    assert len(_chart_points(tmp_path)) == 1
+    env.update(fingerprint="3" * 64, harness_sha="3" * 64)
+    write(tmp_path, record)
+    points = _chart_points(tmp_path)
+    assert len(points) == 2
+    assert (
+        f"fingerprint changed: {'2' * 64} -> {'3' * 64}"
+        in points[-1]["benches"][0]["extra"]
+    )
+    if writer == "record":
+        assert (
+            len(list((tmp_path / "performance/records/main/2026").glob("*.json"))) == 2
+        )
+    record["run"]["time"] = "2026-10-08T10:00:00+00:00"
+    record["results"][0]["head"]["ir_per_step"] += 1
+    with pytest.raises(ValueError, match="changed deterministic counts"):
+        write(tmp_path, record)
+
+
+def test_chart_equal_timestamps_have_the_same_order_and_fingerprint_annotations(
+    tmp_path,
+):
+    module = _load_runner()
+    records = [_publication_fixture(), _publication_fixture()]
+    records[1]["run"]["commit"] = "c" * 40
+    records[1]["run"]["env"]["fingerprint"] = "2" * 64
+    scripts = []
+    for name, ordered in (("forward", records), ("reverse", records[::-1])):
+        pages = tmp_path / name
+        _stock_chart_template(pages)
+        for record in ordered:
+            module.chart_data(pages, record)
+        scripts.append((pages / "performance/dart6-ir/data.js").read_bytes())
+    assert scripts[0] == scripts[1]
+
+
+def test_nightly_changed_results_retain_history_even_when_matching_an_older_run(
+    tmp_path,
+):
+    module = _load_runner()
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, "nightly")
+    for hour, contacts in ((8, 3), (9, 4), (10, 3)):
+        record["run"]["time"] = f"2026-10-08T{hour:02d}:00:00+00:00"
+        record["results"][0]["head"]["guards"]["contacts"] = contacts
+        module.write_publication(tmp_path, record)
+    records = list((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert len(records) == 3
+    table = (tmp_path / "performance/guards/main.md").read_bytes()
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    record["results"][0]["head"]["guards"]["contacts"] = 4
+    assert module.write_publication(tmp_path, record) == []
+    assert (tmp_path / "performance/guards/main.md").read_bytes() == table
+    assert len(list((tmp_path / "performance/records/main/2026").glob("*.json"))) == 3
+
+
+def test_publication_merge_idempotence_fingerprint_flags_and_chart_window(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, "merge", 3570)
+    module.write_publication(tmp_path, record)
+    module.write_publication(tmp_path, record)
+    points = _chart_points(tmp_path)
+    assert len(points) == 1
+    assert points[0]["tool"] == "customSmallerIsBetter"
+    assert [bench["value"] for bench in points[0]["benches"]] == [100_000, 0]
+    assert [bench["name"] for bench in points[0]["benches"]] == [
+        "s3w/dart@1:01234567 Ir",
+        "s3w/dart@1:01234567 allocations",
+    ]
+    assert (tmp_path / "performance/dart6-ir/index.html").read_text() == (
+        tmp_path / "performance/dart6/index.html"
+    ).read_text()
+    record["run"]["time"] = "2026-10-08T08:01:00+00:00"
+    assert module.write_publication(tmp_path, record) == []
+    record["results"][0]["head"]["ir_per_step"] += 1
+    with pytest.raises(ValueError, match="changed deterministic counts"):
+        module.write_publication(tmp_path, record)
+    record["run"]["env"]["fingerprint"] = "2" * 64
+    module.write_publication(tmp_path, record)
+    assert "fingerprint changed" in _chart_points(tmp_path)[-1]["benches"][0]["extra"]
+    for minute in range(251):
+        record["run"].update(commit=f"{minute:040x}", time="2026-10-09T00:00:00+00:00")
+        module.chart_data(tmp_path, record)
+    assert len(_chart_points(tmp_path)) == 250
+    assert len(list((tmp_path / "performance/records/main/2026").glob("*.json"))) == 2
+
+
+def test_chart_out_of_order_publication_keeps_newest_points_and_latest_value(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    start = module.datetime.fromisoformat(record["run"]["time"])
+    # Fill the window backwards, then publish one more older measurement.
+    for minute in range(250, -1, -1):
+        record["run"].update(
+            commit=f"{minute:040x}",
+            time=(start + module.timedelta(minutes=minute)).isoformat(),
+        )
+        record["run"]["env"]["fingerprint"] = f"{minute:064x}"
+        record["results"][0]["head"]["ir_per_step"] = minute
+        module.chart_data(tmp_path, record)
+    data = json.loads(
+        (tmp_path / "performance/dart6-ir/data.js")
+        .read_text()
+        .removeprefix("window.BENCHMARK_DATA = ")
+    )
+    points = data["entries"]["DART 6 deterministic counts"]
+    assert [point["commit"]["id"] for point in points] == [
+        f"{minute:040x}" for minute in range(1, 251)
+    ]
+    assert data["lastUpdate"] == int(
+        (start + module.timedelta(minutes=250)).timestamp() * 1000
+    )
+    assert points[-1]["benches"][0]["value"] == 250
+    assert (
+        f"fingerprint changed: {249:064x} -> {250:064x}"
+        in points[-1]["benches"][0]["extra"]
+    )
+
+
+def test_nightly_out_of_order_publication_preserves_latest_table_and_records(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    source = tmp_path / "source"
+    source.mkdir()
+
+    def git(*arguments):
+        return subprocess.run(
+            ["git", "-C", str(source), *arguments],
+            check=True,
+            text=True,
+            capture_output=True,
+        ).stdout.strip()
+
+    git("init")
+    commits = []
+    for index in range(3):
+        git(
+            "-c",
+            "user.name=test",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "--allow-empty",
+            "-m",
+            str(index),
+        )
+        commits.append(git("rev-parse", "HEAD"))
+    monkeypatch.setattr(module, "ROOT", source)
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, "nightly")
+    record["run"]["commit"] = commits[1]
+    module.write_publication(tmp_path, record)
+    table_path = tmp_path / "performance/guards/main.md"
+    table = table_path.read_text()
+    # A manual dispatch of an ancestor can be measured later than main.
+    record["run"].update(commit=commits[0], time="2026-10-08T09:00:00+00:00")
+    assert "performance/guards/main.md" not in module.write_publication(
+        tmp_path, record
+    )
+    assert table_path.read_text() == table
+    # Commit ancestry also wins when the newer run measured earlier but finished later.
+    record["run"].update(commit=commits[2], time="2026-10-08T07:00:00+00:00")
+    module.write_publication(tmp_path, record)
+    table = table_path.read_text()
+    assert f"for `{commits[2]}`" in table
+    # An overlapping measurement of the same head must not replace its newer run.
+    record["run"]["time"] = "2026-10-08T06:00:00+00:00"
+    module.write_publication(tmp_path, record)
+    assert table_path.read_text() == table
+    records = list((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert len(records) == 4  # The newest record by measurement time is the ancestor.
+    saved = {p.name: p.read_bytes() for p in records}
+    assert module.write_publication(tmp_path, record) == []
+    assert {p.name: p.read_bytes() for p in records} == saved
+    assert (
+        _perf_step("nightly", "Checkout main publisher")["with"]["fetch-depth"] == "0"
+    )
+
+
+def test_nightly_latest_identity_dedup_and_guard_drift(tmp_path):
+    module = _load_runner()
+    fixture = _publication_fixture()
+    fixture["results"][0]["row"] = "S6"
+    fixture["results"][0]["window"] = {"warmup": 0, "steps": 2400}
+    fixture["results"][0]["head"].update(
+        max_penetration=0.123,
+        checkpoints=[{"step": 2400, "max_penetration": 0.123, "resting": "0/71"}],
+    )
+    path = tmp_path / "record.json"
+    module.write_json(path, fixture)
+    record = module.publication_record(path, "nightly")
+    module.write_publication(tmp_path, record)
+    table = (tmp_path / "performance/guards/main.md").read_text()
+    assert "0.123" in table and "2400" in table and "0/71" in table
+    assert (
+        "docs/dev_tasks/dart6_performance_generalization/01-baseline-evidence.md"
+        in table
+    )
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    record["results"][0]["head"]["guards"]["resting"] = "71/71"
+    record["results"][0]["head"]["checkpoints"][0]["max_penetration"] = 0.1
+    module.write_publication(tmp_path, record)
+    table = (tmp_path / "performance/guards/main.md").read_text()
+    assert "S3 / S6 drift since the prior nightly" in table
+    assert "S6/dart checkpoints" in table
+    assert module.write_publication(tmp_path, record) == []
+    assert (tmp_path / "performance/guards/main.md").read_text() == table
+    record["run"]["env"]["fingerprint"] = "2" * 64
+    module.write_publication(tmp_path, record)
+    record["run"]["time"] = "2026-10-08T10:00:00+00:00"
+    record["run"]["env"]["fingerprint"] = "1" * 64
+    module.write_publication(tmp_path, record)
+    records = list((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert (
+        len(records) == 4
+    )  # Changed guards and fingerprint transitions stay immutable.
+    assert not (tmp_path / "performance/dart6-ir").exists()
+
+
+def test_merge_rationale_rerun_records_new_acknowledgment_without_chart_duplicate(
+    tmp_path,
+):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    path = tmp_path / "record.json"
+    fixture = _publication_fixture()
+    fixture["verdict"].update(status="FAIL", failures=["Ir rationale required"])
+    module.write_json(path, fixture)
+    record = module.publication_record(path, "merge", 3570)
+    module.write_publication(tmp_path, record)
+    failed = copy.deepcopy(record)
+    record["run"]["accepted"] = [
+        {
+            "kind": "regression",
+            "rows": ["s3w/dart"],
+            "rationale": "Perf-Regression-Rationale: s3w/dart: intended work",
+        }
+    ]
+    record["verdict"].update(status="PASS", failures=[])
+    module.write_publication(tmp_path, record)
+    records = sorted((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert len(records) == 2
+    assert json.loads(records[0].read_text())["verdict"]["status"] == "FAIL"
+    assert (
+        json.loads(records[1].read_text())["run"]["accepted"]
+        == record["run"]["accepted"]
+    )
+    assert module.write_publication(tmp_path, record) == []
+    assert module.write_publication(tmp_path, failed) == []
+    assert len(list((tmp_path / "performance/records/main/2026").glob("*.json"))) == 2
+    assert len(_chart_points(tmp_path)) == 1
+
+
+def test_guard_table_shows_contact_pair_changes_as_drift(tmp_path):
+    module = _load_runner()
+    fixture = _publication_fixture()
+    fixture["results"][0]["row"] = "S6"
+    fixture["results"][0]["window"] = {"warmup": 0, "steps": 2400}
+    fixture["results"][0]["head"]["guards"]["pairs"] = 79
+    path = tmp_path / "record.json"
+    module.write_json(path, fixture)
+    record = module.publication_record(path, "nightly")
+    module.write_publication(tmp_path, record)
+    assert "| 79 |" in (tmp_path / "performance/guards/main.md").read_text()
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    record["results"][0]["head"]["guards"]["pairs"] = 80
+    module.write_publication(tmp_path, record)
+    table = (tmp_path / "performance/guards/main.md").read_text()
+    assert "| 80 |" in table
+    assert "S3 / S6 drift since the prior nightly" in table
+
+
+def test_merge_rerun_with_changed_allocations_is_not_deduplicated(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, "merge", 3570)
+    module.write_publication(tmp_path, record)
+    changed = copy.deepcopy(record)
+    changed["results"][0]["head"]["allocs_per_step"] = 1.0
+    with pytest.raises(ValueError, match="deterministic counts"):
+        module.write_publication(tmp_path, changed)
+
+
+@pytest.mark.parametrize("writer", ["record", "chart"])
+@pytest.mark.parametrize(
+    "section,key,value",
+    [
+        *(
+            ("guards", key, value)
+            for key, value in (
+                ("hash", "changed"),
+                ("contacts", 4),
+                ("pairs", 2),
+                ("resting", "3/3"),
+                ("finite", False),
+                ("cap_hit", True),
+                ("max_penetration", 0.2),
+            )
+        ),
+        ("head", "ir_per_step", 100_001),
+        ("head", "allocs_per_step", 1),
+        ("head", "bytes_per_step", 1),
+        ("head", "max_penetration", 0.2),
+        ("head", "checkpoints", [{"step": 1, "max_penetration": 0.2}]),
+        ("head", "time_advanced", False),
+        ("head", "cases", ["changed case"]),
+        ("head", "micro_instrumented", False),
+        ("head", "allocs", 1),
+        ("head", "bytes", 1),
+        ("head", "est_cycles_per_step", 101),
+        ("row", "input_sha", "changed"),
+        ("row", "version", 2),
+        ("row", "window", {"warmup": 50, "steps": 100}),
+        ("row", "threads", 4),
+        ("row", "method", "native"),
+        ("row", "collection_signature", "other()"),
+        ("row", "status", "broken"),
+        ("row", "gated", False),
+        ("row", "qualification_required", False),
+        (
+            "row",
+            "perturbations",
+            {"start4k": {"stable": False, "guards": {"hash": "changed"}}},
+        ),
+    ],
+)
+def test_rerun_rejects_changed_deterministic_evidence(
+    tmp_path, writer, section, key, value
+):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    record["run"]["tier"] = "merge"
+    row = record["results"][0]
+    row.update(
+        input_sha="original",
+        threads=1,
+        window={"warmup": 0, "steps": 100},
+        collection_signature="step()",
+    )
+    row["head"].update(
+        bytes_per_step=0,
+        max_penetration=0.1,
+        checkpoints=[{"step": 1, "max_penetration": 0.1}],
+        time_advanced=True,
+    )
+    row["head"]["guards"].update(pairs=1, max_penetration=0.1)
+    write = module.write_publication if writer == "record" else module.chart_data
+    write(tmp_path, record)
+    saved = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    changed = copy.deepcopy(record)
+    row = changed["results"][0]
+    target = (
+        row
+        if section == "row"
+        else row["head"] if section == "head" else row["head"]["guards"]
+    )
+    target[key] = value
+    changed["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    with pytest.raises(ValueError, match="deterministic counts or guards/inputs"):
+        write(tmp_path, changed)
+    assert {
+        path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
+    } == saved
+
+
+@pytest.mark.parametrize("writer", ["record", "chart"])
+def test_rerun_identity_excludes_advisory_metrics_and_install_paths(tmp_path, writer):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    record["run"]["tier"] = "merge"
+    write = module.write_publication if writer == "record" else module.chart_data
+    write(tmp_path, record)
+    saved = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    record["results"][0]["head"].update(
+        wall_ms_per_step=15, max_rss_kb=1000, libdart="/another/install/libdart.so"
+    )
+    record["results"][0]["parent"].update(
+        wall_ms_per_step=20, max_rss_kb=2000, libdart="/base/install/libdart.so"
+    )
+    write(tmp_path, record)
+    assert {
+        path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
+    } == saved
+
+
+@pytest.mark.parametrize(
+    "section,key,value",
+    [
+        ("run", "parent", "c" * 40),
+        ("parent", "ir_per_step", 99_999),
+        ("parent", "allocs_per_step", 1),
+        ("parent", "bytes_per_step", 1),
+        ("parent", "checkpoints", [{"step": 1, "max_penetration": 0.2}]),
+        ("parent", "micro_instrumented", False),
+        ("parent", "time_advanced", False),
+        ("guards", "hash", "changed"),
+        ("guards", "finite", False),
+        ("guards", "contacts", 4),
+    ],
+)
+def test_merge_rerun_rejects_changed_parent_but_chart_deduplicates_head(
+    tmp_path, section, key, value
+):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    record["run"]["tier"] = "merge"
+    module.write_publication(tmp_path, record)
+    saved = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    changed = copy.deepcopy(record)
+    parent = changed["results"][0]["parent"]
+    target = (
+        changed["run"]
+        if section == "run"
+        else parent if section == "parent" else parent["guards"]
+    )
+    target[key] = value
+    module.chart_data(tmp_path, changed)
+    assert len(_chart_points(tmp_path)) == 1
+    with pytest.raises(ValueError, match="deterministic counts or guards/inputs"):
+        module.write_publication(tmp_path, changed)
+    assert {
+        path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
+    } == saved
+
+
+def test_merge_rerun_checks_all_matching_history(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    record["run"]["tier"] = "merge"
+    module.write_publication(tmp_path, record)
+    original = next((tmp_path / "performance/records/main/2026").glob("*.json"))
+    record["verdict"]["status"] = "WARN"
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    module.write_publication(tmp_path, record)
+    older = json.loads(original.read_text())
+    older["results"][0]["head"]["guards"]["hash"] = "inconsistent older run"
+    module.write_json(original, older)
+    with pytest.raises(ValueError, match="guards/inputs"):
+        module.write_publication(tmp_path, record)
+
+
+def test_nightly_same_timestamp_with_changed_evidence_keeps_both_records(tmp_path):
+    module = _load_runner()
+    record = _publication_fixture()
+    record["run"]["tier"] = "nightly"
+    module.write_publication(tmp_path, record)
+    record["results"][0]["head"]["guards"]["contacts"] += 1
+    changed = module.write_publication(tmp_path, record)
+    assert len(changed) == 1 and changed[0].endswith("-nightly.json")
+    records = sorted((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert [
+        json.loads(path.read_text())["results"][0]["head"]["guards"]["contacts"]
+        for path in records
+    ] == [3, 4]
+    assert module.write_publication(tmp_path, record) == []
+
+
+def test_guard_table_keeps_all_rows_before_errors_and_checkpoints():
+    module = _load_runner()
+    record = _publication_fixture()
+    record["results"] = [copy.deepcopy(record["results"][0]) for _ in range(3)]
+    for row, name in zip(record["results"], ("S3", "S6", "S1")):
+        row["row"] = name
+    record["results"][0].update(error="failed\nwith details", status="broken")
+    record["results"][1]["head"]["checkpoints"] = [
+        {"step": 5000, "max_penetration": 0.1}
+    ]
+    report = module.guard_table(record)
+    lines = report.splitlines()
+    start = next(i for i, line in enumerate(lines) if line.startswith("| Row |"))
+    assert all(line.startswith("|") for line in lines[start : start + 5])
+    assert [line.split("|")[1].strip() for line in lines[start + 2 : start + 5]] == [
+        "S3",
+        "S6",
+        "S1",
+    ]
+    assert (
+        report.index("| S1 |")
+        < report.index("`S3/dart`: failed")
+        < report.index("`S6/dart` checkpoints:")
+    )
+
+
+@pytest.mark.parametrize("reporter", ["markdown", "guard_table"])
+def test_markdown_table_cells_escape_pipes_and_line_breaks(reporter):
+    module = _load_runner()
+    record = _publication_fixture()
+    record["run"]["env"].update(
+        valgrind="test", compiler="test", glibc="test", preset="test"
+    )
+    record["results"] *= 2
+    row = record["results"][0]
+    row.update(
+        row="S6",
+        status="broken|details\nnext",
+        gate_reason="failed|details\r\nnext\rlast",
+        failures=[],
+    )
+    row["delta"]["bytes"] = 0
+    row["head"]["guards"]["resting"] = "0/3|details\nnext"
+    report = getattr(module, reporter)(record)
+    lines = report.splitlines()
+    start = next(i for i, line in enumerate(lines) if line.startswith("| Row |"))
+    table = lines[start : start + 4]
+    assert all(line.startswith("|") for line in table)
+    assert len({len(re.split(r"(?<!\\)\|", line)) for line in table}) == 1
+    assert "\\|details<br>next" in table[2]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("threads", 4),
+        ("window", {"warmup": 50, "steps": 100}),
+        ("method", "native"),
+        ("collection_signature", "new()"),
+        ("micro_instrumented", False),
+        ("fingerprint", "2" * 64),
+    ],
+)
+def test_chart_annotates_comparability_changes_across_missing_rows(
+    tmp_path, field, value
+):
+    module = _load_runner()
+    record = _publication_fixture()
+    record["results"][0].update(
+        input_sha="01234567" + "a" * 56,
+        threads=1,
+        window={"warmup": 0, "steps": 100},
+        collection_signature="old()",
+    )
+    stable = copy.deepcopy(record["results"][0])
+    stable["row"] = "stable"
+    record["results"].append(stable)
+    records = [copy.deepcopy(record) for _ in range(3)]
+    for i, point in enumerate(records):
+        point["run"].update(
+            commit=f"{i + 1:040x}", time=f"2026-10-08T{8 + i:02d}:00:00+00:00"
+        )
+    records[1]["results"][0]["status"] = "unsupported"
+    if field == "fingerprint":
+        records[2]["run"]["env"]["fingerprint"] = value
+    elif field == "micro_instrumented":
+        records[2]["results"][0]["head"][field] = value
+    else:
+        records[2]["results"][0][field] = value
+    scripts = []
+    for name, ordered in (("forward", records), ("reverse", records[::-1])):
+        pages = tmp_path / name
+        _stock_chart_template(pages)
+        for point in ordered:
+            module.chart_data(pages, point)
+        points = _chart_points(pages)
+        assert all(
+            f"{field} changed:" in bench["extra"]
+            for bench in points[-1]["benches"]
+            if bench["name"].startswith("s3w/")
+        )
+        if field != "fingerprint":
+            assert all(
+                f"{field} changed:" not in bench["extra"]
+                for point in points
+                for bench in point["benches"]
+                if bench["name"].startswith("stable/")
+            )
+        assert all("changed:" not in bench["extra"] for bench in points[0]["benches"])
+        scripts.append((pages / "performance/dart6-ir/data.js").read_bytes())
+    assert scripts[0] == scripts[1]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("version", 2),
+        ("det", "ode"),
+        ("row", "other"),
+        ("input_sha", "89abcdef" + "b" * 56),
+    ],
+)
+def test_chart_names_split_row_version_detector_and_input_changes(
+    tmp_path, field, value
+):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    module.chart_data(tmp_path, record)
+    record["run"].update(commit="c" * 40, time="2026-10-08T09:00:00+00:00")
+    record["results"][0][field] = value
+    module.chart_data(tmp_path, record)
+    first, second = _chart_points(tmp_path)
+    assert {bench["name"] for bench in first["benches"]}.isdisjoint(
+        bench["name"] for bench in second["benches"]
+    )
+    if field == "input_sha":
+        assert {bench["name"] for bench in second["benches"]} == {
+            "s3w/dart@1:89abcdef Ir",
+            "s3w/dart@1:89abcdef allocations",
+        }
+        assert all("changed:" not in bench["extra"] for bench in second["benches"])
+
+
+def test_chart_legacy_points_validate_counts_and_split_unknown_inputs(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    module.chart_data(tmp_path, record)
+    data_path = tmp_path / "performance/dart6-ir/data.js"
+    data = json.loads(data_path.read_text().removeprefix("window.BENCHMARK_DATA = "))
+    point = data["entries"]["DART 6 deterministic counts"][0]
+    point.pop("measurement")
+    for bench in point["benches"]:
+        for field in (
+            "input_sha",
+            "threads",
+            "window",
+            "method",
+            "collection_signature",
+            "micro_instrumented",
+        ):
+            bench.pop(field)
+    data_path.write_text("window.BENCHMARK_DATA = " + json.dumps(data))
+    saved = data_path.read_bytes()
+    module.chart_data(tmp_path, record)
+    assert data_path.read_bytes() == saved
+    changed = copy.deepcopy(record)
+    changed["results"][0]["head"]["ir_per_step"] += 1
+    with pytest.raises(ValueError, match="deterministic counts"):
+        module.chart_data(tmp_path, changed)
+    record["run"].update(commit="c" * 40, time="2026-10-08T09:00:00+00:00")
+    record["results"][0]["input_sha"] = "89abcdef" + "b" * 56
+    module.chart_data(tmp_path, record)
+    assert all(
+        ":89abcdef " in bench["name"] and "input_sha changed:" not in bench["extra"]
+        for bench in _chart_points(tmp_path)[1]["benches"]
+    )
+
+
+@pytest.mark.parametrize(
+    "outcome", ["race", "rejected", "identical", "no-chart", "nightly"]
+)
+def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
+    monkeypatch, tmp_path, outcome
+):
+    module = _load_runner()
+    tier = "nightly" if outcome == "nightly" else "merge"
+    _trusted_publication(monkeypatch, "schedule" if tier == "nightly" else "push")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
+    real_run = subprocess.run
+
+    def git(directory, *arguments):
+        return real_run(
+            ["git", "-C", str(directory), *arguments],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+
+    remote, pages, competitor = (
+        tmp_path / name for name in ("remote.git", "pages", "competitor")
+    )
+    real_run(
+        ["git", "init", "--bare", "--initial-branch=gh-pages", str(remote)],
+        check=True,
+        capture_output=True,
+    )
+    real_run(["git", "clone", str(remote), str(pages)], check=True, capture_output=True)
+    _stock_chart_template(pages)
+
+    def commit(directory):
+        git(directory, "add", "performance")
+        git(
+            directory,
+            "-c",
+            "user.name=test",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "-m",
+            "test",
+        )
+
+    commit(pages)
+    git(pages, "push", "origin", "HEAD:gh-pages")
+    real_run(
+        ["git", "clone", str(remote), str(competitor)], check=True, capture_output=True
+    )
+    baseline = git(remote, "rev-parse", "gh-pages").stdout.strip()
+    path = tmp_path / "record.json"
+    fixture = _publication_fixture()
+    if outcome == "no-chart":
+        # Distinct timestamps write disjoint files, so Git could rebase cleanly
+        # while preserving duplicate evidence for the same merge identity.
+        fixture["results"][0]["status"] = "failed"
+    module.write_json(path, fixture)
+    incoming = module.publication_record(path, tier)
+    concurrent = copy.deepcopy(incoming)
+    if outcome != "identical":
+        concurrent["run"]["time"] = (
+            "2026-10-08T09:00:00+00:00"
+            if tier == "nightly"
+            else "2026-10-08T07:00:00+00:00"
+        )
+    if outcome in ("race", "rejected"):
+        concurrent["run"]["commit"] = "c" * 40
+        concurrent["run"]["env"]["fingerprint"] = "2" * 64
+    if tier == "nightly":
+        concurrent["results"][0]["head"]["guards"]["contacts"] = 4
+    pushes = []
+    checkouts = []
+
+    def raced_run(command, *args, **kwargs):
+        if command[:3] == ["git", "-C", str(pages)]:
+            if command[3] == "checkout":
+                checkouts.append(command)
+            if command[3] == "push":
+                if outcome == "rejected":
+                    pushes.append(command)
+                    return subprocess.CompletedProcess(
+                        command, 1, "", "simulated remote rejection"
+                    )
+                if not pushes:
+                    module.write_publication(competitor, concurrent)
+                    commit(competitor)
+                    git(competitor, "push", "origin", "HEAD:gh-pages")
+                pushes.append(command)
+        return real_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(module.subprocess, "run", raced_run)
+    args = module.parser().parse_args(
+        ["publish", "--record", str(path), "--tier", tier, "--pages-dir", str(pages)]
+    )
+    if outcome == "rejected":
+        with pytest.raises(
+            RuntimeError, match="rejected after 5 fetch/regenerate attempts"
+        ):
+            module.publish(args)
+        assert len(pushes) == 5
+        assert git(remote, "rev-parse", "gh-pages").stdout.strip() == baseline
+        return
+    deduplicated = outcome in ("identical", "no-chart")
+    assert module.publish(args) is not deduplicated
+    assert len(pushes) == (1 if deduplicated else 2)
+    assert len(checkouts) == 2
+    assert all(
+        not any("force" in argument for argument in command) for command in pushes
+    )
+    git(remote, "merge-base", "--is-ancestor", baseline, "gh-pages")
+    if tier == "nightly":
+        assert (pages / "performance/guards/main.md").read_text() == module.guard_table(
+            concurrent
+        )
+    elif outcome == "no-chart":
+        assert not (pages / "performance/dart6-ir/data.js").exists()
+    else:
+        points = _chart_points(pages)
+        assert [point["commit"]["id"] for point in points] == (
+            ["a" * 40] if outcome == "identical" else ["c" * 40, "a" * 40]
+        )
+        if outcome != "identical":
+            assert "fingerprint changed" in points[-1]["benches"][0]["extra"]
+    assert len(list((pages / "performance/records/main/2026").glob("*.json"))) == (
+        1 if deduplicated else 2
+    )
+    assert module.publish(args) is False

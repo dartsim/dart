@@ -37,9 +37,12 @@
 #include "dart/math/Geometry.hpp"
 #include "dart/simulation/World.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <utility>
 
 using namespace dart;
 using namespace math;

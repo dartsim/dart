@@ -34,7 +34,10 @@
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/config.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
@@ -46,6 +49,9 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <ostream>
+#include <string>
+#include <vector>
 
 //==============================================================================
 class ConstraintTest : public ::testing::Test

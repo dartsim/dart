@@ -31,10 +31,15 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/common/Resource.hpp"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
 #include "dart/config.hpp"
 #include "dart/utils/PackageResourceRetriever.hpp"
 
 #include <gtest/gtest.h>
+
+#include <memory>
 
 using dart::common::Resource;
 using dart::common::ResourcePtr;

@@ -16,7 +16,7 @@
 name: CI FreeBSD (VM)
 
 on:
-  # Nightly only (~1.5 h under TCG emulation): nightly.yml calls this every
+  # Nightly only (~1.5 h in the VM): nightly.yml calls this every
   # night; dispatch it to check a branch on demand.
   workflow_dispatch:
   workflow_call:
@@ -44,8 +44,8 @@ jobs:
     # host setup. They do not carry the `ubuntu-24.04` label, so pinning it keeps
     # this job on GitHub-hosted runners where the VM action works.
     runs-on: ubuntu-24.04
-    # Hosted runners lack nested KVM so the VM runs under slower TCG emulation.
-    # Keep the timeout high enough for the slow VM, but do not mask ctest
+    # The VM runs under KVM, but the test suite is still far slower than on
+    # the Linux runner. Keep the timeout high enough for it, but do not mask ctest
     # failures: release validation must go red when the FreeBSD test suite fails.
     timeout-minutes: 120
     steps:
@@ -72,7 +72,7 @@ jobs:
           version: "14.4"
           memory: 6G
           # Sync the checkout into the VM only; nothing downstream consumes the
-          # build tree, so skip the (slow, timeout-risking under TCG) copy back
+          # build tree, so skip the (slow, timeout-risking) copy back
           # from the VM. Mirrors the former vmactions `copyback: false`.
           sync_files: runner-to-vm
           # Run the build script under sh: the action otherwise uses the guest
@@ -85,9 +85,38 @@ jobs:
             # Install build dependencies from pkg.
             sudo pkg update -f
             sudo pkg install -y \
-              assimp boost-libs cmake eigen fcl libfmt git gmake googletest \
-              libccd ninja octomap ode-double pkgconf spdlog tinyxml2 \
+              assimp boost-libs cmake eigen libfmt git gmake googletest \
+              ninja octomap ode-double pkgconf spdlog tinyxml2 \
               ros-urdfdom ros-urdfdom_headers
+            # FreeBSD's libccd package keeps libccd's single-precision default,
+            # so the package's FCL runs GJK/EPA in float. DART's FCL detector
+            # routes primitive pairs that FCL has no dedicated algorithm for,
+            # such as cylinder-box, through GJK/EPA, and the float contact
+            # normals alone spin the base in
+            # Issue201.ShallowSupportKeepsOffAxisRigidBodyMomentum up to
+            # 0.04 rad/s (#3590). Build libccd in double precision, as
+            # conda-forge, Debian and Homebrew ship it, and FCL against it.
+            # The tarballs are the ones the ports build from, and
+            # `-include cassert` is the ports' fix for FCL.
+            fetch -o /tmp/libccd.tar.gz https://github.com/danfis/libccd/archive/refs/tags/v2.1.tar.gz
+            sha256 -c 542b6c47f522d581fbf39e51df32c7d1256ac0c626e7c2b41f1040d4b9d50d1e /tmp/libccd.tar.gz
+            fetch -o /tmp/fcl.tar.gz https://github.com/flexible-collision-library/fcl/archive/refs/tags/0.7.0.tar.gz
+            sha256 -c 90409e940b24045987506a6b239424a4222e2daf648c86dd146cbcb692ebdcbc /tmp/fcl.tar.gz
+            tar -xzf /tmp/libccd.tar.gz -C /tmp
+            tar -xzf /tmp/fcl.tar.gz -C /tmp
+            cmake -G Ninja -S /tmp/libccd-2.1 -B /tmp/build-libccd \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+              -DENABLE_DOUBLE_PRECISION=ON
+            cmake --build /tmp/build-libccd
+            sudo cmake --install /tmp/build-libccd
+            cmake -G Ninja -S /tmp/fcl-0.7.0 -B /tmp/build-fcl \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+              -DCMAKE_CXX_FLAGS="-include cassert" \
+              -DBUILD_TESTING=OFF
+            cmake --build /tmp/build-fcl -j2
+            sudo cmake --install /tmp/build-fcl
             # DART's source tree does not natively target FreeBSD, so apply the
             # FreeBSD source-compatibility patches (formerly applied by the
             # docker/freebsd harness) before configuring. They are -p0 patches
@@ -103,12 +132,12 @@ jobs:
               -DDART_USE_SYSTEM_GOOGLETEST=ON \
               -DDART_VERBOSE=ON
             cmake --build build/freebsd/cpp/Release --target tests -j2
-            # Some dynamics tests are much slower under hosted-runner VM
-            # emulation; keep the test coverage but avoid the inherited
-            # 10-minute per-test cap from failing a still-progressing run.
+            # Some dynamics tests are much slower in the hosted-runner VM; keep
+            # the test coverage but avoid the inherited 10-minute per-test cap
+            # from failing a still-progressing run.
             # `long-measurement` tests are excluded: the soft-foot push-recovery
-            # sweep alone measures 3674 s under TCG emulation (~190x bare
-            # metal), which starves the remaining suite inside this job's
+            # sweep alone measures 3674 s in the VM (~190x bare metal),
+            # which starves the remaining suite inside this job's
             # 120-minute wall clock, and a deterministic parameter sweep adds
             # no portability signal beyond the correctness gates that stay in.
             ctest --test-dir build/freebsd/cpp/Release --output-on-failure --timeout 1800 --label-exclude long-measurement

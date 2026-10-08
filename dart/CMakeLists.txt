@@ -106,6 +106,10 @@ get_property(dart_core_sources GLOBAL PROPERTY DART_CORE_SOURCES)
 
 # Add target
 dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
+# DantzigLcp-impl.hpp defines its LCP template only under dLCP_FAST, and its
+# include guard lets the first inclusion decide. Define it for every source so a
+# unity batch whose other files include the header first still gets it.
+target_compile_definitions(dart PRIVATE dLCP_FAST)
 target_include_directories(
   dart
   BEFORE

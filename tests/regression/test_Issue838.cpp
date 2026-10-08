@@ -32,10 +32,18 @@
 
 #include <dart/utils/urdf/DartLoader.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
+#include <Eigen/Core>
 #include <TestHelpers.hpp>
 #include <gtest/gtest.h>
+
+#include <vector>
+
+#include <cstddef>
 
 //==============================================================================
 TEST(Issue838, MaterialParsing)

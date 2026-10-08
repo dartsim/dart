@@ -31,20 +31,35 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/config.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/ScrewJoint.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/sdf/SdfParser.hpp"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <cstddef>
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif

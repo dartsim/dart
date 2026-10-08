@@ -43,21 +43,69 @@
 
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
+
+#include <ratio>
 #if HAVE_ODE
   #include <dart/collision/ode/OdeCollisionDetector.hpp>
 #endif
 
-#include <dart/dart.hpp>
+#include <dart/simulation/World.hpp>
 
+#include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/ContactConstraint.hpp>
+#include <dart/constraint/ContactSurface.hpp>
+#include <dart/constraint/WeldJointConstraint.hpp>
+
+#include <dart/collision/CollisionDetector.hpp>
+#include <dart/collision/CollisionFilter.hpp>
+#include <dart/collision/CollisionGroup.hpp>
+#include <dart/collision/CollisionObject.hpp>
+#include <dart/collision/CollisionOption.hpp>
+#include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/Contact.hpp>
+
+#include <dart/dynamics/BallJoint.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/DegreeOfFreedom.hpp>
+#include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/GenericJoint.hpp>
+#include <dart/dynamics/Inertia.hpp>
+#include <dart/dynamics/Joint.hpp>
+#include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/PrismaticJoint.hpp>
+#include <dart/dynamics/RevoluteJoint.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/SoftBodyNode.hpp>
+#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/WeldJoint.hpp>
+
+#include <dart/math/ConfigurationSpace.hpp>
+#include <dart/math/Constants.hpp>
+#include <dart/math/Helpers.hpp>
+#include <dart/math/MathTypes.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <TestHelpers.hpp>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <memory>
+#include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include <cmath>
+#include <cstddef>
 
 using namespace dart;
 using namespace dart::collision;

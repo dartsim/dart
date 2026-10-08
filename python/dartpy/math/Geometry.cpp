@@ -33,8 +33,11 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
-#include <dart/dart.hpp>
+#include <dart/math/Geometry.hpp>
+#include <dart/math/MathTypes.hpp>
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <pybind11/pybind11.h>
 
 // TODO(JS): For some reason, passing const reference causes segfault errors.

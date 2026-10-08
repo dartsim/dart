@@ -30,10 +30,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/DistanceOption.hpp"
+#include "dart/collision/DistanceResult.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/fcl.hpp"
-#include "dart/dart.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/config.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
+
+#include <memory>
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif

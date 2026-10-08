@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/dart/narrow_phase/Gjk-impl.hpp>
+#include <dart/collision/dart/narrow_phase/Epa-impl.hpp>
 #include <dart/collision/dart/narrow_phase/Gjk.hpp>
 
 #include <algorithm>
@@ -45,26 +45,6 @@ namespace dart::collision::native {
 namespace {
 
 constexpr double kEpsilon = 1e-12;
-
-SupportPoint computeSupport(
-    const SupportFunction& supportA,
-    const SupportFunction& supportB,
-    const Eigen::Vector3d& direction)
-{
-  Eigen::Vector3d dir = direction;
-  if (!dir.allFinite() || dir.squaredNorm() < kEpsilon) {
-    dir = Eigen::Vector3d::UnitX();
-  } else {
-    dir.normalize();
-  }
-
-  SupportPoint point;
-  point.v1 = supportA(dir);
-  point.v2 = supportB(-dir);
-  point.v = point.v1 - point.v2;
-  point.direction = dir;
-  return point;
-}
 
 enum class TriangleRegion
 {
@@ -555,21 +535,7 @@ bool Gjk::intersect(
   return detail::queryT(supportA, supportB, initialDirection).intersecting;
 }
 
-namespace {
-
-struct EpaFace
-{
-  std::array<int, 3> vertices;
-  Eigen::Vector3d normal = Eigen::Vector3d::Zero();
-  double distance = 0.0;
-  bool valid = true;
-};
-
-struct EpaEdge
-{
-  int a = 0;
-  int b = 0;
-};
+namespace detail {
 
 void addIfUniqueEdge(std::vector<EpaEdge>& edges, int a, int b)
 {
@@ -612,105 +578,56 @@ bool addFace(
   return true;
 }
 
-} // namespace
+EpaScratch& epaScratch()
+{
+  thread_local EpaScratch scratch;
+  auto* available = &scratch;
+  while (available->inUse) {
+    if (!available->nested) {
+      available->nested = std::make_unique<EpaScratch>();
+    }
+    available = available->nested.get();
+  }
+  return *available;
+}
+
+void fillPenetrationResult(
+    const EpaFace& closestFace,
+    const std::vector<SupportPoint>& vertices,
+    double closestDist,
+    EpaResult& result)
+{
+  const Eigen::Vector3d& faceNormal = closestFace.normal;
+  const auto& fv = closestFace.vertices;
+  const SupportPoint& va = vertices[fv[0]];
+  const SupportPoint& vb = vertices[fv[1]];
+  const SupportPoint& vc = vertices[fv[2]];
+  const Eigen::Vector3d projected = closestDist * faceNormal;
+  std::array<double, 3> weights
+      = barycentricCoordinatesOnTriangle(projected, va.v, vb.v, vc.v);
+  if (!std::isfinite(weights[0]) || !std::isfinite(weights[1])
+      || !std::isfinite(weights[2])) {
+    TriangleClosestResult tri = closestPointTriangleToOrigin(va.v, vb.v, vc.v);
+    weights = tri.weights;
+  }
+
+  result.depth = closestDist;
+  result.normal = faceNormal;
+  result.pointOnA
+      = weights[0] * va.v1 + weights[1] * vb.v1 + weights[2] * vc.v1;
+  result.pointOnB
+      = weights[0] * va.v2 + weights[1] * vb.v2 + weights[2] * vc.v2;
+  result.success = true;
+}
+
+} // namespace detail
 
 EpaResult Epa::penetration(
     const SupportFunction& supportA,
     const SupportFunction& supportB,
     const GjkSimplex& initialSimplex)
 {
-  EpaResult result;
-
-  if (initialSimplex.size < 4) {
-    return result;
-  }
-
-  std::vector<SupportPoint> vertices;
-  vertices.reserve(64);
-  for (int i = 0; i < initialSimplex.size; ++i) {
-    vertices.push_back(initialSimplex.points[i]);
-  }
-
-  std::vector<EpaFace> faces;
-  faces.reserve(64);
-
-  addFace(faces, vertices, 0, 1, 2);
-  addFace(faces, vertices, 0, 3, 1);
-  addFace(faces, vertices, 0, 2, 3);
-  addFace(faces, vertices, 1, 3, 2);
-
-  for (int iteration = 0; iteration < Epa::kMaxIterations; ++iteration) {
-    int closestFaceIdx = -1;
-    double closestDist = std::numeric_limits<double>::max();
-
-    for (size_t i = 0; i < faces.size(); ++i) {
-      if (faces[i].valid && faces[i].distance < closestDist) {
-        closestDist = faces[i].distance;
-        closestFaceIdx = static_cast<int>(i);
-      }
-    }
-
-    if (closestFaceIdx < 0) {
-      break;
-    }
-
-    const EpaFace& closestFace = faces[closestFaceIdx];
-    const Eigen::Vector3d& faceNormal = closestFace.normal;
-
-    SupportPoint newPoint = computeSupport(supportA, supportB, faceNormal);
-    const double newDist = newPoint.v.dot(faceNormal);
-
-    if (newDist - closestDist < Epa::kTolerance) {
-      const auto& fv = closestFace.vertices;
-      const SupportPoint& va = vertices[fv[0]];
-      const SupportPoint& vb = vertices[fv[1]];
-      const SupportPoint& vc = vertices[fv[2]];
-      const Eigen::Vector3d projected = closestDist * faceNormal;
-      std::array<double, 3> weights
-          = barycentricCoordinatesOnTriangle(projected, va.v, vb.v, vc.v);
-      if (!std::isfinite(weights[0]) || !std::isfinite(weights[1])
-          || !std::isfinite(weights[2])) {
-        TriangleClosestResult tri
-            = closestPointTriangleToOrigin(va.v, vb.v, vc.v);
-        weights = tri.weights;
-      }
-
-      result.depth = closestDist;
-      result.normal = faceNormal;
-      result.pointOnA
-          = weights[0] * va.v1 + weights[1] * vb.v1 + weights[2] * vc.v1;
-      result.pointOnB
-          = weights[0] * va.v2 + weights[1] * vb.v2 + weights[2] * vc.v2;
-      result.success = true;
-      return result;
-    }
-
-    const int newVertexIdx = static_cast<int>(vertices.size());
-    vertices.push_back(newPoint);
-
-    std::vector<EpaEdge> edges;
-    edges.reserve(32);
-
-    for (size_t i = 0; i < faces.size(); ++i) {
-      if (!faces[i].valid) {
-        continue;
-      }
-
-      const int v0 = faces[i].vertices[0];
-      if (faces[i].normal.dot(newPoint.v - vertices[v0].v) > 0.0) {
-        faces[i].valid = false;
-        addIfUniqueEdge(edges, faces[i].vertices[0], faces[i].vertices[1]);
-        addIfUniqueEdge(edges, faces[i].vertices[1], faces[i].vertices[2]);
-        addIfUniqueEdge(edges, faces[i].vertices[2], faces[i].vertices[0]);
-      }
-    }
-
-    for (const auto& edge : edges) {
-      addFace(faces, vertices, edge.a, edge.b, newVertexIdx);
-    }
-  }
-
-  return result;
+  return detail::penetrationT(supportA, supportB, initialSimplex);
 }
 
 } // namespace dart::collision::native

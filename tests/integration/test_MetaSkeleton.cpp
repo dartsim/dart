@@ -31,17 +31,39 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/common/LockableReference.hpp"
+#include "dart/common/Uri.hpp"
 #include "dart/common/sub_ptr.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Branch.hpp"
+#include "dart/dynamics/Chain.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Group.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/Linkage.hpp"
+#include "dart/dynamics/MetaSkeleton.hpp"
+#include "dart/dynamics/ReferentialSkeleton.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
+#include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <tuple>
+#include <vector>
+
+#include <cstddef>
 
 using namespace dart;
 using namespace math;

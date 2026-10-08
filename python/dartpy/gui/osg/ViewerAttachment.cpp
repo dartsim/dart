@@ -30,14 +30,14 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "pointers.hpp"
+
 #include <dart/gui/osg/osg.hpp>
 
 #include <dart/dart.hpp>
 
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
-
-PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);
 
 namespace py = pybind11;
 

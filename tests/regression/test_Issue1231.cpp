@@ -37,10 +37,17 @@
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <TestHelpers.hpp>
 #include <gtest/gtest.h>
+
+#include <memory>
+
+#include <cstddef>
 
 //==============================================================================
 TEST(Issue1231, NoContacts)

@@ -30,9 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/utils.hpp>
-
-#include <dart/dart.hpp>
+#include <dart/utils/SkelParser.hpp>
 
 #include <pybind11/pybind11.h>
 

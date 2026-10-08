@@ -245,7 +245,7 @@ MatrixFreeContactSolverOptions sanitizeMatrixFreeContactOptions(
 
 //==============================================================================
 template <typename ExactT, typename DynamicT>
-bool isExactDynamicType(const DynamicT* object)
+bool isExactBoxedLcpDynamicType(const DynamicT* object)
 {
   if (object == nullptr)
     return false;
@@ -552,7 +552,7 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
 
   std::size_t offset = 0u;
   for (const auto& constraintPtr : constraints) {
-    if (!isExactDynamicType<ContactConstraint>(constraintPtr.get()))
+    if (!isExactBoxedLcpDynamicType<ContactConstraint>(constraintPtr.get()))
       return false;
 
     auto* contact = static_cast<ContactConstraint*>(constraintPtr.get());

@@ -30,7 +30,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/collision/CollisionObject.hpp>
+#include <dart/collision/RaycastOption.hpp>
 
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>

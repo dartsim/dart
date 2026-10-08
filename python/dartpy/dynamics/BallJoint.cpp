@@ -30,11 +30,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/BallJoint.hpp>
+#include <dart/dynamics/GenericJoint.hpp>
 
+#include <dart/math/ConfigurationSpace.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+#include <memory>
+#include <string>
+
+#include <cstddef>
 
 namespace py = pybind11;
 

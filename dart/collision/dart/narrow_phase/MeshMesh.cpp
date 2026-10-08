@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/collision/dart/narrow_phase/ConvexConvex.hpp>
+#include <dart/collision/dart/narrow_phase/ConvexConvex-impl.hpp>
 #include <dart/collision/dart/narrow_phase/MeshMesh.hpp>
 
 #include <algorithm>
@@ -77,7 +77,7 @@ struct LocalTriangle
   }
 };
 
-struct SegmentClosestResult
+struct MeshMeshSegmentClosestResult
 {
   Eigen::Vector3d point1;
   Eigen::Vector3d point2;
@@ -208,30 +208,6 @@ bool collideSphereTriangle(
   contact.depth = radius - distance;
   result.addContact(contact);
   return true;
-}
-
-SupportFunction makePrimitiveSupportFunction(
-    const Shape& shape, const Eigen::Isometry3d& transform)
-{
-  switch (shape.getType()) {
-    case ShapeType::Sphere:
-      return makeSphereSupportFunction(
-          static_cast<const SphereShape&>(shape), transform);
-    case ShapeType::Box:
-      return makeBoxSupportFunction(
-          static_cast<const BoxShape&>(shape), transform);
-    case ShapeType::Capsule:
-      return makeCapsuleSupportFunction(
-          static_cast<const CapsuleShape&>(shape), transform);
-    case ShapeType::Cylinder:
-      return makeCylinderSupportFunction(
-          static_cast<const CylinderShape&>(shape), transform);
-    case ShapeType::Convex:
-      return makeConvexSupportFunction(
-          static_cast<const ConvexShape&>(shape), transform);
-    default:
-      return {};
-  }
 }
 
 Eigen::Vector3d primitiveCenter(
@@ -548,7 +524,7 @@ bool pointInTriangleProjected(
   return !(hasNeg && hasPos);
 }
 
-SegmentClosestResult closestPointsBetweenSegments(
+MeshMeshSegmentClosestResult meshMeshClosestPointsBetweenSegments(
     const Eigen::Vector3d& p1,
     const Eigen::Vector3d& q1,
     const Eigen::Vector3d& p2,
@@ -592,7 +568,7 @@ SegmentClosestResult closestPointsBetweenSegments(
     }
   }
 
-  SegmentClosestResult result;
+  MeshMeshSegmentClosestResult result;
   result.s = s;
   result.t = t;
   result.point1 = p1 + d1 * s;
@@ -660,8 +636,9 @@ SegmentTriangleClosestResult closestSegmentTriangle(
     const Eigen::Vector3d& edgeStart = triVertices[static_cast<std::size_t>(i)];
     const Eigen::Vector3d& edgeEnd
         = triVertices[static_cast<std::size_t>((i + 1) % 3)];
-    const SegmentClosestResult edgeClosest
-        = closestPointsBetweenSegments(segStart, segEnd, edgeStart, edgeEnd);
+    const MeshMeshSegmentClosestResult edgeClosest
+        = meshMeshClosestPointsBetweenSegments(
+            segStart, segEnd, edgeStart, edgeEnd);
     updateBest(edgeClosest.point1, edgeClosest.point2);
   }
 
@@ -826,8 +803,9 @@ TriIntersectionResult triangleTriangleIntersection(
 
   for (const auto& e1 : edges1) {
     for (const auto& e2 : edges2) {
-      const SegmentClosestResult segClosest = closestPointsBetweenSegments(
-          e1.first, e1.second, e2.first, e2.second);
+      const MeshMeshSegmentClosestResult segClosest
+          = meshMeshClosestPointsBetweenSegments(
+              e1.first, e1.second, e2.first, e2.second);
       if (segClosest.distSq <= 1e-10) {
         addUniquePoint(
             contactPoints, (segClosest.point1 + segClosest.point2) * 0.5);
@@ -1171,13 +1149,10 @@ bool collidePrimitiveMesh(
     }
   }
 
-  SupportFunction primitiveSupport;
+  const auto primitiveSupport
+      = detail::makeShapeSupportFunctionT(primitive, tfPrim);
   Eigen::Vector3d primitiveCenterWorld = tfPrim.translation();
   if (!spherePrimitive && !capsulePrimitive) {
-    primitiveSupport = makePrimitiveSupportFunction(primitive, tfPrim);
-    if (!primitiveSupport) {
-      return false;
-    }
     primitiveCenterWorld = primitiveCenter(primitive, tfPrim);
   }
 
@@ -1276,30 +1251,33 @@ bool collidePrimitiveMesh(
         continue;
       }
 
-      const SupportFunction triangleSupport
-          = [&triVertices](const Eigen::Vector3d& dir) {
-              double bestDot = triVertices[0].dot(dir);
-              Eigen::Vector3d best = triVertices[0];
-              const double dot1 = triVertices[1].dot(dir);
-              if (dot1 > bestDot) {
-                bestDot = dot1;
-                best = triVertices[1];
-              }
-              const double dot2 = triVertices[2].dot(dir);
-              if (dot2 > bestDot) {
-                best = triVertices[2];
-              }
-              return best;
-            };
+      const auto triangleSupport = [&triVertices](const Eigen::Vector3d& dir) {
+        double bestDot = triVertices[0].dot(dir);
+        Eigen::Vector3d best = triVertices[0];
+        const double dot1 = triVertices[1].dot(dir);
+        if (dot1 > bestDot) {
+          bestDot = dot1;
+          best = triVertices[1];
+        }
+        const double dot2 = triVertices[2].dot(dir);
+        if (dot2 > bestDot) {
+          best = triVertices[2];
+        }
+        return best;
+      };
 
       CollisionResult localResult;
-      if (collideSupportFunctions(
-              primitiveSupport,
-              primitiveCenterWorld,
-              triangleSupport,
-              triCenter,
-              localResult,
-              localOption)) {
+      if (std::visit(
+              [&](const auto& concretePrimitive) {
+                return detail::collideSupportFunctionsT(
+                    concretePrimitive,
+                    primitiveCenterWorld,
+                    triangleSupport,
+                    triCenter,
+                    localResult,
+                    localOption);
+              },
+              primitiveSupport)) {
         hit = true;
         if (!option.enableContact) {
           return true;

@@ -31,12 +31,20 @@
  */
 
 #include "TestHelpers.hpp"
-#include "dart/dart.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/math/ConfigurationSpace.hpp"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <iostream>
 #include <limits>
+#include <string>
+
+#include <cstddef>
 
 using namespace dart;
 using namespace dynamics;

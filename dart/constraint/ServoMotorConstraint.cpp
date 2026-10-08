@@ -280,3 +280,5 @@ bool ServoMotorConstraint::isActive() const
 
 } // namespace constraint
 } // namespace dart
+
+#undef DART_CFM

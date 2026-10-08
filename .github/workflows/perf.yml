@@ -15,6 +15,37 @@ on:
       - "tools/perf/**"
       - "scripts/perf_regression.py"
       - ".github/workflows/perf.yml"
+  push:
+    branches: [main]
+    paths:
+      - "dart/**"
+      - "examples/contact_benchmark/**"
+      - "tests/benchmark/**"
+      - "tests/unit/lcpsolver/DantzigProblemCases.hpp"
+      - "data/**"
+      - "CMakeLists.txt"
+      - "cmake/**"
+      - "tools/perf/**"
+      - "scripts/perf_regression.py"
+      - ".github/workflows/perf.yml"
+  workflow_call:
+    inputs:
+      tier:
+        type: string
+        default: nightly
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: "Performance tier"
+        type: choice
+        options: [merge, nightly]
+        default: merge
+      head:
+        description: "Merged main revision to measure (defaults to this main SHA)"
+        type: string
+      base:
+        description: "Expected first parent of head (optional)"
+        type: string
 
 permissions:
   contents: read
@@ -24,12 +55,14 @@ defaults:
     shell: bash
 
 concurrency:
-  group: perf-pr-${{ github.event.pull_request.number }}
+  # Separate main runs must finish rather than replace pending merge records.
+  group: perf-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
   # A verdict rerun retains the original event; it must not cancel a new run.
-  cancel-in-progress: ${{ github.event.action == 'synchronize' && github.run_attempt == 1 }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' && github.run_attempt == 1 }}
 
 jobs:
   measure:
+    if: ${{ github.event_name == 'pull_request' && inputs.tier != 'nightly' }}
     runs-on: ubuntu-24.04
     # An A/B takes about 25-35 minutes; a mixed PR adds a head smoke build.
     timeout-minutes: 90
@@ -168,7 +201,7 @@ jobs:
   verdict:
     name: Perf A/B
     needs: measure
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && inputs.tier != 'nightly' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -316,3 +349,498 @@ jobs:
         run: |
           [[ "$MEASURE_RESULT" == success && "${{ steps.judge.outcome }}" == success ]]
           exit "$(cat verdict-exit)"
+
+  record-measure:
+    name: Measure merged performance
+    if: >-
+      ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.tier == 'merge')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      mode: ${{ steps.scope.outputs.mode }}
+      head: ${{ steps.scope.outputs.head }}
+      pr: ${{ steps.pr.outputs.number }}
+      artifact: ${{ format('perf-merge-{0}-{1}', github.run_id, github.run_attempt) }}
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Check measurement runner
+        run: test "$RUNNER_ENVIRONMENT" = github-hosted
+
+      - name: Checkout merged main source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select base and measurement scope
+        id: scope
+        env:
+          REQUESTED_HEAD: ${{ inputs.head }}
+          REQUESTED_BASE: ${{ inputs.base }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          head=$(git rev-parse --verify --end-of-options "${REQUESTED_HEAD:-HEAD}^{commit}")
+          # Dispatch can remeasure main history, never an unmerged PR revision.
+          git merge-base --is-ancestor "$head" origin/main
+          if [[ "$GITHUB_EVENT_NAME" == push && -n "$PUSH_BEFORE" && ! "$PUSH_BEFORE" =~ ^0+$ ]] &&
+              base=$(git rev-parse --verify --end-of-options "$PUSH_BEFORE^{commit}"); then
+            # Rebase merges can update main by several commits at once.
+            git merge-base --is-ancestor "$base" "$head"
+          else
+            base=$(git rev-parse "$head^1")
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && -n "$REQUESTED_BASE" ]]; then
+            expected=$(git rev-parse --verify --end-of-options "$REQUESTED_BASE^{commit}")
+            [[ "$expected" == "$base" ]]
+          fi
+          git checkout --detach "$head"
+          mode=skip
+          smoke=false
+          while IFS= read -r -d '' path; do
+            case "$path" in
+              scripts/perf_regression.py|tools/perf/*|tests/benchmark/worlds/*|.github/workflows/perf.yml) smoke=true ;;
+              dart/*|examples/contact_benchmark/*|tests/benchmark/*|tests/unit/lcpsolver/DantzigProblemCases.hpp|data/*|CMakeLists.txt|cmake/*) mode=ab ;;
+            esac
+          done < <(git diff --no-renames --name-only -z "$base" "$head")
+          if [[ "$smoke" == true ]]; then mode=ab; fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "head=$head" >> "$GITHUB_OUTPUT"
+          echo "PERF_BASE=$base" >> "$GITHUB_ENV"
+          echo "PERF_HEAD=$head" >> "$GITHUB_ENV"
+          echo "PERF_MODE=$mode" >> "$GITHUB_ENV"
+          echo "PERF_SMOKE=$smoke" >> "$GITHUB_ENV"
+          echo "PERF_OUTPUT=$RUNNER_TEMP/perf" >> "$GITHUB_ENV"
+          if [[ "$mode" == skip ]]; then
+            echo 'Perf merge: skipped; no perf-relevant changes (pixi files are out of scope).' >> "$GITHUB_STEP_SUMMARY"
+          else
+            git worktree add --detach "$RUNNER_TEMP/perf-harness" "$base"
+          fi
+
+      - name: Find the merged PR and its current rationale
+        id: pr
+        if: ${{ steps.scope.outputs.mode == 'ab' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate --slurp "repos/$GH_REPO/commits/$PERF_HEAD/pulls" > "$RUNNER_TEMP/perf-pulls.json"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          pages = json.loads((Path(os.environ["RUNNER_TEMP"]) / "perf-pulls.json").read_text())
+          candidates = [pr for page in pages for pr in page if pr.get("merged_at") and pr["base"]["ref"] == "main"]
+          exact = [pr for pr in candidates if pr.get("merge_commit_sha") == os.environ["PERF_HEAD"]]
+          candidates = exact or candidates
+          if len(candidates) > 1:
+              raise ValueError("ambiguous merged PR for this commit")
+          pr = candidates[0] if candidates else None
+          (Path(os.environ["RUNNER_TEMP"]) / "perf-pr-body.txt").write_text((pr.get("body") or "") if pr else "")
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a") as output:
+              output.write(f'number={pr["number"] if pr else ""}\n')
+          PY
+
+      - name: Setup pixi
+        if: ${{ steps.scope.outputs.mode == 'ab' }}
+        uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          cache: false
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Install system dependencies
+        if: ${{ steps.scope.outputs.mode == 'ab' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+
+      - name: Measure and apply the parent rules
+        if: ${{ steps.scope.outputs.mode == 'ab' }}
+        run: |
+          harness="$RUNNER_TEMP/perf-harness/scripts/perf_regression.py"
+          options=(--base "$PERF_BASE" --head "$PERF_HEAD" --perturb --jobs 4
+            --body-file "$RUNNER_TEMP/perf-pr-body.txt")
+          status=0
+          pixi run python "$harness" local "${options[@]}" --output-dir "$PERF_OUTPUT" \
+            --json "$PERF_OUTPUT/perf.json" --markdown "$PERF_OUTPUT/perf.md" || status=$?
+          # A policy FAIL is publishable evidence; infrastructure errors are not.
+          [[ "$status" != 2 ]]
+          smoke_status=0
+          if [[ "$PERF_MODE" == ab && "$PERF_SMOKE" == true ]]; then
+            pixi run python scripts/perf_regression.py local --base "$PERF_BASE" \
+              --head "$PERF_HEAD" --smoke --perturb --jobs 4 \
+              --output-dir "$PERF_OUTPUT/smoke" --json "$PERF_OUTPUT/smoke/perf.json" \
+              --markdown "$PERF_OUTPUT/smoke/perf.md" || smoke_status=$?
+          fi
+          export PERF_SMOKE_STATUS=$smoke_status
+          if [[ "$PERF_SMOKE" == true ]]; then
+            python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          from scripts.perf_regression import smoke_build_failure
+
+          smoke_build_failure(
+              Path(os.environ["PERF_OUTPUT"]) / "smoke",
+              os.environ["PERF_HEAD"],
+              int(os.environ["PERF_SMOKE_STATUS"]),
+          )
+          PY
+          fi
+          # The head smoke must satisfy the parent's row set and qualification.
+          cd "$RUNNER_TEMP/perf-harness"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from scripts.perf_regression import markdown, row_key, select_rows, write_json
+
+          output = Path(os.environ["PERF_OUTPUT"])
+          record = json.loads((output / "perf.json").read_text())
+          if record["run"]["commit"] != os.environ["PERF_HEAD"]:
+              raise ValueError("head revision mismatch")
+          if record["run"]["parent"] != os.environ["PERF_BASE"]:
+              raise ValueError("parent revision mismatch")
+          smoke_dir = output / "smoke" if os.environ["PERF_SMOKE"] == "true" else None
+          failures = []
+          if smoke_dir is not None:
+              failure = smoke_dir / "build-failure.json"
+              if failure.exists():
+                  broken = json.loads(failure.read_text())
+                  if broken.get("error_kind") != "build" or broken["commit"] != os.environ["PERF_HEAD"]:
+                      raise ValueError("head smoke infrastructure failure")
+                  failures.append(f'head smoke build failed: {broken["error"]}')
+              else:
+                  smoke = json.loads((smoke_dir / "a-run/record.json").read_text())
+                  if smoke["run"]["commit"] != os.environ["PERF_HEAD"]:
+                      raise ValueError("head smoke revision mismatch")
+                  rows = smoke["results"]
+                  keys = [row_key(row) for row in rows]
+                  if not {row.key for row in select_rows("")}.issubset(keys) or len(keys) != len(set(keys)):
+                      failures.append("head smoke benchmark rows omit parent defaults or repeat rows")
+                  if not rows or not all(row.get("status") == "ok" and row.get("perturbations") and row.get("gated") for row in rows):
+                      failures.append("head smoke rows did not pass their perturbation checks")
+                  if int(os.environ["PERF_SMOKE_STATUS"]) == 1:
+                      failures.append("the head smoke harness reported FAIL")
+                  # Publish rows whose measurement identity changed from the head smoke run;
+                  # the saved A/B verdict still uses the parent workload and settings.
+                  def identity(value):
+                      return (
+                          *(value.get(key) for key in ("input_sha", "version", "threads", "window", "method", "collection_signature")),
+                          value.get("head", {}).get("micro_instrumented"),
+                      )
+
+                  smoke_rows = {row_key(row): row for row in rows}
+                  parent_keys = {row_key(row) for row in record["results"]}
+                  for row in record["results"]:
+                      head = smoke_rows.get(row_key(row))
+                      if head is None or identity(head) == identity(row):
+                          continue
+                      parent = row["parent"]
+                      row.update(head)
+                      row["head_env"] = smoke["run"]["env"]
+                      row["gated"] = False
+                      row["delta"] = {
+                          "ir": None,
+                          "allocs": None,
+                          "bytes": None,
+                          "guards_equal": None,
+                          "class": "behaviour-change",
+                      }
+                      row["gate_reason"] = "measurement identity changed; head smoke rebaseline; verdict uses parent A/B rules"
+                      row["wall_ms_per_step"] = {
+                          "parent": parent.get("wall_ms_per_step"),
+                          "head": row["head"].get("wall_ms_per_step"),
+                          "advisory": True,
+                      }
+                  for key, head in smoke_rows.items():
+                      if key in parent_keys or not (head.get("status") == "ok" and head.get("perturbations") and head.get("gated")):
+                          continue
+                      record["results"].append({
+                          **head,
+                          "head_env": smoke["run"]["env"],
+                          "parent": {},
+                          "gated": False,
+                          "delta": {
+                              "ir": None,
+                              "allocs": None,
+                              "bytes": None,
+                              "guards_equal": None,
+                              "class": "new",
+                          },
+                          "failures": [],
+                          "gate_reason": "new row; head smoke qualified; no parent comparison",
+                      })
+          if failures:
+              record["verdict"]["failures"].extend(failures)
+              record["verdict"]["status"] = "FAIL"
+          write_json(output / "perf.json", record)
+          (output / "perf.md").write_text(markdown(record))
+          PY
+
+      - name: Upload merge evidence
+        if: ${{ !cancelled() && steps.scope.outputs.mode == 'ab' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-merge-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.PERF_OUTPUT }}/perf.*
+            ${{ env.PERF_OUTPUT }}/a-run/
+            ${{ env.PERF_OUTPUT }}/b-run/
+            ${{ env.PERF_OUTPUT }}/smoke/a-run/
+            ${{ env.PERF_OUTPUT }}/smoke/perf.*
+            ${{ env.PERF_OUTPUT }}/**/*.log
+            ${{ env.PERF_OUTPUT }}/**/build-failure.json
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Summarize merge measurements
+        if: ${{ !cancelled() && steps.scope.outputs.mode == 'ab' }}
+        run: |
+          if [[ -f "$PERF_OUTPUT/perf.md" ]]; then cat "$PERF_OUTPUT/perf.md" >> "$GITHUB_STEP_SUMMARY"; fi
+
+  record:
+    name: Record merged performance
+    needs: record-measure
+    # Writers for the same head run one at a time, so their PR comment updates
+    # cannot apply out of order.
+    concurrency:
+      group: perf-record-${{ needs.record-measure.outputs.head }}
+      cancel-in-progress: false
+    if: >-
+      ${{ !cancelled() && needs.record-measure.result == 'success' &&
+          needs.record-measure.outputs.mode == 'ab' &&
+          github.ref == 'refs/heads/main' && (github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && inputs.tier == 'merge')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_REPO: ${{ github.repository }}
+      PERF_HEAD: ${{ needs.record-measure.outputs.head }}
+      PERF_PR: ${{ needs.record-measure.outputs.pr }}
+    steps:
+      - name: Refuse self-hosted publication
+        id: hosted
+        run: |
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          echo "PERF_OUTPUT=$RUNNER_TEMP/perf" >> "$GITHUB_ENV"
+
+      - name: Checkout main publisher
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Download merge measurements (including earlier attempts)
+        id: download
+        uses: actions/download-artifact@v8
+        with:
+          # A writer rerun retains the successful measure job's artifact name.
+          name: ${{ needs.record-measure.outputs.artifact }}
+          path: ${{ runner.temp }}/perf
+
+      - name: Checkout durable records
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+          path: perf-pages
+
+      - name: Publish the merge record and chart
+        id: publish
+        run: |
+          options=()
+          if [[ -n "$PERF_PR" ]]; then options+=(--pr "$PERF_PR"); fi
+          python3 scripts/perf_regression.py publish --record "$PERF_OUTPUT/perf.json" \
+            --tier merge --pages-dir "$GITHUB_WORKSPACE/perf-pages" "${options[@]}"
+
+      - name: Refresh the merged PR verdict comment
+        if: ${{ !cancelled() && steps.hosted.outcome == 'success' && steps.download.outcome == 'success' && steps.publish.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ -z "$PERF_PR" ]]; then
+            echo 'No associated merged PR was found; the saved verdict is enforced below.'
+            exit 0
+          fi
+          marker="<!-- dart-perf-merge:$PERF_HEAD -->"
+          comments=$(gh api --paginate "repos/$GH_REPO/issues/$PERF_PR/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id")
+          comment=${comments%%$'\n'*}
+          export PERF_COMMENT_ID="$comment"
+          if [[ -n "$comment" ]]; then
+            gh api "repos/$GH_REPO/issues/comments/$comment" > "$RUNNER_TEMP/perf-previous-comment.json"
+          fi
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from scripts.perf_regression import merge_comment
+
+          output = Path(os.environ["PERF_OUTPUT"])
+          temp = Path(os.environ["RUNNER_TEMP"])
+          record = json.loads((output / "perf.json").read_text())
+          if record["run"]["commit"] != os.environ["PERF_HEAD"]:
+              raise ValueError("merge comment head revision mismatch")
+          previous = (
+              json.loads((temp / "perf-previous-comment.json").read_text())["body"]
+              if os.environ["PERF_COMMENT_ID"] else ""
+          )
+          body = merge_comment(record, (output / "perf.md").read_text(), previous)
+          (temp / "perf-comment.json").write_text(json.dumps({"body": body}))
+          PY
+          if [[ "$(jq -r '.body == null' "$RUNNER_TEMP/perf-comment.json")" == true ]]; then exit 0; fi
+          if [[ -n "$comment" ]]; then
+            gh api --method PATCH "repos/$GH_REPO/issues/comments/$comment" --input "$RUNNER_TEMP/perf-comment.json"
+          else
+            gh api --method POST "repos/$GH_REPO/issues/$PERF_PR/comments" --input "$RUNNER_TEMP/perf-comment.json"
+          fi
+
+      - name: Summarize and enforce the merged verdict
+        if: ${{ !cancelled() }}
+        run: |
+          if [[ -f "$PERF_OUTPUT/perf.md" ]]; then cat "$PERF_OUTPUT/perf.md" >> "$GITHUB_STEP_SUMMARY"; fi
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          record = json.loads((Path(os.environ["PERF_OUTPUT"]) / "perf.json").read_text())
+          status = record["verdict"]["status"]
+          raise SystemExit(2 if status == "ERROR" else int(status == "FAIL"))
+          PY
+
+  nightly-measure:
+    name: Measure nightly performance
+    if: ${{ inputs.tier == 'nightly' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    outputs:
+      status: ${{ steps.measure.outputs.status }}
+    env:
+      PUBLISH_ELIGIBLE: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+    steps:
+      - name: Check measurement runner
+        run: test "$RUNNER_ENVIRONMENT" = github-hosted
+
+      - name: Checkout nightly source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select main revision
+        env:
+          REQUESTED_HEAD: ${{ inputs.head }}
+        run: |
+          head=$(git rev-parse --verify --end-of-options "${REQUESTED_HEAD:-HEAD}^{commit}")
+          if [[ "$PUBLISH_ELIGIBLE" == true ]]; then
+            git merge-base --is-ancestor "$head" origin/main
+          fi
+          git checkout --detach "$head"
+          echo "PERF_HEAD=$head" >> "$GITHUB_ENV"
+          echo "PERF_OUTPUT=$RUNNER_TEMP/perf-nightly" >> "$GITHUB_ENV"
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          cache: false
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+
+      - name: Measure HEAD and nightly diagnostics
+        id: measure
+        run: |
+          status=0
+          pixi run python scripts/perf_regression.py local --head "$PERF_HEAD" --smoke \
+            --nightly --cache-sim --perturb --jobs 4 --output-dir "$PERF_OUTPUT" \
+            --json "$PERF_OUTPUT/perf.json" --markdown "$PERF_OUTPUT/perf.md" || status=$?
+          echo "PERF_STATUS=$status" >> "$GITHUB_ENV"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          [[ "$status" != 2 ]]
+
+      - name: Upload nightly evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-nightly-${{ github.run_id }}
+          path: |
+            ${{ env.PERF_OUTPUT }}/perf.*
+            ${{ env.PERF_OUTPUT }}/a-run/
+            ${{ env.PERF_OUTPUT }}/**/*.log
+            ${{ env.PERF_OUTPUT }}/build-failure.json
+          retention-days: 30
+          overwrite: true
+          if-no-files-found: error
+
+      - name: Summarize nightly diagnostics
+        if: ${{ !cancelled() }}
+        run: |
+          if [[ -f "$PERF_OUTPUT/perf.md" ]]; then cat "$PERF_OUTPUT/perf.md" >> "$GITHUB_STEP_SUMMARY"; fi
+          # Main failures publish evidence before the writer enforces them.
+          if [[ "$PUBLISH_ELIGIBLE" == true ]]; then
+            [[ "${PERF_STATUS:-2}" != 2 ]]
+          else
+            exit "${PERF_STATUS:-2}"
+          fi
+
+  nightly:
+    name: Record nightly performance
+    needs: nightly-measure
+    if: >-
+      ${{ !cancelled() && needs.nightly-measure.result == 'success' &&
+          github.ref == 'refs/heads/main' && inputs.tier == 'nightly' &&
+          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Refuse self-hosted publication
+        run: test "$RUNNER_ENVIRONMENT" = github-hosted
+
+      - name: Checkout main publisher
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download nightly measurements
+        uses: actions/download-artifact@v8
+        with:
+          name: perf-nightly-${{ github.run_id }}
+          path: ${{ runner.temp }}/perf-nightly
+
+      - name: Checkout durable records
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+          path: perf-pages
+
+      - name: Publish changed nightly record and guard table
+        run: |
+          python3 scripts/perf_regression.py publish --record "$RUNNER_TEMP/perf-nightly/a-run/record.json" \
+            --tier nightly --pages-dir "$GITHUB_WORKSPACE/perf-pages"
+
+      - name: Enforce nightly diagnostics
+        if: ${{ !cancelled() }}
+        env:
+          PERF_STATUS: ${{ needs.nightly-measure.outputs.status }}
+        run: exit "${PERF_STATUS:-2}"

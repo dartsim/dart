@@ -31,17 +31,44 @@
  */
 
 #include "AllocationCounting.hpp"
+#include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/common/Macros.hpp"
+#include "dart/config.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/BoxedLcpSolver.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
-#include "dart/dynamics/dynamics.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
+#include "dart/math/ConfigurationSpace.hpp"
+#include "dart/math/MathTypes.hpp"
+#include "dart/simulation/DeactivationOptions.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
+
+#include <utility>
 
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
@@ -2078,6 +2105,51 @@ TEST(StepAllocation, AwakeGridSteadyState)
   }
 }
 
+// Z1b-F6: convex support callables and EPA scratch retain storage after warmup.
+TEST(StepAllocation, ConvexConvexSteadyState)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  auto world = createAllocationGateWorld(
+      dart::collision::DARTCollisionDetector::create(), false);
+  using ConvexMesh = dart::dynamics::ConvexMeshShape;
+  const ConvexMesh::Vertices vertices{
+      {-0.25, -0.25, -0.25},
+      {0.25, -0.25, -0.25},
+      {-0.25, 0.25, -0.25},
+      {0.25, 0.25, -0.25},
+      {-0.25, -0.25, 0.25},
+      {0.25, -0.25, 0.25},
+      {-0.25, 0.25, 0.25},
+      {0.25, 0.25, 0.25}};
+  const ConvexMesh::Triangles triangles{
+      {0, 2, 1},
+      {1, 2, 3},
+      {4, 5, 6},
+      {5, 7, 6},
+      {0, 1, 4},
+      {1, 5, 4},
+      {2, 6, 3},
+      {3, 6, 7},
+      {0, 4, 2},
+      {2, 4, 6},
+      {1, 3, 5},
+      {3, 7, 5}};
+  auto convex
+      = createAllocationGateBox("convex", Eigen::Vector3d(1.2, 0.7, 0.25), 0.5);
+  convex->getBodyNode(0)->getShapeNode(0)->setShape(
+      std::make_shared<ConvexMesh>(vertices, triangles));
+  world->addSkeleton(convex);
+  for (int i = 0; i < 500; ++i)
+    world->step();
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measureWorldStepsNow(world, allocator, 100, 500);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  EXPECT_EQ(countResting(world), 0u);
+  expectAllocationGateBudget("dart_convex_convex_steady", measurement);
+}
+
 // Z2: explicit preparation covers both the freeze event and the first
 // all-resting snapshot; neither may allocate during subsequent steps.
 TEST(StepAllocation, SleepTransition)
@@ -2122,17 +2194,14 @@ TEST(StepAllocation, WakeTransition)
   expectAllocationGateBudget("dart_wake_transition", measurement);
 }
 
-TEST(StepAllocation, IslandMergeSplitSecondCycle)
-{
-  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
-    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+namespace {
 
-#if !HAVE_BULLET
-  GTEST_SKIP() << "Bullet is required for the Z1a island-retention gate";
-#else
-  // Native manifold-cache node reuse is F9, explicitly deferred to Z1b.
-  // Bullet keeps the same merge/split fixture focused on F5 island storage.
-  const auto detector = dart::collision::BulletCollisionDetector::create();
+// Islands merge and split again on the second cycle; neither the island
+// storage (F5) nor the DART detector's manifold-cache nodes (F9) may allocate.
+void expectMergeSplitSecondCycleAllocationFree(
+    const dart::collision::CollisionDetectorPtr& detector,
+    const std::string& budget)
+{
   auto world = createAllocationGateWorld(detector, false);
   auto solver = std::make_unique<AllocationGateConstraintSolver>();
   auto* inspectedSolver = solver.get();
@@ -2141,8 +2210,7 @@ TEST(StepAllocation, IslandMergeSplitSecondCycle)
   // replacement solver starts with its default detector.
   inspectedSolver->setCollisionDetector(detector);
   ASSERT_EQ(
-      inspectedSolver->getCollisionDetector()->getType(),
-      dart::collision::BulletCollisionDetector::getStaticType());
+      inspectedSolver->getCollisionDetector()->getType(), detector->getType());
   std::vector<dart::dynamics::SkeletonPtr> movers;
   for (int i = 0; i < 6; ++i) {
     for (double x : {-0.6, 0.6}) {
@@ -2206,8 +2274,33 @@ TEST(StepAllocation, IslandMergeSplitSecondCycle)
   EXPECT_LT(minGroups, maxGroups);
   EXPECT_TRUE(sawMerge) << "the second cycle must merge moving-body islands";
   EXPECT_TRUE(sawSplitAfterMerge) << "the merged islands must split again";
-  expectAllocationGateBudget("bullet_merge_split_second_cycle", measurement);
+  expectAllocationGateBudget(budget, measurement);
+}
+
+} // namespace
+
+TEST(StepAllocation, IslandMergeSplitSecondCycle)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+#if !HAVE_BULLET
+  GTEST_SKIP() << "Bullet is required for the Z1a island-retention gate";
+#else
+  expectMergeSplitSecondCycleAllocationFree(
+      dart::collision::BulletCollisionDetector::create(),
+      "bullet_merge_split_second_cycle");
 #endif
+}
+
+TEST(StepAllocation, DartIslandMergeSplitSecondCycle)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  expectMergeSplitSecondCycleAllocationFree(
+      dart::collision::DARTCollisionDetector::create(),
+      "dart_merge_split_second_cycle");
 }
 
 TEST(StepAllocation, ArticulatedJointLimitsSteadyState)

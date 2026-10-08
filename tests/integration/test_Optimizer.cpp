@@ -44,10 +44,18 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
+#include <iterator>
+#include <memory>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
 
+#include <cmath>
+#include <cstddef>
 #include <cstdio>
 #if HAVE_NLOPT
   #include "dart/optimizer/nlopt/NloptSolver.hpp"

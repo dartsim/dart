@@ -34,10 +34,23 @@
 // https://github.com/osrf/gazebo/blob/01b395a5fa92eb054c72f9a2027cdcfd35f287f4/test/integration/joint_force_torque.cc
 
 #include "TestHelpers.hpp"
-#include "dart/dart.hpp"
-#include "dart/utils/sdf/sdf.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/math/Constants.hpp"
+#include "dart/math/MathTypes.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/utils/sdf/SdfParser.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
+
+#include <memory>
 
 using namespace dart;
 using namespace dart::math;
