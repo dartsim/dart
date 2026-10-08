@@ -30,43 +30,39 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
+#ifndef DART_CONSTRAINT_FRICTIONSOLVESTATS_HPP_
+#define DART_CONSTRAINT_FRICTIONSOLVESTATS_HPP_
 
-namespace py = pybind11;
+#include <cstdint>
 
 namespace dart {
-namespace python {
+namespace constraint {
 
-void ConstraintBase(py::module& sm);
-void JointConstraint(py::module& sm);
-void JointCoulombFrictionConstraint(py::module& sm);
-void DynamicJointConstraint(py::module& sm);
-
-void BoxedLcpSolver(py::module& sm);
-void DantzigBoxedLcpSolver(py::module& sm);
-void PgsBoxedLcpSolver(py::module& sm);
-void NsgsFrictionSolver(py::module& sm);
-
-void ConstraintSolver(py::module& sm);
-void BoxedLcpConstraintSolver(py::module& sm);
-
-void dart_constraint(py::module& m)
+/// Cumulative friction-solver statistics. Counters can be differenced around a
+/// step. maxViolation is a maximum since resetStats(); reset while no solves
+/// are running to obtain a per-step maximum.
+struct FrictionSolveStats
 {
-  auto sm = m.def_submodule("constraint");
+  std::uint64_t numSolves = 0;
+  std::uint64_t numConverged = 0;
+  /// Solves that accepted their best finite iterate at the iteration cap or
+  /// after an unsuccessful iteration with no secondary available.
+  std::uint64_t numAcceptedAtCap = 0;
+  /// Solves that returned false, requesting the secondary solver.
+  std::uint64_t numFailed = 0;
+  std::uint64_t numContacts = 0;
+  /// Contacts solved with the box law.
+  std::uint64_t numBoxContacts = 0;
+  /// Local contact QPs that needed the slow certificate path.
+  std::uint64_t numLocalFallbacks = 0;
+  /// Gauss-Seidel sweeps.
+  std::uint64_t numIterations = 0;
+  /// Largest final law violation [m/s] among accepted solves (converged or at
+  /// the cap) since resetStats(). Failed solves do not contribute.
+  double maxViolation = 0.0;
+};
 
-  ConstraintBase(sm);
-  JointConstraint(sm);
-  JointCoulombFrictionConstraint(sm);
-  DynamicJointConstraint(sm);
-
-  BoxedLcpSolver(sm);
-  DantzigBoxedLcpSolver(sm);
-  PgsBoxedLcpSolver(sm);
-  NsgsFrictionSolver(sm);
-
-  ConstraintSolver(sm);
-  BoxedLcpConstraintSolver(sm);
-}
-
-} // namespace python
+} // namespace constraint
 } // namespace dart
+
+#endif // DART_CONSTRAINT_FRICTIONSOLVESTATS_HPP_

@@ -71,6 +71,7 @@
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
 #include "dart/simulation/World.hpp"
@@ -331,6 +332,71 @@ TEST(World, CloneRandomizedPgsSolverOptions)
   const auto* copy = static_cast<const constraint::BoxedLcpConstraintSolver*>(
       clone->getConstraintSolver());
   expectPgsOptionsEqual(copy->getBoxedLcpSolver(), options);
+}
+
+//==============================================================================
+TEST(World, CloneNsgsPrimaryAndSecondaryOptions)
+{
+  for (auto law :
+       {constraint::NsgsFrictionSolver::Law::Coulomb,
+        constraint::NsgsFrictionSolver::Law::Associated,
+        constraint::NsgsFrictionSolver::Law::Box}) {
+    SCOPED_TRACE(static_cast<int>(law));
+    auto source = createCloneContactWorld();
+    auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+        source->getConstraintSolver());
+    constraint::NsgsFrictionSolver::Options options;
+    options.law = law;
+    options.boxForAnisotropic = false;
+    options.maxSweeps = 71;
+    options.tolerance = 2e-7;
+    auto primary = std::make_shared<constraint::NsgsFrictionSolver>(options);
+    auto secondaryOptions = options;
+    secondaryOptions.law = constraint::NsgsFrictionSolver::Law::Box;
+    secondaryOptions.boxForAnisotropic = true;
+    secondaryOptions.maxSweeps = 33;
+    secondaryOptions.tolerance = 3e-6;
+    auto secondary
+        = std::make_shared<constraint::NsgsFrictionSolver>(secondaryOptions);
+    solver->setBoxedLcpSolver(primary);
+    solver->setSecondaryBoxedLcpSolver(secondary);
+    auto clone = source->clone();
+    const auto* copiedSolver
+        = static_cast<const constraint::BoxedLcpConstraintSolver*>(
+            clone->getConstraintSolver());
+    const auto copied
+        = std::dynamic_pointer_cast<const constraint::NsgsFrictionSolver>(
+            copiedSolver->getBoxedLcpSolver());
+    const auto copiedSecondary
+        = std::dynamic_pointer_cast<const constraint::NsgsFrictionSolver>(
+            copiedSolver->getSecondaryBoxedLcpSolver());
+    ASSERT_NE(nullptr, copied);
+    ASSERT_NE(nullptr, copiedSecondary);
+    EXPECT_NE(primary, copied);
+    EXPECT_NE(secondary, copiedSecondary);
+    const auto expectOptions = [](const auto& actual, const auto& expected) {
+      EXPECT_EQ(expected.law, actual.law);
+      EXPECT_EQ(expected.boxForAnisotropic, actual.boxForAnisotropic);
+      EXPECT_EQ(expected.maxSweeps, actual.maxSweeps);
+      EXPECT_EQ(expected.tolerance, actual.tolerance);
+    };
+    expectOptions(copied->getOptions(), options);
+    expectOptions(copiedSecondary->getOptions(), secondaryOptions);
+    EXPECT_EQ(0u, copied->getStats().numSolves);
+    expectCloneContactStepsIdentical(source, clone);
+    EXPECT_GT(copied->getStats().numSolves, 0u);
+    auto advancedClone = source->clone();
+    const auto* advancedSolver
+        = static_cast<const constraint::BoxedLcpConstraintSolver*>(
+            advancedClone->getConstraintSolver());
+    const auto advanced
+        = std::dynamic_pointer_cast<const constraint::NsgsFrictionSolver>(
+            advancedSolver->getBoxedLcpSolver());
+    ASSERT_NE(nullptr, advanced);
+    EXPECT_EQ(0u, advanced->getStats().numSolves);
+    primary->setOptions(constraint::NsgsFrictionSolver::Options{});
+    expectOptions(copied->getOptions(), options);
+  }
 }
 
 //==============================================================================
