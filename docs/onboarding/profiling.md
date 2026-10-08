@@ -264,10 +264,12 @@ remove the retained checkout with
 A maintainer publishes the reviewed set once with
 `python scripts/perf_regression.py publish --tier backfill --record build/perf-backfill/records --pages-dir <pages-dir>`,
 using a clean dedicated `gh-pages` checkout and their own git credentials.
-This command refuses GitHub Actions, validates the entire set before git
-operations, and never updates the chart or nightly guard table. Repeating an
-identical publication adds no commit; hosted release records take precedence
-over local tag records.
+This command refuses GitHub Actions and validates the entire publication set
+before writing publication files to the checkout; a refusal leaves it clean.
+It never updates the chart or nightly guard table. Repeating an identical
+publication adds no commit. Hosted records take precedence over local records
+even when their environment fingerprints match; identical-or-refuse checks
+apply only within the same `runner.environment`.
 
 Inspect history with
 `python scripts/perf_regression.py ledger --records build/perf-backfill/records <pages-records-dir> --since <base-sha> --until <head-sha>`.
@@ -276,9 +278,12 @@ Inspect history with
 or `#PR`, an intent (`perf`, `behaviour` or `unrelated`), and a one-line reason.
 The ledger attributes failures to the head, separates inherited failures and
 broken rows from rationale friction, and lists improvements as well as
-regressions. Path groups summarize affected modules. Its headline counts
-unrelated merges needing a rationale against the bar of at most one in ten;
+regressions. Path groups summarize affected modules, collision detectors and
+CMake inputs. Its headline counts unrelated merges needing a rationale against
+the bar of at most one in ten;
 unlabelled changes are counted separately so they can be reviewed.
+Completeness requires an intent for every non-PASS entry and every entry with
+listed rows or rationale lines, including PASS entries.
 
 Use the soft-body comparison script for PR evidence that must compare the
 current commit against both its parent and the `main` base on the same host:

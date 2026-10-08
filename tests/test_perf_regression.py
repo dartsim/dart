@@ -5905,16 +5905,28 @@ def test_records_carry_no_local_paths(monkeypatch, tmp_path):
     published = module.publication_record(path, "merge")
     assert published["results"][0]["head"]["libdart"] == "libdart.so.6.20"
     assert module.find_local_path(published) is None
-    fixture["results"][0]["error"] = f"failed to read {tmp_path / 'data/input.sdf'}"
-    module.write_json(path, fixture)
-    with pytest.raises(ValueError, match=r"results\.0\.error"):
-        module.publication_record(path, "merge")
+    local_input = tmp_path / "data/input.sdf"
+    for reference in (str(local_input), local_input.as_uri()):
+        fixture["results"][0]["error"] = f"failed to read {reference}"
+        module.write_json(path, fixture)
+        with pytest.raises(ValueError, match=r"results\.0\.error"):
+            module.publication_record(path, "merge")
     fixture["results"][0].pop("error")
     fixture["results"][0]["head"][str(tmp_path / "secret/input")] = "hidden in a key"
     module.write_json(path, fixture)
     with pytest.raises(ValueError, match=r"results\.0\.head\.<key>") as failure:
         module.publication_record(path, "merge")
     assert str(tmp_path) not in str(failure.value)
+
+
+@pytest.mark.parametrize("in_key", [False, True])
+def test_local_path_scan_rejects_file_uris(tmp_path, in_key):
+    module = _load_runner()
+    uri = (tmp_path / "input.sdf").as_uri()
+    record = {"results": [{uri: "hidden in a key"} if in_key else {"error": uri}]}
+    assert module.find_local_path(record) == (
+        "results.0.<key>" if in_key else "results.0.error"
+    )
 
 
 @pytest.mark.parametrize("file_uri", [False, True])
@@ -5948,7 +5960,11 @@ def test_robot_absolute_input_errors_remain_publishable(
     args.bin_dir = tmp_path
     result = module.measure(module.select_rows("robot")[0], args, tmp_path)
     assert result["status"] == "broken" and "error_kind" not in result
-    assert "outside.stl is outside the revision" in result["error"]
+    assert result["error"] == (
+        "robot/dart: failed to load revision inputs: "
+        "atlas_v3_no_head.sdf: outside.stl is outside the revision"
+    )
+    assert str(tmp_path) not in result["error"]
     assert module.find_local_path(result) is None
     base = _measurement_fixture(module, "b" * 40, "robot", "github-hosted")
     head = copy.deepcopy(base)
@@ -6442,19 +6458,30 @@ def test_backfill_requires_its_dedicated_source_worktree(
     assert preserved.read_text() == "preserve this file"
 
 
-def test_main_maps_termination_and_hangup_to_interrupt(monkeypatch):
+@pytest.mark.parametrize(
+    "ignored",
+    [(), (signal.SIGTERM,), (signal.SIGHUP,), (signal.SIGTERM, signal.SIGHUP)],
+)
+def test_main_maps_termination_and_hangup_to_interrupt(monkeypatch, ignored):
     module = _load_runner()
-    installed = {}
+    dispositions = {
+        number: signal.SIG_IGN if number in ignored else signal.SIG_DFL
+        for number in (signal.SIGTERM, signal.SIGHUP)
+    }
+    monkeypatch.setattr(module.signal, "getsignal", dispositions.__getitem__)
     monkeypatch.setattr(
         module.signal,
         "signal",
-        lambda number, handler: installed.setdefault(number, handler),
+        dispositions.__setitem__,
     )
     with pytest.raises(SystemExit):
         module.main(["--help"])
     for number in (signal.SIGTERM, signal.SIGHUP):
+        if number in ignored:
+            assert dispositions[number] is signal.SIG_IGN
+            continue
         with pytest.raises(KeyboardInterrupt):
-            installed[number](number, None)
+            dispositions[number](number, None)
 
 
 def test_write_json_preserves_the_previous_record_until_atomic_replace(
@@ -6781,6 +6808,63 @@ def _comparison_fixture(
     return record
 
 
+@pytest.mark.parametrize(
+    "path,group",
+    [
+        ("dart/collision/dart/test.cpp", "collision/dart"),
+        ("dart/collision/fcl/test.cpp", "collision/fcl"),
+        ("dart/collision/bullet/test.cpp", "collision/bullet"),
+        ("dart/collision/ode/test.cpp", "collision/ode"),
+        ("dart/collision/detail/test.hpp", "collision/other"),
+        ("dart/collision/shared.cpp", "collision/other"),
+        ("dart/collision/unknown/test.cpp", "collision/other"),
+        ("dart/CMakeLists.txt", "cmake"),
+        ("dart/dynamics/CMakeLists.txt", "cmake"),
+        ("CMakeLists.txt", "cmake"),
+        ("cmake/nested/test.cmake", "cmake"),
+        ("dart/config.hpp", "dart/other"),
+        ("dart/dynamics/test.cpp", "dynamics"),
+    ],
+)
+def test_ledger_groups_paths_by_detector_module_and_build(
+    monkeypatch, tmp_path, path, group
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    parent = _perf_commit(repo, "dart/dynamics/base.cpp", "base", "Start history")
+    commit = _perf_commit(repo, path, "change", "Update component")
+    monkeypatch.setattr(module, "ROOT", repo)
+    record = _comparison_fixture(module, parent, commit)
+    report = module.ledger_entries({commit: record}, parent, commit)
+    assert report["entries"][0]["groups"] == [group]
+
+
+def test_ledger_pass_with_accepted_rationale_needs_intent(monkeypatch, tmp_path):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    parent = _perf_commit(repo, "dart/dynamics/base.cpp", "base", "Start history")
+    commit = _perf_commit(
+        repo, "dart/dynamics/test.cpp", "change", "Update component (#3300)"
+    )
+    monkeypatch.setattr(module, "ROOT", repo)
+    record = _comparison_fixture(
+        module,
+        parent,
+        commit,
+        body="Perf-Regression-Rationale: gzb/ode: expected +0.8%",
+    )
+    report = module.ledger_entries({commit: record}, parent, commit)
+    entry = report["entries"][0]
+    assert entry["class"] == "PASS" and not entry["rows"] and entry["accepted"]
+    assert report["headline"]["needing_intent"] == 1
+    assert report["headline"]["k"] == 0 and report["headline"]["n"] == 1
+    intent = tmp_path / "intent.tsv"
+    intent.write_text("#3300\tunrelated\tRoutine update\n")
+    labelled = module.ledger_entries({commit: record}, parent, commit, intent)
+    assert labelled["headline"]["needing_intent"] == 0
+    assert labelled["headline"]["k"] == 1 and labelled["headline"]["n"] == 1
+
+
 def test_ledger_classes_attribution_groups_and_determinism(
     monkeypatch, tmp_path, capsys
 ):
@@ -7013,7 +7097,7 @@ def test_ledger_classes_attribution_groups_and_determinism(
         == 2
     )
     error = capsys.readouterr().err
-    assert "conflict.json" in error and "backfill.json" in error
+    assert "conflict.json" in error and "new-merge.json" in error
 
 
 @pytest.mark.parametrize(
@@ -7027,6 +7111,9 @@ def test_ledger_classes_attribution_groups_and_determinism(
         "nan",
         "missing-run-parent",
         "invalid-run-parent",
+        "runner-string",
+        "runner-list",
+        "runner-dict",
     ],
 )
 def test_ledger_names_malformed_record_files(monkeypatch, tmp_path, capsys, defect):
@@ -7046,6 +7133,12 @@ def test_ledger_names_malformed_record_files(monkeypatch, tmp_path, capsys, defe
         record["run"].pop("parent")
     elif defect == "invalid-run-parent":
         record["run"]["parent"] = "invalid"
+    elif defect.startswith("runner-"):
+        record["run"]["env"]["runner"]["environment"] = {
+            "runner-string": "unexpected",
+            "runner-list": [],
+            "runner-dict": {},
+        }[defect]
     else:
         record["results"][0]["head"]["ir_per_step"] = float("nan")
     path = tmp_path / "malformed.json"
@@ -7308,3 +7401,245 @@ def test_backfill_publication_is_one_commit_and_idempotent(
     with pytest.raises(ValueError, match="deterministic counts"):
         module.publish(args)
     assert _perf_git(pages, "rev-parse", "HEAD") == published
+
+
+@pytest.mark.parametrize("stored_source", ["local", "github-hosted"])
+@pytest.mark.parametrize("changed_counts", [False, True])
+@pytest.mark.parametrize("tagged", [False, True])
+def test_release_source_precedence_with_equal_fingerprints(
+    monkeypatch, tmp_path, stored_source, changed_counts, tagged
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        repo, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(repo, "tag", "v6.19.0")
+    head = _perf_commit(
+        repo, "package.xml", "<package><version>6.20.0</version></package>", "Candidate"
+    )
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", head)
+    if tagged:
+        _perf_git(repo, "tag", "v6.20.0")
+    monkeypatch.setattr(module, "ROOT", repo)
+    pages = tmp_path / "pages"
+    stored = _comparison_fixture(module, base, head, tier="release")
+    stored["run"].update(tag="v6.20.0", base_tag="v6.19.0", pr=None)
+    stored["run"]["env"]["runner"]["environment"] = stored_source
+    module.write_release(pages, stored)
+    path = pages / "performance/releases/v6.20.0.json"
+    saved = path.read_bytes()
+    incoming = copy.deepcopy(stored)
+    incoming["run"]["env"]["runner"]["environment"] = (
+        "github-hosted" if stored_source == "local" else "local"
+    )
+    if changed_counts:
+        incoming["results"][0]["head"]["ir_per_step"] += 30
+        incoming["results"][0]["input_sha"] = "b" * 64
+    changed = module.write_release(pages, incoming)
+    if stored_source == "local":
+        assert changed
+        assert (
+            json.loads(path.read_text())["run"]["env"]["runner"]["environment"]
+            == "github-hosted"
+        )
+        assert json.loads(path.read_text())["results"] == incoming["results"]
+    else:
+        assert changed == [] and path.read_bytes() == saved
+
+
+@pytest.mark.parametrize("candidate_position", ["earlier", "newer", "diverged"])
+def test_release_tag_redispatch_replaces_stored_candidate(
+    monkeypatch, tmp_path, candidate_position
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        repo, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(repo, "tag", "v6.19.0")
+    earlier = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.20.0</version></package>",
+        "First candidate",
+    )
+    tagged = _perf_commit(repo, "dart/dynamics/test.cpp", "tagged", "Ship candidate")
+    newer = _perf_commit(repo, "dart/dynamics/test.cpp", "newer", "Next candidate")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", newer)
+    _perf_git(repo, "checkout", "-b", "release-6.20", base)
+    diverged = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.20.0</version></package>",
+        "Other candidate",
+    )
+    _perf_git(repo, "update-ref", "refs/remotes/origin/release-6.20", diverged)
+    _perf_git(repo, "checkout", "main")
+    monkeypatch.setattr(module, "ROOT", repo)
+    stored_commit = {"earlier": earlier, "newer": newer, "diverged": diverged}[
+        candidate_position
+    ]
+
+    def record_for(scope):
+        record = _comparison_fixture(
+            module, scope["base"], scope["head"], tier="release"
+        )
+        record["run"].update(
+            tag=scope["tag"],
+            base_tag=scope["base_tag"],
+            branch=scope["branch"],
+            pr=None,
+        )
+        record["run"]["env"]["runner"]["environment"] = "github-hosted"
+        return record
+
+    pages = tmp_path / "pages"
+    module.write_release(
+        pages, record_for(module.release_scope(stored_commit, None, None))
+    )
+    _perf_git(repo, "tag", "v6.20.0", tagged)
+    scope = module.release_scope(None, "v6.20.0", None)
+    assert scope["head"] == tagged
+    assert module.write_release(pages, record_for(scope))
+    path = pages / "performance/releases/v6.20.0.json"
+    assert json.loads(path.read_text())["run"]["commit"] == tagged
+    saved = path.read_bytes()
+    assert module.write_release(pages, record_for(scope)) == []
+    assert path.read_bytes() == saved
+
+
+@pytest.mark.parametrize("first_source", ["local", "github-hosted"])
+@pytest.mark.parametrize("same_tier", [False, True])
+def test_history_source_precedence_with_equal_fingerprints(
+    monkeypatch, tmp_path, first_source, same_tier
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Base")
+    parent = _perf_commit(repo, "dart/dynamics/test.cpp", "parent", "Parent")
+    head = _perf_commit(repo, "dart/dynamics/test.cpp", "head", "Measured change")
+    monkeypatch.setattr(module, "ROOT", repo)
+    pages = tmp_path / "pages"
+    _stock_chart_template(pages)
+    local = _comparison_fixture(
+        module, base, head, tier="merge" if same_tier else "backfill"
+    )
+    local["run"]["time"] = "2026-10-08T09:00:00Z"
+    hosted = _comparison_fixture(
+        module,
+        parent,
+        head,
+        tier="merge",
+        change=lambda base, head: head["head"].update(ir_per_step=98000),
+    )
+    hosted["run"]["env"]["runner"]["environment"] = "github-hosted"
+    hosted["results"][0]["input_sha"] = "b" * 64
+    first, second = (local, hosted) if first_source == "local" else (hosted, local)
+    module.write_publication(pages, first)
+    changed = module.write_publication(pages, second)
+    assert bool(changed) == (first_source == "local")
+    history = pages / "performance/records/main"
+    loaded = module.load_records(history)
+    assert loaded[head]["run"]["env"]["runner"]["environment"] == "github-hosted"
+    assert loaded[head]["run"]["parent"] == parent
+    ledger = module.ledger_entries(loaded, parent, head)
+    assert ledger["missing"] == [] and ledger["entries"][0]["rows"]
+    release = copy.deepcopy(hosted)
+    release["run"].update(tier="release", tag="v6.20.0", base_tag="v6.19.0")
+    module.write_release(pages, release)
+    embedded = json.loads((pages / "performance/releases/v6.20.0.json").read_text())[
+        "ledger"
+    ]
+    assert embedded["missing"] == [] and embedded["entries"][0]["rows"]
+
+
+@pytest.mark.parametrize("hosted_tier", ["merge", "backfill"])
+def test_history_hosted_source_supersedes_conflicting_local_duplicates(
+    tmp_path, hosted_tier
+):
+    module = _load_runner()
+    local = _comparison_fixture(module, "b" * 40, "a" * 40, tier="merge")
+    directory = tmp_path / "records"
+    module.write_json(directory / "a-local.json", local)
+    local["results"][0]["head"]["ir_per_step"] += 1
+    module.write_json(directory / "b-local.json", local)
+    hosted = copy.deepcopy(local)
+    hosted["run"].update(tier=hosted_tier, time="2026-10-08T07:00:00Z")
+    hosted["run"]["env"]["runner"]["environment"] = "github-hosted"
+    module.write_json(directory / "c-hosted.json", hosted)
+    loaded = module.load_records(directory)
+    assert loaded["a" * 40] == hosted
+    (directory / "c-hosted.json").unlink()
+    with pytest.raises(ValueError, match="conflicting deterministic measurements"):
+        module.load_records(directory)
+
+
+def test_publication_late_release_refusal_leaves_checkout_clean(monkeypatch, tmp_path):
+    module = _load_runner()
+    source = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        source,
+        "package.xml",
+        "<package><version>6.18.0</version></package>",
+        "Base release",
+    )
+    _perf_git(source, "tag", "v6.18.0")
+    tagged = _perf_commit(
+        source, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(source, "tag", "v6.19.0")
+    head = _perf_commit(source, "dart/dynamics/test.cpp", "head", "Measured change")
+    _perf_git(source, "update-ref", "refs/remotes/origin/main", head)
+    monkeypatch.setattr(module, "ROOT", source)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    remote, pages = tmp_path / "remote.git", tmp_path / "pages"
+    subprocess.run(
+        ["git", "init", "--bare", "--initial-branch=gh-pages", str(remote)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "clone", str(remote), str(pages)], check=True, capture_output=True
+    )
+    _perf_git(pages, "config", "user.name", "Maintainer")
+    _perf_git(pages, "config", "user.email", "maintainer@example.com")
+    release = _comparison_fixture(module, base, tagged, tier="release")
+    release["run"].update(
+        tag="v6.19.0", base_tag="v6.18.0", harness_commit=head, pr=None
+    )
+    module.write_release(pages, release)
+    _perf_git(pages, "add", "performance")
+    _perf_git(pages, "commit", "-m", "Seed release record")
+    _perf_git(pages, "push", "origin", "HEAD:gh-pages")
+    before = _perf_git(pages, "rev-parse", "HEAD")
+    record = _comparison_fixture(module, tagged, head)
+    record["run"]["harness_commit"] = head
+    directory = tmp_path / "records"
+    module.write_json(directory / "main.json", record)
+    release["results"][0]["head"]["ir_per_step"] += 1
+    module.write_json(directory / "release.json", release)
+    args = module.parser().parse_args(
+        [
+            "publish",
+            "--tier",
+            "backfill",
+            "--record",
+            str(directory),
+            "--pages-dir",
+            str(pages),
+        ]
+    )
+    calls = []
+    real_run = module.subprocess.run
+
+    def run(command, *args, **kwargs):
+        calls.append(command)
+        return real_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(module.subprocess, "run", run)
+    with pytest.raises(ValueError, match="deterministic counts"):
+        module.publish(args)
+    assert _perf_git(pages, "status", "--porcelain") == ""
+    assert _perf_git(pages, "rev-parse", "HEAD") == before
+    assert not any("commit" in command or "push" in command for command in calls)

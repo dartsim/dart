@@ -47,7 +47,7 @@ on:
         description: "Expected first parent (merge) or the previous release tag (release; defaults to the newest earlier v6 tag)"
         type: string
       tag:
-        description: "Release tag for tier=release (defaults to v<package.xml version> of head)"
+        description: "Release tag: must match v<package.xml version> at head; with no head, selects an existing tag's commit"
         type: string
 
 permissions:

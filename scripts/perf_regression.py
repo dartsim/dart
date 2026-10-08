@@ -48,7 +48,7 @@ MEASURED_PATHS = (
     "cmake",
 )
 RELEASE_TAG = re.compile(r"v6\.\d+\.\d+")
-LOCAL_PATH = re.compile(r"""(?<![\w.~:/-])/[^\s/'"]+/""")
+LOCAL_PATH = re.compile(r"""file:///[^\s'"]+|(?<![\w.~:/-])/[^\s/'"]+/""")
 # Only these comparison-policy failures can be acknowledged by a rationale.
 WAIVABLE_FAILURES = (
     ("ir", "Perf-Regression-Rationale", r"[^:]+: Ir \+\d+\.\d+% \(limit \+1\.00%\)"),
@@ -2534,7 +2534,7 @@ def chart_data(pages: Path, record: dict) -> None:
 
 def load_records(paths) -> dict:
     """Read a comparison history, detecting conflicts before choosing duplicates."""
-    records, identities = {}, {}
+    records, histories = {}, {}
     if isinstance(paths, Path):
         paths = [paths]
     files = sorted(
@@ -2567,8 +2567,25 @@ def load_records(paths) -> dict:
             measured = datetime.fromisoformat(run["time"].replace("Z", "+00:00"))
             if measured.tzinfo is None:
                 raise ValueError("history time must include its timezone")
-            identity = (commit, fingerprint)
-            counts = deterministic_measurements(record, include_parent=True)
+            source = run["env"]["runner"]["environment"]
+            if source not in ("local", "github-hosted"):
+                raise ValueError("invalid history measurement runner")
+            histories.setdefault(commit, []).append((path, record, source, measured))
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            raise ValueError(f"{path.name}: {error}") from error
+    for commit, history in histories.items():
+        hosted = any(source != "local" for _, _, source, _ in history)
+        identities = {}
+        ranked = []
+        for path, record, source, measured in history:
+            if hosted and source == "local":
+                continue
+            run = record["run"]
+            identity = (run["env"]["fingerprint"], run["tier"], source)
+            counts = (
+                run["parent"],
+                deterministic_measurements(record, include_parent=True),
+            )
             if identity in identities:
                 previous_path, previous_counts = identities[identity]
                 if previous_counts != counts:
@@ -2578,15 +2595,8 @@ def load_records(paths) -> dict:
                     )
             else:
                 identities[identity] = (path, counts)
-            previous = records.get(commit)
-            rank = (run["tier"] == "merge", measured)
-            if previous is None or rank > (
-                previous["run"]["tier"] == "merge",
-                datetime.fromisoformat(previous["run"]["time"].replace("Z", "+00:00")),
-            ):
-                records[commit] = record
-        except (OSError, ValueError, KeyError, TypeError) as error:
-            raise ValueError(f"{path.name}: {error}") from error
+            ranked.append((run["tier"] == "merge", measured, record))
+        records[commit] = max(ranked, key=lambda candidate: candidate[:2])[2]
     return records
 
 
@@ -2716,12 +2726,19 @@ def ledger_entries(
             "diff", "--name-only", run["parent"], commit, "--", *MEASURED_PATHS
         ).splitlines():
             parts = path.split("/")
-            if path.startswith("dart/collision/"):
-                groups.add("collision/" + (parts[2] if len(parts) > 3 else "other"))
-            elif path.startswith("dart/"):
-                groups.add(parts[1])
-            elif path == "CMakeLists.txt" or path.startswith("cmake/"):
+            if parts[-1] == "CMakeLists.txt" or path.startswith("cmake/"):
                 groups.add("cmake")
+            elif path.startswith("dart/collision/"):
+                groups.add(
+                    "collision/"
+                    + (
+                        parts[2]
+                        if len(parts) > 3 and parts[2] in DETECTORS
+                        else "other"
+                    )
+                )
+            elif path.startswith("dart/"):
+                groups.add(parts[1] if len(parts) > 2 else "dart/other")
             else:
                 groups.add("workload")
         value, reason = intentions.get(commit, (None, ""))
@@ -2770,7 +2787,12 @@ def ledger_entries(
             )
         },
         "needing_intent": sum(
-            not entry["intent"] and (entry["class"] != "PASS" or bool(entry["rows"]))
+            not entry["intent"]
+            and (
+                entry["class"] != "PASS"
+                or bool(entry["rows"])
+                or bool(entry["accepted"])
+            )
             for entry in entries
         ),
     }
@@ -2947,10 +2969,18 @@ def write_release(pages: Path, record: dict) -> list[str]:
     if path.exists():
         saved = read_record(path, comparison=True)
         previous = saved["run"]
+        previous_source = previous["env"]["runner"]["environment"]
+        incoming_source = run["env"]["runner"]["environment"]
+        previous_local = previous_source == "local"
+        incoming_local = incoming_source == "local"
+        if not previous_local and incoming_local:
+            print(f"Keep {run['tag']}: hosted measurements take precedence")
+            return []
         identity = ("commit", "parent")
         same = (
             all(previous[key] == run[key] for key in identity)
             and previous["env"]["fingerprint"] == run["env"]["fingerprint"]
+            and previous_source == incoming_source
         )
         if same:
             if deterministic_measurements(
@@ -2960,11 +2990,6 @@ def write_release(pages: Path, record: dict) -> list[str]:
                     "repeated release changed deterministic counts or guards/inputs under the same environment fingerprint"
                 )
             print(f"Keep {run['tag']}: identical deterministic measurements")
-            return []
-        previous_local = previous["env"]["runner"]["environment"] == "local"
-        incoming_local = run["env"]["runner"]["environment"] == "local"
-        if not previous_local and incoming_local:
-            print(f"Keep {run['tag']}: hosted measurements take precedence")
             return []
         if not (previous_local and not incoming_local):
             tagged = subprocess.run(
@@ -2980,18 +3005,20 @@ def write_release(pages: Path, record: dict) -> list[str]:
                 text=True,
                 capture_output=True,
             )
-            if tagged.returncode == 0 and tagged.stdout.strip() == previous["commit"]:
+            tagged_commit = tagged.stdout.strip() if tagged.returncode == 0 else None
+            if tagged_commit == previous["commit"]:
                 print(f"Keep {run['tag']}: tagged commit is final")
                 return []
-            descendant = previous["commit"] != run["commit"] and is_ancestor(
-                previous["commit"], run["commit"]
-            )
-            later = previous["commit"] == run["commit"] and datetime.fromisoformat(
-                run["time"].replace("Z", "+00:00")
-            ) > datetime.fromisoformat(previous["time"].replace("Z", "+00:00"))
-            if not descendant and not later:
-                print(f"Keep {run['tag']}: older or diverged candidate")
-                return []
+            if tagged_commit != run["commit"]:
+                descendant = previous["commit"] != run["commit"] and is_ancestor(
+                    previous["commit"], run["commit"]
+                )
+                later = previous["commit"] == run["commit"] and datetime.fromisoformat(
+                    run["time"].replace("Z", "+00:00")
+                ) > datetime.fromisoformat(previous["time"].replace("Z", "+00:00"))
+                if not descendant and not later:
+                    print(f"Keep {run['tag']}: older or diverged candidate")
+                    return []
     if run["branch"].startswith("release-6."):
         ledger = {"entries": [], "missing": []}
     else:
@@ -3027,12 +3054,37 @@ def write_publication(pages: Path, record: dict) -> list[str]:
     records = pages / "performance/records/main"
     repeated = False
     chart_repeated = False
-    for index, path in enumerate(
-        sorted(records.glob(f"*/*-{run['tier']}.json"), reverse=True)
+    tiers = (
+        ("merge", "backfill")
+        if run["tier"] in ("merge", "backfill")
+        else (run["tier"],)
+    )
+    history = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in sorted(
+            {path for tier in tiers for path in records.glob(f"*/*-{tier}.json")},
+            reverse=True,
+        )
+    ]
+    incoming_source = run["env"]["runner"]["environment"]
+    if incoming_source == "local" and any(
+        saved["run"]["commit"] == run["commit"]
+        and saved["run"]["env"]["runner"]["environment"] != "local"
+        for saved in history
     ):
-        saved = json.loads(path.read_text(encoding="utf-8"))
+        print(f"Keep {run['commit'][:12]}: hosted measurements take precedence")
+        return []
+    for index, saved in enumerate(history):
         previous = saved["run"]
-        if (previous["commit"], previous["env"]["fingerprint"]) == (
+        if (
+            previous["tier"] != run["tier"]
+            or previous["env"]["runner"]["environment"] != incoming_source
+        ):
+            continue
+        if (
+            previous["commit"],
+            previous["env"]["fingerprint"],
+        ) == (
             run["commit"],
             run["env"]["fingerprint"],
         ) and head_fingerprints(saved) == head_fingerprints(record):
@@ -3081,7 +3133,7 @@ def write_publication(pages: Path, record: dict) -> list[str]:
         path.parent.mkdir(parents=True, exist_ok=True)
         write_json(path, record)
         changed.append(str(path.relative_to(pages)))
-        if run["tier"] == "merge" and not chart_repeated:
+        if run["tier"] == "merge" and incoming_source != "local" and not chart_repeated:
             chart_data(pages, record)
             changed.append("performance/dart6-ir")
     return changed
@@ -3151,11 +3203,23 @@ def publish(args) -> bool:
         # Regenerate even when Git could replay our commit without a conflict:
         # concurrent records can change deduplication and derived table/chart state.
         git("checkout", "-B", "gh-pages", "origin/gh-pages")
-        paths = list(
-            dict.fromkeys(
-                path for record in records for path in write_publication(pages, record)
+        with tempfile.TemporaryDirectory() as temporary:
+            staged = Path(temporary) / "pages"
+            shutil.copytree(pages, staged, ignore=shutil.ignore_patterns(".git"))
+            paths = list(
+                dict.fromkeys(
+                    path
+                    for record in records
+                    for path in write_publication(staged, record)
+                )
             )
-        )
+            for path in paths:
+                source, destination = staged / path, pages / path
+                if source.is_dir():
+                    shutil.copytree(source, destination, dirs_exist_ok=True)
+                else:
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(source, destination)
         for path in paths:
             print(path)
         if paths:
@@ -4001,7 +4065,8 @@ def main(argv: list[str] | None = None) -> int:
         raise KeyboardInterrupt
 
     for signum in (signal.SIGTERM, signal.SIGHUP):
-        signal.signal(signum, interrupt)
+        if signal.getsignal(signum) is not signal.SIG_IGN:
+            signal.signal(signum, interrupt)
     args = parser().parse_args(argv)
     try:
         if args.command == "backfill":
