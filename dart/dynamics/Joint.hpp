@@ -1011,6 +1011,11 @@ protected:
   /// Update inverse of projected articulated body inertia
   virtual void updateInvProjArtInertia(const Eigen::Matrix6d& _artInertia) = 0;
 
+  /// Whether artInertia is bitwise equal to the child's explicit articulated
+  /// inertia, from which the explicit projected inverse was just computed.
+  inline bool isChildArticulatedInertia(
+      const Eigen::Matrix6d& artInertia) const;
+
   /// Forward dynamics routine.
   virtual void updateInvProjArtInertiaImplicit(
       const Eigen::Matrix6d& _artInertia, double _timeStep)

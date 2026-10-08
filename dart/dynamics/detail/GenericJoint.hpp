@@ -45,6 +45,7 @@
 #include <dart/math/Helpers.hpp>
 
 #include <cmath>
+#include <cstring>
 
 #define GenericJoint_REPORT_DIM_MISMATCH(func, arg)                            \
   {                                                                            \
@@ -79,6 +80,19 @@
 
 namespace dart {
 namespace dynamics {
+
+//==============================================================================
+inline bool Joint::isChildArticulatedInertia(
+    const Eigen::Matrix6d& artInertia) const
+{
+  return mChildBodyNode != nullptr
+         && std::memcmp(
+                artInertia.data(),
+                mChildBodyNode->mArtInertia.data(),
+                sizeof(double) * artInertia.size())
+                == 0;
+}
+
 namespace detail {
 
 template <typename Derived>
@@ -2128,6 +2142,19 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitDynamic(
     const Eigen::Matrix6d& artInertia, double timeStep)
 {
+  if constexpr (NumDofs > 4) {
+    // Smaller joints use a closed-form inverse. For positive inertia, adding
+    // zero cannot change a projected diagonal entry from -0.0 to +0.0.
+    // Keep the full path if the squared timestep overflows (infinity * zero).
+    if ((Base::mAspectProperties.mDampingCoefficients.array() == 0.0).all()
+        && (Base::mAspectProperties.mSpringStiffnesses.array() == 0.0).all()
+        && std::isfinite(timeStep * timeStep)
+        && this->isChildArticulatedInertia(artInertia)) {
+      mInvProjArtInertiaImplicit = mInvProjArtInertia;
+      return;
+    }
+  }
+
   // Projected articulated inertia
   const JacobianMatrix& Jacobian = getRelativeJacobianStatic();
   Matrix projAI = Jacobian.transpose() * artInertia * Jacobian;
