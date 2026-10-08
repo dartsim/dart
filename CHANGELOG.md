@@ -42,10 +42,9 @@
     explicit package dependency:
     [#3116](https://github.com/dartsim/dart/pull/3116)
 
-  * Fix a crash when constructing `SimpleFrame` (for example while Gazebo
-    loads a world through gz-physics) with GCC 16, or with AVX code generation
-    on older GCC, by aligning the non-virtual part of the classes that inherit
-    `Frame` virtually to `Frame` itself. This changes the layout of
+  * Fix a crash when constructing `SimpleFrame` with GCC 16, or with AVX code
+    generation on older GCC, by aligning the non-virtual part of the classes
+    that inherit `Frame` virtually to `Frame` itself. This changes the layout of
     `SimpleFrame` (and of `ShapeNode` and `SoftBodyNode` in AVX builds), so
     rebuild downstream code against DART 6.20:
     [#3504](https://github.com/dartsim/dart/pull/3504),
@@ -447,9 +446,9 @@
     next step: [#3552](https://github.com/dartsim/dart/pull/3552)
 
   * Speed up `MetaSkeleton::getPositions()` and the other DOF getters and
-    setters, with unchanged results. `getPositions()`, which gz-physics calls
-    for every model after every step, now takes about a quarter fewer
-    instructions:
+    setters, with unchanged results. `getPositions()` now takes about a
+    quarter fewer instructions, which adds up for hosts that read every
+    model's positions after every step:
     [#3554](https://github.com/dartsim/dart/pull/3554)
 
   * Fix `dart::utils::SdfParser` loading every SDF `<soft_shape>` link as a
@@ -569,15 +568,14 @@
     `ConstraintSolver::setCollisionDetector(...)` API is untouched:
     [#2168](https://github.com/dartsim/dart/pull/2168)
 
-  * Harden contact handling against invalid geometry, fixing a crash reported
-    through gz-physics. `BoxShape`, `CylinderShape`, `CapsuleShape`,
-    `EllipsoidShape`, `ConeShape`, and `PyramidShape` now reject non-finite
-    (NaN/Inf) or non-positive dimensions like `SphereShape` already did, and
-    `ConstraintSolver` skips contacts whose point, normal, or penetration depth
-    is non-finite before contact-constraint creation. Together these stop an
-    invalid shape dimension (or a non-finite contact from a mesh or collision
-    backend) from crashing `ContactConstraint` on a `mSpatialNormalA` assertion
-    or corrupting the LCP solve with NaN/Inf:
+  * Harden contact handling against invalid geometry. `BoxShape`,
+    `CylinderShape`, `CapsuleShape`, `EllipsoidShape`, `ConeShape`, and
+    `PyramidShape` now reject non-finite (NaN/Inf) or non-positive dimensions
+    like `SphereShape` already did, and `ConstraintSolver` skips contacts whose
+    point, normal, or penetration depth is non-finite before contact-constraint
+    creation. Together these stop an invalid shape dimension (or a non-finite
+    contact from a mesh or collision backend) from crashing `ContactConstraint`
+    on a `mSpatialNormalA` assertion or corrupting the LCP solve with NaN/Inf:
     [#3132](https://github.com/dartsim/dart/pull/3132),
     [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
 
@@ -611,13 +609,12 @@
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Share the constraint solver's contact cap
-    (`CollisionOption::maxNumContacts`; gz-physics sets 10000) across the
-    colliding pairs when a scene needs more contacts than it allows. Detection
-    used to stop at the cap, so the pairs found last got no contacts and their
-    bodies fell through their support. Now every pair keeps a contact as long
-    as there are no more colliding pairs than the cap and detection stays
-    within the bound documented on `CollisionOption::maxNumContacts`. A
-    simulation is unchanged until a step needs as many contacts as the cap
+    (`CollisionOption::maxNumContacts`) across the colliding pairs when a
+    scene needs more contacts than it allows. Detection used to stop at the
+    cap, so the pairs found last got no contacts and their bodies fell through
+    their support. Now every pair keeps a contact as long as there are no more
+    colliding pairs than the cap and detection stays within the bound
+    documented on `CollisionOption::maxNumContacts`. A simulation is unchanged until a step needs as many contacts as the cap
     allows. From then on, the kept contacts can change, the
     per-pair contact count passed to `ContactSurfaceHandler` (which scales
     slip compliance) is the number kept, and detection costs more because it
@@ -656,10 +653,9 @@
     existing serial path:
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
-  * Make mimic motor constraints robust for Gazebo mimic repros by using
-    ERP-scaled position correction, clamped force-mixing and ERP parameters,
-    and finite fallback force and velocity limits for joints with unbounded
-    limits:
+  * Make mimic motor constraints robust by using ERP-scaled position
+    correction, clamped force-mixing and ERP parameters, and finite fallback
+    force and velocity limits for joints with unbounded limits:
     [#3137](https://github.com/dartsim/dart/pull/3137)
 
   * Apply URDF planar and floating joint limits, velocity limits, force limits,
@@ -752,13 +748,13 @@
 
   * Keep resting bodies asleep when a `World`'s or `Skeleton`'s gravity is set
     to its current value, so worlds whose host re-applies an unchanged gravity
-    before every step, as gz-sim 10 does, can sleep:
+    before every step can sleep:
     [#3552](https://github.com/dartsim/dart/pull/3552)
 
   * Keep bodies awake while a custom `ContactSurfaceHandler` is installed, so
-    motion that only the handler drives, such as a conveyor belt (gz-sim
-    TrackController), keeps responding. Once only the built-in default handler
-    remains, bodies can sleep again after the usual sleep delay:
+    motion that only the handler drives, such as a conveyor belt, keeps
+    responding. Once only the built-in default handler remains, bodies can
+    sleep again after the usual sleep delay:
     [#3552](https://github.com/dartsim/dart/pull/3552)
 
   * Keep each `World`'s automatic deactivation independent of other Worlds:
@@ -770,9 +766,10 @@
 
   * Speed up the ODE collision detector in contact-heavy scenes by finding
     contact-history and contact pairs through sorted per-call indexes instead
-    of scanning for each pair: an awake 3,000-body Gazebo-style step runs about
-    30% fewer instructions on a `PlaneShape` ground and about 20% fewer on
-    Gazebo's box ground, with bit-exact results.
+    of scanning for each pair: an awake 3,000-body step runs about 30% fewer
+    instructions on a `PlaneShape` ground and about 20% fewer on a box ground,
+    with bit-exact results:
+    [#3574](https://github.com/dartsim/dart/pull/3574)
 
 * Python
 
@@ -793,11 +790,11 @@
 
 * Examples
 
-  * Add `contact_benchmark --gz-preset`, which loads an SDF world with the
-    collision setup the gz-physics dartsim plugin uses (SDF planes as 2100 m
-    boxes, a 10000-contact cap, the ODE detector with gz-sim's per-pair limit,
-    and a `BodyNodeCollisionFilter` subclass) and reports contact demand
-    against the cap, cap-starved pairs, sunk bodies, and changed poses:
+  * Add `contact_benchmark --gz-preset`, which loads an SDF world with SDF
+    planes as 2100 m boxes, a 10000-contact cap, the ODE detector with a
+    per-pair contact limit, and a `BodyNodeCollisionFilter` subclass, and
+    reports contact demand against the cap, cap-starved pairs, sunk bodies,
+    and changed poses:
     [#3548](https://github.com/dartsim/dart/pull/3548)
 
   * Give `dart-demos` a real dockable workspace on docking-ImGui builds:
@@ -944,8 +941,8 @@
 * Tests
 
   * Force the ASan and required assertions-enabled builds to run without
-    OpenSceneGraph, and require exact-candidate optional-dependency and Gazebo
-    integration evidence before DART 6 releases:
+    OpenSceneGraph, and require exact-candidate optional-dependency and
+    downstream integration evidence before DART 6 releases:
     [#3393](https://github.com/dartsim/dart/pull/3393)
 
   * Preserve every protected `release-*` post-merge CI run by giving
