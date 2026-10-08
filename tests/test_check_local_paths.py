@@ -111,6 +111,8 @@ def test_public_examples_and_non_path_identifiers_pass(text, capsys):
         "http://localhost:8000/scratchpad/example.md",
         "http://printer.local/scratchpad/example.md",
         "http://127.1/scratchpad/example.md",
+        "http://239.255.255.250/scratchpad/example.md",
+        "http://[ff02::1]/scratchpad/example.md",
         "http://0x7f.1/scratchpad/example.md",
         "http://api.localhost/scratchpad/example.md",
         "http://LOCALHOST/scratchpad/example.md",
