@@ -35,7 +35,8 @@ To acknowledge an intended regression, add `Perf-Regression-Rationale: <rows>: <
 
 Required checks on `main`: `Release` and
 `Asserts enabled (no -DNDEBUG)` (CI Linux), `arm64-Release` (CI macOS),
-`windows-Release` (CI Windows), `ubuntu-latest` (CI gz-physics),
+`windows-Release-cpp` and `windows-Release-python` (CI Windows),
+`ubuntu-latest` (CI gz-physics),
 `API Documentation`, and the two Read the Docs builds. Never require a
 nightly-only job: it never reports on PRs, so it would block every merge.
 
@@ -208,22 +209,24 @@ that commit's first parent. Historical backfill remains P4.
 ## Caching
 
 Build jobs save and restore per-run sccache snapshots, as described for
-Windows below; Linux, macOS and gz-physics share `.github/actions/sccache`,
-and each workflow's `Prune compiler caches` job deletes superseded snapshots.
-Each job's `SCCACHE_CACHE_SIZE` holds about two full builds, so snapshots stay
-small and fresh, and each job prints `sccache --show-stats`. Pixi environment
-caches are written only from `main`.
+Windows below; Linux, macOS and gz-physics share `.github/actions/sccache`.
+After saving, each job runs `.github/actions/sccache/prune.sh`: in its ref it
+keeps its part's newest snapshot and deletes the rest, and on main pushes it
+also deletes its part's PR snapshots unused for a day. Pruning runs inside the
+build jobs: a separate job would wait for a runner of its own, and on a
+cancelled run it would hold the PR's concurrency group, delaying the next
+push's run. Each job's `SCCACHE_CACHE_SIZE` bounds its snapshot, and each job
+prints `sccache --show-stats`. Pixi environment caches are written only from
+`main`.
 
 Windows also splits its build, because each MSVC cache miss is expensive. Its
 build runs as two parallel jobs, `windows-Release-cpp` (C++ tests) and
-`windows-Release-python` (dartpy), reported together as the required
-`windows-Release` check. Every main push saves a snapshot of the whole cache.
-Every same-repository PR run saves only the objects that PR's runs compiled,
-even after a failure or cancellation (fork PRs may not save caches). A PR
-restores the newest main snapshot plus its own, so it rebuilds only what
-changed since its last push. `windows-Release` keeps the newest run's snapshot
-per job in its ref and deletes the rest; on main pushes it also deletes PR
-snapshots unused for a day. Cache keys include the MSVC version. Each MSVC
+`windows-Release-python` (dartpy), both required. Every main push saves a
+snapshot of the whole cache. Every same-repository PR run saves only the
+objects that PR's runs compiled, even after a failure or cancellation (fork
+PRs may not save caches). A PR restores the newest main snapshot plus its own,
+so it rebuilds only what changed since its last push. Cache keys include the
+MSVC version. Each MSVC
 compile spends most of its time parsing headers, so Windows CI builds each
 target as unity translation units (`CMAKE_UNITY_BUILD`). The Linux assertions
 gate does too, so a collision also fails on Linux. Keep file-local names

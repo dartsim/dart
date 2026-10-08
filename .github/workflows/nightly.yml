@@ -25,7 +25,8 @@ env:
 jobs:
   linux:
     uses: ./.github/workflows/ci_ubuntu.yml
-    # Called prune jobs request actions: write, even though skipped at night.
+    # Called build jobs request actions: write to prune compiler caches
+    # (skipped at night); a called job cannot exceed the caller's permissions.
     permissions:
       actions: write
       contents: read
@@ -35,7 +36,8 @@ jobs:
 
   macos:
     uses: ./.github/workflows/ci_macos.yml
-    # Called prune jobs request actions: write, even though skipped at night.
+    # Called build jobs request actions: write to prune compiler caches
+    # (skipped at night); a called job cannot exceed the caller's permissions.
     permissions:
       actions: write
       contents: read
@@ -44,7 +46,7 @@ jobs:
 
   windows:
     uses: ./.github/workflows/ci_windows.yml
-    # Its windows-Release job requests actions: write to prune compiler caches
+    # Called build jobs request actions: write to prune compiler caches
     # (skipped at night); a called job cannot exceed the caller's permissions.
     permissions:
       actions: write
@@ -61,7 +63,8 @@ jobs:
 
   gz-physics:
     uses: ./.github/workflows/ci_gz_physics.yml
-    # Called prune jobs request actions: write, even though skipped at night.
+    # Called build jobs request actions: write to prune compiler caches
+    # (skipped at night); a called job cannot exceed the caller's permissions.
     permissions:
       actions: write
       contents: read
