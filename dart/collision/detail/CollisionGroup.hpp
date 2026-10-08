@@ -117,6 +117,7 @@ void CollisionGroup::subscribeTo(
       bodyNode.get(), BodyNodeSource(bodyNode.get(), bodyNode->getVersion())));
 
   if (inserted.second) {
+    mSubscriptionOrder.push_back(bodyNode.get());
     const BodyNodeSources::iterator& entry = inserted.first;
     bodyNode->eachShapeNodeWith<dynamics::CollisionAspect>(
         [&](const dynamics::ShapeNode* shapeNode) {
@@ -138,6 +139,7 @@ void CollisionGroup::subscribeTo(
       SkeletonSource(metaSkeleton, computeMetaSkeletonVersion(*metaSkeleton))));
 
   if (inserted.second) {
+    mSubscriptionOrder.push_back(metaSkeleton.get());
     SkeletonSource& entry = inserted.first->second;
 
     const std::size_t numBodies = metaSkeleton->getNumBodyNodes();
@@ -243,6 +245,7 @@ void CollisionGroup::unsubscribeFrom(
       removeShapeFrameInternal(entry.first, bodyNode);
 
     mBodyNodeSources.erase(it);
+    removeSubscriptionOrder(bodyNode);
   }
 
   unsubscribeFrom(others...);
@@ -260,6 +263,7 @@ void CollisionGroup::unsubscribeFrom(
     }
 
     mSkeletonSources.erase(it);
+    removeSubscriptionOrder(skeleton);
   }
 
   unsubscribeFrom(others...);

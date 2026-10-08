@@ -236,6 +236,12 @@
 
 * Collision
 
+  * Make collision-object creation for shapes added after
+    `World::addSkeleton()` follow subscription order. Trajectories of scenes
+    that add shapes after `World::addSkeleton()` change once with this fix and
+    become reproducible across runs, independent of heap layout:
+    [#3607](https://github.com/dartsim/dart/pull/3607)
+
   * Build the meshes that `FCLCollisionDetector` uses for boxes, spheres,
     ellipsoids, and cylinders in `MESH` primitive mode in double instead of
     float precision, so their vertices can move at float rounding. In the
