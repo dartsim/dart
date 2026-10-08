@@ -789,6 +789,15 @@
     without transferring ownership or requiring movable/copyable DOF values:
     [#3375](https://github.com/dartsim/dart/pull/3375)
 
+  * Fix dartpy bindings that raised `TypeError` outside Windows CI's unity
+    builds because they lacked pybind11's STL or functional converters,
+    including `Chain.getBodyNodes()`, `UniversalJointProperties.mAxis`,
+    `CollisionGroup.addShapeFrames()` and `ModularFunction` callbacks. Also stop
+    `getJoints()`, `Frame.getChildFrames()`, `getChildEntities()` and
+    `InteractiveFrame.getShapeFrames()` from deleting DART-owned objects with
+    the returned list, and bind `ModularFunction`'s default constructor:
+    [#3619](https://github.com/dartsim/dart/pull/3619)
+
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
     including a Python analytical callback bridge that lets ssik-like solvers
     feed DART's native analytical and whole-body IK pipeline:
