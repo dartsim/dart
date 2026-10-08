@@ -285,17 +285,24 @@ def test_commit_msg_scans_hash_lines_but_ignores_verbose_diff(
     assert result.stdout == expected_output
 
 
-def test_commit_msg_ignores_git_status_lines_but_scans_other_hash_lines(tmp_path):
-    message = tmp_path / "COMMIT_EDITMSG"
+def test_commit_msg_ignores_git_status_lines_but_scans_other_hash_lines(repo):
+    (repo / "scratchpad").mkdir()
+    (repo / "scratchpad/example.md").write_text("Legacy summary\n")
+    (repo / "old.md").write_text("Old summary\n")
+    _commit(repo)
+    _git(repo, "rm", "scratchpad/example.md")
+    (repo / "scratchpad").mkdir()
+    _git(repo, "mv", "old.md", "scratchpad/example-old.md")
+    message = repo / "COMMIT_EDITMSG"
     message.write_text(
         "Remove a legacy example note\n\n"
         "# Changes to be committed:\n"
         "#\tdeleted:    scratchpad/example.md\n"
         "#\trenamed:    old.md -> scratchpad/example-old.md\n"
     )
-    assert _cli("--commit-msg-file", message, cwd=tmp_path).returncode == 0
+    assert _cli("--commit-msg-file", message, cwd=repo / "scratchpad").returncode == 0
     message.write_text("Public summary\n\n# See /home/example/private.md\n")
-    result = _cli("--commit-msg-file", message, cwd=tmp_path)
+    result = _cli("--commit-msg-file", message, cwd=repo)
     assert result.returncode == 1
     assert "/home/example/private.md" in result.stdout
 
@@ -309,6 +316,200 @@ def test_commit_msg_scissors_follow_custom_comment_char(tmp_path):
     )
     result = _cli("--commit-msg-file", message, cwd=tmp_path)
     assert result.returncode == 0, result.stdout
+
+
+@pytest.mark.parametrize("option", ["-m", "-F"])
+@pytest.mark.skipif(os.name != "posix", reason="commit-msg hook is a POSIX sh script")
+def test_commit_msg_rejects_literal_status_line(repo, option):
+    (repo / "notes.md").write_text("Public summary\n")
+    _git(repo, "add", "notes.md")
+    hook = repo / ".git/hooks/commit-msg"
+    hook.write_text(
+        f'#!/bin/sh\nexec "{sys.executable}" "{SCRIPT}" --commit-msg-file "$1"\n'
+    )
+    hook.chmod(0o755)
+    message = "Public summary\n\n#\tmodified:    /home/example/private.md\n"
+    value = message
+    if option == "-F":
+        (repo / "message.txt").write_text(message)
+        value = "message.txt"
+    result = subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Example",
+            "-c",
+            "user.email=example@example.com",
+            "commit",
+            option,
+            value,
+        ],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1, result.stderr
+    assert "3: /home/example/private.md" in result.stderr
+
+
+def _commit(repo, message="Public fixture"):
+    _git(repo, "add", ".")
+    _git(
+        repo,
+        "-c",
+        "user.name=Example",
+        "-c",
+        "user.email=example@example.com",
+        "commit",
+        "-qm",
+        message,
+    )
+    return _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+
+def test_commit_range_reports_leak_removed_before_tip(repo):
+    (repo / "notes.md").write_text("Public summary\n")
+    base = _commit(repo)
+    (repo / "notes.md").write_text("Public summary\n/home/example/private.md\n")
+    leaked = _commit(repo)
+    (repo / "notes.md").write_text("Public summary\n")
+    head = _commit(repo)
+    result = _cli("--commit-range", f"{base}..{head}", cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == f"{leaked}:notes.md:2: /home/example/private.md\n"
+
+
+@pytest.mark.parametrize(
+    "status, paths",
+    [
+        ("modified", "scratchpad/example.md"),
+        ("renamed", "wrong.md -> scratchpad/example-old.md"),
+        ("renamed", "old.md -> scratchpad/example-wrong.md"),
+    ],
+)
+def test_commit_msg_status_must_match_both_status_and_paths(repo, status, paths):
+    (repo / "scratchpad").mkdir()
+    (repo / "scratchpad/example.md").write_text("Legacy summary\n")
+    (repo / "old.md").write_text("Old summary\n")
+    _commit(repo)
+    _git(repo, "rm", "scratchpad/example.md")
+    (repo / "scratchpad").mkdir()
+    _git(repo, "mv", "old.md", "scratchpad/example-old.md")
+    message = repo / "COMMIT_EDITMSG"
+    message.write_text(f"Public summary\n#\t{status}:    {paths}\n")
+    result = _cli("--commit-msg-file", message, cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert "2: scratchpad/example" in result.stdout
+
+
+@pytest.mark.parametrize("quote_non_ascii", [True, False])
+@pytest.mark.skipif(os.name != "posix", reason="control-byte filenames are POSIX-only")
+def test_commit_msg_matches_git_quoted_deleted_path(repo, quote_non_ascii):
+    filename = "scratchpad/example-\t-é.md"
+    (repo / "scratchpad").mkdir()
+    (repo / filename).write_text("Public summary\n")
+    _commit(repo)
+    _git(repo, "rm", filename)
+    _git(repo, "config", "core.quotePath", str(quote_non_ascii).lower())
+    status = _git(repo, "status").stdout
+    # Use Git's actual display quoting rather than the checker's formatter.
+    line = next(line for line in status.splitlines() if "deleted:" in line)
+    message = repo / "COMMIT_EDITMSG"
+    message.write_text("Public summary\n#" + line + "\n")
+    assert _cli("--commit-msg-file", message, cwd=repo).returncode == 0
+
+
+def test_commit_msg_matches_copy_with_both_paths(repo):
+    (repo / "old.md").write_text("Public summary\n" * 10)
+    _commit(repo)
+    (repo / "scratchpad").mkdir()
+    (repo / "scratchpad/example-copy.md").write_bytes((repo / "old.md").read_bytes())
+    (repo / "old.md").write_text("Public summary\n" * 10 + "New summary\n")
+    _git(repo, "add", ".")
+    _git(repo, "config", "diff.renames", "copies")
+    assert "C100" in _git(repo, "diff", "--cached", "--name-status").stdout
+    message = repo / "COMMIT_EDITMSG"
+    message.write_text(
+        "Public summary\n#\tcopied:    old.md -> scratchpad/example-copy.md\n"
+    )
+    assert _cli("--commit-msg-file", message, cwd=repo).returncode == 0
+    message.write_text(
+        "Public summary\n#\tcopied:    wrong.md -> scratchpad/example-copy.md\n"
+    )
+    assert _cli("--commit-msg-file", message, cwd=repo).returncode == 1
+
+
+@pytest.mark.parametrize(
+    "encoding, bom",
+    [
+        ("utf-8", b"\x00\xff"),
+        ("utf-16-le", b"\xff\xfe"),
+        ("utf-16-be", b"\xfe\xff"),
+        ("utf-32-le", b"\xff\xfe\x00\x00"),
+        ("utf-32-be", b"\x00\x00\xfe\xff"),
+    ],
+)
+def test_commit_range_scans_binary_and_encoded_blobs(repo, encoding, bom):
+    (repo / "notes.md").write_text("Public summary\n")
+    base = _commit(repo)
+    (repo / "binary.dat").write_bytes(
+        bom + "Public summary\n/home/example/private.md\n".encode(encoding)
+    )
+    leaked = _commit(repo)
+    _git(repo, "rm", "binary.dat")
+    head = _commit(repo)
+    result = _cli("--commit-range", f"{base}..{head}", cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == f"{leaked}:binary.dat:2: /home/example/private.md\n"
+
+
+def test_commit_range_checks_names_and_keeps_per_file_allowlist(repo):
+    (repo / "notes.md").write_text("Public summary\n")
+    base = _commit(repo)
+    (repo / ".gitignore").write_text(".sisyphus/\n")  # path-fixture
+    (repo / "tests").mkdir()
+    (repo / "tests/test_check_local_paths.py").write_text("/home/example/fixture\n")
+    allowed = _commit(repo)
+    assert _cli("--commit-range", f"{base}..{allowed}", cwd=repo).returncode == 0
+    (repo / "scratchpad").mkdir()
+    (repo / "scratchpad/example.md").write_text("Public summary\n")
+    leaked = _commit(repo)
+    _git(repo, "rm", "scratchpad/example.md")
+    head = _commit(repo)
+    result = _cli("--commit-range", f"{base}..{head}", cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == (
+        f"{leaked}:scratchpad/example.md:0: scratchpad/example.md\n"
+        f"{head}:scratchpad/example.md:0: scratchpad/example.md\n"
+    )
+
+
+def test_commit_range_scans_merge_resolution_and_side_commit(repo):
+    (repo / "notes.md").write_text("Public summary\n")
+    base = _commit(repo)
+    _git(repo, "checkout", "-qb", "side")
+    (repo / "side.md").write_text("/home/example/side.md\n")
+    side = _commit(repo)
+    _git(repo, "checkout", "-qb", "topic", base)
+    (repo / "topic.md").write_text("Public summary\n")
+    _commit(repo)
+    _git(
+        repo,
+        "-c",
+        "user.name=Example",
+        "-c",
+        "user.email=example@example.com",
+        "merge",
+        "--no-commit",
+        "--no-ff",
+        "side",
+    )
+    (repo / "resolution.md").write_text("/home/example/resolution.md\n")
+    merged = _commit(repo)
+    result = _cli("--commit-range", f"{base}..{merged}", cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert f"{side}:side.md:1: /home/example/side.md" in result.stdout
+    assert f"{merged}:resolution.md:1: /home/example/resolution.md" in result.stdout
 
 
 @pytest.mark.parametrize("mode", ["--staged", "--files", "--all-tracked"])
@@ -347,6 +548,13 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
     assert "sparse-checkout: scripts/check_local_paths.py" in workflow
     assert "sparse-checkout-cone-mode: false" in workflow
     assert "persist-credentials: false" in workflow
+    assert "fetch-depth: 0" in workflow
+    assert (
+        'git fetch --no-tags origin "$BASE_SHA" "+refs/pull/$PR_NUMBER/head:refs/remotes/pr/head"'
+        in workflow
+    )
+    assert '--commit-range "$BASE_SHA..refs/remotes/pr/head"' in workflow
+    assert "BASE_SHA: ${{ github.event.pull_request.base.sha }}" in workflow
     assert "PR_TITLE: ${{ github.event.pull_request.title }}" in workflow
     assert "PR_BODY: ${{ github.event.pull_request.body }}" in workflow
     assert "PR_NUMBER: ${{ github.event.pull_request.number }}" in workflow
@@ -361,6 +569,7 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
         "PR_TITLE": "Public summary",
         "PR_BODY": "Public body",
         "PR_NUMBER": "1234",
+        "PR_COMMITS": "2",
         "GH_TOKEN": "synthetic-token",
         "COMMIT_MESSAGES": "Public first commit\nPublic second commit",
         "GH_STATUS": "0",
@@ -385,6 +594,13 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
     assert not (tmp_path / "gh-args").exists()
     (tmp_path / "scripts").mkdir()
     (tmp_path / "scripts" / "check_local_paths.py").write_bytes(SCRIPT.read_bytes())
+    _git(tmp_path, "init", "-q")
+    base = _commit(tmp_path)
+    remote = tmp_path / ".git/origin.git"
+    _git(tmp_path, "clone", "--bare", "-q", str(tmp_path), str(remote))
+    _git(remote, "update-ref", "refs/pull/1234/head", base)
+    _git(tmp_path, "remote", "add", "origin", str(remote))
+    env["BASE_SHA"] = base
     for overrides, failures in (
         ({}, ()),
         ({"PR_BODY": "$(touch injected)\n/home/example"}, ("title/body",)),
@@ -401,6 +617,7 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
             ("title/body", "commit-message"),
         ),
         ({"GH_STATUS": "1"}, ("commit-message",)),
+        ({"BASE_SHA": "f" * 40}, ("commit-change",)),
     ):
         result = subprocess.run(
             ["bash", "-eo", "pipefail", "-c", command],
@@ -410,10 +627,11 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
             text=True,
         )
         assert result.returncode == bool(failures), result.stderr
-        for scan in ("title/body", "commit-message"):
-            assert (f"PR {scan} local-path scan failed." in result.stdout) == (
-                scan in failures
-            )
+        for scan in ("title/body", "commit-message", "commit-change"):
+            assert (
+                f"PR {scan} local-path scan failed." in result.stdout
+                or f"PR {scan} fetch failed." in result.stdout
+            ) == (scan in failures)
         assert (tmp_path / "gh-args").read_text().splitlines() == [
             "api",
             "--paginate",
@@ -422,6 +640,53 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
             ".[].commit.message",
         ]
     assert not (tmp_path / "injected").exists()
+
+
+@pytest.mark.skipif(os.name != "posix", reason="workflow shell is Bash")
+def test_pr_text_scans_removed_leak_without_using_head_checker(repo):
+    (repo / "scripts").mkdir()
+    (repo / "scripts/check_local_paths.py").write_bytes(SCRIPT.read_bytes())
+    (repo / "notes.md").write_text("Public summary\n")
+    base = _commit(repo)
+    (repo / "scripts/check_local_paths.py").write_text(
+        "raise AssertionError('PR checker executed')\n"
+    )
+    (repo / "notes.md").write_text("/home/example/private.md\n")
+    leaked = _commit(repo)
+    (repo / "notes.md").write_text("Public summary\n")
+    _commit(repo)
+    _git(repo, "update-ref", "refs/pull/1234/head", "HEAD")
+    tree = repo / ".git/trusted-checkout"
+    _git(repo, "clone", "--no-checkout", "-q", str(repo), str(tree))
+    _git(tree, "checkout", "-q", "--detach", base)
+    bin_dir = repo / ".git/bin"
+    bin_dir.mkdir()
+    gh = bin_dir / "gh"
+    gh.write_text("#!/bin/sh\nprintf 'Public commit message\\n'\n")
+    gh.chmod(0o755)
+    workflow = (ROOT / ".github/workflows/pr_text.yml").read_text()
+    command = textwrap.dedent(workflow.split("        run: |\n", 1)[1])
+    command = command.replace("${{ github.repository }}", "example/repository")
+    result = subprocess.run(
+        ["bash", "-eo", "pipefail", "-c", command],
+        cwd=tree,
+        env={
+            **os.environ,
+            "PR_TITLE": "Public summary",
+            "PR_BODY": "Public body",
+            "PR_NUMBER": "1234",
+            "PR_COMMITS": "2",
+            "BASE_SHA": base,
+            "PATH": str(bin_dir) + os.pathsep + os.environ["PATH"],
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1, result.stderr
+    assert f"{leaked}:notes.md:1: /home/example/private.md" in result.stdout
+    assert "PR commit-change local-path scan failed." in result.stdout
+    assert (tree / "scripts/check_local_paths.py").read_bytes() == SCRIPT.read_bytes()
+    assert _git(tree, "rev-parse", "HEAD").stdout.strip() == base
 
 
 @pytest.mark.skipif(os.name != "posix", reason="workflow shell is Bash")

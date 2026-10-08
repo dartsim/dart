@@ -1583,6 +1583,69 @@ def test_guard_runs_for_env_hookspath_override_even_with_dart_managed_hook(
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
+def test_guard_runs_for_inherited_hookspath_override_with_managed_hooks(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env.update(
+        {
+            "CLAUDE_PROJECT_DIR": str(repo),
+            "DART_HOOK_DRY_RUN": "1",
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": "core.hooksPath",
+            "GIT_CONFIG_VALUE_0": ".git/hooks",
+        }
+    )
+    returncode, stderr = _run_guard(repo, env, "git commit -m x")
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize(
+    "variable", ["GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "HOME", "XDG_CONFIG_HOME"]
+)
+def test_guard_runs_for_inherited_config_file_override_with_managed_hooks(
+    tmp_path, variable
+):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    config = tmp_path / "gitconfig"
+    config.write_text("[core]\n\thooksPath = .git/hooks\n")
+    if variable in {"HOME", "XDG_CONFIG_HOME"}:
+        env.pop("GIT_CONFIG_GLOBAL", None)
+        config = (
+            tmp_path / ".gitconfig" if variable == "HOME" else tmp_path / "git/config"
+        )
+        config.parent.mkdir(exist_ok=True)
+        config.write_text("[core]\n\thooksPath = .git/hooks\n")
+        value = str(tmp_path)
+    else:
+        value = str(config)
+    env.update(
+        {variable: value, "CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"}
+    )
+    returncode, stderr = _run_guard(repo, env, "git commit -m x")
+    assert returncode == 0
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize("prefix", ["GIT_CONFIG_COUNT=0", "GIT_CONFIG_KEY_0=user.name"])
+def test_guard_inline_assignment_replaces_inherited_config(tmp_path, prefix):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env.update(
+        {
+            "CLAUDE_PROJECT_DIR": str(repo),
+            "DART_HOOK_DRY_RUN": "1",
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": "core.hooksPath",
+            "GIT_CONFIG_VALUE_0": ".git/hooks",
+        }
+    )
+    returncode, stderr = _run_guard(repo, env, f"{prefix} git commit -m x")
+    assert returncode == 0
+    assert stderr == ""
+
+
 @pytest.mark.parametrize(
     "command_template",
     [
