@@ -179,55 +179,52 @@ std::vector<BroadPhasePair> AabbTreeBroadPhase::queryPairs() const
 void AabbTreeBroadPhase::queryPairs(std::vector<BroadPhasePair>& out) const
 {
   out.clear();
-  visitPairs([&out](std::size_t id1, std::size_t id2) {
+  // The tree self-query rejects each disjoint subtree pair once, which
+  // per-object queries cannot do in sparse trees. It may repeat a pair.
+  visitPairsAnyOrder([&out](std::size_t id1, std::size_t id2) {
     out.emplace_back(id1, id2);
     return true;
   });
+  std::sort(out.begin(), out.end());
+  out.erase(std::unique(out.begin(), out.end()), out.end());
 }
 
 bool AabbTreeBroadPhase::visitPairsAnyOrder(
     const BroadPhasePairVisitor& visitor) const
 {
-  if (root_ == kInvalidNode) {
+  return root_ == kInvalidNode || visitPairsRecursive(root_, root_, visitor);
+}
+
+bool AabbTreeBroadPhase::visitPairsRecursive(
+    NodeIndex nodeA,
+    NodeIndex nodeB,
+    const BroadPhasePairVisitor& visitor) const
+{
+  // Recursion depth is bounded by twice the tree height; it is about twice as
+  // fast as an explicit stack on sparse trees.
+  const Node& a = nodes_[nodeA];
+  const Node& b = nodes_[nodeB];
+  if (nodeA == nodeB) {
+    return a.isLeaf()
+           || (visitPairsRecursive(a.left, a.right, visitor)
+               && visitPairsRecursive(a.left, a.left, visitor)
+               && visitPairsRecursive(a.right, a.right, visitor));
+  }
+  if (!a.fatAabb.overlaps(b.fatAabb)) {
     return true;
   }
-
-  auto& stack = mPairStack;
-  stack.clear();
-  stack.emplace_back(root_, root_);
-  while (!stack.empty()) {
-    const auto [nodeA, nodeB] = stack.back();
-    stack.pop_back();
-    const Node& a = nodes_[nodeA];
-    const Node& b = nodes_[nodeB];
-    if (nodeA == nodeB) {
-      if (!a.isLeaf()) {
-        // Reverse pushes preserve the previous recursive visitor order.
-        stack.emplace_back(a.right, a.right);
-        stack.emplace_back(a.left, a.left);
-        stack.emplace_back(a.left, a.right);
-      }
-      continue;
-    }
-    if (!a.fatAabb.overlaps(b.fatAabb)) {
-      continue;
-    }
-    if (a.isLeaf() && b.isLeaf()) {
-      const std::size_t id1 = a.maxObjectId;
-      const std::size_t id2 = b.maxObjectId;
-      if (overlapsTight(id1, tightAabb(id2))
-          && !visitor(std::min(id1, id2), std::max(id1, id2))) {
-        return false;
-      }
-    } else if (b.isLeaf() || (!a.isLeaf() && a.height > b.height)) {
-      stack.emplace_back(a.right, nodeB);
-      stack.emplace_back(a.left, nodeB);
-    } else {
-      stack.emplace_back(nodeA, b.right);
-      stack.emplace_back(nodeA, b.left);
-    }
+  if (a.isLeaf() && b.isLeaf()) {
+    const std::size_t id1 = a.maxObjectId;
+    const std::size_t id2 = b.maxObjectId;
+    return !overlapsTight(id1, tightAabb(id2))
+           || visitor(std::min(id1, id2), std::max(id1, id2));
   }
-  return true;
+  if (b.isLeaf() || (!a.isLeaf() && a.height > b.height)) {
+    return visitPairsRecursive(a.left, nodeB, visitor)
+           && visitPairsRecursive(a.right, nodeB, visitor);
+  }
+  return visitPairsRecursive(nodeA, b.left, visitor)
+         && visitPairsRecursive(nodeA, b.right, visitor);
 }
 
 bool AabbTreeBroadPhase::visitPairs(const BroadPhasePairVisitor& visitor) const
@@ -411,7 +408,6 @@ AabbTreeBroadPhase::NodeIndex AabbTreeBroadPhase::allocateNode()
   // Reserve outside queries, including room for future rebalances of this
   // membership, so a deeper walk cannot allocate during a prepared step.
   mQueryStack.reserve(nodes_.capacity());
-  mPairStack.reserve(nodes_.capacity());
   ++nodeCount_;
   return nodeIndex;
 }

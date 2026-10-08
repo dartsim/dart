@@ -82,6 +82,7 @@ public:
   [[nodiscard]] bool validate() const;
 
 private:
+  // The private layout is ABI from DART 6.20.0 on; later changes need a pimpl.
   using NodeIndex = std::int32_t;
   static constexpr NodeIndex kInvalidNode = -1;
 
@@ -119,7 +120,6 @@ private:
   // The tree is single-query at a time by contract.
   mutable std::vector<std::size_t> mOverlapScratch;
   mutable std::vector<NodeIndex> mQueryStack;
-  mutable std::vector<std::pair<NodeIndex, NodeIndex>> mPairStack;
 
   void setTightAabb(std::size_t id, const Aabb& aabb);
   [[nodiscard]] Aabb tightAabb(std::size_t id) const;
@@ -133,6 +133,11 @@ private:
   [[nodiscard]] NodeIndex balance(NodeIndex nodeIndex);
   [[nodiscard]] static Aabb combine(const Aabb& a, const Aabb& b);
   [[nodiscard]] static double surfaceArea(const Aabb& aabb);
+
+  bool visitPairsRecursive(
+      NodeIndex nodeA,
+      NodeIndex nodeB,
+      const BroadPhasePairVisitor& visitor) const;
 
   void queryOverlappingImpl(
       const Aabb& aabb,
