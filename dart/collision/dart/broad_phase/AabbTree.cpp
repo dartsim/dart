@@ -63,66 +63,108 @@ AabbTreeBroadPhase::AabbTreeBroadPhase(double fatAabbMargin)
 void AabbTreeBroadPhase::clear()
 {
   nodes_.clear();
-  root_ = kNullNode;
+  parents_.clear();
+  root_ = kInvalidNode;
   nodeCount_ = 0;
-  freeList_ = kNullNode;
+  freeList_ = kInvalidNode;
   objectToNode_.clear();
+  for (auto& values : tightMin_) {
+    values.clear();
+  }
+  for (auto& values : tightMax_) {
+    values.clear();
+  }
+  orderedIds_.clear();
+  idsSorted_ = true;
+}
+
+void AabbTreeBroadPhase::setTightAabb(std::size_t id, const Aabb& aabb)
+{
+  for (std::size_t axis = 0; axis < 3; ++axis) {
+    tightMin_[axis][id] = aabb.min[axis];
+    tightMax_[axis][id] = aabb.max[axis];
+  }
+}
+
+Aabb AabbTreeBroadPhase::tightAabb(std::size_t id) const
+{
+  return Aabb(
+      Eigen::Vector3d(tightMin_[0][id], tightMin_[1][id], tightMin_[2][id]),
+      Eigen::Vector3d(tightMax_[0][id], tightMax_[1][id], tightMax_[2][id]));
+}
+
+bool AabbTreeBroadPhase::overlapsTight(std::size_t id, const Aabb& aabb) const
+{
+  // Keep the same double comparisons, including touching bounds, as Aabb.
+  return (tightMin_[0][id] <= aabb.max.x() && tightMax_[0][id] >= aabb.min.x())
+         && (tightMin_[1][id] <= aabb.max.y()
+             && tightMax_[1][id] >= aabb.min.y())
+         && (tightMin_[2][id] <= aabb.max.z()
+             && tightMax_[2][id] >= aabb.min.z());
 }
 
 void AabbTreeBroadPhase::add(std::size_t id, const Aabb& aabb)
 {
-  if (objectToNode_.find(id) != objectToNode_.end()) {
+  if (id < objectToNode_.size() && objectToNode_[id] != kInvalidNode) {
     update(id, aabb);
     return;
   }
 
-  const std::size_t leafIndex = allocateNode();
-  Node& leaf = nodes_[leafIndex];
+  if (id >= std::numeric_limits<std::uint32_t>::max()) {
+    throw std::length_error("AABB tree object id exceeds compact storage");
+  }
+  if (id >= objectToNode_.size()) {
+    objectToNode_.resize(id + 1u, kInvalidNode);
+    for (auto& values : tightMin_) {
+      values.resize(id + 1u);
+    }
+    for (auto& values : tightMax_) {
+      values.resize(id + 1u);
+    }
+  }
 
-  leaf.tightAabb = aabb;
+  const NodeIndex leafIndex = allocateNode();
+  Node& leaf = nodes_[leafIndex];
+  setTightAabb(id, aabb);
   leaf.fatAabb = aabb;
   leaf.fatAabb.expand(fatAabbMargin_);
-  leaf.objectId = id;
-  leaf.height = 0;
-
+  leaf.maxObjectId = static_cast<std::uint32_t>(id);
   objectToNode_[id] = leafIndex;
+  orderedIds_.push_back(id);
+  idsSorted_ = false;
 
   insertLeaf(leafIndex);
 }
 
 void AabbTreeBroadPhase::update(std::size_t id, const Aabb& aabb)
 {
-  const auto it = objectToNode_.find(id);
-  if (it == objectToNode_.end()) {
+  if (id >= objectToNode_.size() || objectToNode_[id] == kInvalidNode) {
     return;
   }
 
-  const std::size_t leafIndex = it->second;
+  const NodeIndex leafIndex = objectToNode_[id];
   Node& leaf = nodes_[leafIndex];
-
+  setTightAabb(id, aabb);
   if (leaf.fatAabb.contains(aabb)) {
-    leaf.tightAabb = aabb;
     return;
   }
 
   removeLeaf(leafIndex);
-
-  leaf.tightAabb = aabb;
   leaf.fatAabb = aabb;
   leaf.fatAabb.expand(fatAabbMargin_);
-
   insertLeaf(leafIndex);
 }
 
 void AabbTreeBroadPhase::remove(std::size_t id)
 {
-  const auto it = objectToNode_.find(id);
-  if (it == objectToNode_.end()) {
+  if (id >= objectToNode_.size() || objectToNode_[id] == kInvalidNode) {
     return;
   }
 
-  const std::size_t leafIndex = it->second;
-  objectToNode_.erase(it);
+  const NodeIndex leafIndex = objectToNode_[id];
+  objectToNode_[id] = kInvalidNode;
+  orderedIds_.erase(std::find(orderedIds_.begin(), orderedIds_.end(), id));
+  idsSorted_ = false;
   removeLeaf(leafIndex);
   freeNode(leafIndex);
 }
@@ -137,109 +179,79 @@ std::vector<BroadPhasePair> AabbTreeBroadPhase::queryPairs() const
 void AabbTreeBroadPhase::queryPairs(std::vector<BroadPhasePair>& out) const
 {
   out.clear();
-
-  if (root_ == kNullNode) {
-    return;
-  }
-
-  queryPairsRecursive(root_, root_, out);
-
-  std::sort(out.begin(), out.end());
-  out.erase(std::unique(out.begin(), out.end()), out.end());
+  visitPairs([&out](std::size_t id1, std::size_t id2) {
+    out.emplace_back(id1, id2);
+    return true;
+  });
 }
 
 bool AabbTreeBroadPhase::visitPairsAnyOrder(
     const BroadPhasePairVisitor& visitor) const
 {
-  // Streams candidates straight out of the tree walk with no sort/dedup, so
-  // an early visitor rejection (e.g. a boolean query's first hit) aborts the
-  // traversal without materializing the pair set. The tree self-query may
-  // visit a pair more than once; callers must be idempotent and
-  // order-independent.
-  if (root_ == kNullNode) {
+  if (root_ == kInvalidNode) {
     return true;
   }
 
-  return visitPairsRecursiveAnyOrder(root_, root_, visitor);
-}
-
-bool AabbTreeBroadPhase::visitPairsRecursiveAnyOrder(
-    std::size_t nodeA,
-    std::size_t nodeB,
-    const BroadPhasePairVisitor& visitor) const
-{
-  if (nodeA == kNullNode || nodeB == kNullNode) {
-    return true;
-  }
-
-  if (nodeA == nodeB) {
-    if (nodes_[nodeA].isLeaf()) {
-      return true;
+  auto& stack = mPairStack;
+  stack.clear();
+  stack.emplace_back(root_, root_);
+  while (!stack.empty()) {
+    const auto [nodeA, nodeB] = stack.back();
+    stack.pop_back();
+    const Node& a = nodes_[nodeA];
+    const Node& b = nodes_[nodeB];
+    if (nodeA == nodeB) {
+      if (!a.isLeaf()) {
+        // Reverse pushes preserve the previous recursive visitor order.
+        stack.emplace_back(a.right, a.right);
+        stack.emplace_back(a.left, a.left);
+        stack.emplace_back(a.left, a.right);
+      }
+      continue;
     }
-
-    return visitPairsRecursiveAnyOrder(
-               nodes_[nodeA].left, nodes_[nodeA].right, visitor)
-           && visitPairsRecursiveAnyOrder(
-               nodes_[nodeA].left, nodes_[nodeA].left, visitor)
-           && visitPairsRecursiveAnyOrder(
-               nodes_[nodeA].right, nodes_[nodeA].right, visitor);
-  }
-
-  if (!nodes_[nodeA].fatAabb.overlaps(nodes_[nodeB].fatAabb)) {
-    return true;
-  }
-
-  if (nodes_[nodeA].isLeaf() && nodes_[nodeB].isLeaf()) {
-    if (nodes_[nodeA].tightAabb.overlaps(nodes_[nodeB].tightAabb)) {
-      const std::size_t id1 = nodes_[nodeA].objectId;
-      const std::size_t id2 = nodes_[nodeB].objectId;
-      return visitor(std::min(id1, id2), std::max(id1, id2));
+    if (!a.fatAabb.overlaps(b.fatAabb)) {
+      continue;
     }
-    return true;
+    if (a.isLeaf() && b.isLeaf()) {
+      const std::size_t id1 = a.maxObjectId;
+      const std::size_t id2 = b.maxObjectId;
+      if (overlapsTight(id1, tightAabb(id2))
+          && !visitor(std::min(id1, id2), std::max(id1, id2))) {
+        return false;
+      }
+    } else if (b.isLeaf() || (!a.isLeaf() && a.height > b.height)) {
+      stack.emplace_back(a.right, nodeB);
+      stack.emplace_back(a.left, nodeB);
+    } else {
+      stack.emplace_back(nodeA, b.right);
+      stack.emplace_back(nodeA, b.left);
+    }
   }
-
-  if (nodes_[nodeB].isLeaf()
-      || (!nodes_[nodeA].isLeaf()
-          && nodes_[nodeA].height > nodes_[nodeB].height)) {
-    return visitPairsRecursiveAnyOrder(nodes_[nodeA].left, nodeB, visitor)
-           && visitPairsRecursiveAnyOrder(nodes_[nodeA].right, nodeB, visitor);
-  }
-
-  return visitPairsRecursiveAnyOrder(nodeA, nodes_[nodeB].left, visitor)
-         && visitPairsRecursiveAnyOrder(nodeA, nodes_[nodeB].right, visitor);
+  return true;
 }
 
 bool AabbTreeBroadPhase::visitPairs(const BroadPhasePairVisitor& visitor) const
 {
-  // Visit in the same lexicographic (min,max) order as BruteForceBroadPhase,
-  // but materialize only one object's higher-id overlaps at a time. This keeps
-  // capped result queries deterministic while allowing the first visitor
-  // rejection to avoid collecting and sorting the full pair set. The id and
-  // overlap buffers are reused member scratch: rebuilding them on every
-  // collide() heap-allocates and trips the StepAllocation gates.
-  auto& orderedIds = mOrderedIdScratch;
-  orderedIds.clear();
-  for (const auto& entry : objectToNode_) {
-    orderedIds.push_back(entry.first);
+  // Match BruteForceBroadPhase's lexicographic order while materializing only
+  // one object's higher-id overlaps, retaining early rejection for capped
+  // queries. Updates preserve membership, so sorting ids is only needed after
+  // add/remove. All query buffers are reused for allocation-free stepping.
+  if (!idsSorted_) {
+    std::sort(orderedIds_.begin(), orderedIds_.end());
+    idsSorted_ = true;
   }
-  std::sort(orderedIds.begin(), orderedIds.end());
 
   auto& overlaps = mOverlapScratch;
-  for (const std::size_t id : orderedIds) {
+  for (const std::size_t id : orderedIds_) {
     overlaps.clear();
-    const Node& leaf = nodes_[objectToNode_.at(id)];
-    queryOverlappingRecursive(root_, leaf.tightAabb, overlaps);
+    queryOverlappingImpl(tightAabb(id), overlaps, id, true);
     std::sort(overlaps.begin(), overlaps.end());
-
-    for (auto it = std::upper_bound(overlaps.begin(), overlaps.end(), id);
-         it != overlaps.end();
-         ++it) {
-      if (!visitor(id, *it)) {
+    for (const std::size_t other : overlaps) {
+      if (!visitor(id, other)) {
         return false;
       }
     }
   }
-
   return true;
 }
 
@@ -249,21 +261,24 @@ void AabbTreeBroadPhase::buildDebugSnapshot(BroadPhaseDebugSnapshot& out) const
   out.candidatePairs = queryPairs();
   out.numObjects = size();
   out.hasTreeTopology = true;
-  out.rootNode = root_;
+  const auto debugIndex = [](NodeIndex index) -> std::size_t {
+    return index == kInvalidNode ? kNullNode : static_cast<std::size_t>(index);
+  };
+  out.rootNode = debugIndex(root_);
 
-  if (root_ == kNullNode) {
+  if (root_ == kInvalidNode) {
     return;
   }
 
-  std::vector<std::size_t> stack{root_};
+  std::vector<NodeIndex> stack{root_};
   std::unordered_set<std::size_t> visited;
   visited.reserve(nodeCount_);
 
   while (!stack.empty()) {
-    const std::size_t nodeIndex = stack.back();
+    const NodeIndex nodeIndex = stack.back();
     stack.pop_back();
 
-    if (nodeIndex == kNullNode || nodeIndex >= nodes_.size()) {
+    if (nodeIndex < 0 || static_cast<std::size_t>(nodeIndex) >= nodes_.size()) {
       continue;
     }
     if (!visited.insert(nodeIndex).second) {
@@ -273,12 +288,13 @@ void AabbTreeBroadPhase::buildDebugSnapshot(BroadPhaseDebugSnapshot& out) const
     const Node& node = nodes_[nodeIndex];
     BroadPhaseDebugNode debugNode;
     debugNode.nodeId = nodeIndex;
-    debugNode.parent = node.parent;
-    debugNode.left = node.left;
-    debugNode.right = node.right;
-    debugNode.objectId = node.objectId;
+    debugNode.parent = debugIndex(parents_[nodeIndex]);
+    debugNode.left = debugIndex(node.left);
+    debugNode.right = debugIndex(node.right);
+    debugNode.objectId = node.isLeaf() ? node.maxObjectId : kNullNode;
     debugNode.aabb = node.fatAabb;
-    debugNode.tightAabb = node.isLeaf() ? node.tightAabb : node.fatAabb;
+    debugNode.tightAabb
+        = node.isLeaf() ? tightAabb(node.maxObjectId) : node.fatAabb;
     debugNode.height = node.height;
     out.nodes.push_back(debugNode);
 
@@ -307,6 +323,8 @@ void AabbTreeBroadPhase::build(
   }
 
   nodes_.reserve(2u * n);
+  parents_.reserve(2u * n);
+  orderedIds_.reserve(n);
 
   for (std::size_t i = 0; i < n; ++i) {
     add(ids[i], aabbs[i]);
@@ -328,11 +346,11 @@ std::vector<std::size_t> AabbTreeBroadPhase::queryOverlapping(
 {
   std::vector<std::size_t> results;
 
-  if (root_ == kNullNode) {
+  if (root_ == kInvalidNode) {
     return results;
   }
 
-  queryOverlappingRecursive(root_, aabb, results);
+  queryOverlappingImpl(aabb, results, 0u, false);
 
   std::sort(results.begin(), results.end());
 
@@ -341,7 +359,7 @@ std::vector<std::size_t> AabbTreeBroadPhase::queryOverlapping(
 
 std::size_t AabbTreeBroadPhase::size() const
 {
-  return objectToNode_.size();
+  return orderedIds_.size();
 }
 
 double AabbTreeBroadPhase::getFatAabbMargin() const
@@ -356,7 +374,7 @@ void AabbTreeBroadPhase::setFatAabbMargin(double margin)
 
 std::size_t AabbTreeBroadPhase::getHeight() const
 {
-  if (root_ == kNullNode) {
+  if (root_ == kInvalidNode) {
     return 0;
   }
 
@@ -365,58 +383,70 @@ std::size_t AabbTreeBroadPhase::getHeight() const
 
 bool AabbTreeBroadPhase::validate() const
 {
-  if (root_ == kNullNode) {
-    return nodeCount_ == 0u;
+  if (root_ == kInvalidNode) {
+    return nodeCount_ == 0u && orderedIds_.empty();
   }
 
   return validateStructure(root_);
 }
 
-std::size_t AabbTreeBroadPhase::allocateNode()
+AabbTreeBroadPhase::NodeIndex AabbTreeBroadPhase::allocateNode()
 {
-  if (freeList_ != kNullNode) {
-    const std::size_t nodeIndex = freeList_;
-    freeList_ = nodes_[nodeIndex].parent;
+  if (freeList_ != kInvalidNode) {
+    const NodeIndex nodeIndex = freeList_;
+    freeList_ = parents_[nodeIndex];
     nodes_[nodeIndex] = Node{};
+    parents_[nodeIndex] = kInvalidNode;
     ++nodeCount_;
     return nodeIndex;
   }
 
-  const std::size_t nodeIndex = nodes_.size();
+  if (nodes_.size()
+      >= static_cast<std::size_t>(std::numeric_limits<NodeIndex>::max())) {
+    throw std::length_error("AABB tree node index exceeds compact storage");
+  }
+  const NodeIndex nodeIndex = static_cast<NodeIndex>(nodes_.size());
   nodes_.emplace_back();
+  parents_.push_back(kInvalidNode);
+  // Reserve outside queries, including room for future rebalances of this
+  // membership, so a deeper walk cannot allocate during a prepared step.
+  mQueryStack.reserve(nodes_.capacity());
+  mPairStack.reserve(nodes_.capacity());
   ++nodeCount_;
   return nodeIndex;
 }
 
-void AabbTreeBroadPhase::freeNode(std::size_t nodeIndex)
+void AabbTreeBroadPhase::freeNode(NodeIndex nodeIndex)
 {
-  assert(nodeIndex < nodes_.size());
-  nodes_[nodeIndex].parent = freeList_;
-  nodes_[nodeIndex].height = kNullNode;
+  assert(nodeIndex >= 0 && static_cast<std::size_t>(nodeIndex) < nodes_.size());
+  parents_[nodeIndex] = freeList_;
+  nodes_[nodeIndex].height = -1;
   freeList_ = nodeIndex;
   --nodeCount_;
 }
 
-void AabbTreeBroadPhase::insertLeaf(std::size_t leafIndex)
+void AabbTreeBroadPhase::insertLeaf(NodeIndex leafIndex)
 {
-  if (root_ == kNullNode) {
+  if (root_ == kInvalidNode) {
     root_ = leafIndex;
-    nodes_[leafIndex].parent = kNullNode;
+    parents_[leafIndex] = kInvalidNode;
     return;
   }
 
   // Copy values before allocateNode(), which may reallocate nodes_.
   const Aabb leafAabb = nodes_[leafIndex].fatAabb;
-  const std::size_t siblingIndex = findBestSibling(leafAabb);
+  const NodeIndex siblingIndex = findBestSibling(leafAabb);
   const Aabb siblingAabb = nodes_[siblingIndex].fatAabb;
-  const std::size_t oldParent = nodes_[siblingIndex].parent;
-  const std::size_t newParent = allocateNode();
+  const NodeIndex oldParent = parents_[siblingIndex];
+  const NodeIndex newParent = allocateNode();
 
-  nodes_[newParent].parent = oldParent;
+  parents_[newParent] = oldParent;
   nodes_[newParent].fatAabb = combine(leafAabb, siblingAabb);
-  nodes_[newParent].height = nodes_[siblingIndex].height + 1u;
+  nodes_[newParent].height = nodes_[siblingIndex].height + 1;
+  nodes_[newParent].maxObjectId = std::max(
+      nodes_[siblingIndex].maxObjectId, nodes_[leafIndex].maxObjectId);
 
-  if (oldParent != kNullNode) {
+  if (oldParent != kInvalidNode) {
     if (nodes_[oldParent].left == siblingIndex) {
       nodes_[oldParent].left = newParent;
     } else {
@@ -424,55 +454,56 @@ void AabbTreeBroadPhase::insertLeaf(std::size_t leafIndex)
     }
     nodes_[newParent].left = siblingIndex;
     nodes_[newParent].right = leafIndex;
-    nodes_[siblingIndex].parent = newParent;
-    nodes_[leafIndex].parent = newParent;
+    parents_[siblingIndex] = newParent;
+    parents_[leafIndex] = newParent;
   } else {
     nodes_[newParent].left = siblingIndex;
     nodes_[newParent].right = leafIndex;
-    nodes_[siblingIndex].parent = newParent;
-    nodes_[leafIndex].parent = newParent;
+    parents_[siblingIndex] = newParent;
+    parents_[leafIndex] = newParent;
     root_ = newParent;
   }
 
-  rebalance(nodes_[leafIndex].parent);
+  rebalance(parents_[leafIndex]);
 }
 
-void AabbTreeBroadPhase::removeLeaf(std::size_t leafIndex)
+void AabbTreeBroadPhase::removeLeaf(NodeIndex leafIndex)
 {
   if (leafIndex == root_) {
-    root_ = kNullNode;
+    root_ = kInvalidNode;
     return;
   }
 
-  const std::size_t parent = nodes_[leafIndex].parent;
-  const std::size_t grandParent = nodes_[parent].parent;
-  const std::size_t sibling = (nodes_[parent].left == leafIndex)
-                                  ? nodes_[parent].right
-                                  : nodes_[parent].left;
+  const NodeIndex parent = parents_[leafIndex];
+  const NodeIndex grandParent = parents_[parent];
+  const NodeIndex sibling = (nodes_[parent].left == leafIndex)
+                                ? nodes_[parent].right
+                                : nodes_[parent].left;
 
-  if (grandParent != kNullNode) {
+  if (grandParent != kInvalidNode) {
     if (nodes_[grandParent].left == parent) {
       nodes_[grandParent].left = sibling;
     } else {
       nodes_[grandParent].right = sibling;
     }
-    nodes_[sibling].parent = grandParent;
+    parents_[sibling] = grandParent;
     freeNode(parent);
     rebalance(grandParent);
   } else {
     root_ = sibling;
-    nodes_[sibling].parent = kNullNode;
+    parents_[sibling] = kInvalidNode;
     freeNode(parent);
   }
 }
 
-std::size_t AabbTreeBroadPhase::findBestSibling(const Aabb& aabb) const
+AabbTreeBroadPhase::NodeIndex AabbTreeBroadPhase::findBestSibling(
+    const Aabb& aabb) const
 {
-  std::size_t index = root_;
+  NodeIndex index = root_;
 
   while (!nodes_[index].isLeaf()) {
-    const std::size_t left = nodes_[index].left;
-    const std::size_t right = nodes_[index].right;
+    const NodeIndex left = nodes_[index].left;
+    const NodeIndex right = nodes_[index].right;
 
     const double area = surfaceArea(nodes_[index].fatAabb);
     const double combinedArea
@@ -510,39 +541,41 @@ std::size_t AabbTreeBroadPhase::findBestSibling(const Aabb& aabb) const
   return index;
 }
 
-void AabbTreeBroadPhase::rebalance(std::size_t nodeIndex)
+void AabbTreeBroadPhase::rebalance(NodeIndex nodeIndex)
 {
-  while (nodeIndex != kNullNode) {
+  while (nodeIndex != kInvalidNode) {
     nodeIndex = balance(nodeIndex);
 
-    const std::size_t left = nodes_[nodeIndex].left;
-    const std::size_t right = nodes_[nodeIndex].right;
+    const NodeIndex left = nodes_[nodeIndex].left;
+    const NodeIndex right = nodes_[nodeIndex].right;
 
-    assert(left != kNullNode);
-    assert(right != kNullNode);
+    assert(left != kInvalidNode);
+    assert(right != kInvalidNode);
 
     nodes_[nodeIndex].height
-        = 1u + std::max(nodes_[left].height, nodes_[right].height);
+        = 1 + std::max(nodes_[left].height, nodes_[right].height);
     nodes_[nodeIndex].fatAabb
         = combine(nodes_[left].fatAabb, nodes_[right].fatAabb);
 
-    nodeIndex = nodes_[nodeIndex].parent;
+    nodes_[nodeIndex].maxObjectId
+        = std::max(nodes_[left].maxObjectId, nodes_[right].maxObjectId);
+    nodeIndex = parents_[nodeIndex];
   }
 }
 
-std::size_t AabbTreeBroadPhase::balance(std::size_t nodeIndex)
+AabbTreeBroadPhase::NodeIndex AabbTreeBroadPhase::balance(NodeIndex nodeIndex)
 {
-  assert(nodeIndex != kNullNode);
+  assert(nodeIndex != kInvalidNode);
 
   Node& A = nodes_[nodeIndex];
-  if (A.isLeaf() || A.height < 2u) {
+  if (A.isLeaf() || A.height < 2) {
     return nodeIndex;
   }
 
-  const std::size_t iB = A.left;
-  const std::size_t iC = A.right;
-  assert(iB < nodes_.size());
-  assert(iC < nodes_.size());
+  const NodeIndex iB = A.left;
+  const NodeIndex iC = A.right;
+  assert(iB >= 0 && static_cast<std::size_t>(iB) < nodes_.size());
+  assert(iC >= 0 && static_cast<std::size_t>(iC) < nodes_.size());
 
   Node& B = nodes_[iB];
   Node& C = nodes_[iC];
@@ -550,23 +583,23 @@ std::size_t AabbTreeBroadPhase::balance(std::size_t nodeIndex)
   const int balance = static_cast<int>(C.height) - static_cast<int>(B.height);
 
   if (balance > 1) {
-    const std::size_t iF = C.left;
-    const std::size_t iG = C.right;
-    assert(iF < nodes_.size());
-    assert(iG < nodes_.size());
+    const NodeIndex iF = C.left;
+    const NodeIndex iG = C.right;
+    assert(iF >= 0 && static_cast<std::size_t>(iF) < nodes_.size());
+    assert(iG >= 0 && static_cast<std::size_t>(iG) < nodes_.size());
     Node& F = nodes_[iF];
     Node& G = nodes_[iG];
 
     C.left = nodeIndex;
-    C.parent = A.parent;
-    A.parent = iC;
+    parents_[iC] = parents_[nodeIndex];
+    parents_[nodeIndex] = iC;
 
-    if (C.parent != kNullNode) {
-      if (nodes_[C.parent].left == nodeIndex) {
-        nodes_[C.parent].left = iC;
+    if (parents_[iC] != kInvalidNode) {
+      if (nodes_[parents_[iC]].left == nodeIndex) {
+        nodes_[parents_[iC]].left = iC;
       } else {
-        assert(nodes_[C.parent].right == nodeIndex);
-        nodes_[C.parent].right = iC;
+        assert(nodes_[parents_[iC]].right == nodeIndex);
+        nodes_[parents_[iC]].right = iC;
       }
     } else {
       root_ = iC;
@@ -575,42 +608,46 @@ std::size_t AabbTreeBroadPhase::balance(std::size_t nodeIndex)
     if (F.height > G.height) {
       C.right = iF;
       A.right = iG;
-      G.parent = nodeIndex;
+      parents_[iG] = nodeIndex;
       A.fatAabb = combine(B.fatAabb, G.fatAabb);
       C.fatAabb = combine(A.fatAabb, F.fatAabb);
-      A.height = 1u + std::max(B.height, G.height);
-      C.height = 1u + std::max(A.height, F.height);
+      A.height = 1 + std::max(B.height, G.height);
+      A.maxObjectId = std::max(B.maxObjectId, G.maxObjectId);
+      C.height = 1 + std::max(A.height, F.height);
+      C.maxObjectId = std::max(A.maxObjectId, F.maxObjectId);
     } else {
       C.right = iG;
       A.right = iF;
-      F.parent = nodeIndex;
+      parents_[iF] = nodeIndex;
       A.fatAabb = combine(B.fatAabb, F.fatAabb);
       C.fatAabb = combine(A.fatAabb, G.fatAabb);
-      A.height = 1u + std::max(B.height, F.height);
-      C.height = 1u + std::max(A.height, G.height);
+      A.height = 1 + std::max(B.height, F.height);
+      A.maxObjectId = std::max(B.maxObjectId, F.maxObjectId);
+      C.height = 1 + std::max(A.height, G.height);
+      C.maxObjectId = std::max(A.maxObjectId, G.maxObjectId);
     }
 
     return iC;
   }
 
   if (balance < -1) {
-    const std::size_t iD = B.left;
-    const std::size_t iE = B.right;
-    assert(iD < nodes_.size());
-    assert(iE < nodes_.size());
+    const NodeIndex iD = B.left;
+    const NodeIndex iE = B.right;
+    assert(iD >= 0 && static_cast<std::size_t>(iD) < nodes_.size());
+    assert(iE >= 0 && static_cast<std::size_t>(iE) < nodes_.size());
     Node& D = nodes_[iD];
     Node& E = nodes_[iE];
 
     B.left = nodeIndex;
-    B.parent = A.parent;
-    A.parent = iB;
+    parents_[iB] = parents_[nodeIndex];
+    parents_[nodeIndex] = iB;
 
-    if (B.parent != kNullNode) {
-      if (nodes_[B.parent].left == nodeIndex) {
-        nodes_[B.parent].left = iB;
+    if (parents_[iB] != kInvalidNode) {
+      if (nodes_[parents_[iB]].left == nodeIndex) {
+        nodes_[parents_[iB]].left = iB;
       } else {
-        assert(nodes_[B.parent].right == nodeIndex);
-        nodes_[B.parent].right = iB;
+        assert(nodes_[parents_[iB]].right == nodeIndex);
+        nodes_[parents_[iB]].right = iB;
       }
     } else {
       root_ = iB;
@@ -619,19 +656,23 @@ std::size_t AabbTreeBroadPhase::balance(std::size_t nodeIndex)
     if (D.height > E.height) {
       B.right = iD;
       A.left = iE;
-      E.parent = nodeIndex;
+      parents_[iE] = nodeIndex;
       A.fatAabb = combine(C.fatAabb, E.fatAabb);
       B.fatAabb = combine(A.fatAabb, D.fatAabb);
-      A.height = 1u + std::max(C.height, E.height);
-      B.height = 1u + std::max(A.height, D.height);
+      A.height = 1 + std::max(C.height, E.height);
+      A.maxObjectId = std::max(C.maxObjectId, E.maxObjectId);
+      B.height = 1 + std::max(A.height, D.height);
+      B.maxObjectId = std::max(A.maxObjectId, D.maxObjectId);
     } else {
       B.right = iE;
       A.left = iD;
-      D.parent = nodeIndex;
+      parents_[iD] = nodeIndex;
       A.fatAabb = combine(C.fatAabb, D.fatAabb);
       B.fatAabb = combine(A.fatAabb, E.fatAabb);
-      A.height = 1u + std::max(C.height, D.height);
-      B.height = 1u + std::max(A.height, E.height);
+      A.height = 1 + std::max(C.height, D.height);
+      A.maxObjectId = std::max(C.maxObjectId, D.maxObjectId);
+      B.height = 1 + std::max(A.height, E.height);
+      B.maxObjectId = std::max(A.maxObjectId, E.maxObjectId);
     }
 
     return iB;
@@ -651,110 +692,78 @@ double AabbTreeBroadPhase::surfaceArea(const Aabb& aabb)
   return 2.0 * (d.x() * d.y() + d.y() * d.z() + d.z() * d.x());
 }
 
-void AabbTreeBroadPhase::queryPairsRecursive(
-    std::size_t nodeA,
-    std::size_t nodeB,
-    std::vector<BroadPhasePair>& pairs) const
-{
-  if (nodeA == kNullNode || nodeB == kNullNode) {
-    return;
-  }
-
-  if (nodeA == nodeB) {
-    if (nodes_[nodeA].isLeaf()) {
-      return;
-    }
-
-    queryPairsRecursive(nodes_[nodeA].left, nodes_[nodeA].right, pairs);
-    queryPairsRecursive(nodes_[nodeA].left, nodes_[nodeA].left, pairs);
-    queryPairsRecursive(nodes_[nodeA].right, nodes_[nodeA].right, pairs);
-    return;
-  }
-
-  if (!nodes_[nodeA].fatAabb.overlaps(nodes_[nodeB].fatAabb)) {
-    return;
-  }
-
-  if (nodes_[nodeA].isLeaf() && nodes_[nodeB].isLeaf()) {
-    if (nodes_[nodeA].tightAabb.overlaps(nodes_[nodeB].tightAabb)) {
-      const std::size_t id1 = nodes_[nodeA].objectId;
-      const std::size_t id2 = nodes_[nodeB].objectId;
-      pairs.emplace_back(std::min(id1, id2), std::max(id1, id2));
-    }
-    return;
-  }
-
-  if (nodes_[nodeB].isLeaf()
-      || (!nodes_[nodeA].isLeaf()
-          && nodes_[nodeA].height > nodes_[nodeB].height)) {
-    queryPairsRecursive(nodes_[nodeA].left, nodeB, pairs);
-    queryPairsRecursive(nodes_[nodeA].right, nodeB, pairs);
-  } else {
-    queryPairsRecursive(nodeA, nodes_[nodeB].left, pairs);
-    queryPairsRecursive(nodeA, nodes_[nodeB].right, pairs);
-  }
-}
-
-void AabbTreeBroadPhase::queryOverlappingRecursive(
-    std::size_t nodeIndex,
+void AabbTreeBroadPhase::queryOverlappingImpl(
     const Aabb& aabb,
-    std::vector<std::size_t>& results) const
+    std::vector<std::size_t>& results,
+    std::size_t minId,
+    bool higherIdsOnly) const
 {
-  if (nodeIndex == kNullNode) {
+  if (root_ == kInvalidNode) {
     return;
   }
 
-  if (!nodes_[nodeIndex].fatAabb.overlaps(aabb)) {
-    return;
-  }
-
-  if (nodes_[nodeIndex].isLeaf()) {
-    if (nodes_[nodeIndex].tightAabb.overlaps(aabb)) {
-      results.push_back(nodes_[nodeIndex].objectId);
+  auto& stack = mQueryStack;
+  stack.clear();
+  stack.push_back(root_);
+  while (!stack.empty()) {
+    const NodeIndex nodeIndex = stack.back();
+    stack.pop_back();
+    const Node& node = nodes_[nodeIndex];
+    if ((higherIdsOnly && node.maxObjectId <= minId)
+        || !node.fatAabb.overlaps(aabb)) {
+      continue;
     }
-    return;
+    if (node.isLeaf()) {
+      if (overlapsTight(node.maxObjectId, aabb)) {
+        results.push_back(node.maxObjectId);
+      }
+    } else {
+      stack.push_back(node.right);
+      stack.push_back(node.left);
+    }
   }
-
-  queryOverlappingRecursive(nodes_[nodeIndex].left, aabb, results);
-  queryOverlappingRecursive(nodes_[nodeIndex].right, aabb, results);
 }
 
-bool AabbTreeBroadPhase::validateStructure(std::size_t nodeIndex) const
+bool AabbTreeBroadPhase::validateStructure(NodeIndex nodeIndex) const
 {
-  if (nodeIndex == kNullNode) {
+  if (nodeIndex == kInvalidNode) {
     return true;
   }
 
-  if (nodeIndex == root_ && nodes_[nodeIndex].parent != kNullNode) {
+  if (nodeIndex == root_ && parents_[nodeIndex] != kInvalidNode) {
     return false;
   }
 
   const Node& node = nodes_[nodeIndex];
 
   if (node.isLeaf()) {
-    if (node.left != kNullNode || node.right != kNullNode) {
+    if (node.left != kInvalidNode || node.right != kInvalidNode) {
       return false;
     }
-    if (node.height != 0u) {
+    if (node.height != 0) {
       return false;
     }
-    return true;
+    const std::size_t id = node.maxObjectId;
+    return id < objectToNode_.size() && objectToNode_[id] == nodeIndex;
   }
 
-  if (node.left == kNullNode || node.right == kNullNode) {
+  if (node.left == kInvalidNode || node.right == kInvalidNode) {
     return false;
   }
 
-  if (nodes_[node.left].parent != nodeIndex) {
+  if (parents_[node.left] != nodeIndex) {
     return false;
   }
-  if (nodes_[node.right].parent != nodeIndex) {
+  if (parents_[node.right] != nodeIndex) {
     return false;
   }
 
-  const std::size_t expectedHeight
-      = 1u + std::max(nodes_[node.left].height, nodes_[node.right].height);
-  if (node.height != expectedHeight) {
+  const std::int32_t expectedHeight
+      = 1 + std::max(nodes_[node.left].height, nodes_[node.right].height);
+  if (node.maxObjectId
+          != std::max(
+              nodes_[node.left].maxObjectId, nodes_[node.right].maxObjectId)
+      || node.height != expectedHeight) {
     return false;
   }
 

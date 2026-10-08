@@ -34,14 +34,18 @@
 
 #include <dart/collision/dart/broad_phase/BroadPhase.hpp>
 
+#include <array>
 #include <limits>
-#include <unordered_map>
 #include <vector>
+
+#include <cstdint>
 
 namespace dart::collision::native {
 
 /// Dynamic AABB Tree using Surface Area Heuristic (SAH) for O(n log n)
 /// broad-phase. Uses fat AABBs to reduce update frequency when objects move.
+/// Object ids index dense storage, so memory grows with the largest id: keep
+/// ids compact and reuse freed ones, as DARTCollisionGroup does.
 class DART_COLLISION_NATIVE_API AabbTreeBroadPhase : public BroadPhase
 {
 public:
@@ -78,64 +82,65 @@ public:
   [[nodiscard]] bool validate() const;
 
 private:
-  /// Scratch buffer reused by visitPairs() so steady-state stepping stays
-  /// allocation-free once the buffer reaches the scene's working size
-  /// (StepAllocation gate discipline). Mutable because visitPairs() is
-  /// const; the tree is single-query at a time by contract.
-  // Reused by visitPairs() so steady-state stepping stays allocation-free.
-  mutable std::vector<std::size_t> mOrderedIdScratch;
-  mutable std::vector<std::size_t> mOverlapScratch;
+  using NodeIndex = std::int32_t;
+  static constexpr NodeIndex kInvalidNode = -1;
 
-private:
-  struct Node
+  struct alignas(64) Node
   {
     Aabb fatAabb;
-    Aabb tightAabb;
-    std::size_t parent = kNullNode;
-    std::size_t left = kNullNode;
-    std::size_t right = kNullNode;
-    std::size_t objectId = kNullNode;
-    std::size_t height = 0;
+    NodeIndex left = kInvalidNode;
+    NodeIndex right = kInvalidNode;
+    std::int32_t height = 0;
+    // A leaf stores its own id; an internal node stores the maximum below it.
+    std::uint32_t maxObjectId = 0;
 
     [[nodiscard]] bool isLeaf() const
     {
-      return left == kNullNode;
+      return left == kInvalidNode;
     }
   };
+  static_assert(sizeof(Node) == 64, "AABB tree nodes must remain 64 bytes");
 
   std::vector<Node> nodes_;
-  std::size_t root_ = kNullNode;
+  // Queries do not read parents. Free nodes reuse this link for the free list.
+  std::vector<NodeIndex> parents_;
+  NodeIndex root_ = kInvalidNode;
   std::size_t nodeCount_ = 0;
-  std::size_t freeList_ = kNullNode;
-  std::unordered_map<std::size_t, std::size_t> objectToNode_;
+  NodeIndex freeList_ = kInvalidNode;
+  std::vector<NodeIndex> objectToNode_;
+  std::array<std::vector<double>, 3> tightMin_;
+  std::array<std::vector<double>, 3> tightMax_;
   double fatAabbMargin_;
 
-  [[nodiscard]] std::size_t allocateNode();
-  void freeNode(std::size_t nodeIndex);
-  void insertLeaf(std::size_t leafIndex);
-  void removeLeaf(std::size_t leafIndex);
-  [[nodiscard]] std::size_t findBestSibling(const Aabb& aabb) const;
-  void rebalance(std::size_t nodeIndex);
-  [[nodiscard]] std::size_t balance(std::size_t nodeIndex);
+  // Membership changes invalidate the sorted-id cache; updates leave it intact.
+  mutable std::vector<std::size_t> orderedIds_;
+  mutable bool idsSorted_ = true;
+  // Reused query scratch keeps prepared steady-state stepping allocation-free.
+  // The tree is single-query at a time by contract.
+  mutable std::vector<std::size_t> mOverlapScratch;
+  mutable std::vector<NodeIndex> mQueryStack;
+  mutable std::vector<std::pair<NodeIndex, NodeIndex>> mPairStack;
+
+  void setTightAabb(std::size_t id, const Aabb& aabb);
+  [[nodiscard]] Aabb tightAabb(std::size_t id) const;
+  [[nodiscard]] bool overlapsTight(std::size_t id, const Aabb& aabb) const;
+  [[nodiscard]] NodeIndex allocateNode();
+  void freeNode(NodeIndex nodeIndex);
+  void insertLeaf(NodeIndex leafIndex);
+  void removeLeaf(NodeIndex leafIndex);
+  [[nodiscard]] NodeIndex findBestSibling(const Aabb& aabb) const;
+  void rebalance(NodeIndex nodeIndex);
+  [[nodiscard]] NodeIndex balance(NodeIndex nodeIndex);
   [[nodiscard]] static Aabb combine(const Aabb& a, const Aabb& b);
   [[nodiscard]] static double surfaceArea(const Aabb& aabb);
 
-  bool visitPairsRecursiveAnyOrder(
-      std::size_t nodeA,
-      std::size_t nodeB,
-      const BroadPhasePairVisitor& visitor) const;
-
-  void queryPairsRecursive(
-      std::size_t nodeA,
-      std::size_t nodeB,
-      std::vector<BroadPhasePair>& pairs) const;
-
-  void queryOverlappingRecursive(
-      std::size_t nodeIndex,
+  void queryOverlappingImpl(
       const Aabb& aabb,
-      std::vector<std::size_t>& results) const;
+      std::vector<std::size_t>& results,
+      std::size_t minId,
+      bool higherIdsOnly) const;
 
-  [[nodiscard]] bool validateStructure(std::size_t nodeIndex) const;
+  [[nodiscard]] bool validateStructure(NodeIndex nodeIndex) const;
 };
 
 } // namespace dart::collision::native
