@@ -1,9 +1,28 @@
 # Baseline evidence (round 2)
 
 Owner doc for the round-2 measurement protocol, the canonical guard-scene
-commands, and the captured baselines. The durable, commit-comparable
-capture path is the #3230 dashboard tooling; tables here are the guard
-reference every later PR must match cell-for-cell.
+commands, and historical captured baselines. The current guard reference is
+the nightly-generated
+[`performance/guards/main.md`](https://github.com/dartsim/dart/blob/gh-pages/performance/guards/main.md)
+on this repository's `gh-pages` branch. It identifies its commit and
+environment fingerprint; compare guards only for the intended revisions and
+detectors. The tables below preserve dated experiments and accepted behavior
+changes, rather than serving as a manually refreshed live baseline.
+
+Merge and changed-nightly records live at
+`performance/records/main/<yyyy>/<date>-<sha12>-<tier>.json` (`dart-perf/1`,
+plain JSON); `<date>` is a UTC timestamp such as
+`2026-10-08T080000000000Z`. A nightly run with the same HEAD, fingerprint,
+and results/guards as the newest record by measurement time does not add a
+record. Changed results or fingerprints preserve a new record even on the same
+day. A rerun of the same artifact leaves the guard table and its drift annotation
+untouched. Merge reruns with the same identity and verdict/rationale are also
+deduplicated; changed rationale or verdict preserves another immutable record
+without another chart point.
+The merge-only Ir/allocation chart is `performance/dart6-ir/`;
+the existing advisory wall-time chart remains at `performance/dart6/`.
+See [CI performance records and guards](../../onboarding/ci-cd.md#performance-records-and-guards)
+for triggers, publication restrictions, rationale handling and verification.
 
 ## Prerequisites
 
@@ -71,6 +90,14 @@ packet does not affect may cite the baseline instead of re-running):
 | S5 | dart, fcl, bullet, ode | 1 | on | — |
 | S6 | dart | 1 | on | checkpoints at 5000 steps |
 
+The nightly S1 captures use the native CLI commands below, since Google
+Benchmark does not emit all guards. Nightly S3 and S4 add 1- and 4-thread
+captures to the canonical 16-thread cells; these additional captures preserve
+the commands' other settings. Native quick-row perturbations and `mt4`
+parity are checked separately. Hosted wall time stays advisory: CI has no
+quiet hardware, so cache, prefetch, SIMD and threading claims need hand-run
+`perf stat` evidence.
+
 Each cell reports: RTF; resting N/M; contacts (+ cap-hit flag);
 final-state hash; finite-state flag; S6 additionally max_penetration per
 checkpoint. Untouched detectors must keep bit-identical hashes across
@@ -83,7 +110,7 @@ in the pixi config). WP-PG.01 must record the `Construct LCP` vs
 Dantzig-solve-proper split per scene — the round-2 smoke number (below)
 did not separate them.
 
-## Round-2 baseline (WP-PG.01, refreshed 2026-07-05)
+## Historical Round-2 Baseline (WP-PG.01, refreshed 2026-07-05)
 
 Metadata: guard rows refreshed on `origin/release-6.20` @
 `b9e6910c066`; GCC 15.2.0 (Ubuntu), Release;
@@ -433,8 +460,9 @@ propose deletion of dead branches to the maintainer).
 `origin/release-6.20` @ `5bee91ad6be` recorded the full matrix, scene
 dumps, profile splits, dashboard artifacts, and prior-art triage. The
 2026-07-05 refresh on `origin/release-6.20` @ `b9e6910c066` re-ran the
-S1–S6 guard rows on the current base and updates the durable table above.
+S1–S6 guard rows on that base and updated the historical table above.
 Zero command failures; Bullet S3/S4/S5 and S6 produced changed guard
-hashes/counts relative to the older base and are now the round-2
-determinism reference until a maintainer-approved re-baseline (D1/D7/D8
-packets record old/new pairs here).
+hashes/counts relative to the older base and became the round-2
+determinism reference. D1/D7/D8 packets record historical old/new pairs
+here. For current `main` evidence, use the generated nightly guard table
+and records linked at the top of this document.

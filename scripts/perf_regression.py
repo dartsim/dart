@@ -2,8 +2,9 @@
 """Measure deterministic DART performance counts and compare revision records.
 
 ``run`` measures an installed arm; ``compare`` judges saved records; ``local``
-prepares revisions and does both. Wall time and RSS are advisory. Requires Linux,
-the system Valgrind, and the active Pixi build environment.
+prepares revisions and does both. ``publish`` writes trusted main records to
+gh-pages. Wall time and RSS are advisory. Measurement requires Linux, the system
+Valgrind, and the active Pixi build environment.
 """
 
 from __future__ import annotations
@@ -28,7 +29,7 @@ import threading
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +58,8 @@ class Row:
     threads: int = 1
     parity: str = ""
     version: int = 1
+    perturb: bool = True
+    checkpoint: int = 0
 
     @property
     def key(self) -> str:
@@ -171,6 +174,100 @@ ROWS += [
     for name in ("s3w", "s1p")
 ]
 
+# Canonical guard windows from the generalization baseline, measured natively.
+# S3/S4 retain their historical 16-thread cells and add serial/4-thread cells.
+DETECTORS = ("dart", "fcl", "bullet", "ode")
+NIGHTLY_ROWS = [
+    Row(
+        f"S1-{objects}-t{threads}",
+        det,
+        CB,
+        ("--generate-container", str(objects), *CAP),
+        0,
+        200,
+        ir=False,
+        threads=threads,
+        perturb=False,
+    )
+    for objects in (60, 120)
+    for det in ("dart", "ode")
+    for threads in (1, 16)
+]
+NIGHTLY_ROWS += [
+    Row("S2", det, CB, tuple(WORLD_ARGS), 0, 3000, ir=False, perturb=False)
+    for det in DETECTORS
+]
+NIGHTLY_ROWS += [
+    Row(
+        f"{scene}-t{threads}",
+        det,
+        CB,
+        args,
+        0,
+        300,
+        ir=False,
+        threads=threads,
+        perturb=False,
+    )
+    for scene, args in (
+        ("S3", (*WORLD_ARGS, "--disable-deactivation")),
+        (
+            "S4",
+            (
+                "--generate-objects",
+                "900",
+                "--max-contacts",
+                "20000",
+                "--max-contacts-per-pair",
+                "4",
+            ),
+        ),
+    )
+    for det in DETECTORS
+    for threads in (1, 4, 16)
+]
+NIGHTLY_ROWS += [
+    Row(
+        "S5",
+        det,
+        CB,
+        (
+            "--generate-objects",
+            "90",
+            "--max-contacts",
+            "20000",
+            "--max-contacts-per-pair",
+            "4",
+        ),
+        0,
+        300,
+        ir=False,
+        perturb=False,
+    )
+    for det in DETECTORS
+]
+NIGHTLY_ROWS += [
+    Row(
+        "S6",
+        "dart",
+        CB,
+        ("--generate-container", "71"),
+        0,
+        20000,
+        ir=False,
+        perturb=False,
+        checkpoint=5000,
+    ),
+    Row(
+        "mf",
+        "dart",
+        CB,
+        ("--generate-container", "120", "--matrix-free-contact-lcp", *CAP),
+        50,
+        50,
+    ),
+]
+
 
 def sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -228,6 +325,13 @@ def micro_guards(text: str) -> dict | None:
         "hash": hashes,
         "finite": all(finite == "true" for _, _, finite in samples),
     }
+
+
+def guard_evidence(metrics: dict) -> tuple:
+    # Native penetration and canonical checkpoints live outside the guard map.
+    return tuple(
+        metrics.get(key) for key in ("guards", "max_penetration", "checkpoints")
+    )
 
 
 def identity(path: str, prefix: Path) -> None:
@@ -349,7 +453,9 @@ def row_command(row: Row, args, world: Path, warmup: int, steps: int) -> list[st
         str(row.threads),
     ]
     if row.driver == "contact_benchmark":
-        command += ["--collision", row.det, "--quiet", "--checkpoint", "0"]
+        command += ["--collision", row.det, "--checkpoint", str(row.checkpoint)]
+        if not row.checkpoint:
+            command += ["--quiet"]
     else:
         command += ["--detector", row.det]
     return command
@@ -397,7 +503,7 @@ def native(row: Row, args, world: Path, config: str = "") -> dict:
     rss = re.search(r"^PERFTIME maxrss_kb=(\d+)$", text, re.MULTILINE)
     if not rss:
         raise ValueError(f"missing RSS: {tag}")
-    return {
+    metrics = {
         "guards": guards(text),
         "time_advanced": not bool(
             re.search(r"^Time Advanced:\s*false\s*$", text, re.MULTILINE)
@@ -410,6 +516,33 @@ def native(row: Row, args, world: Path, config: str = "") -> dict:
         "max_rss_kb": int(rss[1]),
         "wall_ms_per_step": float(field(text, "Avg Step Time").split()[0]),
     }
+    if re.search(r"^Final Max Penetration:", text, re.MULTILINE):
+        metrics["max_penetration"] = finite_or_none(
+            float(field(text, "Final Max Penetration"))
+        )
+        # A finite final state can still report a non-finite penetration.
+        if metrics["max_penetration"] is None:
+            raise BenchmarkCaseError(f"non-finite final penetration: {row.key}")
+    if row.checkpoint:
+        metrics["checkpoints"] = [
+            {
+                "step": int(step),
+                "max_penetration": finite_or_none(float(pen)),
+                "resting": int(resting),
+            }
+            for step, pen, resting in re.findall(
+                r"^step (\d+) .*? max_penetration (\S+) .*? resting (\d+)\b",
+                text,
+                re.MULTILINE,
+            )
+        ]
+        expected = list(range(row.checkpoint, row.steps + 1, row.checkpoint))
+        if [item["step"] for item in metrics["checkpoints"]] != expected:
+            raise ValueError(f"missing canonical checkpoints: {row.key}")
+        # The final finite flag covers only the last step.
+        if any(item["max_penetration"] is None for item in metrics["checkpoints"]):
+            raise BenchmarkCaseError(f"non-finite checkpoint penetration: {row.key}")
+    return metrics
 
 
 def callgrind(row: Row, args, world: Path, steps: int) -> dict[str, int]:
@@ -521,6 +654,7 @@ def measure(row: Row, args, world: Path) -> dict:
             else None
         ),
         "parity": row.parity,
+        "qualification_required": row.perturb,
     }
     result["input_sha"] = None
     try:
@@ -560,7 +694,7 @@ def measure(row: Row, args, world: Path) -> dict:
         if metrics.get("time_advanced") is False:
             result.update(status="broken", error="simulation time did not advance")
             return result
-        if args.perturb:
+        if args.perturb and row.perturb:
             result["perturbations"] = {}
             for config in PERTURBATIONS:
                 altered = (
@@ -570,13 +704,19 @@ def measure(row: Row, args, world: Path) -> dict:
                 )
                 # Requested bytes gate too, so they must not depend on layout,
                 # and every perturbed run must also advance time correctly.
-                stable = altered.get("time_advanced") is not False and all(
-                    altered.get(key) == metrics.get(key)
-                    for key in ("guards", "allocs", "bytes")
+                stable = (
+                    altered.get("time_advanced") is not False
+                    and guard_evidence(altered) == guard_evidence(metrics)
+                    and all(
+                        altered.get(key) == metrics.get(key)
+                        for key in ("allocs", "bytes")
+                    )
                 )
                 result["perturbations"][config] = {
                     "stable": stable,
                     "guards": altered["guards"],
+                    "max_penetration": altered.get("max_penetration"),
+                    "checkpoints": altered.get("checkpoints"),
                     "allocs": altered["allocs"],
                     "bytes": altered.get("bytes"),
                     "time_advanced": altered.get("time_advanced"),
@@ -599,6 +739,7 @@ def measure(row: Row, args, world: Path) -> dict:
                 ) / row.steps
     except BenchmarkCaseError as error:
         result.update(status="broken", gated=False, error=str(error))
+        result.setdefault("head", {})
     except UnsupportedRow as error:
         result.update(
             status="unsupported",
@@ -692,11 +833,13 @@ def micro_perturb(row: Row, args, world: Path, config: str) -> dict:
 def select_rows(names: str) -> list[Row]:
     if not names:
         return ROWS
+    if names == "nightly":
+        return [*ROWS, *NIGHTLY_ROWS]
     selected = []
     for name in names.split(","):
         matches = [
             row
-            for row in ROWS
+            for row in [*ROWS, *NIGHTLY_ROWS]
             if name in (row.key, row.row) or name == "mt4" and row.parity
         ]
         if not matches:
@@ -933,7 +1076,11 @@ def fingerprint(args, provenance: dict | None = None) -> dict:
     )
     values["fingerprint"] = sha(
         json.dumps(
-            {key: value for key, value in values.items() if key != "runner"},
+            {
+                key: value
+                for key, value in values.items()
+                if key not in ("runner", "host_cpu")
+            },
             sort_keys=True,
         ).encode()
     )
@@ -941,6 +1088,10 @@ def fingerprint(args, provenance: dict | None = None) -> dict:
 
 
 def run_arm(args) -> dict:
+    if getattr(args, "nightly", False):
+        if args.rows:
+            raise ValueError("--nightly uses the complete nightly row set; omit --rows")
+        args.rows = "nightly"
     commit = command_output(
         ["git", "rev-parse", "--verify", f"{args.commit}^{{commit}}"]
     )
@@ -976,7 +1127,11 @@ def run_arm(args) -> dict:
     rows = select_rows(args.rows)
     for row in list(rows):
         if row.parity and all(other.key != row.parity for other in rows):
-            rows.append(next(other for other in ROWS if other.key == row.parity))
+            rows.append(
+                next(
+                    other for other in [*ROWS, *NIGHTLY_ROWS] if other.key == row.parity
+                )
+            )
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         try:
             results = list(pool.map(lambda row: measure(row, args, world), rows))
@@ -986,6 +1141,15 @@ def run_arm(args) -> dict:
             kill_running()
             raise
     for row, result in zip(rows, results):
+        if (
+            args.rows == "nightly"
+            and row.driver == CB
+            and result["status"] == "ok"
+            and "pairs" not in (result.get("head", {}).get("guards") or {})
+        ):
+            result.update(
+                status="broken", gated=False, error="missing contact pair count"
+            )
         if row.driver in WORKLOAD_SOURCES:
             result["workload_sha"] = provenance["workload_sources"][row.driver]
             if result["input_sha"] is not None:
@@ -1000,7 +1164,7 @@ def run_arm(args) -> dict:
             if (
                 not serial
                 or serial["status"] != "ok"
-                or serial["head"]["guards"] != result["head"]["guards"]
+                or guard_evidence(serial["head"]) != guard_evidence(result["head"])
             ):
                 result.update(
                     status="broken", error="mt4 guard parity missing or unequal"
@@ -1242,7 +1406,7 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         equal = (
             None
             if missing_micro
-            else bool(bm.get("guards") and bm.get("guards") == hm.get("guards"))
+            else bool(bm.get("guards") and guard_evidence(bm) == guard_evidence(hm))
         )
         reasons = []
         required_missing = bool(
@@ -1421,6 +1585,16 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
     return record
 
 
+def markdown_cell(value) -> str:
+    return (
+        str(value)
+        .replace("|", "\\|")
+        .replace("\r\n", "\n")
+        .replace("\r", "\n")
+        .replace("\n", "<br>")
+    )
+
+
 def markdown(record: dict) -> str:
     verdict = record["verdict"]
     env = record["run"]["env"]
@@ -1496,14 +1670,29 @@ def markdown(record: dict) -> str:
                     if key in guard
                 )
                 guard_text += f"; {label}: {values or 'unavailable'}"
-        lines.append(
-            f"| {row_key(row)} | {row.get('threads', 1)} | {number(bm.get('ir_per_step'))} | {number(hm.get('ir_per_step'))} | {change_text} | {number(bm.get('allocs_per_step'))} → {number(hm.get('allocs_per_step'))} | {bytes_text} | {guard_text} | {change['class']} | {row['gate_reason']} |"
-        )
+        values = [
+            row_key(row),
+            row.get("threads", 1),
+            number(bm.get("ir_per_step")),
+            number(hm.get("ir_per_step")),
+            change_text,
+            f"{number(bm.get('allocs_per_step'))} → {number(hm.get('allocs_per_step'))}",
+            bytes_text,
+            guard_text,
+            change["class"],
+            row["gate_reason"],
+        ]
+        lines.append("| " + " | ".join(map(markdown_cell, values)) + " |")
     lines += [
         "",
         "Wall time is recorded as advisory; RSS warns at +5%. Diagnostic and behaviour-change deltas do not enter the Ir gate.",
     ]
     return "\n".join(lines) + "\n"
+
+
+def finite_or_none(value: float) -> float | None:
+    # Records reject NaN and infinity; a non-finite state already breaks the row.
+    return value if math.isfinite(value) else None
 
 
 def write_json(path: Path, value: dict) -> None:
@@ -1545,6 +1734,627 @@ def read_record(path: Path) -> dict:
     return record
 
 
+def validate_publication_environment(env: dict) -> None:
+    if (
+        not isinstance(env, dict)
+        or not isinstance(env.get("runner"), dict)
+        or env["runner"].get("environment") != "github-hosted"
+    ):
+        raise ValueError("refusing to publish measurements from a non-hosted runner")
+    if not re.fullmatch(r"[0-9a-f]{64}", env.get("fingerprint", "")):
+        raise ValueError("publication environment fingerprint must be a SHA256")
+
+
+def publication_record(path: Path, tier: str, pr: int | None = None) -> dict:
+    """Normalize trusted main measurements into the durable Appendix B record."""
+    if path.stat().st_size > 16 * 1024 * 1024:
+        raise ValueError("record exceeds 16 MiB")
+    record = json.loads(path.read_text(encoding="utf-8"))
+    # Reject non-finite JSON before writing either JSON or the chart script.
+    json.dumps(record, allow_nan=False)
+    if (
+        not isinstance(record, dict)
+        or record.get("schema") != "dart-perf/1"
+        or not isinstance(record.get("run"), dict)
+        or not isinstance(record.get("results"), list)
+        or not record["results"]
+    ):
+        raise ValueError("missing or unsupported publication record")
+    run = record["run"]
+    validate_publication_environment(run.get("env", {}))
+    if not re.fullmatch(r"[0-9a-f]{40}", run.get("commit", "")):
+        raise ValueError("publication commit must be a full SHA")
+    measured = datetime.fromisoformat(run["time"].replace("Z", "+00:00"))
+    if measured.tzinfo is None:
+        raise ValueError("publication time must include its timezone")
+    run["time"] = measured.astimezone(timezone.utc).isoformat()
+    if pr is not None and pr <= 0:
+        raise ValueError("publication PR number must be positive")
+    if tier == "merge":
+        if not re.fullmatch(r"[0-9a-f]{40}", run.get("parent", "")):
+            raise ValueError("merge publication requires the comparison-base SHA")
+        if record.get("verdict", {}).get("status") not in ("PASS", "WARN", "FAIL"):
+            raise ValueError("merge publication requires a completed comparison")
+    else:
+        run["parent"] = None
+        record.pop("verdict", None)
+    run.update(tier=tier, branch="main", pr=pr, accepted=run.get("accepted", []))
+    keys = []
+    for row in record["results"]:
+        if (
+            not isinstance(row, dict)
+            or not isinstance(row.get("row"), str)
+            or not isinstance(row.get("det", ""), str)
+            or not isinstance(row.get("head"), dict)
+            or row.get("error_kind") == "infrastructure"
+        ):
+            # Correctness failures (BenchmarkCaseError, missing pair counts) keep
+            # an empty head in measure(), so they publish; only infrastructure
+            # errors and malformed rows are rejected here.
+            raise ValueError("invalid or incomplete publication row")
+        keys.append(row_key(row))
+        if "head_env" in row:
+            validate_publication_environment(row["head_env"])
+        if tier == "nightly":
+            row.pop("parent", None)
+            row.pop("delta", None)
+        row["wall_ms_per_step"] = {
+            "parent": row.get("parent", {}).get("wall_ms_per_step"),
+            "head": row["head"].get("wall_ms_per_step"),
+            "advisory": True,
+        }
+    if len(keys) != len(set(keys)):
+        raise ValueError("publication record repeats a row")
+    return record
+
+
+def publication_guard(tier: str) -> None:
+    """The record's runner claim cannot replace checking the actual CI context."""
+    if os.environ.get("RUNNER_ENVIRONMENT") != "github-hosted":
+        raise ValueError("refusing to publish from a non-hosted runner")
+    events = (
+        ("push", "workflow_dispatch")
+        if tier == "merge"
+        else ("schedule", "workflow_dispatch")
+    )
+    if (
+        os.environ.get("GITHUB_EVENT_NAME") not in events
+        or os.environ.get("GITHUB_REF") != "refs/heads/main"
+    ):
+        raise ValueError("publication is restricted to trusted main events")
+
+
+def smoke_build_failure(directory: Path, head: str, status: int) -> dict | None:
+    """Accept exit 2 only when smoke saved a build failure for the expected head."""
+    if status not in (0, 1, 2):
+        raise ValueError("head smoke infrastructure failure")
+    path = directory / "build-failure.json"
+    if path.exists():
+        broken = json.loads(path.read_text(encoding="utf-8"))
+        if (
+            not isinstance(broken, dict)
+            or broken.get("error_kind") != "build"
+            or broken.get("commit") != head
+            or not isinstance(broken.get("error"), str)
+            or not broken["error"]
+        ):
+            raise ValueError("head smoke infrastructure failure")
+        return broken
+    if status == 2:
+        raise ValueError("head smoke infrastructure failure")
+    return None
+
+
+def merge_comment(record: dict, report: str, previous: str = "") -> str | None:
+    """Refresh a marked verdict comment without rolling back newer evidence."""
+    run = record["run"]
+    status = record["verdict"]["status"]
+    if status not in ("PASS", "WARN", "FAIL"):
+        raise ValueError("merge comment requires a completed comparison")
+    if not previous and status != "FAIL":
+        return None
+    measured = datetime.fromisoformat(run["time"].replace("Z", "+00:00"))
+    identity = re.search(r"<!-- dart-perf-verdict:(\S+) (PASS|WARN|FAIL) -->", previous)
+    if identity:
+        previous_time = datetime.fromisoformat(identity[1])
+        if previous_time > measured or (
+            previous_time == measured and identity[2] != "FAIL" and status == "FAIL"
+        ):
+            return None
+    message = "Post-merge performance check now passes."
+    if status == "FAIL":
+        message = "Post-merge performance check failed."
+        # Only these comparison-policy failures can be acknowledged by a rationale.
+        rationale_patterns = {
+            "Perf-Regression-Rationale": (
+                r"(?:[^:]+: (?:(?:allocations|requested bytes) \+\S+/step|"
+                r"Ir \+\d+\.\d+% \(limit \+1\.00%\))|"
+                r"Ir geomean \+\d+\.\d+% \(limit \+0\.50%\); rationale required for .+)"
+            ),
+            "Rebaseline-Rationale": (
+                r"[^:]+: (?:(?:input_sha|guards) changed; Rebaseline-Rationale required|"
+                r"Rebaseline-Rationale must state a signed percentage "
+                r"\(measured Ir \+\d+\.\d+%\))"
+            ),
+        }
+        rationales, fixes = set(), []
+        for failure in record["verdict"].get("failures", []):
+            kind = next(
+                (
+                    kind
+                    for kind, pattern in rationale_patterns.items()
+                    if re.fullmatch(pattern, failure)
+                ),
+                None,
+            )
+            if kind:
+                rationales.add(kind)
+            else:
+                fixes.append(failure)
+        if fixes or not rationales:
+            message += " Fix the non-waivable failures listed below"
+            if fixes:
+                message += ":\n\n" + "\n".join(
+                    f"- {markdown_cell(failure)}" for failure in fixes
+                )
+            else:
+                message += "."
+        if rationales:
+            message += (
+                "\n\nAdd the applicable "
+                + " / ".join(sorted(rationales))
+                + " to the merged PR body for the acknowledged comparison failures."
+            )
+        message += "\n\nRerun the full workflow (including measurement)."
+    body = (
+        f"<!-- dart-perf-merge:{run['commit']} -->\n"
+        f"<!-- dart-perf-verdict:{measured.isoformat()} {status} -->\n"
+        f"{message}\n\n{report}"
+    )
+    return None if body == previous else body
+
+
+def nightly_table_can_advance(record: dict, previous: str) -> bool:
+    """The table's full SHA and measurement time identify its published nightly."""
+    if not previous:
+        return True
+    identity = re.search(
+        r"^Generated at (\S+) for `([0-9a-f]{40})`\.$", previous, re.MULTILINE
+    )
+    if not identity:
+        raise ValueError("nightly guard table is missing its run identity")
+    measured, commit = identity.groups()
+    run = record["run"]
+    if commit == run["commit"]:
+        return datetime.fromisoformat(run["time"]) > datetime.fromisoformat(measured)
+
+    def is_ancestor():
+        return subprocess.run(
+            [
+                "git",
+                "-C",
+                str(ROOT),
+                "merge-base",
+                "--is-ancestor",
+                commit,
+                run["commit"],
+            ],
+            text=True,
+            capture_output=True,
+        )
+
+    ancestry = is_ancestor()
+    if ancestry.returncode not in (0, 1):
+        # A concurrent writer may name a main commit newer than this checkout.
+        subprocess.run(
+            ["git", "-C", str(ROOT), "fetch", "--quiet", "origin", "main"],
+            capture_output=True,
+        )
+        ancestry = is_ancestor()
+    # A commit still unknown keeps the published table; the record is written.
+    return ancestry.returncode == 0
+
+
+def guard_table(record: dict, previous: str = "") -> str:
+    run = record["run"]
+    lines = [
+        "# DART main canonical behaviour guards",
+        "",
+        f"Generated at {run['time']} for `{run['commit']}`.",
+        f"Environment fingerprint: `{run['env']['fingerprint']}`.",
+        "",
+        "Commands and scene definitions: [baseline evidence](https://github.com/dartsim/dart/blob/main/docs/dev_tasks/dart6_performance_generalization/01-baseline-evidence.md).",
+        "This table is generated evidence, not a fixed reference. Wall time is advisory.",
+        "S3 and S6 drift belongs to the #3056 / D7 owners.",
+        "",
+        "| Row | Detector | Threads | Warm-up / steps | Status | Hash | Contacts | Pairs | Resting | Finite | Cap hit | Max penetration | Allocs / step |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    drift = []
+    diagnostics = []
+    previous_rows = {
+        tuple(cell.strip() for cell in line.strip("|").split("|")[:2]): line
+        for line in previous.splitlines()
+        if line.startswith("| S")
+    }
+    for row in record["results"]:
+        if not re.match(r"^S[1-6](?:-|$)", row["row"]):
+            continue
+        head = row["head"]
+        guards = head.get("guards", {})
+        window = row.get("window", {})
+        penetration = guards.get("max_penetration", head.get("max_penetration", "—"))
+        values = [
+            row["row"],
+            row.get("det", ""),
+            row.get("threads", 1),
+            f"{window.get('warmup', '—')} / {window.get('steps', '—')}",
+            row.get("status", "—"),
+            *(
+                guards.get(key, "—")
+                for key in ("hash", "contacts", "pairs", "resting", "finite", "cap_hit")
+            ),
+            "non-finite" if penetration is None else penetration,
+            head.get("allocs_per_step", "—"),
+        ]
+        table_row = "| " + " | ".join(map(markdown_cell, values)) + " |"
+        lines.append(table_row)
+        if re.match(r"^S[36](?:-|$)", row["row"]):
+            old_row = previous_rows.get((row["row"], row.get("det", "")))
+            if old_row and old_row != table_row:
+                drift.append(row_key(row))
+        if row.get("error"):
+            diagnostics.extend(["", f"`{row_key(row)}`: {row['error']}", ""])
+        if head.get("checkpoints"):
+            checkpoints = f"`{row_key(row)}` checkpoints: `{json.dumps(head['checkpoints'], sort_keys=True)}`"
+            diagnostics.extend(
+                [
+                    "",
+                    checkpoints,
+                    "",
+                ]
+            )
+            if previous and any(
+                line.startswith(f"`{row_key(row)}` checkpoints:")
+                and line != checkpoints
+                for line in previous.splitlines()
+            ):
+                drift.append(row_key(row) + " checkpoints")
+    lines.extend(diagnostics)
+    if drift:
+        lines.extend(
+            [
+                "",
+                "S3 / S6 drift since the prior nightly (informational; #3056 / D7 owners): "
+                + ", ".join(drift)
+                + ".",
+            ]
+        )
+    return "\n".join(lines) + "\n"
+
+
+def deterministic_measurements(record: dict, *, include_parent: bool = False) -> dict:
+    """Reruns must preserve inputs, deterministic counts and correctness evidence."""
+    return {
+        row_key(row): {
+            **{
+                key: row.get(key)
+                for key in (
+                    "version",
+                    "input_sha",
+                    "threads",
+                    "window",
+                    "method",
+                    "collection_signature",
+                    "status",
+                    "gated",
+                    "qualification_required",
+                    "perturbations",
+                )
+            },
+            **{
+                arm: {
+                    key: row.get(arm, {}).get(key)
+                    for key in (
+                        "ir_per_step",
+                        "allocs_per_step",
+                        "bytes_per_step",
+                        "guards",
+                        "max_penetration",
+                        "checkpoints",
+                        "time_advanced",
+                        "allocs",
+                        "bytes",
+                        "cases",
+                        "micro_instrumented",
+                        "est_cycles_per_step",
+                    )
+                }
+                for arm in (("parent", "head") if include_parent else ("head",))
+            },
+        }
+        for row in record["results"]
+    }
+
+
+def head_fingerprints(record: dict) -> dict:
+    """Smoke-derived rows can use a different harness from the A/B run."""
+    return {
+        row_key(row): row["head_env"]["fingerprint"]
+        for row in record["results"]
+        if "head_env" in row
+    }
+
+
+def chart_data(pages: Path, record: dict) -> None:
+    """Use the existing stock github-action-benchmark page and data format."""
+    directory = pages / "performance/dart6-ir"
+    directory.mkdir(parents=True, exist_ok=True)
+    index = directory / "index.html"
+    if not index.exists():
+        shutil.copyfile(pages / "performance/dart6/index.html", index)
+    prefix = "window.BENCHMARK_DATA = "
+    data_path = directory / "data.js"
+    if data_path.exists():
+        script = data_path.read_text(encoding="utf-8")
+        if not script.startswith(prefix):
+            raise ValueError("unrecognized deterministic chart data")
+        data = json.loads(script[len(prefix) :])
+    else:
+        data = {
+            "lastUpdate": 0,
+            "repoUrl": "https://github.com/dartsim/dart",
+            "entries": {},
+        }
+    series = data["entries"].setdefault("DART 6 deterministic counts", [])
+    run = record["run"]
+    fingerprint = run["env"]["fingerprint"]
+    row_fingerprints = head_fingerprints(record)
+    benches = []
+    for row in record["results"]:
+        if row.get("status") != "ok":
+            continue
+        head_fingerprint = row.get("head_env", run["env"])["fingerprint"]
+        extra = f"fingerprint: {head_fingerprint}"
+        if run.get("pr"):
+            extra += f"\nPR #{run['pr']}"
+        for metric, label, unit in (
+            ("ir_per_step", "Ir", "instructions / step"),
+            ("allocs_per_step", "allocations", "allocations / step"),
+        ):
+            value = row["head"].get(metric)
+            if value is not None:
+                # Inputs split series; other continuity changes are annotated below.
+                benches.append(
+                    {
+                        "name": f"{row_key(row)}@{row['version']}:{(row.get('input_sha') or 'unknown')[:8]} {label}",
+                        "value": value,
+                        "unit": unit,
+                        "extra": extra,
+                        "fingerprint": head_fingerprint,
+                        "micro_instrumented": row["head"].get("micro_instrumented"),
+                        **{
+                            key: row.get(key)
+                            for key in (
+                                "input_sha",
+                                "threads",
+                                "window",
+                                "method",
+                                "collection_signature",
+                            )
+                        },
+                    }
+                )
+    measurement = deterministic_measurements(record)
+    repeated = False
+    for point in series:
+        if (
+            point["commit"]["id"] != run["commit"]
+            or point.get("fingerprint") != fingerprint
+            or point.get("head_fingerprints", {}) != row_fingerprints
+        ):
+            continue
+        if "measurement" in point:
+            changed = point["measurement"] != measurement
+        else:
+            # Older stock data has only plotted counts; validate what it retained.
+            changed = {
+                bench["name"]: (bench["value"], bench["unit"])
+                for bench in point["benches"]
+            } != {bench["name"]: (bench["value"], bench["unit"]) for bench in benches}
+        if changed:
+            raise ValueError(
+                "repeated merge changed deterministic counts or guards/inputs under the same environment fingerprint"
+            )
+        repeated = True
+    if repeated or not benches:
+        return
+    timestamp = int(datetime.fromisoformat(run["time"]).timestamp() * 1000)
+    series.append(
+        {
+            "commit": {
+                "id": run["commit"],
+                "message": run.get("describe", run["commit"]),
+                "timestamp": run["time"],
+                "committer": {"username": "github-actions[bot]"},
+                "url": f"{data['repoUrl']}/commit/{run['commit']}",
+            },
+            "date": timestamp,
+            "tool": "customSmallerIsBetter",
+            "fingerprint": fingerprint,
+            "head_fingerprints": row_fingerprints,
+            "measurement": measurement,
+            "benches": benches,
+        }
+    )
+    series.sort(
+        key=lambda point: (
+            datetime.fromisoformat(point["commit"]["timestamp"]).timestamp(),
+            point["commit"]["id"],
+            point.get("fingerprint", ""),
+            tuple(sorted(point.get("head_fingerprints", {}).items())),
+        )
+    )
+    previous_benches = {}
+    continuity_fields = (
+        "threads",
+        "window",
+        "method",
+        "collection_signature",
+        "micro_instrumented",
+    )
+    for point in series:
+        for bench in point["benches"]:
+            bench["extra"] = re.sub(
+                r"\n(?:fingerprint|input_sha|threads|window|method|collection_signature|micro_instrumented) changed: [^\n]*",
+                "",
+                bench.get("extra", ""),
+            )
+            previous = previous_benches.get(bench["name"])
+            if previous:
+                old_point, old_bench = previous
+                for key in ("fingerprint", *continuity_fields):
+                    old, new = old_bench, bench
+                    if key == "fingerprint":
+                        old = old_bench if key in old_bench else old_point
+                        new = bench if key in bench else point
+                    if old.get(key) != new.get(key):
+                        bench["extra"] += (
+                            f"\n{key} changed: {old.get(key, 'unknown')}"
+                            f" -> {new.get(key, 'unknown')}"
+                        )
+            previous_benches[bench["name"]] = (point, bench)
+    data["entries"]["DART 6 deterministic counts"] = series[-250:]
+    data["lastUpdate"] = series[-1]["date"]
+    # The stock page reads this as executable JS; JSON escaping closes script literals.
+    data_path.write_text(
+        prefix
+        + json.dumps(data, indent=2, allow_nan=False).replace("<", "\\u003c")
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def write_publication(pages: Path, record: dict) -> list[str]:
+    run = record["run"]
+    changed = []
+    records = pages / "performance/records/main"
+    repeated = False
+    chart_repeated = False
+    for index, path in enumerate(
+        sorted(records.glob(f"*/*-{run['tier']}.json"), reverse=True)
+    ):
+        saved = json.loads(path.read_text(encoding="utf-8"))
+        previous = saved["run"]
+        if (previous["commit"], previous["env"]["fingerprint"]) == (
+            run["commit"],
+            run["env"]["fingerprint"],
+        ) and head_fingerprints(saved) == head_fingerprints(record):
+            if run["tier"] == "merge":
+                if previous.get("parent") != run.get("parent") or (
+                    deterministic_measurements(saved, include_parent=True)
+                    != deterministic_measurements(record, include_parent=True)
+                ):
+                    raise ValueError(
+                        "repeated merge changed deterministic counts or guards/inputs under the same "
+                        "environment fingerprint"
+                    )
+                chart_repeated = True
+                repeated = repeated or (
+                    saved["run"].get("accepted", []) == run.get("accepted", [])
+                    and saved.get("verdict") == record.get("verdict")
+                )
+            else:
+                repeated = saved["results"] == record["results"] and (
+                    previous["time"] == run["time"] or index == 0
+                )
+                if repeated:
+                    break
+    if run["tier"] == "nightly":
+        table = pages / "performance/guards/main.md"
+        table.parent.mkdir(parents=True, exist_ok=True)
+        previous_table = table.read_text(encoding="utf-8") if table.exists() else ""
+        if nightly_table_can_advance(record, previous_table):
+            table.write_text(guard_table(record, previous_table), encoding="utf-8")
+            changed.append(str(table.relative_to(pages)))
+    date = datetime.fromisoformat(run["time"])
+    path = (
+        records
+        / f"{date.year:04d}"
+        / f"{date.strftime('%Y-%m-%dT%H%M%S%fZ')}-{run['commit'][:12]}-{run['tier']}.json"
+    )
+    if not repeated:
+        # A live rationale may change while the measurement's timestamp stays fixed.
+        while path.exists():
+            date += timedelta(microseconds=1)
+            path = (
+                records
+                / f"{date.year:04d}"
+                / f"{date.strftime('%Y-%m-%dT%H%M%S%fZ')}-{run['commit'][:12]}-{run['tier']}.json"
+            )
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_json(path, record)
+        changed.append(str(path.relative_to(pages)))
+        if run["tier"] == "merge" and not chart_repeated:
+            chart_data(pages, record)
+            changed.append("performance/dart6-ir")
+    return changed
+
+
+def publish(args) -> bool:
+    publication_guard(args.tier)
+    record = publication_record(args.record, args.tier, args.pr)
+    pages = args.pages_dir.resolve()
+
+    def git(*arguments: str, check: bool = True):
+        return subprocess.run(
+            ["git", "-C", str(pages), *arguments],
+            check=check,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+    if git("status", "--porcelain").stdout:
+        raise ValueError("publication requires a clean dedicated gh-pages checkout")
+    if git("branch", "--show-current").stdout.strip() != "gh-pages":
+        raise ValueError("publication requires a dedicated gh-pages checkout")
+    git("config", "user.name", "github-actions[bot]")
+    git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
+    for attempt in range(5):
+        git("fetch", "origin", "gh-pages")
+        if (
+            attempt == 0
+            and git(
+                "merge-base", "--is-ancestor", "HEAD", "origin/gh-pages", check=False
+            ).returncode
+        ):
+            raise ValueError("gh-pages checkout has unpublished commits")
+        # Regenerate even when Git could replay our commit without a conflict:
+        # concurrent records can change deduplication and derived table/chart state.
+        git("checkout", "-B", "gh-pages", "origin/gh-pages")
+        paths = write_publication(pages, record)
+        if paths:
+            git("add", "--", *paths)
+        if git("diff", "--cached", "--quiet", check=False).returncode:
+            git(
+                "commit",
+                "-m",
+                f"Record DART {args.tier} performance for {record['run']['commit'][:12]}",
+            )
+        if (
+            git("rev-parse", "HEAD").stdout
+            == git("rev-parse", "origin/gh-pages").stdout
+        ):
+            return False
+        pushed = git("push", "origin", "HEAD:refs/heads/gh-pages", check=False)
+        if pushed.returncode == 0:
+            return True
+    raise RuntimeError(
+        f"gh-pages push rejected after 5 fetch/regenerate attempts: {pushed.stderr.strip()}"
+    )
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     sub = result.add_subparsers(dest="command", required=True)
@@ -1576,6 +2386,11 @@ def parser() -> argparse.ArgumentParser:
             "--perturb", action=argparse.BooleanOptionalAction, default=True
         )
         item.add_argument("--cache-sim", action="store_true")
+        item.add_argument(
+            "--nightly",
+            action="store_true",
+            help="include canonical S1-S6 guards and mf",
+        )
         item.add_argument("--shim", type=Path)
         item.add_argument("--heappad", type=Path)
     for item in (sub.add_parser("compare", help="judge saved measurements"), local):
@@ -1585,10 +2400,23 @@ def parser() -> argparse.ArgumentParser:
         item.add_argument("--body-file", type=Path)
         item.add_argument("--json", type=Path)
         item.add_argument("--markdown", type=Path)
+    publication = sub.add_parser(
+        "publish", help="publish trusted main records to gh-pages"
+    )
+    publication.add_argument("--record", type=Path, required=True)
+    publication.add_argument("--tier", choices=("merge", "nightly"), required=True)
+    publication.add_argument("--pages-dir", type=Path, required=True)
+    publication.add_argument("--pr", type=int)
     return result
 
 
 def local_arms(args) -> tuple[dict, dict]:
+    if getattr(args, "nightly", False):
+        if not args.smoke or args.rows:
+            raise ValueError(
+                "--nightly requires --smoke and the complete nightly row set"
+            )
+        args.rows = "nightly"
     output = args.output_dir.resolve()
     default_output = ROOT / "build/perf-compare"
     marker = output / ".perf-compare-owned"
@@ -1807,6 +2635,7 @@ def local_arms(args) -> tuple[dict, dict]:
             )
             break
         arm = argparse.Namespace(**vars(args))
+        arm.nightly = False  # local already selected the nightly rows before building.
         arm.prefix, arm.bin_dir, arm.commit = prefix, binary, revision
         arm.source_dir = source
         arm.base_arm = label == "a" and not args.smoke
@@ -1827,6 +2656,13 @@ def local_arms(args) -> tuple[dict, dict]:
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
+        if args.command == "publish":
+            print(
+                "Performance records published"
+                if publish(args)
+                else "Performance records already current"
+            )
+            return 0
         if args.command == "run":
             record = run_arm(args)
             for row in record["results"]:
@@ -1841,8 +2677,11 @@ def main(argv: list[str] | None = None) -> int:
             return int(
                 any(
                     row["status"] not in ("ok", "unsupported")
+                    or args.nightly
+                    and row["status"] != "ok"
                     or row["status"] == "ok"
                     and args.perturb
+                    and row.get("qualification_required", True)
                     and not row["gated"]
                     for row in record["results"]
                 )
@@ -1863,7 +2702,9 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError(f"malformed measurement record: {error}") from error
         if args.command == "local" and args.smoke and args.perturb:
             if any(
-                row["status"] == "ok" and not row.get("gated")
+                row["status"] == "ok"
+                and row.get("qualification_required", True)
+                and not row.get("gated")
                 for row in head["results"]
             ):
                 record["verdict"]["failures"].append(
@@ -1871,6 +2712,14 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 if record["verdict"]["status"] != "ERROR":
                     record["verdict"]["status"] = "FAIL"
+        # measure() marks a detector row broken when its contact-pair count is
+        # missing, so such rows fail the nightly here.
+        if getattr(args, "nightly", False) and any(
+            row["status"] != "ok" for row in head["results"]
+        ):
+            record["verdict"]["failures"].append("nightly row failed or unsupported")
+            if record["verdict"]["status"] != "ERROR":
+                record["verdict"]["status"] = "FAIL"
         report = markdown(record)
         print(report, end="")
         if args.json:
