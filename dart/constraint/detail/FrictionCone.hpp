@@ -70,7 +70,9 @@ struct LocalSolveResult
 };
 
 /// Solve min 0.5 * lambda.transpose() * H * lambda + c.dot(lambda) in K.
-/// H must be symmetric positive semidefinite. A singular block receives
+/// H must be symmetric positive semidefinite up to rounding: eigenvalues
+/// above -16 * epsilon * max(1, lambda_max) of the normalized block count as
+/// zero curvature. A singular block receives
 /// 1e-12 * trace(H) on its diagonal (1e-12 for an all-zero block).
 /// A shift below the double range is raised to the smallest positive double.
 /// Extreme objectives use a lossless common power-of-two scale. Unrepresentable
@@ -119,7 +121,8 @@ double contactViolation(
     bool associated = false);
 
 /// Relative primal, dual and complementarity certificate. H must be symmetric
-/// positive semidefinite; singular blocks are accepted without regularization.
+/// positive semidefinite up to the same rounding scale as solveConeQp();
+/// singular blocks are accepted without regularization.
 /// H and c are normalized by their common maximum absolute coefficient, and
 /// the impulse scale uses max(|lambda|, max|c| / max|H|) when H is nonzero.
 /// The dual scale uses |H|*|lambda| + |c|, so cancellation is judged relative

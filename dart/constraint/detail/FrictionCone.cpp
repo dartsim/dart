@@ -273,9 +273,13 @@ bool prepare(
   // only eigenvalues measure indefiniteness reliably (including singular H).
   if (ldlt.info() != Eigen::Success || ldlt.vectorD().minCoeff() <= 1e-12) {
     Eigen::SelfAdjointEigenSolver<Matrix> eigen(H, Eigen::EigenvaluesOnly);
-    // Rounding scale for a normalized 3x3 eigensolve: rank-deficient PSD
-    // noise stays above it, while any representable negative eigenvalue such
-    // as -5e-13 is rejected.
+    // Eigenvalues within this rounding scale of a normalized 3x3 eigensolve
+    // count as zero curvature, so a block is "PSD" up to rounding. Assembled
+    // Delassus blocks of directions a body cannot move along carry noise of
+    // this size, and the matrix alone cannot tell it from an explicit tiny
+    // negative eigenvalue such as diag(-1e-15, 1, 1); rejecting both would
+    // send every rank-deficient block to the fallback. Eigenvalues below the
+    // scale, such as -5e-13, are rejected.
     const double tolerance = 16.0 * std::numeric_limits<double>::epsilon();
     if (eigen.info() != Eigen::Success
         || eigen.eigenvalues().minCoeff()
