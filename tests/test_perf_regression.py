@@ -16,6 +16,403 @@ import pytest
 import yaml
 
 
+def test_nightly_rows_cover_canonical_windows_without_changing_quick_tier(tmp_path):
+    module = _load_runner()
+    quick = module.select_rows("")
+    rows = module.select_rows("nightly")
+    assert rows[: len(quick)] == quick
+    assert len(rows) == len({row.key for row in rows})
+    assert {
+        (row.row, row.det, row.threads, row.steps) for row in module.NIGHTLY_ROWS
+    } == {
+        *{
+            (f"S1-{objects}-t{threads}", det, threads, 200)
+            for objects in (60, 120)
+            for det in ("dart", "ode")
+            for threads in (1, 16)
+        },
+        *{("S2", det, 1, 3000) for det in module.DETECTORS},
+        *{
+            (f"{scene}-t{threads}", det, threads, 300)
+            for scene in ("S3", "S4")
+            for det in module.DETECTORS
+            for threads in (1, 4, 16)
+        },
+        *{("S5", det, 1, 300) for det in module.DETECTORS},
+        ("S6", "dart", 1, 20000),
+        ("mf", "dart", 1, 50),
+    }
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--nightly",
+        ]
+    )
+    args.bin_dir, args.source_dir = tmp_path, module.ROOT
+    for row in module.NIGHTLY_ROWS:
+        command = module.row_command(
+            row, args, tmp_path / "world", row.warmup, row.steps
+        )
+        if row.row.startswith("S"):
+            assert row.warmup == 0 and not row.ir and not row.perturb
+            assert ("--disable-deactivation" in command) == row.row.startswith(
+                ("S1", "S3")
+            )
+            assert ("--quiet" in command) == (row.row != "S6")
+    s6 = module.select_rows("S6")[0]
+    assert s6.checkpoint == 5000 and "--max-contacts" not in s6.args
+    assert module.select_rows("mf")[0].warmup == 50
+
+
+def test_canonical_guard_is_measured_once_and_does_not_require_perturbation(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    calls = []
+
+    def native(row, args, world, config=""):
+        calls.append(config)
+        return {"guards": {"finite": True}, "allocs": 0, "bytes": 0}
+
+    monkeypatch.setattr(module, "native", native)
+    row = module.measure(module.select_rows("S6")[0], args, tmp_path)
+    assert calls == [""]
+    assert row["status"] == "ok" and not row["gated"]
+    assert row["qualification_required"] is False
+    assert "ir_per_step" not in row["head"]
+    monkeypatch.setattr(module, "run_arm", lambda args: {"results": [row]})
+    assert (
+        module.main(
+            [
+                "run",
+                "--commit",
+                "HEAD",
+                "--prefix",
+                str(tmp_path),
+                "--output-dir",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+
+
+@pytest.mark.parametrize("missing", [False, True])
+def test_s6_capture_keeps_penetration_checkpoints(monkeypatch, tmp_path, missing):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir, args.source_dir = tmp_path, module.ROOT
+    checkpoints = (5000, 10000, 15000) if missing else (5000, 10000, 15000, 20000)
+    output = "\n".join(
+        [
+            f"STEPALLOC steps=20000 measured=20000 allocs=0 bytes=0 libdart={tmp_path}/libdart.so",
+            "PERFTIME maxrss_kb=100",
+            "Avg Step Time: 1 ms",
+            "Final State Hash: 0x1",
+            "Final State Finite: true",
+            "Final Contacts: 1",
+            "Final Contact Cap Hit: false",
+            "Final Resting: 0/71",
+            "Final Max Penetration: 0.3",
+            *(
+                f"step {step} rtf 1 contacts 1 max_penetration 0.2 mobile 71 resting 0 islands 1"
+                for step in checkpoints
+            ),
+        ]
+    )
+    monkeypatch.setattr(module, "execute", lambda *args: output)
+    monkeypatch.setattr(module, "perturb_environment", lambda *args: {})
+    monkeypatch.setattr(module, "environment", lambda *args: {})
+    if missing:
+        with pytest.raises(ValueError, match="missing canonical checkpoints"):
+            module.native(module.select_rows("S6")[0], args, tmp_path)
+    else:
+        metric = module.native(module.select_rows("S6")[0], args, tmp_path)
+        assert metric["max_penetration"] == 0.3
+        assert [item["step"] for item in metric["checkpoints"]] == list(checkpoints)
+
+
+def test_nightly_requires_complete_head_only_measurement(monkeypatch, tmp_path):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        ["local", "--nightly", "--output-dir", str(tmp_path)]
+    )
+    with pytest.raises(ValueError, match="requires --smoke"):
+        module.local_arms(args)
+    args.smoke, args.rows = True, "pend"
+    with pytest.raises(ValueError, match="complete nightly row set"):
+        module.local_arms(args)
+    monkeypatch.setattr(
+        module,
+        "run_arm",
+        lambda args: {
+            "results": [
+                {"row": "S6", "det": "dart", "status": "unsupported", "gated": False},
+            ]
+        },
+    )
+    assert (
+        module.main(
+            [
+                "run",
+                "--commit",
+                "HEAD",
+                "--prefix",
+                str(tmp_path),
+                "--output-dir",
+                str(tmp_path),
+                "--nightly",
+            ]
+        )
+        == 1
+    )
+
+
+@pytest.mark.parametrize(
+    "paths,mode,smoke",
+    [
+        (["pixi.toml", "pixi.lock"], "skip", "false"),
+        (["docs/README.md"], "skip", "false"),
+        (["scripts/perf_regression.py"], "ab", "true"),
+        (["tools/perf/allocshim.c"], "ab", "true"),
+        ([".github/workflows/perf.yml"], "ab", "true"),
+        (["dart/simulation/World.cpp", "pixi.lock"], "ab", "false"),
+        (["tests/benchmark/worlds/3k_shapes.sdf.gz"], "ab", "true"),
+    ],
+)
+def test_merge_scope_always_compares_first_parent_and_skips_pixi_only(
+    tmp_path, paths, mode, smoke
+):
+    stub = """
+    changed_paths=("$@")
+    git() {
+      case "$1" in
+        rev-parse)
+          if [[ "$*" == *^1* ]]; then printf '%s\\n' parent; else printf '%s\\n' head; fi ;;
+        diff) printf '%s\\0' "${changed_paths[@]}" ;;
+        merge-base|checkout|worktree) return 0 ;;
+      esac
+    }
+    """
+    env_file = tmp_path / "env"
+    result = subprocess.run(
+        [
+            "bash",
+            "-e",
+            "-c",
+            stub
+            + _perf_step("record-measure", "Select first parent and measurement scope")[
+                "run"
+            ],
+            "selector",
+            *paths,
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env={
+            **os.environ,
+            "GITHUB_ENV": str(env_file),
+            "GITHUB_OUTPUT": str(tmp_path / "output"),
+            "GITHUB_STEP_SUMMARY": str(tmp_path / "summary"),
+            "RUNNER_TEMP": str(tmp_path),
+            "REQUESTED_HEAD": "",
+            "REQUESTED_BASE": "",
+        },
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    selected = dict(line.split("=", 1) for line in env_file.read_text().splitlines())
+    assert (selected["PERF_BASE"], selected["PERF_HEAD"]) == ("parent", "head")
+    assert (selected["PERF_MODE"], selected["PERF_SMOKE"]) == (mode, smoke)
+
+
+@pytest.mark.parametrize("ambiguity", [False, True])
+def test_merge_pr_lookup_matches_merged_main_commit(tmp_path, ambiguity):
+    pr = {
+        "number": 3570,
+        "merged_at": "date",
+        "base": {"ref": "main"},
+        "merge_commit_sha": "head",
+        "body": "Perf-Regression-Rationale: s3w/ode: accepted work",
+    }
+    others = [
+        {**pr, "number": 20, "merged_at": None},
+        {**pr, "number": 21, "base": {"ref": "release-6.19"}},
+        {**pr, "number": 22, "merge_commit_sha": "another"},
+    ]
+    if ambiguity:
+        others.append({**pr, "number": 23})
+    (tmp_path / "perf-pulls.json").write_text(json.dumps([[pr], others]))
+    result = _run_perf_snippet(
+        "record-measure",
+        "Find the merged PR and its current rationale",
+        tmp_path,
+        {
+            "RUNNER_TEMP": str(tmp_path),
+            "PERF_HEAD": "head",
+            "GITHUB_OUTPUT": str(tmp_path / "output"),
+        },
+    )
+    if ambiguity:
+        assert result.returncode != 0 and "ambiguous merged PR" in result.stderr
+    else:
+        assert result.returncode == 0, result.stderr
+        assert (tmp_path / "perf-pr-body.txt").read_text() == pr["body"]
+        assert (tmp_path / "output").read_text() == "number=3570\n"
+
+
+def test_publication_permissions_keep_all_measurement_read_only():
+    workflow = _perf_workflow()
+    assert workflow["on"]["push"]["paths"] == workflow["on"]["pull_request"]["paths"]
+    assert "pull_request_target" not in workflow["on"]
+    assert "GH_TOKEN" not in workflow.get("env", {})
+    for job in ("measure", "record-measure", "nightly-measure"):
+        definition = workflow["jobs"][job]
+        permissions = {"contents": "read"}
+        if job == "record-measure":
+            permissions["pull-requests"] = "read"
+        assert definition["permissions"] == permissions
+        assert "GH_TOKEN" not in definition.get("env", {})
+        for step in definition["steps"]:
+            if "GH_TOKEN" in step.get("env", {}):
+                assert step["name"] == "Find the merged PR and its current rationale"
+            if step.get("uses", "").startswith("actions/checkout@"):
+                assert step["with"]["persist-credentials"] == "false"
+    for job in ("record", "nightly"):
+        definition = workflow["jobs"][job]
+        assert definition["permissions"]["contents"] == "write"
+        assert "refs/heads/main" in definition["if"]
+        assert "pull_request" not in definition["if"]
+        assert (
+            definition["steps"][0]["run"].splitlines()[0]
+            == 'test "$RUNNER_ENVIRONMENT" = github-hosted'
+        )
+
+
+def test_merge_writer_uses_only_main_publisher_and_saved_evidence():
+    jobs = _perf_workflow()["jobs"]
+    measure, writer = jobs["record-measure"], jobs["record"]
+    assert writer["needs"] == "record-measure"
+    assert "needs.record-measure.result == 'success'" in writer["if"]
+    assert "needs.record-measure.outputs.mode == 'ab'" in writer["if"]
+    assert writer["permissions"] == {
+        "contents": "write",
+        "pull-requests": "write",
+    }
+    assert "GH_TOKEN" not in writer["env"]
+    assert writer["env"]["PERF_HEAD"] == "${{ needs.record-measure.outputs.head }}"
+    assert writer["env"]["PERF_PR"] == "${{ needs.record-measure.outputs.pr }}"
+    checkout = _perf_step("record", "Checkout main publisher")
+    assert checkout["with"] == {"ref": "main", "persist-credentials": "false"}
+    upload = _perf_step("record-measure", "Upload merge evidence")
+    download = _perf_step(
+        "record", "Download merge measurements (including earlier attempts)"
+    )
+    assert (
+        upload["with"]["name"]
+        == "perf-merge-${{ github.run_id }}-${{ github.run_attempt }}"
+    )
+    assert (
+        measure["outputs"]["artifact"]
+        == "${{ format('perf-merge-{0}-{1}', github.run_id, github.run_attempt) }}"
+    )
+    assert download["with"]["name"] == "${{ needs.record-measure.outputs.artifact }}"
+    assert "overwrite" not in upload["with"]
+    assert "${{ env.PERF_OUTPUT }}/perf.*" in upload["with"]["path"]
+    assert download["with"]["path"] == "${{ runner.temp }}/perf"
+    assert not any(
+        step.get("uses", "").startswith("prefix-dev/") for step in writer["steps"]
+    )
+    for step in writer["steps"]:
+        script = step.get("run", "")
+        assert "pixi" not in script
+        assert " local " not in script
+        assert ("GH_TOKEN" in step.get("env", {})) == ("gh api" in script)
+    assert not any(" publish " in step.get("run", "") for step in measure["steps"])
+    publish = _perf_step("record", "Publish the merge record and chart")["run"]
+    assert (
+        'python3 scripts/perf_regression.py publish --record "$PERF_OUTPUT/perf.json"'
+        in publish
+    )
+    comment_step = _perf_step("record", "Comment on a failed merged PR verdict")
+    assert "steps.hosted.outcome == 'success'" in comment_step["if"]
+    assert "steps.download.outcome == 'success'" in comment_step["if"]
+    comment = comment_step["run"]
+    assert 'marker="<!-- dart-perf-merge:$PERF_HEAD -->"' in comment
+    assert "gh api --method PATCH" in comment and "gh api --method POST" in comment
+    names = [step["name"] for step in writer["steps"]]
+    assert (
+        names.index("Publish the merge record and chart")
+        < names.index("Comment on a failed merged PR verdict")
+        < names.index("Summarize and enforce the merged verdict")
+    )
+
+
+@pytest.mark.parametrize("status,exit_code", [("PASS", 0), ("FAIL", 1), ("ERROR", 2)])
+def test_merge_writer_enforces_saved_verdict(tmp_path, status, exit_code):
+    (tmp_path / "perf.json").write_text(json.dumps({"verdict": {"status": status}}))
+    result = _run_perf_snippet(
+        "record",
+        "Summarize and enforce the merged verdict",
+        tmp_path,
+        {"PERF_OUTPUT": str(tmp_path)},
+    )
+    assert result.returncode == exit_code, result.stderr
+
+
+@pytest.mark.parametrize(
+    "environment,exit_code", [("github-hosted", 0), ("self-hosted", 1)]
+)
+def test_merge_writer_refuses_self_hosted_before_checkout(
+    tmp_path, environment, exit_code
+):
+    result = subprocess.run(
+        [
+            "bash",
+            "-e",
+            "-c",
+            _perf_step("record", "Refuse self-hosted publication")["run"],
+        ],
+        env={
+            **os.environ,
+            "RUNNER_ENVIRONMENT": environment,
+            "RUNNER_TEMP": str(tmp_path),
+            "GITHUB_ENV": str(tmp_path / "env"),
+        },
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == exit_code, result.stderr
+    assert (tmp_path / "env").exists() == (environment == "github-hosted")
+
+
 def test_compare_classification_and_thresholds():
     path = Path(__file__).resolve().parents[1] / "scripts/perf_regression.py"
     spec = importlib.util.spec_from_file_location("perf_regression", path)
@@ -377,6 +774,18 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
 
     monkeypatch.setattr(module, "command_output", command_output)
     first = module.fingerprint(args)
+    original_read = Path.read_text
+
+    def different_cpu(path, *args, **kwargs):
+        if str(path) == "/proc/cpuinfo":
+            return "model name : Another hosted CPU\n"
+        return original_read(path, *args, **kwargs)
+
+    with monkeypatch.context() as cpu_patch:
+        cpu_patch.setattr(Path, "read_text", different_cpu)
+        other_cpu = module.fingerprint(args)
+    assert other_cpu["host_cpu"] != first["host_cpu"]
+    assert other_cpu["fingerprint"] == first["fingerprint"]
     for key in ("compiler", "compiler_sha", "pixi_lock_sha", "preset"):
         assert first[key] == stamp[key]
     for field, executable in (
@@ -3244,3 +3653,359 @@ def test_measure_and_verdict_snippets_require_broken_build_kind(
             assert (tmp_path / "verdict-exit").read_text() == (
                 "1\n" if kind == "build" else "2\n"
             )
+
+
+def _publication_fixture():
+    metrics = {
+        "ir_per_step": 100_000,
+        "allocs_per_step": 0,
+        "wall_ms_per_step": 12.3,
+        "guards": {
+            "hash": "0x123456789abcdef0",
+            "contacts": 3,
+            "resting": "0/3",
+            "finite": True,
+            "cap_hit": False,
+        },
+    }
+    return {
+        "schema": "dart-perf/1",
+        "run": {
+            "tier": "local",
+            "commit": "a" * 40,
+            "parent": "b" * 40,
+            "branch": "topic",
+            "describe": "v6.19.4-270-gaaaaaaaaaaaa",
+            "time": "2026-10-08T08:00:00Z",
+            "env": {
+                "fingerprint": "1" * 64,
+                "runner": {"environment": "github-hosted", "name": "hosted"},
+            },
+            "accepted": [],
+        },
+        "results": [
+            {
+                "row": "s3w",
+                "det": "dart",
+                "version": 1,
+                "gated": True,
+                "status": "ok",
+                "method": "slope",
+                "parent": copy.deepcopy(metrics),
+                "head": metrics,
+                "delta": {"ir": 0, "allocs": 0, "guards_equal": True, "class": "gated"},
+            }
+        ],
+        "verdict": {"status": "PASS", "failures": [], "warnings": [], "ir_geomean": 0},
+    }
+
+
+def _trusted_publication(monkeypatch, event="push"):
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", "github-hosted")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", event)
+    monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
+
+
+@pytest.mark.parametrize("tier", ["merge", "nightly"])
+def test_publication_schema_normalizes_tier_and_advisory_wall(tmp_path, tier):
+    module = _load_runner()
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, tier, 3570)
+    assert record["run"]["tier"] == tier
+    assert record["run"]["branch"] == "main"
+    assert record["run"]["pr"] == 3570
+    assert record["run"]["time"] == "2026-10-08T08:00:00+00:00"
+    row = record["results"][0]
+    assert row["wall_ms_per_step"] == {
+        "parent": 12.3 if tier == "merge" else None,
+        "head": 12.3,
+        "advisory": True,
+    }
+    if tier == "nightly":
+        assert record["run"]["parent"] is None
+        assert "parent" not in row and "delta" not in row
+        assert "verdict" not in record
+
+
+@pytest.mark.parametrize(
+    "event,ref,runner,tier,allowed",
+    [
+        ("push", "main", "github-hosted", "merge", True),
+        ("workflow_dispatch", "main", "github-hosted", "merge", True),
+        ("schedule", "main", "github-hosted", "nightly", True),
+        ("workflow_dispatch", "main", "github-hosted", "nightly", True),
+        ("pull_request", "main", "github-hosted", "merge", False),
+        ("pull_request", "main", "github-hosted", "nightly", False),
+        ("workflow_call", "main", "github-hosted", "nightly", False),
+        ("schedule", "topic", "github-hosted", "nightly", False),
+        ("push", "main", "self-hosted", "merge", False),
+        ("schedule", "main", "local", "nightly", False),
+        ("schedule", "main", "github-hosted", "merge", False),
+        ("push", "main", "github-hosted", "nightly", False),
+    ],
+)
+def test_publication_context_refuses_untrusted_writes(
+    monkeypatch, event, ref, runner, tier, allowed
+):
+    module = _load_runner()
+    _trusted_publication(monkeypatch, event)
+    monkeypatch.setenv("GITHUB_REF", f"refs/heads/{ref}")
+    monkeypatch.setenv("RUNNER_ENVIRONMENT", runner)
+    if allowed:
+        module.publication_guard(tier)
+    else:
+        with pytest.raises(ValueError):
+            module.publication_guard(tier)
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "schema",
+        "runner",
+        "commit",
+        "parent",
+        "fingerprint",
+        "time",
+        "verdict",
+        "nan",
+        "duplicate",
+        "infrastructure",
+    ],
+)
+def test_publication_rejects_invalid_measurement_before_git(tmp_path, defect):
+    module = _load_runner()
+    record = _publication_fixture()
+    if defect == "schema":
+        record["schema"] = "unexpected"
+    elif defect == "runner":
+        record["run"]["env"]["runner"]["environment"] = "self-hosted"
+    elif defect in ("commit", "parent", "time"):
+        record["run"][defect] = "invalid"
+    elif defect == "fingerprint":
+        record["run"]["env"]["fingerprint"] = "invalid"
+    elif defect == "verdict":
+        record["verdict"]["status"] = "ERROR"
+    elif defect == "nan":
+        record["results"][0]["head"]["ir_per_step"] = float("nan")
+    elif defect == "duplicate":
+        record["results"] *= 2
+    elif defect == "infrastructure":
+        record["results"][0]["error_kind"] = "infrastructure"
+    path = tmp_path / "record.json"
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError):
+        module.publication_record(path, "merge")
+
+
+def _stock_chart_template(pages):
+    template = pages / "performance/dart6/index.html"
+    template.parent.mkdir(parents=True, exist_ok=True)
+    template.write_text('<script src="data.js"></script>stock page\n')
+
+
+def _chart_points(pages):
+    data = (pages / "performance/dart6-ir/data.js").read_text()
+    return json.loads(data.removeprefix("window.BENCHMARK_DATA = "))["entries"][
+        "DART 6 deterministic counts"
+    ]
+
+
+def test_publication_merge_idempotence_fingerprint_flags_and_chart_window(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, "merge", 3570)
+    module.write_publication(tmp_path, record)
+    module.write_publication(tmp_path, record)
+    points = _chart_points(tmp_path)
+    assert len(points) == 1
+    assert points[0]["tool"] == "customSmallerIsBetter"
+    assert [bench["value"] for bench in points[0]["benches"]] == [100_000, 0]
+    assert [bench["name"] for bench in points[0]["benches"]] == [
+        "s3w/dart@1 Ir",
+        "s3w/dart@1 allocations",
+    ]
+    assert (tmp_path / "performance/dart6-ir/index.html").read_text() == (
+        tmp_path / "performance/dart6/index.html"
+    ).read_text()
+    record["run"]["time"] = "2026-10-08T08:01:00+00:00"
+    assert module.write_publication(tmp_path, record) == []
+    record["results"][0]["head"]["ir_per_step"] += 1
+    with pytest.raises(ValueError, match="changed Ir"):
+        module.write_publication(tmp_path, record)
+    record["run"]["env"]["fingerprint"] = "2" * 64
+    module.write_publication(tmp_path, record)
+    assert "fingerprint changed" in _chart_points(tmp_path)[-1]["benches"][0]["extra"]
+    for _ in range(251):
+        module.chart_data(tmp_path, record)
+    assert len(_chart_points(tmp_path)) == 250
+    assert len(list((tmp_path / "performance/records/main/2026").glob("*.json"))) == 2
+
+
+def test_nightly_latest_identity_dedup_and_guard_drift(tmp_path):
+    module = _load_runner()
+    fixture = _publication_fixture()
+    fixture["results"][0]["row"] = "S6"
+    fixture["results"][0]["window"] = {"warmup": 0, "steps": 2400}
+    fixture["results"][0]["head"].update(
+        max_penetration=0.123,
+        checkpoints=[{"step": 2400, "max_penetration": 0.123, "resting": "0/71"}],
+    )
+    path = tmp_path / "record.json"
+    module.write_json(path, fixture)
+    record = module.publication_record(path, "nightly")
+    module.write_publication(tmp_path, record)
+    table = (tmp_path / "performance/guards/main.md").read_text()
+    assert "0.123" in table and "2400" in table and "0/71" in table
+    assert (
+        "docs/dev_tasks/dart6_performance_generalization/01-baseline-evidence.md"
+        in table
+    )
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    record["results"][0]["head"]["guards"]["resting"] = "71/71"
+    record["results"][0]["head"]["checkpoints"][0]["max_penetration"] = 0.1
+    module.write_publication(tmp_path, record)
+    table = (tmp_path / "performance/guards/main.md").read_text()
+    assert "S3 / S6 drift since the prior nightly" in table
+    assert "S6/dart checkpoints" in table
+    record["run"]["env"]["fingerprint"] = "2" * 64
+    module.write_publication(tmp_path, record)
+    record["run"]["time"] = "2026-10-08T10:00:00+00:00"
+    record["run"]["env"]["fingerprint"] = "1" * 64
+    module.write_publication(tmp_path, record)
+    records = list((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert len(records) == 3  # A -> B -> A is two fingerprint changes.
+    assert not (tmp_path / "performance/dart6-ir").exists()
+
+
+def test_merge_rationale_rerun_records_new_acknowledgment_without_chart_duplicate(
+    tmp_path,
+):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    path = tmp_path / "record.json"
+    fixture = _publication_fixture()
+    fixture["verdict"].update(status="FAIL", failures=["Ir rationale required"])
+    module.write_json(path, fixture)
+    record = module.publication_record(path, "merge", 3570)
+    module.write_publication(tmp_path, record)
+    record["run"]["accepted"] = [
+        {
+            "kind": "regression",
+            "rows": ["s3w/dart"],
+            "rationale": "Perf-Regression-Rationale: s3w/dart: intended work",
+        }
+    ]
+    record["verdict"].update(status="PASS", failures=[])
+    module.write_publication(tmp_path, record)
+    records = sorted((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert len(records) == 2
+    assert json.loads(records[0].read_text())["verdict"]["status"] == "FAIL"
+    assert (
+        json.loads(records[1].read_text())["run"]["accepted"]
+        == record["run"]["accepted"]
+    )
+    assert module.write_publication(tmp_path, record) == []
+    assert len(_chart_points(tmp_path)) == 1
+
+
+@pytest.mark.parametrize("outcome", ["race", "rejected"])
+def test_publish_retries_chart_conflict_without_losing_concurrent_points(
+    monkeypatch, tmp_path, outcome
+):
+    module = _load_runner()
+    _trusted_publication(monkeypatch)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
+    real_run = subprocess.run
+
+    def git(directory, *arguments):
+        return real_run(
+            ["git", "-C", str(directory), *arguments],
+            check=True,
+            text=True,
+            capture_output=True,
+        )
+
+    remote, pages, competitor = (
+        tmp_path / name for name in ("remote.git", "pages", "competitor")
+    )
+    real_run(
+        ["git", "init", "--bare", "--initial-branch=gh-pages", str(remote)],
+        check=True,
+        capture_output=True,
+    )
+    real_run(["git", "clone", str(remote), str(pages)], check=True, capture_output=True)
+    _stock_chart_template(pages)
+
+    def commit(directory):
+        git(directory, "add", "performance")
+        git(
+            directory,
+            "-c",
+            "user.name=test",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "-m",
+            "test",
+        )
+
+    commit(pages)
+    git(pages, "push", "origin", "HEAD:gh-pages")
+    real_run(
+        ["git", "clone", str(remote), str(competitor)], check=True, capture_output=True
+    )
+    baseline = git(remote, "rev-parse", "gh-pages").stdout.strip()
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    incoming = module.publication_record(path, "merge")
+    concurrent = copy.deepcopy(incoming)
+    concurrent["run"].update(commit="c" * 40, time="2026-10-08T07:00:00+00:00")
+    concurrent["run"]["env"]["fingerprint"] = "2" * 64
+    pushes = []
+    rebases = []
+
+    def raced_run(command, *args, **kwargs):
+        if command[:3] == ["git", "-C", str(pages)]:
+            if command[3] == "rebase":
+                rebases.append(command)
+            if command[3] == "push":
+                if outcome == "rejected":
+                    pushes.append(command)
+                    return subprocess.CompletedProcess(
+                        command, 1, "", "simulated remote rejection"
+                    )
+                if not pushes:
+                    module.write_publication(competitor, concurrent)
+                    commit(competitor)
+                    git(competitor, "push", "origin", "HEAD:gh-pages")
+                pushes.append(command)
+        return real_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(module.subprocess, "run", raced_run)
+    args = module.parser().parse_args(
+        ["publish", "--record", str(path), "--tier", "merge", "--pages-dir", str(pages)]
+    )
+    if outcome == "rejected":
+        with pytest.raises(
+            RuntimeError, match="rejected after 5 fetch/rebase attempts"
+        ):
+            module.publish(args)
+        assert len(pushes) == 5
+        assert git(remote, "rev-parse", "gh-pages").stdout.strip() == baseline
+        return
+    assert module.publish(args)
+    assert len(pushes) == 2
+    assert sum(command[-1] == "origin/gh-pages" for command in rebases) == 2
+    assert any(command[-1] == "--abort" for command in rebases)
+    assert all(
+        not any("force" in argument for argument in command) for command in pushes
+    )
+    git(remote, "merge-base", "--is-ancestor", baseline, "gh-pages")
+    points = _chart_points(pages)
+    assert [point["commit"]["id"] for point in points] == ["c" * 40, "a" * 40]
+    assert "fingerprint changed" in points[-1]["benches"][0]["extra"]
+    assert len(list((pages / "performance/records/main/2026").glob("*.json"))) == 2

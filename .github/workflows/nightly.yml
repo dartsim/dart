@@ -69,6 +69,14 @@ jobs:
     with:
       nightly: true
 
+  perf:
+    uses: ./.github/workflows/perf.yml
+    permissions:
+      contents: write
+      pull-requests: write
+    with:
+      tier: nightly
+
   report:
     needs:
       - linux
@@ -81,6 +89,7 @@ jobs:
       - api-doc
       - codeql
       - dartpy-wheels
+      - perf
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     permissions:
