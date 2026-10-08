@@ -79,7 +79,9 @@ SCISSORS = re.compile(r"\S -{24} >8 -{24}")
 def is_public_host(host: str | None) -> bool:
     host = (host or "").rstrip(".")
     try:
-        return ipaddress.ip_address(host).is_global
+        address = ipaddress.ip_address(host)
+        # Python counts some multicast ranges (SSDP, link-local) as global.
+        return address.is_global and not address.is_multicast
     except ValueError:
         # Shorthand numeric hosts such as 127.1 still reach local addresses.
         if re.fullmatch(r"[0-9.]+|0x[0-9a-f.x]+", host, re.IGNORECASE):
