@@ -125,6 +125,7 @@ private:
   [[nodiscard]] Aabb tightAabb(std::size_t id) const;
   [[nodiscard]] bool overlapsTight(std::size_t id, const Aabb& aabb) const;
   [[nodiscard]] NodeIndex allocateNode();
+  void reserveNodes(std::size_t extra);
   void freeNode(NodeIndex nodeIndex);
   void insertLeaf(NodeIndex leafIndex);
   void removeLeaf(NodeIndex leafIndex);

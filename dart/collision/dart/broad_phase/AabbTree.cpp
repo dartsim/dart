@@ -127,6 +127,14 @@ void AabbTreeBroadPhase::add(std::size_t id, const Aabb& aabb)
     }
   }
 
+  // Reserve every allocation this insertion makes before changing the tree, so
+  // a failure leaves it unchanged: the leaf, at most one internal node from
+  // insertLeaf(), and the ordered id.
+  reserveNodes(2u);
+  if (orderedIds_.size() == orderedIds_.capacity()) {
+    orderedIds_.reserve(std::max<std::size_t>(1u, 2u * orderedIds_.capacity()));
+  }
+
   const NodeIndex leafIndex = allocateNode();
   Node& leaf = nodes_[leafIndex];
   setTightAabb(id, aabb);
@@ -406,14 +414,25 @@ AabbTreeBroadPhase::NodeIndex AabbTreeBroadPhase::allocateNode()
       >= static_cast<std::size_t>(std::numeric_limits<NodeIndex>::max())) {
     throw std::length_error("AABB tree node index exceeds compact storage");
   }
+  reserveNodes(1u);
   const NodeIndex nodeIndex = static_cast<NodeIndex>(nodes_.size());
   nodes_.emplace_back();
   parents_.push_back(kInvalidNode);
-  // Reserve outside queries, including room for future rebalances of this
-  // membership, so a deeper walk cannot allocate during a prepared step.
-  mQueryStack.reserve(nodes_.capacity());
   ++nodeCount_;
   return nodeIndex;
+}
+
+void AabbTreeBroadPhase::reserveNodes(std::size_t extra)
+{
+  // Grow the parallel node arrays before any size changes, so a failed
+  // allocation leaves them in step. The query stack is sized here, outside
+  // queries, so a deeper walk cannot allocate during a prepared step.
+  const std::size_t needed = nodes_.size() + extra;
+  if (nodes_.capacity() < needed) {
+    nodes_.reserve(std::max(needed, 2u * nodes_.capacity()));
+  }
+  parents_.reserve(nodes_.capacity());
+  mQueryStack.reserve(nodes_.capacity());
 }
 
 void AabbTreeBroadPhase::freeNode(NodeIndex nodeIndex)
