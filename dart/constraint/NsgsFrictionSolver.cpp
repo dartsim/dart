@@ -230,6 +230,8 @@ double violation(
     const detail::FrictionRowClassification& classification,
     NsgsFrictionSolver::Law law)
 {
+  // Local solves may shift singular blocks; convergence and best-iterate
+  // selection must judge the unregularized LCP assembled by the caller.
   double largest = 0.0;
   for (int row : classification.scalarRows)
     largest = std::max(
@@ -258,7 +260,7 @@ double violation(
         detail::contactViolation(
             contactImpulse(contact, x),
             velocity,
-            maxDiagonal,
+            maxDiagonal > 0.0 ? maxDiagonal : 1.0,
             contact.cone,
             law == NsgsFrictionSolver::Law::Associated));
   }

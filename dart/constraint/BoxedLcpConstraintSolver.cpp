@@ -178,9 +178,9 @@ void reserveBoxedLcpSolverScratch(
     return;
   }
 
-  const auto* backend = solver.get();
-  if (backend && typeid(*backend) == typeid(NsgsFrictionSolver))
-    static_cast<NsgsFrictionSolver*>(solver.get())->reserve(n);
+  auto nsgsSolver = std::dynamic_pointer_cast<NsgsFrictionSolver>(solver);
+  if (nsgsSolver)
+    nsgsSolver->reserve(n);
 }
 
 void reserveMatrixFreeContactScratch(

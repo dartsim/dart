@@ -92,6 +92,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -2179,6 +2180,48 @@ TEST(StepAllocation, ConvexConvexSteadyState)
   EXPECT_GT(measurement.lastStepContacts, 0u);
   EXPECT_EQ(countResting(world), 0u);
   expectAllocationGateBudget("dart_convex_convex_steady", measurement);
+}
+
+TEST(StepAllocation, NsgsFirstPreparedStepOnFreshThread)
+{
+  class DerivedNsgs final : public dart::constraint::NsgsFrictionSolver
+  {
+  };
+
+  for (const bool subclass : {false, true}) {
+    SCOPED_TRACE(subclass ? "subclass" : "exact type");
+    StepAllocationMeasurement measurement;
+    dart::constraint::FrictionSolveStats stats;
+    // Counters are process-wide: exclude thread startup, setup and teardown.
+    std::thread worker([&] {
+      dart::test::CountingMemoryAllocator allocator;
+      auto world = createCountedStackedBoxesWorld(
+          "nsgs_first_prepared_step",
+          dart::collision::DARTCollisionDetector::create(),
+          allocator);
+      std::shared_ptr<dart::constraint::NsgsFrictionSolver> nsgs;
+      if (subclass)
+        nsgs = std::make_shared<DerivedNsgs>();
+      else
+        nsgs = std::make_shared<dart::constraint::NsgsFrictionSolver>();
+      auto* solver = static_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+          world->getConstraintSolver());
+      solver->setBoxedLcpSolver(nsgs);
+      world->enterSimulationMode();
+      nsgs->resetStats();
+      measurement = measureWorldStepsNow(world, allocator, 1);
+      stats = nsgs->getStats();
+    });
+    worker.join();
+    EXPECT_GT(measurement.lastStepContacts, 0u);
+    EXPECT_GT(stats.numContacts, 0u);
+    EXPECT_EQ(0u, stats.numFailed);
+    expectNoGlobalHeapAllocationsWhenReliable("nsgs_first_step", measurement);
+    EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+    if (!measurement.rawHeap.skipped) {
+      EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+    }
+  }
 }
 
 TEST(StepAllocation, NsgsFrictionLawsSteadyState)

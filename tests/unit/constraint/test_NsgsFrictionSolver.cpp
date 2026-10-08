@@ -305,6 +305,45 @@ TEST(NsgsFrictionSolver, AnisotropyDefaultsToBoxAndCanSelectEllipse)
   }
 }
 
+TEST(NsgsFrictionSolver, ZeroBlockSeparatingContactConvergesImmediately)
+{
+  NsgsFrictionSolver solver;
+  auto p = slidingContact();
+  std::fill(p.A.begin(), p.A.end(), 0.0);
+  p.b = {-1.0, 0.0, 0.0};
+  EXPECT_TRUE(p.solve(solver));
+  for (double impulse : p.x)
+    EXPECT_EQ(0.0, impulse);
+  const auto stats = solver.getStats();
+  EXPECT_EQ(1u, stats.numContacts);
+  EXPECT_EQ(1u, stats.numConverged);
+  EXPECT_EQ(0u, stats.numIterations);
+  EXPECT_EQ(0u, stats.numFailed);
+  EXPECT_EQ(0.0, stats.maxViolation);
+}
+
+TEST(NsgsFrictionSolver, ZeroNormalCurvatureKeepsBoundedBestIterateAtCap)
+{
+  NsgsFrictionSolver::Options options;
+  options.maxSweeps = 3;
+  NsgsFrictionSolver solver(options);
+  auto p = slidingContact();
+  p.A[0] = 0.0;
+  p.b = {1.0, 0.0, 0.0};
+  EXPECT_TRUE(p.solve(solver));
+  for (double impulse : p.x) {
+    EXPECT_TRUE(std::isfinite(impulse));
+    EXPECT_LT(std::abs(impulse), 1.0);
+  }
+  const auto stats = solver.getStats();
+  EXPECT_EQ(1u, stats.numContacts);
+  EXPECT_EQ(0u, stats.numConverged);
+  EXPECT_EQ(1u, stats.numAcceptedAtCap);
+  EXPECT_EQ(options.maxSweeps, stats.numIterations);
+  EXPECT_EQ(0u, stats.numFailed);
+  EXPECT_GT(stats.maxViolation, options.tolerance);
+}
+
 TEST(NsgsFrictionSolver, ZeroCapAndAlreadyConvergedWarmStart)
 {
   NsgsFrictionSolver::Options options;
