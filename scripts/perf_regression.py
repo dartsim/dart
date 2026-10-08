@@ -1448,17 +1448,19 @@ def markdown(record: dict) -> str:
     for row in record["results"]:
         classification = row["delta"]["class"]
         if classification == "gated":
+            change = row["delta"]
+            # Match the gate: Ir increases below its +0.30% warning threshold are
+            # neutral; allocation and byte increases regress even when
+            # acknowledged.
             classification = (
                 "regressed"
                 if row["failures"]
-                or any(
-                    row["delta"][key] is not None and row["delta"][key] > 0
-                    for key in ("ir", "allocs", "bytes")
-                )
+                or any((change[key] or 0) > 0 for key in ("allocs", "bytes"))
+                or (change["ir"] is not None and at_least(change["ir"], 0.003))
                 else (
                     "improved"
-                    if row["delta"]["ir"] is not None
-                    and at_least(-row["delta"]["ir"], 0.01)
+                    if any((change[key] or 0) < 0 for key in ("allocs", "bytes"))
+                    or (change["ir"] is not None and at_least(-change["ir"], 0.01))
                     else "neutral"
                 )
             )
