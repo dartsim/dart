@@ -4116,6 +4116,121 @@ def test_merge_smoke_exit_two_saves_build_failure_verdict(tmp_path, defect):
         assert not (output / "perf.md").exists()
 
 
+@pytest.mark.parametrize("input_changed", [False, True])
+@pytest.mark.parametrize("verdict", ["PASS", "FAIL"])
+def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
+    tmp_path, input_changed, verdict
+):
+    module = _load_runner()
+    output = tmp_path / "perf"
+    smoke_dir = output / "smoke/a-run"
+    smoke_dir.mkdir(parents=True)
+    record = _publication_fixture()
+    record["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    template = record["results"][0]
+    record["results"] = []
+    for spec in module.select_rows(""):
+        row = copy.deepcopy(template)
+        row.update(
+            row=spec.row,
+            det=spec.det,
+            threads=spec.threads,
+            workload_sha="old-workload",
+            perturbations={"test": {"stable": True}},
+            gate_reason="base perturbation check passed; base gate remains active",
+            failures=[],
+        )
+        row["delta"]["bytes"] = 0
+        record["results"].append(row)
+    if verdict == "FAIL":
+        record["results"][0]["failures"] = ["Ir +2.00% (limit +1.00%)"]
+        record["verdict"].update(
+            status="FAIL", failures=["s3w/dart: Ir +2.00% (limit +1.00%)"]
+        )
+    smoke = copy.deepcopy(record)
+    smoke.pop("verdict")
+    smoke["results"].reverse()
+    for row in smoke["results"]:
+        for key in ("parent", "delta", "gate_reason", "failures"):
+            row.pop(key)
+        row["head"].update(
+            ir_per_step=200_000,
+            allocs_per_step=5,
+            bytes_per_step=40,
+            wall_ms_per_step=24.6,
+        )
+        if input_changed and row["row"] in ("dyn", "lcp"):
+            row.update(input_sha="f" * 64, workload_sha="new-workload")
+    module.write_json(output / "perf.json", record)
+    module.write_json(smoke_dir / "record.json", smoke)
+    # Run the record-construction snippet, which imports the parent's rules in CI.
+    script = re.findall(
+        r"python3 - <<'PY'\n(.*?)\nPY",
+        _perf_step("record-measure", "Measure and apply the parent rules")["run"],
+        re.S,
+    )[-1]
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(Path(__file__).resolve().parents[1]),
+            "PERF_OUTPUT": str(output),
+            "PERF_SMOKE": "true",
+            "PERF_SMOKE_STATUS": "0",
+            "PERF_HEAD": record["run"]["commit"],
+            "PERF_BASE": record["run"]["parent"],
+        },
+        text=True,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr
+    saved = json.loads((output / "perf.json").read_text())
+    assert saved["run"] == record["run"]
+    assert saved["verdict"] == record["verdict"]
+    smoke_rows = {module.row_key(row): row for row in smoke["results"]}
+    for original, row in zip(record["results"], saved["results"]):
+        head = smoke_rows[module.row_key(original)]
+        if head["input_sha"] == original["input_sha"]:
+            assert row == original
+        else:
+            assert row["input_sha"] == head["input_sha"]
+            assert row["workload_sha"] == head["workload_sha"]
+            assert row["head"] == head["head"]
+            assert row["perturbations"] == head["perturbations"]
+            assert row["parent"] == original["parent"]
+            assert row["failures"] == original["failures"]
+            assert row["gated"] is False
+            assert row["delta"] == {
+                "ir": None,
+                "allocs": None,
+                "bytes": None,
+                "guards_equal": None,
+                "class": "behaviour-change",
+            }
+            assert "input_sha changed" in row["gate_reason"]
+            assert row["wall_ms_per_step"] == {
+                "parent": 12.3,
+                "head": 24.6,
+                "advisory": True,
+            }
+    published = module.publication_record(output / "perf.json", "merge")
+    pages = tmp_path / "pages"
+    (pages / "performance/dart6").mkdir(parents=True)
+    (pages / "performance/dart6/index.html").write_text("chart")
+    module.chart_data(pages, published)
+    chart = (pages / "performance/dart6-ir/data.js").read_text()
+    point = json.loads(chart.removeprefix("window.BENCHMARK_DATA = "))["entries"][
+        "DART 6 deterministic counts"
+    ][0]
+    assert point["commit"]["id"] == record["run"]["commit"]
+    benches = {bench["name"]: bench["value"] for bench in point["benches"]}
+    suffix = "ffffffff" if input_changed else "01234567"
+    assert benches[f"dyn@1:{suffix} Ir"] == (200_000 if input_changed else 100_000)
+    assert benches[f"dyn@1:{suffix} allocations"] == (5 if input_changed else 0)
+    assert benches["s3w/dart@1:01234567 Ir"] == 100_000
+
+
 def _publication_fixture():
     metrics = {
         "ir_per_step": 100_000,

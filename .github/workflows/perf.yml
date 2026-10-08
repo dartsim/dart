@@ -527,6 +527,28 @@ jobs:
                       failures.append("head smoke rows did not pass their perturbation checks")
                   if int(os.environ["PERF_SMOKE_STATUS"]) == 1:
                       failures.append("the head smoke harness reported FAIL")
+                  # Publish changed head inputs; the saved A/B verdict still uses the parent workload.
+                  smoke_rows = {row_key(row): row for row in rows}
+                  for row in record["results"]:
+                      head = smoke_rows.get(row_key(row))
+                      if head is None or head.get("input_sha") == row.get("input_sha"):
+                          continue
+                      parent = row["parent"]
+                      row.update(head)
+                      row["gated"] = False
+                      row["delta"] = {
+                          "ir": None,
+                          "allocs": None,
+                          "bytes": None,
+                          "guards_equal": None,
+                          "class": "behaviour-change",
+                      }
+                      row["gate_reason"] = "input_sha changed; head smoke rebaseline; verdict uses parent A/B rules"
+                      row["wall_ms_per_step"] = {
+                          "parent": parent.get("wall_ms_per_step"),
+                          "head": row["head"].get("wall_ms_per_step"),
+                          "advisory": True,
+                      }
           if failures:
               record["verdict"]["failures"].extend(failures)
               record["verdict"]["status"] = "FAIL"
