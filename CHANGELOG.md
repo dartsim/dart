@@ -237,9 +237,9 @@
 * Collision
 
   * Make collision-object creation for shapes added after
-    `World::addSkeleton()` follow subscription order. Late-shape trajectories,
-    including every gz-physics world, change once with this fix and become
-    reproducible across runs, independent of heap layout:
+    `World::addSkeleton()` follow subscription order. Trajectories of scenes
+    that add shapes after `World::addSkeleton()` change once with this fix and
+    become reproducible across runs, independent of heap layout:
     [#3607](https://github.com/dartsim/dart/pull/3607)
 
   * Build the meshes that `FCLCollisionDetector` uses for boxes, spheres,
