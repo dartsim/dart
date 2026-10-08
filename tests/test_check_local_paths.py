@@ -60,6 +60,8 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         "directory.ab/file.md",
         r"(?:/home/|/Users/|~/|fbsource|arvr/libraries)",
         "https://github.com/dartsim/dart/pull/1234",
+        "https://api.github.com/users/dartsim/repos",
+        "https://example.com/home/docs/index.html",
     ),
 )
 def test_public_examples_and_non_path_identifiers_pass(text, capsys):
@@ -159,6 +161,14 @@ def test_binary_asset_cannot_hide_embedded_path(repo):
     (repo / "binary.dat").write_bytes(b"\x00\xff/home/example/metadata\n")
     _git(repo, "add", "binary.dat")
     result = _cli("--all-tracked", cwd=repo)
+    assert result.returncode == 1
+    assert "binary.dat:1: /home/example/metadata" in result.stdout
+
+
+def test_staged_binary_cannot_hide_embedded_path(repo):
+    (repo / "binary.dat").write_bytes(b"\x00\xff/home/example/metadata\n")
+    _git(repo, "add", "binary.dat")
+    result = _cli("--staged", cwd=repo)
     assert result.returncode == 1
     assert "binary.dat:1: /home/example/metadata" in result.stdout
 
