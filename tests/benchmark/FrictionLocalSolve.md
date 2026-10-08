@@ -88,6 +88,38 @@ The machine is heavily loaded by other builds. Wall times must be re-measured
 on a quiet host; these instruction counts select the production fast path and
 do not establish a wall-time speedup.
 
+### PR #3604 review corrections
+
+The definiteness check now accepts clearly positive normalized LDLT pivots
+without an eigensolve. Other blocks use self-adjoint eigenvalues with
+`lambda_min >= -1e-12 * max(1, lambda_max)`, preserving rank-one blocks while
+rejecting small negative eigenvalues that principal-minor tolerances missed.
+The iterative eigensolver avoids the direct cubic's loss of accuracy at
+repeated eigenvalues.
+
+Objectives outside the common magnitude band `[2^-128, 2^128]` use a lossless
+power-of-two scale before solving. Regularization and normal shifts are
+returned in caller units, and warm shifts enter scaled units. Zero blocks
+retain their fixed caller-unit regularization. Inputs that cannot share a
+lossless scale, or whose regularized caller diagonals would overflow, return
+uncertified. Regressions cover `6e307`, `1e-300`, maximum finite, minimum normal,
+and minimum subnormal coefficients.
+
+Using the same driver, compiler flags and 1,000-solve Callgrind procedure,
+the review fixes compared with head `34ddb1415c6` as follows. The earlier
+angle/secular table predates that head's certificate and PSD checks.
+
+| Case             | Before instructions/solve | After instructions/solve | Change |
+| ---------------- | ------------------------: | -----------------------: | -----: |
+| Ellipse boundary |                     3,972 |                    4,056 | +2.12% |
+| Ellipse exact    |                    26,087 |                   26,536 | +1.72% |
+| Box boundary     |                    10,166 |                   10,476 | +3.05% |
+| Box exact        |                    48,959 |                   50,428 | +3.00% |
+
+All 4,000 measured solves certified with zero fallbacks and unchanged QP
+counts (1, 8, 1, 6). All ten ordinary benchmark cases returned bit-identical
+impulses, shifts, regularization, certification and counters versus that head.
+
 ## Certificate gate
 
 Run the fixed-seed certificate gate with the full 100,000-problem count:
@@ -102,7 +134,8 @@ The default count keeps CI short. The test reports certified problems,
 fast-path failures, and fallback counts. With the chosen secular path and
 `DART_FRICTION_GATE_COUNT=100000`, all 100,000 problems were certified:
 5 fast-path failures (0.005%), 5 counted fallbacks, and a worst independent
-relative certificate of `9.38623e-11` against the unchanged `1e-10` threshold.
+relative certificate of `8.4375e-11` after the review corrections, against the
+unchanged `1e-10` threshold.
 Regression tests cover both secular branches, the singular pole, opening
 contacts with zero QPs, and a counted fallback from the gate's case 14806.
 The previous angle-specific fallback case 1481 remains a certificate regression.

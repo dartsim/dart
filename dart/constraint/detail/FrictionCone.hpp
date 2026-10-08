@@ -58,6 +58,7 @@ struct LocalSolveResult
   bool certified = false;
   std::uint64_t numLocalFallbacks = 0;
   std::uint64_t numQpSolves = 0;
+  /// Normal shift and regularization are in the caller's objective units.
   double normalShift = 0.0;
   /// Certificate and returned velocity use H + regularization * I.
   double regularization = 0.0;
@@ -66,6 +67,9 @@ struct LocalSolveResult
 /// Solve min 0.5 * lambda.transpose() * H * lambda + c.dot(lambda) in K.
 /// H must be symmetric positive semidefinite. A singular block receives
 /// 1e-12 * trace(H) on its diagonal (1e-12 for an all-zero block).
+/// A shift below the double range is raised to the smallest positive double.
+/// Extreme objectives use a lossless common power-of-two scale. Unrepresentable
+/// scaling or regularized caller diagonals return certified=false.
 /// Invalid inputs return certified=false.
 /// All numeric paths use fixed-size storage and a deterministic iteration
 /// order.

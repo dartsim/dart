@@ -680,6 +680,12 @@ TEST(FrictionCone, IdenticalResultsAcrossThreads)
 TEST(FrictionCone, CertificateRequiresSymmetricPositiveSemidefiniteBlock)
 {
   const Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  // Its determinant is only -6.15e-13, but its negative eigenvalue is
+  // -7.01e-7: absolute tolerances on principal minors accept this block.
+  Eigen::Matrix3d slightlyIndefinite;
+  slightlyIndefinite << 4.74210068e-4, 2.17760294e-2, 2.66206375e-3,
+      2.17760294e-2, 1, 1.22283510e-1, 2.66206375e-3, 1.22283510e-1,
+      1.49534025e-2;
   for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
     const FrictionCone cone{Eigen::Vector2d::Ones(), law};
     for (const double scale : {1e-20, 1.0, 1e20}) {
@@ -695,6 +701,8 @@ TEST(FrictionCone, CertificateRequiresSymmetricPositiveSemidefiniteBlock)
       indefinite.setZero();
       indefinite(0, 1) = indefinite(1, 0) = scale;
       EXPECT_FALSE(coneQpCertificate(indefinite, c, zero, cone));
+      EXPECT_FALSE(
+          coneQpCertificate(scale * slightlyIndefinite, c, zero, cone));
       Eigen::Matrix3d asymmetric = scale * Eigen::Matrix3d::Identity();
       asymmetric(0, 1) = scale;
       EXPECT_FALSE(coneQpCertificate(asymmetric, c, zero, cone));
@@ -708,7 +716,216 @@ TEST(FrictionCone, CertificateRequiresSymmetricPositiveSemidefiniteBlock)
     }
     EXPECT_TRUE(coneQpCertificate(
         Eigen::Matrix3d::Zero(), zero, Eigen::Vector3d(1, 0.5, -0.5), cone));
+    // Common H/c scaling must not erase an indefinite H when c is huge.
+    const Eigen::Matrix3d negativeSubnormal
+        = -std::numeric_limits<double>::denorm_min()
+          * Eigen::Matrix3d::Identity();
+    const Eigen::Vector3d hugeLinear(std::numeric_limits<double>::max(), 0, 0);
+    EXPECT_FALSE(coneQpCertificate(negativeSubnormal, hugeLinear, zero, cone));
+    EXPECT_FALSE(solveConeQp(negativeSubnormal, hugeLinear, cone).certified);
+    EXPECT_FALSE(
+        solveExactContact(negativeSubnormal, hugeLinear, cone).certified);
   }
+}
+
+TEST(FrictionCone, LocalSolvesPreserveMinimizersAtExtremeObjectiveScales)
+{
+  const Eigen::Vector3d expected(1, 0, 0);
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d::Ones(), law};
+    for (const double scale :
+         {6e307,
+          1e-300,
+          std::numeric_limits<double>::max(),
+          std::numeric_limits<double>::min(),
+          std::numeric_limits<double>::denorm_min()}) {
+      SCOPED_TRACE(scale);
+      const Eigen::Matrix3d H = scale * Eigen::Matrix3d::Identity();
+      const Eigen::Vector3d c(-scale, 0, 0);
+      // Even an unregularized trace overflows for 6e307 * I. At the other
+      // endpoint, squared objectives and absolute pivot thresholds underflow.
+      for (const auto& result :
+           {solveConeQp(H, c, cone), solveExactContact(H, c, cone)}) {
+        ASSERT_TRUE(result.certified);
+        EXPECT_LE((result.impulse - expected).norm(), 1e-12);
+        EXPECT_DOUBLE_EQ(result.regularization, 0);
+        EXPECT_DOUBLE_EQ(result.normalShift, 0);
+        EXPECT_TRUE(coneQpCertificate(H, c, result.impulse, cone));
+        EXPECT_LE(
+            independentlyCertify(H, c, result.impulse, cone).worst(), 1e-10L);
+      }
+    }
+  }
+}
+
+TEST(FrictionCone, ExtremeObjectiveScalesPreserveNormalShiftUnitsAndWarmStarts)
+{
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d::Constant(0.5), law};
+    for (const double scale : {1.0, 6e307, 1e-300}) {
+      SCOPED_TRACE(scale);
+      const Eigen::Matrix3d H = scale * Eigen::Matrix3d::Identity();
+      const Eigen::Vector3d c(-scale, 2 * scale, 0);
+      const auto associated = solveConeQp(H, c, cone);
+      ASSERT_TRUE(associated.certified);
+      EXPECT_LE(
+          (associated.impulse - Eigen::Vector3d(1.6, -0.8, 0)).norm(), 1e-10);
+      const auto exact = solveExactContact(H, c, cone);
+      ASSERT_TRUE(exact.certified);
+      EXPECT_LE((exact.impulse - Eigen::Vector3d(1, -0.5, 0)).norm(), 1e-10);
+      EXPECT_NEAR(exact.normalShift / scale, 0.75, 1e-10);
+      EXPECT_LE(
+          independentlyCertify(H, c, exact.impulse, cone, true).worst(),
+          1e-10L);
+      // The exact warm shift should certify immediately after bracketing;
+      // this also detects an input shift left in the caller's units.
+      const auto warm = solveExactContact(H, c, cone, 0.75 * scale);
+      ASSERT_TRUE(warm.certified);
+      EXPECT_EQ(warm.numQpSolves, 3u);
+      EXPECT_NEAR(warm.normalShift / scale, 0.75, 1e-10);
+      EXPECT_LE((warm.impulse - exact.impulse).norm(), 1e-10);
+      if (scale != 1) {
+        // An optional shift outside the scaled range must still permit the
+        // cold solve, including overflow when scaling a huge warm shift up.
+        const double mismatchedShift = scale < 1 ? 1e300 : 1e-300;
+        const auto mismatched = solveExactContact(H, c, cone, mismatchedShift);
+        ASSERT_TRUE(mismatched.certified);
+        EXPECT_LE((mismatched.impulse - exact.impulse).norm(), 1e-10);
+        EXPECT_NEAR(mismatched.normalShift / scale, 0.75, 1e-10);
+      }
+    }
+  }
+}
+
+TEST(FrictionCone, ExtremeObjectiveScalesPreserveRegularizationUnits)
+{
+  const Eigen::Matrix3d singular = Eigen::Vector3d(1, 1, 0).asDiagonal();
+  const Eigen::Vector3d c(-1, 2, 0);
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    // Adding the required regularization to these diagonal entries would
+    // overflow the effective matrix exposed to the caller.
+    const double largest = std::numeric_limits<double>::max();
+    const FrictionCone unitCone{Eigen::Vector2d::Ones(), law};
+    const Eigen::Matrix3d largestSingular = largest * singular;
+    const Eigen::Vector3d largestLinear(-largest, 0, 0);
+    EXPECT_FALSE(
+        solveConeQp(largestSingular, largestLinear, unitCone).certified);
+    EXPECT_FALSE(
+        solveExactContact(largestSingular, largestLinear, unitCone).certified);
+    const FrictionCone cone{Eigen::Vector2d::Constant(0.5), law};
+    const auto ordinaryQp = solveConeQp(singular, c, cone);
+    const auto ordinaryExact = solveExactContact(singular, c, cone);
+    ASSERT_TRUE(ordinaryQp.certified);
+    ASSERT_TRUE(ordinaryExact.certified);
+    for (const double scale : {6e307, 1e-300}) {
+      SCOPED_TRACE(scale);
+      const Eigen::Matrix3d H = scale * singular;
+      const Eigen::Vector3d linear = scale * c;
+      const auto qp = solveConeQp(H, linear, cone);
+      ASSERT_TRUE(qp.certified);
+      EXPECT_NEAR(qp.regularization / scale, 2e-12, 1e-23);
+      EXPECT_LE((qp.impulse - ordinaryQp.impulse).norm(), 1e-10);
+      EXPECT_TRUE(
+          coneQpCertificate(effectiveMatrix(H, qp), linear, qp.impulse, cone));
+      EXPECT_LE(
+          independentlyCertify(effectiveMatrix(H, qp), linear, qp.impulse, cone)
+              .worst(),
+          1e-10L);
+      const auto exact = solveExactContact(H, linear, cone);
+      ASSERT_TRUE(exact.certified);
+      EXPECT_NEAR(exact.regularization / scale, 2e-12, 1e-23);
+      EXPECT_LE((exact.impulse - ordinaryExact.impulse).norm(), 1e-10);
+      EXPECT_NEAR(exact.normalShift / scale, ordinaryExact.normalShift, 1e-10);
+      EXPECT_LE(
+          independentlyCertify(
+              effectiveMatrix(H, exact), linear, exact.impulse, cone, true)
+              .worst(),
+          1e-10L);
+    }
+    // The required diagonal shift itself is below the double range here;
+    // round it up and solve with the same effective H exposed to the caller.
+    const double smallest = std::numeric_limits<double>::denorm_min();
+    const Eigen::Matrix3d H = smallest * singular;
+    const Eigen::Vector3d linear(-smallest, 0, 0);
+    for (const auto& result :
+         {solveConeQp(H, linear, cone), solveExactContact(H, linear, cone)}) {
+      ASSERT_TRUE(result.certified);
+      EXPECT_DOUBLE_EQ(result.regularization, smallest);
+      EXPECT_LE((result.impulse - Eigen::Vector3d(0.5, 0, 0)).norm(), 1e-12);
+      EXPECT_TRUE(coneQpCertificate(
+          effectiveMatrix(H, result), linear, result.impulse, cone));
+      EXPECT_LE(
+          independentlyCertify(
+              effectiveMatrix(H, result), linear, result.impulse, cone)
+              .worst(),
+          1e-10L);
+    }
+  }
+}
+
+TEST(FrictionCone, AllZeroBlocksPreserveFixedRegularizationAtExtremeScales)
+{
+  const Eigen::Matrix3d H = Eigen::Matrix3d::Zero();
+  const FrictionCone cone{
+      Eigen::Vector2d::Constant(0.5), FrictionConeLaw::Ellipse};
+  const double smallest = std::numeric_limits<double>::denorm_min();
+  const Eigen::Vector3d tinyLinear(-smallest, 0, 0);
+  const double expected = smallest / 1e-12;
+  for (const auto& result :
+       {solveConeQp(H, tinyLinear, cone),
+        solveExactContact(H, tinyLinear, cone)}) {
+    ASSERT_TRUE(result.certified);
+    EXPECT_DOUBLE_EQ(result.regularization, 1e-12);
+    EXPECT_NEAR(result.impulse[0] / expected, 1, 1e-10);
+    EXPECT_TRUE(result.impulse.tail<2>().isZero());
+    EXPECT_TRUE(coneQpCertificate(
+        effectiveMatrix(H, result), tinyLinear, result.impulse, cone));
+  }
+  // The fixed zero-block regularization also leaves an opening apex valid
+  // when max|c| / max|H_effective| exceeds the double range.
+  const Eigen::Vector3d hugeLinear(6e307, 6e307, 0);
+  const auto qp = solveConeQp(H, hugeLinear, cone);
+  ASSERT_TRUE(qp.certified);
+  EXPECT_TRUE(qp.impulse.isZero());
+  EXPECT_DOUBLE_EQ(qp.regularization, 1e-12);
+  EXPECT_TRUE(
+      coneQpCertificate(effectiveMatrix(H, qp), hugeLinear, qp.impulse, cone));
+  const auto exact = solveExactContact(H, hugeLinear, cone);
+  ASSERT_TRUE(exact.certified);
+  EXPECT_TRUE(exact.impulse.isZero());
+  EXPECT_DOUBLE_EQ(exact.regularization, 1e-12);
+  EXPECT_DOUBLE_EQ(exact.normalShift, 3e307);
+}
+
+TEST(FrictionCone, UnrepresentableCommonScaleCannotProduceFalseCertificates)
+{
+  // Overflow of max|c| / max|H| must not hide positive complementarity.
+  EXPECT_FALSE(coneQpCertificate(
+      1e-320 * Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1, 0, 0),
+      Eigen::Vector3d(1, 0, 0),
+      FrictionCone{}));
+  // The enormous linear term lies on a disabled tangent. Losing the tiny
+  // normal H and c during common scaling would falsely certify the apex.
+  const Eigen::Matrix3d H = 1e-300 * Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d c(-1e-300, 1e300, 0);
+  const FrictionCone cone{Eigen::Vector2d(0, 1), FrictionConeLaw::Ellipse};
+  EXPECT_FALSE(solveConeQp(H, c, cone).certified);
+  EXPECT_FALSE(solveExactContact(H, c, cone).certified);
+  EXPECT_FALSE(coneQpCertificate(H, c, Eigen::Vector3d::Zero(), cone));
+  const Eigen::Matrix3d zeroH = Eigen::Matrix3d::Zero();
+  const double smallest = std::numeric_limits<double>::denorm_min();
+  const double largest = std::numeric_limits<double>::max();
+  const Eigen::Vector3d mixedLinear(-smallest, largest, 0);
+  EXPECT_FALSE(solveConeQp(zeroH, mixedLinear, cone).certified);
+  EXPECT_FALSE(solveExactContact(zeroH, mixedLinear, cone).certified);
+  EXPECT_FALSE(
+      coneQpCertificate(zeroH, mixedLinear, Eigen::Vector3d::Zero(), cone));
+  EXPECT_FALSE(coneQpCertificate(
+      zeroH,
+      Eigen::Vector3d(smallest, largest, 0),
+      Eigen::Vector3d(1, 0, 0),
+      cone));
 }
 
 TEST(FrictionCone, CertificateIsRelativeToProblemAndImpulseScales)
@@ -859,10 +1076,15 @@ TEST(FrictionCone, RankDeficientBlocksAreNotRejectedAsIndefinite)
   for (const Eigen::Vector3d& a :
        {Eigen::Vector3d(0.3, 0.7, 1.1),
         Eigen::Vector3d(1e-3, 2.0, -0.5),
-        Eigen::Vector3d(0.1, 0.1, 0.1)}) {
+        Eigen::Vector3d(0.1, 0.1, 0.1),
+        Eigen::Vector3d(
+            0.69266230874610279, 0.72181976494641975, -0.70243298661799547)}) {
     const Eigen::Matrix3d H = a * a.transpose();
     FrictionCone cone;
     cone.mu = Eigen::Vector2d(0.5, 0.5);
+    EXPECT_TRUE(coneQpCertificate(
+        H, Eigen::Vector3d(1, 0, 0), Eigen::Vector3d::Zero(), cone))
+        << a.transpose();
     const auto result = solveConeQp(H, Eigen::Vector3d(-1.0, 0.2, -0.3), cone);
     EXPECT_TRUE(result.certified) << a.transpose();
   }

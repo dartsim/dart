@@ -33,7 +33,7 @@
 #include <dart/constraint/detail/FrictionCone.hpp>
 
 #include <Eigen/Cholesky>
-#include <Eigen/LU>
+#include <Eigen/Eigenvalues>
 
 #include <algorithm>
 #include <limits>
@@ -94,10 +94,27 @@ bool certificate(
   if (dataScale > 0.0) {
     normalizedH /= dataScale;
     normalizedC /= dataScale;
+    for (int i = 0; i < 3; ++i) {
+      if (normalizedC[i] == 0.0 && c[i] != 0.0)
+        return false;
+    }
   }
   // Scale impulses too, so complementarity cannot underflow or overflow.
-  const Real impulseScale
-      = std::max(x.cwiseAbs().maxCoeff(), hScale > 0.0 ? cScale / hScale : 0.0);
+  Real referenceImpulse = 0.0;
+  if (hScale > 0.0) {
+    const Real largest = std::numeric_limits<Real>::max();
+    if (hScale < 1.0 && cScale > largest * hScale) {
+      // An opening apex needs only dual feasibility; other impulses cannot
+      // safely use an unrepresentable c/H scale for complementarity.
+      return x.isZero(0.0)
+             && support(normalizedC, cone) - normalizedC[0]
+                    <= tolerance
+                           * (std::abs(normalizedC[0])
+                              + support(normalizedC.cwiseAbs(), cone));
+    }
+    referenceImpulse = cScale / hScale;
+  }
+  const Real impulseScale = std::max(x.cwiseAbs().maxCoeff(), referenceImpulse);
   if (!std::isfinite(impulseScale))
     return false;
   Vector normalizedX = x;
@@ -117,50 +134,81 @@ bool certificate(
          && std::abs(normalizedX.dot(v)) <= tolerance * dotScale;
 }
 
-bool positiveSemidefinite(const Matrix& H)
-{
-  // H is normalized to a largest entry of 1, so an absolute tolerance works.
-  constexpr Real tolerance = 1e-12;
-  for (int i = 0; i < 3; ++i) {
-    if (H(i, i) < -tolerance)
-      return false;
-    const int j = (i + 1) % 3;
-    if (H(i, i) * H(j, j) - H(i, j) * H(j, i) < -tolerance)
-      return false;
-  }
-  return H.determinant() >= -tolerance;
-}
-
 bool prepare(
     const Eigen::Matrix3d& input,
     const Eigen::Vector3d& c,
     const FrictionCone& cone,
     Matrix& H,
+    Vector& q,
     double& regularization,
+    int& scaleExponent,
     bool regularize = true)
 {
   if (!input.allFinite() || !c.allFinite() || !valid(cone))
     return false;
-  const double scale = input.cwiseAbs().maxCoeff();
+  const double inputScale = input.cwiseAbs().maxCoeff();
   H = input;
-  if (scale > 0.0)
-    H /= scale;
+  if (inputScale > 0.0)
+    H /= inputScale;
   if ((H - H.transpose()).cwiseAbs().maxCoeff() > 1e-12)
     return false;
   H = (0.5 * H + 0.5 * H.transpose()).eval();
   Eigen::LDLT<Matrix> ldlt(H);
-  // LDLT pivots cannot tell a singular PSD block (zero pivots, NumericalIssue)
-  // from an indefinite one with a zero diagonal, so require every principal
-  // minor of the normalized block to be nonnegative up to rounding.
-  if (!positiveSemidefinite(H))
-    return false;
-  H = (0.5 * input + 0.5 * input.transpose()).cast<Real>();
-  if (!regularize)
+  // Clearly positive pivots avoid an eigensolve on the hot path. Near zero,
+  // only eigenvalues measure indefiniteness reliably (including singular H).
+  if (ldlt.info() != Eigen::Success || ldlt.vectorD().minCoeff() <= 1e-12) {
+    Eigen::SelfAdjointEigenSolver<Matrix> eigen(H, Eigen::EigenvaluesOnly);
+    if (eigen.info() != Eigen::Success
+        || eigen.eigenvalues().minCoeff()
+               < -1e-12 * std::max(1.0, eigen.eigenvalues().maxCoeff()))
+      return false;
+  }
+  q = c;
+  if (!regularize) {
+    // Certifying needs no solve-scale conversion. Preserve subnormal entries
+    // when symmetrizing, including the smallest positive diagonal.
+    H = inputScale < std::numeric_limits<Real>::min()
+            ? (input + 0.5 * (input.transpose() - input)).eval()
+            : (0.5 * input + 0.5 * input.transpose()).eval();
     return true;
+  }
+  Matrix scaled = input;
+  const double dataScale = std::max(inputScale, c.cwiseAbs().maxCoeff());
+  // Leave ordinary problems bit-identical; bound products in the secular and
+  // angle solves at extreme magnitudes. Zero H has a caller-unit shift floor.
+  if (inputScale > 0.0 && (dataScale < 0x1p-128 || dataScale > 0x1p128)) {
+    std::frexp(dataScale, &scaleExponent);
+    scaled = input.unaryExpr(
+        [&](double v) { return std::ldexp(v, -scaleExponent); });
+    q = c.unaryExpr([&](double v) { return std::ldexp(v, -scaleExponent); });
+    // A mixed-range input may not admit a lossless common scale. Never
+    // certify a different problem after dropping or rounding coefficients.
+    const auto restore = [&](double v) {
+      return std::ldexp(v, scaleExponent);
+    };
+    if ((scaled.unaryExpr(restore).array() != input.array()).any()
+        || (q.unaryExpr(restore).array() != c.array()).any())
+      return false;
+  }
+  const double scale = scaled.cwiseAbs().maxCoeff();
+  H = (0.5 * scaled + 0.5 * scaled.transpose()).eval();
   const Real trace = H.trace();
   if (scale * ldlt.vectorD().minCoeff() <= 1e-18 * std::max(1.0, trace)) {
-    regularization = double(1e-12 * (trace > 0.0 ? trace : 1.0));
-    H.diagonal().array() += Real(regularization);
+    Real shift = 1e-12 * (trace > 0.0 ? trace : 1.0);
+    if (scaleExponent != 0) {
+      regularization = trace > 0.0 ? std::ldexp(shift, scaleExponent) : 1e-12;
+      // The effective block must use the same representable regularization
+      // reported to the caller, even at the subnormal limit.
+      if (regularization == 0.0)
+        regularization = std::numeric_limits<double>::denorm_min();
+      if (input.diagonal().maxCoeff()
+          > std::numeric_limits<Real>::max() - regularization)
+        return false;
+      shift = std::ldexp(regularization, -scaleExponent);
+    } else {
+      regularization = shift;
+    }
+    H.diagonal().array() += shift;
     ldlt.compute(H);
   }
   return ldlt.info() == Eigen::Success && ldlt.vectorD().minCoeff() > 0.0;
@@ -436,10 +484,12 @@ LocalSolveResult solveConeQp(
 {
   LocalSolveResult result;
   Matrix effective;
-  if (!prepare(H, c, cone, effective, result.regularization))
+  Vector q;
+  int scaleExponent = 0;
+  if (!prepare(H, c, cone, effective, q, result.regularization, scaleExponent))
     return result;
   const double regularization = result.regularization;
-  result = solvePrepared(effective, c.cast<Real>(), cone);
+  result = solvePrepared(effective, q, cone);
   result.regularization = regularization;
   return result;
 }
@@ -493,11 +543,13 @@ bool coneQpCertificate(
     double tolerance)
 {
   Matrix checked;
+  Vector q;
+  int scaleExponent = 0;
   double regularization = 0.0;
   return std::isfinite(tolerance) && tolerance > 0.0
-         && prepare(H, c, cone, checked, regularization, false)
-         && certificate(
-             checked, c.cast<Real>(), impulse.cast<Real>(), cone, tolerance);
+         && prepare(
+             H, c, cone, checked, q, regularization, scaleExponent, false)
+         && certificate(checked, q, impulse.cast<Real>(), cone, tolerance);
 }
 
 LocalSolveResult solveExactContact(
@@ -508,18 +560,34 @@ LocalSolveResult solveExactContact(
 {
   LocalSolveResult result;
   Matrix effective;
-  if (!prepare(H, c, cone, effective, result.regularization)
+  Vector q;
+  int scaleExponent = 0;
+  if (!prepare(H, c, cone, effective, q, result.regularization, scaleExponent)
       || !std::isfinite(normalShift))
     return result;
-  const Vector q = c.cast<Real>();
+  if (scaleExponent != 0 && normalShift > 0.0) {
+    int warmExponent = 0;
+    std::frexp(normalShift, &warmExponent);
+    // A warm start outside the representable scaled range cannot improve the
+    // bracket; ignore it instead of overflowing a valid tiny problem.
+    const int exponent = warmExponent - scaleExponent;
+    normalShift = exponent > std::numeric_limits<Real>::max_exponent
+                          || exponent < std::numeric_limits<Real>::min_exponent
+                                            - std::numeric_limits<Real>::digits
+                                            + 1
+                      ? 0.0
+                      : std::ldexp(normalShift, -scaleExponent);
+  }
   // Every exit certifies the contact itself: a scaled anisotropic block can
   // meet the root tolerance before the contact certificate passes.
   const auto finish = [&](const Vector& x, Real shift) {
     result.impulse = x.cast<double>();
-    result.normalShift = double(shift);
+    result.normalShift
+        = scaleExponent == 0 ? shift : std::ldexp(shift, scaleExponent);
     Vector shifted = q;
     shifted[0] += support(effective * x + q, cone);
-    result.certified = certificate(effective, shifted, x, cone);
+    result.certified = std::isfinite(result.normalShift)
+                       && certificate(effective, shifted, x, cone);
     return result.certified;
   };
   // An apex is an exact contact solution whenever the free normal velocity is
