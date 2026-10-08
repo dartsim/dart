@@ -32,10 +32,13 @@
 
 #include "pointers.hpp"
 
-#include <dart/gui/osg/osg.hpp>
+#include <dart/gui/osg/ImGuiHandler.hpp>
+#include <dart/gui/osg/ImGuiViewer.hpp>
+#include <dart/gui/osg/Utils.hpp>
+#include <dart/gui/osg/Viewer.hpp>
 
-#include <dart/dart.hpp>
-
+#include <Eigen/Core>
+#include <osg/Vec4>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 

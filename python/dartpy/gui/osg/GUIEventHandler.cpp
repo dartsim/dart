@@ -32,10 +32,9 @@
 
 #include "pointers.hpp"
 
-#include <dart/gui/osg/osg.hpp>
-
-#include <dart/dart.hpp>
-
+#include <osgGA/GUIActionAdapter>
+#include <osgGA/GUIEventAdapter>
+#include <osgGA/GUIEventHandler>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 

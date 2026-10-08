@@ -32,12 +32,19 @@
 
 #include "pointers.hpp"
 
-#include <dart/gui/osg/osg.hpp>
+#include <dart/gui/osg/ImGuiHandler.hpp>
+#include <dart/gui/osg/ImGuiWidget.hpp>
 
-#include <dart/dart.hpp>
-
+#include <osg/Camera>
+#include <osg/NodeVisitor>
+#include <osg/Object>
+#include <osg/RenderInfo>
+#include <osgGA/GUIActionAdapter>
+#include <osgGA/GUIEventAdapter>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+#include <memory>
 
 namespace py = pybind11;
 
