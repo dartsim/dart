@@ -195,12 +195,29 @@ All tiers stage each arm at `/tmp/dart-perf/arm`, including binaries, libraries,
 revision inputs, shims, dependency paths and measurement outputs. Measurements
 run from `/tmp/dart-perf` with a fixed minimal environment: system `PATH`,
 `LC_ALL=C`, the existing FMA mask in `GLIBC_TUNABLES`, and staged library paths;
-the harness adds only its measurement and perturbation controls. A host lock
-serializes staging, measurement and copying artifacts to the requested output
-directory. The staging root must be private and owned by the current user.
+the harness preloads a small shim that disables OSG's implicit platform plugin
+discovery before its static initializers run. These headless workloads need no
+OSG plugins; otherwise OSG allocates a conda-embedded environment path even
+when `OSG_LIBRARY_PATH` is set. The harness adds its measurement and
+perturbation controls and checks the shim's lookup ABI against the active Pixi
+OSG library. A host lock serializes staging, measurement and copying artifacts
+to the requested output directory. Subprocesses inherit the lock, so an orphan
+must finish before a later run can replace the slot. The staging root must be
+private, owned by the current user, and on its parent's filesystem; mount points
+are refused.
+Set `DART_PERF_STAGING_ROOT` to an absolute directory on an executable
+filesystem when another account owns the default root or `/tmp` is mounted
+`noexec`. Its value is recorded in the environment fingerprint and backfill
+run identity; comparisons and resumes across staging roots are refused.
+Installs also record their build staging root and must be rebuilt when it
+changes, because DART resource paths are compiled into the libraries.
+Read-only installs are copied into writable staging directories without
+changing the originals.
 Harness builds also use fixed source, build, dependency and install aliases,
 because resource retrievers embed source and install data paths. Caller-owned
-build trees remain reusable. Normalization is part of `harness_sha`, so earlier
+build trees remain reusable. Harness builds disable RPATHs and rely on the
+measurement environment's `LD_LIBRARY_PATH`; their installs are intended to
+run only through the harness. Normalization is part of `harness_sha`, so earlier
 records have a different environment fingerprint and require new measurements.
 Comparisons require matching environment fingerprints. Exit status 1 means a
 policy failure; status 2 means an infrastructure error. When measuring an
@@ -213,7 +230,8 @@ Otherwise it falls back to `build/perf/liballocshim.so` and
 supply. `--no-perturb` does not require heappad. The install must also contain
 `share/dart/perf-build.json`, written by `local` with the CMake compiler
 ID/version, build preset, Pixi lock hash, commit, and installed libdart and
-driver hashes, plus per-driver workload source hashes from the archived revision.
+driver hashes, plus per-driver workload source hashes from the archived revision
+and a digest of the installed sample data.
 `contact_benchmark` hashes its CMake-globbed `.cpp`/`.hpp` files;
 `BM_INTEGRATION_kinematics` hashes `bm_kinematics.cpp` and `PerfGuard.hpp`;
 `BM_UNIT_dantzig_lcp` hashes `bm_dantzig_lcp.cpp`, `PerfGuard.hpp`, and
@@ -227,12 +245,16 @@ a `behaviour-change`: performance deltas are withheld and a matching
 use the common driver source from this checkout, covered by the environment's
 harness hash. `run` reads workload hashes from the install stamp, rather than
 from the current checkout. `run` checks the stamp against the artifacts and
-commit; missing or stale provenance, including missing workload hashes, is an
-infrastructure error. Saved records without compiler
-provenance cannot pass comparison. Gated rows fail on increases in either
-allocations per step or requested bytes per step unless acknowledged with a
+commit and installed sample data; missing or stale provenance, including missing
+workload or sample-data hashes, is an infrastructure error. Saved records
+without compiler provenance cannot pass comparison. Gated rows fail on increases
+in either allocations per step or requested bytes per step unless acknowledged with a
 matching `Perf-Regression-Rationale`. The report includes requested-byte deltas;
 missing or invalid byte measurements are handled like allocation counts.
+`dart://sample` resources resolve from the install's verified revision data,
+including the `dyn` scenes. `--source-dir` supplies only explicitly named
+file/model inputs, such as `pend` and `robot`; it cannot replace installed
+`dart://sample` data. Rebuild earlier installs to obtain the sample-data stamp.
 Gated rows with gate failures, allocation-count or requested-byte increases, or
 Ir deltas at or above the +0.30% warning threshold count as regressed in the
 summary. Otherwise, allocation-count or requested-byte decreases, or Ir
@@ -287,10 +309,10 @@ For repeatability checks, require identical deterministic counts and common
 guards with matching toolchain, inputs and environment fingerprints. Earlier
 pilots used arbitrary absolute paths and inherited environments: even local
 runs of one revision could differ by over 0.26% Ir. Fixed staging removes those
-allocation-layout inputs; matching fingerprints still require the same runtime
-environment and toolchain. Wall time and RSS remain advisory. Reusing an older
-install tests runtime normalization, but it retains any build paths embedded
-in its libraries; rebuild through the harness for fixed embedded paths too.
+allocation-layout inputs, including OSG's implicit conda plugin path. The
+runtime shim hash and staging root are fingerprinted; matching fingerprints
+still require the same runtime environment and toolchain. Wall time and RSS
+remain advisory.
 
 Inspect history with
 `python scripts/perf_regression.py ledger --records build/perf-backfill/records <pages-records-dir> --since <base-sha> --until <head-sha>`.

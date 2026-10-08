@@ -1,5 +1,6 @@
 """Regression checks for performance comparison and local execution."""
 
+import contextlib
 import copy
 import fcntl
 import fnmatch
@@ -993,6 +994,91 @@ def _load_runner():
     return module
 
 
+def _fake_runtime_shim(module, shims=None, **kwargs):
+    path = (shims or module.MEASUREMENT_ROOT / "arm") / "osgpath.so"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"runtime shim")
+    module.validate_osg_shim = lambda *args: None
+
+
+def test_osg_preload_disables_embedded_plugin_path_before_main(tmp_path):
+    module = _load_runner()
+    if sys.platform != "linux" or any(
+        not Path(tool).is_file()
+        for tool in ("/usr/bin/c++", "/usr/bin/nm", "/usr/bin/readelf")
+    ):
+        pytest.skip("OSG normalization requires Linux and the system compiler/binutils")
+    library = tmp_path / "discovery.cpp"
+    library.write_text(
+        "#include <cstdlib>\n#include <deque>\n#include <string>\n"
+        "namespace osgDB {\n"
+        "void appendPlatformSpecificLibraryFilePaths(std::deque<std::string>& paths)"
+        ' { paths.emplace_back(std::getenv("CONDA_PREFIX")); }\n}\n'
+        "std::deque<std::string> paths;\n"
+        "struct Initialize { Initialize() {"
+        " osgDB::appendPlatformSpecificLibraryFilePaths(paths); } };\n"
+        "Initialize initialize;\n"
+        'extern "C" int discovered() { return paths.size(); }\n'
+    )
+    driver = tmp_path / "driver.cpp"
+    driver.write_text(
+        '#include <cstdio>\nextern "C" int discovered();\n'
+        'int main() { std::printf("%d\\n", discovered()); }\n'
+    )
+    subprocess.run(
+        [
+            "/usr/bin/c++",
+            "-shared",
+            "-fPIC",
+            str(library),
+            "-o",
+            str(tmp_path / "libdiscovery.so"),
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "/usr/bin/c++",
+            str(driver),
+            f"-L{tmp_path}",
+            "-ldiscovery",
+            "-o",
+            str(tmp_path / "driver"),
+        ],
+        check=True,
+    )
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--commit",
+            "HEAD",
+        ]
+    )
+    module.build_shims(args, tmp_path, names=("osgpath",))
+    module.validate_osg_shim(tmp_path / "osgpath.so", tmp_path / "libdiscovery.so")
+    with pytest.raises(ValueError, match="plugin discovery ABI differs"):
+        module.validate_osg_shim(tmp_path / "osgpath.so", tmp_path / "driver")
+    for prefix in (tmp_path / "env", tmp_path / "a-longer-environment-prefix"):
+        env = {"LD_LIBRARY_PATH": str(tmp_path), "CONDA_PREFIX": str(prefix)}
+        assert (
+            subprocess.check_output([str(tmp_path / "driver")], env=env, text=True)
+            == "1\n"
+        )
+        env["LD_PRELOAD"] = str(tmp_path / "osgpath.so")
+        assert (
+            subprocess.check_output([str(tmp_path / "driver")], env=env, text=True)
+            == "0\n"
+        )
+    dynamic = subprocess.check_output(
+        ["/usr/bin/readelf", "-d", str(tmp_path / "osgpath.so")], text=True
+    )
+    assert "(NEEDED)" not in dynamic
+
+
 def _fake_valgrind(module, monkeypatch, tmp_path):
     launcher = tmp_path / "valgrind/bin/valgrind"
     launcher.parent.mkdir(parents=True)
@@ -1073,6 +1159,7 @@ def test_valgrind_hashes_require_launcher_and_tool(
 
 def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
     module = _load_runner()
+    _fake_runtime_shim(module)
     launcher, tool = _fake_valgrind(module, monkeypatch, tmp_path)
     args = module.parser().parse_args(
         [
@@ -1099,6 +1186,8 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
     (tmp_path / "lib").mkdir()
     library = tmp_path / "lib/libdart.so"
     library.write_bytes(b"measured artifact")
+    data = tmp_path / "share/doc/dart/data"
+    data.mkdir(parents=True)
     stamp = {
         "schema": "dart-perf-build/1",
         "commit": "installed",
@@ -1108,6 +1197,8 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         "preset": "installed preset",
         "libdart_sha": module.sha(library.read_bytes()),
         "libraries": {"lib/libdart.so": module.sha(library.read_bytes())},
+        "sample_data_sha": module.sample_data_hash(data),
+        "staging_root": str(module.MEASUREMENT_ROOT),
         "workload_sources": {
             driver: module.sha(b"installed workload")
             for driver in (module.CB, module.PB)
@@ -1191,6 +1282,11 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         ("compiler_sha", None, "invalid installed build provenance"),
         ("compiler_sha", "", "invalid installed build provenance"),
         ("compiler_sha", "invalid", "invalid installed build provenance"),
+        ("sample_data_sha", None, "invalid installed build provenance"),
+        ("sample_data_sha", "invalid", "invalid installed build provenance"),
+        ("staging_root", None, "invalid installed build provenance"),
+        ("staging_root", "", "invalid installed build provenance"),
+        ("staging_root", "other", "staging root differs"),
         ("schema", "other", "invalid installed build provenance"),
         ("binaries", None, "invalid installed build provenance"),
         ("workload_sources", None, "invalid installed build provenance"),
@@ -1252,6 +1348,8 @@ def test_installed_provenance_verifies_all_dart_libraries(tmp_path, defect):
     (tmp_path / "lib/libdart-utils.so").symlink_to(component.name)
     collision = tmp_path / "lib/libdart-collision-ode.so"
     collision.write_bytes(b"collision")
+    data = tmp_path / "share/doc/dart/data"
+    data.mkdir(parents=True)
     stamp = {
         "schema": "dart-perf-build/1",
         "commit": "installed",
@@ -1260,6 +1358,8 @@ def test_installed_provenance_verifies_all_dart_libraries(tmp_path, defect):
         "pixi_lock_sha": "installed lock",
         "preset": "perf-1",
         "libdart_sha": module.sha(b"core"),
+        "sample_data_sha": module.sample_data_hash(data),
+        "staging_root": str(module.MEASUREMENT_ROOT),
         "libraries": {
             "lib/libdart.so": module.sha(b"core"),
             "lib/libdart-utils.so": module.sha(b"utils"),
@@ -1292,8 +1392,125 @@ def test_installed_provenance_verifies_all_dart_libraries(tmp_path, defect):
         module.installed_provenance(args)
 
 
+@pytest.mark.parametrize(
+    "defect", ["changed", "added", "removed", "missing", "staging-root"]
+)
+def test_installed_provenance_verifies_revision_sample_data(
+    monkeypatch, tmp_path, defect
+):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "installed",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path / "run"),
+        ]
+    )
+    library = tmp_path / "lib/libdart.so"
+    library.parent.mkdir()
+    library.write_bytes(b"DART")
+    data = tmp_path / "share/doc/dart/data"
+    scene = data / "skel/test/scene.skel"
+    scene.parent.mkdir(parents=True)
+    scene.write_bytes(b"revision scene")
+    stamp = {
+        "schema": "dart-perf-build/1",
+        "commit": "installed",
+        "compiler": "GNU 13.3.0",
+        "compiler_sha": "1" * 64,
+        "pixi_lock_sha": "lock",
+        "preset": "perf-1",
+        "libdart_sha": module.sha(b"DART"),
+        "libraries": {"lib/libdart.so": module.sha(b"DART")},
+        "binaries": {},
+        "workload_sources": {},
+        "sample_data_sha": module.sample_data_hash(data),
+        "staging_root": str(module.MEASUREMENT_ROOT),
+    }
+    path = tmp_path / "share/dart/perf-build.json"
+    path.parent.mkdir(parents=True)
+    module.write_json(path, stamp)
+    assert module.installed_provenance(args) == stamp
+    if defect == "changed":
+        scene.write_bytes(b"different scene")
+    elif defect == "added":
+        (scene.parent / "extra.skel").write_bytes(b"extra scene")
+    elif defect == "removed":
+        scene.unlink()
+    elif defect == "staging-root":
+        monkeypatch.setattr(module, "MEASUREMENT_ROOT", tmp_path / "other-root")
+    else:
+        module.shutil.rmtree(data)
+    reason = (
+        "staging root differs; rebuild" if defect == "staging-root" else "sample data"
+    )
+    with pytest.raises(ValueError, match=reason):
+        module.installed_provenance(args)
+
+
+def test_run_arm_loads_installed_sample_data_before_unchecked_source(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    prefix = tmp_path / "prefix"
+    source = tmp_path / "source"
+    for root, content in (
+        (prefix / "share/doc/dart", "installed revision"),
+        (source, "unchecked checkout"),
+    ):
+        scene = root / "data/skel/test/scene.skel"
+        scene.parent.mkdir(parents=True)
+        scene.write_text(content)
+    shim = tmp_path / "allocshim.so"
+    shim.write_bytes(b"shim")
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "installed",
+            "--prefix",
+            str(prefix),
+            "--source-dir",
+            str(source),
+            "--output-dir",
+            str(tmp_path / "run"),
+            "--rows",
+            "dyn",
+            "--shim",
+            str(shim),
+            "--no-perturb",
+        ]
+    )
+    monkeypatch.setattr(module, "command_output", lambda command: "installed")
+    stamp = {"workload_sources": {}}
+    monkeypatch.setattr(module, "installed_provenance", lambda args: stamp)
+    monkeypatch.setattr(
+        module,
+        "build_shims",
+        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
+    )
+
+    def measure(arm, provenance):
+        assert provenance is stamp
+        loaded = module.MEASUREMENT_ROOT / "arm/source/data/skel/test/scene.skel"
+        assert loaded.read_text() == "installed revision"
+        assert loaded.resolve().is_relative_to(arm.prefix)
+        assert (arm.source_dir / "data/skel/test/scene.skel").read_text() == (
+            "unchecked checkout"
+        )
+        return {"sample_data": loaded.read_text()}
+
+    monkeypatch.setattr(module, "_measure_arm", measure)
+    assert module.run_arm(args) == {"sample_data": "installed revision"}
+
+
 def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
     module = _load_runner()
+    _fake_runtime_shim(module)
     _fake_valgrind(module, monkeypatch, tmp_path)
     args = module.parser().parse_args(
         [
@@ -1344,6 +1561,8 @@ def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
     first = module.fingerprint(args)
     assert first["runtime_pixi_lock_sha"] == module.sha(b"runtime lock")
     assert first["runtime_environment"] == "default"
+    assert first["staging_root"] == str(module.MEASUREMENT_ROOT)
+    assert first["osgpath_sha"] == module.sha(b"runtime shim")
     monkeypatch.delenv("PIXI_ENVIRONMENT_NAME")
     for key in ("RUNNER_NAME", "ImageOS", "ImageVersion"):
         monkeypatch.delenv(key, raising=False)
@@ -1358,9 +1577,15 @@ def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
     monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "gazebo")
     monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / ".pixi/envs/gazebo"))
     changed_environment = module.fingerprint(args)
+    previous_root = module.MEASUREMENT_ROOT
+    monkeypatch.setattr(module, "MEASUREMENT_ROOT", tmp_path / "other-staging-root")
+    _fake_runtime_shim(module)
+    changed_root = module.fingerprint(args)
+    monkeypatch.setattr(module, "MEASUREMENT_ROOT", previous_root)
     for changed, field in (
         (changed_lock, "runtime_pixi_lock_sha"),
         (changed_environment, "runtime_environment"),
+        (changed_root, "staging_root"),
     ):
         assert changed["pixi_lock_sha"] == first["pixi_lock_sha"]
         assert changed["fingerprint"] != first["fingerprint"]
@@ -1646,6 +1871,11 @@ def test_changed_input_requires_rebaseline_without_deltas(version):
 @pytest.mark.parametrize("changed", [False, True])
 def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, changed):
     module = _load_runner()
+    monkeypatch.setattr(
+        module,
+        "build_shims",
+        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
+    )
     _fake_valgrind(module, monkeypatch, tmp_path)
     row = module.select_rows(name)[0]
     args = module.parser().parse_args(
@@ -1668,6 +1898,8 @@ def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, cha
     library = tmp_path / "lib/libdart.so"
     library.parent.mkdir()
     library.write_bytes(b"DART")
+    data = tmp_path / "share/doc/dart/data"
+    data.mkdir(parents=True)
     drivers = {module.PB, row.driver}
     binary = tmp_path / "bin"
     binary.mkdir()
@@ -1681,6 +1913,8 @@ def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, cha
         "pixi_lock_sha": "lock",
         "preset": "perf-1",
         "libdart_sha": module.sha(b"DART"),
+        "sample_data_sha": module.sample_data_hash(data),
+        "staging_root": str(module.MEASUREMENT_ROOT),
         "libraries": {"lib/libdart.so": module.sha(b"DART")},
         "binaries": {driver: module.sha(b"binary") for driver in drivers},
         "workload_sources": {
@@ -2239,6 +2473,7 @@ def test_environment_is_identical_under_ambient_pollution(monkeypatch, tmp_path)
         "LC_ALL": "C",
         "GLIBC_TUNABLES": "glibc.cpu.hwcaps=-FMA",
         "LD_LIBRARY_PATH": f"{prefix}/lib:{module.MEASUREMENT_ROOT}/arm/dependencies/lib",
+        "LD_PRELOAD": str(module.MEASUREMENT_ROOT / "arm/osgpath.so"),
     }
     assert module.environment(prefix) == expected
     for name in (
@@ -2295,7 +2530,7 @@ def test_run_arm_stages_fixed_paths_and_exports_artifacts_under_lock(
         assert not (slot / "stale").exists()
         assert arm.prefix == slot / "prefix"
         assert arm.bin_dir == slot / "prefix/bin"
-        assert arm.source_dir == slot / "source"
+        assert arm.source_dir == slot / "inputs-source"
         assert arm.shim == slot / "allocshim.so"
         assert arm.heappad == slot / "heappad.so"
         assert arm.output_dir == slot / "run"
@@ -2306,6 +2541,7 @@ def test_run_arm_stages_fixed_paths_and_exports_artifacts_under_lock(
         assert arm.heappad.read_bytes() == b"heappad"
         assert (slot / "dependencies").resolve() == dependency
         assert arm.source_dir.resolve() == source
+        assert (slot / "source/data").readlink() == arm.prefix / "share/doc/dart/data"
         row = module.select_rows("s3w/dart")[0]
         snapshots.append(
             (
@@ -2400,9 +2636,227 @@ def test_perf_workspace_serializes_replacement(monkeypatch):
     assert not thread.is_alive() and entered.is_set()
 
 
+@pytest.mark.parametrize("build", [False, True])
+def test_orphaned_execute_keeps_workspace_locked(tmp_path, build):
+    module = _load_runner()
+    root = module.MEASUREMENT_ROOT
+    child_pid, release = tmp_path / "child.pid", tmp_path / "release"
+    child = """
+import os, sys, time
+from pathlib import Path
+Path(sys.argv[1]).write_text(str(os.getpid()))
+while not Path(sys.argv[2]).exists():
+    time.sleep(0.01)
+Path(sys.argv[3]).write_text("orphaned dump")
+"""
+    holder = """
+import importlib.util, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("perf", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = module
+spec.loader.exec_module(module)
+module.MEASUREMENT_ROOT = Path(sys.argv[2])
+with module.perf_workspace() as slot:
+    (slot / "run").mkdir()
+    module.execute(
+        [sys.executable, "-c", sys.argv[3], *sys.argv[4:6], str(slot / "run/orphan.cg")],
+        module.environment(slot / "prefix"),
+        slot / "child.log", 10, build=sys.argv[6] == "True"
+    )
+"""
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            holder,
+            module.__file__,
+            str(root),
+            child,
+            str(child_pid),
+            str(release),
+            str(build),
+        ]
+    )
+    contender = None
+    errors = []
+    entered = threading.Event()
+
+    def replace():
+        try:
+            with module.perf_workspace() as slot:
+                assert not (slot / "run/orphan.cg").exists()
+                entered.set()
+        except BaseException as error:
+            errors.append(error)
+
+    try:
+        for _ in range(200):
+            if child_pid.is_file():
+                break
+            assert process.poll() is None
+            time.sleep(0.01)
+        assert child_pid.is_file()
+        process.kill()
+        process.wait(timeout=2)
+        with (root / ".lock").open("a") as lock:
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        contender = threading.Thread(target=replace)
+        contender.start()
+        assert not entered.wait(timeout=0.02)
+        assert (root / "arm/run").is_dir()
+        release.touch()
+        contender.join(timeout=2)
+        assert not contender.is_alive() and entered.is_set()
+        assert not errors
+    finally:
+        release.touch()
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=2)
+        if child_pid.is_file():
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(int(child_pid.read_text()), signal.SIGKILL)
+        if contender is not None:
+            contender.join(timeout=2)
+
+
+def test_perf_workspace_replaces_readonly_install(monkeypatch, tmp_path):
+    module = _load_runner()
+    external = tmp_path / "external"
+    external.mkdir()
+    external.chmod(0o555)
+    with module.perf_workspace() as slot:
+        prefix = slot / "prefix"
+        binary = prefix / "bin"
+        binary.mkdir(parents=True)
+        (binary / "driver").write_text("driver")
+        for directory in (binary, prefix):
+            directory.chmod(0o555)
+        (slot / "source").symlink_to(external, target_is_directory=True)
+    with module.perf_workspace() as slot:
+        assert not (slot / "prefix").exists()
+        assert external.stat().st_mode & 0o777 == 0o555
+    external.chmod(0o700)
+
+
+def test_run_arm_stages_readonly_install_with_external_binaries(monkeypatch, tmp_path):
+    module = _load_runner()
+    prefix, binaries = tmp_path / "prefix", tmp_path / "binaries"
+    source = tmp_path / "source"
+    source.mkdir()
+    (prefix / "bin").mkdir(parents=True)
+    binaries.mkdir()
+    original = prefix / "bin/driver"
+    original.write_text("installed")
+    original.chmod(0o444)
+    (binaries / "driver").write_text("override")
+    for directory in (prefix / "bin", prefix, binaries):
+        directory.chmod(0o555)
+    shim = tmp_path / "shim.so"
+    shim.write_bytes(b"shim")
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(prefix),
+            "--bin-dir",
+            str(binaries),
+            "--source-dir",
+            str(source),
+            "--shim",
+            str(shim),
+            "--no-perturb",
+            "--output-dir",
+            str(tmp_path / "output"),
+        ]
+    )
+    monkeypatch.setattr(module, "command_output", lambda command: "commit")
+    monkeypatch.setattr(module, "installed_provenance", lambda args: {})
+    monkeypatch.setattr(
+        module,
+        "build_shims",
+        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
+    )
+
+    def measure(arm, provenance):
+        assert (arm.bin_dir / "driver").read_text() == "override"
+        for directory in (arm.prefix, arm.bin_dir):
+            assert directory.stat().st_mode & 0o700 == 0o700
+        return {"result": "ok"}
+
+    monkeypatch.setattr(module, "_measure_arm", measure)
+    try:
+        for _ in range(2):
+            assert module.run_arm(args) == {"result": "ok"}
+        assert original.read_text() == "installed"
+        assert original.stat().st_mode & 0o777 == 0o444
+        for directory in (prefix / "bin", prefix, binaries):
+            assert directory.stat().st_mode & 0o777 == 0o555
+    finally:
+        for directory in (prefix, prefix / "bin", binaries):
+            directory.chmod(0o700)
+
+
+@pytest.mark.parametrize("spelling", ["parent", "symlink"])
+def test_perf_workspace_rejects_inputs_inside_resolved_root(
+    monkeypatch, tmp_path, spelling
+):
+    module = _load_runner()
+    staging = tmp_path / "staging"
+    staging.mkdir(mode=0o700)
+    other = tmp_path / "other"
+    other.mkdir()
+    if spelling == "parent":
+        root = other / ".." / "staging"
+    else:
+        alias = tmp_path / "alias"
+        alias.symlink_to(tmp_path, target_is_directory=True)
+        root = alias / "staging"
+    monkeypatch.setattr(module, "MEASUREMENT_ROOT", root)
+    protected = staging / "arm/input"
+    protected.parent.mkdir()
+    protected.write_text("protected")
+    with pytest.raises(ValueError, match="inputs and outputs must be outside staging"):
+        with module.perf_workspace([protected]):
+            pytest.fail("resolved staging input accepted")
+    assert protected.read_text() == "protected"
+
+
+def test_perf_workspace_uses_absolute_root_override(monkeypatch, tmp_path):
+    root = tmp_path / "private-root"
+    monkeypatch.setenv("DART_PERF_STAGING_ROOT", str(root))
+    spec = importlib.util.spec_from_file_location(
+        "perf_override", _load_runner().__file__
+    )
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, spec.name, module)
+    spec.loader.exec_module(module)
+    assert module.MEASUREMENT_ROOT == root
+    with module.perf_workspace() as slot:
+        assert slot == root / "arm" and slot.is_dir()
+    monkeypatch.setattr(module, "MEASUREMENT_ROOT", Path("relative-root"))
+    with pytest.raises(ValueError, match="DART_PERF_STAGING_ROOT.*absolute"):
+        with module.perf_workspace():
+            pytest.fail("relative staging root accepted")
+
+
 @pytest.mark.parametrize(
     "unsafe",
-    ["symlink", "public", "owner", "input", "alias", "ancestor", "staged-alias"],
+    [
+        "symlink",
+        "public",
+        "owner",
+        "mount",
+        "filesystem",
+        "input",
+        "alias",
+        "ancestor",
+        "staged-alias",
+    ],
 )
 def test_perf_workspace_rejects_unsafe_roots_and_inputs(monkeypatch, tmp_path, unsafe):
     module = _load_runner()
@@ -2415,6 +2869,20 @@ def test_perf_workspace_rejects_unsafe_roots_and_inputs(monkeypatch, tmp_path, u
         root.chmod(0o755)
     elif unsafe == "owner":
         monkeypatch.setattr(module.os, "getuid", lambda: root.stat().st_uid + 1)
+    elif unsafe == "mount":
+        monkeypatch.setattr(module.os.path, "ismount", lambda path: path == root)
+    elif unsafe == "filesystem":
+        lstat = module.Path.lstat
+
+        def different_device(path):
+            info = lstat(path)
+            if path == root:
+                values = list(info)
+                values[2] += 1
+                return os.stat_result(values)
+            return info
+
+        monkeypatch.setattr(module.Path, "lstat", different_device)
     else:
         slot = root / "arm"
         slot.mkdir()
@@ -2439,14 +2907,22 @@ def test_perf_workspace_rejects_unsafe_roots_and_inputs(monkeypatch, tmp_path, u
             pytest.fail("unsafe workspace accepted")
     if paths:
         assert preserved.read_text() == "keep"
+    if unsafe == "owner":
+        with pytest.raises(
+            ValueError, match=rf"owner uid {root.stat().st_uid}.*DART_PERF_STAGING_ROOT"
+        ):
+            with module.perf_workspace():
+                pytest.fail("foreign owner accepted")
 
 
 @pytest.mark.parametrize("build", [False, True])
 def test_execute_uses_fixed_measurement_working_directory(tmp_path, build):
     module = _load_runner()
+    env = module.environment(module.MEASUREMENT_ROOT / "arm/prefix")
+    env.pop("LD_PRELOAD")
     output = module.execute(
         [sys.executable, "-c", "import os; print(os.getcwd())"],
-        module.environment(module.MEASUREMENT_ROOT / "arm/prefix"),
+        env,
         tmp_path / "working-directory.log",
         5,
         build=build,
@@ -2899,6 +3375,11 @@ def test_run_resolves_shims_and_reports_missing_options(
     monkeypatch, tmp_path, capsys, layout
 ):
     module = _load_runner()
+    monkeypatch.setattr(
+        module,
+        "build_shims",
+        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
+    )
     root = tmp_path / "repo"
     world = root / "tests/benchmark/worlds/3k_shapes.sdf.gz"
     world.parent.mkdir(parents=True)
@@ -3557,6 +4038,7 @@ def test_local_uses_independent_source_and_cmake_caches(
         contents.addfile(entry, io.BytesIO())
         for name in sorted(
             {path for paths in module.WORKLOAD_SOURCES.values() for path in paths}
+            | {"data/sample.skel"}
         ):
             data = f"archived {name}".encode()
             entry = tarfile.TarInfo(name)
@@ -3572,6 +4054,7 @@ def test_local_uses_independent_source_and_cmake_caches(
         assert kwargs.get("build", False)
         if command[:3] == ["cmake", "-G", "Ninja"]:
             assert "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" in command
+            assert "-DCMAKE_SKIP_RPATH=ON" in command
             source = Path(command[command.index("-S") + 1])
             build = Path(command[command.index("-B") + 1])
             build.mkdir(exist_ok=True)
@@ -3627,6 +4110,10 @@ def test_local_uses_independent_source_and_cmake_caches(
             (prefix / "share/dart").mkdir(parents=True)
             (prefix / "lib").mkdir()
             (prefix / "lib/libdart.so").write_bytes(b"installed DART")
+            module.shutil.copytree(
+                module.MEASUREMENT_ROOT / "arm/source/data",
+                prefix / "share/doc/dart/data",
+            )
         return ""
 
     monkeypatch.setattr(module, "execute", execute)
@@ -3636,6 +4123,7 @@ def test_local_uses_independent_source_and_cmake_caches(
         stamp = module.installed_provenance(arm)
         assert stamp["compiler"] == "GNU 13.3.0"
         assert stamp["compiler_sha"] == module.sha(b"build compiler")
+        assert stamp["staging_root"] == str(module.MEASUREMENT_ROOT)
         assert stamp["pixi_lock_sha"] == module.sha(
             (module.ROOT / "pixi.lock").read_bytes()
         )
@@ -3719,6 +4207,7 @@ def test_local_records_only_head_build_failures(
     monkeypatch.setattr(module, "workload_hashes", lambda *args: {})
     monkeypatch.setattr(module, "cmake_compiler", lambda *args: {})
     monkeypatch.setattr(module, "library_hashes", lambda *args: {})
+    monkeypatch.setattr(module, "sample_data_hash", lambda data: "1" * 64)
 
     error = {
         "build": module.BuildFailure,
@@ -6590,6 +7079,7 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(monkeypatch, tmp
     source, build, driver, prefix = (
         tmp_path / name for name in ("src", "build", "driver", "prefix")
     )
+    (source / "data").mkdir(parents=True)
     configurations, installs = [], []
     monkeypatch.setattr(module, "workload_hashes", lambda *args: {})
     monkeypatch.setattr(
@@ -6606,6 +7096,7 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(monkeypatch, tmp
         assert kwargs["build"]
         if command[:3] == ["cmake", "-G", "Ninja"]:
             assert "--fresh" in command
+            assert "-DCMAKE_SKIP_RPATH=ON" in command
             configured = Path(command[command.index("-B") + 1])
             if configured.resolve() == build:
                 assert (build / ".cmake/api/v1/query/codemodel-v2").is_file()
@@ -6625,6 +7116,9 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(monkeypatch, tmp
             installs.append(command)
             (staged_prefix / "lib").mkdir(parents=True)
             (staged_prefix / "lib/libdart.so").write_bytes(b"library")
+            module.shutil.copytree(
+                source / "data", staged_prefix / "share/doc/dart/data"
+            )
         return ""
 
     monkeypatch.setattr(module, "execute", execute)

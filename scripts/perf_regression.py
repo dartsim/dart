@@ -38,7 +38,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VALGRIND = "/usr/bin/valgrind"
-MEASUREMENT_ROOT = Path("/tmp/dart-perf")
+MEASUREMENT_ROOT = Path(os.environ.get("DART_PERF_STAGING_ROOT", "/tmp/dart-perf"))
+MEASUREMENT_LOCK_FD: int | None = None
 WORLD_SHA = "ad94d44b90f3023765e1b2a4d2ecc7390f5539fa761d6019e08b388ce5c5ff33"
 MEASURED_PATHS = (
     "dart",
@@ -392,32 +393,59 @@ def environment(prefix: Path) -> dict[str, str]:
         "LC_ALL": "C",
         "GLIBC_TUNABLES": "glibc.cpu.hwcaps=-FMA",
         "LD_LIBRARY_PATH": ":".join(paths),
+        "LD_PRELOAD": str(MEASUREMENT_ROOT / "arm/osgpath.so"),
     }
+
+
+def make_writable_directories(tree: Path) -> None:
+    if tree.is_symlink():
+        raise ValueError("performance staging slot cannot be a symlink")
+    tree.chmod(tree.stat().st_mode | stat.S_IRWXU)
+    for parent, directories, _ in os.walk(tree):
+        for name in directories:
+            directory = Path(parent) / name
+            if not directory.is_symlink():
+                directory.chmod(directory.stat().st_mode | stat.S_IRWXU)
 
 
 @contextlib.contextmanager
 def perf_workspace(paths=()):
+    global MEASUREMENT_LOCK_FD
+    if not MEASUREMENT_ROOT.is_absolute():
+        raise ValueError("DART_PERF_STAGING_ROOT must name an absolute directory")
     MEASUREMENT_ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
     info = MEASUREMENT_ROOT.lstat()
     if (
         not stat.S_ISDIR(info.st_mode)
         or info.st_uid != os.getuid()
         or info.st_mode & 0o077
+        or os.path.ismount(MEASUREMENT_ROOT)
+        or info.st_dev != MEASUREMENT_ROOT.parent.stat().st_dev
     ):
-        raise ValueError("performance staging root must be a private owned directory")
+        raise ValueError(
+            "performance staging root must be a private owned directory on its "
+            f"parent filesystem (owner uid {info.st_uid}); choose another absolute "
+            "directory with DART_PERF_STAGING_ROOT"
+        )
     slot = MEASUREMENT_ROOT / "arm"
     if any(
-        root.is_relative_to(slot) or slot.is_relative_to(root)
+        root.is_relative_to(alias) or alias.is_relative_to(root)
         for path in paths
         for root in (Path(path).absolute(), Path(path).resolve())
+        for alias in (slot.absolute(), slot.resolve())
     ):
         raise ValueError("performance inputs and outputs must be outside staging")
     with (MEASUREMENT_ROOT / ".lock").open("a", encoding="utf-8") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         if slot.exists():
+            make_writable_directories(slot)
             shutil.rmtree(slot)
         slot.mkdir()
-        yield slot
+        MEASUREMENT_LOCK_FD = lock.fileno()
+        try:
+            yield slot
+        finally:
+            MEASUREMENT_LOCK_FD = None
 
 
 class UnsupportedRow(ValueError):
@@ -464,6 +492,8 @@ def execute(
             stdout=output,
             stderr=subprocess.STDOUT,
             start_new_session=True,
+            # Orphans retain the slot lock until their last inherited fd closes.
+            pass_fds=() if MEASUREMENT_LOCK_FD is None else (MEASUREMENT_LOCK_FD,),
         )
         with RUNNING_LOCK:
             RUNNING[id(process)] = process
@@ -538,11 +568,12 @@ def row_command(row: Row, args, world: Path, warmup: int, steps: int) -> list[st
 
 
 def perturb_environment(env: dict, args, config: str) -> dict:
-    env.update(LD_PRELOAD=str(args.shim))
+    env["LD_PRELOAD"] += f":{args.shim}"
     if config == "tcache0":
         env["GLIBC_TUNABLES"] += ":glibc.malloc.tcache_count=0"
     elif config:
-        env.update(LD_PRELOAD=f"{args.shim}:{args.heappad}", HEAPPAD=config)
+        env["LD_PRELOAD"] += f":{args.heappad}"
+        env["HEAPPAD"] = config
     return env
 
 
@@ -1093,6 +1124,21 @@ def workload_hashes(
     return hashes
 
 
+def sample_data_hash(data: Path) -> str:
+    if not data.is_dir():
+        raise ValueError("missing benchmark sample data")
+    return sha(
+        json.dumps(
+            {
+                path.relative_to(data).as_posix(): sha(path.read_bytes())
+                for path in sorted(data.rglob("*"))
+                if path.is_file()
+            },
+            sort_keys=True,
+        ).encode()
+    )
+
+
 def installed_provenance(args) -> dict:
     path = args.prefix / "share/dart/perf-build.json"
     if not path.is_file():
@@ -1116,18 +1162,28 @@ def installed_provenance(args) -> dict:
         )
         or any(
             not isinstance(stamp.get(key), str) or not stamp[key].strip()
-            for key in ("compiler", "pixi_lock_sha", "preset")
+            for key in ("compiler", "pixi_lock_sha", "preset", "staging_root")
         )
         or not isinstance(stamp.get("compiler_sha"), str)
         or not re.fullmatch(r"[0-9a-f]{64}", stamp["compiler_sha"])
+        or not isinstance(stamp.get("sample_data_sha"), str)
+        or not re.fullmatch(r"[0-9a-f]{64}", stamp["sample_data_sha"])
     ):
         raise ValueError(f"invalid installed build provenance: {path}")
     if stamp.get("commit") != args.commit:
         raise ValueError("installed build provenance commit differs from --commit")
+    if stamp["staging_root"] != str(MEASUREMENT_ROOT):
+        raise ValueError(
+            "installed build provenance staging root differs; rebuild with the current staging root"
+        )
     if stamp.get("libdart_sha") != sha((args.prefix / "lib/libdart.so").read_bytes()):
         raise ValueError("installed build provenance libdart hash differs")
     if stamp["libraries"] != library_hashes(args.prefix):
         raise ValueError("installed build provenance DART library hashes differ")
+    if stamp["sample_data_sha"] != sample_data_hash(
+        args.prefix / "share/doc/dart/data"
+    ):
+        raise ValueError("installed build provenance sample data hash differs")
     return stamp
 
 
@@ -1171,9 +1227,11 @@ def fingerprint(args, provenance: dict | None = None) -> dict:
         ),
         "runtime_environment": os.environ.get("PIXI_ENVIRONMENT_NAME")
         or Path(os.environ.get("CONDA_PREFIX", "")).name,
+        "staging_root": str(MEASUREMENT_ROOT),
         "preset": provenance["preset"],
         "harness_sha": harness,
         "allocshim_sha": sha(args.shim.read_bytes()),
+        "osgpath_sha": sha((MEASUREMENT_ROOT / "arm/osgpath.so").read_bytes()),
         "heappad_sha": sha(args.heappad.read_bytes()) if args.perturb else None,
     }
     values["runner"] = {
@@ -1245,7 +1303,7 @@ def run_arm(args) -> dict:
     paths = [
         args.prefix,
         args.bin_dir,
-        args.source_dir,
+        args.source_dir / "data",
         args.output_dir,
         args.shim,
         args.heappad,
@@ -1256,15 +1314,36 @@ def run_arm(args) -> dict:
         arm = argparse.Namespace(**vars(args))
         arm.prefix = slot / "prefix"
         shutil.copytree(args.prefix, arm.prefix)
+        make_writable_directories(arm.prefix)
         arm.bin_dir = arm.prefix / "bin"
         if args.bin_dir != args.prefix / "bin":
-            shutil.copytree(args.bin_dir, arm.bin_dir, dirs_exist_ok=True)
-        arm.source_dir = slot / "source"
+
+            def copy_binary(source, destination):
+                destination = Path(destination)
+                if destination.is_file():
+                    destination.chmod(destination.stat().st_mode | stat.S_IWUSR)
+                return shutil.copy2(source, destination)
+
+            shutil.copytree(
+                args.bin_dir,
+                arm.bin_dir,
+                dirs_exist_ok=True,
+                copy_function=copy_binary,
+            )
+            make_writable_directories(arm.bin_dir)
+        arm.source_dir = slot / "inputs-source"
         arm.source_dir.symlink_to(args.source_dir.resolve(), target_is_directory=True)
+        (slot / "source").mkdir()
+        (slot / "source/data").symlink_to(
+            arm.prefix / "share/doc/dart/data", target_is_directory=True
+        )
         if dependency := os.environ.get("CONDA_PREFIX"):
             (slot / "dependencies").symlink_to(
                 Path(dependency).resolve(), target_is_directory=True
             )
+        build_shims(args, slot, names=("osgpath",))
+        if dependency and (Path(dependency) / "lib/libosgDB.so").is_file():
+            validate_osg_shim(slot / "osgpath.so", Path(dependency) / "lib/libosgDB.so")
         arm.shim, arm.heappad = slot / "allocshim.so", slot / "heappad.so"
         shutil.copy2(args.shim, arm.shim)
         if args.perturb:
@@ -3497,13 +3576,14 @@ def has_contact_driver(revision: str) -> bool:
     )
 
 
-def build_shims(args, shims: Path) -> None:
+def build_shims(args, shims: Path, names=("allocshim", "heappad")) -> None:
     shims.mkdir(parents=True, exist_ok=True)
-    compiler = "/usr/bin/cc"
-    compiler_sha = sha(Path(compiler).resolve(strict=True).read_bytes())
     options = ["-O2", "-shared", "-fPIC"]
-    for name in ("allocshim", "heappad"):
-        source = ROOT / f"tools/perf/{name}.c"
+    for name in names:
+        compiler = "/usr/bin/c++" if name == "osgpath" else "/usr/bin/cc"
+        compiler_sha = sha(Path(compiler).resolve(strict=True).read_bytes())
+        suffix = "cpp" if name == "osgpath" else "c"
+        source = ROOT / f"tools/perf/{name}.{suffix}"
         binary, stamp = shims / f"{name}.so", shims / f"{name}.sha256"
         identity = sha(
             json.dumps(
@@ -3535,6 +3615,25 @@ def build_shims(args, shims: Path) -> None:
         stamp.write_text(identity + "\n", encoding="utf-8")
 
 
+def validate_osg_shim(shim: Path, library: Path) -> None:
+    symbols = []
+    for path in (shim, library):
+        exported = subprocess.check_output(
+            ["/usr/bin/nm", "-D", "--defined-only", str(path)], text=True
+        )
+        symbols.append(
+            {
+                line.split()[-1]
+                for line in exported.splitlines()
+                if "appendPlatformSpecificLibraryFilePaths" in line
+            }
+        )
+    if len(symbols[0]) != 1 or not symbols[0].issubset(symbols[1]):
+        raise ValueError(
+            "active OSG plugin discovery ABI differs from normalization shim"
+        )
+
+
 def install_targets(build: Path) -> list[str]:
     """Find configured targets required by install without building the ALL graph."""
     reply = build / ".cmake/api/v1/reply"
@@ -3561,7 +3660,15 @@ def build_arm(args, revision, source, build, driver_build, prefix, drivers, log_
         raise ValueError("building requires the active Pixi environment (CONDA_PREFIX)")
     dependency = Path(dependency)
     with perf_workspace(
-        (source, build, driver_build, prefix, log_prefix, dependency, ROOT)
+        (
+            source,
+            build,
+            driver_build,
+            prefix,
+            log_prefix,
+            dependency,
+            ROOT / "tools/perf",
+        )
     ) as slot:
         for tree in (build, driver_build):
             tree.mkdir(parents=True, exist_ok=True)
@@ -3627,6 +3734,7 @@ def _build_arm(
     options = [
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-DCMAKE_SKIP_RPATH=ON",
         f"-DCMAKE_INSTALL_PREFIX={prefix}",
         f"-DCMAKE_PREFIX_PATH={dependency}",
         "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
@@ -3714,6 +3822,7 @@ def _build_arm(
             str(driver_build),
             "-DCMAKE_BUILD_TYPE=Release",
             "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+            "-DCMAKE_SKIP_RPATH=ON",
             f"-DCMAKE_PREFIX_PATH={prefix};{dependency}",
             "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
         ],
@@ -3734,6 +3843,9 @@ def _build_arm(
     compiler = cmake_compiler(build)
     if cmake_compiler(driver_build) != compiler:
         raise ValueError("DART and portable driver compiler provenance differs")
+    sample_data_sha = sample_data_hash(source / "data")
+    if sample_data_sha != sample_data_hash(prefix / "share/doc/dart/data"):
+        raise ValueError("installed sample data differs from the source revision")
     write_json(
         prefix / "share/dart/perf-build.json",
         {
@@ -3745,6 +3857,8 @@ def _build_arm(
             "libdart_sha": sha((prefix / "lib/libdart.so").read_bytes()),
             "libraries": library_hashes(prefix),
             "workload_sources": workload_sources,
+            "sample_data_sha": sample_data_sha,
+            "staging_root": str(MEASUREMENT_ROOT),
             "binaries": {
                 path.name: sha(path.read_bytes())
                 for path in binary.iterdir()
@@ -3812,6 +3926,7 @@ def host_identity(args) -> dict:
         raise ValueError("cannot identify the mapped glibc libraries")
     return {
         "harness_commit": command_output(["git", "rev-parse", "HEAD"]),
+        "staging_root": str(MEASUREMENT_ROOT),
         "rows": args.rows,
         "valgrind": command_output([VALGRIND, "--version"]).removeprefix("valgrind-"),
         **valgrind_hashes(),
