@@ -63,8 +63,7 @@ def scan_commit_message(text: str) -> bool:
     for number, line in enumerate(text.splitlines(), 1):
         if line == "# ------------------------ >8 ------------------------":
             break
-        if not line.startswith("#"):
-            found |= scan_line(line, number)
+        found |= scan_line(line, number)
     return found
 
 
@@ -139,7 +138,7 @@ def main() -> int:
     mode.add_argument(
         "--commit-msg-file",
         type=Path,
-        help="scan commit text before comments and scissors",
+        help="scan every commit line before Git scissors",
     )
     args = parser.parse_args()
     try:

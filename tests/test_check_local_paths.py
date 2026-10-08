@@ -176,18 +176,26 @@ def test_free_text_file_has_no_fixture_exemption(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "summary, expected", [("Public summary", 0), ("/home/example", 1)]
+    "summary, expected_output",
+    [
+        ("Public summary", ""),
+        ("/home/example", "1: /home/example\n"),
+        ("# See /home/example", "1: /home/example\n"),
+        ("Public summary\n# See /Users/example", "2: /Users/example\n"),
+    ],
 )
-def test_commit_msg_ignores_comments_and_verbose_diff(tmp_path, summary, expected):
+def test_commit_msg_scans_hash_lines_but_ignores_verbose_diff(
+    tmp_path, summary, expected_output
+):
     message = tmp_path / "COMMIT_EDITMSG"
     message.write_text(
-        f"{summary}\n\n# /Users/example\n"
+        f"{summary}\n\n# Please enter the commit message for your changes.\n"
         "# ------------------------ >8 ------------------------\n"
         "diff --git a/notes.md b/notes.md\n+/home/example/private.md\n"
     )
     result = _cli("--commit-msg-file", message, cwd=tmp_path)
-    assert result.returncode == expected, result.stderr
-    assert result.stdout == ("1: /home/example\n" if expected else "")
+    assert result.returncode == bool(expected_output), result.stderr
+    assert result.stdout == expected_output
 
 
 @pytest.mark.parametrize("mode", ["--staged", "--files", "--all-tracked"])

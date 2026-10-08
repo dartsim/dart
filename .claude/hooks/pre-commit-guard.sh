@@ -9,16 +9,17 @@
 #   * reads the hook JSON from stdin, extracts .tool_input.command or .cmd
 #   * exits 0 fast for anything that is not a `git commit` invocation
 #   * for a git commit:
-#       - if the executable git pre-commit hook is DART-managed and the commit
-#         is not using --no-verify/-n or a core.hooksPath override, exit 0
+#       - if both executable git hooks are current DART-managed hooks and the
+#         commit is not using --no-verify/-n or a core.hooksPath override, exit 0
 #         (that hook enforces; avoid running the gate twice)
 #       - if DART_SKIP_HOOKS=1 (in the environment or as a command prefix),
 #         exit 0 (emergency bypass, same as the git hook)
 #       - if the commit targets another repository (`git -C /other/repo
 #         commit`), exit 0 (not this gate's business)
 #       - otherwise run the selected Python interpreter with
-#         `scripts/check_agent_hook.py --profile staged`; on failure exit 2 with a
-#         concise message (exit 2 blocks the tool call and surfaces stderr)
+#         `scripts/check_agent_hook.py --profile staged` and scan supplied commit
+#         messages/files with `scripts/check_local_paths.py --stdin`; on failure
+#         exit 2 with a concise message (exit 2 blocks the tool call and surfaces stderr)
 #   * DART_HOOK_DRY_RUN=1 prints the command it would run and exits 0 (test aid)
 #   * without an injected interpreter, unavailable python3 prints a notice and
 #     exits 0; an injected interpreter fails closed
@@ -571,6 +572,63 @@ def commit_args_disable_hooks(args):
     return False
 
 
+def supplied_commit_message(args, cwd):
+    messages = []
+    i = 0
+    while i < len(args):
+        token = args[i]
+        i += 1
+        if token == "--":
+            break
+        option, sep, value = token.partition("=")
+        if option in {
+            "--message",
+            "--file",
+            "--reuse-message",
+            "--reedit-message",
+            "--author",
+            "--date",
+            "--cleanup",
+            "--template",
+            "--fixup",
+            "--squash",
+            "--trailer",
+            "--pathspec-from-file",
+        }:
+            if not sep:
+                if i >= len(args):
+                    continue
+                value = args[i]
+                i += 1
+        elif token.startswith("-") and not token.startswith("--"):
+            option = ""
+            for offset, short_option in enumerate(token[1:], 2):
+                if short_option in COMMIT_SHORT_OPTS_WITH_ATTACHED_ARG:
+                    option = "-" + short_option
+                    value = token[offset:]
+                    if (
+                        not value
+                        and short_option not in {"S", "u", "U"}
+                        and i < len(args)
+                    ):
+                        value = args[i]
+                        i += 1
+                    break
+        else:
+            continue
+        if option in {"-m", "--message"}:
+            messages.append(value)
+        elif option in {"-F", "--file"} and value != "-":
+            path = shell_expand_path_token(value, cwd)
+            if path:
+                try:
+                    with open(path, encoding="utf-8", errors="replace") as message_file:
+                        messages.append(message_file.read())
+                except OSError:
+                    pass  # Git reports unreadable files; stdin/editor/reused messages need the hook.
+    return "\n\n".join(messages)
+
+
 def unwrap_wrapper(tokens, i, head):
     """Return the wrapped command index, or None when the wrapper only queries."""
     i += 1
@@ -891,17 +949,19 @@ def is_git_commit(text):
                 except OSError:
                     pass
             gate_target_dir = target_dir or project
+            message = supplied_commit_message(tokens[i + 1 :], target_dir)
             if no_verify:
-                return "commit-no-verify", git_worktree_root(gate_target_dir)
+                return "commit-no-verify", git_worktree_root(gate_target_dir), message
             if hooks_path_override:
-                return "commit-hooks-override", git_worktree_root(gate_target_dir)
-            return "commit", git_worktree_root(gate_target_dir)
-    return "skip", ""
+                return "commit-hooks-override", git_worktree_root(gate_target_dir), message
+            return "commit", git_worktree_root(gate_target_dir), message
+    return "skip", "", ""
 
 
-verdict, target_repo_root = is_git_commit(cmd)
+verdict, target_repo_root, message = is_git_commit(cmd)
 print(verdict)
 print(target_repo_root)
+print(json.dumps(message))
 ')
 guard_status=$?
 if [ "$guard_status" -ne 0 ]; then
@@ -933,8 +993,8 @@ fi
 repo_root="${target_repo_root:-${CLAUDE_PROJECT_DIR:-${CODEX_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}}}"
 
 if [ "$verdict" = "commit" ]; then
-    # If the executable git pre-commit hook is the current DART-managed hook,
-    # let it enforce; don't double-run. Stale or incomplete managed hooks and
+    # If both executable git hooks are current DART-managed hooks,
+    # let them enforce; don't double-run. Stale or incomplete managed hooks and
     # foreign hooks are not guaranteed to include DART's staged gate, while
     # --no-verify/-n and core.hooksPath overrides bypass even a current hook.
     hook_path=$(git -C "$repo_root" rev-parse --git-path hooks/pre-commit 2>/dev/null)
@@ -946,7 +1006,12 @@ if [ "$verdict" = "commit" ]; then
         if [ -x "$hook_path" ] \
             && grep -Fq "DART-MANAGED-HOOK v8  (sentinel line: do not edit; the installer keys on it)" "$hook_path" 2>/dev/null \
             && grep -Fq 'if ! "$python_cmd" scripts/check_agent_hook.py --profile staged; then' "$hook_path" 2>/dev/null; then
-            exit 0
+            message_hook_path="$(dirname "$hook_path")/commit-msg"
+            if [ -x "$message_hook_path" ] \
+                && grep -Fq "DART-MANAGED-HOOK v8  (sentinel line: do not edit; the installer keys on it)" "$message_hook_path" 2>/dev/null \
+                && grep -Fq 'if ! "$python_cmd" scripts/check_local_paths.py --commit-msg-file "$1"; then' "$message_hook_path" 2>/dev/null; then
+                exit 0
+            fi
         fi
     fi
 fi
@@ -958,6 +1023,25 @@ fi
 if [ -n "${DART_HOOK_DRY_RUN:-}" ]; then
     echo "DART guard (dry run): would run 'python3 scripts/check_agent_hook.py --profile staged' in $repo_root" >&2
     exit 0
+fi
+
+if [ -f "$repo_root/scripts/check_local_paths.py" ]; then
+    if ! printf '%s\n' "$guard_result" | sed -n '3p' | "$python_cmd" -c '
+import json
+import subprocess
+import sys
+
+message = json.load(sys.stdin)
+if message:
+    sys.exit(subprocess.run(
+        [sys.executable, sys.argv[1], "--stdin"], input=message, text=True,
+        stdout=sys.stderr,
+    ).returncode)
+' "$repo_root/scripts/check_local_paths.py"; then
+        echo "DART guard: local-path check of supplied commit message FAILED — commit blocked." >&2
+        echo "  Remove local paths from the commit message, then retry the commit." >&2
+        exit 2
+    fi
 fi
 
 if [ ! -f "$repo_root/scripts/check_agent_hook.py" ]; then
