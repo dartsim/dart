@@ -165,12 +165,17 @@ bool collideConvexConvex(
     CollisionResult& result,
     const CollisionOption& option)
 {
-  const detail::ShapeSupport supportA{shape1, tf1};
-  const detail::ShapeSupport supportB{shape2, tf2};
+  const auto supportA = detail::makeShapeSupportFunctionT(shape1, tf1);
+  const auto supportB = detail::makeShapeSupportFunctionT(shape2, tf2);
   const Eigen::Vector3d centerA = computeShapeCenter(shape1, tf1);
   const Eigen::Vector3d centerB = computeShapeCenter(shape2, tf2);
-  return detail::collideSupportFunctionsT(
-      supportA, centerA, supportB, centerB, result, option);
+  return std::visit(
+      [&](const auto& concreteA, const auto& concreteB) {
+        return detail::collideSupportFunctionsT(
+            concreteA, centerA, concreteB, centerB, result, option);
+      },
+      supportA,
+      supportB);
 }
 
 void collideConvexConvexBatch(
@@ -203,77 +208,83 @@ double distanceConvexConvex(
     DistanceResult& result,
     const DistanceOption& option)
 {
-  const detail::ShapeSupport supportA{shape1, tf1};
-  const detail::ShapeSupport supportB{shape2, tf2};
+  const auto supportA = detail::makeShapeSupportFunctionT(shape1, tf1);
+  const auto supportB = detail::makeShapeSupportFunctionT(shape2, tf2);
 
   Eigen::Vector3d initialDir = tf2.translation() - tf1.translation();
   if (initialDir.squaredNorm() < 1e-10) {
     initialDir = Eigen::Vector3d::UnitX();
   }
 
-  GjkResult gjkResult = detail::queryT(supportA, supportB, initialDir);
+  return std::visit(
+      [&](const auto& concreteA, const auto& concreteB) {
+        GjkResult gjkResult = detail::queryT(concreteA, concreteB, initialDir);
 
-  if (!gjkResult.intersecting) {
-    if (option.upperBound < gjkResult.distance) {
-      result.distance = std::numeric_limits<double>::max();
-      return std::numeric_limits<double>::max();
-    }
+        if (!gjkResult.intersecting) {
+          if (option.upperBound < gjkResult.distance) {
+            result.distance = std::numeric_limits<double>::max();
+            return std::numeric_limits<double>::max();
+          }
 
-    result.distance = gjkResult.distance;
-    if (option.enableNearestPoints) {
-      result.pointOnObject1 = gjkResult.closestPointA;
-      result.pointOnObject2 = gjkResult.closestPointB;
-      if (gjkResult.distance > 1e-12) {
-        result.normal
-            = (gjkResult.closestPointB - gjkResult.closestPointA).normalized();
-      } else {
-        result.normal = Eigen::Vector3d::UnitX();
-      }
-    }
-    return gjkResult.distance;
-  }
+          result.distance = gjkResult.distance;
+          if (option.enableNearestPoints) {
+            result.pointOnObject1 = gjkResult.closestPointA;
+            result.pointOnObject2 = gjkResult.closestPointB;
+            if (gjkResult.distance > 1e-12) {
+              result.normal
+                  = (gjkResult.closestPointB - gjkResult.closestPointA)
+                        .normalized();
+            } else {
+              result.normal = Eigen::Vector3d::UnitX();
+            }
+          }
+          return gjkResult.distance;
+        }
 
-  EpaResult epaResult
-      = detail::penetrationT(supportA, supportB, gjkResult.simplex);
-  double depth = 0.0;
-  Eigen::Vector3d pointA = tf1.translation();
-  Eigen::Vector3d pointB = tf2.translation();
-  Eigen::Vector3d normal = Eigen::Vector3d::UnitX();
-  Eigen::Vector3d penetrationNormal = Eigen::Vector3d::UnitX();
+        EpaResult epaResult
+            = detail::penetrationT(concreteA, concreteB, gjkResult.simplex);
+        double depth = 0.0;
+        Eigen::Vector3d pointA = tf1.translation();
+        Eigen::Vector3d pointB = tf2.translation();
+        Eigen::Vector3d normal = Eigen::Vector3d::UnitX();
+        Eigen::Vector3d penetrationNormal = Eigen::Vector3d::UnitX();
 
-  if (epaResult.success) {
-    depth = epaResult.depth;
-    pointA = epaResult.pointOnA;
-    pointB = epaResult.pointOnB;
-    penetrationNormal = epaResult.normal;
-  } else {
-    const Eigen::Vector3d centerA = computeShapeCenter(shape1, tf1);
-    const Eigen::Vector3d centerB = computeShapeCenter(shape2, tf2);
-    MprResult mprResult
-        = detail::mpr::penetrationT(supportA, supportB, centerA, centerB);
-    if (mprResult.success) {
-      depth = mprResult.depth;
-      pointA = mprResult.pointOnA;
-      pointB = mprResult.pointOnB;
-      penetrationNormal = mprResult.normal;
-    }
-  }
+        if (epaResult.success) {
+          depth = epaResult.depth;
+          pointA = epaResult.pointOnA;
+          pointB = epaResult.pointOnB;
+          penetrationNormal = epaResult.normal;
+        } else {
+          const Eigen::Vector3d centerA = computeShapeCenter(shape1, tf1);
+          const Eigen::Vector3d centerB = computeShapeCenter(shape2, tf2);
+          MprResult mprResult = detail::mpr::penetrationT(
+              concreteA, concreteB, centerA, centerB);
+          if (mprResult.success) {
+            depth = mprResult.depth;
+            pointA = mprResult.pointOnA;
+            pointB = mprResult.pointOnB;
+            penetrationNormal = mprResult.normal;
+          }
+        }
 
-  alignPenetrationWitnesses(depth, penetrationNormal, pointA, pointB);
-  if ((pointB - pointA).squaredNorm() > 1e-12) {
-    normal = (pointB - pointA).normalized();
-  } else if (penetrationNormal.squaredNorm() > 1e-12) {
-    normal = -penetrationNormal.normalized();
-  }
+        alignPenetrationWitnesses(depth, penetrationNormal, pointA, pointB);
+        if ((pointB - pointA).squaredNorm() > 1e-12) {
+          normal = (pointB - pointA).normalized();
+        } else if (penetrationNormal.squaredNorm() > 1e-12) {
+          normal = -penetrationNormal.normalized();
+        }
 
-  result.distance = -depth;
-  if (option.enableNearestPoints) {
-    result.pointOnObject1 = pointA;
-    result.pointOnObject2 = pointB;
-    result.normal = normal;
-  }
+        result.distance = -depth;
+        if (option.enableNearestPoints) {
+          result.pointOnObject1 = pointA;
+          result.pointOnObject2 = pointB;
+          result.normal = normal;
+        }
 
-  return -depth;
+        return -depth;
+      },
+      supportA,
+      supportB);
 }
 
 } // namespace dart::collision::native

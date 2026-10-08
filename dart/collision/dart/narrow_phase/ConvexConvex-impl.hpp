@@ -36,6 +36,9 @@
 #include <dart/collision/dart/narrow_phase/Epa-impl.hpp>
 #include <dart/collision/dart/narrow_phase/Mpr-impl.hpp>
 
+#include <utility>
+#include <variant>
+
 namespace dart::collision::native::detail {
 
 inline auto makeConvexSupportFunctionT(
@@ -131,38 +134,62 @@ inline auto makeCylinderSupportFunctionT(
   };
 }
 
-// Concrete support callable for the runtime shape dispatch.
-struct ShapeSupport
+struct ZeroSupport
 {
-  const Shape& shape;
-  Eigen::Isometry3d transform;
-
-  Eigen::Vector3d operator()(const Eigen::Vector3d& dir) const
+  Eigen::Vector3d operator()(const Eigen::Vector3d&) const
   {
-    switch (shape.getType()) {
-      case ShapeType::Sphere:
-        return makeSphereSupportFunctionT(
-            static_cast<const SphereShape&>(shape), transform)(dir);
-      case ShapeType::Box:
-        return makeBoxSupportFunctionT(
-            static_cast<const BoxShape&>(shape), transform)(dir);
-      case ShapeType::Capsule:
-        return makeCapsuleSupportFunctionT(
-            static_cast<const CapsuleShape&>(shape), transform)(dir);
-      case ShapeType::Cylinder:
-        return makeCylinderSupportFunctionT(
-            static_cast<const CylinderShape&>(shape), transform)(dir);
-      case ShapeType::Convex:
-        return makeConvexSupportFunctionT(
-            static_cast<const ConvexShape&>(shape), transform)(dir);
-      case ShapeType::Mesh:
-        return makeMeshSupportFunctionT(
-            static_cast<const MeshShape&>(shape), transform)(dir);
-      default:
-        return Eigen::Vector3d::Zero();
-    }
+    return Eigen::Vector3d::Zero();
   }
 };
+
+using ShapeSupportFunction = std::variant<
+    decltype(makeSphereSupportFunctionT(
+        std::declval<const SphereShape&>(),
+        std::declval<const Eigen::Isometry3d&>())),
+    decltype(makeBoxSupportFunctionT(
+        std::declval<const BoxShape&>(),
+        std::declval<const Eigen::Isometry3d&>())),
+    decltype(makeCapsuleSupportFunctionT(
+        std::declval<const CapsuleShape&>(),
+        std::declval<const Eigen::Isometry3d&>())),
+    decltype(makeCylinderSupportFunctionT(
+        std::declval<const CylinderShape&>(),
+        std::declval<const Eigen::Isometry3d&>())),
+    decltype(makeConvexSupportFunctionT(
+        std::declval<const ConvexShape&>(),
+        std::declval<const Eigen::Isometry3d&>())),
+    decltype(makeMeshSupportFunctionT(
+        std::declval<const MeshShape&>(),
+        std::declval<const Eigen::Isometry3d&>())),
+    ZeroSupport>;
+
+// Capture shape parameters once per pair, before visiting the concrete solver.
+inline ShapeSupportFunction makeShapeSupportFunctionT(
+    const Shape& shape, const Eigen::Isometry3d& transform)
+{
+  switch (shape.getType()) {
+    case ShapeType::Sphere:
+      return makeSphereSupportFunctionT(
+          static_cast<const SphereShape&>(shape), transform);
+    case ShapeType::Box:
+      return makeBoxSupportFunctionT(
+          static_cast<const BoxShape&>(shape), transform);
+    case ShapeType::Capsule:
+      return makeCapsuleSupportFunctionT(
+          static_cast<const CapsuleShape&>(shape), transform);
+    case ShapeType::Cylinder:
+      return makeCylinderSupportFunctionT(
+          static_cast<const CylinderShape&>(shape), transform);
+    case ShapeType::Convex:
+      return makeConvexSupportFunctionT(
+          static_cast<const ConvexShape&>(shape), transform);
+    case ShapeType::Mesh:
+      return makeMeshSupportFunctionT(
+          static_cast<const MeshShape&>(shape), transform);
+    default:
+      return ZeroSupport{};
+  }
+}
 
 template <typename SupportA, typename SupportB>
 bool collideSupportFunctionsT(

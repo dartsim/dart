@@ -1026,23 +1026,39 @@ TEST(Gjk, ConcreteCallablesMatchWrappersBitwise)
           if (pose % 3 == 0)
             tfB.translation().x() += 4.0;
         }
-        const detail::ShapeSupport supportA{*shapeA, tfA};
-        const detail::ShapeSupport supportB{*shapeB, tfB};
+        const auto supportA = detail::makeShapeSupportFunctionT(*shapeA, tfA);
+        const auto supportB = detail::makeShapeSupportFunctionT(*shapeB, tfB);
         const auto wrappedA = makeWrappedSupport(*shapeA, tfA);
         const auto wrappedB = makeWrappedSupport(*shapeB, tfB);
         const Eigen::Vector3d direction = tfB.translation() - tfA.translation();
         const auto wrapped = Gjk::query(wrappedA, wrappedB, direction);
-        const auto concrete = detail::queryT(supportA, supportB, direction);
+        const auto concrete = std::visit(
+            [&](const auto& concreteA, const auto& concreteB) {
+              return detail::queryT(concreteA, concreteB, direction);
+            },
+            supportA,
+            supportB);
         expectGjkBits(wrapped, concrete);
         expectGjkBits(
             Gjk::query(wrappedA, wrappedB, wrapped.simplex, direction),
-            detail::queryT(supportA, supportB, concrete.simplex, direction));
+            std::visit(
+                [&](const auto& concreteA, const auto& concreteB) {
+                  return detail::queryT(
+                      concreteA, concreteB, concrete.simplex, direction);
+                },
+                supportA,
+                supportB));
         separated += !wrapped.intersecting;
         intersecting += wrapped.intersecting;
         const auto epaWrapped
             = Epa::penetration(wrappedA, wrappedB, wrapped.simplex);
-        const auto epaConcrete
-            = detail::penetrationT(supportA, supportB, concrete.simplex);
+        const auto epaConcrete = std::visit(
+            [&](const auto& concreteA, const auto& concreteB) {
+              return detail::penetrationT(
+                  concreteA, concreteB, concrete.simplex);
+            },
+            supportA,
+            supportB);
         EXPECT_EQ(epaWrapped.success, epaConcrete.success);
         expectBits(&epaWrapped.depth, &epaConcrete.depth, 1);
         expectBits(epaWrapped.normal.data(), epaConcrete.normal.data(), 3);
@@ -1051,8 +1067,13 @@ TEST(Gjk, ConcreteCallablesMatchWrappersBitwise)
         epaSuccess += epaWrapped.success;
         const auto mprWrapped = Mpr::penetration(
             wrappedA, wrappedB, tfA.translation(), tfB.translation());
-        const auto mprConcrete = detail::mpr::penetrationT(
-            supportA, supportB, tfA.translation(), tfB.translation());
+        const auto mprConcrete = std::visit(
+            [&](const auto& concreteA, const auto& concreteB) {
+              return detail::mpr::penetrationT(
+                  concreteA, concreteB, tfA.translation(), tfB.translation());
+            },
+            supportA,
+            supportB);
         EXPECT_EQ(mprWrapped.success, mprConcrete.success);
         expectBits(&mprWrapped.depth, &mprConcrete.depth, 1);
         expectBits(mprWrapped.normal.data(), mprConcrete.normal.data(), 3);

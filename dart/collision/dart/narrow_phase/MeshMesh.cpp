@@ -1147,7 +1147,8 @@ bool collidePrimitiveMesh(
     }
   }
 
-  const detail::ShapeSupport primitiveSupport{primitive, tfPrim};
+  const auto primitiveSupport
+      = detail::makeShapeSupportFunctionT(primitive, tfPrim);
   Eigen::Vector3d primitiveCenterWorld = tfPrim.translation();
   if (!spherePrimitive && !capsulePrimitive) {
     primitiveCenterWorld = primitiveCenter(primitive, tfPrim);
@@ -1264,13 +1265,17 @@ bool collidePrimitiveMesh(
       };
 
       CollisionResult localResult;
-      if (detail::collideSupportFunctionsT(
-              primitiveSupport,
-              primitiveCenterWorld,
-              triangleSupport,
-              triCenter,
-              localResult,
-              localOption)) {
+      if (std::visit(
+              [&](const auto& concretePrimitive) {
+                return detail::collideSupportFunctionsT(
+                    concretePrimitive,
+                    primitiveCenterWorld,
+                    triangleSupport,
+                    triCenter,
+                    localResult,
+                    localOption);
+              },
+              primitiveSupport)) {
         hit = true;
         if (!option.enableContact) {
           return true;
