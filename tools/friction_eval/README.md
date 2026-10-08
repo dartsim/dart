@@ -45,11 +45,21 @@ python3 tools/friction_eval/friction_eval.py run --bin B619=PATH --bin B620=PATH
 python3 tools/friction_eval/friction_eval.py report DIR > summary.md
 ```
 
-Options: `--solver dantzig|pgs|pgs100|pgs-tight|dzr|mf-pgs`,
+Options: `--solver dantzig|pgs|pgs100|pgs-tight|dzr|mf-pgs|nsgs-c|nsgs-a|nsgs-b`,
 `--detector ode|dart|fcl|bullet` (FCL with its analytic primitives),
 `--dt`, `--erp`, `--cfm`, `--max-erv`, `--deactivation on|off` (default off),
 `--split on|off`, `--threads`, `--max-contacts`, `--max-contacts-per-pair`,
 `--label`, and `--perf`, which drops the wrapper and the audit for timing.
+The NSGS backends select exact Coulomb, the associated cone relaxation, or
+the box law. They require a build containing `NsgsFrictionSolver` and accept
+`--sweeps` (default 100), `--tolerance` (default 1e-5 m/s), and
+`--box-for-anisotropic on|off` (default on). Associated sliding contacts glide,
+so their trajectories are an ablation rather than an exact-Coulomb oracle.
+NSGS rows also report cumulative `nsgs_*` solver statistics, including the
+regularized law violation in `nsgs_violation_max`.
+P1 accepts `v0` to launch its independent bodies with oblique slip; use
+`--perf --threads 1` and `--perf --threads 4` to compare state hashes while
+the built-in backend solves its islands in parallel.
 `friction_eval --list` prints the scene ids: A1-A8 and A10-A13 analytic, C1,
 C2, C4 and C5 coupled thresholds, R1-R3, R5, R6 and R9 robustness, and P1
 (contact_benchmark's generated objects). C4 and R6, the masonry arches, need

@@ -53,6 +53,7 @@
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/DegreeOfFreedom.hpp"
@@ -100,6 +101,11 @@ constraint::BoxedLcpSolverPtr cloneBoxedLcpSolver(
                          ->getOption());
     return clone;
   }
+
+  if (typeid(*backend) == typeid(constraint::NsgsFrictionSolver))
+    return std::make_shared<constraint::NsgsFrictionSolver>(
+        static_cast<const constraint::NsgsFrictionSolver*>(backend)
+            ->getOptions());
 
   dtwarn << "[World::clone] Cannot clone " << role << " boxed LCP solver type '"
          << solver->getType() << "'. Keeping the default solver.\n";

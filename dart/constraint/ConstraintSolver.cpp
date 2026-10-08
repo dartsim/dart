@@ -52,6 +52,7 @@
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
 #include "dart/constraint/MimicMotorConstraint.hpp"
+#include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -317,7 +318,7 @@ bool isParallelSafeBuiltInBoxedSolver(const ConstBoxedLcpSolverPtr& solver)
     return true;
 
   if (!isExactBoxedSolverType<PgsBoxedLcpSolver>(solver))
-    return false;
+    return isExactBoxedSolverType<NsgsFrictionSolver>(solver);
 
   return !isRandomizedPgsSolver(solver);
 }

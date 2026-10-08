@@ -697,13 +697,16 @@ inline Scene backspin(const Params& p, double dt)
   const double decay = 3.5 * mu * kGravity * dt; // slip lost per step
   const double rollSteps = std::ceil(std::abs(slip0) / decay);
   s.steps = steps(param(p, "T", rollSteps * dt + 0.5), dt);
-  auto st = std::make_shared<Eigen::Vector2d>(-1.0, 0.0); // roll step, lateral
+  // Roll step, lateral displacement, first-step normal/tangent velocity ratio.
+  auto st = std::make_shared<Eigen::Vector3d>(-1.0, 0.0, kNaN);
   const auto slipOf = [=]() {
     return planar(
         ball->getLinearVelocity()
         + ball->getAngularVelocity().cross(-radius * Eigen::Vector3d::UnitZ()));
   };
   s.postStep = [=](int i) {
+    if (i == 0 && mu > 0.0 && slipOf().norm() > kSlideSpeed)
+      (*st)(2) = ball->getLinearVelocity().z() / (mu * slipOf().norm());
     if ((*st)(0) < 0.0 && slipOf().norm() < 0.01 * decay)
       (*st)(0) = i + 1;
     (*st)(1) = std::max(
@@ -738,6 +741,8 @@ inline Scene backspin(const Params& p, double dt)
     m["pred_roll_step"] = rollSteps;
     m["lateral"] = (*st)(1);
     m["pred_box_lateral"] = boxLateral;
+    if (std::isfinite((*st)(2)))
+      m["initial_dilatancy"] = (*st)(2);
   };
   return s;
 }
@@ -1501,7 +1506,7 @@ inline Scene generated(const Params& p, double dt)
       shape = boxShape(1.0, 1.0, 1.0);
     else
       shape = std::make_shared<dart::dynamics::CylinderShape>(0.5, 1.0);
-    addFree(
+    auto* body = addFree(
         *s.world,
         "object" + std::to_string(i),
         shape,
@@ -1509,6 +1514,9 @@ inline Scene generated(const Params& p, double dt)
         pose({(i / 3) * spacing, (lane - 1.0) * spacing, 0.5}),
         1.0,
         1.0);
+    const double v0 = param(p, "v0", 0.0);
+    if (v0 != 0.0)
+      freeJoint(body)->setLinearVelocity({v0, 0.5 * v0, 0.0});
   }
   s.steps = steps(param(p, "T", 0.3), dt);
   auto* world = s.world.get();

@@ -43,6 +43,9 @@ CONFIGS = {
     "DZ+R+VA": ("B620", "dzr", ("--va",)),
     "PGS-tight": ("B620", "pgs-tight", ()),
     "PGS30": ("B620", "pgs", ()),
+    "NSGS-C": ("B620", "nsgs-c", ()),
+    "NSGS-A": ("B620", "nsgs-a", ()),
+    "NSGS-B": ("B620", "nsgs-b", ()),
 }
 L2_CONFIGS = tuple(CONFIGS)
 L3_CONFIGS = ("B619", "B620", "DZ+R", "VA", "PGS-tight")
