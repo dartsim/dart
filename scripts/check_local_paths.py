@@ -51,6 +51,7 @@ ALLOWLIST = {
 }
 HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 UTF16_BOMS = (b"\xff\xfe", b"\xfe\xff")
+SCISSORS = re.compile(r"\S -{24} >8 -{24}")
 
 
 def is_public_host(host: str | None) -> bool:
@@ -58,7 +59,8 @@ def is_public_host(host: str | None) -> bool:
     try:
         return ipaddress.ip_address(host).is_global
     except ValueError:
-        return "." in host and host != "localhost" and not host.endswith(".localhost")
+        # .localhost and mDNS .local names stay on the local machine or link.
+        return "." in host and not host.endswith((".localhost", ".local"))
 
 
 def scan_line(line: str, number: int | str, filename: str | None = None) -> bool:
@@ -105,7 +107,8 @@ def scan_commit_message(text: str) -> bool:
     # is deliberate; the PR Text backstop still scans the entire message.
     found = False
     for number, line in enumerate(text.splitlines(), 1):
-        if line == "# ------------------------ >8 ------------------------":
+        # Git prefixes the scissors with core.commentChar, which may differ.
+        if SCISSORS.fullmatch(line):
             break
         found |= scan_line(line, number)
     return found

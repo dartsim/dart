@@ -103,6 +103,7 @@ def test_public_examples_and_non_path_identifiers_pass(text, capsys):
     "url",
     (
         "http://localhost:8000/scratchpad/x.md",
+        "http://printer.local/scratchpad/private.md",
         "http://api.localhost/scratchpad/x.md",
         "http://LOCALHOST/scratchpad/x.md",
         "http://localhost./scratchpad/x.md",
@@ -233,6 +234,17 @@ def test_commit_msg_scans_hash_lines_but_ignores_verbose_diff(
     result = _cli("--commit-msg-file", message, cwd=tmp_path)
     assert result.returncode == bool(expected_output), result.stderr
     assert result.stdout == expected_output
+
+
+def test_commit_msg_scissors_follow_custom_comment_char(tmp_path):
+    message = tmp_path / "COMMIT_EDITMSG"
+    message.write_text(
+        "Public summary\n\n"
+        "; ------------------------ >8 ------------------------\n"
+        "diff --git a/notes.md b/notes.md\n+/home/example/private.md\n"
+    )
+    result = _cli("--commit-msg-file", message, cwd=tmp_path)
+    assert result.returncode == 0, result.stdout
 
 
 @pytest.mark.parametrize("mode", ["--staged", "--files", "--all-tracked"])
