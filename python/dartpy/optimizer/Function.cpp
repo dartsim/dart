@@ -37,6 +37,7 @@
 
 #include <Eigen/Core>
 #include <pybind11/eigen.h>
+#include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 
 #include <memory>
@@ -120,7 +121,7 @@ void Function(py::module& m)
       dart::optimizer::ModularFunction,
       dart::optimizer::Function,
       std::shared_ptr<dart::optimizer::ModularFunction>>(m, "ModularFunction")
-      //      .def(::py::init<>())
+      .def(::py::init<>())
       //      .def(::py::init<const std::string &>(),
       //      ::py::arg("name"))
       .def(

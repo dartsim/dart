@@ -37,6 +37,7 @@
 
 #include <Eigen/Geometry>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <memory>
 #include <string>
@@ -108,13 +109,15 @@ void InteractiveFrame(py::module& m)
                 +[](dart::gui::osg::InteractiveTool* self)
                     -> const std::vector<dart::dynamics::SimpleFrame*> {
                   return self->getShapeFrames();
-                })
+                },
+                ::py::return_value_policy::reference_internal)
             .def(
                 "getShapeFrames",
                 +[](const dart::gui::osg::InteractiveTool* self)
                     -> const std::vector<const dart::dynamics::SimpleFrame*> {
                   return self->getShapeFrames();
-                })
+                },
+                ::py::return_value_policy::reference_internal)
             .def(
                 "removeAllShapeFrames",
                 +[](dart::gui::osg::InteractiveTool* self) {
@@ -192,13 +195,15 @@ void InteractiveFrame(py::module& m)
           +[](dart::gui::osg::InteractiveFrame* self)
               -> const std::vector<dart::dynamics::SimpleFrame*> {
             return self->getShapeFrames();
-          })
+          },
+          ::py::return_value_policy::reference_internal)
       .def(
           "getShapeFrames",
           +[](const dart::gui::osg::InteractiveFrame* self)
               -> const std::vector<const dart::dynamics::SimpleFrame*> {
             return self->getShapeFrames();
-          })
+          },
+          ::py::return_value_policy::reference_internal)
       .def(
           "removeAllShapeFrames", +[](dart::gui::osg::InteractiveFrame* self) {
             self->removeAllShapeFrames();

@@ -16,6 +16,20 @@ def test_collision_option_allows_negative_penetration_depth_opt_in():
     assert option.allowNegativePenetrationDepthContacts
 
 
+def test_collision_group_add_shape_frames_list():
+    detector = dart.collision.DARTCollisionDetector()
+    group = detector.createCollisionGroup()
+    group.addShapeFrames([])
+    assert group.getNumShapeFrames() == 0
+
+    frames = [dart.dynamics.SimpleFrame(), dart.dynamics.SimpleFrame()]
+    for frame in frames:
+        frame.setShape(dart.dynamics.SphereShape(1))
+    group.addShapeFrames(frames)
+    assert group.getNumShapeFrames() == len(frames)
+    assert all(group.hasShapeFrame(frame) for frame in frames)
+
+
 def collision_groups_tester(cd):
     size = [1, 1, 1]
     pos1 = [0, 0, 0]

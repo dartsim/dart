@@ -48,6 +48,7 @@
 
 #include <Eigen/Core>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include <memory>
 #include <string>
@@ -158,20 +159,23 @@ void ReferentialSkeleton(py::module& m)
           +[](dart::dynamics::ReferentialSkeleton* self)
               -> std::vector<dart::dynamics::Joint*> {
             return self->getJoints();
-          })
+          },
+          ::py::return_value_policy::reference_internal)
       .def(
           "getJoints",
           +[](const dart::dynamics::ReferentialSkeleton* self)
               -> std::vector<const dart::dynamics::Joint*> {
             return self->getJoints();
-          })
+          },
+          ::py::return_value_policy::reference_internal)
       .def(
           "getJoints",
           +[](dart::dynamics::ReferentialSkeleton* self,
               const std::string& name) -> std::vector<dart::dynamics::Joint*> {
             return self->getJoints(name);
           },
-          ::py::arg("name"))
+          ::py::arg("name"),
+          ::py::return_value_policy::reference_internal)
       .def(
           "getJoints",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -179,7 +183,8 @@ void ReferentialSkeleton(py::module& m)
               -> std::vector<const dart::dynamics::Joint*> {
             return self->getJoints(name);
           },
-          ::py::arg("name"))
+          ::py::arg("name"),
+          ::py::return_value_policy::reference_internal)
       .def(
           "hasJoint",
           +[](const dart::dynamics::ReferentialSkeleton* self,
