@@ -30,11 +30,18 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/simulation/World.hpp>
 
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/Joint.hpp>
+#include <dart/dynamics/RevoluteJoint.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <vector>
 
 #include <cmath>
 

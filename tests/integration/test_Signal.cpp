@@ -31,13 +31,26 @@
  */
 
 #include "dart/common/Macros.hpp"
-#include "dart/dart.hpp"
+#include "dart/common/Signal.hpp"
+#include "dart/dynamics/Entity.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/math/Helpers.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <atomic>
+#include <functional>
+#include <iostream>
+#include <iterator>
 #include <numeric>
+#include <ostream>
+#include <string>
 #include <thread>
+#include <vector>
 
 using namespace std;
 using namespace Eigen;

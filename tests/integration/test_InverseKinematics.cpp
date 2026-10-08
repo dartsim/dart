@@ -31,12 +31,25 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/common/Console.hpp"
 #include "dart/config.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/InverseKinematics.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/math/Constants.hpp"
 #include "dart/math/Helpers.hpp"
+#include "dart/math/MathTypes.hpp"
+#include "dart/optimizer/Problem.hpp"
+#include "dart/optimizer/Solver.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <memory>
+#include <string>
 
 using namespace Eigen;
 using namespace dart;

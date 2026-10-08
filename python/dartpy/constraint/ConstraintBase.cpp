@@ -30,9 +30,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/constraint/ConstraintBase.hpp>
+
+#include <dart/dynamics/Skeleton.hpp>
 
 #include <pybind11/pybind11.h>
+
+#include <memory>
+#include <string>
+
+#include <cstddef>
 
 namespace py = pybind11;
 

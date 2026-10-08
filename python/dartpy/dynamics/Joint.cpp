@@ -30,12 +30,33 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/Joint.hpp>
+#include <dart/dynamics/MimicDofProperties.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
+#include <dart/math/MathTypes.hpp>
+
+#include <dart/common/Aspect.hpp>
+#include <dart/common/Composite.hpp>
+#include <dart/common/EmbeddedAspect.hpp>
+#include <dart/common/RequiresAspect.hpp>
+#include <dart/common/SpecializedForAspect.hpp>
+#include <dart/common/Subject.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <cstddef>
 
 namespace py = pybind11;
 

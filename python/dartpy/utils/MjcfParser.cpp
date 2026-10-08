@@ -30,11 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/utils.hpp>
+#include <dart/utils/mjcf/MjcfParser.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/common/ResourceRetriever.hpp>
 
 #include <pybind11/pybind11.h>
+
+#include <string>
 
 namespace py = pybind11;
 

@@ -30,10 +30,22 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/constraint/BallJointConstraint.hpp>
+#include <dart/constraint/ConstraintBase.hpp>
+#include <dart/constraint/CylindricalJointConstraint.hpp>
+#include <dart/constraint/DynamicJointConstraint.hpp>
+#include <dart/constraint/RevoluteJointConstraint.hpp>
+#include <dart/constraint/WeldJointConstraint.hpp>
 
+#include <dart/dynamics/BodyNode.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+#include <memory>
+#include <string>
 
 namespace py = pybind11;
 

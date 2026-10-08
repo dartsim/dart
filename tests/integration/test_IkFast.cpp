@@ -32,13 +32,30 @@
 
 #include "TestHelpers.hpp"
 
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/config.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/utils/urdf/DartLoader.hpp>
 
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/IkFast.hpp>
+#include <dart/dynamics/InverseKinematics.hpp>
+#include <dart/dynamics/SharedLibraryIkFast.hpp>
+#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <dart/math/Constants.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <sstream>
+#include <string>
+#include <vector>
+
+#include <cstddef>
 
 using namespace dart;
 

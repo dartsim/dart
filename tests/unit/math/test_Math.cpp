@@ -32,15 +32,24 @@
 
 #include "TestHelpers.hpp"
 #include "dart/common/Stopwatch.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/math/Constants.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
+#include "dart/math/MathTypes.hpp"
+#include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <iostream>
+
+#include <cmath>
+#include <ctime>
 
 using namespace dart;
 using namespace common;

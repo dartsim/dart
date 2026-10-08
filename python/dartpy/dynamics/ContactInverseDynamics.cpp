@@ -34,10 +34,16 @@
 #include "eigen_pybind.h"
 #include "pointers.hpp"
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/ContactInverseDynamics.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
+#include <vector>
+
+#include <cstddef>
 
 namespace py = pybind11;
 

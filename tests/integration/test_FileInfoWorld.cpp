@@ -35,6 +35,7 @@
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
+#include "dart/simulation/Recording.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/FileInfoWorld.hpp"
 #include "dart/utils/SkelParser.hpp"
@@ -43,6 +44,9 @@
 
 #include <fstream>
 #include <iostream>
+#include <string>
+
+#include <cstddef>
 
 using namespace dart;
 using namespace math;

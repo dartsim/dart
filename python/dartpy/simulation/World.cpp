@@ -30,12 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/DeactivationOptions.hpp>
 #include <dart/simulation/World.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/constraint/ConstraintSolver.hpp>
 
+#include <dart/collision/CollisionDetector.hpp>
+#include <dart/collision/CollisionOption.hpp>
+#include <dart/collision/CollisionResult.hpp>
+
+#include <dart/dynamics/SimpleFrame.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <Eigen/Core>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+#include <memory>
+#include <set>
+#include <string>
+
+#include <cstddef>
 
 namespace py = pybind11;
 

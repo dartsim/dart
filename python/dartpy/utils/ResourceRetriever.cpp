@@ -30,11 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/utils.hpp>
+#include <dart/utils/CompositeResourceRetriever.hpp>
+#include <dart/utils/DartResourceRetriever.hpp>
+#include <dart/utils/PackageResourceRetriever.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/common/ResourceRetriever.hpp>
 
 #include <pybind11/pybind11.h>
+
+#include <memory>
 
 namespace py = pybind11;
 

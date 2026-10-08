@@ -33,11 +33,22 @@
 #include "TestHelpers.hpp"
 #include "dart/common/Console.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/config.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Inertia.hpp"
+#include "dart/dynamics/JacobianNode.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/math/Constants.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
+#include "dart/math/MathTypes.hpp"
 #include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
@@ -45,7 +56,14 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <iostream>
+#include <ostream>
+#include <string>
+#include <vector>
+
+#include <cmath>
+#include <cstddef>
 
 using namespace Eigen;
 using namespace dart;

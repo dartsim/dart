@@ -31,12 +31,16 @@
  */
 
 #include "TestHelpers.hpp"
-#include "dart/dart.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/utils/sdf/SdfParser.hpp"
 
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
+
+#include <cstddef>
 
 using namespace dart::math;
 using namespace dart::collision;

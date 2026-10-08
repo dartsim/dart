@@ -36,6 +36,8 @@
 
 #include <gtest/gtest.h>
 
+#include <iostream>
+
 using namespace dart;
 using namespace common;
 
