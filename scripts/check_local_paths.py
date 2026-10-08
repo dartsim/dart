@@ -21,7 +21,8 @@ PATTERNS = tuple(
         r"(?<![\w.-])\.claude[/\\]projects[/\\]",
         r"(?<![\w.-])scratchpad[/\\]",
         r"(?<![\w.-])task_\d+(?:[/\\]|-[\w-]+)",
-        r"(?<!:)/(?:home|Users)/[^\s/`\"'<>|]+/",
+        # A host, path or drive character before /home or /Users is not a home.
+        r"(?<![\w.:-])/(?:home|Users)/[^\s/`\"'<>|]+/",
         r"[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>]+[/\\]+",
     )
 )
@@ -82,6 +83,8 @@ def scan_staged(root: Path) -> bool:
             "--no-ext-diff",
             "--no-textconv",
             "--no-color",
+            # Binary blobs publish their bytes too; diff them as text.
+            "--text",
             "--unified=0",
             "--",
             filename,
