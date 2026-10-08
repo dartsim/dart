@@ -4116,14 +4116,14 @@ def test_merge_smoke_exit_two_saves_build_failure_verdict(tmp_path, defect):
         assert not (output / "perf.md").exists()
 
 
-@pytest.mark.parametrize("input_changed", [False, True])
+@pytest.mark.parametrize("identity_change", ["none", "input", "window"])
 @pytest.mark.parametrize("verdict", ["PASS", "FAIL"])
 @pytest.mark.parametrize(
     "row_change",
     [None, "added", "removed", "bad-status", "no-perturbations", "not-gated"],
 )
 def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
-    tmp_path, input_changed, verdict, row_change
+    tmp_path, identity_change, verdict, row_change
 ):
     module = _load_runner()
     output = tmp_path / "perf"
@@ -4165,8 +4165,11 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
             bytes_per_step=40,
             wall_ms_per_step=24.6,
         )
-        if input_changed and row["row"] in ("dyn", "lcp"):
+        if identity_change == "input" and row["row"] in ("dyn", "lcp"):
             row.update(input_sha="f" * 64, workload_sha="new-workload")
+        elif identity_change == "window" and row["row"] in ("dyn", "lcp"):
+            # Settings change without a workload change keeps input_sha.
+            row["window"] = {"warmup": 7, "steps": 9}
     if row_change == "removed":
         smoke["results"].pop()
     elif row_change is not None:
@@ -4220,10 +4223,14 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
     smoke_rows = {module.row_key(row): row for row in smoke["results"]}
     for original, row in zip(record["results"], saved["results"]):
         head = smoke_rows.get(module.row_key(original))
-        if head is None or head["input_sha"] == original["input_sha"]:
+        if head is None or (head["input_sha"], head.get("window")) == (
+            original["input_sha"],
+            original.get("window"),
+        ):
             assert row == original
         else:
             assert row["input_sha"] == head["input_sha"]
+            assert row.get("window") == head.get("window")
             assert row["workload_sha"] == head["workload_sha"]
             assert row["head"] == head["head"]
             assert row["head_env"] == smoke["run"]["env"]
@@ -4238,7 +4245,7 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
                 "guards_equal": None,
                 "class": "behaviour-change",
             }
-            assert "input_sha changed" in row["gate_reason"]
+            assert "measurement identity changed" in row["gate_reason"]
             assert row["wall_ms_per_step"] == {
                 "parent": 12.3,
                 "head": 24.6,
@@ -4272,13 +4279,14 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
     ][0]
     assert point["commit"]["id"] == record["run"]["commit"]
     benches = {bench["name"]: bench["value"] for bench in point["benches"]}
-    suffix = "ffffffff" if input_changed else "01234567"
-    assert benches[f"dyn@1:{suffix} Ir"] == (200_000 if input_changed else 100_000)
-    assert benches[f"dyn@1:{suffix} allocations"] == (5 if input_changed else 0)
+    replaced = identity_change != "none"
+    suffix = "ffffffff" if identity_change == "input" else "01234567"
+    assert benches[f"dyn@1:{suffix} Ir"] == (200_000 if replaced else 100_000)
+    assert benches[f"dyn@1:{suffix} allocations"] == (5 if replaced else 0)
     assert benches["s3w/dart@1:01234567 Ir"] == 100_000
     for bench in point["benches"]:
         smoke_derived = (
-            input_changed and bench["name"].startswith(("dyn@", "lcp@"))
+            replaced and bench["name"].startswith(("dyn@", "lcp@"))
         ) or bench["name"].startswith("new-benchmark@")
         expected_fingerprint = ("2" if smoke_derived else "1") * 64
         assert bench["fingerprint"] == expected_fingerprint
@@ -4296,7 +4304,7 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
     module.chart_data(pages, following)
     for bench in _chart_points(pages)[-1]["benches"]:
         smoke_derived = (
-            input_changed and bench["name"].startswith(("dyn@", "lcp@"))
+            replaced and bench["name"].startswith(("dyn@", "lcp@"))
         ) or bench["name"].startswith("new-benchmark@")
         assert ("fingerprint changed" in bench["extra"]) is not smoke_derived
 

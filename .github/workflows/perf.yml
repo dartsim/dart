@@ -527,12 +527,19 @@ jobs:
                       failures.append("head smoke rows did not pass their perturbation checks")
                   if int(os.environ["PERF_SMOKE_STATUS"]) == 1:
                       failures.append("the head smoke harness reported FAIL")
-                  # Publish changed head inputs; the saved A/B verdict still uses the parent workload.
+                  # Publish rows whose measurement identity changed from the head smoke run;
+                  # the saved A/B verdict still uses the parent workload and settings.
+                  def identity(value):
+                      return (
+                          *(value.get(key) for key in ("input_sha", "version", "threads", "window", "method", "collection_signature")),
+                          value.get("head", {}).get("micro_instrumented"),
+                      )
+
                   smoke_rows = {row_key(row): row for row in rows}
                   parent_keys = {row_key(row) for row in record["results"]}
                   for row in record["results"]:
                       head = smoke_rows.get(row_key(row))
-                      if head is None or head.get("input_sha") == row.get("input_sha"):
+                      if head is None or identity(head) == identity(row):
                           continue
                       parent = row["parent"]
                       row.update(head)
@@ -545,7 +552,7 @@ jobs:
                           "guards_equal": None,
                           "class": "behaviour-change",
                       }
-                      row["gate_reason"] = "input_sha changed; head smoke rebaseline; verdict uses parent A/B rules"
+                      row["gate_reason"] = "measurement identity changed; head smoke rebaseline; verdict uses parent A/B rules"
                       row["wall_ms_per_step"] = {
                           "parent": parent.get("wall_ms_per_step"),
                           "head": row["head"].get("wall_ms_per_step"),
