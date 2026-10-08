@@ -729,10 +729,10 @@ def unwrap_wrapper(tokens, i, head):
     return i
 
 
-def git_common_dir(path):
+def git_common_dir(path, options=(), env=None):
     result = subprocess.run(
-        ["git", "-C", path, "rev-parse", "--git-common-dir"],
-        capture_output=True,
+        ["git", "-C", path, *options, "rev-parse", "--git-common-dir"],
+        env=env, capture_output=True,
         text=True,
     )
     if result.returncode != 0:
@@ -743,10 +743,10 @@ def git_common_dir(path):
     return os.path.realpath(common)
 
 
-def git_worktree_root(path):
+def git_worktree_root(path, options=(), env=None):
     result = subprocess.run(
-        ["git", "-C", path, "rev-parse", "--show-toplevel"],
-        capture_output=True,
+        ["git", "-C", path, *options, "rev-parse", "--show-toplevel"],
+        env=env, capture_output=True,
         text=True,
     )
     return os.path.realpath(result.stdout.strip()) if result.returncode == 0 else ""
@@ -902,6 +902,7 @@ def is_git_commit(text):
             continue
         i += 1
         target_dir = None
+        repository_paths = {}
         hooks_path_override = False
         while i < len(tokens):
             t = tokens[i]
@@ -909,6 +910,14 @@ def is_git_commit(text):
                 option, _ = strip_outer_quotes(t[len(CONFIG_ENV_PREFIX) :])
                 if is_hooks_path_override(option):
                     hooks_path_override = True
+                i += 1
+                continue
+            option, sep, value = t.partition("=")
+            if option in {"--git-dir", "--work-tree"}:
+                if not sep and i + 1 < len(tokens):
+                    i += 1
+                    value = tokens[i]
+                repository_paths[option] = value
                 i += 1
                 continue
             if t in OPTS_WITH_ARG:
@@ -933,6 +942,16 @@ def is_git_commit(text):
         if not target_dir:
             target_dir = command_cwd or current_cwd
         if i < len(tokens) and command_word(tokens[i]).rstrip(")}") == "commit":
+            repository_options = []
+            for option, value in repository_paths.items():
+                path = shell_expand_path_token(value, target_dir)
+                if path:
+                    repository_options.append(f"{option}={path}")
+            for name in ("GIT_DIR", "GIT_WORK_TREE"):
+                if name in command_env:
+                    path = shell_expand_path_token(command_env[name], target_dir)
+                    if path:
+                        command_env[name] = path
             if env_config_has_hooks_path_override(command_env) or (
                 env_may_load_hookspath_config(command_env, target_dir)
             ):
@@ -943,10 +962,11 @@ def is_git_commit(text):
                 or os.environ.get("CODEX_PROJECT_DIR")
                 or os.getcwd()
             )
+            target_common = None
+            project_common = git_common_dir(project) if project else None
             if target_dir:
                 try:
-                    target_common = git_common_dir(target_dir)
-                    project_common = git_common_dir(project) if project else None
+                    target_common = git_common_dir(target_dir, repository_options, command_env)
                     if (
                         project
                         and target_common
@@ -965,15 +985,25 @@ def is_git_commit(text):
                 except OSError:
                     pass
             gate_target_dir = target_dir or project
+            target_root = git_worktree_root(
+                gate_target_dir, repository_options, command_env
+            )
+            # An explicit Git directory can name this index from a foreign cwd.
+            if (
+                target_root and target_common and target_common == project_common
+                and (repository_options or "GIT_DIR" in command_env)
+                and git_common_dir(target_root) != target_common
+            ):
+                target_root = git_worktree_root(project)
             message = supplied_commit_message(tokens[i + 1 :], target_dir)
             # Return the first commit; later commits in the same shell line
             # are left to the managed commit-msg hook and the PR Text backstop,
             # which scans every PR commit message.
             if no_verify:
-                return "commit-no-verify", git_worktree_root(gate_target_dir), message
+                return "commit-no-verify", target_root, message
             if hooks_path_override:
-                return "commit-hooks-override", git_worktree_root(gate_target_dir), message
-            return "commit", git_worktree_root(gate_target_dir), message
+                return "commit-hooks-override", target_root, message
+            return "commit", target_root, message
     return "skip", "", ""
 
 

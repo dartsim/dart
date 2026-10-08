@@ -69,9 +69,14 @@ skip. The PR Text workflow checks the title, body and every PR commit message
 using the base branch's checker as the backstop before merge.
 
 `pixi run install-hooks` installs managed `pre-commit` and `commit-msg` hooks.
-The latter runs `scripts/check_local_paths.py --commit-msg-file "$1"`, scanning
-every line, including `#` lines, before Git's scissors line. The scissors line
-and the verbose diff below it are excluded. Both hooks share interpreter
+The latter runs `scripts/check_local_paths.py --commit-msg-file "$1"`. When
+Git's editor template instruction is present, the scan skips every line
+starting with its single comment character. Template detection recognizes the
+"Lines starting with" instruction or the "Do not modify or remove the line
+above" instruction together with a matching scissors line. Without a template
+instruction, as with `-m` or `-F`, every line is scanned, including hash-prefixed
+and status-shaped lines. The scan stops at Git's scissors line, excluding the
+line and any verbose diff below it. Both hooks share interpreter
 selection, foreign-hook chaining,
 `DART_SKIP_HOOKS=1`, and `DART_HOOK_DRY_RUN=1`. Older worktrees without the
 checker or a compatible Python interpreter print a notice and skip the message

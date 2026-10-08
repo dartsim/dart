@@ -31,8 +31,13 @@ pixi run install-hooks
 It installs a `pre-commit` git hook that runs the fast staged command below and
 blocks the commit on staged whitespace, local file names or text, or relevant
 AI-infrastructure drift. A managed `commit-msg` hook also scans the commit
-message for local paths, including `#` lines, stopping at Git's scissors line
-before any verbose diff:
+message for local paths. Git's editor template instruction identifies the
+single comment character whose lines Git strips; the scan skips those lines.
+It recognizes either the "Lines starting with" instruction or the "Do not
+modify or remove the line above" instruction with a matching scissors line.
+Without that template instruction (`-m` or `-F`), all lines are scanned,
+including hash-prefixed and status-shaped lines. Scanning stops at Git's
+scissors line before any verbose diff:
 
 ```bash
 pixi run python scripts/check_agent_hook.py --profile staged

@@ -780,6 +780,49 @@ def test_guard_skips_git_c_commits_in_another_repo(tmp_path):
     assert "would run" not in stderr
 
 
+@pytest.mark.parametrize(
+    "selector",
+    [
+        "--git-dir {git_dir} --work-tree {work_tree}",
+        "--git-dir={git_dir} --work-tree={work_tree}",
+        "--work-tree {work_tree} --git-dir={git_dir}",
+        "--git-dir {git_dir}",
+        "--work-tree={work_tree}",
+        "env",
+    ],
+)
+@pytest.mark.parametrize("target_project", [True, False])
+def test_guard_resolves_explicit_repository_selectors(
+    tmp_path, selector, target_project
+):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    target = repo if target_project else other
+    cwd = other if target_project else repo
+    private_path = "scratchpad" + "/example.md"
+    if selector == "env":
+        command = f"GIT_DIR='{target / '.git'}' GIT_WORK_TREE='{target}' git"
+    else:
+        # --work-tree alone selects a checkout for the current Git directory.
+        if selector == "--work-tree={work_tree}":
+            cwd = target
+        command = "git " + selector.format(
+            git_dir=f"'{target / '.git'}'", work_tree=f"'{target}'"
+        )
+    returncode, stderr = _run_guard(
+        cwd, env, command + f" commit --no-verify -m '# See {private_path}'"
+    )
+    assert returncode == (2 if target_project else 0), stderr
+    assert (private_path in stderr) == target_project
+
+
 def test_guard_routes_linked_worktree_commit_to_target_index(tmp_path):
     repo, env = _init_repo(tmp_path)
     subprocess.run(

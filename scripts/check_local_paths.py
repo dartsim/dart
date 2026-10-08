@@ -74,9 +74,12 @@ def decode(data: bytes) -> str:
 
 
 SCISSORS = re.compile(r"\S -{24} >8 -{24}")
-GIT_STATUS_LINE = re.compile(
-    r"\S\t(?P<status>new file|modified|deleted|renamed|copied|typechange|both \w+|"
-    r"added by \w+|deleted by \w+):\s+(?P<paths>\S.*)"
+GIT_TEMPLATE_INSTRUCTION = re.compile(
+    r"^(?P<char>\S) Lines starting with '(?P=char)' will be ignored(?:,|$)",
+    re.MULTILINE,
+)
+GIT_SCISSORS_INSTRUCTION = re.compile(
+    r"^(?P<char>\S) Do not modify or remove the line above\.", re.MULTILINE
 )
 
 
@@ -147,24 +150,21 @@ def scan_text(
 def scan_commit_message(text: str) -> bool:
     # The scissors stop matches git commit -v. Typing a literal scissors line
     # is deliberate; the PR Text backstop still scans the entire message.
+    instruction = GIT_TEMPLATE_INSTRUCTION.search(text)
+    if instruction is None:
+        instruction = GIT_SCISSORS_INSTRUCTION.search(text)
+        if instruction and not any(
+            SCISSORS.fullmatch(line) and line.startswith(instruction["char"])
+            for line in text.splitlines()
+        ):
+            instruction = None
+    comment_char = instruction["char"] if instruction else None
     found = False
-    staged = None
     for number, line in enumerate(text.splitlines(), 1):
-        # Git prefixes the scissors with core.commentChar, which may differ.
         if SCISSORS.fullmatch(line):
             break
-        # Exempt only actual staged entries, not literal status-shaped messages.
-        status = GIT_STATUS_LINE.fullmatch(line)
-        if status:
-            if staged is None:
-                root = Path(
-                    os.fsdecode(
-                        git_output(Path.cwd(), "rev-parse", "--show-toplevel")
-                    ).strip()
-                )
-                staged = staged_status_entries(root)
-            if (status["status"], status["paths"]) in staged:
-                continue
+        if comment_char and line.startswith(comment_char):
+            continue
         found |= scan_line(line, number)
     return found
 
@@ -173,72 +173,6 @@ def git_output(root: Path, *args: str) -> bytes:
     return subprocess.run(
         ["git", *args], cwd=root, check=True, capture_output=True
     ).stdout
-
-
-def git_path_display(path: bytes, quote_non_ascii: bool) -> str:
-    # Git uses C quoting for control bytes and optionally for non-ASCII bytes.
-    escapes = {
-        7: r"\a",
-        8: r"\b",
-        9: r"\t",
-        10: r"\n",
-        11: r"\v",
-        12: r"\f",
-        13: r"\r",
-        34: r"\"",
-        92: r"\\",
-    }
-    if not any(
-        byte in escapes or byte < 32 or byte == 127 or (quote_non_ascii and byte >= 128)
-        for byte in path
-    ):
-        return os.fsdecode(path)
-    quoted = b"".join(
-        (
-            escapes[byte].encode()
-            if byte in escapes
-            else (
-                f"\\{byte:03o}".encode()
-                if byte < 32 or byte == 127 or (quote_non_ascii and byte >= 128)
-                else bytes([byte])
-            )
-        )
-        for byte in path
-    )
-    return '"' + os.fsdecode(quoted) + '"'
-
-
-def staged_status_entries(root: Path) -> set[tuple[str, str]]:
-    entries = iter(
-        git_output(root, "diff", "--cached", "--name-status", "-z").split(b"\0")
-    )
-    labels = {
-        "A": "new file",
-        "M": "modified",
-        "D": "deleted",
-        "R": "renamed",
-        "C": "copied",
-        "T": "typechange",
-    }
-    staged = set()
-    for status in entries:
-        if not status:
-            continue
-        code = chr(status[0])
-        paths = [next(entries)]
-        if code in {"R", "C"}:
-            paths.append(next(entries))
-        if code in labels:
-            for quote_non_ascii in (True, False):
-                staged.add(
-                    (
-                        labels[code],
-                        " -> ".join(
-                            git_path_display(path, quote_non_ascii) for path in paths
-                        ),
-                    )
-                )
-    return staged
 
 
 def scan_changes(
@@ -250,7 +184,7 @@ def scan_changes(
         "--no-renames",
         "--raw",
         "-z",
-        "--diff-filter=ACDMRT" if commit else "--diff-filter=ACMRT",
+        "--diff-filter=ACMRT",
     )
     found = False
     entries = paths.split(b"\0")
@@ -261,8 +195,8 @@ def scan_changes(
         found |= scan_line(
             filename, f"{filename}:0" if commit else filename, commit=commit
         )
-        # Deletions have no blob; gitlinks publish a commit ID, not a file blob.
-        if metadata.split()[1] in {b"000000", b"160000"}:
+        # Gitlinks publish a commit ID, not a file blob.
+        if metadata.split()[1] == b"160000":
             continue
         data = git_output(root, "show", f"{commit or ''}:{filename}")
         if data.startswith(UTF32_BOMS + UTF16_BOMS):
@@ -351,7 +285,7 @@ def main() -> int:
     mode.add_argument(
         "--commit-msg-file",
         type=Path,
-        help="scan every commit line before Git scissors",
+        help="scan commit text, excluding editor template comments and Git scissors",
     )
     args = parser.parse_args()
     try:

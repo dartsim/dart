@@ -4,8 +4,12 @@
 Idempotently writes both hooks so every ``git commit`` runs the fast staged
 gate (``scripts/check_agent_hook.py --profile staged``) and scans its message
 (``scripts/check_local_paths.py --commit-msg-file "$1"``) with the same compatible
-Python interpreter selection. The message scan includes hash-prefixed lines
-and stops at Git's scissors line, excluding verbose diffs. No
+Python interpreter selection. The message scan skips comment lines only when
+Git's editor template instruction identifies their single comment character
+("Lines starting with", or "Do not modify or remove the line above" together
+with a matching scissors line). Without that instruction, including for
+``-m``/``-F``, it scans hash-prefixed and status-shaped lines too. It stops at
+Git's scissors line, excluding verbose diffs. No
 ``pre-merge-commit`` hook is installed: an automatic merge only combines
 commits these hooks or CI already scanned, and a conflicted merge ends with
 ``git commit``, which runs both hooks. Behaviour:
