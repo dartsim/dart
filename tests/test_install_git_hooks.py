@@ -441,6 +441,27 @@ def test_guard_blocks_supplied_private_message_when_hooks_bypassed(
     assert "commit blocked" in stderr
 
 
+@pytest.mark.parametrize("option", ("--trailer {value}", "--trailer={value}"))
+@pytest.mark.parametrize("private_first", (True, False))
+def test_guard_scans_every_trailer_when_hooks_bypassed(tmp_path, option, private_first):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts" / "check_local_paths.py").write_bytes(
+        (ROOT / "scripts" / "check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    private_path = "/home/" + "example/client/private.md"
+    trailers = ["'Note: Public'", f"'Note: {private_path}'"]
+    if private_first:
+        trailers.reverse()
+    arguments = " ".join(option.format(value=value) for value in trailers)
+    command = "git commit --no-verify -m 'Public summary' " + arguments
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 2, stderr
+    assert private_path in stderr
+    assert "commit message" in stderr
+
+
 @pytest.mark.parametrize(
     "arguments",
     [

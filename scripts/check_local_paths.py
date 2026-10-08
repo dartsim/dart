@@ -20,11 +20,16 @@ from urllib.parse import urlsplit
 
 # Keep the publication policy and its narrowly scoped exceptions here.
 PATH_TAIL = r"[^\s`\"'<>\[\](){};,]*"
-PUBLIC_URL = re.compile(
-    r"https?://(?:[^\s`\"'<>\[\](){}/@]+@)?"
-    r"(?:\[[^\s`\"'<>\[\](){}]+\])?[^\s`\"'<>\[\](){}]*",
+URI = re.compile(
+    r"[a-z][a-z0-9+.-]*://(?:[^\s`\"'<>\[\](){}/@]+@)?"
+    r"(?:\[[^\s`\"'<>\[\](){}]+\])?"
+    r"(?:[^\s`\"'<>\[\](){}]|\([^\s`\"'<>\[\](){}]*\))*",
     re.IGNORECASE,
 )
+# Covers private planning/harness dirs, agent scratch/project dirs, numbered
+# worktrees, Linux/macOS/root homes, Windows drive/WSL/Git Bash profiles and
+# local URLs. Other representations are out of scope unless contributors' tools
+# produce them; the PR Text workflow remains the backstop.
 PATTERNS = tuple(
     re.compile(pattern + PATH_TAIL, re.IGNORECASE)
     for pattern in (
@@ -38,7 +43,7 @@ PATTERNS = tuple(
         # Private agent project dirs, scratchpads and numbered worktrees still
         # match above, so ~/ alone is not reported.
         # A host, path or drive character before /home or /Users is not a home.
-        r"(?<![\w.:-])/(?:home|Users|mnt/[A-Za-z]/Users)/[^\s/\\`\"'<>\[\](){};,|]+",
+        r"(?<![\w.:-])/(?:home|Users|(?:mnt/)?[A-Za-z]/Users)/[^\s/\\`\"'<>\[\](){};,|]+",
         # Unix root homes are case-sensitive; PDF /Root entries are not paths.
         r"(?<![\w.:-])/(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|])",
         r"(?<![\w.:-])[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>\[\](){};,|]+",
@@ -46,7 +51,9 @@ PATTERNS = tuple(
 )
 ALLOWLIST = {
     # Only file/staged scans may exempt checker fixtures; free text never does.
-    "tests/test_check_local_paths.py": re.compile(r".*"),
+    "tests/test_check_local_paths.py": re.compile(
+        r".*(?:\bexample\b|# path-fixture).*", re.IGNORECASE
+    ),
     ".gitignore": re.compile(r"\.sisyphus[/]"),
 }
 HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
@@ -59,8 +66,10 @@ def is_public_host(host: str | None) -> bool:
     try:
         return ipaddress.ip_address(host).is_global
     except ValueError:
-        # .localhost and mDNS .local names stay on the local machine or link.
-        return "." in host and not host.endswith((".localhost", ".local"))
+        # Special-use DNS suffixes identify local machines and private networks.
+        return "." in host and not host.endswith(
+            (".localhost", ".local", ".home.arpa", ".internal", ".lan", ".localdomain")
+        )
 
 
 def scan_line(line: str, number: int | str, filename: str | None = None) -> bool:
@@ -72,15 +81,15 @@ def scan_line(line: str, number: int | str, filename: str | None = None) -> bool
     def mask_public_url(match: re.Match[str]) -> str:
         try:
             url = urlsplit(match.group())
-            if is_public_host(url.hostname):
+            if url.scheme in {"http", "https"} and is_public_host(url.hostname):
                 return " "
         except ValueError:
             return match.group()
-        # Scan local URL paths at their root without relaxing home lookbehinds.
+        # Scan local URI paths at their root without relaxing home lookbehinds.
         url_paths.append(url.path)
         return match.group()
 
-    line = PUBLIC_URL.sub(mask_public_url, line)
+    line = URI.sub(mask_public_url, line)
     matches = sorted(
         {
             match.group()
