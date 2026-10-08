@@ -237,9 +237,10 @@ first-parent measured-path base and each tag's previous `v6` tag, including
 `v6.18.0` for `v6.19.0`: 85 listed commits, 13 additional commit bases and
 seven tag revisions, for 105 unique measurements and 91 assembled records.
 `--plan-only` prints the revision inventory without building or measuring.
-The default rows are the quick tier plus S6, with perturbation always enabled;
-tags run only `gzb,robot`. S6 remains in the saved arm records but is omitted
-from published comparisons, along with advisory wall time and RSS.
+The default rows are the quick tier plus S6, with perturbation always enabled.
+Revisions without `examples/contact_benchmark`, such as the 6.18 and 6.19 tags,
+run only the portable rows (`gzb,robot`). S6 remains in the saved arm records but
+is omitted from published comparisons, along with advisory wall time and RSS.
 
 Run `git fetch origin gh-pages` before starting. The harness checkout must be
 clean for the script, `tools/perf` and `pixi.lock`, and publication later

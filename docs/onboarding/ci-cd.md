@@ -235,11 +235,19 @@ Historical comparisons use [`perf-backfill`](profiling.md#revision-comparisons).
 After publishing the GitHub release, attach its performance record manually:
 
 ```bash
+(
+set -e
 git fetch origin gh-pages
 git show origin/gh-pages:performance/releases/v6.x.y.json > dart-perf-v6.x.y.json
-test "$(jq -r .run.commit dart-perf-v6.x.y.json)" = "$(git rev-parse 'v6.x.y^{commit}')"
+tag_commit=$(git rev-parse --verify 'v6.x.y^{commit}')
+record_commit=$(jq -er .run.commit dart-perf-v6.x.y.json)
+if [ "$record_commit" != "$tag_commit" ]; then
+  echo 'record names another candidate; dispatch -f tag=v6.x.y first' >&2
+  exit 1
+fi
 git show origin/gh-pages:performance/releases/v6.x.y.md > dart-perf-v6.x.y.md
 gh release upload v6.x.y dart-perf-v6.x.y.json dart-perf-v6.x.y.md
+)
 ```
 
 If the commit check fails, dispatch again with `-f tag=v6.x.y` and no `head`

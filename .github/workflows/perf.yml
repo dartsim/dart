@@ -933,10 +933,7 @@ jobs:
   release:
     name: Record release performance
     needs: release-measure
-    # One writer per tag at a time; write_release orders candidates.
-    concurrency:
-      group: perf-release-${{ needs.release-measure.outputs.tag }}
-      cancel-in-progress: false
+    # Each writer must finish; fetch/regenerate/push retries reconcile concurrent records.
     if: >-
       ${{ !cancelled() && needs.release-measure.result == 'success' &&
           github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&

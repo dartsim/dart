@@ -1441,7 +1441,12 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         parent, child = parents.get(key), children.get(key)
         bm = parent.get("head", {}) if parent else {}
         hm = child.get("head", {}) if child else {}
-        result = {**(child or parent), "parent": bm, "head": hm}
+        result = {
+            **(child or parent),
+            "parent": bm,
+            "parent_status": parent.get("status") if parent else None,
+            "head": hm,
+        }
         input_changed = bool(
             parent and child and parent.get("input_sha") != child.get("input_sha")
         )
@@ -1837,6 +1842,7 @@ def read_record(path: Path, *, comparison: bool = False) -> dict:
             )
             or not all(
                 isinstance(row.get("parent"), dict)
+                and row.get("parent_status") in (None, "ok", "broken", "unsupported")
                 and isinstance(row.get("head"), dict)
                 and isinstance(row.get("delta"), dict)
                 and all(
@@ -2665,13 +2671,40 @@ def ledger_entries(
                 "base state is non-finite",
                 "base perturbation check failed",
             )
-            unhealthy = row is not None and (
-                not parent
-                or (parent.get("guards") or {}).get("finite") is False
-                or parent.get("time_advanced") is False
-                or f"{key}: base perturbation check failed" in verdict["failures"]
-            )
-            (inherited if base_reason or unhealthy else attributable).append(failure)
+            same_defect = False
+            if row is not None and row.get("parent_status") != "unsupported":
+                head = row.get("head", {})
+                if reason == "head perturbation check failed":
+                    same_defect = (
+                        f"{key}: base perturbation check failed" in verdict["failures"]
+                    )
+                elif row["delta"]["class"] == "broken" and reason in row["failures"]:
+                    same_defect = (
+                        (
+                            not parent
+                            and not head
+                            # shortcut: legacy empty bases lack status, rerun to distinguish unsupported rows.
+                            and row.get("parent_status", "broken") == "broken"
+                        )
+                        or (
+                            reason
+                            in (
+                                "non-finite state",
+                                "missing or failed head measurement",
+                            )
+                            and (parent.get("guards") or {}).get("finite") is False
+                            and (
+                                (head.get("guards") or {}).get("finite") is False
+                                or reason == "non-finite state"
+                            )
+                        )
+                        or (
+                            reason == "simulation time did not advance"
+                            and parent.get("time_advanced") is False
+                            and (parent.get("guards") or {}).get("finite") is not False
+                        )
+                    )
+            (inherited if base_reason or same_defect else attributable).append(failure)
         rules, nonwaivable = set(), []
         for failure in attributable:
             rule = next(
@@ -2821,7 +2854,7 @@ def ledger_markdown(report: dict) -> str:
         + ".",
         "",
         f"Unrelated merges needing a rationale: {headline['k']}/{headline['n']} "
-        f"(P5 bar: at most 1 in 10). Broken: {headline['broken']}. Rules: "
+        f"(target: at most 1 in 10). Broken: {headline['broken']}. Rules: "
         + ", ".join(f"{rule} {count}" for rule, count in headline["rules"].items())
         + f". Needing an intent: {headline['needing_intent']}.",
         "",
@@ -2884,7 +2917,7 @@ def release_markdown(record: dict) -> str:
         "",
     ]
     if run["branch"].startswith("release-6."):
-        lines.append(f"{run['branch']} is tracked by tags only (D11).")
+        lines.append(f"{run['branch']} is tracked by tags only.")
     else:
         ledger = record["ledger"]
         lines += [
@@ -2966,8 +2999,28 @@ def write_release(pages: Path, record: dict) -> list[str]:
     run = record["run"]
     directory = pages / "performance/releases"
     path = directory / f"{run['tag']}.json"
-    if path.exists():
-        saved = read_record(path, comparison=True)
+    tagged = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(ROOT),
+            "rev-parse",
+            "--verify",
+            "--end-of-options",
+            f"{run['tag']}^{{commit}}",
+        ],
+        text=True,
+        capture_output=True,
+    )
+    tagged_commit = tagged.stdout.strip() if tagged.returncode == 0 else None
+    saved = read_record(path, comparison=True) if path.exists() else None
+    if tagged_commit is not None and tagged_commit != run["commit"]:
+        if saved is not None and saved["run"]["commit"] == tagged_commit:
+            print(f"Keep {run['tag']}: tagged commit is final")
+        else:
+            print(f"Skip {run['tag']}: tag does not name the candidate commit")
+        return []
+    if saved is not None:
         previous = saved["run"]
         previous_source = previous["env"]["runner"]["environment"]
         incoming_source = run["env"]["runner"]["environment"]
@@ -2992,20 +3045,6 @@ def write_release(pages: Path, record: dict) -> list[str]:
             print(f"Keep {run['tag']}: identical deterministic measurements")
             return []
         if not (previous_local and not incoming_local):
-            tagged = subprocess.run(
-                [
-                    "git",
-                    "-C",
-                    str(ROOT),
-                    "rev-parse",
-                    "--verify",
-                    "--end-of-options",
-                    f"{run['tag']}^{{commit}}",
-                ],
-                text=True,
-                capture_output=True,
-            )
-            tagged_commit = tagged.stdout.strip() if tagged.returncode == 0 else None
             if tagged_commit == previous["commit"]:
                 print(f"Keep {run['tag']}: tagged commit is final")
                 return []
@@ -3169,6 +3208,13 @@ def publish(args) -> bool:
     ):
         raise ValueError("backfill publication requires one environment fingerprint")
     records.sort(key=lambda record: record["run"]["tier"] == "release")
+    release_refs = sorted(
+        {
+            f"refs/tags/{record['run']['tag']}"
+            for record in records
+            if record["run"]["tier"] == "release"
+        }
+    )
     pages = args.pages_dir.resolve()
 
     def git(*arguments: str, check: bool = True):
@@ -3193,6 +3239,26 @@ def publish(args) -> bool:
         )
     for attempt in range(5):
         git("fetch", "origin", "gh-pages")
+        if release_refs:
+            remote_tags = command_output(
+                ["git", "ls-remote", "--refs", "origin", *release_refs]
+            )
+            present = [line.split()[1] for line in remote_tags.splitlines()]
+            if present:
+                subprocess.run(
+                    [
+                        "git",
+                        "-C",
+                        str(ROOT),
+                        "fetch",
+                        "--no-tags",
+                        "origin",
+                        *(f"{ref}:{ref}" for ref in present),
+                    ],
+                    check=True,
+                    text=True,
+                    capture_output=True,
+                )
         if (
             attempt == 0
             and git(
@@ -3733,6 +3799,18 @@ def backfill_records(args, plan: dict, run: dict) -> list[dict]:
     return records
 
 
+def backfill_git(command: list[str]) -> None:
+    process = subprocess.Popen(command, cwd=ROOT)
+    try:
+        returncode = process.wait()
+    except BaseException:
+        process.terminate()
+        process.wait()
+        raise
+    if returncode:
+        raise subprocess.CalledProcessError(returncode, command)
+
+
 def backfill(args) -> list[dict]:
     plan = backfill_plan(args)
     output = args.output_dir.resolve()
@@ -3790,7 +3868,7 @@ def backfill(args) -> list[dict]:
         if source.is_symlink():
             raise ValueError("backfill source must be a dedicated linked worktree")
         if not source.exists() and plan["revisions"]:
-            subprocess.run(
+            backfill_git(
                 [
                     "git",
                     "worktree",
@@ -3798,9 +3876,7 @@ def backfill(args) -> list[dict]:
                     "--detach",
                     str(source),
                     plan["revisions"][0],
-                ],
-                cwd=ROOT,
-                check=True,
+                ]
             )
         if plan["revisions"]:
             git_file = source / ".git"
@@ -3849,20 +3925,20 @@ def backfill(args) -> list[dict]:
                     )
             if not done and failure_path.is_file():
                 with contextlib.suppress(ValueError, KeyError, OSError, TypeError):
-                    done = json.loads(failure_path.read_text())["commit"] == revision
+                    previous = json.loads(failure_path.read_text())
+                    done = (
+                        previous["commit"] == revision
+                        and previous["identity"] == run["identity"]
+                    )
             if done:
                 print(f"skip {revision[:12]}")
                 continue
             record_path.unlink(missing_ok=True)
             failure_path.unlink(missing_ok=True)
-            subprocess.run(
-                ["git", "-C", str(source), "checkout", "--detach", "--force", revision],
-                cwd=ROOT,
-                check=True,
+            backfill_git(
+                ["git", "-C", str(source), "checkout", "--detach", "--force", revision]
             )
-            subprocess.run(
-                ["git", "-C", str(source), "clean", "-ffdx"], cwd=ROOT, check=True
-            )
+            backfill_git(["git", "-C", str(source), "clean", "-ffdx"])
             arm = arm_namespace(args, revision, source, prefix, directory, shims)
             if not has_contact_driver(revision):
                 arm.rows = "gzb,robot"
@@ -3908,6 +3984,7 @@ def backfill(args) -> list[dict]:
                         failure_path,
                         {
                             "commit": revision,
+                            "identity": run["identity"],
                             "error": str(build_error),
                             "error_kind": "build",
                             "time": datetime.now(timezone.utc).isoformat(),
@@ -4072,6 +4149,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "backfill":
             if args.jobs < 1:
                 raise ValueError("--jobs must be a positive integer")
+            select_rows(args.rows)
             if args.plan_only:
                 plan = backfill_plan(args)
                 for revision in plan["revisions"]:

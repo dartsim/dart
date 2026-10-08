@@ -614,10 +614,7 @@ def test_release_writer_uses_only_main_publisher_and_saved_evidence():
     assert "github.event_name == 'workflow_dispatch'" in writer["if"]
     assert "inputs.tier == 'release'" in writer["if"]
     assert writer["permissions"] == {"contents": "write"}
-    assert writer["concurrency"] == {
-        "group": "perf-release-${{ needs.release-measure.outputs.tag }}",
-        "cancel-in-progress": "false",
-    }
+    assert "concurrency" not in writer
     checkout = _perf_step("release", "Checkout main publisher")
     assert checkout["with"]["ref"] == "main"
     assert checkout["with"]["fetch-depth"] == "0"
@@ -660,6 +657,49 @@ def test_release_writer_uses_only_main_publisher_and_saved_evidence():
     assert "steps.publish.outcome == 'success'" in summary["if"]
     names = [step["name"] for step in writer["steps"]]
     assert names.index(publish["name"]) < names.index(summary["name"])
+
+
+@pytest.mark.parametrize("case", ["matching", "mismatch", "missing-tag"])
+def test_release_asset_runbook_gates_upload(tmp_path, case):
+    documentation = (
+        Path(__file__).resolve().parents[1] / "docs/onboarding/ci-cd.md"
+    ).read_text()
+    commands = (
+        documentation.split("After publishing the GitHub release", 1)[1]
+        .split("```bash\n", 1)[1]
+        .split("\n```", 1)[0]
+    )
+    scripts = {
+        "git": """case "$1" in
+  rev-parse) printf '%s\\n' "$TAG_COMMIT"; exit "$TAG_EXIT" ;;
+  show) printf '%s\\n' 'saved record' ;;
+esac
+""",
+        "jq": "printf '%s\\n' \"$RECORD_COMMIT\"\n",
+        "gh": "printf '%s\\n' \"$*\" > uploaded.txt\n",
+    }
+    for name, script in scripts.items():
+        executable = tmp_path / name
+        executable.write_text("#!/bin/sh\n" + script)
+        executable.chmod(0o755)
+    result = subprocess.run(
+        ["bash"],
+        input=commands,
+        text=True,
+        capture_output=True,
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
+            "RECORD_COMMIT": "a" * 40,
+            "TAG_COMMIT": "b" * 40 if case == "mismatch" else "a" * 40,
+            "TAG_EXIT": "1" if case == "missing-tag" else "0",
+        },
+    )
+    assert (result.returncode == 0) == (case == "matching"), result.stderr
+    assert (tmp_path / "uploaded.txt").exists() == (case == "matching")
+    if case == "mismatch":
+        assert "dispatch" in result.stderr
 
 
 @pytest.mark.parametrize("status,exit_code", [("PASS", 0), ("FAIL", 1), ("ERROR", 2)])
@@ -6047,18 +6087,19 @@ def test_backfill_reuses_tree_build_and_prefix_and_resumes(
         monkeypatch, tmp_path
     )
     calls = []
-    real_run = module.subprocess.run
+    real_git = module.backfill_git
 
-    def run(command, *positional, **keywords):
+    def git(command):
         calls.append(command)
-        return real_run(command, *positional, **keywords)
+        return real_git(command)
 
-    monkeypatch.setattr(module.subprocess, "run", run)
+    monkeypatch.setattr(module, "backfill_git", git)
     module.backfill(args)
     assert measurements == list(revisions)
     assert len(builds) == 3
     assert len({tuple(str(path) for path in build[1:]) for build in builds}) == 1
     assert sum("checkout" in command and "--force" in command for command in calls) == 3
+    assert sum("clean" in command for command in calls) == 3
     assert sum("worktree" in command for command in calls) == 1
     builds.clear()
     measurements.clear()
@@ -6194,6 +6235,7 @@ def test_backfill_build_failures_retry_clean_then_record(
         marker = json.loads((directory / "build-failure.json").read_text())
         assert (
             marker["commit"] == target
+            and marker["identity"] == identity
             and marker["error_kind"] == "build"
             and marker["time"]
         )
@@ -6202,6 +6244,41 @@ def test_backfill_build_failures_retry_clean_then_record(
     )
     if failure == "infrastructure":
         assert not (directory / "record.json").exists()
+
+
+@pytest.mark.parametrize("marker_identity", ["matching", "missing", "changed"])
+def test_backfill_reuses_build_failures_only_with_the_same_identity(
+    monkeypatch, tmp_path, marker_identity
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    original = module.build_arm
+
+    def build(*arguments):
+        if arguments[1] == revisions[0]:
+            raise module.BuildFailure("exit 1: see arm.build.log")
+        return original(*arguments)
+
+    monkeypatch.setattr(module, "build_arm", build)
+    module.backfill(args)
+    marker_path = args.output_dir / "runs" / revisions[0] / "build-failure.json"
+    marker = json.loads(marker_path.read_text())
+    if marker_identity == "missing":
+        marker.pop("identity", None)
+        module.write_json(marker_path, marker)
+    elif marker_identity == "changed":
+        identity["glibc_sha"] = "5" * 64
+        (args.output_dir / "run.json").unlink()
+    monkeypatch.setattr(module, "build_arm", original)
+    builds.clear()
+    measurements.clear()
+    module.backfill(args)
+    if marker_identity == "matching":
+        assert not builds and not measurements and marker_path.exists()
+    else:
+        assert revisions[0] in measurements and builds[0][0] == revisions[0]
+        assert not marker_path.exists()
 
 
 def test_backfill_preserves_all_failed_builds_without_inventing_an_environment(
@@ -6432,6 +6509,64 @@ def test_backfill_plan_only_needs_no_build_or_host_gate(monkeypatch, tmp_path, c
     assert not args.output_dir.exists() and not builds and not measurements
     output = capsys.readouterr().out
     assert revisions[0] in output and revisions[-1] in output
+
+
+@pytest.mark.parametrize("plan_only", [False, True])
+def test_backfill_validates_rows_before_writing_state(
+    monkeypatch, tmp_path, capsys, plan_only
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    argv = [
+        "backfill",
+        "--revs",
+        str(args.revs),
+        "--rows",
+        "s3w,unknown",
+        "--output-dir",
+        str(args.output_dir),
+    ]
+    if plan_only:
+        argv.append("--plan-only")
+    assert module.main(argv) == 2
+    assert "unknown row unknown" in capsys.readouterr().err
+    assert not args.output_dir.exists() and not builds and not measurements
+
+
+@pytest.mark.parametrize("outcome", [0, 1, KeyboardInterrupt, SystemExit])
+def test_backfill_git_checks_exit_and_terminates_before_reraising(monkeypatch, outcome):
+    module = _load_runner()
+    command = ["git", "checkout", "--detach", "HEAD"]
+    events = []
+
+    class Process:
+        def wait(self):
+            events.append("wait")
+            if len(events) == 1 and isinstance(outcome, type):
+                raise outcome()
+            return outcome if isinstance(outcome, int) else -signal.SIGTERM
+
+        def terminate(self):
+            events.append("SIGTERM")
+
+    def popen(arguments, **kwargs):
+        assert arguments == command and kwargs == {"cwd": module.ROOT}
+        return Process()
+
+    monkeypatch.setattr(module.subprocess, "Popen", popen)
+    if isinstance(outcome, type):
+        with pytest.raises(outcome):
+            module.backfill_git(command)
+        assert events == ["wait", "SIGTERM", "wait"]
+    elif outcome:
+        with pytest.raises(subprocess.CalledProcessError) as raised:
+            module.backfill_git(command)
+        assert raised.value.returncode == outcome and raised.value.cmd == command
+        assert events == ["wait"]
+    else:
+        module.backfill_git(command)
+        assert events == ["wait"]
 
 
 @pytest.mark.parametrize("source_kind", ["directory", "symlink"])
@@ -6865,6 +7000,112 @@ def test_ledger_pass_with_accepted_rationale_needs_intent(monkeypatch, tmp_path)
     assert labelled["headline"]["k"] == 1 and labelled["headline"]["n"] == 1
 
 
+@pytest.mark.parametrize(
+    "defect,classification",
+    [
+        ("unsupported-nonfinite", "BROKEN"),
+        ("unsupported-error", "BROKEN"),
+        ("perturbation-input", "NEEDS-RATIONALE"),
+        ("perturbation-micro", "BROKEN"),
+        ("perturbation-nonfinite", "BROKEN"),
+        ("same-build", "NO-BASE"),
+        ("same-nonfinite", "NO-BASE"),
+        ("same-perturbation", "NO-BASE"),
+    ],
+)
+def test_ledger_inherits_only_matching_base_failures(
+    monkeypatch, tmp_path, defect, classification
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    parent = _perf_commit(repo, "dart/dynamics/base.cpp", "base", "Start history")
+    commit = _perf_commit(repo, "dart/dynamics/test.cpp", "head", "Update component")
+    monkeypatch.setattr(module, "ROOT", repo)
+    base = _measurement_fixture(module, parent, "gzb")
+    head = _measurement_fixture(module, commit, "gzb")
+    if defect == "perturbation-micro":
+        for record in (base, head):
+            record["results"] = _micro_record(module, "dyn")["results"]
+            record["results"][0]["perturbations"] = {"start4k": {"stable": True}}
+        head["results"][0]["head"].update(
+            micro_instrumented=False,
+            guards=None,
+            allocs=None,
+            bytes=None,
+            allocs_per_step=None,
+            bytes_per_step=None,
+        )
+    base_row, head_row = base["results"][0], head["results"][0]
+    if defect.startswith("unsupported"):
+        base_row.update(status="unsupported", head={}, perturbations={}, gated=False)
+    if defect.startswith("perturbation") or defect == "same-perturbation":
+        base_row["gated"] = False
+        base_row["perturbations"]["start4k"]["stable"] = False
+    if defect.endswith("nonfinite"):
+        head_row["head"]["guards"]["finite"] = False
+        if defect == "same-nonfinite":
+            base_row["head"]["guards"]["finite"] = False
+    elif defect == "unsupported-error":
+        head_row.update(status="broken", head={}, error="measurement failed")
+    elif defect == "perturbation-input":
+        head_row["input_sha"] = "b" * 64
+    elif defect == "same-build":
+        for row in (base_row, head_row):
+            row.update(
+                status="broken", head={}, error="build failed", error_kind="build"
+            )
+    elif defect == "same-perturbation":
+        head_row["gated"] = False
+        head_row["perturbations"]["start4k"]["stable"] = False
+    record = module.compare(base, head)
+    report = module.ledger_entries({commit: record}, parent, commit)
+    entry = report["entries"][0]
+    assert entry["class"] == classification
+    assert bool(entry["failures"]) == (classification == "BROKEN")
+    if classification == "NEEDS-RATIONALE":
+        assert entry["rules"] == ["input"]
+    assert record["results"][0]["parent_status"] == base_row["status"]
+    record["results"][0].pop("parent_status")
+    legacy = module.ledger_entries({commit: record}, parent, commit)["entries"][0]
+    assert legacy["class"] == (
+        "NO-BASE" if defect == "unsupported-error" else classification
+    )
+    path = tmp_path / "comparison.json"
+    module.write_json(path, record)
+    assert module.read_record(path, comparison=True) == record
+
+
+@pytest.mark.parametrize("base_defect", ["time", "nonfinite"])
+@pytest.mark.parametrize("head_defect", ["time", "nonfinite"])
+def test_ledger_distinguishes_nonfinite_state_from_stopped_time(
+    monkeypatch, tmp_path, base_defect, head_defect
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    parent = _perf_commit(repo, "dart/dynamics/base.cpp", "base", "Start history")
+    commit = _perf_commit(repo, "dart/dynamics/test.cpp", "head", "Update component")
+    monkeypatch.setattr(module, "ROOT", repo)
+
+    def change(base, head):
+        for row, defect in ((base, base_defect), (head, head_defect)):
+            row.update(
+                status="broken",
+                error=(
+                    "non-finite state"
+                    if defect == "nonfinite"
+                    else "simulation time did not advance"
+                ),
+            )
+            row["head"]["time_advanced"] = False
+            row["head"]["guards"]["finite"] = defect != "nonfinite"
+
+    record = _comparison_fixture(module, parent, commit, change=change)
+    report = module.ledger_entries({commit: record}, parent, commit)
+    assert report["entries"][0]["class"] == (
+        "NO-BASE" if base_defect == head_defect else "BROKEN"
+    )
+
+
 def test_ledger_classes_attribution_groups_and_determinism(
     monkeypatch, tmp_path, capsys
 ):
@@ -7031,6 +7272,7 @@ def test_ledger_classes_attribution_groups_and_determinism(
     )
     markdown = module.ledger_markdown(report)
     assert "2026-10-08" not in markdown
+    assert "(target: at most 1 in 10)" in markdown
     assert (
         "Unrelated merges needing a rationale: 2/11" in markdown
         and "Broken: 1" in markdown
@@ -7107,6 +7349,7 @@ def test_ledger_classes_attribution_groups_and_determinism(
         "delta",
         "verdict",
         "parent",
+        "parent-status",
         "row-failures",
         "nan",
         "missing-run-parent",
@@ -7127,6 +7370,8 @@ def test_ledger_names_malformed_record_files(monkeypatch, tmp_path, capsys, defe
         record["verdict"]["failures"] = "not a list"
     elif defect == "parent":
         record["results"][0]["parent"] = []
+    elif defect == "parent-status":
+        record["results"][0]["parent_status"] = "invalid"
     elif defect == "row-failures":
         record["results"][0]["failures"] = "not a list"
     elif defect == "missing-run-parent":
@@ -7279,9 +7524,126 @@ def test_release_records_order_precedence_and_index(monkeypatch, tmp_path, capsy
         "ledger"
     ] == {"entries": [], "missing": []}
     assert (
-        "release-6.19 is tracked by tags only (D11)"
+        "release-6.19 is tracked by tags only."
         in (pages / "performance/releases/v6.19.5.md").read_text()
     )
+
+
+@pytest.mark.parametrize("tag_created", ["normalized", "retry"])
+@pytest.mark.parametrize(
+    "stored_commit,stored_source",
+    [
+        (None, None),
+        ("candidate", "github-hosted"),
+        ("tagged", "github-hosted"),
+        ("tagged", "local"),
+    ],
+)
+def test_publish_refreshes_release_tag_before_writing(
+    monkeypatch, tmp_path, tag_created, stored_commit, stored_source
+):
+    module = _load_runner()
+    source = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        source, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(source, "tag", "v6.19.0")
+    candidate = _perf_commit(
+        source,
+        "package.xml",
+        "<package><version>6.20.0</version></package>",
+        "First candidate",
+    )
+    tagged = _perf_commit(source, "dart/dynamics/test.cpp", "tagged", "Ship release")
+    head = _perf_commit(source, "dart/dynamics/test.cpp", "newer", "Next candidate")
+    _perf_git(source, "update-ref", "refs/remotes/origin/main", head)
+    remote, pages = tmp_path / "remote.git", tmp_path / "pages"
+    subprocess.run(
+        ["git", "clone", "--bare", str(source), str(remote)],
+        check=True,
+        capture_output=True,
+    )
+    _perf_git(source, "remote", "add", "origin", str(remote))
+    _perf_git(remote, "symbolic-ref", "HEAD", "refs/heads/gh-pages")
+    subprocess.run(
+        ["git", "clone", str(remote), str(pages)], check=True, capture_output=True
+    )
+    monkeypatch.setattr(module, "ROOT", source)
+    _trusted_publication(monkeypatch, "workflow_dispatch")
+    _perf_git(pages, "config", "user.name", "test")
+    _perf_git(pages, "config", "user.email", "test@example.com")
+
+    def release(commit, environment="github-hosted"):
+        record = _comparison_fixture(module, base, commit, tier="release")
+        record["run"].update(tag="v6.20.0", base_tag="v6.19.0", pr=None)
+        record["run"]["env"]["runner"]["environment"] = environment
+        return record
+
+    record_path = pages / "performance/releases/v6.20.0.json"
+    if stored_commit is not None:
+        module.write_release(
+            pages,
+            release(
+                {"candidate": candidate, "tagged": tagged}[stored_commit], stored_source
+            ),
+        )
+        _perf_git(pages, "add", "performance")
+    _perf_commit(pages, "README.md", "Release performance\n", "Seed publication")
+    _perf_git(pages, "push", "origin", "HEAD:gh-pages")
+    before = _perf_git(pages, "rev-parse", "HEAD")
+    saved = record_path.read_bytes() if record_path.exists() else None
+    path = tmp_path / "record.json"
+    module.write_json(path, release(head))
+    original = module.publication_record
+
+    def normalize(*args, **kwargs):
+        record = original(*args, **kwargs)
+        if tag_created == "normalized":
+            _perf_git(remote, "tag", "v6.20.0", tagged)
+        return record
+
+    monkeypatch.setattr(module, "publication_record", normalize)
+    real_run = module.subprocess.run
+    pushes = []
+    refreshes = []
+
+    def run(command, *args, **kwargs):
+        if command[:3] == ["git", "-C", str(source)] and "fetch" in command:
+            refreshes.append(command)
+        if command[:4] == ["git", "-C", str(pages), "push"]:
+            pushes.append(command)
+            if tag_created == "retry" and len(pushes) == 1:
+                real_run(
+                    ["git", "-C", str(remote), "tag", "v6.20.0", tagged],
+                    check=True,
+                    capture_output=True,
+                )
+                return subprocess.CompletedProcess(command, 1, "", "retry publication")
+        return real_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(module.subprocess, "run", run)
+    args = module.parser().parse_args(
+        [
+            "publish",
+            "--record",
+            str(path),
+            "--tier",
+            "release",
+            "--tag",
+            "v6.20.0",
+            "--base-tag",
+            "v6.19.0",
+            "--pages-dir",
+            str(pages),
+        ]
+    )
+    assert module.publish(args) is False
+    assert _perf_git(source, "rev-parse", "v6.20.0^{commit}") == tagged
+    assert len(refreshes) == 1
+    assert len(pushes) == (1 if tag_created == "retry" else 0)
+    assert _perf_git(pages, "rev-parse", "HEAD") == before
+    assert _perf_git(pages, "status", "--porcelain") == ""
+    assert (record_path.read_bytes() if record_path.exists() else None) == saved
 
 
 def test_backfill_publication_is_one_commit_and_idempotent(
@@ -7307,6 +7669,7 @@ def test_backfill_publication_is_one_commit_and_idempotent(
         source, "dart/dynamics/test.cpp", "second", "Change DART (#3301)"
     )
     _perf_git(source, "update-ref", "refs/remotes/origin/main", second)
+    _perf_git(source, "remote", "add", "origin", str(source))
     monkeypatch.setattr(module, "ROOT", source)
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
@@ -7591,6 +7954,7 @@ def test_publication_late_release_refusal_leaves_checkout_clean(monkeypatch, tmp
     _perf_git(source, "tag", "v6.19.0")
     head = _perf_commit(source, "dart/dynamics/test.cpp", "head", "Measured change")
     _perf_git(source, "update-ref", "refs/remotes/origin/main", head)
+    _perf_git(source, "remote", "add", "origin", str(source))
     monkeypatch.setattr(module, "ROOT", source)
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     remote, pages = tmp_path / "remote.git", tmp_path / "pages"
