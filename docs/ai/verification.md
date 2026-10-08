@@ -58,10 +58,18 @@ surface affects shared behavior.
 
 The frequent `pixi run python scripts/check_agent_hook.py --profile staged`
 gate is intentionally fast and staged-file aware. It runs
-`git diff --cached --check`, scans added staged lines for local paths, and runs
-the AI checks only when their inputs are staged. It never configures, builds,
-prompts, or uses the network. It does not replace
+`git diff --cached --check`, scans staged file names and added lines for local
+paths, and runs the AI checks only when their inputs are staged. It never
+configures, builds, prompts, or uses the network. It does not replace
 `pixi run lint` before a commit.
+
+`pixi run install-hooks` installs managed `pre-commit` and `commit-msg` hooks.
+The latter runs `scripts/check_local_paths.py --commit-msg-file "$1"`, ignoring
+Git's default `#` comment lines and the scissors line plus the verbose diff
+below it. Both hooks share interpreter selection, foreign-hook chaining,
+`DART_SKIP_HOOKS=1`, and `DART_HOOK_DRY_RUN=1`. Older worktrees without the
+checker or a compatible Python interpreter print a notice and skip the message
+scan; the pre-commit hook retains its staged whitespace fallback.
 
 ## Simulation Verification Route
 

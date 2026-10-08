@@ -4,6 +4,7 @@ import importlib.util
 import os
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -30,6 +31,14 @@ SPEC.loader.exec_module(checker)
         "task_2/scripts/probe.py",
         "checkout/task_12-fix-simd",
         "/home/example/worktree/file.md",
+        "/home/example",
+        "/Users/example",
+        r"C:\Users\example",
+        r"C:\Users\Example User",
+        "C:/Users/example",
+        "/root",
+        "/root/file.md",
+        r"/root\file.md",
         "/Users/example/worktree/file.md",
         r"C:\Users\example\worktree\file.md",
         r"C:\Users\Example User\worktree\file.md",
@@ -62,6 +71,18 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         "https://github.com/dartsim/dart/pull/1234",
         "https://api.github.com/users/dartsim/repos",
         "https://example.com/home/docs/index.html",
+        "https://github.com/example/scratchpad/issues/1",
+        "https://github.com/org/repo/blob/main/task_2/script.py",
+        "HTTP://example.com/.ab/results.json",
+        "https://example.com/.sisyphus/plans/private.md",
+        "https://example.com/.claude/projects/session/notes.md",
+        "https://example.com/tmp/claude-session/notes.md",
+        "https://example.com/root/notes.md",
+        "https://example.com/C:/Users/example/notes.md",
+        "example.com/home/docs",
+        "C:/home/example",
+        "/rooted/file.md",
+        "/Root 1 0 R",
     ),
 )
 def test_public_examples_and_non_path_identifiers_pass(text, capsys):
@@ -77,6 +98,19 @@ def test_reports_all_leaks_and_file_line(capsys):
     assert capsys.readouterr().out.splitlines() == [
         "notes.md:2: .sisyphus/plans/private.md",
         "notes.md:2: /home/example/checkout",
+    ]
+
+
+def test_urls_do_not_hide_adjacent_paths_or_file_urls(capsys):
+    assert checker.scan_text(
+        "https://example.com/scratchpad/public.md /home/example\n"
+        "[public](https://example.com/task_2/file.py),scratchpad/private.md\n"
+        "file:///Users/example/private.md\n"
+    )
+    assert capsys.readouterr().out.splitlines() == [
+        "1: /home/example",
+        "2: scratchpad/private.md",
+        "3: /Users/example/private.md",
     ]
 
 
@@ -139,6 +173,84 @@ def test_free_text_file_has_no_fixture_exemption(tmp_path):
     fixture.parent.mkdir()
     fixture.write_text("/home/example/fixture\n")
     assert _cli("--text-file", fixture, cwd=tmp_path).returncode == 1
+
+
+@pytest.mark.parametrize(
+    "summary, expected", [("Public summary", 0), ("/home/example", 1)]
+)
+def test_commit_msg_ignores_comments_and_verbose_diff(tmp_path, summary, expected):
+    message = tmp_path / "COMMIT_EDITMSG"
+    message.write_text(
+        f"{summary}\n\n# /Users/example\n"
+        "# ------------------------ >8 ------------------------\n"
+        "diff --git a/notes.md b/notes.md\n+/home/example/private.md\n"
+    )
+    result = _cli("--commit-msg-file", message, cwd=tmp_path)
+    assert result.returncode == expected, result.stderr
+    assert result.stdout == ("1: /home/example\n" if expected else "")
+
+
+@pytest.mark.parametrize("mode", ["--staged", "--files", "--all-tracked"])
+def test_file_names_are_scanned_even_with_public_contents(repo, mode):
+    path = repo / "scratchpad" / "notes.md"
+    path.parent.mkdir()
+    path.write_text("Public summary\n")
+    _git(repo, "add", ".")
+    args = (mode, path) if mode == "--files" else (mode,)
+    result = _cli(*args, cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == "scratchpad/notes.md: scratchpad/notes.md\n"
+
+
+def test_filename_scan_has_no_content_allowlist_exception(repo, monkeypatch, capsys):
+    path = repo / "scratchpad" / "notes.md"
+    path.parent.mkdir()
+    path.write_text("Public summary\n")
+    monkeypatch.setitem(
+        checker.ALLOWLIST, "scratchpad/notes.md", checker.re.compile(".*")
+    )
+    assert checker.scan_file(path, "scratchpad/notes.md")
+    assert capsys.readouterr().out == "scratchpad/notes.md: scratchpad/notes.md\n"
+
+
+@pytest.mark.skipif(os.name != "posix", reason="workflow shell is Bash")
+def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
+    workflow = (ROOT / ".github/workflows/pr_text.yml").read_text()
+    assert "  pull_request_target:\n" in workflow
+    assert "types: [opened, edited, reopened, synchronize]" in workflow
+    assert "permissions:\n  contents: read\n" in workflow
+    assert "uses: actions/checkout@" in workflow
+    assert "ref: ${{ github.event.pull_request.base.sha }}" in workflow
+    assert "repository: ${{ github.repository }}" in workflow
+    assert "sparse-checkout: scripts/check_local_paths.py" in workflow
+    assert "sparse-checkout-cone-mode: false" in workflow
+    assert "persist-credentials: false" in workflow
+    assert "PR_TITLE: ${{ github.event.pull_request.title }}" in workflow
+    assert "PR_BODY: ${{ github.event.pull_request.body }}" in workflow
+    assert "pull_request.head" not in workflow
+    command = textwrap.dedent(workflow.split("        run: |\n", 1)[1])
+    env = {**os.environ, "PR_TITLE": "Public summary", "PR_BODY": "Public body"}
+    missing = subprocess.run(
+        ["bash", "-e", "-c", command],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert missing.returncode == 0, missing.stderr
+    assert "::notice::" in missing.stdout
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "check_local_paths.py").write_bytes(SCRIPT.read_bytes())
+    blocked = subprocess.run(
+        ["bash", "-e", "-c", command],
+        cwd=tmp_path,
+        env={**env, "PR_BODY": "$(touch injected)\n/home/example"},
+        capture_output=True,
+        text=True,
+    )
+    assert blocked.returncode == 1, blocked.stderr
+    assert "3: /home/example" in blocked.stdout
+    assert not (tmp_path / "injected").exists()
 
 
 def test_files_and_all_tracked_scan_worktree_and_ignore_untracked(repo):

@@ -3,7 +3,7 @@
 name: PR Text
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, edited, reopened, synchronize]
 
 permissions:
@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          # Use only trusted base code so PR changes cannot bypass this guard.
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
           sparse-checkout: scripts/check_local_paths.py
           sparse-checkout-cone-mode: false
@@ -25,4 +28,9 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" | python3 scripts/check_local_paths.py --stdin
+        run: |
+          if [ ! -f scripts/check_local_paths.py ]; then
+            echo "::notice::Base branch has no local-path checker yet; skipping PR text check."
+            exit 0
+          fi
+          printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" | python3 scripts/check_local_paths.py --stdin
