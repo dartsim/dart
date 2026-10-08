@@ -74,6 +74,10 @@ def decode(data: bytes) -> str:
 
 
 SCISSORS = re.compile(r"\S -{24} >8 -{24}")
+GIT_STATUS_LINE = re.compile(
+    r"\S\t(?:new file|modified|deleted|renamed|copied|typechange|both \w+|"
+    r"added by \w+|deleted by \w+):\s+\S.*"
+)
 
 
 def is_public_host(host: str | None) -> bool:
@@ -139,6 +143,10 @@ def scan_commit_message(text: str) -> bool:
         # Git prefixes the scissors with core.commentChar, which may differ.
         if SCISSORS.fullmatch(line):
             break
+        # Git's editor template lists staged files; cleanup drops these lines,
+        # and the staged scan already judged the file names.
+        if GIT_STATUS_LINE.fullmatch(line):
+            continue
         found |= scan_line(line, number)
     return found
 
