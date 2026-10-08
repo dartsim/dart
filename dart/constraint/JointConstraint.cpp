@@ -173,14 +173,25 @@ void JointConstraint::update()
 
   const int dof = static_cast<int>(mJoint->getNumDofs());
 
-  const Eigen::VectorXd positions = mJoint->getPositions();
-  const Eigen::VectorXd velocities = mJoint->getVelocities();
-
-  const Eigen::VectorXd positionLowerLimits = mJoint->getPositionLowerLimits();
-  const Eigen::VectorXd positionUpperLimits = mJoint->getPositionUpperLimits();
-
-  const Eigen::VectorXd velocityLowerLimits = mJoint->getVelocityLowerLimits();
-  const Eigen::VectorXd velocityUpperLimits = mJoint->getVelocityUpperLimits();
+  // The constraint state supports at most six DOFs. Scalar getters preserve
+  // the same snapshot without the six heap-allocated VectorXd copies.
+  DART_ASSERT(dof <= 6);
+  using DofVector = Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 6, 1>;
+  DofVector positions(dof);
+  DofVector velocities(dof);
+  DofVector positionLowerLimits(dof);
+  DofVector positionUpperLimits(dof);
+  DofVector velocityLowerLimits(dof);
+  DofVector velocityUpperLimits(dof);
+  for (int i = 0; i < dof; ++i) {
+    const auto index = static_cast<std::size_t>(i);
+    positions[i] = mJoint->getPosition(index);
+    velocities[i] = mJoint->getVelocity(index);
+    positionLowerLimits[i] = mJoint->getPositionLowerLimit(index);
+    positionUpperLimits[i] = mJoint->getPositionUpperLimit(index);
+    velocityLowerLimits[i] = mJoint->getVelocityLowerLimit(index);
+    velocityUpperLimits[i] = mJoint->getVelocityUpperLimit(index);
+  }
 
   const double timeStep = mJoint->getSkeleton()->getTimeStep();
   // TODO: There are multiple ways to get time step (or its inverse).

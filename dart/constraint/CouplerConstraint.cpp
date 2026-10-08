@@ -38,7 +38,76 @@
 #include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
+#include <algorithm>
+#include <mutex>
+
 #define DART_CFM 1e-9
+
+namespace {
+
+// Keep the public owning vector while retaining its empty storage between
+// rebuilt constraints. Synchronization also covers destruction on another
+// thread; each constructor copies the current properties into its own buffer.
+struct MimicPropertyStorage
+{
+  std::mutex mutex;
+  std::vector<std::vector<dart::dynamics::MimicDofProperties>> buffers;
+  std::size_t bufferCount = 0u;
+};
+
+MimicPropertyStorage& getMimicPropertyStorage()
+{
+  static auto* storage = new MimicPropertyStorage;
+  return *storage;
+}
+
+std::vector<dart::dynamics::MimicDofProperties> copyMimicProperties(
+    const std::vector<dart::dynamics::MimicDofProperties>& properties)
+{
+  std::vector<dart::dynamics::MimicDofProperties> result;
+  auto& storage = getMimicPropertyStorage();
+  {
+    const std::lock_guard<std::mutex> lock(storage.mutex);
+    if (storage.buffers.empty()) {
+      // Reserve a return slot before handing out new storage, so destruction
+      // remains allocation-free when all live constraints return their vectors.
+      storage.buffers.reserve(storage.bufferCount + 1u);
+      ++storage.bufferCount;
+    } else {
+      auto buffer = std::min_element(
+          storage.buffers.begin(),
+          storage.buffers.end(),
+          [size = properties.size()](const auto& a, const auto& b) {
+            const bool aFits = a.capacity() >= size;
+            const bool bFits = b.capacity() >= size;
+            if (aFits != bFits)
+              return aFits;
+            return aFits ? a.capacity() < b.capacity()
+                         : a.capacity() > b.capacity();
+          });
+      result.swap(*buffer);
+      buffer->swap(storage.buffers.back());
+      storage.buffers.pop_back();
+    }
+  }
+  result.assign(properties.begin(), properties.end());
+  return result;
+}
+
+void releaseMimicProperties(
+    std::vector<dart::dynamics::MimicDofProperties>& properties)
+{
+  properties.clear();
+  auto& storage = getMimicPropertyStorage();
+  const std::lock_guard<std::mutex> lock(storage.mutex);
+  // Implicit copies of the public constraint also own vectors, but do not
+  // acquire a return slot. Drop excess buffers instead of growing in a
+  // destructor.
+  if (storage.buffers.size() < storage.buffers.capacity())
+    storage.buffers.push_back(std::move(properties));
+}
+
+} // namespace
 
 namespace dart {
 namespace constraint {
@@ -51,7 +120,7 @@ CouplerConstraint::CouplerConstraint(
     const std::vector<dynamics::MimicDofProperties>& mimicDofProperties)
   : ConstraintBase(),
     mJoint(joint),
-    mMimicProps(mimicDofProperties),
+    mMimicProps(copyMimicProperties(mimicDofProperties)),
     mBodyNode(joint->getChildBodyNode()),
     mAppliedImpulseIndex(0)
 {
@@ -66,7 +135,7 @@ CouplerConstraint::CouplerConstraint(
 //==============================================================================
 CouplerConstraint::~CouplerConstraint()
 {
-  // Do nothing
+  releaseMimicProperties(mMimicProps);
 }
 
 //==============================================================================

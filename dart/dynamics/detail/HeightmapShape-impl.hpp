@@ -240,9 +240,13 @@ void HeightmapShape<S>::computeBoundingBox(
       = static_cast<double>(widthSamples) * static_cast<double>(mScale.x());
   const double dimY
       = static_cast<double>(depthSamples) * static_cast<double>(mScale.y());
-  const double dimZ = (mMaxHeight - mMinHeight) * mScale.z();
-  min = Eigen::Vector3d(-dimX * 0.5, -dimY * 0.5, mMinHeight * mScale.z());
-  max = min + Eigen::Vector3d(dimX, dimY, dimZ);
+  // Scale each height bound on its own: a float height range subtracted
+  // before widening can round the top of the box below the highest sample.
+  const double scaleZ = static_cast<double>(mScale.z());
+  min = Eigen::Vector3d(
+      -dimX * 0.5, -dimY * 0.5, static_cast<double>(mMinHeight) * scaleZ);
+  max = Eigen::Vector3d(
+      dimX * 0.5, dimY * 0.5, static_cast<double>(mMaxHeight) * scaleZ);
 }
 
 //==============================================================================

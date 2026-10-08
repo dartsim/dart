@@ -75,13 +75,45 @@ namespace collision {
 
 namespace {
 
-std::string collisionObjectKey(const FCLCollisionObject* object)
+const std::string& collisionObjectKey(const FCLCollisionObject* object)
 {
+  static const std::string empty;
   if (!object)
-    return "";
+    return empty;
 
   return object->getKey();
 }
+
+// Borrow retained thread-local capacity without sharing the active buffer with
+// a nested collision query, as in ODE's PairIndex scratch storage.
+template <typename T>
+class ScopedPostProcessVector
+{
+public:
+  explicit ScopedPostProcessVector(std::vector<T>& storage) : mStorage(storage)
+  {
+    mValues.swap(mStorage);
+    mValues.clear();
+  }
+
+  ~ScopedPostProcessVector()
+  {
+    mValues.clear();
+    mValues.swap(mStorage);
+  }
+
+  ScopedPostProcessVector(const ScopedPostProcessVector&) = delete;
+  ScopedPostProcessVector& operator=(const ScopedPostProcessVector&) = delete;
+
+  std::vector<T>& values()
+  {
+    return mValues;
+  }
+
+private:
+  std::vector<T>& mStorage;
+  std::vector<T> mValues;
+};
 
 bool collisionCallback(
     fcl::CollisionObject* o1, fcl::CollisionObject* o2, void* cdata);
@@ -310,7 +342,7 @@ struct FCLDistanceCallbackData
 //==============================================================================
 // Create a cube mesh for collision detection
 template <class BV>
-::fcl::BVHModel<BV>* createCube(float _sizeX, float _sizeY, float _sizeZ)
+::fcl::BVHModel<BV>* createCube(double _sizeX, double _sizeY, double _sizeZ)
 {
   int faces[6][4]
       = {{0, 1, 2, 3},
@@ -319,7 +351,7 @@ template <class BV>
          {4, 5, 1, 0},
          {5, 6, 2, 1},
          {7, 4, 0, 3}};
-  float v[8][3];
+  double v[8][3];
 
   v[0][0] = v[1][0] = v[2][0] = v[3][0] = -_sizeX / 2;
   v[4][0] = v[5][0] = v[6][0] = v[7][0] = _sizeX / 2;
@@ -349,9 +381,10 @@ template <class BV>
 
 //==============================================================================
 template <class BV>
-::fcl::BVHModel<BV>* createEllipsoid(float _sizeX, float _sizeY, float _sizeZ)
+::fcl::BVHModel<BV>* createEllipsoid(
+    double _sizeX, double _sizeY, double _sizeZ)
 {
-  float v[59][3]
+  double v[59][3]
       = {{0, 0, 0},
          {0.135299, -0.461940, -0.135299},
          {0.000000, -0.461940, -0.191342},
@@ -469,14 +502,14 @@ template <class BV>
   const int CACHE_SIZE = 240;
 
   int i, j;
-  float sinCache[CACHE_SIZE];
-  float cosCache[CACHE_SIZE];
-  float angle;
-  float zBase;
-  float zLow, zHigh;
-  float sintemp, costemp;
-  float deltaRadius;
-  float radiusLow, radiusHigh;
+  double sinCache[CACHE_SIZE];
+  double cosCache[CACHE_SIZE];
+  double angle;
+  double zBase;
+  double zLow, zHigh;
+  double sintemp, costemp;
+  double deltaRadius;
+  double radiusLow, radiusHigh;
 
   if (_slices >= CACHE_SIZE)
     _slices = CACHE_SIZE - 1;
@@ -525,9 +558,12 @@ template <class BV>
     for (j = 0; j < _stacks; j++) {
       zLow = j * _height / _stacks + zBase;
       zHigh = (j + 1) * _height / _stacks + zBase;
-      radiusLow = _baseRadius - deltaRadius * (static_cast<float>(j) / _stacks);
-      radiusHigh
-          = _baseRadius - deltaRadius * (static_cast<float>(j + 1) / _stacks);
+      const double stackRatio
+          = static_cast<double>(j) / static_cast<double>(_stacks);
+      const double nextStackRatio
+          = static_cast<double>(j + 1) / static_cast<double>(_stacks);
+      radiusLow = _baseRadius - deltaRadius * stackRatio;
+      radiusHigh = _baseRadius - deltaRadius * nextStackRatio;
 
       p1 = fcl::Vector3(radiusLow * sinCache[i], radiusLow * cosCache[i], zLow);
       p2 = fcl::Vector3(
@@ -602,33 +638,6 @@ template <typename BV>
   model->endModel();
   model->computeLocalAABB();
 
-  return model;
-}
-
-//==============================================================================
-template <class BV>
-::fcl::BVHModel<BV>* createMesh(
-    float _scaleX, float _scaleY, float _scaleZ, const aiScene* _mesh)
-{
-  // Create FCL mesh from Assimp mesh
-
-  DART_ASSERT(_mesh);
-  ::fcl::BVHModel<BV>* model = new ::fcl::BVHModel<BV>;
-  model->beginModel();
-  for (std::size_t i = 0; i < _mesh->mNumMeshes; i++) {
-    for (std::size_t j = 0; j < _mesh->mMeshes[i]->mNumFaces; j++) {
-      fcl::Vector3 vertices[3];
-      for (std::size_t k = 0; k < 3; k++) {
-        const aiVector3D& vertex
-            = _mesh->mMeshes[i]
-                  ->mVertices[_mesh->mMeshes[i]->mFaces[j].mIndices[k]];
-        vertices[k] = fcl::Vector3(
-            vertex.x * _scaleX, vertex.y * _scaleY, vertex.z * _scaleZ);
-      }
-      model->addTriangle(vertices[0], vertices[1], vertices[2]);
-    }
-  }
-  model->endModel();
   return model;
 }
 
@@ -1912,7 +1921,10 @@ void postProcessFCL(
   const auto tol = 1e-12;
   const auto tol3 = tol * 3.0;
 
-  std::vector<bool> markForDeletion(numContacts, false);
+  static thread_local std::vector<bool> deletionStorage;
+  ScopedPostProcessVector<bool> deletionScratch(deletionStorage);
+  auto& markForDeletion = deletionScratch.values();
+  markForDeletion.assign(numContacts, false);
 
   // mark all the repeated points
   markRepeatedPoints<
@@ -1965,7 +1977,9 @@ void postProcessDART(
 
   auto numContacts = 0u;
 
-  std::vector<Contact> unfiltered;
+  static thread_local std::vector<Contact> contactStorage;
+  ScopedPostProcessVector<Contact> contactScratch(contactStorage);
+  auto& unfiltered = contactScratch.values();
   unfiltered.reserve(numFilteredContacts * 2);
 
   for (auto i = 0u; i < numFilteredContacts; ++i) {
@@ -2056,7 +2070,10 @@ void postProcessDART(
 
   const auto unfilteredSize = unfiltered.size();
 
-  std::vector<bool> markForDeletion(unfilteredSize, false);
+  static thread_local std::vector<bool> deletionStorage;
+  ScopedPostProcessVector<bool> deletionScratch(deletionStorage);
+  auto& markForDeletion = deletionScratch.values();
+  markForDeletion.assign(unfilteredSize, false);
 
   // mark all the repeated points
   markRepeatedPoints<std::vector<Contact>, Contact, &std::vector<Contact>::at>(
@@ -2350,8 +2367,8 @@ Contact convertContact(
 bool shouldSwapDeterministically(
     const FCLCollisionObject* fclObj1, const FCLCollisionObject* fclObj2)
 {
-  const auto key1 = collisionObjectKey(fclObj1);
-  const auto key2 = collisionObjectKey(fclObj2);
+  const auto& key1 = collisionObjectKey(fclObj1);
+  const auto& key2 = collisionObjectKey(fclObj2);
 
   const auto addr1 = reinterpret_cast<std::uintptr_t>(fclObj1);
   const auto addr2 = reinterpret_cast<std::uintptr_t>(fclObj2);

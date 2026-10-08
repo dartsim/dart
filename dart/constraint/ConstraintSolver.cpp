@@ -67,6 +67,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <limits>
+#include <memory_resource>
 #include <mutex>
 #include <thread>
 #include <type_traits>
@@ -197,6 +198,50 @@ bool isExactDefaultContactSurfaceHandler(
 
 namespace {
 
+template <typename T>
+void reserveGeometrically(std::vector<T>& storage, std::size_t required)
+{
+  if (required <= storage.capacity())
+    return;
+
+  std::size_t capacity = 1u;
+  while (capacity < required && capacity <= storage.max_size() / 2u)
+    capacity *= 2u;
+  storage.reserve(std::max(capacity, required));
+}
+
+// Cleared island constraint buffers, kept for the next group on this thread.
+// A retire grows the list only at a new peak of spare buffers (the Z2
+// high-water-mark rule); preparation reserves a slot for every island a World
+// can form, so its first all-asleep step stays allocation-free.
+// ponytail: capped at kMaxSpareGroupBuffers per thread, so groups inserted
+// from outside the solver cannot grow it without bound; raise the cap if a
+// thread ever runs Worlds with more islands than that.
+constexpr std::size_t kMaxSpareGroupBuffers = std::size_t{1} << 16;
+
+std::vector<std::vector<ConstraintBasePtr>>& retiredGroupConstraintStorage()
+{
+  static thread_local std::vector<std::vector<ConstraintBasePtr>> storage;
+  return storage;
+}
+
+void handOutGroupConstraintStorage(std::vector<ConstraintBasePtr>& constraints)
+{
+  auto& retired = retiredGroupConstraintStorage();
+  if (!retired.empty()) {
+    constraints = std::move(retired.back());
+    retired.pop_back();
+  }
+}
+
+void retireGroupConstraintStorage(std::vector<ConstraintBasePtr>& constraints)
+{
+  constraints.clear();
+  auto& retired = retiredGroupConstraintStorage();
+  if (constraints.capacity() != 0u && retired.size() < kMaxSpareGroupBuffers)
+    retired.push_back(std::move(constraints));
+}
+
 //==============================================================================
 /// Assigns a temporary value and restores the previous one when it goes out
 /// of scope, including when an exception unwinds the stack.
@@ -237,6 +282,16 @@ ContactSurfaceHandlerPtr getStatelessContactSurfaceHandler()
   static const auto handler
       = std::make_shared<StatelessContactSurfaceHandler>();
   return handler;
+}
+
+//==============================================================================
+// Automatic joint constraints are rebuilt every step. Like the contact pool,
+// this process-lifetime pool also supports shared_ptr destruction on another
+// thread without changing the constraint classes or their public interfaces.
+std::pmr::memory_resource* getJointConstraintPool()
+{
+  static auto* pool = new std::pmr::synchronized_pool_resource;
+  return pool;
 }
 
 } // namespace
@@ -1746,8 +1801,10 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
     contactCandidates.clear();
 
     {
-      contactPairCounts.reserve(mCollisionResult.getNumContacts());
-      contactCandidates.reserve(mCollisionResult.getNumContacts());
+      reserveGeometrically(
+          contactPairCounts, mCollisionResult.getNumContacts());
+      reserveGeometrically(
+          contactCandidates, mCollisionResult.getNumContacts());
       const ContactPairHash contactPairHash;
       bool contactPairBucketsInitialized = false;
       const auto initializeContactPairBuckets = [&]() {
@@ -2530,16 +2587,22 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
     for (auto* joint : mAutomaticJointConstraintJoints) {
       if (joint->hasCoulombFriction()) {
         mJointCoulombFrictionConstraints.push_back(
-            std::make_shared<JointCoulombFrictionConstraint>(joint));
+            std::allocate_shared<JointCoulombFrictionConstraint>(
+                std::pmr::polymorphic_allocator<JointCoulombFrictionConstraint>(
+                    getJointConstraintPool()),
+                joint));
       }
 
       if (joint->areLimitsEnforced()
           || joint->hasActuatorType(dynamics::Joint::SERVO)) {
-        mJointConstraints.push_back(std::make_shared<JointConstraint>(joint));
+        mJointConstraints.push_back(std::allocate_shared<JointConstraint>(
+            std::pmr::polymorphic_allocator<JointConstraint>(
+                getJointConstraintPool()),
+            joint));
       }
 
       if (joint->hasActuatorType(dynamics::Joint::MIMIC)) {
-        auto mimicProps = joint->getMimicDofProperties();
+        const auto& mimicProps = joint->getMimicDofProperties();
         const auto dofCount = joint->getNumDofs();
         bool hasValidMimicDof = false;
         for (std::size_t dofIndex = 0;
@@ -2560,12 +2623,19 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 
         if (hasValidMimicDof) {
           if (joint->isUsingCouplerConstraint()) {
-            mCouplerConstraints.push_back(std::make_shared<CouplerConstraint>(
-                joint, joint->getMimicDofProperties()));
+            mCouplerConstraints.push_back(
+                std::allocate_shared<CouplerConstraint>(
+                    std::pmr::polymorphic_allocator<CouplerConstraint>(
+                        getJointConstraintPool()),
+                    joint,
+                    mimicProps));
           } else {
             mMimicMotorConstraints.push_back(
-                std::make_shared<MimicMotorConstraint>(
-                    joint, joint->getMimicDofProperties()));
+                std::allocate_shared<MimicMotorConstraint>(
+                    std::pmr::polymorphic_allocator<MimicMotorConstraint>(
+                        getJointConstraintPool()),
+                    joint,
+                    mimicProps));
           }
         }
       }
@@ -2618,6 +2688,8 @@ bool ConstraintSolver::clearInactiveConstrainedGroups()
   if (!mActiveConstraints.empty())
     return false;
 
+  for (auto& group : mConstrainedGroups)
+    retireGroupConstraintStorage(group.mConstraints);
   mConstrainedGroups.clear();
   mGroupResting.clear();
   mGroupAllSleepCandidates.clear();
@@ -2762,8 +2834,11 @@ void ConstraintSolver::buildConstrainedGroups()
 
         if (groupIndex == invalidUnionIndex) {
           groupIndex = numConstrainedGroups;
-          if (numConstrainedGroups == mConstrainedGroups.size())
+          if (numConstrainedGroups == mConstrainedGroups.size()) {
             mConstrainedGroups.emplace_back();
+            handOutGroupConstraintStorage(
+                mConstrainedGroups.back().mConstraints);
+          }
 
           auto& group = mConstrainedGroups[groupIndex];
           group.mRootSkeleton = skel->getPtr();
@@ -2796,8 +2871,11 @@ void ConstraintSolver::buildConstrainedGroups()
 
         if (groupIndex == invalidUnionIndex) {
           groupIndex = numConstrainedGroups;
-          if (numConstrainedGroups == mConstrainedGroups.size())
+          if (numConstrainedGroups == mConstrainedGroups.size()) {
             mConstrainedGroups.emplace_back();
+            handOutGroupConstraintStorage(
+                mConstrainedGroups.back().mConstraints);
+          }
 
           mConstrainedGroups[groupIndex].mRootSkeleton = skel;
           skel->mUnionIndex = groupIndex;
@@ -2810,6 +2888,9 @@ void ConstraintSolver::buildConstrainedGroups()
       }
     }
 
+    for (std::size_t i = numConstrainedGroups; i < mConstrainedGroups.size();
+         ++i)
+      retireGroupConstraintStorage(mConstrainedGroups[i].mConstraints);
     mConstrainedGroups.resize(numConstrainedGroups);
   }
 
@@ -3347,6 +3428,8 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   // accumulated constraint impulses. World::step() integrates the
   // velocity-phase impulses only after solve() returns, so preserve them, and
   // the impulse-applied flags, across the position pass.
+  // Clear the flags so position unit-impulse tests do not read stale velocity
+  // changes from skeletons outside the current probe.
   // ponytail: per-step local vectors; move to solver scratch if split-impulse
   // worlds show allocation cost.
   std::vector<bool> impulseAppliedStates;
@@ -3357,6 +3440,7 @@ void ConstraintSolver::solvePositionConstrainedGroups()
   for (const auto& skeleton : mSkeletons) {
     const bool applied = skeleton->isImpulseApplied();
     impulseAppliedStates.push_back(applied);
+    skeleton->setImpulseApplied(false);
     if (!applied)
       continue;
     for (auto* bodyNode : skeleton->getBodyNodes()) {
@@ -3670,6 +3754,16 @@ void ConstraintSolver::reserveConstrainedGroupsScratch()
   mGroupAlreadyRestingScratch.reserve(groupCount);
   mGroupSolvedToRestScratch.reserve(groupCount);
   mIslandSkeletons.reserve(mSkeletons.size());
+  // Each skeleton can form its own island, and all of them may retire at once.
+  // This covers this World only: when several prepared Worlds share a thread,
+  // the first step whose combined retirements exceed it allocates once, a new
+  // high-water mark as Z2 allows; later shrink/regrow cycles do not. Covering
+  // every World here would need cross-World counting, which drifts when a
+  // World is destroyed on another thread.
+  auto& retired = retiredGroupConstraintStorage();
+  reserveGeometrically(
+      retired,
+      std::min(retired.size() + mSkeletons.size(), kMaxSpareGroupBuffers));
 
   for (const auto& group : mConstrainedGroups) {
     reserveConstrainedGroupScratch(group);

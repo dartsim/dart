@@ -152,7 +152,9 @@ rows/columns and manipulate C.
 #include "dart/lcpsolver/dantzig/DantzigMisc.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include <cstddef>
@@ -257,6 +259,41 @@ bool solveLcpWithScratch(
     memcpy(x, b, n * sizeof(Scalar));
 
     return true;
+  }
+
+  if (nSize > scratch.stateCapacity) {
+    // Grow retained storage geometrically only after the allocation-free
+    // diagonal path declines; the logical solve size and stride stay unchanged.
+    const auto maxRows
+        = static_cast<std::size_t>(std::numeric_limits<int>::max() - 3);
+    if (nSize > maxRows)
+      throw std::length_error(
+          "Dantzig scratch row count exceeds padded stride");
+    std::size_t rowCapacity = 1u;
+    while (rowCapacity < nSize) {
+      if (rowCapacity > maxRows / 2u) {
+        rowCapacity = nSize;
+        break;
+      }
+      rowCapacity *= 2u;
+    }
+    const auto strideCapacity
+        = static_cast<std::size_t>(padding(static_cast<int>(rowCapacity)));
+    if (rowCapacity > scratch.L.max_size() / strideCapacity)
+      throw std::length_error("Dantzig scratch matrix size exceeds capacity");
+
+    scratch.L.reserve(rowCapacity * strideCapacity);
+    scratch.d.reserve(rowCapacity);
+    scratch.w.reserve(rowCapacity);
+    scratch.deltaW.reserve(rowCapacity);
+    scratch.deltaX.reserve(rowCapacity);
+    scratch.dell.reserve(rowCapacity);
+    scratch.ell.reserve(rowCapacity);
+    scratch.p.reserve(rowCapacity);
+    scratch.C.reserve(rowCapacity);
+    scratch.ldltRemoveTmp.reserve(rowCapacity + 2u * strideCapacity);
+    scratch.rowPointers.reserve(rowCapacity);
+    scratch.reserveState(rowCapacity);
   }
 
   scratch.L.resize(nSize * nskipSize);
