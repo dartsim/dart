@@ -19,11 +19,11 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 # Keep the publication policy and its narrowly scoped exceptions here.
-PATH_TAIL = r"[^\s`\"'<>\[\](){};,]*"
+PATH_TAIL = r"[^\s`\"'<>\[\](){};,|]*"
 URI = re.compile(
-    r"[a-z][a-z0-9+.-]*://(?:[^\s`\"'<>\[\](){}/@]+@)?"
-    r"(?:\[[^\s`\"'<>\[\](){}]+\])?"
-    r"(?:[^\s`\"'<>\[\](){}]|\([^\s`\"'<>\[\](){}]*\))*",
+    r"[a-z][a-z0-9+.-]*://(?:[^\s`\"'<>\[\](){}/@|]+@)?"
+    r"(?:\[[^\s`\"'<>\[\](){}|]+\])?"
+    r"(?:[^\s`\"'<>\[\](){}|]|\([^\s`\"'<>\[\](){}|]*\))*",
     re.IGNORECASE,
 )
 # Covers private planning/harness dirs, agent scratch/project dirs, numbered
@@ -55,6 +55,8 @@ PATTERNS = tuple(
         # Unix root homes are case-sensitive; PDF /Root entries are not paths.
         r"(?<![\w.-])(?<!\b[A-Za-z]:)/(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|])",
         r"(?<![\w.:-])[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>\[\](){};,|]+",
+        # Windows Actions checks out the repository in two same-named dirs.
+        r"(?<![\w.:-])[A-Za-z]:[/\\]+a[/\\]+(?P<repo>[\w.-]+)[/\\]+(?P=repo)(?=[/\\]|$|[\s`\"'<>\[\](){};,|])",
         # Network (UNC) user profiles, with either path separator.
         r"(?<![\w:/\\])[\\/]{2}[^\\/\s]+[\\/]+Users[\\/]+[^\\/\r\n`\"'<>\[\](){};,|]+",
     )
