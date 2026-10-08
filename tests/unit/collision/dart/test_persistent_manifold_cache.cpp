@@ -35,6 +35,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <memory>
 #include <optional>
 
 #include <cmath>
@@ -290,4 +291,42 @@ TEST(PersistentManifoldCache, RemoveObjectDropsEveryPairContainingObject)
   auto& kept = cache.getOrCreate(5u, 4u);
   EXPECT_EQ(1, kept.numContacts);
   EXPECT_EQ(1u, cache.size());
+}
+
+//==============================================================================
+TEST(PersistentManifoldCache, CopiesAndMovesKeepTheirOwnPools)
+{
+  const auto fill = [](PersistentManifoldCache& cache, std::size_t first) {
+    for (std::size_t id = first; id < first + 64u; ++id) {
+      CachedContact contact;
+      contact.penetrationDepth = 0.001 * static_cast<double>(id);
+      cache.getOrCreate(id, id + 10000u).addOrReplace(contact);
+    }
+  };
+  const auto depth = [](PersistentManifoldCache& cache, std::size_t id) {
+    return cache.getOrCreate(id, id + 10000u).contacts[0].penetrationDepth;
+  };
+
+  auto source = std::make_unique<PersistentManifoldCache>();
+  fill(*source, 0u);
+  PersistentManifoldCache destination;
+  fill(destination, 500u);
+  // Replace a populated cache, then destroy the source and its pool first.
+  destination = std::move(*source);
+  source.reset();
+  EXPECT_EQ(64u, destination.size());
+  EXPECT_DOUBLE_EQ(0.003, depth(destination, 3u));
+  fill(destination, 2000u);
+  EXPECT_EQ(128u, destination.size());
+
+  PersistentManifoldCache copy(destination);
+  auto moved
+      = std::make_unique<PersistentManifoldCache>(std::move(destination));
+  destination = copy;
+  fill(copy, 4000u);
+  moved.reset();
+  EXPECT_EQ(128u, destination.size());
+  EXPECT_EQ(192u, copy.size());
+  EXPECT_DOUBLE_EQ(0.003, depth(destination, 3u));
+  EXPECT_DOUBLE_EQ(2.0, depth(destination, 2000u));
 }
