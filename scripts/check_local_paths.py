@@ -55,18 +55,10 @@ UTF16_BOMS = (b"\xff\xfe", b"\xfe\xff")
 
 def is_public_host(host: str | None) -> bool:
     host = (host or "").rstrip(".")
-    if "." not in host or host == "localhost" or host.endswith(".localhost"):
-        return False
     try:
-        address = ipaddress.ip_address(host)
+        return ipaddress.ip_address(host).is_global
     except ValueError:
-        return True
-    return not (
-        address.is_loopback
-        or address.is_private
-        or address.is_link_local
-        or address.is_unspecified
-    )
+        return "." in host and host != "localhost" and not host.endswith(".localhost")
 
 
 def scan_line(line: str, number: int | str, filename: str | None = None) -> bool:
@@ -178,6 +170,9 @@ def scan_staged(root: Path) -> bool:
 
 def scan_file(path: Path, filename: str) -> bool:
     found = scan_line(filename, filename)
+    # A submodule gitlink publishes only its name and commit, not this checkout.
+    if path.is_dir() and not path.is_symlink():
+        return found
     # A tracked symlink publishes its target, not the external file's contents.
     data = os.fsencode(os.readlink(path)) if path.is_symlink() else path.read_bytes()
     encoding = "utf-16" if data.startswith(UTF16_BOMS) else "utf-8"
