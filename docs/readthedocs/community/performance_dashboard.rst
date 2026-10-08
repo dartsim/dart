@@ -4,8 +4,18 @@ DART 6 Performance Dashboard
 DART publishes a public performance dashboard for the DART 6 LTS benchmark
 slice:
 
-* Dashboard:
+* Wall-time dashboard:
   `https://dartsim.github.io/dart/performance/dart6/ <https://dartsim.github.io/dart/performance/dart6/>`_
+* Deterministic instruction-count and allocation dashboard:
+  `https://dartsim.github.io/dart/performance/dart6-ir/ <https://dartsim.github.io/dart/performance/dart6-ir/>`_
+
+The deterministic chart publishes merge measurements from ``perf.yml``;
+instruction counts use one world thread and allocations are counted natively.
+Its stock Chart.js page retains 250 points with alerts disabled. Full JSON
+records remain on ``gh-pages`` under ``performance/records/main/``, and the
+nightly-generated guard table is ``performance/guards/main.md``. These counts
+complement the wall-time dashboard below; cache, SIMD and threading wins need
+hand-run hardware-counter evidence.
 
 The live dashboard is embedded below. If it does not load, open it directly
 with the link above. The URL returns ``404`` until the first successful
@@ -69,6 +79,12 @@ Each run:
    `benchmark-action/github-action-benchmark
    <https://github.com/benchmark-action/github-action-benchmark>`_, which
    appends a point to the per-benchmark history and updates the hosted page.
+
+Hosted runs use ``ubuntu-24.04`` and configure ``DART_BUILD_PROFILE=OFF``.
+Alerts and alert comments are disabled: hosted wall time is advisory.
+Switching the existing series to profiler-off builds intentionally introduces
+a one-time level shift, so timings before and after that change are not
+directly comparable.
 
 The action stores history on the ``gh-pages`` branch under ``performance/dart6``
 and renders an interactive Chart.js page. There is no external account, API
