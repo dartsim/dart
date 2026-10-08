@@ -98,6 +98,11 @@ parity are checked separately. Hosted wall time stays advisory: CI has no
 quiet hardware, so cache, prefetch, SIMD and threading claims need hand-run
 `perf stat` evidence.
 
+The harness runs every capture with `LC_ALL=C
+GLIBC_TUNABLES=glibc.cpu.hwcaps=-FMA`. The S1 container hashes depend on
+glibc's FMA math variants, so prefix a manual capture with the same variables
+to reproduce the generated table's hashes; the S2–S5 hashes match either way.
+
 Each cell reports: RTF; resting N/M; contacts (+ cap-hit flag);
 final-state hash; finite-state flag; S6 additionally max_penetration per
 checkpoint. Untouched detectors must keep bit-identical hashes across
