@@ -37,6 +37,17 @@ SPEC.loader.exec_module(checker)
         "cwd:/home/example/private.md",
         "../home/example/private.md",
         "../../Users/example/private.md",
+        "/workspace/example/notes.md",
+        "/workspace/example",
+        "/workspaces/example/notes.md",
+        "/workspaces/example",
+        "/__w/example/example/notes.md",
+        "/__w/example",
+        "WORKDIR /workspaces/example/private.md",
+        "Public note: WORKDIR /workspaces/example",
+        "cwd:/workspace/example/notes.md",
+        "../workspaces/example/notes.md",
+        "../../__w/example/notes.md",
         r"\\corp-fs\Users\example\notes.md",
         "//corp-fs/Users/example/notes.md",
         "file:/home/example/private.md",
@@ -98,6 +109,15 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         "example.com/mnt/c/Users/example",
         "C:/home/example",
         "C:/mnt/c/Users/example",
+        "https://example.com/workspace/docs",
+        "https://example.com/workspaces/docs",
+        "https://example.com/__w/docs",
+        "example.com/workspace/docs",
+        "identifier/workspaces/example",
+        "identifier/__w/example",
+        "C:/workspace/example",
+        "WORKDIR /workspaces/example",
+        "WORKDIR /workspace/example",
         "/rooted/file.md",
         "/Root 1 0 R",
     ),
@@ -289,9 +309,9 @@ def test_commit_msg_scans_hash_lines_and_literal_verbose_diff(
     )
 
 
-@pytest.mark.parametrize("comment_char", ["#", ";", "!"])
+@pytest.mark.parametrize("comment_char", ["#", ";", "!", "//", "REM"])
 @pytest.mark.parametrize("cleanup", ["strip", "scissors"])
-def test_commit_msg_editor_template_skips_all_comments(repo, comment_char, cleanup):
+def test_commit_msg_editor_template_respects_cleanup(repo, comment_char, cleanup):
     message = repo / "COMMIT_EDITMSG"
     instruction = (
         f"{comment_char} Lines starting with '{comment_char}' will be ignored, and an empty message aborts the commit.\n"
@@ -308,7 +328,65 @@ def test_commit_msg_editor_template_skips_all_comments(repo, comment_char, clean
         + "+/home/example/private.md\n"
     )
     result = _cli("--commit-msg-file", message, cwd=repo)
-    assert result.returncode == 0, result.stdout
+    assert result.returncode == (0 if cleanup == "strip" else 1), result.stdout
+    assert result.stdout == (
+        "" if cleanup == "strip" else "2: scratchpad/example.md\n3: /home/example/x\n"
+    )
+
+
+@pytest.mark.parametrize("comment_char", ["#", ";", "!"])
+@pytest.mark.parametrize("cleanup", ["strip", "scissors"])
+def test_commit_msg_uses_real_git_editor_templates(repo, comment_char, cleanup):
+    _git(repo, "symbolic-ref", "HEAD", "refs/heads/main")
+    (repo / "notes.md").write_text("public\n")
+    _commit(repo)
+    (repo / "notes.md").write_text("updated\n")
+    _git(repo, "add", "notes.md")
+    result = subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Example",
+            "-c",
+            "user.email=example@example.com",
+            "-c",
+            f"core.commentChar={comment_char}",
+            "commit",
+            *(["--cleanup=scissors", "-v"] if cleanup == "scissors" else []),
+        ],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_SYSTEM": os.devnull,
+            "GIT_EDITOR": "cat",
+            "LC_ALL": "C",
+        },
+    )
+    assert result.returncode == 1, result.stderr
+    template = (repo / ".git/COMMIT_EDITMSG").read_text()
+    assert result.stdout == template
+    if cleanup == "strip":
+        assert (
+            f"{comment_char} Please enter the commit message for your changes. Lines starting\n"
+            f"{comment_char} with '{comment_char}' will be ignored, and an empty message aborts the commit.\n"
+        ) in template
+    else:
+        assert (
+            f"{comment_char} ------------------------ >8 ------------------------\n"
+            f"{comment_char} Do not modify or remove the line above.\n"
+            f"{comment_char} Everything below it will be ignored.\n"
+        ) in template
+        assert "diff --git a/notes.md b/notes.md\n" in template
+    message = repo / "message.txt"
+    message.write_text(
+        f"Public summary\n{comment_char} See /home/example/notes.md\n" + template
+    )
+    scan = _cli("--commit-msg-file", message, cwd=repo)
+    assert scan.returncode == (0 if cleanup == "strip" else 1), scan.stdout
+    assert scan.stdout == ("" if cleanup == "strip" else "2: /home/example/notes.md\n")
 
 
 @pytest.mark.parametrize(
@@ -326,18 +404,21 @@ def test_commit_msg_incomplete_template_still_scans_comments(tmp_path, instructi
     assert result.stdout == "2: /home/example/x\n"
 
 
-def test_commit_msg_recognizes_gits_wrapped_template(tmp_path):
+@pytest.mark.parametrize("comment_char", ["#", ";", "!", "//", "REM"])
+def test_commit_msg_recognizes_gits_wrapped_template(tmp_path, comment_char):
     # Exact text Git writes for an editor commit (the instruction wraps).
     message = tmp_path / "COMMIT_EDITMSG"
     message.write_text(
-        "Remove a legacy example note\n\n"
-        "# Please enter the commit message for your changes. Lines starting\n"
-        "# with '#' will be ignored, and an empty message aborts the commit.\n"
-        "#\n"
-        "# On branch main\n"
-        "# Changes to be committed:\n"
-        "#\tdeleted:    scratchpad/example.md\n"
-        "#\n"
+        (
+            "Remove a legacy example note\n\n"
+            "# Please enter the commit message for your changes. Lines starting\n"
+            "# with '#' will be ignored, and an empty message aborts the commit.\n"
+            "#\n"
+            "# On branch main\n"
+            "# Changes to be committed:\n"
+            "#\tdeleted:    scratchpad/example.md\n"
+            "#\n"
+        ).replace("#", comment_char)
     )
     assert _cli("--commit-msg-file", message, cwd=tmp_path).returncode == 0
 

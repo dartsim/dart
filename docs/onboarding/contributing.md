@@ -31,11 +31,11 @@ pixi run install-hooks
 It installs a `pre-commit` git hook that runs the fast staged command below and
 blocks the commit on staged whitespace, local file names or text, or relevant
 AI-infrastructure drift. A managed `commit-msg` hook also scans the commit
-message for local paths. Git's editor template instruction identifies the
-single comment character whose lines Git strips; the scan skips those lines.
-It recognizes either the "Lines starting with" instruction or the "Do not
-modify or remove the line above" instruction immediately after a scissors line
-with the same comment character. Without that template instruction (`-m` or
+message for local paths. Git's "Lines starting with" editor template instruction
+identifies the comment string whose lines Git strips; the scan skips those
+lines. The "Do not modify or remove the line above" instruction immediately
+after a matching scissors line only enables stopping there; comment lines above
+the cut are scanned because Git keeps them. Without a template instruction (`-m` or
 `-F`), all lines are scanned,
 including hash-prefixed, status-shaped and scissors-shaped lines. Only an editor
 template makes matching scissors end the scan before a verbose diff:
@@ -57,6 +57,9 @@ commit split by its shell tokenizer, scans supplied `-m`/`--message`, readable
 stdin, reused (`-C`/`-c`/`--reuse-message`/`--reedit-message`) and editor-only
 messages when hooks cannot enforce them: supply `-m` or `-F <file>`, or let the
 managed hooks run.
+When managed hooks will not run, the guard also blocks commit-time staging
+(`-a`/`--all`, `-i`/`--include`, `-o`/`--only`, or pathspecs); stage the files
+first or let the hooks run so the staged scan can inspect all committed content.
 These fast checks do not replace `pixi run lint`.
 
 For C++ or Python changes, also run `pixi run build` and focused tests. For

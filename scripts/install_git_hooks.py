@@ -3,11 +3,12 @@
 
 Idempotently writes both hooks so every ``git commit`` runs the fast staged
 gate (``scripts/check_agent_hook.py --profile staged``) and scans its message
-(``scripts/check_local_paths.py --commit-msg-file "$1"``) with the same compatible
-Python interpreter selection. The message scan skips comment lines only when
-Git's editor template instruction identifies their single comment character
-("Lines starting with", or "Do not modify or remove the line above" together
-with a matching scissors line). Without that instruction, including for
+(``scripts/check_local_paths.py --commit-msg-file "$1"``) with compatible
+Python interpreter selection for each gate. The message scan skips comment
+lines only when Git's "Lines starting with" template instruction identifies
+their comment string. The scissors instruction alone enables stopping at a
+matching scissors line while retaining comments above it. Without either
+instruction, including for
 ``-m``/``-F``, it scans hash-prefixed and status-shaped lines too. It stops at
 Git's scissors line, excluding verbose diffs. No
 ``pre-merge-commit`` hook is installed: an automatic merge only combines
@@ -46,7 +47,7 @@ import sys
 from pathlib import Path
 
 SENTINEL = "DART-MANAGED-HOOK"
-HOOK_VERSION = "8"
+HOOK_VERSION = "9"
 
 
 def hook_template(name: str) -> str:
@@ -55,6 +56,11 @@ def hook_template(name: str) -> str:
     command = f"scripts/{script} {arguments}"
     display_command = command.replace('"', '\\"')
     gate = "agent" if name == "pre-commit" else "local-path"
+    compatibility_check = (
+        "import tomllib"
+        if name == "pre-commit"
+        else "import sys; sys.exit(sys.version_info < (3, 9))"
+    )
     fix = (
         "pixi run lint   (then re-stage and commit)"
         if name == "pre-commit"
@@ -95,7 +101,7 @@ select_hook_python() {{
     do
         [ -n "$candidate" ] || continue
         if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
-            if "$candidate" -c 'import tomllib' >/dev/null 2>&1; then
+            if "$candidate" -c '{compatibility_check}' >/dev/null 2>&1; then
                 printf '%s\n' "$candidate"
                 return 0
             fi
