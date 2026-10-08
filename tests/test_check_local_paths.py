@@ -285,6 +285,21 @@ def test_commit_msg_scans_hash_lines_but_ignores_verbose_diff(
     assert result.stdout == expected_output
 
 
+def test_commit_msg_ignores_git_status_lines_but_scans_other_hash_lines(tmp_path):
+    message = tmp_path / "COMMIT_EDITMSG"
+    message.write_text(
+        "Remove a legacy example note\n\n"
+        "# Changes to be committed:\n"
+        "#\tdeleted:    scratchpad/example.md\n"
+        "#\trenamed:    old.md -> scratchpad/example-old.md\n"
+    )
+    assert _cli("--commit-msg-file", message, cwd=tmp_path).returncode == 0
+    message.write_text("Public summary\n\n# See /home/example/private.md\n")
+    result = _cli("--commit-msg-file", message, cwd=tmp_path)
+    assert result.returncode == 1
+    assert "/home/example/private.md" in result.stdout
+
+
 def test_commit_msg_scissors_follow_custom_comment_char(tmp_path):
     message = tmp_path / "COMMIT_EDITMSG"
     message.write_text(

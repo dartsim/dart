@@ -573,9 +573,10 @@ def commit_args_disable_hooks(args):
 
 
 def supplied_commit_message(args, cwd):
-    # Reused (-C/-c/--reuse-message/--reedit-message), stdin and editor messages
-    # are left to the managed commit-msg hook and the PR Text backstop, which
-    # scans every PR commit message.
+    # Reused (-C/-c/--reuse-message/--reedit-message), stdin and editor messages,
+    # and arguments the shell expands later (such as -m "$(...)"), are left to
+    # the managed commit-msg hook and the PR Text backstop, which scans every PR
+    # commit message.
     messages = []
     i = 0
     while i < len(args):
