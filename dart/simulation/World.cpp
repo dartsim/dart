@@ -393,39 +393,9 @@ void World::refreshSkeletonDofIndices()
 }
 
 //==============================================================================
-void World::reserveMemoryManagerForSimulationShape()
+void World::reserveSimulationScratch()
 {
-  DART_ASSERT(mMemoryManager != nullptr);
-  if (!mMemoryManager)
-    return;
-
   const std::size_t numSkeletons = mSkeletons.size();
-  const std::size_t numSimpleFrames = mSimpleFrames.size();
-  const std::size_t numDofs
-      = mIndices.empty() ? 0u : static_cast<std::size_t>(mIndices.back());
-  const std::size_t numLastContacts
-      = mConstraintSolver
-            ? mConstraintSolver->getLastCollisionResult().getNumContacts()
-            : 0u;
-  const std::size_t contactCapacity
-      = std::max(numLastContacts, numSkeletons * 4u);
-
-  const std::size_t freeListReservation = std::max(
-      mMemoryManagerFreeListInitialAllocation,
-      4096u + numSkeletons * 4096u + numSimpleFrames * 512u + numDofs * 512u
-          + contactCapacity * 1024u);
-  if (void* memory = mMemoryManager->allocateUsingFree(freeListReservation)) {
-    mMemoryManager->deallocateUsingFree(memory, freeListReservation);
-  }
-
-  auto& frameAllocator = mMemoryManager->getFrameAllocator();
-  const std::size_t frameReservation = std::max(
-      mMemoryManagerFrameScratchInitialCapacity,
-      4096u + numSkeletons * 1024u + numSimpleFrames * 256u + numDofs * 256u
-          + contactCapacity * 512u);
-  if (frameAllocator.usableCapacity() < frameReservation)
-    (void)frameAllocator.allocate(frameReservation);
-  frameAllocator.reset();
 
   mDisturbedThisStepScratch.reserve(numSkeletons);
   mUnsettledInitialContactSkeletonScratch.reserve(numSkeletons);
@@ -485,10 +455,10 @@ void World::enterSimulationMode()
   // drops a pending confirmation.
   mInitialRestSpeedLimits.clear();
   refreshSkeletonDofIndices();
-  reserveMemoryManagerForSimulationShape();
+  reserveSimulationScratch();
   if (mConstraintSolver)
     mConstraintSolver->prepareForSimulation();
-  reserveMemoryManagerForSimulationShape();
+  reserveSimulationScratch();
   mSimulationModeStructuralVersion
       = dynamics::Skeleton::getGlobalStructuralVersion();
   if (mConstraintSolver) {
@@ -798,9 +768,6 @@ World::World(const WorldConfig& config)
     mMemoryManager(std::make_unique<common::MemoryManager>(
         resolveWorldMemoryBaseAllocator(config),
         makeWorldMemoryManagerOptions(config))),
-    mMemoryManagerFreeListInitialAllocation(config.freeListInitialAllocation),
-    mMemoryManagerFrameScratchInitialCapacity(
-        config.frameScratchInitialCapacity),
     mRecording(new Recording(mSkeletons)),
     onNameChanged(mNameChangedSignal)
 {
@@ -2281,8 +2248,8 @@ void World::updateLastStepRestingWorldState()
       = hasRestingOrCandidateMobileSkeleton(mSkeletons);
   // Skeletons matter only while a body rests, is a candidate, or has quiet
   // dwell that a between-step edit must restart. Entering simulation mode
-  // reserves the buffer (reserveMemoryManagerForSimulationShape()), so
-  // recording allocates nothing.
+  // reserves the buffer (reserveSimulationScratch()), so recording allocates
+  // nothing.
   if (restingOrCandidate || hasDwellingMobileSkeleton(mSkeletons)) {
     for (const auto& skel : mSkeletons) {
       mLastStepRestingWorldSkeletonStates.push_back(RestingWorldSkeletonState{

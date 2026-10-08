@@ -491,8 +491,8 @@ protected:
   /// Rebuilds the cumulative DOF-index cache from the current skeleton list.
   void refreshSkeletonDofIndices();
 
-  /// Reserves the World-owned memory hierarchy for the current world shape.
-  void reserveMemoryManagerForSimulationShape();
+  /// Reserves simulation scratch buffers for the current world shape.
+  void reserveSimulationScratch();
 
   /// Register when a Skeleton's name is changed
   void handleSkeletonNameChange(
@@ -561,12 +561,6 @@ protected:
 
   /// Memory manager owned by this World.
   std::unique_ptr<common::MemoryManager> mMemoryManager;
-
-  /// Configured free-list initial reservation for this World's MemoryManager.
-  std::size_t mMemoryManagerFreeListInitialAllocation = 1048576 /* 1 MB */;
-
-  /// Configured frame arena initial capacity for this World's MemoryManager.
-  std::size_t mMemoryManagerFrameScratchInitialCapacity = 65536;
 
   /// Whether simulation preparation is current for this world shape.
   bool mSimulationMode = false;
