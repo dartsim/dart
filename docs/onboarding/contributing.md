@@ -54,12 +54,16 @@ accepted abbreviations), hooks are overridden, or managed hooks are
 missing/outdated, the agent guard checks every
 commit split by its shell tokenizer, scans supplied `-m`/`--message`, readable
 `-F`/`--file` messages and trailers, and runs the staged gate once. It blocks
-stdin, reused (`-C`/`-c`/`--reuse-message`/`--reedit-message`) and editor-only
+stdin, reused (`-C`/`-c`/`--reuse-message`/`--reedit-message`), autosquash
+(`--fixup`/`--squash`, including `amend:`/`reword:`), and editor-only
 messages when hooks cannot enforce them: supply `-m` or `-F <file>`, or let the
 managed hooks run.
 When managed hooks will not run, the guard also blocks commit-time staging
 (`-a`/`--all`, `-i`/`--include`, `-o`/`--only`, or pathspecs); stage the files
 first or let the hooks run so the staged scan can inspect all committed content.
+Multiple commits without managed hooks are blocked when any earlier command can
+change files or the index. Split the commits into separate tool calls or let the
+hooks run; read-only Git commands between commits remain supported.
 These fast checks do not replace `pixi run lint`.
 
 For C++ or Python changes, also run `pixi run build` and focused tests. For

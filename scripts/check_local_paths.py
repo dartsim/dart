@@ -121,7 +121,11 @@ def scan_line(
 
     def mask_public_url(match: re.Match[str]) -> str:
         try:
-            url = urlsplit(match.group())
+            text = match.group()
+            # HTTP(S) treats backslashes as slashes, including at the authority.
+            if text.lower().startswith(("http://", "https://")):
+                text = text.replace("\\", "/")
+            url = urlsplit(text)
             if url.scheme in {"http", "https"} and is_public_host(url.hostname):
                 return " "
         except ValueError:

@@ -531,6 +531,76 @@ def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed)
     assert stderr.count("direct-agent-gate") == 1
 
 
+@pytest.mark.parametrize("route", ["missing", "no-verify", "managed"])
+@pytest.mark.parametrize("before_first", [True, False])
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "git add notes.md",
+        "git rm notes.md",
+        "git mv notes.md other.md",
+        "git apply changes.patch",
+        "git checkout -- notes.md",
+        "git restore notes.md",
+        "git reset HEAD",
+        "git stash",
+        "git merge topic",
+        "git pull",
+        "git cherry-pick HEAD",
+        "git revert HEAD",
+        "git am changes.patch",
+        "git commit -am public",
+        "python update.py",
+        "env -S 'git add notes.md'",
+    ],
+)
+def test_guard_blocks_chained_unhooked_commits_after_changes(
+    tmp_path, route, before_first, mutation
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    if route != "missing":
+        assert _install(repo, env).returncode == 0
+    commit = "git commit " + ("--no-verify " if route == "no-verify" else "")
+    commit += "-m public"
+    commands = (
+        [mutation, commit, commit] if before_first else [commit, mutation, commit]
+    )
+    returncode, stderr = _run_guard(repo, env, " && ".join(commands))
+    if route == "managed":
+        assert returncode == 0, stderr
+        assert stderr == ""
+    else:
+        assert returncode == 2, stderr
+        assert "separate tool calls" in stderr
+        assert "let the hooks run" in stderr
+        assert "direct-agent-gate" not in stderr
+
+
+@pytest.mark.parametrize("route", ["missing", "no-verify"])
+@pytest.mark.parametrize(
+    "read_only", ["git status", "git diff", "git log -1", "git show HEAD"]
+)
+def test_guard_allows_chained_unhooked_commits_after_read_only_git(
+    tmp_path, route, read_only
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    if route == "no-verify":
+        assert _install(repo, env).returncode == 0
+    commit = "git commit " + ("--no-verify " if route == "no-verify" else "")
+    commit += "-m public"
+    for commands in (
+        [read_only, commit, read_only, commit],
+        ["git add notes.md", commit],
+    ):
+        returncode, stderr = _run_guard(repo, env, " && ".join(commands))
+        assert returncode == 0, stderr
+        assert stderr.count("direct-agent-gate") == 1
+
+
 @pytest.mark.parametrize(
     "route", ["missing", "stale", "no-verify", "no-veri", "hooks-override", "managed"]
 )
@@ -547,6 +617,16 @@ def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed)
         "--trailer 'Note: Public'",
         "-m public -F -",
         "-m public -C HEAD",
+        "--fixup=HEAD -m public",
+        "--fixup HEAD -m public",
+        "--fixup=amend:HEAD -m public",
+        "--fixup=reword:HEAD -m public",
+        "--fix=HEAD -m public",
+        "--fixu amend:HEAD -m public",
+        "--squash=HEAD -m public",
+        "--squash HEAD -m public",
+        "--sq=HEAD -m public",
+        "--squ HEAD -m public",
     ],
 )
 def test_guard_uninspectable_messages_require_managed_hooks(tmp_path, route, arguments):
