@@ -134,7 +134,7 @@ dart::dynamics::SkeletonPtr createSphere(
 }
 
 //==============================================================================
-dart::dynamics::SkeletonPtr createGround()
+dart::dynamics::SkeletonPtr createSimulationEventHandlerGround()
 {
   using namespace dart::dynamics;
 
@@ -347,7 +347,7 @@ DemoScene makeSimulationEventHandlerScene()
     world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
     world->setTimeStep(0.001);
 
-    world->addSkeleton(createGround());
+    world->addSkeleton(createSimulationEventHandlerGround());
     world->addSkeleton(createBox(
         "box1",
         Eigen::Vector3d(-1.0, 0.0, 2.0),

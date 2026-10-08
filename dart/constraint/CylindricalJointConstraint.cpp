@@ -44,7 +44,8 @@ namespace constraint {
 
 namespace {
 
-Eigen::Vector3d normalizeOrFallback(const Eigen::Vector3d& _axis)
+Eigen::Vector3d cylindricalJointNormalizeOrFallback(
+    const Eigen::Vector3d& _axis)
 {
   const double norm = _axis.norm();
   if (norm < 1e-9)
@@ -73,10 +74,10 @@ CylindricalJointConstraint::CylindricalJointConstraint(
     mOffset2(_jointPos),
     mAxis1(
         _body->getTransform().linear().transpose()
-        * normalizeOrFallback(_axis)),
-    mAxis2(normalizeOrFallback(_axis)),
+        * cylindricalJointNormalizeOrFallback(_axis)),
+    mAxis2(cylindricalJointNormalizeOrFallback(_axis)),
     mWorldAxis1(Eigen::Vector3d::UnitZ()),
-    mWorldAxis2(normalizeOrFallback(_axis)),
+    mWorldAxis2(cylindricalJointNormalizeOrFallback(_axis)),
     mViolation(Eigen::Matrix<double, 4, 1>::Zero()),
     mAppliedImpulseIndex(0)
 {
@@ -103,10 +104,10 @@ CylindricalJointConstraint::CylindricalJointConstraint(
     mOffset2(_body2->getTransform().inverse() * _jointPos),
     mAxis1(
         _body1->getTransform().linear().transpose()
-        * normalizeOrFallback(_axis1)),
+        * cylindricalJointNormalizeOrFallback(_axis1)),
     mAxis2(
         _body2->getTransform().linear().transpose()
-        * normalizeOrFallback(_axis2)),
+        * cylindricalJointNormalizeOrFallback(_axis2)),
     mWorldAxis1(Eigen::Vector3d::UnitZ()),
     mWorldAxis2(Eigen::Vector3d::UnitZ()),
     mViolation(Eigen::Matrix<double, 4, 1>::Zero()),
@@ -147,7 +148,7 @@ const std::string& CylindricalJointConstraint::getStaticType()
 //==============================================================================
 void CylindricalJointConstraint::updatePerpendicularBasis()
 {
-  const Eigen::Vector3d axis = normalizeOrFallback(mWorldAxis1);
+  const Eigen::Vector3d axis = cylindricalJointNormalizeOrFallback(mWorldAxis1);
   const Eigen::Vector3d ref = (std::abs(axis.x()) < 0.9)
                                   ? Eigen::Vector3d::UnitX()
                                   : Eigen::Vector3d::UnitY();
@@ -169,15 +170,15 @@ void CylindricalJointConstraint::update()
 
   const Eigen::Isometry3d& T1 = mBodyNode1->getTransform();
   const Eigen::Matrix3d& R1 = T1.linear();
-  mWorldAxis1 = normalizeOrFallback(R1 * mAxis1);
+  mWorldAxis1 = cylindricalJointNormalizeOrFallback(R1 * mAxis1);
 
   Eigen::Vector3d anchor2World = mOffset2;
   if (mBodyNode2) {
     const Eigen::Isometry3d& T2 = mBodyNode2->getTransform();
-    mWorldAxis2 = normalizeOrFallback(T2.linear() * mAxis2);
+    mWorldAxis2 = cylindricalJointNormalizeOrFallback(T2.linear() * mAxis2);
     anchor2World = T2 * mOffset2;
   } else {
-    mWorldAxis2 = normalizeOrFallback(mAxis2);
+    mWorldAxis2 = cylindricalJointNormalizeOrFallback(mAxis2);
   }
 
   updatePerpendicularBasis();

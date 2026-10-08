@@ -46,7 +46,7 @@ namespace dart::collision::native {
 
 namespace {
 
-constexpr double kEpsilon = 1e-10;
+constexpr double kMeshMeshEpsilon = 1e-10;
 
 struct LocalTriangle
 {
@@ -184,13 +184,13 @@ bool collideSphereTriangle(
 
   Eigen::Vector3d normal;
   double distance = 0.0;
-  if (distSq > kEpsilon * kEpsilon) {
+  if (distSq > kMeshMeshEpsilon * kMeshMeshEpsilon) {
     distance = std::sqrt(distSq);
     normal = sphereToTriangle / distance;
   } else {
     normal = (triVertices[1] - triVertices[0])
                  .cross(triVertices[2] - triVertices[0]);
-    if (normal.squaredNorm() < kEpsilon * kEpsilon) {
+    if (normal.squaredNorm() < kMeshMeshEpsilon * kMeshMeshEpsilon) {
       normal = Eigen::Vector3d::UnitZ();
     } else {
       normal.normalize();
@@ -478,7 +478,7 @@ double signedDistanceToPlane(
     const Eigen::Vector3d& planeNormal)
 {
   const double nNorm = planeNormal.norm();
-  if (nNorm < kEpsilon) {
+  if (nNorm < kMeshMeshEpsilon) {
     return 0.0;
   }
   return (p - planePoint).dot(planeNormal) / nNorm;
@@ -519,8 +519,10 @@ bool pointInTriangleProjected(
   const double o2 = orient2d(b2, c2, p2);
   const double o3 = orient2d(c2, a2, p2);
 
-  const bool hasNeg = (o1 < -kEpsilon) || (o2 < -kEpsilon) || (o3 < -kEpsilon);
-  const bool hasPos = (o1 > kEpsilon) || (o2 > kEpsilon) || (o3 > kEpsilon);
+  const bool hasNeg = (o1 < -kMeshMeshEpsilon) || (o2 < -kMeshMeshEpsilon)
+                      || (o3 < -kMeshMeshEpsilon);
+  const bool hasPos = (o1 > kMeshMeshEpsilon) || (o2 > kMeshMeshEpsilon)
+                      || (o3 > kMeshMeshEpsilon);
   return !(hasNeg && hasPos);
 }
 
@@ -541,20 +543,20 @@ MeshMeshSegmentClosestResult meshMeshClosestPointsBetweenSegments(
   double s = 0.0;
   double t = 0.0;
 
-  if (a <= kEpsilon && e <= kEpsilon) {
+  if (a <= kMeshMeshEpsilon && e <= kMeshMeshEpsilon) {
     s = t = 0.0;
-  } else if (a <= kEpsilon) {
+  } else if (a <= kMeshMeshEpsilon) {
     s = 0.0;
     t = std::clamp(f / e, 0.0, 1.0);
   } else {
     const double c = d1.dot(r);
-    if (e <= kEpsilon) {
+    if (e <= kMeshMeshEpsilon) {
       t = 0.0;
       s = std::clamp(-c / a, 0.0, 1.0);
     } else {
       const double b = d1.dot(d2);
       const double denom = a * e - b * b;
-      if (std::abs(denom) > kEpsilon) {
+      if (std::abs(denom) > kMeshMeshEpsilon) {
         s = std::clamp((b * f - c * e) / denom, 0.0, 1.0);
       }
       t = (b * s + f) / e;
@@ -605,7 +607,7 @@ SegmentTriangleClosestResult closestSegmentTriangle(
                                         .cross(triVertices[2] - triVertices[0]);
   const Eigen::Vector3d segDir = segEnd - segStart;
   const double denom = triNormal.dot(segDir);
-  if (std::abs(denom) > kEpsilon) {
+  if (std::abs(denom) > kMeshMeshEpsilon) {
     const double t = triNormal.dot(triVertices[0] - segStart) / denom;
     if (t >= 0.0 && t <= 1.0) {
       const Eigen::Vector3d point = segStart + t * segDir;
@@ -671,13 +673,13 @@ bool collideCapsuleTriangle(
 
   Eigen::Vector3d normal = closest.pointTriangle - closest.pointSegment;
   double distance = 0.0;
-  if (closest.distSq > kEpsilon * kEpsilon) {
+  if (closest.distSq > kMeshMeshEpsilon * kMeshMeshEpsilon) {
     distance = std::sqrt(closest.distSq);
     normal /= distance;
   } else {
     normal = (triVertices[1] - triVertices[0])
                  .cross(triVertices[2] - triVertices[0]);
-    if (normal.squaredNorm() < kEpsilon * kEpsilon) {
+    if (normal.squaredNorm() < kMeshMeshEpsilon * kMeshMeshEpsilon) {
       normal = Eigen::Vector3d::UnitZ();
     } else {
       normal.normalize();
@@ -748,7 +750,7 @@ TriIntersectionResult triangleTriangleIntersection(
   for (int i = 0; i < axisCount; ++i) {
     const Eigen::Vector3d axis = axes[static_cast<std::size_t>(i)];
     const double axisNorm = axis.norm();
-    if (axisNorm < kEpsilon) {
+    if (axisNorm < kMeshMeshEpsilon) {
       continue;
     }
 
@@ -758,7 +760,7 @@ TriIntersectionResult triangleTriangleIntersection(
     double min2 = 0.0;
     const double max2 = projectTriangle(t2, axisDir, min2);
     const double overlap = std::min(max1, max2) - std::max(min1, min2);
-    if (overlap < -kEpsilon) {
+    if (overlap < -kMeshMeshEpsilon) {
       return result;
     }
 
@@ -819,7 +821,7 @@ TriIntersectionResult triangleTriangleIntersection(
               edges,
           const LocalTriangle& tri,
           const Eigen::Vector3d& triNormal) {
-        if (triNormal.squaredNorm() < kEpsilon * kEpsilon) {
+        if (triNormal.squaredNorm() < kMeshMeshEpsilon * kMeshMeshEpsilon) {
           return;
         }
 
@@ -827,7 +829,7 @@ TriIntersectionResult triangleTriangleIntersection(
         for (const auto& edge : edges) {
           const Eigen::Vector3d edgeDir = edge.second - edge.first;
           const double denom = triNormal.dot(edgeDir);
-          if (std::abs(denom) <= kEpsilon) {
+          if (std::abs(denom) <= kMeshMeshEpsilon) {
             continue;
           }
 

@@ -85,14 +85,14 @@ using dart::dynamics::SkeletonPtr;
 using dart::dynamics::WeakBodyNodePtr;
 using dart::math::constantsd;
 
-constexpr double kDisplayElevation = 0.05;
+constexpr double kHuboPuppetDisplayElevation = 0.05;
 
 //==============================================================================
 /// Ported verbatim from the original (identical to atlas_puppet's copy).
-class RelaxedPosture : public dart::optimizer::Function
+class HuboPuppetRelaxedPosture : public dart::optimizer::Function
 {
 public:
-  RelaxedPosture(
+  HuboPuppetRelaxedPosture(
       const Eigen::VectorXd& idealPosture,
       const Eigen::VectorXd& lower,
       const Eigen::VectorXd& upper,
@@ -676,17 +676,17 @@ protected:
 };
 
 //==============================================================================
-enum MoveComponent
+enum HuboPuppetMoveComponent
 {
-  MoveQ = 0,
-  MoveW,
-  MoveE,
-  MoveA,
-  MoveS,
-  MoveD,
-  MoveF,
-  MoveZ,
-  NumMoveComponents
+  HuboPuppetMoveQ = 0,
+  HuboPuppetMoveW,
+  HuboPuppetMoveE,
+  HuboPuppetMoveA,
+  HuboPuppetMoveS,
+  HuboPuppetMoveD,
+  HuboPuppetMoveF,
+  HuboPuppetMoveZ,
+  NumHuboPuppetMoveComponents
 };
 
 //==============================================================================
@@ -698,7 +698,7 @@ struct HuboPuppetState
 
   Eigen::VectorXd restConfig;
   std::vector<bool> moveComponents
-      = std::vector<bool>(NumMoveComponents, false);
+      = std::vector<bool>(NumHuboPuppetMoveComponents, false);
   bool amplifyMovement = false;
 
   std::vector<std::size_t> endEffectorIndex;
@@ -706,14 +706,14 @@ struct HuboPuppetState
   dart::common::aligned_vector<Eigen::Isometry3d> defaultTargetTf;
   std::vector<bool> constraintActive;
 
-  std::shared_ptr<RelaxedPosture> posture;
+  std::shared_ptr<HuboPuppetRelaxedPosture> posture;
   std::shared_ptr<dart::constraint::BalanceConstraint> balance;
 
   std::function<void(const std::string&)> log;
 };
 
 //==============================================================================
-SkeletonPtr createGround()
+SkeletonPtr createHuboPuppetGround()
 {
   auto ground = dart::dynamics::Skeleton::create("ground");
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -789,7 +789,7 @@ void setStartupConfiguration(const SkeletonPtr& hubo)
 }
 
 //==============================================================================
-void setupEndEffectors(const SkeletonPtr& hubo)
+void setupHuboPuppetEndEffectors(const SkeletonPtr& hubo)
 {
   Eigen::VectorXd rootJointWeights = 0.01 * Eigen::VectorXd::Ones(7);
   const double extraErrorClamp = 0.1;
@@ -916,7 +916,7 @@ void setupEndEffectors(const SkeletonPtr& hubo)
 }
 
 //==============================================================================
-void setupWholeBodySolver(const SkeletonPtr& hubo)
+void setupHuboPuppetWholeBodySolver(const SkeletonPtr& hubo)
 {
   auto solver
       = std::dynamic_pointer_cast<dart::optimizer::GradientDescentSolver>(
@@ -941,7 +941,7 @@ void setupWholeBodySolver(const SkeletonPtr& hubo)
   upperPosture[1] = 0.50;
   upperPosture[5] = 0.95;
 
-  auto objective = std::make_shared<RelaxedPosture>(
+  auto objective = std::make_shared<HuboPuppetRelaxedPosture>(
       hubo->getPositions(), lowerPosture, upperPosture, weights);
   hubo->getIK()->setObjective(objective);
 
@@ -988,21 +988,21 @@ void updatePuppet(HuboPuppetState& state)
       rotationalStep *= 2.0;
     }
 
-    if (state.moveComponents[MoveW])
+    if (state.moveComponents[HuboPuppetMoveW])
       newTf.translate(linearStep * forward);
-    if (state.moveComponents[MoveS])
+    if (state.moveComponents[HuboPuppetMoveS])
       newTf.translate(-linearStep * forward);
-    if (state.moveComponents[MoveA])
+    if (state.moveComponents[HuboPuppetMoveA])
       newTf.translate(linearStep * left);
-    if (state.moveComponents[MoveD])
+    if (state.moveComponents[HuboPuppetMoveD])
       newTf.translate(-linearStep * left);
-    if (state.moveComponents[MoveF])
+    if (state.moveComponents[HuboPuppetMoveF])
       newTf.translate(elevationStep * up);
-    if (state.moveComponents[MoveZ])
+    if (state.moveComponents[HuboPuppetMoveZ])
       newTf.translate(-elevationStep * up);
-    if (state.moveComponents[MoveQ])
+    if (state.moveComponents[HuboPuppetMoveQ])
       newTf.rotate(Eigen::AngleAxisd(rotationalStep, up));
-    if (state.moveComponents[MoveE])
+    if (state.moveComponents[HuboPuppetMoveE])
       newTf.rotate(Eigen::AngleAxisd(-rotationalStep, up));
 
     newTf.pretranslate(oldTf.translation());
@@ -1065,35 +1065,35 @@ public:
     switch (ea.getKey()) {
       case 'w':
       case 'W':
-        component = MoveW;
+        component = HuboPuppetMoveW;
         break;
       case 'a':
       case 'A':
-        component = MoveA;
+        component = HuboPuppetMoveA;
         break;
       case 's':
       case 'S':
-        component = MoveS;
+        component = HuboPuppetMoveS;
         break;
       case 'd':
       case 'D':
-        component = MoveD;
+        component = HuboPuppetMoveD;
         break;
       case 'q':
       case 'Q':
-        component = MoveQ;
+        component = HuboPuppetMoveQ;
         break;
       case 'e':
       case 'E':
-        component = MoveE;
+        component = HuboPuppetMoveE;
         break;
       case 'f':
       case 'F':
-        component = MoveF;
+        component = HuboPuppetMoveF;
         break;
       case 'z':
       case 'Z':
-        component = MoveZ;
+        component = HuboPuppetMoveZ;
         break;
       default:
         return false;
@@ -1179,7 +1179,7 @@ DemoScene makeHuboPuppetScene()
                                "/urdf/drchubo/drchubo.urdf");
 
     setStartupConfiguration(hubo);
-    setupEndEffectors(hubo);
+    setupHuboPuppetEndEffectors(hubo);
 
     // The original clones the skeleton after EE/IK setup to exercise
     // IK/EndEffector cloning; kept for behavior parity (see the file
@@ -1189,9 +1189,9 @@ DemoScene makeHuboPuppetScene()
     hubo->setPositions(positions);
 
     world->addSkeleton(hubo);
-    world->addSkeleton(createGround());
+    world->addSkeleton(createHuboPuppetGround());
 
-    setupWholeBodySolver(hubo);
+    setupHuboPuppetWholeBodySolver(hubo);
 
     auto state = std::make_shared<HuboPuppetState>();
     state->hubo = hubo;
@@ -1208,7 +1208,7 @@ DemoScene makeHuboPuppetScene()
       }
     }
 
-    state->posture = std::dynamic_pointer_cast<RelaxedPosture>(
+    state->posture = std::dynamic_pointer_cast<HuboPuppetRelaxedPosture>(
         hubo->getIK(true)->getObjective());
     state->balance
         = std::dynamic_pointer_cast<dart::constraint::BalanceConstraint>(
@@ -1252,8 +1252,8 @@ DemoScene makeHuboPuppetScene()
         }
       }
 
-      ctx.addAttachment(
-          new dart::gui::osg::SupportPolygonVisual(hubo, kDisplayElevation));
+      ctx.addAttachment(new dart::gui::osg::SupportPolygonVisual(
+          hubo, kHuboPuppetDisplayElevation));
       ctx.addEventHandler(new HuboPuppetMoveHandler(state));
     };
 

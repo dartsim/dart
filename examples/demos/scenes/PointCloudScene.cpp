@@ -310,7 +310,7 @@ SkeletonPtr createRobot()
 }
 
 //==============================================================================
-SkeletonPtr createGround()
+SkeletonPtr createPointCloudGround()
 {
   dart::utils::DartLoader loader;
   auto ground = loader.parseSkeleton("dart://sample/urdf/KR5/ground.urdf");
@@ -347,7 +347,7 @@ DemoScene makePointCloudScene()
           "failed to load dart://sample/urdf/KR5/KR5 sixx R650.urdf");
     world->addSkeleton(robot);
 
-    auto ground = createGround();
+    auto ground = createPointCloudGround();
     if (!ground)
       throw std::runtime_error(
           "failed to load dart://sample/urdf/KR5/ground.urdf");

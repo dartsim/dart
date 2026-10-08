@@ -10,7 +10,9 @@ Follow the existing style in nearby files.
   compile up to 8 source files of a target as one translation unit (a CMake
   unity build). So keep names local to a `.cpp` file unique within its
   target: anonymous-namespace or `static` helpers, constants, and types. Also
-  `#undef` any macro a `.cpp` file defines, at the end of that file.
+  `#undef` any macro a `.cpp` file defines, at the end of that file. The
+  nightly `Unity name clashes` job compiles each target as a single unity
+  file, so it reports a clash before a source-list change exposes it.
 - A class that inherits `Frame` (or any base aligned above 8 bytes) virtually
   declares `alignas(<that base>)`, and a generic virtual-inheritance helper
   such as `common::Virtual<T>` declares `alignas(T)`, so the non-virtual part

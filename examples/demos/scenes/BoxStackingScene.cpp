@@ -96,7 +96,7 @@ std::vector<dart::dynamics::SkeletonPtr> createBoxStack(
 }
 
 //==============================================================================
-dart::dynamics::SkeletonPtr createFloor()
+dart::dynamics::SkeletonPtr createBoxStackingFloor()
 {
   using namespace dart::dynamics;
 
@@ -162,7 +162,7 @@ DemoScene makeBoxStackingScene()
 
   scene.factory = [] {
     auto world = dart::simulation::World::create();
-    world->addSkeleton(createFloor());
+    world->addSkeleton(createBoxStackingFloor());
 
     auto boxSkels = createBoxStack(5);
     for (const auto& boxSkel : boxSkels)
