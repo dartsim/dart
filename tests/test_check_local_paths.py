@@ -267,7 +267,7 @@ def test_free_text_file_has_no_fixture_exemption(tmp_path):
     [
         ("Public summary", ""),
         ("/home/example", "1: /home/example\n"),
-        ("# See /home/example", "1: /home/example\n"),
+        ("# See /home/example/x", "1: /home/example/x\n"),
         ("Public summary\n# See /Users/example", "2: /Users/example\n"),
     ],
 )
@@ -285,26 +285,53 @@ def test_commit_msg_scans_hash_lines_but_ignores_verbose_diff(
     assert result.stdout == expected_output
 
 
-def test_commit_msg_ignores_git_status_lines_but_scans_other_hash_lines(repo):
-    (repo / "scratchpad").mkdir()
-    (repo / "scratchpad/example.md").write_text("Legacy summary\n")
-    (repo / "old.md").write_text("Old summary\n")
-    _commit(repo)
-    _git(repo, "rm", "scratchpad/example.md")
-    (repo / "scratchpad").mkdir()
-    _git(repo, "mv", "old.md", "scratchpad/example-old.md")
+@pytest.mark.parametrize("comment_char", ["#", ";", "!"])
+@pytest.mark.parametrize("cleanup", ["strip", "scissors"])
+def test_commit_msg_editor_template_skips_all_comments(repo, comment_char, cleanup):
     message = repo / "COMMIT_EDITMSG"
-    message.write_text(
-        "Remove a legacy example note\n\n"
-        "# Changes to be committed:\n"
-        "#\tdeleted:    scratchpad/example.md\n"
-        "#\trenamed:    old.md -> scratchpad/example-old.md\n"
+    instruction = (
+        f"{comment_char} Lines starting with '{comment_char}' will be ignored, and an empty message aborts the commit.\n"
+        if cleanup == "strip"
+        else f"{comment_char} Do not modify or remove the line above.\n"
     )
-    assert _cli("--commit-msg-file", message, cwd=repo / "scratchpad").returncode == 0
-    message.write_text("Public summary\n\n# See /home/example/private.md\n")
+    scissors = f"{comment_char} ------------------------ >8 ------------------------\n"
+    message.write_text(
+        "Public summary\n"
+        f"{comment_char}\tdeleted: scratchpad/example.md\n"
+        f"{comment_char} See /home/example/x\n"
+        + (instruction if cleanup == "strip" else scissors + instruction)
+        + scissors
+        + "+/home/example/private.md\n"
+    )
     result = _cli("--commit-msg-file", message, cwd=repo)
-    assert result.returncode == 1
-    assert "/home/example/private.md" in result.stdout
+    assert result.returncode == 0, result.stdout
+
+
+@pytest.mark.parametrize(
+    "instruction",
+    [
+        "# Do not modify or remove the line above.",
+        "# Lines starting with ';' will be ignored,",
+    ],
+)
+def test_commit_msg_incomplete_template_still_scans_comments(tmp_path, instruction):
+    message = tmp_path / "COMMIT_EDITMSG"
+    message.write_text(instruction + "\n# See /home/example/x\n")
+    result = _cli("--commit-msg-file", message, cwd=tmp_path)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == "2: /home/example/x\n"
+
+
+def test_commit_msg_template_still_scans_published_lines(tmp_path):
+    message = tmp_path / "COMMIT_EDITMSG"
+    message.write_text(
+        "# Lines starting with '#' will be ignored,\n"
+        "See /home/example/x\n"
+        "; See /home/example/y\n"
+    )
+    result = _cli("--commit-msg-file", message, cwd=tmp_path)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == "2: /home/example/x\n3: /home/example/y\n"
 
 
 def test_commit_msg_scissors_follow_custom_comment_char(tmp_path):
@@ -321,14 +348,16 @@ def test_commit_msg_scissors_follow_custom_comment_char(tmp_path):
 @pytest.mark.parametrize("option", ["-m", "-F"])
 @pytest.mark.skipif(os.name != "posix", reason="commit-msg hook is a POSIX sh script")
 def test_commit_msg_rejects_literal_status_line(repo, option):
-    (repo / "notes.md").write_text("Public summary\n")
-    _git(repo, "add", "notes.md")
+    (repo / "scratchpad").mkdir()
+    (repo / "scratchpad/example.md").write_text("Public summary\n")
+    _commit(repo)
+    _git(repo, "rm", "scratchpad/example.md")
     hook = repo / ".git/hooks/commit-msg"
     hook.write_text(
         f'#!/bin/sh\nexec "{sys.executable}" "{SCRIPT}" --commit-msg-file "$1"\n'
     )
     hook.chmod(0o755)
-    message = "Public summary\n\n#\tmodified:    /home/example/private.md\n"
+    message = "Public summary\n\n#\tdeleted: scratchpad/example.md\n"
     value = message
     if option == "-F":
         (repo / "message.txt").write_text(message)
@@ -349,7 +378,7 @@ def test_commit_msg_rejects_literal_status_line(repo, option):
         text=True,
     )
     assert result.returncode == 1, result.stderr
-    assert "3: /home/example/private.md" in result.stderr
+    assert "3: scratchpad/example.md" in result.stderr
 
 
 def _commit(repo, message="Public fixture"):
@@ -379,64 +408,30 @@ def test_commit_range_reports_leak_removed_before_tip(repo):
     assert result.stdout == f"{leaked}:notes.md:2: /home/example/private.md\n"
 
 
-@pytest.mark.parametrize(
-    "status, paths",
-    [
-        ("modified", "scratchpad/example.md"),
-        ("renamed", "wrong.md -> scratchpad/example-old.md"),
-        ("renamed", "old.md -> scratchpad/example-wrong.md"),
-    ],
-)
-def test_commit_msg_status_must_match_both_status_and_paths(repo, status, paths):
-    (repo / "scratchpad").mkdir()
-    (repo / "scratchpad/example.md").write_text("Legacy summary\n")
-    (repo / "old.md").write_text("Old summary\n")
-    _commit(repo)
-    _git(repo, "rm", "scratchpad/example.md")
-    (repo / "scratchpad").mkdir()
-    _git(repo, "mv", "old.md", "scratchpad/example-old.md")
-    message = repo / "COMMIT_EDITMSG"
-    message.write_text(f"Public summary\n#\t{status}:    {paths}\n")
-    result = _cli("--commit-msg-file", message, cwd=repo)
-    assert result.returncode == 1, result.stderr
-    assert "2: scratchpad/example" in result.stdout
-
-
-@pytest.mark.parametrize("quote_non_ascii", [True, False])
-@pytest.mark.skipif(os.name != "posix", reason="control-byte filenames are POSIX-only")
-def test_commit_msg_matches_git_quoted_deleted_path(repo, quote_non_ascii):
-    filename = "scratchpad/example-\t-é.md"
-    (repo / "scratchpad").mkdir()
-    (repo / filename).write_text("Public summary\n")
-    _commit(repo)
-    _git(repo, "rm", filename)
-    _git(repo, "config", "core.quotePath", str(quote_non_ascii).lower())
-    status = _git(repo, "status").stdout
-    # Use Git's actual display quoting rather than the checker's formatter.
-    line = next(line for line in status.splitlines() if "deleted:" in line)
-    message = repo / "COMMIT_EDITMSG"
-    message.write_text("Public summary\n#" + line + "\n")
-    assert _cli("--commit-msg-file", message, cwd=repo).returncode == 0
-
-
-def test_commit_msg_matches_copy_with_both_paths(repo):
-    (repo / "old.md").write_text("Public summary\n" * 10)
-    _commit(repo)
-    (repo / "scratchpad").mkdir()
-    (repo / "scratchpad/example-copy.md").write_bytes((repo / "old.md").read_bytes())
-    (repo / "old.md").write_text("Public summary\n" * 10 + "New summary\n")
-    _git(repo, "add", ".")
-    _git(repo, "config", "diff.renames", "copies")
-    assert "C100" in _git(repo, "diff", "--cached", "--name-status").stdout
-    message = repo / "COMMIT_EDITMSG"
-    message.write_text(
-        "Public summary\n#\tcopied:    old.md -> scratchpad/example-copy.md\n"
+@pytest.mark.parametrize("operation", ["delete", "rename", "copy"])
+def test_commit_range_cleanup_ignores_removed_names(repo, operation):
+    (repo / "notes.md").write_text("Public summary\n")
+    base = _commit(repo)
+    legacy = repo / "scratchpad/example.md"
+    legacy.parent.mkdir()
+    legacy.write_text("Public summary\n")
+    leaked = _commit(repo)
+    if operation == "delete":
+        _git(repo, "rm", "scratchpad/example.md")
+    elif operation == "rename":
+        _git(repo, "mv", "scratchpad/example.md", "public.md")
+    else:
+        (repo / "public.md").write_bytes(legacy.read_bytes())
+        _git(repo, "config", "diff.renames", "copies")
+    cleaned = _commit(repo)
+    cleanup = _cli("--commit-range", f"{leaked}..{cleaned}", cwd=repo)
+    assert cleanup.returncode == 0, cleanup.stdout
+    introduced = _cli("--commit-range", f"{base}..{cleaned}", cwd=repo)
+    assert introduced.returncode == 1, introduced.stderr
+    assert (
+        introduced.stdout
+        == f"{leaked}:scratchpad/example.md:0: scratchpad/example.md\n"
     )
-    assert _cli("--commit-msg-file", message, cwd=repo).returncode == 0
-    message.write_text(
-        "Public summary\n#\tcopied:    wrong.md -> scratchpad/example-copy.md\n"
-    )
-    assert _cli("--commit-msg-file", message, cwd=repo).returncode == 1
 
 
 @pytest.mark.parametrize(
@@ -480,7 +475,6 @@ def test_commit_range_checks_names_and_keeps_per_file_allowlist(repo):
     assert result.returncode == 1, result.stderr
     assert result.stdout == (
         f"{leaked}:scratchpad/example.md:0: scratchpad/example.md\n"
-        f"{head}:scratchpad/example.md:0: scratchpad/example.md\n"
     )
 
 
