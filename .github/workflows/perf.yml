@@ -600,24 +600,44 @@ jobs:
           python3 scripts/perf_regression.py publish --record "$PERF_OUTPUT/perf.json" \
             --tier merge --pages-dir "$GITHUB_WORKSPACE/perf-pages" "${options[@]}"
 
-      - name: Comment on a failed merged PR verdict
+      - name: Refresh the merged PR verdict comment
         if: ${{ !cancelled() && steps.hosted.outcome == 'success' && steps.download.outcome == 'success' }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          failed=$(python3 -c 'import json, os; print(json.load(open(os.environ["PERF_OUTPUT"] + "/perf.json"))["verdict"]["status"] == "FAIL")')
-          if [[ "$failed" != True ]]; then exit 0; fi
           if [[ -z "$PERF_PR" ]]; then
-            echo 'No associated merged PR was found; the unacknowledged failure remains a failing job.'
+            echo 'No associated merged PR was found; the saved verdict is enforced below.'
             exit 0
           fi
           marker="<!-- dart-perf-merge:$PERF_HEAD -->"
-          { printf '%s\nPost-merge performance check failed. Add the applicable rationale to the merged PR body and rerun the full workflow (including measurement).\n\n' "$marker"; cat "$PERF_OUTPUT/perf.md"; } > "$RUNNER_TEMP/perf-comment.md"
           comments=$(gh api --paginate "repos/$GH_REPO/issues/$PERF_PR/comments" \
             --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id")
           comment=${comments%%$'\n'*}
-          jq -n --rawfile body "$RUNNER_TEMP/perf-comment.md" '{body: $body}' > "$RUNNER_TEMP/perf-comment.json"
+          export PERF_COMMENT_ID="$comment"
+          if [[ -n "$comment" ]]; then
+            gh api "repos/$GH_REPO/issues/comments/$comment" > "$RUNNER_TEMP/perf-previous-comment.json"
+          fi
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          from scripts.perf_regression import merge_comment
+
+          output = Path(os.environ["PERF_OUTPUT"])
+          temp = Path(os.environ["RUNNER_TEMP"])
+          record = json.loads((output / "perf.json").read_text())
+          if record["run"]["commit"] != os.environ["PERF_HEAD"]:
+              raise ValueError("merge comment head revision mismatch")
+          previous = (
+              json.loads((temp / "perf-previous-comment.json").read_text())["body"]
+              if os.environ["PERF_COMMENT_ID"] else ""
+          )
+          body = merge_comment(record, (output / "perf.md").read_text(), previous)
+          (temp / "perf-comment.json").write_text(json.dumps({"body": body}))
+          PY
+          if [[ "$(jq -r '.body == null' "$RUNNER_TEMP/perf-comment.json")" == true ]]; then exit 0; fi
           if [[ -n "$comment" ]]; then
             gh api --method PATCH "repos/$GH_REPO/issues/comments/$comment" --input "$RUNNER_TEMP/perf-comment.json"
           else

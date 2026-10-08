@@ -12,9 +12,11 @@ changes, rather than serving as a manually refreshed live baseline.
 Merge and changed-nightly records live at
 `performance/records/main/<yyyy>/<date>-<sha12>-<tier>.json` (`dart-perf/1`,
 plain JSON); `<date>` is a UTC timestamp such as
-`2026-10-08T080000000000Z`. An unchanged nightly HEAD/fingerprint does not
-add a record; changed fingerprints preserve a new record even on the same
-day. Merge reruns with the same identity and verdict/rationale are also
+`2026-10-08T080000000000Z`. A nightly run with the same HEAD, fingerprint,
+and results/guards as the newest record by measurement time does not add a
+record. Changed results or fingerprints preserve a new record even on the same
+day. A rerun of the same artifact leaves the guard table and its drift annotation
+untouched. Merge reruns with the same identity and verdict/rationale are also
 deduplicated; changed rationale or verdict preserves another immutable record
 without another chart point.
 The merge-only Ir/allocation chart is `performance/dart6-ir/`;

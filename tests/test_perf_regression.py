@@ -368,7 +368,7 @@ def test_merge_writer_uses_only_main_publisher_and_saved_evidence():
         'python3 scripts/perf_regression.py publish --record "$PERF_OUTPUT/perf.json"'
         in publish
     )
-    comment_step = _perf_step("record", "Comment on a failed merged PR verdict")
+    comment_step = _perf_step("record", "Refresh the merged PR verdict comment")
     assert "steps.hosted.outcome == 'success'" in comment_step["if"]
     assert "steps.download.outcome == 'success'" in comment_step["if"]
     comment = comment_step["run"]
@@ -377,7 +377,7 @@ def test_merge_writer_uses_only_main_publisher_and_saved_evidence():
     names = [step["name"] for step in writer["steps"]]
     assert (
         names.index("Publish the merge record and chart")
-        < names.index("Comment on a failed merged PR verdict")
+        < names.index("Refresh the merged PR verdict comment")
         < names.index("Summarize and enforce the merged verdict")
     )
 
@@ -3926,6 +3926,169 @@ def _chart_points(pages):
     ]
 
 
+@pytest.mark.parametrize(
+    "status,previous_kind,method",
+    [
+        ("FAIL", "none", "POST"),
+        ("PASS", "none", None),
+        ("WARN", "none", None),
+        ("PASS", "legacy", "PATCH"),
+        ("WARN", "legacy", "PATCH"),
+        ("PASS", "failed", "PATCH"),
+        ("FAIL", "newer", None),
+        ("FAIL", "same-time-pass", None),
+        ("FAIL", "older-pass", "PATCH"),
+        ("PASS", "identical", None),
+    ],
+)
+def test_merge_comment_shell_refreshes_saved_verdict_without_stale_rollback(
+    tmp_path, status, previous_kind, method
+):
+    module = _load_runner()
+    record = _publication_fixture()
+    record["verdict"]["status"] = status
+    report = "Saved comparison report\n"
+    previous = ""
+    if previous_kind == "legacy":
+        previous = (
+            f"<!-- dart-perf-merge:{record['run']['commit']} -->\n"
+            "Post-merge performance check failed.\n"
+        )
+    elif previous_kind != "none":
+        saved = copy.deepcopy(record)
+        saved["verdict"]["status"] = "FAIL" if previous_kind == "failed" else "PASS"
+        if previous_kind in ("failed", "older-pass"):
+            saved["run"]["time"] = "2026-10-08T07:00:00+00:00"
+        elif previous_kind == "newer":
+            saved["run"]["time"] = "2026-10-08T09:00:00+00:00"
+        previous = module.merge_comment(saved, report, "existing comment")
+    module.write_json(tmp_path / "perf.json", record)
+    (tmp_path / "perf.md").write_text(report)
+    (tmp_path / "previous.json").write_text(json.dumps({"body": previous}))
+    stub = """
+    gh() {
+      if [[ "$*" == *--paginate* ]]; then
+        if [[ "$HAS_PREVIOUS" == true ]]; then echo 42; fi
+      elif [[ "$*" == *--method* ]]; then
+        printf '%s\\n' "$*" > "$RUNNER_TEMP/mutation"
+        cp "$RUNNER_TEMP/perf-comment.json" "$RUNNER_TEMP/submitted.json"
+      else
+        cat "$RUNNER_TEMP/previous.json"
+      fi
+    }
+    """
+    result = subprocess.run(
+        [
+            "bash",
+            "-e",
+            "-o",
+            "pipefail",
+            "-c",
+            stub + _perf_step("record", "Refresh the merged PR verdict comment")["run"],
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env={
+            **os.environ,
+            "PERF_OUTPUT": str(tmp_path),
+            "RUNNER_TEMP": str(tmp_path),
+            "PERF_HEAD": record["run"]["commit"],
+            "PERF_PR": "3570",
+            "GH_REPO": "dartsim/dart",
+            "HAS_PREVIOUS": "true" if previous else "false",
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    mutation = tmp_path / "mutation"
+    assert mutation.exists() is (method is not None)
+    if method:
+        assert f"--method {method}" in mutation.read_text()
+        body = json.loads((tmp_path / "submitted.json").read_text())["body"]
+        assert body.startswith(f"<!-- dart-perf-merge:{record['run']['commit']} -->")
+        assert body.endswith(report)
+        assert ("check failed" if status == "FAIL" else "check now passes") in body
+
+
+@pytest.mark.parametrize("change", [None, "commit", "fingerprint", "results", "guards"])
+def test_nightly_records_skip_only_unchanged_latest_measurement(tmp_path, change):
+    module = _load_runner()
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, "nightly")
+    module.write_publication(tmp_path, record)
+    original = list((tmp_path / "performance/records/main/2026").glob("*.json"))[0]
+    saved = original.read_bytes()
+    record["run"]["time"] = "2026-10-09T08:00:00+00:00"
+    if change == "commit":
+        record["run"]["commit"] = "c" * 40
+    elif change == "fingerprint":
+        record["run"]["env"]["fingerprint"] = "2" * 64
+    elif change == "results":
+        record["results"][0]["head"]["ir_per_step"] += 1
+    elif change == "guards":
+        record["results"][0]["head"]["guards"]["contacts"] += 1
+    # Ancestry is covered separately; isolate immutable-record selection here.
+    module.nightly_table_can_advance = lambda *_: change != "commit"
+    changed = module.write_publication(tmp_path, record)
+    records = list((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert len(records) == (1 if change is None else 2)
+    assert original.read_bytes() == saved
+    if change is None:
+        assert changed == ["performance/guards/main.md"]
+        assert record["run"]["time"] in (tmp_path / changed[0]).read_text()
+
+
+def test_chart_writer_rerun_does_not_duplicate_commit_and_fingerprint(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    module.chart_data(tmp_path, record)
+    data_path = tmp_path / "performance/dart6-ir/data.js"
+    saved = data_path.read_bytes()
+    record["run"]["time"] = "2026-10-09T08:00:00+00:00"
+    module.chart_data(tmp_path, record)
+    assert data_path.read_bytes() == saved
+
+
+def test_chart_equal_timestamps_have_the_same_order_and_fingerprint_annotations(
+    tmp_path,
+):
+    module = _load_runner()
+    records = [_publication_fixture(), _publication_fixture()]
+    records[1]["run"]["commit"] = "c" * 40
+    records[1]["run"]["env"]["fingerprint"] = "2" * 64
+    scripts = []
+    for name, ordered in (("forward", records), ("reverse", records[::-1])):
+        pages = tmp_path / name
+        _stock_chart_template(pages)
+        for record in ordered:
+            module.chart_data(pages, record)
+        scripts.append((pages / "performance/dart6-ir/data.js").read_bytes())
+    assert scripts[0] == scripts[1]
+
+
+def test_nightly_changed_results_retain_history_even_when_matching_an_older_run(
+    tmp_path,
+):
+    module = _load_runner()
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, "nightly")
+    for hour, contacts in ((8, 3), (9, 4), (10, 3)):
+        record["run"]["time"] = f"2026-10-08T{hour:02d}:00:00+00:00"
+        record["results"][0]["head"]["guards"]["contacts"] = contacts
+        module.write_publication(tmp_path, record)
+    records = list((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert len(records) == 3
+    table = (tmp_path / "performance/guards/main.md").read_bytes()
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    record["results"][0]["head"]["guards"]["contacts"] = 4
+    assert module.write_publication(tmp_path, record) == []
+    assert (tmp_path / "performance/guards/main.md").read_bytes() == table
+    assert len(list((tmp_path / "performance/records/main/2026").glob("*.json"))) == 3
+
+
 def test_publication_merge_idempotence_fingerprint_flags_and_chart_window(tmp_path):
     module = _load_runner()
     _stock_chart_template(tmp_path)
@@ -3953,7 +4116,8 @@ def test_publication_merge_idempotence_fingerprint_flags_and_chart_window(tmp_pa
     record["run"]["env"]["fingerprint"] = "2" * 64
     module.write_publication(tmp_path, record)
     assert "fingerprint changed" in _chart_points(tmp_path)[-1]["benches"][0]["extra"]
-    for _ in range(251):
+    for minute in range(251):
+        record["run"].update(commit=f"{minute:040x}", time="2026-10-09T00:00:00+00:00")
         module.chart_data(tmp_path, record)
     assert len(_chart_points(tmp_path)) == 250
     assert len(list((tmp_path / "performance/records/main/2026").glob("*.json"))) == 2
@@ -4045,7 +4209,7 @@ def test_nightly_out_of_order_publication_preserves_latest_table_and_records(
     module.write_publication(tmp_path, record)
     assert table_path.read_text() == table
     records = list((tmp_path / "performance/records/main/2026").glob("*.json"))
-    assert len(records) == 4
+    assert len(records) == 4  # The newest record by measurement time is the ancestor.
     saved = {p.name: p.read_bytes() for p in records}
     assert module.write_publication(tmp_path, record) == []
     assert {p.name: p.read_bytes() for p in records} == saved
@@ -4080,13 +4244,17 @@ def test_nightly_latest_identity_dedup_and_guard_drift(tmp_path):
     table = (tmp_path / "performance/guards/main.md").read_text()
     assert "S3 / S6 drift since the prior nightly" in table
     assert "S6/dart checkpoints" in table
+    assert module.write_publication(tmp_path, record) == []
+    assert (tmp_path / "performance/guards/main.md").read_text() == table
     record["run"]["env"]["fingerprint"] = "2" * 64
     module.write_publication(tmp_path, record)
     record["run"]["time"] = "2026-10-08T10:00:00+00:00"
     record["run"]["env"]["fingerprint"] = "1" * 64
     module.write_publication(tmp_path, record)
     records = list((tmp_path / "performance/records/main/2026").glob("*.json"))
-    assert len(records) == 4  # Every distinct nightly measurement stays immutable.
+    assert (
+        len(records) == 4
+    )  # Changed guards and fingerprint transitions stay immutable.
     assert not (tmp_path / "performance/dart6-ir").exists()
 
 
@@ -4101,6 +4269,7 @@ def test_merge_rationale_rerun_records_new_acknowledgment_without_chart_duplicat
     module.write_json(path, fixture)
     record = module.publication_record(path, "merge", 3570)
     module.write_publication(tmp_path, record)
+    failed = copy.deepcopy(record)
     record["run"]["accepted"] = [
         {
             "kind": "regression",
@@ -4118,15 +4287,20 @@ def test_merge_rationale_rerun_records_new_acknowledgment_without_chart_duplicat
         == record["run"]["accepted"]
     )
     assert module.write_publication(tmp_path, record) == []
+    assert module.write_publication(tmp_path, failed) == []
+    assert len(list((tmp_path / "performance/records/main/2026").glob("*.json"))) == 2
     assert len(_chart_points(tmp_path)) == 1
 
 
-@pytest.mark.parametrize("outcome", ["race", "rejected"])
-def test_publish_retries_chart_conflict_without_losing_concurrent_points(
+@pytest.mark.parametrize(
+    "outcome", ["race", "rejected", "identical", "no-chart", "nightly"]
+)
+def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
     monkeypatch, tmp_path, outcome
 ):
     module = _load_runner()
-    _trusted_publication(monkeypatch)
+    tier = "nightly" if outcome == "nightly" else "merge"
+    _trusted_publication(monkeypatch, "schedule" if tier == "nightly" else "push")
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
     real_run = subprocess.run
 
@@ -4169,18 +4343,32 @@ def test_publish_retries_chart_conflict_without_losing_concurrent_points(
     )
     baseline = git(remote, "rev-parse", "gh-pages").stdout.strip()
     path = tmp_path / "record.json"
-    module.write_json(path, _publication_fixture())
-    incoming = module.publication_record(path, "merge")
+    fixture = _publication_fixture()
+    if outcome == "no-chart":
+        # Distinct timestamps write disjoint files, so Git could rebase cleanly
+        # while preserving duplicate evidence for the same merge identity.
+        fixture["results"][0]["status"] = "failed"
+    module.write_json(path, fixture)
+    incoming = module.publication_record(path, tier)
     concurrent = copy.deepcopy(incoming)
-    concurrent["run"].update(commit="c" * 40, time="2026-10-08T07:00:00+00:00")
-    concurrent["run"]["env"]["fingerprint"] = "2" * 64
+    if outcome != "identical":
+        concurrent["run"]["time"] = (
+            "2026-10-08T09:00:00+00:00"
+            if tier == "nightly"
+            else "2026-10-08T07:00:00+00:00"
+        )
+    if outcome in ("race", "rejected"):
+        concurrent["run"]["commit"] = "c" * 40
+        concurrent["run"]["env"]["fingerprint"] = "2" * 64
+    if tier == "nightly":
+        concurrent["results"][0]["head"]["guards"]["contacts"] = 4
     pushes = []
-    rebases = []
+    checkouts = []
 
     def raced_run(command, *args, **kwargs):
         if command[:3] == ["git", "-C", str(pages)]:
-            if command[3] == "rebase":
-                rebases.append(command)
+            if command[3] == "checkout":
+                checkouts.append(command)
             if command[3] == "push":
                 if outcome == "rejected":
                     pushes.append(command)
@@ -4196,25 +4384,38 @@ def test_publish_retries_chart_conflict_without_losing_concurrent_points(
 
     monkeypatch.setattr(module.subprocess, "run", raced_run)
     args = module.parser().parse_args(
-        ["publish", "--record", str(path), "--tier", "merge", "--pages-dir", str(pages)]
+        ["publish", "--record", str(path), "--tier", tier, "--pages-dir", str(pages)]
     )
     if outcome == "rejected":
         with pytest.raises(
-            RuntimeError, match="rejected after 5 fetch/rebase attempts"
+            RuntimeError, match="rejected after 5 fetch/regenerate attempts"
         ):
             module.publish(args)
         assert len(pushes) == 5
         assert git(remote, "rev-parse", "gh-pages").stdout.strip() == baseline
         return
-    assert module.publish(args)
-    assert len(pushes) == 2
-    assert sum(command[-1] == "origin/gh-pages" for command in rebases) == 2
-    assert any(command[-1] == "--abort" for command in rebases)
+    deduplicated = outcome in ("identical", "no-chart")
+    assert module.publish(args) is not deduplicated
+    assert len(pushes) == (1 if deduplicated else 2)
+    assert len(checkouts) == 2
     assert all(
         not any("force" in argument for argument in command) for command in pushes
     )
     git(remote, "merge-base", "--is-ancestor", baseline, "gh-pages")
-    points = _chart_points(pages)
-    assert [point["commit"]["id"] for point in points] == ["c" * 40, "a" * 40]
-    assert "fingerprint changed" in points[-1]["benches"][0]["extra"]
-    assert len(list((pages / "performance/records/main/2026").glob("*.json"))) == 2
+    if tier == "nightly":
+        assert (pages / "performance/guards/main.md").read_text() == module.guard_table(
+            concurrent
+        )
+    elif outcome == "no-chart":
+        assert not (pages / "performance/dart6-ir/data.js").exists()
+    else:
+        points = _chart_points(pages)
+        assert [point["commit"]["id"] for point in points] == (
+            ["a" * 40] if outcome == "identical" else ["c" * 40, "a" * 40]
+        )
+        if outcome != "identical":
+            assert "fingerprint changed" in points[-1]["benches"][0]["extra"]
+    assert len(list((pages / "performance/records/main/2026").glob("*.json"))) == (
+        1 if deduplicated else 2
+    )
+    assert module.publish(args) is False

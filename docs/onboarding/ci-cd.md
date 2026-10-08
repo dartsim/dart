@@ -52,7 +52,9 @@ nightly-only job: it never reports on PRs, so it would block every merge.
   `Rebaseline-Rationale` gets a comment on that PR and fails the writer job.
   After changing a merged PR's rationale, rerun the full workflow with
   `gh run rerun <run-id>` so measurement reads the new body; rerunning only the
-  writer reuses the saved verdict.
+  writer reuses the saved verdict. A passing rerun updates an existing marked
+  failure comment; it does not create a new comment. Comments identify their
+  measurement time so a writer that reads a newer verdict leaves it untouched.
 - The nightly tier calls the same workflow from `nightly.yml`, measuring HEAD
   only. It runs the quick rows, canonical S1–S6 native guards, layout
   perturbations, scene estimated cycles, and the opt-in matrix-free row. S3
@@ -68,15 +70,23 @@ Both tiers publish in this repository's `gh-pages` branch:
 | `performance/dart6-ir/` | Merge-only Ir and allocation chart, alerts off; fingerprint changes are annotated and the chart retains 250 points |
 | `performance/guards/main.md` | Latest generated nightly S1–S6 guard table, with revision and fingerprint; replaces manual live baseline tables |
 
-The nightly record is added only when HEAD or the environment fingerprint
-changes; the guard table is refreshed each night. Records keep full history
-beyond the chart window. Repeated merge runs with the same HEAD and fingerprint
-must reproduce identical per-row Ir. Unchanged verdict/rationale reruns are
-deduplicated; a new accepted rationale or verdict keeps another immutable
+The nightly record is added when the newest record by measurement time differs
+in HEAD, environment fingerprint, or results (including guards and advisory
+metrics). Identical results at a later time do not add another record. The guard
+table advances by commit ancestry, then measurement time for the same HEAD;
+rerunning the same artifact leaves it untouched, preserving drift annotations.
+Records keep full history beyond the chart window. Repeated merge runs with the
+same HEAD and fingerprint must reproduce identical per-row Ir. Unchanged
+verdict/rationale reruns are deduplicated; a new accepted rationale or verdict
+keeps another immutable
 record without another chart point. The `<date>`
 filename component is a UTC timestamp with microseconds, for example
 `2026-10-08T080000000000Z-aaaaaaaaaaaa-merge.json`, so a fingerprint change
 on the same day preserves both records.
+Publication retries regenerate against the fetched `gh-pages` tip, including
+deduplication and derived chart/table data, before attempting a normal push.
+Chart points use the full measurement time, with commit/fingerprint tie breaks,
+so equal-time arrivals have consistent order and fingerprint annotations.
 The fingerprint includes valgrind and its guest CPU,
 compiler, glibc, `pixi.lock`, preset and harness identity. Read records directly
 with `git show origin/gh-pages:performance/records/main/<yyyy>/<file>.json`.

@@ -1788,6 +1788,36 @@ def smoke_build_failure(directory: Path, head: str, status: int) -> dict | None:
     return None
 
 
+def merge_comment(record: dict, report: str, previous: str = "") -> str | None:
+    """Refresh a marked verdict comment without rolling back newer evidence."""
+    run = record["run"]
+    status = record["verdict"]["status"]
+    if status not in ("PASS", "WARN", "FAIL"):
+        raise ValueError("merge comment requires a completed comparison")
+    if not previous and status != "FAIL":
+        return None
+    measured = datetime.fromisoformat(run["time"].replace("Z", "+00:00"))
+    identity = re.search(r"<!-- dart-perf-verdict:(\S+) (PASS|WARN|FAIL) -->", previous)
+    if identity:
+        previous_time = datetime.fromisoformat(identity[1])
+        if previous_time > measured or (
+            previous_time == measured and identity[2] != "FAIL" and status == "FAIL"
+        ):
+            return None
+    message = (
+        "Post-merge performance check failed. Add the applicable rationale to the merged PR body "
+        "and rerun the full workflow (including measurement)."
+        if status == "FAIL"
+        else "Post-merge performance check now passes."
+    )
+    body = (
+        f"<!-- dart-perf-merge:{run['commit']} -->\n"
+        f"<!-- dart-perf-verdict:{measured.isoformat()} {status} -->\n"
+        f"{message}\n\n{report}"
+    )
+    return None if body == previous else body
+
+
 def nightly_table_can_advance(record: dict, previous: str) -> bool:
     """The table's full SHA and measurement time identify its published nightly."""
     if not previous:
@@ -1800,7 +1830,7 @@ def nightly_table_can_advance(record: dict, previous: str) -> bool:
     measured, commit = identity.groups()
     run = record["run"]
     if commit == run["commit"]:
-        return datetime.fromisoformat(run["time"]) >= datetime.fromisoformat(measured)
+        return datetime.fromisoformat(run["time"]) > datetime.fromisoformat(measured)
     ancestry = subprocess.run(
         ["git", "-C", str(ROOT), "merge-base", "--is-ancestor", commit, run["commit"]],
         text=True,
@@ -1912,6 +1942,12 @@ def chart_data(pages: Path, record: dict) -> None:
     series = data["entries"].setdefault("DART 6 deterministic counts", [])
     run = record["run"]
     fingerprint = run["env"]["fingerprint"]
+    if any(
+        point["commit"]["id"] == run["commit"]
+        and point.get("fingerprint") == fingerprint
+        for point in series
+    ):
+        return
     extra = f"fingerprint: {fingerprint}"
     if run.get("pr"):
         extra += f"\nPR #{run['pr']}"
@@ -1951,7 +1987,13 @@ def chart_data(pages: Path, record: dict) -> None:
             "benches": benches,
         }
     )
-    series.sort(key=lambda point: point["date"])
+    series.sort(
+        key=lambda point: (
+            datetime.fromisoformat(point["commit"]["timestamp"]).timestamp(),
+            point["commit"]["id"],
+            point.get("fingerprint", ""),
+        )
+    )
     for previous, point in zip(series, series[1:]):
         for bench in point["benches"]:
             bench["extra"] = re.sub(
@@ -1979,7 +2021,9 @@ def write_publication(pages: Path, record: dict) -> list[str]:
     records = pages / "performance/records/main"
     repeated = False
     chart_repeated = False
-    for path in sorted(records.glob(f"*/*-{run['tier']}.json"), reverse=True):
+    for index, path in enumerate(
+        sorted(records.glob(f"*/*-{run['tier']}.json"), reverse=True)
+    ):
         saved = json.loads(path.read_text(encoding="utf-8"))
         previous = saved["run"]
         if (previous["commit"], previous["env"]["fingerprint"]) == (
@@ -2002,11 +2046,14 @@ def write_publication(pages: Path, record: dict) -> list[str]:
                 repeated = saved["run"].get("accepted", []) == run.get(
                     "accepted", []
                 ) and saved.get("verdict") == record.get("verdict")
+                if repeated:
+                    break
             else:
-                repeated = previous["time"] == run["time"]
-                if not repeated:
-                    continue
-            break
+                repeated = previous["time"] == run["time"] or (
+                    index == 0 and saved["results"] == record["results"]
+                )
+                if repeated:
+                    break
     if run["tier"] == "nightly":
         table = pages / "performance/guards/main.md"
         table.parent.mkdir(parents=True, exist_ok=True)
@@ -2067,12 +2114,9 @@ def publish(args) -> bool:
             ).returncode
         ):
             raise ValueError("gh-pages checkout has unpublished commits")
-        rebased = git("rebase", "origin/gh-pages", check=False)
-        if rebased.returncode:
-            git("rebase", "--abort")
-            # Only this disposable checkout contains our unpublished generated commit.
-            # Rebuild against the fetched tip instead of dropping another writer's data.
-            git("checkout", "--detach", "origin/gh-pages")
+        # Regenerate even when Git could replay our commit without a conflict:
+        # concurrent records can change deduplication and derived table/chart state.
+        git("checkout", "-B", "gh-pages", "origin/gh-pages")
         paths = write_publication(pages, record)
         if paths:
             git("add", "--", *paths)
@@ -2091,7 +2135,7 @@ def publish(args) -> bool:
         if pushed.returncode == 0:
             return True
     raise RuntimeError(
-        f"gh-pages push rejected after 5 fetch/rebase attempts: {pushed.stderr.strip()}"
+        f"gh-pages push rejected after 5 fetch/regenerate attempts: {pushed.stderr.strip()}"
     )
 
 
