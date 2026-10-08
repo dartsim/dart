@@ -601,6 +601,7 @@ jobs:
           path: perf-pages
 
       - name: Publish the merge record and chart
+        id: publish
         run: |
           options=()
           if [[ -n "$PERF_PR" ]]; then options+=(--pr "$PERF_PR"); fi
@@ -608,7 +609,7 @@ jobs:
             --tier merge --pages-dir "$GITHUB_WORKSPACE/perf-pages" "${options[@]}"
 
       - name: Refresh the merged PR verdict comment
-        if: ${{ !cancelled() && steps.hosted.outcome == 'success' && steps.download.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.hosted.outcome == 'success' && steps.download.outcome == 'success' && steps.publish.outcome == 'success' }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}

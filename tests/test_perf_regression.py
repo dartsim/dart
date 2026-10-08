@@ -476,6 +476,18 @@ def test_merge_writer_enforces_saved_verdict(tmp_path, status, exit_code):
     assert result.returncode == exit_code, result.stderr
 
 
+def test_merge_comment_refresh_requires_successful_publication():
+    publish = _perf_step("record", "Publish the merge record and chart")
+    refresh = _perf_step("record", "Refresh the merged PR verdict comment")
+    assert publish["id"] == "publish"
+    # A failed/skipped publisher must preserve the comment, regardless of verdict.
+    # A published FAIL still needs to be reported before the enforcement step.
+    assert refresh["if"] == (
+        "${{ !cancelled() && steps.hosted.outcome == 'success' && "
+        "steps.download.outcome == 'success' && steps.publish.outcome == 'success' }}"
+    )
+
+
 @pytest.mark.parametrize(
     "environment,exit_code", [("github-hosted", 0), ("self-hosted", 1)]
 )
@@ -4185,6 +4197,97 @@ def test_merge_comment_shell_refreshes_saved_verdict_without_stale_rollback(
         assert ("check failed" if status == "FAIL" else "check now passes") in body
 
 
+@pytest.mark.parametrize(
+    "change,rationales",
+    [
+        ("allocations", ["Perf-Regression-Rationale"]),
+        ("bytes", ["Perf-Regression-Rationale"]),
+        ("ir", ["Perf-Regression-Rationale"]),
+        ("geomean", ["Perf-Regression-Rationale"]),
+        ("input", ["Rebaseline-Rationale"]),
+        ("guards", ["Rebaseline-Rationale"]),
+        ("signed-percentage", ["Rebaseline-Rationale"]),
+        ("perturbation", []),
+        ("missing-head", []),
+        ("missing-base", []),
+        ("nonfinite", []),
+        ("build", []),
+        ("smoke-perturbation", []),
+        ("empty", []),
+        ("unknown", []),
+        ("mixed", ["Perf-Regression-Rationale", "Rebaseline-Rationale"]),
+    ],
+)
+def test_merge_failure_comment_guidance_follows_comparison_policy(change, rationales):
+    module = _load_runner()
+    base = _micro_record(module, "dyn")
+    head = copy.deepcopy(base)
+    head["run"].update(commit="a" * 40, time="2026-10-08T08:00:00Z")
+    row = head["results"][0]
+    body = ""
+    if change == "allocations":
+        row["head"]["allocs_per_step"] = 1
+    elif change == "bytes":
+        row["head"]["bytes_per_step"] = 1
+    elif change in ("ir", "geomean"):
+        row["head"]["ir_per_step"] = 102 if change == "ir" else 100.6
+    elif change == "input":
+        row["input_sha"] = "changed workload"
+    elif change in ("guards", "signed-percentage"):
+        row["head"]["guards"]["hash"] = {"BM_Dynamics/10": "0x1123456789abcdef"}
+        if change == "signed-percentage":
+            row["head"]["ir_per_step"] = 102
+            body = "Rebaseline-Rationale: dyn: intended work"
+    elif change == "perturbation":
+        row.update(gated=False, perturbations={"start4k": {"stable": False}})
+    elif change == "missing-head":
+        row["head"].pop("ir_per_step")
+    elif change == "missing-base":
+        base["results"][0]["head"].pop("ir_per_step")
+    elif change == "nonfinite":
+        row["head"]["guards"]["finite"] = False
+    elif change == "empty":
+        base["results"] = head["results"] = []
+    elif change == "mixed":
+        row["head"]["allocs_per_step"] = 1
+        changed_input = copy.deepcopy(row)
+        changed_input.update(row="changed-input", input_sha="new workload")
+        base["results"].append({**copy.deepcopy(row), "row": "changed-input"})
+        head["results"].append(changed_input)
+    record = module.compare(base, head, body)
+    extra_failures = {
+        "build": "head smoke build failed: compiler error",
+        "mixed": "head smoke build failed: compiler error",
+        "smoke-perturbation": "head smoke rows did not pass their perturbation checks",
+        "unknown": "unrecognized evidence failure",
+    }
+    if change in extra_failures:
+        record["verdict"]["failures"].append(extra_failures[change])
+        record["verdict"]["status"] = "FAIL"
+    assert record["verdict"]["status"] == "FAIL"
+    comment = module.merge_comment(record, "Saved comparison report")
+    guidance = comment.split("Rerun the full workflow", 1)[0]
+    assert "Post-merge performance check failed" in guidance
+    assert ("Add the applicable" in guidance) == bool(rationales)
+    for kind in ("Perf-Regression-Rationale", "Rebaseline-Rationale"):
+        assert (kind in guidance) == (kind in rationales)
+    needs_fix = change in (
+        "perturbation",
+        "missing-head",
+        "missing-base",
+        "nonfinite",
+        "build",
+        "smoke-perturbation",
+        "empty",
+        "unknown",
+        "mixed",
+    )
+    assert ("Fix the non-waivable failures" in guidance) == needs_fix
+    if needs_fix:
+        assert record["verdict"]["failures"][0 if change != "mixed" else -1] in guidance
+    assert "including measurement" in comment
+
+
 @pytest.mark.parametrize("change", [None, "commit", "fingerprint", "results", "guards"])
 def test_nightly_records_skip_only_unchanged_latest_measurement(tmp_path, change):
     module = _load_runner()
@@ -4595,7 +4698,51 @@ def test_rerun_identity_excludes_advisory_metrics_and_install_paths(tmp_path, wr
     record["results"][0]["head"].update(
         wall_ms_per_step=15, max_rss_kb=1000, libdart="/another/install/libdart.so"
     )
+    record["results"][0]["parent"].update(
+        wall_ms_per_step=20, max_rss_kb=2000, libdart="/base/install/libdart.so"
+    )
     write(tmp_path, record)
+    assert {
+        path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
+    } == saved
+
+
+@pytest.mark.parametrize(
+    "section,key,value",
+    [
+        ("run", "parent", "c" * 40),
+        ("parent", "ir_per_step", 99_999),
+        ("parent", "allocs_per_step", 1),
+        ("parent", "bytes_per_step", 1),
+        ("parent", "checkpoints", [{"step": 1, "max_penetration": 0.2}]),
+        ("parent", "micro_instrumented", False),
+        ("parent", "time_advanced", False),
+        ("guards", "hash", "changed"),
+        ("guards", "finite", False),
+        ("guards", "contacts", 4),
+    ],
+)
+def test_merge_rerun_rejects_changed_parent_but_chart_deduplicates_head(
+    tmp_path, section, key, value
+):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    record["run"]["tier"] = "merge"
+    module.write_publication(tmp_path, record)
+    saved = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    changed = copy.deepcopy(record)
+    parent = changed["results"][0]["parent"]
+    target = (
+        changed["run"]
+        if section == "run"
+        else parent if section == "parent" else parent["guards"]
+    )
+    target[key] = value
+    module.chart_data(tmp_path, changed)
+    assert len(_chart_points(tmp_path)) == 1
+    with pytest.raises(ValueError, match="deterministic counts or guards/inputs"):
+        module.write_publication(tmp_path, changed)
     assert {
         path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
     } == saved

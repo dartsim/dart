@@ -1837,12 +1837,51 @@ def merge_comment(record: dict, report: str, previous: str = "") -> str | None:
             previous_time == measured and identity[2] != "FAIL" and status == "FAIL"
         ):
             return None
-    message = (
-        "Post-merge performance check failed. Add the applicable rationale to the merged PR body "
-        "and rerun the full workflow (including measurement)."
-        if status == "FAIL"
-        else "Post-merge performance check now passes."
-    )
+    message = "Post-merge performance check now passes."
+    if status == "FAIL":
+        message = "Post-merge performance check failed."
+        # Only these comparison-policy failures can be acknowledged by a rationale.
+        rationale_patterns = {
+            "Perf-Regression-Rationale": (
+                r"(?:[^:]+: (?:(?:allocations|requested bytes) \+\S+/step|"
+                r"Ir \+\d+\.\d+% \(limit \+1\.00%\))|"
+                r"Ir geomean \+\d+\.\d+% \(limit \+0\.50%\); rationale required for .+)"
+            ),
+            "Rebaseline-Rationale": (
+                r"[^:]+: (?:(?:input_sha|guards) changed; Rebaseline-Rationale required|"
+                r"Rebaseline-Rationale must state a signed percentage "
+                r"\(measured Ir \+\d+\.\d+%\))"
+            ),
+        }
+        rationales, fixes = set(), []
+        for failure in record["verdict"].get("failures", []):
+            kind = next(
+                (
+                    kind
+                    for kind, pattern in rationale_patterns.items()
+                    if re.fullmatch(pattern, failure)
+                ),
+                None,
+            )
+            if kind:
+                rationales.add(kind)
+            else:
+                fixes.append(failure)
+        if fixes or not rationales:
+            message += " Fix the non-waivable failures listed below"
+            if fixes:
+                message += ":\n\n" + "\n".join(
+                    f"- {markdown_cell(failure)}" for failure in fixes
+                )
+            else:
+                message += "."
+        if rationales:
+            message += (
+                "\n\nAdd the applicable "
+                + " / ".join(sorted(rationales))
+                + " to the merged PR body for the acknowledged comparison failures."
+            )
+        message += "\n\nRerun the full workflow (including measurement)."
     body = (
         f"<!-- dart-perf-merge:{run['commit']} -->\n"
         f"<!-- dart-perf-verdict:{measured.isoformat()} {status} -->\n"
@@ -1952,7 +1991,7 @@ def guard_table(record: dict, previous: str = "") -> str:
     return "\n".join(lines) + "\n"
 
 
-def deterministic_measurements(record: dict) -> dict:
+def deterministic_measurements(record: dict, *, include_parent: bool = False) -> dict:
     """Reruns must preserve inputs, deterministic counts and correctness evidence."""
     return {
         row_key(row): {
@@ -1971,22 +2010,25 @@ def deterministic_measurements(record: dict) -> dict:
                     "perturbations",
                 )
             },
-            "head": {
-                key: row["head"].get(key)
-                for key in (
-                    "ir_per_step",
-                    "allocs_per_step",
-                    "bytes_per_step",
-                    "guards",
-                    "max_penetration",
-                    "checkpoints",
-                    "time_advanced",
-                    "allocs",
-                    "bytes",
-                    "cases",
-                    "micro_instrumented",
-                    "est_cycles_per_step",
-                )
+            **{
+                arm: {
+                    key: row.get(arm, {}).get(key)
+                    for key in (
+                        "ir_per_step",
+                        "allocs_per_step",
+                        "bytes_per_step",
+                        "guards",
+                        "max_penetration",
+                        "checkpoints",
+                        "time_advanced",
+                        "allocs",
+                        "bytes",
+                        "cases",
+                        "micro_instrumented",
+                        "est_cycles_per_step",
+                    )
+                }
+                for arm in (("parent", "head") if include_parent else ("head",))
             },
         }
         for row in record["results"]
@@ -2029,6 +2071,8 @@ def chart_data(pages: Path, record: dict) -> None:
         ):
             value = row["head"].get(metric)
             if value is not None:
+                # Store bench identity fields so the continuity pass below annotates
+                # the first point after any change (including input_sha).
                 benches.append(
                     {
                         "name": f"{row_key(row)}@{row['version']} {label}",
@@ -2153,8 +2197,9 @@ def write_publication(pages: Path, record: dict) -> list[str]:
             run["env"]["fingerprint"],
         ):
             if run["tier"] == "merge":
-                if deterministic_measurements(saved) != deterministic_measurements(
-                    record
+                if previous.get("parent") != run.get("parent") or (
+                    deterministic_measurements(saved, include_parent=True)
+                    != deterministic_measurements(record, include_parent=True)
                 ):
                     raise ValueError(
                         "repeated merge changed deterministic counts or guards/inputs under the same "
