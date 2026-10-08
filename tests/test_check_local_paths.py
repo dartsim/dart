@@ -74,6 +74,7 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         r"(?:/home/|/Users/|~/|fbsource|arvr/libraries)",
         "https://github.com/dartsim/dart/pull/1234",
         "https://api.github.com/users/dartsim/repos",
+        "https://[2606:4700:4700::1111]/scratchpad/issue",
         "https://8.8.8.8/scratchpad/x.md",
         "http://localhost@github.com/example/scratchpad/issues/1",
         "https://example.com/home/docs/index.html",
@@ -522,6 +523,29 @@ def test_staged_gitlink_checks_name_without_reading_missing_commit(repo):
     result = _cli("--staged", cwd=repo)
     assert result.returncode == 1, result.stderr
     assert result.stdout == "scratchpad/module: scratchpad/module\n"
+
+
+def test_all_tracked_scans_gitlink_names_but_not_checkout_contents(repo):
+    _git(
+        repo,
+        "update-index",
+        "--add",
+        "--cacheinfo",
+        "160000,0123456789abcdef0123456789abcdef01234567,vendor/lib",
+    )
+    (repo / "vendor" / "lib").mkdir(parents=True)
+    assert _cli("--all-tracked", cwd=repo).returncode == 0
+    _git(
+        repo,
+        "update-index",
+        "--add",
+        "--cacheinfo",
+        "160000,0123456789abcdef0123456789abcdef01234567,scratchpad/lib",
+    )
+    (repo / "scratchpad" / "lib").mkdir(parents=True)
+    result = _cli("--all-tracked", cwd=repo)
+    assert result.returncode == 1
+    assert "scratchpad/lib" in result.stdout
 
 
 def test_missing_file_fails_closed(repo):
