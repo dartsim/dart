@@ -4140,7 +4140,7 @@ bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
   // Small epsilon so floating-point dust in a command/force vector (e.g. a
   // servo writing ~1e-16 at its target) does not count as a real disturbance
   // and defeat sleeping.
-  const double tolerance = 1e-9;
+  const double tolerance = 1e-9; // perf A/A test (throwaway)
 
   const std::size_t nDofs = getNumDofs();
   bool disturbed = false;
