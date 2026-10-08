@@ -5,7 +5,10 @@ Idempotently writes both hooks so every ``git commit`` runs the fast staged
 gate (``scripts/check_agent_hook.py --profile staged``) and scans its message
 (``scripts/check_local_paths.py --commit-msg-file "$1"``) with the same compatible
 Python interpreter selection. The message scan includes hash-prefixed lines
-and stops at Git's scissors line, excluding verbose diffs. Behaviour:
+and stops at Git's scissors line, excluding verbose diffs. No
+``pre-merge-commit`` hook is installed: an automatic merge only combines
+commits these hooks or CI already scanned, and a conflicted merge ends with
+``git commit``, which runs both hooks. Behaviour:
 
 * Each managed hook carries a sentinel line (``DART-MANAGED-HOOK``); re-running
   this installer detects it and rewrites the hook in place, so the command is
