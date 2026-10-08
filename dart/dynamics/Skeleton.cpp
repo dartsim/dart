@@ -4176,29 +4176,29 @@ bool Skeleton::checkExternalDisturbanceAndReset(bool _resetCommand)
           hasResidualExternalForces = true;
       }
     }
-  }
 
-  // Scan generalized forces and commands per-DOF instead of materializing
-  // getForces()/getCommands(): each returns an Eigen::VectorXd by value (a heap
-  // allocation) and this runs per mobile skeleton every step. getForces()[i] is
-  // exactly getDof(i)->getForce() (MetaSkeleton::getValuesFromAllDofs), and
-  // `|x| > tol` is `x > tol || x < -tol`, so the disturbance decision is
-  // identical -- just without the temporaries.
-  for (std::size_t i = 0; i < nDofs; ++i) {
-    const DegreeOfFreedom* dof = getDof(i);
-    if (!dof)
-      continue;
-    const double f = dof->getForce();
-    if (f != 0.0)
-      hasResidualDofForces = true;
-    if (f > tolerance || f < -tolerance)
-      disturbed = true;
+    // Scan generalized forces and commands per DOF instead of materializing
+    // getForces()/getCommands(), which return an Eigen::VectorXd by value (a
+    // heap allocation). Every skeleton DOF belongs to exactly one body's parent
+    // joint, and DegreeOfFreedom::getForce()/getCommand() forward to that
+    // joint, so reading the joint, whose values are contiguous, skips one
+    // separately allocated object per DOF. `|x| > tol` is
+    // `x > tol || x < -tol`, and the flags only accumulate, so the decision is
+    // identical.
+    const Joint* joint = bodyNode->getParentJoint();
+    for (std::size_t i = 0; i < joint->getNumDofs(); ++i) {
+      const double f = joint->getForce(i);
+      if (f != 0.0)
+        hasResidualDofForces = true;
+      if (f > tolerance || f < -tolerance)
+        disturbed = true;
 
-    const double c = dof->getCommand();
-    if (c != 0.0)
-      hasResidualCommands = true;
-    if (c > tolerance || c < -tolerance)
-      disturbed = true;
+      const double c = joint->getCommand(i);
+      if (c != 0.0)
+        hasResidualCommands = true;
+      if (c > tolerance || c < -tolerance)
+        disturbed = true;
+    }
   }
 
   if (disturbed)

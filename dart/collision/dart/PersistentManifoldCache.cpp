@@ -68,7 +68,8 @@ PairKey canonicalPair(std::size_t idA, std::size_t idB)
 }
 
 //==============================================================================
-Eigen::Vector3d normalizedOrDefault(const Eigen::Vector3d& normal)
+Eigen::Vector3d normalizedManifoldCacheNormalOrDefault(
+    const Eigen::Vector3d& normal)
 {
   const double norm = normal.norm();
   if (norm < kNormalEpsilon)
@@ -340,7 +341,8 @@ void PersistentManifold::refresh(
     const Eigen::Vector3d worldB = tfB * contact.localPointB;
     const Eigen::Vector3d rel = worldB - worldA;
 
-    const Eigen::Vector3d n = normalizedOrDefault(contact.normal);
+    const Eigen::Vector3d n
+        = normalizedManifoldCacheNormalOrDefault(contact.normal);
     const double normalDistance = std::abs(rel.dot(n));
     const Eigen::Vector3d tangential = rel - n * rel.dot(n);
     const double tangentialDrift = tangential.norm();

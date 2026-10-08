@@ -1447,3 +1447,9 @@ bool ContactConstraint::hasValidBodyNodes() const
 
 } // namespace constraint
 } // namespace dart
+
+#undef DART_EPSILON
+#undef DART_ERROR_ALLOWANCE
+#undef DART_ERP
+#undef DART_MAX_ERV
+#undef DART_CFM

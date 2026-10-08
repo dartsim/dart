@@ -44,7 +44,7 @@ namespace dart::collision::native {
 
 namespace {
 
-constexpr double kEpsilon = 1e-12;
+constexpr double kPrimitiveCcdEpsilon = 1e-12;
 
 // Conservative advancement scaling s in (0, 1). Each step covers (1 - s) of the
 // maximal provably-safe advance, which (a) keeps the iterate strictly short of
@@ -56,7 +56,7 @@ constexpr double kConservativeScale = 0.1;
 // Closest-distance primitives (Ericson, Real-Time Collision Detection)
 //==============================================================================
 
-Eigen::Vector3d closestPointOnTriangle(
+Eigen::Vector3d primitiveCcdClosestPointOnTriangle(
     const Eigen::Vector3d& p,
     const Eigen::Vector3d& a,
     const Eigen::Vector3d& b,
@@ -116,7 +116,7 @@ double distancePointTriangle(
     const Eigen::Vector3d& b,
     const Eigen::Vector3d& c)
 {
-  return (p - closestPointOnTriangle(p, a, b, c)).norm();
+  return (p - primitiveCcdClosestPointOnTriangle(p, a, b, c)).norm();
 }
 
 double distanceSegmentSegment(
@@ -137,21 +137,21 @@ double distanceSegmentSegment(
   double s = 0.0;
   double t = 0.0;
 
-  if (a <= kEpsilon && e <= kEpsilon) {
+  if (a <= kPrimitiveCcdEpsilon && e <= kPrimitiveCcdEpsilon) {
     s = 0.0;
     t = 0.0;
-  } else if (a <= kEpsilon) {
+  } else if (a <= kPrimitiveCcdEpsilon) {
     s = 0.0;
     t = std::clamp(f / e, 0.0, 1.0);
   } else {
     const double c = d1.dot(r);
-    if (e <= kEpsilon) {
+    if (e <= kPrimitiveCcdEpsilon) {
       t = 0.0;
       s = std::clamp(-c / a, 0.0, 1.0);
     } else {
       const double b = d1.dot(d2);
       const double denom = a * e - b * b;
-      if (denom > kEpsilon) {
+      if (denom > kPrimitiveCcdEpsilon) {
         s = std::clamp((b * f - c * e) / denom, 0.0, 1.0);
       } else {
         s = 0.0;
@@ -212,7 +212,7 @@ bool accdAdvance(
     return true;
   }
 
-  if (lp <= kEpsilon) {
+  if (lp <= kPrimitiveCcdEpsilon) {
     // No relative motion: the clearance is constant, so no new contact forms.
     result.status = CcdPrimitiveStatus::Miss;
     return false;
@@ -223,7 +223,7 @@ bool accdAdvance(
   // minSeparation, so the threshold must be an absolute distance -- scaling it
   // by the initial gap would report a hit for a non-colliding near-miss that
   // merely ends close relative to a large starting separation.
-  const double convergeAbs = std::max(option.tolerance, kEpsilon);
+  const double convergeAbs = std::max(option.tolerance, kPrimitiveCcdEpsilon);
   const int maxIter = std::max(1, option.maxIterations);
 
   double t = 0.0;
@@ -297,8 +297,8 @@ double evalPoly(const std::array<double, 4>& coef, double t)
 void quadraticRootsInUnit(
     double a, double b, double c, std::vector<double>& out)
 {
-  if (std::abs(a) <= kEpsilon) {
-    if (std::abs(b) > kEpsilon) {
+  if (std::abs(a) <= kPrimitiveCcdEpsilon) {
+    if (std::abs(b) > kPrimitiveCcdEpsilon) {
       const double r = -c / b;
       if (r > 0.0 && r < 1.0) {
         out.push_back(r);
@@ -349,12 +349,12 @@ std::vector<double> cubicRootsInUnit(const std::array<double, 4>& coef)
   for (std::size_t i = 0; i + 1 < breaks.size(); ++i) {
     const double lo = breaks[i];
     const double hi = breaks[i + 1];
-    if (hi - lo <= kEpsilon) {
+    if (hi - lo <= kPrimitiveCcdEpsilon) {
       continue;
     }
     const double flo = evalPoly(coef, lo);
     const double fhi = evalPoly(coef, hi);
-    if (std::abs(flo) <= kEpsilon) {
+    if (std::abs(flo) <= kPrimitiveCcdEpsilon) {
       roots.push_back(lo);
     }
     if ((flo < 0.0) != (fhi < 0.0)) {
@@ -362,7 +362,7 @@ std::vector<double> cubicRootsInUnit(const std::array<double, 4>& coef)
     }
   }
   const double fEnd = evalPoly(coef, 1.0);
-  if (std::abs(fEnd) <= kEpsilon) {
+  if (std::abs(fEnd) <= kPrimitiveCcdEpsilon) {
     roots.push_back(1.0);
   }
 
@@ -392,7 +392,7 @@ bool pointInsideTriangle(
   const double d20 = v2.dot(v0);
   const double d21 = v2.dot(v1);
   const double denom = d00 * d11 - d01 * d01;
-  if (std::abs(denom) <= kEpsilon) {
+  if (std::abs(denom) <= kPrimitiveCcdEpsilon) {
     return false;
   }
   const double v = (d11 * d20 - d01 * d21) / denom;
@@ -446,7 +446,7 @@ void addMovingPointPairRoots(
   const Eigen::Vector3d offset = aStart - bStart;
   const Eigen::Vector3d velocity = aVelocity - bVelocity;
   for (int i = 0; i < 3; ++i) {
-    if (std::abs(velocity[i]) <= kEpsilon) {
+    if (std::abs(velocity[i]) <= kPrimitiveCcdEpsilon) {
       continue;
     }
     const double t = -offset[i] / velocity[i];

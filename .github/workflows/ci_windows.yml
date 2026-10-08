@@ -31,18 +31,32 @@ concurrency:
 
 jobs:
   build:
-    # Unique check name: `Release` alone is CI Linux's required context.
-    name: windows-${{ matrix.build_type }}
+    # The two halves of `pixi run test-all` on parallel runners, each ~2/3 of
+    # the cold build. On MSVC, target ALL is exactly tests_and_run + pytest:
+    # CMakeLists.txt adds examples and tutorials to ALL only for other
+    # compilers. The windows-Release job below reports the combined result
+    # under the required check name.
+    name: windows-Release-${{ matrix.part }}
     runs-on: windows-2025-vs2026
     env:
       CMAKE_GENERATOR: Ninja
-      CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+      CMAKE_BUILD_TYPE: Release
       CC: cl
       CXX: cl
-      BUILD_TYPE: ${{ matrix.build_type }}
+      BUILD_TYPE: Release
       DART_VERBOSE: "ON"
       DART_COMPILER_CACHE: sccache
-      SCCACHE_CACHE_SIZE: "1G"
+      # A full build of one part is ~100 MiB, so the cap holds about two builds:
+      # snapshots stay small and fresh instead of growing with stale objects.
+      SCCACHE_CACHE_SIZE: "250M"
+      # The compiler-cache snapshot this run saves: main pushes save the whole
+      # cache, same-repository PR runs save the objects their own runs
+      # compiled, and other runs (forks, which may not save caches) save none.
+      SCCACHE_SNAPSHOT: >-
+        ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'main'
+            || (github.event_name == 'pull_request'
+                && github.event.pull_request.head.repo.full_name == github.repository) && 'pr'
+            || '' }}
       # Preserve build counters through long links and test runs.
       SCCACHE_IDLE_TIMEOUT: "0"
       CTEST_PARALLEL_LEVEL: "4"
@@ -51,12 +65,21 @@ jobs:
       # the job timeout. Disable it for the CI C++/dartpy test build; the
       # published wheels (publish_dartpy.yml) keep it on and are still tested.
       DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION: "ON"
-    # Keep room for cold caches; the warm-cache target is under 25 minutes.
+      # Drop unreferenced inline functions from objects, as MSBuild projects do
+      # by default: objects are 60% smaller, so cache snapshots and links are
+      # too. Compile time is unchanged (same-VM benchmark, 20 files).
+      CXXFLAGS: /Zc:inline
+    # Keep room for cold caches; a warm run without header changes takes
+    # minutes.
     timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
-        build_type: ["Release"] # TODO: Add Debug
+        include:
+          - part: cpp
+            task: test # builds the C++ tests and runs ctest
+          - part: python
+            task: test-py # builds dartpy and runs pytest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -77,20 +100,45 @@ jobs:
         id: sccache-config
         run: |
           "SCCACHE_DIR=$(Join-Path $env:RUNNER_TEMP 'sccache')" >> $env:GITHUB_ENV
-          "date=$([DateTime]::UtcNow.ToString('yyyy-MM-dd'))" >> $env:GITHUB_OUTPUT
+          "SCCACHE_PR_DIR=$(Join-Path $env:RUNNER_TEMP 'sccache-pr')" >> $env:GITHUB_ENV
+          "prefix=sccache-v2-win-${{ matrix.part }}-$env:VCToolsVersion" >> $env:GITHUB_OUTPUT
 
-      - name: Restore sccache
-        id: sccache-restore
+      # PRs restore the newest main snapshot, then their own newest snapshot on
+      # top, so a PR pays only for what it changed since its previous push.
+      # The MSVC version in the key skips snapshots made by an older compiler.
+      - name: Restore sccache (main)
         uses: actions/cache/restore@v6
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-${{ hashFiles('pixi.lock') }}-${{ steps.sccache-config.outputs.date }}
-          # A lockfile bump still reuses objects whose headers did not change.
-          restore-keys: |
-            sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-${{ hashFiles('pixi.lock') }}-
-            sccache-v1-windows-2025-vs2026-msvc-ninja-x64-${{ matrix.build_type }}-
+          key: ${{ steps.sccache-config.outputs.prefix }}-main-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ${{ steps.sccache-config.outputs.prefix }}-main-
+
+      - name: Restore sccache (this PR)
+        if: env.SCCACHE_SNAPSHOT == 'pr'
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.SCCACHE_PR_DIR }}
+          key: ${{ steps.sccache-config.outputs.prefix }}-pr-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ${{ steps.sccache-config.outputs.prefix }}-pr-
+
+      # Record main's objects before this PR's join them, so the PR snapshot
+      # saved below holds only what this PR's runs compiled: tens of MB rather
+      # than a copy of main's whole cache.
+      - name: Merge PR snapshot
+        if: env.SCCACHE_SNAPSHOT == 'pr'
+        run: |
+          New-Item -ItemType Directory -Force $env:SCCACHE_DIR | Out-Null
+          # WriteAllLines also writes the file when main had no snapshot.
+          [System.IO.File]::WriteAllLines((Join-Path $env:RUNNER_TEMP 'sccache-main.txt'),
+            [string[]]@(Get-ChildItem -Recurse -File -Name $env:SCCACHE_DIR))
+          if (Test-Path $env:SCCACHE_PR_DIR) {
+            robocopy $env:SCCACHE_PR_DIR $env:SCCACHE_DIR /E /MOVE /NFL /NDL /NJH /NJS /NP
+            if ($LASTEXITCODE -ge 8) { exit $LASTEXITCODE }
+          }
+          exit 0
 
       - name: Native Windows hook smoke
+        if: matrix.part == 'cpp'
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
@@ -138,27 +186,106 @@ jobs:
       - name: Configure DART
         # Default MSVC Release flags omit /Zi, so sccache can cache objects.
         # Disable pybind11's implicit /GL and /LTCG as well as DART's tuning.
-        run: pixi run config -- -DDART_MSVC_DEFAULT_OPTIONS=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
+        # Unity builds compile each target's sources in batches of 8. MSVC
+        # spends ~70% of each compile parsing headers such as dart/dart.hpp,
+        # and batching shares that work: same-VM benchmark, dartpy objects
+        # 4.5x and core objects 2.4x faster.
+        run: >-
+          pixi run config --
+          -DDART_MSVC_DEFAULT_OPTIONS=ON
+          -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
+          -DCMAKE_UNITY_BUILD=ON
 
       - name: Check Lint
+        if: matrix.part == 'cpp'
         run: pixi run check-lint
 
-      - name: Test DART and dartpy
-        run: pixi run test-all
+      - name: Build and test
+        id: build
+        run: pixi run ${{ matrix.task }}
 
-      # Cache keys are immutable: publish at most one successful main snapshot
-      # per UTC day/configuration, including after a prefix-only restore.
+      # Print the final counters, then stop the server: after a cancellation
+      # its in-flight compiles would keep writing to the cache while it is
+      # archived, and tar fails with "file changed as we read it".
+      - name: Stop sccache
+        if: >-
+          always()
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
+        run: |
+          pixi run sccache --stop-server
+          Get-Process sccache -ErrorAction SilentlyContinue | Stop-Process -Force
+          exit 0
+
+      # Keys are immutable, so each run saves under its own key. Failed and
+      # cancelled runs save too: every object sccache stored is valid, and the
+      # next push resumes from them. A run stopped before the build started has
+      # nothing new and would only replace the newest snapshot with an older one.
+      - name: Collect PR snapshot
+        if: >-
+          always() && env.SCCACHE_SNAPSHOT == 'pr'
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
+        run: |
+          $main = [System.Collections.Generic.HashSet[string]]::new(
+            [string[]]@(Get-Content (Join-Path $env:RUNNER_TEMP 'sccache-main.txt')),
+            [System.StringComparer]::OrdinalIgnoreCase)
+          New-Item -ItemType Directory -Force $env:SCCACHE_PR_DIR | Out-Null
+          foreach ($file in Get-ChildItem -Recurse -File -Name $env:SCCACHE_DIR) {
+            if ($main.Contains($file)) { continue }
+            $target = Join-Path $env:SCCACHE_PR_DIR $file
+            New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
+            Copy-Item (Join-Path $env:SCCACHE_DIR $file) $target
+          }
+
       - name: Save sccache
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.sccache-restore.outputs.cache-hit != 'true'
+        if: >-
+          always() && env.SCCACHE_SNAPSHOT != ''
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
         uses: actions/cache/save@v6
         with:
-          path: ${{ env.SCCACHE_DIR }}
-          key: ${{ steps.sccache-restore.outputs.cache-primary-key }}
-
-      - name: Sccache statistics
-        if: always()
-        run: pixi run sccache --show-stats
+          path: ${{ env.SCCACHE_SNAPSHOT == 'pr' && env.SCCACHE_PR_DIR || env.SCCACHE_DIR }}
+          key: ${{ steps.sccache-config.outputs.prefix }}-${{ env.SCCACHE_SNAPSHOT }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       # Linux CI covers install. On Windows, pixi run install configures a
       # separate install build tree after test-all has already passed, which
       # duplicates work and can keep the protected-branch runner busy for hours.
+
+  # The required check. It also prunes superseded compiler-cache snapshots so
+  # saving on every run stays within the repository's 10 GB Actions cache. It
+  # runs no repository code.
+  windows-release:
+    name: windows-Release
+    needs: build
+    # Always run: a job skipped by its condition reports success, which would
+    # let a cancelled run satisfy the required check.
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Prune superseded compiler caches
+        # Fork PRs save no snapshots, and their token cannot delete caches.
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # In this ref, keep the newest run's snapshot per part and MSVC
+          # version. Keys end in <run_id>-<run_attempt>, and run IDs follow push
+          # order, so an older main run that finishes last cannot evict a newer
+          # commit's snapshot.
+          gh cache list --ref "$GITHUB_REF" --key sccache-v2-win- --limit 100 --json id,key \
+            --jq 'group_by(.key | split("-")[3:5]) | map(sort_by(.key | split("-")[6:8] | map(tonumber)) | .[:-1][]) | .[].id' |
+            xargs -r -n1 gh cache delete
+          # Main pushes also drop PR snapshots idle for a day, such as those
+          # of closed PRs.
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            # $ENV is jq's, not the shell's.
+            # shellcheck disable=SC2016
+            CUTOFF=$(date -u -d '1 day ago' +%FT%TZ) gh cache list --key sccache-v2-win- --limit 1000 --json id,ref,lastAccessedAt \
+              --jq '.[] | select((.ref | startswith("refs/pull/")) and .lastAccessedAt < $ENV.CUTOFF) | .id' |
+              xargs -r -n1 gh cache delete
+          fi
+
+      - name: Check build result
+        run: test "${{ needs.build.result }}" = success

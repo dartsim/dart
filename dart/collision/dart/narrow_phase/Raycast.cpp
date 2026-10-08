@@ -42,7 +42,7 @@ namespace dart::collision::native {
 
 namespace {
 
-constexpr double kEpsilon = 1e-10;
+constexpr double kRaycastEpsilon = 1e-10;
 
 double solveQuadratic(double a, double b, double c, double& t0, double& t1)
 {
@@ -54,7 +54,7 @@ double solveQuadratic(double a, double b, double c, double& t0, double& t1)
   double sqrtDisc = std::sqrt(discriminant);
   double q = (b > 0.0) ? -0.5 * (b + sqrtDisc) : -0.5 * (b - sqrtDisc);
 
-  if (std::abs(q) < kEpsilon) {
+  if (std::abs(q) < kRaycastEpsilon) {
     const double invTwoA = 0.5 / a;
     t0 = (-b - sqrtDisc) * invTwoA;
     t1 = (-b + sqrtDisc) * invTwoA;
@@ -96,7 +96,7 @@ bool raycastSphere(
   }
 
   double t = t0;
-  if (c < 0.0 && t <= kEpsilon) {
+  if (c < 0.0 && t <= kRaycastEpsilon) {
     t = t1;
   }
   if (t < 0.0) {
@@ -140,15 +140,15 @@ bool raycastBox(
   double boundaryDirectionDot = std::numeric_limits<double>::max();
   bool originInsideOrOn = true;
   for (int i = 0; i < 3; ++i) {
-    if (localOrigin[i] < -halfExtents[i] - kEpsilon
-        || localOrigin[i] > halfExtents[i] + kEpsilon) {
+    if (localOrigin[i] < -halfExtents[i] - kRaycastEpsilon
+        || localOrigin[i] > halfExtents[i] + kRaycastEpsilon) {
       originInsideOrOn = false;
       break;
     }
 
     const double distanceToMin = std::abs(localOrigin[i] + halfExtents[i]);
     const double distanceToMax = std::abs(localOrigin[i] - halfExtents[i]);
-    if (distanceToMin <= kEpsilon) {
+    if (distanceToMin <= kRaycastEpsilon) {
       const double directionDot = -localDir[i];
       if (directionDot < boundaryDirectionDot) {
         boundaryAxis = i;
@@ -156,7 +156,7 @@ bool raycastBox(
         boundaryDirectionDot = directionDot;
       }
     }
-    if (distanceToMax <= kEpsilon) {
+    if (distanceToMax <= kRaycastEpsilon) {
       const double directionDot = localDir[i];
       if (directionDot < boundaryDirectionDot) {
         boundaryAxis = i;
@@ -186,7 +186,7 @@ bool raycastBox(
   int hitSignMax = 1;
 
   for (int i = 0; i < 3; ++i) {
-    if (std::abs(localDir[i]) < kEpsilon) {
+    if (std::abs(localDir[i]) < kRaycastEpsilon) {
       if (localOrigin[i] < -halfExtents[i] || localOrigin[i] > halfExtents[i]) {
         return false;
       }
@@ -274,31 +274,31 @@ bool raycastCapsule(
   const double radiusSquared = radius * radius;
   const double radialSquared = ox * ox + oy * oy;
   const bool originStrictlyInsideCylinder
-      = radialSquared < radiusSquared - kEpsilon
-        && localOrigin.z() >= -halfHeight - kEpsilon
-        && localOrigin.z() <= halfHeight + kEpsilon;
+      = radialSquared < radiusSquared - kRaycastEpsilon
+        && localOrigin.z() >= -halfHeight - kRaycastEpsilon
+        && localOrigin.z() <= halfHeight + kRaycastEpsilon;
   const bool originStrictlyInsideTopCap
       = (localOrigin - Eigen::Vector3d(0, 0, halfHeight)).squaredNorm()
-        < radiusSquared - kEpsilon;
+        < radiusSquared - kRaycastEpsilon;
   const bool originStrictlyInsideBottomCap
       = (localOrigin - Eigen::Vector3d(0, 0, -halfHeight)).squaredNorm()
-        < radiusSquared - kEpsilon;
+        < radiusSquared - kRaycastEpsilon;
   const bool originStrictlyInsideCapsule = originStrictlyInsideCylinder
                                            || originStrictlyInsideTopCap
                                            || originStrictlyInsideBottomCap;
 
   auto acceptsHitDistance = [originStrictlyInsideCapsule](double& t) {
-    if (std::abs(t) <= kEpsilon) {
+    if (std::abs(t) <= kRaycastEpsilon) {
       t = 0.0;
     }
-    return originStrictlyInsideCapsule ? t > kEpsilon : t >= 0.0;
+    return originStrictlyInsideCapsule ? t > kRaycastEpsilon : t >= 0.0;
   };
 
   double a = dx * dx + dy * dy;
   double b = 2.0 * (ox * dx + oy * dy);
   double c = radialSquared - radiusSquared;
 
-  if (a > kEpsilon) {
+  if (a > kRaycastEpsilon) {
     double t0, t1;
     if (solveQuadratic(a, b, c, t0, t1) >= 0.0) {
       for (double t : {t0, t1}) {
@@ -307,7 +307,7 @@ bool raycastCapsule(
           if (z >= -halfHeight && z <= halfHeight) {
             Eigen::Vector3d hitPoint = localOrigin + t * localDir;
             Eigen::Vector3d normal(hitPoint.x(), hitPoint.y(), 0.0);
-            if (normal.squaredNorm() > kEpsilon) {
+            if (normal.squaredNorm() > kRaycastEpsilon) {
               bestT = t;
               bestNormal = normal.normalized();
             }
@@ -328,7 +328,7 @@ bool raycastCapsule(
       for (double t : {t0, t1}) {
         if (acceptsHitDistance(t) && t < bestT) {
           Eigen::Vector3d hitPoint = localOrigin + t * localDir;
-          if (capSign * hitPoint.z() < halfHeight - kEpsilon) {
+          if (capSign * hitPoint.z() < halfHeight - kRaycastEpsilon) {
             continue;
           }
 
@@ -383,7 +383,7 @@ bool raycastCylinder(
   double b = 2.0 * (ox * dx + oy * dy);
   double c = ox * ox + oy * oy - radius * radius;
 
-  if (a > kEpsilon) {
+  if (a > kRaycastEpsilon) {
     double t0, t1;
     if (solveQuadratic(a, b, c, t0, t1) >= 0.0) {
       for (double t : {t0, t1}) {
@@ -392,7 +392,7 @@ bool raycastCylinder(
           if (z >= -halfHeight && z <= halfHeight) {
             Eigen::Vector3d hitPoint = localOrigin + t * localDir;
             Eigen::Vector3d normal(hitPoint.x(), hitPoint.y(), 0.0);
-            if (normal.squaredNorm() > kEpsilon) {
+            if (normal.squaredNorm() > kRaycastEpsilon) {
               bestT = t;
               bestNormal = normal.normalized();
             }
@@ -402,7 +402,7 @@ bool raycastCylinder(
     }
   }
 
-  if (std::abs(localDir.z()) > kEpsilon) {
+  if (std::abs(localDir.z()) > kRaycastEpsilon) {
     for (double capZ : {-halfHeight, halfHeight}) {
       double t = (capZ - localOrigin.z()) / localDir.z();
       if (t >= 0.0 && t < bestT) {
@@ -447,11 +447,11 @@ bool raycastPlane(
 
   double denom = worldNormal.dot(ray.direction);
 
-  if (option.backfaceCulling && denom > -kEpsilon) {
+  if (option.backfaceCulling && denom > -kRaycastEpsilon) {
     return false;
   }
 
-  if (std::abs(denom) < kEpsilon) {
+  if (std::abs(denom) < kRaycastEpsilon) {
     return false;
   }
 
@@ -701,9 +701,9 @@ bool raycastConvex(
     const double signedDistance = worldNormal.dot(ray.origin - worldPoint);
     const double directionDot = worldNormal.dot(ray.direction);
 
-    if (signedDistance > kEpsilon) {
+    if (signedDistance > kRaycastEpsilon) {
       startsInside = false;
-      if (directionDot >= -kEpsilon) {
+      if (directionDot >= -kRaycastEpsilon) {
         return false;
       }
 
@@ -712,15 +712,15 @@ bool raycastConvex(
         entryDistance = candidateEntry;
         entryNormal = worldNormal;
       }
-    } else if (std::abs(signedDistance) <= kEpsilon) {
+    } else if (std::abs(signedDistance) <= kRaycastEpsilon) {
       originOnBoundary = true;
       boundaryNormal = worldNormal;
-      if (directionDot > kEpsilon) {
+      if (directionDot > kRaycastEpsilon) {
         exitDistance = 0.0;
         exitNormal = worldNormal;
         hasExitWithinMaxDistance = true;
       }
-    } else if (directionDot > kEpsilon) {
+    } else if (directionDot > kRaycastEpsilon) {
       const double candidateExit = -signedDistance / directionDot;
       if (candidateExit >= 0.0 && candidateExit <= exitDistance) {
         exitDistance = candidateExit;
@@ -729,7 +729,7 @@ bool raycastConvex(
       }
     }
 
-    if (entryDistance - exitDistance > kEpsilon) {
+    if (entryDistance - exitDistance > kRaycastEpsilon) {
       return false;
     }
   }
