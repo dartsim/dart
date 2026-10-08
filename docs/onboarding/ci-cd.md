@@ -30,6 +30,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `perf.yml`                        | Performance regression       | PR to main touching perf paths  | Advisory `Perf A/B` counts and guards, with a head smoke run for harness/workflow-only changes |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main`; an update removes their `maintainer-approved` label |
 | `maintainer_approval.yml`         | Maintainer Approval          | PR pushes, retargets, reopens   | Removes the `maintainer-approved` label when a PR changes after approval; pushes of conflict-free base merges keep it ([PR Lifecycle](ai-tools.md#pr-lifecycle)) |
+| `pr_text.yml`                     | PR Text                      | PR opens, edits, pushes         | Fails when the PR title or body contains a private or machine-specific path (`scripts/check_local_paths.py`) |
 
 To acknowledge an intended regression, add `Perf-Regression-Rationale: <rows>: <reason>` (or `Rebaseline-Rationale: <rows>: <reason>` for changed guards, including a signed Ir percentage when above +1%) to the PR body and run `gh run rerun <run-id> --failed`; editing the body alone does not trigger a run.
 
@@ -66,10 +67,10 @@ gate does.
 
 ## Nightly
 
-`nightly.yml` runs every workflow in the index except the performance
-dashboard, lockfile refresh, and maintainer approval against `main` each night
-at 08:17 UTC, including the nightly-only jobs. It is scheduled directly on
-`main`, the default branch, with no dispatcher. Run it on demand with
+`nightly.yml` runs every workflow in the index except the performance dashboard,
+lockfile refresh, maintainer approval, and PR text against `main` each night at
+08:17 UTC, including the nightly-only jobs. It is scheduled directly on `main`,
+the default branch, with no dispatcher. Run it on demand with
 `gh workflow run nightly.yml --ref main`.
 
 Its `report` job (`scripts/nightly_ci_report.py`) groups jobs by their

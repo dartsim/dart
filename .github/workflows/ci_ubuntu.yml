@@ -55,6 +55,9 @@ jobs:
 
       # check-ai-commands and check-ai-infra run in the Release job's
       # check-lint; test-ai-infra also exercises the agent scenarios.
+      - name: Check tracked files for local paths
+        run: pixi run python scripts/check_local_paths.py --all-tracked
+
       - name: Test AI infrastructure
         run: pixi run test-ai-infra
 
