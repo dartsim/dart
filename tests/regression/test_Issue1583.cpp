@@ -30,12 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/sdf/sdf.hpp>
+#include <dart/utils/sdf/SdfParser.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/simulation/World.hpp>
 
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/Joint.hpp>
+
+#include <Eigen/Core>
 #include <TestHelpers.hpp>
 #include <gtest/gtest.h>
+
+#include <cmath>
+#include <cstddef>
 
 //========================================================================================
 TEST(Issue1583, ServoJointWithPositionLimits)

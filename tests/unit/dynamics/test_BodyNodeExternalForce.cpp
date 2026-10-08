@@ -30,8 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/Skeleton.hpp>
 
+#include <dart/math/MathTypes.hpp>
+
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <limits>

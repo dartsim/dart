@@ -35,11 +35,13 @@
 #include <dart/common/FrameAllocator.hpp>
 #include <dart/common/MemoryAllocator.hpp>
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <array>
 #include <limits>
 #include <memory>
+#include <new>
 #include <type_traits>
 #include <vector>
 

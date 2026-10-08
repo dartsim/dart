@@ -30,11 +30,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/urdf/urdf.hpp>
+#include <dart/utils/urdf/DartLoader.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/simulation/World.hpp>
+
+#include <dart/dynamics/Inertia.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <dart/common/Macros.hpp>
+#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/Uri.hpp>
 
 #include <pybind11/pybind11.h>
+
+#include <string>
 
 namespace py = pybind11;
 

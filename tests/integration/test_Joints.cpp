@@ -31,34 +31,49 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/common/Memory.hpp"
+#include "dart/config.hpp"
 #include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/MimicMotorConstraint.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
+#include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/MimicDofProperties.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/TranslationalJoint.hpp"
 #include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
+#include "dart/math/Constants.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
+#include "dart/math/MathTypes.hpp"
+#include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <array>
 #include <iostream>
+#include <utility>
+#include <vector>
 
 #include <cmath>
+#include <cstddef>
 
 using namespace dart;
 using namespace dart::math;

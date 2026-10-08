@@ -32,12 +32,34 @@
 
 #include "GTestUtils.hpp"
 #include "TestHelpers.hpp"
-#include "dart/dart.hpp"
-#include "dart/utils/utils.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/MultiSphereConvexHullShape.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/math/Constants.hpp"
+#include "dart/math/MathTypes.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/utils/SkelParser.hpp"
+#include "dart/utils/XmlHelpers.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <memory>
+#include <string>
 
 using namespace dart;
 using namespace math;

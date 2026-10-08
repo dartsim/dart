@@ -30,10 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/simulation/World.hpp>
 
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/Inertia.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/WeldJoint.hpp>
+
+#include <dart/math/MathTypes.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <TestHelpers.hpp>
 #include <gtest/gtest.h>
+
+#include <memory>
+#include <string>
+
+#include <cstddef>
 
 dart::dynamics::SkeletonPtr create_box(
     const Eigen::Vector3d& dims,

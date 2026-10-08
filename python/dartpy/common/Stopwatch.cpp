@@ -30,10 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/common/Stopwatch.hpp>
 
 #include <pybind11/iostream.h>
 #include <pybind11/pybind11.h>
+
+#include <iostream>
 
 namespace py = pybind11;
 

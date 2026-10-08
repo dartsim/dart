@@ -33,10 +33,43 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/BallJoint.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/DegreeOfFreedom.hpp>
+#include <dart/dynamics/EulerJoint.hpp>
+#include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/HierarchicalIK.hpp>
+#include <dart/dynamics/JacobianNode.hpp>
+#include <dart/dynamics/Joint.hpp>
+#include <dart/dynamics/MetaSkeleton.hpp>
+#include <dart/dynamics/PlanarJoint.hpp>
+#include <dart/dynamics/PointMass.hpp>
+#include <dart/dynamics/PrismaticJoint.hpp>
+#include <dart/dynamics/RevoluteJoint.hpp>
+#include <dart/dynamics/ScrewJoint.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/SoftBodyNode.hpp>
+#include <dart/dynamics/TranslationalJoint.hpp>
+#include <dart/dynamics/TranslationalJoint2D.hpp>
+#include <dart/dynamics/UniversalJoint.hpp>
+#include <dart/dynamics/WeldJoint.hpp>
 
+#include <dart/math/MathTypes.hpp>
+
+#include <dart/common/LockableReference.hpp>
+
+#include <Eigen/Core>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <cstddef>
 
 namespace py = pybind11;
 

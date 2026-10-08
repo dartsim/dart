@@ -31,17 +31,45 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/common/Uri.hpp"
 #include "dart/common/sub_ptr.hpp"
+#include "dart/config.hpp"
+#include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/Branch.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/Linkage.hpp"
+#include "dart/dynamics/Node.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/ScrewJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SmartPointer.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
 #include "dart/math/Geometry.hpp"
+#include "dart/math/MathTypes.hpp"
+#include "dart/math/Random.hpp"
 #include "dart/simulation/World.hpp"
 #include "dart/utils/SkelParser.hpp"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <cstddef>
 
 using namespace dart;
 using namespace math;

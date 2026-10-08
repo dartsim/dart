@@ -37,10 +37,31 @@
 
 #include "GazeboPreset.hpp"
 
+#include <dart/simulation/World.hpp>
+
+#include <dart/constraint/ConstraintSolver.hpp>
+
+#include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/Contact.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/CylinderShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/Inertia.hpp>
+#include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/WeldJoint.hpp>
 
+#include <dart/math/Constants.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 #include <tinyxml2.h>
 
@@ -49,9 +70,11 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <cmath>
+#include <cstddef>
 
 using namespace dart;
 using namespace dart::examples::contact_benchmark;
