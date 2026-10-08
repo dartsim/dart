@@ -2142,7 +2142,7 @@ template <class ConfigSpaceT>
 void GenericJoint<ConfigSpaceT>::updateInvProjArtInertiaImplicitDynamic(
     const Eigen::Matrix6d& artInertia, double timeStep)
 {
-  if constexpr (NumDofs > 4) {
+  if constexpr (NumDofs > 6) { // throwaway: disables the X1 fast path
     // Smaller joints use a closed-form inverse. For positive inertia, adding
     // zero cannot change a projected diagonal entry from -0.0 to +0.0.
     // Keep the full path if the squared timestep overflows (infinity * zero).
