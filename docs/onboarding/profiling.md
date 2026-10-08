@@ -1,4 +1,4 @@
-# Profiling DART 6.20
+# Profiling DART 6.20 
 
 Use profiling to find the hot path before changing performance-sensitive code,
 then use the benchmark and determinism gates to prove the change. Profiling
