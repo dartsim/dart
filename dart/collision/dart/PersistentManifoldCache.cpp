@@ -375,6 +375,38 @@ std::size_t PairKeyHash::operator()(const PairKey& key) const
 }
 
 //==============================================================================
+PersistentManifoldCache::PersistentManifoldCache(
+    const PersistentManifoldCache& other)
+  : mManifolds(other.mManifolds, mNodePool.get())
+{
+}
+
+//==============================================================================
+PersistentManifoldCache::PersistentManifoldCache(
+    PersistentManifoldCache&& other)
+  : mManifolds(std::move(other.mManifolds), mNodePool.get())
+{
+}
+
+//==============================================================================
+PersistentManifoldCache& PersistentManifoldCache::operator=(
+    const PersistentManifoldCache& other)
+{
+  if (this != &other)
+    mManifolds = other.mManifolds;
+  return *this;
+}
+
+//==============================================================================
+PersistentManifoldCache& PersistentManifoldCache::operator=(
+    PersistentManifoldCache&& other)
+{
+  if (this != &other)
+    mManifolds = std::move(other.mManifolds);
+  return *this;
+}
+
+//==============================================================================
 PersistentManifold& PersistentManifoldCache::getOrCreate(
     std::size_t idA, std::size_t idB)
 {

@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <map>
 #include <memory>
 #include <numeric>
 #include <random>
@@ -748,6 +749,121 @@ TEST(AabbTreeBroadPhase, RandomizedExactEquivalenceWithBruteForce)
     brute.updateRange(updateIds, updateAabbs);
     expectExactBruteForceMatch(tree, brute);
   }
+}
+
+TEST(AabbTreeBroadPhase, RandomizedPairSequenceAndInvariantsAfterEveryOperation)
+{
+  std::mt19937 rng(20261007u);
+  std::uniform_real_distribution<double> centerDist(-3.0, 3.0);
+  std::uniform_real_distribution<double> extentDist(0.15, 1.75);
+  std::uniform_int_distribution<std::size_t> objectDist(0u, 95u);
+  std::uniform_int_distribution<int> operationDist(0, 4);
+
+  AabbTreeBroadPhase tree(0.25);
+  std::map<std::size_t, Aabb> objects;
+  std::vector<std::size_t> ids(96u);
+  for (std::size_t i = 0; i < ids.size(); ++i) {
+    ids[i] = i * 7u;
+  }
+  std::shuffle(ids.begin(), ids.end(), rng);
+
+  auto randomAabb = [&]() {
+    const Eigen::Vector3d center(
+        centerDist(rng), centerDist(rng), centerDist(rng));
+    const Eigen::Vector3d halfExtents(
+        extentDist(rng), extentDist(rng), extentDist(rng));
+    return makeAabb(center, halfExtents);
+  };
+  auto check = [&]() {
+    // validate() also verifies each subtree's maximum object id, which the
+    // ordered walk uses to prune candidates at or below the query id.
+    ASSERT_TRUE(tree.validate());
+    ASSERT_EQ(tree.size(), objects.size());
+    std::vector<BroadPhasePair> expected;
+    for (auto first = objects.begin(); first != objects.end(); ++first) {
+      auto second = first;
+      for (++second; second != objects.end(); ++second) {
+        if (first->second.overlaps(second->second)) {
+          expected.emplace_back(first->first, second->first);
+        }
+      }
+    }
+    EXPECT_EQ(collectVisitedPairs(tree), expected);
+    EXPECT_EQ(tree.queryPairs(), expected);
+  };
+
+  check();
+  for (const std::size_t id : ids) {
+    SCOPED_TRACE(::testing::Message() << "insert id " << id);
+    const Aabb aabb = randomAabb();
+    tree.add(id, aabb);
+    objects[id] = aabb;
+    check();
+  }
+
+  // Force both update paths regardless of which operations the RNG chooses.
+  for (const std::size_t id : ids) {
+    SCOPED_TRACE(::testing::Message() << "contained/escaping update id " << id);
+    Aabb& aabb = objects.at(id);
+    const Eigen::Vector3d inset = (aabb.max - aabb.min) * 0.05;
+    aabb = Aabb(aabb.min + inset, aabb.max - inset);
+    tree.update(id, aabb);
+    check();
+    const Eigen::Vector3d shift(16.0, 0.0, 0.0);
+    aabb = Aabb(aabb.min + shift, aabb.max + shift);
+    tree.update(id, aabb);
+    check();
+  }
+
+  for (int step = 0; step < 800; ++step) {
+    const std::size_t id = ids[objectDist(rng)];
+    const int operation = operationDist(rng);
+    SCOPED_TRACE(
+        ::testing::Message()
+        << "step " << step << " operation " << operation << " id " << id);
+    auto object = objects.find(id);
+    if (operation == 0) {
+      const Aabb aabb = randomAabb();
+      tree.add(id, aabb); // Existing ids exercise add-as-update.
+      objects[id] = aabb;
+    } else if (operation == 1) {
+      tree.remove(id); // Missing ids exercise no-op removal.
+      objects.erase(id);
+    } else {
+      Aabb aabb = randomAabb();
+      if (object != objects.end() && operation == 2) {
+        const Eigen::Vector3d inset
+            = (object->second.max - object->second.min) * 0.05;
+        aabb = Aabb(object->second.min + inset, object->second.max - inset);
+      } else if (object != objects.end() && operation == 3) {
+        const Eigen::Vector3d shift(-16.0, 0.0, 0.0);
+        aabb = Aabb(object->second.min + shift, object->second.max + shift);
+      }
+      tree.update(id, aabb); // Missing ids exercise no-op updates.
+      if (object != objects.end()) {
+        object->second = aabb;
+      }
+    }
+    check();
+  }
+
+  // Remove maxima in descending order, then reuse every id, including zero.
+  while (!objects.empty()) {
+    const std::size_t id = objects.rbegin()->first;
+    SCOPED_TRACE(::testing::Message() << "remove maximum id " << id);
+    tree.remove(id);
+    objects.erase(id);
+    check();
+  }
+  for (const std::size_t id : ids) {
+    const Aabb aabb = randomAabb();
+    tree.add(id, aabb);
+    objects[id] = aabb;
+    check();
+  }
+  tree.clear();
+  objects.clear();
+  check();
 }
 
 //==============================================================================
