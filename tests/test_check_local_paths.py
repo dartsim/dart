@@ -35,6 +35,9 @@ SPEC.loader.exec_module(checker)
         "/Users/example",
         "/mnt/c/Users/example",
         "cwd:/home/example/private.md",
+        "../home/example/private.md",
+        "../../Users/example/private.md",
+        r"\\corp-fs\Users\example\notes.md",
         "file:/home/example/private.md",
         "cwd:/root/example.md",
         "/mnt/c/Users/example/",
@@ -107,6 +110,8 @@ def test_public_examples_and_non_path_identifiers_pass(text, capsys):
     (
         "http://localhost:8000/scratchpad/example.md",
         "http://printer.local/scratchpad/example.md",
+        "http://127.1/scratchpad/example.md",
+        "http://0x7f.1/scratchpad/example.md",
         "http://api.localhost/scratchpad/example.md",
         "http://LOCALHOST/scratchpad/example.md",
         "http://localhost./scratchpad/example.md",
@@ -513,7 +518,13 @@ def test_staged_binary_cannot_hide_embedded_path(repo):
 
 
 @pytest.mark.parametrize(
-    "encoding,bom", [("utf-16-le", b"\xff\xfe"), ("utf-16-be", b"\xfe\xff")]
+    "encoding,bom",
+    [
+        ("utf-16-le", b"\xff\xfe"),
+        ("utf-16-be", b"\xfe\xff"),
+        ("utf-32-le", b"\xff\xfe\x00\x00"),
+        ("utf-32-be", b"\x00\x00\xfe\xff"),
+    ],
 )
 @pytest.mark.parametrize("mode", ["--files", "--all-tracked", "--staged"])
 def test_utf16_files_cannot_hide_paths(repo, encoding, bom, mode):
@@ -534,7 +545,13 @@ def test_utf16_files_cannot_hide_paths(repo, encoding, bom, mode):
 
 
 @pytest.mark.parametrize(
-    "encoding,bom", [("utf-16-le", b"\xff\xfe"), ("utf-16-be", b"\xfe\xff")]
+    "encoding,bom",
+    [
+        ("utf-16-le", b"\xff\xfe"),
+        ("utf-16-be", b"\xfe\xff"),
+        ("utf-32-le", b"\xff\xfe\x00\x00"),
+        ("utf-32-be", b"\x00\x00\xfe\xff"),
+    ],
 )
 def test_staged_utf16_scans_whole_blob_including_unchanged_lines(repo, encoding, bom):
     path = repo / "notes.txt"

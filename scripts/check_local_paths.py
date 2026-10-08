@@ -45,10 +45,11 @@ PATTERNS = tuple(
         # A host or path character before /home or /Users is not a home, and a
         # drive letter (C:/Users) is left to the Windows pattern below; other
         # labels such as cwd: or file: still precede a reported home.
-        r"(?<![\w.-])(?<!\b[A-Za-z]:)/(?:home|Users|(?:mnt/)?[A-Za-z]/Users)/[^\s/\\`\"'<>\[\](){};,|]+",
+        r"(?:(?<=\.\.)|(?<![\w.-])(?<!\b[A-Za-z]:))/(?:home|Users|(?:mnt/)?[A-Za-z]/Users)/[^\s/\\`\"'<>\[\](){};,|]+",
         # Unix root homes are case-sensitive; PDF /Root entries are not paths.
         r"(?<![\w.-])(?<!\b[A-Za-z]:)/(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|])",
         r"(?<![\w.:-])[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>\[\](){};,|]+",
+        r"\\\\[^\\/\s]+\\Users\\[^\\/\r\n`\"'<>\[\](){};,|]+",
     )
 )
 ALLOWLIST = {
@@ -59,7 +60,19 @@ ALLOWLIST = {
     ".gitignore": re.compile(r"\.sisyphus[/]"),
 }
 HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+UTF32_BOMS = (b"\xff\xfe\x00\x00", b"\x00\x00\xfe\xff")
 UTF16_BOMS = (b"\xff\xfe", b"\xfe\xff")
+
+
+def decode(data: bytes) -> str:
+    # UTF-32LE starts with the UTF-16LE mark, so test the longer marks first.
+    if data.startswith(UTF32_BOMS):
+        return data.decode("utf-32", errors="replace")
+    if data.startswith(UTF16_BOMS):
+        return data.decode("utf-16", errors="replace")
+    return data.decode("utf-8", errors="replace")
+
+
 SCISSORS = re.compile(r"\S -{24} >8 -{24}")
 
 
@@ -68,6 +81,9 @@ def is_public_host(host: str | None) -> bool:
     try:
         return ipaddress.ip_address(host).is_global
     except ValueError:
+        # Shorthand numeric hosts such as 127.1 still reach local addresses.
+        if re.fullmatch(r"[0-9.]+|0x[0-9a-f.x]+", host, re.IGNORECASE):
+            return False
         # Special-use DNS suffixes identify local machines and private networks.
         return "." in host and not host.endswith(
             (".localhost", ".local", ".home.arpa", ".internal", ".lan", ".localdomain")
@@ -152,8 +168,8 @@ def scan_staged(root: Path) -> bool:
         if metadata.split()[1] == b"160000":
             continue
         data = git_output(root, "show", f":{filename}")
-        if data.startswith(UTF16_BOMS):
-            found |= scan_text(data.decode("utf-16", errors="replace"), filename)
+        if data.startswith(UTF32_BOMS + UTF16_BOMS):
+            found |= scan_text(decode(data), filename)
             continue
         diff = git_output(
             root,
@@ -189,8 +205,7 @@ def scan_file(path: Path, filename: str) -> bool:
         return found
     # A tracked symlink publishes its target, not the external file's contents.
     data = os.fsencode(os.readlink(path)) if path.is_symlink() else path.read_bytes()
-    encoding = "utf-16" if data.startswith(UTF16_BOMS) else "utf-8"
-    return scan_text(data.decode(encoding, errors="replace"), filename) | found
+    return scan_text(decode(data), filename) | found
 
 
 def main() -> int:
