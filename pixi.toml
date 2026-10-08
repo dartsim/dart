@@ -188,7 +188,7 @@ check-lint = { depends-on = [
 # Fast compatibility alias retained for older local workflows.
 check-lint-quick = { depends-on = ["check-agent-hook"] }
 
-# One-time setup: install the pre-commit git hook that runs check-agent-hook.
+# One-time setup: install the staged-file and commit-message git hooks.
 install-hooks = { cmd = "python scripts/install_git_hooks.py" }
 
 sync-ai-commands = { cmd = "python scripts/sync_ai_commands.py" }

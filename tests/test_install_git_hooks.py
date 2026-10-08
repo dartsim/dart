@@ -53,8 +53,8 @@ def _install(repo: Path, env: dict[str, str]) -> subprocess.CompletedProcess:
     )
 
 
-def _hook(repo: Path) -> Path:
-    return repo / ".git" / "hooks" / "pre-commit"
+def _hook(repo: Path, name: str = "pre-commit") -> Path:
+    return repo / ".git" / "hooks" / name
 
 
 def _write_gate(
@@ -66,12 +66,13 @@ def _write_gate(
     gate.write_text(body)
 
 
-def test_install_writes_executable_hook_and_is_idempotent(tmp_path):
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+def test_install_writes_executable_hook_and_is_idempotent(tmp_path, name):
     repo, env = _init_repo(tmp_path)
 
     first = _install(repo, env)
     assert first.returncode == 0, first.stderr
-    hook = _hook(repo)
+    hook = _hook(repo, name)
     assert hook.exists()
     assert os.access(hook, os.X_OK)
     assert "DART-MANAGED-HOOK" in hook.read_text()
@@ -82,10 +83,11 @@ def test_install_writes_executable_hook_and_is_idempotent(tmp_path):
     assert hashlib.sha256(hook.read_bytes()).hexdigest() == digest
 
 
-def test_installed_hook_honors_skip_and_dry_run(tmp_path):
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+def test_installed_hook_honors_skip_and_dry_run(tmp_path, name):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0
-    hook = _hook(repo)
+    hook = _hook(repo, name)
 
     skipped = subprocess.run(
         [str(hook)],
@@ -105,7 +107,8 @@ def test_installed_hook_honors_skip_and_dry_run(tmp_path):
         text=True,
     )
     assert dry.returncode == 0
-    assert "would run selected Python: scripts/check_agent_hook.py" in dry.stderr
+    script = "check_agent_hook.py" if name == "pre-commit" else "check_local_paths.py"
+    assert f"would run selected Python: scripts/{script}" in dry.stderr
 
 
 @pytest.mark.parametrize(
@@ -155,10 +158,14 @@ def test_installed_hook_fallback_accepts_crlf_but_rejects_trailing_space(
     assert run.returncode == expected
 
 
-def test_installed_hook_prefers_repository_pixi_python(tmp_path):
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+def test_installed_hook_prefers_repository_pixi_python(tmp_path, name):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0
     _write_gate(repo)
+    (repo / "scripts" / "check_local_paths.py").write_text(
+        "print('direct-message-gate', file=__import__('sys').stderr)\n"
+    )
     pixi_python = repo / ".pixi" / "envs" / "default" / "bin" / "python"
     pixi_python.parent.mkdir(parents=True)
     pixi_python.symlink_to(sys.executable)
@@ -169,7 +176,7 @@ def test_installed_hook_prefers_repository_pixi_python(tmp_path):
     incompatible.chmod(0o755)
 
     run = subprocess.run(
-        [str(_hook(repo))],
+        [str(_hook(repo, name)), "COMMIT_EDITMSG"],
         cwd=repo,
         env={**env, "PATH": f"{bin_dir}{os.pathsep}{env['PATH']}"},
         capture_output=True,
@@ -177,20 +184,22 @@ def test_installed_hook_prefers_repository_pixi_python(tmp_path):
     )
 
     assert run.returncode == 0
-    assert "direct-agent-gate" in run.stderr
+    marker = "direct-agent-gate" if name == "pre-commit" else "direct-message-gate"
+    assert marker in run.stderr
     assert str(pixi_python) in run.stderr
 
 
-def test_foreign_hook_is_preserved_and_chained(tmp_path):
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+def test_foreign_hook_is_preserved_and_chained(tmp_path, name):
     repo, env = _init_repo(tmp_path)
-    hook = _hook(repo)
+    hook = _hook(repo, name)
     hook.parent.mkdir(parents=True, exist_ok=True)
-    hook.write_text("#!/bin/sh\nexit 7\n")
+    hook.write_text('#!/bin/sh\n[ "$1" = "message with spaces" ] || exit 9\nexit 7\n')
     hook.chmod(0o755)
 
     result = _install(repo, env)
     assert result.returncode == 0, result.stderr
-    local = hook.parent / "pre-commit.local"
+    local = hook.parent / f"{name}.local"
     assert local.exists()
     assert "exit 7" in local.read_text()
     assert os.access(local, os.X_OK)
@@ -198,7 +207,7 @@ def test_foreign_hook_is_preserved_and_chained(tmp_path):
     # The chained foreign hook still runs and its failure propagates before
     # the staged safety gate is reached (so no dry-run flag is needed here).
     run = subprocess.run(
-        [str(hook)],
+        [str(hook), "message with spaces"],
         cwd=repo,
         env=env,
         capture_output=True,
@@ -207,24 +216,28 @@ def test_foreign_hook_is_preserved_and_chained(tmp_path):
     assert run.returncode == 7
 
 
-def test_disabled_foreign_hook_stays_disabled_when_preserved(tmp_path):
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+def test_disabled_foreign_hook_stays_disabled_when_preserved(tmp_path, name):
     repo, env = _init_repo(tmp_path)
-    hook = _hook(repo)
+    hook = _hook(repo, name)
     hook.parent.mkdir(parents=True, exist_ok=True)
     hook.write_text("#!/bin/sh\nexit 7\n")
     hook.chmod(0o644)
 
     result = _install(repo, env)
     assert result.returncode == 0, result.stderr
-    local = hook.parent / "pre-commit.local"
+    local = hook.parent / f"{name}.local"
     assert local.exists()
     assert "exit 7" in local.read_text()
     assert not os.access(local, os.X_OK)
 
     _write_gate(repo)
+    (repo / "scripts" / "check_local_paths.py").write_text(
+        "print('direct-agent-gate', file=__import__('sys').stderr)\n"
+    )
 
     run = subprocess.run(
-        [str(hook)],
+        [str(hook), "COMMIT_EDITMSG"],
         cwd=repo,
         env=env,
         capture_output=True,
@@ -235,12 +248,13 @@ def test_disabled_foreign_hook_stays_disabled_when_preserved(tmp_path):
     assert "direct-agent-gate" in run.stderr
 
 
-def test_refuses_when_foreign_hook_and_local_both_exist(tmp_path):
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+def test_refuses_when_foreign_hook_and_local_both_exist(tmp_path, name):
     repo, env = _init_repo(tmp_path)
-    hook = _hook(repo)
+    hook = _hook(repo, name)
     hook.parent.mkdir(parents=True, exist_ok=True)
     hook.write_text("#!/bin/sh\nexit 0\n")
-    (hook.parent / "pre-commit.local").write_text("#!/bin/sh\nexit 0\n")
+    (hook.parent / f"{name}.local").write_text("#!/bin/sh\nexit 0\n")
 
     result = _install(repo, env)
     assert result.returncode != 0
@@ -260,6 +274,60 @@ def test_refuses_when_core_hookspath_is_set(tmp_path):
     assert result.returncode != 0
     assert "core.hooksPath" in result.stderr
     assert not (repo / ".githooks" / "pre-commit").exists()
+    assert not (repo / ".githooks" / "commit-msg").exists()
+
+
+def test_commit_msg_hook_blocks_private_message_in_real_commit(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts" / "check_local_paths.py").write_bytes(
+        (ROOT / "scripts" / "check_local_paths.py").read_bytes()
+    )
+    assert _install(repo, env).returncode == 0
+    message = repo / "message with spaces.txt"
+    private_path = ".sisyphus" + "/plans/private.md"
+    message.write_text(f"{private_path}\n")
+    direct = subprocess.run(
+        [str(_hook(repo, "commit-msg")), message.name],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert direct.returncode == 1, direct.stderr
+    assert f"1: {private_path}" in direct.stdout
+    command = [
+        "git",
+        "-c",
+        "user.name=DART Test",
+        "-c",
+        "user.email=test@example.com",
+        "commit",
+        "--allow-empty",
+        "-q",
+        "-F",
+        message.name,
+    ]
+    blocked = subprocess.run(command, cwd=repo, env=env, capture_output=True, text=True)
+    assert blocked.returncode == 1, blocked.stderr
+    assert f"1: {private_path}" in blocked.stderr
+    message.write_text("Public summary\n")
+    allowed = subprocess.run(command, cwd=repo, env=env, capture_output=True, text=True)
+    assert allowed.returncode == 0, allowed.stderr
+
+
+def test_commit_msg_hook_reports_unavailable_checker(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    result = subprocess.run(
+        [str(_hook(repo, "commit-msg")), "COMMIT_EDITMSG"],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "local-path gate unavailable" in result.stderr
 
 
 def _run_guard(

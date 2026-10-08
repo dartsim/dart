@@ -74,8 +74,9 @@
     Docker dev/wheel images.
 
   * Harden the release-branch contributor workflow: `pixi run install-hooks`
-    installs a pre-commit hook running a fast staged safety gate (with tracked
-    Codex and Claude commit guards as fallbacks), `check-ai-commands` runs inside
+    installs pre-commit and commit-msg hooks running staged-file and
+    commit-message safety gates (with tracked Codex and Claude commit guards as
+    fallbacks), `check-ai-commands` runs inside
     `pixi run check-lint` so the AI workflow adapters are CI-enforced, the
     workflow commands carry the structural metadata validated on `main`, and
     the `dart-changelog` routine is available for backport changelog

@@ -22,20 +22,23 @@ Before every commit, run:
 pixi run lint
 ```
 
-Install the fast staged safety gate once per clone:
+Install the commit safety gates once per clone:
 
 ```bash
 pixi run install-hooks
 ```
 
 It installs a `pre-commit` git hook that runs the fast staged command below and
-blocks the commit on staged whitespace or relevant AI-infrastructure drift:
+blocks the commit on staged whitespace, local file names or text, or relevant
+AI-infrastructure drift. A managed `commit-msg` hook also scans the commit
+message for local paths, ignoring default Git comments and verbose diffs:
 
 ```bash
 pixi run python scripts/check_agent_hook.py --profile staged
 ```
 
-An existing `pre-commit` hook is preserved as `pre-commit.local` and chained.
+Existing hooks are preserved as `pre-commit.local` or `commit-msg.local` and
+chained.
 Emergency escape hatch:
 `DART_SKIP_HOOKS=1 git commit ...`. Codex and Claude sessions also use tracked
 PreToolUse hooks for agent-issued `git commit` calls before `install-hooks` has

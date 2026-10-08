@@ -5,10 +5,11 @@ The ``auto`` profile consumes a Codex/Claude PreToolUse JSON payload and
 delegates commit detection to the release branch's well-tested POSIX guard.
 On native Windows, ``scripts/pretool_guard_bridge.py`` locates Git Bash and
 forwards the unchanged payload to that same guard. The ``staged`` profile is
-the installed git-hook gate: it always runs
+the installed pre-commit gate: it always runs
 ``git diff --cached --check`` and the local-path scan. It runs AI-infrastructure
 checks only when their tracked inputs are staged. Neither profile configures,
-builds, or uses network.
+builds, or uses network. The separate installed commit-msg hook scans commit
+messages with ``scripts/check_local_paths.py --commit-msg-file``.
 """
 
 from __future__ import annotations

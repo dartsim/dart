@@ -12,6 +12,7 @@ from pathlib import Path
 
 # Keep the publication policy and its narrowly scoped exceptions here.
 PATH_TAIL = r"[^\s`\"'<>\[\](){};,]*"
+PUBLIC_URL = re.compile(r"https?://[^\s`\"'<>\[\](){}]+", re.IGNORECASE)
 PATTERNS = tuple(
     re.compile(pattern + PATH_TAIL, re.IGNORECASE)
     for pattern in (
@@ -22,8 +23,10 @@ PATTERNS = tuple(
         r"(?<![\w.-])scratchpad[/\\]",
         r"(?<![\w.-])task_\d+(?:[/\\]|-[\w-]+)",
         # A host, path or drive character before /home or /Users is not a home.
-        r"(?<![\w.:-])/(?:home|Users)/[^\s/`\"'<>|]+/",
-        r"[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>]+[/\\]+",
+        r"(?<![\w.:-])/(?:home|Users)/[^\s/\\`\"'<>\[\](){};,|]+",
+        # Unix root homes are case-sensitive; PDF /Root entries are not paths.
+        r"(?<![\w.:-])/(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|])",
+        r"(?<![\w.:-])[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>\[\](){};,|]+",
     )
 )
 ALLOWLIST = {
@@ -34,10 +37,11 @@ ALLOWLIST = {
 HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
 
-def scan_line(line: str, number: int, filename: str | None = None) -> bool:
+def scan_line(line: str, number: int | str, filename: str | None = None) -> bool:
     allowed = ALLOWLIST.get(filename)
     if allowed and allowed.fullmatch(line):
         return False
+    line = PUBLIC_URL.sub(" ", line)
     matches = sorted(
         {match.group() for pattern in PATTERNS for match in pattern.finditer(line)}
     )
@@ -51,6 +55,16 @@ def scan_text(text: str, filename: str | None = None) -> bool:
     found = False
     for number, line in enumerate(text.splitlines(), 1):
         found |= scan_line(line, number, filename)
+    return found
+
+
+def scan_commit_message(text: str) -> bool:
+    found = False
+    for number, line in enumerate(text.splitlines(), 1):
+        if line == "# ------------------------ >8 ------------------------":
+            break
+        if not line.startswith("#"):
+            found |= scan_line(line, number)
     return found
 
 
@@ -75,6 +89,7 @@ def scan_staged(root: Path) -> bool:
         if not encoded:
             continue
         filename = os.fsdecode(encoded)
+        found |= scan_line(filename, filename)
         diff = git_output(
             root,
             "diff",
@@ -103,27 +118,39 @@ def scan_staged(root: Path) -> bool:
 
 
 def scan_file(path: Path, filename: str) -> bool:
+    found = scan_line(filename, filename)
     # A tracked symlink publishes its target, not the external file's contents.
     data = os.fsencode(os.readlink(path)) if path.is_symlink() else path.read_bytes()
-    return scan_text(data.decode("utf-8", errors="replace"), filename)
+    return scan_text(data.decode("utf-8", errors="replace"), filename) | found
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--staged", action="store_true", help="scan added index lines")
+    mode.add_argument(
+        "--staged", action="store_true", help="scan index names and added lines"
+    )
     mode.add_argument("--files", nargs="+", type=Path)
     mode.add_argument("--all-tracked", action="store_true")
     mode.add_argument(
         "--text-file", type=Path, help="scan free text without exceptions"
     )
     mode.add_argument("--stdin", action="store_true", help="scan free text from stdin")
+    mode.add_argument(
+        "--commit-msg-file",
+        type=Path,
+        help="scan commit text before comments and scissors",
+    )
     args = parser.parse_args()
     try:
         if args.stdin:
             return int(scan_text(sys.stdin.read()))
         if args.text_file:
             return int(scan_text(args.text_file.read_text(encoding="utf-8")))
+        if args.commit_msg_file:
+            return int(
+                scan_commit_message(args.commit_msg_file.read_text(encoding="utf-8"))
+            )
         try:
             root = Path(
                 os.fsdecode(
