@@ -62,7 +62,7 @@ namespace {
   return 64.0 * std::numeric_limits<double>::epsilon() * boundaryScale;
 }
 
-void snapNearBoxBoundary(
+void snapSphereBoxNearBoundary(
     Eigen::Vector3d& localPoint,
     const Eigen::Vector3d& boxHalfExtents,
     double tolerance)
@@ -179,7 +179,7 @@ bool collideSphereTranslatedBox(
 
   Eigen::Vector3d insideLocalSphereCenter = localSphereCenter;
   if (sphereCenterInside) {
-    snapNearBoxBoundary(
+    snapSphereBoxNearBoundary(
         insideLocalSphereCenter, boxHalfExtents, boundaryTolerance);
   }
 
@@ -366,7 +366,7 @@ bool collideSphereBox(
 
   if (sphereCenterInside) {
     Eigen::Vector3d insideLocalSphereCenter = localSphereCenter;
-    snapNearBoxBoundary(
+    snapSphereBoxNearBoundary(
         insideLocalSphereCenter, boxHalfExtents, boundaryTolerance);
 
     double minDist = boxHalfExtents.x() - std::abs(insideLocalSphereCenter.x());

@@ -279,3 +279,5 @@ bool JointCoulombFrictionConstraint::isActive() const
 
 } // namespace constraint
 } // namespace dart
+
+#undef DART_CFM
