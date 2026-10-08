@@ -27,9 +27,9 @@ URI = re.compile(
     re.IGNORECASE,
 )
 # Covers private planning/harness dirs, agent scratch/project dirs, numbered
-# worktrees, Linux/macOS/root homes, Windows drive/WSL/Git Bash profiles and
-# local URLs. Other representations are out of scope unless contributors' tools
-# produce them; the PR Text workflow remains the backstop.
+# worktrees, hosted-agent workspaces, Linux/macOS/root homes, Windows
+# drive/WSL/Git Bash profiles and local URLs. Other representations are out of
+# scope unless contributors' tools produce them; PR Text remains the backstop.
 PATTERNS = tuple(
     re.compile(pattern + PATH_TAIL, re.IGNORECASE)
     for pattern in (
@@ -48,6 +48,10 @@ PATTERNS = tuple(
         # drive letter (C:/Users) is left to the Windows pattern below; other
         # labels such as cwd: or file: still precede a reported home.
         r"(?:(?<=\.\.)|(?<![\w.-])(?<!\b[A-Za-z]:))/(?:home|Users|(?:mnt/)?[A-Za-z]/Users)/[^\s/\\`\"'<>\[\](){};,|]+",
+        # A standalone Docker WORKDIR naming one workspace directory is generic;
+        # deeper paths and the same roots in published prose still identify work.
+        r"(?!(?<=^WORKDIR )/(?:workspace|workspaces)/[^/\s]+$)"
+        r"(?:(?<=\.\.)|(?<![\w.-])(?<!\b[A-Za-z]:))/(?:workspace|workspaces|__w)/[^\s/\\`\"'<>\[\](){};,|]+",
         # Unix root homes are case-sensitive; PDF /Root entries are not paths.
         r"(?<![\w.-])(?<!\b[A-Za-z]:)/(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|])",
         r"(?<![\w.:-])[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>\[\](){};,|]+",
@@ -76,15 +80,15 @@ def decode(data: bytes) -> str:
     return data.decode("utf-8", errors="replace")
 
 
-SCISSORS = re.compile(r"\S -{24} >8 -{24}")
+SCISSORS = re.compile(r"(?P<char>[^\r\n]+) -{24} >8 -{24}")
 # Git wraps its editor instruction ("... Lines starting" / "<c> with '<c>' will
 # be ignored, ..."); accept the wrapped second line and a one-line variant.
 GIT_TEMPLATE_INSTRUCTION = re.compile(
-    r"^(?P<char>\S) (?:Lines starting )?with '(?P=char)' will be ignored(?:,|$)",
+    r"^(?P<char>[^\r\n]+?) (?:Lines starting )?with '(?P=char)' will be ignored(?:,|$)",
     re.MULTILINE,
 )
 GIT_SCISSORS_INSTRUCTION = re.compile(
-    r"^(?P<char>\S) Do not modify or remove the line above\.", re.MULTILINE
+    r"^(?P<char>[^\r\n]+?) Do not modify or remove the line above\.", re.MULTILINE
 )
 
 
@@ -157,22 +161,21 @@ def scan_commit_message(text: str) -> bool:
     # a scissors-shaped line in supplied text is scanned like any other line.
     lines = text.splitlines()
     instruction = GIT_TEMPLATE_INSTRUCTION.search(text)
+    strip_comments = instruction is not None
     if instruction is None:
         for line, following in zip(lines, lines[1:]):
             candidate = GIT_SCISSORS_INSTRUCTION.match(following)
-            if (
-                SCISSORS.fullmatch(line)
-                and candidate
-                and line.startswith(candidate["char"])
-            ):
+            scissors = SCISSORS.fullmatch(line)
+            if scissors and candidate and scissors["char"] == candidate["char"]:
                 instruction = candidate
                 break
-    comment_char = instruction["char"] if instruction else None
+    comment_string = instruction["char"] if instruction else None
     found = False
     for number, line in enumerate(lines, 1):
-        if comment_char and line.startswith(comment_char) and SCISSORS.fullmatch(line):
+        scissors = SCISSORS.fullmatch(line)
+        if scissors and scissors["char"] == comment_string:
             break
-        if comment_char and line.startswith(comment_char):
+        if strip_comments and line.startswith(comment_string):
             continue
         found |= scan_line(line, number)
     return found

@@ -76,6 +76,7 @@ def test_install_writes_executable_hook_and_is_idempotent(tmp_path, name):
     assert hook.exists()
     assert os.access(hook, os.X_OK)
     assert "DART-MANAGED-HOOK" in hook.read_text()
+    assert "DART-MANAGED-HOOK v9 " in hook.read_text()
     digest = hashlib.sha256(hook.read_bytes()).hexdigest()
 
     second = _install(repo, env)
@@ -187,6 +188,47 @@ def test_installed_hook_prefers_repository_pixi_python(tmp_path, name):
     marker = "direct-agent-gate" if name == "pre-commit" else "direct-message-gate"
     assert marker in run.stderr
     assert str(pixi_python) in run.stderr
+
+
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+def test_hooks_select_python_for_their_own_requirements(tmp_path, name):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    # Model a Python 3.9+ interpreter without tomllib, using real gate execution.
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    python = bin_dir / "python3"
+    python.write_text(
+        '#!/bin/sh\n[ "$1" = "-c" ] && [ "$2" = "import tomllib" ] && exit 1\n'
+        f'exec "{sys.executable}" "$@"\n'
+    )
+    python.chmod(0o755)
+    (bin_dir / "git").symlink_to(
+        subprocess.run(
+            ["which", "git"], capture_output=True, text=True, check=True
+        ).stdout.strip()
+    )
+    private_path = "/home/" + "example/notes.md"
+    (repo / "COMMIT_EDITMSG").write_text(private_path + "\n")
+    run = subprocess.run(
+        [str(_hook(repo, name)), "COMMIT_EDITMSG"],
+        cwd=repo,
+        env={**env, "PATH": str(bin_dir), "DART_HOOK_PYTHON": str(python)},
+        capture_output=True,
+        text=True,
+    )
+    if name == "commit-msg":
+        assert run.returncode == 1, run.stderr
+        assert f"1: {private_path}" in run.stdout
+        assert "commit blocked" in run.stderr
+    else:
+        assert run.returncode == 0, run.stderr
+        assert "staged diff fallback" in run.stderr
+        assert "direct-agent-gate" not in run.stderr
 
 
 @pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
@@ -537,6 +579,78 @@ def test_guard_uninspectable_messages_require_managed_hooks(tmp_path, route, arg
     )
     assert returncode == 2, stderr
     assert "-m or -F <file>" in stderr
+
+
+@pytest.mark.parametrize(
+    "route", ["missing", "stale", "no-verify", "hooks-override", "managed"]
+)
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        "-a -m public",
+        "--all -m public",
+        "--al -m public",
+        "-qam public",
+        "-i -m public notes.md",
+        "--include -m public notes.md",
+        "--incl -m public notes.md",
+        "-o -m public notes.md",
+        "--only -m public notes.md",
+        "--on -m public notes.md",
+        "-m public notes.md",
+        "-m public -- notes.md",
+        "--pathspec-from-file=paths.txt -m public",
+        "--pathspec-from-file paths.txt -m public",
+    ],
+)
+def test_guard_blocks_commit_time_staging_without_managed_hooks(
+    tmp_path, route, arguments
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    if route != "missing":
+        assert _install(repo, env).returncode == 0
+    if route == "stale":
+        _hook(repo).write_text("#!/bin/sh\n# DART-MANAGED-HOOK v8\nexit 0\n")
+    prefix = (
+        "git -c core.hooksPath=unused-hooks commit"
+        if route == "hooks-override"
+        else "git commit"
+    )
+    if route == "no-verify":
+        prefix += " --no-verify"
+    returncode, stderr = _run_guard(repo, env, prefix + " " + arguments)
+    if route == "managed":
+        assert returncode == 0, stderr
+        assert stderr == ""
+    else:
+        assert returncode == 2, stderr
+        assert "Stage the files first" in stderr
+        assert "let the hooks run" in stderr
+        assert "direct-agent-gate" not in stderr
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        "-m '-a notes.md'",
+        "--message='--all notes.md'",
+        "-m public --author 'Example <example@example.com>'",
+        "-m public --date '2026-01-01 12:00:00 +0000'",
+        "-m public --cleanup strip",
+        "-qm public --no-gpg-sign",
+        "-m public --",
+        "-m public --trailer 'Note: notes.md'",
+    ],
+)
+def test_guard_does_not_treat_option_values_as_commit_time_staging(tmp_path, arguments):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    returncode, stderr = _run_guard(repo, env, "git commit --no-verify " + arguments)
+    assert returncode == 0, stderr
+    assert "direct-agent-gate" in stderr
 
 
 @pytest.mark.parametrize(

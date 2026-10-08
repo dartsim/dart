@@ -65,22 +65,28 @@ configures, builds, prompts, or uses the network. It does not replace
 
 The local-path checks catch accidental publication by contributors and agents.
 Local hooks and the agent guard are conveniences that explicit bypasses can
-skip. The PR Text workflow checks the title, body and every PR commit message
+skip. The PR Text workflow checks the title, body and every PR commit's messages,
+names and added lines
 using the base branch's checker as the backstop before merge.
+Git aliases expanding to commit, `git am`/applypatch imports, and alternate
+`GIT_INDEX_FILE` indexes are not inspected by the local hooks; PR Text's base
+checker is the backstop for every PR commit's messages, names and added lines.
 GitHub may omit this workflow for SHA-like branch names; those PRs rely on CI's
 tracked-file scan and review.
 
 `pixi run install-hooks` installs managed `pre-commit` and `commit-msg` hooks.
 The latter runs `scripts/check_local_paths.py --commit-msg-file "$1"`. When
-Git's editor template instruction is present, the scan skips every line
-starting with its single comment character. Template detection recognizes the
-"Lines starting with" instruction or the "Do not modify or remove the line
-above" instruction immediately after a scissors line with the same comment
-character. Without a template instruction, as with `-m` or `-F`, every line is
+Git's "Lines starting with" editor template instruction is present (including
+its wrapped form), the scan skips every line starting with its comment string.
+The "Do not modify or remove the line above" instruction immediately after a
+matching scissors line only enables stopping at scissors; comments above it
+are scanned because Git's scissors cleanup keeps them.
+Without a template instruction, as with `-m` or `-F`, every line is
 scanned, including hash-prefixed
 and status-shaped lines. Only template evidence makes matching scissors stop
 the scan and exclude a verbose diff; literal scissors lines remain ordinary
-text. Both hooks share interpreter selection, foreign-hook chaining,
+text. Each hook selects a compatible interpreter: Python 3.9+ for commit-msg,
+and Python with `tomllib` (3.11+) for pre-commit. Both share foreign-hook chaining,
 `DART_SKIP_HOOKS=1`, and `DART_HOOK_DRY_RUN=1`. Older worktrees without the
 checker or a compatible Python interpreter print a notice and skip the message
 scan; the pre-commit hook retains its staged whitespace fallback.
@@ -95,6 +101,10 @@ message parts without a comment exemption. It blocks stdin (`-F -`/`--file=-`),
 reused (`-C`/`-c`/`--reuse-message`/`--reedit-message`) and editor-only messages
 when managed hooks cannot enforce them, asking for `-m` or `-F <file>` or for
 the hooks to run.
+It also blocks commit-time staging (`-a`/`--all`, `-i`/`--include`,
+`-o`/`--only`, or pathspecs) when managed hooks will not run, asking to stage
+the files first or let the hooks run because the staged scan cannot see that
+content yet.
 
 ## Simulation Verification Route
 

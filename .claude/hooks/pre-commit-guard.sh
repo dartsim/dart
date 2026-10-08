@@ -5,6 +5,11 @@
 # fast staged-file gate for agent sessions even before `pixi run install-hooks` has
 # been run, so an agent cannot commit past the gate by forgetting it.
 #
+# Scope:
+#   Git aliases expanding to commit, git am/applypatch imports, and alternate
+#   GIT_INDEX_FILE indexes are not inspected by the local hooks; PR Text checks
+#   every PR commit's messages, names and added lines with the base checker.
+#
 # Contract:
 #   * reads the hook JSON from stdin, extracts .tool_input.command or .cmd
 #   * exits 0 fast for anything that is not a `git commit` invocation
@@ -19,6 +24,8 @@
 #         commit`), skip that invocation (not this gate's business)
 #       - otherwise require inspectable -m or -F <file> messages; block stdin,
 #         reused and editor-only messages when managed hooks cannot enforce them
+#       - block commit-time staging when managed hooks will not run; the staged
+#         scan cannot inspect files that the commit command has yet to stage
 #       - scan all supplied messages needing enforcement with
 #         `scripts/check_local_paths.py --stdin` and run the staged gate once:
 #         `scripts/check_agent_hook.py --profile staged`; on failure
@@ -593,13 +600,21 @@ def supplied_commit_message(args, cwd):
     messages = []
     supplied = False
     uninspectable = False
+    stages_content = False
     i = 0
     while i < len(args):
         token = args[i]
         i += 1
         if token == "--":
+            stages_content |= bool(args[i:])
             break
         option, sep, value = token.partition("=")
+        if (
+            token.startswith("--")
+            and any(name.startswith(option) for name in ("--all", "--include", "--only"))
+        ):
+            stages_content = True
+            continue
         if option in {
             "--message",
             "--file",
@@ -622,6 +637,8 @@ def supplied_commit_message(args, cwd):
         elif token.startswith("-") and not token.startswith("--"):
             option = ""
             for offset, short_option in enumerate(token[1:], 2):
+                if short_option in {"a", "i", "o"}:
+                    stages_content = True
                 if short_option in COMMIT_SHORT_OPTS_WITH_ATTACHED_ARG:
                     option = "-" + short_option
                     value = token[offset:]
@@ -634,7 +651,10 @@ def supplied_commit_message(args, cwd):
                         i += 1
                     break
         else:
+            stages_content |= not token.startswith("-") and bool(token.rstrip(")}"))
             continue
+        if option == "--pathspec-from-file":
+            stages_content = True
         if option in {"-m", "--message", "--trailer"}:
             messages.append(value)
             supplied |= option != "--trailer"
@@ -654,7 +674,7 @@ def supplied_commit_message(args, cwd):
                     uninspectable = True
             else:
                 uninspectable = True
-    return "\n\n".join(messages), supplied and not uninspectable
+    return "\n\n".join(messages), supplied and not uninspectable, stages_content
 
 
 def unwrap_wrapper(tokens, i, head):
@@ -953,6 +973,8 @@ def git_commits(text):
             break
         if not target_dir:
             target_dir = command_cwd or current_cwd
+        # Git aliases and git am/applypatch imports are out of scope; PR Text
+        # scans every resulting PR commit with the base checker.
         if i < len(tokens) and command_word(tokens[i]).rstrip(")}") == "commit":
             repository_options = []
             for option, value in repository_paths.items():
@@ -1037,7 +1059,7 @@ def managed_hooks_current(root):
             return False
         if (
             not os.access(path, os.X_OK)
-            or "DART-MANAGED-HOOK v8  (sentinel line: do not edit; the installer keys on it)"
+            or "DART-MANAGED-HOOK v9  (sentinel line: do not edit; the installer keys on it)"
             not in content
             or "if ! \"$python_cmd\" " + command + "; then" not in content
         ):
@@ -1056,10 +1078,12 @@ for bypassed, root, args, cwd in git_commits(cmd):
     )
     if not bypassed and managed_hooks_current(root):
         continue
-    message, inspectable = supplied_commit_message(args, cwd)
+    message, inspectable, stages_content = supplied_commit_message(args, cwd)
     if verdict == "skip":
         verdict, target_repo_root = "commit", root
-    if not inspectable:
+    if stages_content:
+        verdict = "commit-stages-content"
+    elif not inspectable and verdict != "commit-stages-content":
         verdict = "commit-uninspectable"
     messages.append(message)
 print(verdict)
@@ -1080,7 +1104,8 @@ verdict=$(printf '%s\n' "$guard_result" | sed -n '1p' | tr -d '\r')
 target_repo_root=$(printf '%s\n' "$guard_result" | sed -n '2p' | tr -d '\r')
 
 if [ "$verdict" != "commit" ] \
-    && [ "$verdict" != "commit-uninspectable" ]; then
+    && [ "$verdict" != "commit-uninspectable" ] \
+    && [ "$verdict" != "commit-stages-content" ]; then
     if [ "$verdict" = "skip" ]; then
         exit 0
     fi
@@ -1101,6 +1126,12 @@ fi
 if [ -n "${DART_HOOK_DRY_RUN:-}" ]; then
     echo "DART guard (dry run): would run 'python3 scripts/check_agent_hook.py --profile staged' in $repo_root" >&2
     exit 0
+fi
+
+if [ "$verdict" = "commit-stages-content" ]; then
+    echo "DART guard: commit-time staging cannot be inspected — commit blocked." >&2
+    echo "  Stage the files first, or let the hooks run." >&2
+    exit 2
 fi
 
 if [ "$verdict" = "commit-uninspectable" ]; then
@@ -1137,6 +1168,8 @@ if [ ! -f "$repo_root/scripts/check_agent_hook.py" ]; then
     exit 0
 fi
 
+# Alternate GIT_INDEX_FILE indexes are out of scope; PR Text scans the resulting
+# commits with the base checker instead of relying on this staged gate.
 if ! "$python_cmd" -c 'import tomllib' >/dev/null 2>&1; then
     echo "DART guard: compatible Python unavailable; running staged diff fallback" >&2
     if ! git -C "$repo_root" -c core.whitespace=cr-at-eol diff --cached --check >&2; then
