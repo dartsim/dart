@@ -174,7 +174,8 @@ void MetaSkeleton(py::module& m)
             DART_SUPPRESS_DEPRECATED_BEGIN
             return self->getJoints();
             DART_SUPPRESS_DEPRECATED_END
-          })
+          },
+          ::py::return_value_policy::reference_internal)
       .def(
           "getJoints",
           +[](const dart::dynamics::MetaSkeleton* self)
@@ -182,21 +183,24 @@ void MetaSkeleton(py::module& m)
             DART_SUPPRESS_DEPRECATED_BEGIN
             return self->getJoints();
             DART_SUPPRESS_DEPRECATED_END
-          })
+          },
+          ::py::return_value_policy::reference_internal)
       .def(
           "getJoints",
           +[](dart::dynamics::MetaSkeleton* self,
               const std::string& name) -> std::vector<dart::dynamics::Joint*> {
             return self->getJoints(name);
           },
-          ::py::arg("name"))
+          ::py::arg("name"),
+          ::py::return_value_policy::reference_internal)
       .def(
           "getJoints",
           +[](const dart::dynamics::MetaSkeleton* self, const std::string& name)
               -> std::vector<const dart::dynamics::Joint*> {
             return self->getJoints(name);
           },
-          ::py::arg("name"))
+          ::py::arg("name"),
+          ::py::return_value_policy::reference_internal)
       .def(
           "hasJoint",
           +[](const dart::dynamics::MetaSkeleton* self,

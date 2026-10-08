@@ -103,6 +103,19 @@ def test_kinematics():
     kinematics_tester(joint)
 
 
+def test_universal_joint_properties_axes():
+    skel = dart.dynamics.Skeleton()
+    joint, _ = skel.createUniversalJointAndBodyNodePair()
+    joint.setAxis1([0, 0, 1])
+    joint.setAxis2([0, 1, 0])
+
+    axes = joint.getUniversalJointProperties().mAxis
+    assert isinstance(axes, list)
+    assert len(axes) == 2
+    assert np.allclose(axes[0], joint.getAxis1())
+    assert np.allclose(axes[1], joint.getAxis2())
+
+
 def test_access_to_parent_child_transforms():
     skel = dart.dynamics.Skeleton()
     joint, _ = skel.createRevoluteJointAndBodyNodePair()
