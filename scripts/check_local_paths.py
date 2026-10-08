@@ -42,10 +42,12 @@ PATTERNS = tuple(
         # Generic home-relative paths such as ~/.config name no user or machine.
         # Private agent project dirs, scratchpads and numbered worktrees still
         # match above, so ~/ alone is not reported.
-        # A host, path or drive character before /home or /Users is not a home.
-        r"(?<![\w.:-])/(?:home|Users|(?:mnt/)?[A-Za-z]/Users)/[^\s/\\`\"'<>\[\](){};,|]+",
+        # A host or path character before /home or /Users is not a home, and a
+        # drive letter (C:/Users) is left to the Windows pattern below; other
+        # labels such as cwd: or file: still precede a reported home.
+        r"(?<![\w.-])(?<!\b[A-Za-z]:)/(?:home|Users|(?:mnt/)?[A-Za-z]/Users)/[^\s/\\`\"'<>\[\](){};,|]+",
         # Unix root homes are case-sensitive; PDF /Root entries are not paths.
-        r"(?<![\w.:-])/(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|])",
+        r"(?<![\w.-])(?<!\b[A-Za-z]:)/(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|])",
         r"(?<![\w.:-])[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>\[\](){};,|]+",
     )
 )
