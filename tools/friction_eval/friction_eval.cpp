@@ -38,6 +38,12 @@
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
+#if __has_include(<dart/constraint/NsgsFrictionSolver.hpp>)
+  #include <dart/constraint/NsgsFrictionSolver.hpp>
+  #define FRICTION_EVAL_NSGS 1
+#else
+  #define FRICTION_EVAL_NSGS 0
+#endif
 
 #include <Eigen/Dense>
 
@@ -506,6 +512,9 @@ struct Options
   bool va = false, perf = false;
   double erp = -1.0, cfm = -1.0, maxErv = -1.0;
   int threads = 1;
+  int sweeps = 100;
+  double tolerance = 1e-5;
+  bool boxForAnisotropic = true;
   long maxContacts = -1, maxContactsPerPair = -1;
   std::string dumpDir;
   std::set<int> dumpSteps;
@@ -517,11 +526,14 @@ struct Probes
 {
   std::shared_ptr<TightBoxSolver> tight;
   std::shared_ptr<VelocityAlignedHandler> va;
+#if FRICTION_EVAL_NSGS
+  std::shared_ptr<dart::constraint::NsgsFrictionSolver> nsgs;
+#endif
 };
 
 /// Backends that run on a bare LCP (also used by the L1 bank).
 std::shared_ptr<BoxedLcpSolver> makeBackend(
-    const std::string& name, Probes& probes)
+    const std::string& name, Probes& probes, const Options& options = Options())
 {
   if (name == "dantzig")
     return std::make_shared<DantzigBoxedLcpSolver>();
@@ -534,6 +546,22 @@ std::shared_ptr<BoxedLcpSolver> makeBackend(
     probes.tight = std::make_shared<TightBoxSolver>(name == "dzr");
     return probes.tight;
   }
+#if FRICTION_EVAL_NSGS
+  if (name == "nsgs-c" || name == "nsgs-a" || name == "nsgs-b") {
+    using Nsgs = dart::constraint::NsgsFrictionSolver;
+    Nsgs::Options nsgsOptions;
+    nsgsOptions.law = name == "nsgs-c"   ? Nsgs::Law::Coulomb
+                      : name == "nsgs-a" ? Nsgs::Law::Associated
+                                         : Nsgs::Law::Box;
+    nsgsOptions.boxForAnisotropic = options.boxForAnisotropic;
+    nsgsOptions.maxSweeps = options.sweeps;
+    nsgsOptions.tolerance = options.tolerance;
+    probes.nsgs = std::make_shared<Nsgs>(nsgsOptions);
+    return probes.nsgs;
+  }
+#else
+  (void)options;
+#endif
   return nullptr;
 }
 
@@ -566,7 +594,7 @@ void configure(
   deactivation.mEnabled = o.deactivation == "on";
   world.setDeactivationOptions(deactivation);
 
-  auto primary = makeBackend(o.solver, probes);
+  auto primary = makeBackend(o.solver, probes, o);
 #if FRICTION_EVAL_DART620
   if (o.solver == "mf-pgs") {
     primary = makeBackend("dantzig", probes);
@@ -891,6 +919,20 @@ CellResult runCell(const Options& o, const fe::Params& params)
     m["va_aligned_frac"]
         = static_cast<double>(probes.va->mAligned) / probes.va->mCalls;
   }
+#if FRICTION_EVAL_NSGS
+  if (probes.nsgs) {
+    const auto stats = probes.nsgs->getStats();
+    m["nsgs_solves"] = stats.numSolves;
+    m["nsgs_converged"] = stats.numConverged;
+    m["nsgs_capped"] = stats.numAcceptedAtCap;
+    m["nsgs_failed"] = stats.numFailed;
+    m["nsgs_contacts"] = stats.numContacts;
+    m["nsgs_box_contacts"] = stats.numBoxContacts;
+    m["nsgs_local_fallbacks"] = stats.numLocalFallbacks;
+    m["nsgs_sweeps"] = stats.numIterations;
+    m["nsgs_violation_max"] = stats.maxViolation;
+  }
+#endif
   return result;
 }
 
@@ -1346,6 +1388,25 @@ int selfTest()
             && boxResidual(unit, x.data(), 0.0).natural < 1e-6,
         name + " solves the unit contact");
   }
+#if FRICTION_EVAL_NSGS
+  const Problem oblique = contactProblem(
+      "oblique",
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1, 2, 2),
+      {{0.5, 0.5}});
+  for (const std::string name : {"nsgs-c", "nsgs-a", "nsgs-b"}) {
+    const auto x = solveWith(name, oblique);
+    const double normal
+        = name == "nsgs-a" ? (1.0 + std::sqrt(2.0)) / 1.25 : 1.0;
+    const double tangent
+        = name == "nsgs-b" ? 0.5 : 0.5 * normal / std::sqrt(2.0);
+    check(
+        std::abs(x[0] - normal) + std::abs(x[1] - tangent)
+                + std::abs(x[2] - tangent)
+            < 1e-6,
+        name + " selects its contact law");
+  }
+#endif
 
   // A non-finite solution is a failure, never a zero residual: PGS-tight
   // fails on a NaN warm start, and the wrapper counts a backend's NaN
@@ -1551,6 +1612,15 @@ int main(int argc, char** argv)
         o.split = value();
       } else if (arg == "--threads") {
         o.threads = std::stoi(value());
+      } else if (arg == "--sweeps") {
+        o.sweeps = std::stoi(value());
+      } else if (arg == "--tolerance") {
+        o.tolerance = std::stod(value());
+      } else if (arg == "--box-for-anisotropic") {
+        const auto setting = value();
+        if (setting != "on" && setting != "off")
+          throw std::runtime_error("--box-for-anisotropic needs on or off");
+        o.boxForAnisotropic = setting == "on";
       } else if (arg == "--deactivation") {
         o.deactivation = value();
       } else if (arg == "--max-contacts") {

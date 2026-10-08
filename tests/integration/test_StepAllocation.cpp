@@ -46,6 +46,7 @@
 #include "dart/constraint/BoxedLcpSolver.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
@@ -91,6 +92,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -2178,6 +2180,88 @@ TEST(StepAllocation, ConvexConvexSteadyState)
   EXPECT_GT(measurement.lastStepContacts, 0u);
   EXPECT_EQ(countResting(world), 0u);
   expectAllocationGateBudget("dart_convex_convex_steady", measurement);
+}
+
+TEST(StepAllocation, NsgsFirstPreparedStepOnFreshThread)
+{
+  class DerivedNsgs final : public dart::constraint::NsgsFrictionSolver
+  {
+  };
+
+  for (const bool subclass : {false, true}) {
+    SCOPED_TRACE(subclass ? "subclass" : "exact type");
+    StepAllocationMeasurement measurement;
+    dart::constraint::FrictionSolveStats stats;
+    // Counters are process-wide: exclude thread startup, setup and teardown.
+    std::thread worker([&] {
+      dart::test::CountingMemoryAllocator allocator;
+      auto world = createCountedStackedBoxesWorld(
+          "nsgs_first_prepared_step",
+          dart::collision::DARTCollisionDetector::create(),
+          allocator);
+      std::shared_ptr<dart::constraint::NsgsFrictionSolver> nsgs;
+      if (subclass)
+        nsgs = std::make_shared<DerivedNsgs>();
+      else
+        nsgs = std::make_shared<dart::constraint::NsgsFrictionSolver>();
+      auto* solver = static_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+          world->getConstraintSolver());
+      solver->setBoxedLcpSolver(nsgs);
+      world->enterSimulationMode();
+      nsgs->resetStats();
+      measurement = measureWorldStepsNow(world, allocator, 1);
+      stats = nsgs->getStats();
+    });
+    worker.join();
+    EXPECT_GT(measurement.lastStepContacts, 0u);
+    EXPECT_GT(stats.numContacts, 0u);
+    EXPECT_EQ(0u, stats.numFailed);
+    expectNoGlobalHeapAllocationsWhenReliable("nsgs_first_step", measurement);
+    EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+    if (!measurement.rawHeap.skipped) {
+      EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+    }
+  }
+}
+
+TEST(StepAllocation, NsgsFrictionLawsSteadyState)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  using Nsgs = dart::constraint::NsgsFrictionSolver;
+  for (const auto law :
+       {Nsgs::Law::Coulomb, Nsgs::Law::Associated, Nsgs::Law::Box}) {
+    SCOPED_TRACE(static_cast<int>(law));
+    auto world = createAllocationGateWorld(
+        dart::collision::DARTCollisionDetector::create(), false, 1u);
+    // Coupled two-body stacks exercise the dense assembly and contact scratch.
+    addGridBoxes(world, 2, 2);
+    Nsgs::Options options;
+    options.law = law;
+    auto nsgs = std::make_shared<Nsgs>(options);
+    auto* solver = static_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+        world->getConstraintSolver());
+    solver->setBoxedLcpSolver(nsgs);
+    ASSERT_EQ(1u, solver->getNumSimulationThreads());
+    for (int step = 0; step < 300; ++step)
+      world->step();
+
+    nsgs->resetStats();
+    dart::test::CountingMemoryAllocator allocator;
+    const auto measurement = measureWorldStepsNow(world, allocator, 100, 300);
+    const auto stats = nsgs->getStats();
+    reportMeasurement(
+        "dart_nsgs_law_" + std::to_string(static_cast<int>(law)), measurement);
+    EXPECT_GT(measurement.lastStepContacts, 0u);
+    EXPECT_EQ(0u, countResting(world));
+    EXPECT_GT(stats.numContacts, 0u);
+    EXPECT_GT(stats.numIterations, 0u);
+    EXPECT_EQ(0u, stats.numFailed);
+    EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap);
+    EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+    EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+  }
 }
 
 // Z2: explicit preparation covers both the freeze event and the first

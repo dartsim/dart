@@ -94,6 +94,19 @@ void BoxedLcpConstraintSolver(py::module& m)
             return self->getBoxedLcpSolver();
           })
       .def(
+          "setSecondaryBoxedLcpSolver",
+          +[](constraint::BoxedLcpConstraintSolver* self,
+              constraint::BoxedLcpSolverPtr lcpSolver) {
+            self->setSecondaryBoxedLcpSolver(lcpSolver);
+          },
+          ::py::arg("lcpSolver"))
+      .def(
+          "getSecondaryBoxedLcpSolver",
+          +[](const constraint::BoxedLcpConstraintSolver* self)
+              -> constraint::ConstBoxedLcpSolverPtr {
+            return self->getSecondaryBoxedLcpSolver();
+          })
+      .def(
           "setMatrixFreeContactSolverOptions",
           +[](constraint::BoxedLcpConstraintSolver* self,
               const MatrixFreeContactSolverOptions& options) {

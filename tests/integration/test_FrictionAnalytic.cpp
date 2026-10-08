@@ -31,12 +31,13 @@
  */
 
 // T0 of the friction-solver evaluation (tools/friction_eval): analytic scenes
-// for the built-in backends. The rows assert DART's box law on its fixed
-// tangent basis (the box predictions of the evaluation design), which
-// documents today's anisotropy, frozen Dantzig friction bounds and PGS creep.
+// for the built-in backends. Default rows document the box law, Coulomb rows
+// use the exact references, and the associated ablation checks its own law
+// certificate because gliding changes the sliding trajectories.
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "friction_scenes.hpp"
 
@@ -49,7 +50,10 @@ namespace {
 enum class Backend
 {
   Dantzig,
-  Pgs
+  Pgs,
+  NsgsCoulomb,
+  NsgsAssociated,
+  NsgsBox
 };
 
 class FrictionAnalytic : public ::testing::TestWithParam<Backend>
@@ -62,14 +66,39 @@ protected:
         scene.world->getConstraintSolver());
     // gz's detector when built, else FCL (always built).
     solver->setCollisionDetector(fe::makeDetector(HAVE_ODE ? "ode" : "fcl"));
+    std::shared_ptr<dart::constraint::NsgsFrictionSolver> nsgs;
     if (GetParam() == Backend::Pgs) {
       solver->setBoxedLcpSolver(
           std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
-    } else {
+    } else if (GetParam() == Backend::Dantzig) {
       solver->setBoxedLcpSolver(
           std::make_shared<dart::constraint::DantzigBoxedLcpSolver>());
+    } else {
+      using Nsgs = dart::constraint::NsgsFrictionSolver;
+      Nsgs::Options options;
+      options.law = GetParam() == Backend::NsgsCoulomb ? Nsgs::Law::Coulomb
+                    : associated()                     ? Nsgs::Law::Associated
+                                                       : Nsgs::Law::Box;
+      options.maxSweeps = 1000;
+      // Tight targets preserve the physical oracles; associated sliding uses
+      // the public target because redundant contacts converge slowly.
+      options.tolerance = associated() && id != "R1" ? 1e-5 : 1e-7;
+      nsgs = std::make_shared<Nsgs>(options);
+      solver->setBoxedLcpSolver(nsgs);
     }
     auto metrics = fe::run(scene);
+    if (nsgs) {
+      const auto stats = nsgs->getStats();
+      EXPECT_GT(stats.numSolves, 0u) << id;
+      EXPECT_EQ(stats.numFailed, 0u) << id;
+      EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap)
+          << id;
+      EXPECT_LE(stats.maxViolation, 1e-5) << id;
+      EXPECT_EQ(
+          stats.numBoxContacts,
+          GetParam() == Backend::NsgsBox ? stats.numContacts : 0u)
+          << id;
+    }
     // Maxima over steps skip NaN, so a non-finite state must fail here.
     for (std::size_t i = 0; i < scene.world->getNumSkeletons(); ++i) {
       const auto skeleton = scene.world->getSkeleton(i);
@@ -85,6 +114,17 @@ protected:
   {
     return GetParam() == Backend::Pgs;
   }
+
+  bool associated() const
+  {
+    return GetParam() == Backend::NsgsAssociated;
+  }
+
+  bool boxLaw() const
+  {
+    return GetParam() == Backend::Dantzig || pgs()
+           || GetParam() == Backend::NsgsBox;
+  }
 };
 
 } // namespace
@@ -96,7 +136,9 @@ TEST_P(FrictionAnalytic, InclineAlongTheBasis)
 {
   auto m = run("A1", {{"mu", 0.3}, {"T", 0.3}});
   EXPECT_EQ(m.at("slides"), 1.0);
-  EXPECT_NEAR(m.at("accel") / m.at("pred_exact_accel"), 1.0, 1e-3);
+  if (!associated()) {
+    EXPECT_NEAR(m.at("accel") / m.at("pred_exact_accel"), 1.0, 1e-3);
+  }
   m = run("A1", {{"mu", 0.6}, {"T", 0.3}});
   EXPECT_EQ(m.at("slides"), 0.0);
   EXPECT_LT(m.at("creep"), 1e-5);
@@ -109,10 +151,14 @@ TEST_P(FrictionAnalytic, IsotropyPush)
   auto m = run("A4", {{"phi", 45.0}, {"k", 1.2}, {"T", 0.2}});
   EXPECT_EQ(m.at("pred_exact_slides"), 1.0);
   EXPECT_EQ(m.at("pred_box_slides"), 0.0);
-  EXPECT_EQ(m.at("slides"), 0.0);
+  EXPECT_EQ(m.at("slides"), boxLaw() ? 0.0 : 1.0);
   m = run("A4", {{"phi", 30.0}, {"k", 1.5}, {"T", 0.2}});
-  EXPECT_NEAR(m.at("force_ratio"), m.at("pred_box_force_ratio"), 1e-3);
-  EXPECT_NEAR(m.at("vel_dir_err_deg"), m.at("pred_box_vel_dir_err_deg"), 0.1);
+  EXPECT_NEAR(
+      m.at("force_ratio"), boxLaw() ? m.at("pred_box_force_ratio") : 1.0, 1e-3);
+  EXPECT_NEAR(
+      m.at("vel_dir_err_deg"),
+      boxLaw() ? m.at("pred_box_vel_dir_err_deg") : 0.0,
+      0.1);
 }
 
 // A5: each axis decelerates on its own: the stop distance scales by
@@ -123,9 +169,19 @@ TEST_P(FrictionAnalytic, SlideToStop)
 {
   for (const double phi : {30.0, 45.0}) {
     auto m = run("A5", {{"phi", phi}, {"v0", 1.0}, {"T", 0.25}});
-    EXPECT_NEAR(m.at("dist_ratio"), m.at("pred_box_dist_ratio"), 1e-3) << phi;
-    EXPECT_NEAR(m.at("dir_deg"), m.at("pred_box_dir_deg"), 0.1) << phi;
-    EXPECT_LT(m.at("creep"), 1e-5) << phi;
+    if (!associated()) {
+      EXPECT_NEAR(
+          m.at("dist_ratio"),
+          boxLaw() ? m.at("pred_box_dist_ratio") : 1.0,
+          1e-3)
+          << phi;
+      EXPECT_LT(m.at("creep"), 1e-5) << phi;
+    }
+    EXPECT_NEAR(
+        m.at("dir_deg"),
+        boxLaw() ? m.at("pred_box_dir_deg") : m.at("pred_exact_dir_deg"),
+        0.1)
+        << phi;
   }
 }
 
@@ -136,8 +192,13 @@ TEST_P(FrictionAnalytic, BackspinSphere)
        {fe::Params{{"v0", 4.0}, {"w0", 0.0}, {"T", 0.3}},
         fe::Params{{"v0", 1.0}, {"w0", -20.0}, {"T", 0.4}}}) {
     auto m = run("A7", params);
-    EXPECT_LT(m.at("v_roll_err"), 1e-4);
-    EXPECT_NEAR(m.at("roll_step"), m.at("pred_roll_step"), 1.0);
+    if (associated()) {
+      // Associated sliding on the circular cone glides: u_n = mu |u_t|.
+      EXPECT_NEAR(m.at("initial_dilatancy"), 1.0, 1e-3);
+    } else {
+      EXPECT_LT(m.at("v_roll_err"), 1e-4);
+      EXPECT_NEAR(m.at("roll_step"), m.at("pred_roll_step"), 1.0);
+    }
   }
 }
 
@@ -149,7 +210,13 @@ TEST_P(FrictionAnalytic, Conveyor)
   for (const double beta : {0.0, 45.0}) {
     auto m = run("A10", {{"beta", beta}, {"mu", 0.6}, {"T", 0.2}});
     EXPECT_LT(m.at("v_err"), 1e-5) << beta;
-    EXPECT_NEAR(m.at("sync_time"), m.at("pred_box_sync_time"), 1.5e-3) << beta;
+    if (!associated()) {
+      EXPECT_NEAR(
+          m.at("sync_time"),
+          boxLaw() ? m.at("pred_box_sync_time") : m.at("pred_exact_sync_time"),
+          1.5e-3)
+          << beta;
+    }
   }
 }
 
@@ -168,11 +235,15 @@ TEST_P(FrictionAnalytic, SlipCompliance)
 TEST_P(FrictionAnalytic, PainleveBox)
 {
   auto m = run("C1", {{"mu", 0.4}, {"v0", 1.5}, {"T", 0.4}});
-  EXPECT_EQ(m.at("tipped"), 0.0);
-  EXPECT_NEAR(m.at("front_share"), m.at("pred_front_share"), 1e-3);
+  if (!associated()) {
+    EXPECT_EQ(m.at("tipped"), 0.0);
+    EXPECT_NEAR(m.at("front_share"), m.at("pred_front_share"), 1e-3);
+  }
   m = run("C1", {{"mu", 0.6}, {"v0", 1.5}, {"T", 0.4}});
   EXPECT_EQ(m.at("pred_tips"), 1.0);
-  EXPECT_EQ(m.at("tipped"), pgs() ? 1.0 : 0.0);
+  if (!associated()) {
+    EXPECT_EQ(m.at("tipped"), GetParam() == Backend::Dantzig ? 0.0 : 1.0);
+  }
 }
 
 // R1: a resting stack; PGS30 truncation lets it drift.
@@ -186,7 +257,24 @@ TEST_P(FrictionAnalytic, Stack)
 INSTANTIATE_TEST_SUITE_P(
     Backends,
     FrictionAnalytic,
-    ::testing::Values(Backend::Dantzig, Backend::Pgs),
+    ::testing::Values(
+        Backend::Dantzig,
+        Backend::Pgs,
+        Backend::NsgsCoulomb,
+        Backend::NsgsAssociated,
+        Backend::NsgsBox),
     [](const ::testing::TestParamInfo<Backend>& info) {
-      return info.param == Backend::Dantzig ? "Dantzig" : "Pgs";
+      switch (info.param) {
+        case Backend::Dantzig:
+          return "Dantzig";
+        case Backend::Pgs:
+          return "Pgs";
+        case Backend::NsgsCoulomb:
+          return "NsgsCoulomb";
+        case Backend::NsgsAssociated:
+          return "NsgsAssociated";
+        case Backend::NsgsBox:
+          return "NsgsBox";
+      }
+      return "Unknown";
     });
