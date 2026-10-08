@@ -468,9 +468,22 @@ jobs:
               --head "$PERF_HEAD" --smoke --perturb --jobs 4 \
               --output-dir "$PERF_OUTPUT/smoke" --json "$PERF_OUTPUT/smoke/perf.json" \
               --markdown "$PERF_OUTPUT/smoke/perf.md" || smoke_status=$?
-            [[ "$smoke_status" != 2 ]]
           fi
           export PERF_SMOKE_STATUS=$smoke_status
+          if [[ "$PERF_SMOKE" == true ]]; then
+            python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          from scripts.perf_regression import smoke_build_failure
+
+          smoke_build_failure(
+              Path(os.environ["PERF_OUTPUT"]) / "smoke",
+              os.environ["PERF_HEAD"],
+              int(os.environ["PERF_SMOKE_STATUS"]),
+          )
+          PY
+          fi
           # The head smoke must satisfy the parent's row set and qualification.
           cd "$RUNNER_TEMP/perf-harness"
           python3 - <<'PY'
@@ -723,6 +736,7 @@ jobs:
       - name: Checkout main publisher
         uses: actions/checkout@v7
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Download nightly measurements

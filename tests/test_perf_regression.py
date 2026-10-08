@@ -3662,6 +3662,113 @@ def test_measure_and_verdict_snippets_require_broken_build_kind(
             )
 
 
+@pytest.mark.parametrize(
+    "status,defect",
+    [
+        (2, None),
+        (2, "missing"),
+        (2, "infrastructure"),
+        (2, "wrong-head"),
+        (2, "invalid-json"),
+        (2, "missing-error"),
+        (0, "missing"),
+        (1, "missing"),
+    ],
+)
+def test_merge_smoke_build_failure_decision_distinguishes_infrastructure(
+    tmp_path, status, defect
+):
+    module = _load_runner()
+    failure = {"commit": "head", "error_kind": "build", "error": "compiler diagnostic"}
+    if defect == "infrastructure":
+        failure["error_kind"] = "infrastructure"
+    elif defect == "wrong-head":
+        failure["commit"] = "another-head"
+    elif defect == "missing-error":
+        failure.pop("error")
+    if defect == "invalid-json":
+        (tmp_path / "build-failure.json").write_text("{")
+    elif defect != "missing":
+        module.write_json(tmp_path / "build-failure.json", failure)
+    if defect is None:
+        assert module.smoke_build_failure(tmp_path, "head", status) == failure
+    elif status != 2:
+        assert module.smoke_build_failure(tmp_path, "head", status) is None
+    else:
+        with pytest.raises(ValueError):
+            module.smoke_build_failure(tmp_path, "head", status)
+
+
+@pytest.mark.parametrize("defect", [None, "missing", "infrastructure", "wrong-head"])
+def test_merge_smoke_exit_two_saves_build_failure_verdict(tmp_path, defect):
+    module = _load_runner()
+    output = tmp_path / "perf"
+    smoke = output / "smoke"
+    smoke.mkdir(parents=True)
+    harness = tmp_path / "perf-harness"
+    harness.mkdir()
+    record = _publication_fixture()
+    record["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    record["results"][0]["gate_reason"] = "qualified"
+    record["results"][0]["failures"] = []
+    record["results"][0]["delta"]["bytes"] = 0
+    module.write_json(output / "perf.json", record)
+    failure = {
+        "commit": record["run"]["commit"],
+        "error_kind": "build",
+        "error": "compiler diagnostic",
+    }
+    if defect == "infrastructure":
+        failure["error_kind"] = "infrastructure"
+    elif defect == "wrong-head":
+        failure["commit"] = "another-head"
+    if defect != "missing":
+        module.write_json(smoke / "build-failure.json", failure)
+    # Execute the shell guard and saved-verdict code with only measurement stubbed.
+    binary = tmp_path / "bin"
+    binary.mkdir()
+    pixi = binary / "pixi"
+    pixi.write_text(
+        '#!/bin/bash\nfor arg in "$@"; do if [[ "$arg" == --smoke ]]; then exit 2; fi; done\nexit 0\n'
+    )
+    pixi.chmod(0o755)
+    result = subprocess.run(
+        [
+            "bash",
+            "-e",
+            "-c",
+            _perf_step("record-measure", "Measure and apply the parent rules")["run"],
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env={
+            **os.environ,
+            "PATH": f"{binary}:{os.environ['PATH']}",
+            "PYTHONPATH": str(Path(__file__).resolve().parents[1]),
+            "RUNNER_TEMP": str(tmp_path),
+            "PERF_OUTPUT": str(output),
+            "PERF_MODE": "ab",
+            "PERF_SMOKE": "true",
+            "PERF_HEAD": record["run"]["commit"],
+            "PERF_BASE": record["run"]["parent"],
+        },
+        text=True,
+        capture_output=True,
+    )
+    saved = json.loads((output / "perf.json").read_text())
+    if defect is None:
+        assert result.returncode == 0, result.stderr
+        assert saved["verdict"]["status"] == "FAIL"
+        assert saved["verdict"]["failures"] == [
+            "head smoke build failed: compiler diagnostic"
+        ]
+        assert "head smoke build failed" in (output / "perf.md").read_text()
+        module.publication_record(output / "perf.json", "merge")
+    else:
+        assert result.returncode != 0
+        assert saved == record
+        assert not (output / "perf.md").exists()
+
+
 def _publication_fixture():
     metrics = {
         "ir_per_step": 100_000,
@@ -3852,6 +3959,101 @@ def test_publication_merge_idempotence_fingerprint_flags_and_chart_window(tmp_pa
     assert len(list((tmp_path / "performance/records/main/2026").glob("*.json"))) == 2
 
 
+def test_chart_out_of_order_publication_keeps_newest_points_and_latest_value(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    start = module.datetime.fromisoformat(record["run"]["time"])
+    # Fill the window backwards, then publish one more older measurement.
+    for minute in range(250, -1, -1):
+        record["run"].update(
+            commit=f"{minute:040x}",
+            time=(start + module.timedelta(minutes=minute)).isoformat(),
+        )
+        record["run"]["env"]["fingerprint"] = f"{minute:064x}"
+        record["results"][0]["head"]["ir_per_step"] = minute
+        module.chart_data(tmp_path, record)
+    data = json.loads(
+        (tmp_path / "performance/dart6-ir/data.js")
+        .read_text()
+        .removeprefix("window.BENCHMARK_DATA = ")
+    )
+    points = data["entries"]["DART 6 deterministic counts"]
+    assert [point["commit"]["id"] for point in points] == [
+        f"{minute:040x}" for minute in range(1, 251)
+    ]
+    assert data["lastUpdate"] == int(
+        (start + module.timedelta(minutes=250)).timestamp() * 1000
+    )
+    assert points[-1]["benches"][0]["value"] == 250
+    assert (
+        f"fingerprint changed: {249:064x} -> {250:064x}"
+        in points[-1]["benches"][0]["extra"]
+    )
+
+
+def test_nightly_out_of_order_publication_preserves_latest_table_and_records(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    source = tmp_path / "source"
+    source.mkdir()
+
+    def git(*arguments):
+        return subprocess.run(
+            ["git", "-C", str(source), *arguments],
+            check=True,
+            text=True,
+            capture_output=True,
+        ).stdout.strip()
+
+    git("init")
+    commits = []
+    for index in range(3):
+        git(
+            "-c",
+            "user.name=test",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "--allow-empty",
+            "-m",
+            str(index),
+        )
+        commits.append(git("rev-parse", "HEAD"))
+    monkeypatch.setattr(module, "ROOT", source)
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, "nightly")
+    record["run"]["commit"] = commits[1]
+    module.write_publication(tmp_path, record)
+    table_path = tmp_path / "performance/guards/main.md"
+    table = table_path.read_text()
+    # A manual dispatch of an ancestor can be measured later than main.
+    record["run"].update(commit=commits[0], time="2026-10-08T09:00:00+00:00")
+    assert "performance/guards/main.md" not in module.write_publication(
+        tmp_path, record
+    )
+    assert table_path.read_text() == table
+    # Commit ancestry also wins when the newer run measured earlier but finished later.
+    record["run"].update(commit=commits[2], time="2026-10-08T07:00:00+00:00")
+    module.write_publication(tmp_path, record)
+    table = table_path.read_text()
+    assert f"for `{commits[2]}`" in table
+    # An overlapping measurement of the same head must not replace its newer run.
+    record["run"]["time"] = "2026-10-08T06:00:00+00:00"
+    module.write_publication(tmp_path, record)
+    assert table_path.read_text() == table
+    records = list((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert len(records) == 4
+    saved = {p.name: p.read_bytes() for p in records}
+    assert module.write_publication(tmp_path, record) == []
+    assert {p.name: p.read_bytes() for p in records} == saved
+    assert (
+        _perf_step("nightly", "Checkout main publisher")["with"]["fetch-depth"] == "0"
+    )
+
+
 def test_nightly_latest_identity_dedup_and_guard_drift(tmp_path):
     module = _load_runner()
     fixture = _publication_fixture()
@@ -3884,7 +4086,7 @@ def test_nightly_latest_identity_dedup_and_guard_drift(tmp_path):
     record["run"]["env"]["fingerprint"] = "1" * 64
     module.write_publication(tmp_path, record)
     records = list((tmp_path / "performance/records/main/2026").glob("*.json"))
-    assert len(records) == 3  # A -> B -> A is two fingerprint changes.
+    assert len(records) == 4  # Every distinct nightly measurement stays immutable.
     assert not (tmp_path / "performance/dart6-ir").exists()
 
 

@@ -1767,6 +1767,50 @@ def publication_guard(tier: str) -> None:
         raise ValueError("publication is restricted to trusted main events")
 
 
+def smoke_build_failure(directory: Path, head: str, status: int) -> dict | None:
+    """Accept exit 2 only when smoke saved a build failure for the expected head."""
+    if status not in (0, 1, 2):
+        raise ValueError("head smoke infrastructure failure")
+    path = directory / "build-failure.json"
+    if path.exists():
+        broken = json.loads(path.read_text(encoding="utf-8"))
+        if (
+            not isinstance(broken, dict)
+            or broken.get("error_kind") != "build"
+            or broken.get("commit") != head
+            or not isinstance(broken.get("error"), str)
+            or not broken["error"]
+        ):
+            raise ValueError("head smoke infrastructure failure")
+        return broken
+    if status == 2:
+        raise ValueError("head smoke infrastructure failure")
+    return None
+
+
+def nightly_table_can_advance(record: dict, previous: str) -> bool:
+    """The table's full SHA and measurement time identify its published nightly."""
+    if not previous:
+        return True
+    identity = re.search(
+        r"^Generated at (\S+) for `([0-9a-f]{40})`\.$", previous, re.MULTILINE
+    )
+    if not identity:
+        raise ValueError("nightly guard table is missing its run identity")
+    measured, commit = identity.groups()
+    run = record["run"]
+    if commit == run["commit"]:
+        return datetime.fromisoformat(run["time"]) >= datetime.fromisoformat(measured)
+    ancestry = subprocess.run(
+        ["git", "-C", str(ROOT), "merge-base", "--is-ancestor", commit, run["commit"]],
+        text=True,
+        capture_output=True,
+    )
+    if ancestry.returncode not in (0, 1):
+        raise ValueError(f"cannot compare nightly commit ancestry: {ancestry.stderr}")
+    return ancestry.returncode == 0
+
+
 def guard_table(record: dict, previous: str = "") -> str:
     run = record["run"]
     lines = [
@@ -1869,8 +1913,6 @@ def chart_data(pages: Path, record: dict) -> None:
     run = record["run"]
     fingerprint = run["env"]["fingerprint"]
     extra = f"fingerprint: {fingerprint}"
-    if series and series[-1].get("fingerprint") != fingerprint:
-        extra += f"\nfingerprint changed: {series[-1].get('fingerprint', 'unknown')} -> {fingerprint}"
     if run.get("pr"):
         extra += f"\nPR #{run['pr']}"
     benches = []
@@ -1909,8 +1951,19 @@ def chart_data(pages: Path, record: dict) -> None:
             "benches": benches,
         }
     )
+    series.sort(key=lambda point: point["date"])
+    for previous, point in zip(series, series[1:]):
+        for bench in point["benches"]:
+            bench["extra"] = re.sub(
+                r"\nfingerprint changed: [^\n]*", "", bench.get("extra", "")
+            )
+            if previous.get("fingerprint") != point.get("fingerprint"):
+                bench["extra"] += (
+                    f"\nfingerprint changed: {previous.get('fingerprint', 'unknown')}"
+                    f" -> {point.get('fingerprint', 'unknown')}"
+                )
     data["entries"]["DART 6 deterministic counts"] = series[-250:]
-    data["lastUpdate"] = timestamp
+    data["lastUpdate"] = series[-1]["date"]
     # The stock page reads this as executable JS; JSON escaping closes script literals.
     data_path.write_text(
         prefix
@@ -1950,17 +2003,17 @@ def write_publication(pages: Path, record: dict) -> list[str]:
                     "accepted", []
                 ) and saved.get("verdict") == record.get("verdict")
             else:
-                repeated = True
-            break
-        if run["tier"] == "nightly":
-            # Record a fingerprint transition even if the new identity appeared earlier.
+                repeated = previous["time"] == run["time"]
+                if not repeated:
+                    continue
             break
     if run["tier"] == "nightly":
         table = pages / "performance/guards/main.md"
         table.parent.mkdir(parents=True, exist_ok=True)
         previous_table = table.read_text(encoding="utf-8") if table.exists() else ""
-        table.write_text(guard_table(record, previous_table), encoding="utf-8")
-        changed.append(str(table.relative_to(pages)))
+        if nightly_table_can_advance(record, previous_table):
+            table.write_text(guard_table(record, previous_table), encoding="utf-8")
+            changed.append(str(table.relative_to(pages)))
     date = datetime.fromisoformat(run["time"])
     path = (
         records
