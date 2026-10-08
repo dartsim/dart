@@ -1853,8 +1853,8 @@ def guard_table(record: dict, previous: str = "") -> str:
         "This table is generated evidence, not a fixed reference. Wall time is advisory.",
         "S3 and S6 drift belongs to the #3056 / D7 owners.",
         "",
-        "| Row | Detector | Threads | Warm-up / steps | Status | Hash | Contacts | Resting | Finite | Cap hit | Max penetration | Allocs / step |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| Row | Detector | Threads | Warm-up / steps | Status | Hash | Contacts | Pairs | Resting | Finite | Cap hit | Max penetration | Allocs / step |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     drift = []
     previous_rows = {
@@ -1877,7 +1877,7 @@ def guard_table(record: dict, previous: str = "") -> str:
             row.get("status", "—"),
             *(
                 guards.get(key, "—")
-                for key in ("hash", "contacts", "resting", "finite", "cap_hit")
+                for key in ("hash", "contacts", "pairs", "resting", "finite", "cap_hit")
             ),
             "non-finite" if penetration is None else penetration,
             head.get("allocs_per_step", "—"),
@@ -2032,15 +2032,24 @@ def write_publication(pages: Path, record: dict) -> list[str]:
         ):
             if run["tier"] == "merge":
 
-                def ir_values(value):
+                def counts(value):
+                    # Every gated deterministic count, not just Ir.
                     return {
-                        row_key(row): row["head"].get("ir_per_step")
+                        row_key(row): tuple(
+                            row["head"].get(key)
+                            for key in (
+                                "ir_per_step",
+                                "allocs_per_step",
+                                "bytes_per_step",
+                            )
+                        )
                         for row in value["results"]
                     }
 
-                if ir_values(saved) != ir_values(record):
+                if counts(saved) != counts(record):
                     raise ValueError(
-                        "repeated merge changed Ir under the same environment fingerprint"
+                        "repeated merge changed deterministic counts under the same "
+                        "environment fingerprint"
                     )
                 chart_repeated = True
                 repeated = saved["run"].get("accepted", []) == run.get(

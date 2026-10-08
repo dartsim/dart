@@ -4111,7 +4111,7 @@ def test_publication_merge_idempotence_fingerprint_flags_and_chart_window(tmp_pa
     record["run"]["time"] = "2026-10-08T08:01:00+00:00"
     assert module.write_publication(tmp_path, record) == []
     record["results"][0]["head"]["ir_per_step"] += 1
-    with pytest.raises(ValueError, match="changed Ir"):
+    with pytest.raises(ValueError, match="changed deterministic counts"):
         module.write_publication(tmp_path, record)
     record["run"]["env"]["fingerprint"] = "2" * 64
     module.write_publication(tmp_path, record)
@@ -4290,6 +4290,38 @@ def test_merge_rationale_rerun_records_new_acknowledgment_without_chart_duplicat
     assert module.write_publication(tmp_path, failed) == []
     assert len(list((tmp_path / "performance/records/main/2026").glob("*.json"))) == 2
     assert len(_chart_points(tmp_path)) == 1
+
+
+def test_guard_table_shows_contact_pair_changes_as_drift(tmp_path):
+    module = _load_runner()
+    fixture = _publication_fixture()
+    fixture["results"][0]["row"] = "S6"
+    fixture["results"][0]["window"] = {"warmup": 0, "steps": 2400}
+    fixture["results"][0]["head"]["guards"]["pairs"] = 79
+    path = tmp_path / "record.json"
+    module.write_json(path, fixture)
+    record = module.publication_record(path, "nightly")
+    module.write_publication(tmp_path, record)
+    assert "| 79 |" in (tmp_path / "performance/guards/main.md").read_text()
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    record["results"][0]["head"]["guards"]["pairs"] = 80
+    module.write_publication(tmp_path, record)
+    table = (tmp_path / "performance/guards/main.md").read_text()
+    assert "| 80 |" in table
+    assert "S3 / S6 drift since the prior nightly" in table
+
+
+def test_merge_rerun_with_changed_allocations_is_not_deduplicated(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    path = tmp_path / "record.json"
+    module.write_json(path, _publication_fixture())
+    record = module.publication_record(path, "merge", 3570)
+    module.write_publication(tmp_path, record)
+    changed = copy.deepcopy(record)
+    changed["results"][0]["head"]["allocs_per_step"] = 1.0
+    with pytest.raises(ValueError, match="deterministic counts"):
+        module.write_publication(tmp_path, changed)
 
 
 @pytest.mark.parametrize(
