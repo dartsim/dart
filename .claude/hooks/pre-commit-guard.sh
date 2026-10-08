@@ -23,9 +23,11 @@
 #       - if the commit targets another repository (`git -C /other/repo
 #         commit`), skip that invocation (not this gate's business)
 #       - otherwise require inspectable -m or -F <file> messages; block stdin,
-#         reused and editor-only messages when managed hooks cannot enforce them
+#         reused, autosquash and editor-only messages when managed hooks cannot enforce them
 #       - block commit-time staging when managed hooks will not run; the staged
 #         scan cannot inspect files that the commit command has yet to stage
+#       - block multiple unhooked commits after commands that can change files
+#         or the index; a single pre-tool staged scan cannot cover those changes
 #       - scan all supplied messages needing enforcement with
 #         `scripts/check_local_paths.py --stdin` and run the staged gate once:
 #         `scripts/check_agent_hook.py --profile staged`; on failure
@@ -109,6 +111,9 @@ OPTS_WITH_ARG = {
 }
 CONFIG_ENV_PREFIX = "--config-env="
 WRAPPERS = {"command", "exec", "time", "nice", "nohup"}
+READ_ONLY_GIT_COMMANDS = {
+    "status", "diff", "log", "show", "rev-parse", "ls-files", "ls-tree",
+}
 SHELL_CONTROL_PREFIXES = {"!", "if", "then", "else", "elif", "while", "until", "do"}
 SHELL_GROUP_OPENERS = {"(", "{"}
 CWD_UNCERTAIN_PREFIXES = {"then", "else", "elif", "do"}
@@ -595,7 +600,7 @@ def commit_args_disable_hooks(args):
     return False
 
 
-def supplied_commit_message(args, cwd):
+def supplied_commit_message(args, cwd, inspect_message=True):
     # Track the message source separately: trailers alone still need an editor.
     messages = []
     supplied = False
@@ -609,6 +614,10 @@ def supplied_commit_message(args, cwd):
             stages_content |= bool(args[i:])
             break
         option, sep, value = token.partition("=")
+        for name in ("--fixup", "--squash"):
+            if option.startswith("--") and name.startswith(option):
+                option = name
+                break
         if (
             token.startswith("--")
             and any(name.startswith(option) for name in ("--all", "--include", "--only"))
@@ -655,10 +664,15 @@ def supplied_commit_message(args, cwd):
             continue
         if option == "--pathspec-from-file":
             stages_content = True
+        if not inspect_message:
+            continue
         if option in {"-m", "--message", "--trailer"}:
             messages.append(value)
             supplied |= option != "--trailer"
-        elif option in {"-C", "-c", "--reuse-message", "--reedit-message"}:
+        elif option in {
+            "-C", "-c", "--reuse-message", "--reedit-message", "--fixup", "--squash",
+        }:
+            # Autosquash can reuse more than a subject (amend/reword bodies).
             uninspectable = True
         elif option in {"-F", "--file"}:
             supplied = True
@@ -786,6 +800,7 @@ def git_worktree_root(path, options=(), env=None):
 
 def git_commits(text):
     current_cwd = os.getcwd()
+    content_may_change = False
     segment_execution = EXEC_ALWAYS
     previous_separator = ""
     for (
@@ -823,6 +838,7 @@ def git_commits(text):
         command_cwd = None
         cwd_mutation_policy = "allow"
         if bypass:
+            content_may_change = True
             continue  # command-level bypass, same as the git hook
         # unwrap common wrappers: command git commit, time git commit, env X=1 git commit
         while i < len(tokens):
@@ -909,10 +925,13 @@ def git_commits(text):
                 continue
             break
         if bypass:
+            content_may_change = True
             continue
         if i >= len(tokens):
+            content_may_change |= bool(tokens)
             continue
         if not is_git_executable(tokens[i]):
+            content_may_change = True
             current_cwd = maybe_update_shell_cwd(
                 tokens,
                 i,
@@ -973,6 +992,15 @@ def git_commits(text):
             break
         if not target_dir:
             target_dir = command_cwd or current_cwd
+        subcommand = command_word(tokens[i]).rstrip(")}") if i < len(tokens) else ""
+        changed_before_commit = content_may_change
+        if subcommand == "commit":
+            _, _, stages_content = supplied_commit_message(
+                tokens[i + 1 :], target_dir, inspect_message=False
+            )
+            content_may_change |= stages_content
+        elif subcommand not in READ_ONLY_GIT_COMMANDS:
+            content_may_change = True
         # Git aliases and git am/applypatch imports are out of scope; PR Text
         # scans every resulting PR commit with the base checker.
         if i < len(tokens) and command_word(tokens[i]).rstrip(")}") == "commit":
@@ -1034,6 +1062,7 @@ def git_commits(text):
                 target_root,
                 tokens[i + 1 :],
                 target_dir,
+                changed_before_commit,
             )
 
 
@@ -1069,7 +1098,9 @@ def managed_hooks_current(root):
 
 verdict, target_repo_root = "skip", ""
 messages = []
-for bypassed, root, args, cwd in git_commits(cmd):
+unhooked_commits = 0
+unsafe_chain = False
+for bypassed, root, args, cwd, changed_before_commit in git_commits(cmd):
     root = (
         root
         or os.environ.get("CLAUDE_PROJECT_DIR")
@@ -1078,6 +1109,8 @@ for bypassed, root, args, cwd in git_commits(cmd):
     )
     if not bypassed and managed_hooks_current(root):
         continue
+    unhooked_commits += 1
+    unsafe_chain |= unhooked_commits > 1 and changed_before_commit
     message, inspectable, stages_content = supplied_commit_message(args, cwd)
     if verdict == "skip":
         verdict, target_repo_root = "commit", root
@@ -1086,6 +1119,8 @@ for bypassed, root, args, cwd in git_commits(cmd):
     elif not inspectable and verdict != "commit-stages-content":
         verdict = "commit-uninspectable"
     messages.append(message)
+if unsafe_chain:
+    verdict = "commit-unsafe-chain"
 print(verdict)
 print(target_repo_root)
 print(json.dumps("\n\n".join(messages)))
@@ -1105,6 +1140,7 @@ target_repo_root=$(printf '%s\n' "$guard_result" | sed -n '2p' | tr -d '\r')
 
 if [ "$verdict" != "commit" ] \
     && [ "$verdict" != "commit-uninspectable" ] \
+    && [ "$verdict" != "commit-unsafe-chain" ] \
     && [ "$verdict" != "commit-stages-content" ]; then
     if [ "$verdict" = "skip" ]; then
         exit 0
@@ -1128,6 +1164,12 @@ if [ -n "${DART_HOOK_DRY_RUN:-}" ]; then
     exit 0
 fi
 
+if [ "$verdict" = "commit-unsafe-chain" ]; then
+    echo "DART guard: chained commits may change staged content — commit blocked." >&2
+    echo "  Split commits into separate tool calls, or let the hooks run." >&2
+    exit 2
+fi
+
 if [ "$verdict" = "commit-stages-content" ]; then
     echo "DART guard: commit-time staging cannot be inspected — commit blocked." >&2
     echo "  Stage the files first, or let the hooks run." >&2
@@ -1136,7 +1178,7 @@ fi
 
 if [ "$verdict" = "commit-uninspectable" ]; then
     echo "DART guard: commit message cannot be inspected — commit blocked." >&2
-    echo "  Pass the message with -m or -F <file>, or let the hooks run." >&2
+    echo "  Use -m or -F <file> without reused/autosquash sources, or let the hooks run." >&2
     exit 2
 fi
 
