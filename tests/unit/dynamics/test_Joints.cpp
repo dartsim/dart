@@ -37,10 +37,42 @@
 #include <limits>
 
 #include <cmath>
+#include <cstring>
 
 using namespace dart;
 using namespace dart::dynamics;
 using namespace dart::simulation;
+
+namespace {
+
+class InertiaTestFreeJoint : public FreeJoint
+{
+public:
+  explicit InertiaTestFreeJoint(const Properties& properties = Properties())
+    : FreeJoint(properties)
+  {
+  }
+
+  using FreeJoint::getInvProjArtInertia;
+  using FreeJoint::getInvProjArtInertiaImplicit;
+};
+
+Eigen::Matrix6d fullyComputedImplicitInverse(
+    const FreeJoint* joint, const BodyNode* body, double timeStep)
+{
+  const Eigen::Matrix6d jacobian = joint->getRelativeJacobian();
+  Eigen::Matrix6d projected
+      = jacobian.transpose() * body->getArticulatedInertiaImplicit() * jacobian;
+  const Eigen::Vector6d damping = joint->getDampingCoefficients();
+  Eigen::Vector6d stiffness;
+  for (std::size_t i = 0; i < 6; ++i)
+    stiffness[i] = joint->getSpringStiffness(i);
+  projected
+      += (timeStep * damping + timeStep * timeStep * stiffness).asDiagonal();
+  return math::inverse<math::SE3Space>(projected);
+}
+
+} // namespace
 
 TEST(Joints, NonFiniteTransformFromParentBodyNodeRejected)
 {
@@ -145,6 +177,114 @@ TEST(Joints, PassiveForceEditsPreserveAutomaticConstraintRevision)
   joint->setDampingCoefficients(
       Eigen::VectorXd::Constant(joint->getNumDofs(), 1.0));
   EXPECT_EQ(revision, Joint::getAutomaticConstraintRevision());
+}
+
+TEST(Joints, UndampedFreeJointInverseInertiasAreBitwiseEqual)
+{
+  auto skel = Skeleton::create("undamped_inverse_inertia");
+  auto [joint, body] = skel->createJointAndBodyNodePair<InertiaTestFreeJoint>();
+  body->setMass(2.7);
+  body->setLocalCOM(Eigen::Vector3d(0.2, -0.1, 0.3));
+  body->setMomentOfInertia(0.8, 1.0, 1.2, 0.05, -0.02, 0.03);
+
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->addSkeleton(skel);
+  world->step();
+
+  const auto& explicitInverse = joint->getInvProjArtInertia();
+  const auto& implicitInverse = joint->getInvProjArtInertiaImplicit();
+  const auto expected
+      = fullyComputedImplicitInverse(joint, body, world->getTimeStep());
+  ASSERT_TRUE(expected.allFinite());
+  EXPECT_EQ(
+      std::memcmp(
+          explicitInverse.data(), implicitInverse.data(), sizeof(double) * 36),
+      0);
+  EXPECT_EQ(
+      std::memcmp(implicitInverse.data(), expected.data(), sizeof(double) * 36),
+      0);
+}
+
+TEST(Joints, OverflowingTimeStepPreservesImplicitInverseSanitization)
+{
+  auto skel = Skeleton::create("overflowing_inverse_time_step");
+  auto* joint = skel->createJointAndBodyNodePair<InertiaTestFreeJoint>().first;
+  skel->setTimeStep(1e200);
+  ASSERT_EQ(skel->getTimeStep(), 1e200);
+
+  const auto& explicitInverse = joint->getInvProjArtInertia();
+  ASSERT_TRUE(explicitInverse.allFinite());
+  EXPECT_FALSE(explicitInverse.isZero());
+  // dt * dt * zero stiffness produces NaN, which the full path sanitizes.
+  EXPECT_TRUE(joint->getInvProjArtInertiaImplicit().isZero());
+}
+
+TEST(Joints, ChildPassiveForceEditsRefreshImplicitInverseInertia)
+{
+  auto skel = Skeleton::create("child_inverse_inertia");
+  // Plain pointers: lambdas cannot capture structured bindings before C++20.
+  auto* parentJoint
+      = skel->createJointAndBodyNodePair<InertiaTestFreeJoint>().first;
+  auto* parentBody = parentJoint->getChildBodyNode();
+  auto* childJoint
+      = skel->createJointAndBodyNodePair<InertiaTestFreeJoint>(parentBody)
+            .first;
+  auto* childBody = childJoint->getChildBodyNode();
+  parentBody->setLocalCOM(Eigen::Vector3d(0.1, 0.2, -0.1));
+  childBody->setMass(2.7);
+  childBody->setLocalCOM(Eigen::Vector3d(0.2, -0.1, 0.3));
+  childBody->setMomentOfInertia(0.8, 1.0, 1.2, 0.05, -0.02, 0.03);
+  Eigen::Isometry3d childTransform = Eigen::Isometry3d::Identity();
+  childTransform.translation() = Eigen::Vector3d(0.3, -0.4, 0.6);
+  childJoint->setTransformFromParentBodyNode(childTransform);
+  childJoint->setDampingCoefficients(Eigen::Vector6d::Constant(0.75));
+
+  auto world = World::create();
+  world->setGravity(Eigen::Vector3d::Zero());
+  world->addSkeleton(skel);
+  world->step();
+
+  const auto checkImplicitInverses = [&]() {
+    const auto& explicitArtInertia = parentBody->getArticulatedInertia();
+    const auto& implicitArtInertia
+        = parentBody->getArticulatedInertiaImplicit();
+    EXPECT_NE(
+        std::memcmp(
+            explicitArtInertia.data(),
+            implicitArtInertia.data(),
+            sizeof(double) * 36),
+        0);
+    for (auto* joint : {parentJoint, childJoint}) {
+      const auto& actual = joint->getInvProjArtInertiaImplicit();
+      const auto expected = fullyComputedImplicitInverse(
+          joint, joint->getChildBodyNode(), world->getTimeStep());
+      ASSERT_TRUE(expected.allFinite());
+      EXPECT_EQ(
+          std::memcmp(actual.data(), expected.data(), sizeof(double) * 36), 0);
+    }
+  };
+  checkImplicitInverses();
+
+  childJoint->setDampingCoefficients(Eigen::Vector6d::Zero());
+  world->step();
+  // Prime the caches before editing stiffness, with no intervening step or
+  // configuration change to refresh them.
+  const Eigen::Matrix6d beforeEdit
+      = parentJoint->getInvProjArtInertiaImplicit();
+  const auto& explicitInverse = parentJoint->getInvProjArtInertia();
+  EXPECT_EQ(
+      std::memcmp(
+          beforeEdit.data(), explicitInverse.data(), sizeof(double) * 36),
+      0);
+  childJoint->setSpringStiffness(0, 120.0);
+  checkImplicitInverses();
+  EXPECT_NE(
+      std::memcmp(
+          beforeEdit.data(),
+          parentJoint->getInvProjArtInertiaImplicit().data(),
+          sizeof(double) * 36),
+      0);
 }
 
 TEST(Joints, TranslationalJoint2DCopyPointerUsesSource)
