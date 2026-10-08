@@ -536,6 +536,9 @@ def native(row: Row, args, world: Path, config: str = "") -> dict:
         expected = list(range(row.checkpoint, row.steps + 1, row.checkpoint))
         if [item["step"] for item in metrics["checkpoints"]] != expected:
             raise ValueError(f"missing canonical checkpoints: {row.key}")
+        # The final finite flag covers only the last step.
+        if any(item["max_penetration"] is None for item in metrics["checkpoints"]):
+            raise BenchmarkCaseError(f"non-finite checkpoint penetration: {row.key}")
     return metrics
 
 
@@ -1779,6 +1782,9 @@ def publication_record(path: Path, tier: str, pr: int | None = None) -> dict:
             or not isinstance(row.get("head"), dict)
             or row.get("error_kind") == "infrastructure"
         ):
+            # Correctness failures (BenchmarkCaseError, missing pair counts) keep
+            # an empty head in measure(), so they publish; only infrastructure
+            # errors and malformed rows are rejected here.
             raise ValueError("invalid or incomplete publication row")
         keys.append(row_key(row))
         if tier == "nightly":
@@ -1913,13 +1919,31 @@ def nightly_table_can_advance(record: dict, previous: str) -> bool:
     run = record["run"]
     if commit == run["commit"]:
         return datetime.fromisoformat(run["time"]) > datetime.fromisoformat(measured)
-    ancestry = subprocess.run(
-        ["git", "-C", str(ROOT), "merge-base", "--is-ancestor", commit, run["commit"]],
-        text=True,
-        capture_output=True,
-    )
+
+    def is_ancestor():
+        return subprocess.run(
+            [
+                "git",
+                "-C",
+                str(ROOT),
+                "merge-base",
+                "--is-ancestor",
+                commit,
+                run["commit"],
+            ],
+            text=True,
+            capture_output=True,
+        )
+
+    ancestry = is_ancestor()
     if ancestry.returncode not in (0, 1):
-        raise ValueError(f"cannot compare nightly commit ancestry: {ancestry.stderr}")
+        # A concurrent writer may name a main commit newer than this checkout.
+        subprocess.run(
+            ["git", "-C", str(ROOT), "fetch", "--quiet", "origin", "main"],
+            capture_output=True,
+        )
+        ancestry = is_ancestor()
+    # A commit still unknown keeps the published table; the record is written.
     return ancestry.returncode == 0
 
 
@@ -2666,6 +2690,8 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 if record["verdict"]["status"] != "ERROR":
                     record["verdict"]["status"] = "FAIL"
+        # measure() marks a detector row broken when its contact-pair count is
+        # missing, so such rows fail the nightly here.
         if getattr(args, "nightly", False) and any(
             row["status"] != "ok" for row in head["results"]
         ):

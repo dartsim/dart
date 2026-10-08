@@ -146,7 +146,7 @@ def test_s6_capture_keeps_penetration_checkpoints(
             "Final Resting: 0/71",
             f"Final Max Penetration: {penetration}",
             *(
-                f"step {step} rtf 1 contacts 1 max_penetration {penetration} mobile 71 resting 0 islands 1"
+                f"step {step} rtf 1 contacts 1 max_penetration 0.2 mobile 71 resting 0 islands 1"
                 for step in checkpoints
             ),
         ]
@@ -164,6 +164,63 @@ def test_s6_capture_keeps_penetration_checkpoints(
         assert [item["step"] for item in metric["checkpoints"]] == list(checkpoints)
         # A non-finite state is still a broken row, but its evidence must save.
         module.write_json(tmp_path / "metric.json", metric)
+
+
+def test_s6_non_finite_checkpoint_breaks_the_row(monkeypatch, tmp_path):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir, args.source_dir = tmp_path, module.ROOT
+    output = "\n".join(
+        [
+            f"STEPALLOC steps=20000 measured=20000 allocs=0 bytes=0 libdart={tmp_path}/libdart.so",
+            "PERFTIME maxrss_kb=100",
+            "Avg Step Time: 1 ms",
+            "Final State Hash: 0x1",
+            "Final State Finite: true",
+            "Final Contacts: 1",
+            "Final Contact Cap Hit: false",
+            "Final Resting: 0/71",
+            "Final Max Penetration: 0.3",
+            *(
+                f"step {step} rtf 1 contacts 1 max_penetration "
+                f"{'nan' if step == 5000 else '0.2'} mobile 71 resting 0 islands 1"
+                for step in (5000, 10000, 15000, 20000)
+            ),
+        ]
+    )
+    monkeypatch.setattr(module, "execute", lambda *args: output)
+    monkeypatch.setattr(module, "perturb_environment", lambda *args: {})
+    monkeypatch.setattr(module, "environment", lambda *args: {})
+    # A finite final state does not cover the intermediate checkpoints.
+    with pytest.raises(module.BenchmarkCaseError, match="non-finite checkpoint"):
+        module.native(module.select_rows("S6")[0], args, tmp_path)
+
+
+def test_nightly_table_fetches_main_for_an_unknown_published_commit(monkeypatch):
+    module = _load_runner()
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command[3])
+        merge_base = sum(call == "merge-base" for call in calls)
+        code = 128 if command[3] == "merge-base" and merge_base == 1 else 0
+        return subprocess.CompletedProcess(command, code, "", "")
+
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+    previous = "Generated at 2026-10-08T00:00:00+00:00 for `" + "a" * 40 + "`.\n"
+    record = {"run": {"commit": "b" * 40, "time": "2026-10-08T01:00:00+00:00"}}
+    assert module.nightly_table_can_advance(record, previous)
+    assert calls == ["merge-base", "fetch", "merge-base"]
 
 
 def test_nightly_requires_complete_head_only_measurement(monkeypatch, tmp_path):
