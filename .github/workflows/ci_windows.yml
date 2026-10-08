@@ -34,10 +34,12 @@ jobs:
     # The two halves of `pixi run test-all` on parallel runners, each ~2/3 of
     # the cold build. On MSVC, target ALL is exactly tests_and_run + pytest:
     # CMakeLists.txt adds examples and tutorials to ALL only for other
-    # compilers. The windows-Release job below reports the combined result
-    # under the required check name.
+    # compilers. Branch protection requires both checks.
     name: windows-Release-${{ matrix.part }}
     runs-on: windows-2025-vs2026
+    permissions:
+      actions: write # The last step prunes superseded compiler caches.
+      contents: read
     env:
       CMAKE_GENERATOR: Ninja
       CMAKE_BUILD_TYPE: Release
@@ -46,8 +48,8 @@ jobs:
       BUILD_TYPE: Release
       DART_VERBOSE: "ON"
       DART_COMPILER_CACHE: sccache
-      # A full build of one part is ~100 MiB, so the cap holds about two builds:
-      # snapshots stay small and fresh instead of growing with stale objects.
+      # A full unity build of one part caches 20-35 MiB. The cap bounds each
+      # snapshot; objects no build hits any more age out under it.
       SCCACHE_CACHE_SIZE: "250M"
       # The compiler-cache snapshot this run saves: main pushes save the whole
       # cache, same-repository PR runs save the objects their own runs
@@ -245,47 +247,17 @@ jobs:
           path: ${{ env.SCCACHE_SNAPSHOT == 'pr' && env.SCCACHE_PR_DIR || env.SCCACHE_DIR }}
           key: ${{ steps.sccache-config.outputs.prefix }}-${{ env.SCCACHE_SNAPSHOT }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-      # Linux CI covers install. On Windows, pixi run install configures a
-      # separate install build tree after test-all has already passed, which
-      # duplicates work and can keep the protected-branch runner busy for hours.
-
-  # The required check. It also prunes superseded compiler-cache snapshots so
-  # saving on every run stays within the repository's 10 GB Actions cache. It
-  # runs no repository code.
-  windows-release:
-    name: windows-Release
-    needs: build
-    # Always run: a job skipped by its condition reports success, which would
-    # let a cancelled run satisfy the required check.
-    if: always()
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    steps:
       - name: Prune superseded compiler caches
-        # Fork PRs save no snapshots, and their token cannot delete caches.
-        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-        continue-on-error: true
+        if: >-
+          always() && env.SCCACHE_SNAPSHOT != ''
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: |
-          # In this ref, keep the newest run's snapshot per part and MSVC
-          # version. Keys end in <run_id>-<run_attempt>, and run IDs follow push
-          # order, so an older main run that finishes last cannot evict a newer
-          # commit's snapshot.
-          gh cache list --ref "$GITHUB_REF" --key sccache-v2-win- --limit 100 --json id,key \
-            --jq 'group_by(.key | split("-")[3:5]) | map(sort_by(.key | split("-")[6:8] | map(tonumber)) | .[:-1][]) | .[].id' |
-            xargs -r -n1 gh cache delete
-          # Main pushes also drop PR snapshots idle for a day, such as those
-          # of closed PRs.
-          if [ "$GITHUB_EVENT_NAME" = push ]; then
-            # $ENV is jq's, not the shell's.
-            # shellcheck disable=SC2016
-            CUTOFF=$(date -u -d '1 day ago' +%FT%TZ) gh cache list --key sccache-v2-win- --limit 1000 --json id,ref,lastAccessedAt \
-              --jq '.[] | select((.ref | startswith("refs/pull/")) and .lastAccessedAt < $ENV.CUTOFF) | .id' |
-              xargs -r -n1 gh cache delete
-          fi
+          PREFIX: ${{ steps.sccache-config.outputs.prefix }}
+        run: bash .github/actions/sccache/prune.sh "$PREFIX" "$SCCACHE_SNAPSHOT"
 
-      - name: Check build result
-        run: test "${{ needs.build.result }}" = success
+      # Linux CI covers install. On Windows, pixi run install configures a
+      # separate install build tree after test-all has already passed, which
+      # duplicates work and can keep the protected-branch runner busy for hours.
