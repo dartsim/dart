@@ -3419,16 +3419,32 @@ def has_contact_driver(revision: str) -> bool:
 
 def build_shims(args, shims: Path) -> None:
     shims.mkdir(parents=True, exist_ok=True)
+    compiler = "/usr/bin/cc"
+    compiler_sha = sha(Path(compiler).resolve(strict=True).read_bytes())
+    options = ["-O2", "-shared", "-fPIC"]
     for name in ("allocshim", "heappad"):
+        source = ROOT / f"tools/perf/{name}.c"
+        binary, stamp = shims / f"{name}.so", shims / f"{name}.sha256"
+        identity = sha(
+            json.dumps(
+                [sha(source.read_bytes()), compiler_sha, options, "-ldl"]
+            ).encode()
+        )
+        if (
+            binary.is_file()
+            and stamp.is_file()
+            and stamp.read_text(encoding="utf-8", errors="replace").strip() == identity
+        ):
+            continue
+        stamp.unlink(missing_ok=True)
+        binary.unlink(missing_ok=True)
         execute(
             [
-                "/usr/bin/cc",
-                "-O2",
-                "-shared",
-                "-fPIC",
+                compiler,
+                *options,
                 "-o",
-                str(shims / f"{name}.so"),
-                str(ROOT / f"tools/perf/{name}.c"),
+                str(binary),
+                str(source),
                 "-ldl",
             ],
             os.environ.copy(),
@@ -3436,6 +3452,27 @@ def build_shims(args, shims: Path) -> None:
             args.timeout,
             build=True,
         )
+        stamp.write_text(identity + "\n", encoding="utf-8")
+
+
+def install_targets(build: Path) -> list[str]:
+    """Find configured targets required by install without building the ALL graph."""
+    reply = build / ".cmake/api/v1/reply"
+    try:
+        index_path = max(reply.glob("index-*.json"))
+        index = json.loads(index_path.read_text())
+        model = json.loads(
+            (reply / index["reply"]["codemodel-v2"]["jsonFile"]).read_text()
+        )
+        targets = [
+            json.loads((reply / target["jsonFile"]).read_text())
+            for target in model["configurations"][0]["targets"]
+        ]
+        return sorted(target["name"] for target in targets if "install" in target)
+    except (OSError, ValueError, KeyError, IndexError, TypeError) as error:
+        raise ValueError(
+            "cannot read install targets from the CMake File API"
+        ) from error
 
 
 def build_arm(args, revision, source, build, driver_build, prefix, drivers, log_prefix):
@@ -3461,6 +3498,9 @@ def build_arm(args, revision, source, build, driver_build, prefix, drivers, log_
         "-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
         "-DDART_DISABLE_COMPILER_CACHE=ON",
     ]
+    query = build / ".cmake/api/v1/query/codemodel-v2"
+    query.parent.mkdir(parents=True, exist_ok=True)
+    query.touch()
     execute(
         [
             "cmake",
@@ -3486,6 +3526,8 @@ def build_arm(args, revision, source, build, driver_build, prefix, drivers, log_
             "dart-collision-bullet",
             "dart-gui-osg",
         ]
+    # Historical libraries share one install component, including optional ones.
+    targets = sorted(set(targets) | set(install_targets(build)))
     execute(
         [
             "cmake",

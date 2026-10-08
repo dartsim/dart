@@ -232,6 +232,15 @@ parent. For an existing release tag, use
 `gh workflow run perf.yml --ref main -f tier=release -f tag=v6.x.y`.
 Historical comparisons use [`perf-backfill`](profiling.md#revision-comparisons).
 
+The local-to-hosted overlap check allows 0.06% relative Ir differences and
+requires exact common guards, allocation counts and bytes. In the pilot,
+every measured row met that bound: `s3w/ode` was -0.056%, `s3w/dart` was
+-0.038%, and the rest were about 0.02% or less (`s5a/ode` was -0.021%).
+Common guards, allocations and bytes matched exactly. The cause of the small
+cross-environment count differences remains unresolved; the observed bound
+does not guarantee exact counts across environments. Per-revision deltas
+within one environment remain exact.
+
 After publishing the GitHub release, attach its performance record manually:
 
 ```bash

@@ -272,6 +272,15 @@ publication adds no commit. Hosted records take precedence over local records
 even when their environment fingerprints match; identical-or-refuse checks
 apply only within the same `runner.environment`.
 
+For the local-to-hosted overlap check, use a 0.06% tolerance for relative Ir
+differences and require exact common guards, allocation counts and bytes.
+The pilot stayed within this tolerance on every measured row: `s3w/ode`
+was -0.056%, `s3w/dart` was -0.038%, and the rest were about 0.02% or less
+(`s5a/ode` was -0.021%). Common guards, allocations and bytes matched exactly.
+This observed bound does not establish the cause of the differences or
+guarantee exact counts across environments. Per-revision deltas within one
+environment remain exact.
+
 Inspect history with
 `python scripts/perf_regression.py ledger --records build/perf-backfill/records <pages-records-dir> --since <base-sha> --until <head-sha>`.
 `--json <file>` and `--markdown <file>` save the deterministic report.

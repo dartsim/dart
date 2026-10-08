@@ -3110,6 +3110,7 @@ def test_local_uses_independent_source_and_cmake_caches(
     from types import SimpleNamespace
 
     module = _load_runner()
+    monkeypatch.setattr(module, "install_targets", lambda *args: [])
     args = module.parser().parse_args(
         [
             "local",
@@ -3163,7 +3164,7 @@ def test_local_uses_independent_source_and_cmake_caches(
             assert "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" in command
             source = Path(command[command.index("-S") + 1])
             build = Path(command[command.index("-B") + 1])
-            build.mkdir()
+            build.mkdir(exist_ok=True)
             compiler = build / "CMakeFiles/4.0/CMakeCXXCompiler.cmake"
             compiler.parent.mkdir(parents=True)
             (tmp_path / "c++").write_bytes(b"build compiler")
@@ -3283,6 +3284,7 @@ def test_local_records_only_head_build_failures(
     from types import SimpleNamespace
 
     module = _load_runner()
+    monkeypatch.setattr(module, "install_targets", lambda *args: [])
     monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
     resolved = []
 
@@ -6126,6 +6128,45 @@ def test_backfill_reuses_tree_build_and_prefix_and_resumes(
         module.backfill(args)
 
 
+def test_install_targets_tracks_only_the_current_configured_install(tmp_path):
+    module = _load_runner()
+    reply = tmp_path / ".cmake/api/v1/reply"
+    reply.mkdir(parents=True)
+    for name, installed in (
+        ("dart", True),
+        ("dart-optimizer-ipopt", True),
+        ("UNIT_dynamics", False),
+        ("contact_benchmark", False),
+    ):
+        target = {"name": name}
+        if installed:
+            target["install"] = {"destinations": [{"path": "lib"}]}
+        module.write_json(reply / f"{name}.json", target)
+    for date, names in (
+        ("2000-01-01", ["dart", "dart-optimizer-ipopt"]),
+        ("2000-01-02", ["dart", "UNIT_dynamics", "contact_benchmark"]),
+    ):
+        module.write_json(
+            reply / f"index-{date}.json",
+            {"reply": {"codemodel-v2": {"jsonFile": f"model-{date}.json"}}},
+        )
+        module.write_json(
+            reply / f"model-{date}.json",
+            {
+                "configurations": [
+                    {"targets": [{"jsonFile": f"{name}.json"} for name in names]}
+                ]
+            },
+        )
+        assert module.install_targets(tmp_path) == sorted(
+            name for name in names if name.startswith("dart")
+        )
+    (reply / "dart.json").unlink()
+    with pytest.raises(ValueError, match="cannot read install targets") as error:
+        module.install_targets(tmp_path)
+    assert str(tmp_path) not in str(error.value)
+
+
 def test_build_arm_uses_fresh_caches_and_empties_install_prefix(monkeypatch, tmp_path):
     module = _load_runner()
     root = tmp_path / "harness"
@@ -6147,17 +6188,26 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(monkeypatch, tmp
         lambda *args: {"compiler": "GNU 13.3.0", "compiler_sha": "1" * 64},
     )
     monkeypatch.setattr(module, "library_hashes", lambda *args: {})
+    monkeypatch.setattr(
+        module, "install_targets", lambda *args: ["dart-optimizer-ipopt"]
+    )
 
     def execute(command, env, log, timeout, **kwargs):
         assert kwargs["build"]
         if command[:3] == ["cmake", "-G", "Ninja"]:
             assert "--fresh" in command
             configured = Path(command[command.index("-B") + 1])
+            if configured == build:
+                assert (build / ".cmake/api/v1/query/codemodel-v2").is_file()
+                assert not any("IPOPT" in option.upper() for option in command)
             configured.mkdir(exist_ok=True)
             configurations.append(configured)
         elif command[:2] == ["cmake", "--build"]:
             if Path(command[2]) == driver:
                 (driver / "portable_step_bench").write_bytes(b"driver")
+            else:
+                assert "dart-optimizer-ipopt" in command
+                assert "all" not in command
         elif command[:2] == ["cmake", "--install"]:
             assert not prefix.exists()
             installs.append(command)
@@ -8007,3 +8057,104 @@ def test_publication_late_release_refusal_leaves_checkout_clean(monkeypatch, tmp
     assert _perf_git(pages, "status", "--porcelain") == ""
     assert _perf_git(pages, "rev-parse", "HEAD") == before
     assert not any("commit" in command or "push" in command for command in calls)
+
+
+@pytest.fixture
+def shim_build(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+
+    module = _load_runner()
+    source = tmp_path / "source"
+    (source / "tools/perf").mkdir(parents=True)
+    for name in ("allocshim", "heappad"):
+        (source / f"tools/perf/{name}.c").write_text(name)
+    compiler = tmp_path / "compiler"
+    compiler.write_bytes(b"compiler")
+    monkeypatch.setattr(module, "ROOT", source)
+    monkeypatch.setattr(module, "Path", lambda path: compiler)
+    calls = []
+
+    def execute(command, env, log, timeout, **kwargs):
+        assert command[1:4] == ["-O2", "-shared", "-fPIC"]
+        assert command[-1] == "-ldl"
+        assert timeout == 30 and kwargs == {"build": True}
+        binary = Path(command[command.index("-o") + 1])
+        calls.append(binary.stem)
+        binary.write_bytes(b"compiled shim")
+        log.write_text("compiled\n")
+
+    monkeypatch.setattr(module, "execute", execute)
+    return module, SimpleNamespace(timeout=30), tmp_path / "shims", compiler, calls
+
+
+@pytest.mark.parametrize(
+    "change, expected",
+    [
+        ("none", []),
+        ("timestamp", []),
+        ("allocshim", ["allocshim"]),
+        ("heappad", ["heappad"]),
+        ("compiler", ["allocshim", "heappad"]),
+        ("missing_binary", ["allocshim"]),
+        ("missing_stamp", ["allocshim"]),
+    ],
+)
+def test_build_shims_reuses_only_matching_source_and_compiler(
+    shim_build, change, expected
+):
+    module, args, shims, compiler, calls = shim_build
+    module.build_shims(args, shims)
+    assert calls == ["allocshim", "heappad"]
+    before = {path.name: path.stat().st_mtime_ns for path in shims.iterdir()}
+    calls.clear()
+    if change in ("allocshim", "heappad", "compiler"):
+        path = (
+            compiler if change == "compiler" else module.ROOT / f"tools/perf/{change}.c"
+        )
+        stat = path.stat()
+        path.write_bytes(path.read_bytes() + b" changed")
+        os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+    elif change == "timestamp":
+        for name in ("allocshim", "heappad"):
+            (module.ROOT / f"tools/perf/{name}.c").touch()
+        compiler.touch()
+    elif change.startswith("missing_"):
+        suffix = "so" if change == "missing_binary" else "sha256"
+        (shims / f"allocshim.{suffix}").unlink()
+    module.build_shims(args, shims)
+    assert calls == expected
+    for path in shims.iterdir():
+        if path.stem not in expected:
+            assert path.stat().st_mtime_ns == before[path.name]
+        if path.suffix == ".sha256":
+            assert re.fullmatch(r"[0-9a-f]{64}\n", path.read_text())
+    calls.clear()
+    module.build_shims(args, shims)
+    assert calls == []
+
+
+def test_build_shims_failed_rebuild_invalidates_previous_stamp(shim_build, monkeypatch):
+    module, args, shims, compiler, calls = shim_build
+    module.build_shims(args, shims)
+    source = module.ROOT / "tools/perf/allocshim.c"
+    source.write_bytes(source.read_bytes() + b" changed")
+    compile_shim = module.execute
+
+    def fail(*args, **kwargs):
+        assert not (shims / "allocshim.sha256").exists()
+        assert not (shims / "allocshim.so").exists()
+        (shims / "allocshim.so").write_bytes(b"partial output")
+        raise module.BuildFailure("compiler error")
+
+    monkeypatch.setattr(module, "execute", fail)
+    with pytest.raises(module.BuildFailure, match="compiler error"):
+        module.build_shims(args, shims)
+    assert not (shims / "allocshim.sha256").exists()
+    monkeypatch.setattr(module, "execute", compile_shim)
+    calls.clear()
+    module.build_shims(args, shims)
+    assert calls == ["allocshim"]
+    assert (shims / "allocshim.so").read_bytes() == b"compiled shim"
+    calls.clear()
+    module.build_shims(args, shims)
+    assert calls == []
