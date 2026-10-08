@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791429386134,
+  "lastUpdate": 1791455621815,
   "repoUrl": "https://github.com/dartsim/dart",
   "entries": {
     "DART 6 Performance": [
@@ -35028,6 +35028,342 @@ window.BENCHMARK_DATA = {
             "value": 32.21712740910282,
             "unit": "ms/iter",
             "extra": "iterations: 3\ncpu: 32.1927462727269 ms\nthreads: 16"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jslee02@users.noreply.github.com",
+            "name": "Jeongseok (JS) Lee",
+            "username": "jslee02"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "df47e5a420dda1b049c0c243011fdcd9b43140b3",
+          "message": "Build Windows CI as unity translation units with /Zc:inline (#3588)",
+          "timestamp": "2026-10-08T03:13:20-07:00",
+          "tree_id": "29101981c07dfbdacbfd6f3a14a4bc3941b525dc",
+          "url": "https://github.com/dartsim/dart/commit/df47e5a420dda1b049c0c243011fdcd9b43140b3"
+        },
+        "date": 1791455611400,
+        "tool": "googlecpp",
+        "benches": [
+          {
+            "name": "Stacked boxes world step - 2 grid side",
+            "value": 75.1521407499979,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 75.14525414999999 ms\nthreads: 1"
+          },
+          {
+            "name": "Stacked boxes world step - 4 grid side",
+            "value": 850.4494345000353,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 850.3736910000006 ms\nthreads: 1"
+          },
+          {
+            "name": "Stacked boxes world step - 8 grid side",
+            "value": 12300.76422600007,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 12299.339167000004 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 60 objects - 0 engine - 1 threads",
+            "value": 335.84447249990035,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 335.7818472499998 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 60 objects - 0 engine - 16 threads",
+            "value": 333.6951960000533,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 291.16594819999995 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 60 objects - 1 engine - 1 threads",
+            "value": 384.9075664999191,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 384.86872749999975 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 60 objects - 1 engine - 16 threads",
+            "value": 386.9223775000137,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 386.8717660000005 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 0 engine - 1 threads",
+            "value": 2122.46924100009,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 2122.1956629999995 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 0 engine - 16 threads",
+            "value": 2027.9614670002957,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 1865.1733550000065 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 1 engine - 1 threads",
+            "value": 2944.4270970002435,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 2943.972629999998 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 1 engine - 16 threads",
+            "value": 2947.720779000065,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 2947.3049269999974 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 60 objects - 2 engine - 1 threads",
+            "value": 276.94795340003105,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 276.9084037999974 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 60 objects - 2 engine - 16 threads",
+            "value": 276.04447739995516,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 276.0192617999991 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 2 engine - 1 threads",
+            "value": 2588.4460639999816,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 2588.157792000004 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 2 engine - 16 threads",
+            "value": 2570.592513000065,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 2570.349553999975 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 60 objects - 3 engine - 1 threads",
+            "value": 303.06529820004465,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 303.0210291999964 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 60 objects - 3 engine - 16 threads",
+            "value": 303.6167800000385,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 303.58444140000245 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 3 engine - 1 threads",
+            "value": 2674.913740000193,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 2674.436506999996 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 3 engine - 16 threads",
+            "value": 2710.8825029999934,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 2710.4454840000044 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 0 engine - 4 threads",
+            "value": 2031.5509820002262,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 1989.331273999994 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 1 engine - 4 threads",
+            "value": 3204.2954179999015,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 3203.81081699999 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 2 engine - 4 threads",
+            "value": 2752.322313999912,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 2752.0064200000147 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container active step - 120 objects - 3 engine - 4 threads",
+            "value": 2833.1786100000045,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 2832.878102000024 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container deactivation-enabled step - 60 objects - 0 engine - 16 threads",
+            "value": 50.27187699965907,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 43.865164999999706 ms\nthreads: 1"
+          },
+          {
+            "name": "Contact container deactivation-enabled step - 60 objects - 1 engine - 16 threads",
+            "value": 64.04372799988778,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 64.04319200001396 ms\nthreads: 1"
+          },
+          {
+            "name": "Google Benchmark empty baseline",
+            "value": 7.220000100005564e-10,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 7.010000000000871e-10 ns\nthreads: 1"
+          },
+          {
+            "name": "Recursive inverse dynamics - 10 links",
+            "value": 3.009247105444978,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 3.0088775588807355 us\nthreads: 1"
+          },
+          {
+            "name": "Recursive inverse dynamics - 20 links",
+            "value": 6.31216627989609,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 6.311620339638597 us\nthreads: 1"
+          },
+          {
+            "name": "Recursive inverse dynamics - 40 links",
+            "value": 13.822801675509524,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 13.821702749529946 us\nthreads: 1"
+          },
+          {
+            "name": "Dense mass-matrix inverse dynamics - 10 links",
+            "value": 12.68745752700224,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 12.68662728772877 us\nthreads: 1"
+          },
+          {
+            "name": "Dense mass-matrix inverse dynamics - 20 links",
+            "value": 42.2814115906665,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 42.27768558792124 us\nthreads: 1"
+          },
+          {
+            "name": "Dense mass-matrix inverse dynamics - 40 links",
+            "value": 152.78907756563686,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 152.77298828379273 us\nthreads: 1"
+          },
+          {
+            "name": "Contact inverse dynamics - 2 contacts",
+            "value": 25.590496218816984,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 25.588681688138962 us\nthreads: 1"
+          },
+          {
+            "name": "Contact inverse dynamics - 4 contacts",
+            "value": 13.853221770122282,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 13.851823235323254 us\nthreads: 1"
+          },
+          {
+            "name": "Contact inverse dynamics - 8 contacts",
+            "value": 19.33913406487148,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 19.33879275362323 us\nthreads: 1"
+          },
+          {
+            "name": "Contact inverse dynamics basis sweep - 4 friction bases",
+            "value": 13.848445933099812,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 13.847047462024436 us\nthreads: 1"
+          },
+          {
+            "name": "Contact inverse dynamics basis sweep - 8 friction bases",
+            "value": 18.708268146080567,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 18.707597915045522 us\nthreads: 1"
+          },
+          {
+            "name": "Contact inverse dynamics basis sweep - 16 friction bases",
+            "value": 33.02593972085717,
+            "unit": "us/iter",
+            "extra": "iterations: 3\ncpu: 33.02445592655595 us\nthreads: 1"
+          },
+          {
+            "name": "Skel kinematics update corpus - 1 iterations",
+            "value": 94745.9795391086,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 94730.55586592178 ns\nthreads: 1"
+          },
+          {
+            "name": "Skel kinematics update corpus - 10 iterations",
+            "value": 777057.2787979891,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 777003.3272120197 ns\nthreads: 1"
+          },
+          {
+            "name": "Skel kinematics update corpus - 100 iterations",
+            "value": 7547103.443243328,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 7546461.437837833 ns\nthreads: 1"
+          },
+          {
+            "name": "Skel dynamics step corpus - 1 steps",
+            "value": 233659.6675088573,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 233641.7273033516 ns\nthreads: 1"
+          },
+          {
+            "name": "Skel dynamics step corpus - 10 steps",
+            "value": 1700265.3754602454,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 1700137.6723926347 ns\nthreads: 1"
+          },
+          {
+            "name": "Skel dynamics step corpus - 100 steps",
+            "value": 20314604.608695816,
+            "unit": "ns/iter",
+            "extra": "iterations: 3\ncpu: 20313574.14492755 ns\nthreads: 1"
+          },
+          {
+            "name": "Soft-body world step - 0 scene - 1 threads - 200 steps",
+            "value": 26.702926019215038,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 26.699694942307673 ms\nthreads: 1"
+          },
+          {
+            "name": "Soft-body world step - 0 scene - 16 threads - 200 steps",
+            "value": 27.215045730796508,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 27.1786315769232 ms\nthreads: 16"
+          },
+          {
+            "name": "Soft-body world step - 1 scene - 1 threads - 200 steps",
+            "value": 23.049085266658647,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 23.046390150000207 ms\nthreads: 1"
+          },
+          {
+            "name": "Soft-body world step - 1 scene - 16 threads - 200 steps",
+            "value": 23.36103316664928,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 23.32154299999996 ms\nthreads: 16"
+          },
+          {
+            "name": "Soft-body world step - 2 scene - 1 threads - 200 steps",
+            "value": 78.20269605560446,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 78.19810349999972 ms\nthreads: 1"
+          },
+          {
+            "name": "Soft-body world step - 2 scene - 16 threads - 200 steps",
+            "value": 78.32109255558508,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 78.31295566666698 ms\nthreads: 16"
+          },
+          {
+            "name": "Soft-body world step - 3 scene - 1 threads - 200 steps",
+            "value": 51.80296107410296,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 51.797653333334495 ms\nthreads: 1"
+          },
+          {
+            "name": "Soft-body world step - 3 scene - 16 threads - 200 steps",
+            "value": 52.28765788890794,
+            "unit": "ms/iter",
+            "extra": "iterations: 3\ncpu: 52.27082933333304 ms\nthreads: 16"
           }
         ]
       }
