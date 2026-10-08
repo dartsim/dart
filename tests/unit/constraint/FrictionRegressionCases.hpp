@@ -1,7 +1,8 @@
 // Copyright (c) The DART development contributors
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Boundary regressions captured verbatim from final_checks.py (NumPy seed 11).
+// Boundary regressions captured verbatim from an offline NumPy design check
+// (seed 11).
 // D1 covers both secular branches; D2 includes every 16/32-angle scan miss.
 #ifndef DART_TEST_FRICTIONREGRESSIONCASES_HPP_
 #define DART_TEST_FRICTIONREGRESSIONCASES_HPP_
@@ -150,8 +151,8 @@ static constexpr FrictionRegressionCase frictionRegressionCases[] = {
      {18.416203506188868, 5.9543354741551209, -30.337268502400306}},
 };
 
-// Original check_design_math.py seed 7: both split cycles and worst radial
-// bias.
+// Original offline design check (NumPy seed 7): both split cycles and the
+// worst radial bias.
 static constexpr FrictionRegressionCase frictionExactRegressionCases[] = {
     {"check_design_split_cycle_84",
      {0.94473791136831442,

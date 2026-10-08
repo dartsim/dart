@@ -505,8 +505,8 @@ TEST(FrictionCone, CertifiedFallbackIsCounted)
 
 TEST(FrictionCone, DesignCheckProblemBanks)
 {
-  // Recreate the distributions and sizes of check_design_math.py (7),
-  // critique_checks.py (3), and final_checks.py (11) with mt19937_64.
+  // Recreate the problem distributions and sizes of the offline design checks
+  // (NumPy seeds 7, 3 and 11) with mt19937_64.
   // Original NumPy cases exposing narrow minima are preserved above verbatim.
   ProblemBank bank(7);
   for (int i = 0; i < 360; ++i) {
