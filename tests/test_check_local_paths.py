@@ -273,7 +273,7 @@ def test_free_text_file_has_no_fixture_exemption(tmp_path):
         ("Public summary\n# See /Users/example", "2: /Users/example\n"),
     ],
 )
-def test_commit_msg_scans_hash_lines_but_ignores_verbose_diff(
+def test_commit_msg_scans_hash_lines_and_literal_verbose_diff(
     tmp_path, summary, expected_output
 ):
     message = tmp_path / "COMMIT_EDITMSG"
@@ -283,8 +283,10 @@ def test_commit_msg_scans_hash_lines_but_ignores_verbose_diff(
         "diff --git a/notes.md b/notes.md\n+/home/example/private.md\n"
     )
     result = _cli("--commit-msg-file", message, cwd=tmp_path)
-    assert result.returncode == bool(expected_output), result.stderr
-    assert result.stdout == expected_output
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == (
+        expected_output + f"{len(summary.splitlines()) + 5}: /home/example/private.md\n"
+    )
 
 
 @pytest.mark.parametrize("comment_char", ["#", ";", "!"])
@@ -357,10 +359,34 @@ def test_commit_msg_scissors_follow_custom_comment_char(tmp_path):
     message.write_text(
         "Public summary\n\n"
         "; ------------------------ >8 ------------------------\n"
+        "; Do not modify or remove the line above.\n"
         "diff --git a/notes.md b/notes.md\n+/home/example/private.md\n"
     )
     result = _cli("--commit-msg-file", message, cwd=tmp_path)
     assert result.returncode == 0, result.stdout
+
+
+@pytest.mark.parametrize("comment_char", ["#", ";", "!"])
+@pytest.mark.parametrize(
+    "evidence",
+    ["none", "nonadjacent", "mismatched"],
+)
+def test_commit_msg_literal_scissors_need_adjacent_matching_instruction(
+    comment_char, evidence, capsys
+):
+    following = ""
+    if evidence == "nonadjacent":
+        following = f"\n{comment_char} Do not modify or remove the line above.\n"
+    elif evidence == "mismatched":
+        other_char = ";" if comment_char == "#" else "#"
+        following = f"{other_char} Do not modify or remove the line above.\n"
+    message = (
+        f"Public summary\n{comment_char} ------------------------ >8 ------------------------\n"
+        + following
+        + "See /home/example/private.md\n"
+    )
+    assert checker.scan_commit_message(message)
+    assert "/home/example/private.md" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("option", ["-m", "-F"])

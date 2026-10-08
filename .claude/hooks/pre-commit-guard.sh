@@ -8,17 +8,20 @@
 # Contract:
 #   * reads the hook JSON from stdin, extracts .tool_input.command or .cmd
 #   * exits 0 fast for anything that is not a `git commit` invocation
-#   * for a git commit:
+#   * evaluates every git commit split by the shell tokenizer:
 #       - if both executable git hooks are current DART-managed hooks and the
-#         commit is not using --no-verify/-n or a core.hooksPath override, exit 0
-#         (that hook enforces; avoid running the gate twice)
+#         commit is not using --no-verify/-n (including accepted abbreviations)
+#         or a core.hooksPath override, skip
+#         that invocation (the hooks enforce; avoid running the gate twice)
 #       - if DART_SKIP_HOOKS=1 (in the environment or as a command prefix),
-#         exit 0 (emergency bypass, same as the git hook)
+#         skip the affected invocations (emergency bypass, same as the git hook)
 #       - if the commit targets another repository (`git -C /other/repo
-#         commit`), exit 0 (not this gate's business)
-#       - otherwise run the selected Python interpreter with
-#         `scripts/check_agent_hook.py --profile staged` and scan supplied commit
-#         messages/files with `scripts/check_local_paths.py --stdin`; on failure
+#         commit`), skip that invocation (not this gate's business)
+#       - otherwise require inspectable -m or -F <file> messages; block stdin,
+#         reused and editor-only messages when managed hooks cannot enforce them
+#       - scan all supplied messages needing enforcement with
+#         `scripts/check_local_paths.py --stdin` and run the staged gate once:
+#         `scripts/check_agent_hook.py --profile staged`; on failure
 #         exit 2 with a concise message (exit 2 blocks the tool call and surfaces stderr)
 #   * DART_HOOK_DRY_RUN=1 prints the command it would run and exits 0 (test aid)
 #   * without an injected interpreter, unavailable python3 prints a notice and
@@ -586,11 +589,10 @@ def commit_args_disable_hooks(args):
 
 
 def supplied_commit_message(args, cwd):
-    # Reused (-C/-c/--reuse-message/--reedit-message), stdin and editor messages,
-    # and arguments the shell expands later (such as -m "$(...)"), are left to
-    # the managed commit-msg hook and the PR Text backstop, which scans every PR
-    # commit message.
+    # Track the message source separately: trailers alone still need an editor.
     messages = []
+    supplied = False
+    uninspectable = False
     i = 0
     while i < len(args):
         token = args[i]
@@ -635,15 +637,24 @@ def supplied_commit_message(args, cwd):
             continue
         if option in {"-m", "--message", "--trailer"}:
             messages.append(value)
-        elif option in {"-F", "--file"} and value != "-":
+            supplied |= option != "--trailer"
+        elif option in {"-C", "-c", "--reuse-message", "--reedit-message"}:
+            uninspectable = True
+        elif option in {"-F", "--file"}:
+            supplied = True
+            if value == "-":
+                uninspectable = True
+                continue
             path = shell_expand_path_token(value, cwd)
             if path:
                 try:
                     with open(path, encoding="utf-8", errors="replace") as message_file:
                         messages.append(message_file.read())
                 except OSError:
-                    pass  # Git reports unreadable files; stdin/editor/reused messages need the hook.
-    return "\n\n".join(messages)
+                    uninspectable = True
+            else:
+                uninspectable = True
+    return "\n\n".join(messages), supplied and not uninspectable
 
 
 def unwrap_wrapper(tokens, i, head):
@@ -753,7 +764,7 @@ def git_worktree_root(path, options=(), env=None):
     return os.path.realpath(result.stdout.strip()) if result.returncode == 0 else ""
 
 
-def is_git_commit(text):
+def git_commits(text):
     current_cwd = os.getcwd()
     segment_execution = EXEC_ALWAYS
     previous_separator = ""
@@ -996,22 +1007,64 @@ def is_git_commit(text):
                 and git_common_dir(target_root) != target_common
             ):
                 target_root = git_worktree_root(project)
-            message = supplied_commit_message(tokens[i + 1 :], target_dir)
-            # Return the first commit; later commits in the same shell line
-            # are left to the managed commit-msg hook and the PR Text backstop,
-            # which scans every PR commit message.
-            if no_verify:
-                return "commit-no-verify", target_root, message
-            if hooks_path_override:
-                return "commit-hooks-override", target_root, message
-            return "commit", target_root, message
-    return "skip", "", ""
+            yield (
+                no_verify or hooks_path_override,
+                target_root,
+                tokens[i + 1 :],
+                target_dir,
+            )
 
 
-verdict, target_repo_root, message = is_git_commit(cmd)
+def managed_hooks_current(root):
+    result = subprocess.run(
+        ["git", "-C", root, "rev-parse", "--git-path", "hooks/pre-commit"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0 or not result.stdout.strip():
+        return False
+    hook_path = result.stdout.strip()
+    if not os.path.isabs(hook_path):
+        hook_path = os.path.join(root, hook_path)
+    for name, command in (
+        ("pre-commit", "scripts/check_agent_hook.py --profile staged"),
+        ("commit-msg", "scripts/check_local_paths.py --commit-msg-file \"$1\""),
+    ):
+        path = os.path.join(os.path.dirname(hook_path), name)
+        try:
+            with open(path, encoding="utf-8", errors="replace") as hook:
+                content = hook.read()
+        except OSError:
+            return False
+        if (
+            not os.access(path, os.X_OK)
+            or "DART-MANAGED-HOOK v8  (sentinel line: do not edit; the installer keys on it)"
+            not in content
+            or "if ! \"$python_cmd\" " + command + "; then" not in content
+        ):
+            return False
+    return True
+
+
+verdict, target_repo_root = "skip", ""
+messages = []
+for bypassed, root, args, cwd in git_commits(cmd):
+    root = (
+        root
+        or os.environ.get("CLAUDE_PROJECT_DIR")
+        or os.environ.get("CODEX_PROJECT_DIR")
+        or os.getcwd()
+    )
+    if not bypassed and managed_hooks_current(root):
+        continue
+    message, inspectable = supplied_commit_message(args, cwd)
+    if verdict == "skip":
+        verdict, target_repo_root = "commit", root
+    if not inspectable:
+        verdict = "commit-uninspectable"
+    messages.append(message)
 print(verdict)
 print(target_repo_root)
-print(json.dumps(message))
+print(json.dumps("\n\n".join(messages)))
 ')
 guard_status=$?
 if [ "$guard_status" -ne 0 ]; then
@@ -1027,8 +1080,7 @@ verdict=$(printf '%s\n' "$guard_result" | sed -n '1p' | tr -d '\r')
 target_repo_root=$(printf '%s\n' "$guard_result" | sed -n '2p' | tr -d '\r')
 
 if [ "$verdict" != "commit" ] \
-    && [ "$verdict" != "commit-no-verify" ] \
-    && [ "$verdict" != "commit-hooks-override" ]; then
+    && [ "$verdict" != "commit-uninspectable" ]; then
     if [ "$verdict" = "skip" ]; then
         exit 0
     fi
@@ -1042,30 +1094,6 @@ fi
 
 repo_root="${target_repo_root:-${CLAUDE_PROJECT_DIR:-${CODEX_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}}}"
 
-if [ "$verdict" = "commit" ]; then
-    # If both executable git hooks are current DART-managed hooks,
-    # let them enforce; don't double-run. Stale or incomplete managed hooks and
-    # foreign hooks are not guaranteed to include DART's staged gate, while
-    # --no-verify/-n and core.hooksPath overrides bypass even a current hook.
-    hook_path=$(git -C "$repo_root" rev-parse --git-path hooks/pre-commit 2>/dev/null)
-    if [ -n "$hook_path" ]; then
-        case "$hook_path" in
-            /*) : ;;
-            *) hook_path="$repo_root/$hook_path" ;;
-        esac
-        if [ -x "$hook_path" ] \
-            && grep -Fq "DART-MANAGED-HOOK v8  (sentinel line: do not edit; the installer keys on it)" "$hook_path" 2>/dev/null \
-            && grep -Fq 'if ! "$python_cmd" scripts/check_agent_hook.py --profile staged; then' "$hook_path" 2>/dev/null; then
-            message_hook_path="$(dirname "$hook_path")/commit-msg"
-            if [ -x "$message_hook_path" ] \
-                && grep -Fq "DART-MANAGED-HOOK v8  (sentinel line: do not edit; the installer keys on it)" "$message_hook_path" 2>/dev/null \
-                && grep -Fq 'if ! "$python_cmd" scripts/check_local_paths.py --commit-msg-file "$1"; then' "$message_hook_path" 2>/dev/null; then
-                exit 0
-            fi
-        fi
-    fi
-fi
-
 if [ "${DART_SKIP_HOOKS:-0}" = "1" ]; then
     exit 0
 fi
@@ -1073,6 +1101,12 @@ fi
 if [ -n "${DART_HOOK_DRY_RUN:-}" ]; then
     echo "DART guard (dry run): would run 'python3 scripts/check_agent_hook.py --profile staged' in $repo_root" >&2
     exit 0
+fi
+
+if [ "$verdict" = "commit-uninspectable" ]; then
+    echo "DART guard: commit message cannot be inspected — commit blocked." >&2
+    echo "  Pass the message with -m or -F <file>, or let the hooks run." >&2
+    exit 2
 fi
 
 if [ -f "$repo_root/scripts/check_local_paths.py" ]; then

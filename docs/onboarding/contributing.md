@@ -34,10 +34,11 @@ AI-infrastructure drift. A managed `commit-msg` hook also scans the commit
 message for local paths. Git's editor template instruction identifies the
 single comment character whose lines Git strips; the scan skips those lines.
 It recognizes either the "Lines starting with" instruction or the "Do not
-modify or remove the line above" instruction with a matching scissors line.
-Without that template instruction (`-m` or `-F`), all lines are scanned,
-including hash-prefixed and status-shaped lines. Scanning stops at Git's
-scissors line before any verbose diff:
+modify or remove the line above" instruction immediately after a scissors line
+with the same comment character. Without that template instruction (`-m` or
+`-F`), all lines are scanned,
+including hash-prefixed, status-shaped and scissors-shaped lines. Only an editor
+template makes matching scissors end the scan before a verbose diff:
 
 ```bash
 pixi run python scripts/check_agent_hook.py --profile staged
@@ -48,10 +49,14 @@ chained.
 Emergency escape hatch:
 `DART_SKIP_HOOKS=1 git commit ...`. Codex and Claude sessions also use tracked
 PreToolUse hooks for agent-issued `git commit` calls before `install-hooks` has
-been run. When verification is bypassed with `--no-verify`/`-n`, hooks are
-overridden, or managed hooks are missing/outdated, the agent guard also scans
-inline `-m`/`--message` text and readable `-F`/`--file` messages. Stdin, reused
-(`-C`/`-c`), and editor-only messages still need the managed `commit-msg` hook.
+been run. When verification is bypassed with `--no-verify`/`-n` (including
+accepted abbreviations), hooks are overridden, or managed hooks are
+missing/outdated, the agent guard checks every
+commit split by its shell tokenizer, scans supplied `-m`/`--message`, readable
+`-F`/`--file` messages and trailers, and runs the staged gate once. It blocks
+stdin, reused (`-C`/`-c`/`--reuse-message`/`--reedit-message`) and editor-only
+messages when hooks cannot enforce them: supply `-m` or `-F <file>`, or let the
+managed hooks run.
 These fast checks do not replace `pixi run lint`.
 
 For C++ or Python changes, also run `pixi run build` and focused tests. For

@@ -153,21 +153,24 @@ def scan_text(
 
 
 def scan_commit_message(text: str) -> bool:
-    # The scissors stop matches git commit -v. Typing a literal scissors line, or
-    # copying Git's template instruction into a supplied message, is deliberate;
-    # the PR Text backstop still scans every published commit message.
+    # Only Git's editor-template evidence makes scissors a verbose-diff boundary;
+    # a scissors-shaped line in supplied text is scanned like any other line.
+    lines = text.splitlines()
     instruction = GIT_TEMPLATE_INSTRUCTION.search(text)
     if instruction is None:
-        instruction = GIT_SCISSORS_INSTRUCTION.search(text)
-        if instruction and not any(
-            SCISSORS.fullmatch(line) and line.startswith(instruction["char"])
-            for line in text.splitlines()
-        ):
-            instruction = None
+        for line, following in zip(lines, lines[1:]):
+            candidate = GIT_SCISSORS_INSTRUCTION.match(following)
+            if (
+                SCISSORS.fullmatch(line)
+                and candidate
+                and line.startswith(candidate["char"])
+            ):
+                instruction = candidate
+                break
     comment_char = instruction["char"] if instruction else None
     found = False
-    for number, line in enumerate(text.splitlines(), 1):
-        if SCISSORS.fullmatch(line):
+    for number, line in enumerate(lines, 1):
+        if comment_char and line.startswith(comment_char) and SCISSORS.fullmatch(line):
             break
         if comment_char and line.startswith(comment_char):
             continue

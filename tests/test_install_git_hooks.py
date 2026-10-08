@@ -466,28 +466,95 @@ def test_guard_scans_every_trailer_when_hooks_bypassed(tmp_path, option, private
     assert "commit message" in stderr
 
 
+@pytest.mark.parametrize("separator", [" && ", "; ", " || ", " | ", " & ", "\n"])
+@pytest.mark.parametrize("first_bypassed", [True, False])
+def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    private_path = "/home/" + "example/private.md"
+    first = "git commit " + ("--no-verify " if first_bypassed else "") + "-m public"
+    later = f"(git commit --no-verify -m '{private_path}')"
+    returncode, stderr = _run_guard(repo, env, first + separator + later)
+    assert returncode == 2, stderr
+    assert private_path in stderr
+    returncode, stderr = _run_guard(
+        repo, env, first + separator + later.replace(private_path, "public")
+    )
+    assert returncode == 0, stderr
+    assert stderr.count("direct-agent-gate") == 1
+
+
+@pytest.mark.parametrize(
+    "route", ["missing", "stale", "no-verify", "no-veri", "hooks-override", "managed"]
+)
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        "-F -",
+        "--file=-",
+        "-C HEAD",
+        "-cHEAD",
+        "--reuse-message=HEAD",
+        "--reedit-message HEAD",
+        "",
+        "--trailer 'Note: Public'",
+        "-m public -F -",
+        "-m public -C HEAD",
+    ],
+)
+def test_guard_uninspectable_messages_require_managed_hooks(tmp_path, route, arguments):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    if route != "missing":
+        assert _install(repo, env).returncode == 0
+    if route == "stale":
+        _hook(repo, "commit-msg").write_text(
+            "#!/bin/sh\n# DART-MANAGED-HOOK v1\nexit 0\n"
+        )
+    prefix = (
+        "git -c core.hooksPath=unused-hooks commit"
+        if route == "hooks-override"
+        else "git commit"
+    )
+    if route in {"no-verify", "no-veri"}:
+        prefix += " --" + route
+    returncode, stderr = _run_guard(repo, env, prefix + " " + arguments)
+    if route == "managed":
+        assert returncode == 0, stderr
+        assert stderr == ""
+        return
+    assert returncode == 2, stderr
+    assert "-m or -F <file>" in stderr
+    assert "let the hooks run" in stderr
+    returncode, stderr = _run_guard(
+        repo, env, "git commit -m public; " + prefix + " " + arguments
+    )
+    assert returncode == 2, stderr
+    assert "-m or -F <file>" in stderr
+
+
 @pytest.mark.parametrize(
     "arguments",
     [
         "-m 'Public summary' -m 'Public body'",
         "--message='Public summary'",
         "-F 'message with spaces.txt'",
-        "-F -",
-        "--file=-",
-        "-C HEAD",
-        "-c HEAD",
-        "",
-        "--author '-mprivate'",
-        "-- -mprivate",
     ],
 )
-def test_guard_accepts_public_or_unavailable_messages(tmp_path, arguments):
+def test_guard_accepts_inspectable_public_messages(tmp_path, arguments):
     repo, env = _init_repo(tmp_path)
     _write_gate(repo)
     (repo / "scripts" / "check_local_paths.py").write_bytes(
         (ROOT / "scripts" / "check_local_paths.py").read_bytes()
     )
     env["CLAUDE_PROJECT_DIR"] = str(repo)
+    (repo / "message with spaces.txt").write_text("Public summary\n")
     returncode, stderr = _run_guard(repo, env, "git commit --no-verify " + arguments)
     assert returncode == 0, stderr
     assert "direct-agent-gate" in stderr
