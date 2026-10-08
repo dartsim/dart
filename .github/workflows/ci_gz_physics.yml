@@ -34,9 +34,8 @@ jobs:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     env:
-      # Estimate ~300 MiB per test-gz build: measured DART + gz-physics
-      # plus ~150 MiB for the unmeasured gz-sim portion.
-      SCCACHE_CACHE_SIZE: "650M"
+      # A cold build caches 90 MiB on CI; the cap holds about two and a half.
+      SCCACHE_CACHE_SIZE: "224M"
       CMAKE_C_COMPILER_LAUNCHER: sccache
       CMAKE_CXX_COMPILER_LAUNCHER: sccache
     steps:

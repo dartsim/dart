@@ -112,7 +112,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     env:
-      # Cold ALL build: 472 MiB including preprocessor data; keep about two.
+      # A cold build caches 356 MiB on CI; the cap holds about two and a half.
       SCCACHE_CACHE_SIZE: "900M"
       CTEST_PARALLEL_LEVEL: 4
     steps:
@@ -216,8 +216,8 @@ jobs:
     name: Asserts enabled (no -DNDEBUG)
     runs-on: ubuntu-latest
     env:
-      # Cold asserts ALL build: 115 MiB including preprocessor data.
-      SCCACHE_CACHE_SIZE: "250M"
+      # A cold build caches 52 MiB on CI; the cap holds about two and a half.
+      SCCACHE_CACHE_SIZE: "128M"
       CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout

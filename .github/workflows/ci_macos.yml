@@ -43,8 +43,8 @@ jobs:
     name: arm64-${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
     env:
-      # Estimate two builds from Linux Release's 472 MiB whole cache.
-      SCCACHE_CACHE_SIZE: "900M"
+      # A cold build caches 54 MiB on CI; the cap holds about two and a half.
+      SCCACHE_CACHE_SIZE: "128M"
       CTEST_PARALLEL_LEVEL: 3
     strategy:
       fail-fast: false
