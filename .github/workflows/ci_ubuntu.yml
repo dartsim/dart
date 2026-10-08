@@ -134,12 +134,20 @@ jobs:
           version: "2"
 
       - name: Compile each target as one unity file
-        # -O0: clashes are front-end errors. -j1: the dart and dartpy files
-        # each peak near 8 GB. Single-source targets cannot clash.
+        # The options of `pixi run config`, but with build type None as in the
+        # assertions gate: DART forces -O3 for Release, and clashes are
+        # front-end errors, so -O0 is enough. -j1: the dart and dartpy files
+        # each need several GB. Single-source targets cannot clash.
         run: |
-          DART_DISABLE_COMPILER_CACHE=ON pixi run config -- -DCMAKE_UNITY_BUILD=ON \
-            -DCMAKE_UNITY_BUILD_BATCH_SIZE=0 "-DCMAKE_CXX_FLAGS_RELEASE=-O0 -DNDEBUG"
-          cd build/default/cpp/Release
+          pixi run -- bash -c 'cmake -G Ninja -S . -B build/unity-clashes \
+            -DCMAKE_BUILD_TYPE=None -DCMAKE_CXX_FLAGS=-O0 \
+            -DCMAKE_UNITY_BUILD=ON -DCMAKE_UNITY_BUILD_BATCH_SIZE=0 \
+            -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" -DBUILD_TESTING=ON \
+            -DDART_DISABLE_COMPILER_CACHE=ON -DDART_BUILD_DARTPY=ON \
+            -DDART_BUILD_PROFILE=ON -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
+            -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON \
+            -DDART_USE_SYSTEM_PYBIND11=ON -DDART_USE_SYSTEM_TRACY=ON'
+          cd build/unity-clashes
           find . -path '*/Unity/unity_*_cxx.cxx' -exec grep -c -H '^#include' {} + |
             awk -F: '$2 > 1 { sub(/^\.\//, "", $1); print $1 ".o" }' > unity-objects.txt
           test -s unity-objects.txt
