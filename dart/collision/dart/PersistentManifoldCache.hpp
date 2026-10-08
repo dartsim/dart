@@ -107,6 +107,16 @@ public:
       std::optional<std::pair<Eigen::Isometry3d, Eigen::Isometry3d>>(
           std::size_t idA, std::size_t idB)>;
 
+  PersistentManifoldCache() = default;
+
+  // Each cache keeps its node pool for its whole lifetime: copies and moves
+  // transfer manifolds into the destination's pool, never the pool itself, so
+  // no map outlives the memory it was allocated from.
+  PersistentManifoldCache(const PersistentManifoldCache& other);
+  PersistentManifoldCache(PersistentManifoldCache&& other);
+  PersistentManifoldCache& operator=(const PersistentManifoldCache& other);
+  PersistentManifoldCache& operator=(PersistentManifoldCache&& other);
+
   PersistentManifold& getOrCreate(std::size_t idA, std::size_t idB);
 
   [[nodiscard]] bool ownsContact(
