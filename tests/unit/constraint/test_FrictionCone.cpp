@@ -734,3 +734,15 @@ TEST(FrictionCone, SingularRegularizationInvalidInputAndAllocation)
     EXPECT_EQ(raw.allocationCount(), 0u);
   }
 }
+
+//==============================================================================
+TEST(FrictionCone, ExactContactRefinesUntilTheContactCertifies)
+{
+  // The root tolerance is met here before the contact certificate passes.
+  const Eigen::Matrix3d H = Eigen::Vector3d(0.001, 1.0, 1.0).asDiagonal();
+  const Eigen::Vector3d c(-0.01, 2.0, 1.0);
+  FrictionCone cone;
+  cone.mu = Eigen::Vector2d(0.001, 150.0);
+  const auto result = solveExactContact(H, c, cone);
+  EXPECT_TRUE(result.certified);
+}

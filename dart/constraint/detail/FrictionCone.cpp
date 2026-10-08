@@ -469,12 +469,15 @@ LocalSolveResult solveExactContact(
       || !std::isfinite(normalShift))
     return result;
   const Vector q = c.cast<Real>();
+  // Every exit certifies the contact itself: a scaled anisotropic block can
+  // meet the root tolerance before the contact certificate passes.
   const auto finish = [&](const Vector& x, Real shift) {
     result.impulse = x.cast<double>();
     result.normalShift = double(shift);
     Vector shifted = q;
     shifted[0] += support(effective * x + q, cone);
     result.certified = certificate(effective, shifted, x, cone);
+    return result.certified;
   };
   // An apex is an exact contact solution whenever the free normal velocity is
   // nonnegative; no tangential impulse can help an opening contact.
@@ -482,7 +485,9 @@ LocalSolveResult solveExactContact(
     finish(Vector::Zero(), support(q, cone));
     return result;
   }
+  Real lastShift = 0.0;
   const auto evaluate = [&](Real shift, Vector& x, bool& certified) {
+    lastShift = shift;
     Vector shifted = q;
     shifted[0] += shift;
     const auto qp = solvePrepared(effective, shifted, cone);
@@ -500,10 +505,8 @@ LocalSolveResult solveExactContact(
   if (!certified)
     return result;
   const Real rootTolerance = 1e-12 * (1.0 + hi);
-  if (std::abs(flo) <= rootTolerance) {
-    finish(x, 0.0);
+  if (std::abs(flo) <= rootTolerance && finish(x, 0.0))
     return result;
-  }
   Real fhi = evaluate(hi, x, certified);
   if (!certified)
     return result;
@@ -520,10 +523,8 @@ LocalSolveResult solveExactContact(
     const Real fwarm = evaluate(warm, x, certified);
     if (!certified)
       return result;
-    if (std::abs(fwarm) <= rootTolerance) {
-      finish(x, warm);
+    if (std::abs(fwarm) <= rootTolerance && finish(x, warm))
       return result;
-    }
     if (fwarm > 0.0) {
       lo = warm;
       flo = fwarm;
@@ -535,15 +536,17 @@ LocalSolveResult solveExactContact(
   int lastSide = 0;
   for (int iteration = 0; iteration < 200; ++iteration) {
     Real shift = (lo * fhi - hi * flo) / (fhi - flo);
-    if (!(shift > lo && shift < hi))
+    if (!(shift > lo && shift < hi)) {
       shift = (lo + hi) / 2.0;
+      if (!(shift > lo && shift < hi))
+        break;
+    }
     const Real value = evaluate(shift, x, certified);
     if (!certified)
       return result;
-    if (std::abs(value) <= rootTolerance || hi - lo <= rootTolerance) {
-      finish(x, shift);
+    if ((std::abs(value) <= rootTolerance || hi - lo <= rootTolerance)
+        && finish(x, shift))
       return result;
-    }
     if (value > 0.0) {
       lo = shift;
       flo = value;
@@ -558,6 +561,7 @@ LocalSolveResult solveExactContact(
       lastSide = -1;
     }
   }
+  finish(x, lastShift);
   return result;
 }
 
