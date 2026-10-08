@@ -113,13 +113,17 @@ void AabbTreeBroadPhase::add(std::size_t id, const Aabb& aabb)
   if (id >= std::numeric_limits<std::uint32_t>::max()) {
     throw std::length_error("AABB tree object id exceeds compact storage");
   }
-  if (id >= objectToNode_.size()) {
-    objectToNode_.resize(id + 1u, kInvalidNode);
-    for (auto& values : tightMin_) {
-      values.resize(id + 1u);
-    }
-    for (auto& values : tightMax_) {
-      values.resize(id + 1u);
+  // Grow each id-indexed array against its own size: if one resize throws,
+  // a later add() still grows the rest before writing to them.
+  const std::size_t size = id + 1u;
+  if (objectToNode_.size() < size) {
+    objectToNode_.resize(size, kInvalidNode);
+  }
+  for (auto* bounds : {&tightMin_, &tightMax_}) {
+    for (auto& values : *bounds) {
+      if (values.size() < size) {
+        values.resize(size);
+      }
     }
   }
 
