@@ -112,8 +112,7 @@ jobs:
     # the assertions gate) can form. Two sources of one target that share a
     # file-local name fail here, before a change to the source list puts them
     # into one batch and breaks an unrelated PR.
-    # TEMPORARY: also on pull_request, to validate this job on its own PR.
-    if: inputs.nightly || github.event_name == 'pull_request'
+    if: inputs.nightly
     name: Unity name clashes
     runs-on: ubuntu-latest
     steps:
