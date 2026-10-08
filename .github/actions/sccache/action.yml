@@ -94,6 +94,9 @@ runs:
         pixi run -e "$PIXI_ENV" sccache --stop-server || true
         # Cancelled builds may leave in-flight writes after the stop response.
         pkill -KILL -x sccache || true
+        # What the cap counts at the next start; the stats of a cold build
+        # leave out its preprocessor entries.
+        du -sh "$SCCACHE_DIR" || true
 
     - name: Collect PR snapshot
       if: always() && inputs.phase == 'save' && env.SCCACHE_SNAPSHOT == 'pr'

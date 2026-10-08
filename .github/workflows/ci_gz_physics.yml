@@ -34,8 +34,9 @@ jobs:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     env:
-      # A cold build caches 90 MiB on CI; the cap holds about two and a half.
-      SCCACHE_CACHE_SIZE: "224M"
+      # One build, preprocessor entries included, caches 154 MiB on CI; the
+      # cap holds about two.
+      SCCACHE_CACHE_SIZE: "320M"
       CMAKE_C_COMPILER_LAUNCHER: sccache
       CMAKE_CXX_COMPILER_LAUNCHER: sccache
     steps:
