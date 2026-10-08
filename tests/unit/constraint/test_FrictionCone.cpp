@@ -83,7 +83,7 @@ const Eigen::Vector3d boundaryFallbackLinear(
 const FrictionCone boundaryFallbackCone{
     Eigen::Vector2d(1.0, 11.030526431268397), FrictionConeLaw::Ellipse};
 
-// Independent certificate: evaluate the original matrix product in extended
+// Independent certificate: normalize the original problem in extended
 // precision, then check K, K* and complementarity without production helpers.
 // Data-relative scales permit cancellation in H*lambda+c at cond(H)=1e8;
 // each normalized inequality still uses the specified 1e-10 tolerance.
@@ -115,8 +115,17 @@ Certificate independentlyCertify(
     bool exact = false)
 {
   const WideVector x = impulse.cast<long double>();
-  const WideVector product = H.cast<long double>() * x;
-  WideVector dual = product + c.cast<long double>();
+  const long double matrixScale = H.cwiseAbs().maxCoeff();
+  const long double linearScale = c.cwiseAbs().maxCoeff();
+  const long double scale = std::max(matrixScale, linearScale);
+  Eigen::Matrix<long double, 3, 3> normalizedH = H.cast<long double>();
+  WideVector normalizedC = c.cast<long double>();
+  if (scale > 0) {
+    normalizedH /= scale;
+    normalizedC /= scale;
+  }
+  const WideVector product = normalizedH * x;
+  WideVector dual = product + normalizedC;
   if (exact)
     dual[0] += support(dual, cone);
   long double a = 0, b = 0, zeroAxisViolation = 0;
@@ -131,17 +140,25 @@ Certificate independentlyCertify(
   const long double tangent = cone.law == FrictionConeLaw::Box
                                   ? std::max(std::abs(a), std::abs(b))
                                   : std::hypot(a, b);
-  const WideVector data = H.cast<long double>().cwiseAbs() * x.cwiseAbs()
-                          + c.cast<long double>().cwiseAbs();
-  const long double dualScale = 1 + data[0] + support(data, cone);
+  const WideVector data
+      = normalizedH.cwiseAbs() * x.cwiseAbs() + normalizedC.cwiseAbs();
+  const long double impulseScale = std::max(
+      x.cwiseAbs().maxCoeff(), matrixScale > 0 ? linearScale / matrixScale : 0);
+  const long double dualScale = data[0] + support(data, cone);
   const long double dotScale
-      = 1 + x.cwiseAbs().dot(data)
+      = x.cwiseAbs().dot(data)
         + (exact ? std::abs(x[0]) * support(data, cone) : 0);
+  const auto relative = [](long double violation, long double denominator) {
+    return denominator > 0  ? violation / denominator
+           : violation == 0 ? 0
+                            : std::numeric_limits<long double>::infinity();
+  };
   return {
-      std::max({0.0L, -x[0], tangent - x[0], zeroAxisViolation})
-          / (1 + std::abs(x[0]) + tangent),
-      std::max(0.0L, support(dual, cone) - dual[0]) / dualScale,
-      std::abs(x.dot(dual)) / dotScale};
+      relative(
+          std::max({0.0L, -x[0], tangent - x[0], zeroAxisViolation}),
+          impulseScale),
+      relative(std::max(0.0L, support(dual, cone) - dual[0]), dualScale),
+      relative(std::abs(x.dot(dual)), dotScale)};
 }
 
 Eigen::Matrix3d effectiveMatrix(
@@ -660,6 +677,94 @@ TEST(FrictionCone, IdenticalResultsAcrossThreads)
   }
 }
 
+TEST(FrictionCone, CertificateRequiresSymmetricPositiveSemidefiniteBlock)
+{
+  const Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d::Ones(), law};
+    for (const double scale : {1e-20, 1.0, 1e20}) {
+      SCOPED_TRACE(scale);
+      const Eigen::Vector3d c(scale, 0, 0);
+      // At the apex the first-order conditions hold, but -I is unbounded
+      // below along the normal ray.
+      EXPECT_FALSE(coneQpCertificate(
+          -scale * Eigen::Matrix3d::Identity(), c, zero, cone));
+      Eigen::Matrix3d indefinite
+          = scale * Eigen::Vector3d(-1, 1, 1).asDiagonal();
+      EXPECT_FALSE(coneQpCertificate(indefinite, c, zero, cone));
+      indefinite.setZero();
+      indefinite(0, 1) = indefinite(1, 0) = scale;
+      EXPECT_FALSE(coneQpCertificate(indefinite, c, zero, cone));
+      Eigen::Matrix3d asymmetric = scale * Eigen::Matrix3d::Identity();
+      asymmetric(0, 1) = scale;
+      EXPECT_FALSE(coneQpCertificate(asymmetric, c, zero, cone));
+
+      const Eigen::Matrix3d singular
+          = scale * Eigen::Vector3d(1, 0, 0).asDiagonal();
+      const Eigen::Vector3d optimum(1, 0.5, -0.5);
+      // No regularization: the free tangential directions remain minimizers.
+      EXPECT_TRUE(coneQpCertificate(singular, -c, optimum, cone));
+      EXPECT_TRUE(coneQpCertificate(singular, c, zero, cone));
+    }
+    EXPECT_TRUE(coneQpCertificate(
+        Eigen::Matrix3d::Zero(), zero, Eigen::Vector3d(1, 0.5, -0.5), cone));
+  }
+}
+
+TEST(FrictionCone, CertificateIsRelativeToProblemAndImpulseScales)
+{
+  const Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  const Eigen::Vector3d unitNormal(1, 0, 0);
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d::Ones(), law};
+    for (const double scale : {1e-20, 1.0, 1e20}) {
+      SCOPED_TRACE(scale);
+      const Eigen::Matrix3d H = scale * I;
+      const Eigen::Vector3d c(-scale, 0, 0);
+      EXPECT_FALSE(coneQpCertificate(H, c, zero, cone));
+      EXPECT_TRUE(coneQpCertificate(H, c, unitNormal, cone));
+      EXPECT_GT(independentlyCertify(H, c, zero, cone).worst(), 1e-10L);
+      EXPECT_EQ(independentlyCertify(H, c, unitNormal, cone).worst(), 0);
+
+      // The internal certificate also applies to both interior and boundary
+      // solutions after the same uniform objective scaling.
+      for (const Eigen::Vector3d& linear :
+           {c, Eigen::Vector3d(-scale, 2 * scale, 0)}) {
+        const auto result = solveConeQp(H, linear, cone);
+        ASSERT_TRUE(result.certified);
+        EXPECT_TRUE(coneQpCertificate(
+            effectiveMatrix(H, result), linear, result.impulse, cone));
+        EXPECT_LE(
+            independentlyCertify(
+                effectiveMatrix(H, result), linear, result.impulse, cone)
+                .worst(),
+            1e-10L);
+        const Eigen::Vector3d expected
+            = linear[1] == 0 ? unitNormal : Eigen::Vector3d(1.5, -1.5, 0);
+        EXPECT_LE((result.impulse - expected).norm(), 1e-10);
+      }
+    }
+    for (const double size : {1e-200, 1e-20, 1.0, 1e20, 1e200}) {
+      SCOPED_TRACE(size);
+      const Eigen::Vector3d optimum(size, 0, 0);
+      const Eigen::Vector3d c = -optimum;
+      EXPECT_TRUE(coneQpCertificate(I, c, optimum, cone));
+      EXPECT_FALSE(coneQpCertificate(I, c, zero, cone));
+      EXPECT_FALSE(coneQpCertificate(I, c, (1 - 1e-6) * optimum, cone));
+      EXPECT_FALSE(coneQpCertificate(I, c, (1 + 1e-6) * optimum, cone));
+      EXPECT_TRUE(coneQpCertificate(I, c, (1 - 1e-12) * optimum, cone));
+      EXPECT_TRUE(coneQpCertificate(I, c, (1 + 1e-12) * optimum, cone));
+
+      // Isolate primal infeasibility with zero gradient and complementarity.
+      const Eigen::Vector3d infeasible(size, 2 * size, 0);
+      EXPECT_FALSE(coneQpCertificate(I, -infeasible, infeasible, cone));
+      // Isolate complementarity on a primal- and dual-feasible normal ray.
+      EXPECT_FALSE(coneQpCertificate(I, zero, optimum, cone));
+    }
+  }
+}
+
 TEST(FrictionCone, SingularRegularizationInvalidInputAndAllocation)
 {
   Eigen::Matrix3d singular = Eigen::Matrix3d::Identity();
@@ -745,4 +850,27 @@ TEST(FrictionCone, ExactContactRefinesUntilTheContactCertifies)
   cone.mu = Eigen::Vector2d(0.001, 150.0);
   const auto result = solveExactContact(H, c, cone);
   EXPECT_TRUE(result.certified);
+}
+
+//==============================================================================
+TEST(FrictionCone, RankDeficientBlocksAreNotRejectedAsIndefinite)
+{
+  // a * a^T is PSD with rank one; its LDLT pivots can round slightly negative.
+  for (const Eigen::Vector3d& a :
+       {Eigen::Vector3d(0.3, 0.7, 1.1),
+        Eigen::Vector3d(1e-3, 2.0, -0.5),
+        Eigen::Vector3d(0.1, 0.1, 0.1)}) {
+    const Eigen::Matrix3d H = a * a.transpose();
+    FrictionCone cone;
+    cone.mu = Eigen::Vector2d(0.5, 0.5);
+    const auto result = solveConeQp(H, Eigen::Vector3d(-1.0, 0.2, -0.3), cone);
+    EXPECT_TRUE(result.certified) << a.transpose();
+  }
+  // An indefinite block is still rejected.
+  FrictionCone cone;
+  EXPECT_FALSE(coneQpCertificate(
+      -Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1.0, 0.0, 0.0),
+      Eigen::Vector3d::Zero(),
+      cone));
 }

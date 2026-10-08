@@ -104,9 +104,12 @@ double contactViolation(
     const FrictionCone& cone,
     bool associated = false);
 
-/// Relative primal, dual and complementarity certificate. The dual scale
-/// uses |H|*|lambda| + |c|, so cancellation is judged relative to the
-/// original problem data. Call with the effective regularized matrix.
+/// Relative primal, dual and complementarity certificate. H must be symmetric
+/// positive semidefinite; singular blocks are accepted without regularization.
+/// H and c are normalized by their common maximum absolute coefficient, and
+/// the impulse scale uses max(|lambda|, max|c| / max|H|) when H is nonzero.
+/// The dual scale uses |H|*|lambda| + |c|, so cancellation is judged relative
+/// to the problem data. Call with the effective regularized matrix of a solve.
 bool coneQpCertificate(
     const Eigen::Matrix3d& H,
     const Eigen::Vector3d& c,

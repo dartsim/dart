@@ -33,6 +33,7 @@
 #include <dart/constraint/detail/FrictionCone.hpp>
 
 #include <Eigen/Cholesky>
+#include <Eigen/LU>
 
 #include <algorithm>
 #include <limits>
@@ -85,14 +86,49 @@ bool certificate(
 {
   if (!x.allFinite())
     return false;
-  const Vector Hx = H * x;
-  const Vector v = Hx + c;
-  const Vector magnitude = H.cwiseAbs() * x.cwiseAbs() + c.cwiseAbs();
-  const Real dualScale = 1.0 + magnitude[0] + support(magnitude, cone);
-  const Real dotScale = 1.0 + x.cwiseAbs().dot(magnitude);
-  return primalViolation(x, cone) <= tolerance * std::max(1.0, std::abs(x[0]))
+  const Real hScale = H.cwiseAbs().maxCoeff();
+  const Real cScale = c.cwiseAbs().maxCoeff();
+  const Real dataScale = std::max(hScale, cScale);
+  Matrix normalizedH = H;
+  Vector normalizedC = c;
+  if (dataScale > 0.0) {
+    normalizedH /= dataScale;
+    normalizedC /= dataScale;
+  }
+  // Scale impulses too, so complementarity cannot underflow or overflow.
+  const Real impulseScale
+      = std::max(x.cwiseAbs().maxCoeff(), hScale > 0.0 ? cScale / hScale : 0.0);
+  if (!std::isfinite(impulseScale))
+    return false;
+  Vector normalizedX = x;
+  if (impulseScale > 0.0) {
+    normalizedX /= impulseScale;
+    if (hScale > 0.0)
+      normalizedC /= impulseScale;
+  }
+  const Vector v = normalizedH * normalizedX + normalizedC;
+  const Vector magnitude = normalizedH.cwiseAbs() * normalizedX.cwiseAbs()
+                           + normalizedC.cwiseAbs();
+  const Real dualScale = magnitude[0] + support(magnitude, cone);
+  const Real dotScale = normalizedX.cwiseAbs().dot(magnitude);
+  return v.allFinite() && magnitude.allFinite()
+         && primalViolation(normalizedX, cone) <= tolerance
          && support(v, cone) - v[0] <= tolerance * dualScale
-         && std::abs(x.dot(v)) <= tolerance * dotScale;
+         && std::abs(normalizedX.dot(v)) <= tolerance * dotScale;
+}
+
+bool positiveSemidefinite(const Matrix& H)
+{
+  // H is normalized to a largest entry of 1, so an absolute tolerance works.
+  constexpr Real tolerance = 1e-12;
+  for (int i = 0; i < 3; ++i) {
+    if (H(i, i) < -tolerance)
+      return false;
+    const int j = (i + 1) % 3;
+    if (H(i, i) * H(j, j) - H(i, j) * H(j, i) < -tolerance)
+      return false;
+  }
+  return H.determinant() >= -tolerance;
 }
 
 bool prepare(
@@ -100,20 +136,29 @@ bool prepare(
     const Eigen::Vector3d& c,
     const FrictionCone& cone,
     Matrix& H,
-    double& regularization)
+    double& regularization,
+    bool regularize = true)
 {
   if (!input.allFinite() || !c.allFinite() || !valid(cone))
     return false;
   const double scale = input.cwiseAbs().maxCoeff();
-  if ((input - input.transpose()).cwiseAbs().maxCoeff()
-      > 1e-12 * std::max(1.0, scale))
+  H = input;
+  if (scale > 0.0)
+    H /= scale;
+  if ((H - H.transpose()).cwiseAbs().maxCoeff() > 1e-12)
     return false;
-  H = (0.5 * (input + input.transpose())).cast<Real>();
+  H = (0.5 * H + 0.5 * H.transpose()).eval();
   Eigen::LDLT<Matrix> ldlt(H);
-  const Real trace = H.trace();
-  if (trace < 0.0 || ldlt.vectorD().minCoeff() < -1e-12 * std::max(1.0, trace))
+  // LDLT pivots cannot tell a singular PSD block (zero pivots, NumericalIssue)
+  // from an indefinite one with a zero diagonal, so require every principal
+  // minor of the normalized block to be nonnegative up to rounding.
+  if (!positiveSemidefinite(H))
     return false;
-  if (ldlt.vectorD().minCoeff() <= 1e-18 * std::max(1.0, trace)) {
+  H = (0.5 * input + 0.5 * input.transpose()).cast<Real>();
+  if (!regularize)
+    return true;
+  const Real trace = H.trace();
+  if (scale * ldlt.vectorD().minCoeff() <= 1e-18 * std::max(1.0, trace)) {
     regularization = double(1e-12 * (trace > 0.0 ? trace : 1.0));
     H.diagonal().array() += Real(regularization);
     ldlt.compute(H);
@@ -447,14 +492,12 @@ bool coneQpCertificate(
     const FrictionCone& cone,
     double tolerance)
 {
-  return H.allFinite() && c.allFinite() && valid(cone)
-         && std::isfinite(tolerance) && tolerance > 0.0
+  Matrix checked;
+  double regularization = 0.0;
+  return std::isfinite(tolerance) && tolerance > 0.0
+         && prepare(H, c, cone, checked, regularization, false)
          && certificate(
-             H.cast<Real>(),
-             c.cast<Real>(),
-             impulse.cast<Real>(),
-             cone,
-             tolerance);
+             checked, c.cast<Real>(), impulse.cast<Real>(), cone, tolerance);
 }
 
 LocalSolveResult solveExactContact(
