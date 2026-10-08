@@ -188,7 +188,7 @@ Eigen::Vector3d boxSupport(
   return transform * localPoint;
 }
 
-Eigen::Vector3d closestPointOnBox(
+Eigen::Vector3d ccdClosestPointOnBox(
     const Eigen::Vector3d& localPoint, const Eigen::Vector3d& halfExtents)
 {
   Eigen::Vector3d closest;
@@ -433,7 +433,7 @@ bool sphereCastBox(
 
   if (hitAxis < 0 || tMin <= 0.0) {
     const Eigen::Vector3d closestOnBox
-        = closestPointOnBox(localStart, halfExtents);
+        = ccdClosestPointOnBox(localStart, halfExtents);
     Eigen::Vector3d localNormal = localStart - closestOnBox;
     if (localNormal.squaredNorm() > expandedRadiusSq) {
       return runSupportFallback();
@@ -457,7 +457,7 @@ bool sphereCastBox(
 
   Eigen::Vector3d hitCenter = localStart + tMin * localDir;
   const Eigen::Vector3d closestOnBox
-      = closestPointOnBox(hitCenter, halfExtents);
+      = ccdClosestPointOnBox(hitCenter, halfExtents);
   Eigen::Vector3d localNormal = hitCenter - closestOnBox;
   if (localNormal.squaredNorm() > expandedRadiusSq) {
     return runSupportFallback();

@@ -77,7 +77,7 @@ struct LocalTriangle
   }
 };
 
-struct SegmentClosestResult
+struct MeshMeshSegmentClosestResult
 {
   Eigen::Vector3d point1;
   Eigen::Vector3d point2;
@@ -548,7 +548,7 @@ bool pointInTriangleProjected(
   return !(hasNeg && hasPos);
 }
 
-SegmentClosestResult closestPointsBetweenSegments(
+MeshMeshSegmentClosestResult meshMeshClosestPointsBetweenSegments(
     const Eigen::Vector3d& p1,
     const Eigen::Vector3d& q1,
     const Eigen::Vector3d& p2,
@@ -592,7 +592,7 @@ SegmentClosestResult closestPointsBetweenSegments(
     }
   }
 
-  SegmentClosestResult result;
+  MeshMeshSegmentClosestResult result;
   result.s = s;
   result.t = t;
   result.point1 = p1 + d1 * s;
@@ -660,8 +660,9 @@ SegmentTriangleClosestResult closestSegmentTriangle(
     const Eigen::Vector3d& edgeStart = triVertices[static_cast<std::size_t>(i)];
     const Eigen::Vector3d& edgeEnd
         = triVertices[static_cast<std::size_t>((i + 1) % 3)];
-    const SegmentClosestResult edgeClosest
-        = closestPointsBetweenSegments(segStart, segEnd, edgeStart, edgeEnd);
+    const MeshMeshSegmentClosestResult edgeClosest
+        = meshMeshClosestPointsBetweenSegments(
+            segStart, segEnd, edgeStart, edgeEnd);
     updateBest(edgeClosest.point1, edgeClosest.point2);
   }
 
@@ -826,8 +827,9 @@ TriIntersectionResult triangleTriangleIntersection(
 
   for (const auto& e1 : edges1) {
     for (const auto& e2 : edges2) {
-      const SegmentClosestResult segClosest = closestPointsBetweenSegments(
-          e1.first, e1.second, e2.first, e2.second);
+      const MeshMeshSegmentClosestResult segClosest
+          = meshMeshClosestPointsBetweenSegments(
+              e1.first, e1.second, e2.first, e2.second);
       if (segClosest.distSq <= 1e-10) {
         addUniquePoint(
             contactPoints, (segClosest.point1 + segClosest.point2) * 0.5);

@@ -30,48 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pointers.hpp"
+#pragma once
 
-#include <dart/gui/osg/osg.hpp>
-
-#include <dart/dart.hpp>
-
-#include <pybind11/eigen.h>
+#include <osg/ref_ptr>
 #include <pybind11/pybind11.h>
 
-namespace py = pybind11;
-
-namespace dart {
-namespace python {
-
-void ImGuiViewer(py::module& m)
-{
-  ::py::class_<
-      dart::gui::osg::ImGuiViewer,
-      dart::gui::osg::Viewer,
-      osg::ref_ptr<dart::gui::osg::ImGuiViewer>>(m, "ImGuiViewer")
-      .def(::py::init<>())
-      .def(
-          ::py::init([](const Eigen::Vector4d& clearColor) {
-            return new ::dart::gui::osg::ImGuiViewer(
-                gui::osg::eigToOsgVec4f(clearColor));
-          }),
-          ::py::arg("clearColor"))
-      .def(::py::init<const osg::Vec4&>(), ::py::arg("clearColor"))
-      .def(
-          "getImGuiHandler",
-          +[](dart::gui::osg::ImGuiViewer* self)
-              -> dart::gui::osg::ImGuiHandler* {
-            return self->getImGuiHandler();
-          },
-          ::py::return_value_policy::reference_internal)
-      .def(
-          "showAbout",
-          +[](dart::gui::osg::ImGuiViewer* self) { self->showAbout(); })
-      .def(
-          "hideAbout",
-          +[](dart::gui::osg::ImGuiViewer* self) { self->hideAbout(); });
-}
-
-} // namespace python
-} // namespace dart
+// Declare the holder once for every OSG binding: repeating this
+// specialization in each source file breaks unity builds, which compile
+// several of these files as one translation unit.
+PYBIND11_DECLARE_HOLDER_TYPE(T, ::osg::ref_ptr<T>, true);

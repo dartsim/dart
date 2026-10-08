@@ -54,10 +54,10 @@
 #define DART_CFM 1e-5
 // #define DART_MAX_NUMBER_OF_CONTACTS 32
 
-#define DART_RESTITUTION_COEFF_THRESHOLD 1e-3
-#define DART_FRICTION_COEFF_THRESHOLD 1e-3
-#define DART_BOUNCING_VELOCITY_THRESHOLD 1e-1
-#define DART_MAX_BOUNCING_VELOCITY 1e+2
+#define DART_SOFT_RESTITUTION_COEFF_THRESHOLD 1e-3
+#define DART_SOFT_FRICTION_COEFF_THRESHOLD 1e-3
+#define DART_SOFT_BOUNCING_VELOCITY_THRESHOLD 1e-1
+#define DART_SOFT_MAX_BOUNCING_VELOCITY 1e+2
 #define DART_CONTACT_CONSTRAINT_EPSILON 1e-6
 
 namespace dart {
@@ -68,8 +68,8 @@ double SoftContactConstraint::mErrorReductionParameter = DART_ERP;
 double SoftContactConstraint::mMaxErrorReductionVelocity = DART_MAX_ERV;
 double SoftContactConstraint::mConstraintForceMixing = DART_CFM;
 
-constexpr double DART_DEFAULT_FRICTION_COEFF = 1.0;
-constexpr double DART_DEFAULT_RESTITUTION_COEFF = 0.0;
+constexpr double kSoftContactDefaultFrictionCoeff = 1.0;
+constexpr double kSoftContactDefaultRestitutionCoeff = 0.0;
 
 //==============================================================================
 static double dotColumnTail3(
@@ -106,8 +106,8 @@ SoftContactConstraint::SoftContactConstraint(
     mContact(nullptr),
     mSoftCollInfo(nullptr),
     mFirstFrictionalDirection(Eigen::Vector3d::UnitZ()),
-    mFrictionCoeff(DART_DEFAULT_FRICTION_COEFF),
-    mRestitutionCoeff(DART_DEFAULT_RESTITUTION_COEFF),
+    mFrictionCoeff(kSoftContactDefaultFrictionCoeff),
+    mRestitutionCoeff(kSoftContactDefaultRestitutionCoeff),
     mJacobians1(Eigen::Matrix<double, 6, 3>::Zero()),
     mJacobians2(Eigen::Matrix<double, 6, 3>::Zero()),
     mIsFrictionOn(true),
@@ -132,8 +132,8 @@ void SoftContactConstraint::reset(collision::Contact& contact, double timeStep)
   mContact = &contact;
   mSoftCollInfo = static_cast<collision::SoftCollisionInfo*>(contact.userData);
   mFirstFrictionalDirection = Eigen::Vector3d::UnitZ();
-  mFrictionCoeff = DART_DEFAULT_FRICTION_COEFF;
-  mRestitutionCoeff = DART_DEFAULT_RESTITUTION_COEFF;
+  mFrictionCoeff = kSoftContactDefaultFrictionCoeff;
+  mRestitutionCoeff = kSoftContactDefaultRestitutionCoeff;
   mJacobians1.setZero();
   mJacobians2.setZero();
   mTangentBasis.setZero();
@@ -194,7 +194,7 @@ void SoftContactConstraint::reset(collision::Contact& contact, double timeStep)
   const double restitutionCoeffA = computeRestitutionCoefficient(shapeNodeA);
   const double restitutionCoeffB = computeRestitutionCoefficient(shapeNodeB);
   mRestitutionCoeff = restitutionCoeffA * restitutionCoeffB;
-  if (mRestitutionCoeff > DART_RESTITUTION_COEFF_THRESHOLD)
+  if (mRestitutionCoeff > DART_SOFT_RESTITUTION_COEFF_THRESHOLD)
     mIsBounceOn = true;
   else
     mIsBounceOn = false;
@@ -211,7 +211,7 @@ void SoftContactConstraint::reset(collision::Contact& contact, double timeStep)
   // TODO(JS): Consider providing various ways of the combined friction or
   // allowing to override this method by a custom method
   mFrictionCoeff = std::min(frictionCoeffA, frictionCoeffB);
-  if (mFrictionCoeff > DART_FRICTION_COEFF_THRESHOLD) {
+  if (mFrictionCoeff > DART_SOFT_FRICTION_COEFF_THRESHOLD) {
     mIsFrictionOn = true;
 
     // Update frictional direction
@@ -525,12 +525,12 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
       double& negativeRelativeVel = _info->b[index];
       double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
 
-      if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD) {
+      if (restitutionVel > DART_SOFT_BOUNCING_VELOCITY_THRESHOLD) {
         if (restitutionVel > bouncingVelocity) {
           bouncingVelocity = restitutionVel;
 
-          if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY) {
-            bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
+          if (bouncingVelocity > DART_SOFT_MAX_BOUNCING_VELOCITY) {
+            bouncingVelocity = DART_SOFT_MAX_BOUNCING_VELOCITY;
           }
         }
       }
@@ -578,12 +578,12 @@ void SoftContactConstraint::getInformation(ConstraintInfo* _info)
       double& negativeRelativeVel = _info->b[0];
       double restitutionVel = negativeRelativeVel * mRestitutionCoeff;
 
-      if (restitutionVel > DART_BOUNCING_VELOCITY_THRESHOLD) {
+      if (restitutionVel > DART_SOFT_BOUNCING_VELOCITY_THRESHOLD) {
         if (restitutionVel > bouncingVelocity) {
           bouncingVelocity = restitutionVel;
 
-          if (bouncingVelocity > DART_MAX_BOUNCING_VELOCITY) {
-            bouncingVelocity = DART_MAX_BOUNCING_VELOCITY;
+          if (bouncingVelocity > DART_SOFT_MAX_BOUNCING_VELOCITY) {
+            bouncingVelocity = DART_SOFT_MAX_BOUNCING_VELOCITY;
           }
         }
       }
@@ -925,9 +925,9 @@ double SoftContactConstraint::computeFrictionCoefficient(
   if (dynamicAspect == nullptr) {
     dtwarn << "[ContactConstraint] Attempt to extract friction coefficient "
            << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_FRICTION_COEFF << ") will be used "
+           << "value (" << kSoftContactDefaultFrictionCoeff << ") will be used "
            << "instead.\n";
-    return DART_DEFAULT_FRICTION_COEFF;
+    return kSoftContactDefaultFrictionCoeff;
   }
 
   const double coeff = dynamicAspect->getFrictionCoeff();
@@ -935,8 +935,8 @@ double SoftContactConstraint::computeFrictionCoefficient(
     dtwarn << "[ContactConstraint] Invalid friction coefficient (" << coeff
            << ") from ShapeNode [" << shapeNode->getName()
            << "]. Friction must be non-negative and finite. Using default "
-           << "value (" << DART_DEFAULT_FRICTION_COEFF << ").\n";
-    return DART_DEFAULT_FRICTION_COEFF;
+           << "value (" << kSoftContactDefaultFrictionCoeff << ").\n";
+    return kSoftContactDefaultFrictionCoeff;
   }
 
   return coeff;
@@ -953,9 +953,10 @@ double SoftContactConstraint::computeRestitutionCoefficient(
   if (dynamicAspect == nullptr) {
     dtwarn << "[ContactConstraint] Attempt to extract restitution coefficient "
            << "from a ShapeNode that doesn't have DynamicAspect. The default "
-           << "value (" << DART_DEFAULT_RESTITUTION_COEFF << ") will be used "
+           << "value (" << kSoftContactDefaultRestitutionCoeff
+           << ") will be used "
            << "instead.\n";
-    return DART_DEFAULT_RESTITUTION_COEFF;
+    return kSoftContactDefaultRestitutionCoeff;
   }
 
   const double coeff = dynamicAspect->getRestitutionCoeff();
@@ -963,8 +964,9 @@ double SoftContactConstraint::computeRestitutionCoefficient(
     dtwarn << "[ContactConstraint] Invalid restitution coefficient (" << coeff
            << ") from ShapeNode [" << shapeNode->getName()
            << "]. Restitution must be in range [0, 1] and finite. Using "
-           << "default value (" << DART_DEFAULT_RESTITUTION_COEFF << ").\n";
-    return DART_DEFAULT_RESTITUTION_COEFF;
+           << "default value (" << kSoftContactDefaultRestitutionCoeff
+           << ").\n";
+    return kSoftContactDefaultRestitutionCoeff;
   }
 
   return coeff;
@@ -1112,3 +1114,14 @@ dynamics::PointMass* SoftContactConstraint::selectCollidingPointMass(
 
 } // namespace constraint
 } // namespace dart
+
+#undef DART_EPSILON
+#undef DART_ERROR_ALLOWANCE
+#undef DART_ERP
+#undef DART_MAX_ERV
+#undef DART_CFM
+#undef DART_SOFT_RESTITUTION_COEFF_THRESHOLD
+#undef DART_SOFT_FRICTION_COEFF_THRESHOLD
+#undef DART_SOFT_BOUNCING_VELOCITY_THRESHOLD
+#undef DART_SOFT_MAX_BOUNCING_VELOCITY
+#undef DART_CONTACT_CONSTRAINT_EPSILON

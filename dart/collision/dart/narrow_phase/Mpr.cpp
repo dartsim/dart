@@ -41,7 +41,7 @@ namespace dart::collision::native {
 
 namespace {
 
-constexpr double kEpsilon = 1e-12;
+constexpr double kMprEpsilon = 1e-12;
 
 struct Portal
 {
@@ -49,13 +49,13 @@ struct Portal
   int size = 0;
 };
 
-SupportPoint computeSupport(
+SupportPoint computeMprSupport(
     const SupportFunction& supportA,
     const SupportFunction& supportB,
     const Eigen::Vector3d& direction)
 {
   Eigen::Vector3d dir = direction;
-  if (dir.squaredNorm() < kEpsilon) {
+  if (dir.squaredNorm() < kMprEpsilon) {
     dir = Eigen::Vector3d::UnitX();
   }
 
@@ -78,13 +78,13 @@ SupportPoint makeCenterPoint(
 
 bool isZero(double value)
 {
-  return std::abs(value) < kEpsilon;
+  return std::abs(value) < kMprEpsilon;
 }
 
 bool normalizeSafe(Eigen::Vector3d& v)
 {
   const double norm = v.norm();
-  if (norm < kEpsilon) {
+  if (norm < kMprEpsilon) {
     return false;
   }
   v /= norm;
@@ -157,7 +157,7 @@ int discoverPortal(
   portal.points[0] = makeCenterPoint(centerA, centerB);
   portal.size = 1;
 
-  if (portal.points[0].v.squaredNorm() < kEpsilon) {
+  if (portal.points[0].v.squaredNorm() < kMprEpsilon) {
     portal.points[0].v += Eigen::Vector3d(Mpr::kTolerance * 10.0, 0.0, 0.0);
   }
 
@@ -166,7 +166,7 @@ int discoverPortal(
     dir = Eigen::Vector3d::UnitX();
   }
 
-  portal.points[1] = computeSupport(supportA, supportB, dir);
+  portal.points[1] = computeMprSupport(supportA, supportB, dir);
   portal.size = 2;
 
   double dot = portal.points[1].v.dot(dir);
@@ -175,15 +175,15 @@ int discoverPortal(
   }
 
   dir = portal.points[0].v.cross(portal.points[1].v);
-  if (dir.squaredNorm() < kEpsilon) {
-    if (portal.points[1].v.squaredNorm() < kEpsilon) {
+  if (dir.squaredNorm() < kMprEpsilon) {
+    if (portal.points[1].v.squaredNorm() < kMprEpsilon) {
       return 1;
     }
     return 2;
   }
 
   dir.normalize();
-  portal.points[2] = computeSupport(supportA, supportB, dir);
+  portal.points[2] = computeMprSupport(supportA, supportB, dir);
   dot = portal.points[2].v.dot(dir);
   if (isZero(dot) || dot < 0.0) {
     return -1;
@@ -205,7 +205,7 @@ int discoverPortal(
   }
 
   while (portal.size < 4) {
-    portal.points[3] = computeSupport(supportA, supportB, dir);
+    portal.points[3] = computeMprSupport(supportA, supportB, dir);
     dot = portal.points[3].v.dot(dir);
     if (isZero(dot) || dot < 0.0) {
       return -1;
@@ -256,7 +256,7 @@ int refinePortal(
       return 0;
     }
 
-    SupportPoint v4 = computeSupport(supportA, supportB, dir);
+    SupportPoint v4 = computeMprSupport(supportA, supportB, dir);
 
     if (!portalCanEncapsulateOrigin(v4, dir)
         || portalReachTolerance(portal, v4, dir)) {
@@ -269,19 +269,19 @@ int refinePortal(
   return -1;
 }
 
-struct SegmentClosestResult
+struct MprSegmentClosestResult
 {
   Eigen::Vector3d closest = Eigen::Vector3d::Zero();
   double t = 0.0;
 };
 
-SegmentClosestResult closestPointOnSegmentToOrigin(
+MprSegmentClosestResult closestPointOnSegmentToOrigin(
     const Eigen::Vector3d& a, const Eigen::Vector3d& b)
 {
-  SegmentClosestResult result;
+  MprSegmentClosestResult result;
   const Eigen::Vector3d ab = b - a;
   const double abLen2 = ab.squaredNorm();
-  if (abLen2 < kEpsilon) {
+  if (abLen2 < kMprEpsilon) {
     result.closest = a;
     result.t = 0.0;
     return result;
@@ -425,7 +425,7 @@ void findPenetration(
   for (int iter = 0; iter < Mpr::kMaxIterations; ++iter) {
     Eigen::Vector3d dir;
     portalDir(portal, dir);
-    SupportPoint v4 = computeSupport(supportA, supportB, dir);
+    SupportPoint v4 = computeMprSupport(supportA, supportB, dir);
 
     if (portalReachTolerance(portal, v4, dir)
         || iter + 1 >= Mpr::kMaxIterations) {
@@ -436,7 +436,7 @@ void findPenetration(
       const double depth = closest.norm();
 
       result.depth = depth;
-      if (depth < kEpsilon) {
+      if (depth < kMprEpsilon) {
         result.normal = Eigen::Vector3d::Zero();
       } else {
         result.normal = closest / depth;
@@ -470,7 +470,7 @@ void findPenetrationSegment(Portal& portal, MprResult& result)
 
   result.normal = portal.points[1].v;
   result.depth = result.normal.norm();
-  if (result.depth > kEpsilon) {
+  if (result.depth > kMprEpsilon) {
     result.normal /= result.depth;
   } else {
     result.normal = Eigen::Vector3d::Zero();
