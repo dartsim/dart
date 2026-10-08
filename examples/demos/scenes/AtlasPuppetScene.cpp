@@ -32,9 +32,9 @@
 
 // Ported from examples/atlas_puppet: a purely kinematic Atlas whole-body IK
 // puppet. Four end effectors (l_hand, r_hand, l_foot, r_foot) can each be
-// driven by a draggable InteractiveFrame target; a RelaxedPosture objective
-// and BalanceConstraint keep the robot upright while W/A/S/D/Q/E/F/Z walk it
-// around the scene and 'R' asks the solver to optimize posture/balance.
+// driven by a draggable InteractiveFrame target; a AtlasPuppetRelaxedPosture
+// objective and BalanceConstraint keep the robot upright while W/A/S/D/Q/E/F/Z
+// walk it around the scene and 'R' asks the solver to optimize posture/balance.
 //
 // Deviations from the original: the original drives everything from
 // WorldNode::customPreRefresh() (render-rate, since
@@ -85,16 +85,17 @@ using dart::dynamics::EndEffector;
 using dart::dynamics::Frame;
 using dart::dynamics::SkeletonPtr;
 
-constexpr double kDisplayElevation = 0.05;
+constexpr double kAtlasPuppetDisplayElevation = 0.05;
 
 //==============================================================================
-/// Ported verbatim from the original's RelaxedPosture: a soft objective that
-/// nudges the posture back inside [lower, upper] (or all the way to `ideal`
-/// while `enforceIdealPosture` is held true, i.e. while 'r' is held).
-class RelaxedPosture : public dart::optimizer::Function
+/// Ported verbatim from the original's AtlasPuppetRelaxedPosture: a soft
+/// objective that nudges the posture back inside [lower, upper] (or all the way
+/// to `ideal` while `enforceIdealPosture` is held true, i.e. while 'r' is
+/// held).
+class AtlasPuppetRelaxedPosture : public dart::optimizer::Function
 {
 public:
-  RelaxedPosture(
+  AtlasPuppetRelaxedPosture(
       const Eigen::VectorXd& idealPosture,
       const Eigen::VectorXd& lower,
       const Eigen::VectorXd& upper,
@@ -151,7 +152,7 @@ protected:
 };
 
 //==============================================================================
-enum MoveComponent
+enum AtlasPuppetMoveComponent
 {
   MoveQ = 0,
   MoveW,
@@ -183,7 +184,7 @@ struct AtlasPuppetState
   dart::common::aligned_vector<Eigen::Isometry3d> defaultTargetTf;
   std::vector<bool> constraintActive;
 
-  std::shared_ptr<RelaxedPosture> posture;
+  std::shared_ptr<AtlasPuppetRelaxedPosture> posture;
   std::shared_ptr<dart::constraint::BalanceConstraint> balance;
 
   std::size_t consecutiveFailures = 0;
@@ -193,7 +194,7 @@ struct AtlasPuppetState
 };
 
 //==============================================================================
-SkeletonPtr createGround()
+SkeletonPtr createAtlasPuppetGround()
 {
   auto ground = dart::dynamics::Skeleton::create("ground");
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -266,7 +267,7 @@ void setupStartConfiguration(const SkeletonPtr& atlas)
 }
 
 //==============================================================================
-void setupEndEffectors(const SkeletonPtr& atlas)
+void setupAtlasPuppetEndEffectors(const SkeletonPtr& atlas)
 {
   Eigen::VectorXd rootJointWeights = 0.01 * Eigen::VectorXd::Ones(6);
 
@@ -355,7 +356,7 @@ void setupEndEffectors(const SkeletonPtr& atlas)
 }
 
 //==============================================================================
-void setupWholeBodySolver(const SkeletonPtr& atlas)
+void setupAtlasPuppetWholeBodySolver(const SkeletonPtr& atlas)
 {
   auto solver
       = std::dynamic_pointer_cast<dart::optimizer::GradientDescentSolver>(
@@ -390,7 +391,7 @@ void setupWholeBodySolver(const SkeletonPtr& atlas)
   upperPosture[7] = 0.1;
   upperPosture[8] = 0.1;
 
-  auto objective = std::make_shared<RelaxedPosture>(
+  auto objective = std::make_shared<AtlasPuppetRelaxedPosture>(
       atlas->getPositions(), lowerPosture, upperPosture, weights);
   atlas->getIK()->setObjective(objective);
 
@@ -621,11 +622,11 @@ DemoScene makeAtlasPuppetScene()
       throw std::runtime_error(
           "failed to load dart://sample/sdf/atlas/atlas_v3_no_head.urdf");
     world->addSkeleton(atlas);
-    world->addSkeleton(createGround());
+    world->addSkeleton(createAtlasPuppetGround());
 
     setupStartConfiguration(atlas);
-    setupEndEffectors(atlas);
-    setupWholeBodySolver(atlas);
+    setupAtlasPuppetEndEffectors(atlas);
+    setupAtlasPuppetWholeBodySolver(atlas);
 
     auto state = std::make_shared<AtlasPuppetState>();
     state->atlas = atlas;
@@ -641,7 +642,7 @@ DemoScene makeAtlasPuppetScene()
       }
     });
 
-    state->posture = std::dynamic_pointer_cast<RelaxedPosture>(
+    state->posture = std::dynamic_pointer_cast<AtlasPuppetRelaxedPosture>(
         atlas->getIK(true)->getObjective());
     state->balance
         = std::dynamic_pointer_cast<dart::constraint::BalanceConstraint>(
@@ -684,8 +685,8 @@ DemoScene makeAtlasPuppetScene()
         }
       });
 
-      ctx.addAttachment(
-          new dart::gui::osg::SupportPolygonVisual(atlas, kDisplayElevation));
+      ctx.addAttachment(new dart::gui::osg::SupportPolygonVisual(
+          atlas, kAtlasPuppetDisplayElevation));
       ctx.addEventHandler(new AtlasPuppetMoveHandler(state));
     };
 

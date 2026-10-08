@@ -82,7 +82,7 @@ using dart::dynamics::EndEffector;
 using dart::dynamics::SkeletonPtr;
 
 //==============================================================================
-dart::dynamics::SkeletonPtr createGround()
+dart::dynamics::SkeletonPtr createWamIkFastGround()
 {
   auto ground = dart::dynamics::Skeleton::create("ground");
   Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
@@ -246,7 +246,7 @@ DemoScene makeWamIkFastScene()
         -infiniteAngular, infiniteAngular);
 
     world->addSkeleton(wam);
-    world->addSkeleton(createGround());
+    world->addSkeleton(createWamIkFastGround());
 
     auto state = std::make_shared<WamIkFastState>();
     state->wam = wam;

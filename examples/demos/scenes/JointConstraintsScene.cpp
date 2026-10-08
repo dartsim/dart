@@ -76,9 +76,9 @@ namespace {
 
 using dart::dynamics::SkeletonPtr;
 
-const char* const kPelvisName = "h_pelvis";
-const char* const kSpineName = "h_spine";
-const char* const kLeftHeelName = "h_heel_left";
+const char* const kJointConstraintsPelvisName = "h_pelvis";
+const char* const kJointConstraintsSpineName = "h_spine";
+const char* const kJointConstraintsLeftHeelName = "h_heel_left";
 
 //==============================================================================
 /// SPD tracking controller state, ported from examples/joint_constraints'
@@ -95,7 +95,8 @@ struct SpdController
 };
 
 //==============================================================================
-SpdController makeController(const SkeletonPtr& skel, double timestep)
+SpdController makeJointConstraintsController(
+    const SkeletonPtr& skel, double timestep)
 {
   SpdController controller;
   const int nDof = static_cast<int>(skel->getNumDofs());
@@ -140,7 +141,7 @@ Eigen::VectorXd computeTorques(
   // Ankle strategy for the sagittal plane: com[0]/cop[0] are the world-frame
   // X coordinates, invariant under the Y-up -> Z-up reorientation (see file
   // comment), so this logic is byte-for-byte identical to the original.
-  auto* heel = skel->getBodyNode(kLeftHeelName);
+  auto* heel = skel->getBodyNode(kJointConstraintsLeftHeelName);
   if (heel && torques.size() > 26) {
     const Eigen::Vector3d com = skel->getCOM();
     const Eigen::Vector3d cop
@@ -198,7 +199,7 @@ void toggleHarness(
 {
   state.harnessOn = !state.harnessOn;
   if (state.harnessOn) {
-    auto* pelvis = skel->getBodyNode(kPelvisName);
+    auto* pelvis = skel->getBodyNode(kJointConstraintsPelvisName);
     if (!pelvis)
       return;
     state.weldJoint
@@ -236,9 +237,9 @@ DemoScene makeJointConstraintsScene()
     // Initial pose: global orientation/position y, hips, knees, ankles, lower
     // back -- unaffected by the reorientation (see file comment). The indices
     // are hardcoded up to 21, so guard the DOF layout the same way
-    // makeController and computeTorques guard theirs (every other
-    // hardcoded-index path here is clamped or checked); a smaller skeleton
-    // would otherwise index out of range.
+    // makeJointConstraintsController and computeTorques guard theirs (every
+    // other hardcoded-index path here is clamped or checked); a smaller
+    // skeleton would otherwise index out of range.
     const std::vector<std::size_t> genCoordIds
         = {1, 4, 6, 9, 10, 13, 16, 17, 21};
     if (skel->getNumDofs() < 22)
@@ -249,7 +250,8 @@ DemoScene makeJointConstraintsScene()
     skel->setPositions(genCoordIds, initConfig);
 
     auto state = std::make_shared<JointConstraintsState>();
-    state->controller = makeController(skel, world->getTimeStep());
+    state->controller
+        = makeJointConstraintsController(skel, world->getTimeStep());
 
     DemoSceneSetup setup;
     setup.world = world;
@@ -267,7 +269,7 @@ DemoScene makeJointConstraintsScene()
       // destabilize the biped.
       state->controller.timestep = world->getTimeStep();
 
-      auto* spine = skel->getBodyNode(kSpineName);
+      auto* spine = skel->getBodyNode(kJointConstraintsSpineName);
       if (spine)
         spine->addExtForce(state->perturbationForce);
 

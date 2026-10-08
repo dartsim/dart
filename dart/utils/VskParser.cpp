@@ -168,7 +168,7 @@ void tokenize(
     std::vector<std::string>& tokens,
     const std::string& delimiters = " ");
 
-common::ResourceRetrieverPtr getRetriever(
+common::ResourceRetrieverPtr getVskRetriever(
     const common::ResourceRetrieverPtr& retriever);
 
 } // anonymous namespace
@@ -201,7 +201,7 @@ VskParser::Options::Options(
 dynamics::SkeletonPtr VskParser::readSkeleton(
     const common::Uri& fileUri, Options options)
 {
-  options.retrieverOrNullptr = getRetriever(options.retrieverOrNullptr);
+  options.retrieverOrNullptr = getVskRetriever(options.retrieverOrNullptr);
 
   // Load VSK file and create document
   tinyxml2::XMLDocument vskDocument;
@@ -985,7 +985,7 @@ void tokenize(
 }
 
 //==============================================================================
-common::ResourceRetrieverPtr getRetriever(
+common::ResourceRetrieverPtr getVskRetriever(
     const common::ResourceRetrieverPtr& retriever)
 {
   if (retriever) {
