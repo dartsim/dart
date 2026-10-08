@@ -39,6 +39,13 @@ dart_benchmarks(
   SOURCES
     bm_dantzig_lcp.cpp
     bm_dart_collision.cpp
+    bm_friction_local_solve.cpp
   LINK_LIBRARIES
     ${unit_benchmark_link_libraries}
 )
+
+set_target_properties(
+  BM_UNIT_friction_local_solve
+  PROPERTIES OUTPUT_NAME bm_friction_local_solve
+)
+add_custom_target(bm_friction_local_solve DEPENDS BM_UNIT_friction_local_solve)
