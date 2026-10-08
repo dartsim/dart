@@ -2078,6 +2078,51 @@ TEST(StepAllocation, AwakeGridSteadyState)
   }
 }
 
+// Z1b-F6: convex support callables and EPA scratch retain storage after warmup.
+TEST(StepAllocation, ConvexConvexSteadyState)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  auto world = createAllocationGateWorld(
+      dart::collision::DARTCollisionDetector::create(), false);
+  using ConvexMesh = dart::dynamics::ConvexMeshShape;
+  const ConvexMesh::Vertices vertices{
+      {-0.25, -0.25, -0.25},
+      {0.25, -0.25, -0.25},
+      {-0.25, 0.25, -0.25},
+      {0.25, 0.25, -0.25},
+      {-0.25, -0.25, 0.25},
+      {0.25, -0.25, 0.25},
+      {-0.25, 0.25, 0.25},
+      {0.25, 0.25, 0.25}};
+  const ConvexMesh::Triangles triangles{
+      {0, 2, 1},
+      {1, 2, 3},
+      {4, 5, 6},
+      {5, 7, 6},
+      {0, 1, 4},
+      {1, 5, 4},
+      {2, 6, 3},
+      {3, 6, 7},
+      {0, 4, 2},
+      {2, 4, 6},
+      {1, 3, 5},
+      {3, 7, 5}};
+  auto convex
+      = createAllocationGateBox("convex", Eigen::Vector3d(1.2, 0.7, 0.25), 0.5);
+  convex->getBodyNode(0)->getShapeNode(0)->setShape(
+      std::make_shared<ConvexMesh>(vertices, triangles));
+  world->addSkeleton(convex);
+  for (int i = 0; i < 500; ++i)
+    world->step();
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measureWorldStepsNow(world, allocator, 100, 500);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  EXPECT_EQ(countResting(world), 0u);
+  expectAllocationGateBudget("dart_convex_convex_steady", measurement);
+}
+
 // Z2: explicit preparation covers both the freeze event and the first
 // all-resting snapshot; neither may allocate during subsequent steps.
 TEST(StepAllocation, SleepTransition)
