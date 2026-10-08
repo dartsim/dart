@@ -297,7 +297,8 @@ void Frame(py::module& m)
           +[](const dart::dynamics::Frame* self)
               -> const std::set<const dart::dynamics::Entity*> {
             return self->getChildEntities();
-          })
+          },
+          ::py::return_value_policy::reference_internal)
       .def(
           "getNumChildEntities",
           +[](const dart::dynamics::Frame* self) -> std::size_t {
@@ -308,7 +309,8 @@ void Frame(py::module& m)
           +[](const dart::dynamics::Frame* self)
               -> std::set<const dart::dynamics::Frame*> {
             return self->getChildFrames();
-          })
+          },
+          ::py::return_value_policy::reference_internal)
       .def(
           "getNumChildFrames",
           +[](const dart::dynamics::Frame* self) -> std::size_t {

@@ -14,6 +14,12 @@ class SampleObjFunc(dart.optimizer.Function):
         grad[1] = 0.5 / (math.sqrt(x[1]) + 0.000001)
 
 
+def test_modular_function_accepts_callable():
+    function = dart.optimizer.ModularFunction()
+    function.setCostFunction(lambda x: x[0] + 2 * x[1])
+    assert function.eval([3, 4]) == pytest.approx(11)
+
+
 def test_gradient_descent_solver():
     prob = dart.optimizer.Problem(2)
     assert prob.getDimension() == 2
