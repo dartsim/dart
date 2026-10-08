@@ -1233,3 +1233,14 @@ TEST(FrictionCone, RankDeficientBlocksAreNotRejectedAsIndefinite)
       Eigen::Vector3d::Zero(),
       cone));
 }
+
+//==============================================================================
+TEST(FrictionCone, TinyNegativeEigenvaluesAreIndefinite)
+{
+  // diag(-5e-13, 1, 1) is unbounded below along the feasible normal ray.
+  const Eigen::Matrix3d H = Eigen::Vector3d(-5e-13, 1.0, 1.0).asDiagonal();
+  FrictionCone cone;
+  EXPECT_FALSE(coneQpCertificate(
+      H, Eigen::Vector3d(1.0, 0.0, 0.0), Eigen::Vector3d::Zero(), cone));
+  EXPECT_FALSE(solveConeQp(H, Eigen::Vector3d(1.0, 0.0, 0.0), cone).certified);
+}

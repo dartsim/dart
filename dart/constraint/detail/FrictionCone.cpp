@@ -182,9 +182,13 @@ bool prepare(
   // only eigenvalues measure indefiniteness reliably (including singular H).
   if (ldlt.info() != Eigen::Success || ldlt.vectorD().minCoeff() <= 1e-12) {
     Eigen::SelfAdjointEigenSolver<Matrix> eigen(H, Eigen::EigenvaluesOnly);
+    // Rounding scale for a normalized 3x3 eigensolve: rank-deficient PSD
+    // noise stays above it, while any representable negative eigenvalue such
+    // as -5e-13 is rejected.
+    const double tolerance = 16.0 * std::numeric_limits<double>::epsilon();
     if (eigen.info() != Eigen::Success
         || eigen.eigenvalues().minCoeff()
-               < -1e-12 * std::max(1.0, eigen.eigenvalues().maxCoeff()))
+               < -tolerance * std::max(1.0, eigen.eigenvalues().maxCoeff()))
       return false;
   }
   q = c;
