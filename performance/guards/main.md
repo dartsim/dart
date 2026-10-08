@@ -1,6 +1,6 @@
 # DART main canonical behaviour guards
 
-Generated at 2026-10-08T15:46:05.899170+00:00 for `e4cd718cc1666682730a5d5b4d9437d3b40ba264`.
+Generated at 2026-10-08T17:25:58.931498+00:00 for `e4cd718cc1666682730a5d5b4d9437d3b40ba264`.
 Environment fingerprint: `07fe2c8bea6456e1fcd12b4c29dd123048a081a58ae8337fc8c98062e96c2bc0`.
 
 Commands and scene definitions: [baseline evidence](https://github.com/dartsim/dart/blob/main/docs/dev_tasks/dart6_performance_generalization/01-baseline-evidence.md).
@@ -53,5 +53,3 @@ S3 and S6 drift belongs to the #3056 / D7 owners.
 
 `S6/dart` checkpoints: `[{"max_penetration": 0.00397687, "resting": 0, "step": 5000}, {"max_penetration": 0.00398381, "resting": 0, "step": 10000}, {"max_penetration": 0.00385061, "resting": 0, "step": 15000}, {"max_penetration": 0.00363641, "resting": 0, "step": 20000}]`
 
-
-S3 / S6 drift since the prior nightly (informational; #3056 / D7 owners): S3-t1/dart, S3-t4/dart, S3-t16/dart, S3-t1/fcl, S3-t4/fcl, S3-t16/fcl, S3-t1/bullet, S3-t4/bullet, S3-t16/bullet, S3-t1/ode, S3-t4/ode, S3-t16/ode, S6/dart.
