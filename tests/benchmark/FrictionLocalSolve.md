@@ -92,8 +92,9 @@ do not establish a wall-time speedup.
 
 The definiteness check now accepts clearly positive normalized LDLT pivots
 without an eigensolve. Other blocks use self-adjoint eigenvalues with
-`lambda_min >= -1e-12 * max(1, lambda_max)`, preserving rank-one blocks while
-rejecting small negative eigenvalues that principal-minor tolerances missed.
+`lambda_min >= -16 * epsilon * max(1, lambda_max)`, where `epsilon` is double
+machine precision, preserving rank-one blocks while rejecting small negative
+eigenvalues that principal-minor tolerances missed.
 The iterative eigensolver avoids the direct cubic's loss of accuracy at
 repeated eigenvalues.
 

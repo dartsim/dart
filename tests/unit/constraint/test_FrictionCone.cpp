@@ -797,6 +797,66 @@ TEST(FrictionCone, ExtremeObjectiveScalesPreserveNormalShiftUnitsAndWarmStarts)
   }
 }
 
+TEST(FrictionCone, UnrepresentableReturnedNormalShiftCannotCertify)
+{
+  const double smallest = std::numeric_limits<double>::denorm_min();
+  const Eigen::Matrix3d H = smallest * Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d c(0, smallest, 0);
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d::Constant(0.5), law};
+    const auto result = solveExactContact(H, c, cone);
+    if (!result.certified)
+      continue;
+    // The positive opening shift is half the smallest representable double.
+    // Certification in scaled units must not survive its loss on conversion.
+    EXPECT_GT(result.normalShift, 0);
+    EXPECT_NEAR(result.normalShift / smallest, 0.5, 1e-10);
+    Eigen::Vector3d shifted = c;
+    shifted[0] += result.normalShift;
+    EXPECT_TRUE(coneQpCertificate(
+        effectiveMatrix(H, result), shifted, result.impulse, cone));
+  }
+}
+
+TEST(FrictionCone, UnderflowedApexSupportCannotCertifyZeroImpulse)
+{
+  const double scale = std::ldexp(1.0, 990);
+  const Eigen::Matrix3d H = scale * Eigen::Matrix3d::Identity();
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    for (int axis = 0; axis < 2; ++axis) {
+      FrictionCone cone{Eigen::Vector2d::Zero(), law};
+      cone.mu[axis] = 0.25;
+      Eigen::Vector3d c = Eigen::Vector3d::Zero();
+      c[axis + 1] = std::ldexp(1.0, -73);
+      c[2 - axis] = std::ldexp(1.0, 1000);
+      const auto result = solveConeQp(H, c, cone);
+      if (!result.certified)
+        continue;
+      // The huge disabled-axis term cannot erase the active wedge's minimizer:
+      // lambda_n = mu*c_t / (H_nn*(1+mu^2)), lambda_t = -mu*lambda_n.
+      const long double expectedNormal
+          = 0.25L * static_cast<long double>(c[axis + 1])
+            / (static_cast<long double>(scale) * (1 + 0.25L * 0.25L));
+      const long double rounding = std::numeric_limits<double>::denorm_min();
+      EXPECT_GT(result.impulse[0], 0);
+      EXPECT_LT(result.impulse[axis + 1], 0);
+      EXPECT_DOUBLE_EQ(result.impulse[2 - axis], 0);
+      EXPECT_LE(
+          std::abs(
+              static_cast<long double>(result.impulse[0]) - expectedNormal),
+          rounding);
+      EXPECT_LE(
+          std::abs(
+              static_cast<long double>(result.impulse[axis + 1])
+              + 0.25L * expectedNormal),
+          rounding);
+      EXPECT_TRUE(coneQpCertificate(H, c, result.impulse, cone));
+      EXPECT_LE(
+          independentlyCertify(H, c, result.impulse, cone).worst(), 1e-10L);
+    }
+  }
+}
+
 TEST(FrictionCone, ExtremeObjectiveScalesPreserveRegularizationUnits)
 {
   const Eigen::Matrix3d singular = Eigen::Vector3d(1, 1, 0).asDiagonal();
@@ -895,6 +955,39 @@ TEST(FrictionCone, AllZeroBlocksPreserveFixedRegularizationAtExtremeScales)
   EXPECT_TRUE(exact.impulse.isZero());
   EXPECT_DOUBLE_EQ(exact.regularization, 1e-12);
   EXPECT_DOUBLE_EQ(exact.normalShift, 3e307);
+}
+
+TEST(FrictionCone, UnscaledSubnormalBlocksPreserveRegularizationFloor)
+{
+  const double smallest = std::numeric_limits<double>::denorm_min();
+  const Eigen::Matrix3d H = smallest * Eigen::Matrix3d::Identity();
+  const Eigen::Vector3d c(1, 0, 0);
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d::Constant(0.5), law};
+    for (const auto& result :
+         {solveConeQp(H, c, cone), solveExactContact(H, c, cone)}) {
+      if (!result.certified)
+        continue;
+      // The ordinary linear term prevents objective scaling, but the required
+      // positive regularization must still survive its subnormal conversion.
+      EXPECT_DOUBLE_EQ(result.regularization, smallest);
+      EXPECT_TRUE(coneQpCertificate(
+          effectiveMatrix(H, result), c, result.impulse, cone));
+    }
+  }
+}
+
+TEST(FrictionCone, ExactContactRejectsVanishedVelocityProducts)
+{
+  Eigen::Matrix3d H = 1e-20 * Eigen::Matrix3d::Identity();
+  H(0, 1) = H(1, 0) = 1e-320;
+  const Eigen::Vector3d c(-1e-30, 0, 0);
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d::Constant(0.5), law};
+    // A nonzero normal impulse loses its tangential H*lambda contribution in
+    // caller units; that velocity must remain representable for the root solve.
+    EXPECT_FALSE(solveExactContact(H, c, cone).certified);
+  }
 }
 
 TEST(FrictionCone, UnrepresentableCommonScaleCannotProduceFalseCertificates)
@@ -1021,6 +1114,86 @@ TEST(FrictionCone, UnderflowedCertificateCoefficientsFailClosed)
           Eigen::Vector3d::Zero(),
           cone,
           largest));
+    }
+  }
+}
+
+TEST(FrictionCone, VanishedCertificateProductsFailClosed)
+{
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d(1, 0), law};
+    const Eigen::Matrix3d H = Eigen::Vector3d(0, 1e-200, 1).asDiagonal();
+    const Eigen::Vector3d impulse(1, 1e-200, 0);
+    // The feasible impulse has a positive active gradient; losing H*lambda
+    // must not turn that gradient into a certificate for a null-space point.
+    EXPECT_GT(
+        independentlyCertify(H, Eigen::Vector3d::Zero(), impulse, cone).worst(),
+        1e-10L);
+    EXPECT_FALSE(coneQpCertificate(H, Eigen::Vector3d::Zero(), impulse, cone));
+
+    const Eigen::Vector3d stationary(1, 1e-100, 0);
+    const Eigen::Vector3d c = -H * stationary;
+    ASSERT_NE(c[1], 0);
+    // Even a stationary point is outside the supported domain if its
+    // complementarity scale disappears while taking the dot product.
+    EXPECT_FALSE(coneQpCertificate(H, c, stationary, cone));
+
+    const Eigen::Matrix3d nonsingular
+        = Eigen::Vector3d(1, 1e-200, 1).asDiagonal();
+    Eigen::Vector3d perturbed = -nonsingular * stationary;
+    perturbed[1] -= 1e-310;
+    // A surviving normal data scale cannot conceal the vanished tangential
+    // contribution to lambda.dot(H*lambda+c).
+    EXPECT_FALSE(coneQpCertificate(nonsingular, perturbed, stationary, cone));
+  }
+}
+
+TEST(FrictionCone, VanishedDefinitenessAndReferenceScalesFailClosed)
+{
+  const double smallest = std::numeric_limits<double>::denorm_min();
+  const Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d::Ones(), law};
+    const Eigen::Matrix3d H = Eigen::Vector3d(smallest, 2, 2).asDiagonal();
+    const Eigen::Vector3d opening(1, 0, 0);
+    // An opening apex still requires a lossless definiteness normalization.
+    EXPECT_FALSE(coneQpCertificate(H, opening, zero, cone));
+    EXPECT_FALSE(solveConeQp(H, opening, cone).certified);
+    EXPECT_FALSE(solveExactContact(H, opening, cone).certified);
+    // The positive c/H reference impulse lies below the double range.
+    EXPECT_FALSE(coneQpCertificate(
+        2 * Eigen::Matrix3d::Identity(),
+        Eigen::Vector3d(smallest, 0, 0),
+        zero,
+        cone));
+  }
+}
+
+TEST(FrictionCone, SupportAndContactResidualUnderflowFailClosed)
+{
+  const double smallest = std::numeric_limits<double>::denorm_min();
+  const double infinity = std::numeric_limits<double>::infinity();
+  const Eigen::Vector3d zero = Eigen::Vector3d::Zero();
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d::Constant(0.5), law};
+    // The positive tangential support cannot disappear from the normal shift.
+    EXPECT_FALSE(deSaxce(Eigen::Vector3d(0, smallest, 0), cone).allFinite());
+    for (const bool associated : {false, true}) {
+      // Dividing a nonzero velocity by the step scale must not report zero.
+      EXPECT_EQ(
+          contactViolation(
+              zero, Eigen::Vector3d(smallest, 0, 0), 2, cone, associated),
+          infinity);
+      // Squaring this finite residual would erase its nonzero Euclidean norm.
+      EXPECT_DOUBLE_EQ(
+          contactViolation(
+              Eigen::Vector3d(-1e-200, 0, 0), zero, 1, cone, associated),
+          1e-200);
+      // Multiplying a surviving residual by the step scale can still erase it.
+      EXPECT_EQ(
+          contactViolation(
+              Eigen::Vector3d(-smallest, 0, 0), zero, 0.5, cone, associated),
+          infinity);
     }
   }
 }

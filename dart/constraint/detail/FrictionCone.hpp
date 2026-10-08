@@ -78,6 +78,8 @@ struct LocalSolveResult
 /// Invalid inputs return certified=false.
 /// Supported cone coefficients do not imply support for every double-range
 /// objective or impulse: required scaled quantities must remain representable.
+/// Conversions and products that erase a nonzero value or become non-finite
+/// cannot certify a result; shortcuts must be skipped or return uncertified.
 /// All numeric paths use fixed-size storage and a deterministic iteration
 /// order.
 LocalSolveResult solveConeQp(
@@ -103,12 +105,12 @@ Eigen::Vector3d deSaxce(
     const Eigen::Vector3d& velocity, const FrictionCone& cone);
 
 /// Primal infeasibility in normal-impulse units; zero-axis tangents must be
-/// zero. Invalid inputs or non-finite intermediates return positive infinity.
+/// zero. Invalid inputs or unrepresentable intermediates return infinity.
 double coneViolation(const Eigen::Vector3d& impulse, const FrictionCone& cone);
 
 /// a * ||lambda - projection(lambda - shiftedVelocity/a)|| in velocity units.
 /// The associated ablation uses the unshifted velocity.
-/// Invalid inputs or non-finite intermediates return positive infinity.
+/// Invalid inputs or unrepresentable intermediates return positive infinity.
 double contactViolation(
     const Eigen::Vector3d& impulse,
     const Eigen::Vector3d& velocity,
@@ -123,7 +125,7 @@ double contactViolation(
 /// The dual scale uses |H|*|lambda| + |c|, so cancellation is judged relative
 /// to the problem data. Call with the effective regularized matrix of a solve.
 /// Returns false if normalization erases a nonzero H, c or impulse coefficient,
-/// or if any required intermediate overflows or is non-finite.
+/// or if a required product underflows to zero or becomes non-finite.
 bool coneQpCertificate(
     const Eigen::Matrix3d& H,
     const Eigen::Vector3d& c,

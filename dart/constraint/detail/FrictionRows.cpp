@@ -137,11 +137,20 @@ bool classifyFrictionRows(
       contact.cone.mu[1] = 0;
     const double major = contact.cone.mu.maxCoeff();
     const double minor = contact.cone.mu.minCoeff();
+    const double anisotropyThreshold = 1e-9 * major;
+    const double reductionThreshold = 1e-6 * major;
+    // An unrepresentable threshold must not change the friction law or axes.
+    contact.usePgs
+        |= !std::isfinite(anisotropyThreshold)
+           || !std::isfinite(reductionThreshold)
+           || (major > 0
+               && (anisotropyThreshold == 0 || reductionThreshold == 0));
     contact.cone.law
-        = contact.usePgs || (boxForAnisotropic && major - minor > 1e-9 * major)
+        = contact.usePgs
+                  || (boxForAnisotropic && major - minor > anisotropyThreshold)
               ? FrictionConeLaw::Box
               : FrictionConeLaw::Ellipse;
-    if (!contact.usePgs && minor <= 1e-6 * major) {
+    if (!contact.usePgs && minor <= reductionThreshold) {
       if (contact.cone.mu[0] <= contact.cone.mu[1])
         contact.cone.mu[0] = 0;
       else

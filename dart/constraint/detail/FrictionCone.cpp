@@ -48,6 +48,43 @@ using Vector = Eigen::Matrix<Real, 3, 1>;
 using Matrix = Eigen::Matrix<Real, 3, 3>;
 constexpr Real kPi = 3.141592653589793238462643383279502884;
 constexpr Real kTolerance = 1e-10;
+constexpr Real kSmall = 0x1p-256;
+
+bool represented(Real value, Real converted)
+{
+  return std::isfinite(converted) && (value == 0.0 || converted != 0.0);
+}
+
+bool productRepresented(Real a, Real b, Real product)
+{
+  return std::isfinite(product) && (product != 0.0 || a == 0.0 || b == 0.0);
+}
+
+bool productsRepresented(const Matrix& H, const Vector& x)
+{
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j)
+      if (!productRepresented(H(i, j), x[j], H(i, j) * x[j]))
+        return false;
+  return true;
+}
+
+bool productsRepresented(const Vector& a, const Vector& b)
+{
+  for (int i = 0; i < 3; ++i)
+    if (!productRepresented(a[i], b[i], a[i] * b[i]))
+      return false;
+  return true;
+}
+
+template <typename Derived>
+bool coefficientsRepresented(
+    const Eigen::MatrixBase<Derived>& original,
+    const Eigen::MatrixBase<Derived>& converted)
+{
+  return converted.allFinite()
+         && !((converted.array() == 0.0) && (original.array() != 0.0)).any();
+}
 
 bool valid(const FrictionCone& cone)
 {
@@ -60,27 +97,43 @@ Vector coneRay(const FrictionCone& cone)
   Vector d(1.0, cone.mu[0], cone.mu[1]);
   // Uniform scaling preserves the cone and bounds quadratic/cubic products.
   const Real largest = cone.mu.maxCoeff();
-  if (largest > 1e20)
+  if (largest > 1e20) {
     d /= largest;
+    if (!represented(cone.mu[0], d[1]) || !represented(cone.mu[1], d[2]))
+      return Vector::Constant(std::numeric_limits<Real>::quiet_NaN());
+  }
   return d;
 }
 
-Real support(const Vector& v, const FrictionCone& cone)
+EIGEN_DONT_INLINE bool supportProductsLost(
+    Real a, Real b, const Vector& v, const FrictionCone& cone)
+{
+  return (a == 0.0 && cone.mu[0] != 0.0 && v[1] != 0.0)
+         || (b == 0.0 && cone.mu[1] != 0.0 && v[2] != 0.0);
+}
+
+EIGEN_STRONG_INLINE Real support(const Vector& v, const FrictionCone& cone)
 {
   const Real a = Real(cone.mu[0]) * v[1];
   const Real b = Real(cone.mu[1]) * v[2];
+  if (((a == 0.0 && v[1] != 0.0) || (b == 0.0 && v[2] != 0.0))
+      && supportProductsLost(a, b, v, cone))
+    return std::numeric_limits<Real>::infinity();
   return cone.law == FrictionConeLaw::Box ? std::abs(a) + std::abs(b)
                                           : std::hypot(a, b);
 }
 
-Real primalViolation(const Vector& v, const FrictionCone& cone)
+EIGEN_STRONG_INLINE Real
+primalViolation(const Vector& v, const FrictionCone& cone)
 {
   Real t[2] = {0.0, 0.0};
   Real violation = std::max(0.0, -v[0]);
   for (int i = 0; i < 2; ++i) {
-    if (cone.mu[i] > 0.0)
+    if (cone.mu[i] > 0.0) {
       t[i] = std::abs(v[i + 1]) / Real(cone.mu[i]);
-    else
+      if (t[i] == 0.0 && v[i + 1] != 0.0)
+        return std::numeric_limits<Real>::infinity();
+    } else
       violation = std::max(violation, std::abs(v[i + 1]));
   }
   const Real gauge = cone.law == FrictionConeLaw::Box ? std::max(t[0], t[1])
@@ -93,7 +146,8 @@ bool certificate(
     const Vector& c,
     const Vector& x,
     const FrictionCone& cone,
-    Real tolerance = kTolerance)
+    Real tolerance = kTolerance,
+    bool primalChecked = false)
 {
   // Callers prepare finite H and c; exact-contact shifts change only c[0].
   if (!x.allFinite() || !std::isfinite(c[0]))
@@ -101,59 +155,85 @@ bool certificate(
   const Real hScale = H.cwiseAbs().maxCoeff();
   const Real cScale = c.cwiseAbs().maxCoeff();
   const Real dataScale = std::max(hScale, cScale);
-  Matrix normalizedH = H;
-  Vector normalizedC = c;
-  if (dataScale > 0.0) {
-    normalizedH /= dataScale;
-    normalizedC /= dataScale;
-    if (normalizedH.cwiseAbs().minCoeff() == 0.0
-        && ((normalizedH.array() == 0.0) && (H.array() != 0.0)).any())
+  const Real xScale = x.cwiseAbs().maxCoeff();
+  if (xScale == 0.0) {
+    // At the apex H*x and all complementarity products are exactly zero.
+    if (dataScale > 0.0) {
+      const Matrix normalizedH = H / dataScale;
+      if (normalizedH.cwiseAbs().minCoeff() == 0.0
+          && !coefficientsRepresented(H, normalizedH))
+        return false;
+    }
+    Vector normalizedC = c;
+    if (dataScale > 0.0)
+      normalizedC /= dataScale;
+    if (((normalizedC.array() == 0.0) && (c.array() != 0.0)).any())
       return false;
+    const Real tangentSupport = support(normalizedC, cone);
+    const Real dualScale = std::abs(normalizedC[0]) + tangentSupport;
+    const Real limit = tolerance * dualScale;
+    return productRepresented(tolerance, dualScale, limit)
+           && tangentSupport - normalizedC[0] <= limit;
   }
   // Scale impulses too, so complementarity cannot underflow or overflow.
   Real referenceImpulse = 0.0;
   if (hScale > 0.0) {
     const Real largest = std::numeric_limits<Real>::max();
     if (hScale < 1.0 && cScale > largest * hScale) {
-      // An opening apex needs only dual feasibility; other impulses cannot
-      // safely use an unrepresentable c/H scale for complementarity.
-      if (((normalizedC.array() == 0.0) && (c.array() != 0.0)).any())
-        return false;
-      const Real limit = tolerance
-                         * (std::abs(normalizedC[0])
-                            + support(normalizedC.cwiseAbs(), cone));
-      return x.isZero(0.0) && std::isfinite(limit)
-             && support(normalizedC, cone) - normalizedC[0] <= limit;
+      // Nonzero impulses require a representable c/H complementarity scale.
+      return false;
     }
     referenceImpulse = cScale / hScale;
+    if (referenceImpulse == 0.0 && cScale != 0.0)
+      return false;
   }
-  const Real impulseScale = std::max(x.cwiseAbs().maxCoeff(), referenceImpulse);
+  const Real impulseScale = std::max(xScale, referenceImpulse);
   if (!std::isfinite(impulseScale))
     return false;
   Vector normalizedX = x;
-  if (impulseScale > 0.0) {
-    normalizedX /= impulseScale;
-    if (hScale > 0.0)
-      normalizedC /= impulseScale;
-  }
-  if (primalViolation(normalizedX, cone) > tolerance)
+  normalizedX /= impulseScale;
+  if (!primalChecked && primalViolation(normalizedX, cone) > tolerance)
     return false;
+  Matrix normalizedH = H;
+  Vector normalizedC = c;
+  if (dataScale > 0.0) {
+    normalizedH /= dataScale;
+    normalizedC /= dataScale;
+  }
+  if (hScale > 0.0)
+    normalizedC /= impulseScale;
   // Both normalizations must preserve every nonzero coefficient, including
   // disabled axes and null-space impulses that could hide complementarity.
-  if ((normalizedC.cwiseAbs().minCoeff() == 0.0
-       && ((normalizedC.array() == 0.0) && (c.array() != 0.0)).any())
-      || (impulseScale > 1.0 && normalizedX.cwiseAbs().minCoeff() == 0.0
+  const Real minH = normalizedH.cwiseAbs().minCoeff();
+  const Real minC = normalizedC.cwiseAbs().minCoeff();
+  const Real minX = normalizedX.cwiseAbs().minCoeff();
+  if ((minH == 0.0
+       && ((normalizedH.array() == 0.0) && (H.array() != 0.0)).any())
+      || (minC == 0.0
+          && ((normalizedC.array() == 0.0) && (c.array() != 0.0)).any())
+      || (impulseScale > 1.0 && minX == 0.0
           && ((normalizedX.array() == 0.0) && (x.array() != 0.0)).any()))
     return false;
   // Scaled coefficients are bounded by one: these sums cannot overflow.
-  const Vector v = normalizedH * normalizedX + normalizedC;
-  const Vector magnitude = normalizedH.cwiseAbs() * normalizedX.cwiseAbs()
-                           + normalizedC.cwiseAbs();
+  const Matrix terms = normalizedH * normalizedX.asDiagonal();
+  const Vector v = terms.rowwise().sum() + normalizedC;
+  const Vector magnitude
+      = terms.cwiseAbs().rowwise().sum() + normalizedC.cwiseAbs();
   const Real dualScale = magnitude[0] + support(magnitude, cone);
   const Real dotScale = normalizedX.cwiseAbs().dot(magnitude);
   const Real dualLimit = tolerance * dualScale;
   const Real dotLimit = tolerance * dotScale;
+  // Ordinary normalized operands cannot lose a product to underflow, even
+  // after cancellation. Check every contraction term outside that range.
+  if (minH < kSmall || minC < kSmall || minX < kSmall) {
+    if (!productsRepresented(normalizedH, normalizedX)
+        || !productsRepresented(normalizedX, magnitude)
+        || !productsRepresented(normalizedX, v))
+      return false;
+  }
   return std::isfinite(dualLimit) && std::isfinite(dotLimit)
+         && (dualLimit != 0.0 || dualScale == 0.0)
+         && (dotLimit != 0.0 || dotScale == 0.0)
          && support(v, cone) - v[0] <= dualLimit
          && std::abs(normalizedX.dot(v)) <= dotLimit;
 }
@@ -166,6 +246,8 @@ bool prepare(
     Vector& q,
     double& regularization,
     int& scaleExponent,
+    Eigen::LDLT<Matrix>& ldlt,
+    Real& factorScale,
     bool regularize = true)
 {
   if (!input.allFinite() || !c.allFinite() || !valid(cone))
@@ -174,10 +256,19 @@ bool prepare(
   H = input;
   if (inputScale > 0.0)
     H /= inputScale;
-  if ((H - H.transpose()).cwiseAbs().maxCoeff() > 1e-12)
+  if (H.cwiseAbs().minCoeff() == 0.0 && !coefficientsRepresented(input, H))
     return false;
-  H = (0.5 * H + 0.5 * H.transpose()).eval();
-  Eigen::LDLT<Matrix> ldlt(H);
+  const bool symmetric = input(0, 1) == input(1, 0)
+                         && input(0, 2) == input(2, 0)
+                         && input(1, 2) == input(2, 1);
+  if (!symmetric) {
+    const Matrix asymmetry = H - H.transpose();
+    if (asymmetry.cwiseAbs().maxCoeff() > 1e-12
+        || !productsRepresented(asymmetry, Vector::Constant(0.5)))
+      return false;
+    H = (H - 0.5 * asymmetry).eval();
+  }
+  ldlt.compute(H);
   // Clearly positive pivots avoid an eigensolve on the hot path. Near zero,
   // only eigenvalues measure indefiniteness reliably (including singular H).
   if (ldlt.info() != Eigen::Success || ldlt.vectorD().minCoeff() <= 1e-12) {
@@ -195,7 +286,13 @@ bool prepare(
   if (!regularize) {
     // Certifying needs no solve-scale conversion. Preserve subnormal entries
     // when symmetrizing, including the smallest positive diagonal.
-    H = (input + 0.5 * (input.transpose() - input)).eval();
+    H = input;
+    if (!symmetric) {
+      const Matrix difference = input.transpose() - input;
+      if (!productsRepresented(difference, Vector::Constant(0.5)))
+        return false;
+      H = (input + 0.5 * difference).eval();
+    }
     return true;
   }
   Matrix scaled = input;
@@ -217,9 +314,20 @@ bool prepare(
       return false;
   }
   const double scale = scaled.cwiseAbs().maxCoeff();
-  H = (0.5 * scaled + 0.5 * scaled.transpose()).eval();
+  H = scaled;
+  if (!symmetric) {
+    const Matrix difference = scaled.transpose() - scaled;
+    if (!productsRepresented(difference, Vector::Constant(0.5)))
+      return false;
+    H = (scaled + 0.5 * difference).eval();
+  }
   const Real trace = H.trace();
-  if (scale * ldlt.vectorD().minCoeff() <= 1e-18 * std::max(1.0, trace)) {
+  factorScale = scale;
+  const Real minPivot = ldlt.vectorD().minCoeff();
+  const Real pivot = scale * minPivot;
+  if (pivot == 0.0 && scale != 0.0 && minPivot != 0.0)
+    return false;
+  if (pivot <= 1e-18 * std::max(1.0, trace)) {
     Real shift = 1e-12 * (trace > 0.0 ? trace : 1.0);
     if (scaleExponent != 0) {
       regularization = trace > 0.0 ? std::ldexp(shift, scaleExponent) : 1e-12;
@@ -227,15 +335,22 @@ bool prepare(
       // reported to the caller, even at the subnormal limit.
       if (regularization == 0.0)
         regularization = std::numeric_limits<double>::denorm_min();
+      if (!std::isfinite(regularization))
+        return false;
       if (input.diagonal().maxCoeff()
           > std::numeric_limits<Real>::max() - regularization)
         return false;
       shift = std::ldexp(regularization, -scaleExponent);
+      if (!represented(regularization, shift))
+        return false;
     } else {
-      regularization = shift;
+      regularization
+          = shift == 0.0 ? std::numeric_limits<double>::denorm_min() : shift;
+      shift = regularization;
     }
     H.diagonal().array() += shift;
     ldlt.compute(H);
+    factorScale = 1.0;
   }
   return ldlt.info() == Eigen::Success && ldlt.vectorD().minCoeff() > 0.0;
 }
@@ -466,21 +581,29 @@ Vector polyhedralQp(const Matrix& H, const Vector& c, const FrictionCone& cone)
 }
 
 LocalSolveResult solvePrepared(
-    const Matrix& H, const Vector& c, const FrictionCone& cone)
+    const Matrix& H,
+    const Vector& c,
+    const FrictionCone& cone,
+    const Eigen::LDLT<Matrix>& ldlt,
+    Real factorScale)
 {
   LocalSolveResult result;
   result.numQpSolves = 1;
   Vector x = Vector::Zero();
   if (c[0] >= support(c, cone)) {
-    result.certified = true;
+    result.certified = std::isfinite(c[0]);
     return result;
   }
-  x = H.ldlt().solve(-c);
-  if (primalViolation(x, cone) <= 0.0
-      && certificate(H, c, x.cast<double>().cast<Real>(), cone)) {
-    result.impulse = x.cast<double>();
-    result.certified = true;
-    return result;
+  const Vector rhs = -c / factorScale;
+  // Reuse the prepared block for shifted QPs, only with a representable RHS.
+  if (coefficientsRepresented(c, rhs)) {
+    x = ldlt.solve(rhs);
+    if (primalViolation(x, cone) <= 0.0
+        && certificate(H, c, x, cone, kTolerance, true)) {
+      result.impulse = x;
+      result.certified = true;
+      return result;
+    }
   }
   if (cone.law == FrictionConeLaw::Box || cone.mu.minCoeff() == 0.0) {
     x = polyhedralQp(H, c, cone);
@@ -517,10 +640,21 @@ LocalSolveResult solveConeQp(
   Matrix effective;
   Vector q;
   int scaleExponent = 0;
-  if (!prepare(H, c, cone, effective, q, result.regularization, scaleExponent))
+  Eigen::LDLT<Matrix> ldlt;
+  Real factorScale = 1.0;
+  if (!prepare(
+          H,
+          c,
+          cone,
+          effective,
+          q,
+          result.regularization,
+          scaleExponent,
+          ldlt,
+          factorScale))
     return result;
   const double regularization = result.regularization;
-  result = solvePrepared(effective, q, cone);
+  result = solvePrepared(effective, q, cone, ldlt, factorScale);
   result.regularization = regularization;
   return result;
 }
@@ -565,14 +699,17 @@ double contactViolation(
       = associated ? velocity : deSaxce(velocity, cone);
   const Eigen::Vector3d step = shifted / maxDiagonal;
   const Eigen::Vector3d argument = impulse - step;
-  if (!shifted.allFinite() || !step.allFinite() || !argument.allFinite())
+  if (!shifted.allFinite() || !coefficientsRepresented(shifted, step)
+      || !argument.allFinite())
     return std::numeric_limits<double>::infinity();
   const Eigen::Vector3d residual = impulse - projectCone(argument, cone);
   if (!residual.allFinite())
     return std::numeric_limits<double>::infinity();
-  const double violation = maxDiagonal * residual.norm();
-  return std::isfinite(violation) ? violation
-                                  : std::numeric_limits<double>::infinity();
+  const double length = std::hypot(residual[0], residual[1], residual[2]);
+  const double violation = maxDiagonal * length;
+  return productRepresented(maxDiagonal, length, violation)
+             ? violation
+             : std::numeric_limits<double>::infinity();
 }
 
 bool coneQpCertificate(
@@ -586,9 +723,20 @@ bool coneQpCertificate(
   Vector q;
   int scaleExponent = 0;
   double regularization = 0.0;
+  Eigen::LDLT<Matrix> ldlt;
+  Real factorScale = 1.0;
   return std::isfinite(tolerance) && tolerance > 0.0
          && prepare(
-             H, c, cone, checked, q, regularization, scaleExponent, false)
+             H,
+             c,
+             cone,
+             checked,
+             q,
+             regularization,
+             scaleExponent,
+             ldlt,
+             factorScale,
+             false)
          && certificate(checked, q, impulse.cast<Real>(), cone, tolerance);
 }
 
@@ -602,7 +750,18 @@ LocalSolveResult solveExactContact(
   Matrix effective;
   Vector q;
   int scaleExponent = 0;
-  if (!prepare(H, c, cone, effective, q, result.regularization, scaleExponent)
+  Eigen::LDLT<Matrix> ldlt;
+  Real factorScale = 1.0;
+  if (!prepare(
+          H,
+          c,
+          cone,
+          effective,
+          q,
+          result.regularization,
+          scaleExponent,
+          ldlt,
+          factorScale)
       || !std::isfinite(normalShift))
     return result;
   if (scaleExponent != 0 && normalShift > 0.0) {
@@ -611,29 +770,45 @@ LocalSolveResult solveExactContact(
     // A warm start outside the representable scaled range cannot improve the
     // bracket; ignore it instead of overflowing a valid tiny problem.
     const int exponent = warmExponent - scaleExponent;
-    normalShift = exponent > std::numeric_limits<Real>::max_exponent
-                          || exponent < std::numeric_limits<Real>::min_exponent
-                                            - std::numeric_limits<Real>::digits
-                                            + 1
-                      ? 0.0
-                      : std::ldexp(normalShift, -scaleExponent);
+    const Real scaledShift
+        = exponent > std::numeric_limits<Real>::max_exponent
+                  || exponent < std::numeric_limits<Real>::min_exponent
+                                    - std::numeric_limits<Real>::digits + 1
+              ? 0.0
+              : std::ldexp(normalShift, -scaleExponent);
+    normalShift = represented(normalShift, scaledShift) ? scaledShift : 0.0;
   }
   // Every exit certifies the contact itself: a scaled anisotropic block can
   // meet the root tolerance before the contact certificate passes.
-  const auto finish = [&](const Vector& x, Real shift) {
+  const auto finish = [&](const Vector& x, Real shift, bool apex = false) {
     result.impulse = x.cast<double>();
     result.normalShift
         = scaleExponent == 0 ? shift : std::ldexp(shift, scaleExponent);
+    if (!represented(shift, result.normalShift)) {
+      result.certified = false;
+      return false;
+    }
+    if (!apex && !productsRepresented(effective, x)) {
+      result.certified = false;
+      return false;
+    }
     Vector shifted = q;
-    shifted[0] += support(effective * x + q, cone);
-    result.certified = std::isfinite(result.normalShift)
-                       && certificate(effective, shifted, x, cone);
+    shifted[0] += apex ? shift : support(effective * x + q, cone);
+    result.certified = certificate(effective, shifted, x, cone);
+    if (result.certified && scaleExponent != 0) {
+      // Certify the returned shift, including subnormal conversion rounding.
+      Matrix callerH = H;
+      callerH.diagonal().array() += result.regularization;
+      Vector callerC = c;
+      callerC[0] += result.normalShift;
+      result.certified = coneQpCertificate(callerH, callerC, x, cone);
+    }
     return result.certified;
   };
   // An apex is an exact contact solution whenever the free normal velocity is
   // nonnegative; no tangential impulse can help an opening contact.
   if (q[0] >= 0.0) {
-    finish(Vector::Zero(), support(q, cone));
+    finish(Vector::Zero(), support(q, cone), true);
     return result;
   }
   Real lastShift = 0.0;
@@ -641,7 +816,7 @@ LocalSolveResult solveExactContact(
     lastShift = shift;
     Vector shifted = q;
     shifted[0] += shift;
-    const auto qp = solvePrepared(effective, shifted, cone);
+    const auto qp = solvePrepared(effective, shifted, cone, ldlt, factorScale);
     result.numQpSolves += qp.numQpSolves;
     result.numLocalFallbacks += qp.numLocalFallbacks;
     x = qp.impulse.cast<Real>();

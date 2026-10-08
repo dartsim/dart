@@ -131,6 +131,27 @@ TEST(FrictionRows, AnisotropicSwitchAndOneDimensionalReduction)
   }
 }
 
+TEST(FrictionRows, UnderflowedThresholdsRetainCoefficientsForPgs)
+{
+  const double smallest = std::numeric_limits<double>::denorm_min();
+  for (const Eigen::Vector2d& mu :
+       {Eigen::Vector2d(0, smallest),
+        Eigen::Vector2d(smallest, smallest),
+        Eigen::Vector2d(smallest, 2 * smallest),
+        Eigen::Vector2d(smallest, 1e-317)}) {
+    for (const bool box : {false, true}) {
+      const auto result = classify(
+          {{0, -mu[0], -mu[1]}, {infinity, mu[0], mu[1]}, {-1, 0, 0}}, box);
+      ASSERT_EQ(result.contacts.size(), 1);
+      EXPECT_TRUE(result.contacts[0].usePgs);
+      EXPECT_EQ(result.contacts[0].cone.law, FrictionConeLaw::Box);
+      EXPECT_EQ(result.contacts[0].cone.mu, mu);
+      EXPECT_EQ(result.contactRows, (std::vector<int>{0, 1, 2}));
+      EXPECT_EQ(result.contacts[0].rowCount, 3);
+    }
+  }
+}
+
 TEST(FrictionRows, MalformedCouplingIsRetainedForPgs)
 {
   const std::vector<Rows> bank{
