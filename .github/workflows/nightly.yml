@@ -25,12 +25,20 @@ env:
 jobs:
   linux:
     uses: ./.github/workflows/ci_ubuntu.yml
+    # Called prune jobs request actions: write, even though skipped at night.
+    permissions:
+      actions: write
+      contents: read
     with:
       nightly: true
     secrets: inherit
 
   macos:
     uses: ./.github/workflows/ci_macos.yml
+    # Called prune jobs request actions: write, even though skipped at night.
+    permissions:
+      actions: write
+      contents: read
     with:
       nightly: true
 
@@ -53,6 +61,10 @@ jobs:
 
   gz-physics:
     uses: ./.github/workflows/ci_gz_physics.yml
+    # Called prune jobs request actions: write, even though skipped at night.
+    permissions:
+      actions: write
+      contents: read
 
   api-doc:
     uses: ./.github/workflows/api_doc.yml
