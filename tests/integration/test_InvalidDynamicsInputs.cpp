@@ -30,11 +30,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/simulation/World.hpp>
 
+#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
+
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/RevoluteJoint.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <dart/math/MathTypes.hpp>
+
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <memory>
+#include <string>
 
 #include <cmath>
 

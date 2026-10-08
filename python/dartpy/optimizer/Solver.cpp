@@ -32,9 +32,16 @@
 
 #include "eigen_pybind.h"
 
-#include <dart/dart.hpp>
+#include <dart/optimizer/Problem.hpp>
+#include <dart/optimizer/Solver.hpp>
 
 #include <pybind11/pybind11.h>
+
+#include <memory>
+#include <ostream>
+#include <string>
+
+#include <cstddef>
 
 namespace py = pybind11;
 

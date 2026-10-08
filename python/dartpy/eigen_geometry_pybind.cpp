@@ -37,7 +37,9 @@
 #include "dart/common/Macros.hpp"
 #include "pybind11/pybind11.h"
 
-#include <dart/common/common.hpp>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <Eigen/LU>
 
 #include <cassert>
 #include <cmath>

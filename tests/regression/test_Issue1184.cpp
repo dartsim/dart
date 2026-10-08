@@ -30,19 +30,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/config.hpp>
+
 #include <dart/simulation/World.hpp>
+
+#include <dart/constraint/ConstraintSolver.hpp>
 
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 
+#include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/Joint.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/SphereShape.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <TestHelpers.hpp>
 #include <gtest/gtest.h>
+
+#include <functional>
+#include <limits>
+#include <memory>
+
+#include <cmath>
 
 //==============================================================================
 TEST(Issue1184, Accuracy)

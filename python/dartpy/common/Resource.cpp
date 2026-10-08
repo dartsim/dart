@@ -30,9 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/common/LocalResource.hpp>
+#include <dart/common/Resource.hpp>
 
 #include <pybind11/pybind11.h>
+
+#include <memory>
+#include <string>
 
 namespace py = pybind11;
 

@@ -33,16 +33,23 @@
 #ifndef DART_BENCHMARK_INTEGRATION_BOXES_SCENE_HPP_
 #define DART_BENCHMARK_INTEGRATION_BOXES_SCENE_HPP_
 
-#include <dart/simulation/simulation.hpp>
-
-#include <dart/constraint/constraint.hpp>
+#include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/RevoluteJoint.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/WeldJoint.hpp>
+#include <dart/simulation/World.hpp>
 
 #include <dart/collision/bullet/bullet.hpp>
 
-#include <dart/dynamics/dynamics.hpp>
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 
-#include <dart/math/math.hpp>
-
+#include <memory>
 #include <string>
 
 #include <cstddef>

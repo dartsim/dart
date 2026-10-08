@@ -30,7 +30,9 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/collision/DistanceResult.hpp>
+
+#include <dart/dynamics/ShapeFrame.hpp>
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>

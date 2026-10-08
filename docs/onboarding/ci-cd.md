@@ -207,12 +207,14 @@ that commit's first parent. Historical backfill remains P4.
 
 ## Caching
 
-Build jobs restore an sccache compiler cache saved from `main` at most once a
-day per configuration, and pixi environment caches are also written only from
-`main`: PR runs read both but never write, which keeps the repository's 10 GB
-Actions cache for main-branch entries. Each job prints `sccache --show-stats`.
+Build jobs save and restore per-run sccache snapshots, as described for
+Windows below; Linux, macOS and gz-physics share `.github/actions/sccache`,
+and each workflow's `Prune compiler caches` job deletes superseded snapshots.
+Each job's `SCCACHE_CACHE_SIZE` holds about two full builds, so snapshots stay
+small and fresh, and each job prints `sccache --show-stats`. Pixi environment
+caches are written only from `main`.
 
-Windows is the exception, because each MSVC cache miss is expensive. Its
+Windows also splits its build, because each MSVC cache miss is expensive. Its
 build runs as two parallel jobs, `windows-Release-cpp` (C++ tests) and
 `windows-Release-python` (dartpy), reported together as the required
 `windows-Release` check. Every main push saves a snapshot of the whole cache.
@@ -223,7 +225,8 @@ changed since its last push. `windows-Release` keeps the newest run's snapshot
 per job in its ref and deletes the rest; on main pushes it also deletes PR
 snapshots unused for a day. Cache keys include the MSVC version. Each MSVC
 compile spends most of its time parsing headers, so Windows CI builds each
-target as unity translation units (`CMAKE_UNITY_BUILD`). Keep file-local names
+target as unity translation units (`CMAKE_UNITY_BUILD`). The Linux assertions
+gate does too, so a collision also fails on Linux. Keep file-local names
 unique within a target for this ([Code Style](code-style.md)).
 CTest runs in parallel (`CTEST_PARALLEL_LEVEL`). Nightly-only configurations
 never save, so they build cold. Pixi build tasks pin `BUILD_TYPE=Release`, so

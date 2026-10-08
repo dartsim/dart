@@ -30,12 +30,25 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/utils/sdf/sdf.hpp>
+#include <dart/simulation/World.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/SphereShape.hpp>
+#include <dart/dynamics/WeldJoint.hpp>
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <TestHelpers.hpp>
 #include <gtest/gtest.h>
+
+#include <memory>
+#include <string>
+
+#include <cstddef>
 
 // This test is adapted from @azeey's work here:
 // https://github.com/ignitionrobotics/ign-physics/pull/31

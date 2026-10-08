@@ -33,8 +33,12 @@
 #include "TestHelpers.hpp"
 
 #include <dart/common/Factory.hpp>
+#include <dart/common/Singleton.hpp>
 
 #include <gtest/gtest.h>
+
+#include <memory>
+#include <string>
 
 using namespace dart;
 

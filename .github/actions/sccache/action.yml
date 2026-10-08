@@ -1,0 +1,120 @@
+name: Compiler cache snapshots
+description: Restore main and PR sccache objects, or stop and save a snapshot
+inputs:
+  phase:
+    description: restore before the build, save after it (including failure/cancellation)
+    required: true
+  os:
+    description: Cache OS field (linux or macos)
+    required: true
+  part:
+    description: Cache build part, without hyphens
+    required: true
+  pixi-environment:
+    description: Pixi environment used by the CMake build
+    default: default
+runs:
+  using: composite
+  steps:
+    - name: Initialize sccache
+      if: inputs.phase == 'restore'
+      id: config
+      shell: bash
+      env:
+        CACHE_OS: ${{ inputs.os }}
+        CACHE_PART: ${{ inputs.part }}
+        PIXI_ENV: ${{ inputs.pixi-environment }}
+        SNAPSHOT: >-
+          ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'main'
+              || (github.event_name == 'pull_request'
+                  && github.event.pull_request.head.repo.full_name == github.repository) && 'pr'
+              || '' }}
+      run: |
+        # Ask CMake in the build's environment: neither default nor gazebo
+        # supplies a compiler, so the runner's system compiler normally wins.
+        probe="$RUNNER_TEMP/sccache-compiler"
+        mkdir -p "$probe"
+        cat > "$probe/CMakeLists.txt" <<'CMAKE'
+        cmake_minimum_required(VERSION 3.22)
+        project(CompilerVersion LANGUAGES CXX)
+        file(WRITE "${CMAKE_BINARY_DIR}/version.txt" "${CMAKE_CXX_COMPILER_VERSION}")
+        CMAKE
+        # Probe without the Gazebo job's launcher: do not start sccache before restore.
+        CMAKE_CXX_COMPILER_LAUNCHER="" pixi run -e "$PIXI_ENV" cmake -G Ninja -S "$probe" -B "$probe/build"
+        version=$(cat "$probe/build/version.txt")
+        # Pruning splits on '-': OS, part and compiler version are single fields.
+        [[ "$CACHE_OS" != *-* && "$CACHE_PART" != *-* && "$version" =~ ^[0-9]+(\.[0-9]+)*$ ]]
+        prefix="sccache-v2-$CACHE_OS-$CACHE_PART-$version"
+        echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
+        {
+          echo "SCCACHE_PREFIX=$prefix"
+          echo "SCCACHE_DIR=$RUNNER_TEMP/sccache"
+          echo "SCCACHE_PR_DIR=$RUNNER_TEMP/sccache-pr"
+          echo "SCCACHE_SNAPSHOT=$SNAPSHOT"
+          echo "SCCACHE_IDLE_TIMEOUT=0"
+        } >> "$GITHUB_ENV"
+
+    - name: Restore sccache (main)
+      if: inputs.phase == 'restore'
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ runner.temp }}/sccache
+        key: ${{ steps.config.outputs.prefix }}-main-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: ${{ steps.config.outputs.prefix }}-main-
+
+    - name: Restore sccache (this PR)
+      if: inputs.phase == 'restore' && env.SCCACHE_SNAPSHOT == 'pr'
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ runner.temp }}/sccache-pr
+        key: ${{ steps.config.outputs.prefix }}-pr-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: ${{ steps.config.outputs.prefix }}-pr-
+
+    - name: Merge PR snapshot
+      if: inputs.phase == 'restore' && env.SCCACHE_SNAPSHOT == 'pr'
+      shell: bash
+      run: |
+        mkdir -p "$SCCACHE_DIR"
+        # Paths, not mtimes: a hit touches main's objects without making them PR objects.
+        (cd "$SCCACHE_DIR" && find . -type f | LC_ALL=C sort) > "$RUNNER_TEMP/sccache-main.txt"
+        # Preprocessor-cache entries are rewritten in place when a header
+        # changes, so compare those by content.
+        (cd "$SCCACHE_DIR" && { [ ! -d preprocessor ] || find preprocessor -type f -exec cksum {} +; } | LC_ALL=C sort) > "$RUNNER_TEMP/sccache-main-pp.txt"
+        if [ -d "$SCCACHE_PR_DIR" ]; then
+          cp -pR "$SCCACHE_PR_DIR/." "$SCCACHE_DIR/"
+          rm -rf "$SCCACHE_PR_DIR"
+        fi
+
+    - name: Stop sccache
+      if: always() && inputs.phase == 'save'
+      shell: bash
+      env:
+        PIXI_ENV: ${{ inputs.pixi-environment }}
+      run: |
+        pixi run -e "$PIXI_ENV" sccache --stop-server || true
+        # Cancelled builds may leave in-flight writes after the stop response.
+        pkill -KILL -x sccache || true
+        # What the cap counts at the next start; the stats of a cold build
+        # leave out its preprocessor entries.
+        du -sh "$SCCACHE_DIR" || true
+
+    - name: Collect PR snapshot
+      if: always() && inputs.phase == 'save' && env.SCCACHE_SNAPSHOT == 'pr'
+      shell: bash
+      run: |
+        mkdir -p "$SCCACHE_PR_DIR"
+        (cd "$SCCACHE_DIR" && find . -type f | LC_ALL=C sort) > "$RUNNER_TEMP/sccache-current.txt"
+        LC_ALL=C comm -13 "$RUNNER_TEMP/sccache-main.txt" "$RUNNER_TEMP/sccache-current.txt" > "$RUNNER_TEMP/sccache-pr.txt"
+        (cd "$SCCACHE_DIR" && { [ ! -d preprocessor ] || find preprocessor -type f -exec cksum {} +; } | LC_ALL=C sort) > "$RUNNER_TEMP/sccache-current-pp.txt"
+        LC_ALL=C comm -13 "$RUNNER_TEMP/sccache-main-pp.txt" "$RUNNER_TEMP/sccache-current-pp.txt" |
+          awk '{ print "./" $3 }' >> "$RUNNER_TEMP/sccache-pr.txt"
+        LC_ALL=C sort -u -o "$RUNNER_TEMP/sccache-pr.txt" "$RUNNER_TEMP/sccache-pr.txt"
+        tar -C "$SCCACHE_DIR" -cf "$RUNNER_TEMP/sccache-pr.tar" -T "$RUNNER_TEMP/sccache-pr.txt"
+        tar -C "$SCCACHE_PR_DIR" -xf "$RUNNER_TEMP/sccache-pr.tar"
+
+    - name: Save sccache
+      if: always() && inputs.phase == 'save' && env.SCCACHE_SNAPSHOT != ''
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ env.SCCACHE_SNAPSHOT == 'pr' && env.SCCACHE_PR_DIR || env.SCCACHE_DIR }}
+        key: ${{ env.SCCACHE_PREFIX }}-${{ env.SCCACHE_SNAPSHOT }}-${{ github.run_id }}-${{ github.run_attempt }}

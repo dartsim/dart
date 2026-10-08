@@ -34,6 +34,9 @@ jobs:
     name: ubuntu-latest
     runs-on: ubuntu-latest
     env:
+      # One build, preprocessor entries included, caches 154 MiB on CI; the
+      # cap holds about two.
+      SCCACHE_CACHE_SIZE: "320M"
       CMAKE_C_COMPILER_LAUNCHER: sccache
       CMAKE_CXX_COMPILER_LAUNCHER: sccache
     steps:
@@ -47,18 +50,13 @@ jobs:
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
-      # Compiler cache: restored on every run, saved from main at most once a
-      # day per configuration (the repository's Actions cache is 10 GB).
       - name: Restore compiler cache
-        run: |
-          echo "SCCACHE_DIR=${{ runner.temp }}/sccache" >> "$GITHUB_ENV"
-          echo "SCCACHE_CACHE_SIZE=1G" >> "$GITHUB_ENV"
-          echo "SCCACHE_DAY=$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
-      - uses: actions/cache/restore@v6
+        uses: ./.github/actions/sccache
         with:
-          path: ${{ runner.temp }}/sccache
-          key: sccache-gz-physics-${{ env.SCCACHE_DAY }}
-          restore-keys: sccache-gz-physics-
+          phase: restore
+          os: linux
+          part: gz
+          pixi-environment: gazebo
 
       - name: Install apt packages
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
@@ -67,6 +65,7 @@ jobs:
           version: 1.0
 
       - name: Test gz-physics
+        id: build
         run: |
           pixi r -e gazebo test-gz
 
@@ -75,9 +74,44 @@ jobs:
         run: pixi run sccache --show-stats || true
 
       - name: Save compiler cache
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v6
+        if: >-
+          always()
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
+        uses: ./.github/actions/sccache
         with:
-          path: ${{ runner.temp }}/sccache
-          key: sccache-gz-physics-${{ env.SCCACHE_DAY }}
+          phase: save
+          os: linux
+          part: gz
+          pixi-environment: gazebo
 
+  prune-sccache:
+    name: Prune compiler caches
+    needs: [test_gazebo]
+    # Forks cannot save/delete caches; nightly calls and dispatches only read.
+    if: >-
+      always()
+      && (github.event_name == 'push'
+          || (github.event_name == 'pull_request'
+              && github.event.pull_request.head.repo.full_name == github.repository))
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Prune superseded compiler caches
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Run IDs follow push order; a slow older run must not evict a newer one.
+          gh cache list --ref "$GITHUB_REF" --key sccache-v2-linux-gz- --limit 100 --json id,key \
+            --jq 'group_by(.key | split("-")[3:5]) | map(sort_by(.key | split("-")[6:8] | map(tonumber)) | .[:-1][]) | .[].id' |
+            xargs -r -n1 gh cache delete
+          # Main pushes also drop this prefix's PR snapshots idle for a day.
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
+            # $ENV is jq's, not the shell's.
+            # shellcheck disable=SC2016
+            CUTOFF=$(date -u -d '1 day ago' +%FT%TZ) gh cache list --key sccache-v2-linux-gz- --limit 1000 --json id,ref,lastAccessedAt \
+              --jq '.[] | select((.ref | startswith("refs/pull/")) and .lastAccessedAt < $ENV.CUTOFF) | .id' |
+              xargs -r -n1 gh cache delete
+          fi

@@ -32,6 +32,7 @@
 
 #include "TestHelpers.hpp"
 
+#include <dart/common/MemoryAllocator.hpp>
 #include <dart/common/PoolAllocator.hpp>
 
 #include <gtest/gtest.h>

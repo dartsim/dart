@@ -32,11 +32,20 @@
 
 #include "Joint.hpp"
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/Joint.hpp>
+#include <dart/dynamics/ZeroDofJoint.hpp>
 
+#include <dart/math/MathTypes.hpp>
+
+#include <Eigen/Core>
 #include <eigen_geometry_pybind.h>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+#include <memory>
+#include <string>
+
+#include <cstddef>
 
 namespace py = pybind11;
 

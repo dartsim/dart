@@ -35,6 +35,10 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+#include <utility>
+#include <vector>
+
 using dart::common::Uri;
 
 TEST(UriHelpers, fromString_ValidUri_ReturnsTrue)

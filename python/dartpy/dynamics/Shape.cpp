@@ -33,12 +33,39 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
+#include <dart/dynamics/ArrowShape.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/CapsuleShape.hpp>
+#include <dart/dynamics/ConeShape.hpp>
+#include <dart/dynamics/CylinderShape.hpp>
+#include <dart/dynamics/EllipsoidShape.hpp>
+#include <dart/dynamics/LineSegmentShape.hpp>
+#include <dart/dynamics/MeshShape.hpp>
+#include <dart/dynamics/MultiSphereConvexHullShape.hpp>
+#include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/PointCloudShape.hpp>
+#include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/SoftBodyNode.hpp>
+#include <dart/dynamics/SoftMeshShape.hpp>
+#include <dart/dynamics/SphereShape.hpp>
+
+#include <dart/math/Geometry.hpp>
+
 #include <dart/common/Deprecated.hpp>
+#include <dart/common/Macros.hpp>
+#include <dart/common/ResourceRetriever.hpp>
+#include <dart/common/Subject.hpp>
+#include <dart/common/Uri.hpp>
 
-#include <dart/dart.hpp>
-
+#include <Eigen/Core>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
+#include <memory>
+#include <string>
+#include <vector>
+
+#include <cstddef>
 
 namespace py = pybind11;
 

@@ -30,13 +30,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/config.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Group.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
 #include "dart/simulation/World.hpp"
+
+#if HAVE_BULLET
+  #include "dart/collision/bullet/BulletCollisionDetector.hpp"
+#endif
+#if HAVE_ODE
+  #include "dart/collision/ode/OdeCollisionDetector.hpp"
+#endif
 
 #include <dart/dynamics/SphereShape.hpp>
 
@@ -44,11 +54,226 @@
 
 #include <iostream>
 #include <memory>
+#include <string>
+#include <vector>
+
+namespace {
+
+dart::collision::CollisionDetectorPtr createCollisionDetector(const char* name)
+{
+  // Direct references keep optional detector libraries linked, so their static
+  // factory registration runs before the tests check availability.
+#if HAVE_BULLET
+  if (std::string(name) == "bullet")
+    return dart::collision::BulletCollisionDetector::create();
+#endif
+#if HAVE_ODE
+  if (std::string(name) == "ode")
+    return dart::collision::OdeCollisionDetector::create();
+#endif
+  return dart::collision::CollisionDetector::getFactory()->create(name);
+}
+
+std::vector<std::string> collisionObjectSkeletonOrder(
+    const dart::collision::CollisionGroup& group)
+{
+  std::vector<std::string> order;
+  for (std::size_t i = 0; i < group.getNumShapeFrames(); ++i)
+    order.push_back(
+        group.getShapeFrame(i)->asShapeNode()->getSkeleton()->getName());
+  return order;
+}
+
+std::vector<std::string> heapSubscriptionOrder()
+{
+  std::vector<std::string> order{"ground"};
+  for (int i = 0; i < 48; ++i)
+    order.push_back("b" + std::to_string(i));
+  return order;
+}
+
+// Model the gz-physics path: subscribe each skeleton before creating its
+// shapes. Keep padding allocations alive to vary pointer hashes independently
+// of the scene, and use object order as the exact oracle across detectors.
+std::vector<std::string> runHeapSubscriptionScene(
+    const char* detector, std::size_t padding, bool lateShapes, int steps)
+{
+  auto world = dart::simulation::World::create();
+  world->setTimeStep(0.001);
+  auto deactivation = world->getDeactivationOptions();
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+  world->getConstraintSolver()->setCollisionDetector(
+      createCollisionDetector(detector));
+  world->getConstraintSolver()->getCollisionOption().maxNumContacts = 40;
+
+  auto ground = dart::dynamics::Skeleton::create("ground");
+  auto* groundBody
+      = ground->createJointAndBodyNodePair<dart::dynamics::WeldJoint>().second;
+  auto* groundShape = groundBody->createShapeNodeWith<
+      dart::dynamics::CollisionAspect,
+      dart::dynamics::DynamicsAspect>(
+      std::make_shared<dart::dynamics::BoxShape>(Eigen::Vector3d(100, 100, 1)));
+  groundShape->setRelativeTranslation(Eigen::Vector3d(0, 0, -0.5));
+  ground->setMobile(false);
+  world->addSkeleton(ground);
+
+  std::vector<std::unique_ptr<char[]>> paddingBlocks;
+  std::vector<std::pair<dart::dynamics::BodyNode*, dart::dynamics::ShapePtr>>
+      deferred;
+  for (int i = 0; i < 48; ++i) {
+    if (padding > 0)
+      paddingBlocks.push_back(std::make_unique<char[]>(padding * (1 + i % 3)));
+
+    dart::dynamics::ShapePtr shape;
+    if (i % 3 == 0)
+      shape = std::make_shared<dart::dynamics::BoxShape>(
+          Eigen::Vector3d::Constant(0.4));
+    else if (i % 3 == 1)
+      shape = std::make_shared<dart::dynamics::SphereShape>(0.2);
+    else
+      shape = std::make_shared<dart::dynamics::CylinderShape>(0.2, 0.4);
+
+    auto skeleton = dart::dynamics::Skeleton::create("b" + std::to_string(i));
+    auto pair
+        = skeleton->createJointAndBodyNodePair<dart::dynamics::FreeJoint>();
+    if (lateShapes)
+      deferred.emplace_back(pair.second, shape);
+    else
+      pair.second->createShapeNodeWith<
+          dart::dynamics::CollisionAspect,
+          dart::dynamics::DynamicsAspect>(shape);
+
+    dart::dynamics::Inertia inertia;
+    inertia.setMass(1.0);
+    inertia.setMoment(shape->computeInertia(1.0));
+    pair.second->setInertia(inertia);
+    Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+    transform.translation() = Eigen::Vector3d(
+        0.42 * (i % 4), 0.42 * ((i / 4) % 4), 0.21 + 0.41 * (i / 16));
+    pair.first->setTransform(transform);
+    world->addSkeleton(skeleton);
+  }
+
+  auto group = world->getConstraintSolver()->getCollisionGroup();
+  EXPECT_EQ(group->getNumShapeFrames(), lateShapes ? 1u : 49u);
+  for (const auto& entry : deferred)
+    entry.first->createShapeNodeWith<
+        dart::dynamics::CollisionAspect,
+        dart::dynamics::DynamicsAspect>(entry.second);
+
+  group->update();
+  EXPECT_EQ(collisionObjectSkeletonOrder(*group), heapSubscriptionOrder());
+  for (int i = 0; i < steps; ++i)
+    world->step();
+  return collisionObjectSkeletonOrder(*group);
+}
+
+} // namespace
 
 class CollisionGroupsTest : public testing::Test,
                             public testing::WithParamInterface<const char*>
 {
 };
+
+TEST_P(CollisionGroupsTest, LateShapesFollowSubscriptionOrderAcrossHeapLayouts)
+{
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(GetParam()))
+    GTEST_SKIP() << GetParam() << " is not available";
+
+  for (const std::size_t padding : {0u, 24u, 200u, 4136u}) {
+    SCOPED_TRACE(padding);
+    EXPECT_EQ(
+        runHeapSubscriptionScene(GetParam(), padding, true, 600),
+        heapSubscriptionOrder());
+  }
+}
+
+TEST_P(CollisionGroupsTest, EarlyShapesKeepSubscriptionOrderAcrossHeapLayouts)
+{
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(GetParam()))
+    GTEST_SKIP() << GetParam() << " is not available";
+
+  for (const std::size_t padding : {0u, 24u, 200u, 4136u}) {
+    SCOPED_TRACE(padding);
+    EXPECT_EQ(
+        runHeapSubscriptionScene(GetParam(), padding, false, 1),
+        heapSubscriptionOrder());
+  }
+}
+
+TEST_P(CollisionGroupsTest, MixedSubscriptionsKeepInsertionOrderAfterRemoval)
+{
+  if (!dart::collision::CollisionDetector::getFactory()->canCreate(GetParam()))
+    GTEST_SKIP() << GetParam() << " is not available";
+
+  auto detector = createCollisionDetector(GetParam());
+  auto group = detector->createCollisionGroup();
+  auto skeletonA = dart::dynamics::Skeleton::create("A");
+  auto skeletonB = dart::dynamics::Skeleton::create("B");
+  auto skeletonC = dart::dynamics::Skeleton::create("C");
+  auto skeletonD = dart::dynamics::Skeleton::create("D");
+  auto* bodyA
+      = skeletonA->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
+            .second;
+  auto* bodyB
+      = skeletonB->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
+            .second;
+  auto* bodyC
+      = skeletonC->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
+            .second;
+  auto* bodyD
+      = skeletonD->createJointAndBodyNodePair<dart::dynamics::FreeJoint>()
+            .second;
+
+  group->subscribeTo(skeletonA, bodyB, skeletonC, bodyD);
+  // A repeated subscription must neither append a key nor change its order.
+  group->subscribeTo(bodyB, skeletonA);
+  auto shape = std::make_shared<dart::dynamics::SphereShape>(0.2);
+  auto* shapeA
+      = bodyA->createShapeNodeWith<dart::dynamics::CollisionAspect>(shape);
+  auto* shapeB
+      = bodyB->createShapeNodeWith<dart::dynamics::CollisionAspect>(shape);
+  auto* shapeC
+      = bodyC->createShapeNodeWith<dart::dynamics::CollisionAspect>(shape);
+  auto* shapeD
+      = bodyD->createShapeNodeWith<dart::dynamics::CollisionAspect>(shape);
+  group->update();
+  EXPECT_EQ(
+      collisionObjectSkeletonOrder(*group),
+      (std::vector<std::string>{"A", "B", "C", "D"}));
+
+  // Both explicit unsubscribe and removal through a ShapeFrame must erase the
+  // ordered key, so a new subscription appends rather than restoring it.
+  group->removeShapeFrame(shapeB);
+  group->unsubscribeFrom(skeletonC.get());
+  EXPECT_FALSE(group->isSubscribedTo(bodyB));
+  EXPECT_FALSE(group->isSubscribedTo(skeletonC.get()));
+  shapeB->remove();
+  shapeC->remove();
+  group->subscribeTo(skeletonC, bodyB);
+  group->subscribeTo(bodyB, skeletonC);
+  shapeB = bodyB->createShapeNodeWith<dart::dynamics::CollisionAspect>(shape);
+  shapeC = bodyC->createShapeNodeWith<dart::dynamics::CollisionAspect>(shape);
+  group->update();
+  EXPECT_EQ(
+      collisionObjectSkeletonOrder(*group),
+      (std::vector<std::string>{"A", "D", "C", "B"}));
+
+  // Clearing the group must also clear its ordered subscription record.
+  group->removeAllShapeFrames();
+  shapeA->remove();
+  shapeB->remove();
+  shapeC->remove();
+  shapeD->remove();
+  group->subscribeTo(bodyB, skeletonA);
+  bodyA->createShapeNodeWith<dart::dynamics::CollisionAspect>(shape);
+  bodyB->createShapeNodeWith<dart::dynamics::CollisionAspect>(shape);
+  group->update();
+  EXPECT_EQ(
+      collisionObjectSkeletonOrder(*group),
+      (std::vector<std::string>{"B", "A"}));
+}
 
 TEST_P(CollisionGroupsTest, SkeletonSubscription)
 {

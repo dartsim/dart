@@ -32,6 +32,8 @@
 
 #include "TestHelpers.hpp"
 
+#include <dart/config.hpp>
+
 #include <dart/common/MemoryManager.hpp>
 
 #include <gtest/gtest.h>
