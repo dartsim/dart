@@ -30,13 +30,17 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/gui/osg/osg.hpp>
+#include <dart/gui/osg/InteractiveFrame.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/Frame.hpp>
+#include <dart/dynamics/SimpleFrame.hpp>
 
-#include <osgShadow/ShadowMap>
-#include <osgShadow/ShadowTechnique>
+#include <Eigen/Geometry>
 #include <pybind11/pybind11.h>
+
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace py = pybind11;
 

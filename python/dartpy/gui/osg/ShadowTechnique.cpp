@@ -32,10 +32,6 @@
 
 #include "pointers.hpp"
 
-#include <dart/gui/osg/osg.hpp>
-
-#include <dart/dart.hpp>
-
 #include <osgShadow/ShadowMap>
 #include <osgShadow/ShadowTechnique>
 #include <pybind11/pybind11.h>

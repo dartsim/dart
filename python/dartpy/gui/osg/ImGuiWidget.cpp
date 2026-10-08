@@ -32,9 +32,7 @@
 
 #include "pointers.hpp"
 
-#include <dart/gui/osg/osg.hpp>
-
-#include <dart/dart.hpp>
+#include <dart/gui/osg/ImGuiWidget.hpp>
 
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>

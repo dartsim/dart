@@ -32,11 +32,17 @@
 
 #include "pointers.hpp"
 
-#include <dart/gui/osg/osg.hpp>
+#include <dart/gui/osg/DebugOverlay.hpp>
+#include <dart/gui/osg/Viewer.hpp>
 
+#include <Eigen/Core>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
+#include <string>
+
+#include <cstddef>
 
 namespace py = pybind11;
 

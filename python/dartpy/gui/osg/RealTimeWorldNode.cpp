@@ -32,11 +32,15 @@
 
 #include "pointers.hpp"
 
-#include <dart/gui/osg/osg.hpp>
+#include <dart/gui/osg/RealTimeWorldNode.hpp>
+#include <dart/gui/osg/WorldNode.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/simulation/World.hpp>
 
+#include <osgShadow/ShadowTechnique>
 #include <pybind11/pybind11.h>
+
+#include <memory>
 
 namespace py = pybind11;
 
