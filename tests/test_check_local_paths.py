@@ -43,6 +43,9 @@ SPEC.loader.exec_module(checker)
         "/workspaces/example",
         "/__w/example/example/notes.md",
         "/__w/example",
+        r"D:\a\example\example\notes.md",
+        "D:/a/example/example/notes.md",
+        r"C:\a\example-repo\example-repo",
         "WORKDIR /workspaces/example/private.md",
         "Public note: WORKDIR /workspaces/example",
         "cwd:/workspace/example/notes.md",
@@ -117,6 +120,10 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         "identifier/workspaces/example",
         "identifier/__w/example",
         "C:/workspace/example",
+        r"C:\a\example\other\notes.md",
+        "C:/a/example/other/notes.md",
+        "C:/a/example",
+        "C:/tools/example/example/notes.md",
         "WORKDIR /workspaces/example",
         "WORKDIR /workspace/example",
         "/rooted/file.md",
@@ -195,6 +202,11 @@ def test_public_url_with_balanced_parentheses_is_fully_masked(capsys):
 def test_public_url_leaves_unbalanced_markdown_parenthesis(capsys):
     assert checker.scan_text("[text](https://example.com/x)/home/example/x")
     assert capsys.readouterr().out == "1: /home/example/x\n"
+
+
+def test_public_url_does_not_hide_pipe_delimited_path(capsys):
+    assert checker.scan_text("https://example.com/docs|/home/example/private.md")
+    assert capsys.readouterr().out == "1: /home/example/private.md\n"
 
 
 def test_reports_all_leaks_and_file_line(capsys):

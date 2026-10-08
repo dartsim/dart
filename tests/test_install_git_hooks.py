@@ -9,6 +9,7 @@ the hook and guard are `/bin/sh` scripts gated on the executable bit.
 import hashlib
 import json
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -415,6 +416,137 @@ def _run_guard(
         text=True,
     )
     return run.returncode, run.stderr
+
+
+@pytest.mark.parametrize("shell", ("bash", "sh", "zsh", "dash", "ksh"))
+@pytest.mark.parametrize(
+    "wrapper", ("", "env X=1 ", "command ", "exec ", "nohup ", "timeout 5 ")
+)
+@pytest.mark.parametrize("source", ("-c", "heredoc", "here-string", "nested"))
+def test_guard_inspects_child_shell_commit(tmp_path, shell, wrapper, source):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts" / "check_local_paths.py").write_bytes(
+        (ROOT / "scripts" / "check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    private_path = ".sisyphus" + "/plans/example.md"
+    script = f"git commit --no-verify -m {shlex.quote(private_path)}"
+    if source == "nested":
+        script = "sh -c " + shlex.quote(script)
+    if source == "heredoc":
+        command = f"{wrapper}{shell} <<'EOF'\n{script}\nEOF"
+    elif source == "here-string":
+        command = f"{wrapper}{shell} <<< {shlex.quote(script)}"
+    else:
+        command = f"{wrapper}{shell} -c {shlex.quote(script)}"
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 2, stderr
+    assert private_path in stderr
+    assert "commit message" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        'bash -c "git commit -m $MESSAGE"',
+        'bash -c "git commit $(printf %s -m) example"',
+        "bash -c \"$(printf %s 'git commit -m example')\"",
+        'sh <<< "git commit -m $MESSAGE"',
+        "sh <<EOF\ngit commit -m $MESSAGE\nEOF",
+        "bash -c 'git commit -m example",
+        "bash -c 'git commit -m \"example'",
+        "sh <<EOF\ngit commit -m example\n",
+    ),
+)
+def test_guard_blocks_dynamic_or_unparseable_child_script(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 2, stderr
+    assert "shell script cannot be inspected" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        "bash -c 'echo git commit'",
+        "sh <<'EOF'\necho git commit\nEOF",
+        'bash -c "echo $MESSAGE"',
+        "bash -c 'echo example' ; git status",
+    ),
+)
+def test_guard_skips_child_scripts_without_commits(tmp_path, command):
+    returncode, stderr = _guard_verdict(tmp_path, command)
+    assert returncode == 0, stderr
+    assert "would run" not in stderr
+
+
+@pytest.mark.parametrize("installed", (False, True))
+@pytest.mark.parametrize("bypassed", (False, True))
+def test_guard_child_commit_uses_same_hook_and_gate_rules(
+    tmp_path, installed, bypassed
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    if installed:
+        assert _install(repo, env).returncode == 0
+    script = "git commit -m example" + (" --no-verify" if bypassed else "")
+    returncode, stderr = _run_guard(repo, env, "bash -c " + shlex.quote(script))
+    assert returncode == 0, stderr
+    assert stderr.count("direct-agent-gate") == int(not installed or bypassed)
+
+
+def test_guard_child_script_depth_limit_blocks_commit(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    command = "git commit -m example"
+    for _ in range(10):
+        command = "sh -c " + shlex.quote(command)
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 2, stderr
+    assert "shell script cannot be inspected" in stderr
+
+
+def test_guard_child_shell_inherits_cwd_and_config(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    assert _install(repo, env).returncode == 0
+    (repo / "subdir").mkdir()
+    (repo / "message.txt").write_text("example\n")
+    command = "cd subdir && env GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath "
+    command += "GIT_CONFIG_VALUE_0=unused sh -c 'git commit -F ../message.txt'"
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 0, stderr
+    assert stderr.count("direct-agent-gate") == 1
+
+
+def test_guard_child_shell_preserves_chain_staging_safety(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    command = "git commit -m example; sh -c 'git add example; git commit -m example'"
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 2, stderr
+    assert "chained commits" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        "sh -c 'git commit -m example'; git commit -m example",
+        "git commit -m example; sh -c 'git commit -m example'",
+        "sh -c 'git commit -m example'; sh -c 'git commit -m example'",
+    ),
+)
+def test_guard_child_shell_allows_read_only_commit_chains(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 0, stderr
+    assert stderr.count("direct-agent-gate") == 1
 
 
 @pytest.mark.parametrize(
