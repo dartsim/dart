@@ -33,6 +33,9 @@ jobs:
   test_gazebo:
     name: ubuntu-latest
     runs-on: ubuntu-latest
+    permissions:
+      actions: write # Save compiler cache prunes superseded snapshots.
+      contents: read
     env:
       # One build, preprocessor entries included, caches 154 MiB on CI; the
       # cap holds about two.
@@ -83,35 +86,3 @@ jobs:
           os: linux
           part: gz
           pixi-environment: gazebo
-
-  prune-sccache:
-    name: Prune compiler caches
-    needs: [test_gazebo]
-    # Forks cannot save/delete caches; nightly calls and dispatches only read.
-    if: >-
-      always()
-      && (github.event_name == 'push'
-          || (github.event_name == 'pull_request'
-              && github.event.pull_request.head.repo.full_name == github.repository))
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    steps:
-      - name: Prune superseded compiler caches
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          # Run IDs follow push order; a slow older run must not evict a newer one.
-          gh cache list --ref "$GITHUB_REF" --key sccache-v2-linux-gz- --limit 100 --json id,key \
-            --jq 'group_by(.key | split("-")[3:5]) | map(sort_by(.key | split("-")[6:8] | map(tonumber)) | .[:-1][]) | .[].id' |
-            xargs -r -n1 gh cache delete
-          # Main pushes also drop this prefix's PR snapshots idle for a day.
-          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
-            # $ENV is jq's, not the shell's.
-            # shellcheck disable=SC2016
-            CUTOFF=$(date -u -d '1 day ago' +%FT%TZ) gh cache list --key sccache-v2-linux-gz- --limit 1000 --json id,ref,lastAccessedAt \
-              --jq '.[] | select((.ref | startswith("refs/pull/")) and .lastAccessedAt < $ENV.CUTOFF) | .id' |
-              xargs -r -n1 gh cache delete
-          fi
