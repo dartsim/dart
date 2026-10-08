@@ -58,8 +58,9 @@ surface affects shared behavior.
 
 The frequent `pixi run python scripts/check_agent_hook.py --profile staged`
 gate is intentionally fast and staged-file aware. It runs
-`git diff --cached --check` and the AI checks only when their inputs are staged;
-it never configures, builds, prompts, or uses the network. It does not replace
+`git diff --cached --check`, scans added staged lines for local paths, and runs
+the AI checks only when their inputs are staged. It never configures, builds,
+prompts, or uses the network. It does not replace
 `pixi run lint` before a commit.
 
 ## Simulation Verification Route

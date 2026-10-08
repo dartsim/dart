@@ -36,7 +36,11 @@ pixi run -e gazebo test-gz
 # After explicit maintainer/user approval, push and create PR
 branch=$(git branch --show-current)
 git push -u origin "HEAD:${branch}"
-gh pr create --draft --base <target-branch> --milestone "<milestone>"
+# Prepare the plain title and filled template, then require both checks to pass
+printf '%s\n' "$pr_title" | pixi run python scripts/check_local_paths.py --stdin
+pixi run python scripts/check_local_paths.py --text-file "$pr_body_file"
+gh pr create --draft --base <target-branch> --milestone "<milestone>" \
+  --title "$pr_title" --body-file "$pr_body_file"
 ```
 
 Then follow `docs/onboarding/ai-tools.md` § "PR Lifecycle" from draft to merge.
@@ -55,6 +59,11 @@ Write the body for a human skimming it: bullets and highlights only; state the m
 When a PR has meaningful user-facing API, workflow, behavior, or performance impact, add a concise Before / After section. Cover only relevant dimensions, phrase rows as user-visible before/after outcomes, and for performance claims name the baseline explicitly: CPU path, parent commit, `main`, or prior implementation, plus workload, metric, and important limitations.
 
 Use plain descriptive commit messages and PR titles. Do not prefix them with agent tags such as `[codex]`, `[claude]`, or `[opencode]`.
+
+Describe private plans in prose or link public PRs/issues; keep private, local,
+and machine-specific paths out of published text. Before every `gh pr create`
+or `gh pr edit`, run the title and body checks above on the exact proposed
+text (including retained text for edits). Both must exit 0 before publication.
 
 For already-published PRs, keep history inspectable with additive commits. If
 the PR branch needs the latest target branch, use explicit maintainer/user

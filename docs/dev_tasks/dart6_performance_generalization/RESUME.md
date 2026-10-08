@@ -83,8 +83,7 @@ Recommended next session plan (items 1-2 are DONE for the 2026-07-10 cycle;
 kept for the method):
 
 1. Verify live state: `git fetch origin release-6.20`, inspect open
-   PRs/issues, and avoid touching dirty sibling worktrees
-   such as `/home/js/dev/dartsim/dart/task_3-fix-simd`.
+   PRs/issues, and avoid touching dirty sibling worktrees used for other work.
 2. Run a current-head acceptance audit against the README north-star gate:
    tests, benchmark matrix, GUI/headless artifacts, decision status, and
    remaining issue #3056 closure evidence.

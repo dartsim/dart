@@ -1,0 +1,28 @@
+# Published PR text is permanent; keep private and machine-specific paths out
+# of it. Title and description edits rerun only this check, not CI.
+name: PR Text
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  local-paths:
+    name: No local paths in PR text
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/check_local_paths.py
+          sparse-checkout-cone-mode: false
+
+      - name: Check PR title and body
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" | python3 scripts/check_local_paths.py --stdin

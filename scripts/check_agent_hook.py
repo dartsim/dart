@@ -6,8 +6,9 @@ delegates commit detection to the release branch's well-tested POSIX guard.
 On native Windows, ``scripts/pretool_guard_bridge.py`` locates Git Bash and
 forwards the unchanged payload to that same guard. The ``staged`` profile is
 the installed git-hook gate: it always runs
-``git diff --cached --check`` and runs AI-infrastructure checks only when their
-tracked inputs are staged. Neither profile configures, builds, or uses network.
+``git diff --cached --check`` and the local-path scan. It runs AI-infrastructure
+checks only when their tracked inputs are staged. Neither profile configures,
+builds, or uses network.
 """
 
 from __future__ import annotations
@@ -42,6 +43,7 @@ AI_PATH_PREFIXES = (
     "python/tests/unit/gui/test_agent_capture.py",
     "python/tests/unit/gui/test_agent_debug_overlay.py",
     "scripts/check_agent_hook.py",
+    "scripts/check_local_paths.py",
     "scripts/check_ai_infrastructure.py",
     "scripts/install_git_hooks.py",
     "scripts/pretool_guard_bridge.py",
@@ -51,6 +53,7 @@ AI_PATH_PREFIXES = (
     "tests/CMakeLists.txt",
     "tests/test_ai_infrastructure.py",
     "tests/test_install_git_hooks.py",
+    "tests/test_check_local_paths.py",
     "tests/test_sync_ai_commands.py",
 )
 
@@ -209,6 +212,17 @@ def run_staged(root: Path) -> int:
         sys.stderr.write(diff_check.stdout)
         sys.stderr.write(diff_check.stderr)
         return diff_check.returncode
+
+    local_paths = subprocess.run(
+        [
+            sys.executable,
+            str(Path(__file__).with_name("check_local_paths.py")),
+            "--staged",
+        ],
+        cwd=root,
+    )
+    if local_paths.returncode:
+        return local_paths.returncode
 
     paths = staged_paths(root)
     relevant = {path for path in paths if is_ai_infrastructure_path(path)}
