@@ -548,7 +548,8 @@
   * Add opt-in `NsgsFrictionSolver` with exact Coulomb, associated, and box
     friction laws, cumulative `FrictionSolveStats`, clone support, and
     dartpy configuration including the secondary solver. The default
-    Dantzig/PGS solver configuration is unchanged.
+    Dantzig/PGS solver configuration is unchanged:
+    [#3617](https://github.com/dartsim/dart/pull/3617)
 
   * Fix split-impulse position correction failures for contacts between multiple reactive skeletons: [#3582](https://github.com/dartsim/dart/pull/3582)
 
