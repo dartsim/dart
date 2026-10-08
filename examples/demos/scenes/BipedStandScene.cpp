@@ -66,8 +66,8 @@ namespace {
 using dart::dynamics::BodyNode;
 using dart::dynamics::SkeletonPtr;
 
-const char* const kSpineName = "h_spine";
-const char* const kLeftHeelName = "h_heel_left";
+const char* const kBipedStandSpineName = "h_spine";
+const char* const kBipedStandLeftHeelName = "h_heel_left";
 
 //==============================================================================
 /// SPD tracking + ankle-strategy controller state, ported from
@@ -89,7 +89,8 @@ struct BipedStandController
 };
 
 //==============================================================================
-BipedStandController makeController(const SkeletonPtr& skel, double timestep)
+BipedStandController makeBipedStandController(
+    const SkeletonPtr& skel, double timestep)
 {
   BipedStandController controller;
   const int nDof = static_cast<int>(skel->getNumDofs());
@@ -107,7 +108,7 @@ BipedStandController makeController(const SkeletonPtr& skel, double timestep)
   controller.timestep = timestep;
   controller.desiredDofs = skel->getPositions();
 
-  controller.leftHeel = skel->getBodyNode(kLeftHeelName);
+  controller.leftHeel = skel->getBodyNode(kBipedStandLeftHeelName);
   auto dofIndex = [&](const char* name) -> std::size_t {
     auto* dof = skel->getDof(name);
     if (!dof)
@@ -239,7 +240,7 @@ DemoScene makeBipedStandScene()
     auto state = std::make_shared<BipedStandState>();
     // Built after the initial pose is set, so the desired (tracked) pose
     // matches the standing configuration above -- see the file comment.
-    state->controller = makeController(skel, world->getTimeStep());
+    state->controller = makeBipedStandController(skel, world->getTimeStep());
 
     DemoSceneSetup setup;
     setup.world = world;
@@ -255,7 +256,7 @@ DemoScene makeBipedStandScene()
       // step (see JointConstraintsScene.cpp).
       state->controller.timestep = world->getTimeStep();
 
-      auto* spine = skel->getBodyNode(kSpineName);
+      auto* spine = skel->getBodyNode(kBipedStandSpineName);
       if (spine)
         spine->addExtForce(state->perturbationForce);
 

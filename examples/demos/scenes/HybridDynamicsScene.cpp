@@ -71,7 +71,7 @@ namespace {
 using dart::dynamics::Joint;
 using dart::dynamics::SkeletonPtr;
 
-const char* const kPelvisName = "h_pelvis";
+const char* const kHybridDynamicsPelvisName = "h_pelvis";
 
 //==============================================================================
 /// Per-instance state captured by this scene's preStep/key-action lambdas.
@@ -83,7 +83,7 @@ struct HybridDynamicsState
 //==============================================================================
 void toggleHarness(const SkeletonPtr& skel, HybridDynamicsState& state)
 {
-  auto* pelvis = skel->getBodyNode(kPelvisName);
+  auto* pelvis = skel->getBodyNode(kHybridDynamicsPelvisName);
   if (!pelvis)
     return;
   auto* joint = pelvis->getParentJoint();

@@ -43,12 +43,12 @@ namespace dart::collision::native {
 
 namespace {
 
-constexpr double kEpsilon = 1e-10;
+constexpr double kCcdEpsilon = 1e-10;
 
 double solveQuadraticSmallestPositive(double a, double b, double c)
 {
-  if (std::abs(a) < kEpsilon) {
-    if (std::abs(b) < kEpsilon) {
+  if (std::abs(a) < kCcdEpsilon) {
+    if (std::abs(b) < kCcdEpsilon) {
       return -1.0;
     }
     double t = -c / b;
@@ -99,7 +99,7 @@ void updateBestCcdResult(
 Eigen::Vector3d normalizedOr(
     const Eigen::Vector3d& value, const Eigen::Vector3d& fallback)
 {
-  if (value.squaredNorm() < kEpsilon) {
+  if (value.squaredNorm() < kCcdEpsilon) {
     return fallback;
   }
   return value.normalized();
@@ -222,7 +222,7 @@ Eigen::Vector3d cylinderSupport(
   Eigen::Vector3d localPoint(0.0, 0.0, std::copysign(halfHeight, localDir.z()));
   const double radial
       = std::sqrt(localDir.x() * localDir.x() + localDir.y() * localDir.y());
-  if (radial > kEpsilon) {
+  if (radial > kCcdEpsilon) {
     localPoint.x() = radius * localDir.x() / radial;
     localPoint.y() = radius * localDir.y() / radial;
   }
@@ -253,7 +253,7 @@ bool sphereCastConvexTarget(
   double t = 0.0;
 
   Eigen::Vector3d initialDir = targetSeed - sphereStart;
-  if (initialDir.squaredNorm() < kEpsilon) {
+  if (initialDir.squaredNorm() < kCcdEpsilon) {
     initialDir = Eigen::Vector3d::UnitX();
   }
 
@@ -281,10 +281,10 @@ bool sphereCastConvexTarget(
     const double distance = gjkResult.distance;
 
     Eigen::Vector3d sepAxis = gjkResult.separationAxis;
-    if (sepAxis.squaredNorm() < kEpsilon) {
+    if (sepAxis.squaredNorm() < kCcdEpsilon) {
       sepAxis = pointB - pointA;
     }
-    if (sepAxis.squaredNorm() < kEpsilon) {
+    if (sepAxis.squaredNorm() < kCcdEpsilon) {
       sepAxis = Eigen::Vector3d::UnitX();
     }
     sepAxis.normalize();
@@ -338,7 +338,7 @@ bool sphereCastSphere(
     result.timeOfImpact = 0.0;
     result.point = sphereStart;
     const Eigen::Vector3d normal = sphereStart - targetCenter;
-    if (normal.squaredNorm() < kEpsilon) {
+    if (normal.squaredNorm() < kCcdEpsilon) {
       result.normal = Eigen::Vector3d::UnitZ();
     } else {
       result.normal = normal.normalized();
@@ -403,7 +403,7 @@ bool sphereCastBox(
   int hitSign = 1;
 
   for (int i = 0; i < 3; ++i) {
-    if (std::abs(localDir[i]) < kEpsilon) {
+    if (std::abs(localDir[i]) < kCcdEpsilon) {
       if (localStart[i] < -expandedHalf[i] || localStart[i] > expandedHalf[i]) {
         return false;
       }
@@ -443,7 +443,7 @@ bool sphereCastBox(
     result.timeOfImpact = 0.0;
     result.point = targetTransform * closestOnBox;
 
-    if (localNormal.squaredNorm() < kEpsilon) {
+    if (localNormal.squaredNorm() < kCcdEpsilon) {
       localNormal = Eigen::Vector3d::UnitZ();
     } else {
       localNormal.normalize();
@@ -463,7 +463,7 @@ bool sphereCastBox(
     return runSupportFallback();
   }
 
-  if (localNormal.squaredNorm() < kEpsilon) {
+  if (localNormal.squaredNorm() < kCcdEpsilon) {
     localNormal = Eigen::Vector3d::Zero();
     localNormal[hitAxis] = static_cast<double>(hitSign);
   } else {
@@ -503,7 +503,7 @@ bool sphereCastCapsule(
   if (initialDelta.squaredNorm() <= combinedRadius * combinedRadius) {
     Eigen::Vector3d localNormal
         = normalizedOr(initialDelta, Eigen::Vector3d::UnitX());
-    if (initialDelta.squaredNorm() < kEpsilon) {
+    if (initialDelta.squaredNorm() < kCcdEpsilon) {
       if (localStart.z() >= halfHeight) {
         localNormal = Eigen::Vector3d::UnitZ();
       } else if (localStart.z() <= -halfHeight) {
@@ -551,7 +551,7 @@ bool sphereCastCapsule(
   double b = 2.0 * (ox * dx + oy * dy);
   double c = ox * ox + oy * oy - combinedRadius * combinedRadius;
 
-  if (a > kEpsilon) {
+  if (a > kCcdEpsilon) {
     double t = solveQuadraticSmallestPositive(a, b, c);
     if (t >= 0.0 && t <= 1.0 && t < bestT) {
       Eigen::Vector3d hitCenter = localStart + t * localDir;
@@ -649,7 +649,7 @@ bool sphereCastCylinder(
   const double closestRadius = std::min(startRadial, cylinderRadius);
   const double closestZ = std::clamp(localStart.z(), -halfHeight, halfHeight);
   Eigen::Vector3d closestOnCylinder(0.0, 0.0, closestZ);
-  if (startRadial > kEpsilon) {
+  if (startRadial > kCcdEpsilon) {
     closestOnCylinder.x() = closestRadius * localStart.x() / startRadial;
     closestOnCylinder.y() = closestRadius * localStart.y() / startRadial;
   }
@@ -660,9 +660,9 @@ bool sphereCastCylinder(
         = normalizedOr(initialDelta, Eigen::Vector3d::UnitX());
     Eigen::Vector3d localPoint = closestOnCylinder;
 
-    if (initialDelta.squaredNorm() < kEpsilon) {
+    if (initialDelta.squaredNorm() < kCcdEpsilon) {
       Eigen::Vector3d radialNormal = Eigen::Vector3d::UnitX();
-      if (startRadial > kEpsilon) {
+      if (startRadial > kCcdEpsilon) {
         radialNormal = Eigen::Vector3d(
             localStart.x() / startRadial, localStart.y() / startRadial, 0.0);
       }
@@ -710,7 +710,7 @@ bool sphereCastCylinder(
   double b = 2.0 * (ox * dx + oy * dy);
   double c = ox * ox + oy * oy - combinedRadius * combinedRadius;
 
-  if (a > kEpsilon) {
+  if (a > kCcdEpsilon) {
     double t = solveQuadraticSmallestPositive(a, b, c);
     if (t >= 0.0 && t <= 1.0 && t < bestT) {
       Eigen::Vector3d hitCenter = localStart + t * localDir;
@@ -728,7 +728,7 @@ bool sphereCastCylinder(
   }
 
   double expandedHalfHeight = halfHeight + sphereRadius;
-  if (std::abs(localDir.z()) > kEpsilon) {
+  if (std::abs(localDir.z()) > kCcdEpsilon) {
     for (double capZ : {-expandedHalfHeight, expandedHalfHeight}) {
       double t = (capZ - localStart.z()) / localDir.z();
       if (t >= 0.0 && t <= 1.0 && t < bestT) {
@@ -864,7 +864,7 @@ bool capsuleCastConvexTarget(
   double t = 0.0;
 
   Eigen::Vector3d initialDir = targetSeed - capsuleStart.translation();
-  if (initialDir.squaredNorm() < kEpsilon) {
+  if (initialDir.squaredNorm() < kCcdEpsilon) {
     initialDir = Eigen::Vector3d::UnitX();
   }
 
@@ -886,7 +886,7 @@ bool capsuleCastConvexTarget(
       result.point = targetSupport(Eigen::Vector3d::UnitX());
       Eigen::Vector3d normal
           = supportA(Eigen::Vector3d::UnitX()) - result.point;
-      if (normal.squaredNorm() < kEpsilon) {
+      if (normal.squaredNorm() < kCcdEpsilon) {
         normal = Eigen::Vector3d::UnitZ();
       } else {
         normal.normalize();
@@ -900,10 +900,10 @@ bool capsuleCastConvexTarget(
     const double distance = gjkResult.distance;
 
     Eigen::Vector3d sepAxis = gjkResult.separationAxis;
-    if (sepAxis.squaredNorm() < kEpsilon) {
+    if (sepAxis.squaredNorm() < kCcdEpsilon) {
       sepAxis = pointB - pointA;
     }
-    if (sepAxis.squaredNorm() < kEpsilon) {
+    if (sepAxis.squaredNorm() < kCcdEpsilon) {
       sepAxis = Eigen::Vector3d::UnitX();
     }
     sepAxis.normalize();
@@ -1182,7 +1182,7 @@ struct RotationBoundData
 
   [[nodiscard]] double angularBound(const Eigen::Vector3d& direction) const
   {
-    if (angle < kEpsilon) {
+    if (angle < kCcdEpsilon) {
       return 0.0;
     }
     return angle * maxPerpRadius * direction.cross(axis).norm();
@@ -1199,7 +1199,7 @@ RotationBoundData makeRotationBoundData(
   const Eigen::Quaterniond qStart(transformStart.rotation());
   const Eigen::Quaterniond qEnd(transformEnd.rotation());
   data.angle = qStart.angularDistance(qEnd);
-  if (data.angle < kEpsilon) {
+  if (data.angle < kCcdEpsilon) {
     return data;
   }
 
@@ -1240,7 +1240,7 @@ public:
       rotates_(
           rotation[0].squaredNorm() + rotation[1].squaredNorm()
               + rotation[2].squaredNorm() + rotation[3].squaredNorm()
-          > kEpsilon)
+          > kCcdEpsilon)
   {
     // Hodograph (derivative) control points: a cubic Bezier's derivative is a
     // quadratic Bezier with control points 3*(P_{i+1} - P_i).
@@ -1270,7 +1270,7 @@ public:
       const Eigen::Vector3d w = b0 * rotation_[0] + b1 * rotation_[1]
                                 + b2 * rotation_[2] + b3 * rotation_[3];
       const double angle = w.norm();
-      if (angle > kEpsilon) {
+      if (angle > kCcdEpsilon) {
         result.linear()
             = Eigen::AngleAxisd(angle, w / angle).toRotationMatrix();
       }
@@ -1347,8 +1347,8 @@ public:
     const double a = v0 - 2.0 * v1 + v2;
     const double b = 2.0 * (v1 - v0);
     const double c = v0;
-    if (std::abs(a) < kEpsilon) {
-      if (std::abs(b) > kEpsilon) {
+    if (std::abs(a) < kCcdEpsilon) {
+      if (std::abs(b) > kCcdEpsilon) {
         consider(-c / b);
       }
     } else {
@@ -1410,7 +1410,7 @@ bool conservativeAdvancement(
 
   Eigen::Vector3d initialDir
       = transformB.translation() - transformAStart.translation();
-  if (initialDir.squaredNorm() < kEpsilon) {
+  if (initialDir.squaredNorm() < kCcdEpsilon) {
     initialDir = Eigen::Vector3d::UnitX();
   }
 
@@ -1447,9 +1447,10 @@ bool conservativeAdvancement(
       result.point = pointB;
       // Check the magnitude before normalizing: coincident support points
       // (degenerate/overlapping configs) would otherwise yield a NaN normal
-      // that slips past a post-normalization guard (NaN < kEpsilon is false).
+      // that slips past a post-normalization guard (NaN < kCcdEpsilon is
+      // false).
       const Eigen::Vector3d normal = pointA - pointB;
-      if (normal.squaredNorm() < kEpsilon) {
+      if (normal.squaredNorm() < kCcdEpsilon) {
         result.normal = Eigen::Vector3d::UnitZ();
       } else {
         result.normal = normal.normalized();
@@ -1462,10 +1463,10 @@ bool conservativeAdvancement(
     double distance = gjkResult.distance;
 
     Eigen::Vector3d sepAxis = gjkResult.separationAxis;
-    if (sepAxis.squaredNorm() < kEpsilon) {
+    if (sepAxis.squaredNorm() < kCcdEpsilon) {
       sepAxis = pointB - pointA;
     }
-    if (sepAxis.squaredNorm() < kEpsilon) {
+    if (sepAxis.squaredNorm() < kCcdEpsilon) {
       sepAxis = Eigen::Vector3d::UnitX();
     }
     sepAxis.normalize();
@@ -1523,7 +1524,7 @@ bool convexCast(
 
   Eigen::Vector3d initialDir
       = transformBStart.translation() - transformAStart.translation();
-  if (initialDir.squaredNorm() < kEpsilon) {
+  if (initialDir.squaredNorm() < kCcdEpsilon) {
     initialDir = Eigen::Vector3d::UnitX();
   }
 
@@ -1566,9 +1567,10 @@ bool convexCast(
       result.point = pointB;
       // Check the magnitude before normalizing: coincident support points
       // (degenerate/overlapping configs) would otherwise yield a NaN normal
-      // that slips past a post-normalization guard (NaN < kEpsilon is false).
+      // that slips past a post-normalization guard (NaN < kCcdEpsilon is
+      // false).
       const Eigen::Vector3d normal = pointA - pointB;
-      if (normal.squaredNorm() < kEpsilon) {
+      if (normal.squaredNorm() < kCcdEpsilon) {
         result.normal = Eigen::Vector3d::UnitZ();
       } else {
         result.normal = normal.normalized();
@@ -1581,10 +1583,10 @@ bool convexCast(
     double distance = gjkResult.distance;
 
     Eigen::Vector3d sepAxis = gjkResult.separationAxis;
-    if (sepAxis.squaredNorm() < kEpsilon) {
+    if (sepAxis.squaredNorm() < kCcdEpsilon) {
       sepAxis = pointB - pointA;
     }
-    if (sepAxis.squaredNorm() < kEpsilon) {
+    if (sepAxis.squaredNorm() < kCcdEpsilon) {
       sepAxis = Eigen::Vector3d::UnitX();
     }
     sepAxis.normalize();
@@ -1639,7 +1641,7 @@ bool splineCast(
 
   Eigen::Vector3d initialDir
       = transformB.translation() - translationControlPoints[0];
-  if (initialDir.squaredNorm() < kEpsilon) {
+  if (initialDir.squaredNorm() < kCcdEpsilon) {
     initialDir = Eigen::Vector3d::UnitX();
   }
 
@@ -1651,7 +1653,7 @@ bool splineCast(
   const bool aRotates = motionA.rotates();
   const Eigen::Vector3d bTranslation = transformB.translation();
   const Eigen::Matrix3d bRotation = transformB.rotation();
-  const bool bRotates = !bRotation.isIdentity(kEpsilon);
+  const bool bRotates = !bRotation.isIdentity(kCcdEpsilon);
   const Eigen::Matrix3d bRotationT = bRotation.transpose();
 
   auto supportB = [&](const Eigen::Vector3d& dir) -> Eigen::Vector3d {
@@ -1695,9 +1697,10 @@ bool splineCast(
       result.point = pointB;
       // Check the magnitude before normalizing: coincident support points
       // (degenerate/overlapping configs) would otherwise yield a NaN normal
-      // that slips past a post-normalization guard (NaN < kEpsilon is false).
+      // that slips past a post-normalization guard (NaN < kCcdEpsilon is
+      // false).
       const Eigen::Vector3d normal = pointA - pointB;
-      if (normal.squaredNorm() < kEpsilon) {
+      if (normal.squaredNorm() < kCcdEpsilon) {
         result.normal = Eigen::Vector3d::UnitZ();
       } else {
         result.normal = normal.normalized();
@@ -1708,10 +1711,10 @@ bool splineCast(
     const double distance = gjkResult.distance;
 
     Eigen::Vector3d sepAxis = gjkResult.separationAxis;
-    if (sepAxis.squaredNorm() < kEpsilon) {
+    if (sepAxis.squaredNorm() < kCcdEpsilon) {
       sepAxis = gjkResult.closestPointB - gjkResult.closestPointA;
     }
-    if (sepAxis.squaredNorm() < kEpsilon) {
+    if (sepAxis.squaredNorm() < kCcdEpsilon) {
       sepAxis = Eigen::Vector3d::UnitX();
     }
     sepAxis.normalize();
@@ -1733,7 +1736,7 @@ bool splineCast(
       // opts into.
       Eigen::Vector3d toward
           = gjkResult.closestPointB - gjkResult.closestPointA;
-      if (toward.squaredNorm() < kEpsilon) {
+      if (toward.squaredNorm() < kCcdEpsilon) {
         toward = sepAxis;
       }
       toward.normalize();
@@ -1762,8 +1765,8 @@ bool splineCast(
              / accel;
       }
     }
-    if (dt < kEpsilon) {
-      dt = kEpsilon;
+    if (dt < kCcdEpsilon) {
+      dt = kCcdEpsilon;
     }
     t += dt;
     if (t > 1.0) {

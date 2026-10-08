@@ -44,7 +44,7 @@ namespace dart::collision::native {
 
 namespace {
 
-constexpr double kEpsilon = 1e-12;
+constexpr double kGjkEpsilon = 1e-12;
 
 enum class TriangleRegion
 {
@@ -76,7 +76,7 @@ SegmentClosestResult closestPointSegmentToOrigin(
   SegmentClosestResult result;
   const Eigen::Vector3d ab = b - a;
   const double abLen2 = ab.squaredNorm();
-  if (abLen2 < kEpsilon) {
+  if (abLen2 < kGjkEpsilon) {
     result.closest = a;
     result.t = 0.0;
     return result;
@@ -106,7 +106,7 @@ std::array<double, 3> barycentricCoordinatesOnTriangle(
   const double d21 = v2.dot(v1);
   const double denom = d00 * d11 - d01 * d01;
 
-  if (std::abs(denom) < kEpsilon) {
+  if (std::abs(denom) < kGjkEpsilon) {
     return {
         std::numeric_limits<double>::quiet_NaN(),
         std::numeric_limits<double>::quiet_NaN(),
@@ -186,7 +186,7 @@ TriangleClosestResult closestPointTriangleToOrigin(
   }
 
   const double denom = va + vb + vc;
-  if (std::abs(denom) < kEpsilon) {
+  if (std::abs(denom) < kGjkEpsilon) {
     auto best = TriangleClosestResult{};
     const auto ab = closestPointSegmentToOrigin(a, b);
     best.closest = ab.closest;
@@ -276,7 +276,7 @@ bool reduceLine(
 
   weights.fill(0.0);
 
-  if (abLen2 < kEpsilon) {
+  if (abLen2 < kGjkEpsilon) {
     simplex.points[0] = a;
     simplex.size = 1;
     closest = a.v;
@@ -380,7 +380,7 @@ bool originOutsideFace(
 {
   Eigen::Vector3d normal = (b - a).cross(c - a);
   const double norm2 = normal.squaredNorm();
-  if (norm2 < kEpsilon) {
+  if (norm2 < kGjkEpsilon) {
     normalOut = normal;
     return true;
   }
@@ -459,7 +459,7 @@ namespace detail {
 
 bool isUsableDirection(const Eigen::Vector3d& direction)
 {
-  return direction.allFinite() && direction.squaredNorm() > kEpsilon;
+  return direction.allFinite() && direction.squaredNorm() > kGjkEpsilon;
 }
 
 bool reduceSimplex(
@@ -498,9 +498,9 @@ void fillSeparationResult(
       simplex, weights, result.closestPointA, result.closestPointB);
 
   Eigen::Vector3d axis = result.closestPointB - result.closestPointA;
-  if (axis.squaredNorm() > kEpsilon) {
+  if (axis.squaredNorm() > kGjkEpsilon) {
     result.separationAxis = axis.normalized();
-  } else if (closest.squaredNorm() > kEpsilon) {
+  } else if (closest.squaredNorm() > kGjkEpsilon) {
     result.separationAxis = (-closest).normalized();
   } else {
     result.separationAxis = Eigen::Vector3d::UnitX();
@@ -561,7 +561,7 @@ bool addFace(
 
   Eigen::Vector3d normal = (vb - va).cross(vc - va);
   const double len = normal.norm();
-  if (len < kEpsilon) {
+  if (len < kGjkEpsilon) {
     return false;
   }
   normal /= len;

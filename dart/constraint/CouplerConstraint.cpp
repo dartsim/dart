@@ -48,24 +48,24 @@ namespace {
 // Keep the public owning vector while retaining its empty storage between
 // rebuilt constraints. Synchronization also covers destruction on another
 // thread; each constructor copies the current properties into its own buffer.
-struct MimicPropertyStorage
+struct CouplerMimicPropertyStorage
 {
   std::mutex mutex;
   std::vector<std::vector<dart::dynamics::MimicDofProperties>> buffers;
   std::size_t bufferCount = 0u;
 };
 
-MimicPropertyStorage& getMimicPropertyStorage()
+CouplerMimicPropertyStorage& getCouplerMimicPropertyStorage()
 {
-  static auto* storage = new MimicPropertyStorage;
+  static auto* storage = new CouplerMimicPropertyStorage;
   return *storage;
 }
 
-std::vector<dart::dynamics::MimicDofProperties> copyMimicProperties(
+std::vector<dart::dynamics::MimicDofProperties> copyCouplerMimicProperties(
     const std::vector<dart::dynamics::MimicDofProperties>& properties)
 {
   std::vector<dart::dynamics::MimicDofProperties> result;
-  auto& storage = getMimicPropertyStorage();
+  auto& storage = getCouplerMimicPropertyStorage();
   {
     const std::lock_guard<std::mutex> lock(storage.mutex);
     if (storage.buffers.empty()) {
@@ -94,11 +94,11 @@ std::vector<dart::dynamics::MimicDofProperties> copyMimicProperties(
   return result;
 }
 
-void releaseMimicProperties(
+void releaseCouplerMimicProperties(
     std::vector<dart::dynamics::MimicDofProperties>& properties)
 {
   properties.clear();
-  auto& storage = getMimicPropertyStorage();
+  auto& storage = getCouplerMimicPropertyStorage();
   const std::lock_guard<std::mutex> lock(storage.mutex);
   // Implicit copies of the public constraint also own vectors, but do not
   // acquire a return slot. Drop excess buffers instead of growing in a
@@ -120,7 +120,7 @@ CouplerConstraint::CouplerConstraint(
     const std::vector<dynamics::MimicDofProperties>& mimicDofProperties)
   : ConstraintBase(),
     mJoint(joint),
-    mMimicProps(copyMimicProperties(mimicDofProperties)),
+    mMimicProps(copyCouplerMimicProperties(mimicDofProperties)),
     mBodyNode(joint->getChildBodyNode()),
     mAppliedImpulseIndex(0)
 {
@@ -135,7 +135,7 @@ CouplerConstraint::CouplerConstraint(
 //==============================================================================
 CouplerConstraint::~CouplerConstraint()
 {
-  releaseMimicProperties(mMimicProps);
+  releaseCouplerMimicProperties(mMimicProps);
 }
 
 //==============================================================================

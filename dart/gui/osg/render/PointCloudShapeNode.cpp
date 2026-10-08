@@ -53,10 +53,10 @@ namespace osg {
 namespace render {
 
 //==============================================================================
-class BoxDrawable final : public ::osg::ShapeDrawable
+class PointCloudBoxDrawable final : public ::osg::ShapeDrawable
 {
 public:
-  BoxDrawable(double size, const Eigen::Vector4d& color)
+  PointCloudBoxDrawable(double size, const Eigen::Vector4d& color)
   {
     mShape = new ::osg::Box(::osg::Vec3(), static_cast<float>(size));
     setColor(eigToOsgVec4f(color));
@@ -221,7 +221,7 @@ public:
   BoxPointNode(
       const Eigen::Vector3d& point, double size, const Eigen::Vector4d& color)
   {
-    mDrawable = new BoxDrawable(size, color);
+    mDrawable = new PointCloudBoxDrawable(size, color);
     mGeode = new ::osg::Geode();
 
     mGeode->addDrawable(mDrawable);
@@ -241,7 +241,7 @@ public:
   }
 
 protected:
-  ::osg::ref_ptr<BoxDrawable> mDrawable;
+  ::osg::ref_ptr<PointCloudBoxDrawable> mDrawable;
   ::osg::ref_ptr<::osg::Geode> mGeode;
 };
 

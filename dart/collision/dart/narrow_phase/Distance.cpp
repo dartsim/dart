@@ -45,7 +45,7 @@ namespace dart::collision::native {
 
 namespace {
 
-struct SegmentClosestResult
+struct DistanceSegmentClosestResult
 {
   Eigen::Vector3d point1;
   Eigen::Vector3d point2;
@@ -66,7 +66,7 @@ struct SdfSdfCandidate
   Eigen::Vector3d normalSourceToTarget = Eigen::Vector3d::UnitX();
 };
 
-SegmentClosestResult closestPointsBetweenSegments(
+DistanceSegmentClosestResult distanceClosestPointsBetweenSegments(
     const Eigen::Vector3d& p1,
     const Eigen::Vector3d& q1,
     const Eigen::Vector3d& p2,
@@ -117,14 +117,14 @@ SegmentClosestResult closestPointsBetweenSegments(
     }
   }
 
-  SegmentClosestResult res;
+  DistanceSegmentClosestResult res;
   res.point1 = p1 + d1 * s;
   res.point2 = p2 + d2 * t;
   res.distSq = (res.point1 - res.point2).squaredNorm();
   return res;
 }
 
-Eigen::Vector3d closestPointOnBox(
+Eigen::Vector3d distanceClosestPointOnBox(
     const Eigen::Vector3d& point, const Eigen::Vector3d& halfExtents)
 {
   return Eigen::Vector3d(
@@ -133,7 +133,7 @@ Eigen::Vector3d closestPointOnBox(
       std::clamp(point.z(), -halfExtents.z(), halfExtents.z()));
 }
 
-Eigen::Vector3d closestPointOnSegmentInBoxSpace(
+Eigen::Vector3d distanceClosestPointOnSegmentInBoxSpace(
     const Eigen::Vector3d& segmentStart,
     const Eigen::Vector3d& segmentEnd,
     const Eigen::Vector3d& halfExtents,
@@ -144,7 +144,7 @@ Eigen::Vector3d closestPointOnSegmentInBoxSpace(
 
   if (segmentLengthSq < 1e-10) {
     closestOnSegment = segmentStart;
-    return closestPointOnBox(segmentStart, halfExtents);
+    return distanceClosestPointOnBox(segmentStart, halfExtents);
   }
 
   double bestDistSq = std::numeric_limits<double>::max();
@@ -167,7 +167,7 @@ Eigen::Vector3d closestPointOnSegmentInBoxSpace(
   auto testCandidate = [&](double t) {
     const Eigen::Vector3d pointOnSegment = segmentStart + segment * t;
     const Eigen::Vector3d pointOnBox
-        = closestPointOnBox(pointOnSegment, halfExtents);
+        = distanceClosestPointOnBox(pointOnSegment, halfExtents);
     const double distSq = (pointOnSegment - pointOnBox).squaredNorm();
     const double interiorMargin = computeInteriorMargin(pointOnSegment);
 
@@ -779,7 +779,7 @@ double distanceSphereBox(
       = boxInv * sphereTransform.translation();
 
   const Eigen::Vector3d closestOnBoxLocal
-      = closestPointOnBox(sphereCenterLocal, boxHalf);
+      = distanceClosestPointOnBox(sphereCenterLocal, boxHalf);
   const Eigen::Vector3d diffLocal = sphereCenterLocal - closestOnBoxLocal;
   const double distToSurface = diffLocal.norm();
   const double boundaryTolerance
@@ -911,7 +911,8 @@ double distanceBoxBox(
         (i & 4) ? half2.z() : -half2.z());
 
     const Eigen::Vector3d corner2In1 = box2In1 * corner2Local;
-    const Eigen::Vector3d closest1 = closestPointOnBox(corner2In1, half1);
+    const Eigen::Vector3d closest1
+        = distanceClosestPointOnBox(corner2In1, half1);
     updateCandidate(transform1 * closest1, transform2 * corner2Local);
   }
 
@@ -925,7 +926,8 @@ double distanceBoxBox(
         (i & 4) ? half1.z() : -half1.z());
 
     const Eigen::Vector3d corner1In2 = box1In2 * corner1Local;
-    const Eigen::Vector3d closest2 = closestPointOnBox(corner1In2, half2);
+    const Eigen::Vector3d closest2
+        = distanceClosestPointOnBox(corner1In2, half2);
     updateCandidate(transform1 * corner1Local, transform2 * closest2);
   }
 
@@ -935,7 +937,7 @@ double distanceBoxBox(
     const Eigen::Vector3d edge1Start = transform1 * edge1.start;
     const Eigen::Vector3d edge1End = transform1 * edge1.end;
     for (const auto& edge2 : edges2) {
-      const auto closest = closestPointsBetweenSegments(
+      const auto closest = distanceClosestPointsBetweenSegments(
           edge1Start,
           edge1End,
           transform2 * edge2.start,
@@ -989,7 +991,7 @@ double distanceCapsuleCapsule(
   const Eigen::Vector3d top2 = center2 + axis2 * h2;
   const Eigen::Vector3d bot2 = center2 - axis2 * h2;
 
-  auto closest = closestPointsBetweenSegments(bot1, top1, bot2, top2);
+  auto closest = distanceClosestPointsBetweenSegments(bot1, top1, bot2, top2);
 
   const double axisDist = std::sqrt(closest.distSq);
   const double dist = axisDist - r1 - r2;
@@ -1091,7 +1093,7 @@ double distanceCapsuleBox(
   const Eigen::Vector3d botLocal = boxInv * capBot;
 
   Eigen::Vector3d bestCapsulePoint = Eigen::Vector3d::Zero();
-  const Eigen::Vector3d bestBoxPoint = closestPointOnSegmentInBoxSpace(
+  const Eigen::Vector3d bestBoxPoint = distanceClosestPointOnSegmentInBoxSpace(
       botLocal, topLocal, boxHalf, bestCapsulePoint);
   const double minDist = (bestCapsulePoint - bestBoxPoint).norm();
   const double boundaryTolerance

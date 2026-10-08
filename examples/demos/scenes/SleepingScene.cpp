@@ -101,7 +101,7 @@ void setShapeInertia(BodyNode* body, const dart::dynamics::ShapePtr& shape)
 }
 
 //==============================================================================
-SkeletonPtr createFloor()
+SkeletonPtr createSleepingFloor()
 {
   auto floor = Skeleton::create("floor");
   auto body = floor->createJointAndBodyNodePair<WeldJoint>(nullptr).second;
@@ -598,7 +598,7 @@ DemoScene makeSleepingScene()
     auto world = dart::simulation::World::create();
     world->setTimeStep(1.0 / 60.0);
     world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
-    world->addSkeleton(createFloor());
+    world->addSkeleton(createSleepingFloor());
 
     auto opts = world->getDeactivationOptions();
     opts.mTimeUntilSleep = 0.3;
