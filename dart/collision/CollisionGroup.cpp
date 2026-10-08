@@ -38,6 +38,8 @@
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 
+#include <algorithm>
+
 #include <cassert>
 #include <cstdint>
 
@@ -123,14 +125,15 @@ void CollisionGroup::removeShapeFrame(const dynamics::ShapeFrame* shapeFrame)
     if (nullptr == source)
       continue;
 
-    // We don't know which container this source is kept in, so try erasing it
-    // from each.
-    if (mSkeletonSources.erase(
-            static_cast<const dynamics::MetaSkeleton*>(source))
-        > 0)
+    const auto* skeleton = static_cast<const dynamics::MetaSkeleton*>(source);
+    if (mSkeletonSources.erase(skeleton) > 0) {
+      removeSubscriptionOrder(skeleton);
       continue;
+    }
 
-    mBodyNodeSources.erase(static_cast<const dynamics::BodyNode*>(source));
+    const auto* body = static_cast<const dynamics::BodyNode*>(source);
+    mBodyNodeSources.erase(body);
+    removeSubscriptionOrder(body);
   }
 
   mObjectInfoList.erase(search);
@@ -178,6 +181,7 @@ void CollisionGroup::removeAllShapeFrames()
   // the next update() dereference freed memory and re-add the frames.
   mSkeletonSources.clear();
   mBodyNodeSources.clear();
+  mSubscriptionOrder.clear();
   mObserver.removeAllShapeFrames();
   if (hadObjects)
     incrementContentVersion();
@@ -305,21 +309,42 @@ void CollisionGroup::update()
   // collision objects; erase the now-stale source afterward so a later update()
   // does not re-enter the expired path and dereference the freed ObjectInfo
   // pointers still held in the source's mObjects (use-after-free).
-  for (auto it = mSkeletonSources.begin(); it != mSkeletonSources.end();) {
-    updateSkeletonSource(*it);
-    if (!it->second.mSource.lock())
-      it = mSkeletonSources.erase(it);
-    else
-      ++it;
-  }
+  mSubscriptionOrder.erase(
+      std::remove_if(
+          mSubscriptionOrder.begin(),
+          mSubscriptionOrder.end(),
+          [this](const Subscription& source) {
+            if (const auto* key
+                = std::get_if<const dynamics::MetaSkeleton*>(&source)) {
+              const auto skeleton = mSkeletonSources.find(*key);
+              DART_ASSERT(skeleton != mSkeletonSources.end());
+              updateSkeletonSource(*skeleton);
+              if (skeleton->second.mSource.lock())
+                return false;
 
-  for (auto it = mBodyNodeSources.begin(); it != mBodyNodeSources.end();) {
-    updateBodyNodeSource(*it);
-    if (!it->second.mSource.lock())
-      it = mBodyNodeSources.erase(it);
-    else
-      ++it;
-  }
+              mSkeletonSources.erase(skeleton);
+              return true;
+            }
+
+            const auto body = mBodyNodeSources.find(
+                std::get<const dynamics::BodyNode*>(source));
+            DART_ASSERT(body != mBodyNodeSources.end());
+            updateBodyNodeSource(*body);
+            if (body->second.mSource.lock())
+              return false;
+
+            mBodyNodeSources.erase(body);
+            return true;
+          }),
+      mSubscriptionOrder.end());
+}
+
+//==============================================================================
+void CollisionGroup::removeSubscriptionOrder(const Subscription& source)
+{
+  mSubscriptionOrder.erase(
+      std::remove(mSubscriptionOrder.begin(), mSubscriptionOrder.end(), source),
+      mSubscriptionOrder.end());
 }
 
 //==============================================================================
