@@ -67,28 +67,34 @@ The local-path checks catch accidental publication by contributors and agents.
 Local hooks and the agent guard are conveniences that explicit bypasses can
 skip. The PR Text workflow checks the title, body and every PR commit message
 using the base branch's checker as the backstop before merge.
+GitHub may omit this workflow for SHA-like branch names; those PRs rely on CI's
+tracked-file scan and review.
 
 `pixi run install-hooks` installs managed `pre-commit` and `commit-msg` hooks.
 The latter runs `scripts/check_local_paths.py --commit-msg-file "$1"`. When
 Git's editor template instruction is present, the scan skips every line
 starting with its single comment character. Template detection recognizes the
 "Lines starting with" instruction or the "Do not modify or remove the line
-above" instruction together with a matching scissors line. Without a template
-instruction, as with `-m` or `-F`, every line is scanned, including hash-prefixed
-and status-shaped lines. The scan stops at Git's scissors line, excluding the
-line and any verbose diff below it. Both hooks share interpreter
-selection, foreign-hook chaining,
+above" instruction immediately after a scissors line with the same comment
+character. Without a template instruction, as with `-m` or `-F`, every line is
+scanned, including hash-prefixed
+and status-shaped lines. Only template evidence makes matching scissors stop
+the scan and exclude a verbose diff; literal scissors lines remain ordinary
+text. Both hooks share interpreter selection, foreign-hook chaining,
 `DART_SKIP_HOOKS=1`, and `DART_HOOK_DRY_RUN=1`. Older worktrees without the
 checker or a compatible Python interpreter print a notice and skip the message
 scan; the pre-commit hook retains its staged whitespace fallback.
 
-When `--no-verify`/`-n`, a `core.hooksPath` override, or a missing/outdated
-managed hook prevents enforcement, the shared Claude/Codex agent guard runs the
-staged gate and scans supplied `-m`/`--message` text and readable `-F`/`--file`
-files through `scripts/check_local_paths.py --stdin`. It joins all supplied
-message parts without a comment exemption. Stdin (`-F -`), reused messages
-(`-C`/`-c`), and editor-only messages require the managed `commit-msg` hook;
-the agent guard cannot inspect them before the command runs.
+When `--no-verify`/`-n` (including accepted abbreviations), a `core.hooksPath`
+override, or a missing/outdated managed hook prevents enforcement, the shared
+Claude/Codex agent guard checks
+every commit split by its shell tokenizer, runs the staged gate once and scans
+all such commits' supplied `-m`/`--message`, readable `-F`/`--file` messages and
+trailers through `scripts/check_local_paths.py --stdin`. It joins supplied
+message parts without a comment exemption. It blocks stdin (`-F -`/`--file=-`),
+reused (`-C`/`-c`/`--reuse-message`/`--reedit-message`) and editor-only messages
+when managed hooks cannot enforce them, asking for `-m` or `-F <file>` or for
+the hooks to run.
 
 ## Simulation Verification Route
 
