@@ -520,6 +520,9 @@ def native(row: Row, args, world: Path, config: str = "") -> dict:
         metrics["max_penetration"] = finite_or_none(
             float(field(text, "Final Max Penetration"))
         )
+        # A finite final state can still report a non-finite penetration.
+        if metrics["max_penetration"] is None:
+            raise BenchmarkCaseError(f"non-finite final penetration: {row.key}")
     if row.checkpoint:
         metrics["checkpoints"] = [
             {

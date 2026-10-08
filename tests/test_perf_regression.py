@@ -158,11 +158,14 @@ def test_s6_capture_keeps_penetration_checkpoints(
         with pytest.raises(ValueError, match="missing canonical checkpoints"):
             module.native(module.select_rows("S6")[0], args, tmp_path)
     else:
+        if penetration == "inf":
+            # A non-finite final penetration breaks the row on every detector.
+            with pytest.raises(module.BenchmarkCaseError, match="non-finite final"):
+                module.native(module.select_rows("S6")[0], args, tmp_path)
+            return
         metric = module.native(module.select_rows("S6")[0], args, tmp_path)
-        expected = None if penetration == "inf" else 0.3
-        assert metric["max_penetration"] == expected
+        assert metric["max_penetration"] == 0.3
         assert [item["step"] for item in metric["checkpoints"]] == list(checkpoints)
-        # A non-finite state is still a broken row, but its evidence must save.
         module.write_json(tmp_path / "metric.json", metric)
 
 

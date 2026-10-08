@@ -558,6 +558,11 @@ jobs:
   record:
     name: Record merged performance
     needs: record-measure
+    # Writers for the same head run one at a time, so their PR comment updates
+    # cannot apply out of order.
+    concurrency:
+      group: perf-record-${{ needs.record-measure.outputs.head }}
+      cancel-in-progress: false
     if: >-
       ${{ !cancelled() && needs.record-measure.result == 'success' &&
           needs.record-measure.outputs.mode == 'ab' &&
