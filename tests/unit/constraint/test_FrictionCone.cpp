@@ -46,6 +46,7 @@
 #include <random>
 #include <vector>
 
+#include <cfenv>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -56,17 +57,31 @@ using namespace dart::constraint::detail;
 namespace {
 
 using WideVector = Eigen::Matrix<long double, 3, 1>;
-// Case 1481 of the certificate gate: the negative boundary-angle interval is
-// too narrow for the fast scan, so a dense certified fallback is required.
-const Eigen::Matrix3d boundaryFallbackMatrix = [] {
+// Case 1481 of the certificate gate: the negative boundary-angle interval was
+// too narrow for the former fast scan.
+const Eigen::Matrix3d angleRegressionMatrix = [] {
   Eigen::Matrix3d H;
   H << 9.2262669053731354, -0.85140655213626348, 2.0162788383275716,
       -0.85140655213626348, 1.1266781846934588, -0.50746117462211937,
       2.0162788383275716, -0.50746117462211926, 3.8093325701017848;
   return H;
 }();
-const Eigen::Vector3d boundaryFallbackLinear(
+const Eigen::Vector3d angleRegressionLinear(
     0.33890073956668498, 0.26636504987113141, 0.21106576606743932);
+
+// Case 14806 of the same gate: the secular candidate fails certification at
+// cond(H)=1e8, exercising the counted dense scan and its allocation contract.
+const Eigen::Matrix3d boundaryFallbackMatrix = [] {
+  Eigen::Matrix3d H;
+  H << 49624365.732912913, -40338883.018506698, -29540346.2012682,
+      -40338883.018506698, 32793684.558535863, 24008382.652795985,
+      -29540346.201268196, 24008382.652795985, 17591950.708551209;
+  return H;
+}();
+const Eigen::Vector3d boundaryFallbackLinear(
+    -0.077530063162165985, 0.28456983999152358, -0.29484743180755263);
+const FrictionCone boundaryFallbackCone{
+    Eigen::Vector2d(1.0, 11.030526431268397), FrictionConeLaw::Ellipse};
 
 // Independent certificate: evaluate the original matrix product in extended
 // precision, then check K, K* and complementarity without production helpers.
@@ -320,6 +335,51 @@ TEST(FrictionCone, OneDimensionalWedgesAndVelocityUnits)
   }
 }
 
+TEST(FrictionCone, BoundaryAcrossPositiveSecularPole)
+{
+  const Eigen::Matrix3d H = Eigen::Matrix3d::Identity();
+  const FrictionCone cone;
+  // The positive generalized eigenvalue is 1. These solutions have KKT
+  // multipliers 1/3, 1 (the singular hard case), and 3, respectively.
+  for (double normal : {-1.0, 0.0, 1.0}) {
+    const Eigen::Vector3d c(normal, 2.0, 0.0);
+    std::feclearexcept(FE_INVALID);
+    const auto result = solveConeQp(H, c, cone);
+    EXPECT_EQ(std::fetestexcept(FE_INVALID), 0);
+    const double impulse = (2.0 - normal) / 2.0;
+    ASSERT_TRUE(result.certified);
+    EXPECT_LE(
+        (result.impulse - Eigen::Vector3d(impulse, -impulse, 0.0)).norm(),
+        1e-12);
+    EXPECT_EQ(result.numLocalFallbacks, 0u);
+    EXPECT_LE(independentlyCertify(H, c, result.impulse, cone).worst(), 1e-10L);
+  }
+}
+
+TEST(FrictionCone, OpeningExactContactUsesNoQp)
+{
+  const Eigen::Matrix3d H = Eigen::Matrix3d::Identity();
+  for (const auto law : {FrictionConeLaw::Ellipse, FrictionConeLaw::Box}) {
+    const FrictionCone cone{Eigen::Vector2d(0.5, 0.3), law};
+    for (double normal : {0.0, 1.0}) {
+      const Eigen::Vector3d c(normal, 2.0, -3.0);
+      for (double warm : {0.0, 5.0}) {
+        const auto result = solveExactContact(H, c, cone, warm);
+        ASSERT_TRUE(result.certified);
+        EXPECT_TRUE(result.impulse.isZero());
+        EXPECT_EQ(result.numQpSolves, 0u);
+        EXPECT_EQ(result.numLocalFallbacks, 0u);
+        EXPECT_DOUBLE_EQ(
+            result.normalShift,
+            static_cast<double>(support(c.cast<long double>(), cone)));
+        EXPECT_LE(
+            independentlyCertify(H, c, result.impulse, cone, true).worst(),
+            1e-10L);
+      }
+    }
+  }
+}
+
 TEST(FrictionCone, RejectsRadialNewtonBias)
 {
   Eigen::Matrix3d H = Eigen::Matrix3d::Identity();
@@ -402,7 +462,18 @@ TEST(FrictionCone, OriginalSplitCyclesAndWorstRadialBias)
 
 TEST(FrictionCone, CertifiedFallbackIsCounted)
 {
-  const FrictionCone cone;
+  const auto angle = solveConeQp(
+      angleRegressionMatrix, angleRegressionLinear, FrictionCone{});
+  ASSERT_TRUE(angle.certified);
+  EXPECT_LE(
+      independentlyCertify(
+          angleRegressionMatrix,
+          angleRegressionLinear,
+          angle.impulse,
+          FrictionCone{})
+          .worst(),
+      1e-10L);
+  const auto& cone = boundaryFallbackCone;
   const auto result
       = solveConeQp(boundaryFallbackMatrix, boundaryFallbackLinear, cone);
   ASSERT_TRUE(result.certified);
@@ -638,7 +709,7 @@ TEST(FrictionCone, SingularRegularizationInvalidInputAndAllocation)
   FrictionRowClassification rows;
   ASSERT_TRUE(classifyFrictionRows(3, lo, hi, findex, rows));
   const auto fallbackWarmup = solveConeQp(
-      boundaryFallbackMatrix, boundaryFallbackLinear, FrictionCone{});
+      boundaryFallbackMatrix, boundaryFallbackLinear, boundaryFallbackCone);
   ASSERT_TRUE(fallbackWarmup.certified);
   ASSERT_GT(fallbackWarmup.numLocalFallbacks, 0u);
   dart::test::ScopedHeapAllocationCounter heap;
@@ -649,7 +720,7 @@ TEST(FrictionCone, SingularRegularizationInvalidInputAndAllocation)
     const auto qp = solveConeQp(H, c, cone);
     const auto exact = solveExactContact(H, c, cone);
     const auto fallback = solveConeQp(
-        boundaryFallbackMatrix, boundaryFallbackLinear, FrictionCone{});
+        boundaryFallbackMatrix, boundaryFallbackLinear, boundaryFallbackCone);
     allCertified = allCertified && fallback.certified;
     sum += contactViolation(exact.impulse, H * exact.impulse + c, 1, cone);
     allCertified = allCertified && qp.certified && exact.certified;

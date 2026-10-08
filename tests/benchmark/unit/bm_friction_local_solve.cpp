@@ -5,10 +5,16 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <iostream>
+#include <string>
 #include <vector>
 
 #include <cmath>
 #include <cstdint>
+
+#if __has_include(<valgrind/callgrind.h>)
+  #include <valgrind/callgrind.h>
+#endif
 
 namespace {
 
@@ -152,6 +158,69 @@ void localSolve(benchmark::State& state, int caseIndex, FrictionConeLaw law)
   state.counters["clock_pair_median_ns"] = latency.clockPairMedianNs;
 }
 
+int callgrindSolve(const std::string& name)
+{
+#if __has_include(<valgrind/callgrind.h>)
+  const std::array<std::string, 10> names{
+      "ellipse_interior",
+      "ellipse_apex",
+      "ellipse_boundary",
+      "ellipse_exact",
+      "box_interior",
+      "box_apex",
+      "box_boundary",
+      "box_exact",
+      "ellipse_exact_opening",
+      "box_exact_opening"};
+  const auto found = std::find(names.begin(), names.end(), name);
+  if (found == names.end()) {
+    std::cerr << "Unknown Callgrind case: " << name << '\n';
+    return 1;
+  }
+  const int index = static_cast<int>(found - names.begin());
+  const int caseIndex = index < 8 ? index % 4 : 1;
+  const auto law = (index >= 4 && index < 8) || index == 9
+                       ? FrictionConeLaw::Box
+                       : FrictionConeLaw::Ellipse;
+  const auto problem = makeProblem(caseIndex, law);
+  const bool exact = caseIndex == 3 || index >= 8;
+  const auto solve = [&] {
+    return exact ? solveExactContact(problem.h, problem.c, problem.cone)
+                 : solveConeQp(problem.h, problem.c, problem.cone);
+  };
+  // Resolve dynamic-library symbols before instruction collection starts.
+  auto warmup = solve();
+  benchmark::DoNotOptimize(warmup.impulse);
+  std::vector<LocalSolveResult> results(1000);
+  CALLGRIND_START_INSTRUMENTATION;
+  CALLGRIND_ZERO_STATS;
+  for (auto& result : results)
+    result = solve();
+  CALLGRIND_STOP_INSTRUMENTATION;
+
+  std::uint64_t fallbackCount = 0;
+  std::uint64_t qpCount = 0;
+  for (const auto& result : results) {
+    if (!result.certified) {
+      std::cerr << "Callgrind solve was not certified: " << name << '\n';
+      return 1;
+    }
+    fallbackCount += result.numLocalFallbacks;
+    qpCount += result.numQpSolves;
+  }
+  std::cout << "case=" << name << " solves=" << results.size()
+            << " certified=1 QPs/solve="
+            << static_cast<double>(qpCount) / results.size()
+            << " fallbacks/solve="
+            << static_cast<double>(fallbackCount) / results.size() << '\n';
+  return 0;
+#else
+  std::cerr << "Callgrind case " << name
+            << " requires valgrind/callgrind.h at build time\n";
+  return 1;
+#endif
+}
+
 } // namespace
 
 #define FRICTION_BENCHMARK(name, caseIndex, law)                               \
@@ -172,3 +241,15 @@ FRICTION_BENCHMARK(box_boundary, 2, Box);
 FRICTION_BENCHMARK(box_exact, 3, Box);
 
 #undef FRICTION_BENCHMARK
+
+int main(int argc, char** argv)
+{
+  if (argc == 3 && std::string(argv[1]) == "--callgrind")
+    return callgrindSolve(argv[2]);
+  benchmark::Initialize(&argc, argv);
+  if (benchmark::ReportUnrecognizedArguments(argc, argv))
+    return 1;
+  benchmark::RunSpecifiedBenchmarks();
+  benchmark::Shutdown();
+  return 0;
+}

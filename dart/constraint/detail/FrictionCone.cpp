@@ -111,8 +111,7 @@ bool prepare(
   H = (0.5 * (input + input.transpose())).cast<Real>();
   Eigen::LDLT<Matrix> ldlt(H);
   const Real trace = H.trace();
-  if (trace < 0.0
-      || ldlt.vectorD().minCoeff() < -1e-12 * std::max(1.0, trace))
+  if (trace < 0.0 || ldlt.vectorD().minCoeff() < -1e-12 * std::max(1.0, trace))
     return false;
   if (ldlt.vectorD().minCoeff() <= 1e-18 * std::max(1.0, trace)) {
     regularization = double(1e-12 * (trace > 0.0 ? trace : 1.0));
@@ -126,7 +125,6 @@ struct AnglePoint
 {
   Real value = 0.0;
   Real derivative = 0.0;
-  Real derivativeSlope = 0.0;
   Vector impulse = Vector::Zero();
 };
 
@@ -137,15 +135,12 @@ AnglePoint anglePoint(
   const Real m1 = cone.mu[0], m2 = cone.mu[1];
   const Vector a(1.0, m1 * ct, m2 * st);
   const Vector da(0.0, -m1 * st, m2 * ct);
-  const Vector dda(0.0, -m1 * ct, -m2 * st);
   const Vector Ha = H * a;
-  const Real p = c.dot(a), dp = c.dot(da), ddp = c.dot(dda);
+  const Real p = c.dot(a), dp = c.dot(da);
   const Real h = a.dot(Ha), dh = 2.0 * da.dot(Ha);
-  const Real ddh = 2.0 * (dda.dot(Ha) + da.dot(H * da));
   AnglePoint point;
   // The derivative has the sign of 2 p' h - p h' whenever p < 0.
   point.derivative = 2.0 * dp * h - p * dh;
-  point.derivativeSlope = 2.0 * ddp * h + dp * dh - p * ddh;
   if (p < 0.0 && h > 0.0) {
     point.value = -p * p / (2.0 * h);
     point.impulse = (-p / h) * a;
@@ -158,27 +153,16 @@ Vector refineAngle(
     const Vector& c,
     const FrictionCone& cone,
     Real theta,
-    Real step,
-    bool newton)
+    Real step)
 {
   Real lo = theta - step, hi = theta + step;
-  for (int iteration = 0; iteration < (newton ? 48 : 90); ++iteration) {
+  for (int iteration = 0; iteration < 90; ++iteration) {
     const auto point = anglePoint(H, c, cone, theta);
-    if (newton && point.derivativeSlope > 0.0
-        && std::abs(point.derivative / point.derivativeSlope)
-               <= 4.0 * std::numeric_limits<Real>::epsilon()
-                      * (1.0 + std::abs(theta)))
-      break;
     if (point.derivative < 0.0)
       lo = theta;
     else
       hi = theta;
-    Real next = (lo + hi) / 2.0;
-    if (newton && point.derivativeSlope > 0.0) {
-      const Real proposal = theta - point.derivative / point.derivativeSlope;
-      if (proposal > lo && proposal < hi)
-        next = proposal;
-    }
+    const Real next = (lo + hi) / 2.0;
     if (next == theta)
       break;
     theta = next;
@@ -187,11 +171,7 @@ Vector refineAngle(
 }
 
 Vector scanAngles(
-    const Matrix& H,
-    const Vector& c,
-    const FrictionCone& cone,
-    int count,
-    bool newton)
+    const Matrix& H, const Vector& c, const FrictionCone& cone, int count)
 {
   const Real step = 2.0 * kPi / count;
   Vector best = Vector::Zero();
@@ -203,7 +183,7 @@ Vector scanAngles(
   for (int k = 0; k < count; ++k) {
     const Real next = anglePoint(H, c, cone, (k + 1) * step).value;
     if (here < 0.0 && here <= before && here <= next) {
-      const Vector x = refineAngle(H, c, cone, k * step, step, newton);
+      const Vector x = refineAngle(H, c, cone, k * step, step);
       const Real value = 0.5 * x.dot(H * x) + c.dot(x);
       if (value < bestValue) {
         bestValue = value;
@@ -216,6 +196,114 @@ Vector scanAngles(
     here = next;
   }
   return best;
+}
+
+Vector secularBoundary(
+    const Matrix& H, const Vector& c, const FrictionCone& cone)
+{
+  // In y coordinates x = D*y, the boundary is y_n^2 = |y_t|^2 and
+  // (D*H*D - nu*diag(1,-1,-1))*y = -D*c. Only C + nu*I is
+  // inverted below: no matrix containing 1/mu^2 is formed or inverted.
+  const Vector d(1.0, cone.mu[0], cone.mu[1]);
+  const Matrix B = d.asDiagonal() * H * d.asDiagonal();
+  const Vector g = d.cwiseProduct(c);
+  const Eigen::Vector2d b = B.bottomLeftCorner<2, 1>();
+  struct Point
+  {
+    Real delta, numerator, value, slope;
+    Eigen::Vector2d u, w, tangent;
+  };
+  const auto evaluate = [&](Real nu) {
+    const Real a = B(1, 1) + nu, e = B(2, 2) + nu, f = B(1, 2);
+    Eigen::Matrix2d inverse;
+    inverse << e, -f, -f, a;
+    inverse /= a * e - f * f;
+    Point p;
+    p.u = inverse * g.tail<2>();
+    p.w = inverse * b;
+    p.delta = B(0, 0) - nu - b.dot(p.w);
+    p.numerator = -g[0] + b.dot(p.u);
+    // y_n = numerator/delta, y_t = -tangent/delta. This secular
+    // residual avoids division by delta at the generalized eigenvalue.
+    p.tangent = p.delta * p.u + p.numerator * p.w;
+    const Real length = p.tangent.norm();
+    p.value = length - std::abs(p.numerator);
+    const Real dd = p.w.squaredNorm() - 1.0;
+    const Real dn = -p.w.dot(p.u);
+    const Eigen::Vector2d dt = dd * p.u - p.delta * (inverse * p.u) + dn * p.w
+                               - p.numerator * (inverse * p.w);
+    p.slope = length > 0.0 ? p.tangent.dot(dt) / length
+                                 - std::copysign(1.0, p.numerator) * dn
+                           : 0.0;
+    return p;
+  };
+  const auto onRay = [&](const Eigen::Vector2d& tangent) -> Vector {
+    const Vector ray(1.0, d[1] * tangent[0], d[2] * tangent[1]);
+    return (-c.dot(ray) / ray.dot(H * ray)) * ray;
+  };
+
+  // The Schur complement delta has one positive zero nu_plus. It is
+  // concave, so Newton from B_nn approaches this pole from above.
+  Real lo = 0.0, hi = B(0, 0), pole = hi;
+  for (int i = 0; i < 64; ++i) {
+    const auto p = evaluate(pole);
+    if (std::abs(p.delta)
+        <= 8.0 * std::numeric_limits<Real>::epsilon() * B(0, 0))
+      break;
+    if (p.delta > 0.0)
+      lo = pole;
+    else
+      hi = pole;
+    Real next = pole - p.delta / (p.w.squaredNorm() - 1.0);
+    if (!(next > lo && next < hi))
+      next = (lo + hi) / 2.0;
+    if (next == pole)
+      break;
+    pole = next;
+  }
+  const auto atPole = evaluate(pole);
+  if (std::abs(atPole.numerator)
+      <= 8.0 * std::numeric_limits<Real>::epsilon() * g.norm()) {
+    // At the singular hard case, solve the cone equation along the null
+    // direction (1,-w), rather than dividing by the zero Schur complement.
+    const Real a = 1.0 - atPole.w.squaredNorm();
+    const Real dot = atPole.w.dot(atPole.u);
+    const Real root = std::sqrt(dot * dot + a * atPole.u.squaredNorm());
+    const Real normal
+        = dot < 0.0 ? atPole.u.squaredNorm() / (root - dot) : (dot + root) / a;
+    const Eigen::Vector2d tangent = -atPole.u - normal * atPole.w;
+    return onRay(tangent.normalized());
+  }
+  const bool lower = atPole.numerator > 0.0;
+  // A negative pole numerator puts the positive-nappe solution ABOVE
+  // nu_plus; the root below it then lies on the negative nappe.
+  lo = lower ? 0.0 : pole;
+  hi = lower ? pole : 2.0 * pole;
+  if (!lower) {
+    for (int i = 0; i < 64 && evaluate(hi).value <= 0.0; ++i)
+      hi *= 2.0;
+    if (!(evaluate(hi).value > 0.0))
+      return Vector::Zero();
+  }
+  Real nu = (lo + hi) / 2.0;
+  for (int i = 0; i < 64; ++i) {
+    const auto p = evaluate(nu);
+    if (std::abs(p.value) <= 8.0 * std::numeric_limits<Real>::epsilon()
+                                 * (p.tangent.norm() + std::abs(p.numerator)))
+      break;
+    if ((p.value > 0.0) == lower)
+      lo = nu;
+    else
+      hi = nu;
+    Real next = nu - p.value / p.slope;
+    if (!(next > lo && next < hi))
+      next = (lo + hi) / 2.0;
+    if (next == nu)
+      break;
+    nu = next;
+  }
+  const auto p = evaluate(nu);
+  return onRay((lower ? -1.0 : 1.0) * p.tangent.normalized());
 }
 
 Vector polyhedralQp(const Matrix& H, const Vector& c, const FrictionCone& cone)
@@ -276,13 +364,13 @@ LocalSolveResult solvePrepared(
   if (cone.law == FrictionConeLaw::Box || cone.mu.minCoeff() == 0.0) {
     x = polyhedralQp(H, c, cone);
   } else {
-    x = scanAngles(H, c, cone, 32, true);
+    x = secularBoundary(H, c, cone);
     if (!certificate(H, c, x.cast<double>().cast<Real>(), cone)) {
       ++result.numLocalFallbacks;
       // Dense reference scan plus bisection. Increase the sampling density
       // for narrow minima at the randomized gate's highest condition numbers.
       for (int count : {720, 5760, 46080}) {
-        x = scanAngles(H, c, cone, count, false);
+        x = scanAngles(H, c, cone, count);
         if (certificate(H, c, x.cast<double>().cast<Real>(), cone))
           break;
       }
@@ -388,6 +476,12 @@ LocalSolveResult solveExactContact(
     shifted[0] += support(effective * x + q, cone);
     result.certified = certificate(effective, shifted, x, cone);
   };
+  // An apex is an exact contact solution whenever the free normal velocity is
+  // nonnegative; no tangential impulse can help an opening contact.
+  if (q[0] >= 0.0) {
+    finish(Vector::Zero(), support(q, cone));
+    return result;
+  }
   const auto evaluate = [&](Real shift, Vector& x, bool& certified) {
     Vector shifted = q;
     shifted[0] += shift;
@@ -413,12 +507,6 @@ LocalSolveResult solveExactContact(
   Real fhi = evaluate(hi, x, certified);
   if (!certified)
     return result;
-  // An apex is an exact contact solution whenever the free normal velocity is
-  // nonnegative; no tangential impulse can help an opening contact.
-  if (q[0] >= 0.0) {
-    finish(Vector::Zero(), support(q, cone));
-    return result;
-  }
   for (int expand = 0; fhi >= 0.0 && expand < 32; ++expand) {
     hi *= 2.0;
     fhi = evaluate(hi, x, certified);
