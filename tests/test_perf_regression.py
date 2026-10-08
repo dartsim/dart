@@ -515,7 +515,7 @@ def test_publication_permissions_keep_all_measurement_read_only():
     assert workflow["on"]["push"]["paths"] == workflow["on"]["pull_request"]["paths"]
     assert "pull_request_target" not in workflow["on"]
     assert "GH_TOKEN" not in workflow.get("env", {})
-    for job in ("measure", "record-measure", "nightly-measure"):
+    for job in ("measure", "record-measure", "nightly-measure", "release-measure"):
         definition = workflow["jobs"][job]
         permissions = {"contents": "read"}
         if job == "record-measure":
@@ -527,7 +527,7 @@ def test_publication_permissions_keep_all_measurement_read_only():
                 assert step["name"] == "Find the merged PR and its current rationale"
             if step.get("uses", "").startswith("actions/checkout@"):
                 assert step["with"]["persist-credentials"] == "false"
-    for job in ("record", "nightly"):
+    for job in ("record", "nightly", "release"):
         definition = workflow["jobs"][job]
         assert definition["permissions"]["contents"] == "write"
         assert "refs/heads/main" in definition["if"]
@@ -595,6 +595,71 @@ def test_merge_writer_uses_only_main_publisher_and_saved_evidence():
         < names.index("Refresh the merged PR verdict comment")
         < names.index("Summarize and enforce the merged verdict")
     )
+
+
+def test_release_writer_uses_only_main_publisher_and_saved_evidence():
+    workflow = _perf_workflow()
+    assert workflow["on"]["workflow_dispatch"]["inputs"]["tier"]["options"] == [
+        "merge",
+        "nightly",
+        "release",
+    ]
+    measure, writer = (workflow["jobs"][job] for job in ("release-measure", "release"))
+    assert "github.event_name == 'workflow_dispatch'" in measure["if"]
+    assert "inputs.tier == 'release'" in measure["if"]
+    assert "github.ref" not in measure["if"]
+    assert writer["needs"] == "release-measure"
+    assert "needs.release-measure.result == 'success'" in writer["if"]
+    assert "github.ref == 'refs/heads/main'" in writer["if"]
+    assert "github.event_name == 'workflow_dispatch'" in writer["if"]
+    assert "inputs.tier == 'release'" in writer["if"]
+    assert writer["permissions"] == {"contents": "write"}
+    assert writer["concurrency"] == {
+        "group": "perf-release-${{ needs.release-measure.outputs.tag }}",
+        "cancel-in-progress": "false",
+    }
+    checkout = _perf_step("release", "Checkout main publisher")
+    assert checkout["with"]["ref"] == "main"
+    assert checkout["with"]["fetch-depth"] == "0"
+    assert checkout["with"]["persist-credentials"] == "false"
+    upload = _perf_step("release-measure", "Upload release evidence")
+    download = _perf_step(
+        "release", "Download release measurements (including earlier attempts)"
+    )
+    assert (
+        upload["with"]["name"]
+        == "perf-release-${{ github.run_id }}-${{ github.run_attempt }}"
+    )
+    assert "overwrite" not in upload["with"]
+    assert (
+        measure["outputs"]["artifact"]
+        == "${{ format('perf-release-{0}-{1}', github.run_id, github.run_attempt) }}"
+    )
+    assert download["with"]["name"] == "${{ needs.release-measure.outputs.artifact }}"
+    assert download["with"]["path"] == "${{ runner.temp }}/perf"
+    select = _perf_step("release-measure", "Select candidate and previous release")
+    assert select["env"] == {
+        "REQUESTED_HEAD": "${{ inputs.head }}",
+        "REQUESTED_TAG": "${{ inputs.tag }}",
+        "REQUESTED_BASE": "${{ inputs.base }}",
+    }
+    assert "${{ inputs." not in select["run"]
+    assert "release_scope(" in select["run"]
+    for step in writer["steps"]:
+        script = step.get("run", "")
+        assert "GH_TOKEN" not in step.get("env", {})
+        assert "pixi" not in script and " local " not in script
+        assert "gh release" not in script
+        assert not step.get("uses", "").startswith("prefix-dev/")
+    assert "GH_TOKEN" not in writer.get("env", {})
+    assert not any(" publish " in step.get("run", "") for step in measure["steps"])
+    publish = _perf_step("release", "Publish the release record and index")
+    assert publish["id"] == "publish" and "--tier release" in publish["run"]
+    assert '--tag "$PERF_TAG" --base-tag "$PERF_BASE_TAG"' in publish["run"]
+    summary = _perf_step("release", "Summarize the release record")
+    assert "steps.publish.outcome == 'success'" in summary["if"]
+    names = [step["name"] for step in writer["steps"]]
+    assert names.index(publish["name"]) < names.index(summary["name"])
 
 
 @pytest.mark.parametrize("status,exit_code", [("PASS", 0), ("FAIL", 1), ("ERROR", 2)])

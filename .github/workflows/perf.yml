@@ -38,13 +38,16 @@ on:
       tier:
         description: "Performance tier"
         type: choice
-        options: [merge, nightly]
+        options: [merge, nightly, release]
         default: merge
       head:
-        description: "Merged main revision to measure (defaults to this main SHA)"
+        description: "Revision to measure: a merged main revision (merge, nightly) or the release candidate (release; defaults to the tag)"
         type: string
       base:
-        description: "Expected first parent of head (optional)"
+        description: "Expected first parent (merge) or the previous release tag (release; defaults to the newest earlier v6 tag)"
+        type: string
+      tag:
+        description: "Release tag for tier=release (defaults to v<package.xml version> of head)"
         type: string
 
 permissions:
@@ -844,3 +847,139 @@ jobs:
         env:
           PERF_STATUS: ${{ needs.nightly-measure.outputs.status }}
         run: exit "${PERF_STATUS:-2}"
+
+  release-measure:
+    name: Measure release performance
+    # Any ref measures (a dry run off main); only the main writer publishes.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.tier == 'release' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    outputs:
+      head: ${{ steps.scope.outputs.head }}
+      tag: ${{ steps.scope.outputs.tag }}
+      base_tag: ${{ steps.scope.outputs.base_tag }}
+      artifact: ${{ format('perf-release-{0}-{1}', github.run_id, github.run_attempt) }}
+    steps:
+      - name: Check measurement runner
+        run: test "$RUNNER_ENVIRONMENT" = github-hosted
+
+      - name: Checkout the release harness
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # tags and release branches for release_scope
+          persist-credentials: false
+
+      - name: Select candidate and previous release
+        id: scope
+        env:
+          REQUESTED_HEAD: ${{ inputs.head }}
+          REQUESTED_TAG: ${{ inputs.tag }}
+          REQUESTED_BASE: ${{ inputs.base }}
+        run: |
+          python3 - <<'PY'
+          import os
+
+          from scripts.perf_regression import release_scope
+
+          scope = release_scope(
+              *(os.environ[key] or None for key in ("REQUESTED_HEAD", "REQUESTED_TAG", "REQUESTED_BASE"))
+          )
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.writelines(f"{key}={scope[key]}\n" for key in ("head", "tag", "base_tag"))
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env:
+              env.write(f"PERF_BASE={scope['base']}\nPERF_HEAD={scope['head']}\n")
+              env.write(f"PERF_OUTPUT={os.environ['RUNNER_TEMP']}/perf\n")
+          PY
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          cache: false
+          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev valgrind
+
+      - name: Measure the candidate against the previous release
+        run: |
+          status=0
+          pixi run python scripts/perf_regression.py local --base "$PERF_BASE" --head "$PERF_HEAD" \
+            --perturb --jobs 4 --output-dir "$PERF_OUTPUT" \
+            --json "$PERF_OUTPUT/perf.json" --markdown "$PERF_OUTPUT/perf.md" || status=$?
+          # A policy FAIL is publishable evidence; infrastructure errors are not.
+          [[ "$status" != 2 ]]
+
+      - name: Upload release evidence
+        if: ${{ !cancelled() && steps.scope.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.PERF_OUTPUT }}/perf.*
+            ${{ env.PERF_OUTPUT }}/a-run/
+            ${{ env.PERF_OUTPUT }}/b-run/
+            ${{ env.PERF_OUTPUT }}/**/*.log
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Summarize release measurements
+        if: ${{ !cancelled() && steps.scope.outcome == 'success' }}
+        run: if [[ -f "$PERF_OUTPUT/perf.md" ]]; then cat "$PERF_OUTPUT/perf.md" >> "$GITHUB_STEP_SUMMARY"; fi
+
+  release:
+    name: Record release performance
+    needs: release-measure
+    # One writer per tag at a time; write_release orders candidates.
+    concurrency:
+      group: perf-release-${{ needs.release-measure.outputs.tag }}
+      cancel-in-progress: false
+    if: >-
+      ${{ !cancelled() && needs.release-measure.result == 'success' &&
+          github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' &&
+          inputs.tier == 'release' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      PERF_TAG: ${{ needs.release-measure.outputs.tag }}
+      PERF_BASE_TAG: ${{ needs.release-measure.outputs.base_tag }}
+    steps:
+      - name: Refuse self-hosted publication
+        run: |
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          echo "PERF_OUTPUT=$RUNNER_TEMP/perf" >> "$GITHUB_ENV"
+
+      - name: Checkout main publisher
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0  # tags, release branches and ancestry for release_scope and the ledger
+          persist-credentials: false
+
+      - name: Download release measurements (including earlier attempts)
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.release-measure.outputs.artifact }}
+          path: ${{ runner.temp }}/perf
+
+      - name: Checkout durable records
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+          path: perf-pages
+
+      - name: Publish the release record and index
+        id: publish
+        run: |
+          python3 scripts/perf_regression.py publish --record "$PERF_OUTPUT/perf.json" --tier release \
+            --tag "$PERF_TAG" --base-tag "$PERF_BASE_TAG" --pages-dir "$GITHUB_WORKSPACE/perf-pages"
+
+      - name: Summarize the release record
+        if: ${{ !cancelled() && steps.publish.outcome == 'success' }}
+        run: cat "perf-pages/performance/releases/$PERF_TAG.md" >> "$GITHUB_STEP_SUMMARY"
