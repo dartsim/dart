@@ -31,12 +31,26 @@
  */
 
 #include "TestHelpers.hpp"
-#include "dart/common/common.hpp"
-#include "dart/constraint/constraint.hpp"
-#include "dart/dynamics/dynamics.hpp"
+#include "dart/collision/Contact.hpp"
+#include "dart/common/Macros.hpp"
+#include "dart/common/Platform.hpp"
+#include "dart/constraint/BoxedLcpConstraintSolver.hpp"
+#include "dart/constraint/BoxedLcpSolver.hpp"
+#include "dart/constraint/ConstraintBase.hpp"
+#include "dart/constraint/ContactConstraint.hpp"
+#include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/simulation/World.hpp"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
+
+#include <memory>
 
 using namespace dart;
 

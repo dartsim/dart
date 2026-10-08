@@ -31,11 +31,32 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/common/NameManager.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/DegreeOfFreedom.hpp"
+#include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/Entity.hpp"
+#include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/TranslationalJoint.hpp"
+#include "dart/math/ConfigurationSpace.hpp"
+#include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+
+#include <cstddef>
 
 using namespace dart;
 using namespace math;

@@ -30,20 +30,60 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/collision/collision.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/CollisionFilter.hpp"
+#include "dart/collision/CollisionGroup.hpp"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
+#include "dart/collision/Contact.hpp"
 #include "dart/collision/dart/DARTCollide.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/dart/DARTCollisionGroup.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/fcl/fcl.hpp"
-#include "dart/common/common.hpp"
+#include "dart/common/Factory.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/config.hpp"
-#include "dart/dynamics/dynamics.hpp"
-#include "dart/math/math.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/ConeShape.hpp"
+#include "dart/dynamics/CylinderShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/HeightmapShape.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SphereShape.hpp"
+#include "dart/dynamics/VoxelGridShape.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/math/Constants.hpp"
+#include "dart/math/Random.hpp"
+#include "dart/simulation/World.hpp"
+#include "dart/utils/SkelParser.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <cmath>
+#include <cstddef>
 #if HAVE_ODE
   #include "dart/collision/ode/detail/OdeGeom.hpp"
   #include "dart/collision/ode/ode.hpp"
@@ -54,8 +94,6 @@
   #include "dart/collision/bullet/bullet.hpp"
 #endif
 #include "TestHelpers.hpp"
-#include "dart/simulation/simulation.hpp"
-#include "dart/utils/utils.hpp"
 
 #include <algorithm>
 #include <limits>

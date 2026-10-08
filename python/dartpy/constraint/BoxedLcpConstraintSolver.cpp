@@ -30,9 +30,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
+#include <dart/constraint/BoxedLcpSolver.hpp>
+#include <dart/constraint/ConstraintSolver.hpp>
 
 #include <pybind11/pybind11.h>
+
+#include <memory>
 
 namespace py = pybind11;
 

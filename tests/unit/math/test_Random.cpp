@@ -34,7 +34,12 @@
 
 #include <dart/math/Random.hpp>
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
+
+#include <vector>
+
+#include <cstddef>
 
 using namespace dart;
 using namespace dart::math;

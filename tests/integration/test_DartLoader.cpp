@@ -31,10 +31,19 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Inertia.hpp"
+#include "dart/dynamics/Joint.hpp"
 #include "dart/dynamics/MeshShape.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/WeldJoint.hpp"
+#include "dart/math/Constants.hpp"
 #include "dart/utils/urdf/DartLoader.hpp"
 
 #include <Eigen/Dense>
@@ -42,6 +51,8 @@
 #include <urdf_model/link.h>
 
 #include <iostream>
+#include <memory>
+#include <string>
 
 using namespace dart;
 using dart::common::Uri;

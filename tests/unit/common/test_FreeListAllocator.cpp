@@ -34,6 +34,7 @@
 
 #include <dart/common/CAllocator.hpp>
 #include <dart/common/FreeListAllocator.hpp>
+#include <dart/common/MemoryAllocator.hpp>
 
 #include <gtest/gtest.h>
 

@@ -36,6 +36,7 @@
 
 #include <dart/constraint/ConstraintSolver.hpp>
 
+#include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/bullet/BulletCollisionDetector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
 #include <dart/collision/ode/OdeCollisionDetector.hpp>
@@ -44,13 +45,29 @@
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/PlaneShape.hpp>
+#include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
 
-#include <dart/common/Deprecated.hpp>
+#include <dart/math/Helpers.hpp>
 
+#include <dart/common/Deprecated.hpp>
+#include <dart/common/Macros.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <TestHelpers.hpp>
 #include <gtest/gtest.h>
+
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <ostream>
+#include <string>
+
+#include <cmath>
+#include <cstddef>
 
 //==============================================================================
 bool runIssue1234Subtest(

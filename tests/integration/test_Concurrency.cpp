@@ -31,12 +31,18 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <gtest/gtest.h>
 
 #include <chrono>
 #include <future>
+#include <string>
+#include <vector>
+
+#include <cstddef>
 
 using namespace dart;
 using namespace dynamics;

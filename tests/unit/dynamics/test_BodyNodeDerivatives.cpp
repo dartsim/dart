@@ -30,13 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/EulerJoint.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/TranslationalJoint.hpp>
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <vector>
 
 #include <cmath>
+#include <cstddef>
 
 namespace {
 

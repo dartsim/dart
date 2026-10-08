@@ -31,24 +31,37 @@
  */
 
 #include "TestHelpers.hpp"
-#include "dart/collision/collision.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/CollisionGroup.hpp"
+#include "dart/common/Factory.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/config.hpp"
+#include "dart/constraint/BoxedLcpSolver.hpp"
+#include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Random.hpp"
+#include "dart/simulation/DeactivationOptions.hpp"
+#include "dart/simulation/Recording.hpp"
 #include "dart/utils/SkelParser.hpp"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <atomic>
 #include <chrono>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
+#include <cstddef>
 #include <cstring>
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"

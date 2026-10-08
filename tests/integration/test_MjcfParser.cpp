@@ -31,20 +31,42 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
-#include "dart/dart.hpp"
+#include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/ResourceRetriever.hpp"
+#include "dart/common/Uri.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/utils/CompositeResourceRetriever.hpp"
+#include "dart/utils/DartResourceRetriever.hpp"
+#include "dart/utils/mjcf/MjcfParser.hpp"
 #include "dart/utils/mjcf/detail/GeomCollisionFilter.hpp"
 #include "dart/utils/mjcf/detail/MujocoModel.hpp"
 #include "dart/utils/mjcf/detail/Types.hpp"
 #include "dart/utils/mjcf/detail/Utils.hpp"
-#include "dart/utils/utils.hpp"
 
+#include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
+
+#include <cstddef>
 
 using namespace dart;
 using namespace utils::MjcfParser::detail;

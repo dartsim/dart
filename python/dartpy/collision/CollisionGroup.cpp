@@ -30,10 +30,27 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/collision/CollisionDetector.hpp>
+#include <dart/collision/CollisionGroup.hpp>
+#include <dart/collision/CollisionOption.hpp>
+#include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/DistanceOption.hpp>
+#include <dart/collision/DistanceResult.hpp>
+#include <dart/collision/RaycastOption.hpp>
+#include <dart/collision/RaycastResult.hpp>
 
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/MetaSkeleton.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
+
+#include <Eigen/Core>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+#include <memory>
+#include <vector>
+
+#include <cstddef>
 
 namespace py = pybind11;
 

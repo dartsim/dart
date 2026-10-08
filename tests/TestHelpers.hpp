@@ -43,16 +43,38 @@
 #include "dart/common/Macros.hpp"
 #include "GTestUtils.hpp"
 #include "dart/collision/CollisionDetector.hpp"
+#include "dart/common/Resource.hpp"
 #include "dart/common/ResourceRetriever.hpp"
 #include "dart/common/Uri.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
-#include "dart/dynamics/dynamics.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/EllipsoidShape.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
+#include "dart/dynamics/Inertia.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/Shape.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/math/ConfigurationSpace.hpp"
+#include "dart/math/Constants.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/simulation/World.hpp"
 
 #include <Eigen/Dense>
 
+#include <memory>
+#include <sstream>
+#include <string>
+#include <utility>
 #include <vector>
+
+#include <cstddef>
 
 using namespace Eigen;
 using namespace dart::math;

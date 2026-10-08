@@ -30,9 +30,15 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/Inertia.hpp>
 
+#include <dart/math/MathTypes.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <pybind11/pybind11.h>
+
+#include <memory>
 // #include <pybind11/stl.h>
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"

@@ -31,11 +31,24 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
 #include "dart/math/Helpers.hpp"
 #include "dart/math/Random.hpp"
+#include "dart/simulation/World.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
+
+#include <memory>
+
+#include <cmath>
 
 using namespace dart;
 using namespace dynamics;

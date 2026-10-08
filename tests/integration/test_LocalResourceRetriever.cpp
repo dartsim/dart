@@ -32,8 +32,13 @@
 
 #include "TestHelpers.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
+#include "dart/common/Resource.hpp"
+#include "dart/common/Uri.hpp"
 
 #include <gtest/gtest.h>
+
+#include <string>
+#include <vector>
 
 using dart::common::LocalResourceRetriever;
 using dart::common::Resource;

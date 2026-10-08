@@ -30,13 +30,29 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/simulation/World.hpp>
 
+#include <dart/dynamics/BallJoint.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/Joint.hpp>
+#include <dart/dynamics/RevoluteJoint.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/TranslationalJoint2D.hpp>
+#include <dart/dynamics/UniversalJoint.hpp>
+
+#include <dart/math/ConfigurationSpace.hpp>
+#include <dart/math/MathTypes.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <limits>
+#include <vector>
 
 #include <cmath>
+#include <cstddef>
 #include <cstring>
 
 using namespace dart;

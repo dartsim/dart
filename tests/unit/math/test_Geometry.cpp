@@ -33,10 +33,16 @@
 #include "TestHelpers.hpp"
 #include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
+#include "dart/math/MathTypes.hpp"
+#include "dart/math/Random.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <iostream>
+
+#include <cmath>
 
 using namespace dart;
 using namespace math;
