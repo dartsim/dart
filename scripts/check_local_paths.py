@@ -10,15 +10,21 @@ the base branch's checker as the backstop before merge.
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import os
 import re
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 # Keep the publication policy and its narrowly scoped exceptions here.
 PATH_TAIL = r"[^\s`\"'<>\[\](){};,]*"
-PUBLIC_URL = re.compile(r"https?://[^\s`\"'<>\[\](){}]+", re.IGNORECASE)
+PUBLIC_URL = re.compile(
+    r"https?://(?:[^\s`\"'<>\[\](){}/@]+@)?"
+    r"(?:\[[^\s`\"'<>\[\](){}]+\])?[^\s`\"'<>\[\](){}]*",
+    re.IGNORECASE,
+)
 PATTERNS = tuple(
     re.compile(pattern + PATH_TAIL, re.IGNORECASE)
     for pattern in (
@@ -32,7 +38,7 @@ PATTERNS = tuple(
         # Private agent project dirs, scratchpads and numbered worktrees still
         # match above, so ~/ alone is not reported.
         # A host, path or drive character before /home or /Users is not a home.
-        r"(?<![\w.:-])/(?:home|Users)/[^\s/\\`\"'<>\[\](){};,|]+",
+        r"(?<![\w.:-])/(?:home|Users|mnt/[A-Za-z]/Users)/[^\s/\\`\"'<>\[\](){};,|]+",
         # Unix root homes are case-sensitive; PDF /Root entries are not paths.
         r"(?<![\w.:-])/(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|])",
         r"(?<![\w.:-])[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>\[\](){};,|]+",
@@ -47,13 +53,47 @@ HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 UTF16_BOMS = (b"\xff\xfe", b"\xfe\xff")
 
 
+def is_public_host(host: str | None) -> bool:
+    host = (host or "").rstrip(".")
+    if "." not in host or host == "localhost" or host.endswith(".localhost"):
+        return False
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        return True
+    return not (
+        address.is_loopback
+        or address.is_private
+        or address.is_link_local
+        or address.is_unspecified
+    )
+
+
 def scan_line(line: str, number: int | str, filename: str | None = None) -> bool:
     allowed = ALLOWLIST.get(filename)
     if allowed and allowed.fullmatch(line):
         return False
-    line = PUBLIC_URL.sub(" ", line)
+    url_paths = []
+
+    def mask_public_url(match: re.Match[str]) -> str:
+        try:
+            url = urlsplit(match.group())
+            if is_public_host(url.hostname):
+                return " "
+        except ValueError:
+            return match.group()
+        # Scan local URL paths at their root without relaxing home lookbehinds.
+        url_paths.append(url.path)
+        return match.group()
+
+    line = PUBLIC_URL.sub(mask_public_url, line)
     matches = sorted(
-        {match.group() for pattern in PATTERNS for match in pattern.finditer(line)}
+        {
+            match.group()
+            for text in (line, *url_paths)
+            for pattern in PATTERNS
+            for match in pattern.finditer(text)
+        }
     )
     location = f"{filename}:{number}" if filename else str(number)
     for match in matches:

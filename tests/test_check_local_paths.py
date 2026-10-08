@@ -33,6 +33,9 @@ SPEC.loader.exec_module(checker)
         "/home/example/worktree/file.md",
         "/home/example",
         "/Users/example",
+        "/mnt/c/Users/example",
+        "/mnt/c/Users/example/",
+        "/mnt/d/Users/example/x.md",
         r"C:\Users\example",
         r"C:\Users\Example User",
         "C:/Users/example",
@@ -59,6 +62,7 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
     "text",
     (
         "/tmp/out.png",
+        "/mnt/data/models/x.md",
         "/tmp/dart-visual-evidence",
         "/tmp/dart-agent-visual-smoke/smoke.png",
         "docs/plans/public.md",
@@ -70,6 +74,8 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         r"(?:/home/|/Users/|~/|fbsource|arvr/libraries)",
         "https://github.com/dartsim/dart/pull/1234",
         "https://api.github.com/users/dartsim/repos",
+        "https://8.8.8.8/scratchpad/x.md",
+        "http://localhost@github.com/example/scratchpad/issues/1",
         "https://example.com/home/docs/index.html",
         "https://github.com/example/scratchpad/issues/1",
         "https://github.com/org/repo/blob/main/task_2/script.py",
@@ -80,7 +86,9 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         "https://example.com/root/notes.md",
         "https://example.com/C:/Users/example/notes.md",
         "example.com/home/docs",
+        "example.com/mnt/c/Users/example",
         "C:/home/example",
+        "C:/mnt/c/Users/example",
         "/rooted/file.md",
         "/Root 1 0 R",
     ),
@@ -88,6 +96,32 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
 def test_public_examples_and_non_path_identifiers_pass(text, capsys):
     assert not checker.scan_text(text)
     assert not capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "url",
+    (
+        "http://localhost:8000/scratchpad/x.md",
+        "http://api.localhost/scratchpad/x.md",
+        "http://LOCALHOST/scratchpad/x.md",
+        "http://localhost./scratchpad/x.md",
+        "http://github.com@127.0.0.1/scratchpad/x.md",
+        "http://127.0.0.1/.claude/projects/s",
+        "http://192.168.1.5/home/example/x",
+        "http://169.254.1.5/home/example/x",
+        "http://0.0.0.0/home/example/x",
+        "http://[::1]/scratchpad/x",
+        "http://[::]/home/example/x",
+        "http://[fd00::1]/home/example/x",
+        "http://[fe80::1]/home/example/x",
+        "https:///home/example/x",
+        "http://intranet/scratchpad/x",
+        "http://[invalid]/scratchpad/x",
+    ),
+)
+def test_local_or_malformed_urls_do_not_hide_private_paths(url, capsys):
+    assert checker.scan_text(url)
+    assert capsys.readouterr().out.startswith("1: ")
 
 
 def test_reports_all_leaks_and_file_line(capsys):
@@ -106,11 +140,13 @@ def test_urls_do_not_hide_adjacent_paths_or_file_urls(capsys):
         "https://example.com/scratchpad/public.md /home/example\n"
         "[public](https://example.com/task_2/file.py),scratchpad/private.md\n"
         "file:///Users/example/private.md\n"
+        "https://example.com/public]/home/example\n"
     )
     assert capsys.readouterr().out.splitlines() == [
         "1: /home/example",
         "2: scratchpad/private.md",
         "3: /Users/example/private.md",
+        "4: /home/example",
     ]
 
 
@@ -309,6 +345,84 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
             ".[].commit.message",
         ]
     assert not (tmp_path / "injected").exists()
+
+
+@pytest.mark.skipif(os.name != "posix", reason="workflow shell is Bash")
+@pytest.mark.parametrize(
+    "event, base_checker, leak, expected_status",
+    (
+        ("pull_request", True, True, 1),
+        ("pull_request", True, False, 0),
+        ("pull_request", False, True, 1),
+        ("pull_request", False, False, 0),
+        ("push", True, True, 0),
+        ("push", False, True, 1),
+    ),
+)
+def test_tracked_file_ci_uses_base_checker_with_tree_fallback(
+    tmp_path, event, base_checker, leak, expected_status
+):
+    workflow = (ROOT / ".github/workflows/ci_ubuntu.yml").read_text()
+    step = workflow.split("      - name: Check tracked files for local paths\n", 1)[
+        1
+    ].split("\n      - name:", 1)[0]
+    assert "BASE_SHA: ${{ github.event.pull_request.base.sha }}" in step
+    command = textwrap.dedent(step.split("        run: |\n", 1)[1])
+    assert "${{" not in command
+
+    remote = tmp_path / "origin"
+    remote.mkdir()
+    _git(remote, "init", "-q")
+    (remote / "README.md").write_text("Public summary\n")
+    if base_checker:
+        (remote / "scripts").mkdir()
+        (remote / "scripts/check_local_paths.py").write_bytes(SCRIPT.read_bytes())
+    _git(remote, "add", ".")
+    _git(
+        remote,
+        "-c",
+        "user.name=Example",
+        "-c",
+        "user.email=example@example.com",
+        "commit",
+        "-qm",
+        "Base fixture",
+    )
+    base_sha = _git(remote, "rev-parse", "HEAD").stdout.strip()
+    tree = tmp_path / "checkout"
+    _git(tmp_path, "clone", "-q", str(remote), str(tree))
+    (tree / "scripts").mkdir(exist_ok=True)
+    (tree / "scripts/check_local_paths.py").write_bytes(
+        b"raise SystemExit(0)\n" if base_checker else SCRIPT.read_bytes()
+    )
+    (tree / "notes.md").write_text("/home/example/x\n" if leak else "Public summary\n")
+    _git(tree, "add", ".")
+    if event == "push":
+        _git(tree, "remote", "remove", "origin")
+    runner_temp = tmp_path / "runner"
+    runner_temp.mkdir()
+    result = subprocess.run(
+        ["bash", "-eo", "pipefail", "-c", command],
+        cwd=tree,
+        env={
+            **os.environ,
+            "GITHUB_EVENT_NAME": event,
+            "BASE_SHA": base_sha,
+            "RUNNER_TEMP": str(runner_temp),
+        },
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == expected_status, result.stderr
+    assert ("notes.md:1: /home/example/x" in result.stdout) == bool(expected_status)
+    assert ("::notice::" in result.stdout) == (
+        event == "pull_request" and not base_checker
+    )
+    extracted = runner_temp / "check_local_paths.py"
+    if event == "pull_request" and base_checker:
+        assert extracted.read_bytes() == SCRIPT.read_bytes()
+    elif event == "push":
+        assert not extracted.exists()
 
 
 def test_files_and_all_tracked_scan_worktree_and_ignore_untracked(repo):
