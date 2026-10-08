@@ -143,6 +143,8 @@ void _ZN4dart10simulation5World4stepEb(void* world, _Bool reset)
 
 __attribute__((destructor)) static void report(void)
 {
+  // Keep the report on its own line when stdout and stderr share a log.
+  fflush(stdout);
   fprintf(
       stderr,
       "STEPALLOC steps=%lu measured=%lu allocs=%lu bytes=%lu libdart=%s\n",
