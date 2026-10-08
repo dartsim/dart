@@ -686,6 +686,15 @@ TEST(FrictionCone, ContactViolationKeepsStepsBelowTheImpulseRounding)
       contactViolation(
           Eigen::Vector3d(1e20, 0, 0), Eigen::Vector3d(1, 0, 0), 1, cone),
       1.0);
+  // Partly absorbed: 1e20 - 24000 moves by only 16384.
+  EXPECT_GE(
+      contactViolation(
+          Eigen::Vector3d(1e20, 0, 0),
+          Eigen::Vector3d(24000, 0, 0),
+          1,
+          cone,
+          true),
+      24000.0);
   // A converged contact with a large impulse still reads as converged.
   EXPECT_LE(
       contactViolation(

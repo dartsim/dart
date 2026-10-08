@@ -703,14 +703,16 @@ double contactViolation(
   const Eigen::Vector3d residual = impulse - projectCone(argument, cone);
   if (!residual.allFinite())
     return std::numeric_limits<double>::infinity();
-  // A step below half the impulse's rounding unit vanishes from argument.
-  // Projection is nonexpansive, so adding the lost step bounds the residual.
-  Eigen::Vector3d lost = Eigen::Vector3d::Zero();
-  for (int i = 0; i < 3; ++i)
-    if (argument[i] == impulse[i])
-      lost[i] = step[i];
+  // Rounding impulse - step can absorb all or part of a small step. TwoSum
+  // recovers that rounding error exactly, and projection is nonexpansive, so
+  // adding it bounds the true residual.
+  Eigen::Vector3d rounding;
+  for (int i = 0; i < 3; ++i) {
+    const double moved = argument[i] - impulse[i];
+    rounding[i] = (impulse[i] - (argument[i] - moved)) + (-step[i] - moved);
+  }
   const double length = std::hypot(residual[0], residual[1], residual[2])
-                        + std::hypot(lost[0], lost[1], lost[2]);
+                        + std::hypot(rounding[0], rounding[1], rounding[2]);
   const double violation = maxDiagonal * length;
   return productRepresented(maxDiagonal, length, violation)
              ? violation
