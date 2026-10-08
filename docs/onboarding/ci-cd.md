@@ -30,7 +30,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S6 guards |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main`; an update removes their `maintainer-approved` label |
 | `maintainer_approval.yml`         | Maintainer Approval          | PR pushes, retargets, reopens   | Removes the `maintainer-approved` label when a PR changes after approval; pushes of conflict-free base merges keep it ([PR Lifecycle](ai-tools.md#pr-lifecycle)) |
-| `pr_text.yml`                     | PR Text                      | PR opens, edits, reopens, pushes | Checks PR title and body with only the base branch's local-path checker; skips with a notice until that checker exists on the base |
+| `pr_text.yml`                     | PR Text                      | PR opens, edits, reopens, pushes | Checks PR title, body and every PR commit message with only the base branch's local-path checker; skips with a notice until that checker exists on the base |
 
 To acknowledge an intended regression, add `Perf-Regression-Rationale: <rows>: <reason>` (or `Rebaseline-Rationale: <rows>: <reason>` for changed guards, including a signed Ir percentage when above +1%) to the PR body and run `gh run rerun <run-id> --failed`; editing the body alone does not trigger a run.
 

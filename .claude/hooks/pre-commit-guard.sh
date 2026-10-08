@@ -573,6 +573,9 @@ def commit_args_disable_hooks(args):
 
 
 def supplied_commit_message(args, cwd):
+    # Reused (-C/-c/--reuse-message/--reedit-message), stdin and editor messages
+    # are left to the managed commit-msg hook and the PR Text backstop, which
+    # scans every PR commit message.
     messages = []
     i = 0
     while i < len(args):
@@ -950,6 +953,9 @@ def is_git_commit(text):
                     pass
             gate_target_dir = target_dir or project
             message = supplied_commit_message(tokens[i + 1 :], target_dir)
+            # Return the first commit; later commits in the same shell line
+            # are left to the managed commit-msg hook and the PR Text backstop,
+            # which scans every PR commit message.
             if no_verify:
                 return "commit-no-verify", git_worktree_root(gate_target_dir), message
             if hooks_path_override:

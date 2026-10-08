@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Reject private or machine-specific paths in repository and published text."""
+"""Reject private or machine-specific paths in repository and published text.
+
+These checks catch accidental publication by contributors and agents. Local
+hooks and the agent guard are conveniences that explicit bypasses can skip.
+The PR Text workflow checks the title, body and every PR commit message using
+the base branch's checker as the backstop before merge.
+"""
 
 from __future__ import annotations
 
@@ -22,6 +28,9 @@ PATTERNS = tuple(
         r"(?<![\w.-])\.claude[/\\]projects[/\\]",
         r"(?<![\w.-])scratchpad[/\\]",
         r"(?<![\w.-])task_\d+(?:[/\\]|-[\w-]+)",
+        # Generic home-relative paths such as ~/.config name no user or machine.
+        # Private agent project dirs, scratchpads and numbered worktrees still
+        # match above, so ~/ alone is not reported.
         # A host, path or drive character before /home or /Users is not a home.
         r"(?<![\w.:-])/(?:home|Users)/[^\s/\\`\"'<>\[\](){};,|]+",
         # Unix root homes are case-sensitive; PDF /Root entries are not paths.
@@ -35,6 +44,7 @@ ALLOWLIST = {
     ".gitignore": re.compile(r"\.sisyphus[/]"),
 }
 HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+UTF16_BOMS = (b"\xff\xfe", b"\xfe\xff")
 
 
 def scan_line(line: str, number: int | str, filename: str | None = None) -> bool:
@@ -59,6 +69,8 @@ def scan_text(text: str, filename: str | None = None) -> bool:
 
 
 def scan_commit_message(text: str) -> bool:
+    # The scissors stop matches git commit -v. Typing a literal scissors line
+    # is deliberate; the PR Text backstop still scans the entire message.
     found = False
     for number, line in enumerate(text.splitlines(), 1):
         if line == "# ------------------------ >8 ------------------------":
@@ -79,16 +91,24 @@ def scan_staged(root: Path) -> bool:
         "diff",
         "--cached",
         "--no-renames",
-        "--name-only",
+        "--raw",
         "-z",
         "--diff-filter=ACMRT",
     )
     found = False
-    for encoded in paths.split(b"\0"):
+    entries = paths.split(b"\0")
+    for metadata, encoded in zip(entries[::2], entries[1::2]):
         if not encoded:
             continue
         filename = os.fsdecode(encoded)
         found |= scan_line(filename, filename)
+        # Gitlinks publish a commit ID, not a file blob.
+        if metadata.split()[1] == b"160000":
+            continue
+        data = git_output(root, "show", f":{filename}")
+        if data.startswith(UTF16_BOMS):
+            found |= scan_text(data.decode("utf-16", errors="replace"), filename)
+            continue
         diff = git_output(
             root,
             "diff",
@@ -120,7 +140,8 @@ def scan_file(path: Path, filename: str) -> bool:
     found = scan_line(filename, filename)
     # A tracked symlink publishes its target, not the external file's contents.
     data = os.fsencode(os.readlink(path)) if path.is_symlink() else path.read_bytes()
-    return scan_text(data.decode("utf-8", errors="replace"), filename) | found
+    encoding = "utf-16" if data.startswith(UTF16_BOMS) else "utf-8"
+    return scan_text(data.decode(encoding, errors="replace"), filename) | found
 
 
 def main() -> int:

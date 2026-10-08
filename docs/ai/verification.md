@@ -63,6 +63,11 @@ paths, and runs the AI checks only when their inputs are staged. It never
 configures, builds, prompts, or uses the network. It does not replace
 `pixi run lint` before a commit.
 
+The local-path checks catch accidental publication by contributors and agents.
+Local hooks and the agent guard are conveniences that explicit bypasses can
+skip. The PR Text workflow checks the title, body and every PR commit message
+using the base branch's checker as the backstop before merge.
+
 `pixi run install-hooks` installs managed `pre-commit` and `commit-msg` hooks.
 The latter runs `scripts/check_local_paths.py --commit-msg-file "$1"`, scanning
 every line, including `#` lines, before Git's scissors line. The scissors line

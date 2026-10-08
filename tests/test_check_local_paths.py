@@ -227,6 +227,7 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
     assert "  pull_request_target:\n" in workflow
     assert "types: [opened, edited, reopened, synchronize]" in workflow
     assert "permissions:\n  contents: read\n" in workflow
+    assert "  pull-requests: read\n" in workflow
     assert "uses: actions/checkout@" in workflow
     assert "ref: ${{ github.event.pull_request.base.sha }}" in workflow
     assert "repository: ${{ github.repository }}" in workflow
@@ -235,11 +236,32 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
     assert "persist-credentials: false" in workflow
     assert "PR_TITLE: ${{ github.event.pull_request.title }}" in workflow
     assert "PR_BODY: ${{ github.event.pull_request.body }}" in workflow
+    assert "PR_NUMBER: ${{ github.event.pull_request.number }}" in workflow
+    assert "GH_TOKEN: ${{ github.token }}" in workflow
+    assert "        shell: bash\n" in workflow
     assert "pull_request.head" not in workflow
     command = textwrap.dedent(workflow.split("        run: |\n", 1)[1])
-    env = {**os.environ, "PR_TITLE": "Public summary", "PR_BODY": "Public body"}
+    command = command.replace("${{ github.repository }}", "example/repository")
+    assert "${{" not in command
+    env = {
+        **os.environ,
+        "PR_TITLE": "Public summary",
+        "PR_BODY": "Public body",
+        "PR_NUMBER": "1234",
+        "GH_TOKEN": "synthetic-token",
+        "COMMIT_MESSAGES": "Public first commit\nPublic second commit",
+        "GH_STATUS": "0",
+        "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
+    }
+    gh = tmp_path / "gh"
+    gh.write_text(
+        '#!/bin/sh\n[ "$GH_TOKEN" = synthetic-token ] || exit 2\n'
+        'printf "%s\\n" "$@" > gh-args\n'
+        'printf "%s\\n" "$COMMIT_MESSAGES"\nexit "$GH_STATUS"\n'
+    )
+    gh.chmod(0o755)
     missing = subprocess.run(
-        ["bash", "-e", "-c", command],
+        ["bash", "-eo", "pipefail", "-c", command],
         cwd=tmp_path,
         env=env,
         capture_output=True,
@@ -247,17 +269,45 @@ def test_pr_text_uses_only_base_checker_and_handles_missing_checker(tmp_path):
     )
     assert missing.returncode == 0, missing.stderr
     assert "::notice::" in missing.stdout
+    assert not (tmp_path / "gh-args").exists()
     (tmp_path / "scripts").mkdir()
     (tmp_path / "scripts" / "check_local_paths.py").write_bytes(SCRIPT.read_bytes())
-    blocked = subprocess.run(
-        ["bash", "-e", "-c", command],
-        cwd=tmp_path,
-        env={**env, "PR_BODY": "$(touch injected)\n/home/example"},
-        capture_output=True,
-        text=True,
-    )
-    assert blocked.returncode == 1, blocked.stderr
-    assert "3: /home/example" in blocked.stdout
+    for overrides, failures in (
+        ({}, ()),
+        ({"PR_BODY": "$(touch injected)\n/home/example"}, ("title/body",)),
+        (
+            {
+                "COMMIT_MESSAGES": "Public first commit\n"
+                "# ------------------------ >8 ------------------------\n"
+                "$(touch injected)\n/home/example",
+            },
+            ("commit-message",),
+        ),
+        (
+            {"PR_TITLE": "/home/example", "COMMIT_MESSAGES": "/home/example"},
+            ("title/body", "commit-message"),
+        ),
+        ({"GH_STATUS": "1"}, ("commit-message",)),
+    ):
+        result = subprocess.run(
+            ["bash", "-eo", "pipefail", "-c", command],
+            cwd=tmp_path,
+            env={**env, **overrides},
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == bool(failures), result.stderr
+        for scan in ("title/body", "commit-message"):
+            assert (f"PR {scan} local-path scan failed." in result.stdout) == (
+                scan in failures
+            )
+        assert (tmp_path / "gh-args").read_text().splitlines() == [
+            "api",
+            "--paginate",
+            "repos/example/repository/pulls/1234/commits",
+            "--jq",
+            ".[].commit.message",
+        ]
     assert not (tmp_path / "injected").exists()
 
 
@@ -291,6 +341,73 @@ def test_staged_binary_cannot_hide_embedded_path(repo):
     result = _cli("--staged", cwd=repo)
     assert result.returncode == 1
     assert "binary.dat:1: /home/example/metadata" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "encoding,bom", [("utf-16-le", b"\xff\xfe"), ("utf-16-be", b"\xfe\xff")]
+)
+@pytest.mark.parametrize("mode", ["--files", "--all-tracked", "--staged"])
+def test_utf16_files_cannot_hide_paths(repo, encoding, bom, mode):
+    path = repo / "notes.txt"
+    path.write_bytes(
+        bom + "Public summary\n/home/example/private.md\n".encode(encoding)
+    )
+    _git(repo, "add", path.name)
+    if mode == "--staged":
+        path.write_text("Public worktree hides staged leak\n")
+    args = (mode, path) if mode == "--files" else (mode,)
+    result = _cli(*args, cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == "notes.txt:2: /home/example/private.md\n"
+    path.write_bytes(bom + "Public summary\n".encode(encoding))
+    _git(repo, "add", path.name)
+    assert _cli(*args, cwd=repo).returncode == 0
+
+
+@pytest.mark.parametrize(
+    "encoding,bom", [("utf-16-le", b"\xff\xfe"), ("utf-16-be", b"\xfe\xff")]
+)
+def test_staged_utf16_scans_whole_blob_including_unchanged_lines(repo, encoding, bom):
+    path = repo / "notes.txt"
+    path.write_bytes(
+        bom + "/home/example/private.md\nPublic summary\n".encode(encoding)
+    )
+    _git(repo, "add", path.name)
+    _git(
+        repo,
+        "-c",
+        "user.name=Example",
+        "-c",
+        "user.email=example@example.com",
+        "commit",
+        "-qm",
+        "Initial fixture",
+    )
+    path.write_bytes(
+        bom + "/home/example/private.md\nUpdated summary\n".encode(encoding)
+    )
+    _git(repo, "add", path.name)
+    path.write_text("Public worktree hides staged leak\n")
+    result = _cli("--staged", cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == "notes.txt:1: /home/example/private.md\n"
+
+
+def test_staged_gitlink_checks_name_without_reading_missing_commit(repo):
+    _git(repo, "update-index", "--add", "--cacheinfo", "160000", "a" * 40, "module")
+    assert _cli("--staged", cwd=repo).returncode == 0
+    _git(
+        repo,
+        "update-index",
+        "--add",
+        "--cacheinfo",
+        "160000",
+        "a" * 40,
+        "scratchpad/module",
+    )
+    result = _cli("--staged", cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == "scratchpad/module: scratchpad/module\n"
 
 
 def test_missing_file_fails_closed(repo):

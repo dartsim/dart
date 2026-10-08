@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   local-paths:
@@ -24,13 +25,25 @@ jobs:
           sparse-checkout: scripts/check_local_paths.py
           sparse-checkout-cone-mode: false
 
-      - name: Check PR title and body
+      - name: Check PR title, body and commit messages
+        shell: bash
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ ! -f scripts/check_local_paths.py ]; then
             echo "::notice::Base branch has no local-path checker yet; skipping PR text check."
             exit 0
           fi
-          printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" | python3 scripts/check_local_paths.py --stdin
+          scan_status=0
+          if ! printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" | python3 scripts/check_local_paths.py --stdin; then
+            echo "::error::PR title/body local-path scan failed."
+            scan_status=1
+          fi
+          if ! gh api --paginate "repos/${{ github.repository }}/pulls/$PR_NUMBER/commits" --jq '.[].commit.message' | python3 scripts/check_local_paths.py --stdin; then
+            echo "::error::PR commit-message local-path scan failed."
+            scan_status=1
+          fi
+          exit "$scan_status"
