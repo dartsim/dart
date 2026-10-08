@@ -114,8 +114,12 @@ def test_canonical_guard_is_measured_once_and_does_not_require_perturbation(
     )
 
 
-@pytest.mark.parametrize("missing", [False, True])
-def test_s6_capture_keeps_penetration_checkpoints(monkeypatch, tmp_path, missing):
+@pytest.mark.parametrize(
+    "missing,penetration", [(False, "0.3"), (True, "0.3"), (False, "inf")]
+)
+def test_s6_capture_keeps_penetration_checkpoints(
+    monkeypatch, tmp_path, missing, penetration
+):
     module = _load_runner()
     args = module.parser().parse_args(
         [
@@ -136,13 +140,13 @@ def test_s6_capture_keeps_penetration_checkpoints(monkeypatch, tmp_path, missing
             "PERFTIME maxrss_kb=100",
             "Avg Step Time: 1 ms",
             "Final State Hash: 0x1",
-            "Final State Finite: true",
+            f"Final State Finite: {'true' if penetration != 'inf' else 'false'}",
             "Final Contacts: 1",
             "Final Contact Cap Hit: false",
             "Final Resting: 0/71",
-            "Final Max Penetration: 0.3",
+            f"Final Max Penetration: {penetration}",
             *(
-                f"step {step} rtf 1 contacts 1 max_penetration 0.2 mobile 71 resting 0 islands 1"
+                f"step {step} rtf 1 contacts 1 max_penetration {penetration} mobile 71 resting 0 islands 1"
                 for step in checkpoints
             ),
         ]
@@ -155,8 +159,11 @@ def test_s6_capture_keeps_penetration_checkpoints(monkeypatch, tmp_path, missing
             module.native(module.select_rows("S6")[0], args, tmp_path)
     else:
         metric = module.native(module.select_rows("S6")[0], args, tmp_path)
-        assert metric["max_penetration"] == 0.3
+        expected = None if penetration == "inf" else 0.3
+        assert metric["max_penetration"] == expected
         assert [item["step"] for item in metric["checkpoints"]] == list(checkpoints)
+        # A non-finite state is still a broken row, but its evidence must save.
+        module.write_json(tmp_path / "metric.json", metric)
 
 
 def test_nightly_requires_complete_head_only_measurement(monkeypatch, tmp_path):

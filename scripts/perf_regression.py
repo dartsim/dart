@@ -510,10 +510,16 @@ def native(row: Row, args, world: Path, config: str = "") -> dict:
         "wall_ms_per_step": float(field(text, "Avg Step Time").split()[0]),
     }
     if re.search(r"^Final Max Penetration:", text, re.MULTILINE):
-        metrics["max_penetration"] = float(field(text, "Final Max Penetration"))
+        metrics["max_penetration"] = finite_or_none(
+            float(field(text, "Final Max Penetration"))
+        )
     if row.checkpoint:
         metrics["checkpoints"] = [
-            {"step": int(step), "max_penetration": float(pen), "resting": int(resting)}
+            {
+                "step": int(step),
+                "max_penetration": finite_or_none(float(pen)),
+                "resting": int(resting),
+            }
             for step, pen, resting in re.findall(
                 r"^step (\d+) .*? max_penetration (\S+) .*? resting (\d+)\b",
                 text,
@@ -1635,6 +1641,11 @@ def markdown(record: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def finite_or_none(value: float) -> float | None:
+    # Records reject NaN and infinity; a non-finite state already breaks the row.
+    return value if math.isfinite(value) else None
+
+
 def write_json(path: Path, value: dict) -> None:
     path.write_text(
         json.dumps(value, indent=2, allow_nan=False) + "\n", encoding="utf-8"
@@ -1783,6 +1794,7 @@ def guard_table(record: dict, previous: str = "") -> str:
         head = row["head"]
         guards = head.get("guards", {})
         window = row.get("window", {})
+        penetration = guards.get("max_penetration", head.get("max_penetration", "—"))
         values = [
             row["row"],
             row.get("det", ""),
@@ -1793,7 +1805,7 @@ def guard_table(record: dict, previous: str = "") -> str:
                 guards.get(key, "—")
                 for key in ("hash", "contacts", "resting", "finite", "cap_hit")
             ),
-            guards.get("max_penetration", head.get("max_penetration", "—")),
+            "non-finite" if penetration is None else penetration,
             head.get("allocs_per_step", "—"),
         ]
         table_row = (
