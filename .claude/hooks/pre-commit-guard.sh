@@ -446,8 +446,20 @@ def env_config_has_hooks_path_override(env):
     return False
 
 
-def env_may_load_hookspath_config(env):
-    return any(name in env for name in GIT_CONFIG_FILE_ENV)
+def env_may_load_hookspath_config(env, target_dir):
+    if not any(name in env for name in GIT_CONFIG_FILE_ENV):
+        return False
+    if any(
+        name in env and env[name] != os.environ.get(name)
+        for name in GIT_CONFIG_FILE_ENV
+    ):
+        return True
+    # Ordinary inherited HOME/config settings need not disable managed hooks.
+    result = subprocess.run(
+        ["git", "-C", target_dir or os.getcwd(), "config", "--get", "core.hooksPath"],
+        env=env, capture_output=True,
+    )
+    return result.returncode != 1
 
 
 def split_env_split_string(value):
@@ -770,7 +782,7 @@ def is_git_commit(text):
                 separator, cwd_execution, status
             )
         previous_separator = separator
-        command_env = {}
+        command_env = dict(os.environ)
         i, bypass = skip_env_prefix(tokens, 0, command_env)
         i = skip_shell_prefixes(tokens, i)
         next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
@@ -922,7 +934,7 @@ def is_git_commit(text):
             target_dir = command_cwd or current_cwd
         if i < len(tokens) and command_word(tokens[i]).rstrip(")}") == "commit":
             if env_config_has_hooks_path_override(command_env) or (
-                env_may_load_hookspath_config(command_env)
+                env_may_load_hookspath_config(command_env, target_dir)
             ):
                 hooks_path_override = True
             no_verify = commit_args_disable_hooks(tokens[i + 1 :])

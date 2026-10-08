@@ -3,8 +3,8 @@
 
 These checks catch accidental publication by contributors and agents. Local
 hooks and the agent guard are conveniences that explicit bypasses can skip.
-The PR Text workflow checks the title, body and every PR commit message using
-the base branch's checker as the backstop before merge.
+The PR Text workflow checks the title, body, messages and changes of every PR
+commit using the base branch's checker as the backstop before merge.
 """
 
 from __future__ import annotations
@@ -75,8 +75,8 @@ def decode(data: bytes) -> str:
 
 SCISSORS = re.compile(r"\S -{24} >8 -{24}")
 GIT_STATUS_LINE = re.compile(
-    r"\S\t(?:new file|modified|deleted|renamed|copied|typechange|both \w+|"
-    r"added by \w+|deleted by \w+):\s+\S.*"
+    r"\S\t(?P<status>new file|modified|deleted|renamed|copied|typechange|both \w+|"
+    r"added by \w+|deleted by \w+):\s+(?P<paths>\S.*)"
 )
 
 
@@ -96,7 +96,12 @@ def is_public_host(host: str | None) -> bool:
         )
 
 
-def scan_line(line: str, number: int | str, filename: str | None = None) -> bool:
+def scan_line(
+    line: str,
+    number: int | str,
+    filename: str | None = None,
+    commit: str | None = None,
+) -> bool:
     allowed = ALLOWLIST.get(filename)
     if allowed and allowed.fullmatch(line):
         return False
@@ -123,15 +128,19 @@ def scan_line(line: str, number: int | str, filename: str | None = None) -> bool
         }
     )
     location = f"{filename}:{number}" if filename else str(number)
+    if commit:
+        location = f"{commit}:{location}"
     for match in matches:
         print(f"{location}: {match}")
     return bool(matches)
 
 
-def scan_text(text: str, filename: str | None = None) -> bool:
+def scan_text(
+    text: str, filename: str | None = None, commit: str | None = None
+) -> bool:
     found = False
     for number, line in enumerate(text.splitlines(), 1):
-        found |= scan_line(line, number, filename)
+        found |= scan_line(line, number, filename, commit)
     return found
 
 
@@ -139,14 +148,23 @@ def scan_commit_message(text: str) -> bool:
     # The scissors stop matches git commit -v. Typing a literal scissors line
     # is deliberate; the PR Text backstop still scans the entire message.
     found = False
+    staged = None
     for number, line in enumerate(text.splitlines(), 1):
         # Git prefixes the scissors with core.commentChar, which may differ.
         if SCISSORS.fullmatch(line):
             break
-        # Git's editor template lists staged files; cleanup drops these lines,
-        # and the staged scan already judged the file names.
-        if GIT_STATUS_LINE.fullmatch(line):
-            continue
+        # Exempt only actual staged entries, not literal status-shaped messages.
+        status = GIT_STATUS_LINE.fullmatch(line)
+        if status:
+            if staged is None:
+                root = Path(
+                    os.fsdecode(
+                        git_output(Path.cwd(), "rev-parse", "--show-toplevel")
+                    ).strip()
+                )
+                staged = staged_status_entries(root)
+            if (status["status"], status["paths"]) in staged:
+                continue
         found |= scan_line(line, number)
     return found
 
@@ -157,15 +175,82 @@ def git_output(root: Path, *args: str) -> bytes:
     ).stdout
 
 
-def scan_staged(root: Path) -> bool:
+def git_path_display(path: bytes, quote_non_ascii: bool) -> str:
+    # Git uses C quoting for control bytes and optionally for non-ASCII bytes.
+    escapes = {
+        7: r"\a",
+        8: r"\b",
+        9: r"\t",
+        10: r"\n",
+        11: r"\v",
+        12: r"\f",
+        13: r"\r",
+        34: r"\"",
+        92: r"\\",
+    }
+    if not any(
+        byte in escapes or byte < 32 or byte == 127 or (quote_non_ascii and byte >= 128)
+        for byte in path
+    ):
+        return os.fsdecode(path)
+    quoted = b"".join(
+        (
+            escapes[byte].encode()
+            if byte in escapes
+            else (
+                f"\\{byte:03o}".encode()
+                if byte < 32 or byte == 127 or (quote_non_ascii and byte >= 128)
+                else bytes([byte])
+            )
+        )
+        for byte in path
+    )
+    return '"' + os.fsdecode(quoted) + '"'
+
+
+def staged_status_entries(root: Path) -> set[tuple[str, str]]:
+    entries = iter(
+        git_output(root, "diff", "--cached", "--name-status", "-z").split(b"\0")
+    )
+    labels = {
+        "A": "new file",
+        "M": "modified",
+        "D": "deleted",
+        "R": "renamed",
+        "C": "copied",
+        "T": "typechange",
+    }
+    staged = set()
+    for status in entries:
+        if not status:
+            continue
+        code = chr(status[0])
+        paths = [next(entries)]
+        if code in {"R", "C"}:
+            paths.append(next(entries))
+        if code in labels:
+            for quote_non_ascii in (True, False):
+                staged.add(
+                    (
+                        labels[code],
+                        " -> ".join(
+                            git_path_display(path, quote_non_ascii) for path in paths
+                        ),
+                    )
+                )
+    return staged
+
+
+def scan_changes(
+    root: Path, revisions: tuple[str, ...], commit: str | None = None
+) -> bool:
     paths = git_output(
         root,
-        "diff",
-        "--cached",
+        *revisions,
         "--no-renames",
         "--raw",
         "-z",
-        "--diff-filter=ACMRT",
+        "--diff-filter=ACDMRT" if commit else "--diff-filter=ACMRT",
     )
     found = False
     entries = paths.split(b"\0")
@@ -173,18 +258,19 @@ def scan_staged(root: Path) -> bool:
         if not encoded:
             continue
         filename = os.fsdecode(encoded)
-        found |= scan_line(filename, filename)
-        # Gitlinks publish a commit ID, not a file blob.
-        if metadata.split()[1] == b"160000":
+        found |= scan_line(
+            filename, f"{filename}:0" if commit else filename, commit=commit
+        )
+        # Deletions have no blob; gitlinks publish a commit ID, not a file blob.
+        if metadata.split()[1] in {b"000000", b"160000"}:
             continue
-        data = git_output(root, "show", f":{filename}")
+        data = git_output(root, "show", f"{commit or ''}:{filename}")
         if data.startswith(UTF32_BOMS + UTF16_BOMS):
-            found |= scan_text(decode(data), filename)
+            found |= scan_text(decode(data), filename, commit)
             continue
         diff = git_output(
             root,
-            "diff",
-            "--cached",
+            *revisions,
             "--no-renames",
             "--no-ext-diff",
             "--no-textconv",
@@ -201,10 +287,38 @@ def scan_staged(root: Path) -> bool:
             if hunk:
                 number = int(hunk.group(1))
             elif number is not None and line.startswith("+"):
-                found |= scan_line(line[1:], number, filename)
+                found |= scan_line(line[1:], number, filename, commit)
                 number += 1
             elif number is not None and line.startswith(" "):
                 number += 1
+    return found
+
+
+def scan_staged(root: Path) -> bool:
+    return scan_changes(root, ("diff", "--cached"))
+
+
+def scan_commit_range(root: Path, commit_range: str) -> bool:
+    found = False
+    commits = git_output(
+        root,
+        "rev-list",
+        "--reverse",
+        "--topo-order",
+        "--parents",
+        "--end-of-options",
+        commit_range,
+        "--",
+    )
+    for entry in commits.decode("ascii").splitlines():
+        commit, *parents = entry.split()
+        # First-parent diffs include merge resolutions; side commits are scanned too.
+        revisions = (
+            ("diff", parents[0], commit)
+            if parents
+            else ("diff-tree", "--root", "--no-commit-id", "-r", commit)
+        )
+        found |= scan_changes(root, revisions, commit)
     return found
 
 
@@ -226,6 +340,10 @@ def main() -> int:
     )
     mode.add_argument("--files", nargs="+", type=Path)
     mode.add_argument("--all-tracked", action="store_true")
+    mode.add_argument(
+        "--commit-range",
+        help="scan names and added lines of every commit in BASE..HEAD",
+    )
     mode.add_argument(
         "--text-file", type=Path, help="scan free text without exceptions"
     )
@@ -257,6 +375,8 @@ def main() -> int:
             root = Path.cwd()
         if args.staged:
             return int(scan_staged(root))
+        if args.commit_range:
+            return int(scan_commit_range(root, args.commit_range))
         paths = args.files
         if args.all_tracked:
             paths = [

@@ -1,5 +1,7 @@
 # Published PR text is permanent; keep private and machine-specific paths out
-# of it. Title and description edits rerun only this check, not CI.
+# of it. Rebase merges can publish every PR commit, including removed leaks.
+# Fetch PR objects for scanning; never check out or execute PR code.
+# Title and description edits rerun only this check, not CI.
 name: PR Text
 
 on:
@@ -21,17 +23,19 @@ jobs:
           # Use only trusted base code so PR changes cannot bypass this guard.
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
           persist-credentials: false
           sparse-checkout: scripts/check_local_paths.py
           sparse-checkout-cone-mode: false
 
-      - name: Check PR title, body and commit messages
+      - name: Check PR title, body, commit messages and changes
         shell: bash
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_COMMITS: ${{ github.event.pull_request.commits }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ ! -f scripts/check_local_paths.py ]; then
@@ -49,6 +53,13 @@ jobs:
             scan_status=1
           elif ! gh api --paginate "repos/${{ github.repository }}/pulls/$PR_NUMBER/commits" --jq '.[].commit.message' | python3 scripts/check_local_paths.py --stdin; then
             echo "::error::PR commit-message local-path scan failed."
+            scan_status=1
+          fi
+          if ! git fetch --no-tags origin "$BASE_SHA" "+refs/pull/$PR_NUMBER/head:refs/remotes/pr/head"; then
+            echo "::error::PR commit-change fetch failed."
+            scan_status=1
+          elif ! python3 scripts/check_local_paths.py --commit-range "$BASE_SHA..refs/remotes/pr/head"; then
+            echo "::error::PR commit-change local-path scan failed."
             scan_status=1
           fi
           exit "$scan_status"
