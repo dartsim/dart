@@ -191,6 +191,17 @@ Each run repeats every row under seven heap-layout perturbations, and a row
 gates only when its guards and allocation counts stay identical under all of
 them in that run; `--no-perturb` skips the checks and leaves every row
 diagnostic. The report names each row's qualification and thread count.
+All tiers stage each arm at `/tmp/dart-perf/arm`, including binaries, libraries,
+revision inputs, shims, dependency paths and measurement outputs. Measurements
+run from `/tmp/dart-perf` with a fixed minimal environment: system `PATH`,
+`LC_ALL=C`, the existing FMA mask in `GLIBC_TUNABLES`, and staged library paths;
+the harness adds only its measurement and perturbation controls. A host lock
+serializes staging, measurement and copying artifacts to the requested output
+directory. The staging root must be private and owned by the current user.
+Harness builds also use fixed source, build, dependency and install aliases,
+because resource retrievers embed source and install data paths. Caller-owned
+build trees remain reusable. Normalization is part of `harness_sha`, so earlier
+records have a different environment fingerprint and require new measurements.
 Comparisons require matching environment fingerprints. Exit status 1 means a
 policy failure; status 2 means an infrastructure error. When measuring an
 existing install with `scripts/perf_regression.py run`, supply `--commit` for
@@ -272,14 +283,14 @@ publication adds no commit. Hosted records take precedence over local records
 even when their environment fingerprints match; identical-or-refuse checks
 apply only within the same `runner.environment`.
 
-For the local-to-hosted overlap check, use a 0.06% tolerance for relative Ir
-differences and require exact common guards, allocation counts and bytes.
-The pilot stayed within this tolerance on every measured row: `s3w/ode`
-was -0.056%, `s3w/dart` was -0.038%, and the rest were about 0.02% or less
-(`s5a/ode` was -0.021%). Common guards, allocations and bytes matched exactly.
-This observed bound does not establish the cause of the differences or
-guarantee exact counts across environments. Per-revision deltas within one
-environment remain exact.
+For repeatability checks, require identical deterministic counts and common
+guards with matching toolchain, inputs and environment fingerprints. Earlier
+pilots used arbitrary absolute paths and inherited environments: even local
+runs of one revision could differ by over 0.26% Ir. Fixed staging removes those
+allocation-layout inputs; matching fingerprints still require the same runtime
+environment and toolchain. Wall time and RSS remain advisory. Reusing an older
+install tests runtime normalization, but it retains any build paths embedded
+in its libraries; rebuild through the harness for fixed embedded paths too.
 
 Inspect history with
 `python scripts/perf_regression.py ledger --records build/perf-backfill/records <pages-records-dir> --since <base-sha> --until <head-sha>`.

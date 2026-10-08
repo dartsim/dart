@@ -18,6 +18,20 @@ import pytest
 import yaml
 
 
+@pytest.fixture(autouse=True)
+def _isolated_measurement_workspace(monkeypatch, tmp_path_factory):
+    loader = _load_runner
+    root = tmp_path_factory.mktemp("measurement")
+    root.chmod(0o700)
+
+    def load():
+        module = loader()
+        monkeypatch.setattr(module, "MEASUREMENT_ROOT", root)
+        return module
+
+    monkeypatch.setattr(sys.modules[__name__], "_load_runner", load)
+
+
 def test_nightly_rows_cover_canonical_windows_without_changing_quick_tier(tmp_path):
     module = _load_runner()
     quick = module.select_rows("")
@@ -2211,7 +2225,402 @@ def test_environment_ignores_inherited_library_path(monkeypatch, tmp_path):
     monkeypatch.setenv("LD_LIBRARY_PATH", "/elsewhere/lib")
     monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "env"))
     env = module.environment(tmp_path / "prefix")
-    assert env["LD_LIBRARY_PATH"] == f"{tmp_path}/prefix/lib:{tmp_path}/env/lib"
+    assert env["LD_LIBRARY_PATH"] == (
+        f"{tmp_path}/prefix/lib:{module.MEASUREMENT_ROOT}/arm/dependencies/lib"
+    )
+
+
+def test_environment_is_identical_under_ambient_pollution(monkeypatch, tmp_path):
+    module = _load_runner()
+    prefix = module.MEASUREMENT_ROOT / "arm/prefix"
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
+    expected = {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "GLIBC_TUNABLES": "glibc.cpu.hwcaps=-FMA",
+        "LD_LIBRARY_PATH": f"{prefix}/lib:{module.MEASUREMENT_ROOT}/arm/dependencies/lib",
+    }
+    assert module.environment(prefix) == expected
+    for name in (
+        "PATH",
+        "LC_ALL",
+        "GLIBC_TUNABLES",
+        "LD_LIBRARY_PATH",
+        "LD_PRELOAD",
+        "HEAPPAD",
+        "PERF_WARMUP",
+        "PERF_WINDOW",
+        "PERF_MICRO",
+        "PYTHONPATH",
+        "PIXI_PROJECT_ROOT",
+        "PIXI_ENVIRONMENT_NAME",
+        "EXTRA_ENVIRONMENT",
+    ):
+        monkeypatch.setenv(name, "polluted" * 100)
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "longer-dependency-location"))
+    assert module.environment(prefix) == expected
+    monkeypatch.delenv("CONDA_PREFIX")
+    expected["LD_LIBRARY_PATH"] = f"{prefix}/lib"
+    assert module.environment(prefix) == expected
+
+
+@pytest.mark.parametrize("failure", [None, ValueError, KeyboardInterrupt])
+def test_run_arm_stages_fixed_paths_and_exports_artifacts_under_lock(
+    monkeypatch, tmp_path, failure
+):
+    module = _load_runner()
+    slot = module.MEASUREMENT_ROOT / "arm"
+    stamp = {"workload_sources": {}}
+    monkeypatch.setattr(module, "command_output", lambda command: "commit")
+    monkeypatch.setattr(module, "installed_provenance", lambda args: stamp)
+    snapshots = []
+
+    def assert_locked():
+        with (module.MEASUREMENT_ROOT / ".lock").open("a") as lock:
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+    original_copytree = module.shutil.copytree
+
+    def copytree(source, destination, *args, **kwargs):
+        if source == slot / "run":
+            assert_locked()
+        return original_copytree(source, destination, *args, **kwargs)
+
+    monkeypatch.setattr(module.shutil, "copytree", copytree)
+
+    def measure(arm, provenance):
+        assert provenance is stamp
+        assert_locked()
+        assert not (slot / "stale").exists()
+        assert arm.prefix == slot / "prefix"
+        assert arm.bin_dir == slot / "prefix/bin"
+        assert arm.source_dir == slot / "source"
+        assert arm.shim == slot / "allocshim.so"
+        assert arm.heappad == slot / "heappad.so"
+        assert arm.output_dir == slot / "run"
+        assert (arm.bin_dir / module.CB).read_bytes() == b"driver"
+        library = arm.prefix / "lib/libdart.so"
+        assert not library.is_symlink() and library.read_bytes() == b"library"
+        assert arm.shim.read_bytes() == b"allocshim"
+        assert arm.heappad.read_bytes() == b"heappad"
+        assert (slot / "dependencies").resolve() == dependency
+        assert arm.source_dir.resolve() == source
+        row = module.select_rows("s3w/dart")[0]
+        snapshots.append(
+            (
+                module.row_command(
+                    row, arm, slot / "inputs/world.sdf", row.warmup, row.steps
+                ),
+                module.environment(arm.prefix),
+            )
+        )
+        (arm.output_dir / "partial.log").write_text("measurement evidence")
+        if failure:
+            raise failure("measurement failed")
+        module.write_json(arm.output_dir / "record.json", {"result": "ok"})
+        return {"result": "ok"}
+
+    monkeypatch.setattr(module, "_measure_arm", measure)
+    for label in ("short", "a-much-longer-location"):
+        directory = tmp_path / label
+        prefix, binary, source, dependency = (
+            directory / name for name in ("prefix", "binary", "source", "dependencies")
+        )
+        for path in (prefix / "lib", binary, source, dependency / "lib"):
+            path.mkdir(parents=True)
+        library = directory / "library.so"
+        library.write_bytes(b"library")
+        (prefix / "lib/libdart.so").symlink_to(library)
+        (binary / module.CB).write_bytes(b"driver")
+        shim, heappad = directory / "shim.so", directory / "heappad.so"
+        shim.write_bytes(b"allocshim")
+        heappad.write_bytes(b"heappad")
+        monkeypatch.setenv("CONDA_PREFIX", str(dependency))
+        monkeypatch.setenv("EXTRA_ENVIRONMENT", label * 100)
+        output = directory / "output"
+        args = module.parser().parse_args(
+            [
+                "run",
+                "--commit",
+                "HEAD",
+                "--prefix",
+                str(prefix),
+                "--bin-dir",
+                str(binary),
+                "--source-dir",
+                str(source),
+                "--shim",
+                str(shim),
+                "--heappad",
+                str(heappad),
+                "--output-dir",
+                str(output),
+                "--rows",
+                "s3w/dart",
+            ]
+        )
+        if failure:
+            with pytest.raises(failure, match="measurement failed"):
+                module.run_arm(args)
+        else:
+            assert module.run_arm(args) == {"result": "ok"}
+            assert json.loads((output / "record.json").read_text()) == {"result": "ok"}
+        assert (output / "partial.log").read_text() == "measurement evidence"
+        assert (
+            args.prefix == prefix
+            and args.bin_dir == binary
+            and args.source_dir == source
+        )
+        assert (prefix / "lib/libdart.so").is_symlink()
+        with (module.MEASUREMENT_ROOT / ".lock").open("a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        (slot / "stale").write_text("old arm")
+    assert snapshots[0] == snapshots[1]
+
+
+def test_perf_workspace_serializes_replacement(monkeypatch):
+    module = _load_runner()
+    waiting, entered = threading.Event(), threading.Event()
+
+    def contender():
+        waiting.set()
+        with module.perf_workspace() as slot:
+            assert not (slot / "previous").exists()
+            entered.set()
+
+    with module.perf_workspace() as slot:
+        (slot / "previous").write_text("previous arm")
+        thread = threading.Thread(target=contender)
+        thread.start()
+        assert waiting.wait(timeout=2)
+        assert not entered.wait(timeout=0.02)
+        assert (slot / "previous").is_file()
+    thread.join(timeout=2)
+    assert not thread.is_alive() and entered.is_set()
+
+
+@pytest.mark.parametrize(
+    "unsafe",
+    ["symlink", "public", "owner", "input", "alias", "ancestor", "staged-alias"],
+)
+def test_perf_workspace_rejects_unsafe_roots_and_inputs(monkeypatch, tmp_path, unsafe):
+    module = _load_runner()
+    root = module.MEASUREMENT_ROOT
+    paths = ()
+    if unsafe == "symlink":
+        root.rmdir()
+        root.symlink_to(tmp_path, target_is_directory=True)
+    elif unsafe == "public":
+        root.chmod(0o755)
+    elif unsafe == "owner":
+        monkeypatch.setattr(module.os, "getuid", lambda: root.stat().st_uid + 1)
+    else:
+        slot = root / "arm"
+        slot.mkdir()
+        preserved = slot / "input"
+        preserved.write_text("keep")
+        if unsafe == "staged-alias":
+            preserved = tmp_path / "external"
+            preserved.write_text("keep")
+            alias = slot / "source"
+            alias.symlink_to(tmp_path, target_is_directory=True)
+            paths = (alias / "external",)
+        elif unsafe == "ancestor":
+            paths = (root,)
+        elif unsafe == "alias":
+            alias = tmp_path / "input-alias"
+            alias.symlink_to(preserved)
+            paths = (alias,)
+        else:
+            paths = (preserved,)
+    with pytest.raises(ValueError, match="private owned|outside staging"):
+        with module.perf_workspace(paths):
+            pytest.fail("unsafe workspace accepted")
+    if paths:
+        assert preserved.read_text() == "keep"
+
+
+@pytest.mark.parametrize("build", [False, True])
+def test_execute_uses_fixed_measurement_working_directory(tmp_path, build):
+    module = _load_runner()
+    output = module.execute(
+        [sys.executable, "-c", "import os; print(os.getcwd())"],
+        module.environment(module.MEASUREMENT_ROOT / "arm/prefix"),
+        tmp_path / "working-directory.log",
+        5,
+        build=build,
+    )
+    assert output.strip() == str(module.ROOT if build else module.MEASUREMENT_ROOT)
+
+
+def test_workload_hashes_normalize_lexical_and_resolved_staging_paths(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    hashes = []
+    for label in ("short", "longer-location"):
+        directory = tmp_path / label
+        source, build, prefix, dependency = (
+            directory / name for name in ("source", "build", "prefix", "dependencies")
+        )
+        for tree in (source, build, prefix, dependency):
+            tree.mkdir(parents=True)
+        for name in module.WORKLOAD_SOURCES[module.PB]:
+            path = source / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"same workload")
+        monkeypatch.setenv("CONDA_PREFIX", str(dependency))
+        with module.perf_workspace() as slot:
+            for name, tree in (
+                ("source", source),
+                ("build", build),
+                ("prefix", prefix),
+                ("dependencies", dependency),
+            ):
+                (slot / name).symlink_to(tree, target_is_directory=True)
+            roots = (source, build, prefix, dependency)
+            aliases = tuple(
+                slot / name for name in ("source", "build", "prefix", "dependencies")
+            )
+            name = next(
+                name
+                for name in module.WORKLOAD_SOURCES[module.PB]
+                if name.endswith(".cpp")
+            )
+            command = " ".join(
+                [
+                    "/usr/bin/c++ -O3",
+                    *(f"-I{path}/include" for path in (*roots, *aliases)),
+                    f"-o {slot}/build/object.o -c {slot}/source/{name}",
+                ]
+            )
+            entry = {
+                "directory": str(slot / "build"),
+                "file": str(source / name),
+                "command": command,
+            }
+            module.write_json(build / "compile_commands.json", [entry])
+            hashes.append(module.workload_hashes(source, [module.PB], build, prefix))
+            assert (
+                module.workload_hashes(
+                    slot / "source", [module.PB], slot / "build", slot / "prefix"
+                )
+                == hashes[-1]
+            )
+            entry["command"] = command.replace("-O3", "-O2")
+            module.write_json(build / "compile_commands.json", [entry])
+            assert (
+                module.workload_hashes(source, [module.PB], build, prefix) != hashes[-1]
+            )
+    assert hashes[0] == hashes[1]
+
+
+@pytest.mark.parametrize("failure", [False, True])
+def test_build_arm_normalizes_build_paths_and_dependency_metadata(
+    monkeypatch, tmp_path, failure
+):
+    module = _load_runner()
+    snapshots = []
+
+    def build(
+        args,
+        revision,
+        source,
+        build,
+        driver,
+        prefix,
+        drivers,
+        log_prefix,
+        dependency,
+        harness,
+        env,
+    ):
+        slot = module.MEASUREMENT_ROOT / "arm"
+        assert [source, build, driver, prefix, dependency, harness] == [
+            slot / name
+            for name in (
+                "source",
+                "build",
+                "driver",
+                "prefix",
+                "dependencies",
+                "harness",
+            )
+        ]
+        assert env["CONDA_PREFIX"] == str(dependency)
+        metadata_paths = [
+            Path(path) for path in env["PKG_CONFIG_PATH"].split(os.pathsep)
+        ]
+        assert metadata_paths == [
+            slot / "pkgconfig" / name for name in ("lib/pkgconfig", "share/pkgconfig")
+        ]
+        contents = (metadata_paths[0] / "dependency.pc").read_text()
+        assert contents == f"prefix={dependency}\nincludedir={dependency}/include\n"
+        relative = (metadata_paths[0] / "relative.pc").read_text()
+        original_metadata = dependency / "lib/pkgconfig"
+        assert f"prefix={original_metadata}/../..\n" in relative
+        assert f"Cflags: -I{original_metadata}/../../include\n" in relative
+        assert "${pcfiledir}" not in relative
+        if Path("/usr/bin/pkg-config").is_file():
+            includes = subprocess.check_output(
+                ["/usr/bin/pkg-config", "--cflags", "relative"], env=env, text=True
+            ).split()
+            assert len(includes) == 1 and includes[0].startswith("-I")
+            assert Path(includes[0][2:]).resolve() == dependency.resolve() / "include"
+        snapshots.append((contents, relative))
+        if failure:
+            raise ValueError("build failed")
+        prefix.mkdir()
+        (prefix / "built").write_text("installed arm")
+
+    monkeypatch.setattr(module, "_build_arm", build)
+    for label in ("short", "longer-location"):
+        directory = tmp_path / label
+        source, build, driver, prefix, dependencies = (
+            directory / name
+            for name in ("source", "build", "driver", "prefix", "dependencies")
+        )
+        source.mkdir(parents=True)
+        prefix.mkdir()
+        (prefix / "previous").write_text("previous install")
+        metadata = dependencies / "lib/pkgconfig/dependency.pc"
+        metadata.parent.mkdir(parents=True)
+        alias = directory / "dependency-alias"
+        alias.symlink_to(dependencies, target_is_directory=True)
+        metadata.write_text(f"prefix={alias}\nincludedir={dependencies}/include\n")
+        relative = metadata.with_name("relative.pc")
+        relative_contents = (
+            "prefix=${pcfiledir}/../..\n"
+            "Name: relative\nDescription: Relative metadata paths\nVersion: 1\n"
+            "Cflags: -I${pcfiledir}/../../include\n"
+        )
+        relative.write_text(relative_contents)
+        monkeypatch.setenv("CONDA_PREFIX", str(alias))
+        arguments = (
+            object(),
+            "revision",
+            source,
+            build,
+            driver,
+            prefix,
+            [],
+            directory / "logs",
+        )
+        if failure:
+            with pytest.raises(ValueError, match="build failed"):
+                module.build_arm(*arguments)
+            assert (prefix / "previous").read_text() == "previous install"
+        else:
+            module.build_arm(*arguments)
+            assert not (prefix / "previous").exists()
+            assert (prefix / "built").read_text() == "installed arm"
+        assert (
+            metadata.read_text()
+            == f"prefix={alias}\nincludedir={dependencies}/include\n"
+        )
+        assert relative.read_text() == relative_contents
+    assert snapshots[0] == snapshots[1]
 
 
 @pytest.mark.parametrize(
@@ -2517,6 +2926,7 @@ def test_run_resolves_shims_and_reports_missing_options(
         },
     )
     prefix = tmp_path / "output/a"
+    prefix.mkdir(parents=True)
     argv = [
         "run",
         "--commit",
@@ -3172,9 +3582,9 @@ def test_local_uses_independent_source_and_cmake_caches(
                 f'set(CMAKE_CXX_COMPILER "{tmp_path / "c++"}")\n'
                 'set(CMAKE_CXX_COMPILER_ID "GNU")\nset(CMAKE_CXX_COMPILER_VERSION "13.3.0")\n'
             )
-            workload_source = source if source.name.startswith("src-") else module.ROOT
+            workload_source = source if source.name == "source" else source.parents[1]
             compiled_drivers = (
-                expected_drivers if source.name.startswith("src-") else {module.PB}
+                expected_drivers if source.name == "source" else {module.PB}
             )
             module.write_json(
                 build / "compile_commands.json",
@@ -3189,15 +3599,15 @@ def test_local_uses_independent_source_and_cmake_caches(
                     if name.endswith(".cpp")
                 ],
             )
-            if source.name.startswith("src-"):
+            if source.name == "source":
                 assert (source / "CMakeLists.txt").is_file()
                 assert not (build / "CMakeCache.txt").exists()
-                (build / "CMakeCache.txt").write_text(source.name)
-                configurations.append((source, build))
+                (build / "CMakeCache.txt").write_text(source.resolve().name)
+                configurations.append((source.resolve(), build.resolve()))
         elif command[:2] == ["cmake", "--build"]:
             build = Path(command[2])
-            if build.name.startswith("driver-"):
-                (build / "portable_step_bench").write_text(build.name)
+            if build.name == "driver":
+                (build / "portable_step_bench").write_text(build.resolve().name)
             else:
                 targets = set(command[command.index("--target") + 1 :])
                 assert targets & module.WORKLOAD_SOURCES.keys() == expected_drivers
@@ -3331,9 +3741,9 @@ def test_local_records_only_head_build_failures(
             (prefix / "share/dart").mkdir(parents=True)
             (prefix / "lib").mkdir()
             (prefix / "lib/libdart.so").write_bytes(b"DART")
-        if command[:2] == ["cmake", "--build"] and "driver-" in command[2]:
+        if command[:2] == ["cmake", "--build"] and Path(command[2]).name == "driver":
             driver = Path(command[2])
-            driver.mkdir()
+            driver.mkdir(exist_ok=True)
             (driver / "portable_step_bench").write_bytes(b"driver")
         return ""
 
@@ -3886,7 +4296,7 @@ def test_revision_input_errors_are_recorded_per_row(
         original = Path.open
 
         def open_file(self, *args, **kwargs):
-            if self == damaged:
+            if self.resolve() == damaged:
                 raise PermissionError(f"unreadable input: {self}")
             return original(self, *args, **kwargs)
 
@@ -6197,22 +6607,24 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(monkeypatch, tmp
         if command[:3] == ["cmake", "-G", "Ninja"]:
             assert "--fresh" in command
             configured = Path(command[command.index("-B") + 1])
-            if configured == build:
+            if configured.resolve() == build:
                 assert (build / ".cmake/api/v1/query/codemodel-v2").is_file()
                 assert not any("IPOPT" in option.upper() for option in command)
             configured.mkdir(exist_ok=True)
-            configurations.append(configured)
+            configurations.append(configured.resolve())
         elif command[:2] == ["cmake", "--build"]:
-            if Path(command[2]) == driver:
+            if Path(command[2]).resolve() == driver:
                 (driver / "portable_step_bench").write_bytes(b"driver")
             else:
                 assert "dart-optimizer-ipopt" in command
                 assert "all" not in command
         elif command[:2] == ["cmake", "--install"]:
-            assert not prefix.exists()
+            staged_prefix = Path(command[command.index("--prefix") + 1])
+            assert staged_prefix == module.MEASUREMENT_ROOT / "arm/prefix"
+            assert not staged_prefix.exists()
             installs.append(command)
-            (prefix / "lib").mkdir(parents=True)
-            (prefix / "lib/libdart.so").write_bytes(b"library")
+            (staged_prefix / "lib").mkdir(parents=True)
+            (staged_prefix / "lib/libdart.so").write_bytes(b"library")
         return ""
 
     monkeypatch.setattr(module, "execute", execute)

@@ -23,6 +23,7 @@ import re
 import shlex
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tarfile
@@ -37,6 +38,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VALGRIND = "/usr/bin/valgrind"
+MEASUREMENT_ROOT = Path("/tmp/dart-perf")
 WORLD_SHA = "ad94d44b90f3023765e1b2a4d2ecc7390f5539fa761d6019e08b388ce5c5ff33"
 MEASURED_PATHS = (
     "dart",
@@ -382,17 +384,40 @@ def identity(path: str, prefix: Path) -> None:
 
 
 def environment(prefix: Path) -> dict[str, str]:
-    env = os.environ.copy()
-    for key in ("LD_PRELOAD", "HEAPPAD", "PERF_WARMUP", "PERF_WINDOW", "PERF_MICRO"):
-        env.pop(key, None)
-    env.update(LC_ALL="C", GLIBC_TUNABLES="glibc.cpu.hwcaps=-FMA")
-    # Only the arm and the active Pixi environment supply libraries; an inherited
-    # path could load other dependencies that the fingerprint does not record.
     paths = [str(prefix / "lib")]
-    if env.get("CONDA_PREFIX"):
-        paths.append(str(Path(env["CONDA_PREFIX"]) / "lib"))
-    env["LD_LIBRARY_PATH"] = ":".join(paths)
-    return env
+    if os.environ.get("CONDA_PREFIX"):
+        paths.append(str(MEASUREMENT_ROOT / "arm/dependencies/lib"))
+    return {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "GLIBC_TUNABLES": "glibc.cpu.hwcaps=-FMA",
+        "LD_LIBRARY_PATH": ":".join(paths),
+    }
+
+
+@contextlib.contextmanager
+def perf_workspace(paths=()):
+    MEASUREMENT_ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
+    info = MEASUREMENT_ROOT.lstat()
+    if (
+        not stat.S_ISDIR(info.st_mode)
+        or info.st_uid != os.getuid()
+        or info.st_mode & 0o077
+    ):
+        raise ValueError("performance staging root must be a private owned directory")
+    slot = MEASUREMENT_ROOT / "arm"
+    if any(
+        root.is_relative_to(slot) or slot.is_relative_to(root)
+        for path in paths
+        for root in (Path(path).absolute(), Path(path).resolve())
+    ):
+        raise ValueError("performance inputs and outputs must be outside staging")
+    with (MEASUREMENT_ROOT / ".lock").open("a", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if slot.exists():
+            shutil.rmtree(slot)
+        slot.mkdir()
+        yield slot
 
 
 class UnsupportedRow(ValueError):
@@ -434,7 +459,7 @@ def execute(
     with log.open("w", encoding="utf-8") as output:
         process = subprocess.Popen(
             command,
-            cwd=ROOT,
+            cwd=ROOT if build else MEASUREMENT_ROOT,
             env=env,
             stdout=output,
             stderr=subprocess.STDOUT,
@@ -979,9 +1004,27 @@ def workload_hashes(
     )
 
     def normalize(command):
-        roots = [(source, "<SOURCE>"), (build, "<BUILD>"), (prefix, "<PREFIX>")]
+        slot = MEASUREMENT_ROOT / "arm"
+        roots = [
+            (source, "<SOURCE>"),
+            (build, "<BUILD>"),
+            (prefix, "<PREFIX>"),
+            (slot / "source", "<SOURCE>"),
+            (slot / "harness", "<SOURCE>"),
+            (slot / "build", "<BUILD>"),
+            (slot / "driver", "<BUILD>"),
+            (slot / "prefix", "<PREFIX>"),
+            (slot / "dependencies", "<DEPENDENCY>"),
+        ]
+        if dependency := os.environ.get("CONDA_PREFIX"):
+            roots.append((Path(dependency), "<DEPENDENCY>"))
         for path, label in sorted(
-            ((str(path.resolve()), label) for path, label in roots if path is not None),
+            {
+                (str(root), label)
+                for path, label in roots
+                if path is not None
+                for root in (path.absolute(), path.resolve())
+            },
             key=lambda item: len(item[0]),
             reverse=True,
         ):
@@ -1124,10 +1167,10 @@ def fingerprint(args, provenance: dict | None = None) -> dict:
         "glibc": command_output(["getconf", "GNU_LIBC_VERSION"]).split()[-1],
         "pixi_lock_sha": provenance["pixi_lock_sha"],
         "runtime_pixi_lock_sha": sha(
-            (Path(env.get("PIXI_PROJECT_ROOT", ROOT)) / "pixi.lock").read_bytes()
+            (Path(os.environ.get("PIXI_PROJECT_ROOT", ROOT)) / "pixi.lock").read_bytes()
         ),
-        "runtime_environment": env.get("PIXI_ENVIRONMENT_NAME")
-        or Path(env.get("CONDA_PREFIX", "")).name,
+        "runtime_environment": os.environ.get("PIXI_ENVIRONMENT_NAME")
+        or Path(os.environ.get("CONDA_PREFIX", "")).name,
         "preset": provenance["preset"],
         "harness_sha": harness,
         "allocshim_sha": sha(args.shim.read_bytes()),
@@ -1199,6 +1242,43 @@ def run_arm(args) -> dict:
         setattr(args, option, path)
     args.commit = commit
     provenance = installed_provenance(args)
+    paths = [
+        args.prefix,
+        args.bin_dir,
+        args.source_dir,
+        args.output_dir,
+        args.shim,
+        args.heappad,
+    ]
+    if dependency := os.environ.get("CONDA_PREFIX"):
+        paths.append(Path(dependency))
+    with perf_workspace(paths) as slot:
+        arm = argparse.Namespace(**vars(args))
+        arm.prefix = slot / "prefix"
+        shutil.copytree(args.prefix, arm.prefix)
+        arm.bin_dir = arm.prefix / "bin"
+        if args.bin_dir != args.prefix / "bin":
+            shutil.copytree(args.bin_dir, arm.bin_dir, dirs_exist_ok=True)
+        arm.source_dir = slot / "source"
+        arm.source_dir.symlink_to(args.source_dir.resolve(), target_is_directory=True)
+        if dependency := os.environ.get("CONDA_PREFIX"):
+            (slot / "dependencies").symlink_to(
+                Path(dependency).resolve(), target_is_directory=True
+            )
+        arm.shim, arm.heappad = slot / "allocshim.so", slot / "heappad.so"
+        shutil.copy2(args.shim, arm.shim)
+        if args.perturb:
+            shutil.copy2(args.heappad, arm.heappad)
+        arm.output_dir = slot / "run"
+        arm.output_dir.mkdir()
+        try:
+            return _measure_arm(arm, provenance)
+        finally:
+            shutil.copytree(arm.output_dir, args.output_dir, dirs_exist_ok=True)
+
+
+def _measure_arm(args, provenance) -> dict:
+    commit = args.commit
     env_fingerprint = fingerprint(args, provenance)
     inputs = args.output_dir.parent / "inputs"
     inputs.mkdir(exist_ok=True)
@@ -3479,6 +3559,71 @@ def build_arm(args, revision, source, build, driver_build, prefix, drivers, log_
     dependency = os.environ.get("CONDA_PREFIX")
     if not dependency:
         raise ValueError("building requires the active Pixi environment (CONDA_PREFIX)")
+    dependency = Path(dependency)
+    with perf_workspace(
+        (source, build, driver_build, prefix, log_prefix, dependency, ROOT)
+    ) as slot:
+        for tree in (build, driver_build):
+            tree.mkdir(parents=True, exist_ok=True)
+        for name, tree in (
+            ("source", source),
+            ("build", build),
+            ("driver", driver_build),
+            ("harness", ROOT),
+            ("dependencies", dependency),
+        ):
+            (slot / name).symlink_to(tree.resolve(), target_is_directory=True)
+        env = os.environ.copy()
+        env["CONDA_PREFIX"] = str(slot / "dependencies")
+        pkgconfig = []
+        # Dependency metadata can embed the original install prefix literally.
+        for directory in ("lib/pkgconfig", "share/pkgconfig"):
+            metadata = slot / "pkgconfig" / directory
+            metadata.mkdir(parents=True)
+            for path in (dependency / directory).glob("*.pc"):
+                contents = path.read_text(encoding="utf-8").replace(
+                    "${pcfiledir}", str(slot / "dependencies" / directory)
+                )
+                for root in sorted(
+                    {str(dependency.absolute()), str(dependency.resolve())},
+                    key=len,
+                    reverse=True,
+                ):
+                    contents = contents.replace(root, str(slot / "dependencies"))
+                (metadata / path.name).write_text(contents, encoding="utf-8")
+            pkgconfig.append(str(metadata))
+        env["PKG_CONFIG_PATH"] = os.pathsep.join(pkgconfig)
+        _build_arm(
+            args,
+            revision,
+            slot / "source",
+            slot / "build",
+            slot / "driver",
+            slot / "prefix",
+            drivers,
+            log_prefix,
+            slot / "dependencies",
+            slot / "harness",
+            env,
+        )
+        if prefix.exists():
+            shutil.rmtree(prefix)
+        shutil.copytree(slot / "prefix", prefix)
+
+
+def _build_arm(
+    args,
+    revision,
+    source,
+    build,
+    driver_build,
+    prefix,
+    drivers,
+    log_prefix,
+    dependency,
+    harness,
+    env,
+):
     options = [
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
@@ -3513,7 +3658,7 @@ def build_arm(args, revision, source, build, driver_build, prefix, drivers, log_
             str(build),
             *options,
         ],
-        os.environ.copy(),
+        env,
         Path(f"{log_prefix}.configure.log"),
         args.timeout,
         build=True,
@@ -3538,7 +3683,7 @@ def build_arm(args, revision, source, build, driver_build, prefix, drivers, log_
             "--target",
             *targets,
         ],
-        os.environ.copy(),
+        env,
         Path(f"{log_prefix}.build.log"),
         max(args.timeout, 3600),
         build=True,
@@ -3547,7 +3692,7 @@ def build_arm(args, revision, source, build, driver_build, prefix, drivers, log_
         shutil.rmtree(prefix)
     execute(
         ["cmake", "--install", str(build), "--prefix", str(prefix)],
-        os.environ.copy(),
+        env,
         Path(f"{log_prefix}.install.log"),
         args.timeout,
         build=True,
@@ -3564,7 +3709,7 @@ def build_arm(args, revision, source, build, driver_build, prefix, drivers, log_
             "Ninja",
             "--fresh",
             "-S",
-            str(ROOT / "tools/perf"),
+            str(harness / "tools/perf"),
             "-B",
             str(driver_build),
             "-DCMAKE_BUILD_TYPE=Release",
@@ -3572,15 +3717,15 @@ def build_arm(args, revision, source, build, driver_build, prefix, drivers, log_
             f"-DCMAKE_PREFIX_PATH={prefix};{dependency}",
             "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
         ],
-        os.environ.copy(),
+        env,
         Path(f"{log_prefix}.driver-configure.log"),
         args.timeout,
         build=True,
     )
-    workload_sources |= workload_hashes(ROOT, [PB], driver_build, prefix)
+    workload_sources |= workload_hashes(harness, [PB], driver_build, prefix)
     execute(
         ["cmake", "--build", str(driver_build), "--parallel", str(args.jobs)],
-        os.environ.copy(),
+        env,
         Path(f"{log_prefix}.driver-build.log"),
         max(args.timeout, 3600),
         build=True,
