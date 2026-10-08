@@ -51,7 +51,8 @@ constexpr Real kTolerance = 1e-10;
 
 bool valid(const FrictionCone& cone)
 {
-  return (cone.mu.array() >= 0.0).all() && (cone.mu.array() <= 1e100).all();
+  return (cone.mu.array() >= 0.0).all()
+         && (cone.mu.array() <= kMaxFrictionCoefficient).all();
 }
 
 Vector coneRay(const FrictionCone& cone)

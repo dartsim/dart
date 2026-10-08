@@ -120,8 +120,10 @@ bool classifyFrictionRows(
     result.contactRows[contact.rowOffset + cursor] = i;
     if (i == root)
       continue;
+    // Coefficients the cone laws cannot represent stay with PGS.
     const bool cleanTangent = result.parents[i] == root && std::isfinite(hi[i])
-                              && hi[i] >= 0 && lo[i] == -hi[i];
+                              && hi[i] <= kMaxFrictionCoefficient && hi[i] >= 0
+                              && lo[i] == -hi[i];
     contact.usePgs |= !cleanTangent;
     // Tangent axes follow their row order even if the normal comes later.
     const int axis = contact.tangentRows[0] < 0 ? 0 : 1;

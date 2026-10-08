@@ -140,7 +140,9 @@ TEST(FrictionRows, MalformedCouplingIsRetainedForPgs)
       {{-1, -.5}, {1, .5}, {-1, 0}},                   // non-normal parent
       {{0, -.5, -.5}, {infinity, .5, .5}, {-1, 0, 1}}, // chain
       {{-.5, -.5}, {.5, .5}, {1, 0}},                  // cycle
-      {{0, -infinity}, {infinity, infinity}, {-1, 0}}};
+      {{0, -infinity}, {infinity, infinity}, {-1, 0}},
+      // a coefficient above kMaxFrictionCoefficient
+      {{0, -1e200, -1e200}, {infinity, 1e200, 1e200}, {-1, 0, 0}}};
   for (std::size_t i = 0; i < bank.size(); ++i) {
     SCOPED_TRACE(i);
     const auto result = classify(bank[i]);

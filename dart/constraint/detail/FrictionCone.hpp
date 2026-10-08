@@ -39,6 +39,9 @@
 
 namespace dart::constraint::detail {
 
+/// Largest supported friction coefficient; larger ones make a cone invalid.
+inline constexpr double kMaxFrictionCoefficient = 1e100;
+
 /// Internal building blocks; these types carry no API stability promise.
 enum class FrictionConeLaw
 {
