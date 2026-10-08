@@ -258,6 +258,8 @@ jobs:
             # DART 6 dartpy requires dart-gui-osg, so this required variant
             # runs the C++ tests with assertions and validates the no-OSG
             # contract. -O2 keeps NDEBUG undefined; at -O0 the tests take hours.
+            # Unity builds catch file-local name collisions on Linux too;
+            # see code-style.md.
             cmake \
               -G Ninja \
               -S . \
@@ -266,6 +268,7 @@ jobs:
               -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
               -DCMAKE_C_FLAGS=-O2 \
               -DCMAKE_CXX_FLAGS=-O2 \
+              -DCMAKE_UNITY_BUILD=ON \
               -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
               -DCMAKE_DISABLE_FIND_PACKAGE_OpenSceneGraph=TRUE \
               -DDART_BUILD_DARTPY=OFF \
