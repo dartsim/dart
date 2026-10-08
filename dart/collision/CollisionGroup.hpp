@@ -47,6 +47,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
 namespace dart {
@@ -544,11 +545,22 @@ private:
   /// \returns true if an update was performed
   bool updateShapeFrame(ObjectInfo* object);
 
+  using Subscription
+      = std::variant<const dynamics::MetaSkeleton*, const dynamics::BodyNode*>;
+
+  /// Remove a subscription from the ordered record.
+  void removeSubscriptionOrder(const Subscription& source);
+
   /// Skeleton sources that this group is subscribed to
   SkeletonSources mSkeletonSources;
 
   /// BodyNode sources that this group is susbscribed to
   BodyNodeSources mBodyNodeSources;
+
+  /// Skeleton and BodyNode keys in subscription order. The maps provide
+  /// lookups; this record keeps late collision-object creation independent of
+  /// pointer hashes, including when the two source types are interleaved.
+  std::vector<Subscription> mSubscriptionOrder;
 
   /// The object that observes the Shape Frames that this group cares about
   ShapeFrameObserver mObserver;

@@ -236,6 +236,12 @@
 
 * Collision
 
+  * Make collision-object creation for shapes added after
+    `World::addSkeleton()` follow subscription order. Late-shape trajectories,
+    including every gz-physics world, change once with this fix and become
+    reproducible across runs, independent of heap layout:
+    [#TBD](https://github.com/dartsim/dart/pull/TBD)
+
   * Build the meshes that `FCLCollisionDetector` uses for boxes, spheres,
     ellipsoids, and cylinders in `MESH` primitive mode in double instead of
     float precision, so their vertices can move at float rounding. In the
