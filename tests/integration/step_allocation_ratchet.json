@@ -1,4 +1,6 @@
 {
+  "dart_merge_split_second_cycle_operator_new_per_step": 0,
+  "dart_merge_split_second_cycle_raw_malloc_per_step": 0,
   "dart_awake_grid_threads_1_operator_new_per_step": 0,
   "dart_awake_grid_threads_1_raw_malloc_per_step": 0,
   "dart_awake_grid_threads_4_operator_new_per_step": 0,

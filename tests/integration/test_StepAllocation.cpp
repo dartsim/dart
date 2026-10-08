@@ -2122,17 +2122,14 @@ TEST(StepAllocation, WakeTransition)
   expectAllocationGateBudget("dart_wake_transition", measurement);
 }
 
-TEST(StepAllocation, IslandMergeSplitSecondCycle)
-{
-  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
-    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+namespace {
 
-#if !HAVE_BULLET
-  GTEST_SKIP() << "Bullet is required for the Z1a island-retention gate";
-#else
-  // Native manifold-cache node reuse is F9, explicitly deferred to Z1b.
-  // Bullet keeps the same merge/split fixture focused on F5 island storage.
-  const auto detector = dart::collision::BulletCollisionDetector::create();
+// Islands merge and split again on the second cycle; neither the island
+// storage (F5) nor the DART detector's manifold-cache nodes (F9) may allocate.
+void expectMergeSplitSecondCycleAllocationFree(
+    const dart::collision::CollisionDetectorPtr& detector,
+    const std::string& budget)
+{
   auto world = createAllocationGateWorld(detector, false);
   auto solver = std::make_unique<AllocationGateConstraintSolver>();
   auto* inspectedSolver = solver.get();
@@ -2141,8 +2138,7 @@ TEST(StepAllocation, IslandMergeSplitSecondCycle)
   // replacement solver starts with its default detector.
   inspectedSolver->setCollisionDetector(detector);
   ASSERT_EQ(
-      inspectedSolver->getCollisionDetector()->getType(),
-      dart::collision::BulletCollisionDetector::getStaticType());
+      inspectedSolver->getCollisionDetector()->getType(), detector->getType());
   std::vector<dart::dynamics::SkeletonPtr> movers;
   for (int i = 0; i < 6; ++i) {
     for (double x : {-0.6, 0.6}) {
@@ -2206,8 +2202,33 @@ TEST(StepAllocation, IslandMergeSplitSecondCycle)
   EXPECT_LT(minGroups, maxGroups);
   EXPECT_TRUE(sawMerge) << "the second cycle must merge moving-body islands";
   EXPECT_TRUE(sawSplitAfterMerge) << "the merged islands must split again";
-  expectAllocationGateBudget("bullet_merge_split_second_cycle", measurement);
+  expectAllocationGateBudget(budget, measurement);
+}
+
+} // namespace
+
+TEST(StepAllocation, IslandMergeSplitSecondCycle)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+#if !HAVE_BULLET
+  GTEST_SKIP() << "Bullet is required for the Z1a island-retention gate";
+#else
+  expectMergeSplitSecondCycleAllocationFree(
+      dart::collision::BulletCollisionDetector::create(),
+      "bullet_merge_split_second_cycle");
 #endif
+}
+
+TEST(StepAllocation, DartIslandMergeSplitSecondCycle)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  expectMergeSplitSecondCycleAllocationFree(
+      dart::collision::DARTCollisionDetector::create(),
+      "dart_merge_split_second_cycle");
 }
 
 TEST(StepAllocation, ArticulatedJointLimitsSteadyState)

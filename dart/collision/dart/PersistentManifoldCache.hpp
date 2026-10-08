@@ -40,6 +40,8 @@
 
 #include <array>
 #include <functional>
+#include <memory>
+#include <memory_resource>
 #include <optional>
 #include <unordered_map>
 #include <utility>
@@ -148,7 +150,13 @@ public:
   [[nodiscard]] std::size_t size() const;
 
 private:
-  std::unordered_map<PairKey, PersistentManifold, PairKeyHash> mManifolds;
+  // Pairs that separate and touch again reuse pooled nodes instead of a
+  // malloc/free per contact begin/end. The pool only supplies memory: the
+  // hash, bucket growth and therefore iteration order are unchanged.
+  std::unique_ptr<std::pmr::unsynchronized_pool_resource> mNodePool
+      = std::make_unique<std::pmr::unsynchronized_pool_resource>();
+  std::pmr::unordered_map<PairKey, PersistentManifold, PairKeyHash> mManifolds{
+      mNodePool.get()};
 };
 
 } // namespace native
