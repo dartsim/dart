@@ -38,13 +38,15 @@
 namespace dart {
 namespace constraint {
 
-/// Cumulative friction-solver statistics. Difference snapshots around a step,
-/// or reset the counters while no solves are running.
+/// Cumulative friction-solver statistics. Counters can be differenced around a
+/// step. maxViolation is a maximum since resetStats(); reset while no solves
+/// are running to obtain a per-step maximum.
 struct FrictionSolveStats
 {
   std::uint64_t numSolves = 0;
   std::uint64_t numConverged = 0;
-  /// Solves that returned their best finite iterate at the iteration cap.
+  /// Solves that accepted their best finite iterate at the iteration cap or
+  /// after an unsuccessful iteration with no secondary available.
   std::uint64_t numAcceptedAtCap = 0;
   /// Solves that returned false, requesting the secondary solver.
   std::uint64_t numFailed = 0;
@@ -55,7 +57,8 @@ struct FrictionSolveStats
   std::uint64_t numLocalFallbacks = 0;
   /// Gauss-Seidel sweeps.
   std::uint64_t numIterations = 0;
-  /// Largest final law violation [m/s].
+  /// Largest final law violation [m/s] among accepted solves (converged or at
+  /// the cap) since resetStats(). Failed solves do not contribute.
   double maxViolation = 0.0;
 };
 

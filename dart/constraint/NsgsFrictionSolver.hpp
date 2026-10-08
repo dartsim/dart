@@ -46,9 +46,14 @@ namespace constraint {
 
 /// Opt-in block nonsmooth Gauss-Seidel friction solver. Input terms remain
 /// read-only; the returned impulse follows the selected law, including at the
-/// iteration cap. A non-finite or divergent solve requests the secondary.
+/// iteration cap. An unsuccessful iteration requests the secondary when
+/// available, or returns the best completed finite iterate without one.
 /// Independent groups may solve concurrently; options must not change during
 /// solve(), and reserve() reserves scratch only for the calling thread.
+/// Install this backend before the World is prepared (before
+/// enterSimulationMode() or the first step). After switching backends in an
+/// already prepared World, each solving thread grows its scratch on its first
+/// solve; later groups exceeding that capacity may require further growth.
 class NsgsFrictionSolver : public BoxedLcpSolver
 {
 public:
@@ -78,10 +83,16 @@ public:
   static const std::string& getStaticType();
 
   /// Warm starts are projected to the selected cone or scalar/PGS bounds
-  /// before comparing residuals. The failure policy is independent of
-  /// earlyTermination. Zero maxSweeps accepts that projected iterate at the
-  /// cap. Invalid options (negative cap or tolerance, non-finite tolerance,
-  /// unknown law) return false.
+  /// before comparing residuals. With earlyTermination true, divergence,
+  /// non-finite iterates, or an uncertified local solve return false to request
+  /// the secondary. With it false, the best completed finite projected iterate
+  /// is accepted and counted in numAcceptedAtCap. Zero maxSweeps also accepts
+  /// that projected iterate at the cap. Invalid options (negative cap or
+  /// tolerance, non-finite tolerance, unknown law), invalid indices, non-finite
+  /// inputs, or failure to form a projected starting iterate with a finite law
+  /// violation return false in both modes. Self indices (findex[k] == k) are
+  /// rejected before touching x so the secondary can apply the built-in
+  /// coupling semantics.
   bool solve(
       int n,
       double* A,

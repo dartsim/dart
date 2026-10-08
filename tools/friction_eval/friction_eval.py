@@ -589,7 +589,9 @@ def report(data, out, failed=frozenset()):
             [r[:7] for r in drift if r[7]],
         )
     )
-    for config in ("DZ+R", "VA", "DZ+R+VA", "PGS-tight", "PGS30"):
+    for config in L2_CONFIGS:
+        if config in ("B619", "B620"):
+            continue
         rows = compare(data, config)
         w(f"\n## {config} vs B620\n\n")
         s = scores(data, config, failed=failed)
@@ -854,11 +856,11 @@ def self_test(binary=None):
     ) == [("tipped", 1.0, None)]
     sample = COLUMNS_LINE + "".join(
         f"{c},6.20-line,A5,phi=45,dantzig,ode,0.001,off,off,{m},{v}\n"
-        for c, m, v in (
-            ("B620", "dist_ratio", 0.7064),
-            ("B620", "lateral", 0.0),
-            ("VA", "dist_ratio", 1.0),
-            ("VA", "lateral", 0.0),
+        for c in L2_CONFIGS
+        if c != "B619"
+        for m, v in (
+            ("dist_ratio", 0.7064 if c == "B620" else 1.0),
+            ("lateral", 0.0),
         )
     )
     with tempfile.TemporaryDirectory() as tmp:
@@ -874,6 +876,17 @@ def self_test(binary=None):
         assert (
             "| A5 | phi=45 | ode | 0.001 | dist_ratio | 0.7064 | 1 |" in text.getvalue()
         )
+        for config in L2_CONFIGS:
+            if config in ("B619", "B620"):
+                continue
+            title = f"\n## {config} vs B620\n\n"
+            assert title in text.getvalue(), config
+            section = text.getvalue().split(title, 1)[1].split("\n## ", 1)[0]
+            assert "| A5 | 0.5 |" in section, config
+            assert "\nMean: 0.5\n" in section, config
+            assert (
+                "| A5 | phi=45 | ode | 0.001 | dist_ratio | 0.7064 | 1 |" in section
+            ), config
         # A metric only one side reports is a difference shown as "-".
         data[("VA", "A5", "phi=45", "ode", "0.001", "off", "off")]["creep"] = 0.0
         rows = [r for r in compare(data, "VA") if r[4] == "creep"]

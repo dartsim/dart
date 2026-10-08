@@ -314,6 +314,57 @@ private:
   std::size_t mActiveImpulse;
 };
 
+class SelfIndexedConstraint final : public constraint::ConstraintBase
+{
+public:
+  SelfIndexedConstraint()
+  {
+    mDim = 1u;
+  }
+
+  void update() override {}
+
+  void getInformation(constraint::ConstraintInfo* info) override
+  {
+    ++mNumAssemblies;
+    info->x[0] = 0.0;
+    info->lo[0] = 0.0;
+    info->hi[0] = 1.0;
+    info->b[0] = 1.0;
+    info->w[0] = 0.0;
+    info->findex[0] = 0;
+  }
+
+  void applyUnitImpulse(std::size_t) override {}
+
+  void getVelocityChange(double* vel, bool) override
+  {
+    vel[0] = 1.0;
+  }
+
+  void excite() override {}
+
+  void unexcite() override {}
+
+  void applyImpulse(double* impulse) override
+  {
+    mAppliedImpulse = impulse[0];
+  }
+
+  bool isActive() const override
+  {
+    return true;
+  }
+
+  dynamics::SkeletonPtr getRootSkeleton() const override
+  {
+    return nullptr;
+  }
+
+  double mAppliedImpulse{0.0};
+  std::size_t mNumAssemblies{0u};
+};
+
 class DerivedDantzigBoxedLcpSolver final
   : public constraint::DantzigBoxedLcpSolver
 {
@@ -1441,6 +1492,36 @@ TEST(ConstraintSolver, NsgsFrictionLawsHaveBitIdenticalThreadCountResults)
     EXPECT_EQ(0u, stats.numFailed);
     EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap);
   }
+}
+
+//==============================================================================
+TEST(ConstraintSolver, NsgsSelfIndexUsesDefaultPgsSecondarySemantics)
+{
+  auto referenceConstraint = std::make_shared<SelfIndexedConstraint>();
+  ExposedBoxedLcpConstraintSolver referenceSolver(
+      std::make_shared<constraint::PgsBoxedLcpSolver>(), nullptr);
+  auto referenceGroup = referenceSolver.makeGroupForTest({referenceConstraint});
+  referenceSolver.solveGroupForTest(referenceGroup);
+  ASSERT_DOUBLE_EQ(0.0, referenceConstraint->mAppliedImpulse);
+
+  auto primary = std::make_shared<constraint::NsgsFrictionSolver>();
+  ExposedBoxedLcpConstraintSolver solver;
+  solver.setBoxedLcpSolver(primary);
+  ASSERT_EQ(
+      constraint::PgsBoxedLcpSolver::getStaticType(),
+      solver.getSecondaryBoxedLcpSolver()->getType());
+  auto selfIndexedConstraint = std::make_shared<SelfIndexedConstraint>();
+  auto group = solver.makeGroupForTest({selfIndexedConstraint});
+  solver.solveGroupForTest(group);
+
+  EXPECT_DOUBLE_EQ(
+      referenceConstraint->mAppliedImpulse,
+      selfIndexedConstraint->mAppliedImpulse);
+  EXPECT_EQ(2u, selfIndexedConstraint->mNumAssemblies);
+  const auto stats = primary->getStats();
+  EXPECT_EQ(1u, stats.numFailed);
+  EXPECT_EQ(0u, stats.numConverged);
+  EXPECT_EQ(0u, stats.numAcceptedAtCap);
 }
 
 //==============================================================================

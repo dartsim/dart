@@ -140,3 +140,26 @@ def test_live_stats_snapshots_reset_and_clone(law):
     ]:
         assert getattr(reset, field) == 0
     assert after.numSolves > 0
+
+
+def test_failed_solves_do_not_contribute_to_max_violation():
+    world = _contact_world()
+    options = Nsgs.Options()
+    options.maxSweeps = -1
+    backend = Nsgs(options)
+    world.getConstraintSolver().setBoxedLcpSolver(backend)
+
+    world.step()
+    failed = backend.getStats()
+    assert failed.numFailed == failed.numSolves > 0
+    assert failed.numConverged == failed.numAcceptedAtCap == 0
+    assert failed.maxViolation == 0
+
+    options.maxSweeps = 100
+    backend.setOptions(options)
+    world.step()
+    accepted = backend.getStats()
+    assert accepted.numSolves > failed.numSolves
+    assert accepted.numFailed == failed.numFailed
+    assert accepted.numConverged + accepted.numAcceptedAtCap > 0
+    assert np.isfinite(accepted.maxViolation)

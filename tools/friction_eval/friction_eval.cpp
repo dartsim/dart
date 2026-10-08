@@ -1389,11 +1389,20 @@ int selfTest()
         name + " solves the unit contact");
   }
 #if FRICTION_EVAL_NSGS
+  const Problem oblique = contactProblem(
+      "oblique",
+      Eigen::Matrix3d::Identity(),
+      Eigen::Vector3d(1, 2, 2),
+      {{0.5, 0.5}});
   for (const std::string name : {"nsgs-c", "nsgs-a", "nsgs-b"}) {
-    const auto x = solveWith(name, unit);
-    const double normal = name == "nsgs-a" ? 1.6 : 1.0;
+    const auto x = solveWith(name, oblique);
+    const double normal
+        = name == "nsgs-a" ? (1.0 + std::sqrt(2.0)) / 1.25 : 1.0;
+    const double tangent
+        = name == "nsgs-b" ? 0.5 : 0.5 * normal / std::sqrt(2.0);
     check(
-        std::abs(x[0] - normal) + std::abs(x[1] - 0.5 * normal) + std::abs(x[2])
+        std::abs(x[0] - normal) + std::abs(x[1] - tangent)
+                + std::abs(x[2] - tangent)
             < 1e-6,
         name + " selects its contact law");
   }

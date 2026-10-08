@@ -69,7 +69,7 @@ public:
   /// \param[in] lo Lower bound of x where it's restricted to be lo <= 0.
   /// \param[in] hi Upper bound of x where it's enforced to be hi >= 0.
   /// \param[in] findex Indices to corresponding normal contact constraint.
-  /// Use findex[k] = -1 (or k itself) for normal contacts and non-contact
+  /// Use findex[k] = -1 for normal contacts and non-contact
   /// constraints, and the normal contact's row for friction constraints.
   /// \param[in] earlyTermination Set true to return false as soon as the
   /// solver finds that the solution doesn't exist. Otherwise, the solver will

@@ -428,7 +428,7 @@ bool NsgsFrictionSolver::solve(
     double* lo,
     double* hi,
     int* findex,
-    bool /*earlyTermination*/)
+    bool earlyTermination)
 {
   FrictionSolveStats stats;
   stats.numSolves = 1;
@@ -436,7 +436,7 @@ bool NsgsFrictionSolver::solve(
     stats.numConverged = success && converged;
     stats.numAcceptedAtCap = success && !converged;
     stats.numFailed = !success;
-    stats.maxViolation = finalViolation;
+    stats.maxViolation = success ? finalViolation : 0.0;
     accumulateStats(stats);
     return success;
   };
@@ -453,7 +453,7 @@ bool NsgsFrictionSolver::solve(
   const int stride = lcpsolver::dantzig::padding(n);
   for (int i = 0; i < n; ++i) {
     if (!std::isfinite(x[i]) || !std::isfinite(b[i]) || std::isnan(lo[i])
-        || std::isnan(hi[i]) || lo[i] > hi[i]
+        || std::isnan(hi[i]) || lo[i] > hi[i] || findex[i] == i
         || A[std::size_t(i) * stride + i] < 0.0)
       return finish(false, false, infinity);
     for (int j = 0; j < n; ++j)
@@ -525,7 +525,10 @@ bool NsgsFrictionSolver::solve(
 #if DART_BUILD_MODE_DEBUG
   assert(fingerprint == inputFingerprint(n, stride, A, b, lo, hi, findex));
 #endif
-  return finish(!failed && producedNoWorse, converged, bestViolation);
+  return finish(
+      !earlyTermination || (!failed && producedNoWorse),
+      converged,
+      bestViolation);
 }
 
 //==============================================================================

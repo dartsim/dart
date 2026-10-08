@@ -546,7 +546,7 @@
 * Simulation
 
   * Add opt-in `NsgsFrictionSolver` with exact Coulomb, associated, and box
-    friction laws, per-contact convergence statistics, clone support, and
+    friction laws, cumulative `FrictionSolveStats`, clone support, and
     dartpy configuration including the secondary solver. The default
     Dantzig/PGS solver configuration is unchanged.
 

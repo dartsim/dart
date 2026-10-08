@@ -56,10 +56,17 @@ the box law. They require a build containing `NsgsFrictionSolver` and accept
 `--box-for-anisotropic on|off` (default on). Associated sliding contacts glide,
 so their trajectories are an ablation rather than an exact-Coulomb oracle.
 NSGS rows also report cumulative `nsgs_*` solver statistics, including the
-regularized law violation in `nsgs_violation_max`.
-P1 accepts `v0` to launch its independent bodies with oblique slip; use
-`--perf --threads 1` and `--perf --threads 4` to compare state hashes while
-the built-in backend solves its islands in parallel.
+largest final law violation among accepted solves since the last stats reset
+in `nsgs_violation_max`.
+P1 accepts `v0` to launch its independent bodies with oblique slip. Parallel
+island solves require at least 128 constrained groups; use 900 independent
+bodies to compare serial and parallel state hashes:
+
+```bash
+friction_eval --scene P1 --param n=900,v0=1 --solver nsgs-c --perf --threads 1
+friction_eval --scene P1 --param n=900,v0=1 --solver nsgs-c --perf --threads 4
+```
+
 `friction_eval --list` prints the scene ids: A1-A8 and A10-A13 analytic, C1,
 C2, C4 and C5 coupled thresholds, R1-R3, R5, R6 and R9 robustness, and P1
 (contact_benchmark's generated objects). C4 and R6, the masonry arches, need
