@@ -560,6 +560,9 @@ private:
   /// Skeleton and BodyNode keys in subscription order. The maps provide
   /// lookups; this record keeps late collision-object creation independent of
   /// pointer hashes, including when the two source types are interleaved.
+  /// Added before 6.20.0: the inline subscribeTo() writes it, so binaries built
+  /// against older headers need a rebuild, which the per-minor soname
+  /// (libdart.so.6.20) already requires.
   std::vector<Subscription> mSubscriptionOrder;
 
   /// The object that observes the Shape Frames that this group cares about
