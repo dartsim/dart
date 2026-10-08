@@ -31,10 +31,24 @@
  */
 
 #include "TestHelpers.hpp"
-#include "dart/dart.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
+#include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/WeldJoint.hpp"
+#include "dart/math/ConfigurationSpace.hpp"
+#include "dart/math/Geometry.hpp"
+#include "dart/math/MathTypes.hpp"
+#include "dart/simulation/World.hpp"
 #include "dart/utils/sdf/SdfParser.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
+
+#include <string>
 
 using namespace dart::math;
 using namespace dart::collision;

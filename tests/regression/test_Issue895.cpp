@@ -32,10 +32,21 @@
 
 #include <dart/utils/urdf/DartLoader.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/simulation/World.hpp>
 
+#include <dart/collision/CollisionResult.hpp>
+
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/BoxShape.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <Eigen/Core>
 #include <TestHelpers.hpp>
 #include <gtest/gtest.h>
+
+#include <memory>
 
 //==============================================================================
 TEST(Issue895, BodyNodeSelfCollision)

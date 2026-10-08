@@ -30,8 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/Inertia.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/TranslationalJoint.hpp>
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 using dart::dynamics::BodyNode;

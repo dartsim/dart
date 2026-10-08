@@ -35,16 +35,22 @@
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionOption.hpp"
+#include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/Contact.hpp"
+#include "dart/collision/DistanceOption.hpp"
+#include "dart/collision/DistanceResult.hpp"
 #include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/dart/DARTCollisionObject.hpp"
 #include "dart/collision/dart/PersistentManifoldCache.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
+#include "dart/common/Macros.hpp"
 #include "dart/common/Profile.hpp"
 #include "dart/config.hpp"
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/ConstrainedGroup.hpp"
+#include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/ContactSurface.hpp"
@@ -58,18 +64,35 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/ServoMotorConstraint.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
+#include "dart/dynamics/BallJoint.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/CylinderShape.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/GenericJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
+#include "dart/dynamics/MimicDofProperties.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
+#include "dart/dynamics/Shape.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/ShapeNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/dynamics/SoftBodyNode.hpp"
 #include "dart/dynamics/SphereShape.hpp"
 #include "dart/lcpsolver/dantzig/DantzigLcp.hpp"
+#include "dart/math/ConfigurationSpace.hpp"
+#include "dart/math/MathTypes.hpp"
 #include "dart/simulation/DeactivationOptions.hpp"
 #include "dart/simulation/World.hpp"
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
+#include <iterator>
+#include <utility>
+
+#include <cmath>
+#include <cstddef>
 
 #if HAVE_BULLET
   #include "dart/collision/bullet/BulletCollisionDetector.hpp"

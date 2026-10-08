@@ -31,6 +31,7 @@
  */
 
 #include <dart/collision/dart/detail/Span.hpp>
+#include <dart/collision/dart/narrow_phase/ConvexConvex-impl.hpp>
 #include <dart/collision/dart/narrow_phase/Gjk.hpp>
 #include <dart/collision/dart/narrow_phase/Mpr.hpp>
 #include <dart/collision/dart/shapes/Shape.hpp>
@@ -38,11 +39,15 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <fstream>
 #include <limits>
+#include <random>
 #include <utility>
 #include <vector>
 
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 using namespace dart::collision::native;
 
@@ -913,4 +918,232 @@ TEST(Mpr, IntersectCoversRefinedPortalAndDegeneratePortalExits)
       {{-Eigen::Vector3d::UnitX(), -Eigen::Vector3d::UnitX()}});
   EXPECT_TRUE(Mpr::intersect(
       segmentSupport, zero, Eigen::Vector3d::UnitX(), Eigen::Vector3d::Zero()));
+}
+
+namespace {
+
+void expectBits(const double* a, const double* b, std::size_t count)
+{
+  EXPECT_EQ(std::memcmp(a, b, count * sizeof(double)), 0);
+}
+
+void expectGjkBits(const GjkResult& a, const GjkResult& b)
+{
+  EXPECT_EQ(a.intersecting, b.intersecting);
+  expectBits(&a.distance, &b.distance, 1);
+  expectBits(a.closestPointA.data(), b.closestPointA.data(), 3);
+  expectBits(a.closestPointB.data(), b.closestPointB.data(), 3);
+  expectBits(a.separationAxis.data(), b.separationAxis.data(), 3);
+  EXPECT_EQ(a.simplex.size, b.simplex.size);
+  for (std::size_t i = 0; i < a.simplex.points.size(); ++i) {
+    const auto& x = a.simplex.points[i];
+    const auto& y = b.simplex.points[i];
+    expectBits(x.v.data(), y.v.data(), 3);
+    expectBits(x.v1.data(), y.v1.data(), 3);
+    expectBits(x.v2.data(), y.v2.data(), 3);
+    expectBits(x.direction.data(), y.direction.data(), 3);
+  }
+}
+
+SupportFunction makeWrappedSupport(
+    const Shape& shape, const Eigen::Isometry3d& tf)
+{
+  switch (shape.getType()) {
+    case ShapeType::Sphere:
+      return makeSphereSupportFunction(
+          static_cast<const SphereShape&>(shape), tf);
+    case ShapeType::Box:
+      return makeBoxSupportFunction(static_cast<const BoxShape&>(shape), tf);
+    case ShapeType::Capsule:
+      return makeCapsuleSupportFunction(
+          static_cast<const CapsuleShape&>(shape), tf);
+    case ShapeType::Cylinder:
+      return makeCylinderSupportFunction(
+          static_cast<const CylinderShape&>(shape), tf);
+    default:
+      return makeConvexSupportFunction(
+          static_cast<const ConvexShape&>(shape), tf);
+  }
+}
+
+} // namespace
+
+TEST(Gjk, ConcreteCallablesMatchWrappersBitwise)
+{
+  const SphereShape sphere(0.5);
+  const BoxShape box(Eigen::Vector3d::Constant(0.5));
+  const CapsuleShape capsule(0.5, 1.0);
+  const CylinderShape cylinder(0.5, 1.0);
+  const ConvexShape convex(
+      {{-0.5, -0.5, -0.5},
+       {0.5, -0.5, -0.5},
+       {-0.5, 0.5, -0.5},
+       {0.5, 0.5, -0.5},
+       {-0.5, -0.5, 0.5},
+       {0.5, -0.5, 0.5},
+       {-0.5, 0.5, 0.5},
+       {0.5, 0.5, 0.5}});
+  const std::array<const Shape*, 5> shapes{
+      &sphere, &box, &capsule, &cylinder, &convex};
+  std::mt19937 rng(0x620F6u);
+  const auto random = [&] {
+    return 2.0 * static_cast<double>(rng()) / std::mt19937::max() - 1.0;
+  };
+  const auto randomPose = [&] {
+    Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+    const Eigen::Vector3d axis(random(), random(), random());
+    tf.linear()
+        = Eigen::AngleAxisd(random(), axis.normalized()).toRotationMatrix();
+    tf.translation() = Eigen::Vector3d(random(), random(), random());
+    return tf;
+  };
+  // Optional binary oracle for comparing the same corpus against a base build.
+  std::ofstream oracle;
+  if (const auto* path = std::getenv("DART_TEST_NARROW_PHASE_BITS"))
+    oracle.open(path, std::ios::binary);
+  const auto record = [&](const double* values, std::size_t count) {
+    if (oracle.is_open())
+      oracle.write(
+          reinterpret_cast<const char*>(values), count * sizeof(double));
+  };
+  int separated = 0;
+  int intersecting = 0;
+  int epaSuccess = 0;
+  for (const auto* shapeA : shapes) {
+    for (const auto* shapeB : shapes) {
+      for (int pose = 0; pose < 35; ++pose) {
+        SCOPED_TRACE(static_cast<int>(shapeA->getType()));
+        SCOPED_TRACE(static_cast<int>(shapeB->getType()));
+        SCOPED_TRACE(pose);
+        Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+        Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+        if (pose < 3) {
+          // Every shape has x extent 0.5: separated, touching, penetrating.
+          tfB.translation().x() = pose == 0 ? 3.0 : (pose == 1 ? 1.0 : 0.75);
+        } else {
+          tfA = randomPose();
+          tfB = randomPose();
+          if (pose % 3 == 0)
+            tfB.translation().x() += 4.0;
+        }
+        const auto supportA = detail::makeShapeSupportFunctionT(*shapeA, tfA);
+        const auto supportB = detail::makeShapeSupportFunctionT(*shapeB, tfB);
+        const auto wrappedA = makeWrappedSupport(*shapeA, tfA);
+        const auto wrappedB = makeWrappedSupport(*shapeB, tfB);
+        const Eigen::Vector3d direction = tfB.translation() - tfA.translation();
+        const auto wrapped = Gjk::query(wrappedA, wrappedB, direction);
+        const auto concrete = std::visit(
+            [&](const auto& concreteA, const auto& concreteB) {
+              return detail::queryT(concreteA, concreteB, direction);
+            },
+            supportA,
+            supportB);
+        expectGjkBits(wrapped, concrete);
+        expectGjkBits(
+            Gjk::query(wrappedA, wrappedB, wrapped.simplex, direction),
+            std::visit(
+                [&](const auto& concreteA, const auto& concreteB) {
+                  return detail::queryT(
+                      concreteA, concreteB, concrete.simplex, direction);
+                },
+                supportA,
+                supportB));
+        separated += !wrapped.intersecting;
+        intersecting += wrapped.intersecting;
+        const auto epaWrapped
+            = Epa::penetration(wrappedA, wrappedB, wrapped.simplex);
+        const auto epaConcrete = std::visit(
+            [&](const auto& concreteA, const auto& concreteB) {
+              return detail::penetrationT(
+                  concreteA, concreteB, concrete.simplex);
+            },
+            supportA,
+            supportB);
+        EXPECT_EQ(epaWrapped.success, epaConcrete.success);
+        expectBits(&epaWrapped.depth, &epaConcrete.depth, 1);
+        expectBits(epaWrapped.normal.data(), epaConcrete.normal.data(), 3);
+        expectBits(epaWrapped.pointOnA.data(), epaConcrete.pointOnA.data(), 3);
+        expectBits(epaWrapped.pointOnB.data(), epaConcrete.pointOnB.data(), 3);
+        epaSuccess += epaWrapped.success;
+        const auto mprWrapped = Mpr::penetration(
+            wrappedA, wrappedB, tfA.translation(), tfB.translation());
+        const auto mprConcrete = std::visit(
+            [&](const auto& concreteA, const auto& concreteB) {
+              return detail::mpr::penetrationT(
+                  concreteA, concreteB, tfA.translation(), tfB.translation());
+            },
+            supportA,
+            supportB);
+        EXPECT_EQ(mprWrapped.success, mprConcrete.success);
+        expectBits(&mprWrapped.depth, &mprConcrete.depth, 1);
+        expectBits(mprWrapped.normal.data(), mprConcrete.normal.data(), 3);
+        expectBits(mprWrapped.pointOnA.data(), mprConcrete.pointOnA.data(), 3);
+        expectBits(mprWrapped.pointOnB.data(), mprConcrete.pointOnB.data(), 3);
+        expectBits(mprWrapped.position.data(), mprConcrete.position.data(), 3);
+        const double flags[]{
+            double(wrapped.intersecting),
+            double(wrapped.simplex.size),
+            double(epaWrapped.success),
+            double(mprWrapped.success)};
+        record(flags, 4);
+        record(&wrapped.distance, 1);
+        record(wrapped.closestPointA.data(), 3);
+        record(wrapped.closestPointB.data(), 3);
+        record(wrapped.separationAxis.data(), 3);
+        for (const auto& point : wrapped.simplex.points) {
+          record(point.v.data(), 3);
+          record(point.v1.data(), 3);
+          record(point.v2.data(), 3);
+          record(point.direction.data(), 3);
+        }
+        record(&epaWrapped.depth, 1);
+        record(epaWrapped.normal.data(), 3);
+        record(epaWrapped.pointOnA.data(), 3);
+        record(epaWrapped.pointOnB.data(), 3);
+        record(&mprWrapped.depth, 1);
+        record(mprWrapped.normal.data(), 3);
+        record(mprWrapped.pointOnA.data(), 3);
+        record(mprWrapped.pointOnB.data(), 3);
+        record(mprWrapped.position.data(), 3);
+      }
+    }
+  }
+  EXPECT_GT(separated, 0);
+  EXPECT_GT(intersecting, 0);
+  EXPECT_GT(epaSuccess, 0);
+}
+
+TEST(Epa, RecursiveSupportRetainsOuterScratch)
+{
+  const BoxShape shape(Eigen::Vector3d::Ones());
+  const Eigen::Isometry3d tfA = Eigen::Isometry3d::Identity();
+  Eigen::Isometry3d tfB = Eigen::Isometry3d::Identity();
+  tfB.translation() = Eigen::Vector3d(0.5, 0.25, 0.125);
+  tfB.linear() = Eigen::AngleAxisd(0.2, Eigen::Vector3d(1, 2, 3).normalized())
+                     .toRotationMatrix();
+  const auto supportA = detail::makeBoxSupportFunctionT(shape, tfA);
+  const auto supportB = detail::makeBoxSupportFunctionT(shape, tfB);
+  const auto gjk = detail::queryT(supportA, supportB, tfB.translation());
+  ASSERT_EQ(gjk.simplex.size, 4);
+  const auto expected = Epa::penetration(supportA, supportB, gjk.simplex);
+  ASSERT_TRUE(expected.success);
+  int nestedCalls = 0;
+  const auto recursive = [&](const Eigen::Vector3d& dir) {
+    const auto nested = Epa::penetration(supportA, supportB, gjk.simplex);
+    EXPECT_TRUE(nested.success);
+    ++nestedCalls;
+    return supportA(dir);
+  };
+  // Repeat through both entry points after the nested slot has been warmed.
+  for (int i = 0; i < 2; ++i) {
+    const auto actual
+        = i == 0 ? Epa::penetration(recursive, supportB, gjk.simplex)
+                 : detail::penetrationT(recursive, supportB, gjk.simplex);
+    EXPECT_EQ(expected.success, actual.success);
+    expectBits(&expected.depth, &actual.depth, 1);
+    expectBits(expected.normal.data(), actual.normal.data(), 3);
+    expectBits(expected.pointOnA.data(), actual.pointOnA.data(), 3);
+    expectBits(expected.pointOnB.data(), actual.pointOnB.data(), 3);
+  }
+  EXPECT_GT(nestedCalls, 0);
 }

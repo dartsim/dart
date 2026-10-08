@@ -32,10 +32,18 @@
 
 #include <dart/utils/urdf/DartLoader.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/simulation/World.hpp>
+
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/SphereShape.hpp>
 
 #include <TestHelpers.hpp>
 #include <gtest/gtest.h>
+
+#include <memory>
+#include <string>
 
 //==============================================================================
 TEST(Issue986, CreateShapeNodeShouldCompile)

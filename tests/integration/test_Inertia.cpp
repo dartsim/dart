@@ -36,6 +36,7 @@
 
 #include <dart/math/Random.hpp>
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <limits>

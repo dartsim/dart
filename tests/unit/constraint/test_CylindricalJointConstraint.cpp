@@ -30,14 +30,26 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/simulation/World.hpp>
 
+#include <dart/constraint/ConstraintBase.hpp>
+#include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/CylindricalJointConstraint.hpp>
+
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/Skeleton.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <cmath>
+#include <cstddef>
 
 using namespace dart;
 using namespace dart::constraint;

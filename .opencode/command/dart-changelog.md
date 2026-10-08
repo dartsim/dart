@@ -113,7 +113,10 @@ entry still matches nearby `CHANGELOG.md` style after adding the PR link.
    chore. Use one concise bullet, combine closely related changes, avoid author
    credits, and avoid one-bullet-per-PR diary style. Keep the entry to what the
    reader must know or do (what changed for them, any rebuild or migration
-   step); the mechanism belongs in the PR body or a design doc.
+   step); the mechanism belongs in the PR body or a design doc. Describe DART
+   behavior or API conditions for any downstream, without naming a specific
+   downstream project in entry descriptions; keep bug-report issue links as
+   references. PR descriptions may still cite downstream evidence.
 6. Place the entry under the target branch's release section and nearest
    existing category. Do not create a new category for one PR unless the release
    shape genuinely needs it.

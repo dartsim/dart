@@ -33,11 +33,22 @@
 #include "GTestUtils.hpp"
 #include "TestHelpers.hpp"
 #include "dart/common/Macros.hpp"
+#include "dart/common/Memory.hpp"
+#include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/math/Constants.hpp"
+#include "dart/math/Geometry.hpp"
 #include "dart/math/Helpers.hpp"
+#include "dart/math/MathTypes.hpp"
 #include "dart/math/Random.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
+
+#include <vector>
+
+#include <cstddef>
 
 using namespace dart;
 using namespace dynamics;

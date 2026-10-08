@@ -30,8 +30,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/dart.hpp"
+#include "dart/dynamics/ScrewJoint.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/math/Helpers.hpp"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <tuple>

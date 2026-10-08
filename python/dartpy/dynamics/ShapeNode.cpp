@@ -33,9 +33,17 @@
 #include "eigen_geometry_pybind.h"
 #include "eigen_pybind.h"
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/Inertia.hpp>
+#include <dart/dynamics/JacobianNode.hpp>
+#include <dart/dynamics/Node.hpp>
+#include <dart/dynamics/ShapeFrame.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <pybind11/pybind11.h>
+
+#include <memory>
 
 namespace py = pybind11;
 

@@ -410,6 +410,11 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   endif()
 
   add_compile_options(-Wall -Wextra -fPIC)
+  if(CMAKE_UNITY_BUILD)
+    # Unity sources include .cpp files, so GCC warns about ordinary file-local
+    # types used by classes with linkage as though they were defined in headers.
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-subobject-linkage>)
+  endif()
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     add_compile_options(-Werror)
   endif()

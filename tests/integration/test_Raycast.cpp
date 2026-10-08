@@ -30,10 +30,23 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/collision/CollisionDetector.hpp"
+#include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/RaycastOption.hpp"
+#include "dart/collision/RaycastResult.hpp"
+#include "dart/collision/dart/DARTCollisionDetector.hpp"
 #include "dart/collision/fcl/fcl.hpp"
-#include "dart/dart.hpp"
+#include "dart/common/Console.hpp"
+#include "dart/config.hpp"
+#include "dart/dynamics/Frame.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/SimpleFrame.hpp"
+#include "dart/dynamics/SphereShape.hpp"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
+
+#include <memory>
 #if HAVE_BULLET
   #include "dart/collision/bullet/bullet.hpp"
 #endif

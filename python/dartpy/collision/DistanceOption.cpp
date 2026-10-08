@@ -30,9 +30,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/dart.hpp>
+#include <dart/collision/DistanceFilter.hpp>
+#include <dart/collision/DistanceOption.hpp>
 
 #include <pybind11/pybind11.h>
+
+#include <memory>
 
 namespace py = pybind11;
 

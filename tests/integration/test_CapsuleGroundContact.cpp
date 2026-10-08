@@ -31,13 +31,25 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/bullet/bullet.hpp"
 #include "dart/collision/ode/ode.hpp"
-#include "dart/dart.hpp"
+#include "dart/constraint/ConstraintSolver.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/CapsuleShape.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/Inertia.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/math/Constants.hpp"
+#include "dart/simulation/World.hpp"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <gtest/gtest.h>
 
 #include <functional>
+#include <memory>
 #include <tuple>
 
 using namespace dart::dynamics;

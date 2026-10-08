@@ -31,11 +31,22 @@
  */
 
 #include "TestHelpers.hpp"
+#include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/EndEffector.hpp"
+#include "dart/dynamics/JacobianNode.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/math/Constants.hpp"
 #include "dart/utils/urdf/DartLoader.hpp"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <ostream>
+#include <vector>
+
+#include <cmath>
+#include <cstddef>
 
 std::vector<std::size_t> twoLinkIndices;
 

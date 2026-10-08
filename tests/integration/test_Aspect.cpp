@@ -36,16 +36,31 @@
 #define DART_UNITTEST_SPECIALIZED_ASPECT_ACCESS
 
 #include "TestHelpers.hpp"
+#include "dart/common/Aspect.hpp"
+#include "dart/common/AspectWithVersion.hpp"
 #include "dart/common/Composite.hpp"
+#include "dart/common/Console.hpp"
 #include "dart/common/EmbeddedAspect.hpp"
+#include "dart/common/Empty.hpp"
 #include "dart/common/SpecializedForAspect.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/sub_ptr.hpp"
+#include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/PlanarJoint.hpp"
+#include "dart/dynamics/PrismaticJoint.hpp"
+#include "dart/dynamics/RevoluteJoint.hpp"
+#include "dart/dynamics/ScrewJoint.hpp"
+#include "dart/dynamics/ShapeFrame.hpp"
+#include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/UniversalJoint.hpp"
+#include "dart/math/Random.hpp"
 
+#include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include <memory>
 #include <vector>
 
 #include <cstddef>
