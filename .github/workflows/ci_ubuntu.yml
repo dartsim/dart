@@ -112,6 +112,9 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     env:
+      # One build, preprocessor entries included, caches 457 MiB on CI; the
+      # cap holds about two.
+      SCCACHE_CACHE_SIZE: "900M"
       CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
@@ -124,18 +127,12 @@ jobs:
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
-      # Compiler cache: restored on every run, saved from main at most once a
-      # day per configuration (the repository's Actions cache is 10 GB).
       - name: Restore compiler cache
-        run: |
-          echo "SCCACHE_DIR=${{ runner.temp }}/sccache" >> "$GITHUB_ENV"
-          echo "SCCACHE_CACHE_SIZE=1G" >> "$GITHUB_ENV"
-          echo "SCCACHE_DAY=$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
-      - uses: actions/cache/restore@v6
+        uses: ./.github/actions/sccache
         with:
-          path: ${{ runner.temp }}/sccache
-          key: sccache-linux-Release-${{ env.SCCACHE_DAY }}
-          restore-keys: sccache-linux-Release-
+          phase: restore
+          os: linux
+          part: Release
 
       - uses: awalsh128/cache-apt-pkgs-action@v1.6.3
         with:
@@ -148,6 +145,7 @@ jobs:
           pixi run check-lint
 
       - name: Test DART and dartpy
+        id: build
         run: |
           DART_VERBOSE=ON \
           pixi run test-all
@@ -204,11 +202,14 @@ jobs:
         run: pixi run sccache --show-stats || true
 
       - name: Save compiler cache
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v6
+        if: >-
+          always()
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
+        uses: ./.github/actions/sccache
         with:
-          path: ${{ runner.temp }}/sccache
-          key: sccache-linux-Release-${{ env.SCCACHE_DAY }}
+          phase: save
+          os: linux
+          part: Release
 
   # Catch compile and test failures when assertions are enabled outside a Debug
   # build type (e.g., downstream builds that drop -DNDEBUG in Release).
@@ -216,6 +217,9 @@ jobs:
     name: Asserts enabled (no -DNDEBUG)
     runs-on: ubuntu-latest
     env:
+      # One build, preprocessor entries included, caches 107 MiB on CI; the
+      # cap holds about two.
+      SCCACHE_CACHE_SIZE: "224M"
       CTEST_PARALLEL_LEVEL: 4
     steps:
       - name: Checkout
@@ -228,18 +232,12 @@ jobs:
           cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
 
-      # Compiler cache: restored on every run, saved from main at most once a
-      # day per configuration (the repository's Actions cache is 10 GB).
       - name: Restore compiler cache
-        run: |
-          echo "SCCACHE_DIR=${{ runner.temp }}/sccache" >> "$GITHUB_ENV"
-          echo "SCCACHE_CACHE_SIZE=1G" >> "$GITHUB_ENV"
-          echo "SCCACHE_DAY=$(date -u +%Y%m%d)" >> "$GITHUB_ENV"
-      - uses: actions/cache/restore@v6
+        uses: ./.github/actions/sccache
         with:
-          path: ${{ runner.temp }}/sccache
-          key: sccache-linux-asserts-${{ env.SCCACHE_DAY }}
-          restore-keys: sccache-linux-asserts-
+          phase: restore
+          os: linux
+          part: asserts
 
       - name: Install system dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1.6.3
@@ -248,6 +246,7 @@ jobs:
           version: "2"
 
       - name: Build and test with assertions (no -DNDEBUG)
+        id: build
         run: |
           # NOTE: pixi tasks set BUILD_TYPE internally, so we
           # configure this variant explicitly to ensure NDEBUG is not defined.
@@ -284,11 +283,14 @@ jobs:
         run: pixi run sccache --show-stats || true
 
       - name: Save compiler cache
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v6
+        if: >-
+          always()
+          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
+        uses: ./.github/actions/sccache
         with:
-          path: ${{ runner.temp }}/sccache
-          key: sccache-linux-asserts-${{ env.SCCACHE_DAY }}
+          phase: save
+          os: linux
+          part: asserts
 
   eigen-overalignment:
     name: Eigen 64-byte alignment
@@ -315,3 +317,35 @@ jobs:
         run: |
           DART_VERBOSE=ON \
           pixi run test-eigen-overalignment
+
+  prune-sccache:
+    name: Prune compiler caches
+    needs: [build, build-asserts]
+    # Forks cannot save/delete caches; nightly calls and dispatches only read.
+    if: >-
+      always()
+      && (github.event_name == 'push'
+          || (github.event_name == 'pull_request'
+              && github.event.pull_request.head.repo.full_name == github.repository))
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Prune superseded compiler caches
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # Run IDs follow push order; a slow older run must not evict a newer one.
+          gh cache list --ref "$GITHUB_REF" --key sccache-v2-linux- --limit 100 --json id,key \
+            --jq 'group_by(.key | split("-")[3:5]) | map(sort_by(.key | split("-")[6:8] | map(tonumber)) | .[:-1][]) | .[].id' |
+            xargs -r -n1 gh cache delete
+          # Main pushes also drop this prefix's PR snapshots idle for a day.
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
+            # $ENV is jq's, not the shell's.
+            # shellcheck disable=SC2016
+            CUTOFF=$(date -u -d '1 day ago' +%FT%TZ) gh cache list --key sccache-v2-linux- --limit 1000 --json id,ref,lastAccessedAt \
+              --jq '.[] | select((.ref | startswith("refs/pull/")) and .lastAccessedAt < $ENV.CUTOFF) | .id' |
+              xargs -r -n1 gh cache delete
+          fi
