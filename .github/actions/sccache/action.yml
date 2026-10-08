@@ -118,3 +118,12 @@ runs:
       with:
         path: ${{ env.SCCACHE_SNAPSHOT == 'pr' && env.SCCACHE_PR_DIR || env.SCCACHE_DIR }}
         key: ${{ env.SCCACHE_PREFIX }}-${{ env.SCCACHE_SNAPSHOT }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+    # The calling job needs actions: write.
+    - name: Prune superseded compiler caches
+      if: always() && inputs.phase == 'save' && env.SCCACHE_SNAPSHOT != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+      run: bash "$GITHUB_ACTION_PATH/prune.sh" "$SCCACHE_PREFIX" "$SCCACHE_SNAPSHOT"
