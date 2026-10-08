@@ -521,20 +521,22 @@ jobs:
                       raise ValueError("head smoke revision mismatch")
                   rows = smoke["results"]
                   keys = [row_key(row) for row in rows]
-                  if set(keys) != {row.key for row in select_rows("")} or len(keys) != len(set(keys)):
-                      failures.append("head smoke benchmark rows differ from the parent defaults")
+                  if not {row.key for row in select_rows("")}.issubset(keys) or len(keys) != len(set(keys)):
+                      failures.append("head smoke benchmark rows omit parent defaults or repeat rows")
                   if not rows or not all(row.get("status") == "ok" and row.get("perturbations") and row.get("gated") for row in rows):
                       failures.append("head smoke rows did not pass their perturbation checks")
                   if int(os.environ["PERF_SMOKE_STATUS"]) == 1:
                       failures.append("the head smoke harness reported FAIL")
                   # Publish changed head inputs; the saved A/B verdict still uses the parent workload.
                   smoke_rows = {row_key(row): row for row in rows}
+                  parent_keys = {row_key(row) for row in record["results"]}
                   for row in record["results"]:
                       head = smoke_rows.get(row_key(row))
                       if head is None or head.get("input_sha") == row.get("input_sha"):
                           continue
                       parent = row["parent"]
                       row.update(head)
+                      row["head_env"] = smoke["run"]["env"]
                       row["gated"] = False
                       row["delta"] = {
                           "ir": None,
@@ -549,6 +551,24 @@ jobs:
                           "head": row["head"].get("wall_ms_per_step"),
                           "advisory": True,
                       }
+                  for key, head in smoke_rows.items():
+                      if key in parent_keys or not (head.get("status") == "ok" and head.get("perturbations") and head.get("gated")):
+                          continue
+                      record["results"].append({
+                          **head,
+                          "head_env": smoke["run"]["env"],
+                          "parent": {},
+                          "gated": False,
+                          "delta": {
+                              "ir": None,
+                              "allocs": None,
+                              "bytes": None,
+                              "guards_equal": None,
+                              "class": "new",
+                          },
+                          "failures": [],
+                          "gate_reason": "new row; head smoke qualified; no parent comparison",
+                      })
           if failures:
               record["verdict"]["failures"].extend(failures)
               record["verdict"]["status"] = "FAIL"

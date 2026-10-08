@@ -4118,8 +4118,12 @@ def test_merge_smoke_exit_two_saves_build_failure_verdict(tmp_path, defect):
 
 @pytest.mark.parametrize("input_changed", [False, True])
 @pytest.mark.parametrize("verdict", ["PASS", "FAIL"])
+@pytest.mark.parametrize(
+    "row_change",
+    [None, "added", "removed", "bad-status", "no-perturbations", "not-gated"],
+)
 def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
-    tmp_path, input_changed, verdict
+    tmp_path, input_changed, verdict, row_change
 ):
     module = _load_runner()
     output = tmp_path / "perf"
@@ -4127,6 +4131,7 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
     smoke_dir.mkdir(parents=True)
     record = _publication_fixture()
     record["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
+    record["run"]["env"]["harness_sha"] = "1" * 64
     template = record["results"][0]
     record["results"] = []
     for spec in module.select_rows(""):
@@ -4149,6 +4154,7 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
         )
     smoke = copy.deepcopy(record)
     smoke.pop("verdict")
+    smoke["run"]["env"].update(fingerprint="2" * 64, harness_sha="2" * 64)
     smoke["results"].reverse()
     for row in smoke["results"]:
         for key in ("parent", "delta", "gate_reason", "failures"):
@@ -4161,6 +4167,18 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
         )
         if input_changed and row["row"] in ("dyn", "lcp"):
             row.update(input_sha="f" * 64, workload_sha="new-workload")
+    if row_change == "removed":
+        smoke["results"].pop()
+    elif row_change is not None:
+        added = copy.deepcopy(smoke["results"][0])
+        added.update(row="new-benchmark", det="")
+        if row_change == "bad-status":
+            added["status"] = "failed"
+        elif row_change == "no-perturbations":
+            added.pop("perturbations")
+        elif row_change == "not-gated":
+            added["gated"] = False
+        smoke["results"].append(added)
     module.write_json(output / "perf.json", record)
     module.write_json(smoke_dir / "record.json", smoke)
     # Run the record-construction snippet, which imports the parent's rules in CI.
@@ -4187,16 +4205,28 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
     assert result.returncode == 0, result.stderr
     saved = json.loads((output / "perf.json").read_text())
     assert saved["run"] == record["run"]
-    assert saved["verdict"] == record["verdict"]
+    expected_verdict = copy.deepcopy(record["verdict"])
+    if row_change == "removed":
+        expected_verdict["status"] = "FAIL"
+        expected_verdict["failures"].append(
+            "head smoke benchmark rows omit parent defaults or repeat rows"
+        )
+    elif row_change not in (None, "added"):
+        expected_verdict["status"] = "FAIL"
+        expected_verdict["failures"].append(
+            "head smoke rows did not pass their perturbation checks"
+        )
+    assert saved["verdict"] == expected_verdict
     smoke_rows = {module.row_key(row): row for row in smoke["results"]}
     for original, row in zip(record["results"], saved["results"]):
-        head = smoke_rows[module.row_key(original)]
-        if head["input_sha"] == original["input_sha"]:
+        head = smoke_rows.get(module.row_key(original))
+        if head is None or head["input_sha"] == original["input_sha"]:
             assert row == original
         else:
             assert row["input_sha"] == head["input_sha"]
             assert row["workload_sha"] == head["workload_sha"]
             assert row["head"] == head["head"]
+            assert row["head_env"] == smoke["run"]["env"]
             assert row["perturbations"] == head["perturbations"]
             assert row["parent"] == original["parent"]
             assert row["failures"] == original["failures"]
@@ -4214,6 +4244,23 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
                 "head": 24.6,
                 "advisory": True,
             }
+    assert len(saved["results"]) == len(record["results"]) + (row_change == "added")
+    if row_change == "added":
+        added = saved["results"][-1]
+        assert added["row"] == "new-benchmark"
+        assert added["head"] == smoke_rows["new-benchmark"]["head"]
+        assert added["head_env"] == smoke["run"]["env"]
+        assert added["parent"] == {}
+        assert added["gated"] is False
+        assert added["perturbations"] == smoke_rows["new-benchmark"]["perturbations"]
+        assert added["delta"] == {
+            "ir": None,
+            "allocs": None,
+            "bytes": None,
+            "guards_equal": None,
+            "class": "new",
+        }
+        assert "new row" in (output / "perf.md").read_text()
     published = module.publication_record(output / "perf.json", "merge")
     pages = tmp_path / "pages"
     (pages / "performance/dart6").mkdir(parents=True)
@@ -4229,6 +4276,29 @@ def test_merge_record_publishes_changed_smoke_inputs_keeps_parent_verdict(
     assert benches[f"dyn@1:{suffix} Ir"] == (200_000 if input_changed else 100_000)
     assert benches[f"dyn@1:{suffix} allocations"] == (5 if input_changed else 0)
     assert benches["s3w/dart@1:01234567 Ir"] == 100_000
+    for bench in point["benches"]:
+        smoke_derived = (
+            input_changed and bench["name"].startswith(("dyn@", "lcp@"))
+        ) or bench["name"].startswith("new-benchmark@")
+        expected_fingerprint = ("2" if smoke_derived else "1") * 64
+        assert bench["fingerprint"] == expected_fingerprint
+        assert f"fingerprint: {expected_fingerprint}" in bench["extra"]
+    if row_change == "added":
+        added_suffix = smoke_rows["new-benchmark"]["input_sha"][:8]
+        assert benches[f"new-benchmark@1:{added_suffix} Ir"] == 200_000
+        assert benches[f"new-benchmark@1:{added_suffix} allocations"] == 5
+    # The next ordinary merge uses the head harness for all rows.
+    following = copy.deepcopy(published)
+    following["run"].update(commit="c" * 40, time="2026-10-08T09:00:00+00:00")
+    following["run"]["env"] = smoke["run"]["env"]
+    for row in following["results"]:
+        row.pop("head_env", None)
+    module.chart_data(pages, following)
+    for bench in _chart_points(pages)[-1]["benches"]:
+        smoke_derived = (
+            input_changed and bench["name"].startswith(("dyn@", "lcp@"))
+        ) or bench["name"].startswith("new-benchmark@")
+        assert ("fingerprint changed" in bench["extra"]) is not smoke_derived
 
 
 def _publication_fixture():
@@ -4344,6 +4414,8 @@ def test_publication_context_refuses_untrusted_writes(
         "commit",
         "parent",
         "fingerprint",
+        "head-fingerprint",
+        "head-runner",
         "time",
         "verdict",
         "nan",
@@ -4362,6 +4434,13 @@ def test_publication_rejects_invalid_measurement_before_git(tmp_path, defect):
         record["run"][defect] = "invalid"
     elif defect == "fingerprint":
         record["run"]["env"]["fingerprint"] = "invalid"
+    elif defect in ("head-fingerprint", "head-runner"):
+        env = copy.deepcopy(record["run"]["env"])
+        if defect == "head-fingerprint":
+            env["fingerprint"] = "invalid"
+        else:
+            env["runner"]["environment"] = "self-hosted"
+        record["results"][0]["head_env"] = env
     elif defect == "verdict":
         record["verdict"]["status"] = "ERROR"
     elif defect == "nan":
@@ -4603,6 +4682,39 @@ def test_chart_writer_rerun_does_not_duplicate_commit_and_fingerprint(tmp_path):
     record["run"]["time"] = "2026-10-09T08:00:00+00:00"
     module.chart_data(tmp_path, record)
     assert data_path.read_bytes() == saved
+
+
+@pytest.mark.parametrize("writer", ["record", "chart"])
+def test_smoke_provenance_distinguishes_reruns_and_preserves_counts(tmp_path, writer):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    record["run"]["tier"] = "merge"
+    env = copy.deepcopy(record["run"]["env"])
+    env.update(fingerprint="2" * 64, harness_sha="2" * 64)
+    record["results"][0]["head_env"] = env
+    write = module.write_publication if writer == "record" else module.chart_data
+    write(tmp_path, record)
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    env["runner"]["name"] = "another hosted runner"
+    write(tmp_path, record)
+    assert len(_chart_points(tmp_path)) == 1
+    env.update(fingerprint="3" * 64, harness_sha="3" * 64)
+    write(tmp_path, record)
+    points = _chart_points(tmp_path)
+    assert len(points) == 2
+    assert (
+        f"fingerprint changed: {'2' * 64} -> {'3' * 64}"
+        in points[-1]["benches"][0]["extra"]
+    )
+    if writer == "record":
+        assert (
+            len(list((tmp_path / "performance/records/main/2026").glob("*.json"))) == 2
+        )
+    record["run"]["time"] = "2026-10-08T10:00:00+00:00"
+    record["results"][0]["head"]["ir_per_step"] += 1
+    with pytest.raises(ValueError, match="changed deterministic counts"):
+        write(tmp_path, record)
 
 
 def test_chart_equal_timestamps_have_the_same_order_and_fingerprint_annotations(

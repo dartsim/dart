@@ -1734,6 +1734,17 @@ def read_record(path: Path) -> dict:
     return record
 
 
+def validate_publication_environment(env: dict) -> None:
+    if (
+        not isinstance(env, dict)
+        or not isinstance(env.get("runner"), dict)
+        or env["runner"].get("environment") != "github-hosted"
+    ):
+        raise ValueError("refusing to publish measurements from a non-hosted runner")
+    if not re.fullmatch(r"[0-9a-f]{64}", env.get("fingerprint", "")):
+        raise ValueError("publication environment fingerprint must be a SHA256")
+
+
 def publication_record(path: Path, tier: str, pr: int | None = None) -> dict:
     """Normalize trusted main measurements into the durable Appendix B record."""
     if path.stat().st_size > 16 * 1024 * 1024:
@@ -1750,17 +1761,9 @@ def publication_record(path: Path, tier: str, pr: int | None = None) -> dict:
     ):
         raise ValueError("missing or unsupported publication record")
     run = record["run"]
-    env = run.get("env", {})
-    if (
-        not isinstance(env, dict)
-        or not isinstance(env.get("runner"), dict)
-        or env.get("runner", {}).get("environment") != "github-hosted"
-    ):
-        raise ValueError("refusing to publish measurements from a non-hosted runner")
+    validate_publication_environment(run.get("env", {}))
     if not re.fullmatch(r"[0-9a-f]{40}", run.get("commit", "")):
         raise ValueError("publication commit must be a full SHA")
-    if not re.fullmatch(r"[0-9a-f]{64}", env.get("fingerprint", "")):
-        raise ValueError("publication environment fingerprint must be a SHA256")
     measured = datetime.fromisoformat(run["time"].replace("Z", "+00:00"))
     if measured.tzinfo is None:
         raise ValueError("publication time must include its timezone")
@@ -1790,6 +1793,8 @@ def publication_record(path: Path, tier: str, pr: int | None = None) -> dict:
             # errors and malformed rows are rejected here.
             raise ValueError("invalid or incomplete publication row")
         keys.append(row_key(row))
+        if "head_env" in row:
+            validate_publication_environment(row["head_env"])
         if tier == "nightly":
             row.pop("parent", None)
             row.pop("delta", None)
@@ -2072,6 +2077,15 @@ def deterministic_measurements(record: dict, *, include_parent: bool = False) ->
     }
 
 
+def head_fingerprints(record: dict) -> dict:
+    """Smoke-derived rows can use a different harness from the A/B run."""
+    return {
+        row_key(row): row["head_env"]["fingerprint"]
+        for row in record["results"]
+        if "head_env" in row
+    }
+
+
 def chart_data(pages: Path, record: dict) -> None:
     """Use the existing stock github-action-benchmark page and data format."""
     directory = pages / "performance/dart6-ir"
@@ -2095,13 +2109,15 @@ def chart_data(pages: Path, record: dict) -> None:
     series = data["entries"].setdefault("DART 6 deterministic counts", [])
     run = record["run"]
     fingerprint = run["env"]["fingerprint"]
-    extra = f"fingerprint: {fingerprint}"
-    if run.get("pr"):
-        extra += f"\nPR #{run['pr']}"
+    row_fingerprints = head_fingerprints(record)
     benches = []
     for row in record["results"]:
         if row.get("status") != "ok":
             continue
+        head_fingerprint = row.get("head_env", run["env"])["fingerprint"]
+        extra = f"fingerprint: {head_fingerprint}"
+        if run.get("pr"):
+            extra += f"\nPR #{run['pr']}"
         for metric, label, unit in (
             ("ir_per_step", "Ir", "instructions / step"),
             ("allocs_per_step", "allocations", "allocations / step"),
@@ -2115,6 +2131,7 @@ def chart_data(pages: Path, record: dict) -> None:
                         "value": value,
                         "unit": unit,
                         "extra": extra,
+                        "fingerprint": head_fingerprint,
                         "micro_instrumented": row["head"].get("micro_instrumented"),
                         **{
                             key: row.get(key)
@@ -2134,6 +2151,7 @@ def chart_data(pages: Path, record: dict) -> None:
         if (
             point["commit"]["id"] != run["commit"]
             or point.get("fingerprint") != fingerprint
+            or point.get("head_fingerprints", {}) != row_fingerprints
         ):
             continue
         if "measurement" in point:
@@ -2164,6 +2182,7 @@ def chart_data(pages: Path, record: dict) -> None:
             "date": timestamp,
             "tool": "customSmallerIsBetter",
             "fingerprint": fingerprint,
+            "head_fingerprints": row_fingerprints,
             "measurement": measurement,
             "benches": benches,
         }
@@ -2173,6 +2192,7 @@ def chart_data(pages: Path, record: dict) -> None:
             datetime.fromisoformat(point["commit"]["timestamp"]).timestamp(),
             point["commit"]["id"],
             point.get("fingerprint", ""),
+            tuple(sorted(point.get("head_fingerprints", {}).items())),
         )
     )
     previous_benches = {}
@@ -2194,11 +2214,10 @@ def chart_data(pages: Path, record: dict) -> None:
             if previous:
                 old_point, old_bench = previous
                 for key in ("fingerprint", *continuity_fields):
-                    old, new = (
-                        (old_point, point)
-                        if key == "fingerprint"
-                        else (old_bench, bench)
-                    )
+                    old, new = old_bench, bench
+                    if key == "fingerprint":
+                        old = old_bench if key in old_bench else old_point
+                        new = bench if key in bench else point
                     if old.get(key) != new.get(key):
                         bench["extra"] += (
                             f"\n{key} changed: {old.get(key, 'unknown')}"
@@ -2230,7 +2249,7 @@ def write_publication(pages: Path, record: dict) -> list[str]:
         if (previous["commit"], previous["env"]["fingerprint"]) == (
             run["commit"],
             run["env"]["fingerprint"],
-        ):
+        ) and head_fingerprints(saved) == head_fingerprints(record):
             if run["tier"] == "merge":
                 if previous.get("parent") != run.get("parent") or (
                     deterministic_measurements(saved, include_parent=True)
