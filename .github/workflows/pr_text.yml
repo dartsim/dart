@@ -31,6 +31,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_COMMITS: ${{ github.event.pull_request.commits }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ ! -f scripts/check_local_paths.py ]; then
@@ -42,7 +43,11 @@ jobs:
             echo "::error::PR title/body local-path scan failed."
             scan_status=1
           fi
-          if ! gh api --paginate "repos/${{ github.repository }}/pulls/$PR_NUMBER/commits" --jq '.[].commit.message' | python3 scripts/check_local_paths.py --stdin; then
+          # The commits endpoint lists at most 250 commits; fail closed beyond.
+          if [ "$PR_COMMITS" -gt 250 ]; then
+            echo "::error::PR has $PR_COMMITS commits; only 250 commit messages can be listed and scanned."
+            scan_status=1
+          elif ! gh api --paginate "repos/${{ github.repository }}/pulls/$PR_NUMBER/commits" --jq '.[].commit.message' | python3 scripts/check_local_paths.py --stdin; then
             echo "::error::PR commit-message local-path scan failed."
             scan_status=1
           fi
