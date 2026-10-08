@@ -9,7 +9,7 @@
 # "Cannot find the library dart-gui". The 4.4.3 pin is not yet validated in
 # that wheel build environment; confirm GLUT detection there before relying
 # on or changing it.
-requires = ["setuptools>=84.0.0", "wheel", "ninja", "cmake>=4.4.3,<4.4.4"]
+requires = ["setuptools>=84.0.0", "wheel", "ninja", "cmake>=4.4.4,<4.4.5"]
 build-backend = "setuptools.build_meta"
 
 [tool.black]
