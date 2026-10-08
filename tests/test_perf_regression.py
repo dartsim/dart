@@ -1315,6 +1315,72 @@ def test_summary_separates_gated_regressions(ir, allocs, gated, body, status, su
         assert "1 neutral" not in report and "1 improved" not in report
 
 
+def test_allocation_report_preserves_buffered_checkpoint_output(tmp_path):
+    if sys.platform != "linux" or not all(
+        Path(path).is_file() for path in ("/usr/bin/cc", "/usr/bin/time")
+    ):
+        pytest.skip("the harness shims require GNU libc and the system C compiler")
+    module = _load_runner()
+    step_symbol = "_ZN4dart10simulation5World4stepEb"
+    library = tmp_path / "steps.c"
+    library.write_text(f"void {step_symbol}(void* world, _Bool reset) {{}}\n")
+    driver = tmp_path / "checkpoints.c"
+    driver.write_text(
+        f"#include <stdio.h>\nextern void {step_symbol}(void*, _Bool);\n"
+        + """
+int main(void)
+{
+  static char buffer[4096];
+  if (setvbuf(stdout, buffer, _IOFBF, sizeof(buffer)))
+    return 2;
+  for (int step = 1; step <= 20000; ++step) {
+    _ZN4dart10simulation5World4stepEb(NULL, 0);
+    if (step % 5000 == 0)
+      printf("step %d\\n", step);
+  }
+  for (int i = 0; i < 4200; ++i)
+    putchar('x');
+  puts("\\nFinal State Finite: true");
+  return 0;
+}
+"""
+    )
+    shim = tmp_path / "allocshim.so"
+    for source, target, options in (
+        (module.ROOT / "tools/perf/allocshim.c", shim, ["-shared", "-fPIC", "-ldl"]),
+        (library, tmp_path / "libsteps.so", ["-shared", "-fPIC"]),
+        (
+            driver,
+            tmp_path / "checkpoints",
+            [f"-L{tmp_path}", "-lsteps", f"-Wl,-rpath,{tmp_path}"],
+        ),
+    ):
+        subprocess.run(
+            ["/usr/bin/cc", "-O2", str(source), "-o", str(target), *options],
+            check=True,
+            capture_output=True,
+        )
+    env = os.environ.copy()
+    for key in ("HEAPPAD", "PERF_WINDOW"):
+        env.pop(key, None)
+    env.update(LD_PRELOAD=str(shim), PERF_WARMUP="0")
+    output = module.execute(
+        ["/usr/bin/time", "-f", "PERFTIME maxrss_kb=%M", str(tmp_path / "checkpoints")],
+        env,
+        tmp_path / "checkpoints.log",
+        30,
+    )
+    match = re.search(r"^STEPALLOC steps=(\d+) measured=(\d+)", output, re.MULTILINE)
+    assert match and tuple(map(int, match.groups())) == (20000, 20000), output
+    assert re.findall(r"^step (\d+)$", output, re.MULTILINE) == [
+        "5000",
+        "10000",
+        "15000",
+        "20000",
+    ]
+    assert "x" * 4200 + "\nFinal State Finite: true\n" in output
+
+
 def test_allocation_shims_count_each_entry_once(tmp_path):
     import os
     import re

@@ -194,7 +194,8 @@ per-commit tracking in P3.
 After merging workflow changes, verify the hosted behavior: dispatch the
 merge tier twice for the same `main` SHA and check identical Ir or different
 fingerprints (including host CPU metadata); inspect the record schema;
-compare the generated guard table with a manual S1–S6 capture; confirm that
+compare the generated guard table with a manual S1–S6 capture run with the
+harness's `LC_ALL` and `GLIBC_TUNABLES` settings; confirm that
 a CI-change PR nightly dry run writes nothing and a pixi-only merge is
 skipped.
 
