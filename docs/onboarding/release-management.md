@@ -43,6 +43,20 @@ configuring/building with OpenSceneGraph forcibly disabled, and the required
 `ubuntu-latest` context, owned only by CI gz-physics and running both Gazebo
 tasks. Keep each required context single-owner when editing workflows.
 
+Before tagging, also record the release performance comparison on the exact
+candidate SHA:
+`gh workflow run perf.yml --ref main -f tier=release -f head=<candidate-sha>`.
+It takes the version from the candidate's `package.xml`, compares the candidate
+with the previous `v6` tag on the rows both can run (`-f base=v6.x.y` selects
+another baseline), and publishes `performance/releases/v6.x.y.json`, `.md` and
+`index.md` on `gh-pages`, listing the merged changes since that tag that moved
+a gated row, broke a row or carried a rationale line. Read it before tagging;
+a FAIL does not block by itself but needs an explanation. After publishing the
+GitHub release, check that the record names the tagged commit, then attach both
+files as `dart-perf-v6.x.y.json` and `dart-perf-v6.x.y.md` (commands in
+[CI/CD](ci-cd.md#performance-records-and-guards)); if the record names an
+earlier candidate, dispatch again with `-f tag=v6.x.y` first.
+
 At a new minor release (for example 6.20.0), tag `main`. Cut a `release-6.x`
 branch from the tag only when patch releases must diverge from `main`; a patch
 release then tags its packaging squash commit on that branch, as above, never

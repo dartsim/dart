@@ -227,6 +227,59 @@ Ir deltas at or above the +0.30% warning threshold count as regressed in the
 summary. Otherwise, allocation-count or requested-byte decreases, or Ir
 improvements of at least 1%, count as improved.
 
+Use `pixi run perf-backfill --revs <file>` for a resumable local history run.
+The file contains one commit, ref or `v6.x.y` tag per line, with blank lines
+and `#` comments ignored. Put tags after commits. For the historical window,
+generate the commit list with
+`git rev-list --first-parent --reverse --since=2026-07-01T00:00:00Z 789d3662c59 -- dart`,
+then append `v6.19.0` through `v6.19.5`. The command adds each commit's latest
+first-parent measured-path base and each tag's previous `v6` tag, including
+`v6.18.0` for `v6.19.0`: 85 listed commits, 13 additional commit bases and
+seven tag revisions, for 105 unique measurements and 91 assembled records.
+`--plan-only` prints the revision inventory without building or measuring.
+The default rows are the quick tier plus S6, with perturbation always enabled;
+tags run only `gzb,robot`. S6 remains in the saved arm records but is omitted
+from published comparisons, along with advisory wall time and RSS.
+
+Run `git fetch origin gh-pages` before starting. The harness checkout must be
+clean for the script, `tools/perf` and `pixi.lock`, and publication later
+requires its harness commit to be on `main`. The run uses one detached source
+checkout, persistent Ninja build trees and an install prefix emptied before
+each install under `build/perf-backfill`. A lock prevents concurrent runs.
+Rerunning resumes completed revisions; do not delete the source checkout
+between runs, because its unchanged file timestamps allow object reuse.
+The run identity pins the toolchain, glibc libraries, harness commit and rows,
+checks the initial toolchain against the newest hosted merge record, and
+requires one fingerprint throughout. Drift stops the run. For a long campaign,
+hold `libc6`, `libc6-dev`, `valgrind`, `gcc-13` and `g++-13` and stop
+`apt-daily-upgrade.timer`; restore the previous package holds and timer state
+afterward. A build failure receives a clean retry and then a saved broken arm;
+persistent infrastructure errors stop the run. If the run has never completed
+a measurement, assembly stops because no verified environment fingerprint is
+available; the build-failure markers remain available for resume.
+After review and publication,
+remove the retained checkout with
+`git worktree remove --force build/perf-backfill/src`.
+
+A maintainer publishes the reviewed set once with
+`python scripts/perf_regression.py publish --tier backfill --record build/perf-backfill/records --pages-dir <pages-dir>`,
+using a clean dedicated `gh-pages` checkout and their own git credentials.
+This command refuses GitHub Actions, validates the entire set before git
+operations, and never updates the chart or nightly guard table. Repeating an
+identical publication adds no commit; hosted release records take precedence
+over local tag records.
+
+Inspect history with
+`python scripts/perf_regression.py ledger --records build/perf-backfill/records <pages-records-dir> --since <base-sha> --until <head-sha>`.
+`--json <file>` and `--markdown <file>` save the deterministic report.
+`--intent <file>` reads a TSV with a SHA prefix of at least seven characters
+or `#PR`, an intent (`perf`, `behaviour` or `unrelated`), and a one-line reason.
+The ledger attributes failures to the head, separates inherited failures and
+broken rows from rationale friction, and lists improvements as well as
+regressions. Path groups summarize affected modules. Its headline counts
+unrelated merges needing a rationale against the bar of at most one in ten;
+unlabelled changes are counted separately so they can be reviewed.
+
 Use the soft-body comparison script for PR evidence that must compare the
 current commit against both its parent and the `main` base on the same host:
 
