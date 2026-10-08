@@ -1,11 +1,13 @@
 """Regression checks for performance comparison and local execution."""
 
 import copy
+import fcntl
 import fnmatch
 import importlib.util
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import threading
@@ -1223,6 +1225,14 @@ def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
     first = module.fingerprint(args)
     assert first["runtime_pixi_lock_sha"] == module.sha(b"runtime lock")
     assert first["runtime_environment"] == "default"
+    monkeypatch.delenv("PIXI_ENVIRONMENT_NAME")
+    for key in ("RUNNER_NAME", "ImageOS", "ImageVersion"):
+        monkeypatch.delenv(key, raising=False)
+    fallback = module.fingerprint(args)
+    assert fallback["runtime_environment"] == "default"
+    assert fallback["runner"]["name"] == "local"
+    assert fallback["runner"]["image"] == ""
+    monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "default")
     lock.write_bytes(b"different runtime lock")
     changed_lock = module.fingerprint(args)
     lock.write_bytes(b"runtime lock")
@@ -3225,8 +3235,7 @@ def test_local_records_only_head_build_failures(
     def run_arm(arm):
         assert arm.base_arm
         assert not smoke and arm.commit == "base-commit"
-        record = _micro_record(module, "dyn")
-        record["run"]["commit"] = arm.commit
+        record = _measurement_fixture(module, arm.commit, "gzb")
         record["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
         arm.output_dir.mkdir()
         module.write_json(arm.output_dir / "record.json", record)
@@ -3248,12 +3257,14 @@ def test_local_records_only_head_build_failures(
             str(tmp_path),
         ]
     ) == (1 if not smoke and not shim and kind == "build" else 2)
-    assert resolved == (["base-revision^{commit}"] if not smoke else []) + [
-        "head-revision^{commit}"
-    ]
+    assert [revision for revision in resolved if revision.endswith("^{commit}")] == (
+        ["base-revision^{commit}"] if not smoke else []
+    ) + ["head-revision^{commit}"]
     failure = tmp_path / "build-failure.json"
     if kind == "build" and smoke:
-        assert json.loads(failure.read_text()) == {
+        marker = json.loads(failure.read_text())
+        assert marker.pop("time")
+        assert marker == {
             "commit": "head-commit",
             "error": f"simulated {phase} failure",
             "error_kind": "build",
@@ -3517,6 +3528,18 @@ def _perf_step(job, name):
     ],
 )
 def test_workflow_selects_smoke_and_ab_for_mixed_changes(tmp_path, paths, mode, smoke):
+    module = _load_runner()
+    expected = {
+        path + "/*" if path != "CMakeLists.txt" and not path.endswith(".hpp") else path
+        for path in module.MEASURED_PATHS
+    }
+    for job, name in (
+        ("measure", "Select smoke or A/B"),
+        ("record-measure", "Select base and measurement scope"),
+    ):
+        script = _perf_step(job, name)["run"]
+        patterns = set(re.search(r"^\s+(.+?)\) mode=ab", script, re.M)[1].split("|"))
+        assert patterns == expected
     env_path = tmp_path / "env"
     # Stub git's revision/diff output while executing the actual shell selector.
     stub = """
@@ -3768,7 +3791,9 @@ def test_revision_input_errors_are_recorded_per_row(
     assert row["status"] == "broken" and not row["gated"]
     assert row["input_sha"] is None
     assert "failed to load revision inputs" in row["error"]
-    assert str(damaged) in row["error"]
+    assert path in row["error"]
+    assert str(source) not in row["error"]
+    assert module.find_local_path(broken) is None
     assert (row.get("error_kind") == "infrastructure") == (arm == "base")
     assert healthy["status"] == "ok" and measured == ["gzb"]
     assert json.loads((args.output_dir / "record.json").read_text()) == broken
@@ -4414,7 +4439,14 @@ def _publication_fixture():
                 "method": "slope",
                 "parent": copy.deepcopy(metrics),
                 "head": metrics,
-                "delta": {"ir": 0, "allocs": 0, "guards_equal": True, "class": "gated"},
+                "delta": {
+                    "ir": 0,
+                    "allocs": 0,
+                    "bytes": 0,
+                    "guards_equal": True,
+                    "class": "gated",
+                },
+                "failures": [],
             }
         ],
         "verdict": {"status": "PASS", "failures": [], "warnings": [], "ir_geomean": 0},
@@ -4427,19 +4459,49 @@ def _trusted_publication(monkeypatch, event="push"):
     monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
 
 
-@pytest.mark.parametrize("tier", ["merge", "nightly"])
-def test_publication_schema_normalizes_tier_and_advisory_wall(tmp_path, tier):
+@pytest.mark.parametrize("tier", ["merge", "nightly", "release", "backfill"])
+def test_publication_schema_normalizes_tier_and_advisory_wall(
+    monkeypatch, tmp_path, tier
+):
     module = _load_runner()
     path = tmp_path / "record.json"
-    module.write_json(path, _publication_fixture())
-    record = module.publication_record(path, tier, 3570)
+    fixture = _publication_fixture()
+    fixture["run"].update(pr=3229, harness_commit="c" * 40)
+    fixture["results"][0]["head"]["libdart"] = str(tmp_path / "libdart.so.6.20")
+    fixture["results"][0]["parent"]["libdart"] = str(tmp_path / "libdart.so.6.19")
+    monkeypatch.setattr(module, "is_ancestor", lambda *args: True)
+    monkeypatch.setattr(
+        module,
+        "release_scope",
+        lambda *args: {
+            "head": "a" * 40,
+            "base": "b" * 40,
+            "branch": "main",
+            "tag": "v6.20.0",
+            "base_tag": "v6.19.5",
+        },
+    )
+    if tier == "backfill":
+        fixture["run"]["env"]["runner"] = {
+            "environment": "local",
+            "name": "local",
+            "image": "",
+        }
+    module.write_json(path, fixture)
+    extra = {"tag": "v6.20.0", "base_tag": "v6.19.5"} if tier == "release" else {}
+    record = module.publication_record(path, tier, 3570, **extra)
     assert record["run"]["tier"] == tier
     assert record["run"]["branch"] == "main"
-    assert record["run"]["pr"] == 3570
+    assert record["run"]["pr"] == (None if tier == "release" else 3570)
+    assert module.publication_record(path, tier, **extra)["run"]["pr"] == (
+        None if tier == "release" else 3229
+    )
+    assert record["run"]["harness_commit"] == "c" * 40
     assert record["run"]["time"] == "2026-10-08T08:00:00+00:00"
     row = record["results"][0]
+    assert row["head"]["libdart"] == "libdart.so.6.20"
     assert row["wall_ms_per_step"] == {
-        "parent": 12.3 if tier == "merge" else None,
+        "parent": None if tier == "nightly" else 12.3,
         "head": 12.3,
         "advisory": True,
     }
@@ -4464,6 +4526,12 @@ def test_publication_schema_normalizes_tier_and_advisory_wall(tmp_path, tier):
         ("schedule", "main", "local", "nightly", False),
         ("schedule", "main", "github-hosted", "merge", False),
         ("push", "main", "github-hosted", "nightly", False),
+        ("workflow_dispatch", "main", "github-hosted", "release", True),
+        ("workflow_dispatch", "topic", "github-hosted", "release", False),
+        ("push", "main", "github-hosted", "release", False),
+        ("schedule", "main", "github-hosted", "release", False),
+        ("workflow_dispatch", "main", "local", "release", False),
+        ("push", "main", "local", "merge", False),
     ],
 )
 def test_publication_context_refuses_untrusted_writes(
@@ -4495,6 +4563,7 @@ def test_publication_context_refuses_untrusted_writes(
         "nan",
         "duplicate",
         "infrastructure",
+        "local-path",
     ],
 )
 def test_publication_rejects_invalid_measurement_before_git(tmp_path, defect):
@@ -4523,6 +4592,8 @@ def test_publication_rejects_invalid_measurement_before_git(tmp_path, defect):
         record["results"] *= 2
     elif defect == "infrastructure":
         record["results"][0]["error_kind"] = "infrastructure"
+    elif defect == "local-path":
+        record["results"][0]["error"] = f"failed to read {tmp_path / 'data/input.sdf'}"
     path = tmp_path / "record.json"
     path.write_text(json.dumps(record))
     with pytest.raises(ValueError):
@@ -5424,14 +5495,21 @@ def test_chart_legacy_points_validate_counts_and_split_unknown_inputs(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "outcome", ["race", "rejected", "identical", "no-chart", "nightly"]
+    "outcome", ["race", "rejected", "identical", "no-chart", "nightly", "backfill"]
 )
 def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
     monkeypatch, tmp_path, outcome
 ):
     module = _load_runner()
-    tier = "nightly" if outcome == "nightly" else "merge"
+    tier = (
+        "backfill"
+        if outcome == "backfill"
+        else "nightly" if outcome == "nightly" else "merge"
+    )
     _trusted_publication(monkeypatch, "schedule" if tier == "nightly" else "push")
+    if tier == "backfill":
+        monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+        monkeypatch.setattr(module, "is_ancestor", lambda *args: True)
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
     real_run = subprocess.run
 
@@ -5453,6 +5531,11 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
     )
     real_run(["git", "clone", str(remote), str(pages)], check=True, capture_output=True)
     _stock_chart_template(pages)
+    if tier == "backfill":
+        for name in ("performance/dart6-ir/data.js", "performance/guards/main.md"):
+            target = pages / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(b"preserve hosted evidence\n")
 
     def commit(directory):
         git(directory, "add", "performance")
@@ -5468,6 +5551,9 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
         )
 
     commit(pages)
+    if tier == "backfill":
+        git(pages, "config", "user.name", "Maintainer")
+        git(pages, "config", "user.email", "maintainer@example.com")
     git(pages, "push", "origin", "HEAD:gh-pages")
     real_run(
         ["git", "clone", str(remote), str(competitor)], check=True, capture_output=True
@@ -5475,6 +5561,13 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
     baseline = git(remote, "rev-parse", "gh-pages").stdout.strip()
     path = tmp_path / "record.json"
     fixture = _publication_fixture()
+    if tier == "backfill":
+        fixture["run"].update(harness_commit="f" * 40)
+        fixture["run"]["env"]["runner"] = {
+            "environment": "local",
+            "name": "local",
+            "image": "",
+        }
     if outcome == "no-chart":
         # Distinct timestamps write disjoint files, so Git could rebase cleanly
         # while preserving duplicate evidence for the same merge identity.
@@ -5488,7 +5581,7 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
             if tier == "nightly"
             else "2026-10-08T07:00:00+00:00"
         )
-    if outcome in ("race", "rejected"):
+    if outcome in ("race", "rejected", "backfill"):
         concurrent["run"]["commit"] = "c" * 40
         concurrent["run"]["env"]["fingerprint"] = "2" * 64
     if tier == "nightly":
@@ -5533,7 +5626,14 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
         not any("force" in argument for argument in command) for command in pushes
     )
     git(remote, "merge-base", "--is-ancestor", baseline, "gh-pages")
-    if tier == "nightly":
+    if tier == "backfill":
+        assert (
+            pages / "performance/dart6-ir/data.js"
+        ).read_bytes() == b"preserve hosted evidence\n"
+        assert (
+            pages / "performance/guards/main.md"
+        ).read_bytes() == b"preserve hosted evidence\n"
+    elif tier == "nightly":
         assert (pages / "performance/guards/main.md").read_text() == module.guard_table(
             concurrent
         )
@@ -5550,3 +5650,1596 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
         1 if deduplicated else 2
     )
     assert module.publish(args) is False
+
+
+def _perf_git(directory, *arguments):
+    return subprocess.run(
+        ["git", "-C", str(directory), *arguments],
+        text=True,
+        capture_output=True,
+        check=True,
+    ).stdout.strip()
+
+
+def _perf_repository(directory):
+    directory.mkdir()
+    _perf_git(directory, "init", "--initial-branch=main")
+    _perf_git(directory, "config", "user.name", "test")
+    _perf_git(directory, "config", "user.email", "test@example.com")
+    return directory
+
+
+def _perf_commit(directory, path, content, subject):
+    target = directory / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content)
+    _perf_git(directory, "add", path)
+    _perf_git(directory, "commit", "-m", subject)
+    return _perf_git(directory, "rev-parse", "HEAD")
+
+
+def _measurement_fixture(module, commit, rows="s3w", environment="local"):
+    fixture = _publication_fixture()
+    fixture.pop("verdict")
+    fixture["run"].pop("parent")
+    fixture["run"].update(commit=commit, branch="main", harness_commit="f" * 40)
+    fixture["run"]["env"].update(
+        compiler="GNU 13.3.0",
+        compiler_provenance="dart-perf-build/1",
+        compiler_sha="1" * 64,
+        valgrind="valgrind-3.22.0",
+        valgrind_sha="2" * 64,
+        callgrind_sha="3" * 64,
+        glibc="glibc 2.39",
+        preset="perf-1",
+        valgrind_guest_cpu="test",
+        runner={"environment": environment, "name": "local", "image": ""},
+    )
+    metrics = copy.deepcopy(fixture["results"][0]["head"])
+    metrics.update(bytes_per_step=0, max_rss_kb=100)
+    fixture["results"] = []
+    for row in module.select_rows(rows):
+        result = module.row_result(row)
+        result.update(
+            status="ok",
+            gated=True,
+            method="slope",
+            input_sha="a" * 64,
+            head=copy.deepcopy(metrics),
+            perturbations={"start4k": {"stable": True}},
+        )
+        fixture["results"].append(result)
+    return fixture
+
+
+def test_backfill_plan_adds_measured_bases_and_previous_tags(monkeypatch, tmp_path):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    old = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.18.0</version></package>",
+        "Old release",
+    )
+    _perf_git(repo, "tag", "v6.18.0")
+    tag = _perf_commit(
+        repo, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(repo, "tag", "v6.19.0")
+    contact = _perf_commit(
+        repo, "examples/contact_benchmark/CMakeLists.txt", "driver", "Add driver"
+    )
+    _perf_commit(repo, "docs/readme.md", "docs", "Document driver")
+    head = _perf_commit(repo, "dart/dynamics/test.cpp", "first", "Change DART (#3229)")
+    cmake = _perf_commit(repo, "cmake/test.cmake", "settings", "Change build")
+    _perf_git(repo, "checkout", "-b", "topic")
+    _perf_commit(repo, "dart/dynamics/test.cpp", "second", "Change DART on topic")
+    _perf_git(repo, "checkout", "main")
+    _perf_commit(repo, "docs/readme.md", "more docs", "Document merge")
+    _perf_git(repo, "merge", "--no-ff", "topic", "-m", "Merge DART (#3300)")
+    merge = _perf_git(repo, "rev-parse", "HEAD")
+    docs = _perf_commit(repo, "docs/readme.md", "last docs", "Document result")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", docs)
+    monkeypatch.setattr(module, "ROOT", repo)
+    revisions = tmp_path / "revisions.txt"
+    revisions.write_text(f"# selected history\n{head}\n{docs}\n{merge}\nv6.19.0\n")
+    args = module.parser().parse_args(
+        ["backfill", "--revs", str(revisions), "--plan-only"]
+    )
+    plan = module.backfill_plan(args)
+    assert plan["revisions"] == [contact, head, cmake, merge, old, tag]
+    assert plan["skipped"] == [docs]
+    assert [(pair["commit"], pair["parent"]) for pair in plan["pairs"]] == [
+        (head, contact),
+        (merge, cmake),
+        (tag, old),
+    ]
+    assert plan["pairs"][-1]["tag"] == "v6.19.0"
+    assert plan["pairs"][-1]["base_tag"] == "v6.18.0"
+    revisions.write_text(tag + "\n")
+    with pytest.raises(ValueError, match="contact_benchmark"):
+        module.backfill_plan(args)
+
+
+@pytest.mark.parametrize(
+    "flag,unsupported", [("--generate-container", True), ("--quiet", False)]
+)
+def test_unknown_row_option_is_unsupported_only_for_row_flags(
+    monkeypatch, tmp_path, flag, unsupported
+):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir, args.source_dir = tmp_path, module.ROOT
+    output = f"Unknown option: {flag}\nUsage: driver\n"
+
+    def popen(command, **kwargs):
+        kwargs["stdout"].write(output)
+        return module.argparse.Namespace(returncode=1, wait=lambda **kwargs: None)
+
+    monkeypatch.setattr(module.subprocess, "Popen", popen)
+    monkeypatch.setattr(module, "environment", lambda *args: {})
+    monkeypatch.setattr(module, "perturb_environment", lambda *args: {})
+    row = module.select_rows("s1p")[0]
+    result = module.measure(row, args, tmp_path)
+    assert result["status"] == ("unsupported" if unsupported else "broken")
+    assert (result.get("error_kind") == "infrastructure") is not unsupported
+    if unsupported:
+        assert result["error"] == f"contact_benchmark lacks {flag}"
+    else:
+        assert "exit 1" in result["error"]
+    output += (
+        f"STEPALLOC steps={row.warmup + row.steps} measured={row.steps} allocs=0 bytes=0 libdart={tmp_path / 'libdart.so'}\n"
+        "PERFTIME maxrss_kb=100\nAvg Step Time: 1 ms\n"
+        "Final State Hash: 0x0123456789abcdef\nFinal State Finite: false\n"
+        "Final Contacts: 1\nFinal Contact Cap Hit: false\nFinal Resting: 0/1\n"
+    )
+    result = module.measure(row, args, tmp_path)
+    assert result["status"] == "broken"
+    assert "error_kind" not in result
+    assert result["error"] == "non-finite state"
+
+
+def test_records_carry_no_local_paths(monkeypatch, tmp_path):
+    module = _load_runner()
+    log = tmp_path / "logs/benchmark.log"
+    log.parent.mkdir()
+    with pytest.raises(ValueError) as failure:
+        module.execute(
+            [sys.executable, "-c", "raise SystemExit(1)"], dict(os.environ), log, 10
+        )
+    assert str(failure.value) == "exit 1: see benchmark.log"
+    source = tmp_path / "source"
+    atlas = source / "data/sdf/atlas"
+    atlas.mkdir(parents=True)
+    (atlas / "ground.urdf").write_text("<robot/>")
+    (atlas / "atlas_v3_no_head.sdf").write_text(
+        "<sdf><mesh><uri>../../../../outside.stl</uri></mesh></sdf>"
+    )
+    with pytest.raises(ValueError) as failure:
+        module.robot_data_paths(source)
+    assert "outside the revision" in str(failure.value)
+    assert str(source) not in str(failure.value)
+    assert module.LOCAL_PATH.search(str(failure.value)) is None
+    fixture = _publication_fixture()
+    fixture["run"]["accepted"] = [
+        f"Perf-Regression-Rationale: s3w/dart: inspect {tmp_path / 'dart/dynamics'}"
+    ]
+    fixture["results"][0]["head"]["libdart"] = str(tmp_path / "lib/libdart.so.6.20")
+    path = tmp_path / "record.json"
+    module.write_json(path, fixture)
+    published = module.publication_record(path, "merge")
+    assert published["results"][0]["head"]["libdart"] == "libdart.so.6.20"
+    assert module.find_local_path(published) is None
+    fixture["results"][0]["error"] = f"failed to read {tmp_path / 'data/input.sdf'}"
+    module.write_json(path, fixture)
+    with pytest.raises(ValueError, match=r"results\.0\.error"):
+        module.publication_record(path, "merge")
+    fixture["results"][0].pop("error")
+    fixture["results"][0]["head"][str(tmp_path / "secret/input")] = "hidden in a key"
+    module.write_json(path, fixture)
+    with pytest.raises(ValueError, match=r"results\.0\.head\.<key>") as failure:
+        module.publication_record(path, "merge")
+    assert str(tmp_path) not in str(failure.value)
+
+
+@pytest.mark.parametrize("file_uri", [False, True])
+def test_robot_absolute_input_errors_remain_publishable(
+    monkeypatch, tmp_path, file_uri
+):
+    module = _load_runner()
+    source = tmp_path / "source"
+    atlas = source / "data/sdf/atlas"
+    atlas.mkdir(parents=True)
+    reference = str(tmp_path / "outside.stl")
+    if file_uri:
+        reference = "file://" + reference
+    (atlas / "ground.urdf").write_text("<robot/>")
+    (atlas / "atlas_v3_no_head.sdf").write_text(
+        f"<sdf><mesh><uri>{reference}</uri></mesh></sdf>"
+    )
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--source-dir",
+            str(source),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir = tmp_path
+    result = module.measure(module.select_rows("robot")[0], args, tmp_path)
+    assert result["status"] == "broken" and "error_kind" not in result
+    assert "outside.stl is outside the revision" in result["error"]
+    assert module.find_local_path(result) is None
+    base = _measurement_fixture(module, "b" * 40, "robot", "github-hosted")
+    head = copy.deepcopy(base)
+    head["run"]["commit"] = "a" * 40
+    head["results"] = [result]
+    record = module.compare(base, head)
+    path = tmp_path / "record.json"
+    module.write_json(path, record)
+    assert module.publication_record(path, "merge")["verdict"]["status"] == "FAIL"
+
+
+def _backfill_test_setup(monkeypatch, tmp_path):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        repo, "examples/contact_benchmark/CMakeLists.txt", "driver", "Add driver"
+    )
+    first = _perf_commit(repo, "dart/dynamics/test.cpp", "first", "Change DART (#3229)")
+    last = _perf_commit(repo, "dart/dynamics/test.cpp", "last", "Change DART (#3300)")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", last)
+    monkeypatch.setattr(module, "ROOT", repo)
+    revisions = tmp_path / "revisions.txt"
+    revisions.write_text(f"{first}\n{last}\n")
+    args = module.parser().parse_args(
+        [
+            "backfill",
+            "--revs",
+            str(revisions),
+            "--rows",
+            "s3w",
+            "--output-dir",
+            str(tmp_path / "output"),
+        ]
+    )
+    env = _measurement_fixture(module, base)["run"]["env"]
+    identity = {
+        **{
+            key: env[key]
+            for key in (
+                "valgrind",
+                "valgrind_sha",
+                "callgrind_sha",
+                "compiler_sha",
+                "glibc",
+            )
+        },
+        "harness_commit": last,
+        "rows": args.rows,
+        "glibc_sha": "4" * 64,
+    }
+    monkeypatch.setattr(module, "host_identity", lambda *args: copy.deepcopy(identity))
+    monkeypatch.setattr(module, "hosted_reference", lambda: copy.deepcopy(env))
+    monkeypatch.setattr(module, "build_shims", lambda *args: None)
+    builds, measurements = [], []
+
+    def build_arm(arm, revision, source, build, driver, prefix, drivers, log_prefix):
+        builds.append((revision, source, build, driver, prefix))
+        build.mkdir(parents=True, exist_ok=True)
+        driver.mkdir(parents=True, exist_ok=True)
+
+    def run_arm(arm):
+        measurements.append(arm.commit)
+        assert arm.source_dir == args.output_dir / "src"
+        assert arm.prefix == args.output_dir / "prefix"
+        assert not arm.base_arm
+        record = _measurement_fixture(module, arm.commit)
+        record["run"]["harness_commit"] = last
+        module.write_json(arm.output_dir / "record.json", record)
+        return record
+
+    monkeypatch.setattr(module, "build_arm", build_arm)
+    monkeypatch.setattr(module, "run_arm", run_arm)
+    return module, args, (base, first, last), identity, builds, measurements
+
+
+def test_backfill_reuses_tree_build_and_prefix_and_resumes(
+    monkeypatch, tmp_path, capsys
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    calls = []
+    real_run = module.subprocess.run
+
+    def run(command, *positional, **keywords):
+        calls.append(command)
+        return real_run(command, *positional, **keywords)
+
+    monkeypatch.setattr(module.subprocess, "run", run)
+    module.backfill(args)
+    assert measurements == list(revisions)
+    assert len(builds) == 3
+    assert len({tuple(str(path) for path in build[1:]) for build in builds}) == 1
+    assert sum("checkout" in command and "--force" in command for command in calls) == 3
+    assert sum("worktree" in command for command in calls) == 1
+    builds.clear()
+    measurements.clear()
+    calls.clear()
+    capsys.readouterr()
+    module.backfill(args)
+    assert builds == measurements == []
+    assert not any("checkout" in command or "clean" in command for command in calls)
+    assert capsys.readouterr().out.count("skip ") == 3
+    (args.output_dir / "runs" / revisions[-1] / "record.json").unlink()
+    module.backfill(args)
+    assert measurements == [revisions[-1]]
+    assert len(builds) == 1
+    assert not any("worktree" in command for command in calls)
+    (args.output_dir / "runs" / revisions[-1] / "record.json").unlink()
+    original = module.build_arm
+
+    def moved(*arguments):
+        original(*arguments)
+        _perf_git(args.output_dir / "src", "checkout", "--detach", revisions[0])
+
+    monkeypatch.setattr(module, "build_arm", moved)
+    with pytest.raises(ValueError, match="source tree moved"):
+        module.backfill(args)
+
+
+def test_build_arm_uses_fresh_caches_and_empties_install_prefix(monkeypatch, tmp_path):
+    module = _load_runner()
+    root = tmp_path / "harness"
+    root.mkdir()
+    (root / "pixi.lock").write_text("lock")
+    monkeypatch.setattr(module, "ROOT", root)
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
+    args = module.parser().parse_args(
+        ["local", "--rows", "gzb", "--output-dir", str(tmp_path)]
+    )
+    source, build, driver, prefix = (
+        tmp_path / name for name in ("src", "build", "driver", "prefix")
+    )
+    configurations, installs = [], []
+    monkeypatch.setattr(module, "workload_hashes", lambda *args: {})
+    monkeypatch.setattr(
+        module,
+        "cmake_compiler",
+        lambda *args: {"compiler": "GNU 13.3.0", "compiler_sha": "1" * 64},
+    )
+    monkeypatch.setattr(module, "library_hashes", lambda *args: {})
+
+    def execute(command, env, log, timeout, **kwargs):
+        assert kwargs["build"]
+        if command[:3] == ["cmake", "-G", "Ninja"]:
+            assert "--fresh" in command
+            configured = Path(command[command.index("-B") + 1])
+            configured.mkdir(exist_ok=True)
+            configurations.append(configured)
+        elif command[:2] == ["cmake", "--build"]:
+            if Path(command[2]) == driver:
+                (driver / "portable_step_bench").write_bytes(b"driver")
+        elif command[:2] == ["cmake", "--install"]:
+            assert not prefix.exists()
+            installs.append(command)
+            (prefix / "lib").mkdir(parents=True)
+            (prefix / "lib/libdart.so").write_bytes(b"library")
+        return ""
+
+    monkeypatch.setattr(module, "execute", execute)
+    for revision in ("a" * 40, "b" * 40):
+        module.build_arm(
+            args, revision, source, build, driver, prefix, [], tmp_path / "arm"
+        )
+        (build / "object.o").write_bytes(b"reused")
+        (prefix / "lib/stale.so").write_bytes(b"stale")
+    assert configurations == [build, driver, build, driver]
+    assert len(installs) == 2
+    assert (build / "object.o").read_bytes() == b"reused"
+    assert (
+        json.loads((prefix / "share/dart/perf-build.json").read_text())["commit"]
+        == "b" * 40
+    )
+
+
+@pytest.mark.parametrize("failure", ["retry-build", "build", "infrastructure", "value"])
+def test_backfill_build_failures_retry_clean_then_record(
+    monkeypatch, tmp_path, failure
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    original_build, original_measure = module.build_arm, module.run_arm
+    attempts = []
+    target = revisions[1] if failure == "retry-build" else revisions[0]
+
+    def build(*arguments):
+        revision, build, driver = arguments[1], arguments[3], arguments[4]
+        if revision == target:
+            attempt = attempts.count(revision) + 1
+            attempts.append(revision)
+            if attempt == 1:
+                build.mkdir(parents=True, exist_ok=True)
+                driver.mkdir(parents=True, exist_ok=True)
+                (build / "object.o").write_bytes(b"stale")
+            elif failure in ("build", "retry-build"):
+                assert not build.exists() and not driver.exists()
+            if failure == "value":
+                raise ValueError("runner timeout")
+            if failure == "build" or failure == "retry-build" and attempt == 1:
+                raise module.BuildFailure("exit 1: see arm.build.log")
+        return original_build(*arguments)
+
+    def measure(arm):
+        record = original_measure(arm)
+        if failure == "infrastructure" and arm.commit == target:
+            record["results"][0].update(
+                status="broken", error_kind="infrastructure", error="runner timeout"
+            )
+            module.write_json(arm.output_dir / "record.json", record)
+        return record
+
+    monkeypatch.setattr(module, "build_arm", build)
+    monkeypatch.setattr(module, "run_arm", measure)
+    if failure in ("value", "infrastructure"):
+        with pytest.raises(ValueError, match="timeout|infrastructure"):
+            module.backfill(args)
+        assert revisions[1] not in measurements
+        assert len(attempts) == 2
+    else:
+        module.backfill(args)
+        assert revisions[-1] in measurements
+        assert len(attempts) == 2
+    directory = args.output_dir / "runs" / target
+    assert (directory / "build-failure.json").exists() == (failure == "build")
+    if failure == "build":
+        marker = json.loads((directory / "build-failure.json").read_text())
+        assert (
+            marker["commit"] == target
+            and marker["error_kind"] == "build"
+            and marker["time"]
+        )
+    assert (directory / "record.infrastructure.json").exists() == (
+        failure == "infrastructure"
+    )
+    if failure == "infrastructure":
+        assert not (directory / "record.json").exists()
+
+
+def test_backfill_preserves_all_failed_builds_without_inventing_an_environment(
+    monkeypatch, tmp_path
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    attempts = []
+
+    def build(*arguments):
+        attempts.append(arguments[1])
+        raise module.BuildFailure("exit 1: see arm.build.log")
+
+    monkeypatch.setattr(module, "build_arm", build)
+    with pytest.raises(ValueError, match="no measured arm"):
+        module.backfill(args)
+    assert not measurements and attempts == [
+        revision for revision in revisions for _ in range(2)
+    ]
+    assert all(
+        (args.output_dir / "runs" / revision / "build-failure.json").exists()
+        for revision in revisions
+    )
+    assert not (args.output_dir / "records").exists()
+
+
+@pytest.mark.parametrize("first_failure", ["value", "infrastructure"])
+def test_backfill_does_not_record_an_unclean_build_failure_after_infrastructure(
+    monkeypatch, tmp_path, first_failure
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    original_build, original_measure = module.build_arm, module.run_arm
+    attempts = []
+
+    def build(*arguments):
+        attempts.append(arguments[1])
+        if len(attempts) == 1:
+            if first_failure == "value":
+                raise ValueError("runner timeout")
+            return original_build(*arguments)
+        raise module.BuildFailure("exit 1: see arm.build.log")
+
+    def measure(arm):
+        record = original_measure(arm)
+        record["results"][0].update(
+            status="broken", error_kind="infrastructure", error="runner timeout"
+        )
+        module.write_json(arm.output_dir / "record.json", record)
+        return record
+
+    monkeypatch.setattr(module, "build_arm", build)
+    monkeypatch.setattr(module, "run_arm", measure)
+    with pytest.raises(ValueError):
+        module.backfill(args)
+    assert attempts == [revisions[0], revisions[0]]
+    assert not (args.output_dir / "runs" / revisions[0] / "build-failure.json").exists()
+    assert revisions[1] not in measurements
+
+
+def test_backfill_refuses_a_source_move_even_when_building_fails(monkeypatch, tmp_path):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    attempts = []
+
+    def build(*arguments):
+        attempts.append(arguments[1])
+        _perf_git(args.output_dir / "src", "checkout", "--detach", revisions[-1])
+        raise module.BuildFailure("exit 1: see arm.build.log")
+
+    monkeypatch.setattr(module, "build_arm", build)
+    with pytest.raises(ValueError, match="source tree moved"):
+        module.backfill(args)
+    assert attempts == [revisions[0]] and not measurements
+    assert not (args.output_dir / "runs" / revisions[0] / "build-failure.json").exists()
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "run-array",
+        "marker-array",
+        "wrong-commit",
+        "wrong-fingerprint",
+        "infrastructure",
+    ],
+)
+def test_backfill_redoes_malformed_or_incomplete_resume_records(
+    monkeypatch, tmp_path, defect
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    module.backfill(args)
+    target = args.output_dir / "runs" / revisions[1]
+    record = json.loads((target / "record.json").read_text())
+    if defect == "run-array":
+        record["run"] = []
+    elif defect == "marker-array":
+        (target / "record.json").unlink()
+        module.write_json(target / "build-failure.json", [])
+    elif defect == "wrong-commit":
+        record["run"]["commit"] = revisions[0]
+    elif defect == "wrong-fingerprint":
+        record["run"]["env"]["fingerprint"] = "different"
+    else:
+        record["results"][0].update(
+            status="broken", error_kind="infrastructure", error="runner timeout"
+        )
+    if defect != "marker-array":
+        module.write_json(target / "record.json", record)
+    builds.clear()
+    measurements.clear()
+    module.backfill(args)
+    assert measurements == [revisions[1]] and len(builds) == 1
+    assert not (target / "build-failure.json").exists()
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "reference",
+        "resume",
+        "fingerprint",
+        "lock",
+        "dirty",
+        "ignored",
+        "guest",
+        "during",
+    ],
+)
+def test_backfill_refuses_drift_concurrency_and_dirty_harness(
+    monkeypatch, tmp_path, defect
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    lock = None
+    if defect == "reference":
+        hosted = module.hosted_reference()
+        hosted["valgrind_sha"] = "5" * 64
+        monkeypatch.setattr(module, "hosted_reference", lambda: hosted)
+    elif defect == "resume":
+        module.backfill(args)
+        identity["glibc_sha"] = "5" * 64
+        builds.clear()
+    elif defect == "fingerprint" or defect == "guest":
+        original = module.run_arm
+
+        def measure(arm):
+            record = original(arm)
+            if defect == "guest" or arm.commit == revisions[1]:
+                record["run"]["env"][
+                    "valgrind_guest_cpu" if defect == "guest" else "fingerprint"
+                ] = "different"
+                module.write_json(arm.output_dir / "record.json", record)
+            return record
+
+        monkeypatch.setattr(module, "run_arm", measure)
+    elif defect == "lock":
+        args.output_dir.mkdir()
+        lock = (args.output_dir / ".lock").open("a")
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    elif defect in ("dirty", "ignored"):
+        target = module.ROOT / "tools/perf/untracked.txt"
+        target.parent.mkdir(parents=True)
+        target.write_text("dirty")
+        if defect == "ignored":
+            (module.ROOT / ".gitignore").write_text("tools/perf/untracked.txt\n")
+    elif defect == "during":
+        original = module.build_arm
+
+        def build(*arguments):
+            original(*arguments)
+            identity["glibc_sha"] = "5" * 64
+
+        monkeypatch.setattr(module, "build_arm", build)
+    try:
+        with pytest.raises(
+            ValueError, match="reference|identity|fingerprint|lock|dirty"
+        ):
+            module.backfill(args)
+    finally:
+        if lock:
+            lock.close()
+    if defect in ("reference", "lock", "dirty", "ignored"):
+        assert not (args.output_dir / "build").exists()
+        assert not builds
+    if defect == "resume":
+        assert not builds
+    if defect in ("fingerprint", "guest", "during"):
+        revision = revisions[1] if defect == "fingerprint" else revisions[0]
+        directory = args.output_dir / "runs" / revision
+        assert (directory / "record.drift.json").is_file()
+        assert not (directory / "record.json").exists()
+    with pytest.raises(SystemExit):
+        module.parser().parse_args(["backfill", "--revs", str(args.revs), "--nightly"])
+
+
+def test_backfill_plan_only_needs_no_build_or_host_gate(monkeypatch, tmp_path, capsys):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    monkeypatch.setattr(
+        module,
+        "host_identity",
+        lambda *args: pytest.fail("planning used the host gate"),
+    )
+    monkeypatch.setattr(
+        module, "build_shims", lambda *args: pytest.fail("planning built shims")
+    )
+    assert (
+        module.main(
+            [
+                "backfill",
+                "--revs",
+                str(args.revs),
+                "--plan-only",
+                "--output-dir",
+                str(args.output_dir),
+            ]
+        )
+        == 0
+    )
+    assert not args.output_dir.exists() and not builds and not measurements
+    output = capsys.readouterr().out
+    assert revisions[0] in output and revisions[-1] in output
+
+
+@pytest.mark.parametrize("source_kind", ["directory", "symlink"])
+def test_backfill_requires_its_dedicated_source_worktree(
+    monkeypatch, tmp_path, source_kind
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    args.output_dir.mkdir()
+    source = args.output_dir / "src"
+    if source_kind == "symlink":
+        source.symlink_to(module.ROOT, target_is_directory=True)
+    else:
+        source.mkdir()
+    preserved = module.ROOT / "docs/untracked.txt"
+    preserved.parent.mkdir(exist_ok=True)
+    preserved.write_text("preserve this file")
+    before = _perf_git(module.ROOT, "rev-parse", "HEAD")
+    with pytest.raises(ValueError, match="worktree|source"):
+        module.backfill(args)
+    assert not builds and not measurements
+    assert _perf_git(module.ROOT, "rev-parse", "HEAD") == before
+    assert preserved.read_text() == "preserve this file"
+
+
+def test_main_maps_termination_and_hangup_to_interrupt(monkeypatch):
+    module = _load_runner()
+    installed = {}
+    monkeypatch.setattr(
+        module.signal,
+        "signal",
+        lambda number, handler: installed.setdefault(number, handler),
+    )
+    with pytest.raises(SystemExit):
+        module.main(["--help"])
+    for number in (signal.SIGTERM, signal.SIGHUP):
+        with pytest.raises(KeyboardInterrupt):
+            installed[number](number, None)
+
+
+def test_write_json_preserves_the_previous_record_until_atomic_replace(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    path = tmp_path / "record.json"
+    module.write_json(path, {"complete": "before"})
+    previous = path.read_bytes()
+
+    def interrupt(source, destination):
+        assert json.loads(Path(source).read_text()) == {"complete": "after"}
+        assert Path(destination) == path and path.read_bytes() == previous
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(module.os, "replace", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        module.write_json(path, {"complete": "after"})
+    assert path.read_bytes() == previous
+
+
+def test_backfill_records_pair_bases_and_cover_build_failures(monkeypatch, tmp_path):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    recovered = _perf_commit(
+        module.ROOT, "dart/dynamics/test.cpp", "recovered", "Recover build (#3301)"
+    )
+    base, failed, both = revisions
+    all_revisions = [*revisions, recovered]
+    plan = {
+        "revisions": all_revisions,
+        "pairs": [
+            {
+                "commit": head,
+                "parent": parent,
+                "branch": "main",
+                "tag": None,
+                "base_tag": None,
+            }
+            for parent, head in zip(all_revisions, all_revisions[1:])
+        ]
+        + [
+            {
+                "commit": recovered,
+                "parent": base,
+                "branch": "release-6.19",
+                "tag": "v6.19.5",
+                "base_tag": "v6.19.4",
+            }
+        ],
+        "skipped": [],
+    }
+    for revision in (base, recovered):
+        record = _measurement_fixture(module, revision, "s3w,S6")
+        module.write_json(args.output_dir / "runs" / revision / "record.json", record)
+    for revision in (failed, both):
+        module.write_json(
+            args.output_dir / "runs" / revision / "build-failure.json",
+            {
+                "commit": revision,
+                "error": "exit 1: see arm.build.log",
+                "error_kind": "build",
+                "time": "2026-10-08T09:00:00Z",
+            },
+        )
+    stale = args.output_dir / "records/main/stale.json"
+    module.write_json(stale, {})
+    records = module.backfill_records(
+        args, plan, {"identity": identity, "fingerprint": "1" * 64}
+    )
+    assert not stale.exists()
+    assert len(records) == 4
+    for record, pair in zip(records, plan["pairs"]):
+        assert record["run"]["parent"] == pair["parent"]
+        assert record["run"]["harness_commit"] == identity["harness_commit"]
+        assert record["run"]["accepted"] == []
+        assert {module.row_key(row) for row in record["results"]} == {
+            "s3w/dart",
+            "s3w/ode",
+        }
+        assert not record["verdict"]["warnings"]
+        assert all(
+            row["wall_ms_per_step"] == {"parent": None, "head": None, "advisory": True}
+            for row in record["results"]
+        )
+        assert all(
+            "max_rss_kb" not in row[arm]
+            for row in record["results"]
+            for arm in ("parent", "head")
+        )
+    head_failed, both_failed, base_failed, release = records
+    assert [record["verdict"]["status"] for record in records] == [
+        "FAIL",
+        "FAIL",
+        "FAIL",
+        "PASS",
+    ]
+    assert head_failed["run"]["tier"] == "backfill" and head_failed["run"]["pr"] == 3229
+    assert all(
+        row["error_kind"] == "build" and row["parent"] for row in head_failed["results"]
+    )
+    assert all(
+        row["error_kind"] == "build" and not row["parent"]
+        for row in both_failed["results"]
+    )
+    assert all(
+        "missing or failed base measurement" in row["failures"]
+        for row in base_failed["results"]
+    )
+    assert release["run"]["tier"] == "release" and release["run"]["pr"] is None
+    assert (
+        release["run"]["tag"],
+        release["run"]["base_tag"],
+        release["run"]["branch"],
+    ) == ("v6.19.5", "v6.19.4", "release-6.19")
+    assert (args.output_dir / "records/releases/v6.19.5.json").is_file()
+    narrowed = {"revisions": [failed, both], "pairs": [plan["pairs"][1]], "skipped": []}
+    records = module.backfill_records(
+        args, narrowed, {"identity": identity, "fingerprint": "1" * 64}
+    )
+    assert len(records) == 1 and records[0]["verdict"]["status"] == "FAIL"
+    assert records[0]["run"]["env"]["fingerprint"] == "1" * 64
+    assert not (args.output_dir / "records/releases/v6.19.5.json").exists()
+
+
+def test_release_scope_derives_and_refuses(monkeypatch, tmp_path):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+
+    def version(value, subject):
+        return _perf_commit(
+            repo,
+            "package.xml",
+            f"<package><version>{value}</version></package>",
+            subject,
+        )
+
+    old = version("6.18.0", "Old release")
+    _perf_git(repo, "tag", "v6.18.0")
+    first = version("6.19.0", "Release")
+    _perf_git(repo, "tag", "v6.19.0")
+    shared = version("6.19.1", "First patch")
+    _perf_git(repo, "tag", "v6.19.1")
+    _perf_git(repo, "checkout", "-b", "release-6.19")
+    patch = version("6.19.2", "Second patch")
+    _perf_git(repo, "tag", "v6.19.2")
+    latest = version("6.19.3", "Third patch")
+    _perf_git(repo, "tag", "v6.19.3")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/release-6.19", latest)
+    _perf_git(repo, "checkout", "main")
+    version("6.20.0", "Next release candidate")
+    _perf_git(
+        repo,
+        "merge",
+        "--no-ff",
+        "-s",
+        "ours",
+        "release-6.19",
+        "-m",
+        "Merge release maintenance",
+    )
+    candidate = _perf_commit(repo, "docs/readme.md", "candidate", "Document candidate")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", candidate)
+    _perf_git(repo, "checkout", "-b", "topic")
+    off_branch = version("6.21.0", "Off-branch candidate")
+    for name in ("ci/release-6.21-publish-wheels", "release/6.21.0-version-bump"):
+        _perf_git(repo, "update-ref", f"refs/remotes/origin/{name}", off_branch)
+    monkeypatch.setattr(module, "ROOT", repo)
+    assert module.release_scope(None, "v6.19.0", None) == {
+        "head": first,
+        "tag": "v6.19.0",
+        "base_tag": "v6.18.0",
+        "base": old,
+        "branch": "main",
+    }
+    assert module.release_scope(shared, None, None)["branch"] == "main"
+    assert module.release_scope(None, "v6.19.2", None) == {
+        "head": patch,
+        "tag": "v6.19.2",
+        "base_tag": "v6.19.1",
+        "base": shared,
+        "branch": "release-6.19",
+    }
+    assert module.release_scope(candidate, None, None)["base_tag"] == "v6.19.3"
+    assert module.release_scope(candidate, None, "v6.19.0")["base"] == first
+    refusals = [
+        (None, "v7.0.0", None),
+        (None, "v6.20.0", None),
+        (patch, "v6.19.3", None),
+        (off_branch, None, None),
+        (candidate, "v6.19.3", None),
+        (patch, "v6.19.2", "v6.19.3"),
+        (candidate, "v6.20.1", None),
+    ]
+    same_version = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.19.3</version></package>",
+        "Move candidate",
+    )
+    refusals.append((same_version, "v6.19.3", None))
+    for request in refusals:
+        with pytest.raises(ValueError):
+            module.release_scope(*request)
+
+
+@pytest.mark.parametrize(
+    "tier,environment",
+    [
+        ("merge", "local"),
+        ("nightly", "local"),
+        ("release", "local"),
+        ("backfill", "github-hosted"),
+    ],
+)
+def test_publication_tiers_refuse_mismatched_measurement_runner(
+    monkeypatch, tmp_path, tier, environment
+):
+    module = _load_runner()
+    fixture = _publication_fixture()
+    fixture["run"]["env"]["runner"]["environment"] = environment
+    path = tmp_path / "record.json"
+    module.write_json(path, fixture)
+    with pytest.raises(ValueError, match="measurement runner"):
+        module.publication_record(
+            path,
+            tier,
+            tag="v6.20.0" if tier == "release" else None,
+            base_tag="v6.19.5" if tier == "release" else None,
+        )
+
+
+def test_backfill_publication_refuses_ci_off_main_harness_and_mixed_fingerprints(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    monkeypatch.setenv("GITHUB_ACTIONS", "false")
+    with pytest.raises(ValueError, match="GitHub Actions"):
+        module.publication_guard("backfill")
+    monkeypatch.delenv("GITHUB_ACTIONS")
+    module.publication_guard("backfill")
+    fixture = _publication_fixture()
+    fixture["run"].update(tier="backfill", harness_commit="f" * 40)
+    fixture["run"]["env"]["runner"] = {
+        "environment": "local",
+        "name": "local",
+        "image": "",
+    }
+    first, second = (tmp_path / name for name in ("first.json", "second.json"))
+    module.write_json(first, fixture)
+    monkeypatch.setattr(module, "is_ancestor", lambda base, head: base != "f" * 40)
+    with pytest.raises(ValueError, match="harness commit must be on main"):
+        module.publication_record(first, "backfill")
+    monkeypatch.setattr(module, "is_ancestor", lambda base, head: base != "a" * 40)
+    with pytest.raises(ValueError, match="backfill commit must be on main"):
+        module.publication_record(first, "backfill")
+    monkeypatch.setattr(module, "is_ancestor", lambda *args: True)
+    fixture["run"]["env"]["fingerprint"] = "2" * 64
+    module.write_json(second, fixture)
+    monkeypatch.setattr(
+        module.subprocess,
+        "run",
+        lambda *args, **kwargs: pytest.fail("invalid records reached git"),
+    )
+    args = module.parser().parse_args(
+        [
+            "publish",
+            "--tier",
+            "backfill",
+            "--record",
+            str(first),
+            str(second),
+            "--pages-dir",
+            str(tmp_path / "pages"),
+        ]
+    )
+    with pytest.raises(ValueError, match="fingerprint"):
+        module.publish(args)
+
+
+@pytest.mark.parametrize("defect", ["base", "branch", "tag", "base-tag"])
+def test_publication_rejects_release_scope_mismatch(monkeypatch, tmp_path, defect):
+    module = _load_runner()
+    fixture = _publication_fixture()
+    fixture["run"].update(
+        tier="release",
+        branch="release-6.19",
+        tag="v6.19.5",
+        base_tag="v6.19.4",
+        harness_commit="f" * 40,
+    )
+    fixture["run"]["env"]["runner"]["environment"] = "local"
+    monkeypatch.setattr(module, "is_ancestor", lambda *args: True)
+    scope = {
+        "head": "a" * 40,
+        "base": "b" * 40,
+        "branch": "release-6.19",
+        "tag": "v6.19.5",
+        "base_tag": "v6.19.4",
+    }
+    if defect == "base":
+        scope["base"] = "c" * 40
+    elif defect == "branch":
+        scope["branch"] = "main"
+    else:
+        fixture["run"].pop("tag" if defect == "tag" else "base_tag")
+    monkeypatch.setattr(module, "release_scope", lambda *args: scope)
+    path = tmp_path / "record.json"
+    module.write_json(path, fixture)
+    with pytest.raises(ValueError, match="scope|requires tag"):
+        module.publication_record(path, "backfill")
+
+
+def _comparison_fixture(
+    module, parent, commit, *, tier="backfill", rows="gzb", change=None, body=""
+):
+    base = _measurement_fixture(module, parent, rows)
+    head = _measurement_fixture(module, commit, rows)
+    if change:
+        change(base["results"][0], head["results"][0])
+    record = module.compare(base, head, body)
+    record["run"].update(tier=tier, parent=parent, branch="main", pr=3300)
+    return record
+
+
+def test_ledger_classes_attribution_groups_and_determinism(
+    monkeypatch, tmp_path, capsys
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    since = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Start history")
+    monkeypatch.setattr(module, "ROOT", repo)
+    paths = [
+        "dart/dynamics/test.cpp",
+        "dart/collision/ode/test.cpp",
+        "dart/collision/shared.cpp",
+        "cmake/test.cmake",
+        "examples/contact_benchmark/main.cpp",
+        "data/test.world",
+        "tests/benchmark/test.cpp",
+        "dart/constraint/test.cpp",
+        "dart/simulation/test.cpp",
+        "dart/math/test.cpp",
+        "dart/dynamics/other.cpp",
+        "dart/collision/dart/test.cpp",
+        "dart/collision/fcl/test.cpp",
+        "CMakeLists.txt",
+    ]
+    kinds = [
+        "pass",
+        "warn",
+        "ir",
+        "broken",
+        "no-base",
+        "improved",
+        "input",
+        "guards",
+        "allocs",
+        "bytes",
+        "percent",
+        "base-finite",
+        "base-time",
+        "base-perturb",
+    ]
+    records, commits = {}, []
+    parent = since
+    directory = tmp_path / "records"
+
+    def mutate(kind):
+        def change(base, head):
+            if kind == "ir":
+                head["head"]["ir_per_step"] = 102000
+            elif kind == "improved":
+                head["head"]["ir_per_step"] = 98000
+            elif kind == "broken":
+                head["head"]["guards"]["finite"] = False
+            elif kind == "no-base":
+                base.update(
+                    status="broken", head={}, error="build failed", error_kind="build"
+                )
+                head.update(
+                    status="broken", head={}, error="build failed", error_kind="build"
+                )
+            elif kind in ("input", "percent"):
+                if kind == "input":
+                    head["input_sha"] = "b" * 64
+                if kind == "percent":
+                    head["head"]["ir_per_step"] = 102000
+                    head["head"]["guards"]["hash"] = "0x9876543210abcdef"
+            elif kind == "guards":
+                head["head"]["guards"]["contacts"] = 4
+            elif kind == "allocs":
+                head["head"]["allocs_per_step"] = 1
+            elif kind == "bytes":
+                head["head"]["bytes_per_step"] = 8
+            elif kind == "base-finite":
+                base["head"]["guards"]["finite"] = False
+                head["head"]["guards"]["finite"] = False
+            elif kind == "base-time":
+                base["head"]["time_advanced"] = False
+                head.update(status="broken", error="simulation time did not advance")
+            elif kind == "base-perturb":
+                base["gated"] = head["gated"] = False
+                base["perturbations"]["start4k"]["stable"] = False
+                head["perturbations"]["start4k"]["stable"] = False
+
+        return change
+
+    for index, (path, kind) in enumerate(zip(paths, kinds)):
+        commit = _perf_commit(repo, path, kind, f"Change {kind} (#{3300 + index})")
+        record = _comparison_fixture(
+            module,
+            parent,
+            commit,
+            change=mutate(kind),
+            body=(
+                "Rebaseline-Rationale: gzb/ode: intended behaviour"
+                if kind == "percent"
+                else ""
+            ),
+        )
+        record["run"]["pr"] = None if kind == "improved" else 3300 + index
+        if kind == "warn":
+            record["verdict"]["warnings"] = ["guard evidence incomplete"]
+        elif kind == "pass":
+            record["verdict"]["warnings"] = ["RSS increased (advisory)"]
+        records[commit] = record
+        commits.append(commit)
+        module.write_json(directory / f"{index:02d}-backfill.json", record)
+        parent = commit
+    missing = _perf_commit(
+        repo, "dart/dynamics/missing.cpp", "missing", "Missing measurement"
+    )
+    _perf_commit(repo, "docs/readme.md", "docs", "Document history")
+    until = _perf_git(repo, "rev-parse", "HEAD")
+    # A merge record wins even when a backfill record is newer. Within merge,
+    # the newest record's verdict and rationale win without changing counts.
+    preferred = copy.deepcopy(records[commits[2]])
+    preferred["run"].update(tier="merge", time="2026-10-08T07:00:00Z")
+    module.write_json(directory / "old-merge.json", preferred)
+    preferred["run"]["time"] = "2026-10-08T07:30:00Z"
+    module.write_json(directory / "new-merge.json", preferred)
+    loaded = module.load_records([directory])
+    assert loaded[commits[2]]["run"]["tier"] == "merge"
+    assert loaded[commits[2]]["run"]["time"] == "2026-10-08T07:30:00Z"
+    intent = tmp_path / "intent.tsv"
+    intent.write_text(
+        f"#3302\tunrelated\tRoutine change\n{commits[3][:8]}\tunrelated\tCorrectness repair\n"
+        f"#3307\tbehaviour\tContact update\n#3308\tperf\tAllocation update\n#3310\tunrelated\tRoutine refactor\n"
+    )
+    report = module.ledger_entries(loaded, since, until, intent)
+    entries = report["entries"]
+    assert [entry["commit"] for entry in entries] == commits
+    assert report["missing"] == [missing]
+    assert [entry["class"] for entry in entries] == [
+        "PASS",
+        "WARN",
+        "NEEDS-RATIONALE",
+        "BROKEN",
+        "NO-BASE",
+        "PASS",
+        "NEEDS-RATIONALE",
+        "NEEDS-RATIONALE",
+        "NEEDS-RATIONALE",
+        "NEEDS-RATIONALE",
+        "NEEDS-RATIONALE",
+        "NO-BASE",
+        "NO-BASE",
+        "NO-BASE",
+    ]
+    assert entries[5]["rows"][0]["change"] == "improved" and entries[5]["pr"] is None
+    assert entries[3]["failures"] and not entries[4]["failures"]
+    assert (
+        entries[4]["inherited"]
+        and entries[11]["inherited"]
+        and entries[12]["inherited"]
+        and entries[13]["inherited"]
+    )
+    assert entries[2]["groups"] == ["collision/other"]
+    assert entries[1]["groups"] == ["collision/ode"]
+    assert entries[3]["groups"] == ["cmake"]
+    assert entries[4]["groups"] == ["workload"]
+    assert entries[7]["groups"] == ["constraint"]
+    headline = report["headline"]
+    assert headline["k"] == 2 and headline["n"] == 11 and headline["broken"] == 1
+    assert all(
+        headline["rules"][rule]
+        for rule in ("ir", "geomean", "allocs", "bytes", "guards", "input", "percent")
+    )
+    markdown = module.ledger_markdown(report)
+    assert "2026-10-08" not in markdown
+    assert (
+        "Unrelated merges needing a rationale: 2/11" in markdown
+        and "Broken: 1" in markdown
+    )
+    assert markdown.index("## Unrelated or unlabelled") < markdown.index("## Intended")
+    assert "gzb/ode: improved" in markdown and "—" in markdown
+    assert (
+        module.ledger_markdown(
+            module.ledger_entries(
+                module.load_records([directory]), since, until, intent
+            )
+        )
+        == markdown
+    )
+    json_output, markdown_output = tmp_path / "ledger.json", tmp_path / "ledger.md"
+    assert (
+        module.main(
+            [
+                "ledger",
+                "--records",
+                str(directory),
+                "--since",
+                since,
+                "--until",
+                until,
+                "--intent",
+                str(intent),
+                "--json",
+                str(json_output),
+                "--markdown",
+                str(markdown_output),
+            ]
+        )
+        == 0
+    )
+    assert (
+        json.loads(json_output.read_text()) == report
+        and markdown_output.read_text() == markdown
+    )
+    for text in (
+        "#9999\tunrelated\tUnknown PR\n",
+        f"{commits[0][:7]}\tinvalid\tUnknown intent\n",
+    ):
+        intent.write_text(text)
+        with pytest.raises(ValueError, match="intent.tsv"):
+            module.ledger_entries(loaded, since, until, intent)
+    truncated = directory / "truncated.json"
+    truncated.write_text('{"schema":')
+    assert (
+        module.main(
+            ["ledger", "--records", str(directory), "--since", since, "--until", until]
+        )
+        == 2
+    )
+    assert "truncated.json" in capsys.readouterr().err
+    truncated.unlink()
+    conflict = copy.deepcopy(preferred)
+    conflict["results"][0]["head"]["ir_per_step"] += 1
+    module.write_json(directory / "conflict.json", conflict)
+    assert (
+        module.main(
+            ["ledger", "--records", str(directory), "--since", since, "--until", until]
+        )
+        == 2
+    )
+    error = capsys.readouterr().err
+    assert "conflict.json" in error and "backfill.json" in error
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "schema",
+        "delta",
+        "verdict",
+        "parent",
+        "row-failures",
+        "nan",
+        "missing-run-parent",
+        "invalid-run-parent",
+    ],
+)
+def test_ledger_names_malformed_record_files(monkeypatch, tmp_path, capsys, defect):
+    module = _load_runner()
+    record = _comparison_fixture(module, "b" * 40, "a" * 40)
+    if defect == "schema":
+        record["schema"] = "unexpected"
+    elif defect == "delta":
+        record["results"][0]["delta"] = {"class": "gated"}
+    elif defect == "verdict":
+        record["verdict"]["failures"] = "not a list"
+    elif defect == "parent":
+        record["results"][0]["parent"] = []
+    elif defect == "row-failures":
+        record["results"][0]["failures"] = "not a list"
+    elif defect == "missing-run-parent":
+        record["run"].pop("parent")
+    elif defect == "invalid-run-parent":
+        record["run"]["parent"] = "invalid"
+    else:
+        record["results"][0]["head"]["ir_per_step"] = float("nan")
+    path = tmp_path / "malformed.json"
+    path.write_text(json.dumps(record))
+    assert (
+        module.main(
+            ["ledger", "--records", str(path), "--since", "HEAD~1", "--until", "HEAD"]
+        )
+        == 2
+    )
+    assert "malformed.json" in capsys.readouterr().err
+
+
+def test_release_records_order_precedence_and_index(monkeypatch, tmp_path, capsys):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    old = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.18.0</version></package>",
+        "Old release",
+    )
+    _perf_git(repo, "tag", "v6.18.0")
+    base = _perf_commit(
+        repo, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(repo, "tag", "v6.19.0")
+    first = _perf_commit(
+        repo, "dart/dynamics/test.cpp", "first", "First candidate (#3300)"
+    )
+    second = _perf_commit(
+        repo, "dart/dynamics/test.cpp", "second", "Second candidate (#3301)"
+    )
+    third = _perf_commit(
+        repo, "dart/dynamics/test.cpp", "third", "Third candidate (#3302)"
+    )
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", third)
+    monkeypatch.setattr(module, "ROOT", repo)
+    pages = tmp_path / "pages"
+    history = _comparison_fixture(
+        module,
+        base,
+        first,
+        tier="merge",
+        change=lambda base, head: head["head"].update(ir_per_step=98000),
+    )
+    module.write_json(
+        pages / "performance/records/main/2026/history-merge.json", history
+    )
+
+    def candidate(
+        commit,
+        fingerprint,
+        environment="github-hosted",
+        parent=base,
+        time="2026-10-08T08:00:00Z",
+    ):
+        record = _comparison_fixture(
+            module, parent, commit, tier="release", rows="gzb,robot"
+        )
+        record["run"].update(
+            tag="v6.20.0",
+            base_tag="v6.18.0" if parent == old else "v6.19.0",
+            pr=None,
+            time=time,
+        )
+        record["run"]["env"].update(fingerprint=fingerprint)
+        record["run"]["env"]["runner"]["environment"] = environment
+        return record
+
+    local = candidate(first, "1" * 64, "local")
+    paths = module.write_release(pages, local)
+    assert paths == [
+        "performance/releases/v6.20.0.json",
+        "performance/releases/v6.20.0.md",
+        "performance/releases/index.md",
+    ]
+    path = pages / paths[0]
+    saved = path.read_bytes()
+    stored = json.loads(saved)
+    assert stored["ledger"]["entries"][0]["rows"][0]["change"] == "improved"
+    assert stored["ledger"]["missing"] == []
+    assert "gzb/ode: improved" in (pages / paths[1]).read_text()
+    identical = copy.deepcopy(local)
+    identical["run"]["time"] = "2026-10-08T10:00:00Z"
+    assert module.write_release(pages, identical) == [] and path.read_bytes() == saved
+    inconsistent = copy.deepcopy(local)
+    inconsistent["results"][0]["head"]["allocs_per_step"] += 1
+    with pytest.raises(ValueError, match="deterministic counts"):
+        module.write_release(pages, inconsistent)
+    hosted = candidate(first, "2" * 64)
+    assert module.write_release(pages, hosted)
+    saved = path.read_bytes()
+    assert module.write_release(pages, candidate(second, "3" * 64, "local")) == []
+    assert path.read_bytes() == saved
+    assert module.write_release(pages, candidate(base, "3" * 64)) == []
+    assert "older or diverged candidate" in capsys.readouterr().out
+    assert module.write_release(pages, candidate(second, "3" * 64))
+    assert json.loads(path.read_text())["run"]["commit"] == second
+    assert module.write_release(
+        pages, candidate(second, "4" * 64, parent=old, time="2026-10-08T09:00:00Z")
+    )
+    assert json.loads(path.read_text())["run"]["base_tag"] == "v6.18.0"
+    saved = path.read_bytes()
+    assert (
+        module.write_release(
+            pages, candidate(second, "5" * 64, time="2026-10-08T07:00:00Z")
+        )
+        == []
+    )
+    assert path.read_bytes() == saved
+    _perf_git(repo, "tag", "v6.20.0", second)
+    assert module.write_release(pages, candidate(third, "5" * 64)) == []
+    assert path.read_bytes() == saved
+    assert "tagged commit is final" in capsys.readouterr().out
+    newer = candidate(third, "6" * 64)
+    newer["run"].update(tag="v6.21.0", base_tag="v6.20.0", parent=second)
+    assert module.write_release(pages, newer)
+    index = module.release_index(pages)
+    assert (
+        index
+        == module.release_index(pages)
+        == (pages / "performance/releases/index.md").read_text()
+    )
+    assert index.index("[v6.21.0]") < index.index("[v6.20.0]")
+    assert index.count("[v6.20.0]") == index.count("[v6.21.0]") == 2
+    assert (
+        "| gzb/ode | 100000 | +0.000% | 0 | same, 0x123456789a | 44444444 | hosted |"
+        in index
+    )
+    assert "| robot/dart |" in index
+    branch_record = candidate(third, "7" * 64)
+    branch_record["run"].update(
+        tag="v6.19.5", base_tag="v6.19.4", branch="release-6.19"
+    )
+    module.write_release(pages, branch_record)
+    assert json.loads((pages / "performance/releases/v6.19.5.json").read_text())[
+        "ledger"
+    ] == {"entries": [], "missing": []}
+    assert (
+        "release-6.19 is tracked by tags only (D11)"
+        in (pages / "performance/releases/v6.19.5.md").read_text()
+    )
+
+
+def test_backfill_publication_is_one_commit_and_idempotent(
+    monkeypatch, tmp_path, capsys
+):
+    module = _load_runner()
+    source = _perf_repository(tmp_path / "repository")
+    old = _perf_commit(
+        source,
+        "package.xml",
+        "<package><version>6.18.0</version></package>",
+        "Old release",
+    )
+    _perf_git(source, "tag", "v6.18.0")
+    tag = _perf_commit(
+        source, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(source, "tag", "v6.19.0")
+    first = _perf_commit(
+        source, "dart/dynamics/test.cpp", "first", "Change DART (#3300)"
+    )
+    second = _perf_commit(
+        source, "dart/dynamics/test.cpp", "second", "Change DART (#3301)"
+    )
+    _perf_git(source, "update-ref", "refs/remotes/origin/main", second)
+    monkeypatch.setattr(module, "ROOT", source)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
+    records = tmp_path / "records"
+    first_record = _comparison_fixture(module, tag, first)
+    second_record = _comparison_fixture(module, first, second)
+    release = _comparison_fixture(module, old, tag, tier="release")
+    release["run"].update(tag="v6.19.0", base_tag="v6.18.0", pr=None)
+    for name, record in (
+        ("main/first.json", first_record),
+        ("main/second.json", second_record),
+        ("releases/v6.19.0.json", release),
+    ):
+        record["run"]["harness_commit"] = second
+        module.write_json(records / name, record)
+    remote, pages = tmp_path / "remote.git", tmp_path / "pages"
+    subprocess.run(
+        ["git", "init", "--bare", "--initial-branch=gh-pages", str(remote)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "clone", str(remote), str(pages)], check=True, capture_output=True
+    )
+    _perf_git(pages, "config", "user.name", "Maintainer")
+    _perf_git(pages, "config", "user.email", "maintainer@example.com")
+    kept = {}
+    for name in ("performance/dart6-ir/data.js", "performance/guards/main.md"):
+        target = pages / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        kept[name] = b"preserve hosted evidence\n"
+        target.write_bytes(kept[name])
+    _perf_git(pages, "add", "performance")
+    _perf_git(pages, "commit", "-m", "Seed hosted evidence")
+    _perf_git(pages, "push", "origin", "HEAD:gh-pages")
+    before = _perf_git(pages, "rev-parse", "HEAD")
+    calls = []
+    real_run = module.subprocess.run
+
+    def run(command, *args, **kwargs):
+        calls.append(command)
+        return real_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(module.subprocess, "run", run)
+    monkeypatch.setattr(
+        module, "chart_data", lambda *args: pytest.fail("backfill updated chart")
+    )
+    monkeypatch.setattr(
+        module, "guard_table", lambda *args: pytest.fail("backfill updated guards")
+    )
+    args = module.parser().parse_args(
+        [
+            "publish",
+            "--tier",
+            "backfill",
+            "--record",
+            str(records),
+            "--pages-dir",
+            str(pages),
+        ]
+    )
+    assert module.publish(args) is True
+    assert _perf_git(pages, "rev-list", "--count", f"{before}..HEAD") == "1"
+    assert (
+        _perf_git(pages, "log", "-1", "--format=%an <%ae>")
+        == "Maintainer <maintainer@example.com>"
+    )
+    assert (
+        _perf_git(pages, "log", "-1", "--format=%s")
+        == "Record DART backfill performance for 2 commits and 1 tags"
+    )
+    written = _perf_git(pages, "diff", "--name-only", before, "HEAD").splitlines()
+    assert len(written) == 5
+    assert all(
+        name.endswith("-backfill.json") or name.startswith("performance/releases/")
+        for name in written
+    )
+    assert all((pages / name).read_bytes() == content for name, content in kept.items())
+    output = capsys.readouterr().out
+    assert all(name in output for name in written)
+    assert not any(
+        "--force" in command or "-f" in command
+        for command in calls
+        if "push" in command
+    )
+    assert not any("github-actions" in " ".join(command) for command in calls)
+    published = _perf_git(pages, "rev-parse", "HEAD")
+    assert module.publish(args) is False
+    assert _perf_git(pages, "rev-parse", "HEAD") == published
+    first_record["results"][0]["head"]["allocs_per_step"] = 1
+    module.write_json(records / "main/first.json", first_record)
+    with pytest.raises(ValueError, match="deterministic counts"):
+        module.publish(args)
+    assert _perf_git(pages, "rev-parse", "HEAD") == published
