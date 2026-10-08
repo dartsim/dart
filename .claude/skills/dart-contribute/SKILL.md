@@ -58,6 +58,11 @@ Write the body for a human skimming it: bullets and highlights only; state the m
 
 When a PR has meaningful user-facing API, workflow, behavior, or performance impact, add a concise Before / After section. Cover only relevant dimensions, phrase rows as user-visible before/after outcomes, and for performance claims name the baseline explicitly: CPU path, parent commit, `main`, or prior implementation, plus workload, metric, and important limitations.
 
+Commit messages are checked through the managed `commit-msg` hook, including
+`#` lines before Git's scissors line. When managed hooks are bypassed or
+unavailable, the shared Claude/Codex guard checks inline messages and readable
+message files; stdin, reused, and editor-only messages still require the hook.
+
 Use plain descriptive commit messages and PR titles. Do not prefix them with agent tags such as `[codex]`, `[claude]`, or `[opencode]`.
 
 Describe private plans in prose or link public PRs/issues; keep private, local,

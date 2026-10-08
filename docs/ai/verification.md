@@ -64,12 +64,21 @@ configures, builds, prompts, or uses the network. It does not replace
 `pixi run lint` before a commit.
 
 `pixi run install-hooks` installs managed `pre-commit` and `commit-msg` hooks.
-The latter runs `scripts/check_local_paths.py --commit-msg-file "$1"`, ignoring
-Git's default `#` comment lines and the scissors line plus the verbose diff
-below it. Both hooks share interpreter selection, foreign-hook chaining,
+The latter runs `scripts/check_local_paths.py --commit-msg-file "$1"`, scanning
+every line, including `#` lines, before Git's scissors line. The scissors line
+and the verbose diff below it are excluded. Both hooks share interpreter
+selection, foreign-hook chaining,
 `DART_SKIP_HOOKS=1`, and `DART_HOOK_DRY_RUN=1`. Older worktrees without the
 checker or a compatible Python interpreter print a notice and skip the message
 scan; the pre-commit hook retains its staged whitespace fallback.
+
+When `--no-verify`/`-n`, a `core.hooksPath` override, or a missing/outdated
+managed hook prevents enforcement, the shared Claude/Codex agent guard runs the
+staged gate and scans supplied `-m`/`--message` text and readable `-F`/`--file`
+files through `scripts/check_local_paths.py --stdin`. It joins all supplied
+message parts without a comment exemption. Stdin (`-F -`), reused messages
+(`-C`/`-c`), and editor-only messages require the managed `commit-msg` hook;
+the agent guard cannot inspect them before the command runs.
 
 ## Simulation Verification Route
 

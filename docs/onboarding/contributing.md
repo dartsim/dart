@@ -31,7 +31,8 @@ pixi run install-hooks
 It installs a `pre-commit` git hook that runs the fast staged command below and
 blocks the commit on staged whitespace, local file names or text, or relevant
 AI-infrastructure drift. A managed `commit-msg` hook also scans the commit
-message for local paths, ignoring default Git comments and verbose diffs:
+message for local paths, including `#` lines, stopping at Git's scissors line
+before any verbose diff:
 
 ```bash
 pixi run python scripts/check_agent_hook.py --profile staged
@@ -42,7 +43,11 @@ chained.
 Emergency escape hatch:
 `DART_SKIP_HOOKS=1 git commit ...`. Codex and Claude sessions also use tracked
 PreToolUse hooks for agent-issued `git commit` calls before `install-hooks` has
-been run. These fast checks do not replace `pixi run lint`.
+been run. When verification is bypassed with `--no-verify`/`-n`, hooks are
+overridden, or managed hooks are missing/outdated, the agent guard also scans
+inline `-m`/`--message` text and readable `-F`/`--file` messages. Stdin, reused
+(`-C`/`-c`), and editor-only messages still need the managed `commit-msg` hook.
+These fast checks do not replace `pixi run lint`.
 
 For C++ or Python changes, also run `pixi run build` and focused tests. For
 Gazebo/gz-physics compatibility surfaces, run:

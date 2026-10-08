@@ -316,6 +316,36 @@ def test_commit_msg_hook_blocks_private_message_in_real_commit(tmp_path):
     assert allowed.returncode == 0, allowed.stderr
 
 
+@pytest.mark.parametrize("prefix", ["", "# See "])
+def test_commit_msg_hook_blocks_inline_hash_message(tmp_path, prefix):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts" / "check_local_paths.py").write_bytes(
+        (ROOT / "scripts" / "check_local_paths.py").read_bytes()
+    )
+    assert _install(repo, env).returncode == 0
+    private_path = ".sisyphus" + "/plans/private.md"
+    result = subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=DART Test",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "--allow-empty",
+            "-m",
+            prefix + private_path,
+        ],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1, result.stderr
+    assert f"1: {private_path}" in result.stderr
+
+
 def test_commit_msg_hook_reports_unavailable_checker(tmp_path):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0
@@ -343,6 +373,144 @@ def _run_guard(
         text=True,
     )
     return run.returncode, run.stderr
+
+
+@pytest.mark.parametrize(
+    "route",
+    [
+        "missing",
+        "stale",
+        "no-verify",
+        "hooks-override",
+        "missing-commit-msg",
+        "stale-commit-msg",
+    ],
+)
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        "-m {message}",
+        "-m{message}",
+        "--message {message}",
+        "--message={message}",
+        "-m public -m {message}",
+        "--message=public --message {message}",
+        "-qnm {message}",
+        "-S -m {message}",
+        "-u -m {message}",
+        "-F {file}",
+        "-F{file}",
+        "--file {file}",
+        "--file={file}",
+    ],
+)
+def test_guard_blocks_supplied_private_message_when_hooks_bypassed(
+    tmp_path, route, arguments
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts" / "check_local_paths.py").write_bytes(
+        (ROOT / "scripts" / "check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    if route != "missing":
+        assert _install(repo, env).returncode == 0
+    if route == "stale":
+        _hook(repo).write_text("#!/bin/sh\n# DART-MANAGED-HOOK v1\nexit 0\n")
+    if route == "missing-commit-msg":
+        _hook(repo, "commit-msg").unlink()
+    if route == "stale-commit-msg":
+        _hook(repo, "commit-msg").write_text(
+            "#!/bin/sh\n# DART-MANAGED-HOOK v1\nexit 0\n"
+        )
+    private_path = ".sisyphus" + "/plans/private.md"
+    message_file = repo / "message with spaces.txt"
+    message_file.write_text(f"# See {private_path}\n")
+    arguments = arguments.format(
+        message=f"'# See {private_path}'", file="'message with spaces.txt'"
+    )
+    command = "git commit " + arguments
+    if route == "no-verify":
+        command = "git commit --no-verify " + arguments
+    if route == "hooks-override":
+        command = "git -c core.hooksPath=unused-hooks commit " + arguments
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 2, stderr
+    assert private_path in stderr
+    assert "commit message" in stderr
+    assert "commit blocked" in stderr
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        "-m 'Public summary' -m 'Public body'",
+        "--message='Public summary'",
+        "-F 'message with spaces.txt'",
+        "-F -",
+        "--file=-",
+        "-C HEAD",
+        "-c HEAD",
+        "",
+        "--author '-mprivate'",
+        "-- -mprivate",
+    ],
+)
+def test_guard_accepts_public_or_unavailable_messages(tmp_path, arguments):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts" / "check_local_paths.py").write_bytes(
+        (ROOT / "scripts" / "check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    returncode, stderr = _run_guard(repo, env, "git commit --no-verify " + arguments)
+    assert returncode == 0, stderr
+    assert "direct-agent-gate" in stderr
+
+
+@pytest.mark.parametrize("input_key", ["command", "cmd"])
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git commit --no-verify -F nested/message.txt",
+        "cd nested && git commit --no-verify --file=message.txt",
+        "git -C nested commit --no-verify -F message.txt",
+        "env -C nested git commit --no-verify -F message.txt",
+    ],
+)
+def test_guard_reads_message_files_from_commit_directory(tmp_path, input_key, command):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts" / "check_local_paths.py").write_bytes(
+        (ROOT / "scripts" / "check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    message_file = repo / "nested" / "message.txt"
+    message_file.parent.mkdir()
+    private_path = ".sisyphus" + "/plans/private.md"
+    message_file.write_text(f"Public summary\n# See {private_path}\n")
+    returncode, stderr = _run_guard(repo, env, command, input_key)
+    assert returncode == 2, stderr
+    assert f"2: {private_path}" in stderr
+    message_file.write_text("Public summary\n")
+    returncode, stderr = _run_guard(repo, env, command, input_key)
+    assert returncode == 0, stderr
+    assert "direct-agent-gate" in stderr
+
+
+def test_guard_preserves_quoted_multiline_message_without_shell_execution(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts" / "check_local_paths.py").write_bytes(
+        (ROOT / "scripts" / "check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    private_path = ".sisyphus" + "/plans/private.md"
+    command = f"git commit --no-verify -m 'Public résumé; (quoted)\n$(touch injected)\n# See {private_path}'"
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 2, stderr
+    assert f"3: {private_path}" in stderr
+    assert not (repo / "injected").exists()
 
 
 def _guard_verdict(tmp_path: Path, command: str, extra_env: dict | None = None):
