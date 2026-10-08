@@ -619,7 +619,7 @@ def supplied_commit_message(args, cwd):
                     break
         else:
             continue
-        if option in {"-m", "--message"}:
+        if option in {"-m", "--message", "--trailer"}:
             messages.append(value)
         elif option in {"-F", "--file"} and value != "-":
             path = shell_expand_path_token(value, cwd)

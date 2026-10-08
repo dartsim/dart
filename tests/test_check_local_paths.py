@@ -20,16 +20,16 @@ SPEC.loader.exec_module(checker)
 @pytest.mark.parametrize(
     "path",
     (
-        ".sisyphus/plans/private.md",
-        "../.sisyphus/notes/private.md",
-        "checkout/.ab/control/results.json",
-        ".ab/results.json",
-        "/tmp/claude-session/notes.md",
-        ".claude/projects/session/notes.md",
-        "scratchpad/notes.md",
-        "checkout/scratchpad/notes.md",
-        "task_2/scripts/probe.py",
-        "checkout/task_12-fix-simd",
+        ".sisyphus/plans/example.md",
+        "../.sisyphus/notes/example.md",
+        "checkout/.ab/control/example.json",
+        ".ab/example.json",
+        "/tmp/claude-example/notes.md",
+        ".claude/projects/example/notes.md",
+        "scratchpad/example.md",
+        "checkout/scratchpad/example.md",
+        "task_2/scripts/example.py",
+        "checkout/task_12-example",
         "/home/example/worktree/file.md",
         "/home/example",
         "/Users/example",
@@ -39,16 +39,16 @@ SPEC.loader.exec_module(checker)
         r"C:\Users\example",
         r"C:\Users\Example User",
         "C:/Users/example",
-        "/root",
-        "/root/file.md",
-        r"/root\file.md",
+        "/root",  # path-fixture
+        "/root/example.md",
+        r"/root\example.md",
         "/Users/example/worktree/file.md",
         r"C:\Users\example\worktree\file.md",
         r"C:\Users\Example User\worktree\file.md",
         r"C:\\Users\\example\\worktree\\file.md",
         "C:/Users/example/worktree/file.md",
-        r"checkout\.ab\results.json",
-        r"task_3\scripts\probe.py",
+        r"checkout\.ab\example.json",
+        r"task_3\scripts\example.py",
     ),
 )
 def test_private_paths_are_reported_with_line_and_match(path, capsys):
@@ -75,15 +75,15 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         "https://github.com/dartsim/dart/pull/1234",
         "https://api.github.com/users/dartsim/repos",
         "https://[2606:4700:4700::1111]/scratchpad/issue",
-        "https://8.8.8.8/scratchpad/x.md",
+        "https://8.8.8.8/scratchpad/example.md",
         "http://localhost@github.com/example/scratchpad/issues/1",
         "https://example.com/home/docs/index.html",
         "https://github.com/example/scratchpad/issues/1",
         "https://github.com/org/repo/blob/main/task_2/script.py",
-        "HTTP://example.com/.ab/results.json",
-        "https://example.com/.sisyphus/plans/private.md",
-        "https://example.com/.claude/projects/session/notes.md",
-        "https://example.com/tmp/claude-session/notes.md",
+        "HTTP://example.com/.ab/example.json",
+        "https://example.com/.sisyphus/plans/example.md",
+        "https://example.com/.claude/projects/example/notes.md",
+        "https://example.com/tmp/claude-example/notes.md",
         "https://example.com/root/notes.md",
         "https://example.com/C:/Users/example/notes.md",
         "example.com/home/docs",
@@ -102,23 +102,23 @@ def test_public_examples_and_non_path_identifiers_pass(text, capsys):
 @pytest.mark.parametrize(
     "url",
     (
-        "http://localhost:8000/scratchpad/x.md",
-        "http://printer.local/scratchpad/private.md",
-        "http://api.localhost/scratchpad/x.md",
-        "http://LOCALHOST/scratchpad/x.md",
-        "http://localhost./scratchpad/x.md",
-        "http://github.com@127.0.0.1/scratchpad/x.md",
-        "http://127.0.0.1/.claude/projects/s",
+        "http://localhost:8000/scratchpad/example.md",
+        "http://printer.local/scratchpad/example.md",
+        "http://api.localhost/scratchpad/example.md",
+        "http://LOCALHOST/scratchpad/example.md",
+        "http://localhost./scratchpad/example.md",
+        "http://github.com@127.0.0.1/scratchpad/example.md",
+        "http://127.0.0.1/.claude/projects/example",
         "http://192.168.1.5/home/example/x",
         "http://169.254.1.5/home/example/x",
         "http://0.0.0.0/home/example/x",
-        "http://[::1]/scratchpad/x",
+        "http://[::1]/scratchpad/example",
         "http://[::]/home/example/x",
         "http://[fd00::1]/home/example/x",
         "http://[fe80::1]/home/example/x",
         "https:///home/example/x",
-        "http://intranet/scratchpad/x",
-        "http://[invalid]/scratchpad/x",
+        "http://intranet/scratchpad/example",
+        "http://[invalid]/scratchpad/example",
     ),
 )
 def test_local_or_malformed_urls_do_not_hide_private_paths(url, capsys):
@@ -126,13 +126,49 @@ def test_local_or_malformed_urls_do_not_hide_private_paths(url, capsys):
     assert capsys.readouterr().out.startswith("1: ")
 
 
+@pytest.mark.parametrize("path", ("/c/Users/example/x.md", "/d/Users/example"))
+def test_git_bash_profiles_are_reported(path, capsys):
+    assert checker.scan_text(path)
+    assert capsys.readouterr().out == f"1: {path}\n"
+    assert not checker.scan_text("/c/tools")
+
+
+@pytest.mark.parametrize(
+    "uri",
+    (
+        "file://localhost/home/example/x",
+        "file://example.com/Users/example/x",
+        "vscode://file/home/example/x",
+    ),
+)
+def test_local_file_and_editor_uri_paths_are_reported(uri, capsys):
+    assert checker.scan_text(uri)
+    assert capsys.readouterr().out.startswith("1: /")
+
+
+@pytest.mark.parametrize("suffix", ("home.arpa", "internal", "lan", "localdomain"))
+def test_special_use_hosts_do_not_mask_paths(suffix, capsys):
+    assert checker.scan_text(f"http://printer.{suffix}/scratchpad/x.md")  # path-fixture
+    assert capsys.readouterr().out == "1: scratchpad/x.md\n"  # path-fixture
+
+
+def test_public_url_with_balanced_parentheses_is_fully_masked(capsys):
+    assert not checker.scan_text("https://example.com/a(b)/scratchpad/public.md")
+    assert not capsys.readouterr().out
+
+
+def test_public_url_leaves_unbalanced_markdown_parenthesis(capsys):
+    assert checker.scan_text("[text](https://example.com/x)/home/example/x")
+    assert capsys.readouterr().out == "1: /home/example/x\n"
+
+
 def test_reports_all_leaks_and_file_line(capsys):
     assert checker.scan_text(
-        "summary\n/home/example/checkout and .sisyphus/plans/private.md\n",
+        "summary\n/home/example/checkout and .sisyphus/plans/example.md\n",
         "notes.md",
     )
     assert capsys.readouterr().out.splitlines() == [
-        "notes.md:2: .sisyphus/plans/private.md",
+        "notes.md:2: .sisyphus/plans/example.md",
         "notes.md:2: /home/example/checkout",
     ]
 
@@ -140,27 +176,30 @@ def test_reports_all_leaks_and_file_line(capsys):
 def test_urls_do_not_hide_adjacent_paths_or_file_urls(capsys):
     assert checker.scan_text(
         "https://example.com/scratchpad/public.md /home/example\n"
-        "[public](https://example.com/task_2/file.py),scratchpad/private.md\n"
+        "[public](https://example.com/task_2/file.py),scratchpad/example.md\n"
         "file:///Users/example/private.md\n"
         "https://example.com/public]/home/example\n"
     )
     assert capsys.readouterr().out.splitlines() == [
         "1: /home/example",
-        "2: scratchpad/private.md",
+        "2: scratchpad/example.md",
         "3: /Users/example/private.md",
         "4: /home/example",
     ]
 
 
 def test_allowlist_is_limited_to_exact_file_and_line():
-    assert not checker.scan_text(".sisyphus/\n", ".gitignore")
-    assert checker.scan_text(".sisyphus/plans/private.md\n", ".gitignore")
-    assert checker.scan_text(".sisyphus/\n", "nested/.gitignore")
+    assert not checker.scan_text(".sisyphus/\n", ".gitignore")  # path-fixture
+    assert checker.scan_text(".sisyphus/plans/example.md\n", ".gitignore")
+    assert checker.scan_text(".sisyphus/\n", "nested/.gitignore")  # path-fixture
     assert not checker.scan_text(
         "/home/example/fixture\n", "tests/test_check_local_paths.py"
     )
     assert checker.scan_text("/home/example/fixture\n", "tests/test_other.py")
-    assert checker.scan_text(".sisyphus/\n")
+    assert not checker.scan_text(
+        "/root # path-fixture\n", "tests/test_check_local_paths.py"
+    )
+    assert checker.scan_text(".sisyphus/\n")  # path-fixture
 
 
 def _cli(*args, cwd, text=None):
@@ -195,13 +234,13 @@ def repo(tmp_path):
 
 
 def test_stdin_and_text_file_scan_title_body_without_executing_shell(tmp_path):
-    text = "$(touch injected)\n`touch injected`\n.sisyphus/plans/private.md\n"
+    text = "$(touch injected)\n`touch injected`\n.sisyphus/plans/example.md\n"
     title_body = tmp_path / "pr-body.md"
     title_body.write_text(text)
     for args, input_text in ((("--stdin",), text), (("--text-file", title_body), None)):
         result = _cli(*args, cwd=tmp_path, text=input_text)
         assert result.returncode == 1, result.stderr
-        assert result.stdout == "3: .sisyphus/plans/private.md\n"
+        assert result.stdout == "3: .sisyphus/plans/example.md\n"
         assert not (tmp_path / "injected").exists()
     assert _cli("--stdin", cwd=tmp_path, text="Public summary\n").returncode == 0
 
@@ -249,25 +288,25 @@ def test_commit_msg_scissors_follow_custom_comment_char(tmp_path):
 
 @pytest.mark.parametrize("mode", ["--staged", "--files", "--all-tracked"])
 def test_file_names_are_scanned_even_with_public_contents(repo, mode):
-    path = repo / "scratchpad" / "notes.md"
+    path = repo / "scratchpad" / "example.md"
     path.parent.mkdir()
     path.write_text("Public summary\n")
     _git(repo, "add", ".")
     args = (mode, path) if mode == "--files" else (mode,)
     result = _cli(*args, cwd=repo)
     assert result.returncode == 1, result.stderr
-    assert result.stdout == "scratchpad/notes.md: scratchpad/notes.md\n"
+    assert result.stdout == "scratchpad/example.md: scratchpad/example.md\n"
 
 
 def test_filename_scan_has_no_content_allowlist_exception(repo, monkeypatch, capsys):
-    path = repo / "scratchpad" / "notes.md"
+    path = repo / "scratchpad" / "example.md"
     path.parent.mkdir()
     path.write_text("Public summary\n")
     monkeypatch.setitem(
-        checker.ALLOWLIST, "scratchpad/notes.md", checker.re.compile(".*")
+        checker.ALLOWLIST, "scratchpad/example.md", checker.re.compile(".*")
     )
-    assert checker.scan_file(path, "scratchpad/notes.md")
-    assert capsys.readouterr().out == "scratchpad/notes.md: scratchpad/notes.md\n"
+    assert checker.scan_file(path, "scratchpad/example.md")
+    assert capsys.readouterr().out == "scratchpad/example.md: scratchpad/example.md\n"
 
 
 @pytest.mark.skipif(os.name != "posix", reason="workflow shell is Bash")
@@ -443,7 +482,7 @@ def test_files_and_all_tracked_scan_worktree_and_ignore_untracked(repo):
     tracked.write_text("Public summary\n")
     _git(repo, "add", tracked.name)
     tracked.write_text("Public summary\n/Users/example/checkout\n")
-    (repo / "untracked.md").write_text("scratchpad/private.md\n")
+    (repo / "untracked.md").write_text("scratchpad/example.md\n")
     (repo / "binary.dat").write_bytes(b"\x00\xffpublic asset")
     _git(repo, "add", "binary.dat")
     for args in (("--files", tracked, repo / "binary.dat"), ("--all-tracked",)):
@@ -530,11 +569,11 @@ def test_staged_gitlink_checks_name_without_reading_missing_commit(repo):
         "--cacheinfo",
         "160000",
         "a" * 40,
-        "scratchpad/module",
+        "scratchpad/example",
     )
     result = _cli("--staged", cwd=repo)
     assert result.returncode == 1, result.stderr
-    assert result.stdout == "scratchpad/module: scratchpad/module\n"
+    assert result.stdout == "scratchpad/example: scratchpad/example\n"
 
 
 def test_all_tracked_scans_gitlink_names_but_not_checkout_contents(repo):
@@ -552,12 +591,12 @@ def test_all_tracked_scans_gitlink_names_but_not_checkout_contents(repo):
         "update-index",
         "--add",
         "--cacheinfo",
-        "160000,0123456789abcdef0123456789abcdef01234567,scratchpad/lib",
+        "160000,0123456789abcdef0123456789abcdef01234567,scratchpad/example",
     )
-    (repo / "scratchpad" / "lib").mkdir(parents=True)
+    (repo / "scratchpad" / "example").mkdir(parents=True)
     result = _cli("--all-tracked", cwd=repo)
     assert result.returncode == 1
-    assert "scratchpad/lib" in result.stdout
+    assert "scratchpad/example" in result.stdout
 
 
 def test_missing_file_fails_closed(repo):
@@ -576,7 +615,7 @@ def test_files_scan_does_not_require_git(tmp_path):
 
 def test_staged_only_checks_added_index_lines_and_reports_new_line_numbers(repo):
     tracked = repo / "notes with spaces.md"
-    tracked.write_text(".sisyphus/plans/existing.md\nremoved\npublic\n")
+    tracked.write_text(".sisyphus/plans/example.md\nremoved\npublic\n")
     _git(repo, "add", tracked.name)
     _git(
         repo,
@@ -589,24 +628,24 @@ def test_staged_only_checks_added_index_lines_and_reports_new_line_numbers(repo)
         "-qm",
         "base",
     )
-    tracked.write_text(".sisyphus/plans/existing.md\npublic\nnew summary\n")
+    tracked.write_text(".sisyphus/plans/example.md\npublic\nnew summary\n")
     _git(repo, "add", tracked.name)
     tracked.write_text("/home/example/unstaged\n")
     assert _cli("--staged", cwd=repo).returncode == 0
 
-    tracked.write_text(".sisyphus/plans/existing.md\npublic\n/tmp/claude-new/log\n")
+    tracked.write_text(".sisyphus/plans/example.md\npublic\n/tmp/claude-example/log\n")
     _git(repo, "add", tracked.name)
     tracked.write_text("Public worktree hides staged leak\n")
     result = _cli("--staged", cwd=repo)
     assert result.returncode == 1
-    assert result.stdout == "notes with spaces.md:3: /tmp/claude-new/log\n"
+    assert result.stdout == "notes with spaces.md:3: /tmp/claude-example/log\n"
 
     _git(repo, "rm", "-f", tracked.name)
     assert _cli("--staged", cwd=repo).returncode == 0
 
 
 def test_staged_new_file_allows_gitignore_and_checker_fixtures(repo):
-    (repo / ".gitignore").write_text(".sisyphus/\n")
+    (repo / ".gitignore").write_text(".sisyphus/\n")  # path-fixture
     fixture = repo / "tests" / "test_check_local_paths.py"
     fixture.parent.mkdir()
     fixture.write_text("/home/example/fixture\n")
@@ -616,6 +655,20 @@ def test_staged_new_file_allows_gitignore_and_checker_fixtures(repo):
     (repo / ".gitignore").write_text(".sisyphus/\n/home/example/ignored\n")
     _git(repo, "add", ".gitignore")
     assert _cli("--staged", cwd=repo).returncode == 1
+
+
+@pytest.mark.parametrize("mode", ("--files", "--all-tracked", "--staged"))
+def test_checker_test_exemption_rejects_non_fixture_home(repo, mode):
+    fixture = repo / "tests" / "test_check_local_paths.py"
+    fixture.parent.mkdir()
+    # Construct a non-fixture user without publishing a real home path.
+    path = "/home/" + "example"[::-1] + "/client/private.md"
+    fixture.write_text(path + "\n")
+    _git(repo, "add", ".")
+    args = (mode, fixture) if mode == "--files" else (mode,)
+    result = _cli(*args, cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == f"tests/test_check_local_paths.py:1: {path}\n"
 
 
 @pytest.mark.skipif(os.name != "posix", reason="symlink creation needs privileges")
@@ -628,7 +681,7 @@ def test_tracked_symlink_scans_target_without_reading_external_file(repo):
 
 
 def test_staged_hook_rejects_leak_outside_ai_infrastructure(repo):
-    (repo / "source.cpp").write_text("// scratchpad/private.md\n")
+    (repo / "source.cpp").write_text("// scratchpad/example.md\n")
     _git(repo, "add", "source.cpp")
     result = subprocess.run(
         [
@@ -644,4 +697,4 @@ def test_staged_hook_rejects_leak_outside_ai_infrastructure(repo):
         text=True,
     )
     assert result.returncode == 1
-    assert "source.cpp:1: scratchpad/private.md" in result.stdout
+    assert "source.cpp:1: scratchpad/example.md" in result.stdout
