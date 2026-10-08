@@ -40,6 +40,8 @@
 
 #include <array>
 #include <functional>
+#include <memory>
+#include <memory_resource>
 #include <optional>
 #include <unordered_map>
 #include <utility>
@@ -105,6 +107,16 @@ public:
       std::optional<std::pair<Eigen::Isometry3d, Eigen::Isometry3d>>(
           std::size_t idA, std::size_t idB)>;
 
+  PersistentManifoldCache() = default;
+
+  // Each cache keeps its node pool for its whole lifetime: copies and moves
+  // transfer manifolds into the destination's pool, never the pool itself, so
+  // no map outlives the memory it was allocated from.
+  PersistentManifoldCache(const PersistentManifoldCache& other);
+  PersistentManifoldCache(PersistentManifoldCache&& other);
+  PersistentManifoldCache& operator=(const PersistentManifoldCache& other);
+  PersistentManifoldCache& operator=(PersistentManifoldCache&& other);
+
   PersistentManifold& getOrCreate(std::size_t idA, std::size_t idB);
 
   [[nodiscard]] bool ownsContact(
@@ -148,7 +160,13 @@ public:
   [[nodiscard]] std::size_t size() const;
 
 private:
-  std::unordered_map<PairKey, PersistentManifold, PairKeyHash> mManifolds;
+  // Pairs that separate and touch again reuse pooled nodes instead of a
+  // malloc/free per contact begin/end. The pool only supplies memory: the
+  // hash, bucket growth and therefore iteration order are unchanged.
+  std::unique_ptr<std::pmr::unsynchronized_pool_resource> mNodePool
+      = std::make_unique<std::pmr::unsynchronized_pool_resource>();
+  std::pmr::unordered_map<PairKey, PersistentManifold, PairKeyHash> mManifolds{
+      mNodePool.get()};
 };
 
 } // namespace native
