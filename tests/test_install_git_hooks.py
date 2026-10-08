@@ -381,6 +381,7 @@ def _run_guard(
         "missing",
         "stale",
         "no-verify",
+        "no-verify-abbrev",
         "hooks-override",
         "missing-commit-msg",
         "stale-commit-msg",
@@ -432,6 +433,9 @@ def test_guard_blocks_supplied_private_message_when_hooks_bypassed(
     command = "git commit " + arguments
     if route == "no-verify":
         command = "git commit --no-verify " + arguments
+    if route == "no-verify-abbrev":
+        # Git accepts unique long-option prefixes.
+        command = "git commit --no-veri " + arguments
     if route == "hooks-override":
         command = "git -c core.hooksPath=unused-hooks commit " + arguments
     returncode, stderr = _run_guard(repo, env, command)

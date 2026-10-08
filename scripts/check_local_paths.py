@@ -42,6 +42,8 @@ PATTERNS = tuple(
         # Generic home-relative paths such as ~/.config name no user or machine.
         # Private agent project dirs, scratchpads and numbered worktrees still
         # match above, so ~/ alone is not reported.
+        # Named-user tilde forms (~name/) are not reported either: binary files
+        # are full of the same byte pattern, and contributors' tools expand them.
         # A host or path character before /home or /Users is not a home, and a
         # drive letter (C:/Users) is left to the Windows pattern below; other
         # labels such as cwd: or file: still precede a reported home.
@@ -49,7 +51,8 @@ PATTERNS = tuple(
         # Unix root homes are case-sensitive; PDF /Root entries are not paths.
         r"(?<![\w.-])(?<!\b[A-Za-z]:)/(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|])",
         r"(?<![\w.:-])[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>\[\](){};,|]+",
-        r"\\\\[^\\/\s]+\\Users\\[^\\/\r\n`\"'<>\[\](){};,|]+",
+        # Network (UNC) user profiles, with either path separator.
+        r"(?<![\w:/\\])[\\/]{2}[^\\/\s]+[\\/]+Users[\\/]+[^\\/\r\n`\"'<>\[\](){};,|]+",
     )
 )
 ALLOWLIST = {
@@ -74,8 +77,10 @@ def decode(data: bytes) -> str:
 
 
 SCISSORS = re.compile(r"\S -{24} >8 -{24}")
+# Git wraps its editor instruction ("... Lines starting" / "<c> with '<c>' will
+# be ignored, ..."); accept the wrapped second line and a one-line variant.
 GIT_TEMPLATE_INSTRUCTION = re.compile(
-    r"^(?P<char>\S) Lines starting with '(?P=char)' will be ignored(?:,|$)",
+    r"^(?P<char>\S) (?:Lines starting )?with '(?P=char)' will be ignored(?:,|$)",
     re.MULTILINE,
 )
 GIT_SCISSORS_INSTRUCTION = re.compile(
@@ -148,8 +153,9 @@ def scan_text(
 
 
 def scan_commit_message(text: str) -> bool:
-    # The scissors stop matches git commit -v. Typing a literal scissors line
-    # is deliberate; the PR Text backstop still scans the entire message.
+    # The scissors stop matches git commit -v. Typing a literal scissors line, or
+    # copying Git's template instruction into a supplied message, is deliberate;
+    # the PR Text backstop still scans every published commit message.
     instruction = GIT_TEMPLATE_INSTRUCTION.search(text)
     if instruction is None:
         instruction = GIT_SCISSORS_INSTRUCTION.search(text)

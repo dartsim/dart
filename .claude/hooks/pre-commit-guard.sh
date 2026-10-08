@@ -572,7 +572,8 @@ def commit_args_disable_hooks(args):
         t = token.strip(")}")
         if t == "--":
             return False
-        if t == "--no-verify" or t == "-n":
+        # Git accepts unique long-option prefixes; "--no-ver" is ambiguous.
+        if t == "-n" or (t.startswith("--no-veri") and "--no-verify".startswith(t)):
             return True
         if t.startswith("--") or not t.startswith("-") or t == "-":
             continue

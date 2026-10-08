@@ -38,6 +38,7 @@ SPEC.loader.exec_module(checker)
         "../home/example/private.md",
         "../../Users/example/private.md",
         r"\\corp-fs\Users\example\notes.md",
+        "//corp-fs/Users/example/notes.md",
         "file:/home/example/private.md",
         "cwd:/root/example.md",
         "/mnt/c/Users/example/",
@@ -78,6 +79,7 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         "named-scratchpad/file.md",
         "directory.ab/file.md",
         r"(?:/home/|/Users/|~/|fbsource|arvr/libraries)",
+        "~example/notes.md",
         "https://github.com/dartsim/dart/pull/1234",
         "https://api.github.com/users/dartsim/repos",
         "https://[2606:4700:4700::1111]/scratchpad/issue",
@@ -320,6 +322,22 @@ def test_commit_msg_incomplete_template_still_scans_comments(tmp_path, instructi
     result = _cli("--commit-msg-file", message, cwd=tmp_path)
     assert result.returncode == 1, result.stderr
     assert result.stdout == "2: /home/example/x\n"
+
+
+def test_commit_msg_recognizes_gits_wrapped_template(tmp_path):
+    # Exact text Git writes for an editor commit (the instruction wraps).
+    message = tmp_path / "COMMIT_EDITMSG"
+    message.write_text(
+        "Remove a legacy example note\n\n"
+        "# Please enter the commit message for your changes. Lines starting\n"
+        "# with '#' will be ignored, and an empty message aborts the commit.\n"
+        "#\n"
+        "# On branch main\n"
+        "# Changes to be committed:\n"
+        "#\tdeleted:    scratchpad/example.md\n"
+        "#\n"
+    )
+    assert _cli("--commit-msg-file", message, cwd=tmp_path).returncode == 0
 
 
 def test_commit_msg_template_still_scans_published_lines(tmp_path):
