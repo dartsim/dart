@@ -733,6 +733,7 @@ def measure(row: Row, args, world: Path) -> dict:
                 ) / row.steps
     except BenchmarkCaseError as error:
         result.update(status="broken", gated=False, error=str(error))
+        result.setdefault("head", {})
     except UnsupportedRow as error:
         result.update(
             status="unsupported",
@@ -1134,6 +1135,15 @@ def run_arm(args) -> dict:
             kill_running()
             raise
     for row, result in zip(rows, results):
+        if (
+            args.rows == "nightly"
+            and row.driver == CB
+            and result["status"] == "ok"
+            and "pairs" not in (result.get("head", {}).get("guards") or {})
+        ):
+            result.update(
+                status="broken", gated=False, error="missing contact pair count"
+            )
         if row.driver in WORKLOAD_SOURCES:
             result["workload_sha"] = provenance["workload_sources"][row.driver]
             if result["input_sha"] is not None:
@@ -2071,11 +2081,10 @@ def chart_data(pages: Path, record: dict) -> None:
         ):
             value = row["head"].get(metric)
             if value is not None:
-                # Store bench identity fields so the continuity pass below annotates
-                # the first point after any change (including input_sha).
+                # Inputs split series; other continuity changes are annotated below.
                 benches.append(
                     {
-                        "name": f"{row_key(row)}@{row['version']} {label}",
+                        "name": f"{row_key(row)}@{row['version']}:{(row.get('input_sha') or 'unknown')[:8]} {label}",
                         "value": value,
                         "unit": unit,
                         "extra": extra,
@@ -2141,7 +2150,6 @@ def chart_data(pages: Path, record: dict) -> None:
     )
     previous_benches = {}
     continuity_fields = (
-        "input_sha",
         "threads",
         "window",
         "method",

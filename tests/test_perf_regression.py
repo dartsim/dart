@@ -202,6 +202,77 @@ def test_nightly_requires_complete_head_only_measurement(monkeypatch, tmp_path):
     )
 
 
+@pytest.mark.parametrize("pairs", [None, 0, 3])
+def test_nightly_requires_contact_pairs_and_saves_failures(
+    monkeypatch, tmp_path, pairs
+):
+    module = _load_runner()
+    rows = [*module.NIGHTLY_ROWS, module.select_rows("gzb")[0]]
+    monkeypatch.setattr(module, "select_rows", lambda selection: rows)
+    monkeypatch.setattr(module, "command_output", lambda command: "a" * 40)
+    monkeypatch.setattr(
+        module, "fingerprint", lambda *args: _publication_fixture()["run"]["env"]
+    )
+    monkeypatch.setattr(
+        module,
+        "installed_provenance",
+        lambda args: {
+            "workload_sources": {module.CB: "contact", module.PB: "portable"}
+        },
+    )
+    output = "\n".join(
+        [
+            "Final State Hash: 0x1",
+            "Final State Finite: true",
+            "Final Contacts: 3",
+            "Final Contact Cap Hit: false",
+            "Final Resting: 0/3",
+            *([] if pairs is None else [f"Final Contact Pairs: {pairs}"]),
+        ]
+    )
+    monkeypatch.setattr(
+        module,
+        "native",
+        lambda *args: {
+            "guards": module.guards(output),
+            "allocs_per_step": 0,
+            "bytes_per_step": 0,
+        },
+    )
+    shim = tmp_path / "shim.so"
+    shim.write_bytes(b"shim")
+    assert module.main(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--shim",
+            str(shim),
+            "--nightly",
+            "--native-only",
+            "--no-perturb",
+        ]
+    ) == int(pairs is None)
+    record = module.publication_record(tmp_path / "record.json", "nightly")
+    for row in record["results"][:-1]:
+        assert row["status"] == ("broken" if pairs is None else "ok")
+        if pairs is None:
+            assert row["error"] == "missing contact pair count"
+            assert not row["gated"]
+        else:
+            assert row["head"]["guards"]["pairs"] == pairs
+    # The portable driver does not emit pair counts on main.
+    assert record["results"][-1]["status"] == "ok"
+    module.write_publication(tmp_path / "pages", record)
+    table = (tmp_path / "pages/performance/guards/main.md").read_text()
+    if pairs is None:
+        assert "missing contact pair count" in table and "broken" in table
+
+
 @pytest.mark.parametrize(
     "paths,mode,smoke",
     [
@@ -2698,6 +2769,35 @@ def test_micro_case_errors_are_correctness_failures(
         ["compare", "--base", str(base_path), "--head", str(head_path)]
     ) == (1 if correctness else 2)
     assert ("FAIL" if correctness else "ERROR") in capsys.readouterr().out
+    monkeypatch.setattr(module, "run_arm", lambda args: head)
+    assert module.main(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--nightly",
+        ]
+    ) == (1 if correctness else 2)
+    head["run"] = _publication_fixture()["run"]
+    module.write_json(head_path, head)
+    if correctness:
+        assert broken["head"] == {}
+        published = module.publication_record(head_path, "nightly")
+        module.write_publication(tmp_path / "pages", published)
+        saved = list(
+            (tmp_path / "pages/performance/records/main").glob("*/*-nightly.json")
+        )
+        assert len(saved) == 1
+        assert (
+            json.loads(saved[0].read_text())["results"][0]["error"] == broken["error"]
+        )
+    else:
+        with pytest.raises(ValueError, match="invalid or incomplete publication row"):
+            module.publication_record(head_path, "nightly")
 
 
 @pytest.mark.parametrize("name", ["dyn", "lcp"])
@@ -3989,6 +4089,7 @@ def _publication_fixture():
                 "row": "s3w",
                 "det": "dart",
                 "version": 1,
+                "input_sha": "01234567" + "a" * 56,
                 "gated": True,
                 "status": "ok",
                 "method": "slope",
@@ -4380,8 +4481,8 @@ def test_publication_merge_idempotence_fingerprint_flags_and_chart_window(tmp_pa
     assert points[0]["tool"] == "customSmallerIsBetter"
     assert [bench["value"] for bench in points[0]["benches"]] == [100_000, 0]
     assert [bench["name"] for bench in points[0]["benches"]] == [
-        "s3w/dart@1 Ir",
-        "s3w/dart@1 allocations",
+        "s3w/dart@1:01234567 Ir",
+        "s3w/dart@1:01234567 allocations",
     ]
     assert (tmp_path / "performance/dart6-ir/index.html").read_text() == (
         tmp_path / "performance/dart6/index.html"
@@ -4836,7 +4937,6 @@ def test_markdown_table_cells_escape_pipes_and_line_breaks(reporter):
 @pytest.mark.parametrize(
     "field,value",
     [
-        ("input_sha", "new input"),
         ("threads", 4),
         ("window", {"warmup": 50, "steps": 100}),
         ("method", "native"),
@@ -4851,7 +4951,7 @@ def test_chart_annotates_comparability_changes_across_missing_rows(
     module = _load_runner()
     record = _publication_fixture()
     record["results"][0].update(
-        input_sha="old input",
+        input_sha="01234567" + "a" * 56,
         threads=1,
         window={"warmup": 0, "steps": 100},
         collection_signature="old()",
@@ -4896,9 +4996,17 @@ def test_chart_annotates_comparability_changes_across_missing_rows(
 
 
 @pytest.mark.parametrize(
-    "field,value", [("version", 2), ("det", "ode"), ("row", "other")]
+    "field,value",
+    [
+        ("version", 2),
+        ("det", "ode"),
+        ("row", "other"),
+        ("input_sha", "89abcdef" + "b" * 56),
+    ],
 )
-def test_chart_names_split_row_version_and_detector_changes(tmp_path, field, value):
+def test_chart_names_split_row_version_detector_and_input_changes(
+    tmp_path, field, value
+):
     module = _load_runner()
     _stock_chart_template(tmp_path)
     record = _publication_fixture()
@@ -4910,9 +5018,15 @@ def test_chart_names_split_row_version_and_detector_changes(tmp_path, field, val
     assert {bench["name"] for bench in first["benches"]}.isdisjoint(
         bench["name"] for bench in second["benches"]
     )
+    if field == "input_sha":
+        assert {bench["name"] for bench in second["benches"]} == {
+            "s3w/dart@1:89abcdef Ir",
+            "s3w/dart@1:89abcdef allocations",
+        }
+        assert all("changed:" not in bench["extra"] for bench in second["benches"])
 
 
-def test_chart_legacy_points_validate_counts_and_annotate_unknown_inputs(tmp_path):
+def test_chart_legacy_points_validate_counts_and_split_unknown_inputs(tmp_path):
     module = _load_runner()
     _stock_chart_template(tmp_path)
     record = _publication_fixture()
@@ -4940,10 +5054,10 @@ def test_chart_legacy_points_validate_counts_and_annotate_unknown_inputs(tmp_pat
     with pytest.raises(ValueError, match="deterministic counts"):
         module.chart_data(tmp_path, changed)
     record["run"].update(commit="c" * 40, time="2026-10-08T09:00:00+00:00")
-    record["results"][0]["input_sha"] = "new input"
+    record["results"][0]["input_sha"] = "89abcdef" + "b" * 56
     module.chart_data(tmp_path, record)
     assert all(
-        "input_sha changed: unknown -> new input" in bench["extra"]
+        ":89abcdef " in bench["name"] and "input_sha changed:" not in bench["extra"]
         for bench in _chart_points(tmp_path)[1]["benches"]
     )
 

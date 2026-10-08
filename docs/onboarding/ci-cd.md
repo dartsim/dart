@@ -64,14 +64,15 @@ nightly-only job: it never reports on PRs, so it would block every merge.
   perturbations, scene estimated cycles, and the opt-in matrix-free row. S3
   and S4 include 1- and 4-thread captures alongside their canonical 16-thread
   captures. Failed perturbation checks make the row diagnostic and fail the
-  nightly `perf` group.
+  nightly `perf` group. Every `contact_benchmark` detector row must report its
+  final contact pair count; a missing count fails the nightly.
 
 Both tiers publish in this repository's `gh-pages` branch:
 
 | Path | Content |
 | --- | --- |
 | `performance/records/main/<yyyy>/<date>-<sha12>-<tier>.json` | Plain JSON `dart-perf/1` record: revisions, runner/host metadata, environment fingerprint, accepted rationale lines, per-row values, guards and advisory wall time |
-| `performance/dart6-ir/` | Merge-only Ir and allocation chart, alerts off; comparability changes are annotated and the chart retains 250 points |
+| `performance/dart6-ir/` | Merge-only Ir and allocation chart, alerts off; input changes split series, other continuity changes are annotated, and the chart retains 250 points |
 | `performance/guards/main.md` | Latest generated nightly S1–S6 guard table, with revision and fingerprint; replaces manual live baseline tables |
 
 The nightly record is added when the newest record by measurement time differs
@@ -99,12 +100,16 @@ Publication retries regenerate against the fetched `gh-pages` tip, including
 deduplication and derived chart/table data, before attempting a normal push.
 Chart points use the full measurement time, with commit/fingerprint tie breaks,
 so equal-time arrivals have consistent order and annotations. The stock page
-keeps its existing series and shows hover annotations at the first point after
-an environment fingerprint, row `input_sha`, thread count, warm-up/step window,
-measurement method, collection signature or micro instrumentation changes. Annotations compare each
-series with its last observed point, including across missing rows, and are
-recomputed when older evidence arrives. Older points without input metadata are
-shown as `unknown` at the transition. Row names, detectors and versions already
+uses series names such as `s3w/dart@1:01234567 Ir`, including the first eight
+hex characters of the row's `input_sha`. Workload or data input changes start
+a new series even without a version bump, so incomparable inputs are never
+connected. Older series without input identity remain separate. Hover
+annotations mark the first point after an environment fingerprint, thread
+count, warm-up/step window, measurement method, collection signature or micro
+instrumentation changes. Annotations compare each series with its last observed
+point, including across missing rows, and are recomputed when older evidence
+arrives. Older points without continuity metadata are shown as `unknown` at
+the transition. Row names, detectors and versions also
 form distinct series names. Hover annotations preserve the stock page; they do
 not remove the connecting line, so annotated transitions are incomparable.
 The fingerprint includes valgrind and its guest CPU,
