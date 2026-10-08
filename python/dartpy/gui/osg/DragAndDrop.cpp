@@ -32,12 +32,24 @@
 
 #include "pointers.hpp"
 
-#include <dart/gui/osg/osg.hpp>
+#include <dart/gui/osg/DragAndDrop.hpp>
+#include <dart/gui/osg/InteractiveFrame.hpp>
+#include <dart/gui/osg/Viewer.hpp>
 
-#include <dart/dart.hpp>
+#include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/Shape.hpp>
+#include <dart/dynamics/SimpleFrame.hpp>
 
+#include <dart/common/Observer.hpp>
+#include <dart/common/Subject.hpp>
+
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <osgGA/GUIEventAdapter>
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
+
+#include <memory>
 
 namespace py = pybind11;
 
