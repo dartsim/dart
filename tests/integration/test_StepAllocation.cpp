@@ -2052,6 +2052,36 @@ TEST(WorldSimulationModeMemoryManager, BakedWorldBaseAllocatorDoesNotGrow)
   EXPECT_EQ(snapshot.allocationBytes, 0u);
 }
 
+TEST(
+    WorldSimulationModeMemoryManager,
+    EnterSimulationModeDoesNotGrowBaseAllocator)
+{
+  dart::test::CountingMemoryAllocator allocator;
+  dart::simulation::WorldConfig config("counted_simulation_entry_world");
+  config.baseAllocator = &allocator;
+
+  auto world = dart::simulation::World::create(config);
+  world->setCollisionDetector(dart::collision::DARTCollisionDetector::create());
+  for (std::size_t i = 0u; i < 100u; ++i) {
+    world->addSkeleton(createBox(
+        i,
+        Eigen::Vector3d(static_cast<double>(i), 0.0, 1.0),
+        Eigen::Vector3d(0.2, 0.2, 0.2),
+        Eigen::Vector3d(0.2, 0.6, 0.3)));
+  }
+
+  dart::test::ScopedCountingMemoryAllocatorCounter counter(allocator);
+  world->enterSimulationMode();
+  counter.stop();
+
+  ASSERT_TRUE(world->isInSimulationMode());
+  const auto snapshot = counter.snapshot();
+  EXPECT_EQ(snapshot.allocationCount, 0u);
+  EXPECT_EQ(snapshot.allocationBytes, 0u);
+  EXPECT_EQ(snapshot.deallocationCount, 0u);
+  EXPECT_EQ(snapshot.deallocationBytes, 0u);
+}
+
 TEST(StepAllocation, ReportsWorldStepAllocationBaseline)
 {
   const auto nativeMeasurement
