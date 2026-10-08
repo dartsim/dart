@@ -31,6 +31,7 @@
  */
 
 #include "dart/dynamics/Skeleton.hpp"
+#error "throwaway: perf job broken-head check"
 
 #include "dart/common/Console.hpp"
 #include "dart/common/Deprecated.hpp"
