@@ -677,6 +677,41 @@ TEST(FrictionCone, IdenticalResultsAcrossThreads)
   }
 }
 
+TEST(FrictionCone, ContactViolationKeepsStepsBelowTheImpulseRounding)
+{
+  const FrictionCone cone{
+      Eigen::Vector2d::Constant(0.5), FrictionConeLaw::Ellipse};
+  // 1e20 - 1 rounds back to 1e20, yet the fixed-point residual is 1.
+  EXPECT_GE(
+      contactViolation(
+          Eigen::Vector3d(1e20, 0, 0), Eigen::Vector3d(1, 0, 0), 1, cone),
+      1.0);
+  // A converged contact with a large impulse still reads as converged.
+  EXPECT_LE(
+      contactViolation(
+          Eigen::Vector3d(1e3, 0, 0), Eigen::Vector3d(1e-14, 0, 0), 1, cone),
+      2e-14);
+}
+
+TEST(FrictionCone, RegularizationIgnoresObjectiveUnits)
+{
+  // Nonsingular, but its normal curvature is far below one in any units.
+  const Eigen::Matrix3d H = Eigen::Vector3d(1e-17, 1, 1).asDiagonal();
+  const Eigen::Vector3d c(-1e-17, 0, 0);
+  const FrictionCone cone{
+      Eigen::Vector2d::Constant(0.5), FrictionConeLaw::Ellipse};
+  for (const double scale : {1.0, 1e-10, 1e10}) {
+    SCOPED_TRACE(scale);
+    for (const auto& result :
+         {solveConeQp(scale * H, scale * c, cone),
+          solveExactContact(scale * H, scale * c, cone)}) {
+      ASSERT_TRUE(result.certified);
+      EXPECT_EQ(result.regularization, 0.0);
+      EXPECT_NEAR(result.impulse[0], 1.0, 1e-9);
+    }
+  }
+}
+
 TEST(FrictionCone, CertificateRequiresSymmetricPositiveSemidefiniteBlock)
 {
   const Eigen::Vector3d zero = Eigen::Vector3d::Zero();

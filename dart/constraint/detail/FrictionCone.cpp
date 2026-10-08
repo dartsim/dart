@@ -323,11 +323,9 @@ bool prepare(
   }
   const Real trace = H.trace();
   factorScale = scale;
-  const Real minPivot = ldlt.vectorD().minCoeff();
-  const Real pivot = scale * minPivot;
-  if (pivot == 0.0 && scale != 0.0 && minPivot != 0.0)
-    return false;
-  if (pivot <= 1e-18 * std::max(1.0, trace)) {
+  // Judge singularity on the normalized block, whose PSD trace/scale lies in
+  // [1, 3], so that rescaling the whole QP cannot change the decision.
+  if (scale == 0.0 || ldlt.vectorD().minCoeff() <= 1e-18 * (trace / scale)) {
     Real shift = 1e-12 * (trace > 0.0 ? trace : 1.0);
     if (scaleExponent != 0) {
       regularization = trace > 0.0 ? std::ldexp(shift, scaleExponent) : 1e-12;
@@ -705,7 +703,14 @@ double contactViolation(
   const Eigen::Vector3d residual = impulse - projectCone(argument, cone);
   if (!residual.allFinite())
     return std::numeric_limits<double>::infinity();
-  const double length = std::hypot(residual[0], residual[1], residual[2]);
+  // A step below half the impulse's rounding unit vanishes from argument.
+  // Projection is nonexpansive, so adding the lost step bounds the residual.
+  Eigen::Vector3d lost = Eigen::Vector3d::Zero();
+  for (int i = 0; i < 3; ++i)
+    if (argument[i] == impulse[i])
+      lost[i] = step[i];
+  const double length = std::hypot(residual[0], residual[1], residual[2])
+                        + std::hypot(lost[0], lost[1], lost[2]);
   const double violation = maxDiagonal * length;
   return productRepresented(maxDiagonal, length, violation)
              ? violation
