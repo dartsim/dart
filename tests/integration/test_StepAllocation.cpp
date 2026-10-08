@@ -48,6 +48,7 @@
 #include "dart/constraint/ContactSurface.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
+#include "dart/dynamics/ConvexMeshShape.hpp"
 #include "dart/dynamics/Frame.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/GenericJoint.hpp"
