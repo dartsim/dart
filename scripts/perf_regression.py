@@ -327,6 +327,13 @@ def micro_guards(text: str) -> dict | None:
     }
 
 
+def guard_evidence(metrics: dict) -> tuple:
+    # Native penetration and canonical checkpoints live outside the guard map.
+    return tuple(
+        metrics.get(key) for key in ("guards", "max_penetration", "checkpoints")
+    )
+
+
 def identity(path: str, prefix: Path) -> None:
     if not Path(path).resolve().is_relative_to(prefix.resolve()):
         raise ValueError(f"arm identity: {path} is outside {prefix}")
@@ -691,13 +698,19 @@ def measure(row: Row, args, world: Path) -> dict:
                 )
                 # Requested bytes gate too, so they must not depend on layout,
                 # and every perturbed run must also advance time correctly.
-                stable = altered.get("time_advanced") is not False and all(
-                    altered.get(key) == metrics.get(key)
-                    for key in ("guards", "allocs", "bytes")
+                stable = (
+                    altered.get("time_advanced") is not False
+                    and guard_evidence(altered) == guard_evidence(metrics)
+                    and all(
+                        altered.get(key) == metrics.get(key)
+                        for key in ("allocs", "bytes")
+                    )
                 )
                 result["perturbations"][config] = {
                     "stable": stable,
                     "guards": altered["guards"],
+                    "max_penetration": altered.get("max_penetration"),
+                    "checkpoints": altered.get("checkpoints"),
                     "allocs": altered["allocs"],
                     "bytes": altered.get("bytes"),
                     "time_advanced": altered.get("time_advanced"),
@@ -1135,7 +1148,7 @@ def run_arm(args) -> dict:
             if (
                 not serial
                 or serial["status"] != "ok"
-                or serial["head"]["guards"] != result["head"]["guards"]
+                or guard_evidence(serial["head"]) != guard_evidence(result["head"])
             ):
                 result.update(
                     status="broken", error="mt4 guard parity missing or unequal"
@@ -1377,7 +1390,7 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         equal = (
             None
             if missing_micro
-            else bool(bm.get("guards") and bm.get("guards") == hm.get("guards"))
+            else bool(bm.get("guards") and guard_evidence(bm) == guard_evidence(hm))
         )
         reasons = []
         required_missing = bool(
@@ -1556,6 +1569,16 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
     return record
 
 
+def markdown_cell(value) -> str:
+    return (
+        str(value)
+        .replace("|", "\\|")
+        .replace("\r\n", "\n")
+        .replace("\r", "\n")
+        .replace("\n", "<br>")
+    )
+
+
 def markdown(record: dict) -> str:
     verdict = record["verdict"]
     env = record["run"]["env"]
@@ -1631,9 +1654,19 @@ def markdown(record: dict) -> str:
                     if key in guard
                 )
                 guard_text += f"; {label}: {values or 'unavailable'}"
-        lines.append(
-            f"| {row_key(row)} | {row.get('threads', 1)} | {number(bm.get('ir_per_step'))} | {number(hm.get('ir_per_step'))} | {change_text} | {number(bm.get('allocs_per_step'))} → {number(hm.get('allocs_per_step'))} | {bytes_text} | {guard_text} | {change['class']} | {row['gate_reason']} |"
-        )
+        values = [
+            row_key(row),
+            row.get("threads", 1),
+            number(bm.get("ir_per_step")),
+            number(hm.get("ir_per_step")),
+            change_text,
+            f"{number(bm.get('allocs_per_step'))} → {number(hm.get('allocs_per_step'))}",
+            bytes_text,
+            guard_text,
+            change["class"],
+            row["gate_reason"],
+        ]
+        lines.append("| " + " | ".join(map(markdown_cell, values)) + " |")
     lines += [
         "",
         "Wall time is recorded as advisory; RSS warns at +5%. Diagnostic and behaviour-change deltas do not enter the Ir gate.",
@@ -1720,7 +1753,7 @@ def publication_record(path: Path, tier: str, pr: int | None = None) -> dict:
         raise ValueError("publication PR number must be positive")
     if tier == "merge":
         if not re.fullmatch(r"[0-9a-f]{40}", run.get("parent", "")):
-            raise ValueError("merge publication requires the first-parent SHA")
+            raise ValueError("merge publication requires the comparison-base SHA")
         if record.get("verdict", {}).get("status") not in ("PASS", "WARN", "FAIL"):
             raise ValueError("merge publication requires a completed comparison")
     else:
@@ -1857,6 +1890,7 @@ def guard_table(record: dict, previous: str = "") -> str:
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     drift = []
+    diagnostics = []
     previous_rows = {
         tuple(cell.strip() for cell in line.strip("|").split("|")[:2]): line
         for line in previous.splitlines()
@@ -1882,19 +1916,17 @@ def guard_table(record: dict, previous: str = "") -> str:
             "non-finite" if penetration is None else penetration,
             head.get("allocs_per_step", "—"),
         ]
-        table_row = (
-            "| " + " | ".join(str(value).replace("|", "\\|") for value in values) + " |"
-        )
+        table_row = "| " + " | ".join(map(markdown_cell, values)) + " |"
         lines.append(table_row)
         if re.match(r"^S[36](?:-|$)", row["row"]):
             old_row = previous_rows.get((row["row"], row.get("det", "")))
             if old_row and old_row != table_row:
                 drift.append(row_key(row))
         if row.get("error"):
-            lines.extend(["", f"`{row_key(row)}`: {row['error']}", ""])
+            diagnostics.extend(["", f"`{row_key(row)}`: {row['error']}", ""])
         if head.get("checkpoints"):
             checkpoints = f"`{row_key(row)}` checkpoints: `{json.dumps(head['checkpoints'], sort_keys=True)}`"
-            lines.extend(
+            diagnostics.extend(
                 [
                     "",
                     checkpoints,
@@ -1907,6 +1939,7 @@ def guard_table(record: dict, previous: str = "") -> str:
                 for line in previous.splitlines()
             ):
                 drift.append(row_key(row) + " checkpoints")
+    lines.extend(diagnostics)
     if drift:
         lines.extend(
             [
@@ -1917,6 +1950,47 @@ def guard_table(record: dict, previous: str = "") -> str:
             ]
         )
     return "\n".join(lines) + "\n"
+
+
+def deterministic_measurements(record: dict) -> dict:
+    """Reruns must preserve inputs, deterministic counts and correctness evidence."""
+    return {
+        row_key(row): {
+            **{
+                key: row.get(key)
+                for key in (
+                    "version",
+                    "input_sha",
+                    "threads",
+                    "window",
+                    "method",
+                    "collection_signature",
+                    "status",
+                    "gated",
+                    "qualification_required",
+                    "perturbations",
+                )
+            },
+            "head": {
+                key: row["head"].get(key)
+                for key in (
+                    "ir_per_step",
+                    "allocs_per_step",
+                    "bytes_per_step",
+                    "guards",
+                    "max_penetration",
+                    "checkpoints",
+                    "time_advanced",
+                    "allocs",
+                    "bytes",
+                    "cases",
+                    "micro_instrumented",
+                    "est_cycles_per_step",
+                )
+            },
+        }
+        for row in record["results"]
+    }
 
 
 def chart_data(pages: Path, record: dict) -> None:
@@ -1942,12 +2016,6 @@ def chart_data(pages: Path, record: dict) -> None:
     series = data["entries"].setdefault("DART 6 deterministic counts", [])
     run = record["run"]
     fingerprint = run["env"]["fingerprint"]
-    if any(
-        point["commit"]["id"] == run["commit"]
-        and point.get("fingerprint") == fingerprint
-        for point in series
-    ):
-        return
     extra = f"fingerprint: {fingerprint}"
     if run.get("pr"):
         extra += f"\nPR #{run['pr']}"
@@ -1967,9 +2035,41 @@ def chart_data(pages: Path, record: dict) -> None:
                         "value": value,
                         "unit": unit,
                         "extra": extra,
+                        "micro_instrumented": row["head"].get("micro_instrumented"),
+                        **{
+                            key: row.get(key)
+                            for key in (
+                                "input_sha",
+                                "threads",
+                                "window",
+                                "method",
+                                "collection_signature",
+                            )
+                        },
                     }
                 )
-    if not benches:
+    measurement = deterministic_measurements(record)
+    repeated = False
+    for point in series:
+        if (
+            point["commit"]["id"] != run["commit"]
+            or point.get("fingerprint") != fingerprint
+        ):
+            continue
+        if "measurement" in point:
+            changed = point["measurement"] != measurement
+        else:
+            # Older stock data has only plotted counts; validate what it retained.
+            changed = {
+                bench["name"]: (bench["value"], bench["unit"])
+                for bench in point["benches"]
+            } != {bench["name"]: (bench["value"], bench["unit"]) for bench in benches}
+        if changed:
+            raise ValueError(
+                "repeated merge changed deterministic counts or guards/inputs under the same environment fingerprint"
+            )
+        repeated = True
+    if repeated or not benches:
         return
     timestamp = int(datetime.fromisoformat(run["time"]).timestamp() * 1000)
     series.append(
@@ -1984,6 +2084,7 @@ def chart_data(pages: Path, record: dict) -> None:
             "date": timestamp,
             "tool": "customSmallerIsBetter",
             "fingerprint": fingerprint,
+            "measurement": measurement,
             "benches": benches,
         }
     )
@@ -1994,16 +2095,37 @@ def chart_data(pages: Path, record: dict) -> None:
             point.get("fingerprint", ""),
         )
     )
-    for previous, point in zip(series, series[1:]):
+    previous_benches = {}
+    continuity_fields = (
+        "input_sha",
+        "threads",
+        "window",
+        "method",
+        "collection_signature",
+        "micro_instrumented",
+    )
+    for point in series:
         for bench in point["benches"]:
             bench["extra"] = re.sub(
-                r"\nfingerprint changed: [^\n]*", "", bench.get("extra", "")
+                r"\n(?:fingerprint|input_sha|threads|window|method|collection_signature|micro_instrumented) changed: [^\n]*",
+                "",
+                bench.get("extra", ""),
             )
-            if previous.get("fingerprint") != point.get("fingerprint"):
-                bench["extra"] += (
-                    f"\nfingerprint changed: {previous.get('fingerprint', 'unknown')}"
-                    f" -> {point.get('fingerprint', 'unknown')}"
-                )
+            previous = previous_benches.get(bench["name"])
+            if previous:
+                old_point, old_bench = previous
+                for key in ("fingerprint", *continuity_fields):
+                    old, new = (
+                        (old_point, point)
+                        if key == "fingerprint"
+                        else (old_bench, bench)
+                    )
+                    if old.get(key) != new.get(key):
+                        bench["extra"] += (
+                            f"\n{key} changed: {old.get(key, 'unknown')}"
+                            f" -> {new.get(key, 'unknown')}"
+                        )
+            previous_benches[bench["name"]] = (point, bench)
     data["entries"]["DART 6 deterministic counts"] = series[-250:]
     data["lastUpdate"] = series[-1]["date"]
     # The stock page reads this as executable JS; JSON escaping closes script literals.
@@ -2031,35 +2153,21 @@ def write_publication(pages: Path, record: dict) -> list[str]:
             run["env"]["fingerprint"],
         ):
             if run["tier"] == "merge":
-
-                def counts(value):
-                    # Every gated deterministic count, not just Ir.
-                    return {
-                        row_key(row): tuple(
-                            row["head"].get(key)
-                            for key in (
-                                "ir_per_step",
-                                "allocs_per_step",
-                                "bytes_per_step",
-                            )
-                        )
-                        for row in value["results"]
-                    }
-
-                if counts(saved) != counts(record):
+                if deterministic_measurements(saved) != deterministic_measurements(
+                    record
+                ):
                     raise ValueError(
-                        "repeated merge changed deterministic counts under the same "
+                        "repeated merge changed deterministic counts or guards/inputs under the same "
                         "environment fingerprint"
                     )
                 chart_repeated = True
-                repeated = saved["run"].get("accepted", []) == run.get(
-                    "accepted", []
-                ) and saved.get("verdict") == record.get("verdict")
-                if repeated:
-                    break
+                repeated = repeated or (
+                    saved["run"].get("accepted", []) == run.get("accepted", [])
+                    and saved.get("verdict") == record.get("verdict")
+                )
             else:
-                repeated = previous["time"] == run["time"] or (
-                    index == 0 and saved["results"] == record["results"]
+                repeated = saved["results"] == record["results"] and (
+                    previous["time"] == run["time"] or index == 0
                 )
                 if repeated:
                     break

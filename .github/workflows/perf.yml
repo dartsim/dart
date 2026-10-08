@@ -377,17 +377,24 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Select first parent and measurement scope
+      - name: Select base and measurement scope
         id: scope
         env:
           REQUESTED_HEAD: ${{ inputs.head }}
           REQUESTED_BASE: ${{ inputs.base }}
+          PUSH_BEFORE: ${{ github.event.before }}
         run: |
           head=$(git rev-parse --verify --end-of-options "${REQUESTED_HEAD:-HEAD}^{commit}")
           # Dispatch can remeasure main history, never an unmerged PR revision.
           git merge-base --is-ancestor "$head" origin/main
-          base=$(git rev-parse "$head^1")
-          if [[ -n "$REQUESTED_BASE" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == push && -n "$PUSH_BEFORE" && ! "$PUSH_BEFORE" =~ ^0+$ ]] &&
+              base=$(git rev-parse --verify --end-of-options "$PUSH_BEFORE^{commit}"); then
+            # Rebase merges can update main by several commits at once.
+            git merge-base --is-ancestor "$base" "$head"
+          else
+            base=$(git rev-parse "$head^1")
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && -n "$REQUESTED_BASE" ]]; then
             expected=$(git rev-parse --verify --end-of-options "$REQUESTED_BASE^{commit}")
             [[ "$expected" == "$base" ]]
           fi

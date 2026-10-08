@@ -43,8 +43,12 @@ nightly-only job: it never reports on PRs, so it would block every merge.
 
 `perf.yml` extends the PR harness for two hosted tiers on `ubuntu-24.04`:
 
-- The merge tier compares a qualifying `main` commit's first parent with HEAD
-  using the parent's harness and thresholds, in HEAD's pixi environment.
+- The merge tier compares a qualifying push to `main` from its pre-update SHA
+  (`github.event.before`) to HEAD, covering every commit in a rebase merge.
+  The base must be an ancestor of HEAD; only a zero or unavailable pre-update
+  SHA falls back to HEAD's first parent. Manual dispatch uses that first parent
+  and validates the optional `base` input against it.
+  Measurement uses the base's harness and thresholds, in HEAD's pixi environment.
   Harness/workflow changes also run a head smoke capture.
   Pixi-only changes are skipped. It finds the merged PR through the commit's
   pull-request API endpoint and checks its current body for rationale lines.
@@ -67,7 +71,7 @@ Both tiers publish in this repository's `gh-pages` branch:
 | Path | Content |
 | --- | --- |
 | `performance/records/main/<yyyy>/<date>-<sha12>-<tier>.json` | Plain JSON `dart-perf/1` record: revisions, runner/host metadata, environment fingerprint, accepted rationale lines, per-row values, guards and advisory wall time |
-| `performance/dart6-ir/` | Merge-only Ir and allocation chart, alerts off; fingerprint changes are annotated and the chart retains 250 points |
+| `performance/dart6-ir/` | Merge-only Ir and allocation chart, alerts off; comparability changes are annotated and the chart retains 250 points |
 | `performance/guards/main.md` | Latest generated nightly S1–S6 guard table, with revision and fingerprint; replaces manual live baseline tables |
 
 The nightly record is added when the newest record by measurement time differs
@@ -76,8 +80,16 @@ metrics). Identical results at a later time do not add another record. The guard
 table advances by commit ancestry, then measurement time for the same HEAD;
 rerunning the same artifact leaves it untouched, preserving drift annotations.
 Records keep full history beyond the chart window. Repeated merge runs with the
-same HEAD and fingerprint must reproduce identical per-row Ir. Unchanged
-verdict/rationale reruns are deduplicated; a new accepted rationale or verdict
+same HEAD and fingerprint must reproduce identical per-row Ir, allocations,
+requested bytes, guards (hash, contacts, pairs, resting, finite, cap hit and
+penetration), penetration checkpoints, time advancement, perturbation evidence,
+gate qualification, micro instrumentation and measurement inputs.
+Perturbation qualification, multithread parity and A/B guard comparison also
+include separately stored penetration and checkpoint evidence.
+The chart writer validates this evidence too; legacy chart points can only
+validate the plotted counts they retained. A nightly with changed results is
+retained even if its timestamp matches an earlier record.
+Unchanged verdict/rationale reruns are deduplicated; a new accepted rationale or verdict
 keeps another immutable
 record without another chart point. The `<date>`
 filename component is a UTC timestamp with microseconds, for example
@@ -86,7 +98,15 @@ on the same day preserves both records.
 Publication retries regenerate against the fetched `gh-pages` tip, including
 deduplication and derived chart/table data, before attempting a normal push.
 Chart points use the full measurement time, with commit/fingerprint tie breaks,
-so equal-time arrivals have consistent order and fingerprint annotations.
+so equal-time arrivals have consistent order and annotations. The stock page
+keeps its existing series and shows hover annotations at the first point after
+an environment fingerprint, row `input_sha`, thread count, warm-up/step window,
+measurement method, collection signature or micro instrumentation changes. Annotations compare each
+series with its last observed point, including across missing rows, and are
+recomputed when older evidence arrives. Older points without input metadata are
+shown as `unknown` at the transition. Row names, detectors and versions already
+form distinct series names. Hover annotations preserve the stock page; they do
+not remove the connecting line, so annotated transitions are incomparable.
 The fingerprint includes valgrind and its guest CPU,
 compiler, glibc, `pixi.lock`, preset and harness identity. Read records directly
 with `git show origin/gh-pages:performance/records/main/<yyyy>/<file>.json`.

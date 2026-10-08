@@ -214,7 +214,7 @@ def test_nightly_requires_complete_head_only_measurement(monkeypatch, tmp_path):
         (["tests/benchmark/worlds/3k_shapes.sdf.gz"], "ab", "true"),
     ],
 )
-def test_merge_scope_always_compares_first_parent_and_skips_pixi_only(
+def test_dispatch_scope_compares_first_parent_and_skips_pixi_only(
     tmp_path, paths, mode, smoke
 ):
     stub = """
@@ -235,9 +235,7 @@ def test_merge_scope_always_compares_first_parent_and_skips_pixi_only(
             "-e",
             "-c",
             stub
-            + _perf_step("record-measure", "Select first parent and measurement scope")[
-                "run"
-            ],
+            + _perf_step("record-measure", "Select base and measurement scope")["run"],
             "selector",
             *paths,
         ],
@@ -250,6 +248,8 @@ def test_merge_scope_always_compares_first_parent_and_skips_pixi_only(
             "RUNNER_TEMP": str(tmp_path),
             "REQUESTED_HEAD": "",
             "REQUESTED_BASE": "",
+            "GITHUB_EVENT_NAME": "workflow_dispatch",
+            "PUSH_BEFORE": "",
         },
         text=True,
         capture_output=True,
@@ -258,6 +258,88 @@ def test_merge_scope_always_compares_first_parent_and_skips_pixi_only(
     selected = dict(line.split("=", 1) for line in env_file.read_text().splitlines())
     assert (selected["PERF_BASE"], selected["PERF_HEAD"]) == ("parent", "head")
     assert (selected["PERF_MODE"], selected["PERF_SMOKE"]) == (mode, smoke)
+
+
+@pytest.mark.parametrize(
+    "event,before,requested,expected",
+    [
+        ("push", "start", "", "start"),
+        ("push", "zero", "", "parent"),
+        ("push", "", "", "parent"),
+        ("push", "missing", "", "parent"),
+        ("push", "side", "", None),
+        ("workflow_dispatch", "start", "", "parent"),
+        ("workflow_dispatch", "", "parent", "parent"),
+        ("workflow_dispatch", "", "start", None),
+        ("workflow_dispatch", "", "missing", None),
+    ],
+)
+def test_merge_scope_uses_push_range_and_validates_ancestry(
+    tmp_path, event, before, requested, expected
+):
+    source = tmp_path / "source"
+    source.mkdir()
+
+    def git(*arguments):
+        return subprocess.run(
+            ["git", "-C", str(source), *arguments],
+            check=True,
+            text=True,
+            capture_output=True,
+        ).stdout.strip()
+
+    git("init", "--initial-branch=main")
+    git("config", "user.name", "test")
+    git("config", "user.email", "test@example.com")
+    revisions = {"zero": "0" * 40, "missing": "f" * 40, "": ""}
+    # A rebase merge whose first commit changes DART and last changes only docs.
+    for name, path in (
+        ("start", "README.md"),
+        ("parent", "dart/change.cpp"),
+        ("head", "docs/change.md"),
+    ):
+        target = source / path
+        target.parent.mkdir(exist_ok=True)
+        target.write_text(name)
+        git("add", ".")
+        git("commit", "-m", name)
+        revisions[name] = git("rev-parse", "HEAD")
+    git("update-ref", "refs/remotes/origin/main", revisions["head"])
+    git("checkout", "-b", "side", revisions["start"])
+    git("commit", "--allow-empty", "-m", "unrelated history")
+    revisions["side"] = git("rev-parse", "HEAD")
+    git("checkout", "main")
+    env_file = tmp_path / "env"
+    step = _perf_step("record-measure", "Select base and measurement scope")
+    assert step["env"]["PUSH_BEFORE"] == "${{ github.event.before }}"
+    result = subprocess.run(
+        ["bash", "-e", "-o", "pipefail", "-c", step["run"]],
+        cwd=source,
+        env={
+            **os.environ,
+            "GITHUB_EVENT_NAME": event,
+            "PUSH_BEFORE": revisions[before],
+            "REQUESTED_HEAD": "",
+            "REQUESTED_BASE": revisions[requested],
+            "RUNNER_TEMP": str(tmp_path),
+            "GITHUB_ENV": str(env_file),
+            "GITHUB_OUTPUT": str(tmp_path / "output"),
+            "GITHUB_STEP_SUMMARY": str(tmp_path / "summary"),
+        },
+        text=True,
+        capture_output=True,
+    )
+    if expected is None:
+        assert result.returncode != 0
+        assert not env_file.exists()
+    else:
+        assert result.returncode == 0, result.stderr
+        selected = dict(
+            line.split("=", 1) for line in env_file.read_text().splitlines()
+        )
+        assert selected["PERF_BASE"] == revisions[expected]
+        assert selected["PERF_HEAD"] == revisions["head"]
+        assert selected["PERF_MODE"] == ("ab" if expected == "start" else "skip")
 
 
 @pytest.mark.parametrize("ambiguity", [False, True])
@@ -1591,7 +1673,18 @@ def test_run_requires_installed_commit():
 
 
 @pytest.mark.parametrize(
-    "changed", [None, "hash", "contacts", "cap_hit", "resting", "finite"]
+    "changed",
+    [
+        None,
+        "hash",
+        "contacts",
+        "pairs",
+        "cap_hit",
+        "resting",
+        "finite",
+        "max_penetration",
+        "checkpoints",
+    ],
 )
 def test_multithread_parity_compares_all_guards(monkeypatch, tmp_path, changed):
     module = _load_runner()
@@ -1622,15 +1715,26 @@ def test_multithread_parity_compares_all_guards(monkeypatch, tmp_path, changed):
 
     def measure(row, args, world):
         guards = dict(
-            hash="same", contacts=1, cap_hit=False, resting="0/1", finite=True
+            hash="same", contacts=1, pairs=1, cap_hit=False, resting="0/1", finite=True
         )
+        metrics = {
+            "guards": guards,
+            "max_penetration": 0.1,
+            "checkpoints": [{"step": 100, "max_penetration": 0.1}],
+        }
         if row.parity and changed:
-            guards[changed] = {
+            target = (
+                metrics if changed in ("max_penetration", "checkpoints") else guards
+            )
+            target[changed] = {
                 "hash": "different",
                 "contacts": 2,
+                "pairs": 2,
                 "cap_hit": True,
                 "resting": "1/1",
                 "finite": False,
+                "max_penetration": 0.2,
+                "checkpoints": [{"step": 100, "max_penetration": 0.2}],
             }[changed]
         return {
             "row": row.row,
@@ -1638,7 +1742,7 @@ def test_multithread_parity_compares_all_guards(monkeypatch, tmp_path, changed):
             "parity": row.parity,
             "status": "ok",
             "input_sha": "scene input",
-            "head": {"guards": guards},
+            "head": metrics,
         }
 
     monkeypatch.setattr(module, "measure", measure)
@@ -1705,6 +1809,77 @@ def test_measure_gates_only_on_its_own_perturbation_pass(monkeypatch, tmp_path):
         lambda row, args, world, config="": {**metrics, "bytes": 64 + bool(config)},
     )
     assert module.measure(row, args, tmp_path)["gated"] is False
+
+
+@pytest.mark.parametrize("field", ["max_penetration", "checkpoints"])
+def test_perturbation_checks_separately_stored_guard_evidence(
+    monkeypatch, tmp_path, field
+):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--native-only",
+        ]
+    )
+    original = {
+        "guards": {"hash": "same", "finite": True},
+        "allocs": 0,
+        "bytes": 0,
+        "max_penetration": 0.1,
+        "checkpoints": [{"step": 100, "max_penetration": 0.1}],
+    }
+    altered = copy.deepcopy(original)
+    altered[field] = (
+        0.2 if field == "max_penetration" else [{"step": 100, "max_penetration": 0.2}]
+    )
+    monkeypatch.setattr(
+        module,
+        "native",
+        lambda row, args, world, config="": copy.deepcopy(
+            altered if config else original
+        ),
+    )
+    measured = module.measure(module.select_rows("s3w/dart")[0], args, tmp_path)
+    assert measured["gated"] is False
+    assert all(
+        not sample["stable"] and sample[field] == altered[field]
+        for sample in measured["perturbations"].values()
+    )
+
+
+@pytest.mark.parametrize("field", ["max_penetration", "checkpoints"])
+def test_compare_rebaselines_separately_stored_guard_evidence(field):
+    module = _load_runner()
+    base = _publication_fixture()
+    base["run"]["env"].update(_micro_record(module, "dyn")["run"]["env"])
+    base["results"][0]["head"].update(
+        bytes_per_step=0,
+        max_penetration=0.1,
+        checkpoints=[{"step": 100, "max_penetration": 0.1}],
+    )
+    head = copy.deepcopy(base)
+    head["results"][0]["head"][field] = (
+        0.2 if field == "max_penetration" else [{"step": 100, "max_penetration": 0.2}]
+    )
+    result = module.compare(base, head)
+    assert result["verdict"]["status"] == "FAIL"
+    assert result["results"][0]["delta"]["guards_equal"] is False
+    assert result["results"][0]["failures"] == [
+        "guards changed; Rebaseline-Rationale required"
+    ]
+    assert (
+        module.compare(
+            base, head, "Rebaseline-Rationale: s3w/dart: intended guard change"
+        )["verdict"]["status"]
+        == "PASS"
+    )
 
 
 def test_environment_ignores_inherited_library_path(monkeypatch, tmp_path):
@@ -4322,6 +4497,308 @@ def test_merge_rerun_with_changed_allocations_is_not_deduplicated(tmp_path):
     changed["results"][0]["head"]["allocs_per_step"] = 1.0
     with pytest.raises(ValueError, match="deterministic counts"):
         module.write_publication(tmp_path, changed)
+
+
+@pytest.mark.parametrize("writer", ["record", "chart"])
+@pytest.mark.parametrize(
+    "section,key,value",
+    [
+        *(
+            ("guards", key, value)
+            for key, value in (
+                ("hash", "changed"),
+                ("contacts", 4),
+                ("pairs", 2),
+                ("resting", "3/3"),
+                ("finite", False),
+                ("cap_hit", True),
+                ("max_penetration", 0.2),
+            )
+        ),
+        ("head", "ir_per_step", 100_001),
+        ("head", "allocs_per_step", 1),
+        ("head", "bytes_per_step", 1),
+        ("head", "max_penetration", 0.2),
+        ("head", "checkpoints", [{"step": 1, "max_penetration": 0.2}]),
+        ("head", "time_advanced", False),
+        ("head", "cases", ["changed case"]),
+        ("head", "micro_instrumented", False),
+        ("head", "allocs", 1),
+        ("head", "bytes", 1),
+        ("head", "est_cycles_per_step", 101),
+        ("row", "input_sha", "changed"),
+        ("row", "version", 2),
+        ("row", "window", {"warmup": 50, "steps": 100}),
+        ("row", "threads", 4),
+        ("row", "method", "native"),
+        ("row", "collection_signature", "other()"),
+        ("row", "status", "broken"),
+        ("row", "gated", False),
+        ("row", "qualification_required", False),
+        (
+            "row",
+            "perturbations",
+            {"start4k": {"stable": False, "guards": {"hash": "changed"}}},
+        ),
+    ],
+)
+def test_rerun_rejects_changed_deterministic_evidence(
+    tmp_path, writer, section, key, value
+):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    record["run"]["tier"] = "merge"
+    row = record["results"][0]
+    row.update(
+        input_sha="original",
+        threads=1,
+        window={"warmup": 0, "steps": 100},
+        collection_signature="step()",
+    )
+    row["head"].update(
+        bytes_per_step=0,
+        max_penetration=0.1,
+        checkpoints=[{"step": 1, "max_penetration": 0.1}],
+        time_advanced=True,
+    )
+    row["head"]["guards"].update(pairs=1, max_penetration=0.1)
+    write = module.write_publication if writer == "record" else module.chart_data
+    write(tmp_path, record)
+    saved = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    changed = copy.deepcopy(record)
+    row = changed["results"][0]
+    target = (
+        row
+        if section == "row"
+        else row["head"] if section == "head" else row["head"]["guards"]
+    )
+    target[key] = value
+    changed["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    with pytest.raises(ValueError, match="deterministic counts or guards/inputs"):
+        write(tmp_path, changed)
+    assert {
+        path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
+    } == saved
+
+
+@pytest.mark.parametrize("writer", ["record", "chart"])
+def test_rerun_identity_excludes_advisory_metrics_and_install_paths(tmp_path, writer):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    record["run"]["tier"] = "merge"
+    write = module.write_publication if writer == "record" else module.chart_data
+    write(tmp_path, record)
+    saved = {path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()}
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    record["results"][0]["head"].update(
+        wall_ms_per_step=15, max_rss_kb=1000, libdart="/another/install/libdart.so"
+    )
+    write(tmp_path, record)
+    assert {
+        path: path.read_bytes() for path in tmp_path.rglob("*") if path.is_file()
+    } == saved
+
+
+def test_merge_rerun_checks_all_matching_history(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    record["run"]["tier"] = "merge"
+    module.write_publication(tmp_path, record)
+    original = next((tmp_path / "performance/records/main/2026").glob("*.json"))
+    record["verdict"]["status"] = "WARN"
+    record["run"]["time"] = "2026-10-08T09:00:00+00:00"
+    module.write_publication(tmp_path, record)
+    older = json.loads(original.read_text())
+    older["results"][0]["head"]["guards"]["hash"] = "inconsistent older run"
+    module.write_json(original, older)
+    with pytest.raises(ValueError, match="guards/inputs"):
+        module.write_publication(tmp_path, record)
+
+
+def test_nightly_same_timestamp_with_changed_evidence_keeps_both_records(tmp_path):
+    module = _load_runner()
+    record = _publication_fixture()
+    record["run"]["tier"] = "nightly"
+    module.write_publication(tmp_path, record)
+    record["results"][0]["head"]["guards"]["contacts"] += 1
+    changed = module.write_publication(tmp_path, record)
+    assert len(changed) == 1 and changed[0].endswith("-nightly.json")
+    records = sorted((tmp_path / "performance/records/main/2026").glob("*.json"))
+    assert [
+        json.loads(path.read_text())["results"][0]["head"]["guards"]["contacts"]
+        for path in records
+    ] == [3, 4]
+    assert module.write_publication(tmp_path, record) == []
+
+
+def test_guard_table_keeps_all_rows_before_errors_and_checkpoints():
+    module = _load_runner()
+    record = _publication_fixture()
+    record["results"] = [copy.deepcopy(record["results"][0]) for _ in range(3)]
+    for row, name in zip(record["results"], ("S3", "S6", "S1")):
+        row["row"] = name
+    record["results"][0].update(error="failed\nwith details", status="broken")
+    record["results"][1]["head"]["checkpoints"] = [
+        {"step": 5000, "max_penetration": 0.1}
+    ]
+    report = module.guard_table(record)
+    lines = report.splitlines()
+    start = next(i for i, line in enumerate(lines) if line.startswith("| Row |"))
+    assert all(line.startswith("|") for line in lines[start : start + 5])
+    assert [line.split("|")[1].strip() for line in lines[start + 2 : start + 5]] == [
+        "S3",
+        "S6",
+        "S1",
+    ]
+    assert (
+        report.index("| S1 |")
+        < report.index("`S3/dart`: failed")
+        < report.index("`S6/dart` checkpoints:")
+    )
+
+
+@pytest.mark.parametrize("reporter", ["markdown", "guard_table"])
+def test_markdown_table_cells_escape_pipes_and_line_breaks(reporter):
+    module = _load_runner()
+    record = _publication_fixture()
+    record["run"]["env"].update(
+        valgrind="test", compiler="test", glibc="test", preset="test"
+    )
+    record["results"] *= 2
+    row = record["results"][0]
+    row.update(
+        row="S6",
+        status="broken|details\nnext",
+        gate_reason="failed|details\r\nnext\rlast",
+        failures=[],
+    )
+    row["delta"]["bytes"] = 0
+    row["head"]["guards"]["resting"] = "0/3|details\nnext"
+    report = getattr(module, reporter)(record)
+    lines = report.splitlines()
+    start = next(i for i, line in enumerate(lines) if line.startswith("| Row |"))
+    table = lines[start : start + 4]
+    assert all(line.startswith("|") for line in table)
+    assert len({len(re.split(r"(?<!\\)\|", line)) for line in table}) == 1
+    assert "\\|details<br>next" in table[2]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("input_sha", "new input"),
+        ("threads", 4),
+        ("window", {"warmup": 50, "steps": 100}),
+        ("method", "native"),
+        ("collection_signature", "new()"),
+        ("micro_instrumented", False),
+        ("fingerprint", "2" * 64),
+    ],
+)
+def test_chart_annotates_comparability_changes_across_missing_rows(
+    tmp_path, field, value
+):
+    module = _load_runner()
+    record = _publication_fixture()
+    record["results"][0].update(
+        input_sha="old input",
+        threads=1,
+        window={"warmup": 0, "steps": 100},
+        collection_signature="old()",
+    )
+    stable = copy.deepcopy(record["results"][0])
+    stable["row"] = "stable"
+    record["results"].append(stable)
+    records = [copy.deepcopy(record) for _ in range(3)]
+    for i, point in enumerate(records):
+        point["run"].update(
+            commit=f"{i + 1:040x}", time=f"2026-10-08T{8 + i:02d}:00:00+00:00"
+        )
+    records[1]["results"][0]["status"] = "unsupported"
+    if field == "fingerprint":
+        records[2]["run"]["env"]["fingerprint"] = value
+    elif field == "micro_instrumented":
+        records[2]["results"][0]["head"][field] = value
+    else:
+        records[2]["results"][0][field] = value
+    scripts = []
+    for name, ordered in (("forward", records), ("reverse", records[::-1])):
+        pages = tmp_path / name
+        _stock_chart_template(pages)
+        for point in ordered:
+            module.chart_data(pages, point)
+        points = _chart_points(pages)
+        assert all(
+            f"{field} changed:" in bench["extra"]
+            for bench in points[-1]["benches"]
+            if bench["name"].startswith("s3w/")
+        )
+        if field != "fingerprint":
+            assert all(
+                f"{field} changed:" not in bench["extra"]
+                for point in points
+                for bench in point["benches"]
+                if bench["name"].startswith("stable/")
+            )
+        assert all("changed:" not in bench["extra"] for bench in points[0]["benches"])
+        scripts.append((pages / "performance/dart6-ir/data.js").read_bytes())
+    assert scripts[0] == scripts[1]
+
+
+@pytest.mark.parametrize(
+    "field,value", [("version", 2), ("det", "ode"), ("row", "other")]
+)
+def test_chart_names_split_row_version_and_detector_changes(tmp_path, field, value):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    module.chart_data(tmp_path, record)
+    record["run"].update(commit="c" * 40, time="2026-10-08T09:00:00+00:00")
+    record["results"][0][field] = value
+    module.chart_data(tmp_path, record)
+    first, second = _chart_points(tmp_path)
+    assert {bench["name"] for bench in first["benches"]}.isdisjoint(
+        bench["name"] for bench in second["benches"]
+    )
+
+
+def test_chart_legacy_points_validate_counts_and_annotate_unknown_inputs(tmp_path):
+    module = _load_runner()
+    _stock_chart_template(tmp_path)
+    record = _publication_fixture()
+    module.chart_data(tmp_path, record)
+    data_path = tmp_path / "performance/dart6-ir/data.js"
+    data = json.loads(data_path.read_text().removeprefix("window.BENCHMARK_DATA = "))
+    point = data["entries"]["DART 6 deterministic counts"][0]
+    point.pop("measurement")
+    for bench in point["benches"]:
+        for field in (
+            "input_sha",
+            "threads",
+            "window",
+            "method",
+            "collection_signature",
+            "micro_instrumented",
+        ):
+            bench.pop(field)
+    data_path.write_text("window.BENCHMARK_DATA = " + json.dumps(data))
+    saved = data_path.read_bytes()
+    module.chart_data(tmp_path, record)
+    assert data_path.read_bytes() == saved
+    changed = copy.deepcopy(record)
+    changed["results"][0]["head"]["ir_per_step"] += 1
+    with pytest.raises(ValueError, match="deterministic counts"):
+        module.chart_data(tmp_path, changed)
+    record["run"].update(commit="c" * 40, time="2026-10-08T09:00:00+00:00")
+    record["results"][0]["input_sha"] = "new input"
+    module.chart_data(tmp_path, record)
+    assert all(
+        "input_sha changed: unknown -> new input" in bench["extra"]
+        for bench in _chart_points(tmp_path)[1]["benches"]
+    )
 
 
 @pytest.mark.parametrize(
