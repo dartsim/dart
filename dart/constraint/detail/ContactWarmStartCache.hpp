@@ -50,13 +50,27 @@ class ShapeFrame;
 }
 
 namespace dart::constraint {
+class BoxedLcpSolver;
 class ConstraintSolver;
-}
+} // namespace dart::constraint
 
 namespace dart::constraint::detail {
 
+struct ContactWarmStartSolveResult
+{
+  const BoxedLcpSolver* solver = nullptr;
+  bool success = false;
+  bool converged = false;
+  double violation = std::numeric_limits<double>::infinity();
+};
+
+/// The last friction-solve result on this thread; counters mix islands.
+ContactWarmStartSolveResult& contactWarmStartSolveResult();
+/// One-shot request to refine an eligible primary's cached initial guess.
+const BoxedLcpSolver*& contactWarmStartRefinementSolver();
+
 /// Detector-independent contact history; no API stability promise. Prepare and
-/// merge serially, and read seeds without mutation while islands solve.
+/// merge serially; islands read seeds and update only their own entries.
 class ContactWarmStartCache
 {
 public:
@@ -97,12 +111,15 @@ public:
   std::size_t add(const void* contact, const Key& key);
   const Seed* seed(const void* contact) const;
   /// Both vectors represent the world impulse toward body 1 in each body's
-  /// local coordinates. Non-finite results are discarded at merge.
+  /// local coordinates. Islands may update distinct contacts concurrently;
+  /// non-finite results are discarded at merge.
   void update(
       const void* contact, const std::array<Eigen::Vector3d, 2>& localImpulses);
-  /// Keep only the current contacts with finite solved impulses.
+  /// Keep current keys for native eligibility, and only finite solved impulses
+  /// for additional matching.
   void finish();
   void clear();
+  /// Number of reusable impulses, excluding native-only contact metadata.
   std::size_t size() const;
 
 private:

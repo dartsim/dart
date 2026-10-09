@@ -83,11 +83,10 @@ public:
   static const std::string& getStaticType();
 
   /// Warm starts are projected to the selected cone or scalar/PGS bounds
-  /// before comparing residuals. With earlyTermination true, all completed
-  /// sweeps worsening the start by more than tolerance, non-finite iterates, or
-  /// an uncertified local solve return false to request the secondary. With it
-  /// false, the best completed finite projected iterate is accepted and counted
-  /// in numAcceptedAtCap. Zero maxSweeps also accepts
+  /// before comparing residuals. With earlyTermination true, divergence,
+  /// non-finite iterates, or an uncertified local solve return false to request
+  /// the secondary. With it false, the best completed finite projected iterate
+  /// is accepted and counted in numAcceptedAtCap. Zero maxSweeps also accepts
   /// that projected iterate at the cap. Invalid options (negative cap or
   /// tolerance, non-finite tolerance, unknown law), invalid indices, non-finite
   /// inputs, or failure to form a projected starting iterate with a finite law

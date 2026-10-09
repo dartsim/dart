@@ -1079,11 +1079,37 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   constructLcpTerms();
 
   const auto* primary = mBoxedLcpSolver.get();
+  detail::ContactWarmStartCache* contactCache = nullptr;
+  // Coupled-body warm starts can increase residual motion at the iteration cap.
   if (!isExactBoxedLcpDynamicType<DantzigBoxedLcpSolver>(primary)
       && !isExactBoxedLcpDynamicType<PgsBoxedLcpSolver>(primary)
-      && (dynamic_cast<const NsgsFrictionSolver*>(primary)
-          || dynamic_cast<const FbfFrictionSolver*>(primary))) {
-    const auto* cache = detail::findContactWarmStartCache(this);
+      && dynamic_cast<const NsgsFrictionSolver*>(primary)) {
+    const dynamics::BodyNode* soleReactiveBody = nullptr;
+    bool singleReactiveBody = true;
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      if (!isExactBoxedLcpDynamicType<ContactConstraint>(constraintPtrs[i])) {
+        singleReactiveBody = false;
+        break;
+      }
+      const auto* contact
+          = static_cast<const ContactConstraint*>(constraintPtrs[i]);
+      const auto addBody = [&](const dynamics::BodyNode* body) {
+        if (soleReactiveBody && soleReactiveBody != body)
+          singleReactiveBody = false;
+        else
+          soleReactiveBody = body;
+      };
+      if (contact->mIsReactiveA)
+        addBody(contact->mBodyNodeA);
+      if (contact->mIsReactiveB)
+        addBody(contact->mBodyNodeB);
+      if (!singleReactiveBody)
+        break;
+    }
+    auto* cache = singleReactiveBody && soleReactiveBody
+                      ? detail::findContactWarmStartCache(this)
+                      : nullptr;
+    contactCache = cache;
     if (cache) {
       for (std::size_t i = 0; i < numConstraints; ++i) {
         if (!isExactBoxedLcpDynamicType<ContactConstraint>(constraintPtrs[i]))
@@ -1139,12 +1165,18 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   const bool earlyTermination = (mSecondaryBoxedLcpSolver != nullptr);
   DART_ASSERT(mBoxedLcpSolver);
   bool success = false;
+  if (contactCache) {
+    detail::contactWarmStartSolveResult() = {};
+    detail::contactWarmStartRefinementSolver() = primary;
+  }
   {
     DART_PROFILE_SCOPED_IF_N(
         profileRecording, "BoxedLcpConstraintSolver::primarySolve");
     success = mBoxedLcpSolver->solve(
         n, a, x, b, 0, lo, hi, fIndex, earlyTermination);
   }
+  if (contactCache)
+    detail::contactWarmStartRefinementSolver() = nullptr;
 
   // A valid LCP solution must be finite. Reject NaN *and* infinite entries: a
   // near-singular contact (e.g. a thin, hard, frictionless geometry) can make
@@ -1163,6 +1195,13 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   // values, but it could happen. So we set the success to false for them.
   if (success && hasNonFinite(x, n))
     success = false;
+
+  bool refreshContactCache = false;
+  if (contactCache) {
+    const auto& result = detail::contactWarmStartSolveResult();
+    refreshContactCache = success && result.solver == primary && result.success
+                          && result.converged;
+  }
 
   bool fallbackSuccess = false;
   bool fallbackRan = false;
@@ -1241,6 +1280,22 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
         constraint->applyImpulse(x + constraintOffsets[i]);
         constraint->excite();
       }
+    }
+  }
+
+  if (refreshContactCache) {
+    for (std::size_t i = 0; i < numConstraints; ++i) {
+      if (!isExactBoxedLcpDynamicType<ContactConstraint>(constraintPtrs[i]))
+        continue;
+      const auto* contact
+          = static_cast<const ContactConstraint*>(constraintPtrs[i]);
+      const Eigen::Vector3d impulse = contact->mContact->force * mTimeStep;
+      contactCache->update(
+          contact,
+          {{contact->mBodyNodeA->getWorldTransform().linear().transpose()
+                * impulse,
+            contact->mBodyNodeB->getWorldTransform().linear().transpose()
+                * impulse}});
     }
   }
 }

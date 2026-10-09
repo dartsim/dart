@@ -95,9 +95,9 @@ public:
   static const std::string& getStaticType();
 
   /// Warm starts are projected to the friction cones and scalar/PGS bounds
-  /// before comparing residuals. With earlyTermination true, all completed
-  /// iterates worsening the start by more than tolerance, non-finite iterates,
-  /// an uncertified local solve, or an exhausted step-size search return false
+  /// before comparing residuals. With earlyTermination true, divergence (no
+  /// iterate at least as good as the start), non-finite iterates, an
+  /// uncertified local solve, or an exhausted step-size search return false
   /// to request the secondary. With it false, the best completed finite
   /// projected iterate is accepted and counted in numAcceptedAtCap. Zero
   /// maxOuterIterations also accepts that projected iterate at the cap.

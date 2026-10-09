@@ -389,8 +389,7 @@ bool FbfFrictionSolver::solve(
   bool failed = false;
   bool converged = false;
   const auto record = [&](double v) {
-    // Residual changes within tolerance do not establish divergence.
-    producedNoWorse |= v - start <= o.tolerance;
+    producedNoWorse |= v <= start;
     if (v < bestViolation) {
       bestViolation = v;
       std::copy(x, x + n, s.best.begin());

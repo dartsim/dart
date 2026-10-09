@@ -1440,8 +1440,7 @@ bool ConstraintSolver::solveWithQueryFilter(
     const auto* primary = boxed->getBoxedLcpSolver().get();
     if (!isExactDynamicType<DantzigBoxedLcpSolver>(primary)
         && !isExactDynamicType<PgsBoxedLcpSolver>(primary)
-        && (dynamic_cast<const NsgsFrictionSolver*>(primary)
-            || dynamic_cast<const FbfFrictionSolver*>(primary))) {
+        && dynamic_cast<const NsgsFrictionSolver*>(primary)) {
       contactCache = &detail::getOrCreateContactWarmStartCache(this);
       contactCache->begin(
           mTimeStep,
@@ -1489,18 +1488,6 @@ bool ConstraintSolver::solveWithQueryFilter(
   }
 
   if (contactCache) {
-    for (const auto& constraint : mContactConstraints) {
-      if (!isExactDynamicType<ContactConstraint>(constraint.get())
-          || !constraint->isActive())
-        continue;
-      const Eigen::Vector3d impulse = constraint->mContact->force * mTimeStep;
-      contactCache->update(
-          constraint.get(),
-          {{constraint->mBodyNodeA->getWorldTransform().linear().transpose()
-                * impulse,
-            constraint->mBodyNodeB->getWorldTransform().linear().transpose()
-                * impulse}});
-    }
     contactCache->finish();
   }
 
@@ -3850,8 +3837,7 @@ void ConstraintSolver::reserveConstrainedGroupsScratch()
     const auto* primary = boxed->getBoxedLcpSolver().get();
     if (!isExactDynamicType<DantzigBoxedLcpSolver>(primary)
         && !isExactDynamicType<PgsBoxedLcpSolver>(primary)
-        && (dynamic_cast<const NsgsFrictionSolver*>(primary)
-            || dynamic_cast<const FbfFrictionSolver*>(primary))) {
+        && dynamic_cast<const NsgsFrictionSolver*>(primary)) {
       detail::getOrCreateContactWarmStartCache(this).reserve(
           mContactConstraints.size());
     }

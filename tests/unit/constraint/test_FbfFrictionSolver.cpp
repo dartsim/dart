@@ -288,7 +288,7 @@ private:
 
 } // namespace
 
-TEST(FbfFrictionSolver, WarmStartResidualChangeWithinToleranceIsAcceptedAtCap)
+TEST(FbfFrictionSolver, WarmStartResidualIncreaseRequestsSecondary)
 {
   // A complete SPD sweep raises the warm residual by 7.81e-6 m/s.
   for (double tolerance : {1e-5, 1e-6}) {
@@ -302,16 +302,15 @@ TEST(FbfFrictionSolver, WarmStartResidualChangeWithinToleranceIsAcceptedAtCap)
     options.maxOuterIterations = 1;
     options.tolerance = tolerance;
     FbfFrictionSolver solver(options);
-    const bool accepted = tolerance == 1e-5;
-    EXPECT_EQ(accepted, p.solve(solver));
+    EXPECT_FALSE(p.solve(solver));
     EXPECT_EQ(startingImpulse, p.x);
     const auto stats = solver.getStats();
-    EXPECT_EQ(accepted ? 1u : 0u, stats.numAcceptedAtCap);
-    EXPECT_EQ(accepted ? 0u : 1u, stats.numFailed);
+    EXPECT_EQ(0u, stats.numAcceptedAtCap);
+    EXPECT_EQ(1u, stats.numFailed);
     EXPECT_EQ(0u, stats.numConverged);
     EXPECT_EQ(1u, stats.numIterations);
     EXPECT_EQ(1u, stats.numInnerIterations);
-    EXPECT_NEAR(accepted ? 1.1e-5 : 0.0, stats.maxViolation, 1e-14);
+    EXPECT_DOUBLE_EQ(0.0, stats.maxViolation);
   }
 }
 

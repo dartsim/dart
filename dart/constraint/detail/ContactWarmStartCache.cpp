@@ -42,6 +42,19 @@
 #include <cmath>
 
 namespace dart::constraint::detail {
+
+ContactWarmStartSolveResult& contactWarmStartSolveResult()
+{
+  static thread_local ContactWarmStartSolveResult result;
+  return result;
+}
+
+const BoxedLcpSolver*& contactWarmStartRefinementSolver()
+{
+  static thread_local const BoxedLcpSolver* solver = nullptr;
+  return solver;
+}
+
 namespace {
 
 std::size_t warmStartPointerHash(const void* pointer)
@@ -172,7 +185,8 @@ std::size_t ContactWarmStartCache::add(const void* contact, const Key& key)
       distance += squaredDistance;
     }
     entry.seed.canRetainNative |= normalsCompatible;
-    if (!mConsumed[i] && pointsCompatible && normalsCompatible
+    if (previous.solved && !mConsumed[i] && pointsCompatible
+        && normalsCompatible
         && (distance < nearest || (distance == nearest && i < match))) {
       nearest = distance;
       match = i;
@@ -233,12 +247,6 @@ void ContactWarmStartCache::update(
 //==============================================================================
 void ContactWarmStartCache::finish()
 {
-  mCurrent.erase(
-      std::remove_if(
-          mCurrent.begin(),
-          mCurrent.end(),
-          [](const Entry& entry) { return !entry.solved; }),
-      mCurrent.end());
   mPrevious.swap(mCurrent);
   mCurrent.clear();
   std::fill(mContactBuckets.begin(), mContactBuckets.end(), npos);
@@ -260,7 +268,10 @@ void ContactWarmStartCache::clear()
 //==============================================================================
 std::size_t ContactWarmStartCache::size() const
 {
-  return mPrevious.size();
+  return std::count_if(
+      mPrevious.begin(), mPrevious.end(), [](const Entry& entry) {
+        return entry.solved;
+      });
 }
 
 //==============================================================================

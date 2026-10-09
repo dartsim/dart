@@ -184,6 +184,40 @@ TEST_F(
   EXPECT_EQ(0u, cache.size());
 }
 
+TEST_F(ContactWarmStartCacheTest, UnrefreshedKeysPreserveOnlyNativeEligibility)
+{
+  for (const bool changeTimeStep : {false, true}) {
+    SCOPED_TRACE(changeTimeStep);
+    publish(key());
+    cache.begin(0.001, 1);
+    cache.add(&contacts[1], key());
+    ASSERT_TRUE(cache.seed(&contacts[1])->matched);
+    cache.finish();
+    EXPECT_EQ(0u, cache.size());
+
+    cache.begin(0.001, 1);
+    cache.add(&contacts[2], key());
+    const auto* seed = cache.seed(&contacts[2]);
+    ASSERT_NE(nullptr, seed);
+    EXPECT_FALSE(seed->matched);
+    EXPECT_TRUE(seed->canRetainNative);
+    EXPECT_EQ(0.0, seed->localImpulse.squaredNorm());
+    cache.finish();
+    EXPECT_EQ(0u, cache.size());
+
+    if (!changeTimeStep) {
+      cache.begin(0.001, 0);
+      cache.finish();
+    }
+    cache.begin(changeTimeStep ? 0.002 : 0.001, 1);
+    cache.add(&contacts[3], key());
+    ASSERT_NE(nullptr, cache.seed(&contacts[3]));
+    EXPECT_FALSE(cache.seed(&contacts[3])->matched);
+    EXPECT_FALSE(cache.seed(&contacts[3])->canRetainNative);
+    cache.finish();
+  }
+}
+
 TEST_F(
     ContactWarmStartCacheTest,
     CollisionGroupIdentityAndContentInvalidateHistory)

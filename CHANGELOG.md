@@ -581,11 +581,11 @@
 
 * Simulation
 
-  * Reuse rigid-contact impulses across steps with opt-in NSGS and FBF
-    friction solvers on every collision detector while preserving compatible
-    detector seeds. Contact history resets when the timestep, collision
-    geometry, or primary solver changes. Warm NSGS and FBF solves avoid
-    spurious fallback near their requested accuracy.
+  * Reuse converged rigid-contact impulses across steps with the opt-in NSGS
+    friction solver for contact groups with one reactive body, on every
+    collision detector. Refine cached guesses before accepting them, preserve
+    compatible detector seeds, and reset impulse history after capped or
+    failed solves and changes to timestep, collision geometry, or solver.
 
   * Allow resting islands that use a custom `BodyNodeCollisionFilter` to sleep
     while their collision decisions stay unchanged, and keep reporting their

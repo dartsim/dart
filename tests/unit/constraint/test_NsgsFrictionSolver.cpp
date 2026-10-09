@@ -7,6 +7,7 @@
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/detail/ContactWarmStartCache.hpp"
 #include "dart/constraint/detail/FrictionCone.hpp"
 #include "dart/lcpsolver/dantzig/DantzigCommon.hpp"
 
@@ -223,7 +224,7 @@ TEST(NsgsFrictionSolver, CapReturnsBestCompletedIterateInBothTerminationModes)
   }
 }
 
-TEST(NsgsFrictionSolver, WarmStartResidualChangeWithinToleranceIsAcceptedAtCap)
+TEST(NsgsFrictionSolver, WarmStartResidualIncreaseRequestsSecondary)
 {
   // Four redundant box contacts: completed sweeps raise the warm residual by
   // 4.52e-9 m/s, below the requested accuracy, while the seed remains best.
@@ -283,16 +284,14 @@ TEST(NsgsFrictionSolver, WarmStartResidualChangeWithinToleranceIsAcceptedAtCap)
     options.maxSweeps = 1000;
     options.tolerance = tolerance;
     NsgsFrictionSolver solver(options);
-    const bool accepted = tolerance == 1e-7;
-    EXPECT_EQ(accepted, p.solve(solver));
+    EXPECT_FALSE(p.solve(solver));
     EXPECT_EQ(startingImpulse, p.x);
     const auto stats = solver.getStats();
-    EXPECT_EQ(accepted ? 1u : 0u, stats.numAcceptedAtCap);
-    EXPECT_EQ(accepted ? 0u : 1u, stats.numFailed);
+    EXPECT_EQ(0u, stats.numAcceptedAtCap);
+    EXPECT_EQ(1u, stats.numFailed);
     EXPECT_EQ(0u, stats.numConverged);
     EXPECT_EQ(1000u, stats.numIterations);
-    EXPECT_NEAR(
-        accepted ? 1.5899341954771166e-7 : 0.0, stats.maxViolation, 1e-13);
+    EXPECT_DOUBLE_EQ(0.0, stats.maxViolation);
   }
 }
 
@@ -561,6 +560,128 @@ TEST(NsgsFrictionSolver, StatsAccumulateAcrossThreadsAndReset)
   EXPECT_EQ(0u, stats.numContacts);
   EXPECT_EQ(0u, stats.numIterations);
   EXPECT_EQ(0.0, stats.maxViolation);
+}
+
+TEST(NsgsFrictionSolver, WarmStartResultRecordsEachSolveAndItsOwner)
+{
+  NsgsFrictionSolver::Options options;
+  options.maxSweeps = 0;
+  NsgsFrictionSolver solver(options);
+  Problem p(1);
+  ASSERT_TRUE(p.solve(solver));
+  auto result = detail::contactWarmStartSolveResult();
+  EXPECT_EQ(&solver, result.solver);
+  EXPECT_TRUE(result.success);
+  EXPECT_FALSE(result.converged);
+  EXPECT_DOUBLE_EQ(1.0, result.violation);
+
+  p.x[0] = 1.0;
+  ASSERT_TRUE(p.solve(solver));
+  result = detail::contactWarmStartSolveResult();
+  EXPECT_EQ(&solver, result.solver);
+  EXPECT_TRUE(result.success);
+  EXPECT_TRUE(result.converged);
+  EXPECT_DOUBLE_EQ(0.0, result.violation);
+  EXPECT_DOUBLE_EQ(1.0, solver.getStats().maxViolation);
+
+  p.b[0] = std::numeric_limits<double>::quiet_NaN();
+  ASSERT_FALSE(p.solve(solver));
+  result = detail::contactWarmStartSolveResult();
+  EXPECT_EQ(&solver, result.solver);
+  EXPECT_FALSE(result.success);
+  EXPECT_FALSE(result.converged);
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), result.violation);
+
+  NsgsFrictionSolver other;
+  p = Problem(1);
+  ASSERT_TRUE(p.solve(other));
+  result = detail::contactWarmStartSolveResult();
+  EXPECT_EQ(&other, result.solver);
+  EXPECT_TRUE(result.success);
+  EXPECT_TRUE(result.converged);
+  EXPECT_DOUBLE_EQ(0.0, result.violation);
+}
+
+TEST(NsgsFrictionSolver, WarmStartResultIsLocalToTheSolvingThread)
+{
+  NsgsFrictionSolver::Options options;
+  options.maxSweeps = 0;
+  NsgsFrictionSolver solver(options);
+  Problem p(1);
+  p.x[0] = 1.0;
+  ASSERT_TRUE(p.solve(solver));
+
+  auto worker = std::async(std::launch::async, [&] {
+    Problem capped(1);
+    capped.solve(solver);
+    return detail::contactWarmStartSolveResult();
+  });
+  const auto capped = worker.get();
+  EXPECT_EQ(&solver, capped.solver);
+  EXPECT_TRUE(capped.success);
+  EXPECT_FALSE(capped.converged);
+  EXPECT_DOUBLE_EQ(1.0, capped.violation);
+
+  const auto converged = detail::contactWarmStartSolveResult();
+  EXPECT_EQ(&solver, converged.solver);
+  EXPECT_TRUE(converged.success);
+  EXPECT_TRUE(converged.converged);
+  EXPECT_DOUBLE_EQ(0.0, converged.violation);
+}
+
+TEST(NsgsFrictionSolver, WarmStartRefinementHonorsTheOwnerAndIterationBudget)
+{
+  for (const int budget : {0, 1}) {
+    SCOPED_TRACE(budget);
+    NsgsFrictionSolver::Options options;
+    options.maxSweeps = budget;
+    NsgsFrictionSolver solver(options);
+    NsgsFrictionSolver other(options);
+    for (const auto* requested :
+         std::array<const BoxedLcpSolver*, 3>{{nullptr, &solver, &other}}) {
+      SCOPED_TRACE(requested);
+      Problem p(1);
+      const double startingImpulse = 1.0 - 0.5 * options.tolerance;
+      p.x[0] = startingImpulse;
+      solver.resetStats();
+      detail::contactWarmStartRefinementSolver() = requested;
+      ASSERT_TRUE(p.solve(solver));
+      const bool refined = requested == &solver && budget > 0;
+      EXPECT_EQ(refined ? 1u : 0u, solver.getStats().numIterations);
+      EXPECT_EQ(1u, solver.getStats().numConverged);
+      EXPECT_DOUBLE_EQ(refined ? 1.0 : startingImpulse, p.x[0]);
+      EXPECT_DOUBLE_EQ(options.tolerance, solver.getOptions().tolerance);
+      EXPECT_EQ(nullptr, detail::contactWarmStartRefinementSolver());
+
+      p.x[0] = startingImpulse;
+      solver.resetStats();
+      ASSERT_TRUE(p.solve(solver));
+      EXPECT_EQ(0u, solver.getStats().numIterations);
+      EXPECT_DOUBLE_EQ(startingImpulse, p.x[0]);
+    }
+  }
+}
+
+TEST(NsgsFrictionSolver, WarmStartRefinementKeepsTheCertifiedBestIterate)
+{
+  Problem p(2);
+  p.A[1] = p.A[p.stride] = 0.9;
+  p.b = {1.9, 1.9};
+  p.x = {0.99989, 1.00011};
+  const auto startingImpulse = p.x;
+  NsgsFrictionSolver::Options options;
+  // The starting violation is 1.1e-5; a complete sweep raises it to 1.881e-5.
+  options.tolerance = 1.2e-5;
+  NsgsFrictionSolver solver(options);
+  detail::contactWarmStartRefinementSolver() = &solver;
+  ASSERT_TRUE(p.solve(solver));
+  EXPECT_EQ(startingImpulse, p.x);
+  const auto stats = solver.getStats();
+  EXPECT_EQ(1u, stats.numIterations);
+  EXPECT_EQ(1u, stats.numConverged);
+  EXPECT_EQ(0u, stats.numFailed);
+  EXPECT_NEAR(1.1e-5, stats.maxViolation, 1e-14);
+  EXPECT_EQ(nullptr, detail::contactWarmStartRefinementSolver());
 }
 
 TEST(NsgsFrictionSolver, AnisotropyDefaultsToBoxAndCanSelectEllipse)

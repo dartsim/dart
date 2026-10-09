@@ -31,6 +31,7 @@
  */
 
 #include <dart/constraint/NsgsFrictionSolver.hpp>
+#include <dart/constraint/detail/ContactWarmStartCache.hpp>
 #include <dart/constraint/detail/FrictionRows.hpp>
 
 #include <dart/lcpsolver/dantzig/DantzigCommon.hpp>
@@ -221,9 +222,15 @@ bool NsgsFrictionSolver::solve(
     int* findex,
     bool earlyTermination)
 {
+  auto& refinementSolver = detail::contactWarmStartRefinementSolver();
+  const bool requireRefinement
+      = refinementSolver == this && mOptions.maxSweeps > 0;
+  refinementSolver = nullptr;
   FrictionSolveStats stats;
   stats.numSolves = 1;
   const auto finish = [&](bool success, bool converged, double finalViolation) {
+    detail::contactWarmStartSolveResult()
+        = {this, success, converged, finalViolation};
     stats.numConverged = success && converged;
     stats.numAcceptedAtCap = success && !converged;
     stats.numFailed = !success;
@@ -293,9 +300,11 @@ bool NsgsFrictionSolver::solve(
   const double startingViolation = bestViolation;
   if (!std::isfinite(bestViolation))
     return finish(false, false, infinity);
-  if (bestViolation <= mOptions.tolerance)
+  if (bestViolation <= mOptions.tolerance && !requireRefinement)
     return finish(true, true, bestViolation);
-  bool producedNoWorse = mOptions.maxSweeps == 0;
+  bool producedNoWorse
+      = mOptions.maxSweeps == 0
+        || (requireRefinement && bestViolation <= mOptions.tolerance);
   bool failed = false;
   bool converged = false;
   for (int iteration = 0; iteration < mOptions.maxSweeps; ++iteration) {
@@ -322,14 +331,14 @@ bool NsgsFrictionSolver::solve(
       failed = true;
       break;
     }
-    // Residual changes within tolerance do not establish divergence.
-    producedNoWorse
-        |= currentViolation - startingViolation <= mOptions.tolerance;
+    producedNoWorse |= currentViolation <= startingViolation;
     if (currentViolation < bestViolation) {
       bestViolation = currentViolation;
       std::copy(x, x + n, scratch.best.begin());
     }
-    if (currentViolation <= mOptions.tolerance) {
+    // A refinement must not discard an already certified best guess.
+    if ((requireRefinement ? bestViolation : currentViolation)
+        <= mOptions.tolerance) {
       converged = true;
       break;
     }
