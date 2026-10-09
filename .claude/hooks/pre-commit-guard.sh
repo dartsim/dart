@@ -422,41 +422,18 @@ def child_shell_script(tokens, i, raw_part, heredocs, parsed):
 
 
 def split_shell_segments(text, heredocs):
+    # Child shell syntax belongs to extracted arguments; this layer is Bash.
     text = strip_heredoc_bodies(text, heredocs)
     part = []
+    part_start = 0
     quote = ""
     contexts = []
     part_isolated = False
-    native_shell = ""
     i = 0
     while i < len(text):
         ch = text[i]
-        if (
-            not quote and not native_shell and ch.isspace()
-            and part and not part[-1].isspace()
-        ):
-            try:
-                tokens = shlex.split("".join(part))
-            except ValueError:
-                tokens = []
-            tokens, command_i, _, _, _, _ = command_prefix(tokens, None, {})
-            if command_i < len(tokens):
-                shell = command_basename(tokens[command_i]).lower().removesuffix(".exe")
-                if shell in NON_POSIX_SHELLS:
-                    native_shell = shell
-        closing_context = not quote and contexts and ch == contexts[-1][1]
-        if (
-            native_shell and quote != "'\''"
-            and ch == ("^" if native_shell == "cmd" else "`")
-            and not closing_context
-        ):
-            # Native escapes and continuations must stay in their script text.
-            end = i + (3 if text.startswith("\r\n", i + 1) else 2)
-            part.append(text[i:end])
-            i = end
-            continue
         if quote:
-            if not native_shell and quote == "\"" and ch == "\\":
+            if quote == "\"" and ch == "\\":
                 part.append(ch)
                 if i + 1 < len(text):
                     part.append(text[i + 1])
@@ -464,18 +441,20 @@ def split_shell_segments(text, heredocs):
                 else:
                     i += 1
                 continue
-            if not native_shell and quote == "\"" and text.startswith("$(", i):
+            if quote == "\"" and text.startswith("$(", i):
                 part.append("$DART_DYNAMIC_SCRIPT")
-                contexts.append(("command-substitution", ")", quote, part))
+                contexts.append(("command-substitution", ")", quote, part, part_start))
                 part = []
+                part_start = i + 2
                 part_isolated = True
                 quote = ""
                 i += 2
                 continue
-            if not native_shell and quote == "\"" and ch == "`":
+            if quote == "\"" and ch == "`":
                 part.append("$DART_DYNAMIC_SCRIPT")
-                contexts.append(("command-substitution", "`", quote, part))
+                contexts.append(("command-substitution", "`", quote, part, part_start))
                 part = []
+                part_start = i + 1
                 part_isolated = True
                 quote = ""
                 i += 1
@@ -485,7 +464,7 @@ def split_shell_segments(text, heredocs):
                 quote = ""
             i += 1
             continue
-        if not native_shell and ch == "\\":
+        if ch == "\\":
             part.append(ch)
             if i + 1 < len(text):
                 part.append(text[i + 1])
@@ -498,29 +477,30 @@ def split_shell_segments(text, heredocs):
             part.append(ch)
             i += 1
             continue
-        if ch == "`" and (not native_shell or closing_context):
+        if ch == "`":
             if contexts and contexts[-1][1] == "`":
                 if part:
-                    yield "".join(part), "", True, True
-                _, _, restore_quote, outer_part = contexts.pop()
+                    yield "".join(part), "", True, True, text[part_start:i]
+                _, _, restore_quote, outer_part, part_start = contexts.pop()
                 part = outer_part
                 quote = restore_quote
-                native_shell = ""
             else:
                 part.append("$DART_DYNAMIC_SCRIPT")
-                contexts.append(("command-substitution", "`", "", part))
+                contexts.append(("command-substitution", "`", "", part, part_start))
                 part = []
+                part_start = i + 1
                 part_isolated = True
             i += 1
             continue
-        if not native_shell and text.startswith("$(", i):
+        if text.startswith("$(", i):
             part.append("$DART_DYNAMIC_SCRIPT")
-            contexts.append(("command-substitution", ")", "", part))
+            contexts.append(("command-substitution", ")", "", part, part_start))
             part = []
+            part_start = i + 2
             part_isolated = True
             i += 2
             continue
-        if not native_shell and ch == "(":
+        if ch == "(":
             if re.search(
                 r"(?:^|\s)(?:function\s+)?[A-Za-z_][A-Za-z0-9_]*\s*$",
                 "".join(part),
@@ -528,8 +508,9 @@ def split_shell_segments(text, heredocs):
                 part.append(ch)
                 i += 1
                 continue
-            contexts.append(("subshell", ")", "", part))
+            contexts.append(("subshell", ")", "", part, part_start))
             part = []
+            part_start = i + 1
             part_isolated = True
             i += 1
             continue
@@ -541,19 +522,19 @@ def split_shell_segments(text, heredocs):
                 "".join(part),
             )
         ):
-            contexts.append(("function-body", "}", "", part))
+            contexts.append(("function-body", "}", "", part, part_start))
             part = []
+            part_start = i + 1
             part_isolated = True
             i += 1
             continue
         if contexts and ch == contexts[-1][1]:
             context_kind = contexts[-1][0]
             if part and context_kind != "function-body":
-                yield "".join(part), "", True, True
-            _, _, restore_quote, outer_part = contexts.pop()
+                yield "".join(part), "", True, True, text[part_start:i]
+            _, _, restore_quote, outer_part, part_start = contexts.pop()
             part = outer_part
             quote = restore_quote
-            native_shell = ""
             part_isolated = True
             i += 1
             continue
@@ -577,15 +558,19 @@ def split_shell_segments(text, heredocs):
                 separator,
                 part_isolated or bool(contexts),
                 bool(contexts),
+                text[part_start:i],
             )
             part = []
-            native_shell = ""
+            part_start = i + len(separator)
             part_isolated = bool(contexts)
             i += len(separator)
             continue
         part.append(ch)
         i += 1
-    yield "".join(part), "", part_isolated or bool(contexts), bool(contexts)
+    yield (
+        "".join(part), "", part_isolated or bool(contexts), bool(contexts),
+        text[part_start:],
+    )
 
 
 def env_config_has_hooks_path_override(env):
@@ -1065,6 +1050,7 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
         separator,
         isolated_context,
         separator_isolated,
+        source_part,
     ) in split_shell_segments(text, heredocs):
         raw_part = part.strip()
         subshell_like = isolated_context or previous_separator == "|"
@@ -1102,9 +1088,12 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
         shell = command_basename(tokens[i]).lower().removesuffix(".exe")
         if shell in NON_POSIX_SHELLS:
             # These scripts use syntax the POSIX tokenizer cannot inspect.
-            script = raw_part + "\n" + "\n".join(
-                heredocs[token][0] for token in tokens[i + 1 :] if token in heredocs
+            script = " ".join(
+                heredocs[token][0] if token in heredocs else token
+                for token in tokens[i + 1 :]
             )
+            if "$DART_DYNAMIC_SCRIPT" in script:
+                script += "\n" + source_part
             escape = "^" if shell == "cmd" else "`"
             script = (
                 script.replace(escape + "\r\n", "")

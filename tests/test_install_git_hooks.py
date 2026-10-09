@@ -722,7 +722,12 @@ def test_commit_msg_hook_reports_unavailable_checker(tmp_path):
 
 
 def _run_guard(
-    repo: Path, env: dict[str, str], command: str, input_key: str = "command"
+    repo: Path,
+    env: dict[str, str],
+    command: str,
+    input_key: str = "command",
+    *,
+    timeout: float | None = None,
 ):
     payload = json.dumps({"tool_input": {input_key: command}})
     run = subprocess.run(
@@ -732,6 +737,7 @@ def _run_guard(
         env=env,
         capture_output=True,
         text=True,
+        timeout=timeout,
     )
     return run.returncode, run.stderr
 
@@ -985,29 +991,29 @@ def test_guard_fails_closed_for_non_posix_commit_continuations(
     repo, env = _init_repo(tmp_path)
     env["CLAUDE_PROJECT_DIR"] = str(repo)
     script = f"git {continuation}{newline}commit --allow-empty -m example"
-    returncode, stderr = _run_guard(repo, env, f'{command} "{script}"')
+    returncode, stderr = _run_guard(repo, env, f"{command} {shlex.quote(script)}")
     assert returncode == 2, stderr
     assert "shell script cannot be inspected" in stderr
 
     script = "git status" + newline + "echo commit"
-    returncode, stderr = _run_guard(repo, env, f'{command} "{script}"')
+    returncode, stderr = _run_guard(repo, env, f"{command} {shlex.quote(script)}")
     assert returncode == 0, stderr
     assert stderr == ""
 
 
 @pytest.mark.parametrize(
-    "command",
+    "command,script",
     (
-        'powershell -Command "git commit -m `"example`""',
-        'pwsh -Command "git commit -m `"example`""',
-        'powershell -Command "git com`mit --allow-empty -m example"',
-        'cmd /C "git com^mit --allow-empty -m example"',
+        ("powershell -Command", 'git commit -m `"example`"'),
+        ("pwsh -Command", 'git commit -m `"example`"'),
+        ("powershell -Command", "git com`mit --allow-empty -m example"),
+        ("cmd /C", "git com^mit --allow-empty -m example"),
     ),
 )
-def test_guard_fails_closed_for_non_posix_commit_escapes(tmp_path, command):
+def test_guard_fails_closed_for_non_posix_commit_escapes(tmp_path, command, script):
     repo, env = _init_repo(tmp_path)
     env["CLAUDE_PROJECT_DIR"] = str(repo)
-    returncode, stderr = _run_guard(repo, env, command)
+    returncode, stderr = _run_guard(repo, env, f"{command} {shlex.quote(script)}")
     assert returncode == 2, stderr
     assert "shell script cannot be inspected" in stderr
 
@@ -1017,11 +1023,71 @@ def test_guard_fails_closed_for_non_posix_subexpression_commits(tmp_path, shell)
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0
     env["CLAUDE_PROJECT_DIR"] = str(repo)
+    script = "$(git commit --allow-empty -m example)"
     returncode, stderr = _run_guard(
-        repo, env, f'{shell} -Command "$(git commit --allow-empty -m example)"'
+        repo, env, f"{shell} -Command {shlex.quote(script)}"
     )
     assert returncode == 2, stderr
     assert "shell script cannot be inspected" in stderr
+
+
+@pytest.mark.parametrize(
+    "command,script,expected",
+    [
+        (command, script.format(escape=escape), expected)
+        for command, escape in (
+            ("powershell -Command", "`"),
+            ("pwsh -Command", "`"),
+            ("cmd /C", "^"),
+        )
+        for script, expected in (
+            ("git commit --allow-empty --no-verify -m example", 2),
+            ("git com{escape}mit --allow-empty --no-verify -m example", 2),
+            ("git {escape}\ncommit --allow-empty --no-verify -m example", 2),
+            ("git {escape}\r\ncommit --allow-empty --no-verify -m example", 2),
+            ("git status", 0),
+            ("Write-Output example", 0),
+        )
+    ],
+)
+def test_guard_inspects_native_script_from_posix_substitution(
+    tmp_path, command, script, expected
+):
+    repo, env = _init_repo(tmp_path)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    command = f'{command} "$(printf %s {shlex.quote(script)})"'
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == expected, stderr
+    if expected:
+        assert "shell script cannot be inspected" in stderr
+    else:
+        assert stderr == ""
+
+
+@pytest.mark.parametrize("shell", ("powershell", "pwsh"))
+@pytest.mark.parametrize("script", ("git status", "Write-Output example"))
+@pytest.mark.parametrize("private", (False, True))
+def test_guard_keeps_generated_native_script_before_outer_commit(
+    tmp_path, shell, script, private
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    message = "/home/" + "example/private.md" if private else "example"
+    command = (
+        f'{shell} -Command "$(printf %s {shlex.quote(script)})" && '
+        f"git commit --allow-empty --no-verify -m {shlex.quote(message)}"
+    )
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == (2 if private else 0), stderr
+    if private:
+        assert "commit message" in stderr
+        assert message in stderr
+    else:
+        assert stderr.count("direct-agent-gate") == 1
 
 
 @pytest.mark.parametrize(
@@ -1044,7 +1110,10 @@ def test_guard_keeps_commit_free_native_script_command_boundaries(
     )
     env["CLAUDE_PROJECT_DIR"] = str(repo)
     message = "/home/" + "example/private.md" if private else "example"
-    command = f'powershell -Command "{script}" && git commit -m {shlex.quote(message)}'
+    command = (
+        f"powershell -Command {shlex.quote(script)} && "
+        f"git commit -m {shlex.quote(message)}"
+    )
     returncode, stderr = _run_guard(repo, env, command)
     assert returncode == (2 if private else 0), stderr
     if private:
@@ -1052,6 +1121,49 @@ def test_guard_keeps_commit_free_native_script_command_boundaries(
         assert message in stderr
     else:
         assert stderr.count("direct-agent-gate") == 1
+
+
+@pytest.mark.parametrize("shell", ("powershell", "pwsh"))
+@pytest.mark.parametrize("private", (False, True))
+def test_guard_keeps_outer_bash_escapes_before_native_script(tmp_path, shell, private):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    message = "/home/" + "example/private.md" if private else "example"
+    script = r"Write-Output \";\""
+    command = (
+        f'{shell} -Command "{script}" && '
+        f"git commit --allow-empty --no-verify -m {shlex.quote(message)}"
+    )
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == (2 if private else 0), stderr
+    if private:
+        assert "commit message" in stderr
+        assert message in stderr
+    else:
+        assert stderr.count("direct-agent-gate") == 1
+
+
+def test_guard_handles_thousands_of_non_native_arguments_within_timeout(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    private_path = "/home/" + "example/private.md"
+    paths = " ".join(f"fixtures/file_{index:04d}.md" for index in range(3000))
+    command = (
+        f"git add {paths} && "
+        f"git commit --allow-empty --no-verify -m {shlex.quote(private_path)}"
+    )
+    returncode, stderr = _run_guard(repo, env, command, timeout=5)
+    assert returncode == 2, stderr
+    assert "commit message" in stderr
+    assert private_path in stderr
 
 
 @pytest.mark.parametrize("shell", ("powershell", "pwsh"))
@@ -1075,12 +1187,16 @@ def test_guard_fails_closed_for_native_dynamic_git_commits(
     script = "git $SUBCOMMAND --allow-empty --no-verify -m example"
     if subexpression:
         script = "$({})".format(script)
-    returncode, stderr = _run_guard(repo, env, f'{shell} -Command "{script}"')
+    returncode, stderr = _run_guard(
+        repo, env, f"{shell} -Command {shlex.quote(script)}"
+    )
     assert returncode == 2, stderr
     assert "shell script cannot be inspected" in stderr
 
     script = "git status; Write-Output $MESSAGE"
-    returncode, stderr = _run_guard(repo, env, f'{shell} -Command "{script}"')
+    returncode, stderr = _run_guard(
+        repo, env, f"{shell} -Command {shlex.quote(script)}"
+    )
     assert returncode == 0, stderr
     assert stderr == ""
 
