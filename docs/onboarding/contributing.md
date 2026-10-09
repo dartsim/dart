@@ -53,8 +53,12 @@ revert, `git am` and sequencer operations that skip commit hooks. It runs
 remote SHA for existing refs or the merge base with the remote's default branch
 for new refs. Missing base objects are fetched without changing refs or
 `FETCH_HEAD`; an empty remote or unrelated history scans all local history.
-Deletions skip scanning. Unavailable checkers/interpreters print a notice and
-skip scanning; findings or lookup/scan errors block the push.
+Deletions skip scanning. Older branches without checkers and unavailable
+interpreters print a notice and skip scanning. If a checker is missing from
+the worktree but exists in HEAD (commit hooks) or the push base (pre-push), the
+hook runs its tracked version from a temporary file; recovery, lookup and scan
+errors block the operation. The staged checker also recovers its sibling
+local-path checker. Temporary files are removed when the hook exits.
 
 Existing hooks are preserved as `<hook>.local` and chained; a foreign pre-push
 hook receives the same ref-update stdin as the managed hook.

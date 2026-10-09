@@ -1,4 +1,4 @@
-# DART native-Windows launcher for the shared commit guard.
+# DART native-Windows launcher for the shared shell guard and its Python file.
 $ErrorActionPreference = "Stop"
 
 try {

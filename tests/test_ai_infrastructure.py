@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -3328,6 +3329,7 @@ def test_release_hook_validation_rejects_unsafe_suffix_and_extra_keys(tmp_path):
         ".codex/hooks.json",
         ".claude/settings.json",
         ".claude/hooks/pre-commit-guard.sh",
+        ".claude/hooks/pre-commit-guard.py",
         ".claude/hooks/pre-commit-guard.ps1",
         "scripts/install_git_hooks.py",
         "scripts/pretool_guard_bridge.py",
@@ -3734,6 +3736,14 @@ def test_ci_wiring_requires_factory_capture_and_visual_task(
     ("relative", "marker"),
     (
         (
+            ".claude/hooks/pre-commit-guard.py",
+            "def managed_hooks_current(root):",
+        ),
+        (
+            ".claude/hooks/pre-commit-guard.sh",
+            '"$python_cmd" "$guard_program"',
+        ),
+        (
             ".claude/hooks/pre-commit-guard.ps1",
             "$global:LASTEXITCODE = $null",
         ),
@@ -3774,6 +3784,7 @@ def test_windows_hook_components_cannot_be_missing_or_drifted(
         ".codex/hooks.json",
         ".claude/settings.json",
         ".claude/hooks/pre-commit-guard.sh",
+        ".claude/hooks/pre-commit-guard.py",
         ".claude/hooks/pre-commit-guard.ps1",
         "scripts/install_git_hooks.py",
         "scripts/pretool_guard_bridge.py",
@@ -3805,6 +3816,48 @@ def test_windows_launcher_does_not_shadow_native_exit_code():
     assert "$nativeExitCode = $global:LASTEXITCODE" in launcher
 
 
+def test_hook_literal_arguments_stay_below_safe_bound():
+    guard = (ROOT / ".claude/hooks/pre-commit-guard.sh").read_text()
+    assert all(
+        len(argument.encode("utf-8")) <= 8192
+        for argument in shlex.split(guard, comments=True)
+    )
+
+
+def test_guard_classifier_version_matches_installer(tmp_path):
+    for source in (
+        ".codex/hooks.json",
+        ".claude/settings.json",
+        ".claude/hooks/pre-commit-guard.sh",
+        ".claude/hooks/pre-commit-guard.py",
+        ".claude/hooks/pre-commit-guard.ps1",
+        "scripts/install_git_hooks.py",
+        "scripts/pretool_guard_bridge.py",
+    ):
+        destination = tmp_path / source
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text((ROOT / source).read_text())
+    errors = []
+    infra.check_hooks(tmp_path, errors)
+    assert errors == []
+    program = tmp_path / ".claude/hooks/pre-commit-guard.py"
+    program.write_text(
+        re.sub(r"DART-MANAGED-HOOK v\d+", "DART-MANAGED-HOOK v0", program.read_text())
+    )
+    infra.check_hooks(tmp_path, errors)
+    assert any("managed hook version differs" in error for error in errors)
+
+
+def test_native_pretool_missing_classifier_fails_closed(tmp_path, monkeypatch, capsys):
+    guard = tmp_path / ".claude/hooks/pre-commit-guard.sh"
+    guard.parent.mkdir(parents=True)
+    guard.write_text("#!/bin/sh\nexit 0\n")
+    monkeypatch.setattr(bridge, "find_git_bash", lambda: Path("/test/git-bash"))
+    payload = json.dumps({"tool_input": {"command": "git commit -m x"}}).encode()
+    assert bridge.forward(tmp_path, payload) == 2
+    assert "pre-commit-guard.py" in capsys.readouterr().err
+
+
 def test_windows_smoke_preserves_successful_diagnostic_exit_code(monkeypatch, capsys):
     workflow = (ROOT / ".github/workflows/ci_windows.yml").read_text()
     command = re.search(r"\$hookCommand = (.*)", workflow)[1]
@@ -3826,6 +3879,7 @@ def test_native_pretool_forwards_payload_to_shared_guard(
     guard = tmp_path / ".claude" / "hooks" / "pre-commit-guard.sh"
     guard.parent.mkdir(parents=True)
     guard.write_text("#!/bin/sh\nexit 0\n")
+    guard.with_suffix(".py").write_text("# synthetic classifier\n")
     bash = Path("C:/Program Files/Git/bin/bash.exe")
     calls = []
     monkeypatch.setattr(bridge, "find_git_bash", lambda: bash)
@@ -3886,6 +3940,7 @@ def test_native_pretool_maps_guard_failure_to_codex_block(
     guard = tmp_path / ".claude" / "hooks" / "pre-commit-guard.sh"
     guard.parent.mkdir(parents=True)
     guard.write_text("#!/bin/sh\nexit 2\n")
+    guard.with_suffix(".py").write_text("# synthetic classifier\n")
     monkeypatch.setattr(bridge, "find_git_bash", lambda: Path("/test/git-bash"))
     monkeypatch.setattr(
         bridge.subprocess,

@@ -91,6 +91,9 @@ foreign-hook chaining,
 `DART_SKIP_HOOKS=1`, and `DART_HOOK_DRY_RUN=1`. Older worktrees without the
 checker or a compatible Python interpreter print a notice and skip the message
 and pre-push scans; the pre-commit hook retains its staged whitespace fallback.
+When a checker exists in HEAD or the push base but was removed or renamed in
+the worktree, hooks run its tracked version from a temporary file instead;
+recovery errors block the commit or push.
 
 The pre-push hook reads Git's `<local ref> <local sha> <remote ref> <remote sha>`
 stdin and runs `scripts/check_local_paths.py --commit-range <base>..<local sha>`
@@ -100,13 +103,14 @@ use the remote SHA; new refs use the merge base with the remote's default
 branch. Missing base objects are fetched without changing refs or `FETCH_HEAD`.
 An empty remote or unrelated history scans all local history. Deletions skip
 scanning. Foreign pre-push hooks receive the same stdin and their failures block
-the push. Unavailable checkers/interpreters print a notice and skip scanning;
+the push. Older branches without checkers and unavailable interpreters print a
+notice and skip scanning;
 findings and lookup or scan errors block the push.
 
 The shared Claude/Codex agent guard uses three paths:
 
 1. **Fast allow:** raw command text without both whole words `git` and
-   `commit` (case-sensitive regex word boundaries) returns immediately before
+   `commit` (case-insensitive regex word boundaries) returns immediately before
    shell tokenization. Commit spellings without the word `commit`, such as
    user-configured aliases, dynamically generated or split spellings, rely on
    installed hooks and the PR Text check.

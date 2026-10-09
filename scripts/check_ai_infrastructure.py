@@ -218,6 +218,12 @@ WINDOWS_BRIDGE_MARKERS = (
     'env["CODEX_PROJECT_DIR"] = str(root)',
     'env["DART_HOOK_PYTHON"]',
     "return 0 if result.returncode == 0 else 2",
+    'guard.with_suffix(".py")',
+)
+GUARD_PROGRAM_MARKERS = (
+    "json.load(sys.stdin)",
+    "def git_commits(",
+    "def managed_hooks_current(root):",
 )
 
 
@@ -266,6 +272,7 @@ def required_paths(root: Path) -> list[Path]:
         root / ".codex" / "config.toml",
         root / ".codex" / "hooks.json",
         root / ".claude" / "hooks" / "pre-commit-guard.ps1",
+        root / ".claude" / "hooks" / "pre-commit-guard.py",
         root / "docs" / "ai" / "agent-scenarios.json",
         root / "docs" / "ai" / "branch-profile.json",
         root / "docs" / "onboarding" / "architecture.md",
@@ -1000,6 +1007,25 @@ def check_hooks(root: Path, errors: list[str]) -> None:
             errors.append(
                 f"{path.relative_to(root)}: must invoke the staged agent hook profile"
             )
+    guard_text = guard.read_text(encoding="utf-8") if guard.exists() else ""
+    for marker in ("pre-commit-guard.py", '"$python_cmd" "$guard_program"'):
+        if marker not in guard_text:
+            errors.append(
+                f"{guard.relative_to(root)}: missing required marker {marker!r}"
+            )
+    program = guard.with_suffix(".py")
+    program_text = program.read_text(encoding="utf-8") if program.exists() else ""
+    for marker in GUARD_PROGRAM_MARKERS:
+        if marker not in program_text:
+            errors.append(
+                f"{program.relative_to(root)}: missing required marker {marker!r}"
+            )
+    installer_text = installer.read_text(encoding="utf-8") if installer.exists() else ""
+    version = re.search(r'HOOK_VERSION = "(\d+)"', installer_text)
+    if version and f"DART-MANAGED-HOOK v{version[1]} " not in program_text:
+        errors.append(
+            f"{program.relative_to(root)}: managed hook version differs from installer"
+        )
     launcher = root / ".claude" / "hooks" / "pre-commit-guard.ps1"
     launcher_text = launcher.read_text(encoding="utf-8") if launcher.exists() else ""
     for marker in WINDOWS_LAUNCHER_MARKERS:

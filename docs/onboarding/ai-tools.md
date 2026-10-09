@@ -53,7 +53,9 @@ cross-tool `pre-commit` and `commit-msg` git hooks.
 On native Windows, `.claude/hooks/pre-commit-guard.ps1` launches
 `scripts/pretool_guard_bridge.py`, which forwards the unchanged hook payload to
 the same Git Bash guard used on POSIX; commit classification has one shared
-implementation. The manual fallback is:
+implementation in `.claude/hooks/pre-commit-guard.py`. The shell guard runs
+that tracked file with JSON on stdin, keeping its program off the Windows
+command line. Keep both files alongside each other. The manual fallback is:
 
 ```bash
 pixi run python scripts/check_agent_hook.py --profile staged

@@ -11,6 +11,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -96,6 +97,146 @@ def _push_repo(tmp_path):
     git("remote", "add", "origin", str(remote))
     git("push", "origin", "main")
     return repo, env, git
+
+
+@pytest.mark.parametrize("removal", ["delete", "rename"])
+@pytest.mark.parametrize(
+    "name,new_ref",
+    [
+        ("pre-commit", False),
+        ("commit-msg", False),
+        ("pre-push", False),
+        ("pre-push", True),
+    ],
+)
+def test_hooks_block_removed_tracked_checkers(tmp_path, removal, name, new_ref):
+    repo, env, git = _push_repo(tmp_path)
+    _write_gate(repo, (ROOT / "scripts/check_agent_hook.py").read_text())
+    git("add", "scripts/check_agent_hook.py")
+    git("commit", "-qm", "Install staged checker fixture")
+    git("push", "origin", "main")
+    assert _install(repo, env).returncode == 0
+    for script in ("check_agent_hook.py", "check_local_paths.py"):
+        if removal == "delete":
+            git("rm", f"scripts/{script}")
+        else:
+            git("mv", f"scripts/{script}", f"scripts/renamed_{script}")
+    private_path = "/home/" + "example/private.md"
+    (repo / "notes.md").write_text(private_path + "\n")
+    git("add", "notes.md")
+    if name == "pre-commit":
+        result = git("commit", "-qm", "Public change", check=False)
+    elif name == "commit-msg":
+        message = repo / "message.txt"
+        message.write_text(private_path + "\n")
+        result = subprocess.run(
+            [str(_hook(repo, name)), str(message)],
+            cwd=repo,
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+    else:
+        git("-c", "core.hooksPath=", "commit", "-qm", "Public change")
+        target = "topic" if new_ref else "main"
+        result = git("push", "origin", f"HEAD:refs/heads/{target}", check=False)
+    assert result.returncode != 0, result.stderr
+
+
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg", "pre-push"])
+@pytest.mark.parametrize("failure", ["show", "python"])
+def test_hooks_fail_closed_when_tracked_checker_cannot_be_recovered(
+    tmp_path, name, failure
+):
+    repo, env, git = _push_repo(tmp_path)
+    base = git("rev-parse", "HEAD").stdout.strip()
+    assert _install(repo, env).returncode == 0
+    git("rm", "scripts/check_agent_hook.py", "scripts/check_local_paths.py")
+    if name == "pre-push":
+        git("-c", "core.hooksPath=", "commit", "-qm", "Public change")
+    real_git = shutil.which("git")
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    if failure == "show":
+        executable = bin_dir / "git"
+        executable.write_text(
+            '#!/bin/sh\nif [ "$1" = show ]; then exit 1; fi\n'
+            f'exec {shlex.quote(real_git)} "$@"\n'
+        )
+    else:
+        executable = bin_dir / "python3"
+        executable.write_text("#!/bin/sh\nexit 1\n")
+        env["DART_HOOK_PYTHON"] = str(executable)
+    executable.chmod(0o755)
+    env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
+    message = repo / "message.txt"
+    message.write_text("Public summary\n")
+    updates = None
+    if name == "pre-push":
+        head = git("rev-parse", "HEAD").stdout.strip()
+        updates = f"refs/heads/main {head} refs/heads/main {base}\n"
+        command = [str(_hook(repo, name)), "origin", str(tmp_path / "remote.git")]
+    else:
+        command = [str(_hook(repo, name)), str(message)]
+    result = subprocess.run(
+        command, cwd=repo, env=env, input=updates, capture_output=True, text=True
+    )
+    assert result.returncode != 0, result.stderr
+    assert "cannot recover tracked checker" in result.stderr
+
+
+def test_pre_push_recovers_checker_for_clean_change_and_removes_temporary_files(
+    tmp_path,
+):
+    repo, env, git = _push_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    git("rm", "scripts/check_local_paths.py")
+    git("-c", "core.hooksPath=", "commit", "-qm", "Public change")
+    temporary = tmp_path / "checker-files"
+    temporary.mkdir()
+    env["TMPDIR"] = str(temporary)
+    result = git("push", "origin", "main", check=False)
+    assert result.returncode == 0, result.stderr
+    assert "using tracked scripts/check_local_paths.py" in result.stderr
+    assert list(temporary.iterdir()) == []
+
+
+def test_guard_keeps_python_arguments_below_safe_bound(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    python = tmp_path / "bounded-python"
+    python.write_text(
+        f"#!{sys.executable}\n"
+        "import os, sys\n"
+        "assert all(len(arg.encode()) <= 8192 for arg in sys.argv[1:]), "
+        "'Python argument exceeds safe bound'\n"
+        f"os.execv({sys.executable!r}, [{sys.executable!r}, *sys.argv[1:]])\n"
+    )
+    python.chmod(0o755)
+    env.update(
+        {
+            "CLAUDE_PROJECT_DIR": str(repo),
+            "DART_HOOK_PYTHON": str(python),
+            "DART_HOOK_DRY_RUN": "1",
+        }
+    )
+    returncode, stderr = _run_guard(repo, env, "git commit --no-verify -m x")
+    assert returncode == 0, stderr
+    assert "would run" in stderr
+
+
+@pytest.mark.parametrize("executable", ["GIT", "Git", "GIT.EXE"])
+def test_guard_case_insensitive_fast_allow(tmp_path, executable):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    private_path = "C:\\Users\\" + "example\\private.md"
+    returncode, stderr = _run_guard(
+        repo, env, f"{executable} commit --no-verify -m '{private_path}'"
+    )
+    assert returncode == 2, stderr
 
 
 @pytest.mark.parametrize("leak", ["message", "content"])
@@ -211,6 +352,10 @@ def test_pre_push_skips_unavailable_gate_and_honors_local_hook(
     if unavailable == "checker":
         git("rm", "scripts/check_local_paths.py")
         git("commit", "-qm", "Checkout without checker")
+        # An older branch lacks the checker at the remote base as well.
+        git("push", "origin", "main")
+        base = git("rev-parse", "HEAD").stdout.strip()
+        git("commit", "--allow-empty", "-qm", "Public legacy change")
     else:
         bin_dir = tmp_path / "bin"
         bin_dir.mkdir()
@@ -236,12 +381,9 @@ def test_pre_push_skips_unavailable_gate_and_honors_local_hook(
         assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
     else:
         assert result.returncode == 0, result.stderr
-        assert (
-            result.stderr.count(
-                "DART pre-push: local-path gate unavailable in this checkout; skipping scan."
-            )
-            == 1
-        )
+        assert result.stderr.count(
+            "DART pre-push: local-path gate unavailable in this checkout; skipping scan."
+        ) == (2 if unavailable == "checker" else 1)
         head = git("rev-parse", "HEAD").stdout.strip()
         for ref in ("main", "topic"):
             assert git("ls-remote", "origin", f"refs/heads/{ref}").stdout.strip() == (
@@ -343,7 +485,7 @@ def test_install_writes_executable_hook_and_is_idempotent(tmp_path, name):
     assert hook.exists()
     assert os.access(hook, os.X_OK)
     assert "DART-MANAGED-HOOK" in hook.read_text()
-    assert "DART-MANAGED-HOOK v12 " in hook.read_text()
+    assert "DART-MANAGED-HOOK v13 " in hook.read_text()
     digest = hashlib.sha256(hook.read_bytes()).hexdigest()
 
     second = _install(repo, env)
@@ -1064,14 +1206,14 @@ def test_guard_fails_closed_for_non_posix_child_commits(tmp_path, shell, install
     "command",
     ("powershell -NoProfile -Command -", "pwsh -NoProfile -Command -", "cmd /Q"),
 )
-def test_guard_applies_case_sensitive_fast_allow_to_non_posix_stdin(tmp_path, command):
+def test_guard_blocks_case_insensitive_commit_in_non_posix_stdin(tmp_path, command):
     repo, env = _init_repo(tmp_path)
     env["CLAUDE_PROJECT_DIR"] = str(repo)
     returncode, stderr = _run_guard(
         repo, env, command + " <<'EOF'\nGIT.EXE COMMIT --allow-empty -m example\nEOF"
     )
-    assert returncode == 0, stderr
-    assert stderr == ""
+    assert returncode == 2, stderr
+    assert "commit blocked" in stderr
 
     returncode, stderr = _run_guard(repo, env, command + " <<'EOF'\ngit status\nEOF")
     assert returncode == 0, stderr
@@ -1299,8 +1441,6 @@ def test_guard_handles_thousands_of_non_native_arguments_within_timeout(tmp_path
     (
         "git status # unmatched { syntax",
         "git COMMIT",
-        "GIT commit -m x",
-        "GIT.EXE commit -m x",
         "grep -rn commit scripts | head",
         "gh api repos/o/r/commits | jq .",
         "git log --oneline | head",

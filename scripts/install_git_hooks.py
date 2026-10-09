@@ -16,8 +16,10 @@ using ``check_local_paths.py --commit-range``. Existing refs use the remote SHA;
 new refs use the merge base with the remote's default branch. Missing base
 objects are fetched without changing refs or FETCH_HEAD. An empty remote or
 unrelated history scans the whole local history; lookup or scan errors block
-the push. An unavailable checker or compatible Python skips the scan with a
-notice. Foreign pre-push hooks receive the same stdin. Behaviour:
+the push. Older branches without a checker or compatible Python skip the scan
+with a notice. A checker removed from the worktree is recovered from HEAD or
+the push base; recovery errors block the operation. Foreign pre-push hooks
+receive the same stdin. Behaviour:
 
 * Each managed hook carries a sentinel line (``DART-MANAGED-HOOK``); re-running
   this installer detects it and rewrites the hook in place, so the command is
@@ -52,10 +54,34 @@ import sys
 from pathlib import Path
 
 SENTINEL = "DART-MANAGED-HOOK"
-HOOK_VERSION = "12"
+HOOK_VERSION = "13"
+
+CHECKER_SELECTION = """\
+# Recover removed/renamed checkers without trusting the post-change worktree.
+select_checker() {
+    checker_path=$2
+    [ ! -f "$checker_path" ] || return 0
+    checker_path=
+    [ -n "$1" ] || return 0
+    tracked_checker=$(git ls-tree --name-only "$1" -- "$2") || return 1
+    [ -n "$tracked_checker" ] || return 0
+    [ -n "$python_cmd" ] || return 1
+    if [ -z "${checker_temp:-}" ]; then
+        checker_temp=$(mktemp -d) || return 1
+        trap 'rm -rf "$checker_temp"' 0
+    fi
+    checker_path="$checker_temp/${2##*/}"
+    git show "$1:$2" > "$checker_path" || return 1
+    # The staged checker invokes its sibling local-path checker by __file__.
+    if [ "$2" = scripts/check_agent_hook.py ]; then
+        git show "$1:scripts/check_local_paths.py" > "$checker_temp/check_local_paths.py" || return 1
+    fi
+    echo "DART hook: using tracked $2 from $1." >&2
+}
+"""
 
 PRE_PUSH_SCAN = """\
-if [ ! -f scripts/check_local_paths.py ] || [ -z "$python_cmd" ]; then
+if [ -z "$python_cmd" ] && [ -f scripts/check_local_paths.py ]; then
     echo "DART pre-push: local-path gate unavailable in this checkout; skipping scan." >&2
     exit 0
 fi
@@ -89,8 +115,16 @@ printf '%s\\n' "$push_updates" | while read -r local_ref local_sha remote_ref re
     fi
     commit_range=$local_sha
     [ -z "$base_sha" ] || commit_range="$base_sha..$local_sha"
+    if ! select_checker "${base_sha:-$local_sha}" scripts/check_local_paths.py; then
+        echo "DART pre-push: cannot recover tracked checker — push blocked." >&2
+        exit 1
+    fi
+    if [ -z "$checker_path" ]; then
+        echo "DART pre-push: local-path gate unavailable in this checkout; skipping scan." >&2
+        continue
+    fi
     echo "DART pre-push: scanning $local_ref ($commit_range)..." >&2
-    if ! "$python_cmd" scripts/check_local_paths.py --commit-range "$commit_range"; then
+    if ! "$python_cmd" "$checker_path" --commit-range "$commit_range"; then
         echo "DART pre-push: local-path hook FAILED — push blocked." >&2
         echo "  Fix: remove local paths from pushed commits." >&2
         echo "  Emergency bypass: DART_SKIP_HOOKS=1 git push ..." >&2
@@ -138,13 +172,20 @@ def hook_template(name: str) -> str:
     capture = ""
     chain = f'    "$hooks_dir/{name}.local" "$@" || exit $?'
     run_gate = f"""\
-if [ ! -f scripts/{script} ] \
+checker_revision=$(git rev-parse --verify --quiet HEAD)
+revision_status=$?
+[ "$revision_status" -le 1 ] || exit "$revision_status"
+if ! select_checker "$checker_revision" scripts/{script}; then
+    echo "DART {name}: cannot recover tracked checker — commit blocked." >&2
+    exit 1
+fi
+if [ -z "$checker_path" ] \
     || [ -z "$python_cmd" ]; then
 {fallback}    exit 0
 fi
 
 echo "DART {name}: running fast {gate} gate ($python_cmd {display_command})..." >&2
-if ! "$python_cmd" {command}; then
+if ! "$python_cmd" "$checker_path" {arguments}; then
     echo "" >&2
     echo "DART {name}: {gate} hook FAILED — commit blocked." >&2
     echo "  Fix with: {fix}" >&2
@@ -205,6 +246,7 @@ fi
 
 cd "$repo_root" || exit 1
 
+{CHECKER_SELECTION}
 {run_gate}
 """
 

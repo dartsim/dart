@@ -90,9 +90,10 @@ def find_git_bash() -> Optional[Path]:
 
 def run_guard(root: Path, payload: bytes, bash: Path) -> int:
     guard = root / ".claude" / "hooks" / "pre-commit-guard.sh"
-    if not guard.is_file():
-        print("DART pre-tool hook: missing {}".format(guard), file=sys.stderr)
-        return 2
+    for path in (guard, guard.with_suffix(".py")):
+        if not path.is_file():
+            print("DART pre-tool hook: missing {}".format(path), file=sys.stderr)
+            return 2
     env = dict(os.environ)
     env["CLAUDE_PROJECT_DIR"] = str(root)
     env["CODEX_PROJECT_DIR"] = str(root)
