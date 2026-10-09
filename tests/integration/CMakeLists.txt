@@ -75,6 +75,7 @@ dart_format_add(
   "${PROJECT_SOURCE_DIR}/tools/friction_eval/friction_scenes.hpp"
 )
 dart_add_test("integration" test_IslandDeactivation)
+dart_add_test("integration" test_CustomFilterSleeping)
 if(TARGET dart-collision-bullet)
   target_link_libraries(test_IslandDeactivation dart-collision-bullet)
 endif()

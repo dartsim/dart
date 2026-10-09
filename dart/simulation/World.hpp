@@ -717,8 +717,8 @@ public:
   common::SlotRegister<NameChangedSignal> onNameChanged;
 
 private:
-  /// Collision-side deactivation state, including the resting contacts that
-  /// getLastCollisionResult() keeps reporting.
+  /// Collision-side deactivation state, including custom-filter decisions and
+  /// the resting contacts getLastCollisionResult() keeps reporting.
   std::unique_ptr<WorldDeactivationState> mDeactivationState;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END

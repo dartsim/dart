@@ -36,6 +36,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "dart/simulation/World.hpp"
+
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
@@ -59,7 +61,6 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
-#include "dart/simulation/World.hpp"
 
 #include <algorithm>
 #include <atomic>
@@ -2547,9 +2548,18 @@ bool World::hasDeactivationStateChangedSince(
   if (window == 0u)
     return false;
 
+  const bool customFilterSleeping = isCustomBodyNodeFilter(
+      *mDeactivationState,
+      mConstraintSolver->getCollisionOption().collisionFilter.get());
   const auto changed = [&](const dynamics::Skeleton* skel) {
-    return skel != nullptr
-           && skel->mDeactivationStateVersion - globalVersion - 1u < window;
+    if (skel == nullptr
+        || skel->mDeactivationStateVersion - globalVersion - 1u >= window) {
+      return false;
+    }
+    // Active material writes cannot invalidate another island's sleep. Quiet
+    // bodies still restart their dwell, and supports and sleepers still wake.
+    return !customFilterSleeping || !skel->isMobile() || skel->isResting()
+           || skel->isSleepCandidate() || skel->getRestDwellTime() > 0.0;
   };
   for (const auto& skel : mSkeletons) {
     if (changed(skel.get()))
