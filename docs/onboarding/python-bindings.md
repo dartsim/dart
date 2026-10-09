@@ -93,6 +93,13 @@ headers and reject conflicting stock Eigen, `shared_ptr`, and `array.h`
 casters. Missing optional STL casters fail compilation. Keep DART headers and
 STL casters limited to the types that a translation unit uses.
 
+Factory-backed Python subclasses create the native object when the base
+initializer receives its arguments, preserving translated initializers and
+Python identity. A small attachment helper in `detail/construction.cpp` uses
+nanobind internals to retain the original factory control block without moving
+the native object. Compile-time ABI/layout checks guard this dependency; audit
+the helper when nanobind changes its internals ABI.
+
 The Eigen caster preserves Eigen dimensions, strides, and ownership. By-value
 results move into a heap owner. At runtime, NumPy 2 uses its C API to export
 the array; NumPy 1 uses nanobind's `numpy.asarray` export with that same owner.

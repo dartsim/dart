@@ -2,6 +2,8 @@
 #include "detail/dart_nb.hpp"
 // clang-format on
 
+#include <dart/collision/CollisionDetector.hpp>
+
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/DegreeOfFreedom.hpp>
 #include <dart/dynamics/Joint.hpp>
@@ -260,7 +262,18 @@ nb::handle wrap(
     return existing.release();
   if (policy == nb::rv_policy::none)
     return {};
-  if (entry.graph_owned
+  // shared_ptr exports attach their owner in shared_caster. Raw detector
+  // exports recover the same native control block even after its wrapper dies.
+  std::shared_ptr<dart::collision::CollisionDetector> detector_owner;
+  if (!is_new) {
+    if (auto* detector
+        = static_cast<dart::collision::CollisionDetector*>(upcast(
+            selected->first,
+            typeid(dart::collision::CollisionDetector),
+            pointer)))
+      detector_owner = detector->weak_from_this().lock();
+  }
+  if ((entry.graph_owned || detector_owner)
       && (policy == nb::rv_policy::automatic
           || policy == nb::rv_policy::take_ownership))
     policy = nb::rv_policy::reference;
@@ -273,6 +286,8 @@ nb::handle wrap(
         entry.python_type,
         pointer,
         policy == nb::rv_policy::reference_internal ? parent : nb::handle());
+  if (detector_owner)
+    hold_native_owner(result, detector_owner);
   hold_body(result, selected->first, pointer);
   remember_wrapper(selected->first, complete, result);
   if (is_new)

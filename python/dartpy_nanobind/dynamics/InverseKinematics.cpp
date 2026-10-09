@@ -724,7 +724,7 @@ void InverseKinematics(nb::module_& m)
                   -> dart::dynamics::InverseKinematicsPtr {
                 return dart::dynamics::InverseKinematics::create(node);
               }),
-          nb::arg("node").none())
+          nb::arg("node"))
       .def(
           "findSolution",
           +[](dart::dynamics::InverseKinematics* self,

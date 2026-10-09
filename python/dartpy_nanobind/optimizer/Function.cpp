@@ -66,6 +66,10 @@ public:
   void evalGradient(
       const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
   {
+    nb::gil_scoped_acquire guard;
+    // Function has no public Python evalGradient method.
+    if (!nb::hasattr(nb_trampoline.base(), "evalGradient"))
+      return Function::evalGradient(x, grad);
     NB_OVERRIDE(evalGradient, x, grad);
   }
 };

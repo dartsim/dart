@@ -1,17 +1,40 @@
 #pragma once
 
+#include "polymorphic.hpp"
+
 #include <nanobind/eval.h>
 
 namespace dartnb {
+// Transfer a prepared external reference into an uninitialized Python subtype.
+// The native factory object and its shared_ptr control block stay in place.
+void attachFactoryInstance(nb::handle self, nb::handle prepared);
+
 template <class T>
 nb::object nativeInstance(
     nb::handle requested, const std::shared_ptr<T>& owner, bool ready = true)
 {
+  if (!owner)
+    throw nb::type_error("native factory returned an empty owner");
   auto result = nb::inst_reference(requested, owner.get());
   hold_native_owner(result, owner);
   nb::inst_set_state(result, ready, false);
   if (ready)
     remember_wrapper(typeid(T), dynamic_cast<void*>(owner.get()), result);
+  return result;
+}
+
+template <class Owner, class = decltype(std::declval<Owner>().get_shared())>
+nb::object nativeInstance(
+    nb::handle requested, const Owner& owner, bool ready = true)
+{
+  // DART's IK holder preserves its affiliated JacobianNode in addition to the
+  // native shared_ptr. Retain both without replacing the native control block.
+  auto result = nativeInstance(requested, owner.get_shared(), ready);
+  auto holder = std::make_unique<Owner>(owner);
+  nb::keep_alive_cb(result, holder.get(), [](void* pointer) noexcept {
+    delete static_cast<Owner*>(pointer);
+  });
+  holder.release();
   return result;
 }
 
@@ -106,19 +129,16 @@ void defHybridInit(Cls& cls, const Extra&... extra)
 
 namespace dartnb {
 template <class T, class = void>
-struct HasDefaultCreate : std::false_type
-{
-};
-template <class T>
-struct HasDefaultCreate<T, std::void_t<decltype(T::create())>> : std::true_type
-{
-};
-template <class T>
 struct SharedReturn : std::false_type
 {
 };
 template <class T>
 struct SharedReturn<std::shared_ptr<T>> : std::true_type
+{
+};
+template <class T>
+struct SharedReturn<T, std::void_t<decltype(std::declval<T>().get_shared())>>
+  : SharedReturn<decltype(std::declval<T>().get_shared())>
 {
 };
 template <class F>
@@ -168,13 +188,7 @@ struct factory<F, R(Args...)> : nb::def_visitor<factory<F, R(Args...)>>
               if (requested.is(nb::type<T>()))
                 return requested.attr("_native_factory")(*args, **kwargs);
               nb::module_::import_("dartpy").attr("_guard_init")(requested);
-              if constexpr (HasDefaultCreate<T>::value) {
-                return nativeInstance(requested, T::create(), false);
-              } else {
-                auto exact = requested.attr("_native_factory")(*args, **kwargs);
-                return nativeInstance(
-                    requested, nb::cast<std::shared_ptr<T>>(exact), false);
-              }
+              return nb::inst_alloc(requested);
             });
       }
       cls.def(
@@ -185,16 +199,11 @@ struct factory<F, R(Args...)> : nb::def_visitor<factory<F, R(Args...)>>
               throw nb::type_error("incompatible initialization type");
             if (nb::inst_ready(self))
               return;
-            auto* native = nb::inst_ptr<T>(self);
-            if constexpr (std::is_same_v<T, dart::dynamics::Skeleton>) {
-              auto prepared = f(args...);
-              native->setProperties(prepared->getProperties());
-            } else if constexpr (std::is_same_v<T, dart::simulation::World>) {
-              auto prepared = f(args...);
-              native->setName(prepared->getName());
-            }
+            auto owner = f(args...);
+            auto prepared = nativeInstance(nb::type<T>(), owner, false);
+            attachFactoryInstance(self, prepared);
             nb::inst_set_state(self, true, false);
-            remember_wrapper(typeid(T), complete_address(native), self);
+            remember_wrapper(typeid(T), complete_address(owner.get()), self);
           },
           extra...);
     }

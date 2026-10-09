@@ -69,16 +69,17 @@ void hold_native_owner(nb::handle wrapper, const std::shared_ptr<T>& owner)
     void* complete;
   };
   void* complete = complete_address(owner.get());
-  auto* holder = new Payload{owner, complete};
+  auto holder = std::make_unique<Payload>(Payload{owner, complete});
   remember_owner(
       complete,
       std::static_pointer_cast<void>(std::const_pointer_cast<Mutable>(owner)),
-      holder);
-  nb::keep_alive_cb(wrapper, holder, [](void* q) noexcept {
+      holder.get());
+  nb::keep_alive_cb(wrapper, holder.get(), [](void* q) noexcept {
     auto* payload = static_cast<Payload*>(q);
     forget_owner(payload->complete, payload);
     delete payload;
   });
+  holder.release();
 }
 
 template <class T, class Base>

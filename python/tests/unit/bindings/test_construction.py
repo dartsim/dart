@@ -70,6 +70,202 @@ def test_skeleton_subclass_translated_init_and_world_identity():
     world.step()
 
 
+@pytest.mark.parametrize("kind", ["Skeleton", "World"])
+def test_factory_subclass_preserves_default_and_translated_names(kind):
+    base = D.Skeleton if kind == "Skeleton" else dart.simulation.World
+
+    class Default(base):
+        pass
+
+    class Translated(base):
+        def __init__(self, label, *, prefix):
+            super().__init__(name=f"{prefix}_{label}")
+            self.label = label
+
+    assert Default().getName() == base().getName()
+    value = Translated("named", prefix="python")
+    assert value.getName() == "python_named"
+    assert value.label == "named"
+    if kind == "Skeleton":
+        assert value.getPtr() is value
+        _, body = value.createFreeJointAndBodyNodePair()
+        assert body.getSkeleton() is value
+    else:
+        skeleton = D.Skeleton()
+        value.addSkeleton(skeleton)
+        assert value.getSkeleton(0) is skeleton
+
+
+def test_chain_factory_subclass_defers_native_arguments_and_preserves_new_identity():
+    run_isolated(
+        """
+        import weakref
+        skeleton = dart.dynamics.Skeleton()
+        _, start = skeleton.createFreeJointAndBodyNodePair()
+        _, target = skeleton.createRevoluteJointAndBodyNodePair(start)
+        class Parent(dart.dynamics.Chain):
+            def __init__(self, *, include_parent, native_name):
+                super().__init__(start, target, include_parent, native_name)
+        class Chain(Parent):
+            def __new__(cls, label):
+                value = super().__new__(cls)
+                value.allocated_label = label
+                cls.pending = weakref.ref(value)
+                return value
+            def __init__(self, label):
+                assert self is self.pending()
+                assert self.allocated_label == label
+                super().__init__(include_parent=True, native_name='python_' + label)
+                self.label = label
+        value = Chain('translated')
+        assert value is Chain.pending()
+        assert value.label == 'translated'
+        assert value.getName() == 'python_translated'
+        assert value.getNumDofs() == 7
+        assert value.getBodyNode(0) is start
+        assert value.getBodyNode(1) is target
+        clone = value.cloneChain('cloned')
+        assert clone.getName() == 'cloned' and clone.getNumDofs() == 7
+        del clone
+        wrappers = [item for item in gc.get_objects()
+                    if type(item) in (dart.dynamics.Chain, Chain)]
+        assert wrappers == [value], [type(item).__name__ for item in wrappers]
+        del wrappers, value
+        gc.collect()
+        assert Chain.pending() is None
+        """
+    )
+
+
+def test_chain_factory_uses_forwarded_arguments_even_when_outer_signature_matches():
+    skeleton = D.Skeleton()
+    _, start = skeleton.createFreeJointAndBodyNodePair()
+    _, target = skeleton.createRevoluteJointAndBodyNodePair(start)
+
+    class Chain(D.Chain):
+        def __init__(self, start, target, name):
+            super().__init__(start, target, True, f"python_{name}")
+
+    value = Chain(start, target, "translated")
+    assert value.getName() == "python_translated"
+    assert value.getNumDofs() == 7
+    D.Chain.__init__(value, start, target, "replacement")
+    assert value.getName() == "python_translated"
+    assert value.getNumDofs() == 7
+
+
+def test_linkage_factory_subclass_translates_criteria_and_name():
+    skeleton = D.Skeleton()
+    _, start = skeleton.createFreeJointAndBodyNodePair()
+    _, target = skeleton.createRevoluteJointAndBodyNodePair(start)
+
+    class Linkage(D.Linkage):
+        def __init__(self, label):
+            criteria = D.ChainCriteria(start, target, True).convert()
+            super().__init__(criteria, f"python_{label}")
+            self.label = label
+
+    value = Linkage("translated")
+    assert value.label == "translated"
+    assert value.getName() == "python_translated"
+    assert value.getNumDofs() == 7
+    assert value.getBodyNode(0) is start
+    assert value.getBodyNode(1) is target
+    assert value.cloneLinkage().getNumDofs() == 7
+
+
+def test_inverse_kinematics_factory_subclass_preserves_native_backreferences():
+    skeleton = D.Skeleton()
+    _, body = skeleton.createFreeJointAndBodyNodePair()
+
+    class InverseKinematics(D.InverseKinematics):
+        def __init__(self, *, label):
+            super().__init__(body)
+            self.label = label
+
+    value = InverseKinematics(label="translated")
+    assert value.label == "translated"
+    assert value.getDofs() == list(range(6))
+    assert value.getGradientMethod().getIK() is value
+
+
+def test_inverse_kinematics_factory_keeps_affiliated_node_alive():
+    run_isolated(
+        """
+        skeleton = dart.dynamics.Skeleton()
+        _, body = skeleton.createFreeJointAndBodyNodePair()
+        class InverseKinematics(dart.dynamics.InverseKinematics):
+            def __init__(self, label, body):
+                super().__init__(body)
+                self.label = label
+        value = InverseKinematics('translated', body)
+        del _, body, skeleton
+        gc.collect()
+        assert value.label == 'translated'
+        assert value.getDofs() == list(range(6))
+        assert value.getGradientMethod().getIK() is value
+        """
+    )
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "DARTCollisionDetector",
+        "FCLCollisionDetector",
+        "BulletCollisionDetector",
+        "OdeCollisionDetector",
+    ],
+)
+def test_collision_factory_subclass_preserves_native_shared_owner(kind):
+    base = getattr(dart.collision, kind, None)
+    if base is None:
+        pytest.skip(f"{kind} requires its optional collision component")
+
+    class Detector(base):
+        def __init__(self, label):
+            super().__init__()
+            self.label = label
+
+    value = Detector("translated")
+    assert value.label == "translated"
+    assert value.createCollisionGroup().getCollisionDetector() is value
+
+
+@pytest.mark.parametrize("failure", ["before_base", "after_base", "native_arguments"])
+def test_factory_subclass_constructor_failure_releases_pending_wrapper(failure):
+    run_isolated(
+        f"""
+        import weakref
+        skeleton = dart.dynamics.Skeleton()
+        _, start = skeleton.createFreeJointAndBodyNodePair()
+        _, target = skeleton.createRevoluteJointAndBodyNodePair(start)
+        class Chain(dart.dynamics.Chain):
+            def __new__(cls, label):
+                value = super().__new__(cls)
+                cls.pending = weakref.ref(value)
+                return value
+            def __init__(self, label):
+                self.label = label
+                if {failure!r} == 'before_base':
+                    raise ValueError('before native construction')
+                if {failure!r} == 'native_arguments':
+                    super().__init__('invalid criteria')
+                else:
+                    super().__init__(start, target, label)
+                    raise ValueError('after native construction')
+        try:
+            Chain('failing')
+        except (TypeError, ValueError):
+            pass
+        else:
+            raise AssertionError('constructor failure was ignored')
+        gc.collect()
+        assert Chain.pending() is None
+        """
+    )
+
+
 @pytest.mark.parametrize("arity", [0, 1, 2, 3])
 def test_simple_frame_constructor_overloads_initialize_state(arity):
     parent = D.SimpleFrame()

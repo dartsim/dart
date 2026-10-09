@@ -42,7 +42,11 @@ set_target_properties(
 )
 target_compile_features(dartpy PRIVATE cxx_std_17)
 target_include_directories(dartpy PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(dartpy PRIVATE dart dart-utils dart-utils-urdf)
+target_include_directories(dartpy SYSTEM PRIVATE "${NB_DIR}/src")
+target_link_libraries(
+  dartpy
+  PRIVATE dart dart-utils dart-utils-urdf tsl::robin_map
+)
 foreach(optional dart-collision-bullet dart-collision-ode)
   if(TARGET ${optional})
     target_link_libraries(dartpy PRIVATE ${optional})

@@ -9,6 +9,18 @@ import pytest
 from ._support import IS_NANOBIND, run_isolated
 
 
+def test_inverse_kinematics_constructor_rejects_null_node():
+    run_isolated(
+        """
+        try:
+            dart.dynamics.InverseKinematics(None)
+        except TypeError:
+            return
+        raise AssertionError("a null IK node was accepted")
+        """
+    )
+
+
 @pytest.mark.parametrize("value", [True, False])
 def test_bool_parameters_accept_true_and_false(value):
     skeleton = dart.dynamics.Skeleton()

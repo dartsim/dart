@@ -37,6 +37,9 @@
     are read-only. Secondary-base `isinstance`/MRO and exception details differ;
     bool parameters accept only `True`/`False`, and str parameters reject bytes.
 
+  * Reject a null node when constructing inverse kinematics in either binder,
+    preventing an invalid-input crash.
+
 * Examples
 
   * Replace the four C++ tutorials with Python exercises and solutions in

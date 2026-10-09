@@ -177,6 +177,48 @@ def test_world_retains_native_skeleton_without_pinning_python_wrapper():
 
 
 @pytest.mark.parametrize(
+    ("detector_name", "detector_type"),
+    [("FCLCollisionDetector", "fcl"), ("DARTCollisionDetector", "dart")],
+)
+@pytest.mark.parametrize("collision_object", ["collisionObject1", "collisionObject2"])
+def test_raw_collision_detector_retains_native_owner(
+    detector_name, detector_type, collision_object
+):
+    run_isolated(
+        f"""
+        import weakref
+        detector = dart.collision.{detector_name}()
+        group = detector.createCollisionGroup()
+        original = weakref.ref(detector)
+        first = dart.dynamics.SimpleFrame()
+        first.setShape(dart.dynamics.SphereShape(1.0))
+        second = dart.dynamics.SimpleFrame()
+        second.setShape(dart.dynamics.SphereShape(1.0))
+        second.setTranslation([0.5, 0.0, 0.0])
+        group.addShapeFrame(first)
+        group.addShapeFrame(second)
+        result = dart.collision.CollisionResult()
+        assert group.collide(dart.collision.CollisionOption(), result)
+        del detector
+        gc.collect()
+        assert original() is None
+        recovered = result.getContact(0).{collision_object}.getCollisionDetector()
+        del group, result
+        gc.collect()
+        assert recovered.getType() == {detector_type!r}
+        # A raw export must retain a genuine native owner for shared_ptr input.
+        solver = dart.constraint.BoxedLcpConstraintSolver()
+        solver.setCollisionDetector(recovered)
+        assert solver.getCollisionDetector() is recovered
+        assert recovered.createCollisionGroup().getCollisionDetector() is recovered
+        del solver
+        gc.collect()
+        assert recovered.getType() == {detector_type!r}
+        """
+    )
+
+
+@pytest.mark.parametrize(
     ("kind", "arguments", "volume"),
     [
         ("BoxShape", "np.array([1.0, 2.0, 3.0])", "6.0"),
