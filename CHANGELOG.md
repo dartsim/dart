@@ -78,6 +78,11 @@
 
 * Build
 
+  * Correct `DART_ARCH_64BITS` / `DART_ARCH_32BITS` on 64-bit Windows and
+    non-x86 64-bit Linux targets such as aarch64, and recognize FreeBSD in
+    `dart/common/Platform.hpp`:
+    [#3624](https://github.com/dartsim/dart/pull/3624)
+
   * Build DART as C++17 regardless of the compiler default, so GCC 16 (which
     defaults to C++20) builds with the default warnings-as-errors setting:
     [#3505](https://github.com/dartsim/dart/pull/3505)
