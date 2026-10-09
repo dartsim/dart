@@ -1,7 +1,7 @@
 # DART main canonical behaviour guards
 
-Generated at 2026-10-08T17:25:58.931498+00:00 for `e4cd718cc1666682730a5d5b4d9437d3b40ba264`.
-Environment fingerprint: `07fe2c8bea6456e1fcd12b4c29dd123048a081a58ae8337fc8c98062e96c2bc0`.
+Generated at 2026-10-09T15:48:14.731309+00:00 for `a2d7992c2261f3e14c944e7eef51ca9caade3a9b`.
+Environment fingerprint: `8e524aa2e0b4886459b4085f7d4c948b65f1ad3e9677df83f60ba402709042b7`.
 
 Commands and scene definitions: [baseline evidence](https://github.com/dartsim/dart/blob/main/docs/dev_tasks/dart6_performance_generalization/01-baseline-evidence.md).
 This table is generated evidence, not a fixed reference. Wall time is advisory.
