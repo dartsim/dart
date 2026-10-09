@@ -209,6 +209,11 @@ Set `DART_PERF_STAGING_ROOT` to an absolute directory on an executable
 filesystem when another account owns the default root or `/tmp` is mounted
 `noexec`. Its value is recorded in the environment fingerprint and backfill
 run identity; comparisons and resumes across staging roots are refused.
+Records expose the generic default root as `default` and a custom root as
+`sha256:<digest>`; the actual value remains in the fingerprint input. The
+publisher also normalizes older records containing the default `/tmp/dart-perf`
+or a custom root in `run.env` or a row's `head_env`, without allowing paths
+elsewhere in the record.
 Installs also record their build staging root and must be rebuilt when it
 changes, because DART resource paths are compiled into the libraries.
 Read-only installs are copied into writable staging directories without
