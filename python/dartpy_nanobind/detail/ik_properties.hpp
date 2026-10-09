@@ -1,0 +1,33 @@
+#pragma once
+
+#include "dart_nb.hpp"
+
+#include <dart/dynamics/InverseKinematics.hpp>
+
+namespace dartnb {
+template <>
+inline constexpr bool value_base<
+    dart::dynamics::InverseKinematics::ErrorMethod::Properties> = true;
+template <>
+inline constexpr bool value_base<dart::dynamics::InverseKinematics::
+                                     TaskSpaceRegion::UniqueProperties> = true;
+template <>
+inline constexpr bool value_base<
+    dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties> = true;
+static_assert(std::is_base_of_v<
+              polymorphic_caster<
+                  dart::dynamics::InverseKinematics::ErrorMethod::Properties>,
+              nb::detail::make_caster<
+                  dart::dynamics::InverseKinematics::ErrorMethod::Properties>>);
+static_assert(std::is_base_of_v<
+              polymorphic_caster<dart::dynamics::InverseKinematics::
+                                     TaskSpaceRegion::UniqueProperties>,
+              nb::detail::make_caster<dart::dynamics::InverseKinematics::
+                                          TaskSpaceRegion::UniqueProperties>>);
+static_assert(
+    std::is_base_of_v<
+        polymorphic_caster<
+            dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties>,
+        nb::detail::make_caster<
+            dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties>>);
+} // namespace dartnb

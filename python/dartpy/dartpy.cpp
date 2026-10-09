@@ -53,6 +53,7 @@ void dart_gui(py::module& m);
 
 PYBIND11_MODULE(dartpy, m)
 {
+  m.attr("_binder") = "pybind11";
   m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
 
 #ifdef DARTPY_VERSION_INFO

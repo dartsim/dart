@@ -15,9 +15,9 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 
 | Workflow file                     | Workflow name                | Runs                            | Purpose |
 | --------------------------------- | ---------------------------- | ------------------------------- | ------- |
-| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, no-OSG assertions build + test; nightly adds install, ASan, coverage (the Debug build), Eigen 64-byte alignment, and a unity name-clash check |
-| `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test; nightly adds install |
-| `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release build + test |
+| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, nanobind Python tests, no-OSG assertions build + test; nightly adds install, ASan, coverage (the Debug build), Eigen 64-byte alignment, and a unity name-clash check |
+| `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test and nanobind Python tests; nightly adds install |
+| `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release C++ tests and Python tests with both binders; unity builds |
 | `ci_gz_physics.yml`               | CI gz-physics                | PR, push, nightly               | Gazebo/gz-physics downstream integration |
 | `api_doc.yml`                     | API Documentation            | PR, push, nightly               | Doxygen API docs build (validation only; not published) |
 | `ci_simd.yml`                     | CI SIMD Multi-Arch           | PR/push touching SIMD, nightly  | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
