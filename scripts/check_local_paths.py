@@ -64,7 +64,8 @@ PATTERNS = tuple(
 ALLOWLIST = {
     # Only file/staged scans may exempt checker fixtures; free text never does.
     "tests/test_check_local_paths.py": re.compile(
-        r".*(?:\bexample\b|# path-fixture).*", re.IGNORECASE
+        r"(?:^|[/\\])(?:example(?: user|-repo)?(?:\.[\w.-]+)?|path-fixture)(?=$|[/\\:])",
+        re.IGNORECASE,
     ),
     ".gitignore": re.compile(r"\.sisyphus[/]"),
 }
@@ -73,13 +74,30 @@ UTF32_BOMS = (b"\xff\xfe\x00\x00", b"\x00\x00\xfe\xff")
 UTF16_BOMS = (b"\xff\xfe", b"\xfe\xff")
 
 
-def decode(data: bytes) -> str:
+def text_encoding(data: bytes) -> str | None:
     # UTF-32LE starts with the UTF-16LE mark, so test the longer marks first.
     if data.startswith(UTF32_BOMS):
-        return data.decode("utf-32", errors="replace")
+        return "utf-32"
     if data.startswith(UTF16_BOMS):
-        return data.decode("utf-16", errors="replace")
-    return data.decode("utf-8", errors="replace")
+        return "utf-16"
+    if len(data) >= 8 and len(data) % 2 == 0 and b"\0" in data:
+        for nul_bytes, text_bytes, encoding in (
+            (data[1::2], data[::2], "utf-16-le"),
+            (data[::2], data[1::2], "utf-16-be"),
+        ):
+            # Alternating NULs plus printable text distinguish UTF-16 from assets.
+            if (
+                nul_bytes.count(0) / len(nul_bytes) >= 0.3
+                and sum(32 <= byte <= 126 or byte in b"\t\n\r" for byte in text_bytes)
+                / len(text_bytes)
+                >= 0.85
+            ):
+                return encoding
+    return None
+
+
+def decode(data: bytes) -> str:
+    return data.decode(text_encoding(data) or "utf-8", errors="replace")
 
 
 SCISSORS = re.compile(r"(?P<char>[^\r\n]+) -{24} >8 -{24}")
@@ -117,7 +135,7 @@ def scan_line(
     commit: str | None = None,
 ) -> bool:
     allowed = ALLOWLIST.get(filename)
-    if allowed and allowed.fullmatch(line):
+    if filename == ".gitignore" and allowed.fullmatch(line):
         return False
     url_paths = []
 
@@ -143,6 +161,9 @@ def scan_line(
             for text in (line, *url_paths)
             for pattern in PATTERNS
             for match in pattern.finditer(text)
+            if not (
+                filename != ".gitignore" and allowed and allowed.search(match.group())
+            )
         }
     )
     location = f"{filename}:{number}" if filename else str(number)
@@ -217,8 +238,11 @@ def scan_changes(
         if metadata.split()[1] == b"160000":
             continue
         data = git_output(root, "show", f"{commit or ''}:{filename}")
-        if data.startswith(UTF32_BOMS + UTF16_BOMS):
-            found |= scan_text(decode(data), filename, commit)
+        encoding = text_encoding(data)
+        if encoding:
+            found |= scan_text(
+                data.decode(encoding, errors="replace"), filename, commit
+            )
             continue
         diff = git_output(
             root,
@@ -310,11 +334,9 @@ def main() -> int:
         if args.stdin:
             return int(scan_text(sys.stdin.read()))
         if args.text_file:
-            return int(scan_text(args.text_file.read_text(encoding="utf-8")))
+            return int(scan_text(decode(args.text_file.read_bytes())))
         if args.commit_msg_file:
-            return int(
-                scan_commit_message(args.commit_msg_file.read_text(encoding="utf-8"))
-            )
+            return int(scan_commit_message(decode(args.commit_msg_file.read_bytes())))
         try:
             root = Path(
                 os.fsdecode(

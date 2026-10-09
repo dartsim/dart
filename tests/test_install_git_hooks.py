@@ -304,10 +304,11 @@ def test_refuses_when_foreign_hook_and_local_both_exist(tmp_path, name):
     assert "refusing" in result.stderr
 
 
-def test_refuses_when_core_hookspath_is_set(tmp_path):
+@pytest.mark.parametrize("hooks_path", [".githooks", ""])
+def test_refuses_when_core_hookspath_is_set(tmp_path, hooks_path):
     repo, env = _init_repo(tmp_path)
     subprocess.run(
-        ["git", "config", "core.hooksPath", ".githooks"],
+        ["git", "config", "core.hooksPath", hooks_path],
         cwd=repo,
         check=True,
         env=env,
@@ -318,6 +319,55 @@ def test_refuses_when_core_hookspath_is_set(tmp_path):
     assert "core.hooksPath" in result.stderr
     assert not (repo / ".githooks" / "pre-commit").exists()
     assert not (repo / ".githooks" / "commit-msg").exists()
+    assert not (repo / "pre-commit").exists()
+    assert not (repo / "commit-msg").exists()
+
+
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+@pytest.mark.parametrize("target_kind", ["foreign", "managed", "dangling"])
+def test_install_preserves_hook_symlink_without_writing_target(
+    tmp_path, name, target_kind
+):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    hook = _hook(repo, name)
+    target = tmp_path / "hook-target"
+    content = hook.read_bytes() if target_kind == "managed" else b"#!/bin/sh\nexit 0\n"
+    if target_kind != "dangling":
+        target.write_bytes(content)
+    hook.unlink()
+    hook.symlink_to(target)
+
+    result = _install(repo, env)
+    assert result.returncode == 0, result.stderr
+    assert not hook.is_symlink()
+    assert "DART-MANAGED-HOOK" in hook.read_text()
+    local = hook.with_name(f"{name}.local")
+    assert local.is_symlink()
+    assert local.readlink() == target
+    assert target.exists() == (target_kind != "dangling")
+    if target.exists():
+        assert target.read_bytes() == content
+
+
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+def test_install_refuses_symlink_hook_backup_conflict_before_any_writes(tmp_path, name):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    hook = _hook(repo, name)
+    hook.unlink()
+    hook.symlink_to("missing-target")
+    local = hook.with_name(f"{name}.local")
+    local.symlink_to("missing-backup")
+    other = _hook(repo, "commit-msg" if name == "pre-commit" else "pre-commit")
+    other.write_text("#!/bin/sh\nexit 0\n")
+    result = _install(repo, env)
+    assert result.returncode != 0
+    assert "refusing" in result.stderr
+    assert hook.readlink() == Path("missing-target")
+    assert local.readlink() == Path("missing-backup")
+    assert other.read_text() == "#!/bin/sh\nexit 0\n"
+    assert not other.with_name(f"{other.name}.local").exists()
 
 
 def test_commit_msg_hook_blocks_private_message_in_real_commit(tmp_path):
@@ -1794,6 +1844,75 @@ def test_guard_runs_when_dart_managed_hook_is_stale_or_incomplete(tmp_path, body
 
     assert returncode == 0
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize(
+    "argument",
+    [
+        "$FLAGS",
+        "${FLAGS}",
+        '"$FLAGS"',
+        '"${FLAGS}"',
+        "$(printf -- --no-verify)",
+        "`printf -- --no-verify`",
+        '"$(printf -- --no-verify)"',
+        '"`printf -- --no-verify`"',
+        "*",
+        "--no-*",
+        "--no-verif?",
+        "--no-verif[y]",
+    ],
+)
+def test_guard_expanded_arguments_run_staged_gate_with_managed_hooks(
+    tmp_path, argument
+):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    _write_gate(repo, "raise SystemExit('staged-gate-failed')\n")
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "FLAGS": "--no-verify"})
+    returncode, stderr = _run_guard(
+        repo, env, f"git commit {argument} -m 'Public summary'"
+    )
+    assert returncode == 2
+    assert "staged-gate-failed" in stderr
+
+
+@pytest.mark.parametrize("option", ["-m", "--message=", "-F", "--file=", "--trailer="])
+@pytest.mark.parametrize(
+    "value",
+    ["$MESSAGE", '"${MESSAGE}"', "$(cat message.txt)", "`cat message.txt`", "*"],
+)
+def test_guard_blocks_dynamic_message_with_managed_hooks(tmp_path, option, value):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    separator = "" if option.endswith("=") else " "
+    returncode, stderr = _run_guard(
+        repo, env, f"git commit -m public {option}{separator}{value}"
+    )
+    assert returncode == 2
+    assert "message cannot be inspected" in stderr
+
+
+@pytest.mark.parametrize(
+    "literal",
+    [
+        "'$FLAGS'",
+        "'${FLAGS}'",
+        "'$(printf x)'",
+        "'`printf x`'",
+        "'*'",
+        r"\$FLAGS",
+        '"*"',
+    ],
+)
+def test_guard_literal_message_keeps_managed_hook_fast_path(tmp_path, literal):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+    returncode, stderr = _run_guard(repo, env, f"git commit -m {literal}")
+    assert returncode == 0, stderr
+    assert "would run" not in stderr
 
 
 def test_guard_stands_down_when_dart_managed_executable_hook_installed(tmp_path):

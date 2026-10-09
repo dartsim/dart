@@ -16,7 +16,7 @@
 #   * evaluates every git commit split by the shell tokenizer:
 #       - if both executable git hooks are current DART-managed hooks and the
 #         commit is not using --no-verify/-n (including accepted abbreviations)
-#         or a core.hooksPath override, skip
+#         or a core.hooksPath override, and its arguments cannot expand, skip
 #         that invocation (the hooks enforce; avoid running the gate twice)
 #       - if DART_SKIP_HOOKS=1 (in the environment or as a command prefix),
 #         skip the affected invocations (emergency bypass, same as the git hook)
@@ -344,7 +344,7 @@ def strip_heredoc_bodies(text, heredocs):
     return "".join(stripped)
 
 
-def has_shell_expansion(text, respect_quotes=True):
+def has_shell_expansion(text, respect_quotes=True, globs=False):
     quote = ""
     i = 0
     while i < len(text):
@@ -357,24 +357,28 @@ def has_shell_expansion(text, respect_quotes=True):
         elif quote != "'\''" and (
             ch == "`" or ch == "$" and i + 1 < len(text)
             and (text[i + 1].isalnum() or text[i + 1] in "_({@*#?-$!")
+            or globs and not quote and ch in "*?["
         ):
             return True
         i += 1
     return False
 
 
-def argument_has_expansion(part, value):
+def argument_has_expansion(part, value, globs=False):
     words = re.findall(
         r"(?:[^\s\\\"'\'']|\\[\s\S]|\"(?:\\[\s\S]|[^\"\\])*\"|'\''[^'\'']*'\'')+",
         part,
     )
+    matched = False
     for word in words:
         try:
             if shlex.split(word) == [value]:
-                return has_shell_expansion(word)
+                matched = True
+                if has_shell_expansion(word, globs=globs):
+                    return True
         except ValueError:
             return True
-    return has_shell_expansion(part)
+    return not matched and has_shell_expansion(part, globs=globs)
 
 
 def text_has_commit(text):
@@ -705,7 +709,7 @@ def commit_args_disable_hooks(args):
     return False
 
 
-def supplied_commit_message(args, cwd, inspect_message=True):
+def supplied_commit_message(args, cwd, inspect_message=True, raw_part=""):
     # Track the message source separately: trailers alone still need an editor.
     messages = []
     supplied = False
@@ -714,6 +718,7 @@ def supplied_commit_message(args, cwd, inspect_message=True):
     i = 0
     while i < len(args):
         token = args[i]
+        value_word = token
         i += 1
         if token == "--":
             stages_content |= bool(args[i:])
@@ -747,6 +752,7 @@ def supplied_commit_message(args, cwd, inspect_message=True):
                 if i >= len(args):
                     continue
                 value = args[i]
+                value_word = args[i]
                 i += 1
         elif token.startswith("-") and not token.startswith("--"):
             option = ""
@@ -762,14 +768,23 @@ def supplied_commit_message(args, cwd, inspect_message=True):
                         and i < len(args)
                     ):
                         value = args[i]
+                        value_word = args[i]
                         i += 1
                     break
         else:
-            stages_content |= not token.startswith("-") and bool(token.rstrip(")}"))
+            stages_content |= (
+                not token.startswith("-") and bool(token.rstrip(")}"))
+                and not argument_has_expansion(raw_part, token, globs=True)
+            )
             continue
         if option == "--pathspec-from-file":
             stages_content = True
         if not inspect_message:
+            continue
+        if option in {"-m", "--message", "--trailer", "-F", "--file"} and argument_has_expansion(
+            raw_part, value_word, globs=True
+        ):
+            uninspectable = True
             continue
         if option in {"-m", "--message", "--trailer"}:
             messages.append(value)
@@ -1159,6 +1174,10 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
             ):
                 hooks_path_override = True
             no_verify = commit_args_disable_hooks(tokens[i + 1 :])
+            expanded_args = any(
+                argument_has_expansion(raw_part, token, globs=True)
+                for token in tokens[i + 1 :]
+            )
             project = (
                 os.environ.get("CLAUDE_PROJECT_DIR")
                 or os.environ.get("CODEX_PROJECT_DIR")
@@ -1198,11 +1217,12 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
             ):
                 target_root = git_worktree_root(project)
             yield (
-                no_verify or hooks_path_override,
+                no_verify or hooks_path_override or expanded_args,
                 target_root,
                 tokens[i + 1 :],
                 target_dir,
                 changed_before_commit,
+                raw_part,
             )
     return content_may_change
 
@@ -1242,7 +1262,7 @@ messages = []
 unhooked_commits = 0
 unsafe_chain = False
 try:
-    for bypassed, root, args, cwd, changed_before_commit in git_commits(cmd):
+    for bypassed, root, args, cwd, changed_before_commit, raw_part in git_commits(cmd):
         root = (
             root
             or os.environ.get("CLAUDE_PROJECT_DIR")
@@ -1253,7 +1273,7 @@ try:
             continue
         unhooked_commits += 1
         unsafe_chain |= unhooked_commits > 1 and changed_before_commit
-        message, inspectable, stages_content = supplied_commit_message(args, cwd)
+        message, inspectable, stages_content = supplied_commit_message(args, cwd, raw_part=raw_part)
         if verdict == "skip":
             verdict, target_repo_root = "commit", root
         if stages_content:
