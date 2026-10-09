@@ -66,10 +66,19 @@ endmacro()
 #   dart_generate_include_header_file(file_path target_dir [headers...])
 #===============================================================================
 macro(dart_generate_include_header_file file_path target_dir)
-  file(WRITE ${file_path} "// Automatically generated file by cmake\n\n")
+  set(include_header_content "// Automatically generated file by cmake\n\n")
   foreach(header ${ARGN})
-    file(APPEND ${file_path} "#include \"${target_dir}${header}\"\n")
+    string(
+      APPEND include_header_content
+      "#include \"${target_dir}${header}\"\n"
+    )
   endforeach()
+  file(
+    CONFIGURE
+    OUTPUT "${file_path}"
+    CONTENT "${include_header_content}"
+    @ONLY
+  )
 endmacro()
 
 #===============================================================================
