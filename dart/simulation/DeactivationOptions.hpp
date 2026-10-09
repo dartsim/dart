@@ -79,7 +79,9 @@ struct DeactivationOptions
   double mAngularSpeedThreshold = 0.05;
 
   /// Duration (seconds) of sustained sub-threshold motion that must elapse
-  /// before a skeleton is allowed to sleep.
+  /// before a skeleton is allowed to sleep. Joint-coupled islands with a
+  /// custom BodyNodeCollisionFilter also require at least 2000 quiet solver
+  /// steps; changing the time step restarts their dwell.
   double mTimeUntilSleep = 0.5;
 
   /// Hysteresis factor applied to the sleep thresholds to obtain the wake

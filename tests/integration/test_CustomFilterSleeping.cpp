@@ -148,6 +148,80 @@ struct JointScene
   dynamics::BodyNode* flap;
 };
 
+enum class JointMount
+{
+  Hinge,
+  WorldBall,
+  DoorBall
+};
+
+JointScene createJointScene(
+    double timeStep, bool deactivation, JointMount mount, bool tracked = false)
+{
+  JointScene scene;
+  scene.world = createWorld(timeStep, tracked);
+  scene.world->setCollisionDetector(collision::FCLCollisionDetector::create());
+  auto options = scene.world->getDeactivationOptions();
+  options.mEnabled = deactivation;
+  scene.world->setDeactivationOptions(options);
+  scene.world->addSkeleton(createFloor());
+
+  const bool door = mount == JointMount::DoorBall;
+  const Eigen::Vector3d size
+      = door ? Eigen::Vector3d(0.05, 1.0, 2.0) : Eigen::Vector3d(0.5, 0.5, 0.1);
+  const Eigen::Vector3d edge(0.25, 0.0, 0.0);
+  const double mass = door ? 20.0 : 1.0;
+  dynamics::BodyNode::Properties properties;
+  properties.mInertia.setMass(mass);
+  properties.mInertia.setMoment(dynamics::BoxShape::computeInertia(size, mass));
+  if (mount != JointMount::Hinge) {
+    scene.model = dynamics::Skeleton::create("model");
+    dynamics::BallJoint::Properties joint;
+    if (door) {
+      joint.mT_ParentBodyToJoint.translation() = Eigen::Vector3d(0.0, 0.0, 1.0);
+      joint.mT_ChildBodyToJoint.translation() = Eigen::Vector3d(0.0, -0.5, 0.0);
+    } else {
+      joint.mT_ParentBodyToJoint.translation()
+          = edge + Eigen::Vector3d(0.0, 0.0, 0.05);
+      joint.mT_ChildBodyToJoint.translation() = -edge;
+    }
+    scene.flap = scene.model
+                     ->createJointAndBodyNodePair<dynamics::BallJoint>(
+                         nullptr, joint, properties)
+                     .second;
+  } else {
+    scene.model
+        = createBox("model", size, Eigen::Vector3d(0.0, 0.0, 0.05), 5.0);
+    dynamics::RevoluteJoint::Properties joint;
+    joint.mAxis = Eigen::Vector3d::UnitY();
+    joint.mT_ParentBodyToJoint.translation() = edge;
+    joint.mT_ChildBodyToJoint.translation() = -edge;
+    scene.flap = scene.model
+                     ->createJointAndBodyNodePair<dynamics::RevoluteJoint>(
+                         scene.model->getBodyNode(0), joint, properties)
+                     .second;
+  }
+  scene.flap->createShapeNodeWith<
+      dynamics::CollisionAspect,
+      dynamics::DynamicsAspect>(std::make_shared<dynamics::BoxShape>(size));
+  scene.world->addSkeleton(scene.model);
+  return scene;
+}
+
+Eigen::Vector3d contactForce(const JointScene& scene)
+{
+  Eigen::Vector3d force = Eigen::Vector3d::Zero();
+  const auto& result = scene.world->getLastCollisionResult();
+  for (std::size_t i = 0; i < result.getNumContacts(); ++i) {
+    const auto& contact = result.getContact(i);
+    if (contact.getBodyNodePtr1().get() == scene.flap)
+      force += contact.force;
+    else if (contact.getBodyNodePtr2().get() == scene.flap)
+      force -= contact.force;
+  }
+  return force;
+}
+
 } // namespace
 
 TEST(CustomFilterSleeping, ActiveMaterialWritesKeepUnrelatedIslandAsleep)
@@ -234,5 +308,101 @@ TEST(CustomFilterSleeping, RestingAndStaticMaterialEditsStillWake)
               .getNumContacts(),
           0u);
     }
+  }
+}
+
+// Joint reactions can relax over many contact solves even after motion is
+// negligible. Sleeping must preserve a settled wrench at either time step.
+TEST(CustomFilterSleeping, JointCoupledDwellCountsContactSolves)
+{
+  for (const bool tracked : {false, true}) {
+    SCOPED_TRACE(tracked ? "tracked custom filter" : "custom filter");
+    for (const double timeStep : {0.001, 0.002}) {
+      for (const auto mount :
+           {JointMount::Hinge, JointMount::WorldBall, JointMount::DoorBall}) {
+        SCOPED_TRACE(timeStep);
+        SCOPED_TRACE(static_cast<int>(mount));
+        auto sleeping = createJointScene(timeStep, true, mount, tracked);
+        auto awake = createJointScene(timeStep, false, mount, tracked);
+        std::size_t sleepStep = 0;
+        for (std::size_t i = 1; i <= 3000; ++i) {
+          sleeping.world->step();
+          awake.world->step();
+          if (sleepStep == 0 && sleeping.model->isResting())
+            sleepStep = i;
+        }
+        ASSERT_NE(0u, sleepStep);
+        EXPECT_GE(sleepStep, 2000u);
+        const double tolerance = 0.001 * sleeping.flap->getMass() * 9.81;
+        EXPECT_LT(
+            (sleeping.flap->getBodyForce() - awake.flap->getBodyForce())
+                .cwiseAbs()
+                .maxCoeff(),
+            tolerance);
+        EXPECT_LT(
+            (contactForce(sleeping) - contactForce(awake))
+                .cwiseAbs()
+                .maxCoeff(),
+            tolerance);
+      }
+    }
+  }
+}
+
+TEST(CustomFilterSleeping, DenseIslandCannotShortenJointCoupledDwell)
+{
+  for (const bool tracked : {false, true}) {
+    SCOPED_TRACE(tracked ? "tracked custom filter" : "custom filter");
+    auto scene = createJointScene(0.002, true, JointMount::Hinge, tracked);
+    auto left = createBox(
+        "left",
+        Eigen::Vector3d::Constant(0.2),
+        Eigen::Vector3d(-0.1, 0.0, 0.2));
+    auto right = createBox(
+        "right",
+        Eigen::Vector3d::Constant(0.2),
+        Eigen::Vector3d(0.1, 0.0, 0.2));
+    scene.world->addSkeleton(left);
+    scene.world->addSkeleton(right);
+    bool sharedIsland = false;
+    std::size_t sleepStep = 0;
+    for (std::size_t i = 1; i <= 3000; ++i) {
+      scene.world->step();
+      const int island = scene.model->getIslandIndex();
+      sharedIsland = sharedIsland
+                     || (island >= 0 && island == left->getIslandIndex()
+                         && island == right->getIslandIndex());
+      if (scene.model->isResting()) {
+        sleepStep = i;
+        break;
+      }
+    }
+    ASSERT_TRUE(sharedIsland);
+    ASSERT_NE(0u, sleepStep);
+    EXPECT_GE(sleepStep, 2000u);
+  }
+}
+
+TEST(CustomFilterSleeping, TimeStepChangeRestartsJointCoupledDwell)
+{
+  for (const bool tracked : {false, true}) {
+    SCOPED_TRACE(tracked ? "tracked custom filter" : "custom filter");
+    auto scene = createJointScene(0.002, true, JointMount::Hinge, tracked);
+    for (std::size_t i = 0; i < 1000; ++i)
+      scene.world->step();
+    ASSERT_FALSE(scene.model->isResting());
+
+    scene.world->setTimeStep(0.001);
+    std::size_t sleepStep = 0;
+    for (std::size_t i = 1; i <= 3000; ++i) {
+      scene.world->setTimeStep(scene.world->getTimeStep());
+      scene.world->step();
+      if (scene.model->isResting()) {
+        sleepStep = i;
+        break;
+      }
+    }
+    ASSERT_NE(0u, sleepStep);
+    EXPECT_GE(sleepStep, 2000u);
   }
 }

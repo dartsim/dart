@@ -523,6 +523,8 @@ public:
   // Whether this step's start replayed the record successfully.
   bool mReplayVerified = false;
 
+  std::vector<char> mIslandJointDwellReady;
+
   // Contacts of resting pairs, as solved when the set of resting skeletons
   // last changed; the solver no longer computes or solves them. Their
   // CollisionObjects are only used while mRetainedGroup and
@@ -850,6 +852,8 @@ void World::reserveSimulationScratch()
     }
   }
   mLastStepRestingWorldSkeletonStates.reserve(numSkeletons);
+
+  mDeactivationState->mIslandJointDwellReady.reserve(numSkeletons);
 }
 
 //==============================================================================
@@ -1292,6 +1296,12 @@ void World::setTimeStep(double _timeStep)
     return;
   }
 
+  if (_timeStep != mTimeStep
+      && isCustomBodyNodeFilter(
+          *mDeactivationState,
+          mConstraintSolver->getCollisionOption().collisionFilter.get())) {
+    wakeRestingSkeletonsForWorldChange();
+  }
   mTimeStep = _timeStep;
   DART_ASSERT(mConstraintSolver);
   mConstraintSolver->setTimeStep(_timeStep);
@@ -1692,6 +1702,20 @@ void World::step(bool _resetCommand)
 //==============================================================================
 void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 {
+  const bool customFilterSleeping = isCustomBodyNodeFilter(
+      *mDeactivationState,
+      mConstraintSolver->getCollisionOption().collisionFilter.get());
+  // Joint reactions relax per contact solve even when motion is negligible;
+  // a larger time step must not freeze them after fewer solves.
+  // shortcut: tested decay only; use impulse convergence for slower islands.
+  constexpr double kJointCoupledQuietSolves = 2000.0;
+  const auto requiredDwell = [&](const dynamics::Skeleton& skeleton) {
+    return customFilterSleeping && hasJointCoupledBodies(skeleton)
+               ? std::max(
+                   mDeactivationOptions.mTimeUntilSleep,
+                   kJointCoupledQuietSolves * mTimeStep)
+               : mDeactivationOptions.mTimeUntilSleep;
+  };
   const double linSleep = mDeactivationOptions.mLinearSpeedThreshold;
   const double angSleep = mDeactivationOptions.mAngularSpeedThreshold;
   const double scale = mDeactivationOptions.mWakeThresholdScale;
@@ -2022,8 +2046,13 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
         skel->setSleepCandidate(false);
       }
     } else {
-      const bool canAccumulateDwell = islanded || skel->isSleepCandidate()
-                                      || skel->getRestDwellTime() > 0.0;
+      const bool needsJointSolveDwell
+          = customFilterSleeping && hasJointCoupledBodies(*skel);
+      const bool canAccumulateDwell
+          = islanded
+            || (!needsJointSolveDwell
+                && (skel->isSleepCandidate()
+                    || skel->getRestDwellTime() > 0.0));
       const bool quiet = canSleep && canAccumulateDwell && (linSpeed < linSleep)
                          && (angSpeed < angSleep) && !disturbed;
       if (quiet) {
@@ -2055,7 +2084,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
                                && islandMobileSkeletonCount[islandIndex]
                                       >= kDenseContactJitterMinIslandSize;
         }
-        if (!denseContactIsland && dwell >= mDeactivationOptions.mTimeUntilSleep
+        if (!denseContactIsland && dwell >= requiredDwell(*skel)
             && finalQuiet) {
           skel->setSleepCandidate(true);
         }
@@ -2075,6 +2104,9 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
     islandAllFinalSleepCandidateReady.assign(islandCount, 1);
     islandAllBelowWake.assign(islandCount, 1);
     islandDwellWakeReadyCount.assign(islandCount, 0u);
+    auto& islandJointDwellReady = mDeactivationState->mIslandJointDwellReady;
+    if (customFilterSleeping)
+      islandJointDwellReady.assign(islandCount, 1);
 
     for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
       const auto& skel = mSkeletons[i];
@@ -2102,18 +2134,20 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       const bool finalReady
           = !disturbed
             && (skel->isSleepCandidate()
-                || (skel->getRestDwellTime()
-                        >= mDeactivationOptions.mTimeUntilSleep
+                || (skel->getRestDwellTime() >= requiredDwell(*skel)
                     && skel->getSmoothedLinearSpeed() < finalSleepLinearSpeed
                     && skel->getSmoothedAngularSpeed()
                            < finalSleepAngularSpeed));
+      if (customFilterSleeping && hasJointCoupledBodies(*skel)
+          && skel->getRestDwellTime() < requiredDwell(*skel)) {
+        islandJointDwellReady[islandIndex] = 0;
+      }
       islandHasMobileSkeleton[islandIndex] = 1;
       islandAllFinalSleepCandidateReady[islandIndex]
           = islandAllFinalSleepCandidateReady[islandIndex] && finalReady;
       islandAllBelowWake[islandIndex]
           = islandAllBelowWake[islandIndex] && belowWake;
-      if (belowWake
-          && skel->getRestDwellTime() >= mDeactivationOptions.mTimeUntilSleep) {
+      if (belowWake && skel->getRestDwellTime() >= requiredDwell(*skel)) {
         ++islandDwellWakeReadyCount[islandIndex];
       }
     }
@@ -2140,7 +2174,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
                 >= kDenseContactJitterMinIslandSize
             && islandAllBelowWake[islandIndex]
             && islandDwellWakeReadyCount[islandIndex] > 0u;
-      if (finalReady || denseContactJitterReady) {
+      if ((finalReady || denseContactJitterReady)
+          && (!customFilterSleeping || islandJointDwellReady[islandIndex])) {
         skel->setSleepCandidate(true);
       }
     }
@@ -2213,7 +2248,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       continue;
     }
 
-    if (skel->getRestDwellTime() < mDeactivationOptions.mTimeUntilSleep)
+    if (skel->getRestDwellTime() < requiredDwell(*skel))
       continue;
 
     if (skel->computeMaxBodyLinearSpeed() > kZeroSpeedForContactMissSleep
