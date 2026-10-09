@@ -46,10 +46,23 @@ if [ -z "$python_cmd" ]; then
     fi
 fi
 # Without a working classifier, block anything that may commit and allow the rest.
+command_text() {
+    if [ -n "$python_cmd" ] && printf '%s' "$input" | "$python_cmd" -c 'import json, sys
+t = json.load(sys.stdin).get("tool_input") or {}
+print(t.get("command") or t.get("cmd") or "")' 2>/dev/null; then
+        return
+    fi
+    printf '%s' "$input" \
+        | sed -E -n 's/.*"(command|cmd)"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\2/p'
+}
 may_commit() {
-    printf '%s' "$input" | grep -qiw git && printf '%s' "$input" | grep -qiw commit
+    text=$(command_text)
+    printf '%s' "$text" | grep -qiw git && printf '%s' "$text" | grep -qiw commit
 }
 disable_guard() {
+    if [ "${DART_SKIP_HOOKS:-0}" = "1" ]; then
+        exit 0
+    fi
     if [ -n "${DART_HOOK_PYTHON:-}" ] || may_commit; then
         echo "DART guard: cannot inspect this commit; blocking it" >&2
         exit 2

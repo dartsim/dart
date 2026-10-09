@@ -4163,3 +4163,51 @@ def test_guard_blocks_commits_when_classifier_is_missing(tmp_path, command, expe
     )
 
     assert run.returncode == expected, run.stderr
+
+
+def _run_guard_without_classifier(tmp_path, payload, extra_env=None, path=None):
+    hooks = tmp_path / "hooks"
+    hooks.mkdir(exist_ok=True)
+    guard = hooks / GUARD.name
+    shutil.copy2(GUARD, guard)
+    repo, env = _init_repo(tmp_path)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    env.pop("DART_HOOK_PYTHON", None)
+    env.update(extra_env or {})
+    if path is not None:
+        env["PATH"] = path
+    return subprocess.run(
+        [str(guard)],
+        cwd=repo,
+        input=json.dumps(payload),
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_guard_without_classifier_honors_skip_hooks(tmp_path):
+    payload = {"tool_input": {"command": "git commit --no-verify -m x"}}
+    run = _run_guard_without_classifier(tmp_path, payload, {"DART_SKIP_HOOKS": "1"})
+    assert run.returncode == 0, run.stderr
+
+
+def test_guard_without_classifier_ignores_payload_metadata(tmp_path):
+    payload = {"cwd": "/tmp/git-commit-worktree", "tool_input": {"command": "ls -la"}}
+    run = _run_guard_without_classifier(tmp_path, payload)
+    assert run.returncode == 0, run.stderr
+
+
+@pytest.mark.parametrize(
+    ("command", "expected"), [("git commit -m x", 2), ("ls -la", 0)]
+)
+def test_guard_without_python_reads_only_the_command(tmp_path, command, expected):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    for tool in ("bash", "sh", "cat", "dirname", "git", "grep", "sed", "tr"):
+        found = shutil.which(tool)
+        if found:
+            (bin_dir / tool).symlink_to(found)
+    payload = {"cwd": "/tmp/git-commit-worktree", "tool_input": {"command": command}}
+    run = _run_guard_without_classifier(tmp_path, payload, path=str(bin_dir))
+    assert run.returncode == expected, run.stderr
