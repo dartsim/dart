@@ -117,6 +117,14 @@ It also blocks commit-time staging (`-a`/`--all`, `-i`/`--include`,
 `-o`/`--only`, or pathspecs) when managed hooks will not run, asking to stage
 the files first or let the hooks run because the staged scan cannot see that
 content yet.
+With current managed hooks, ordinary staging, builds and formatters keep the
+guard fast path so Git checks the index after those commands run. Earlier
+segments disable that fast path only when they may change hook state: Git
+configuration writes (including include paths), command-scoped Git config or
+config environment changes, init/clone, writes or file operations affecting the
+hooks directory, a configured hooksPath target or loaded config files, and
+segments the guard cannot inspect. Content/index changes remain tracked
+separately to reject unsafe chains of multiple commits without hook enforcement.
 
 ## Simulation Verification Route
 
