@@ -68,27 +68,29 @@ TEST(MemoryManagerTest, Allocate)
   // Allocate 1 byte using FreeListAllocator
   auto ptr1 = mm.allocateUsingFree(1);
   EXPECT_NE(ptr1, nullptr);
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   EXPECT_TRUE(mm.hasAllocated(ptr1, 1));
+#else
+  EXPECT_FALSE(mm.hasAllocated(ptr1, 1));
+#endif
   EXPECT_FALSE(mm.hasAllocated(nullptr, 1));
   EXPECT_FALSE(mm.hasAllocated(ptr1, 1 * 2));
-#endif
 
   // Allocate 1 byte using PoolAllocator
   auto ptr2 = mm.allocateUsingPool(1);
   EXPECT_NE(ptr2, nullptr);
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   EXPECT_TRUE(mm.hasAllocated(ptr2, 1));
+#else
+  EXPECT_FALSE(mm.hasAllocated(ptr2, 1));
+#endif
   EXPECT_FALSE(mm.hasAllocated(nullptr, 1));
   EXPECT_FALSE(mm.hasAllocated(ptr2, 1 * 2));
-#endif
 
   // Allocate 1 byte using FrameAllocator
   auto ptr3 = mm.allocate(MemoryManager::Type::Frame, 1);
   EXPECT_NE(ptr3, nullptr);
-#if DART_BUILD_MODE_DEBUG
   EXPECT_FALSE(mm.hasAllocated(ptr3, 1));
-#endif
 
   // Deallocate all
   mm.deallocateUsingFree(ptr1, 1);

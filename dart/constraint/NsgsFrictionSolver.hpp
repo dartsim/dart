@@ -104,10 +104,6 @@ public:
       int* findex,
       bool earlyTermination = false) override;
 
-#if DART_BUILD_MODE_DEBUG
-  bool canSolve(int n, const double* A) override;
-#endif
-
   void setOptions(const Options& options);
   const Options& getOptions() const;
   void reserve(std::size_t numRows);

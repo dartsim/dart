@@ -141,13 +141,6 @@ public:
         n, A, x, b, nullptr, nub, lo, hi, findex, mScratch, earlyTermination);
   }
 
-#if DART_BUILD_MODE_DEBUG
-  bool canSolve(int, const double*) override
-  {
-    return true;
-  }
-#endif
-
 private:
   dart::lcpsolver::dantzig::DantzigLcpScratch<double> mScratch;
 };

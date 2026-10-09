@@ -119,13 +119,12 @@ elseif(TARGET dart)
 endif()
 
 # Single owner of where the wam_ikfast scene's dlopen'd IK shared library is
-# written: this demos project's own build dir. Used both as the ikfast target's
+# written: this demos project's own build dir, used as the ikfast target's
 # LIBRARY_OUTPUT_DIRECTORY (in scenes/wam_ikfast/ikfast/CMakeLists.txt, which
-# inherits this variable) and as WamIkFastScene.cpp's DART_DEMOS_IKFAST_DIR
-# compile definition, so the two are identical by construction in both the
-# in-source and standalone build paths -- no dependence on DART_BINARY_DIR
-# (which DARTConfig.cmake does not export, so it would be undefined standalone,
-# collapsing the compile definition to "" and the lookup to "/libdartDemosWamIk.so").
+# inherits this variable). It does not depend on DART_BINARY_DIR, which
+# DARTConfig.cmake does not export to standalone builds. WamIkFastScene.cpp
+# gets the library's absolute path from the target itself
+# (DART_DEMOS_IKFAST_LIBRARY below).
 # Defined before the add_subdirectory below so the child scope inherits it.
 set(dart_demos_ikfast_output_dir "${CMAKE_CURRENT_BINARY_DIR}")
 
@@ -302,16 +301,15 @@ function(dart_demos_configure_scenes_target target)
   endif()
 
   # Bakes in an absolute path to where scenes/wam_ikfast/ikfast's shared
-  # library lands (dart_demos_ikfast_output_dir, the same variable that sets
-  # its LIBRARY_OUTPUT_DIRECTORY) so WamIkFastScene.cpp's SharedLibraryIkFast
-  # lookup does not depend on the running process's current working directory:
+  # library lands, using the target's path, so WamIkFastScene.cpp's
+  # SharedLibraryIkFast lookup does not depend on the process's working directory:
   # dart::common::SharedLibraryManager::load() resolves the name it is given
   # via std::ifstream(path).good() rather than dlopen()'s own RPATH-aware
   # search, so a bare filename ("libdartDemosWamIk.so") only resolves when
   # the process happens to be launched from that directory itself.
   target_compile_definitions(
     ${target}
-    PRIVATE DART_DEMOS_IKFAST_DIR="${dart_demos_ikfast_output_dir}"
+    PRIVATE DART_DEMOS_IKFAST_LIBRARY="$<TARGET_FILE:dart_demos_wam_ikfast>"
   )
 endfunction()
 

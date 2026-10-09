@@ -2210,7 +2210,7 @@ void Skeleton::constructNewTree()
 //==============================================================================
 void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
 {
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   std::vector<BodyNode*>::iterator repeat = std::find(
       mSkelCache.mBodyNodes.begin(), mSkelCache.mBodyNodes.end(), _newBodyNode);
   if (repeat != mSkelCache.mBodyNodes.end()) {
@@ -2259,7 +2259,7 @@ void Skeleton::registerBodyNode(BodyNode* _newBodyNode)
   updateTotalMass();
   updateCacheDimensions(_newBodyNode->mTreeIndex);
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i) {
     if (mSkelCache.mBodyNodes[i]->mIndexInSkeleton != i) {
       dterr << "[Skeleton::registerBodyNode] BodyNode named ["
@@ -3799,7 +3799,7 @@ void Skeleton::updateBiasImpulse(BodyNode* _bodyNode)
   // This skeleton should contain _bodyNode
   DART_ASSERT(_bodyNode->getSkeleton().get() == this);
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     DART_ASSERT(
@@ -3830,7 +3830,7 @@ void Skeleton::updateBiasImpulse(
   // This skeleton should contain _bodyNode
   DART_ASSERT(_bodyNode->getSkeleton().get() == this);
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     DART_ASSERT(
@@ -3877,7 +3877,7 @@ void Skeleton::updateBiasImpulse(
   DART_ASSERT(_bodyNode1->getSkeleton().get() == this);
   DART_ASSERT(_bodyNode2->getSkeleton().get() == this);
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     DART_ASSERT(
@@ -3920,7 +3920,7 @@ void Skeleton::updateBiasImpulse(
       std::find(mSoftBodyNodes.begin(), mSoftBodyNodes.end(), _softBodyNode)
       != mSoftBodyNodes.end());
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   // All the constraint impulse should be zero
   for (std::size_t i = 0; i < mSkelCache.mBodyNodes.size(); ++i)
     DART_ASSERT(
