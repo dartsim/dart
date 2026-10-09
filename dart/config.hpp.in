@@ -66,6 +66,7 @@
 #cmakedefine01 HAVE_ODE
 #cmakedefine01 DART_ODE_HAS_LIBCCD_BOX_CYL
 #cmakedefine01 HAVE_OCTOMAP
+#cmakedefine01 DART_ALLOW_SINGLE_PRECISION_LIBCCD
 // TODO(JS): Change names to DART_HAVE_*
 // TODO(JS): Use target_compile_definitions(<target_name> PUBLIC
 // -DDART_HAVE_*=1)

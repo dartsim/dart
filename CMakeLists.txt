@@ -224,6 +224,11 @@ dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF)
+dart_option(
+  DART_ALLOW_SINGLE_PRECISION_LIBCCD
+  "Build even if FCL's libccd uses single precision"
+  OFF
+)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
 
 dart_configure_compiler_cache()
@@ -299,7 +304,7 @@ if(NOT CMAKE_BUILD_TYPE)
     CMAKE_BUILD_TYPE
     Release
     CACHE STRING
-    "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel"
+    "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel | None"
     FORCE
   )
 endif()
@@ -309,11 +314,11 @@ if(
   NOT
     "${CMAKE_BUILD_TYPE_UPPERCASE}"
       MATCHES
-      "^(DEBUG|RELEASE|RELWITHDEBINFO|MINSIZEREL)$"
+      "^(DEBUG|RELEASE|RELWITHDEBINFO|MINSIZEREL|NONE)$"
 )
   message(
     WARNING
-    "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel"
+    "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel | None"
   )
 endif()
 

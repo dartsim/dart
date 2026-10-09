@@ -42,6 +42,7 @@
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/detail/CollisionFilterSnapshotTracker.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
@@ -63,6 +64,7 @@
 #include "dart/dynamics/Skeleton.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <condition_variable>
 #include <iostream>
 #include <limits>
@@ -75,7 +77,9 @@
 #include <typeinfo>
 #include <vector>
 
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
 
 namespace dart {
 namespace simulation {
@@ -343,6 +347,145 @@ bool hasDwellingMobileSkeleton(
   return false;
 }
 
+// An unordered pair of collision objects, in address order.
+struct PairKey
+{
+  const collision::CollisionObject* first;
+  const collision::CollisionObject* second;
+};
+
+bool operator<(const PairKey& a, const PairKey& b)
+{
+  const std::less<const collision::CollisionObject*> less;
+  return less(a.first, b.first)
+         || (a.first == b.first && less(a.second, b.second));
+}
+
+bool operator==(const PairKey& a, const PairKey& b)
+{
+  return a.first == b.first && a.second == b.second;
+}
+
+PairKey makePairKey(const collision::Contact& contact)
+{
+  const collision::CollisionObject* a = contact.collisionObject1;
+  const collision::CollisionObject* b = contact.collisionObject2;
+  return std::less<const collision::CollisionObject*>()(b, a) ? PairKey{b, a}
+                                                              : PairKey{a, b};
+}
+
+bool containsPair(const std::vector<PairKey>& sortedPairs, const PairKey& pair)
+{
+  return std::binary_search(sortedPairs.begin(), sortedPairs.end(), pair);
+}
+
+const dynamics::Skeleton* getSkeletonOf(
+    const collision::CollisionObject* object)
+{
+  const auto* bodyNode = object ? object->getBodyNode() : nullptr;
+  return bodyNode ? bodyNode->getSkeletonRawPtr() : nullptr;
+}
+
+// A contact the solver no longer solves: neither body moves, and at least one
+// of them is a resting mobile skeleton.
+bool isRestingPair(const collision::Contact& contact)
+{
+  const auto* skeleton1 = getSkeletonOf(contact.collisionObject1);
+  const auto* skeleton2 = getSkeletonOf(contact.collisionObject2);
+  if (skeleton1 == nullptr || skeleton2 == nullptr)
+    return false;
+
+  const bool resting1 = skeleton1->isMobile() && skeleton1->isResting();
+  const bool resting2 = skeleton2->isMobile() && skeleton2->isResting();
+  return (resting1 || resting2) && (resting1 || !skeleton1->isMobile())
+         && (resting2 || !skeleton2->isMobile());
+}
+
+// Whether a skeleton with bodies can move (a skeleton without bodies never
+// keeps others awake; see ConstraintSolver::buildConstrainedGroups()).
+struct FilterDecision
+{
+  const collision::CollisionObject* object1;
+  const collision::CollisionObject* object2;
+  bool ignored;
+};
+
+// Forwards to a collision filter and records each of its decisions.
+class CollisionFilterRecorder final : public collision::CollisionFilter
+{
+public:
+  bool ignoresCollision(
+      const collision::CollisionObject* object1,
+      const collision::CollisionObject* object2) const override
+  {
+    // Bullet's dispatcher keeps the last query filter between collide()
+    // calls. Outside World's solve the recorder is disarmed and filters
+    // nothing.
+    if (mTarget == nullptr)
+      return false;
+
+    const bool ignored = mTarget->ignoresCollision(object1, object2);
+    // CollisionFilter makes no promise about the calling thread.
+    std::lock_guard<std::mutex> lock(mMutex);
+    mDecisions.push_back({object1, object2, ignored});
+    return ignored;
+  }
+
+  const collision::CollisionFilter* mTarget = nullptr;
+  mutable std::mutex mMutex;
+  // Grow only at a new high-water mark and keep capacity across steps, like
+  // contact constraints, collision results, and the pooled manifold cache.
+  mutable std::vector<FilterDecision> mDecisions;
+};
+
+// Disarms the recorder when the solve returns or throws.
+struct RecorderDisarm
+{
+  CollisionFilterRecorder& recorder;
+
+  ~RecorderDisarm()
+  {
+    recorder.mTarget = nullptr;
+  }
+};
+
+// DART_CUSTOM_FILTER_SLEEPING=0|false|off|no (any letter case) turns decision
+// replay off for the World objects created afterwards (#3056): custom
+// collision filters that World cannot track then keep its bodies awake. A
+// temporary escape hatch for 6.20.x, read like
+// DART_SOFT_FACE_INTERIOR_CONTACTS.
+bool readCustomFilterSleepingSwitch()
+{
+  const char* value = std::getenv("DART_CUSTOM_FILTER_SLEEPING");
+  if (value == nullptr)
+    return true;
+
+  std::string lower(value);
+  std::transform(
+      lower.begin(), lower.end(), lower.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+      });
+  const bool off
+      = lower == "0" || lower == "false" || lower == "off" || lower == "no";
+  const bool on = lower.empty() || lower == "1" || lower == "true"
+                  || lower == "on" || lower == "yes";
+  if (off) {
+    static std::atomic<bool> reported{false};
+    if (!reported.exchange(true)) {
+      dtmsg << "[World] DART_CUSTOM_FILTER_SLEEPING=" << value
+            << ": custom-filter decision replay is disabled.\n";
+    }
+  } else if (!on) {
+    static std::atomic<bool> reported{false};
+    if (!reported.exchange(true)) {
+      dtwarn << "[World] Ignoring DART_CUSTOM_FILTER_SLEEPING=" << value
+             << "; set it to 0, false, off or no to disable custom-filter "
+                "decision replay.\n";
+    }
+  }
+  return !off;
+}
+
 common::MemoryAllocator& resolveWorldMemoryBaseAllocator(
     const WorldConfig& config)
 {
@@ -358,6 +501,293 @@ common::MemoryManager::Options makeWorldMemoryManagerOptions(
   options.freeListGrowthPolicy = config.freeListGrowthPolicy;
   options.frameAllocatorInitialCapacity = config.frameScratchInitialCapacity;
   return options;
+}
+
+} // namespace
+
+//==============================================================================
+// Collision-side state of automatic deactivation (#3056). It only holds data;
+// the functions below and World implement the logic.
+class WorldDeactivationState
+{
+public:
+  explicit WorldDeactivationState(bool customFilterSleeping)
+    : mCustomFilterSleeping(customFilterSleeping)
+  {
+  }
+
+  // Whether World replays the decisions of collision filters it cannot track
+  // by revision (DART_CUSTOM_FILTER_SLEEPING, read at construction).
+  const bool mCustomFilterSleeping;
+
+  std::size_t mSolverSkeletonOwnershipCheckCount = 0u;
+  std::size_t mSolverSkeletonCount = 0u;
+  std::weak_ptr<const collision::CollisionGroup> mSolverSkeletonGroup;
+  std::size_t mSolverSkeletonGroupVersion = 0u;
+  bool mSolverSkeletonOwnershipValid = false;
+  bool mOwnsSolverSkeletons = false;
+
+  // The decisions such a filter made for every pair the last solve's contact
+  // query asked about, and what they refer to. Bullet's dispatcher may keep a
+  // reference to the recorder after the solve.
+  std::shared_ptr<CollisionFilterRecorder> mRecorder;
+  const collision::CollisionFilter* mRecordedFilter = nullptr;
+  std::weak_ptr<const collision::CollisionGroup> mRecordedGroup;
+  std::size_t mRecordedGroupVersion = 0u;
+  bool mRecordValid = false;
+  // Whether this step's start replayed the record successfully.
+  bool mReplayVerified = false;
+  // Current step's custom-filter eligibility, refreshed by its wake check.
+  bool mStepCustomBodyFilter = false;
+
+  std::vector<char> mIslandJointDwellReady;
+
+  // Contacts of resting pairs, as solved when the set of resting skeletons
+  // last changed; the solver no longer computes or solves them. Their
+  // CollisionObjects are only used while mRetainedGroup and
+  // mRetainedGroupVersion still match the solver's collision group, which
+  // proves the objects are alive.
+  std::vector<collision::Contact> mRetainedContacts;
+  std::vector<PairKey> mRetainedPairs;    // sorted and unique
+  std::vector<char> mRestingAtLastUpdate; // resting flag of each skeleton
+  std::weak_ptr<const collision::CollisionGroup> mRetainedGroup;
+  std::size_t mRetainedGroupVersion = 0u;
+
+  // What World::getLastCollisionResult() reports while contacts are retained:
+  // the solver's contacts of the other pairs, then the retained ones. Built on
+  // the first read after a full step.
+  std::mutex mViewMutex;
+  bool mViewDirty = false;
+  collision::CollisionResult mView;
+};
+
+namespace {
+
+//==============================================================================
+// Custom body filters can sleep through revision tracking or decision replay.
+bool isCustomBodyNodeFilter(
+    const WorldDeactivationState& state,
+    const collision::CollisionFilter* filter)
+{
+  return filter != nullptr
+         && typeid(*filter) != typeid(collision::BodyNodeCollisionFilter)
+         && dynamic_cast<const collision::BodyNodeCollisionFilter*>(filter)
+                != nullptr
+         && (state.mCustomFilterSleeping
+             || dynamic_cast<
+                    const collision::detail::CollisionFilterSnapshotTracker*>(
+                    filter)
+                    != nullptr);
+}
+
+bool isReplayed(
+    const WorldDeactivationState& state,
+    const collision::CollisionFilter* filter)
+{
+  return state.mCustomFilterSleeping && isCustomBodyNodeFilter(state, filter)
+         && dynamic_cast<
+                const collision::detail::CollisionFilterSnapshotTracker*>(
+                filter)
+                == nullptr;
+}
+
+//==============================================================================
+// Custom-filter sleepers report no residual acceleration from their last
+// solve. Joint resets leave acceleration-actuator commands alone.
+void clearRestingAccelerations(
+    dynamics::Skeleton& skeleton, bool updateVelocity = false)
+{
+  for (std::size_t joint = 0; joint < skeleton.getNumJoints(); ++joint)
+    skeleton.getJoint(joint)->resetAccelerations();
+  skeleton.computeForwardKinematics(false, updateVelocity, true);
+}
+
+//==============================================================================
+// Invalidates the previous record and arms the recorder for `filter`.
+CollisionFilterRecorder& armRecorder(
+    WorldDeactivationState& state, const collision::CollisionFilter* filter)
+{
+  state.mRecordValid = false;
+  if (!state.mRecorder)
+    state.mRecorder = std::make_shared<CollisionFilterRecorder>();
+  state.mRecorder->mDecisions.clear();
+  state.mRecorder->mTarget = filter;
+  return *state.mRecorder;
+}
+
+//==============================================================================
+// Keeps the record of the solve that just ran only if it holds a decision for
+// every pair the query could have reported: the query did not stop at its
+// contact limit, contacts were enabled, and the collision group and filter
+// stayed the same.
+void finishRecord(
+    WorldDeactivationState& state,
+    const constraint::ConstraintSolver& solver,
+    const std::shared_ptr<collision::CollisionFilter>& filter,
+    const collision::ConstCollisionGroupPtr& group,
+    std::size_t groupVersion,
+    bool queryComplete,
+    bool enableContact,
+    bool restingAtSolve)
+{
+  const bool recordValid
+      = queryComplete && enableContact && solver.getCollisionGroup() == group
+        && group->getContentVersion() == groupVersion
+        && solver.getCollisionOption().collisionFilter == filter;
+  if (!recordValid)
+    return;
+
+  // While a body rests, BodyNodeCollisionFilter skips resting pairs during the
+  // solver's query only; keep the filter's own decisions, which replay asks
+  // for outside the query.
+  if (restingAtSolve) {
+    for (auto& decision : state.mRecorder->mDecisions) {
+      decision.ignored
+          = filter->ignoresCollision(decision.object1, decision.object2);
+    }
+  }
+  state.mRecordedFilter = filter.get();
+  state.mRecordedGroup = group;
+  state.mRecordedGroupVersion = groupVersion;
+  state.mRecordValid = true;
+}
+
+//==============================================================================
+// Whether the solver's collision filter makes every recorded decision again.
+// Resting bodies and their supports do not move, and other edits are caught by
+// World's version and snapshot checks, so the pairs the last query asked about
+// are all the pairs that can produce contacts.
+bool replayRecord(
+    const WorldDeactivationState& state,
+    const constraint::ConstraintSolver& solver)
+{
+  const auto* filter = solver.getCollisionOption().collisionFilter.get();
+  if (!state.mRecordValid || filter != state.mRecordedFilter)
+    return false;
+
+  // The recorded objects are alive while the group keeps its content version.
+  const auto group = state.mRecordedGroup.lock();
+  if (group == nullptr || group != solver.getCollisionGroup()
+      || group->getContentVersion() != state.mRecordedGroupVersion) {
+    return false;
+  }
+
+  for (const auto& decision : state.mRecorder->mDecisions) {
+    if (filter->ignoresCollision(decision.object1, decision.object2)
+        != decision.ignored) {
+      return false;
+    }
+  }
+  return true;
+}
+
+//==============================================================================
+void clearRetainedContacts(WorldDeactivationState& state)
+{
+  state.mRetainedContacts.clear();
+  state.mRetainedPairs.clear();
+  state.mRestingAtLastUpdate.clear();
+  state.mRetainedGroup.reset();
+  state.mRetainedGroupVersion = 0u;
+  state.mViewDirty = false;
+  state.mView.clear();
+}
+
+//==============================================================================
+// Whether there are retained contacts and every object they name is still in
+// the solver's collision group. Removing an object from a group either bumps
+// its content version right away or destroys the group.
+bool isRetentionAlive(
+    const WorldDeactivationState& state,
+    const constraint::ConstraintSolver& solver)
+{
+  if (state.mRetainedContacts.empty())
+    return false;
+
+  const auto group = state.mRetainedGroup.lock();
+  return group != nullptr && group == solver.getCollisionGroup()
+         && group->getContentVersion() == state.mRetainedGroupVersion;
+}
+
+//==============================================================================
+void sortRetainedPairs(WorldDeactivationState& state)
+{
+  auto& pairs = state.mRetainedPairs;
+  pairs.clear();
+  for (const auto& contact : state.mRetainedContacts)
+    pairs.push_back(makePairKey(contact));
+  std::sort(pairs.begin(), pairs.end());
+  pairs.erase(std::unique(pairs.begin(), pairs.end()), pairs.end());
+}
+
+//==============================================================================
+// Runs at the end of every full step with deactivation on. Custom body filters
+// retain contacts whenever the set of resting skeletons changes: drop pairs
+// that are no longer resting and retain this step's contacts of the pairs that
+// froze in it, with the forces of their final solve. A resting pair missing
+// from that solve's result (a one-frame contact miss) waits for the next
+// change. `keep` is false when nothing rests, when the collision group changed
+// during the step (the solver result may name freed objects), or when the
+// collision filter cannot preserve sleep (its bodies wake at the next step
+// start).
+void updateRetainedContacts(
+    WorldDeactivationState& state,
+    const constraint::ConstraintSolver& solver,
+    const std::vector<dynamics::SkeletonPtr>& skeletons,
+    bool keep)
+{
+  if (!keep) {
+    if (!state.mRetainedContacts.empty() || !state.mRestingAtLastUpdate.empty())
+      clearRetainedContacts(state);
+    return;
+  }
+
+  const auto group = solver.getCollisionGroup();
+  bool restingSetChanged
+      = state.mRestingAtLastUpdate.size() != skeletons.size();
+  if (!state.mRetainedContacts.empty() && !isRetentionAlive(state, solver)) {
+    // The retained objects may be gone; drop them without touching them.
+    state.mRetainedContacts.clear();
+    restingSetChanged = true;
+  }
+  for (std::size_t i = 0; i < skeletons.size() && !restingSetChanged; ++i) {
+    restingSetChanged
+        = (state.mRestingAtLastUpdate[i] != 0) != skeletons[i]->isResting();
+  }
+
+  if (restingSetChanged) {
+    auto& retained = state.mRetainedContacts;
+    retained.erase(
+        std::remove_if(
+            retained.begin(),
+            retained.end(),
+            [](const collision::Contact& contact) {
+              return !isRestingPair(contact);
+            }),
+        retained.end());
+    sortRetainedPairs(state);
+
+    const std::size_t numRetained = retained.size();
+    for (const auto& contact : solver.getLastCollisionResult().getContacts()) {
+      if (isRestingPair(contact)
+          && !containsPair(state.mRetainedPairs, makePairKey(contact))) {
+        retained.push_back(contact);
+        // The detector's own data, such as the dart detector's manifold
+        // cache, does not outlive the step.
+        retained.back().userData = nullptr;
+      }
+    }
+    if (retained.size() != numRetained)
+      sortRetainedPairs(state);
+
+    state.mRestingAtLastUpdate.resize(skeletons.size());
+    for (std::size_t i = 0; i < skeletons.size(); ++i)
+      state.mRestingAtLastUpdate[i] = skeletons[i]->isResting() ? 1 : 0;
+    state.mRetainedGroup = group;
+    state.mRetainedGroupVersion = group->getContentVersion();
+  }
+
+  state.mViewDirty = !state.mRetainedContacts.empty();
 }
 
 } // namespace
@@ -454,6 +884,18 @@ void World::reserveSimulationScratch()
     }
   }
   mLastStepRestingWorldSkeletonStates.reserve(numSkeletons);
+
+  if (mDeactivationOptions.mEnabled
+      && isCustomBodyNodeFilter(
+          *mDeactivationState,
+          mConstraintSolver->getCollisionOption().collisionFilter.get())) {
+    const auto contactCapacity
+        = mConstraintSolver->getLastCollisionResult().getContacts().capacity();
+    mDeactivationState->mRetainedContacts.reserve(contactCapacity);
+    mDeactivationState->mRetainedPairs.reserve(contactCapacity);
+    mDeactivationState->mRestingAtLastUpdate.reserve(numSkeletons);
+    mDeactivationState->mIslandJointDwellReady.reserve(numSkeletons);
+  }
 }
 
 //==============================================================================
@@ -468,8 +910,26 @@ void World::enterSimulationMode()
   mInitialRestSpeedLimits.clear();
   refreshSkeletonDofIndices();
   reserveSimulationScratch();
-  if (mConstraintSolver)
-    mConstraintSolver->prepareForSimulation();
+  if (mConstraintSolver) {
+    const auto filter = mConstraintSolver->getCollisionOption().collisionFilter;
+    if (mDeactivationOptions.mEnabled
+        && isReplayed(*mDeactivationState, filter.get())) {
+      // Warm the exact preparation queries without replacing a valid record.
+      auto recorder = std::make_shared<CollisionFilterRecorder>();
+      recorder->mTarget = filter.get();
+      const RecorderDisarm disarm{*recorder};
+      mConstraintSolver->prepareForSimulationWithQueryFilter(recorder);
+      if (!mDeactivationState->mRecorder) {
+        mDeactivationState->mRecorder = recorder;
+        recorder->mDecisions.clear();
+      } else {
+        mDeactivationState->mRecorder->mDecisions.reserve(
+            recorder->mDecisions.capacity());
+      }
+    } else {
+      mConstraintSolver->prepareForSimulation();
+    }
+  }
   reserveSimulationScratch();
   mSimulationModeStructuralVersion
       = dynamics::Skeleton::getGlobalStructuralVersion();
@@ -781,7 +1241,9 @@ World::World(const WorldConfig& config)
         resolveWorldMemoryBaseAllocator(config),
         makeWorldMemoryManagerOptions(config))),
     mRecording(new Recording(mSkeletons)),
-    onNameChanged(mNameChangedSignal)
+    onNameChanged(mNameChangedSignal),
+    mDeactivationState(std::make_unique<WorldDeactivationState>(
+        readCustomFilterSleepingSwitch()))
 {
   mIndices.push_back(0);
 
@@ -894,6 +1356,12 @@ void World::setTimeStep(double _timeStep)
     return;
   }
 
+  if (_timeStep != mTimeStep
+      && isCustomBodyNodeFilter(
+          *mDeactivationState,
+          mConstraintSolver->getCollisionOption().collisionFilter.get())) {
+    wakeRestingSkeletonsForWorldChange();
+  }
   mTimeStep = _timeStep;
   DART_ASSERT(mConstraintSolver);
   mConstraintSolver->setTimeStep(_timeStep);
@@ -1039,6 +1507,7 @@ void World::step(bool _resetCommand)
     return;
   }
 
+  const bool customFilterSleeping = mDeactivationState->mStepCustomBodyFilter;
   const bool lastStepHadNoContacts
       = mConstraintSolver->getLastCollisionResult().getNumContacts() == 0;
   bool allRestingFastPathReady = false;
@@ -1051,6 +1520,12 @@ void World::step(bool _resetCommand)
   }
 
   if (deactivationEnabled && lastStepHadNoContacts && allRestingFastPathReady) {
+    if (customFilterSleeping) {
+      for (const auto& skel : mSkeletons) {
+        if (skel->isMobile() && skel->isResting())
+          clearRestingAccelerations(*skel);
+      }
+    }
     mTime += mTimeStep;
     mFrame++;
     if (!mLastStepRestingWorldStateValid)
@@ -1146,10 +1621,43 @@ void World::step(bool _resetCommand)
         });
   }
 
-  // Detect activated constraints and compute constraint impulses
-  {
+  // Detect activated constraints and compute constraint impulses. The group
+  // stamp also proves that contacts remain alive through this solve.
+  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+  const std::size_t collisionGroupVersion = collisionGroup->getContentVersion();
+  const auto collisionFilter
+      = mConstraintSolver->getCollisionOption().collisionFilter;
+  auto& deactivationState = *mDeactivationState;
+  if (isReplayed(deactivationState, collisionFilter.get())
+      && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
+      && (mFrame < 2 || mDeactivationOptions.mTimeUntilSleep <= mTimeStep
+          || hasRestingOrCandidateMobileSkeleton(mSkeletons)
+          || hasDwellingMobileSkeleton(mSkeletons))) {
+    // Record before a body can freeze; moving bodies with no quiet dwell
+    // need no replay record.
+    const bool enableContact
+        = mConstraintSolver->getCollisionOption().enableContact;
+    const bool restingAtSolve = hasRestingMobileSkeleton();
+    const RecorderDisarm disarm{
+        armRecorder(deactivationState, collisionFilter.get())};
+    const bool queryComplete
+        = mConstraintSolver->solveWithQueryFilter(deactivationState.mRecorder);
+    finishRecord(
+        deactivationState,
+        *mConstraintSolver,
+        collisionFilter,
+        collisionGroup,
+        collisionGroupVersion,
+        queryComplete,
+        enableContact,
+        restingAtSolve);
+  } else {
+    deactivationState.mRecordValid = false;
     mConstraintSolver->solve();
   }
+  const bool collisionGroupUnchanged
+      = mConstraintSolver->getCollisionGroup() == collisionGroup
+        && collisionGroup->getContentVersion() == collisionGroupVersion;
 
   {
     parallelForIndexRange(
@@ -1186,6 +1694,8 @@ void World::step(bool _resetCommand)
                   disturbedThisStep[i] = 1;
               }
             } else {
+              if (customFilterSleeping)
+                clearRestingAccelerations(*skel);
               return;
             }
           }
@@ -1210,7 +1720,10 @@ void World::step(bool _resetCommand)
             // Same per-DOF setter path as setVelocities(), without a vector.
             for (std::size_t dof = 0; dof < skel->getNumDofs(); ++dof)
               skel->setVelocity(dof, 0.0);
-            skel->computeForwardKinematics(false, true, false);
+            if (customFilterSleeping)
+              clearRestingAccelerations(*skel, true);
+            else
+              skel->computeForwardKinematics(false, true, false);
           }
 
           if (_resetCommand) {
@@ -1232,8 +1745,10 @@ void World::step(bool _resetCommand)
   mTime += mTimeStep;
   mFrame++;
 
+  // A snapshot can only serve a next step on which a mobile body can freeze.
   if (deactivationEnabled
-      && mConstraintSolver->getLastCollisionResult().getNumContacts() == 0) {
+      && mConstraintSolver->getLastCollisionResult().getNumContacts() == 0
+      && hasRestingOrCandidateMobileSkeleton(mSkeletons)) {
     updateAllRestingKinematicSnapshot(_resetCommand);
   } else {
     invalidateAllRestingKinematicSnapshot();
@@ -1243,11 +1758,32 @@ void World::step(bool _resetCommand)
     updateLastStepRestingWorldState();
   else
     invalidateLastStepRestingWorldState();
+
+  updateRetainedContacts(
+      deactivationState,
+      *mConstraintSolver,
+      mSkeletons,
+      customFilterSleeping && collisionGroupUnchanged
+          && hasRestingMobileSkeleton());
 }
 
 //==============================================================================
 void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 {
+  const bool customFilterSleeping = isCustomBodyNodeFilter(
+      *mDeactivationState,
+      mConstraintSolver->getCollisionOption().collisionFilter.get());
+  // Joint reactions relax per contact solve even when motion is negligible;
+  // a larger time step must not freeze them after fewer solves.
+  // shortcut: tested decay only; use impulse convergence for slower islands.
+  constexpr double kJointCoupledQuietSolves = 2000.0;
+  const auto requiredDwell = [&](const dynamics::Skeleton& skeleton) {
+    return customFilterSleeping && hasJointCoupledBodies(skeleton)
+               ? std::max(
+                   mDeactivationOptions.mTimeUntilSleep,
+                   kJointCoupledQuietSolves * mTimeStep)
+               : mDeactivationOptions.mTimeUntilSleep;
+  };
   const double linSleep = mDeactivationOptions.mLinearSpeedThreshold;
   const double angSleep = mDeactivationOptions.mAngularSpeedThreshold;
   const double scale = mDeactivationOptions.mWakeThresholdScale;
@@ -1291,7 +1827,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // While a custom handler is installed, every quiet dwell stays 0: no body
   // becomes a candidate (every rest path needs candidacy), and removing the
   // handler restarts the full sleep delay (#3056).
-  const bool canSleep = usesBuiltInContactSurfaceHandler(*mConstraintSolver);
+  const bool canSleep = usesBuiltInContactSurfaceHandler(*mConstraintSolver)
+                        && (!customFilterSleeping || ownsSolverSkeletons());
   constexpr double kSupportNormalMinVerticalComponent = 0.5;
   const auto& contacts = mConstraintSolver->getLastCollisionResult();
   const double gravityNorm = mGravity.norm();
@@ -1578,8 +2115,13 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
         skel->setSleepCandidate(false);
       }
     } else {
-      const bool canAccumulateDwell = islanded || skel->isSleepCandidate()
-                                      || skel->getRestDwellTime() > 0.0;
+      const bool needsJointSolveDwell
+          = customFilterSleeping && hasJointCoupledBodies(*skel);
+      const bool canAccumulateDwell
+          = islanded
+            || (!needsJointSolveDwell
+                && (skel->isSleepCandidate()
+                    || skel->getRestDwellTime() > 0.0));
       const bool quiet = canSleep && canAccumulateDwell && (linSpeed < linSleep)
                          && (angSpeed < angSleep) && !disturbed;
       if (quiet) {
@@ -1611,7 +2153,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
                                && islandMobileSkeletonCount[islandIndex]
                                       >= kDenseContactJitterMinIslandSize;
         }
-        if (!denseContactIsland && dwell >= mDeactivationOptions.mTimeUntilSleep
+        if (!denseContactIsland && dwell >= requiredDwell(*skel)
             && finalQuiet) {
           skel->setSleepCandidate(true);
         }
@@ -1631,6 +2173,9 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
     islandAllFinalSleepCandidateReady.assign(islandCount, 1);
     islandAllBelowWake.assign(islandCount, 1);
     islandDwellWakeReadyCount.assign(islandCount, 0u);
+    auto& islandJointDwellReady = mDeactivationState->mIslandJointDwellReady;
+    if (customFilterSleeping)
+      islandJointDwellReady.assign(islandCount, 1);
 
     for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
       const auto& skel = mSkeletons[i];
@@ -1658,18 +2203,20 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       const bool finalReady
           = !disturbed
             && (skel->isSleepCandidate()
-                || (skel->getRestDwellTime()
-                        >= mDeactivationOptions.mTimeUntilSleep
+                || (skel->getRestDwellTime() >= requiredDwell(*skel)
                     && skel->getSmoothedLinearSpeed() < finalSleepLinearSpeed
                     && skel->getSmoothedAngularSpeed()
                            < finalSleepAngularSpeed));
+      if (customFilterSleeping && hasJointCoupledBodies(*skel)
+          && skel->getRestDwellTime() < requiredDwell(*skel)) {
+        islandJointDwellReady[islandIndex] = 0;
+      }
       islandHasMobileSkeleton[islandIndex] = 1;
       islandAllFinalSleepCandidateReady[islandIndex]
           = islandAllFinalSleepCandidateReady[islandIndex] && finalReady;
       islandAllBelowWake[islandIndex]
           = islandAllBelowWake[islandIndex] && belowWake;
-      if (belowWake
-          && skel->getRestDwellTime() >= mDeactivationOptions.mTimeUntilSleep) {
+      if (belowWake && skel->getRestDwellTime() >= requiredDwell(*skel)) {
         ++islandDwellWakeReadyCount[islandIndex];
       }
     }
@@ -1696,7 +2243,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
                 >= kDenseContactJitterMinIslandSize
             && islandAllBelowWake[islandIndex]
             && islandDwellWakeReadyCount[islandIndex] > 0u;
-      if (finalReady || denseContactJitterReady) {
+      if ((finalReady || denseContactJitterReady)
+          && (!customFilterSleeping || islandJointDwellReady[islandIndex])) {
         skel->setSleepCandidate(true);
       }
     }
@@ -1756,6 +2304,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 
       skel->setIslandIndex(0);
       skel->setResting(true);
+      if (customFilterSleeping)
+        clearRestingAccelerations(*skel);
     };
 
     tryRestOnInactiveSupport(bodyNode1, bodyNode2);
@@ -1769,7 +2319,7 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
       continue;
     }
 
-    if (skel->getRestDwellTime() < mDeactivationOptions.mTimeUntilSleep)
+    if (skel->getRestDwellTime() < requiredDwell(*skel))
       continue;
 
     if (skel->computeMaxBodyLinearSpeed() > kZeroSpeedForContactMissSleep
@@ -1779,6 +2329,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 
     skel->setIslandIndex(0);
     skel->setResting(true);
+    if (customFilterSleeping)
+      clearRestingAccelerations(*skel);
   }
 }
 
@@ -1842,7 +2394,10 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   const auto* collisionFilter = collisionOption.collisionFilter.get();
-  if (!isCollisionFilterSnapshotTrackable(collisionFilter)) {
+  if (!isCollisionFilterSnapshotTrackable(collisionFilter)
+      && !(
+          isReplayed(*mDeactivationState, collisionFilter)
+          && mDeactivationState->mReplayVerified)) {
     invalidateAllRestingKinematicSnapshot();
     return false;
   }
@@ -1873,8 +2428,11 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
   // Another World's changes move only the global version. If none of this
   // World's skeletons changed, catch the record up so that such a change
   // alone does not force the per-skeleton validation below.
-  const bool deactivationStateChanged = hasDeactivationStateChangedSince(
-      *collisionGroup, mAllRestingSnapshotDeactivationStateVersion);
+  const bool deactivationStateChanged
+      = dynamics::Skeleton::getGlobalDeactivationStateVersion()
+            != mAllRestingSnapshotDeactivationStateVersion
+        && hasDeactivationStateChangedSince(
+            *collisionGroup, mAllRestingSnapshotDeactivationStateVersion);
   if (!deactivationStateChanged) {
     mAllRestingSnapshotDeactivationStateVersion
         = dynamics::Skeleton::getGlobalDeactivationStateVersion();
@@ -1956,7 +2514,8 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       copySkeletonPositions(*skel, snapshot.mPositions);
     }
 
-    if (!skel->isMobile())
+    // A skeleton without bodies cannot disturb a contact island.
+    if (!skel->isMobile() || skel->getNumBodyNodes() == 0u)
       continue;
 
     hasMobileSkeleton = true;
@@ -1980,9 +2539,10 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 //==============================================================================
 void World::updateAllRestingKinematicSnapshot(bool _resetCommand)
 {
-  const auto& collisionOption = mConstraintSolver->getCollisionOption();
-  if (!isCollisionFilterSnapshotTrackable(
-          collisionOption.collisionFilter.get())) {
+  const auto* collisionFilter
+      = mConstraintSolver->getCollisionOption().collisionFilter.get();
+  if (!isCollisionFilterSnapshotTrackable(collisionFilter)
+      && !isReplayed(*mDeactivationState, collisionFilter)) {
     invalidateAllRestingKinematicSnapshot();
     return;
   }
@@ -2099,9 +2659,19 @@ bool World::hasDeactivationStateChangedSince(
   if (window == 0u)
     return false;
 
+  const bool customFilterSleeping = isCustomBodyNodeFilter(
+      *mDeactivationState,
+      mConstraintSolver->getCollisionOption().collisionFilter.get());
   const auto changed = [&](const dynamics::Skeleton* skel) {
-    return skel != nullptr
-           && skel->mDeactivationStateVersion - globalVersion - 1u < window;
+    if (skel == nullptr
+        || skel->mDeactivationStateVersion - globalVersion - 1u >= window) {
+      return false;
+    }
+    // Active material writes cannot invalidate another island's sleep. A ready
+    // cache must still notice a static support becoming mobile.
+    return !customFilterSleeping || mAllRestingSnapshotReady
+           || !skel->isMobile() || skel->isResting() || skel->isSleepCandidate()
+           || skel->getRestDwellTime() > 0.0;
   };
   for (const auto& skel : mSkeletons) {
     if (changed(skel.get()))
@@ -2128,10 +2698,33 @@ bool World::hasDeactivationStateChangedSince(
 //==============================================================================
 void World::wakeRestingSkeletonsIfStepStateChanged()
 {
+  auto& deactivationState = *mDeactivationState;
+  deactivationState.mReplayVerified = false;
   const auto collisionDetector = mConstraintSolver->getCollisionDetector();
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   const auto* collisionFilter = collisionOption.collisionFilter.get();
+  // Classify once per step. The default filter needs only the same exact-type
+  // check as snapshot tracking; World::step reuses the custom-filter decision.
+  bool collisionFilterTrackable
+      = collisionFilter == nullptr
+        || typeid(*collisionFilter)
+               == typeid(collision::BodyNodeCollisionFilter);
+  bool collisionFilterReplayed = false;
+  deactivationState.mStepCustomBodyFilter = false;
+  if (!collisionFilterTrackable) {
+    const auto* tracker = dynamic_cast<
+        const collision::detail::CollisionFilterSnapshotTracker*>(
+        collisionFilter);
+    collisionFilterTrackable = tracker != nullptr;
+    deactivationState.mStepCustomBodyFilter
+        = dynamic_cast<const collision::BodyNodeCollisionFilter*>(
+              collisionFilter)
+              != nullptr
+          && (deactivationState.mCustomFilterSleeping || tracker != nullptr);
+    collisionFilterReplayed
+        = deactivationState.mStepCustomBodyFilter && tracker == nullptr;
+  }
   // A sleep candidate is checked like a resting body: the next solve may
   // freeze it on evidence gathered before the change.
   const bool restingOrCandidate
@@ -2166,15 +2759,20 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
   // Another World's changes move only the global version. If none of this
   // World's skeletons changed, catch the record up so that the next steps
   // compare in O(1) again.
-  const bool deactivationStateChanged = hasDeactivationStateChangedSince(
-      *collisionGroup, mLastStepRestingWorldStateDeactivationStateVersion);
+  const bool deactivationStateChanged
+      = dynamics::Skeleton::getGlobalDeactivationStateVersion()
+            != mLastStepRestingWorldStateDeactivationStateVersion
+        && hasDeactivationStateChangedSince(
+            *collisionGroup,
+            mLastStepRestingWorldStateDeactivationStateVersion);
   if (!deactivationStateChanged) {
     mLastStepRestingWorldStateDeactivationStateVersion
         = dynamics::Skeleton::getGlobalDeactivationStateVersion();
   }
 
-  const bool recordedStateUnchanged
+  bool recordedStateUnchanged
       = skeletonStateUnchanged && !deactivationStateChanged
+        && (!deactivationState.mStepCustomBodyFilter || ownsSolverSkeletons())
         && mLastStepRestingWorldStateCollisionDetector
                == collisionDetector.get()
         && mLastStepRestingWorldStateCollisionGroup == collisionGroup.get()
@@ -2191,6 +2789,14 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
         && mLastStepRestingWorldStateCollisionFilter == collisionFilter
         && mLastStepRestingWorldStateCollisionFilterRevision
                == getCollisionFilterSnapshotRevision(collisionFilter);
+
+  if (recordedStateUnchanged && collisionFilterReplayed
+      && !mLastStepRestingWorldSkeletonStates.empty()
+      && (restingOrCandidate || deactivationState.mRecordValid)) {
+    deactivationState.mReplayVerified
+        = replayRecord(deactivationState, *mConstraintSolver);
+    recordedStateUnchanged = deactivationState.mReplayVerified;
+  }
 
   if (!restingOrCandidate) {
     // Dwell rule: a between-step change to this World (a relaxed joint limit,
@@ -2218,7 +2824,7 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
       = recordedStateUnchanged
         && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
         && mLastStepRestingWorldStateCollisionFilterTrackable
-        && isCollisionFilterSnapshotTrackable(collisionFilter);
+        && (collisionFilterTrackable || collisionFilterReplayed);
 
   if (!worldStateUnchanged)
     wakeRestingSkeletonsForWorldChange();
@@ -2249,7 +2855,9 @@ void World::updateLastStepRestingWorldState()
       = collisionOption.collisionFilter.get();
   mLastStepRestingWorldStateCollisionFilterTrackable
       = isCollisionFilterSnapshotTrackable(
-          mLastStepRestingWorldStateCollisionFilter);
+            mLastStepRestingWorldStateCollisionFilter)
+        || isReplayed(
+            *mDeactivationState, mLastStepRestingWorldStateCollisionFilter);
   mLastStepRestingWorldStateCollisionFilterRevision
       = mLastStepRestingWorldStateCollisionFilterTrackable
             ? getCollisionFilterSnapshotRevision(
@@ -2334,6 +2942,7 @@ void World::wakeRestingSkeletonsForWorldChange()
 
   invalidateAllRestingKinematicSnapshot();
   invalidateLastStepRestingWorldState();
+  clearRetainedContacts(*mDeactivationState);
 }
 
 //==============================================================================
@@ -2451,6 +3060,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
 
   mSkeletons.push_back(_skeleton);
+  mDeactivationState->mSolverSkeletonOwnershipValid = false;
   mMapForSkeletons[_skeleton] = _skeleton;
 
   mNameConnectionsForSkeletons.push_back(_skeleton->onNameChanged.connect(
@@ -2513,6 +3123,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
       mSkeletons.end());
+  mDeactivationState->mSolverSkeletonOwnershipValid = false;
   refreshSkeletonDofIndices();
   invalidateSimulationMode();
 
@@ -2711,7 +3322,28 @@ bool World::checkCollision(
 //==============================================================================
 const collision::CollisionResult& World::getLastCollisionResult() const
 {
-  return mConstraintSolver->getLastCollisionResult();
+  auto& state = *mDeactivationState;
+  const auto& solved = mConstraintSolver->getLastCollisionResult();
+  if (!mDeactivationOptions.mEnabled
+      || !isCustomBodyNodeFilter(
+          state, mConstraintSolver->getCollisionOption().collisionFilter.get())
+      || !isRetentionAlive(state, *mConstraintSolver)) {
+    return solved;
+  }
+
+  std::lock_guard<std::mutex> lock(state.mViewMutex);
+  if (state.mViewDirty) {
+    auto& view = state.mView;
+    view.clear();
+    for (const auto& contact : solved.getContacts()) {
+      if (!containsPair(state.mRetainedPairs, makePairKey(contact)))
+        view.addContact(contact);
+    }
+    for (const auto& contact : state.mRetainedContacts)
+      view.addContact(contact);
+    state.mViewDirty = false;
+  }
+  return state.mView;
 }
 
 //==============================================================================
@@ -2762,6 +3394,57 @@ collision::ConstCollisionDetectorPtr World::getCollisionDetector() const
 }
 
 //==============================================================================
+bool World::ownsSolverSkeletons()
+{
+  const auto& solverSkeletons = mConstraintSolver->getSkeletons();
+  if (solverSkeletons.size() != mSkeletons.size())
+    return false;
+
+  auto& state = *mDeactivationState;
+  const auto group = mConstraintSolver->getCollisionGroup();
+  const auto version = group->getContentVersion();
+  // Shapeless skeletons cannot be contact supports: a swap that changes neither
+  // count nor group content cannot change the support-motion hazard. World list
+  // edits invalidate this cache at insertion/removal.
+  if (!state.mSolverSkeletonOwnershipValid
+      || state.mSolverSkeletonCount != solverSkeletons.size()
+      || state.mSolverSkeletonGroup.lock() != group
+      || state.mSolverSkeletonGroupVersion != version) {
+    ++state.mSolverSkeletonOwnershipCheckCount;
+    // World snapshots cover only its own skeletons, regardless of solver order.
+    state.mOwnsSolverSkeletons
+        = solverSkeletons == mSkeletons
+          || std::all_of(
+              solverSkeletons.begin(),
+              solverSkeletons.end(),
+              [&](const auto& skel) {
+                return mMapForSkeletons.find(skel) != mMapForSkeletons.end();
+              });
+    // Direct group additions can introduce supports outside World snapshots.
+    for (std::size_t i = 0;
+         state.mOwnsSolverSkeletons && i < group->getNumShapeFrames();
+         ++i) {
+      const auto* shapeNode = group->getShapeFrame(i)->asShapeNode();
+      state.mOwnsSolverSkeletons
+          = shapeNode
+            && mMapForSkeletons.find(shapeNode->getSkeleton())
+                   != mMapForSkeletons.end();
+    }
+    state.mSolverSkeletonCount = solverSkeletons.size();
+    state.mSolverSkeletonGroup = group;
+    state.mSolverSkeletonGroupVersion = version;
+    state.mSolverSkeletonOwnershipValid = true;
+  }
+  return state.mOwnsSolverSkeletons;
+}
+
+//==============================================================================
+std::size_t World::getSolverSkeletonOwnershipCheckCount() const
+{
+  return mDeactivationState->mSolverSkeletonOwnershipCheckCount;
+}
+
+//==============================================================================
 void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
 {
   if (!solver) {
@@ -2774,6 +3457,7 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
     solver->setFromOtherConstraintSolver(*mConstraintSolver);
 
   mConstraintSolver = std::move(solver);
+  mDeactivationState->mSolverSkeletonOwnershipValid = false;
   mConstraintSolver->setTimeStep(mTimeStep);
   mConstraintSolver->setNumSimulationThreads(mNumSimulationThreads);
   invalidateAllRestingKinematicSnapshot();
@@ -2836,7 +3520,7 @@ void World::bake()
   // recording's layout was last refreshed by addSkeleton/removeSkeleton.
   mRecording->updateNumGenCoords(mSkeletons);
 
-  const auto collisionResult = getConstraintSolver()->getLastCollisionResult();
+  const auto& collisionResult = getLastCollisionResult();
   const auto nContacts = static_cast<int>(collisionResult.getNumContacts());
   const auto nSkeletons = getNumSkeletons();
 

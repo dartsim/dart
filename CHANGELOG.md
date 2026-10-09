@@ -78,10 +78,21 @@
 
 * Build
 
+  * Accept `CMAKE_BUILD_TYPE=None`, which distribution packaging uses to apply
+    its own compiler flags, without the unknown-build-type warning:
+    [#3633](https://github.com/dartsim/dart/pull/3633)
+
   * Correct `DART_ARCH_64BITS` / `DART_ARCH_32BITS` on 64-bit Windows and
     non-x86 64-bit Linux targets such as aarch64, and recognize FreeBSD in
     `dart/common/Platform.hpp`:
     [#3624](https://github.com/dartsim/dart/pull/3624)
+
+  * Stop the build when FCL's libccd is built in single precision (libccd's
+    default), which causes momentum drift on shallow contacts and weaker
+    soft-contact push recovery. Rebuild libccd with
+    `-DENABLE_DOUBLE_PRECISION=ON` and FCL against it, or configure with
+    `-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`:
+    [#3590](https://github.com/dartsim/dart/issues/3590)
 
   * Build DART as C++17 regardless of the compiler default, so GCC 16 (which
     defaults to C++20) builds with the default warnings-as-errors setting:
@@ -575,6 +586,15 @@
     detector seeds. Contact history resets when the timestep, collision
     geometry, or primary solver changes. Warm NSGS and FBF solves avoid
     spurious fallback near their requested accuracy.
+
+  * Allow resting islands that use a custom `BodyNodeCollisionFilter` to sleep
+    while their collision decisions stay unchanged, and keep reporting their
+    last solved contacts and forces. Such islands stay awake while the
+    constraint solver holds skeletons or collision shape frames the `World`
+    does not own. Set
+    `DART_CUSTOM_FILTER_SLEEPING=0` to disable custom-filter sleeping.
+    Downstream code that constructs or subclasses `World` must rebuild against
+    DART 6.20: [#3632](https://github.com/dartsim/dart/pull/3632)
 
   * Add opt-in `NsgsFrictionSolver` with exact Coulomb, associated, and box
     friction laws, cumulative `FrictionSolveStats`, clone support, and

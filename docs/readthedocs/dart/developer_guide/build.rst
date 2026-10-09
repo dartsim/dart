@@ -46,6 +46,9 @@ the authority:
 * Build system: Ninja is the Pixi default; other CMake generators can work.
 * Core package dependencies: Assimp, Eigen, FCL, fmt, Bullet, ODE, OctoMap,
   spdlog, tinyxml2, urdfdom, and OpenSceneGraph.
+* FCL's libccd dependency must be built in double precision
+  (``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the
+  build stops. ``-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`` builds anyway.
 * dartpy dependencies: Python, NumPy, and pybind11.
 
 Manual CMake build

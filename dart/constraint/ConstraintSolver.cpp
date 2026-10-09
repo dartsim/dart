@@ -713,7 +713,10 @@ std::size_t trimContactsFairly(
 // budget is applied after collide() returns because detectors may drop
 // contacts per pair after their base class's collide() (gz-physics'
 // GzOdeCollisionDetector does), which hides saturation from the base class.
-void collideWithContactBudget(
+// Returns false when the query may have stopped before asking the filter
+// about every candidate pair. ODE and Bullet visit every pair anyway, so this
+// is conservative for them.
+bool collideWithContactBudget(
     collision::CollisionGroup& group,
     const collision::CollisionOption& option,
     collision::CollisionResult& result)
@@ -722,7 +725,7 @@ void collideWithContactBudget(
   if (cap <= 1u || cap == std::numeric_limits<std::size_t>::max()) {
     // Binary checks and unlimited budgets have nothing to share.
     group.collide(option, &result);
-    return;
+    return result.getNumContacts() < cap;
   }
 
   const std::size_t bound = getContactDetectionBound(cap);
@@ -730,7 +733,7 @@ void collideWithContactBudget(
 
   const std::size_t demand = result.getNumContacts();
   if (demand <= cap)
-    return;
+    return true;
 
   const std::size_t numPairs = trimContactsFairly(result, cap);
 
@@ -759,6 +762,7 @@ void collideWithContactBudget(
                 "warning is printed once per process.\n";
     }
   }
+  return demand < bound;
 }
 
 } // namespace
@@ -1024,7 +1028,8 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
       skeleton
       && "Null pointer skeleton is now allowed to add to ConstraintSover.");
 
-  if (!hasSkeleton(skeleton)) {
+  const bool contained = hasSkeleton(skeleton);
+  if (!contained) {
     dtwarn << "[ConstraintSolver::removeSkeleton] Attempting to remove "
            << "skeleton '" << skeleton->getName()
            << "', which doesn't exist in the ConstraintSolver.\n";
@@ -1356,6 +1361,13 @@ LCPSolver* ConstraintSolver::getLCPSolver() const
 //==============================================================================
 void ConstraintSolver::solve()
 {
+  solveWithQueryFilter(nullptr);
+}
+
+//==============================================================================
+bool ConstraintSolver::solveWithQueryFilter(
+    const std::shared_ptr<collision::CollisionFilter>& queryFilter)
+{
   const bool profileRecording
       = dart::common::profile::isProfileRecordingEnabled();
   DART_PROFILE_SCOPED_IF_N(profileRecording, "ConstraintSolver::solve");
@@ -1415,10 +1427,11 @@ void ConstraintSolver::solve()
   }
 
   // Update constraints and collect active constraints
+  bool contactQueryComplete;
   {
     DART_PROFILE_SCOPED_IF_N(
         profileRecording, "ConstraintSolver::updateConstraints");
-    updateConstraints();
+    contactQueryComplete = updateConstraintsWithQueryFilter(true, queryFilter);
   }
 
   detail::ContactWarmStartCache* contactCache = nullptr;
@@ -1458,7 +1471,7 @@ void ConstraintSolver::solve()
     if (contactCache)
       contactCache->finish();
     clearInactiveConstrainedGroups();
-    return;
+    return contactQueryComplete;
   }
 
   // Build constrained groups
@@ -1496,10 +1509,18 @@ void ConstraintSolver::solve()
         profileRecording, "ConstraintSolver::solvePositionConstrainedGroups");
     solvePositionConstrainedGroups();
   }
+  return contactQueryComplete;
 }
 
 //==============================================================================
 void ConstraintSolver::prepareForSimulation()
+{
+  prepareForSimulationWithQueryFilter(nullptr);
+}
+
+//==============================================================================
+void ConstraintSolver::prepareForSimulationWithQueryFilter(
+    const std::shared_ptr<collision::CollisionFilter>& queryFilter)
 {
   // solve() uses a non-empty previous active set as evidence that constraint
   // impulses may need clearing, and clears stale freeze flags and island
@@ -1561,7 +1582,7 @@ void ConstraintSolver::prepareForSimulation()
     // collides, which keeps re-entry cheap in resting worlds.
     constexpr int kPreparationPasses = 2;
     for (int pass = 0; pass < kPreparationPasses; ++pass) {
-      updateConstraints(false);
+      updateConstraintsWithQueryFilter(false, queryFilter);
       {
         const ScopedAssignment<bool> deactivationActive(
             mDeactivationActive, false);
@@ -1720,6 +1741,14 @@ bool ConstraintSolver::checkAndAddConstraint(
 //==============================================================================
 void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 {
+  updateConstraintsWithQueryFilter(updateManualConstraints, nullptr);
+}
+
+//==============================================================================
+bool ConstraintSolver::updateConstraintsWithQueryFilter(
+    bool updateManualConstraints,
+    const std::shared_ptr<collision::CollisionFilter>& queryFilter)
+{
   // Clear previous active constraint list
   mActiveConstraints.clear();
   mActiveConstraintsAllSingleReactiveContacts = true;
@@ -1752,7 +1781,9 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
     bool hasAwakeMobileSkeleton = false;
     if (mDeactivationActive) {
       for (const auto& skeleton : mSkeletons) {
-        if (skeleton->isMobile() && !skeleton->isResting()) {
+        // A skeleton without bodies cannot touch a resting one.
+        if (skeleton->isMobile() && !skeleton->isResting()
+            && skeleton->getNumBodyNodes() > 0u) {
           hasAwakeMobileSkeleton = true;
           break;
         }
@@ -1762,8 +1793,17 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
         mDeactivationActive, hasAwakeMobileSkeleton);
   }
 
-  collideWithContactBudget(
-      *mCollisionGroup, mCollisionOption, mCollisionResult);
+  bool contactQueryComplete;
+  if (queryFilter) {
+    // Keep the user's collision option intact for downstream readers.
+    auto queryOption = mCollisionOption;
+    queryOption.collisionFilter = queryFilter;
+    contactQueryComplete = collideWithContactBudget(
+        *mCollisionGroup, queryOption, mCollisionResult);
+  } else {
+    contactQueryComplete = collideWithContactBudget(
+        *mCollisionGroup, mCollisionOption, mCollisionResult);
+  }
 
   if (restingContactFilter != nullptr)
     restingContactFilter->setSolverRestingContactFilterActive(false, false);
@@ -2737,6 +2777,7 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
       }
     }
   }
+  return contactQueryComplete;
 }
 
 //==============================================================================
@@ -3164,7 +3205,8 @@ void ConstraintSolver::buildConstrainedGroups()
       bool hasUngroupedAwakeMobileSkeleton = false;
       for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
         const auto& skeleton = mSkeletons[i];
-        if (!skeleton->isMobile())
+        // A skeleton without bodies has nothing that can move.
+        if (!skeleton->isMobile() || skeleton->getNumBodyNodes() == 0u)
           continue;
 
         const auto root = ConstraintBase::getRootSkeleton(skeleton);
