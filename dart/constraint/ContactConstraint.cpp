@@ -657,6 +657,17 @@ void ContactConstraint::update()
 }
 
 //==============================================================================
+bool ContactConstraint::hasCompleteNativeWarmStart() const
+{
+  const auto* cached = getDARTCachedContact(mContact);
+  return cached && std::isfinite(cached->cachedNormalImpulse)
+         && (!mIsFrictionOn
+             || (hasMatchingCachedFrictionBasis(*cached, mTangentBasis)
+                 && std::isfinite(cached->cachedFrictionImpulse1)
+                 && std::isfinite(cached->cachedFrictionImpulse2)));
+}
+
+//==============================================================================
 void ContactConstraint::getInformation(ConstraintInfo* info)
 {
   if (!hasValidBodyNodes())

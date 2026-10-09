@@ -1088,22 +1088,36 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
       for (std::size_t i = 0; i < numConstraints; ++i) {
         if (!isExactBoxedLcpDynamicType<ContactConstraint>(constraintPtrs[i]))
           continue;
-        // Native detector seeds must obey the same cache invalidation rules.
-        std::fill_n(x + constraintOffsets[i], constraintDims[i], 0.0);
         const auto* seed = cache->seed(constraintPtrs[i]);
-        if (!seed || !seed->matched)
-          continue;
         const auto* contact
             = static_cast<const ContactConstraint*>(constraintPtrs[i]);
-        const Eigen::Vector3d impulse
-            = contact->mBodyNodeA->getWorldTransform().linear()
-              * seed->localImpulse;
         double* values = x + constraintOffsets[i];
-        values[0] = std::max(0.0, contact->mContact->normal.dot(impulse));
-        if (contact->mIsFrictionOn) {
-          values[1] = contact->mTangentBasis.col(0).dot(impulse);
-          values[2] = contact->mTangentBasis.col(1).dot(impulse);
+        const double nativeNormal = seed && seed->canRetainNative
+                                            && values[0] > 0.0
+                                            && std::isfinite(values[0])
+                                        ? values[0]
+                                        : 0.0;
+        // Keep complete native seeds within their detector's point tolerance.
+        if (nativeNormal > 0.0
+            && (!contact->mIsFrictionOn
+                || (std::isfinite(values[1]) && std::isfinite(values[2])))
+            && contact->hasCompleteNativeWarmStart())
+          continue;
+        std::fill_n(values, constraintDims[i], 0.0);
+        if (seed && seed->matched) {
+          const Eigen::Vector3d impulse
+              = contact->mBodyNodeA->getWorldTransform().linear()
+                * seed->localImpulse;
+          values[0] = std::max(0.0, contact->mContact->normal.dot(impulse));
+          if (contact->mIsFrictionOn) {
+            values[1] = contact->mTangentBasis.col(0).dot(impulse);
+            values[2] = contact->mTangentBasis.col(1).dot(impulse);
+          }
         }
+        // Native normal seeds remain valid when only the friction basis
+        // changed.
+        if (nativeNormal > 0.0)
+          values[0] = nativeNormal;
       }
     }
   }

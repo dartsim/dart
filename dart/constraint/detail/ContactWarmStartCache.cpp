@@ -156,22 +156,23 @@ std::size_t ContactWarmStartCache::add(const void* contact, const Key& key)
   double nearest = std::numeric_limits<double>::infinity();
   bool reversedMatch = false;
   for (std::size_t i = mPairBuckets[slot]; i != npos; i = mPrevious[i].next) {
-    if (mConsumed[i])
-      continue;
     const auto& previous = mPrevious[i];
     const bool reversed = key.frames != previous.key.frames;
     double distance = 0.0;
-    bool compatible = true;
+    bool pointsCompatible = true;
+    bool normalsCompatible = true;
     for (int side = 0; side < 2; ++side) {
       const int oldSide = reversed ? 1 - side : side;
       const double squaredDistance
           = (key.points[side] - previous.key.points[oldSide]).squaredNorm();
       const double normalDot = entry.key.normals[side].dot(
           previous.key.normals[oldSide] * (reversed ? -1.0 : 1.0));
-      compatible &= squaredDistance <= 1e-6 && normalDot >= 0.999;
+      pointsCompatible &= squaredDistance <= 1e-6;
+      normalsCompatible &= normalDot >= 0.999;
       distance += squaredDistance;
     }
-    if (compatible
+    entry.seed.canRetainNative |= normalsCompatible;
+    if (!mConsumed[i] && pointsCompatible && normalsCompatible
         && (distance < nearest || (distance == nearest && i < match))) {
       nearest = distance;
       match = i;

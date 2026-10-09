@@ -97,6 +97,7 @@ TEST_F(
           ContactWarmStartCache::npos, cache.add(&contacts[1], candidate));
       ASSERT_NE(nullptr, cache.seed(&contacts[1]));
       EXPECT_EQ(change % 2 == 0, cache.seed(&contacts[1])->matched);
+      EXPECT_EQ(change != 3, cache.seed(&contacts[1])->canRetainNative);
     }
   }
   publish(original);
@@ -106,6 +107,7 @@ TEST_F(
   scaledNormals.normals[1] *= 0.5;
   cache.add(&contacts[1], scaledNormals);
   EXPECT_TRUE(cache.seed(&contacts[1])->matched);
+  EXPECT_TRUE(cache.seed(&contacts[1])->canRetainNative);
 }
 
 TEST_F(ContactWarmStartCacheTest, NearestOneToOneMatchHasStableTieBreak)
@@ -129,10 +131,12 @@ TEST_F(ContactWarmStartCacheTest, NearestOneToOneMatchHasStableTieBreak)
   EXPECT_EQ(1.0, cache.seed(&contacts[4])->localImpulse[0]);
   EXPECT_EQ(3.0, cache.seed(&contacts[5])->localImpulse[0]);
   EXPECT_FALSE(cache.seed(&contacts[6])->matched);
+  EXPECT_TRUE(cache.seed(&contacts[6])->canRetainNative);
   auto otherPair = key();
   otherPair.frames[1] = &frames[2];
   cache.add(&contacts[7], otherPair);
   EXPECT_FALSE(cache.seed(&contacts[7])->matched);
+  EXPECT_FALSE(cache.seed(&contacts[7])->canRetainNative);
 }
 
 TEST_F(
@@ -149,6 +153,7 @@ TEST_F(
   cache.begin(0.001, 1);
   cache.add(&contacts[1], reversed);
   ASSERT_TRUE(cache.seed(&contacts[1])->matched);
+  EXPECT_TRUE(cache.seed(&contacts[1])->canRetainNative);
   EXPECT_TRUE(cache.seed(&contacts[1])
                   ->localImpulse.isApprox(Eigen::Vector3d(-4, -1, -6), 0.0));
 }
@@ -161,6 +166,7 @@ TEST_F(
   cache.begin(0.002, 1);
   cache.add(&contacts[1], key());
   EXPECT_FALSE(cache.seed(&contacts[1])->matched);
+  EXPECT_FALSE(cache.seed(&contacts[1])->canRetainNative);
   cache.update(
       &contacts[1], {{Eigen::Vector3d::Ones(), Eigen::Vector3d::Ones()}});
   cache.finish();
@@ -170,6 +176,7 @@ TEST_F(
   cache.begin(0.002, 1);
   cache.add(&contacts[1], key());
   EXPECT_FALSE(cache.seed(&contacts[1])->matched);
+  EXPECT_FALSE(cache.seed(&contacts[1])->canRetainNative);
   EXPECT_EQ(nullptr, cache.seed(&contacts[0]));
   cache.finish();
   EXPECT_EQ(0u, cache.size());
@@ -198,6 +205,7 @@ TEST_F(
         change == 0 ? 10 : 11);
     cache.add(&contacts[1], value);
     EXPECT_FALSE(cache.seed(&contacts[1])->matched);
+    EXPECT_FALSE(cache.seed(&contacts[1])->canRetainNative);
     cache.finish();
   }
 }

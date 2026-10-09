@@ -571,9 +571,10 @@
 * Simulation
 
   * Reuse rigid-contact impulses across steps with opt-in NSGS and FBF
-    friction solvers on every collision detector. Contact history resets
-    when the timestep, collision geometry, or primary solver changes. Warm
-    NSGS solves avoid spurious fallback near their requested accuracy.
+    friction solvers on every collision detector while preserving compatible
+    detector seeds. Contact history resets when the timestep, collision
+    geometry, or primary solver changes. Warm NSGS and FBF solves avoid
+    spurious fallback near their requested accuracy.
 
   * Add opt-in `NsgsFrictionSolver` with exact Coulomb, associated, and box
     friction laws, cumulative `FrictionSolveStats`, clone support, and

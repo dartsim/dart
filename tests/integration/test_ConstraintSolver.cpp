@@ -1620,6 +1620,113 @@ TEST(ConstraintSolver, ContactWarmStartPreservesImpulseAndInvalidatesHistory)
 }
 
 //==============================================================================
+TEST(
+    ConstraintSolver, NativeWarmStartRetainsPointToleranceWithinNormalTolerance)
+{
+  for (const bool useFbf : {false, true}) {
+    SCOPED_TRACE(useFbf ? "FBF" : "NSGS");
+    for (const bool missingFrictionBasis : {false, true}) {
+      SCOPED_TRACE(
+          missingFrictionBasis ? "missing friction basis" : "frictionless");
+      auto world = createSingleFreeBodyContactWorld(false);
+      auto sphere = world->getSkeleton("box");
+      auto* shape = sphere->getBodyNode(0)->getShapeNode(0);
+      shape->setShape(std::make_shared<dynamics::SphereShape>(0.25));
+      shape->getDynamicsAspect()->setFrictionCoeff(
+          missingFrictionBasis ? 0.5 : 0.0);
+      auto* joint = static_cast<dynamics::FreeJoint*>(sphere->getJoint(0));
+      auto pose = Eigen::Isometry3d::Identity();
+      pose.translation().z() = 0.2495;
+      auto resetBody = [&](double angle) {
+        pose.linear() = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitY())
+                            .toRotationMatrix();
+        joint->setTransform(pose);
+        joint->setAngularVelocity(Eigen::Vector3d::Zero());
+        joint->setLinearVelocity(Eigen::Vector3d::Zero());
+      };
+      auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+          world->getConstraintSolver());
+      solver->setSecondaryBoxedLcpSolver(nullptr);
+      auto nsgs = std::make_shared<constraint::NsgsFrictionSolver>();
+      auto fbf = std::make_shared<constraint::FbfFrictionSolver>();
+      solver->setBoxedLcpSolver(
+          useFbf ? constraint::BoxedLcpSolverPtr(fbf)
+                 : constraint::BoxedLcpSolverPtr(nsgs));
+      resetBody(0.0);
+      if (missingFrictionBasis)
+        joint->setLinearVelocity(Eigen::Vector3d(0.2, 0.1, 0.0));
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      const auto& first = world->getLastCollisionResult().getContact(0);
+      ASSERT_NE(nullptr, first.userData);
+      auto* native
+          = static_cast<collision::native::CachedContact*>(first.userData);
+      const Eigen::Vector3d solvedImpulse
+          = contactImpulseWithUpwardNormal(*world);
+      ASSERT_GT(solvedImpulse.z(), 0.0);
+      if (missingFrictionBasis) {
+        ASSERT_TRUE(native->hasCachedFrictionBasis);
+        ASSERT_GT(solvedImpulse.head<2>().squaredNorm(), 0.0);
+        native->hasCachedFrictionBasis = false;
+      }
+      Eigen::Vector3d previousPoint = pose.inverse() * first.point;
+      Eigen::Vector3d previousNormal = pose.linear().transpose() * first.normal;
+      auto nsgsOptions = nsgs->getOptions();
+      nsgsOptions.maxSweeps = 0;
+      nsgs->setOptions(nsgsOptions);
+      auto fbfOptions = fbf->getOptions();
+      fbfOptions.maxOuterIterations = 0;
+      fbf->setOptions(fbfOptions);
+      nsgs->resetStats();
+      fbf->resetStats();
+
+      // A 5 mm local-point change misses the new cache but keeps the native
+      // seed.
+      resetBody(0.02);
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      const auto& retained = world->getLastCollisionResult().getContact(0);
+      EXPECT_EQ(native, retained.userData);
+      const Eigen::Vector3d retainedPoint = pose.inverse() * retained.point;
+      const Eigen::Vector3d retainedNormal
+          = pose.linear().transpose() * retained.normal;
+      EXPECT_GT((retainedPoint - previousPoint).norm(), 0.001);
+      EXPECT_LT((retainedPoint - previousPoint).norm(), 0.02);
+      EXPECT_GT(retainedNormal.dot(previousNormal), 0.999);
+      const Eigen::Vector3d retainedImpulse
+          = contactImpulseWithUpwardNormal(*world);
+      if (missingFrictionBasis) {
+        EXPECT_NEAR(solvedImpulse.z(), retainedImpulse.z(), 1e-12);
+        EXPECT_EQ(0.0, retainedImpulse.head<2>().squaredNorm());
+      } else {
+        EXPECT_TRUE(retainedImpulse.isApprox(solvedImpulse, 1e-12));
+      }
+      ASSERT_GT(native->cachedNormalImpulse, 0.0);
+      previousPoint = retainedPoint;
+      previousNormal = retainedNormal;
+
+      // A further 0.05 rad remains inside 20 mm but invalidates the local
+      // normal.
+      resetBody(0.07);
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      const auto& invalidated = world->getLastCollisionResult().getContact(0);
+      EXPECT_EQ(native, invalidated.userData);
+      const Eigen::Vector3d invalidatedPoint
+          = pose.inverse() * invalidated.point;
+      const Eigen::Vector3d invalidatedNormal
+          = pose.linear().transpose() * invalidated.normal;
+      EXPECT_GT((invalidatedPoint - previousPoint).norm(), 0.001);
+      EXPECT_LT((invalidatedPoint - previousPoint).norm(), 0.02);
+      EXPECT_LT(invalidatedNormal.dot(previousNormal), 0.999);
+      EXPECT_EQ(0.0, contactImpulseWithUpwardNormal(*world).squaredNorm());
+      EXPECT_EQ(0u, nsgs->getStats().numIterations);
+      EXPECT_EQ(0u, fbf->getStats().numIterations);
+    }
+  }
+}
+
+//==============================================================================
 TEST(ConstraintSolver, LegacyPrimariesDoNotUseOrRetainContactWarmStart)
 {
 #if HAVE_ODE

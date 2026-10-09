@@ -74,6 +74,9 @@ public:
   {
     Eigen::Vector3d localImpulse = Eigen::Vector3d::Zero();
     bool matched = false;
+    /// Native normal seeds may retain their detector's point tolerance
+    /// when the previous shape pair and both local normals remain compatible.
+    bool canRetainNative = false;
   };
 
   static constexpr std::size_t npos = std::numeric_limits<std::size_t>::max();
@@ -89,7 +92,8 @@ public:
       std::size_t contentVersion = 0);
   /// Match each prior contact at most once, using the nearest pair of points.
   /// Each local point must be within 1 mm and each normal within about 2.56
-  /// degrees (dot >= 0.999). Invalid geometry returns npos.
+  /// degrees (dot >= 0.999). Native seed eligibility ignores point distances
+  /// and prior match consumption. Invalid geometry returns npos.
   std::size_t add(const void* contact, const Key& key);
   const Seed* seed(const void* contact) const;
   /// Both vectors represent the world impulse toward body 1 in each body's
