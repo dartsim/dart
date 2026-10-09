@@ -70,6 +70,28 @@ foreach(collision_engine dart-collision-bullet dart-collision-ode)
     target_link_libraries(test_FrictionAnalytic ${collision_engine})
   endif()
 endforeach()
+# The opt-in NSGS rows solve to tight tolerances: about 14-44 s in Release,
+# which the gcov coverage job (roughly 360-600x slower on solver-heavy tests)
+# and the FreeBSD VM job (roughly 60-90x) cannot fit in their per-test
+# timeouts. They run as a separate entry carrying the labels those jobs
+# exclude (see the soft-foot entries below), so the fast Dantzig and PGS rows
+# still run everywhere; test_NsgsFrictionSolver still covers the NSGS code.
+set_tests_properties(
+  test_FrictionAnalytic
+  PROPERTIES
+    ENVIRONMENT "GTEST_FILTER=-*/Nsgs*"
+    FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
+)
+add_test(
+  NAME test_FrictionAnalytic_nsgs
+  COMMAND $<TARGET_FILE:test_FrictionAnalytic> --gtest_filter=*/Nsgs*
+)
+set_tests_properties(
+  test_FrictionAnalytic_nsgs
+  PROPERTIES
+    FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
+    LABELS "no-coverage-value;long-measurement"
+)
 dart_format_add(
   "${PROJECT_SOURCE_DIR}/tools/friction_eval/friction_eval.cpp"
   "${PROJECT_SOURCE_DIR}/tools/friction_eval/friction_scenes.hpp"
