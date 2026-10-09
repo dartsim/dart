@@ -23,10 +23,12 @@ dart_check_required_package(fcl "fcl")
 
 # Check only during DART's own configure; the opt-out bypasses all header lookup.
 if(NOT DART_ALLOW_SINGLE_PRECISION_LIBCCD)
-  # Walk FCL's link interface depth-first, the order in which CMake collects
-  # its include directories. Keep what $<BUILD_INTERFACE:...> wraps (possibly
-  # a list) and drop other generator expressions; $<LINK_ONLY:...> entries
-  # carry no include directories anyway.
+  # Find the ccd/config.h that compiling against FCL would use, in the
+  # compiler's order: the include directories of FCL's link interface, then
+  # FCL_INCLUDE_DIRS, then the compiler's implicit directories.
+  # Keep what $<BUILD_INTERFACE:...> wraps (possibly a list) and drop other
+  # generator expressions; $<LINK_ONLY:...> entries carry no include
+  # directories anyway.
   set(_dart_fcl_ccd_targets "")
   set(_dart_fcl_pending fcl)
   while(_dart_fcl_pending)
@@ -56,75 +58,118 @@ if(NOT DART_ALLOW_SINGLE_PRECISION_LIBCCD)
     endif()
   endwhile()
 
-  set(_dart_fcl_ccd_includes "")
+  # CMake passes normal include directories (-I) before system ones
+  # (-isystem): those of imported or SYSTEM targets and those listed in
+  # INTERFACE_SYSTEM_INCLUDE_DIRECTORIES. Each group keeps the walk's order.
+  set(_dart_fcl_ccd_normal_includes "")
+  set(_dart_fcl_ccd_system_includes "")
   foreach(_dart_fcl_target IN LISTS _dart_fcl_ccd_targets)
-    get_target_property(
-      _dart_fcl_includes
-      "${_dart_fcl_target}"
-      INTERFACE_INCLUDE_DIRECTORIES
+    foreach(
+      _dart_fcl_property
+      IN
+      ITEMS INTERFACE_INCLUDE_DIRECTORIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES
     )
-    if(_dart_fcl_includes)
-      string(
-        REGEX REPLACE
-        "\\$<BUILD_INTERFACE:([^<>]*)>"
-        "\\1"
-        _dart_fcl_includes
-        "${_dart_fcl_includes}"
+      get_target_property(
+        _dart_fcl_dirs
+        "${_dart_fcl_target}"
+        ${_dart_fcl_property}
       )
-      string(GENEX_STRIP "${_dart_fcl_includes}" _dart_fcl_includes)
-      list(APPEND _dart_fcl_ccd_includes ${_dart_fcl_includes})
-    endif()
+      if(_dart_fcl_dirs)
+        string(
+          REGEX REPLACE
+          "\\$<BUILD_INTERFACE:([^<>]*)>"
+          "\\1"
+          _dart_fcl_dirs
+          "${_dart_fcl_dirs}"
+        )
+        string(GENEX_STRIP "${_dart_fcl_dirs}" _dart_fcl_dirs)
+      else()
+        set(_dart_fcl_dirs "")
+      endif()
+      set(_dart_fcl_${_dart_fcl_property} "${_dart_fcl_dirs}")
+    endforeach()
+    get_target_property(_dart_fcl_imported "${_dart_fcl_target}" IMPORTED)
+    get_target_property(
+      _dart_fcl_no_system
+      "${_dart_fcl_target}"
+      IMPORTED_NO_SYSTEM
+    )
+    get_target_property(_dart_fcl_system "${_dart_fcl_target}" SYSTEM)
+    foreach(_dart_fcl_include IN LISTS _dart_fcl_INTERFACE_INCLUDE_DIRECTORIES)
+      if(
+        (_dart_fcl_imported AND NOT _dart_fcl_no_system)
+        OR _dart_fcl_system
+        OR
+          _dart_fcl_include
+            IN_LIST
+            _dart_fcl_INTERFACE_SYSTEM_INCLUDE_DIRECTORIES
+      )
+        list(APPEND _dart_fcl_ccd_system_includes "${_dart_fcl_include}")
+      else()
+        list(APPEND _dart_fcl_ccd_normal_includes "${_dart_fcl_include}")
+      endif()
+    endforeach()
   endforeach()
-  # Then the directories the compiler searches by itself.
-  list(
-    APPEND _dart_fcl_ccd_includes
+  set(
+    _dart_fcl_ccd_includes
+    ${_dart_fcl_ccd_normal_includes}
+    ${_dart_fcl_ccd_system_includes}
     ${FCL_INCLUDE_DIRS}
-    ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}
   )
-
-  # Take the first match, in the compiler's order.
-  unset(_dart_fcl_ccd_include_dir CACHE)
-  unset(_dart_fcl_ccd_include_dir)
-  foreach(_dart_fcl_include IN LISTS _dart_fcl_ccd_includes)
+  # CMake doesn't pass the compiler's implicit directories as flags; the
+  # compiler searches them last, in their own order.
+  if(_dart_fcl_ccd_includes AND CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES)
+    list(
+      REMOVE_ITEM _dart_fcl_ccd_includes
+      ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}
+    )
+  endif()
+  # The first directory with a ccd/config.h decides.
+  set(_dart_fcl_ccd_header "")
+  foreach(
+    _dart_fcl_include
+    IN
+    LISTS _dart_fcl_ccd_includes CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES
+  )
     if(EXISTS "${_dart_fcl_include}/ccd/config.h")
-      set(_dart_fcl_ccd_include_dir "${_dart_fcl_include}")
+      set(_dart_fcl_ccd_header "${_dart_fcl_include}/ccd/config.h")
       break()
     endif()
   endforeach()
-
-  if(_dart_fcl_ccd_include_dir)
-    set(_dart_fcl_ccd_header "${_dart_fcl_ccd_include_dir}/ccd/config.h")
+  set(_dart_fcl_ccd_single "")
+  if(_dart_fcl_ccd_header)
     file(
       STRINGS "${_dart_fcl_ccd_header}"
       _dart_fcl_ccd_single
       REGEX "^[ \t]*#[ \t]*define[ \t]+CCD_SINGLE([ \t]|$)"
     )
-    if(_dart_fcl_ccd_single)
-      # CPATH, CPLUS_INCLUDE_PATH and include flags in CMAKE_CXX_FLAGS can put
-      # another libccd ahead of this one, so only warn when any is present.
-      set(_dart_fcl_ccd_message_type FATAL_ERROR)
-      if(
-        NOT "$ENV{CPATH}$ENV{CPLUS_INCLUDE_PATH}" STREQUAL ""
-        OR CMAKE_CXX_FLAGS MATCHES "(^|[ \t])(-I|-isystem|/I)"
-      )
-        set(_dart_fcl_ccd_message_type WARNING)
-      endif()
-      # FreeBSD's math/libccd port does spell its option DOUBLE_PECISION.
-      message(
-        ${_dart_fcl_ccd_message_type}
-        "FCL's GJK/EPA runs in single precision because ${_dart_fcl_ccd_header} "
-        "defines CCD_SINGLE, causing momentum drift on shallow contacts "
-        "and weaker soft-contact push recovery. Rebuild libccd with "
-        "-DENABLE_DOUBLE_PRECISION=ON and rebuild FCL against it "
-        "(FreeBSD math/libccd: DOUBLE_PECISION; vcpkg: ccd[double-precision]), "
-        "or skip this check with -DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON."
-      )
-    else()
-      message(
-        STATUS
-        "FCL's libccd headers use double precision: ${_dart_fcl_ccd_header}"
-      )
+  endif()
+
+  if(_dart_fcl_ccd_single)
+    # CPATH, CPLUS_INCLUDE_PATH and include flags in CMAKE_CXX_FLAGS can put
+    # another libccd ahead of this one, so only warn when any is present.
+    set(_dart_fcl_ccd_message_type FATAL_ERROR)
+    if(
+      NOT "$ENV{CPATH}$ENV{CPLUS_INCLUDE_PATH}" STREQUAL ""
+      OR CMAKE_CXX_FLAGS MATCHES "(^|[ \t])(-I|-isystem|/I)"
+    )
+      set(_dart_fcl_ccd_message_type WARNING)
     endif()
+    # FreeBSD's math/libccd port does spell its option DOUBLE_PECISION.
+    message(
+      ${_dart_fcl_ccd_message_type}
+      "FCL's GJK/EPA runs in single precision because ${_dart_fcl_ccd_header} "
+      "defines CCD_SINGLE, causing momentum drift on shallow contacts "
+      "and weaker soft-contact push recovery. Rebuild libccd with "
+      "-DENABLE_DOUBLE_PRECISION=ON and rebuild FCL against it "
+      "(FreeBSD math/libccd: DOUBLE_PECISION; vcpkg: ccd[double-precision]), "
+      "or skip this check with -DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON."
+    )
+  elseif(_dart_fcl_ccd_header)
+    message(
+      STATUS
+      "FCL's libccd headers use double precision: ${_dart_fcl_ccd_header}"
+    )
   else()
     message(
       STATUS
