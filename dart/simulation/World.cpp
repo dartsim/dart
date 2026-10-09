@@ -853,6 +853,11 @@ void World::reserveSimulationScratch()
   }
   mLastStepRestingWorldSkeletonStates.reserve(numSkeletons);
 
+  const auto contactCapacity
+      = mConstraintSolver->getLastCollisionResult().getContacts().capacity();
+  mDeactivationState->mRetainedContacts.reserve(contactCapacity);
+  mDeactivationState->mRetainedPairs.reserve(contactCapacity);
+  mDeactivationState->mRestingAtLastUpdate.reserve(numSkeletons);
   mDeactivationState->mIslandJointDwellReady.reserve(numSkeletons);
 }
 
