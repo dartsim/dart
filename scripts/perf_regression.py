@@ -2187,7 +2187,7 @@ def publication_record(
     if local:
         if not is_ancestor(run["harness_commit"], "origin/main"):
             raise ValueError("backfill harness commit must be on main")
-        if not is_ancestor(run["commit"], "origin/main"):
+        if not release and not is_ancestor(run["commit"], "origin/main"):
             raise ValueError("backfill commit must be on main")
     return record
 
@@ -2813,12 +2813,15 @@ def ledger_entries(
             for commit in matches:
                 intentions[commit] = (value, reason)
 
-    entries = []
+    entries, covered = [], set()
     for commit in commits:
         if commit not in records:
             continue
         record = records[commit]
         run, verdict = record["run"], record["verdict"]
+        covered.update(
+            git("rev-list", "--first-parent", commit, f"^{run['parent']}").splitlines()
+        )
         rows = {row_key(row): row for row in record["results"]}
         attributable, inherited = [], []
         for failure in verdict["failures"]:
@@ -2992,7 +2995,7 @@ def ledger_entries(
         "since": since,
         "until": until,
         "missing": [
-            commit for commit in commits if commit in measured and commit not in records
+            commit for commit in commits if commit in measured and commit not in covered
         ],
         "entries": entries,
         "headline": headline,

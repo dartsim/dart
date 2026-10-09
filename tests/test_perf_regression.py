@@ -7887,6 +7887,62 @@ def test_publication_rejects_release_scope_mismatch(monkeypatch, tmp_path, defec
         module.publication_record(path, "backfill")
 
 
+def test_backfill_publication_accepts_only_valid_release_branch_tags(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.19.1</version></package>",
+        "Prepare patch release",
+    )
+    _perf_git(repo, "tag", "v6.19.1")
+    _perf_git(repo, "checkout", "-b", "release-6.19")
+    tagged = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.19.2</version></package>",
+        "Prepare next patch release",
+    )
+    _perf_git(repo, "tag", "v6.19.2")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/release-6.19", tagged)
+    _perf_git(repo, "checkout", "main")
+    harness = _perf_commit(repo, "docs/readme.md", "harness", "Update harness")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", harness)
+    monkeypatch.setattr(module, "ROOT", repo)
+    assert not module.is_ancestor(tagged, "origin/main")
+    record = _comparison_fixture(module, base, tagged, tier="release")
+    record["run"].update(
+        tag="v6.19.2",
+        base_tag="v6.19.1",
+        branch="release-6.19",
+        harness_commit=harness,
+        pr=None,
+    )
+    path = tmp_path / "record.json"
+    module.write_json(path, record)
+    published = module.publication_record(path, "backfill")
+    assert published["run"]["commit"] == tagged
+    assert published["run"]["tier"] == "release"
+    assert published["run"]["branch"] == "release-6.19"
+    for key, value, message in (
+        ("tier", "backfill", "backfill commit must be on main"),
+        ("harness_commit", tagged, "harness commit must be on main"),
+        ("branch", "main", "scope differs from measurement"),
+    ):
+        invalid = copy.deepcopy(record)
+        invalid["run"][key] = value
+        module.write_json(path, invalid)
+        with pytest.raises(ValueError, match=message):
+            module.publication_record(path, "backfill")
+    _perf_git(repo, "tag", "--force", "v6.19.2", base)
+    module.write_json(path, record)
+    with pytest.raises(ValueError, match="tag does not name the candidate commit"):
+        module.publication_record(path, "backfill")
+
+
 def _comparison_fixture(
     module, parent, commit, *, tier="backfill", rows="gzb", change=None, body=""
 ):
@@ -7928,6 +7984,50 @@ def test_ledger_groups_paths_by_detector_module_and_build(
     record = _comparison_fixture(module, parent, commit)
     report = module.ledger_entries({commit: record}, parent, commit)
     assert report["entries"][0]["groups"] == [group]
+
+
+@pytest.mark.parametrize("tier", ["merge", "backfill"])
+def test_ledger_and_release_cover_comparison_span(monkeypatch, tmp_path, tier):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    since = _perf_commit(repo, "dart/dynamics/test.cpp", "start", "Start history")
+    before = _perf_commit(
+        repo, "dart/dynamics/before.cpp", "before", "Change before comparison"
+    )
+    parent = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Comparison base")
+    first = _perf_commit(repo, "dart/dynamics/test.cpp", "first", "First PR change")
+    _perf_commit(repo, "docs/readme.md", "docs", "Document PR")
+    second = _perf_commit(
+        repo, "dart/collision/ode/test.cpp", "second", "Second PR change"
+    )
+    head = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Final PR change")
+    after = _perf_commit(
+        repo, "dart/dynamics/after.cpp", "after", "Change after comparison"
+    )
+    until = _perf_commit(repo, "docs/readme.md", "more docs", "Document history")
+    monkeypatch.setattr(module, "ROOT", repo)
+    pages = tmp_path / "pages"
+    history = _comparison_fixture(module, parent, head, tier=tier)
+    directory = pages / "performance/records/main"
+    module.write_json(directory / f"history-{tier}.json", history)
+    records = module.load_records(directory)
+    report = module.ledger_entries(records, since, until)
+    assert report["missing"] == [before, parent, after]
+    assert [entry["commit"] for entry in report["entries"]] == [head]
+    assert report["headline"]["n"] == 1
+    assert report["entries"][0]["groups"] == ["collision/ode"]
+    assert module.ledger_entries(records, since, second)["missing"] == [
+        before,
+        parent,
+        first,
+        second,
+    ]
+
+    release = _comparison_fixture(module, since, until, tier="release")
+    release["run"].update(tag="v6.20.0", base_tag="v6.19.0", pr=None)
+    module.write_release(pages, release)
+    saved = json.loads((pages / "performance/releases/v6.20.0.json").read_text())
+    assert saved["ledger"]["missing"] == [before, parent, after]
 
 
 def test_ledger_pass_with_accepted_rationale_needs_intent(monkeypatch, tmp_path):
