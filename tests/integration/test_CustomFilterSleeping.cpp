@@ -39,6 +39,8 @@
 #include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/CollisionGroup.hpp>
 #include <dart/collision/CollisionResult.hpp>
+#include <dart/collision/RaycastOption.hpp>
+#include <dart/collision/RaycastResult.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/detail/CollisionFilterSnapshotTracker.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
@@ -49,8 +51,13 @@
 #include <dart/dynamics/FreeJoint.hpp>
 #include <dart/dynamics/RevoluteJoint.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
+#include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 #include <dart/dynamics/WeldJoint.hpp>
+
+#if HAVE_BULLET
+  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#endif
 
 #include <gtest/gtest.h>
 
@@ -655,6 +662,24 @@ TEST(CustomFilterSleeping, SkeletonOwnershipHasConstantSteadyStateCost)
   replacementSolver->removeSkeleton(foreign);
   ASSERT_TRUE(replacementSolver->checkAndAddSkeleton(first));
   expectNoSteadyStateChecks(true);
+
+  auto group = replacementSolver->getCollisionGroup();
+  const auto contentChecks
+      = WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world);
+  group->subscribeTo(foreign);
+  expectNoSteadyStateChecks(false);
+  EXPECT_EQ(
+      contentChecks + 1,
+      WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world));
+  group->unsubscribeFrom(foreign.get());
+  expectNoSteadyStateChecks(true);
+  auto frame = dynamics::SimpleFrame::createShared(dynamics::Frame::World());
+  frame->setShape(
+      std::make_shared<dynamics::BoxShape>(Eigen::Vector3d::Ones()));
+  group->addShapeFrame(frame.get());
+  expectNoSteadyStateChecks(false);
+  group->removeShapeFrame(frame.get());
+  expectNoSteadyStateChecks(true);
 }
 
 TEST(CustomFilterSleeping, ContactStepsReuseSkeletonOwnership)
@@ -727,12 +752,114 @@ TEST(CustomFilterSleeping, SolverOnlySupportKeepsBodiesAwake)
 
 TEST(CustomFilterSleeping, SolverOnlySupportPreservesDefaultFilterSleep)
 {
+  for (const bool collisionGroupOnly : {false, true}) {
+    auto world = createWorld();
+    auto support = createFloor();
+    auto* solver = world->getConstraintSolver();
+    solver->getCollisionOption().collisionFilter
+        = std::make_shared<collision::BodyNodeCollisionFilter>();
+    if (collisionGroupOnly)
+      solver->getCollisionGroup()->subscribeTo(support);
+    else
+      solver->addSkeleton(support);
+    auto box = createBox(
+        "box", Eigen::Vector3d::Constant(0.2), Eigen::Vector3d(0.0, 0.0, 0.1));
+    world->addSkeleton(box);
+    EXPECT_TRUE(settle(*world, *box));
+  }
+}
+
+TEST(CustomFilterSleeping, CollisionGroupOnlySupportKeepsBodiesAwake)
+{
+  for (const bool subscribe : {false, true}) {
+    for (const bool addAfterSleep : {false, true}) {
+      SCOPED_TRACE(subscribe ? "subscribeTo" : "addShapeFrame");
+      SCOPED_TRACE(addAfterSleep ? "add after sleep" : "add before sleep");
+      auto world = createWorld();
+      auto support = createFloor();
+      auto box = createBox(
+          "box",
+          Eigen::Vector3d::Constant(0.2),
+          Eigen::Vector3d(0.0, 0.0, 0.1));
+      world->addSkeleton(box);
+      if (addAfterSleep) {
+        world->addSkeleton(createFloor());
+        ASSERT_TRUE(settle(*world, *box));
+        world->step();
+        ASSERT_EQ(
+            0u,
+            world->getConstraintSolver()
+                ->getLastCollisionResult()
+                .getNumContacts());
+      }
+      auto group = world->getConstraintSolver()->getCollisionGroup();
+      if (addAfterSleep)
+        group->unsubscribeFrom(world->getSkeleton(1).get());
+      if (subscribe)
+        group->subscribeTo(support);
+      else
+        group->addShapeFrame(support->getBodyNode(0)->getShapeNode(0));
+      ASSERT_EQ(
+          world->getNumSkeletons(),
+          world->getConstraintSolver()->getSkeletons().size());
+
+      std::size_t restingSteps = 0;
+      for (std::size_t i = 0; i < 1000; ++i) {
+        world->step();
+        restingSteps += box->isResting() ? 1u : 0u;
+      }
+      EXPECT_EQ(0u, restingSteps);
+      EXPECT_FALSE(box->isSleepCandidate());
+
+      const auto version = group->getContentVersion();
+      const double startZ
+          = box->getBodyNode(0)->getTransform().translation().z();
+      auto transform
+          = support->getRootJoint()->getTransformFromParentBodyNode();
+      transform.translation().x() += 10.0;
+      support->getRootJoint()->setTransformFromParentBodyNode(transform);
+      EXPECT_EQ(version, group->getContentVersion());
+      for (std::size_t i = 0; i < 40; ++i)
+        world->step();
+      EXPECT_LT(
+          box->getBodyNode(0)->getTransform().translation().z(),
+          startZ - 0.005);
+      EXPECT_FALSE(box->isResting());
+    }
+  }
+}
+
+#if HAVE_BULLET
+TEST(CustomFilterSleeping, CollisionGroupQueriesPreserveOwnershipAndSleep)
+{
   auto world = createWorld();
-  world->getConstraintSolver()->getCollisionOption().collisionFilter
-      = std::make_shared<collision::BodyNodeCollisionFilter>();
-  world->getConstraintSolver()->addSkeleton(createFloor());
+  world->setCollisionDetector(collision::BulletCollisionDetector::create());
+  world->addSkeleton(createFloor());
   auto box = createBox(
       "box", Eigen::Vector3d::Constant(0.2), Eigen::Vector3d(0.0, 0.0, 0.1));
   world->addSkeleton(box);
-  EXPECT_TRUE(settle(*world, *box));
+  ASSERT_TRUE(settle(*world, *box));
+  auto* solver = world->getConstraintSolver();
+  auto group = solver->getCollisionGroup();
+  ASSERT_TRUE(WorldTestAccess::ownsSolverSkeletons(*world));
+  const auto version = group->getContentVersion();
+  const auto checks
+      = WorldTestAccess::getSolverSkeletonOwnershipCheckCount(*world);
+  for (std::size_t i = 0; i < 8; ++i) {
+    collision::CollisionResult contacts;
+    group->collide(solver->getCollisionOption(), &contacts);
+    collision::RaycastResult ray;
+    const Eigen::Vector3d from(0.0, 0.0, 1.0);
+    const Eigen::Vector3d to(0.0, 0.0, -1.0);
+    EXPECT_TRUE(group->raycast(from, to, collision::RaycastOption(), &ray));
+    EXPECT_TRUE(solver->getCollisionDetector()->raycast(
+        group.get(), from, to, collision::RaycastOption(), &ray));
+    EXPECT_EQ(version, group->getContentVersion());
+    EXPECT_TRUE(WorldTestAccess::ownsSolverSkeletons(*world));
+    world->step();
+    EXPECT_TRUE(box->isResting());
+  }
+  EXPECT_EQ(
+      checks, WorldTestAccess::getSolverSkeletonOwnershipCheckCount(*world));
 }
+#endif

@@ -1438,7 +1438,7 @@ TEST(
 
 TEST(StepAllocation, NativeCustomFilterFirstPostBakeHasNoAllocation)
 {
-  for (const int ownership : {0, 1, 2}) {
+  for (const int ownership : {0, 1, 2, 3, 4}) {
     SCOPED_TRACE(ownership);
     const std::string label = "native_dart_custom_filter_first_post_bake_gate";
     dart::test::CountingMemoryAllocator allocator;
@@ -1448,6 +1448,7 @@ TEST(StepAllocation, NativeCustomFilterFirstPostBakeHasNoAllocation)
         1u, dart::collision::DARTCollisionDetector::create(), config);
     world->getConstraintSolver()->getCollisionOption().collisionFilter
         = std::make_shared<PreparedStepBodyNodeCollisionFilter>();
+    dart::dynamics::SkeletonPtr externalSupport;
     if (ownership == 1) {
       auto first = world->getSkeleton(0);
       world->getConstraintSolver()->removeSkeleton(first);
@@ -1455,6 +1456,13 @@ TEST(StepAllocation, NativeCustomFilterFirstPostBakeHasNoAllocation)
     } else if (ownership == 2) {
       world->getConstraintSolver()->addSkeleton(
           dart::dynamics::Skeleton::create());
+    } else if (ownership == 3 || ownership == 4) {
+      externalSupport = createGround();
+      auto group = world->getConstraintSolver()->getCollisionGroup();
+      if (ownership == 3)
+        group->subscribeTo(externalSupport);
+      else
+        group->addShapeFrame(externalSupport->getBodyNode(0)->getShapeNode(0));
     }
     world->enterSimulationMode();
     ASSERT_TRUE(world->isInSimulationMode());

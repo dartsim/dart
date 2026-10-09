@@ -78,6 +78,7 @@ dart_add_test("integration" test_IslandDeactivation)
 dart_add_test("integration" test_CustomFilterSleeping)
 if(TARGET dart-collision-bullet)
   target_link_libraries(test_IslandDeactivation dart-collision-bullet)
+  target_link_libraries(test_CustomFilterSleeping dart-collision-bullet)
 endif()
 if(TARGET dart-collision-ode AND TARGET dart-utils)
   # Covers the `contact_benchmark --gz-preset` helpers.

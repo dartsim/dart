@@ -3414,6 +3414,16 @@ bool World::ownsSolverSkeletons()
               [&](const auto& skel) {
                 return mMapForSkeletons.find(skel) != mMapForSkeletons.end();
               });
+    // Direct group additions can introduce supports outside World snapshots.
+    for (std::size_t i = 0;
+         state.mOwnsSolverSkeletons && i < group->getNumShapeFrames();
+         ++i) {
+      const auto* shapeNode = group->getShapeFrame(i)->asShapeNode();
+      state.mOwnsSolverSkeletons
+          = shapeNode
+            && mMapForSkeletons.find(shapeNode->getSkeleton())
+                   != mMapForSkeletons.end();
+    }
     state.mSolverSkeletonCount = solverSkeletons.size();
     state.mSolverSkeletonGroup = group;
     state.mSolverSkeletonGroupVersion = version;
