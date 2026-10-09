@@ -4133,3 +4133,33 @@ def test_guard_runs_for_config_file_env_even_with_dart_managed_hook(
 
     assert returncode == 0
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize(
+    ("command", "expected"),
+    [
+        ("git commit --no-verify -m " + "/home/" + "example/private.md", 2),
+        ("GIT commit -m x", 2),
+        ("git status", 0),
+        ("ls -la", 0),
+    ],
+)
+def test_guard_blocks_commits_when_classifier_is_missing(tmp_path, command, expected):
+    hooks = tmp_path / "hooks"
+    hooks.mkdir()
+    guard = hooks / GUARD.name
+    shutil.copy2(GUARD, guard)
+    repo, env = _init_repo(tmp_path)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    env.pop("DART_HOOK_PYTHON", None)
+
+    run = subprocess.run(
+        [str(guard)],
+        cwd=repo,
+        input=json.dumps({"tool_input": {"command": command}}),
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+
+    assert run.returncode == expected, run.stderr

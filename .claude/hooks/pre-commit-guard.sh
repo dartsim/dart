@@ -45,9 +45,22 @@ if [ -z "$python_cmd" ]; then
         python_cmd=python3
     fi
 fi
-if [ -z "$python_cmd" ]; then
-    echo "DART guard: python3 unavailable; commit guard disabled" >&2
+# Without a working classifier, block anything that may commit and allow the rest.
+may_commit() {
+    printf '%s' "$input" | grep -qiw git && printf '%s' "$input" | grep -qiw commit
+}
+disable_guard() {
+    if [ -n "${DART_HOOK_PYTHON:-}" ] || may_commit; then
+        echo "DART guard: cannot inspect this commit; blocking it" >&2
+        exit 2
+    fi
+    echo "DART guard: guard disabled for this call" >&2
     exit 0
+}
+
+if [ -z "$python_cmd" ]; then
+    echo "DART guard: python3 unavailable" >&2
+    disable_guard
 fi
 
 # Decode once, then allow, inspect a precise simple chain, or block.
@@ -56,11 +69,7 @@ guard_result=$(printf '%s' "$input" | "$python_cmd" "$guard_program")
 guard_status=$?
 if [ "$guard_status" -ne 0 ]; then
     echo "DART guard: commit detection failed" >&2
-    if [ -n "${DART_HOOK_PYTHON:-}" ]; then
-        exit 2
-    fi
-    echo "DART guard: guard disabled for this call" >&2
-    exit 0
+    disable_guard
 fi
 
 verdict=$(printf '%s\n' "$guard_result" | sed -n '1p' | tr -d '\r')
@@ -76,11 +85,7 @@ if [ "$verdict" != "commit" ] \
         exit 0
     fi
     echo "DART guard: invalid commit-detection result" >&2
-    if [ -n "${DART_HOOK_PYTHON:-}" ]; then
-        exit 2
-    fi
-    echo "DART guard: guard disabled for this call" >&2
-    exit 0
+    disable_guard
 fi
 
 repo_root="${target_repo_root:-${CLAUDE_PROJECT_DIR:-${CODEX_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}}}"
