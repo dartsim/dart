@@ -124,6 +124,7 @@ struct WorldConfig final
 DART_COMMON_DECLARE_SHARED_WEAK(World)
 
 class SimulationThreadPool;
+class WorldDeactivationState;
 
 /// class World
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -274,6 +275,19 @@ public:
   /// world hasn't stepped forward yet, then the result would be empty. Note
   /// that this function does not return the collision checking result of
   /// World::checkCollision().
+  ///
+  /// With automatic deactivation and a custom BodyNodeCollisionFilter that
+  /// supports sleeping, the result also holds the contacts of resting bodies
+  /// as solved in the step that put them to sleep, forces included, so it can
+  /// hold more contacts than
+  /// CollisionOption::maxNumContacts.
+  /// ConstraintSolver::getLastCollisionResult() holds only the contacts the
+  /// solver computed in the last step. The returned reference stays valid until
+  /// the next step or change to the world. Several threads may call this
+  /// function at once, but the result's accessors that build caches on first
+  /// use, such as CollisionResult::inCollision() and getCollidingBodyNodes(),
+  /// are not synchronized: concurrent readers should copy the result or read
+  /// its contacts.
   const collision::CollisionResult& getLastCollisionResult() const;
 
   /// Sets the collision detector used by the world's constraint solver.
@@ -702,6 +716,23 @@ public:
   // Slot registers
   //--------------------------------------------------------------------------
   common::SlotRegister<NameChangedSignal> onNameChanged;
+
+private:
+  friend struct WorldTestAccess;
+
+  /// Whether solver support motion is covered by World's skeleton snapshots.
+  bool ownsSolverSkeletons();
+
+  /// Number of full skeleton membership checks, for deterministic cost tests.
+  std::size_t getSolverSkeletonOwnershipCheckCount() const;
+
+  /// Collision-side deactivation state, including custom-filter decisions and
+  /// the resting contacts getLastCollisionResult() keeps reporting.
+  /// World's layout is not ABI-stable from 6.19 to 6.20: the thread, memory,
+  /// and simulation-mode members above were added in 6.20. Keep new state
+  /// behind this pointer so 6.20.x can extend it without changing
+  /// sizeof(World).
+  std::unique_ptr<WorldDeactivationState> mDeactivationState;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 

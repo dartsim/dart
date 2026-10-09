@@ -48,6 +48,16 @@ namespace simulation {
 /// Deactivation is decided per solver island and is a deterministic function of
 /// stable state (cached body speeds, dwell time, and the thresholds below), so
 /// it does not depend on iteration or container order.
+///
+/// BodyNodeCollisionFilter subclasses without a snapshot revision can sleep:
+/// World records the solver query's pair decisions and replays them before
+/// keeping bodies asleep. A changed decision wakes them. Custom filters without
+/// a snapshot revision that do not derive from BodyNodeCollisionFilter keep
+/// bodies awake. Set DART_CUSTOM_FILTER_SLEEPING to 0, false, off or no
+/// (case-insensitive) before constructing a World to disable this replay.
+/// This temporary escape hatch for 6.20.x leaves default filters unchanged.
+/// Custom BodyNodeCollisionFilter sleepers report zero acceleration and retain
+/// their last solved contacts through World::getLastCollisionResult().
 struct DeactivationOptions
 {
   /// Whether automatic deactivation is enabled. Defaults to true so resting
@@ -72,7 +82,9 @@ struct DeactivationOptions
   double mAngularSpeedThreshold = 0.05;
 
   /// Duration (seconds) of sustained sub-threshold motion that must elapse
-  /// before a skeleton is allowed to sleep.
+  /// before a skeleton is allowed to sleep. Joint-coupled islands with a
+  /// custom BodyNodeCollisionFilter also require at least 2000 quiet solver
+  /// steps; changing the time step restarts their dwell.
   double mTimeUntilSleep = 0.5;
 
   /// Hysteresis factor applied to the sleep thresholds to obtain the wake
