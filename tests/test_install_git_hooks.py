@@ -9,6 +9,7 @@ the hook and guard are `/bin/sh` scripts gated on the executable bit.
 import hashlib
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -764,12 +765,14 @@ def test_guard_expanded_command_positions_require_fallback(
     _write_gate(repo, "raise SystemExit('staged-gate-failed')\n")
     env["CLAUDE_PROJECT_DIR"] = str(repo)
     returncode, stderr = _run_guard(repo, env, f"{command} {arguments}")
-    if "commit" not in command:
+    if not (re.search(r"\bgit\b", command) and re.search(r"\bcommit\b", command)):
         assert returncode == 0, stderr
         assert stderr == ""
         return
     assert returncode == 2, stderr
-    if arguments == "-m public":
+    if "$(" in command or "`" in command:
+        assert "simple command" in stderr
+    elif arguments == "-m public":
         assert "staged-gate-failed" in stderr
     else:
         assert "cannot be inspected" in stderr
@@ -1066,8 +1069,10 @@ def test_guard_inspects_native_script_from_posix_substitution(
     env["CLAUDE_PROJECT_DIR"] = str(repo)
     command = f'{command} "$(printf %s {shlex.quote(script)})"'
     returncode, stderr = _run_guard(repo, env, command)
-    assert returncode == 0, stderr
-    assert stderr.count("direct-agent-gate") == int("commit" in command)
+    blocked = bool(re.search(r"\bgit\b", command) and re.search(r"\bcommit\b", command))
+    assert returncode == (2 if blocked else 0), stderr
+    assert ("simple command" in stderr) == blocked
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize("command", ("powershell -Command", "pwsh -Command", "cmd /C"))
@@ -1108,12 +1113,10 @@ def test_guard_keeps_generated_native_script_before_outer_commit(
         f"git commit --allow-empty --no-verify -m {shlex.quote(message)}"
     )
     returncode, stderr = _run_guard(repo, env, command)
-    assert returncode == (2 if private else 0), stderr
-    if private:
-        assert "commit message" in stderr
-        assert message in stderr
-    else:
-        assert stderr.count("direct-agent-gate") == 1
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -1141,6 +1144,10 @@ def test_guard_keeps_commit_free_native_script_command_boundaries(
         f"git commit -m {shlex.quote(message)}"
     )
     returncode, stderr = _run_guard(repo, env, command)
+    if "`" in script:
+        assert returncode == 2, stderr
+        assert "simple command" in stderr
+        return
     assert returncode == (2 if private else 0), stderr
     if private:
         assert "commit message" in stderr
@@ -1197,13 +1204,23 @@ def test_guard_handles_thousands_of_non_native_arguments_within_timeout(tmp_path
     (
         "git status # unmatched { syntax",
         "git COMMIT",
+        "GIT commit -m x",
+        "GIT.EXE commit -m x",
+        "grep -rn commit scripts | head",
+        "gh api repos/o/r/commits | jq .",
+        "git log --oneline | head",
+        "echo git_commit | cat",
+        "echo git commits | cat",
+        "echo git precommit | cat",
+        "echo digit commit | cat",
+        "true & echo commit",
         "git $SUB",
         r"git com\mit -m x",
         'git com"mit" -m x',
         "git 'com'mit -m x",
     ),
 )
-def test_guard_fast_allows_raw_commands_without_commit(tmp_path, command):
+def test_guard_fast_allows_raw_commands_without_both_words(tmp_path, command):
     repo, env = _init_repo(tmp_path)
     _write_gate(repo, "raise SystemExit('staged-gate-failed')\n")
     env["CLAUDE_PROJECT_DIR"] = str(repo)
@@ -1234,9 +1251,74 @@ def test_guard_handles_thousands_of_brace_arguments_within_timeout(
     assert stderr.count("direct-agent-gate") == int(with_commit)
 
 
+@pytest.mark.parametrize("installed", (False, True))
+@pytest.mark.parametrize(
+    "bypass", ("commit-time-staging", "unhooked-chain", "quoted-path")
+)
+def test_guard_blocks_complex_syntax_bypasses(tmp_path, installed, bypass):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(
+        repo,
+        "import subprocess, sys\n"
+        "sys.exit(subprocess.run([sys.executable, 'scripts/check_local_paths.py', "
+        "'--staged']).returncode)\n",
+    )
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    notes = repo / "notes.md"
+    notes.write_text("Public base\n")
+    subprocess.run(["git", "add", "notes.md"], cwd=repo, env=env, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Example",
+            "-c",
+            "user.email=test@example.com",
+            "commit",
+            "-qm",
+            "Public base",
+        ],
+        cwd=repo,
+        env=env,
+        check=True,
+    )
+    if installed:
+        assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    notes.write_text("/home/" + "example/private.md\n")
+    command = {
+        "commit-time-staging": "git commit --no-verify -am public || true",
+        "unhooked-chain": "{ git commit --allow-empty --no-verify -m public; "
+        "git add notes.md; git commit --no-verify -m public; }",
+        "quoted-path": '{ git commit --allow-empty --no-verify -m /"home"/'
+        "example/private.md; }",
+    }[bypass]
+
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+
+
 @pytest.mark.parametrize(
     "command",
     (
+        "true >notes.md && git commit -m public",
+        "1 >/dev/null git status && git commit -m public",
+        "git status >&\u0661 && git commit -m public",
+        "git status 2>&1 >notes.md && git commit -m public",
+        "git status >/dev/null >notes.md && git commit -m public",
+        "git status <<< public && git commit -m public",
+        "printf public > notes.md && git commit -m public",
+        "printf public >.git/hooks/commit-msg && git commit -m public",
+        'printf public > ".git/hooks/commit-msg" && git commit -m public',
+        "git status > .git/hooks/commit-msg && git commit -m public",
+        "git add notes.md > .git/hooks/commit-msg && git commit -m public",
+        "printf public >.git/config && git commit -m public",
+        "(git commit -m x)",
         "{ (git commit -m public) }",
         "{ if true; then git commit -m public; fi }",
         "{ { git commit -m fix; } }",
@@ -1249,12 +1331,13 @@ def test_guard_handles_thousands_of_brace_arguments_within_timeout(
         "{ >/dev/null git commit -m public; }",
         "{ git\\\n commit -m public; }",
         "git status # git commit; {",
-        "true & echo commit",
         "DART_SKIP_HOOKS=1 git commit -m public & true",
     ),
 )
 @pytest.mark.parametrize("failed_gate", (False, True))
-def test_guard_complex_inline_commands_use_project_gate(tmp_path, command, failed_gate):
+def test_guard_blocks_complex_inline_commands_before_project_gate(
+    tmp_path, command, failed_gate
+):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0
     _write_gate(
@@ -1266,9 +1349,10 @@ def test_guard_complex_inline_commands_use_project_gate(tmp_path, command, faile
 
     returncode, stderr = _run_guard(repo, env, command)
 
-    assert returncode == (2 if failed_gate else 0), stderr
-    assert "direct-agent-gate" in stderr
-    assert "cannot be inspected" not in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -1282,7 +1366,7 @@ def test_guard_complex_inline_commands_use_project_gate(tmp_path, command, faile
         "cat <<'EOF'\ngit commit -m public\n{private_path}\nEOF",
     ),
 )
-def test_guard_scans_all_complex_command_text(tmp_path, command_template):
+def test_guard_blocks_complex_command_text_without_scanning(tmp_path, command_template):
     repo, env = _init_repo(tmp_path)
     _write_gate(repo)
     (repo / "scripts/check_local_paths.py").write_bytes(
@@ -1297,7 +1381,9 @@ def test_guard_scans_all_complex_command_text(tmp_path, command_template):
     )
 
     assert returncode == 2, stderr
-    assert private_path in stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -1369,6 +1455,10 @@ def test_guard_complex_message_sources_stay_uninspectable(tmp_path, command):
 
     returncode, stderr = _run_guard(repo, env, command)
 
+    if "$G commit" in command:
+        assert returncode == 0, stderr
+        assert stderr == ""
+        return
     assert returncode == 2, stderr
     assert "cannot be inspected" in stderr
     assert "simple command" in stderr
@@ -1393,7 +1483,7 @@ def test_guard_heredoc_message_stops_at_first_delimiter(tmp_path):
 
 
 @pytest.mark.parametrize("arguments", ("-F message.txt", "-m public"))
-def test_guard_ansi_quoted_git_uses_conservative_path(tmp_path, arguments):
+def test_guard_blocks_ansi_quoted_git(tmp_path, arguments):
     repo, env = _init_repo(tmp_path)
     _write_gate(repo)
     assert _install(repo, env).returncode == 0
@@ -1401,12 +1491,10 @@ def test_guard_ansi_quoted_git_uses_conservative_path(tmp_path, arguments):
 
     returncode, stderr = _run_guard(repo, env, "$'git' commit --no-verify " + arguments)
 
-    assert returncode == (2 if arguments.startswith("-F") else 0), stderr
-    if returncode:
-        assert "cannot be inspected" in stderr
-        assert "simple command" in stderr
-    else:
-        assert "direct-agent-gate" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize("installed", (False, True))
@@ -1443,8 +1531,10 @@ def test_guard_keeps_native_child_inside_posix_backticks(tmp_path, shell):
     env["CLAUDE_PROJECT_DIR"] = str(repo)
     command = f'echo `{shell} -Command "Write-Output example"` && git commit -m example'
     returncode, stderr = _run_guard(repo, env, command)
-    assert returncode == 0, stderr
-    assert stderr.count("direct-agent-gate") == 1
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize("shell", ("powershell", "pwsh"))
@@ -1685,8 +1775,9 @@ def test_guard_inspects_commit_after_escaped_redirect_and_background_separator(
     command = r"echo \>&git commit --allow-empty --no-verify -m " + private_path
     returncode, stderr = _run_guard(repo, env, command)
     assert returncode == 2, stderr
-    assert private_path in stderr
-    assert "commit message" in stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize("option", ("--trailer {value}", "--trailer={value}"))
@@ -1725,12 +1816,13 @@ def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed)
     later = f"(git commit --no-verify -m '{private_path}')"
     returncode, stderr = _run_guard(repo, env, first + separator + later)
     assert returncode == 2, stderr
-    assert private_path in stderr
+    assert "simple command" in stderr
     returncode, stderr = _run_guard(
         repo, env, first + separator + later.replace(private_path, "public")
     )
-    assert returncode == 0, stderr
-    assert stderr.count("direct-agent-gate") == 1
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -1752,12 +1844,6 @@ def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed)
         ("cd . && ", False),
         ("pushd . && popd && ", False),
         ("pwd && true && : && ", False),
-        ("true >notes.md && ", True),
-        ("1 >/dev/null git status && ", True),
-        ("git status >&\u0661 && ", True),
-        ("git status 2>&1 >notes.md && ", True),
-        ("git status >/dev/null >notes.md && ", True),
-        ("git status <<< public && ", True),
         ("export FLAG=public; ", True),
         ("FLAG=public git add notes.md && ", True),
         ("./git status && ", True),
@@ -1768,7 +1854,6 @@ def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed)
         ("pixi run lint && ", True),
         ("cmake --build build && ", True),
         ("black . && ", True),
-        ("printf public > notes.md && ", True),
         ("cat .git/hooks/pre-commit && ", True),
         ("bash -c 'git add notes.md' && ", True),
         ("git config --get core.hooksPath; ", True),
@@ -1790,11 +1875,6 @@ def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed)
         ("cp replacement .git/hooks/commit-msg && ", True),
         ("ln -sf replacement .git/hooks/commit-msg && ", True),
         ("chmod -x .git/hooks/commit-msg && ", True),
-        ("printf public >.git/hooks/commit-msg && ", True),
-        ('printf public > ".git/hooks/commit-msg" && ', True),
-        ("git status > .git/hooks/commit-msg && ", True),
-        ("git add notes.md > .git/hooks/commit-msg && ", True),
-        ("printf public >.git/config && ", True),
         ("bash -c 'chmod -x .git/hooks/commit-msg' && ", True),
         ("python update.py && ", True),
         ("cmake -P update.cmake && ", True),
@@ -1873,11 +1953,19 @@ def test_guard_blocks_six_hook_state_bypasses(tmp_path, route, before_commit):
     command = before_commit + f" && {commit} -m '{private_path}'"
     returncode, stderr = _run_guard(cwd, env, command)
     assert returncode == 2, stderr
-    assert private_path in stderr
-    assert "commit message" in stderr
+    if route == "home-config":
+        assert "simple command" in stderr
+    else:
+        assert private_path in stderr
+        assert "commit message" in stderr
     returncode, stderr = _run_guard(cwd, env, command.replace(private_path, "public"))
-    assert returncode == 0, stderr
-    assert stderr.count("direct-agent-gate") == 1
+    if route == "home-config":
+        assert returncode == 2, stderr
+        assert "simple command" in stderr
+        assert "direct-agent-gate" not in stderr
+    else:
+        assert returncode == 0, stderr
+        assert stderr.count("direct-agent-gate") == 1
 
 
 @pytest.mark.parametrize("target", ["hooks", "hooks with spaces", "hooks=directory"])
@@ -1897,8 +1985,13 @@ def test_guard_checks_mutations_in_linked_hooks_directory(tmp_path, target, comm
         env,
         f"{command} {shlex.quote(target + '/commit-msg')} && git commit -m public",
     )
-    assert returncode == 0, stderr
-    assert stderr.count("direct-agent-gate") == 1
+    if command == "printf public >":
+        assert returncode == 2, stderr
+        assert "simple command" in stderr
+        assert "direct-agent-gate" not in stderr
+    else:
+        assert returncode == 0, stderr
+        assert stderr.count("direct-agent-gate") == 1
 
 
 @pytest.mark.parametrize(
@@ -1920,8 +2013,9 @@ def test_guard_checks_creation_of_hook_config_files(tmp_path, key, value, target
     returncode, stderr = _run_guard(
         repo, env, f"printf public > {target} && git commit -m public"
     )
-    assert returncode == 0, stderr
-    assert stderr.count("direct-agent-gate") == 1
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize("filename", ["notes.md", "notes (draft).md"])
@@ -2336,8 +2430,6 @@ def test_guard_fails_closed_for_unknown_injected_classifier_result(tmp_path):
         "/usr/bin/git commit -m x",
         "command /usr/local/bin/git commit -m x",
         "git -c user.name='DART Bot' commit -m x",
-        "GIT commit -m x",
-        "GIT.EXE commit -m x",
         "command git commit -m x",
         "command -- git commit -m x",
         "command -p git commit -m x",
@@ -2358,7 +2450,6 @@ def test_guard_fails_closed_for_unknown_injected_classifier_result(tmp_path):
         "env --ignore-environment git commit -m x",
         "env -S 'git commit -m x'",
         "env --split-string='git commit -m x'",
-        "(git commit -m x)",
         'FOO="a b" git commit -m x',
         "pixi run lint && git commit -m x",
     ],
@@ -2382,15 +2473,17 @@ def test_guard_detects_commit_forms(tmp_path, command):
 )
 def test_guard_detects_commits_inside_shell_conditionals(tmp_path, command):
     returncode, stderr = _guard_verdict(tmp_path, command)
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
     "command",
     [
         # `&` terminates the preceding command, so the trailing `git commit`
-        # still runs and must route to the gate even when a non-git segment
+        # still runs and must block even when a non-git segment
         # precedes it. Splitting on `&` must not disturb `&&` handling.
         "true & git commit -m x",
         "false & git commit -m x",
@@ -2401,8 +2494,10 @@ def test_guard_detects_commits_inside_shell_conditionals(tmp_path, command):
 )
 def test_guard_detects_commit_after_background_operator(tmp_path, command):
     returncode, stderr = _guard_verdict(tmp_path, command)
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -2429,8 +2524,10 @@ def test_guard_checks_skip_assignment_inside_shell_conditionals(tmp_path):
 
     returncode, stderr = _guard_verdict(tmp_path, command)
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize("use_absolute", [False, True])
@@ -2643,8 +2740,10 @@ def test_guard_checks_foreign_commit_in_or_chain(tmp_path):
 
     returncode, stderr = _run_guard(repo, env, f"cd docs || git -C {other} commit -m x")
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -2666,6 +2765,10 @@ def test_guard_does_not_carry_cwd_from_skipped_conditional_cd(
 
     returncode, stderr = _run_guard(repo, env, command_template.format(other=other))
 
+    if "||" in command_template:
+        assert returncode == 2, stderr
+        assert "simple command" in stderr
+        return
     assert returncode == 0
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
@@ -2687,8 +2790,12 @@ def test_guard_carries_cwd_from_executed_conditional_cd(tmp_path, command_templa
 
     returncode, stderr = _run_guard(repo, env, command_template.format(other=other))
 
+    if "||" in command_template:
+        assert returncode == 2, stderr
+        assert "simple command" in stderr
+        return
     assert returncode == 0
-    assert ("would run" in stderr) == ("||" in command_template)
+    assert "would run" not in stderr
 
 
 def test_guard_keeps_uncertain_conditional_cd_cwd_fail_closed(tmp_path):
@@ -2717,8 +2824,10 @@ def test_guard_treats_unparsed_cd_status_as_uncertain(tmp_path):
         repo, env, f"cd -P . || cd {other}; git commit -m x"
     )
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -2770,9 +2879,10 @@ def test_guard_checks_uncertain_context_cd_from_foreign_repo(
 
     returncode, stderr = _run_guard(other, env, command)
 
-    assert returncode == (2 if failed_gate else 0), stderr
-    assert "direct-message-gate" in stderr
-    assert ("direct-agent-gate" in stderr) == (failed_gate != "message")
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -2807,8 +2917,9 @@ def test_guard_checks_uncertain_cwd_even_with_managed_project_hooks(tmp_path, co
     )
 
     assert returncode == 2, stderr
-    assert "direct-message-gate" in stderr
-    assert "staged-gate-failed" in stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -2835,8 +2946,12 @@ def test_guard_skips_foreign_repo_only_in_simple_chain(tmp_path, command):
 
     returncode, stderr = _run_guard(repo, env, command)
 
+    if "(" in command:
+        assert returncode == 2, stderr
+        assert "simple command" in stderr
+        return
     assert returncode == 0, stderr
-    assert ("would run" in stderr) == ("(" in command)
+    assert "would run" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -2858,8 +2973,10 @@ def test_guard_treats_pipeline_cd_cwd_as_uncertain(tmp_path, pipeline):
     command = pipeline.format(other=other)
     returncode, stderr = _run_guard(repo, env, f"{command}; git commit -m x")
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 def test_guard_treats_multisegment_subshell_cd_cwd_as_uncertain(tmp_path):
@@ -2873,8 +2990,10 @@ def test_guard_treats_multisegment_subshell_cd_cwd_as_uncertain(tmp_path):
         repo, env, f"(true; cd {other}; true); git commit -m x"
     )
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 def test_guard_treats_command_substitution_cd_cwd_as_uncertain(tmp_path):
@@ -2888,8 +3007,10 @@ def test_guard_treats_command_substitution_cd_cwd_as_uncertain(tmp_path):
         repo, env, f"echo $(true; cd {other}; pwd); git commit -m x"
     )
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 def test_guard_does_not_use_command_substitution_status_for_outer_chain(tmp_path):
@@ -2902,8 +3023,10 @@ def test_guard_does_not_use_command_substitution_status_for_outer_chain(tmp_path
     command = f"echo $(true; false) && cd {repo}; git commit -m x"
     returncode, stderr = _run_guard(other, env, command)
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 def test_guard_treats_backtick_command_substitution_cd_cwd_as_uncertain(tmp_path):
@@ -2916,8 +3039,10 @@ def test_guard_treats_backtick_command_substitution_cd_cwd_as_uncertain(tmp_path
     command = f"echo `true; cd {other}; pwd`; git commit -m x"
     returncode, stderr = _run_guard(repo, env, command)
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -2934,8 +3059,10 @@ def test_guard_detects_embedded_command_substitution_commit(tmp_path, command):
 
     returncode, stderr = _run_guard(repo, env, command)
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 def test_guard_preserves_outer_git_command_around_substitution(tmp_path):
@@ -2944,8 +3071,10 @@ def test_guard_preserves_outer_git_command_around_substitution(tmp_path):
 
     returncode, stderr = _run_guard(repo, env, 'git -C "$(pwd)" commit -m x')
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize("definition", ("change_dir()", "function change_dir"))
@@ -2959,8 +3088,10 @@ def test_guard_does_not_carry_function_definition_body_cwd(tmp_path, definition)
     command = f"{definition} {{ true; cd {other}; }}; git commit -m x"
     returncode, stderr = _run_guard(repo, env, command)
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -2978,8 +3109,10 @@ def test_guard_checks_function_definition_body_commit(tmp_path, command):
 
     returncode, stderr = _run_guard(repo, env, command)
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 def test_guard_does_not_treat_path_qualified_builtin_as_shell_builtin(tmp_path):
@@ -3007,8 +3140,10 @@ def test_guard_treats_brace_group_cd_cwd_as_uncertain(tmp_path):
         repo, env, f"{{ true; cd {other}; true; }}; git commit -m x"
     )
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -3034,7 +3169,10 @@ def test_guard_blocks_private_messages_with_literal_braces(tmp_path, command_tem
     )
 
     assert returncode == 2, stderr
-    assert private_path in stderr
+    if command_template.startswith("{{"):
+        assert "simple command" in stderr
+    else:
+        assert private_path in stderr
 
 
 @pytest.mark.parametrize(
@@ -3059,6 +3197,10 @@ def test_guard_checks_commits_with_brace_words(tmp_path, command):
 
     returncode, stderr = _run_guard(repo, env, command)
 
+    if not command.startswith("git commit"):
+        assert returncode == 2, stderr
+        assert "simple command" in stderr
+        return
     assert returncode == 0, stderr
     assert "direct-agent-gate" in stderr
 
@@ -3080,8 +3222,10 @@ def test_guard_checks_unmatched_brace_contexts(tmp_path, command):
 
     returncode, stderr = _run_guard(repo, env, command)
 
-    assert returncode == 0, stderr
-    assert "direct-agent-gate" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 def test_guard_ignores_quoted_shell_separators(tmp_path):
@@ -3190,8 +3334,10 @@ def test_guard_preserves_conditional_cd_cwd_for_relative_commit_paths(tmp_path):
         repo, env, "if cd docs; then git -C .. commit -m x; fi"
     )
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 def test_guard_checks_conditional_cd_commit_in_another_repo(tmp_path):
@@ -3205,8 +3351,10 @@ def test_guard_checks_conditional_cd_commit_in_another_repo(tmp_path):
         repo, env, f"if cd {other}; then git commit -m x; fi"
     )
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -3226,8 +3374,10 @@ def test_guard_does_not_preserve_conditional_branch_cd_cwd(tmp_path, command_tem
     command = command_template.format(other=other)
     returncode, stderr = _run_guard(repo, env, command)
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -3241,8 +3391,10 @@ def test_guard_does_not_preserve_conditional_branch_cd_cwd(tmp_path, command_tem
 def test_guard_checks_git_commit_inside_heredoc_body(tmp_path, command):
     returncode, stderr = _guard_verdict(tmp_path, command)
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 def test_guard_detects_git_commit_after_heredoc_body(tmp_path):
@@ -3250,8 +3402,10 @@ def test_guard_detects_git_commit_after_heredoc_body(tmp_path):
 
     returncode, stderr = _guard_verdict(tmp_path, command)
 
-    assert returncode == 0
-    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+    assert returncode == 2, stderr
+    assert "simple command" in stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 @pytest.mark.parametrize(
@@ -3337,7 +3491,7 @@ def test_guard_expanded_arguments_run_staged_gate_with_managed_hooks(
         repo, env, f"git commit {argument} -m 'Public summary'"
     )
     assert returncode == 2
-    if argument in {"$(printf -- --no-verify)", "`printf -- --no-verify`"}:
+    if "$(" in argument or "`" in argument:
         assert "cannot be inspected" in stderr
         assert "simple command" in stderr
     else:
@@ -3358,7 +3512,10 @@ def test_guard_blocks_dynamic_message_with_managed_hooks(tmp_path, option, value
         repo, env, f"git commit -m public {option}{separator}{value}"
     )
     assert returncode == 2
-    assert "message cannot be inspected" in stderr
+    if "$(" in value or "`" in value:
+        assert "simple command" in stderr
+    else:
+        assert "message cannot be inspected" in stderr
 
 
 @pytest.mark.parametrize(
