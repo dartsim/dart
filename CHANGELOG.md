@@ -555,7 +555,7 @@
     exact Coulomb friction with a certified step size, with clone support and
     dartpy bindings. `FrictionSolveStats` gains inner-sweep, step-reduction and
     inner-cap counters. The default Dantzig/PGS solver configuration is
-    unchanged.
+    unchanged: [#3631](https://github.com/dartsim/dart/pull/3631)
 
   * Fix split-impulse position correction failures for contacts between multiple reactive skeletons: [#3582](https://github.com/dartsim/dart/pull/3582)
 
