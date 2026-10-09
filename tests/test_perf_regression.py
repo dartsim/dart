@@ -1,11 +1,14 @@
 """Regression checks for performance comparison and local execution."""
 
+import contextlib
 import copy
+import fcntl
 import fnmatch
 import importlib.util
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import threading
@@ -14,6 +17,20 @@ from pathlib import Path
 
 import pytest
 import yaml
+
+
+@pytest.fixture(autouse=True)
+def _isolated_measurement_workspace(monkeypatch, tmp_path_factory):
+    loader = _load_runner
+    root = tmp_path_factory.mktemp("measurement")
+    root.chmod(0o700)
+
+    def load():
+        module = loader()
+        monkeypatch.setattr(module, "MEASUREMENT_ROOT", root)
+        return module
+
+    monkeypatch.setattr(sys.modules[__name__], "_load_runner", load)
 
 
 def test_nightly_rows_cover_canonical_windows_without_changing_quick_tier(tmp_path):
@@ -513,7 +530,7 @@ def test_publication_permissions_keep_all_measurement_read_only():
     assert workflow["on"]["push"]["paths"] == workflow["on"]["pull_request"]["paths"]
     assert "pull_request_target" not in workflow["on"]
     assert "GH_TOKEN" not in workflow.get("env", {})
-    for job in ("measure", "record-measure", "nightly-measure"):
+    for job in ("measure", "record-measure", "nightly-measure", "release-measure"):
         definition = workflow["jobs"][job]
         permissions = {"contents": "read"}
         if job == "record-measure":
@@ -525,7 +542,7 @@ def test_publication_permissions_keep_all_measurement_read_only():
                 assert step["name"] == "Find the merged PR and its current rationale"
             if step.get("uses", "").startswith("actions/checkout@"):
                 assert step["with"]["persist-credentials"] == "false"
-    for job in ("record", "nightly"):
+    for job in ("record", "nightly", "release"):
         definition = workflow["jobs"][job]
         assert definition["permissions"]["contents"] == "write"
         assert "refs/heads/main" in definition["if"]
@@ -593,6 +610,111 @@ def test_merge_writer_uses_only_main_publisher_and_saved_evidence():
         < names.index("Refresh the merged PR verdict comment")
         < names.index("Summarize and enforce the merged verdict")
     )
+
+
+def test_release_writer_uses_only_main_publisher_and_saved_evidence():
+    workflow = _perf_workflow()
+    assert workflow["on"]["workflow_dispatch"]["inputs"]["tier"]["options"] == [
+        "merge",
+        "nightly",
+        "release",
+    ]
+    measure, writer = (workflow["jobs"][job] for job in ("release-measure", "release"))
+    assert "github.event_name == 'workflow_dispatch'" in measure["if"]
+    assert "inputs.tier == 'release'" in measure["if"]
+    assert "github.ref" not in measure["if"]
+    assert writer["needs"] == "release-measure"
+    assert "needs.release-measure.result == 'success'" in writer["if"]
+    assert "github.ref == 'refs/heads/main'" in writer["if"]
+    assert "github.event_name == 'workflow_dispatch'" in writer["if"]
+    assert "inputs.tier == 'release'" in writer["if"]
+    assert writer["permissions"] == {"contents": "write"}
+    assert "concurrency" not in writer
+    checkout = _perf_step("release", "Checkout main publisher")
+    assert checkout["with"]["ref"] == "main"
+    assert checkout["with"]["fetch-depth"] == "0"
+    assert checkout["with"]["persist-credentials"] == "false"
+    upload = _perf_step("release-measure", "Upload release evidence")
+    download = _perf_step(
+        "release", "Download release measurements (including earlier attempts)"
+    )
+    assert (
+        upload["with"]["name"]
+        == "perf-release-${{ github.run_id }}-${{ github.run_attempt }}"
+    )
+    assert "overwrite" not in upload["with"]
+    assert (
+        measure["outputs"]["artifact"]
+        == "${{ format('perf-release-{0}-{1}', github.run_id, github.run_attempt) }}"
+    )
+    assert download["with"]["name"] == "${{ needs.release-measure.outputs.artifact }}"
+    assert download["with"]["path"] == "${{ runner.temp }}/perf"
+    select = _perf_step("release-measure", "Select candidate and previous release")
+    assert select["env"] == {
+        "REQUESTED_HEAD": "${{ inputs.head }}",
+        "REQUESTED_TAG": "${{ inputs.tag }}",
+        "REQUESTED_BASE": "${{ inputs.base }}",
+    }
+    assert "${{ inputs." not in select["run"]
+    assert "release_scope(" in select["run"]
+    for step in writer["steps"]:
+        script = step.get("run", "")
+        assert "GH_TOKEN" not in step.get("env", {})
+        assert "pixi" not in script and " local " not in script
+        assert "gh release" not in script
+        assert not step.get("uses", "").startswith("prefix-dev/")
+    assert "GH_TOKEN" not in writer.get("env", {})
+    assert not any(" publish " in step.get("run", "") for step in measure["steps"])
+    publish = _perf_step("release", "Publish the release record and index")
+    assert publish["id"] == "publish" and "--tier release" in publish["run"]
+    assert '--tag "$PERF_TAG" --base-tag "$PERF_BASE_TAG"' in publish["run"]
+    summary = _perf_step("release", "Summarize the release record")
+    assert "steps.publish.outcome == 'success'" in summary["if"]
+    names = [step["name"] for step in writer["steps"]]
+    assert names.index(publish["name"]) < names.index(summary["name"])
+
+
+@pytest.mark.parametrize("case", ["matching", "mismatch", "missing-tag"])
+def test_release_asset_runbook_gates_upload(tmp_path, case):
+    documentation = (
+        Path(__file__).resolve().parents[1] / "docs/onboarding/ci-cd.md"
+    ).read_text()
+    commands = (
+        documentation.split("After publishing the GitHub release", 1)[1]
+        .split("```bash\n", 1)[1]
+        .split("\n```", 1)[0]
+    )
+    scripts = {
+        "git": """case "$1" in
+  rev-parse) printf '%s\\n' "$TAG_COMMIT"; exit "$TAG_EXIT" ;;
+  show) printf '%s\\n' 'saved record' ;;
+esac
+""",
+        "jq": "printf '%s\\n' \"$RECORD_COMMIT\"\n",
+        "gh": "printf '%s\\n' \"$*\" > uploaded.txt\n",
+    }
+    for name, script in scripts.items():
+        executable = tmp_path / name
+        executable.write_text("#!/bin/sh\n" + script)
+        executable.chmod(0o755)
+    result = subprocess.run(
+        ["bash"],
+        input=commands,
+        text=True,
+        capture_output=True,
+        cwd=tmp_path,
+        env={
+            **os.environ,
+            "PATH": str(tmp_path) + os.pathsep + os.environ["PATH"],
+            "RECORD_COMMIT": "a" * 40,
+            "TAG_COMMIT": "b" * 40 if case == "mismatch" else "a" * 40,
+            "TAG_EXIT": "1" if case == "missing-tag" else "0",
+        },
+    )
+    assert (result.returncode == 0) == (case == "matching"), result.stderr
+    assert (tmp_path / "uploaded.txt").exists() == (case == "matching")
+    if case == "mismatch":
+        assert "dispatch" in result.stderr
 
 
 @pytest.mark.parametrize("status,exit_code", [("PASS", 0), ("FAIL", 1), ("ERROR", 2)])
@@ -872,6 +994,91 @@ def _load_runner():
     return module
 
 
+def _fake_runtime_shim(module, shims=None, **kwargs):
+    path = (shims or module.MEASUREMENT_ROOT / "arm") / "osgpath.so"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"runtime shim")
+    module.validate_osg_shim = lambda *args: None
+
+
+def test_osg_preload_disables_embedded_plugin_path_before_main(tmp_path):
+    module = _load_runner()
+    if sys.platform != "linux" or any(
+        not Path(tool).is_file()
+        for tool in ("/usr/bin/c++", "/usr/bin/nm", "/usr/bin/readelf")
+    ):
+        pytest.skip("OSG normalization requires Linux and the system compiler/binutils")
+    library = tmp_path / "discovery.cpp"
+    library.write_text(
+        "#include <cstdlib>\n#include <deque>\n#include <string>\n"
+        "namespace osgDB {\n"
+        "void appendPlatformSpecificLibraryFilePaths(std::deque<std::string>& paths)"
+        ' { paths.emplace_back(std::getenv("CONDA_PREFIX")); }\n}\n'
+        "std::deque<std::string> paths;\n"
+        "struct Initialize { Initialize() {"
+        " osgDB::appendPlatformSpecificLibraryFilePaths(paths); } };\n"
+        "Initialize initialize;\n"
+        'extern "C" int discovered() { return paths.size(); }\n'
+    )
+    driver = tmp_path / "driver.cpp"
+    driver.write_text(
+        '#include <cstdio>\nextern "C" int discovered();\n'
+        'int main() { std::printf("%d\\n", discovered()); }\n'
+    )
+    subprocess.run(
+        [
+            "/usr/bin/c++",
+            "-shared",
+            "-fPIC",
+            str(library),
+            "-o",
+            str(tmp_path / "libdiscovery.so"),
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            "/usr/bin/c++",
+            str(driver),
+            f"-L{tmp_path}",
+            "-ldiscovery",
+            "-o",
+            str(tmp_path / "driver"),
+        ],
+        check=True,
+    )
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+            "--commit",
+            "HEAD",
+        ]
+    )
+    module.build_shims(args, tmp_path, names=("osgpath",))
+    module.validate_osg_shim(tmp_path / "osgpath.so", tmp_path / "libdiscovery.so")
+    with pytest.raises(ValueError, match="plugin discovery ABI differs"):
+        module.validate_osg_shim(tmp_path / "osgpath.so", tmp_path / "driver")
+    for prefix in (tmp_path / "env", tmp_path / "a-longer-environment-prefix"):
+        env = {"LD_LIBRARY_PATH": str(tmp_path), "CONDA_PREFIX": str(prefix)}
+        assert (
+            subprocess.check_output([str(tmp_path / "driver")], env=env, text=True)
+            == "1\n"
+        )
+        env["LD_PRELOAD"] = str(tmp_path / "osgpath.so")
+        assert (
+            subprocess.check_output([str(tmp_path / "driver")], env=env, text=True)
+            == "0\n"
+        )
+    dynamic = subprocess.check_output(
+        ["/usr/bin/readelf", "-d", str(tmp_path / "osgpath.so")], text=True
+    )
+    assert "(NEEDED)" not in dynamic
+
+
 def _fake_valgrind(module, monkeypatch, tmp_path):
     launcher = tmp_path / "valgrind/bin/valgrind"
     launcher.parent.mkdir(parents=True)
@@ -952,6 +1159,7 @@ def test_valgrind_hashes_require_launcher_and_tool(
 
 def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
     module = _load_runner()
+    _fake_runtime_shim(module)
     launcher, tool = _fake_valgrind(module, monkeypatch, tmp_path)
     args = module.parser().parse_args(
         [
@@ -978,6 +1186,8 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
     (tmp_path / "lib").mkdir()
     library = tmp_path / "lib/libdart.so"
     library.write_bytes(b"measured artifact")
+    data = tmp_path / "share/doc/dart/data"
+    data.mkdir(parents=True)
     stamp = {
         "schema": "dart-perf-build/1",
         "commit": "installed",
@@ -987,6 +1197,8 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         "preset": "installed preset",
         "libdart_sha": module.sha(library.read_bytes()),
         "libraries": {"lib/libdart.so": module.sha(library.read_bytes())},
+        "sample_data_sha": module.sample_data_hash(data),
+        "staging_root": str(module.MEASUREMENT_ROOT),
         "workload_sources": {
             driver: module.sha(b"installed workload")
             for driver in (module.CB, module.PB)
@@ -1070,6 +1282,11 @@ def test_fingerprint_uses_installed_build_provenance(monkeypatch, tmp_path):
         ("compiler_sha", None, "invalid installed build provenance"),
         ("compiler_sha", "", "invalid installed build provenance"),
         ("compiler_sha", "invalid", "invalid installed build provenance"),
+        ("sample_data_sha", None, "invalid installed build provenance"),
+        ("sample_data_sha", "invalid", "invalid installed build provenance"),
+        ("staging_root", None, "invalid installed build provenance"),
+        ("staging_root", "", "invalid installed build provenance"),
+        ("staging_root", "other", "staging root differs"),
         ("schema", "other", "invalid installed build provenance"),
         ("binaries", None, "invalid installed build provenance"),
         ("workload_sources", None, "invalid installed build provenance"),
@@ -1131,6 +1348,8 @@ def test_installed_provenance_verifies_all_dart_libraries(tmp_path, defect):
     (tmp_path / "lib/libdart-utils.so").symlink_to(component.name)
     collision = tmp_path / "lib/libdart-collision-ode.so"
     collision.write_bytes(b"collision")
+    data = tmp_path / "share/doc/dart/data"
+    data.mkdir(parents=True)
     stamp = {
         "schema": "dart-perf-build/1",
         "commit": "installed",
@@ -1139,6 +1358,8 @@ def test_installed_provenance_verifies_all_dart_libraries(tmp_path, defect):
         "pixi_lock_sha": "installed lock",
         "preset": "perf-1",
         "libdart_sha": module.sha(b"core"),
+        "sample_data_sha": module.sample_data_hash(data),
+        "staging_root": str(module.MEASUREMENT_ROOT),
         "libraries": {
             "lib/libdart.so": module.sha(b"core"),
             "lib/libdart-utils.so": module.sha(b"utils"),
@@ -1171,8 +1392,125 @@ def test_installed_provenance_verifies_all_dart_libraries(tmp_path, defect):
         module.installed_provenance(args)
 
 
+@pytest.mark.parametrize(
+    "defect", ["changed", "added", "removed", "missing", "staging-root"]
+)
+def test_installed_provenance_verifies_revision_sample_data(
+    monkeypatch, tmp_path, defect
+):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "installed",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path / "run"),
+        ]
+    )
+    library = tmp_path / "lib/libdart.so"
+    library.parent.mkdir()
+    library.write_bytes(b"DART")
+    data = tmp_path / "share/doc/dart/data"
+    scene = data / "skel/test/scene.skel"
+    scene.parent.mkdir(parents=True)
+    scene.write_bytes(b"revision scene")
+    stamp = {
+        "schema": "dart-perf-build/1",
+        "commit": "installed",
+        "compiler": "GNU 13.3.0",
+        "compiler_sha": "1" * 64,
+        "pixi_lock_sha": "lock",
+        "preset": "perf-1",
+        "libdart_sha": module.sha(b"DART"),
+        "libraries": {"lib/libdart.so": module.sha(b"DART")},
+        "binaries": {},
+        "workload_sources": {},
+        "sample_data_sha": module.sample_data_hash(data),
+        "staging_root": str(module.MEASUREMENT_ROOT),
+    }
+    path = tmp_path / "share/dart/perf-build.json"
+    path.parent.mkdir(parents=True)
+    module.write_json(path, stamp)
+    assert module.installed_provenance(args) == stamp
+    if defect == "changed":
+        scene.write_bytes(b"different scene")
+    elif defect == "added":
+        (scene.parent / "extra.skel").write_bytes(b"extra scene")
+    elif defect == "removed":
+        scene.unlink()
+    elif defect == "staging-root":
+        monkeypatch.setattr(module, "MEASUREMENT_ROOT", tmp_path / "other-root")
+    else:
+        module.shutil.rmtree(data)
+    reason = (
+        "staging root differs; rebuild" if defect == "staging-root" else "sample data"
+    )
+    with pytest.raises(ValueError, match=reason):
+        module.installed_provenance(args)
+
+
+def test_run_arm_loads_installed_sample_data_before_unchecked_source(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    prefix = tmp_path / "prefix"
+    source = tmp_path / "source"
+    for root, content in (
+        (prefix / "share/doc/dart", "installed revision"),
+        (source, "unchecked checkout"),
+    ):
+        scene = root / "data/skel/test/scene.skel"
+        scene.parent.mkdir(parents=True)
+        scene.write_text(content)
+    shim = tmp_path / "allocshim.so"
+    shim.write_bytes(b"shim")
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "installed",
+            "--prefix",
+            str(prefix),
+            "--source-dir",
+            str(source),
+            "--output-dir",
+            str(tmp_path / "run"),
+            "--rows",
+            "dyn",
+            "--shim",
+            str(shim),
+            "--no-perturb",
+        ]
+    )
+    monkeypatch.setattr(module, "command_output", lambda command: "installed")
+    stamp = {"workload_sources": {}}
+    monkeypatch.setattr(module, "installed_provenance", lambda args: stamp)
+    monkeypatch.setattr(
+        module,
+        "build_shims",
+        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
+    )
+
+    def measure(arm, provenance):
+        assert provenance is stamp
+        loaded = module.MEASUREMENT_ROOT / "arm/source/data/skel/test/scene.skel"
+        assert loaded.read_text() == "installed revision"
+        assert loaded.resolve().is_relative_to(arm.prefix)
+        assert (arm.source_dir / "data/skel/test/scene.skel").read_text() == (
+            "unchecked checkout"
+        )
+        return {"sample_data": loaded.read_text()}
+
+    monkeypatch.setattr(module, "_measure_arm", measure)
+    assert module.run_arm(args) == {"sample_data": "installed revision"}
+
+
 def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
     module = _load_runner()
+    _fake_runtime_shim(module)
     _fake_valgrind(module, monkeypatch, tmp_path)
     args = module.parser().parse_args(
         [
@@ -1223,15 +1561,31 @@ def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
     first = module.fingerprint(args)
     assert first["runtime_pixi_lock_sha"] == module.sha(b"runtime lock")
     assert first["runtime_environment"] == "default"
+    assert first["staging_root"] == str(module.MEASUREMENT_ROOT)
+    assert first["osgpath_sha"] == module.sha(b"runtime shim")
+    monkeypatch.delenv("PIXI_ENVIRONMENT_NAME")
+    for key in ("RUNNER_NAME", "ImageOS", "ImageVersion"):
+        monkeypatch.delenv(key, raising=False)
+    fallback = module.fingerprint(args)
+    assert fallback["runtime_environment"] == "default"
+    assert fallback["runner"]["name"] == "local"
+    assert fallback["runner"]["image"] == ""
+    monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "default")
     lock.write_bytes(b"different runtime lock")
     changed_lock = module.fingerprint(args)
     lock.write_bytes(b"runtime lock")
     monkeypatch.setenv("PIXI_ENVIRONMENT_NAME", "gazebo")
     monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / ".pixi/envs/gazebo"))
     changed_environment = module.fingerprint(args)
+    previous_root = module.MEASUREMENT_ROOT
+    monkeypatch.setattr(module, "MEASUREMENT_ROOT", tmp_path / "other-staging-root")
+    _fake_runtime_shim(module)
+    changed_root = module.fingerprint(args)
+    monkeypatch.setattr(module, "MEASUREMENT_ROOT", previous_root)
     for changed, field in (
         (changed_lock, "runtime_pixi_lock_sha"),
         (changed_environment, "runtime_environment"),
+        (changed_root, "staging_root"),
     ):
         assert changed["pixi_lock_sha"] == first["pixi_lock_sha"]
         assert changed["fingerprint"] != first["fingerprint"]
@@ -1517,6 +1871,11 @@ def test_changed_input_requires_rebaseline_without_deltas(version):
 @pytest.mark.parametrize("changed", [False, True])
 def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, changed):
     module = _load_runner()
+    monkeypatch.setattr(
+        module,
+        "build_shims",
+        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
+    )
     _fake_valgrind(module, monkeypatch, tmp_path)
     row = module.select_rows(name)[0]
     args = module.parser().parse_args(
@@ -1539,6 +1898,8 @@ def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, cha
     library = tmp_path / "lib/libdart.so"
     library.parent.mkdir()
     library.write_bytes(b"DART")
+    data = tmp_path / "share/doc/dart/data"
+    data.mkdir(parents=True)
     drivers = {module.PB, row.driver}
     binary = tmp_path / "bin"
     binary.mkdir()
@@ -1552,6 +1913,8 @@ def test_run_workload_stamp_controls_rebaseline(monkeypatch, tmp_path, name, cha
         "pixi_lock_sha": "lock",
         "preset": "perf-1",
         "libdart_sha": module.sha(b"DART"),
+        "sample_data_sha": module.sample_data_hash(data),
+        "staging_root": str(module.MEASUREMENT_ROOT),
         "libraries": {"lib/libdart.so": module.sha(b"DART")},
         "binaries": {driver: module.sha(b"binary") for driver in drivers},
         "workload_sources": {
@@ -2096,7 +2459,644 @@ def test_environment_ignores_inherited_library_path(monkeypatch, tmp_path):
     monkeypatch.setenv("LD_LIBRARY_PATH", "/elsewhere/lib")
     monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "env"))
     env = module.environment(tmp_path / "prefix")
-    assert env["LD_LIBRARY_PATH"] == f"{tmp_path}/prefix/lib:{tmp_path}/env/lib"
+    assert env["LD_LIBRARY_PATH"] == (
+        f"{tmp_path}/prefix/lib:{module.MEASUREMENT_ROOT}/arm/dependencies/lib"
+    )
+
+
+def test_environment_is_identical_under_ambient_pollution(monkeypatch, tmp_path):
+    module = _load_runner()
+    prefix = module.MEASUREMENT_ROOT / "arm/prefix"
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
+    expected = {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "GLIBC_TUNABLES": "glibc.cpu.hwcaps=-FMA",
+        "LD_LIBRARY_PATH": f"{prefix}/lib:{module.MEASUREMENT_ROOT}/arm/dependencies/lib",
+        "LD_PRELOAD": str(module.MEASUREMENT_ROOT / "arm/osgpath.so"),
+    }
+    assert module.environment(prefix) == expected
+    for name in (
+        "PATH",
+        "LC_ALL",
+        "GLIBC_TUNABLES",
+        "LD_LIBRARY_PATH",
+        "LD_PRELOAD",
+        "HEAPPAD",
+        "PERF_WARMUP",
+        "PERF_WINDOW",
+        "PERF_MICRO",
+        "PYTHONPATH",
+        "PIXI_PROJECT_ROOT",
+        "PIXI_ENVIRONMENT_NAME",
+        "EXTRA_ENVIRONMENT",
+    ):
+        monkeypatch.setenv(name, "polluted" * 100)
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "longer-dependency-location"))
+    assert module.environment(prefix) == expected
+    monkeypatch.delenv("CONDA_PREFIX")
+    expected["LD_LIBRARY_PATH"] = f"{prefix}/lib"
+    assert module.environment(prefix) == expected
+
+
+@pytest.mark.parametrize("failure", [None, ValueError, KeyboardInterrupt])
+def test_run_arm_stages_fixed_paths_and_exports_artifacts_under_lock(
+    monkeypatch, tmp_path, failure
+):
+    module = _load_runner()
+    slot = module.MEASUREMENT_ROOT / "arm"
+    stamp = {"workload_sources": {}}
+    monkeypatch.setattr(module, "command_output", lambda command: "commit")
+    monkeypatch.setattr(module, "installed_provenance", lambda args: stamp)
+    snapshots = []
+
+    def assert_locked():
+        with (module.MEASUREMENT_ROOT / ".lock").open("a") as lock:
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+    original_copytree = module.shutil.copytree
+
+    def copytree(source, destination, *args, **kwargs):
+        if source == slot / "run":
+            assert_locked()
+        return original_copytree(source, destination, *args, **kwargs)
+
+    monkeypatch.setattr(module.shutil, "copytree", copytree)
+
+    def measure(arm, provenance):
+        assert provenance is stamp
+        assert_locked()
+        assert not (slot / "stale").exists()
+        assert arm.prefix == slot / "prefix"
+        assert arm.bin_dir == slot / "prefix/bin"
+        assert arm.source_dir == slot / "inputs-source"
+        assert arm.shim == slot / "allocshim.so"
+        assert arm.heappad == slot / "heappad.so"
+        assert arm.output_dir == slot / "run"
+        assert (arm.bin_dir / module.CB).read_bytes() == b"driver"
+        library = arm.prefix / "lib/libdart.so"
+        assert not library.is_symlink() and library.read_bytes() == b"library"
+        assert arm.shim.read_bytes() == b"allocshim"
+        assert arm.heappad.read_bytes() == b"heappad"
+        assert (slot / "dependencies").resolve() == dependency
+        assert arm.source_dir.resolve() == source
+        assert (slot / "source/data").readlink() == arm.prefix / "share/doc/dart/data"
+        row = module.select_rows("s3w/dart")[0]
+        snapshots.append(
+            (
+                module.row_command(
+                    row, arm, slot / "inputs/world.sdf", row.warmup, row.steps
+                ),
+                module.environment(arm.prefix),
+            )
+        )
+        (arm.output_dir / "partial.log").write_text("measurement evidence")
+        if failure:
+            raise failure("measurement failed")
+        module.write_json(arm.output_dir / "record.json", {"result": "ok"})
+        return {"result": "ok"}
+
+    monkeypatch.setattr(module, "_measure_arm", measure)
+    for label in ("short", "a-much-longer-location"):
+        directory = tmp_path / label
+        prefix, binary, source, dependency = (
+            directory / name for name in ("prefix", "binary", "source", "dependencies")
+        )
+        for path in (prefix / "lib", binary, source, dependency / "lib"):
+            path.mkdir(parents=True)
+        library = directory / "library.so"
+        library.write_bytes(b"library")
+        (prefix / "lib/libdart.so").symlink_to(library)
+        (binary / module.CB).write_bytes(b"driver")
+        shim, heappad = directory / "shim.so", directory / "heappad.so"
+        shim.write_bytes(b"allocshim")
+        heappad.write_bytes(b"heappad")
+        monkeypatch.setenv("CONDA_PREFIX", str(dependency))
+        monkeypatch.setenv("EXTRA_ENVIRONMENT", label * 100)
+        output = directory / "output"
+        args = module.parser().parse_args(
+            [
+                "run",
+                "--commit",
+                "HEAD",
+                "--prefix",
+                str(prefix),
+                "--bin-dir",
+                str(binary),
+                "--source-dir",
+                str(source),
+                "--shim",
+                str(shim),
+                "--heappad",
+                str(heappad),
+                "--output-dir",
+                str(output),
+                "--rows",
+                "s3w/dart",
+            ]
+        )
+        if failure:
+            with pytest.raises(failure, match="measurement failed"):
+                module.run_arm(args)
+        else:
+            assert module.run_arm(args) == {"result": "ok"}
+            assert json.loads((output / "record.json").read_text()) == {"result": "ok"}
+        assert (output / "partial.log").read_text() == "measurement evidence"
+        assert (
+            args.prefix == prefix
+            and args.bin_dir == binary
+            and args.source_dir == source
+        )
+        assert (prefix / "lib/libdart.so").is_symlink()
+        with (module.MEASUREMENT_ROOT / ".lock").open("a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        (slot / "stale").write_text("old arm")
+    assert snapshots[0] == snapshots[1]
+
+
+def test_perf_workspace_serializes_replacement(monkeypatch):
+    module = _load_runner()
+    waiting, entered = threading.Event(), threading.Event()
+
+    def contender():
+        waiting.set()
+        with module.perf_workspace() as slot:
+            assert not (slot / "previous").exists()
+            entered.set()
+
+    with module.perf_workspace() as slot:
+        (slot / "previous").write_text("previous arm")
+        thread = threading.Thread(target=contender)
+        thread.start()
+        assert waiting.wait(timeout=2)
+        assert not entered.wait(timeout=0.02)
+        assert (slot / "previous").is_file()
+    thread.join(timeout=2)
+    assert not thread.is_alive() and entered.is_set()
+
+
+@pytest.mark.parametrize("build", [False, True])
+def test_orphaned_execute_keeps_workspace_locked(tmp_path, build):
+    module = _load_runner()
+    root = module.MEASUREMENT_ROOT
+    child_pid, release = tmp_path / "child.pid", tmp_path / "release"
+    child = """
+import os, sys, time
+from pathlib import Path
+Path(sys.argv[1]).write_text(str(os.getpid()))
+while not Path(sys.argv[2]).exists():
+    time.sleep(0.01)
+Path(sys.argv[3]).write_text("orphaned dump")
+"""
+    holder = """
+import importlib.util, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("perf", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = module
+spec.loader.exec_module(module)
+module.MEASUREMENT_ROOT = Path(sys.argv[2])
+with module.perf_workspace() as slot:
+    (slot / "run").mkdir()
+    module.execute(
+        [sys.executable, "-c", sys.argv[3], *sys.argv[4:6], str(slot / "run/orphan.cg")],
+        module.environment(slot / "prefix"),
+        slot / "child.log", 10, build=sys.argv[6] == "True"
+    )
+"""
+    process = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            holder,
+            module.__file__,
+            str(root),
+            child,
+            str(child_pid),
+            str(release),
+            str(build),
+        ]
+    )
+    contender = None
+    errors = []
+    entered = threading.Event()
+
+    def replace():
+        try:
+            with module.perf_workspace() as slot:
+                assert not (slot / "run/orphan.cg").exists()
+                entered.set()
+        except BaseException as error:
+            errors.append(error)
+
+    try:
+        for _ in range(200):
+            if child_pid.is_file():
+                break
+            assert process.poll() is None
+            time.sleep(0.01)
+        assert child_pid.is_file()
+        process.kill()
+        process.wait(timeout=2)
+        with (root / ".lock").open("a") as lock:
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        contender = threading.Thread(target=replace)
+        contender.start()
+        assert not entered.wait(timeout=0.02)
+        assert (root / "arm/run").is_dir()
+        release.touch()
+        contender.join(timeout=2)
+        assert not contender.is_alive() and entered.is_set()
+        assert not errors
+    finally:
+        release.touch()
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=2)
+        if child_pid.is_file():
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(int(child_pid.read_text()), signal.SIGKILL)
+        if contender is not None:
+            contender.join(timeout=2)
+
+
+def test_perf_workspace_replaces_readonly_install(monkeypatch, tmp_path):
+    module = _load_runner()
+    external = tmp_path / "external"
+    external.mkdir()
+    external.chmod(0o555)
+    with module.perf_workspace() as slot:
+        prefix = slot / "prefix"
+        binary = prefix / "bin"
+        binary.mkdir(parents=True)
+        (binary / "driver").write_text("driver")
+        for directory in (binary, prefix):
+            directory.chmod(0o555)
+        (slot / "source").symlink_to(external, target_is_directory=True)
+    with module.perf_workspace() as slot:
+        assert not (slot / "prefix").exists()
+        assert external.stat().st_mode & 0o777 == 0o555
+    external.chmod(0o700)
+
+
+def test_run_arm_stages_readonly_install_with_external_binaries(monkeypatch, tmp_path):
+    module = _load_runner()
+    prefix, binaries = tmp_path / "prefix", tmp_path / "binaries"
+    source = tmp_path / "source"
+    source.mkdir()
+    (prefix / "bin").mkdir(parents=True)
+    binaries.mkdir()
+    original = prefix / "bin/driver"
+    original.write_text("installed")
+    original.chmod(0o444)
+    (binaries / "driver").write_text("override")
+    for directory in (prefix / "bin", prefix, binaries):
+        directory.chmod(0o555)
+    shim = tmp_path / "shim.so"
+    shim.write_bytes(b"shim")
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(prefix),
+            "--bin-dir",
+            str(binaries),
+            "--source-dir",
+            str(source),
+            "--shim",
+            str(shim),
+            "--no-perturb",
+            "--output-dir",
+            str(tmp_path / "output"),
+        ]
+    )
+    monkeypatch.setattr(module, "command_output", lambda command: "commit")
+    monkeypatch.setattr(module, "installed_provenance", lambda args: {})
+    monkeypatch.setattr(
+        module,
+        "build_shims",
+        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
+    )
+
+    def measure(arm, provenance):
+        assert (arm.bin_dir / "driver").read_text() == "override"
+        for directory in (arm.prefix, arm.bin_dir):
+            assert directory.stat().st_mode & 0o700 == 0o700
+        return {"result": "ok"}
+
+    monkeypatch.setattr(module, "_measure_arm", measure)
+    try:
+        for _ in range(2):
+            assert module.run_arm(args) == {"result": "ok"}
+        assert original.read_text() == "installed"
+        assert original.stat().st_mode & 0o777 == 0o444
+        for directory in (prefix / "bin", prefix, binaries):
+            assert directory.stat().st_mode & 0o777 == 0o555
+    finally:
+        for directory in (prefix, prefix / "bin", binaries):
+            directory.chmod(0o700)
+
+
+@pytest.mark.parametrize("spelling", ["parent", "symlink"])
+def test_perf_workspace_rejects_inputs_inside_resolved_root(
+    monkeypatch, tmp_path, spelling
+):
+    module = _load_runner()
+    staging = tmp_path / "staging"
+    staging.mkdir(mode=0o700)
+    other = tmp_path / "other"
+    other.mkdir()
+    if spelling == "parent":
+        root = other / ".." / "staging"
+    else:
+        alias = tmp_path / "alias"
+        alias.symlink_to(tmp_path, target_is_directory=True)
+        root = alias / "staging"
+    monkeypatch.setattr(module, "MEASUREMENT_ROOT", root)
+    protected = staging / "arm/input"
+    protected.parent.mkdir()
+    protected.write_text("protected")
+    with pytest.raises(ValueError, match="inputs and outputs must be outside staging"):
+        with module.perf_workspace([protected]):
+            pytest.fail("resolved staging input accepted")
+    assert protected.read_text() == "protected"
+
+
+def test_perf_workspace_uses_absolute_root_override(monkeypatch, tmp_path):
+    root = tmp_path / "private-root"
+    monkeypatch.setenv("DART_PERF_STAGING_ROOT", str(root))
+    spec = importlib.util.spec_from_file_location(
+        "perf_override", _load_runner().__file__
+    )
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, spec.name, module)
+    spec.loader.exec_module(module)
+    assert module.MEASUREMENT_ROOT == root
+    with module.perf_workspace() as slot:
+        assert slot == root / "arm" and slot.is_dir()
+    monkeypatch.setattr(module, "MEASUREMENT_ROOT", Path("relative-root"))
+    with pytest.raises(ValueError, match="DART_PERF_STAGING_ROOT.*absolute"):
+        with module.perf_workspace():
+            pytest.fail("relative staging root accepted")
+
+
+@pytest.mark.parametrize(
+    "unsafe",
+    [
+        "symlink",
+        "public",
+        "owner",
+        "mount",
+        "filesystem",
+        "input",
+        "alias",
+        "ancestor",
+        "staged-alias",
+    ],
+)
+def test_perf_workspace_rejects_unsafe_roots_and_inputs(monkeypatch, tmp_path, unsafe):
+    module = _load_runner()
+    root = module.MEASUREMENT_ROOT
+    paths = ()
+    if unsafe == "symlink":
+        root.rmdir()
+        root.symlink_to(tmp_path, target_is_directory=True)
+    elif unsafe == "public":
+        root.chmod(0o755)
+    elif unsafe == "owner":
+        monkeypatch.setattr(module.os, "getuid", lambda: root.stat().st_uid + 1)
+    elif unsafe == "mount":
+        monkeypatch.setattr(module.os.path, "ismount", lambda path: path == root)
+    elif unsafe == "filesystem":
+        lstat = module.Path.lstat
+
+        def different_device(path):
+            info = lstat(path)
+            if path == root:
+                values = list(info)
+                values[2] += 1
+                return os.stat_result(values)
+            return info
+
+        monkeypatch.setattr(module.Path, "lstat", different_device)
+    else:
+        slot = root / "arm"
+        slot.mkdir()
+        preserved = slot / "input"
+        preserved.write_text("keep")
+        if unsafe == "staged-alias":
+            preserved = tmp_path / "external"
+            preserved.write_text("keep")
+            alias = slot / "source"
+            alias.symlink_to(tmp_path, target_is_directory=True)
+            paths = (alias / "external",)
+        elif unsafe == "ancestor":
+            paths = (root,)
+        elif unsafe == "alias":
+            alias = tmp_path / "input-alias"
+            alias.symlink_to(preserved)
+            paths = (alias,)
+        else:
+            paths = (preserved,)
+    with pytest.raises(ValueError, match="private owned|outside staging"):
+        with module.perf_workspace(paths):
+            pytest.fail("unsafe workspace accepted")
+    if paths:
+        assert preserved.read_text() == "keep"
+    if unsafe == "owner":
+        with pytest.raises(
+            ValueError, match=rf"owner uid {root.stat().st_uid}.*DART_PERF_STAGING_ROOT"
+        ):
+            with module.perf_workspace():
+                pytest.fail("foreign owner accepted")
+
+
+@pytest.mark.parametrize("build", [False, True])
+def test_execute_uses_fixed_measurement_working_directory(tmp_path, build):
+    module = _load_runner()
+    env = module.environment(module.MEASUREMENT_ROOT / "arm/prefix")
+    env.pop("LD_PRELOAD")
+    output = module.execute(
+        [sys.executable, "-c", "import os; print(os.getcwd())"],
+        env,
+        tmp_path / "working-directory.log",
+        5,
+        build=build,
+    )
+    assert output.strip() == str(module.ROOT if build else module.MEASUREMENT_ROOT)
+
+
+def test_workload_hashes_normalize_lexical_and_resolved_staging_paths(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    hashes = []
+    for label in ("short", "longer-location"):
+        directory = tmp_path / label
+        source, build, prefix, dependency = (
+            directory / name for name in ("source", "build", "prefix", "dependencies")
+        )
+        for tree in (source, build, prefix, dependency):
+            tree.mkdir(parents=True)
+        for name in module.WORKLOAD_SOURCES[module.PB]:
+            path = source / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"same workload")
+        monkeypatch.setenv("CONDA_PREFIX", str(dependency))
+        with module.perf_workspace() as slot:
+            for name, tree in (
+                ("source", source),
+                ("build", build),
+                ("prefix", prefix),
+                ("dependencies", dependency),
+            ):
+                (slot / name).symlink_to(tree, target_is_directory=True)
+            roots = (source, build, prefix, dependency)
+            aliases = tuple(
+                slot / name for name in ("source", "build", "prefix", "dependencies")
+            )
+            name = next(
+                name
+                for name in module.WORKLOAD_SOURCES[module.PB]
+                if name.endswith(".cpp")
+            )
+            command = " ".join(
+                [
+                    "/usr/bin/c++ -O3",
+                    *(f"-I{path}/include" for path in (*roots, *aliases)),
+                    f"-o {slot}/build/object.o -c {slot}/source/{name}",
+                ]
+            )
+            entry = {
+                "directory": str(slot / "build"),
+                "file": str(source / name),
+                "command": command,
+            }
+            module.write_json(build / "compile_commands.json", [entry])
+            hashes.append(module.workload_hashes(source, [module.PB], build, prefix))
+            assert (
+                module.workload_hashes(
+                    slot / "source", [module.PB], slot / "build", slot / "prefix"
+                )
+                == hashes[-1]
+            )
+            entry["command"] = command.replace("-O3", "-O2")
+            module.write_json(build / "compile_commands.json", [entry])
+            assert (
+                module.workload_hashes(source, [module.PB], build, prefix) != hashes[-1]
+            )
+    assert hashes[0] == hashes[1]
+
+
+@pytest.mark.parametrize("failure", [False, True])
+def test_build_arm_normalizes_build_paths_and_dependency_metadata(
+    monkeypatch, tmp_path, failure
+):
+    module = _load_runner()
+    snapshots = []
+
+    def build(
+        args,
+        revision,
+        source,
+        build,
+        driver,
+        prefix,
+        drivers,
+        log_prefix,
+        dependency,
+        harness,
+        env,
+    ):
+        slot = module.MEASUREMENT_ROOT / "arm"
+        assert [source, build, driver, prefix, dependency, harness] == [
+            slot / name
+            for name in (
+                "source",
+                "build",
+                "driver",
+                "prefix",
+                "dependencies",
+                "harness",
+            )
+        ]
+        assert env["CONDA_PREFIX"] == str(dependency)
+        metadata_paths = [
+            Path(path) for path in env["PKG_CONFIG_PATH"].split(os.pathsep)
+        ]
+        assert metadata_paths == [
+            slot / "pkgconfig" / name for name in ("lib/pkgconfig", "share/pkgconfig")
+        ]
+        contents = (metadata_paths[0] / "dependency.pc").read_text()
+        assert contents == f"prefix={dependency}\nincludedir={dependency}/include\n"
+        relative = (metadata_paths[0] / "relative.pc").read_text()
+        original_metadata = dependency / "lib/pkgconfig"
+        assert f"prefix={original_metadata}/../..\n" in relative
+        assert f"Cflags: -I{original_metadata}/../../include\n" in relative
+        assert "${pcfiledir}" not in relative
+        if Path("/usr/bin/pkg-config").is_file():
+            includes = subprocess.check_output(
+                ["/usr/bin/pkg-config", "--cflags", "relative"], env=env, text=True
+            ).split()
+            assert len(includes) == 1 and includes[0].startswith("-I")
+            assert Path(includes[0][2:]).resolve() == dependency.resolve() / "include"
+        snapshots.append((contents, relative))
+        if failure:
+            raise ValueError("build failed")
+        prefix.mkdir()
+        (prefix / "built").write_text("installed arm")
+
+    monkeypatch.setattr(module, "_build_arm", build)
+    for label in ("short", "longer-location"):
+        directory = tmp_path / label
+        source, build, driver, prefix, dependencies = (
+            directory / name
+            for name in ("source", "build", "driver", "prefix", "dependencies")
+        )
+        source.mkdir(parents=True)
+        prefix.mkdir()
+        (prefix / "previous").write_text("previous install")
+        metadata = dependencies / "lib/pkgconfig/dependency.pc"
+        metadata.parent.mkdir(parents=True)
+        alias = directory / "dependency-alias"
+        alias.symlink_to(dependencies, target_is_directory=True)
+        metadata.write_text(f"prefix={alias}\nincludedir={dependencies}/include\n")
+        relative = metadata.with_name("relative.pc")
+        relative_contents = (
+            "prefix=${pcfiledir}/../..\n"
+            "Name: relative\nDescription: Relative metadata paths\nVersion: 1\n"
+            "Cflags: -I${pcfiledir}/../../include\n"
+        )
+        relative.write_text(relative_contents)
+        monkeypatch.setenv("CONDA_PREFIX", str(alias))
+        arguments = (
+            object(),
+            "revision",
+            source,
+            build,
+            driver,
+            prefix,
+            [],
+            directory / "logs",
+        )
+        if failure:
+            with pytest.raises(ValueError, match="build failed"):
+                module.build_arm(*arguments)
+            assert (prefix / "previous").read_text() == "previous install"
+        else:
+            module.build_arm(*arguments)
+            assert not (prefix / "previous").exists()
+            assert (prefix / "built").read_text() == "installed arm"
+        assert (
+            metadata.read_text()
+            == f"prefix={alias}\nincludedir={dependencies}/include\n"
+        )
+        assert relative.read_text() == relative_contents
+    assert snapshots[0] == snapshots[1]
 
 
 @pytest.mark.parametrize(
@@ -2375,6 +3375,11 @@ def test_run_resolves_shims_and_reports_missing_options(
     monkeypatch, tmp_path, capsys, layout
 ):
     module = _load_runner()
+    monkeypatch.setattr(
+        module,
+        "build_shims",
+        lambda args, shims, **kwargs: _fake_runtime_shim(module, shims),
+    )
     root = tmp_path / "repo"
     world = root / "tests/benchmark/worlds/3k_shapes.sdf.gz"
     world.parent.mkdir(parents=True)
@@ -2402,6 +3407,7 @@ def test_run_resolves_shims_and_reports_missing_options(
         },
     )
     prefix = tmp_path / "output/a"
+    prefix.mkdir(parents=True)
     argv = [
         "run",
         "--commit",
@@ -2995,6 +4001,7 @@ def test_local_uses_independent_source_and_cmake_caches(
     from types import SimpleNamespace
 
     module = _load_runner()
+    monkeypatch.setattr(module, "install_targets", lambda *args: [])
     args = module.parser().parse_args(
         [
             "local",
@@ -3031,6 +4038,7 @@ def test_local_uses_independent_source_and_cmake_caches(
         contents.addfile(entry, io.BytesIO())
         for name in sorted(
             {path for paths in module.WORKLOAD_SOURCES.values() for path in paths}
+            | {"data/sample.skel"}
         ):
             data = f"archived {name}".encode()
             entry = tarfile.TarInfo(name)
@@ -3046,9 +4054,10 @@ def test_local_uses_independent_source_and_cmake_caches(
         assert kwargs.get("build", False)
         if command[:3] == ["cmake", "-G", "Ninja"]:
             assert "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" in command
+            assert "-DCMAKE_SKIP_RPATH=ON" in command
             source = Path(command[command.index("-S") + 1])
             build = Path(command[command.index("-B") + 1])
-            build.mkdir()
+            build.mkdir(exist_ok=True)
             compiler = build / "CMakeFiles/4.0/CMakeCXXCompiler.cmake"
             compiler.parent.mkdir(parents=True)
             (tmp_path / "c++").write_bytes(b"build compiler")
@@ -3056,9 +4065,9 @@ def test_local_uses_independent_source_and_cmake_caches(
                 f'set(CMAKE_CXX_COMPILER "{tmp_path / "c++"}")\n'
                 'set(CMAKE_CXX_COMPILER_ID "GNU")\nset(CMAKE_CXX_COMPILER_VERSION "13.3.0")\n'
             )
-            workload_source = source if source.name.startswith("src-") else module.ROOT
+            workload_source = source if source.name == "source" else source.parents[1]
             compiled_drivers = (
-                expected_drivers if source.name.startswith("src-") else {module.PB}
+                expected_drivers if source.name == "source" else {module.PB}
             )
             module.write_json(
                 build / "compile_commands.json",
@@ -3073,15 +4082,15 @@ def test_local_uses_independent_source_and_cmake_caches(
                     if name.endswith(".cpp")
                 ],
             )
-            if source.name.startswith("src-"):
+            if source.name == "source":
                 assert (source / "CMakeLists.txt").is_file()
                 assert not (build / "CMakeCache.txt").exists()
-                (build / "CMakeCache.txt").write_text(source.name)
-                configurations.append((source, build))
+                (build / "CMakeCache.txt").write_text(source.resolve().name)
+                configurations.append((source.resolve(), build.resolve()))
         elif command[:2] == ["cmake", "--build"]:
             build = Path(command[2])
-            if build.name.startswith("driver-"):
-                (build / "portable_step_bench").write_text(build.name)
+            if build.name == "driver":
+                (build / "portable_step_bench").write_text(build.resolve().name)
             else:
                 targets = set(command[command.index("--target") + 1 :])
                 assert targets & module.WORKLOAD_SOURCES.keys() == expected_drivers
@@ -3101,6 +4110,10 @@ def test_local_uses_independent_source_and_cmake_caches(
             (prefix / "share/dart").mkdir(parents=True)
             (prefix / "lib").mkdir()
             (prefix / "lib/libdart.so").write_bytes(b"installed DART")
+            module.shutil.copytree(
+                module.MEASUREMENT_ROOT / "arm/source/data",
+                prefix / "share/doc/dart/data",
+            )
         return ""
 
     monkeypatch.setattr(module, "execute", execute)
@@ -3110,6 +4123,7 @@ def test_local_uses_independent_source_and_cmake_caches(
         stamp = module.installed_provenance(arm)
         assert stamp["compiler"] == "GNU 13.3.0"
         assert stamp["compiler_sha"] == module.sha(b"build compiler")
+        assert stamp["staging_root"] == str(module.MEASUREMENT_ROOT)
         assert stamp["pixi_lock_sha"] == module.sha(
             (module.ROOT / "pixi.lock").read_bytes()
         )
@@ -3168,6 +4182,7 @@ def test_local_records_only_head_build_failures(
     from types import SimpleNamespace
 
     module = _load_runner()
+    monkeypatch.setattr(module, "install_targets", lambda *args: [])
     monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
     resolved = []
 
@@ -3192,6 +4207,7 @@ def test_local_records_only_head_build_failures(
     monkeypatch.setattr(module, "workload_hashes", lambda *args: {})
     monkeypatch.setattr(module, "cmake_compiler", lambda *args: {})
     monkeypatch.setattr(module, "library_hashes", lambda *args: {})
+    monkeypatch.setattr(module, "sample_data_hash", lambda data: "1" * 64)
 
     error = {
         "build": module.BuildFailure,
@@ -3214,9 +4230,9 @@ def test_local_records_only_head_build_failures(
             (prefix / "share/dart").mkdir(parents=True)
             (prefix / "lib").mkdir()
             (prefix / "lib/libdart.so").write_bytes(b"DART")
-        if command[:2] == ["cmake", "--build"] and "driver-" in command[2]:
+        if command[:2] == ["cmake", "--build"] and Path(command[2]).name == "driver":
             driver = Path(command[2])
-            driver.mkdir()
+            driver.mkdir(exist_ok=True)
             (driver / "portable_step_bench").write_bytes(b"driver")
         return ""
 
@@ -3225,8 +4241,7 @@ def test_local_records_only_head_build_failures(
     def run_arm(arm):
         assert arm.base_arm
         assert not smoke and arm.commit == "base-commit"
-        record = _micro_record(module, "dyn")
-        record["run"]["commit"] = arm.commit
+        record = _measurement_fixture(module, arm.commit, "gzb")
         record["run"]["env"].update(valgrind="test", glibc="test", preset="perf-1")
         arm.output_dir.mkdir()
         module.write_json(arm.output_dir / "record.json", record)
@@ -3248,12 +4263,14 @@ def test_local_records_only_head_build_failures(
             str(tmp_path),
         ]
     ) == (1 if not smoke and not shim and kind == "build" else 2)
-    assert resolved == (["base-revision^{commit}"] if not smoke else []) + [
-        "head-revision^{commit}"
-    ]
+    assert [revision for revision in resolved if revision.endswith("^{commit}")] == (
+        ["base-revision^{commit}"] if not smoke else []
+    ) + ["head-revision^{commit}"]
     failure = tmp_path / "build-failure.json"
     if kind == "build" and smoke:
-        assert json.loads(failure.read_text()) == {
+        marker = json.loads(failure.read_text())
+        assert marker.pop("time")
+        assert marker == {
             "commit": "head-commit",
             "error": f"simulated {phase} failure",
             "error_kind": "build",
@@ -3517,6 +4534,18 @@ def _perf_step(job, name):
     ],
 )
 def test_workflow_selects_smoke_and_ab_for_mixed_changes(tmp_path, paths, mode, smoke):
+    module = _load_runner()
+    expected = {
+        path + "/*" if path != "CMakeLists.txt" and not path.endswith(".hpp") else path
+        for path in module.MEASURED_PATHS
+    }
+    for job, name in (
+        ("measure", "Select smoke or A/B"),
+        ("record-measure", "Select base and measurement scope"),
+    ):
+        script = _perf_step(job, name)["run"]
+        patterns = set(re.search(r"^\s+(.+?)\) mode=ab", script, re.M)[1].split("|"))
+        assert patterns == expected
     env_path = tmp_path / "env"
     # Stub git's revision/diff output while executing the actual shell selector.
     stub = """
@@ -3756,7 +4785,7 @@ def test_revision_input_errors_are_recorded_per_row(
         original = Path.open
 
         def open_file(self, *args, **kwargs):
-            if self == damaged:
+            if self.resolve() == damaged:
                 raise PermissionError(f"unreadable input: {self}")
             return original(self, *args, **kwargs)
 
@@ -3768,7 +4797,9 @@ def test_revision_input_errors_are_recorded_per_row(
     assert row["status"] == "broken" and not row["gated"]
     assert row["input_sha"] is None
     assert "failed to load revision inputs" in row["error"]
-    assert str(damaged) in row["error"]
+    assert path in row["error"]
+    assert str(source) not in row["error"]
+    assert module.find_local_path(broken) is None
     assert (row.get("error_kind") == "infrastructure") == (arm == "base")
     assert healthy["status"] == "ok" and measured == ["gzb"]
     assert json.loads((args.output_dir / "record.json").read_text()) == broken
@@ -4414,7 +5445,14 @@ def _publication_fixture():
                 "method": "slope",
                 "parent": copy.deepcopy(metrics),
                 "head": metrics,
-                "delta": {"ir": 0, "allocs": 0, "guards_equal": True, "class": "gated"},
+                "delta": {
+                    "ir": 0,
+                    "allocs": 0,
+                    "bytes": 0,
+                    "guards_equal": True,
+                    "class": "gated",
+                },
+                "failures": [],
             }
         ],
         "verdict": {"status": "PASS", "failures": [], "warnings": [], "ir_geomean": 0},
@@ -4427,19 +5465,49 @@ def _trusted_publication(monkeypatch, event="push"):
     monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
 
 
-@pytest.mark.parametrize("tier", ["merge", "nightly"])
-def test_publication_schema_normalizes_tier_and_advisory_wall(tmp_path, tier):
+@pytest.mark.parametrize("tier", ["merge", "nightly", "release", "backfill"])
+def test_publication_schema_normalizes_tier_and_advisory_wall(
+    monkeypatch, tmp_path, tier
+):
     module = _load_runner()
     path = tmp_path / "record.json"
-    module.write_json(path, _publication_fixture())
-    record = module.publication_record(path, tier, 3570)
+    fixture = _publication_fixture()
+    fixture["run"].update(pr=3229, harness_commit="c" * 40)
+    fixture["results"][0]["head"]["libdart"] = str(tmp_path / "libdart.so.6.20")
+    fixture["results"][0]["parent"]["libdart"] = str(tmp_path / "libdart.so.6.19")
+    monkeypatch.setattr(module, "is_ancestor", lambda *args: True)
+    monkeypatch.setattr(
+        module,
+        "release_scope",
+        lambda *args: {
+            "head": "a" * 40,
+            "base": "b" * 40,
+            "branch": "main",
+            "tag": "v6.20.0",
+            "base_tag": "v6.19.5",
+        },
+    )
+    if tier == "backfill":
+        fixture["run"]["env"]["runner"] = {
+            "environment": "local",
+            "name": "local",
+            "image": "",
+        }
+    module.write_json(path, fixture)
+    extra = {"tag": "v6.20.0", "base_tag": "v6.19.5"} if tier == "release" else {}
+    record = module.publication_record(path, tier, 3570, **extra)
     assert record["run"]["tier"] == tier
     assert record["run"]["branch"] == "main"
-    assert record["run"]["pr"] == 3570
+    assert record["run"]["pr"] == (None if tier == "release" else 3570)
+    assert module.publication_record(path, tier, **extra)["run"]["pr"] == (
+        None if tier == "release" else 3229
+    )
+    assert record["run"]["harness_commit"] == "c" * 40
     assert record["run"]["time"] == "2026-10-08T08:00:00+00:00"
     row = record["results"][0]
+    assert row["head"]["libdart"] == "libdart.so.6.20"
     assert row["wall_ms_per_step"] == {
-        "parent": 12.3 if tier == "merge" else None,
+        "parent": None if tier == "nightly" else 12.3,
         "head": 12.3,
         "advisory": True,
     }
@@ -4464,6 +5532,12 @@ def test_publication_schema_normalizes_tier_and_advisory_wall(tmp_path, tier):
         ("schedule", "main", "local", "nightly", False),
         ("schedule", "main", "github-hosted", "merge", False),
         ("push", "main", "github-hosted", "nightly", False),
+        ("workflow_dispatch", "main", "github-hosted", "release", True),
+        ("workflow_dispatch", "topic", "github-hosted", "release", False),
+        ("push", "main", "github-hosted", "release", False),
+        ("schedule", "main", "github-hosted", "release", False),
+        ("workflow_dispatch", "main", "local", "release", False),
+        ("push", "main", "local", "merge", False),
     ],
 )
 def test_publication_context_refuses_untrusted_writes(
@@ -4495,6 +5569,7 @@ def test_publication_context_refuses_untrusted_writes(
         "nan",
         "duplicate",
         "infrastructure",
+        "local-path",
     ],
 )
 def test_publication_rejects_invalid_measurement_before_git(tmp_path, defect):
@@ -4523,6 +5598,8 @@ def test_publication_rejects_invalid_measurement_before_git(tmp_path, defect):
         record["results"] *= 2
     elif defect == "infrastructure":
         record["results"][0]["error_kind"] = "infrastructure"
+    elif defect == "local-path":
+        record["results"][0]["error"] = f"failed to read {tmp_path / 'data/input.sdf'}"
     path = tmp_path / "record.json"
     path.write_text(json.dumps(record))
     with pytest.raises(ValueError):
@@ -5424,14 +6501,21 @@ def test_chart_legacy_points_validate_counts_and_split_unknown_inputs(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "outcome", ["race", "rejected", "identical", "no-chart", "nightly"]
+    "outcome", ["race", "rejected", "identical", "no-chart", "nightly", "backfill"]
 )
 def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
     monkeypatch, tmp_path, outcome
 ):
     module = _load_runner()
-    tier = "nightly" if outcome == "nightly" else "merge"
+    tier = (
+        "backfill"
+        if outcome == "backfill"
+        else "nightly" if outcome == "nightly" else "merge"
+    )
     _trusted_publication(monkeypatch, "schedule" if tier == "nightly" else "push")
+    if tier == "backfill":
+        monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+        monkeypatch.setattr(module, "is_ancestor", lambda *args: True)
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
     real_run = subprocess.run
 
@@ -5453,6 +6537,11 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
     )
     real_run(["git", "clone", str(remote), str(pages)], check=True, capture_output=True)
     _stock_chart_template(pages)
+    if tier == "backfill":
+        for name in ("performance/dart6-ir/data.js", "performance/guards/main.md"):
+            target = pages / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(b"preserve hosted evidence\n")
 
     def commit(directory):
         git(directory, "add", "performance")
@@ -5468,6 +6557,9 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
         )
 
     commit(pages)
+    if tier == "backfill":
+        git(pages, "config", "user.name", "Maintainer")
+        git(pages, "config", "user.email", "maintainer@example.com")
     git(pages, "push", "origin", "HEAD:gh-pages")
     real_run(
         ["git", "clone", str(remote), str(competitor)], check=True, capture_output=True
@@ -5475,6 +6567,13 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
     baseline = git(remote, "rev-parse", "gh-pages").stdout.strip()
     path = tmp_path / "record.json"
     fixture = _publication_fixture()
+    if tier == "backfill":
+        fixture["run"].update(harness_commit="f" * 40)
+        fixture["run"]["env"]["runner"] = {
+            "environment": "local",
+            "name": "local",
+            "image": "",
+        }
     if outcome == "no-chart":
         # Distinct timestamps write disjoint files, so Git could rebase cleanly
         # while preserving duplicate evidence for the same merge identity.
@@ -5488,7 +6587,7 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
             if tier == "nightly"
             else "2026-10-08T07:00:00+00:00"
         )
-    if outcome in ("race", "rejected"):
+    if outcome in ("race", "rejected", "backfill"):
         concurrent["run"]["commit"] = "c" * 40
         concurrent["run"]["env"]["fingerprint"] = "2" * 64
     if tier == "nightly":
@@ -5533,7 +6632,14 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
         not any("force" in argument for argument in command) for command in pushes
     )
     git(remote, "merge-base", "--is-ancestor", baseline, "gh-pages")
-    if tier == "nightly":
+    if tier == "backfill":
+        assert (
+            pages / "performance/dart6-ir/data.js"
+        ).read_bytes() == b"preserve hosted evidence\n"
+        assert (
+            pages / "performance/guards/main.md"
+        ).read_bytes() == b"preserve hosted evidence\n"
+    elif tier == "nightly":
         assert (pages / "performance/guards/main.md").read_text() == module.guard_table(
             concurrent
         )
@@ -5550,3 +6656,2586 @@ def test_publish_regenerates_after_rejection_without_losing_concurrent_evidence(
         1 if deduplicated else 2
     )
     assert module.publish(args) is False
+
+
+def _perf_git(directory, *arguments):
+    return subprocess.run(
+        ["git", "-C", str(directory), *arguments],
+        text=True,
+        capture_output=True,
+        check=True,
+    ).stdout.strip()
+
+
+def _perf_repository(directory):
+    directory.mkdir()
+    _perf_git(directory, "init", "--initial-branch=main")
+    _perf_git(directory, "config", "user.name", "test")
+    _perf_git(directory, "config", "user.email", "test@example.com")
+    return directory
+
+
+def _perf_commit(directory, path, content, subject):
+    target = directory / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content)
+    _perf_git(directory, "add", path)
+    _perf_git(directory, "commit", "-m", subject)
+    return _perf_git(directory, "rev-parse", "HEAD")
+
+
+def _measurement_fixture(module, commit, rows="s3w", environment="local"):
+    fixture = _publication_fixture()
+    fixture.pop("verdict")
+    fixture["run"].pop("parent")
+    fixture["run"].update(commit=commit, branch="main", harness_commit="f" * 40)
+    fixture["run"]["env"].update(
+        compiler="GNU 13.3.0",
+        compiler_provenance="dart-perf-build/1",
+        compiler_sha="1" * 64,
+        valgrind="valgrind-3.22.0",
+        valgrind_sha="2" * 64,
+        callgrind_sha="3" * 64,
+        glibc="glibc 2.39",
+        preset="perf-1",
+        valgrind_guest_cpu="test",
+        runner={"environment": environment, "name": "local", "image": ""},
+    )
+    metrics = copy.deepcopy(fixture["results"][0]["head"])
+    metrics.update(bytes_per_step=0, max_rss_kb=100)
+    fixture["results"] = []
+    for row in module.select_rows(rows):
+        result = module.row_result(row)
+        result.update(
+            status="ok",
+            gated=True,
+            method="slope",
+            input_sha="a" * 64,
+            head=copy.deepcopy(metrics),
+            perturbations={"start4k": {"stable": True}},
+        )
+        fixture["results"].append(result)
+    return fixture
+
+
+def test_backfill_plan_adds_measured_bases_and_previous_tags(monkeypatch, tmp_path):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    old = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.18.0</version></package>",
+        "Old release",
+    )
+    _perf_git(repo, "tag", "v6.18.0")
+    tag = _perf_commit(
+        repo, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(repo, "tag", "v6.19.0")
+    contact = _perf_commit(
+        repo, "examples/contact_benchmark/CMakeLists.txt", "driver", "Add driver"
+    )
+    _perf_commit(repo, "docs/readme.md", "docs", "Document driver")
+    head = _perf_commit(repo, "dart/dynamics/test.cpp", "first", "Change DART (#3229)")
+    cmake = _perf_commit(repo, "cmake/test.cmake", "settings", "Change build")
+    _perf_git(repo, "checkout", "-b", "topic")
+    _perf_commit(repo, "dart/dynamics/test.cpp", "second", "Change DART on topic")
+    _perf_git(repo, "checkout", "main")
+    _perf_commit(repo, "docs/readme.md", "more docs", "Document merge")
+    _perf_git(repo, "merge", "--no-ff", "topic", "-m", "Merge DART (#3300)")
+    merge = _perf_git(repo, "rev-parse", "HEAD")
+    docs = _perf_commit(repo, "docs/readme.md", "last docs", "Document result")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", docs)
+    monkeypatch.setattr(module, "ROOT", repo)
+    revisions = tmp_path / "revisions.txt"
+    revisions.write_text(f"# selected history\n{head}\n{docs}\n{merge}\nv6.19.0\n")
+    args = module.parser().parse_args(
+        ["backfill", "--revs", str(revisions), "--plan-only"]
+    )
+    plan = module.backfill_plan(args)
+    assert plan["revisions"] == [contact, head, cmake, merge, old, tag]
+    assert plan["skipped"] == [docs]
+    assert [(pair["commit"], pair["parent"]) for pair in plan["pairs"]] == [
+        (head, contact),
+        (merge, cmake),
+        (tag, old),
+    ]
+    assert plan["pairs"][-1]["tag"] == "v6.19.0"
+    assert plan["pairs"][-1]["base_tag"] == "v6.18.0"
+    revisions.write_text(tag + "\n")
+    with pytest.raises(ValueError, match="contact_benchmark"):
+        module.backfill_plan(args)
+
+
+@pytest.mark.parametrize(
+    "flag,unsupported", [("--generate-container", True), ("--quiet", False)]
+)
+def test_unknown_row_option_is_unsupported_only_for_row_flags(
+    monkeypatch, tmp_path, flag, unsupported
+):
+    module = _load_runner()
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir, args.source_dir = tmp_path, module.ROOT
+    output = f"Unknown option: {flag}\nUsage: driver\n"
+
+    def popen(command, **kwargs):
+        kwargs["stdout"].write(output)
+        return module.argparse.Namespace(returncode=1, wait=lambda **kwargs: None)
+
+    monkeypatch.setattr(module.subprocess, "Popen", popen)
+    monkeypatch.setattr(module, "environment", lambda *args: {})
+    monkeypatch.setattr(module, "perturb_environment", lambda *args: {})
+    row = module.select_rows("s1p")[0]
+    result = module.measure(row, args, tmp_path)
+    assert result["status"] == ("unsupported" if unsupported else "broken")
+    assert (result.get("error_kind") == "infrastructure") is not unsupported
+    if unsupported:
+        assert result["error"] == f"contact_benchmark lacks {flag}"
+    else:
+        assert "exit 1" in result["error"]
+    output += (
+        f"STEPALLOC steps={row.warmup + row.steps} measured={row.steps} allocs=0 bytes=0 libdart={tmp_path / 'libdart.so'}\n"
+        "PERFTIME maxrss_kb=100\nAvg Step Time: 1 ms\n"
+        "Final State Hash: 0x0123456789abcdef\nFinal State Finite: false\n"
+        "Final Contacts: 1\nFinal Contact Cap Hit: false\nFinal Resting: 0/1\n"
+    )
+    result = module.measure(row, args, tmp_path)
+    assert result["status"] == "broken"
+    assert "error_kind" not in result
+    assert result["error"] == "non-finite state"
+
+
+def test_records_carry_no_local_paths(monkeypatch, tmp_path):
+    module = _load_runner()
+    log = tmp_path / "logs/benchmark.log"
+    log.parent.mkdir()
+    with pytest.raises(ValueError) as failure:
+        module.execute(
+            [sys.executable, "-c", "raise SystemExit(1)"], dict(os.environ), log, 10
+        )
+    assert str(failure.value) == "exit 1: see benchmark.log"
+    source = tmp_path / "source"
+    atlas = source / "data/sdf/atlas"
+    atlas.mkdir(parents=True)
+    (atlas / "ground.urdf").write_text("<robot/>")
+    (atlas / "atlas_v3_no_head.sdf").write_text(
+        "<sdf><mesh><uri>../../../../outside.stl</uri></mesh></sdf>"
+    )
+    with pytest.raises(ValueError) as failure:
+        module.robot_data_paths(source)
+    assert "outside the revision" in str(failure.value)
+    assert str(source) not in str(failure.value)
+    assert module.LOCAL_PATH.search(str(failure.value)) is None
+    fixture = _publication_fixture()
+    fixture["run"]["accepted"] = [
+        f"Perf-Regression-Rationale: s3w/dart: inspect {tmp_path / 'dart/dynamics'}"
+    ]
+    fixture["results"][0]["head"]["libdart"] = str(tmp_path / "lib/libdart.so.6.20")
+    path = tmp_path / "record.json"
+    module.write_json(path, fixture)
+    published = module.publication_record(path, "merge")
+    assert published["results"][0]["head"]["libdart"] == "libdart.so.6.20"
+    assert module.find_local_path(published) is None
+    local_input = tmp_path / "data/input.sdf"
+    for reference in (str(local_input), local_input.as_uri()):
+        fixture["results"][0]["error"] = f"failed to read {reference}"
+        module.write_json(path, fixture)
+        with pytest.raises(ValueError, match=r"results\.0\.error"):
+            module.publication_record(path, "merge")
+    fixture["results"][0].pop("error")
+    fixture["results"][0]["head"][str(tmp_path / "secret/input")] = "hidden in a key"
+    module.write_json(path, fixture)
+    with pytest.raises(ValueError, match=r"results\.0\.head\.<key>") as failure:
+        module.publication_record(path, "merge")
+    assert str(tmp_path) not in str(failure.value)
+
+
+@pytest.mark.parametrize("in_key", [False, True])
+def test_local_path_scan_rejects_file_uris(tmp_path, in_key):
+    module = _load_runner()
+    uri = (tmp_path / "input.sdf").as_uri()
+    record = {"results": [{uri: "hidden in a key"} if in_key else {"error": uri}]}
+    assert module.find_local_path(record) == (
+        "results.0.<key>" if in_key else "results.0.error"
+    )
+
+
+@pytest.mark.parametrize("file_uri", [False, True])
+def test_robot_absolute_input_errors_remain_publishable(
+    monkeypatch, tmp_path, file_uri
+):
+    module = _load_runner()
+    source = tmp_path / "source"
+    atlas = source / "data/sdf/atlas"
+    atlas.mkdir(parents=True)
+    reference = str(tmp_path / "outside.stl")
+    if file_uri:
+        reference = "file://" + reference
+    (atlas / "ground.urdf").write_text("<robot/>")
+    (atlas / "atlas_v3_no_head.sdf").write_text(
+        f"<sdf><mesh><uri>{reference}</uri></mesh></sdf>"
+    )
+    args = module.parser().parse_args(
+        [
+            "run",
+            "--commit",
+            "HEAD",
+            "--prefix",
+            str(tmp_path),
+            "--source-dir",
+            str(source),
+            "--output-dir",
+            str(tmp_path),
+        ]
+    )
+    args.bin_dir = tmp_path
+    result = module.measure(module.select_rows("robot")[0], args, tmp_path)
+    assert result["status"] == "broken" and "error_kind" not in result
+    assert result["error"] == (
+        "robot/dart: failed to load revision inputs: "
+        "atlas_v3_no_head.sdf: outside.stl is outside the revision"
+    )
+    assert str(tmp_path) not in result["error"]
+    assert module.find_local_path(result) is None
+    base = _measurement_fixture(module, "b" * 40, "robot", "github-hosted")
+    head = copy.deepcopy(base)
+    head["run"]["commit"] = "a" * 40
+    head["results"] = [result]
+    record = module.compare(base, head)
+    path = tmp_path / "record.json"
+    module.write_json(path, record)
+    assert module.publication_record(path, "merge")["verdict"]["status"] == "FAIL"
+
+
+def _backfill_test_setup(monkeypatch, tmp_path):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        repo, "examples/contact_benchmark/CMakeLists.txt", "driver", "Add driver"
+    )
+    first = _perf_commit(repo, "dart/dynamics/test.cpp", "first", "Change DART (#3229)")
+    last = _perf_commit(repo, "dart/dynamics/test.cpp", "last", "Change DART (#3300)")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", last)
+    monkeypatch.setattr(module, "ROOT", repo)
+    revisions = tmp_path / "revisions.txt"
+    revisions.write_text(f"{first}\n{last}\n")
+    args = module.parser().parse_args(
+        [
+            "backfill",
+            "--revs",
+            str(revisions),
+            "--rows",
+            "s3w",
+            "--output-dir",
+            str(tmp_path / "output"),
+        ]
+    )
+    env = _measurement_fixture(module, base)["run"]["env"]
+    identity = {
+        **{
+            key: env[key]
+            for key in (
+                "valgrind",
+                "valgrind_sha",
+                "callgrind_sha",
+                "compiler_sha",
+                "glibc",
+            )
+        },
+        "harness_commit": last,
+        "rows": args.rows,
+        "glibc_sha": "4" * 64,
+    }
+    monkeypatch.setattr(module, "host_identity", lambda *args: copy.deepcopy(identity))
+    monkeypatch.setattr(module, "hosted_reference", lambda: copy.deepcopy(env))
+    monkeypatch.setattr(module, "build_shims", lambda *args: None)
+    builds, measurements = [], []
+
+    def build_arm(arm, revision, source, build, driver, prefix, drivers, log_prefix):
+        builds.append((revision, source, build, driver, prefix))
+        build.mkdir(parents=True, exist_ok=True)
+        driver.mkdir(parents=True, exist_ok=True)
+
+    def run_arm(arm):
+        measurements.append(arm.commit)
+        assert arm.source_dir == args.output_dir / "src"
+        assert arm.prefix == args.output_dir / "prefix"
+        assert not arm.base_arm
+        record = _measurement_fixture(module, arm.commit)
+        record["run"]["harness_commit"] = last
+        module.write_json(arm.output_dir / "record.json", record)
+        return record
+
+    monkeypatch.setattr(module, "build_arm", build_arm)
+    monkeypatch.setattr(module, "run_arm", run_arm)
+    return module, args, (base, first, last), identity, builds, measurements
+
+
+def test_backfill_reuses_tree_build_and_prefix_and_resumes(
+    monkeypatch, tmp_path, capsys
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    calls = []
+    real_git = module.backfill_git
+
+    def git(command):
+        calls.append(command)
+        return real_git(command)
+
+    monkeypatch.setattr(module, "backfill_git", git)
+    module.backfill(args)
+    assert measurements == list(revisions)
+    assert len(builds) == 3
+    assert len({tuple(str(path) for path in build[1:]) for build in builds}) == 1
+    assert sum("checkout" in command and "--force" in command for command in calls) == 3
+    assert sum("clean" in command for command in calls) == 3
+    assert sum("worktree" in command for command in calls) == 1
+    builds.clear()
+    measurements.clear()
+    calls.clear()
+    capsys.readouterr()
+    module.backfill(args)
+    assert builds == measurements == []
+    assert not any("checkout" in command or "clean" in command for command in calls)
+    assert capsys.readouterr().out.count("skip ") == 3
+    (args.output_dir / "runs" / revisions[-1] / "record.json").unlink()
+    module.backfill(args)
+    assert measurements == [revisions[-1]]
+    assert len(builds) == 1
+    assert not any("worktree" in command for command in calls)
+    (args.output_dir / "runs" / revisions[-1] / "record.json").unlink()
+    original = module.build_arm
+
+    def moved(*arguments):
+        original(*arguments)
+        _perf_git(args.output_dir / "src", "checkout", "--detach", revisions[0])
+
+    monkeypatch.setattr(module, "build_arm", moved)
+    with pytest.raises(ValueError, match="source tree moved"):
+        module.backfill(args)
+
+
+def test_install_targets_tracks_only_the_current_configured_install(tmp_path):
+    module = _load_runner()
+    reply = tmp_path / ".cmake/api/v1/reply"
+    reply.mkdir(parents=True)
+    for name, installed in (
+        ("dart", True),
+        ("dart-optimizer-ipopt", True),
+        ("UNIT_dynamics", False),
+        ("contact_benchmark", False),
+    ):
+        target = {"name": name}
+        if installed:
+            target["install"] = {"destinations": [{"path": "lib"}]}
+        module.write_json(reply / f"{name}.json", target)
+    for date, names in (
+        ("2000-01-01", ["dart", "dart-optimizer-ipopt"]),
+        ("2000-01-02", ["dart", "UNIT_dynamics", "contact_benchmark"]),
+    ):
+        module.write_json(
+            reply / f"index-{date}.json",
+            {"reply": {"codemodel-v2": {"jsonFile": f"model-{date}.json"}}},
+        )
+        module.write_json(
+            reply / f"model-{date}.json",
+            {
+                "configurations": [
+                    {"targets": [{"jsonFile": f"{name}.json"} for name in names]}
+                ]
+            },
+        )
+        assert module.install_targets(tmp_path) == sorted(
+            name for name in names if name.startswith("dart")
+        )
+    (reply / "dart.json").unlink()
+    with pytest.raises(ValueError, match="cannot read install targets") as error:
+        module.install_targets(tmp_path)
+    assert str(tmp_path) not in str(error.value)
+
+
+def test_build_arm_uses_fresh_caches_and_empties_install_prefix(monkeypatch, tmp_path):
+    module = _load_runner()
+    root = tmp_path / "harness"
+    root.mkdir()
+    (root / "pixi.lock").write_text("lock")
+    monkeypatch.setattr(module, "ROOT", root)
+    monkeypatch.setenv("CONDA_PREFIX", str(tmp_path / "dependencies"))
+    args = module.parser().parse_args(
+        ["local", "--rows", "gzb", "--output-dir", str(tmp_path)]
+    )
+    source, build, driver, prefix = (
+        tmp_path / name for name in ("src", "build", "driver", "prefix")
+    )
+    (source / "data").mkdir(parents=True)
+    configurations, installs = [], []
+    monkeypatch.setattr(module, "workload_hashes", lambda *args: {})
+    monkeypatch.setattr(
+        module,
+        "cmake_compiler",
+        lambda *args: {"compiler": "GNU 13.3.0", "compiler_sha": "1" * 64},
+    )
+    monkeypatch.setattr(module, "library_hashes", lambda *args: {})
+    monkeypatch.setattr(
+        module, "install_targets", lambda *args: ["dart-optimizer-ipopt"]
+    )
+
+    def execute(command, env, log, timeout, **kwargs):
+        assert kwargs["build"]
+        if command[:3] == ["cmake", "-G", "Ninja"]:
+            assert "--fresh" in command
+            assert "-DCMAKE_SKIP_RPATH=ON" in command
+            configured = Path(command[command.index("-B") + 1])
+            if configured.resolve() == build:
+                assert (build / ".cmake/api/v1/query/codemodel-v2").is_file()
+                assert not any("IPOPT" in option.upper() for option in command)
+            configured.mkdir(exist_ok=True)
+            configurations.append(configured.resolve())
+        elif command[:2] == ["cmake", "--build"]:
+            if Path(command[2]).resolve() == driver:
+                (driver / "portable_step_bench").write_bytes(b"driver")
+            else:
+                assert "dart-optimizer-ipopt" in command
+                assert "all" not in command
+        elif command[:2] == ["cmake", "--install"]:
+            staged_prefix = Path(command[command.index("--prefix") + 1])
+            assert staged_prefix == module.MEASUREMENT_ROOT / "arm/prefix"
+            assert not staged_prefix.exists()
+            installs.append(command)
+            (staged_prefix / "lib").mkdir(parents=True)
+            (staged_prefix / "lib/libdart.so").write_bytes(b"library")
+            module.shutil.copytree(
+                source / "data", staged_prefix / "share/doc/dart/data"
+            )
+        return ""
+
+    monkeypatch.setattr(module, "execute", execute)
+    for revision in ("a" * 40, "b" * 40):
+        module.build_arm(
+            args, revision, source, build, driver, prefix, [], tmp_path / "arm"
+        )
+        (build / "object.o").write_bytes(b"reused")
+        (prefix / "lib/stale.so").write_bytes(b"stale")
+    assert configurations == [build, driver, build, driver]
+    assert len(installs) == 2
+    assert (build / "object.o").read_bytes() == b"reused"
+    assert (
+        json.loads((prefix / "share/dart/perf-build.json").read_text())["commit"]
+        == "b" * 40
+    )
+
+
+@pytest.mark.parametrize("failure", ["retry-build", "build", "infrastructure", "value"])
+def test_backfill_build_failures_retry_clean_then_record(
+    monkeypatch, tmp_path, failure
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    original_build, original_measure = module.build_arm, module.run_arm
+    attempts = []
+    target = revisions[1] if failure == "retry-build" else revisions[0]
+
+    def build(*arguments):
+        revision, build, driver = arguments[1], arguments[3], arguments[4]
+        if revision == target:
+            attempt = attempts.count(revision) + 1
+            attempts.append(revision)
+            if attempt == 1:
+                build.mkdir(parents=True, exist_ok=True)
+                driver.mkdir(parents=True, exist_ok=True)
+                (build / "object.o").write_bytes(b"stale")
+            elif failure in ("build", "retry-build"):
+                assert not build.exists() and not driver.exists()
+            if failure == "value":
+                raise ValueError("runner timeout")
+            if failure == "build" or failure == "retry-build" and attempt == 1:
+                raise module.BuildFailure("exit 1: see arm.build.log")
+        return original_build(*arguments)
+
+    def measure(arm):
+        record = original_measure(arm)
+        if failure == "infrastructure" and arm.commit == target:
+            record["results"][0].update(
+                status="broken", error_kind="infrastructure", error="runner timeout"
+            )
+            module.write_json(arm.output_dir / "record.json", record)
+        return record
+
+    monkeypatch.setattr(module, "build_arm", build)
+    monkeypatch.setattr(module, "run_arm", measure)
+    if failure in ("value", "infrastructure"):
+        with pytest.raises(ValueError, match="timeout|infrastructure"):
+            module.backfill(args)
+        assert revisions[1] not in measurements
+        assert len(attempts) == 2
+    else:
+        module.backfill(args)
+        assert revisions[-1] in measurements
+        assert len(attempts) == 2
+    directory = args.output_dir / "runs" / target
+    assert (directory / "build-failure.json").exists() == (failure == "build")
+    if failure == "build":
+        marker = json.loads((directory / "build-failure.json").read_text())
+        assert (
+            marker["commit"] == target
+            and marker["identity"] == identity
+            and marker["error_kind"] == "build"
+            and marker["time"]
+        )
+    assert (directory / "record.infrastructure.json").exists() == (
+        failure == "infrastructure"
+    )
+    if failure == "infrastructure":
+        assert not (directory / "record.json").exists()
+
+
+@pytest.mark.parametrize("marker_identity", ["matching", "missing", "changed"])
+def test_backfill_reuses_build_failures_only_with_the_same_identity(
+    monkeypatch, tmp_path, marker_identity
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    original = module.build_arm
+
+    def build(*arguments):
+        if arguments[1] == revisions[0]:
+            raise module.BuildFailure("exit 1: see arm.build.log")
+        return original(*arguments)
+
+    monkeypatch.setattr(module, "build_arm", build)
+    module.backfill(args)
+    marker_path = args.output_dir / "runs" / revisions[0] / "build-failure.json"
+    marker = json.loads(marker_path.read_text())
+    if marker_identity == "missing":
+        marker.pop("identity", None)
+        module.write_json(marker_path, marker)
+    elif marker_identity == "changed":
+        identity["glibc_sha"] = "5" * 64
+        (args.output_dir / "run.json").unlink()
+    monkeypatch.setattr(module, "build_arm", original)
+    builds.clear()
+    measurements.clear()
+    module.backfill(args)
+    if marker_identity == "matching":
+        assert not builds and not measurements and marker_path.exists()
+    else:
+        assert revisions[0] in measurements and builds[0][0] == revisions[0]
+        assert not marker_path.exists()
+
+
+def test_backfill_preserves_all_failed_builds_without_inventing_an_environment(
+    monkeypatch, tmp_path
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    attempts = []
+
+    def build(*arguments):
+        attempts.append(arguments[1])
+        raise module.BuildFailure("exit 1: see arm.build.log")
+
+    monkeypatch.setattr(module, "build_arm", build)
+    with pytest.raises(ValueError, match="no measured arm"):
+        module.backfill(args)
+    assert not measurements and attempts == [
+        revision for revision in revisions for _ in range(2)
+    ]
+    assert all(
+        (args.output_dir / "runs" / revision / "build-failure.json").exists()
+        for revision in revisions
+    )
+    assert not (args.output_dir / "records").exists()
+
+
+@pytest.mark.parametrize("first_failure", ["value", "infrastructure"])
+def test_backfill_does_not_record_an_unclean_build_failure_after_infrastructure(
+    monkeypatch, tmp_path, first_failure
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    original_build, original_measure = module.build_arm, module.run_arm
+    attempts = []
+
+    def build(*arguments):
+        attempts.append(arguments[1])
+        if len(attempts) == 1:
+            if first_failure == "value":
+                raise ValueError("runner timeout")
+            return original_build(*arguments)
+        raise module.BuildFailure("exit 1: see arm.build.log")
+
+    def measure(arm):
+        record = original_measure(arm)
+        record["results"][0].update(
+            status="broken", error_kind="infrastructure", error="runner timeout"
+        )
+        module.write_json(arm.output_dir / "record.json", record)
+        return record
+
+    monkeypatch.setattr(module, "build_arm", build)
+    monkeypatch.setattr(module, "run_arm", measure)
+    with pytest.raises(ValueError):
+        module.backfill(args)
+    assert attempts == [revisions[0], revisions[0]]
+    assert not (args.output_dir / "runs" / revisions[0] / "build-failure.json").exists()
+    assert revisions[1] not in measurements
+
+
+def test_backfill_refuses_a_source_move_even_when_building_fails(monkeypatch, tmp_path):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    attempts = []
+
+    def build(*arguments):
+        attempts.append(arguments[1])
+        _perf_git(args.output_dir / "src", "checkout", "--detach", revisions[-1])
+        raise module.BuildFailure("exit 1: see arm.build.log")
+
+    monkeypatch.setattr(module, "build_arm", build)
+    with pytest.raises(ValueError, match="source tree moved"):
+        module.backfill(args)
+    assert attempts == [revisions[0]] and not measurements
+    assert not (args.output_dir / "runs" / revisions[0] / "build-failure.json").exists()
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "run-array",
+        "marker-array",
+        "wrong-commit",
+        "wrong-fingerprint",
+        "infrastructure",
+    ],
+)
+def test_backfill_redoes_malformed_or_incomplete_resume_records(
+    monkeypatch, tmp_path, defect
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    module.backfill(args)
+    target = args.output_dir / "runs" / revisions[1]
+    record = json.loads((target / "record.json").read_text())
+    if defect == "run-array":
+        record["run"] = []
+    elif defect == "marker-array":
+        (target / "record.json").unlink()
+        module.write_json(target / "build-failure.json", [])
+    elif defect == "wrong-commit":
+        record["run"]["commit"] = revisions[0]
+    elif defect == "wrong-fingerprint":
+        record["run"]["env"]["fingerprint"] = "different"
+    else:
+        record["results"][0].update(
+            status="broken", error_kind="infrastructure", error="runner timeout"
+        )
+    if defect != "marker-array":
+        module.write_json(target / "record.json", record)
+    builds.clear()
+    measurements.clear()
+    module.backfill(args)
+    assert measurements == [revisions[1]] and len(builds) == 1
+    assert not (target / "build-failure.json").exists()
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "reference",
+        "resume",
+        "fingerprint",
+        "lock",
+        "dirty",
+        "ignored",
+        "guest",
+        "during",
+    ],
+)
+def test_backfill_refuses_drift_concurrency_and_dirty_harness(
+    monkeypatch, tmp_path, defect
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    lock = None
+    if defect == "reference":
+        hosted = module.hosted_reference()
+        hosted["valgrind_sha"] = "5" * 64
+        monkeypatch.setattr(module, "hosted_reference", lambda: hosted)
+    elif defect == "resume":
+        module.backfill(args)
+        identity["glibc_sha"] = "5" * 64
+        builds.clear()
+    elif defect == "fingerprint" or defect == "guest":
+        original = module.run_arm
+
+        def measure(arm):
+            record = original(arm)
+            if defect == "guest" or arm.commit == revisions[1]:
+                record["run"]["env"][
+                    "valgrind_guest_cpu" if defect == "guest" else "fingerprint"
+                ] = "different"
+                module.write_json(arm.output_dir / "record.json", record)
+            return record
+
+        monkeypatch.setattr(module, "run_arm", measure)
+    elif defect == "lock":
+        args.output_dir.mkdir()
+        lock = (args.output_dir / ".lock").open("a")
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    elif defect in ("dirty", "ignored"):
+        target = module.ROOT / "tools/perf/untracked.txt"
+        target.parent.mkdir(parents=True)
+        target.write_text("dirty")
+        if defect == "ignored":
+            (module.ROOT / ".gitignore").write_text("tools/perf/untracked.txt\n")
+    elif defect == "during":
+        original = module.build_arm
+
+        def build(*arguments):
+            original(*arguments)
+            identity["glibc_sha"] = "5" * 64
+
+        monkeypatch.setattr(module, "build_arm", build)
+    try:
+        with pytest.raises(
+            ValueError, match="reference|identity|fingerprint|lock|dirty"
+        ):
+            module.backfill(args)
+    finally:
+        if lock:
+            lock.close()
+    if defect in ("reference", "lock", "dirty", "ignored"):
+        assert not (args.output_dir / "build").exists()
+        assert not builds
+    if defect == "resume":
+        assert not builds
+    if defect in ("fingerprint", "guest", "during"):
+        revision = revisions[1] if defect == "fingerprint" else revisions[0]
+        directory = args.output_dir / "runs" / revision
+        assert (directory / "record.drift.json").is_file()
+        assert not (directory / "record.json").exists()
+    with pytest.raises(SystemExit):
+        module.parser().parse_args(["backfill", "--revs", str(args.revs), "--nightly"])
+
+
+def test_backfill_plan_only_needs_no_build_or_host_gate(monkeypatch, tmp_path, capsys):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    monkeypatch.setattr(
+        module,
+        "host_identity",
+        lambda *args: pytest.fail("planning used the host gate"),
+    )
+    monkeypatch.setattr(
+        module, "build_shims", lambda *args: pytest.fail("planning built shims")
+    )
+    assert (
+        module.main(
+            [
+                "backfill",
+                "--revs",
+                str(args.revs),
+                "--plan-only",
+                "--output-dir",
+                str(args.output_dir),
+            ]
+        )
+        == 0
+    )
+    assert not args.output_dir.exists() and not builds and not measurements
+    output = capsys.readouterr().out
+    assert revisions[0] in output and revisions[-1] in output
+
+
+@pytest.mark.parametrize("plan_only", [False, True])
+def test_backfill_validates_rows_before_writing_state(
+    monkeypatch, tmp_path, capsys, plan_only
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    argv = [
+        "backfill",
+        "--revs",
+        str(args.revs),
+        "--rows",
+        "s3w,unknown",
+        "--output-dir",
+        str(args.output_dir),
+    ]
+    if plan_only:
+        argv.append("--plan-only")
+    assert module.main(argv) == 2
+    assert "unknown row unknown" in capsys.readouterr().err
+    assert not args.output_dir.exists() and not builds and not measurements
+
+
+@pytest.mark.parametrize("outcome", [0, 1, KeyboardInterrupt, SystemExit])
+def test_backfill_git_checks_exit_and_terminates_before_reraising(monkeypatch, outcome):
+    module = _load_runner()
+    command = ["git", "checkout", "--detach", "HEAD"]
+    events = []
+
+    class Process:
+        def wait(self):
+            events.append("wait")
+            if len(events) == 1 and isinstance(outcome, type):
+                raise outcome()
+            return outcome if isinstance(outcome, int) else -signal.SIGTERM
+
+        def terminate(self):
+            events.append("SIGTERM")
+
+    def popen(arguments, **kwargs):
+        assert arguments == command and kwargs == {"cwd": module.ROOT}
+        return Process()
+
+    monkeypatch.setattr(module.subprocess, "Popen", popen)
+    if isinstance(outcome, type):
+        with pytest.raises(outcome):
+            module.backfill_git(command)
+        assert events == ["wait", "SIGTERM", "wait"]
+    elif outcome:
+        with pytest.raises(subprocess.CalledProcessError) as raised:
+            module.backfill_git(command)
+        assert raised.value.returncode == outcome and raised.value.cmd == command
+        assert events == ["wait"]
+    else:
+        module.backfill_git(command)
+        assert events == ["wait"]
+
+
+@pytest.mark.parametrize("source_kind", ["directory", "symlink"])
+def test_backfill_requires_its_dedicated_source_worktree(
+    monkeypatch, tmp_path, source_kind
+):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    args.output_dir.mkdir()
+    source = args.output_dir / "src"
+    if source_kind == "symlink":
+        source.symlink_to(module.ROOT, target_is_directory=True)
+    else:
+        source.mkdir()
+    preserved = module.ROOT / "docs/untracked.txt"
+    preserved.parent.mkdir(exist_ok=True)
+    preserved.write_text("preserve this file")
+    before = _perf_git(module.ROOT, "rev-parse", "HEAD")
+    with pytest.raises(ValueError, match="worktree|source"):
+        module.backfill(args)
+    assert not builds and not measurements
+    assert _perf_git(module.ROOT, "rev-parse", "HEAD") == before
+    assert preserved.read_text() == "preserve this file"
+
+
+@pytest.mark.parametrize(
+    "ignored",
+    [(), (signal.SIGTERM,), (signal.SIGHUP,), (signal.SIGTERM, signal.SIGHUP)],
+)
+def test_main_maps_termination_and_hangup_to_interrupt(monkeypatch, ignored):
+    module = _load_runner()
+    dispositions = {
+        number: signal.SIG_IGN if number in ignored else signal.SIG_DFL
+        for number in (signal.SIGTERM, signal.SIGHUP)
+    }
+    monkeypatch.setattr(module.signal, "getsignal", dispositions.__getitem__)
+    monkeypatch.setattr(
+        module.signal,
+        "signal",
+        dispositions.__setitem__,
+    )
+    with pytest.raises(SystemExit):
+        module.main(["--help"])
+    for number in (signal.SIGTERM, signal.SIGHUP):
+        if number in ignored:
+            assert dispositions[number] is signal.SIG_IGN
+            continue
+        with pytest.raises(KeyboardInterrupt):
+            dispositions[number](number, None)
+
+
+def test_write_json_preserves_the_previous_record_until_atomic_replace(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    path = tmp_path / "record.json"
+    module.write_json(path, {"complete": "before"})
+    previous = path.read_bytes()
+
+    def interrupt(source, destination):
+        assert json.loads(Path(source).read_text()) == {"complete": "after"}
+        assert Path(destination) == path and path.read_bytes() == previous
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(module.os, "replace", interrupt)
+    with pytest.raises(KeyboardInterrupt):
+        module.write_json(path, {"complete": "after"})
+    assert path.read_bytes() == previous
+
+
+def test_backfill_records_pair_bases_and_cover_build_failures(monkeypatch, tmp_path):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    recovered = _perf_commit(
+        module.ROOT, "dart/dynamics/test.cpp", "recovered", "Recover build (#3301)"
+    )
+    base, failed, both = revisions
+    all_revisions = [*revisions, recovered]
+    plan = {
+        "revisions": all_revisions,
+        "pairs": [
+            {
+                "commit": head,
+                "parent": parent,
+                "branch": "main",
+                "tag": None,
+                "base_tag": None,
+            }
+            for parent, head in zip(all_revisions, all_revisions[1:])
+        ]
+        + [
+            {
+                "commit": recovered,
+                "parent": base,
+                "branch": "release-6.19",
+                "tag": "v6.19.5",
+                "base_tag": "v6.19.4",
+            }
+        ],
+        "skipped": [],
+    }
+    for revision in (base, recovered):
+        record = _measurement_fixture(module, revision, "s3w,S6")
+        module.write_json(args.output_dir / "runs" / revision / "record.json", record)
+    for revision in (failed, both):
+        module.write_json(
+            args.output_dir / "runs" / revision / "build-failure.json",
+            {
+                "commit": revision,
+                "error": "exit 1: see arm.build.log",
+                "error_kind": "build",
+                "time": "2026-10-08T09:00:00Z",
+            },
+        )
+    stale = args.output_dir / "records/main/stale.json"
+    module.write_json(stale, {})
+    records = module.backfill_records(
+        args, plan, {"identity": identity, "fingerprint": "1" * 64}
+    )
+    assert not stale.exists()
+    assert len(records) == 4
+    for record, pair in zip(records, plan["pairs"]):
+        assert record["run"]["parent"] == pair["parent"]
+        assert record["run"]["harness_commit"] == identity["harness_commit"]
+        assert record["run"]["accepted"] == []
+        assert {module.row_key(row) for row in record["results"]} == {
+            "s3w/dart",
+            "s3w/ode",
+        }
+        assert not record["verdict"]["warnings"]
+        assert all(
+            row["wall_ms_per_step"] == {"parent": None, "head": None, "advisory": True}
+            for row in record["results"]
+        )
+        assert all(
+            "max_rss_kb" not in row[arm]
+            for row in record["results"]
+            for arm in ("parent", "head")
+        )
+    head_failed, both_failed, base_failed, release = records
+    assert [record["verdict"]["status"] for record in records] == [
+        "FAIL",
+        "FAIL",
+        "FAIL",
+        "PASS",
+    ]
+    assert head_failed["run"]["tier"] == "backfill" and head_failed["run"]["pr"] == 3229
+    assert all(
+        row["error_kind"] == "build" and row["parent"] for row in head_failed["results"]
+    )
+    assert all(
+        row["error_kind"] == "build" and not row["parent"]
+        for row in both_failed["results"]
+    )
+    assert all(
+        "missing or failed base measurement" in row["failures"]
+        for row in base_failed["results"]
+    )
+    assert release["run"]["tier"] == "release" and release["run"]["pr"] is None
+    assert (
+        release["run"]["tag"],
+        release["run"]["base_tag"],
+        release["run"]["branch"],
+    ) == ("v6.19.5", "v6.19.4", "release-6.19")
+    assert (args.output_dir / "records/releases/v6.19.5.json").is_file()
+    narrowed = {"revisions": [failed, both], "pairs": [plan["pairs"][1]], "skipped": []}
+    records = module.backfill_records(
+        args, narrowed, {"identity": identity, "fingerprint": "1" * 64}
+    )
+    assert len(records) == 1 and records[0]["verdict"]["status"] == "FAIL"
+    assert records[0]["run"]["env"]["fingerprint"] == "1" * 64
+    assert not (args.output_dir / "records/releases/v6.19.5.json").exists()
+
+
+def test_release_scope_derives_and_refuses(monkeypatch, tmp_path):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+
+    def version(value, subject):
+        return _perf_commit(
+            repo,
+            "package.xml",
+            f"<package><version>{value}</version></package>",
+            subject,
+        )
+
+    old = version("6.18.0", "Old release")
+    _perf_git(repo, "tag", "v6.18.0")
+    first = version("6.19.0", "Release")
+    _perf_git(repo, "tag", "v6.19.0")
+    shared = version("6.19.1", "First patch")
+    _perf_git(repo, "tag", "v6.19.1")
+    _perf_git(repo, "checkout", "-b", "release-6.19")
+    patch = version("6.19.2", "Second patch")
+    _perf_git(repo, "tag", "v6.19.2")
+    latest = version("6.19.3", "Third patch")
+    _perf_git(repo, "tag", "v6.19.3")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/release-6.19", latest)
+    _perf_git(repo, "checkout", "main")
+    version("6.20.0", "Next release candidate")
+    _perf_git(
+        repo,
+        "merge",
+        "--no-ff",
+        "-s",
+        "ours",
+        "release-6.19",
+        "-m",
+        "Merge release maintenance",
+    )
+    candidate = _perf_commit(repo, "docs/readme.md", "candidate", "Document candidate")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", candidate)
+    _perf_git(repo, "checkout", "-b", "topic")
+    off_branch = version("6.21.0", "Off-branch candidate")
+    for name in ("ci/release-6.21-publish-wheels", "release/6.21.0-version-bump"):
+        _perf_git(repo, "update-ref", f"refs/remotes/origin/{name}", off_branch)
+    monkeypatch.setattr(module, "ROOT", repo)
+    assert module.release_scope(None, "v6.19.0", None) == {
+        "head": first,
+        "tag": "v6.19.0",
+        "base_tag": "v6.18.0",
+        "base": old,
+        "branch": "main",
+    }
+    assert module.release_scope(shared, None, None)["branch"] == "main"
+    assert module.release_scope(None, "v6.19.2", None) == {
+        "head": patch,
+        "tag": "v6.19.2",
+        "base_tag": "v6.19.1",
+        "base": shared,
+        "branch": "release-6.19",
+    }
+    assert module.release_scope(candidate, None, None)["base_tag"] == "v6.19.3"
+    assert module.release_scope(candidate, None, "v6.19.0")["base"] == first
+    refusals = [
+        (None, "v7.0.0", None),
+        (None, "v6.20.0", None),
+        (patch, "v6.19.3", None),
+        (off_branch, None, None),
+        (candidate, "v6.19.3", None),
+        (patch, "v6.19.2", "v6.19.3"),
+        (candidate, "v6.20.1", None),
+    ]
+    same_version = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.19.3</version></package>",
+        "Move candidate",
+    )
+    refusals.append((same_version, "v6.19.3", None))
+    for request in refusals:
+        with pytest.raises(ValueError):
+            module.release_scope(*request)
+
+
+@pytest.mark.parametrize(
+    "tier,environment",
+    [
+        ("merge", "local"),
+        ("nightly", "local"),
+        ("release", "local"),
+        ("backfill", "github-hosted"),
+    ],
+)
+def test_publication_tiers_refuse_mismatched_measurement_runner(
+    monkeypatch, tmp_path, tier, environment
+):
+    module = _load_runner()
+    fixture = _publication_fixture()
+    fixture["run"]["env"]["runner"]["environment"] = environment
+    path = tmp_path / "record.json"
+    module.write_json(path, fixture)
+    with pytest.raises(ValueError, match="measurement runner"):
+        module.publication_record(
+            path,
+            tier,
+            tag="v6.20.0" if tier == "release" else None,
+            base_tag="v6.19.5" if tier == "release" else None,
+        )
+
+
+def test_backfill_publication_refuses_ci_off_main_harness_and_mixed_fingerprints(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    monkeypatch.setenv("GITHUB_ACTIONS", "false")
+    with pytest.raises(ValueError, match="GitHub Actions"):
+        module.publication_guard("backfill")
+    monkeypatch.delenv("GITHUB_ACTIONS")
+    module.publication_guard("backfill")
+    fixture = _publication_fixture()
+    fixture["run"].update(tier="backfill", harness_commit="f" * 40)
+    fixture["run"]["env"]["runner"] = {
+        "environment": "local",
+        "name": "local",
+        "image": "",
+    }
+    first, second = (tmp_path / name for name in ("first.json", "second.json"))
+    module.write_json(first, fixture)
+    monkeypatch.setattr(module, "is_ancestor", lambda base, head: base != "f" * 40)
+    with pytest.raises(ValueError, match="harness commit must be on main"):
+        module.publication_record(first, "backfill")
+    monkeypatch.setattr(module, "is_ancestor", lambda base, head: base != "a" * 40)
+    with pytest.raises(ValueError, match="backfill commit must be on main"):
+        module.publication_record(first, "backfill")
+    monkeypatch.setattr(module, "is_ancestor", lambda *args: True)
+    fixture["run"]["env"]["fingerprint"] = "2" * 64
+    module.write_json(second, fixture)
+    monkeypatch.setattr(
+        module.subprocess,
+        "run",
+        lambda *args, **kwargs: pytest.fail("invalid records reached git"),
+    )
+    args = module.parser().parse_args(
+        [
+            "publish",
+            "--tier",
+            "backfill",
+            "--record",
+            str(first),
+            str(second),
+            "--pages-dir",
+            str(tmp_path / "pages"),
+        ]
+    )
+    with pytest.raises(ValueError, match="fingerprint"):
+        module.publish(args)
+
+
+@pytest.mark.parametrize("defect", ["base", "branch", "tag", "base-tag"])
+def test_publication_rejects_release_scope_mismatch(monkeypatch, tmp_path, defect):
+    module = _load_runner()
+    fixture = _publication_fixture()
+    fixture["run"].update(
+        tier="release",
+        branch="release-6.19",
+        tag="v6.19.5",
+        base_tag="v6.19.4",
+        harness_commit="f" * 40,
+    )
+    fixture["run"]["env"]["runner"]["environment"] = "local"
+    monkeypatch.setattr(module, "is_ancestor", lambda *args: True)
+    scope = {
+        "head": "a" * 40,
+        "base": "b" * 40,
+        "branch": "release-6.19",
+        "tag": "v6.19.5",
+        "base_tag": "v6.19.4",
+    }
+    if defect == "base":
+        scope["base"] = "c" * 40
+    elif defect == "branch":
+        scope["branch"] = "main"
+    else:
+        fixture["run"].pop("tag" if defect == "tag" else "base_tag")
+    monkeypatch.setattr(module, "release_scope", lambda *args: scope)
+    path = tmp_path / "record.json"
+    module.write_json(path, fixture)
+    with pytest.raises(ValueError, match="scope|requires tag"):
+        module.publication_record(path, "backfill")
+
+
+def test_backfill_publication_accepts_only_valid_release_branch_tags(
+    monkeypatch, tmp_path
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.19.1</version></package>",
+        "Prepare patch release",
+    )
+    _perf_git(repo, "tag", "v6.19.1")
+    _perf_git(repo, "checkout", "-b", "release-6.19")
+    tagged = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.19.2</version></package>",
+        "Prepare next patch release",
+    )
+    _perf_git(repo, "tag", "v6.19.2")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/release-6.19", tagged)
+    _perf_git(repo, "checkout", "main")
+    harness = _perf_commit(repo, "docs/readme.md", "harness", "Update harness")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", harness)
+    monkeypatch.setattr(module, "ROOT", repo)
+    assert not module.is_ancestor(tagged, "origin/main")
+    record = _comparison_fixture(module, base, tagged, tier="release")
+    record["run"].update(
+        tag="v6.19.2",
+        base_tag="v6.19.1",
+        branch="release-6.19",
+        harness_commit=harness,
+        pr=None,
+    )
+    path = tmp_path / "record.json"
+    module.write_json(path, record)
+    published = module.publication_record(path, "backfill")
+    assert published["run"]["commit"] == tagged
+    assert published["run"]["tier"] == "release"
+    assert published["run"]["branch"] == "release-6.19"
+    for key, value, message in (
+        ("tier", "backfill", "backfill commit must be on main"),
+        ("harness_commit", tagged, "harness commit must be on main"),
+        ("branch", "main", "scope differs from measurement"),
+    ):
+        invalid = copy.deepcopy(record)
+        invalid["run"][key] = value
+        module.write_json(path, invalid)
+        with pytest.raises(ValueError, match=message):
+            module.publication_record(path, "backfill")
+    _perf_git(repo, "tag", "--force", "v6.19.2", base)
+    module.write_json(path, record)
+    with pytest.raises(ValueError, match="tag does not name the candidate commit"):
+        module.publication_record(path, "backfill")
+
+
+def _comparison_fixture(
+    module, parent, commit, *, tier="backfill", rows="gzb", change=None, body=""
+):
+    base = _measurement_fixture(module, parent, rows)
+    head = _measurement_fixture(module, commit, rows)
+    if change:
+        change(base["results"][0], head["results"][0])
+    record = module.compare(base, head, body)
+    record["run"].update(tier=tier, parent=parent, branch="main", pr=3300)
+    return record
+
+
+@pytest.mark.parametrize(
+    "path,group",
+    [
+        ("dart/collision/dart/test.cpp", "collision/dart"),
+        ("dart/collision/fcl/test.cpp", "collision/fcl"),
+        ("dart/collision/bullet/test.cpp", "collision/bullet"),
+        ("dart/collision/ode/test.cpp", "collision/ode"),
+        ("dart/collision/detail/test.hpp", "collision/other"),
+        ("dart/collision/shared.cpp", "collision/other"),
+        ("dart/collision/unknown/test.cpp", "collision/other"),
+        ("dart/CMakeLists.txt", "cmake"),
+        ("dart/dynamics/CMakeLists.txt", "cmake"),
+        ("CMakeLists.txt", "cmake"),
+        ("cmake/nested/test.cmake", "cmake"),
+        ("dart/config.hpp", "dart/other"),
+        ("dart/dynamics/test.cpp", "dynamics"),
+    ],
+)
+def test_ledger_groups_paths_by_detector_module_and_build(
+    monkeypatch, tmp_path, path, group
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    parent = _perf_commit(repo, "dart/dynamics/base.cpp", "base", "Start history")
+    commit = _perf_commit(repo, path, "change", "Update component")
+    monkeypatch.setattr(module, "ROOT", repo)
+    record = _comparison_fixture(module, parent, commit)
+    report = module.ledger_entries({commit: record}, parent, commit)
+    assert report["entries"][0]["groups"] == [group]
+
+
+@pytest.mark.parametrize("tier", ["merge", "backfill"])
+def test_ledger_and_release_cover_comparison_span(monkeypatch, tmp_path, tier):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    since = _perf_commit(repo, "dart/dynamics/test.cpp", "start", "Start history")
+    before = _perf_commit(
+        repo, "dart/dynamics/before.cpp", "before", "Change before comparison"
+    )
+    parent = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Comparison base")
+    first = _perf_commit(repo, "dart/dynamics/test.cpp", "first", "First PR change")
+    _perf_commit(repo, "docs/readme.md", "docs", "Document PR")
+    second = _perf_commit(
+        repo, "dart/collision/ode/test.cpp", "second", "Second PR change"
+    )
+    head = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Final PR change")
+    after = _perf_commit(
+        repo, "dart/dynamics/after.cpp", "after", "Change after comparison"
+    )
+    until = _perf_commit(repo, "docs/readme.md", "more docs", "Document history")
+    monkeypatch.setattr(module, "ROOT", repo)
+    pages = tmp_path / "pages"
+    history = _comparison_fixture(module, parent, head, tier=tier)
+    directory = pages / "performance/records/main"
+    module.write_json(directory / f"history-{tier}.json", history)
+    records = module.load_records(directory)
+    report = module.ledger_entries(records, since, until)
+    assert report["missing"] == [before, parent, after]
+    assert [entry["commit"] for entry in report["entries"]] == [head]
+    assert report["headline"]["n"] == 1
+    assert report["entries"][0]["groups"] == ["collision/ode"]
+    assert module.ledger_entries(records, since, second)["missing"] == [
+        before,
+        parent,
+        first,
+        second,
+    ]
+
+    release = _comparison_fixture(module, since, until, tier="release")
+    release["run"].update(tag="v6.20.0", base_tag="v6.19.0", pr=None)
+    module.write_release(pages, release)
+    saved = json.loads((pages / "performance/releases/v6.20.0.json").read_text())
+    assert saved["ledger"]["missing"] == [before, parent, after]
+
+
+def test_ledger_pass_with_accepted_rationale_needs_intent(monkeypatch, tmp_path):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    parent = _perf_commit(repo, "dart/dynamics/base.cpp", "base", "Start history")
+    commit = _perf_commit(
+        repo, "dart/dynamics/test.cpp", "change", "Update component (#3300)"
+    )
+    monkeypatch.setattr(module, "ROOT", repo)
+    record = _comparison_fixture(
+        module,
+        parent,
+        commit,
+        body="Perf-Regression-Rationale: gzb/ode: expected +0.8%",
+    )
+    report = module.ledger_entries({commit: record}, parent, commit)
+    entry = report["entries"][0]
+    assert entry["class"] == "PASS" and not entry["rows"] and entry["accepted"]
+    assert report["headline"]["needing_intent"] == 1
+    assert report["headline"]["k"] == 0 and report["headline"]["n"] == 1
+    intent = tmp_path / "intent.tsv"
+    intent.write_text("#3300\tunrelated\tRoutine update\n")
+    labelled = module.ledger_entries({commit: record}, parent, commit, intent)
+    assert labelled["headline"]["needing_intent"] == 0
+    assert labelled["headline"]["k"] == 1 and labelled["headline"]["n"] == 1
+
+
+@pytest.mark.parametrize(
+    "defect,classification",
+    [
+        ("unsupported-nonfinite", "BROKEN"),
+        ("unsupported-error", "BROKEN"),
+        ("perturbation-input", "NEEDS-RATIONALE"),
+        ("perturbation-micro", "BROKEN"),
+        ("perturbation-nonfinite", "BROKEN"),
+        ("same-build", "NO-BASE"),
+        ("same-nonfinite", "NO-BASE"),
+        ("same-perturbation", "NO-BASE"),
+    ],
+)
+def test_ledger_inherits_only_matching_base_failures(
+    monkeypatch, tmp_path, defect, classification
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    parent = _perf_commit(repo, "dart/dynamics/base.cpp", "base", "Start history")
+    commit = _perf_commit(repo, "dart/dynamics/test.cpp", "head", "Update component")
+    monkeypatch.setattr(module, "ROOT", repo)
+    base = _measurement_fixture(module, parent, "gzb")
+    head = _measurement_fixture(module, commit, "gzb")
+    if defect == "perturbation-micro":
+        for record in (base, head):
+            record["results"] = _micro_record(module, "dyn")["results"]
+            record["results"][0]["perturbations"] = {"start4k": {"stable": True}}
+        head["results"][0]["head"].update(
+            micro_instrumented=False,
+            guards=None,
+            allocs=None,
+            bytes=None,
+            allocs_per_step=None,
+            bytes_per_step=None,
+        )
+    base_row, head_row = base["results"][0], head["results"][0]
+    if defect.startswith("unsupported"):
+        base_row.update(status="unsupported", head={}, perturbations={}, gated=False)
+    if defect.startswith("perturbation") or defect == "same-perturbation":
+        base_row["gated"] = False
+        base_row["perturbations"]["start4k"]["stable"] = False
+    if defect.endswith("nonfinite"):
+        head_row["head"]["guards"]["finite"] = False
+        if defect == "same-nonfinite":
+            base_row["head"]["guards"]["finite"] = False
+    elif defect == "unsupported-error":
+        head_row.update(status="broken", head={}, error="measurement failed")
+    elif defect == "perturbation-input":
+        head_row["input_sha"] = "b" * 64
+    elif defect == "same-build":
+        for row in (base_row, head_row):
+            row.update(
+                status="broken", head={}, error="build failed", error_kind="build"
+            )
+    elif defect == "same-perturbation":
+        head_row["gated"] = False
+        head_row["perturbations"]["start4k"]["stable"] = False
+    record = module.compare(base, head)
+    report = module.ledger_entries({commit: record}, parent, commit)
+    entry = report["entries"][0]
+    assert entry["class"] == classification
+    assert bool(entry["failures"]) == (classification == "BROKEN")
+    if classification == "NEEDS-RATIONALE":
+        assert entry["rules"] == ["input"]
+    assert record["results"][0]["parent_status"] == base_row["status"]
+    record["results"][0].pop("parent_status")
+    legacy = module.ledger_entries({commit: record}, parent, commit)["entries"][0]
+    assert legacy["class"] == (
+        "NO-BASE" if defect == "unsupported-error" else classification
+    )
+    path = tmp_path / "comparison.json"
+    module.write_json(path, record)
+    assert module.read_record(path, comparison=True) == record
+
+
+@pytest.mark.parametrize("base_defect", ["time", "nonfinite"])
+@pytest.mark.parametrize("head_defect", ["time", "nonfinite"])
+def test_ledger_distinguishes_nonfinite_state_from_stopped_time(
+    monkeypatch, tmp_path, base_defect, head_defect
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    parent = _perf_commit(repo, "dart/dynamics/base.cpp", "base", "Start history")
+    commit = _perf_commit(repo, "dart/dynamics/test.cpp", "head", "Update component")
+    monkeypatch.setattr(module, "ROOT", repo)
+
+    def change(base, head):
+        for row, defect in ((base, base_defect), (head, head_defect)):
+            row.update(
+                status="broken",
+                error=(
+                    "non-finite state"
+                    if defect == "nonfinite"
+                    else "simulation time did not advance"
+                ),
+            )
+            row["head"]["time_advanced"] = False
+            row["head"]["guards"]["finite"] = defect != "nonfinite"
+
+    record = _comparison_fixture(module, parent, commit, change=change)
+    report = module.ledger_entries({commit: record}, parent, commit)
+    assert report["entries"][0]["class"] == (
+        "NO-BASE" if base_defect == head_defect else "BROKEN"
+    )
+
+
+def test_ledger_classes_attribution_groups_and_determinism(
+    monkeypatch, tmp_path, capsys
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    since = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Start history")
+    monkeypatch.setattr(module, "ROOT", repo)
+    paths = [
+        "dart/dynamics/test.cpp",
+        "dart/collision/ode/test.cpp",
+        "dart/collision/shared.cpp",
+        "cmake/test.cmake",
+        "examples/contact_benchmark/main.cpp",
+        "data/test.world",
+        "tests/benchmark/test.cpp",
+        "dart/constraint/test.cpp",
+        "dart/simulation/test.cpp",
+        "dart/math/test.cpp",
+        "dart/dynamics/other.cpp",
+        "dart/collision/dart/test.cpp",
+        "dart/collision/fcl/test.cpp",
+        "CMakeLists.txt",
+    ]
+    kinds = [
+        "pass",
+        "warn",
+        "ir",
+        "broken",
+        "no-base",
+        "improved",
+        "input",
+        "guards",
+        "allocs",
+        "bytes",
+        "percent",
+        "base-finite",
+        "base-time",
+        "base-perturb",
+    ]
+    records, commits = {}, []
+    parent = since
+    directory = tmp_path / "records"
+
+    def mutate(kind):
+        def change(base, head):
+            if kind == "ir":
+                head["head"]["ir_per_step"] = 102000
+            elif kind == "improved":
+                head["head"]["ir_per_step"] = 98000
+            elif kind == "broken":
+                head["head"]["guards"]["finite"] = False
+            elif kind == "no-base":
+                base.update(
+                    status="broken", head={}, error="build failed", error_kind="build"
+                )
+                head.update(
+                    status="broken", head={}, error="build failed", error_kind="build"
+                )
+            elif kind in ("input", "percent"):
+                if kind == "input":
+                    head["input_sha"] = "b" * 64
+                if kind == "percent":
+                    head["head"]["ir_per_step"] = 102000
+                    head["head"]["guards"]["hash"] = "0x9876543210abcdef"
+            elif kind == "guards":
+                head["head"]["guards"]["contacts"] = 4
+            elif kind == "allocs":
+                head["head"]["allocs_per_step"] = 1
+            elif kind == "bytes":
+                head["head"]["bytes_per_step"] = 8
+            elif kind == "base-finite":
+                base["head"]["guards"]["finite"] = False
+                head["head"]["guards"]["finite"] = False
+            elif kind == "base-time":
+                base["head"]["time_advanced"] = False
+                head.update(status="broken", error="simulation time did not advance")
+            elif kind == "base-perturb":
+                base["gated"] = head["gated"] = False
+                base["perturbations"]["start4k"]["stable"] = False
+                head["perturbations"]["start4k"]["stable"] = False
+
+        return change
+
+    for index, (path, kind) in enumerate(zip(paths, kinds)):
+        commit = _perf_commit(repo, path, kind, f"Change {kind} (#{3300 + index})")
+        record = _comparison_fixture(
+            module,
+            parent,
+            commit,
+            change=mutate(kind),
+            body=(
+                "Rebaseline-Rationale: gzb/ode: intended behaviour"
+                if kind == "percent"
+                else ""
+            ),
+        )
+        record["run"]["pr"] = None if kind == "improved" else 3300 + index
+        if kind == "warn":
+            record["verdict"]["warnings"] = ["guard evidence incomplete"]
+        elif kind == "pass":
+            record["verdict"]["warnings"] = ["RSS increased (advisory)"]
+        records[commit] = record
+        commits.append(commit)
+        module.write_json(directory / f"{index:02d}-backfill.json", record)
+        parent = commit
+    missing = _perf_commit(
+        repo, "dart/dynamics/missing.cpp", "missing", "Missing measurement"
+    )
+    _perf_commit(repo, "docs/readme.md", "docs", "Document history")
+    until = _perf_git(repo, "rev-parse", "HEAD")
+    # A merge record wins even when a backfill record is newer. Within merge,
+    # the newest record's verdict and rationale win without changing counts.
+    preferred = copy.deepcopy(records[commits[2]])
+    preferred["run"].update(tier="merge", time="2026-10-08T07:00:00Z")
+    module.write_json(directory / "old-merge.json", preferred)
+    preferred["run"]["time"] = "2026-10-08T07:30:00Z"
+    module.write_json(directory / "new-merge.json", preferred)
+    loaded = module.load_records([directory])
+    assert loaded[commits[2]]["run"]["tier"] == "merge"
+    assert loaded[commits[2]]["run"]["time"] == "2026-10-08T07:30:00Z"
+    intent = tmp_path / "intent.tsv"
+    intent.write_text(
+        f"#3302\tunrelated\tRoutine change\n{commits[3][:8]}\tunrelated\tCorrectness repair\n"
+        f"#3307\tbehaviour\tContact update\n#3308\tperf\tAllocation update\n#3310\tunrelated\tRoutine refactor\n"
+    )
+    report = module.ledger_entries(loaded, since, until, intent)
+    entries = report["entries"]
+    assert [entry["commit"] for entry in entries] == commits
+    assert report["missing"] == [missing]
+    assert [entry["class"] for entry in entries] == [
+        "PASS",
+        "WARN",
+        "NEEDS-RATIONALE",
+        "BROKEN",
+        "NO-BASE",
+        "PASS",
+        "NEEDS-RATIONALE",
+        "NEEDS-RATIONALE",
+        "NEEDS-RATIONALE",
+        "NEEDS-RATIONALE",
+        "NEEDS-RATIONALE",
+        "NO-BASE",
+        "NO-BASE",
+        "NO-BASE",
+    ]
+    assert entries[5]["rows"][0]["change"] == "improved" and entries[5]["pr"] is None
+    assert entries[3]["failures"] and not entries[4]["failures"]
+    assert (
+        entries[4]["inherited"]
+        and entries[11]["inherited"]
+        and entries[12]["inherited"]
+        and entries[13]["inherited"]
+    )
+    assert entries[2]["groups"] == ["collision/other"]
+    assert entries[1]["groups"] == ["collision/ode"]
+    assert entries[3]["groups"] == ["cmake"]
+    assert entries[4]["groups"] == ["workload"]
+    assert entries[7]["groups"] == ["constraint"]
+    headline = report["headline"]
+    assert headline["k"] == 2 and headline["n"] == 11 and headline["broken"] == 1
+    assert all(
+        headline["rules"][rule]
+        for rule in ("ir", "geomean", "allocs", "bytes", "guards", "input", "percent")
+    )
+    markdown = module.ledger_markdown(report)
+    assert "2026-10-08" not in markdown
+    assert "(target: at most 1 in 10)" in markdown
+    assert (
+        "Unrelated merges needing a rationale: 2/11" in markdown
+        and "Broken: 1" in markdown
+    )
+    assert markdown.index("## Unrelated or unlabelled") < markdown.index("## Intended")
+    assert "gzb/ode: improved" in markdown and "—" in markdown
+    assert (
+        module.ledger_markdown(
+            module.ledger_entries(
+                module.load_records([directory]), since, until, intent
+            )
+        )
+        == markdown
+    )
+    json_output, markdown_output = tmp_path / "ledger.json", tmp_path / "ledger.md"
+    assert (
+        module.main(
+            [
+                "ledger",
+                "--records",
+                str(directory),
+                "--since",
+                since,
+                "--until",
+                until,
+                "--intent",
+                str(intent),
+                "--json",
+                str(json_output),
+                "--markdown",
+                str(markdown_output),
+            ]
+        )
+        == 0
+    )
+    assert (
+        json.loads(json_output.read_text()) == report
+        and markdown_output.read_text() == markdown
+    )
+    for text in (
+        "#9999\tunrelated\tUnknown PR\n",
+        f"{commits[0][:7]}\tinvalid\tUnknown intent\n",
+    ):
+        intent.write_text(text)
+        with pytest.raises(ValueError, match="intent.tsv"):
+            module.ledger_entries(loaded, since, until, intent)
+    truncated = directory / "truncated.json"
+    truncated.write_text('{"schema":')
+    assert (
+        module.main(
+            ["ledger", "--records", str(directory), "--since", since, "--until", until]
+        )
+        == 2
+    )
+    assert "truncated.json" in capsys.readouterr().err
+    truncated.unlink()
+    conflict = copy.deepcopy(preferred)
+    conflict["results"][0]["head"]["ir_per_step"] += 1
+    module.write_json(directory / "conflict.json", conflict)
+    assert (
+        module.main(
+            ["ledger", "--records", str(directory), "--since", since, "--until", until]
+        )
+        == 2
+    )
+    error = capsys.readouterr().err
+    assert "conflict.json" in error and "new-merge.json" in error
+
+
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "schema",
+        "delta",
+        "verdict",
+        "parent",
+        "parent-status",
+        "row-failures",
+        "nan",
+        "missing-run-parent",
+        "invalid-run-parent",
+        "runner-string",
+        "runner-list",
+        "runner-dict",
+    ],
+)
+def test_ledger_names_malformed_record_files(monkeypatch, tmp_path, capsys, defect):
+    module = _load_runner()
+    record = _comparison_fixture(module, "b" * 40, "a" * 40)
+    if defect == "schema":
+        record["schema"] = "unexpected"
+    elif defect == "delta":
+        record["results"][0]["delta"] = {"class": "gated"}
+    elif defect == "verdict":
+        record["verdict"]["failures"] = "not a list"
+    elif defect == "parent":
+        record["results"][0]["parent"] = []
+    elif defect == "parent-status":
+        record["results"][0]["parent_status"] = "invalid"
+    elif defect == "row-failures":
+        record["results"][0]["failures"] = "not a list"
+    elif defect == "missing-run-parent":
+        record["run"].pop("parent")
+    elif defect == "invalid-run-parent":
+        record["run"]["parent"] = "invalid"
+    elif defect.startswith("runner-"):
+        record["run"]["env"]["runner"]["environment"] = {
+            "runner-string": "unexpected",
+            "runner-list": [],
+            "runner-dict": {},
+        }[defect]
+    else:
+        record["results"][0]["head"]["ir_per_step"] = float("nan")
+    path = tmp_path / "malformed.json"
+    path.write_text(json.dumps(record))
+    assert (
+        module.main(
+            ["ledger", "--records", str(path), "--since", "HEAD~1", "--until", "HEAD"]
+        )
+        == 2
+    )
+    assert "malformed.json" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("tagged", [False, True])
+@pytest.mark.parametrize("history_present", [False, True])
+def test_release_redispatch_refreshes_ledger(
+    monkeypatch, tmp_path, tagged, history_present
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Base release")
+    head = _perf_commit(repo, "dart/dynamics/test.cpp", "head", "Measured change")
+    monkeypatch.setattr(module, "ROOT", repo)
+    if tagged:
+        _perf_git(repo, "tag", "v6.20.0", head)
+    pages = tmp_path / "pages"
+    history_path = pages / "performance/records/main/2026/history-merge.json"
+    history = _comparison_fixture(module, base, head, tier="merge")
+    if history_present:
+        module.write_json(history_path, history)
+    release = _comparison_fixture(module, base, head, tier="release")
+    release["run"].update(tag="v6.20.0", base_tag="v6.19.0", pr=None)
+    module.write_release(pages, release)
+    path = pages / "performance/releases/v6.20.0.json"
+    markdown_path = path.with_suffix(".md")
+    stored = json.loads(path.read_text())
+    assert stored["ledger"] == {
+        "entries": [],
+        "missing": [] if history_present else [head],
+    }
+    before = markdown_path.read_bytes()
+    history["verdict"]["warnings"] = ["guard evidence incomplete"]
+    module.write_json(history_path, history)
+    assert module.write_release(pages, release)
+    refreshed = json.loads(path.read_text())
+    assert refreshed["ledger"]["missing"] == []
+    assert refreshed["ledger"]["entries"][0]["commit"] == head
+    assert refreshed["ledger"]["entries"][0]["class"] == "WARN"
+    assert refreshed["results"] == stored["results"]
+    assert markdown_path.read_bytes() != before
+    assert f"`{head[:12]}`" in markdown_path.read_text()
+    assert "| WARN |" in markdown_path.read_text()
+    saved = {file: file.read_bytes() for file in path.parent.iterdir()}
+    release["run"]["time"] = "2026-10-08T10:00:00Z"
+    assert module.write_release(pages, release) == []
+    assert {file: file.read_bytes() for file in saved} == saved
+
+
+@pytest.mark.parametrize("policy", ["verdict", "rationale", "qualification"])
+def test_release_redispatch_refreshes_policy(monkeypatch, tmp_path, policy):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Base release")
+    head = _perf_commit(repo, "dart/dynamics/test.cpp", "head", "Measured change")
+    _perf_git(repo, "tag", "v6.20.0", head)
+    monkeypatch.setattr(module, "ROOT", repo)
+    pages = tmp_path / "pages"
+    release = _comparison_fixture(module, base, head, tier="release")
+    release["run"].update(tag="v6.20.0", base_tag="v6.19.0", pr=None)
+    module.write_release(pages, release)
+    path = pages / "performance/releases/v6.20.0.json"
+    stored = json.loads(path.read_text())
+    if policy == "verdict":
+        release["verdict"]["warnings"] = ["guard evidence incomplete"]
+    elif policy == "rationale":
+        release["run"]["accepted"] = [{"rationale": "intended behaviour"}]
+    else:
+        release["results"][0]["gate_reason"] = "qualification refreshed"
+    assert module.write_release(pages, release)
+    refreshed = json.loads(path.read_text())
+    assert refreshed == {**release, "ledger": stored["ledger"]}
+    assert module.deterministic_measurements(
+        refreshed, include_parent=True
+    ) == module.deterministic_measurements(stored, include_parent=True)
+    assert path.with_suffix(".md").read_text() == module.release_markdown(refreshed)
+    assert module.write_release(pages, release) == []
+
+
+def test_release_records_order_precedence_and_index(monkeypatch, tmp_path, capsys):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    old = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.18.0</version></package>",
+        "Old release",
+    )
+    _perf_git(repo, "tag", "v6.18.0")
+    base = _perf_commit(
+        repo, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(repo, "tag", "v6.19.0")
+    first = _perf_commit(
+        repo, "dart/dynamics/test.cpp", "first", "First candidate (#3300)"
+    )
+    second = _perf_commit(
+        repo, "dart/dynamics/test.cpp", "second", "Second candidate (#3301)"
+    )
+    third = _perf_commit(
+        repo, "dart/dynamics/test.cpp", "third", "Third candidate (#3302)"
+    )
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", third)
+    monkeypatch.setattr(module, "ROOT", repo)
+    pages = tmp_path / "pages"
+    history = _comparison_fixture(
+        module,
+        base,
+        first,
+        tier="merge",
+        change=lambda base, head: head["head"].update(ir_per_step=98000),
+    )
+    module.write_json(
+        pages / "performance/records/main/2026/history-merge.json", history
+    )
+
+    def candidate(
+        commit,
+        fingerprint,
+        environment="github-hosted",
+        parent=base,
+        time="2026-10-08T08:00:00Z",
+    ):
+        record = _comparison_fixture(
+            module, parent, commit, tier="release", rows="gzb,robot"
+        )
+        record["run"].update(
+            tag="v6.20.0",
+            base_tag="v6.18.0" if parent == old else "v6.19.0",
+            pr=None,
+            time=time,
+        )
+        record["run"]["env"].update(fingerprint=fingerprint)
+        record["run"]["env"]["runner"]["environment"] = environment
+        return record
+
+    local = candidate(first, "1" * 64, "local")
+    paths = module.write_release(pages, local)
+    assert paths == [
+        "performance/releases/v6.20.0.json",
+        "performance/releases/v6.20.0.md",
+        "performance/releases/index.md",
+    ]
+    path = pages / paths[0]
+    saved = path.read_bytes()
+    stored = json.loads(saved)
+    assert stored["ledger"]["entries"][0]["rows"][0]["change"] == "improved"
+    assert stored["ledger"]["missing"] == []
+    assert "gzb/ode: improved" in (pages / paths[1]).read_text()
+    identical = copy.deepcopy(local)
+    identical["run"]["time"] = "2026-10-08T10:00:00Z"
+    assert module.write_release(pages, identical) == [] and path.read_bytes() == saved
+    inconsistent = copy.deepcopy(local)
+    inconsistent["results"][0]["head"]["allocs_per_step"] += 1
+    with pytest.raises(ValueError, match="deterministic counts"):
+        module.write_release(pages, inconsistent)
+    hosted = candidate(first, "2" * 64)
+    assert module.write_release(pages, hosted)
+    saved = path.read_bytes()
+    assert module.write_release(pages, candidate(second, "3" * 64, "local")) == []
+    assert path.read_bytes() == saved
+    assert module.write_release(pages, candidate(base, "3" * 64)) == []
+    assert "older or diverged candidate" in capsys.readouterr().out
+    assert module.write_release(pages, candidate(second, "3" * 64))
+    assert json.loads(path.read_text())["run"]["commit"] == second
+    assert module.write_release(
+        pages, candidate(second, "4" * 64, parent=old, time="2026-10-08T09:00:00Z")
+    )
+    assert json.loads(path.read_text())["run"]["base_tag"] == "v6.18.0"
+    saved = path.read_bytes()
+    assert (
+        module.write_release(
+            pages, candidate(second, "5" * 64, time="2026-10-08T07:00:00Z")
+        )
+        == []
+    )
+    assert path.read_bytes() == saved
+    _perf_git(repo, "tag", "v6.20.0", second)
+    assert module.write_release(pages, candidate(third, "5" * 64)) == []
+    assert path.read_bytes() == saved
+    assert "tagged commit is final" in capsys.readouterr().out
+    newer = candidate(third, "6" * 64)
+    newer["run"].update(tag="v6.21.0", base_tag="v6.20.0", parent=second)
+    assert module.write_release(pages, newer)
+    index = module.release_index(pages)
+    assert (
+        index
+        == module.release_index(pages)
+        == (pages / "performance/releases/index.md").read_text()
+    )
+    assert index.index("[v6.21.0]") < index.index("[v6.20.0]")
+    assert index.count("[v6.20.0]") == index.count("[v6.21.0]") == 2
+    assert (
+        "| gzb/ode | 100000 | +0.000% | 0 | same, 0x123456789a | 44444444 | hosted |"
+        in index
+    )
+    assert "| robot/dart |" in index
+    branch_record = candidate(third, "7" * 64)
+    branch_record["run"].update(
+        tag="v6.19.5", base_tag="v6.19.4", branch="release-6.19"
+    )
+    module.write_release(pages, branch_record)
+    assert json.loads((pages / "performance/releases/v6.19.5.json").read_text())[
+        "ledger"
+    ] == {"entries": [], "missing": []}
+    assert (
+        "release-6.19 is tracked by tags only."
+        in (pages / "performance/releases/v6.19.5.md").read_text()
+    )
+
+
+@pytest.mark.parametrize("tag_created", ["normalized", "retry"])
+@pytest.mark.parametrize(
+    "stored_commit,stored_source",
+    [
+        (None, None),
+        ("candidate", "github-hosted"),
+        ("tagged", "github-hosted"),
+        ("tagged", "local"),
+    ],
+)
+def test_publish_refreshes_release_tag_before_writing(
+    monkeypatch, tmp_path, tag_created, stored_commit, stored_source
+):
+    module = _load_runner()
+    source = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        source, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(source, "tag", "v6.19.0")
+    candidate = _perf_commit(
+        source,
+        "package.xml",
+        "<package><version>6.20.0</version></package>",
+        "First candidate",
+    )
+    tagged = _perf_commit(source, "dart/dynamics/test.cpp", "tagged", "Ship release")
+    head = _perf_commit(source, "dart/dynamics/test.cpp", "newer", "Next candidate")
+    _perf_git(source, "update-ref", "refs/remotes/origin/main", head)
+    remote, pages = tmp_path / "remote.git", tmp_path / "pages"
+    subprocess.run(
+        ["git", "clone", "--bare", str(source), str(remote)],
+        check=True,
+        capture_output=True,
+    )
+    _perf_git(source, "remote", "add", "origin", str(remote))
+    _perf_git(remote, "symbolic-ref", "HEAD", "refs/heads/gh-pages")
+    subprocess.run(
+        ["git", "clone", str(remote), str(pages)], check=True, capture_output=True
+    )
+    monkeypatch.setattr(module, "ROOT", source)
+    _trusted_publication(monkeypatch, "workflow_dispatch")
+    _perf_git(pages, "config", "user.name", "test")
+    _perf_git(pages, "config", "user.email", "test@example.com")
+
+    def release(commit, environment="github-hosted"):
+        record = _comparison_fixture(module, base, commit, tier="release")
+        record["run"].update(tag="v6.20.0", base_tag="v6.19.0", pr=None)
+        record["run"]["env"]["runner"]["environment"] = environment
+        return record
+
+    record_path = pages / "performance/releases/v6.20.0.json"
+    if stored_commit is not None:
+        module.write_release(
+            pages,
+            release(
+                {"candidate": candidate, "tagged": tagged}[stored_commit], stored_source
+            ),
+        )
+        _perf_git(pages, "add", "performance")
+    _perf_commit(pages, "README.md", "Release performance\n", "Seed publication")
+    _perf_git(pages, "push", "origin", "HEAD:gh-pages")
+    before = _perf_git(pages, "rev-parse", "HEAD")
+    saved = record_path.read_bytes() if record_path.exists() else None
+    path = tmp_path / "record.json"
+    module.write_json(path, release(head))
+    original = module.publication_record
+
+    def normalize(*args, **kwargs):
+        record = original(*args, **kwargs)
+        if tag_created == "normalized":
+            _perf_git(remote, "tag", "v6.20.0", tagged)
+        return record
+
+    monkeypatch.setattr(module, "publication_record", normalize)
+    real_run = module.subprocess.run
+    pushes = []
+    refreshes = []
+
+    def run(command, *args, **kwargs):
+        if command[:3] == ["git", "-C", str(source)] and "fetch" in command:
+            refreshes.append(command)
+        if command[:4] == ["git", "-C", str(pages), "push"]:
+            pushes.append(command)
+            if tag_created == "retry" and len(pushes) == 1:
+                real_run(
+                    ["git", "-C", str(remote), "tag", "v6.20.0", tagged],
+                    check=True,
+                    capture_output=True,
+                )
+                return subprocess.CompletedProcess(command, 1, "", "retry publication")
+        return real_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(module.subprocess, "run", run)
+    args = module.parser().parse_args(
+        [
+            "publish",
+            "--record",
+            str(path),
+            "--tier",
+            "release",
+            "--tag",
+            "v6.20.0",
+            "--base-tag",
+            "v6.19.0",
+            "--pages-dir",
+            str(pages),
+        ]
+    )
+    assert module.publish(args) is False
+    assert _perf_git(source, "rev-parse", "v6.20.0^{commit}") == tagged
+    assert len(refreshes) == 1
+    assert len(pushes) == (1 if tag_created == "retry" else 0)
+    assert _perf_git(pages, "rev-parse", "HEAD") == before
+    assert _perf_git(pages, "status", "--porcelain") == ""
+    assert (record_path.read_bytes() if record_path.exists() else None) == saved
+
+
+def test_backfill_publication_is_one_commit_and_idempotent(
+    monkeypatch, tmp_path, capsys
+):
+    module = _load_runner()
+    source = _perf_repository(tmp_path / "repository")
+    old = _perf_commit(
+        source,
+        "package.xml",
+        "<package><version>6.18.0</version></package>",
+        "Old release",
+    )
+    _perf_git(source, "tag", "v6.18.0")
+    tag = _perf_commit(
+        source, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(source, "tag", "v6.19.0")
+    first = _perf_commit(
+        source, "dart/dynamics/test.cpp", "first", "Change DART (#3300)"
+    )
+    second = _perf_commit(
+        source, "dart/dynamics/test.cpp", "second", "Change DART (#3301)"
+    )
+    _perf_git(source, "update-ref", "refs/remotes/origin/main", second)
+    _perf_git(source, "remote", "add", "origin", str(source))
+    monkeypatch.setattr(module, "ROOT", source)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
+    records = tmp_path / "records"
+    first_record = _comparison_fixture(module, tag, first)
+    second_record = _comparison_fixture(module, first, second)
+    release = _comparison_fixture(module, old, tag, tier="release")
+    release["run"].update(tag="v6.19.0", base_tag="v6.18.0", pr=None)
+    for name, record in (
+        ("main/first.json", first_record),
+        ("main/second.json", second_record),
+        ("releases/v6.19.0.json", release),
+    ):
+        record["run"]["harness_commit"] = second
+        module.write_json(records / name, record)
+    remote, pages = tmp_path / "remote.git", tmp_path / "pages"
+    subprocess.run(
+        ["git", "init", "--bare", "--initial-branch=gh-pages", str(remote)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "clone", str(remote), str(pages)], check=True, capture_output=True
+    )
+    _perf_git(pages, "config", "user.name", "Maintainer")
+    _perf_git(pages, "config", "user.email", "maintainer@example.com")
+    kept = {}
+    for name in ("performance/dart6-ir/data.js", "performance/guards/main.md"):
+        target = pages / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        kept[name] = b"preserve hosted evidence\n"
+        target.write_bytes(kept[name])
+    _perf_git(pages, "add", "performance")
+    _perf_git(pages, "commit", "-m", "Seed hosted evidence")
+    _perf_git(pages, "push", "origin", "HEAD:gh-pages")
+    before = _perf_git(pages, "rev-parse", "HEAD")
+    calls = []
+    real_run = module.subprocess.run
+
+    def run(command, *args, **kwargs):
+        calls.append(command)
+        return real_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(module.subprocess, "run", run)
+    monkeypatch.setattr(
+        module, "chart_data", lambda *args: pytest.fail("backfill updated chart")
+    )
+    monkeypatch.setattr(
+        module, "guard_table", lambda *args: pytest.fail("backfill updated guards")
+    )
+    args = module.parser().parse_args(
+        [
+            "publish",
+            "--tier",
+            "backfill",
+            "--record",
+            str(records),
+            "--pages-dir",
+            str(pages),
+        ]
+    )
+    assert module.publish(args) is True
+    assert _perf_git(pages, "rev-list", "--count", f"{before}..HEAD") == "1"
+    assert (
+        _perf_git(pages, "log", "-1", "--format=%an <%ae>")
+        == "Maintainer <maintainer@example.com>"
+    )
+    assert (
+        _perf_git(pages, "log", "-1", "--format=%s")
+        == "Record DART backfill performance for 2 commits and 1 tags"
+    )
+    written = _perf_git(pages, "diff", "--name-only", before, "HEAD").splitlines()
+    assert len(written) == 5
+    assert all(
+        name.endswith("-backfill.json") or name.startswith("performance/releases/")
+        for name in written
+    )
+    assert all((pages / name).read_bytes() == content for name, content in kept.items())
+    output = capsys.readouterr().out
+    assert all(name in output for name in written)
+    assert not any(
+        "--force" in command or "-f" in command
+        for command in calls
+        if "push" in command
+    )
+    assert not any("github-actions" in " ".join(command) for command in calls)
+    published = _perf_git(pages, "rev-parse", "HEAD")
+    assert module.publish(args) is False
+    assert _perf_git(pages, "rev-parse", "HEAD") == published
+    first_record["results"][0]["head"]["allocs_per_step"] = 1
+    module.write_json(records / "main/first.json", first_record)
+    with pytest.raises(ValueError, match="deterministic counts"):
+        module.publish(args)
+    assert _perf_git(pages, "rev-parse", "HEAD") == published
+
+
+@pytest.mark.parametrize("stored_source", ["local", "github-hosted"])
+@pytest.mark.parametrize("changed_counts", [False, True])
+@pytest.mark.parametrize("tagged", [False, True])
+def test_release_source_precedence_with_equal_fingerprints(
+    monkeypatch, tmp_path, stored_source, changed_counts, tagged
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        repo, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(repo, "tag", "v6.19.0")
+    head = _perf_commit(
+        repo, "package.xml", "<package><version>6.20.0</version></package>", "Candidate"
+    )
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", head)
+    if tagged:
+        _perf_git(repo, "tag", "v6.20.0")
+    monkeypatch.setattr(module, "ROOT", repo)
+    pages = tmp_path / "pages"
+    stored = _comparison_fixture(module, base, head, tier="release")
+    stored["run"].update(tag="v6.20.0", base_tag="v6.19.0", pr=None)
+    stored["run"]["env"]["runner"]["environment"] = stored_source
+    module.write_release(pages, stored)
+    path = pages / "performance/releases/v6.20.0.json"
+    saved = path.read_bytes()
+    incoming = copy.deepcopy(stored)
+    incoming["run"]["env"]["runner"]["environment"] = (
+        "github-hosted" if stored_source == "local" else "local"
+    )
+    if changed_counts:
+        incoming["results"][0]["head"]["ir_per_step"] += 30
+        incoming["results"][0]["input_sha"] = "b" * 64
+    changed = module.write_release(pages, incoming)
+    if stored_source == "local":
+        assert changed
+        assert (
+            json.loads(path.read_text())["run"]["env"]["runner"]["environment"]
+            == "github-hosted"
+        )
+        assert json.loads(path.read_text())["results"] == incoming["results"]
+    else:
+        assert changed == [] and path.read_bytes() == saved
+
+
+@pytest.mark.parametrize("candidate_position", ["earlier", "newer", "diverged"])
+def test_release_tag_redispatch_replaces_stored_candidate(
+    monkeypatch, tmp_path, candidate_position
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        repo, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(repo, "tag", "v6.19.0")
+    earlier = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.20.0</version></package>",
+        "First candidate",
+    )
+    tagged = _perf_commit(repo, "dart/dynamics/test.cpp", "tagged", "Ship candidate")
+    newer = _perf_commit(repo, "dart/dynamics/test.cpp", "newer", "Next candidate")
+    _perf_git(repo, "update-ref", "refs/remotes/origin/main", newer)
+    _perf_git(repo, "checkout", "-b", "release-6.20", base)
+    diverged = _perf_commit(
+        repo,
+        "package.xml",
+        "<package><version>6.20.0</version></package>",
+        "Other candidate",
+    )
+    _perf_git(repo, "update-ref", "refs/remotes/origin/release-6.20", diverged)
+    _perf_git(repo, "checkout", "main")
+    monkeypatch.setattr(module, "ROOT", repo)
+    stored_commit = {"earlier": earlier, "newer": newer, "diverged": diverged}[
+        candidate_position
+    ]
+
+    def record_for(scope):
+        record = _comparison_fixture(
+            module, scope["base"], scope["head"], tier="release"
+        )
+        record["run"].update(
+            tag=scope["tag"],
+            base_tag=scope["base_tag"],
+            branch=scope["branch"],
+            pr=None,
+        )
+        record["run"]["env"]["runner"]["environment"] = "github-hosted"
+        return record
+
+    pages = tmp_path / "pages"
+    module.write_release(
+        pages, record_for(module.release_scope(stored_commit, None, None))
+    )
+    _perf_git(repo, "tag", "v6.20.0", tagged)
+    scope = module.release_scope(None, "v6.20.0", None)
+    assert scope["head"] == tagged
+    assert module.write_release(pages, record_for(scope))
+    path = pages / "performance/releases/v6.20.0.json"
+    assert json.loads(path.read_text())["run"]["commit"] == tagged
+    saved = path.read_bytes()
+    assert module.write_release(pages, record_for(scope)) == []
+    assert path.read_bytes() == saved
+
+
+@pytest.mark.parametrize("first_source", ["local", "github-hosted"])
+@pytest.mark.parametrize("same_tier", [False, True])
+def test_history_source_precedence_with_equal_fingerprints(
+    monkeypatch, tmp_path, first_source, same_tier
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Base")
+    parent = _perf_commit(repo, "dart/dynamics/test.cpp", "parent", "Parent")
+    head = _perf_commit(repo, "dart/dynamics/test.cpp", "head", "Measured change")
+    monkeypatch.setattr(module, "ROOT", repo)
+    pages = tmp_path / "pages"
+    _stock_chart_template(pages)
+    local = _comparison_fixture(
+        module, base, head, tier="merge" if same_tier else "backfill"
+    )
+    local["run"]["time"] = "2026-10-08T09:00:00Z"
+    hosted = _comparison_fixture(
+        module,
+        parent,
+        head,
+        tier="merge",
+        change=lambda base, head: head["head"].update(ir_per_step=98000),
+    )
+    hosted["run"]["env"]["runner"]["environment"] = "github-hosted"
+    hosted["results"][0]["input_sha"] = "b" * 64
+    first, second = (local, hosted) if first_source == "local" else (hosted, local)
+    module.write_publication(pages, first)
+    changed = module.write_publication(pages, second)
+    assert bool(changed) == (first_source == "local")
+    history = pages / "performance/records/main"
+    loaded = module.load_records(history)
+    assert loaded[head]["run"]["env"]["runner"]["environment"] == "github-hosted"
+    assert loaded[head]["run"]["parent"] == parent
+    ledger = module.ledger_entries(loaded, parent, head)
+    assert ledger["missing"] == [] and ledger["entries"][0]["rows"]
+    release = copy.deepcopy(hosted)
+    release["run"].update(tier="release", tag="v6.20.0", base_tag="v6.19.0")
+    module.write_release(pages, release)
+    embedded = json.loads((pages / "performance/releases/v6.20.0.json").read_text())[
+        "ledger"
+    ]
+    assert embedded["missing"] == [] and embedded["entries"][0]["rows"]
+
+
+@pytest.mark.parametrize("hosted_tier", ["merge", "backfill"])
+def test_history_hosted_source_supersedes_conflicting_local_duplicates(
+    tmp_path, hosted_tier
+):
+    module = _load_runner()
+    local = _comparison_fixture(module, "b" * 40, "a" * 40, tier="merge")
+    directory = tmp_path / "records"
+    module.write_json(directory / "a-local.json", local)
+    local["results"][0]["head"]["ir_per_step"] += 1
+    module.write_json(directory / "b-local.json", local)
+    hosted = copy.deepcopy(local)
+    hosted["run"].update(tier=hosted_tier, time="2026-10-08T07:00:00Z")
+    hosted["run"]["env"]["runner"]["environment"] = "github-hosted"
+    module.write_json(directory / "c-hosted.json", hosted)
+    loaded = module.load_records(directory)
+    assert loaded["a" * 40] == hosted
+    (directory / "c-hosted.json").unlink()
+    with pytest.raises(ValueError, match="conflicting deterministic measurements"):
+        module.load_records(directory)
+
+
+def test_publication_late_release_refusal_leaves_checkout_clean(monkeypatch, tmp_path):
+    module = _load_runner()
+    source = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(
+        source,
+        "package.xml",
+        "<package><version>6.18.0</version></package>",
+        "Base release",
+    )
+    _perf_git(source, "tag", "v6.18.0")
+    tagged = _perf_commit(
+        source, "package.xml", "<package><version>6.19.0</version></package>", "Release"
+    )
+    _perf_git(source, "tag", "v6.19.0")
+    head = _perf_commit(source, "dart/dynamics/test.cpp", "head", "Measured change")
+    _perf_git(source, "update-ref", "refs/remotes/origin/main", head)
+    _perf_git(source, "remote", "add", "origin", str(source))
+    monkeypatch.setattr(module, "ROOT", source)
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    remote, pages = tmp_path / "remote.git", tmp_path / "pages"
+    subprocess.run(
+        ["git", "init", "--bare", "--initial-branch=gh-pages", str(remote)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "clone", str(remote), str(pages)], check=True, capture_output=True
+    )
+    _perf_git(pages, "config", "user.name", "Maintainer")
+    _perf_git(pages, "config", "user.email", "maintainer@example.com")
+    release = _comparison_fixture(module, base, tagged, tier="release")
+    release["run"].update(
+        tag="v6.19.0", base_tag="v6.18.0", harness_commit=head, pr=None
+    )
+    module.write_release(pages, release)
+    _perf_git(pages, "add", "performance")
+    _perf_git(pages, "commit", "-m", "Seed release record")
+    _perf_git(pages, "push", "origin", "HEAD:gh-pages")
+    before = _perf_git(pages, "rev-parse", "HEAD")
+    record = _comparison_fixture(module, tagged, head)
+    record["run"]["harness_commit"] = head
+    directory = tmp_path / "records"
+    module.write_json(directory / "main.json", record)
+    release["results"][0]["head"]["ir_per_step"] += 1
+    module.write_json(directory / "release.json", release)
+    args = module.parser().parse_args(
+        [
+            "publish",
+            "--tier",
+            "backfill",
+            "--record",
+            str(directory),
+            "--pages-dir",
+            str(pages),
+        ]
+    )
+    calls = []
+    real_run = module.subprocess.run
+
+    def run(command, *args, **kwargs):
+        calls.append(command)
+        return real_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(module.subprocess, "run", run)
+    with pytest.raises(ValueError, match="deterministic counts"):
+        module.publish(args)
+    assert _perf_git(pages, "status", "--porcelain") == ""
+    assert _perf_git(pages, "rev-parse", "HEAD") == before
+    assert not any("commit" in command or "push" in command for command in calls)
+
+
+@pytest.fixture
+def shim_build(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+
+    module = _load_runner()
+    source = tmp_path / "source"
+    (source / "tools/perf").mkdir(parents=True)
+    for name in ("allocshim", "heappad"):
+        (source / f"tools/perf/{name}.c").write_text(name)
+    compiler = tmp_path / "compiler"
+    compiler.write_bytes(b"compiler")
+    monkeypatch.setattr(module, "ROOT", source)
+    monkeypatch.setattr(module, "Path", lambda path: compiler)
+    calls = []
+
+    def execute(command, env, log, timeout, **kwargs):
+        assert command[1:4] == ["-O2", "-shared", "-fPIC"]
+        assert command[-1] == "-ldl"
+        assert timeout == 30 and kwargs == {"build": True}
+        binary = Path(command[command.index("-o") + 1])
+        calls.append(binary.stem)
+        binary.write_bytes(b"compiled shim")
+        log.write_text("compiled\n")
+
+    monkeypatch.setattr(module, "execute", execute)
+    return module, SimpleNamespace(timeout=30), tmp_path / "shims", compiler, calls
+
+
+@pytest.mark.parametrize(
+    "change, expected",
+    [
+        ("none", []),
+        ("timestamp", []),
+        ("allocshim", ["allocshim"]),
+        ("heappad", ["heappad"]),
+        ("compiler", ["allocshim", "heappad"]),
+        ("missing_binary", ["allocshim"]),
+        ("missing_stamp", ["allocshim"]),
+    ],
+)
+def test_build_shims_reuses_only_matching_source_and_compiler(
+    shim_build, change, expected
+):
+    module, args, shims, compiler, calls = shim_build
+    module.build_shims(args, shims)
+    assert calls == ["allocshim", "heappad"]
+    before = {path.name: path.stat().st_mtime_ns for path in shims.iterdir()}
+    calls.clear()
+    if change in ("allocshim", "heappad", "compiler"):
+        path = (
+            compiler if change == "compiler" else module.ROOT / f"tools/perf/{change}.c"
+        )
+        stat = path.stat()
+        path.write_bytes(path.read_bytes() + b" changed")
+        os.utime(path, ns=(stat.st_atime_ns, stat.st_mtime_ns))
+    elif change == "timestamp":
+        for name in ("allocshim", "heappad"):
+            (module.ROOT / f"tools/perf/{name}.c").touch()
+        compiler.touch()
+    elif change.startswith("missing_"):
+        suffix = "so" if change == "missing_binary" else "sha256"
+        (shims / f"allocshim.{suffix}").unlink()
+    module.build_shims(args, shims)
+    assert calls == expected
+    for path in shims.iterdir():
+        if path.stem not in expected:
+            assert path.stat().st_mtime_ns == before[path.name]
+        if path.suffix == ".sha256":
+            assert re.fullmatch(r"[0-9a-f]{64}\n", path.read_text())
+    calls.clear()
+    module.build_shims(args, shims)
+    assert calls == []
+
+
+def test_build_shims_failed_rebuild_invalidates_previous_stamp(shim_build, monkeypatch):
+    module, args, shims, compiler, calls = shim_build
+    module.build_shims(args, shims)
+    source = module.ROOT / "tools/perf/allocshim.c"
+    source.write_bytes(source.read_bytes() + b" changed")
+    compile_shim = module.execute
+
+    def fail(*args, **kwargs):
+        assert not (shims / "allocshim.sha256").exists()
+        assert not (shims / "allocshim.so").exists()
+        (shims / "allocshim.so").write_bytes(b"partial output")
+        raise module.BuildFailure("compiler error")
+
+    monkeypatch.setattr(module, "execute", fail)
+    with pytest.raises(module.BuildFailure, match="compiler error"):
+        module.build_shims(args, shims)
+    assert not (shims / "allocshim.sha256").exists()
+    monkeypatch.setattr(module, "execute", compile_shim)
+    calls.clear()
+    module.build_shims(args, shims)
+    assert calls == ["allocshim"]
+    assert (shims / "allocshim.so").read_bytes() == b"compiled shim"
+    calls.clear()
+    module.build_shims(args, shims)
+    assert calls == []
