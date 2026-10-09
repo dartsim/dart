@@ -99,6 +99,11 @@ dart_format_add(
   "${PROJECT_SOURCE_DIR}/tools/friction_eval/friction_scenes.hpp"
 )
 dart_add_test("integration" test_IslandDeactivation)
+dart_add_test("integration" test_CustomFilterSleeping)
+if(TARGET dart-collision-bullet)
+  target_link_libraries(test_IslandDeactivation dart-collision-bullet)
+  target_link_libraries(test_CustomFilterSleeping dart-collision-bullet)
+endif()
 if(TARGET dart-collision-ode AND TARGET dart-utils)
   # Covers the `contact_benchmark --gz-preset` helpers.
   dart_add_test("integration" test_ContactBenchmarkGazeboPreset)

@@ -43,6 +43,9 @@
 
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/fcl/FCLCollisionDetector.hpp>
+#if HAVE_BULLET
+  #include <dart/collision/bullet/BulletCollisionDetector.hpp>
+#endif
 
 #include <ratio>
 #if HAVE_ODE
@@ -63,6 +66,7 @@
 #include <dart/collision/CollisionOption.hpp>
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/Contact.hpp>
+#include <dart/collision/detail/CollisionFilterSnapshotTracker.hpp>
 
 #include <dart/dynamics/BallJoint.hpp>
 #include <dart/dynamics/BodyNode.hpp>
@@ -95,17 +99,24 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <utility>
 #include <vector>
 
 #include <cmath>
 #include <cstddef>
+#include <cstdlib>
 
 using namespace dart;
 using namespace dart::collision;
@@ -340,6 +351,69 @@ SkeletonPtr createPinnedContactArm(const std::string& name)
 }
 
 //==============================================================================
+// Builds a free model whose 5 kg plate lies on the floor at x, plus a 1 kg slab
+// of the same size. Welded on top of the plate, the slab touches nothing else,
+// so the weld carries exactly its weight (a statically determinate load).
+// Hinged about y to the plate's +x edge and lying on the floor, the slab's
+// horizontal load can be shared between floor friction and the hinge in many
+// ways (statically indeterminate).
+SkeletonPtr createPlateAndSlab(const std::string& name, double x, bool hinged)
+{
+  const Eigen::Vector3d size(0.5, 0.5, 0.1);
+  auto skel = Skeleton::create(name);
+
+  BodyNode::Properties plateProps(BodyNode::AspectProperties(name + "_plate"));
+  plateProps.mInertia.setMass(5.0);
+  plateProps.mInertia.setMoment(BoxShape::computeInertia(size, 5.0));
+  auto* plate = skel->createJointAndBodyNodePair<FreeJoint>(
+                        nullptr, FreeJoint::Properties(), plateProps)
+                    .second;
+  plate->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(size));
+
+  BodyNode::Properties slabProps(BodyNode::AspectProperties(name + "_slab"));
+  slabProps.mInertia.setMass(1.0);
+  slabProps.mInertia.setMoment(BoxShape::computeInertia(size, 1.0));
+  BodyNode* slab = nullptr;
+  if (hinged) {
+    RevoluteJoint::Properties joint;
+    joint.mAxis = Eigen::Vector3d::UnitY();
+    joint.mT_ParentBodyToJoint.translation() = Eigen::Vector3d(0.25, 0, 0);
+    joint.mT_ChildBodyToJoint.translation() = Eigen::Vector3d(-0.25, 0, 0);
+    slab = skel->createJointAndBodyNodePair<RevoluteJoint>(
+                   plate, joint, slabProps)
+               .second;
+  } else {
+    WeldJoint::Properties joint;
+    joint.mT_ParentBodyToJoint.translation() = Eigen::Vector3d(0, 0, 0.1);
+    slab = skel->createJointAndBodyNodePair<WeldJoint>(plate, joint, slabProps)
+               .second;
+  }
+  slab->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(size));
+
+  Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+  tf.translation() = Eigen::Vector3d(x, 0, 0.05);
+  skel->getJoint(0)->setPositions(FreeJoint::convertToPositions(tf));
+  return skel;
+}
+
+//==============================================================================
+// Sums the contact forces that act on the body in a collision result.
+Eigen::Vector3d sumContactForces(
+    const CollisionResult& result, const BodyNode* body)
+{
+  Eigen::Vector3d sum = Eigen::Vector3d::Zero();
+  for (const auto& contact : result.getContacts()) {
+    if (contact.getBodyNodePtr1().get() == body)
+      sum += contact.force;
+    else if (contact.getBodyNodePtr2().get() == body)
+      sum -= contact.force;
+  }
+  return sum;
+}
+
+//==============================================================================
 // Steps the world until the predicate is satisfied or maxSteps is exceeded.
 // Returns the number of steps taken (== maxSteps if never satisfied).
 template <typename Predicate>
@@ -400,7 +474,103 @@ private:
   const BodyNode* mBody1;
   const BodyNode* mBody2;
   bool mIgnorePair;
-  mutable std::size_t mNumCalls = 0u;
+  mutable std::atomic<std::size_t> mNumCalls{0u};
+};
+
+// Like TogglePairCollisionFilter, but it reports a revision whenever its
+// decisions may change, so World tracks it like BodyNodeCollisionFilter's
+// blacklist.
+class RevisionedTogglePairCollisionFilter
+  : public TogglePairCollisionFilter,
+    public collision::detail::CollisionFilterSnapshotTracker
+{
+public:
+  using TogglePairCollisionFilter::TogglePairCollisionFilter;
+
+  void setIgnorePair(bool ignorePair)
+  {
+    TogglePairCollisionFilter::setIgnorePair(ignorePair);
+    ++mRevision;
+  }
+
+  std::size_t getCollisionFilterSnapshotRevision() const override
+  {
+    return mRevision + getBodyNodePairBlackListRevision();
+  }
+
+private:
+  std::size_t mRevision = 0u;
+};
+
+// Collision detectors whose filter queries differ: FCL (World's default) and
+// the dart detector stop asking at their contact limit, ODE and Bullet do not,
+// and Bullet's dispatcher keeps the last query filter.
+std::vector<std::string> getFilterQueryDetectors()
+{
+  std::vector<std::string> detectors{"fcl", "dart"};
+#if HAVE_ODE
+  detectors.emplace_back("ode");
+#endif
+#if HAVE_BULLET
+  detectors.emplace_back("bullet");
+#endif
+  return detectors;
+}
+
+void setCollisionDetector(World& world, const std::string& name)
+{
+  if (name == "dart")
+    world.setCollisionDetector(collision::DARTCollisionDetector::create());
+#if HAVE_ODE
+  if (name == "ode")
+    world.setCollisionDetector(collision::OdeCollisionDetector::create());
+#endif
+#if HAVE_BULLET
+  if (name == "bullet")
+    world.setCollisionDetector(collision::BulletCollisionDetector::create());
+#endif
+}
+
+// Sets an environment variable while in scope.
+class ScopedEnvironmentVariable
+{
+public:
+  ScopedEnvironmentVariable(const char* name, const char* value) : mName(name)
+  {
+    if (const char* previous = std::getenv(name))
+      mPrevious = previous;
+    set(mName.c_str(), value);
+  }
+
+  ~ScopedEnvironmentVariable()
+  {
+    if (mPrevious)
+      set(mName.c_str(), mPrevious->c_str());
+    else
+      unset(mName.c_str());
+  }
+
+private:
+  static void set(const char* name, const char* value)
+  {
+#ifdef _WIN32
+    _putenv_s(name, value);
+#else
+    setenv(name, value, 1);
+#endif
+  }
+
+  static void unset(const char* name)
+  {
+#ifdef _WIN32
+    _putenv_s(name, "");
+#else
+    unsetenv(name);
+#endif
+  }
+
+  std::string mName;
+  std::optional<std::string> mPrevious;
 };
 
 bool contactContainsBodies(
@@ -479,16 +649,21 @@ void stepUntilRestingFastPathReady(
 
   for (std::size_t i = 0; i < 1000; ++i) {
     world->step();
-    if (world->getLastCollisionResult().getNumContacts() == 0)
+    if (world->getConstraintSolver()->getLastCollisionResult().getNumContacts()
+        == 0)
       break;
   }
 
-  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  ASSERT_EQ(
+      0u,
+      world->getConstraintSolver()->getLastCollisionResult().getNumContacts());
   ASSERT_TRUE(sleeper->isResting());
 
   // Exercise the cached all-resting step once before mutating support geometry.
   world->step();
-  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  ASSERT_EQ(
+      0u,
+      world->getConstraintSolver()->getLastCollisionResult().getNumContacts());
   ASSERT_TRUE(sleeper->isResting());
 }
 
@@ -499,7 +674,9 @@ void stepUntilRestingWithContacts(
       = stepUntil(world, maxSteps, [&]() { return sleeper->isResting(); });
   ASSERT_LT(settled, maxSteps);
   ASSERT_TRUE(sleeper->isResting());
-  ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+  ASSERT_GT(
+      world->getConstraintSolver()->getLastCollisionResult().getNumContacts(),
+      0u);
 }
 
 void expectSleeperFallsAfterSupportEdit(
@@ -549,7 +726,9 @@ void expectSolverRunsAfterRestingConstraintEdit(
     World* world, const SkeletonPtr& sleeper)
 {
   world->step();
-  EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u)
+  EXPECT_GT(
+      world->getConstraintSolver()->getLastCollisionResult().getNumContacts(),
+      0u)
       << "automatic joint-constraint edit reused the all-resting fast path";
   EXPECT_FALSE(sleeper->isResting())
       << "automatic joint-constraint edit did not wake the sleeping body";
@@ -3839,7 +4018,7 @@ public:
 private:
   const BodyNode* mBelt;
   double mSpeed = 0.0;
-  mutable std::size_t mNumCalls = 0u;
+  mutable std::atomic<std::size_t> mNumCalls{0u};
 };
 
 //==============================================================================
@@ -4222,6 +4401,7 @@ TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
   {
     MoveStopper,
     IgnoreStopper,
+    CustomIgnoreStopper,
     RemoveWeld,
   };
   struct Row
@@ -4236,6 +4416,9 @@ TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
                false},
            Row{"stopper contact ignored one step before candidacy",
                Release::IgnoreStopper,
+               false},
+           Row{"custom filter ignores stopper one step before candidacy",
+               Release::CustomIgnoreStopper,
                false},
            Row{"weld removed while a sleep candidate",
                Release::RemoveWeld,
@@ -4254,6 +4437,12 @@ TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
     // A static plate just downhill of the box, or a weld to the world.
     auto stopper = createWeldedBox(
         "stopper", Eigen::Vector3d(0.1, 2.0, 0.3), Eigen::Vector3d::Zero());
+    auto customFilter = std::make_shared<TogglePairCollisionFilter>(
+        boxBody, stopper->getBodyNode(0), false);
+    if (row.release == Release::CustomIgnoreStopper) {
+      world->getConstraintSolver()->getCollisionOption().collisionFilter
+          = customFilter;
+    }
     auto placeStopper = [&](double x) {
       Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
       tf.linear() = ramp.tilt;
@@ -4299,6 +4488,9 @@ TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
         filter->addBodyNodePairToBlackList(boxBody, stopper->getBodyNode(0));
         break;
       }
+      case Release::CustomIgnoreStopper:
+        customFilter->setIgnorePair(true);
+        break;
       case Release::RemoveWeld:
         world->getConstraintSolver()->removeConstraint(holder);
         break;
@@ -4406,31 +4598,39 @@ TEST(IslandDeactivation, InactiveManualConstraintKeepsPoseValidation)
 // see (a conveyor's belt speed), so its contacts must never freeze.
 TEST(IslandDeactivation, CustomContactSurfaceHandlerKeepsPayloadMoving)
 {
-  auto world = makeSleepWorld();
-  auto belt = createBelt();
-  world->addSkeleton(belt);
-  auto box = createFreeBox(
-      "box", Eigen::Vector3d::Constant(0.1), Eigen::Vector3d(0, 0, 0.06));
-  world->addSkeleton(box);
-  auto handler = std::make_shared<BeltHandler>(belt->getBodyNode(0));
-  world->getConstraintSolver()->addContactSurfaceHandler(handler);
+  for (const bool customFilter : {false, true}) {
+    SCOPED_TRACE(customFilter ? "custom filter" : "default filter");
+    auto world = makeSleepWorld();
+    if (customFilter) {
+      world->getConstraintSolver()->getCollisionOption().collisionFilter
+          = std::make_shared<TogglePairCollisionFilter>(
+              nullptr, nullptr, false);
+    }
+    auto belt = createBelt();
+    world->addSkeleton(belt);
+    auto box = createFreeBox(
+        "box", Eigen::Vector3d::Constant(0.1), Eigen::Vector3d(0, 0, 0.06));
+    world->addSkeleton(box);
+    auto handler = std::make_shared<BeltHandler>(belt->getBodyNode(0));
+    world->getConstraintSolver()->addContactSurfaceHandler(handler);
 
-  std::size_t restingSteps = 0;
-  for (int i = 0; i < 2000; ++i) {
-    world->step();
-    restingSteps += box->isResting() ? 1u : 0u;
+    std::size_t restingSteps = 0;
+    for (int i = 0; i < 2000; ++i) {
+      world->step();
+      restingSteps += box->isResting() ? 1u : 0u;
+    }
+    EXPECT_EQ(0u, restingSteps) << "the box fell asleep on the belt";
+
+    const Eigen::Vector3d start = getPosition(box);
+    const std::size_t callsBefore = handler->getNumCalls();
+    handler->setSpeed(0.5);
+    for (int i = 0; i < 1000; ++i)
+      world->step();
+    EXPECT_GT(handler->getNumCalls(), callsBefore)
+        << "the handler was no longer consulted";
+    EXPECT_GT((getPosition(box) - start).norm(), 0.25)
+        << "the started belt did not carry the box";
   }
-  EXPECT_EQ(0u, restingSteps) << "the box fell asleep on the belt";
-
-  const Eigen::Vector3d start = getPosition(box);
-  const std::size_t callsBefore = handler->getNumCalls();
-  handler->setSpeed(0.5);
-  for (int i = 0; i < 1000; ++i)
-    world->step();
-  EXPECT_GT(handler->getNumCalls(), callsBefore)
-      << "the handler was no longer consulted";
-  EXPECT_GT((getPosition(box) - start).norm(), 0.25)
-      << "the started belt did not carry the box";
 }
 
 //==============================================================================
@@ -4737,10 +4937,9 @@ TEST(IslandDeactivation, WakeOnSimpleFrameSupportEdit)
 }
 
 //==============================================================================
-// Stateful custom filters do not expose a revision, so the all-resting cache
-// must opt out instead of reusing a snapshot after the filter's decision
-// changes.
-TEST(IslandDeactivation, CustomFilterDisablesAllRestingFastPath)
+// A stateful custom filter is consulted before the all-resting cache is reused,
+// so changing its support decision wakes the body.
+TEST(IslandDeactivation, CustomFilterChangeWakesRestingFastPath)
 {
   auto world = makeSleepWorld();
   auto floor = createFloor();
@@ -4761,9 +4960,13 @@ TEST(IslandDeactivation, CustomFilterDisablesAllRestingFastPath)
   sleeper->setResting(true);
 
   world->step();
-  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  ASSERT_EQ(
+      0u,
+      world->getConstraintSolver()->getLastCollisionResult().getNumContacts());
   world->step();
-  ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+  ASSERT_EQ(
+      0u,
+      world->getConstraintSolver()->getLastCollisionResult().getNumContacts());
 
   filter->setIgnorePair(false);
   filter->resetNumCalls();
@@ -4772,6 +4975,966 @@ TEST(IslandDeactivation, CustomFilterDisablesAllRestingFastPath)
       << "custom BodyNodeCollisionFilter subclass was hidden by the "
          "all-resting fast path";
 }
+
+namespace {
+
+// Pads every result that has contacts with copies of them, up to the query's
+// contact limit, like a scene whose contact demand reaches the solver's
+// detection bound (CollisionOption::maxNumContacts).
+class PaddingCollisionDetector : public collision::DARTCollisionDetector
+{
+public:
+  static std::shared_ptr<PaddingCollisionDetector> create()
+  {
+    return std::shared_ptr<PaddingCollisionDetector>(
+        new PaddingCollisionDetector());
+  }
+
+  using DARTCollisionDetector::collide;
+
+  bool collide(
+      CollisionGroup* group,
+      const CollisionOption& option,
+      CollisionResult* result) override
+  {
+    const bool collided = DARTCollisionDetector::collide(group, option, result);
+    if (result != nullptr && result->getNumContacts() > 0u) {
+      const std::size_t numContacts = result->getNumContacts();
+      for (std::size_t i = numContacts; i < option.maxNumContacts; ++i) {
+        // Copy first: addContact() may reallocate the storage it refers to.
+        const collision::Contact contact = result->getContact(i % numContacts);
+        result->addContact(contact);
+      }
+    }
+    return collided;
+  }
+};
+
+} // namespace
+
+//==============================================================================
+TEST(IslandDeactivation, RestingBodyReportsZeroAcceleration)
+{
+  for (const bool tracked : {false, true}) {
+    SCOPED_TRACE(tracked ? "tracked custom filter" : "custom filter");
+    auto world = makeSleepWorld();
+    if (tracked) {
+      world->getConstraintSolver()->getCollisionOption().collisionFilter
+          = std::make_shared<RevisionedTogglePairCollisionFilter>(
+              nullptr, nullptr, false);
+    } else {
+      world->getConstraintSolver()->getCollisionOption().collisionFilter
+          = std::make_shared<TogglePairCollisionFilter>(
+              nullptr, nullptr, false);
+    }
+    world->addSkeleton(createFloor());
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    world->addSkeleton(box);
+    ASSERT_LT(
+        stepUntil(world.get(), 5000, [&]() { return box->isResting(); }),
+        5000u);
+
+    const auto* body = box->getBodyNode(0);
+    for (int i = 0; i < 3; ++i) {
+      EXPECT_TRUE(box->getAccelerations().isZero(0.0))
+          << box->getAccelerations().transpose();
+      EXPECT_TRUE(body->getSpatialAcceleration().isZero(0.0))
+          << body->getSpatialAcceleration().transpose();
+      world->step();
+      ASSERT_TRUE(box->isResting());
+    }
+  }
+}
+
+//==============================================================================
+TEST(IslandDeactivation, DefaultSleepingPreservesQueryAndAcceleration)
+{
+  for (const bool nullFilter : {false, true}) {
+    SCOPED_TRACE(nullFilter ? "null filter" : "default filter");
+    auto world = makeSleepWorld();
+    if (nullFilter)
+      world->getConstraintSolver()
+          ->getCollisionOption()
+          .collisionFilter.reset();
+    world->addSkeleton(createFloor());
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.02));
+    auto pushed = createFreeBox(
+        "pushed",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(3, 0, kHalf));
+
+    const Eigen::VectorXd seeded
+        = Eigen::VectorXd::Constant(sleeper->getNumDofs(), 0.125);
+    sleeper->setAccelerations(seeded);
+    sleeper->setResting(true);
+    EXPECT_EQ(seeded, sleeper->getAccelerations());
+    sleeper->setResting(false);
+    world->addSkeleton(sleeper);
+    world->addSkeleton(pushed);
+    ASSERT_LT(
+        stepUntil(world.get(), 5000, [&]() { return sleeper->isResting(); }),
+        5000u);
+    const Eigen::VectorXd frozenAcceleration = sleeper->getAccelerations();
+    const Eigen::Vector6d frozenBodyAcceleration
+        = sleeper->getBodyNode(0)->getSpatialAcceleration();
+    EXPECT_FALSE(frozenAcceleration.isZero(0.0));
+    EXPECT_FALSE(frozenBodyAcceleration.isZero(0.0));
+
+    if (!nullFilter) {
+      ASSERT_NO_FATAL_FAILURE(
+          stepUntilRestingFastPathReady(world.get(), sleeper));
+    }
+    const auto& solved = world->getConstraintSolver()->getLastCollisionResult();
+    for (int i = 0; i < 3; ++i) {
+      world->step();
+      ASSERT_TRUE(sleeper->isResting());
+      EXPECT_EQ(&solved, &world->getLastCollisionResult());
+      if (nullFilter)
+        EXPECT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+      else
+        EXPECT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+      EXPECT_EQ(frozenAcceleration, sleeper->getAccelerations());
+      EXPECT_EQ(
+          frozenBodyAcceleration,
+          sleeper->getBodyNode(0)->getSpatialAcceleration());
+    }
+
+    for (int i = 0; i < 20; ++i) {
+      pushed->getBodyNode(0)->setExtForce(Eigen::Vector3d(5.0, 0.0, 0.0));
+      world->step();
+      ASSERT_FALSE(pushed->isResting());
+      ASSERT_TRUE(sleeper->isResting());
+      EXPECT_EQ(&solved, &world->getLastCollisionResult());
+      EXPECT_GT(solved.getNumContacts(), 0u);
+    }
+  }
+}
+
+//==============================================================================
+TEST(IslandDeactivation, RestingModelKeepsWrenchesOfFreezingSolve)
+{
+  for (const bool tracked : {false, true}) {
+    SCOPED_TRACE(tracked ? "tracked custom filter" : "custom filter");
+    std::array<WorldPtr, 2> worlds; // sleeping, always awake
+    for (std::size_t i = 0; i < worlds.size(); ++i) {
+      worlds[i] = World::create();
+      auto opts = worlds[i]->getDeactivationOptions();
+      opts.mEnabled = i == 0;
+      worlds[i]->setDeactivationOptions(opts);
+      if (tracked) {
+        worlds[i]->getConstraintSolver()->getCollisionOption().collisionFilter
+            = std::make_shared<RevisionedTogglePairCollisionFilter>(
+                nullptr, nullptr, false);
+      } else {
+        worlds[i]->getConstraintSolver()->getCollisionOption().collisionFilter
+            = std::make_shared<TogglePairCollisionFilter>(
+                nullptr, nullptr, false);
+      }
+      worlds[i]->addSkeleton(createFloor());
+      worlds[i]->addSkeleton(createPlateAndSlab("welded", 0.0, false));
+      worlds[i]->addSkeleton(createPlateAndSlab("hinged", 2.0, true));
+    }
+    const auto& sleeping = worlds[0];
+    const auto& awake = worlds[1];
+
+    // Per model: the slab's joint wrench and the contact forces on its plate
+    // and slab, as reported by the sleeping world.
+    struct Loads
+    {
+      Eigen::Vector6d wrench;
+      Eigen::Vector3d plate;
+      Eigen::Vector3d slab;
+    };
+    const auto loads = [](const World& world, const std::string& name) {
+      const auto skel = world.getSkeleton(name);
+      const auto& result = world.getLastCollisionResult();
+      return Loads{
+          skel->getBodyNode(1)->getBodyForce(),
+          sumContactForces(result, skel->getBodyNode(0)),
+          sumContactForces(result, skel->getBodyNode(1))};
+    };
+
+    std::map<std::string, Loads> frozen;
+    for (std::size_t step = 0; step < 5000 && frozen.size() < 2; ++step) {
+      sleeping->step();
+      awake->step();
+      for (const char* name : {"welded", "hinged"}) {
+        if (!frozen.count(name) && sleeping->getSkeleton(name)->isResting())
+          frozen.emplace(name, loads(*sleeping, name));
+      }
+    }
+    ASSERT_EQ(frozen.size(), 2u) << "a model never went to sleep";
+
+    for (std::size_t step = 0; step < 1000; ++step) {
+      sleeping->step();
+      awake->step();
+      for (const char* name : {"welded", "hinged"}) {
+        ASSERT_TRUE(sleeping->getSkeleton(name)->isResting()) << name;
+        const auto now = loads(*sleeping, name);
+        ASSERT_EQ(now.wrench, frozen.at(name).wrench) << name;
+        ASSERT_EQ(now.plate, frozen.at(name).plate) << name;
+        ASSERT_EQ(now.slab, frozen.at(name).slab) << name;
+      }
+    }
+
+    // The weld carries exactly the slab's weight, and the plate's supports
+    // carry the whole model: both match the awake run up to the residual
+    // acceleration of the freezing step (about 1e-5 N here).
+    const Eigen::Vector3d g = sleeping->getGravity();
+    const auto welded = loads(*sleeping, "welded");
+    const auto weldedAwake = loads(*awake, "welded");
+    EXPECT_TRUE(welded.wrench.isApprox(weldedAwake.wrench, 1e-5))
+        << welded.wrench.transpose() << " vs "
+        << weldedAwake.wrench.transpose();
+    EXPECT_NEAR(welded.wrench[5], -g.z(), 1e-4);
+    EXPECT_TRUE((welded.plate - weldedAwake.plate).isZero(1e-4))
+        << welded.plate.transpose() << " vs " << weldedAwake.plate.transpose();
+    EXPECT_TRUE((welded.plate + 6.0 * g).isZero(1e-4)) << welded.plate;
+
+    // Friction can share the slab's horizontal load with the hinge; its
+    // frozen forces must still balance the slab and total model weight.
+    const auto hinged = loads(*sleeping, "hinged");
+    const auto hingedAwake = loads(*awake, "hinged");
+    EXPECT_TRUE(
+        (hinged.plate + hinged.slab - hingedAwake.plate - hingedAwake.slab)
+            .isZero(1e-4));
+    EXPECT_TRUE((hinged.plate + hinged.slab + 6.0 * g).isZero(1e-4));
+    EXPECT_TRUE((hinged.wrench.tail<3>() + hinged.slab + g).isZero(1e-3))
+        << hinged.wrench.transpose() << " | " << hinged.slab.transpose();
+  }
+}
+
+//==============================================================================
+TEST(IslandDeactivation, RestingContactsReportedWithForce)
+{
+  enum class Filter
+  {
+    RevisionTracked,
+    Replayed,
+  };
+  for (const auto filterKind : {Filter::RevisionTracked, Filter::Replayed}) {
+    SCOPED_TRACE(
+        filterKind == Filter::RevisionTracked
+            ? "revision-tracked custom filter"
+            : "custom filter without a revision");
+    auto world = makeSleepWorld();
+    if (filterKind == Filter::RevisionTracked) {
+      world->getConstraintSolver()->getCollisionOption().collisionFilter
+          = std::make_shared<RevisionedTogglePairCollisionFilter>(
+              nullptr, nullptr, false);
+    } else if (filterKind == Filter::Replayed) {
+      world->getConstraintSolver()->getCollisionOption().collisionFilter
+          = std::make_shared<TogglePairCollisionFilter>(
+              nullptr, nullptr, false);
+    }
+    auto floor = createFloor();
+    world->addSkeleton(floor);
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf));
+    auto pushed = createFreeBox(
+        "pushed",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(3, 0, kHalf));
+    world->addSkeleton(sleeper);
+    world->addSkeleton(pushed);
+
+    const double weight = sleeper->getMass() * -world->getGravity().z();
+    const auto supportForce = [&]() {
+      std::size_t numContacts = 0u;
+      double force = 0.0;
+      for (const auto& contact :
+           world->getLastCollisionResult().getContacts()) {
+        if (contactContainsBodies(
+                contact, floor->getBodyNode(0), sleeper->getBodyNode(0))) {
+          ++numContacts;
+          force += std::abs(contact.force.z());
+        }
+      }
+      return numContacts > 0u ? force : -1.0;
+    };
+
+    ASSERT_NO_FATAL_FAILURE(
+        stepUntilRestingFastPathReady(world.get(), sleeper));
+    ASSERT_TRUE(pushed->isResting());
+    const auto& solved = world->getConstraintSolver()->getLastCollisionResult();
+    for (int i = 0; i < 1000; ++i) {
+      world->step();
+      ASSERT_TRUE(sleeper->isResting());
+      ASSERT_EQ(0u, solved.getNumContacts());
+      ASSERT_NEAR(weight, supportForce(), 1e-3 * weight) << "step " << i;
+    }
+
+    // Another body awake: the sleeper's contacts are still reported, now next
+    // to the pushed body's live ones.
+    for (int i = 0; i < 20; ++i) {
+      pushed->getBodyNode(0)->setExtForce(Eigen::Vector3d(5.0, 0.0, 0.0));
+      world->step();
+      ASSERT_FALSE(pushed->isResting());
+      ASSERT_TRUE(sleeper->isResting());
+      ASSERT_NEAR(weight, supportForce(), 1e-3 * weight) << "pushed step " << i;
+    }
+  }
+}
+
+//==============================================================================
+TEST(IslandDeactivation, RestingContactsDroppedOnWorldChange)
+{
+  struct Change
+  {
+    const char* name;
+    bool removesSleeperContacts;
+    std::function<void(World&, const SkeletonPtr&, const SkeletonPtr&)> apply;
+  };
+  const std::vector<Change> changes = {
+      {"World::removeSkeleton(sleeper)",
+       true,
+       [](World& world, const SkeletonPtr&, const SkeletonPtr& sleeper) {
+         world.removeSkeleton(sleeper);
+       }},
+      {"World::removeSkeleton(support)",
+       true,
+       [](World& world, const SkeletonPtr& floor, const SkeletonPtr&) {
+         world.removeSkeleton(floor);
+       }},
+      {"World::removeAllSkeletons",
+       true,
+       [](World& world, const SkeletonPtr&, const SkeletonPtr&) {
+         world.removeAllSkeletons();
+       }},
+      {"ShapeNode::remove",
+       true,
+       [](World&, const SkeletonPtr&, const SkeletonPtr& sleeper) {
+         sleeper->getBodyNode(0)->getShapeNode(0)->remove();
+       }},
+      {"BodyNode::remove",
+       true,
+       [](World&, const SkeletonPtr&, const SkeletonPtr& sleeper) {
+         sleeper->getBodyNode(0)->remove();
+       }},
+      // The moved body's objects stay in the collision group until the next
+      // step updates it, so its contacts may still be reported until then.
+      {"BodyNode::moveTo out of the world",
+       false,
+       [](World&, const SkeletonPtr&, const SkeletonPtr& sleeper) {
+         sleeper->getBodyNode(0)->moveTo<FreeJoint>(
+             Skeleton::create("outside"), nullptr);
+       }},
+      {"ConstraintSolver::setCollisionDetector",
+       true,
+       [](World& world, const SkeletonPtr&, const SkeletonPtr&) {
+         world.getConstraintSolver()->setCollisionDetector(
+             collision::DARTCollisionDetector::create());
+       }},
+      {"CollisionGroup::removeShapeFrame",
+       true,
+       [](World& world, const SkeletonPtr&, const SkeletonPtr& sleeper) {
+         world.getConstraintSolver()->getCollisionGroup()->removeShapeFrame(
+             sleeper->getBodyNode(0)->getShapeNode(0));
+       }},
+      {"CollisionOption::collisionFilter",
+       false,
+       [](World& world, const SkeletonPtr&, const SkeletonPtr&) {
+         world.getConstraintSolver()->getCollisionOption().collisionFilter
+             = std::make_shared<TogglePairCollisionFilter>(
+                 nullptr, nullptr, false);
+       }},
+      {"World::reset",
+       true,
+       [](World& world, const SkeletonPtr&, const SkeletonPtr&) {
+         world.reset();
+       }},
+  };
+
+  for (const bool customFilter : {false, true}) {
+    SCOPED_TRACE(customFilter ? "custom filter" : "default filter");
+    for (const auto& change : changes) {
+      SCOPED_TRACE(change.name);
+      auto world = makeSleepWorld();
+      if (customFilter) {
+        world->getConstraintSolver()->getCollisionOption().collisionFilter
+            = std::make_shared<TogglePairCollisionFilter>(
+                nullptr, nullptr, false);
+      }
+      auto floor = createFloor();
+      world->addSkeleton(floor);
+      auto sleeper = createFreeBox(
+          "sleeper",
+          Eigen::Vector3d::Constant(kBoxSize),
+          Eigen::Vector3d(0, 0, kHalf));
+      auto other = createFreeBox(
+          "other",
+          Eigen::Vector3d::Constant(kBoxSize),
+          Eigen::Vector3d(1, 0, kHalf));
+      world->addSkeleton(sleeper);
+      world->addSkeleton(other);
+      ASSERT_NO_FATAL_FAILURE(
+          stepUntilRestingFastPathReady(world.get(), sleeper));
+      if (customFilter) {
+        ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+      } else {
+        ASSERT_EQ(
+            &world->getConstraintSolver()->getLastCollisionResult(),
+            &world->getLastCollisionResult());
+        ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+      }
+      const auto* sleeperShape = sleeper->getBodyNode(0)->getShapeNode(0);
+
+      change.apply(*world, floor, sleeper);
+
+      for (const auto& contact :
+           world->getLastCollisionResult().getContacts()) {
+        // Under ASan, a freed object fails here.
+        ASSERT_NE(nullptr, contact.collisionObject1->getShapeFrame());
+        ASSERT_NE(nullptr, contact.collisionObject2->getShapeFrame());
+        if (change.removesSleeperContacts) {
+          EXPECT_NE(sleeperShape, contact.collisionObject1->getShapeFrame());
+          EXPECT_NE(sleeperShape, contact.collisionObject2->getShapeFrame());
+        }
+      }
+
+      world->step();
+      const auto group = world->getConstraintSolver()->getCollisionGroup();
+      for (const auto& contact :
+           world->getLastCollisionResult().getContacts()) {
+        EXPECT_TRUE(
+            group->hasShapeFrame(contact.collisionObject1->getShapeFrame()));
+        EXPECT_TRUE(
+            group->hasShapeFrame(contact.collisionObject2->getShapeFrame()));
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST(IslandDeactivation, CustomFilterReplayWakesOnRestingPairDecisionChange)
+{
+  for (const auto& detector : getFilterQueryDetectors()) {
+    for (const std::size_t threads : {std::size_t{1}, std::size_t{4}}) {
+      for (const bool beforeFastPath : {true, false}) {
+        SCOPED_TRACE(
+            ::testing::Message()
+            << detector << " detector, " << threads << " threads, "
+            << (beforeFastPath ? "before" : "on") << " the fast path");
+        auto world = makeSleepWorld();
+        setCollisionDetector(*world, detector);
+        world->setNumSimulationThreads(threads);
+        auto floor = createFloor();
+        world->addSkeleton(floor);
+        auto sleeper = createFreeBox(
+            "sleeper",
+            Eigen::Vector3d::Constant(kBoxSize),
+            Eigen::Vector3d(0, 0, kHalf + 0.02));
+        world->addSkeleton(sleeper);
+        auto filter = std::make_shared<TogglePairCollisionFilter>(
+            floor->getBodyNode(0), sleeper->getBodyNode(0), false);
+        world->getConstraintSolver()->getCollisionOption().collisionFilter
+            = filter;
+
+        if (beforeFastPath) {
+          ASSERT_NO_FATAL_FAILURE(
+              stepUntilRestingWithContacts(world.get(), sleeper));
+        } else {
+          ASSERT_NO_FATAL_FAILURE(
+              stepUntilRestingFastPathReady(world.get(), sleeper));
+        }
+
+        filter->setIgnorePair(true);
+        expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+      }
+    }
+  }
+}
+
+//==============================================================================
+TEST(IslandDeactivation, CustomFilterReplayIgnoresNonOverlappingPairChange)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  auto distant = createFreeBox(
+      "distant",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(3, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+  world->addSkeleton(distant);
+  auto filter = std::make_shared<TogglePairCollisionFilter>(
+      sleeper->getBodyNode(0), distant->getBodyNode(0), false);
+  world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+  ASSERT_TRUE(distant->isResting());
+  const auto& solved = world->getConstraintSolver()->getLastCollisionResult();
+  for (const bool ignorePair : {true, false, true}) {
+    filter->setIgnorePair(ignorePair);
+    filter->resetNumCalls();
+    world->step();
+    EXPECT_GT(filter->getNumCalls(), 0u) << "the filter was not asked again";
+    EXPECT_TRUE(sleeper->isResting());
+    EXPECT_TRUE(distant->isResting());
+    EXPECT_EQ(0u, solved.getNumContacts())
+        << "the all-resting fast path was not taken";
+  }
+}
+
+//==============================================================================
+TEST(IslandDeactivation, CustomFilterReplayInvalidWhenQueryIncomplete)
+{
+  enum class Query
+  {
+    Complete,
+    BinaryLimit,
+    DetectionBound,
+  };
+  for (const auto query :
+       {Query::Complete, Query::BinaryLimit, Query::DetectionBound}) {
+    SCOPED_TRACE(
+        query == Query::Complete
+            ? "complete query"
+            : (query == Query::BinaryLimit ? "maxNumContacts = 1"
+                                           : "detection bound reached"));
+    auto world = makeSleepWorld();
+    world->setCollisionDetector(
+        query == Query::DetectionBound
+            ? collision::CollisionDetectorPtr(
+                PaddingCollisionDetector::create())
+            : collision::CollisionDetectorPtr(
+                collision::DARTCollisionDetector::create()));
+    auto& option = world->getConstraintSolver()->getCollisionOption();
+    option.maxNumContacts = query == Query::BinaryLimit ? 1u : 4u;
+    option.collisionFilter
+        = std::make_shared<TogglePairCollisionFilter>(nullptr, nullptr, false);
+    world->addSkeleton(createFloor());
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf));
+    world->addSkeleton(box);
+
+    if (query == Query::Complete) {
+      ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), box));
+      continue;
+    }
+
+    const auto& solved = world->getConstraintSolver()->getLastCollisionResult();
+    for (int i = 0; i < 3000; ++i) {
+      world->step();
+      ASSERT_GT(solved.getNumContacts(), 0u)
+          << "the all-resting fast path was taken at step " << i;
+    }
+  }
+}
+
+//==============================================================================
+TEST(IslandDeactivation, CustomFilterTrackerUsesRevisionNotReplay)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+  auto filter = std::make_shared<RevisionedTogglePairCollisionFilter>(
+      floor->getBodyNode(0), sleeper->getBodyNode(0), false);
+  world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+  filter->resetNumCalls();
+  for (int i = 0; i < 100; ++i)
+    world->step();
+  EXPECT_TRUE(sleeper->isResting());
+  EXPECT_EQ(0u, filter->getNumCalls())
+      << "a filter with a revision was asked about pairs on fast-path steps";
+
+  filter->setIgnorePair(true);
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+//==============================================================================
+TEST(IslandDeactivation, CustomFilterReplayIgnoresPreparation)
+{
+  auto world = makeSleepWorld();
+  auto floor = createFloor();
+  world->addSkeleton(floor);
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + 0.02));
+  world->addSkeleton(sleeper);
+  auto filter = std::make_shared<TogglePairCollisionFilter>(
+      floor->getBodyNode(0), sleeper->getBodyNode(0), false);
+  world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), sleeper));
+
+  filter->setIgnorePair(true);
+  world->setNumSimulationThreads(2);
+  ASSERT_FALSE(world->isInSimulationMode());
+  expectSleeperFallsAfterSupportEdit(world.get(), sleeper);
+}
+
+namespace {
+
+class ThrowingNormalizationFilter : public TogglePairCollisionFilter
+{
+public:
+  ThrowingNormalizationFilter(const BodyNode* support, const BodyNode* awake)
+    : TogglePairCollisionFilter(nullptr, nullptr, false),
+      mSupport(support),
+      mAwake(awake)
+  {
+  }
+
+  void throwAfterNextQuery()
+  {
+    mThrow = true;
+    mSawQuery = false;
+    // getRevision() includes the solver-only resting-filter mode.
+    mOutsideRevision = getRevision();
+  }
+
+  bool ignoresCollision(
+      const CollisionObject* object1,
+      const CollisionObject* object2) const override
+  {
+    if (mThrow) {
+      if (getRevision() != mOutsideRevision) {
+        mSawQuery = true;
+      } else if (mSawQuery) {
+        const auto* body1 = object1->getBodyNode();
+        const auto* body2 = object2->getBodyNode();
+        if ((body1 == mSupport && body2 == mAwake)
+            || (body2 == mSupport && body1 == mAwake)) {
+          mThrow = false;
+          throw std::runtime_error("filter normalization failed");
+        }
+      }
+    }
+    return TogglePairCollisionFilter::ignoresCollision(object1, object2);
+  }
+
+private:
+  const BodyNode* mSupport;
+  const BodyNode* mAwake;
+  mutable bool mThrow = false;
+  mutable bool mSawQuery = false;
+  std::size_t mOutsideRevision = 0u;
+};
+
+} // namespace
+
+//==============================================================================
+TEST(IslandDeactivation, FailedFilterNormalizationInvalidatesReplay)
+{
+  auto world = makeSleepWorld();
+  world->setCollisionDetector(collision::DARTCollisionDetector::create());
+  auto floor = createFloor();
+  auto sleeper = createFreeBox(
+      "sleeper",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf));
+  auto awake = createFreeBox(
+      "awake",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(3, 0, kHalf));
+  world->addSkeleton(floor);
+  world->addSkeleton(sleeper);
+  world->addSkeleton(awake);
+  auto filter = std::make_shared<ThrowingNormalizationFilter>(
+      floor->getBodyNode(0), awake->getBodyNode(0));
+  world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+
+  for (std::size_t step = 0; step < 2000 && !sleeper->isResting(); ++step) {
+    awake->getBodyNode(0)->setExtForce(Eigen::Vector3d(0, 0, 1));
+    world->step();
+  }
+  ASSERT_TRUE(sleeper->isResting());
+  ASSERT_FALSE(awake->isResting());
+  awake->getBodyNode(0)->setExtForce(Eigen::Vector3d(0, 0, 1));
+  world->step();
+  ASSERT_TRUE(sleeper->isResting());
+
+  // The awake support pair is visited last, after the resting pairs have been
+  // normalized. A throw must still leave the entire record invalid.
+  filter->throwAfterNextQuery();
+  awake->getBodyNode(0)->setExtForce(Eigen::Vector3d(0, 0, 1));
+  ASSERT_THROW(world->step(), std::runtime_error);
+  ASSERT_TRUE(sleeper->isResting());
+
+  world->step();
+  EXPECT_FALSE(sleeper->isResting())
+      << "a failed solve left a replayable record";
+}
+
+//==============================================================================
+TEST(IslandDeactivation, CustomFilterSleepingKillSwitch)
+{
+  for (const char* value : {"0", "FaLsE", "OFF", "nO"}) {
+    SCOPED_TRACE(value);
+    const ScopedEnvironmentVariable killSwitch(
+        "DART_CUSTOM_FILTER_SLEEPING", value);
+
+    auto world = makeSleepWorld();
+    world->getConstraintSolver()->getCollisionOption().collisionFilter
+        = std::make_shared<TogglePairCollisionFilter>(nullptr, nullptr, false);
+    world->addSkeleton(createFloor());
+    auto box = createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf));
+    world->addSkeleton(box);
+    const auto& solved = world->getConstraintSolver()->getLastCollisionResult();
+    bool touched = false;
+    bool restingAfterLastStep = false;
+    for (int i = 0; i < 3000; ++i) {
+      world->step();
+      touched = touched || solved.getNumContacts() > 0u;
+      ASSERT_TRUE(!touched || solved.getNumContacts() > 0u)
+          << "the all-resting fast path was taken at step " << i;
+      ASSERT_FALSE(restingAfterLastStep && box->isResting())
+          << "the box stayed asleep across step " << i;
+      restingAfterLastStep = box->isResting();
+      ASSERT_EQ(&solved, &world->getLastCollisionResult());
+    }
+
+    auto defaultWorld = makeSleepWorld();
+    defaultWorld->addSkeleton(createFloor());
+    auto sleeper = createFreeBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf));
+    defaultWorld->addSkeleton(sleeper);
+    ASSERT_NO_FATAL_FAILURE(
+        stepUntilRestingFastPathReady(defaultWorld.get(), sleeper));
+  }
+}
+
+//==============================================================================
+TEST(IslandDeactivation, CustomFilterSleepingKillSwitchKeepsTrackedJointDwell)
+{
+  const ScopedEnvironmentVariable killSwitch(
+      "DART_CUSTOM_FILTER_SLEEPING", "off");
+  auto world = makeSleepWorld();
+  world->getConstraintSolver()->getCollisionOption().collisionFilter
+      = std::make_shared<RevisionedTogglePairCollisionFilter>(
+          nullptr, nullptr, false);
+  world->addSkeleton(createFloor());
+  auto model = createPlateAndSlab("hinged", 0.0, true);
+  world->addSkeleton(model);
+
+  for (std::size_t i = 0; i < 1500; ++i)
+    world->step();
+  EXPECT_FALSE(model->isResting());
+
+  for (std::size_t i = 0; i < 1500; ++i)
+    world->step();
+  EXPECT_TRUE(model->isResting());
+}
+
+//==============================================================================
+TEST(IslandDeactivation, ReplayAndRetentionDeterministicAcrossThreads)
+{
+  struct Run
+  {
+    std::vector<Eigen::VectorXd> positions;
+    std::vector<std::size_t> reportedContacts;
+    std::size_t fastPathSteps = 0u;
+  };
+
+  const auto simulate = [](std::size_t threads) {
+    auto world = makeSleepWorld();
+    world->setCollisionDetector(collision::DARTCollisionDetector::create());
+    world->setNumSimulationThreads(threads);
+    auto floor = createFloor();
+    world->addSkeleton(floor);
+    // Enough skeletons for World's per-skeleton work to run in parallel.
+    std::vector<SkeletonPtr> boxes;
+    for (int i = 0; i < 144; ++i) {
+      boxes.push_back(createFreeBox(
+          "box" + std::to_string(i),
+          Eigen::Vector3d::Constant(kBoxSize),
+          Eigen::Vector3d(0.5 * (i % 12) - 3.0, 0.5 * (i / 12) - 3.0, kHalf)));
+      world->addSkeleton(boxes.back());
+    }
+    auto filter = std::make_shared<TogglePairCollisionFilter>(
+        floor->getBodyNode(0), boxes[7]->getBodyNode(0), false);
+    world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+
+    Run run;
+    const auto& solved = world->getConstraintSolver()->getLastCollisionResult();
+    for (int i = 0; i < 4000; ++i) {
+      if (i == 1500)
+        boxes[30]->getBodyNode(0)->addExtForce(Eigen::Vector3d(300.0, 0, 0));
+      if (i == 3500)
+        filter->setIgnorePair(true);
+      world->step();
+      if (solved.getNumContacts() == 0u)
+        ++run.fastPathSteps;
+      run.reportedContacts.push_back(
+          world->getLastCollisionResult().getNumContacts());
+    }
+    for (const auto& box : boxes)
+      run.positions.push_back(box->getPositions());
+    return run;
+  };
+
+  const Run serial = simulate(1u);
+  const Run threaded = simulate(4u);
+  ASSERT_GT(serial.fastPathSteps, 0u)
+      << "the boxes never reached the all-resting fast path";
+  EXPECT_EQ(serial.fastPathSteps, threaded.fastPathSteps);
+  EXPECT_EQ(serial.reportedContacts, threaded.reportedContacts);
+  for (std::size_t i = 0; i < serial.positions.size(); ++i) {
+    EXPECT_TRUE(serial.positions[i].isApprox(threaded.positions[i], 1e-12))
+        << "box" << i;
+  }
+}
+
+//==============================================================================
+TEST(IslandDeactivation, ReplayInManyWorldsSteppedInParallel)
+{
+  // Build first: BodyNode IDs are assigned by a shared counter.
+  constexpr std::size_t kNumWorlds = 64u;
+  std::vector<WorldPtr> worlds;
+  for (std::size_t w = 0; w < kNumWorlds; ++w) {
+    auto world = makeSleepWorld();
+    world->setCollisionDetector(collision::DARTCollisionDetector::create());
+    world->addSkeleton(createFloor());
+    world->addSkeleton(createFreeBox(
+        "box",
+        Eigen::Vector3d::Constant(kBoxSize),
+        Eigen::Vector3d(0, 0, kHalf + 0.001 * static_cast<double>(w))));
+    world->getConstraintSolver()->getCollisionOption().collisionFilter
+        = std::make_shared<TogglePairCollisionFilter>(nullptr, nullptr, false);
+    worlds.push_back(world);
+  }
+
+  const auto start = std::chrono::steady_clock::now();
+  std::vector<std::thread> threads;
+  threads.reserve(kNumWorlds);
+  for (const auto& world : worlds) {
+    threads.emplace_back([&world]() {
+      for (int i = 0; i < 1000; ++i) {
+        world->step();
+        (void)world->getLastCollisionResult().getNumContacts();
+      }
+    });
+  }
+  for (auto& thread : threads)
+    thread.join();
+  EXPECT_LT(
+      std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
+          .count(),
+      600.0);
+
+  // Several threads read one resting World's contacts at once, right after
+  // the sleep transition left them to be built on the next read.
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto box = createFreeBox(
+      "box", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d(0, 0, kHalf));
+  world->addSkeleton(box);
+  world->getConstraintSolver()->getCollisionOption().collisionFilter
+      = std::make_shared<TogglePairCollisionFilter>(nullptr, nullptr, false);
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), box));
+  std::array<std::size_t, 4> counts{};
+  std::vector<std::thread> readers;
+  for (std::size_t r = 0; r < counts.size(); ++r) {
+    readers.emplace_back([&world, &counts, r]() {
+      counts[r] = world->getLastCollisionResult().getNumContacts();
+    });
+  }
+  for (auto& reader : readers)
+    reader.join();
+  EXPECT_GT(counts[0], 0u);
+  for (const std::size_t count : counts)
+    EXPECT_EQ(counts[0], count);
+}
+
+//==============================================================================
+TEST(IslandDeactivation, EmptySkeletonDoesNotKeepBodiesAwake)
+{
+  auto world = makeSleepWorld();
+  world->addSkeleton(createFloor());
+  auto base = createFreeBox(
+      "base",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf));
+  auto payload = createFreeBox(
+      "payload",
+      Eigen::Vector3d::Constant(kBoxSize),
+      Eigen::Vector3d(0, 0, kHalf + kBoxSize + 0.1));
+  world->addSkeleton(base);
+  world->addSkeleton(payload);
+
+  // Welds the payload 0.1 m above the base, leaving its skeleton empty.
+  auto* payloadBody = payload->getBodyNode(0);
+  auto* weld = payloadBody->moveTo<WeldJoint>(base->getBodyNode(0));
+  weld->setTransformFromParentBodyNode(
+      Eigen::Isometry3d(Eigen::Translation3d(0.0, 0.0, kBoxSize + 0.1)));
+  ASSERT_EQ(0u, payload->getNumBodyNodes());
+  ASSERT_TRUE(world->hasSkeleton(payload));
+
+  ASSERT_NO_FATAL_FAILURE(stepUntilRestingFastPathReady(world.get(), base));
+
+  // Detaches the payload the way gz-physics does; it drops onto the base.
+  const Eigen::Isometry3d attached = payloadBody->getTransform();
+  payloadBody->moveTo<FreeJoint>(payload, nullptr)->setTransform(attached);
+  for (int i = 0; i < 200; ++i)
+    world->step();
+  EXPECT_LT(
+      payloadBody->getTransform().translation().z(),
+      attached.translation().z() - 0.05)
+      << "the detached payload stayed frozen in the air";
+}
+
+#if HAVE_BULLET
+//==============================================================================
+TEST(IslandDeactivation, CustomFilterRecorderSurvivesBulletOutOfStepQuery)
+{
+  // The skeletons outlive the World, so its collision group keeps their
+  // objects.
+  auto floor = createFloor();
+  auto box = createFreeBox(
+      "box", Eigen::Vector3d::Constant(kBoxSize), Eigen::Vector3d(0, 0, kHalf));
+  collision::CollisionGroupPtr group;
+  auto filter
+      = std::make_shared<TogglePairCollisionFilter>(nullptr, nullptr, false);
+  {
+    auto world = makeSleepWorld();
+    world->setCollisionDetector(collision::BulletCollisionDetector::create());
+    world->addSkeleton(floor);
+    world->addSkeleton(box);
+    world->getConstraintSolver()->getCollisionOption().collisionFilter = filter;
+    for (int i = 0; i < 10; ++i)
+      world->step();
+
+    EXPECT_TRUE(world->checkCollision());
+    group = world->getConstraintSolver()->getCollisionGroup();
+    CollisionOption option;
+    option.collisionFilter = filter;
+    CollisionResult result;
+    EXPECT_TRUE(group->collide(option, &result));
+    world->step();
+  }
+
+  filter.reset();
+  CollisionResult result;
+  EXPECT_TRUE(group->collide(CollisionOption(), &result));
+  EXPECT_GT(result.getNumContacts(), 0u);
+}
+#endif
 
 //==============================================================================
 // Applying an external force to a sleeping body must wake it (via the

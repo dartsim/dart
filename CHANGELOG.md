@@ -581,6 +581,15 @@
 
 * Simulation
 
+  * Allow resting islands that use a custom `BodyNodeCollisionFilter` to sleep
+    while their collision decisions stay unchanged, and keep reporting their
+    last solved contacts and forces. Such islands stay awake while the
+    constraint solver holds skeletons or collision shape frames the `World`
+    does not own. Set
+    `DART_CUSTOM_FILTER_SLEEPING=0` to disable custom-filter sleeping.
+    Downstream code that constructs or subclasses `World` must rebuild against
+    DART 6.20: [#3632](https://github.com/dartsim/dart/pull/3632)
+
   * Add opt-in `NsgsFrictionSolver` with exact Coulomb, associated, and box
     friction laws, cumulative `FrictionSolveStats`, clone support, and
     dartpy configuration including the secondary solver. The default
