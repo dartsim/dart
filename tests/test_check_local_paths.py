@@ -101,6 +101,8 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         r"http://example.com\scratchpad\example.md",
         "http://localhost@github.com/example/scratchpad/issues/1",
         "https://example.com/home/docs/index.html",
+        "https://bücher.de/home/docs/index.html",
+        "https://xn--bcher-kva.de/home/docs/index.html",
         "https://github.com/example/scratchpad/issues/1",
         "https://github.com/org/repo/blob/main/task_2/script.py",
         "HTTP://example.com/.ab/example.json",
@@ -219,6 +221,9 @@ def test_special_use_hosts_do_not_mask_paths(suffix, capsys):
         "foo.bar..",
         "foo_bar.com",
         "a" * 64 + ".com",
+        "bücher.local",
+        "\u200d.com",
+        "ü" * 58 + ".de",
     ],
 )
 def test_non_public_dns_hosts_do_not_mask_home_paths(host, capsys):
@@ -279,6 +284,24 @@ def test_merge_cleanup_keeps_editor_appended_comments(
         )
         == expected
     )
+
+
+@pytest.mark.parametrize("arguments", [[], ["--edit"], ["--no-edit"]])
+@pytest.mark.parametrize("configured", [None, "default", "strip", "scissors"])
+@pytest.mark.parametrize("explicit_default", [False, True])
+def test_merge_comments_require_explicit_cleanup(
+    repo, monkeypatch, arguments, configured, explicit_default
+):
+    if configured is not None:
+        _git(repo, "config", "commit.cleanup", configured)
+    monkeypatch.chdir(repo)
+    message = "Public merge\n# Build /home/example/private.md\n"
+    command = ["git", "merge", *arguments]
+    if explicit_default:
+        command.append("--cleanup=default")
+    # Scissors keeps comments before its cut; strip is the only safe exemption.
+    expected = explicit_default or configured != "strip"
+    assert checker.scan_commit_message(message, command, "#") == expected
 
 
 def test_public_url_with_balanced_parentheses_is_fully_masked(capsys):

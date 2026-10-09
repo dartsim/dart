@@ -134,6 +134,10 @@ def is_public_host(host: str | None) -> bool:
         # Python counts some multicast ranges (SSDP, link-local) as global.
         return address.is_global and not address.is_multicast
     except ValueError:
+        try:
+            host = host.encode("idna").decode("ascii")
+        except UnicodeError:
+            return False
         # Shorthand numeric hosts such as 127.1 still reach local addresses.
         if re.fullmatch(r"[0-9.]+|0x[0-9a-f.x]+", host, re.IGNORECASE):
             return False
@@ -372,7 +376,8 @@ def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
         cleanup = result.stdout.rstrip("\n") if result.returncode == 0 else "default"
     use_editor = edit if edit is not None else not supplied
     if cleanup == "default":
-        cleanup = "strip" if use_editor else "whitespace"
+        # Merge editor use depends on environment and interactivity, not just args.
+        cleanup = "strip" if subcommand == "commit" and use_editor else "whitespace"
     elif cleanup == "scissors" and not use_editor:
         cleanup = "whitespace"
     return cleanup, verbose
