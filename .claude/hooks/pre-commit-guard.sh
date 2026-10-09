@@ -1256,7 +1256,7 @@ def managed_hooks_current(root):
             return False
         if (
             not os.access(path, os.X_OK)
-            or "DART-MANAGED-HOOK v11  (sentinel line: do not edit; the installer keys on it)"
+            or "DART-MANAGED-HOOK v12  (sentinel line: do not edit; the installer keys on it)"
             not in content
             or "if ! \"$python_cmd\" " + command + "; then" not in content
         ):

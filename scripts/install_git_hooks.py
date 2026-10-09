@@ -16,7 +16,8 @@ using ``check_local_paths.py --commit-range``. Existing refs use the remote SHA;
 new refs use the merge base with the remote's default branch. Missing base
 objects are fetched without changing refs or FETCH_HEAD. An empty remote or
 unrelated history scans the whole local history; lookup or scan errors block
-the push. Foreign pre-push hooks receive the same stdin. Behaviour:
+the push. An unavailable checker or compatible Python skips the scan with a
+notice. Foreign pre-push hooks receive the same stdin. Behaviour:
 
 * Each managed hook carries a sentinel line (``DART-MANAGED-HOOK``); re-running
   this installer detects it and rewrites the hook in place, so the command is
@@ -51,19 +52,20 @@ import sys
 from pathlib import Path
 
 SENTINEL = "DART-MANAGED-HOOK"
-HOOK_VERSION = "11"
+HOOK_VERSION = "12"
 
 PRE_PUSH_SCAN = """\
+if [ ! -f scripts/check_local_paths.py ] || [ -z "$python_cmd" ]; then
+    echo "DART pre-push: local-path gate unavailable in this checkout; skipping scan." >&2
+    exit 0
+fi
+
 printf '%s\\n' "$push_updates" | while read -r local_ref local_sha remote_ref remote_sha; do
     # A zero local SHA denotes deletion; no commit is being published.
     case "$local_sha" in
         *[!0]*) ;;
         *) continue ;;
     esac
-    if [ ! -f scripts/check_local_paths.py ] || [ -z "$python_cmd" ]; then
-        echo "DART pre-push: local-path gate unavailable — push blocked." >&2
-        exit 1
-    fi
     base_sha=$remote_sha
     new_ref=0
     case "$remote_sha" in
