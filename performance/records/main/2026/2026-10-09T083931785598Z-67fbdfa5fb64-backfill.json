@@ -1,0 +1,3034 @@
+{
+  "schema": "dart-perf/1",
+  "run": {
+    "tier": "backfill",
+    "harness_commit": "409acba6904a08ffc2fd10d52174c5ce20a29c1c",
+    "commit": "67fbdfa5fb64e4c7ced6696ce7bf892e988f7794",
+    "parent": "a75ed57cef3daa3d5659457458f363fad1dca106",
+    "branch": "main",
+    "pr": 3576,
+    "describe": "v6.19.5-285-g67fbdfa5fb6",
+    "time": "2026-10-09T08:39:31.785598+00:00",
+    "env": {
+      "valgrind": "3.22.0",
+      "valgrind_sha": "4652774bd116cb49951ef74115ad4237cad5021b2bd4d80002f09d986ec438b9",
+      "callgrind_sha": "5bc589aea801a02d44a388697e5fe6e8437d475dbdf614291eb1f8bb9a76ad98",
+      "valgrind_guest_cpu": "Intel(R) Core(TM) i7-4910MQ CPU @ 2.90GHz",
+      "compiler": "GNU 13.3.0",
+      "compiler_sha": "1353e9bdd29a7295c7226bf6c63abccce056d8cac31f112e5cdbecc3f28c2769",
+      "compiler_provenance": "dart-perf-build/1",
+      "glibc": "2.39",
+      "pixi_lock_sha": "56fcfb7118bb0edb33efa2f92fb91349d819d02f93ab55c04a7c24388aa45e6a",
+      "runtime_pixi_lock_sha": "56fcfb7118bb0edb33efa2f92fb91349d819d02f93ab55c04a7c24388aa45e6a",
+      "runtime_environment": "default",
+      "staging_root": "default",
+      "preset": "perf-1",
+      "harness_sha": "0e6a4bd4408d2d69226d647c5fb8a3b087128e66b27dd482c34bed2677e5fc66",
+      "allocshim_sha": "5f16a7d5a3ecfab93d9b8625541574b0e6b437b9c59780f2f7d5dceef3940b20",
+      "osgpath_sha": "d3e9c07242e9b62952e1c44c9733b7515753d2d681ebc5988023a9dc503bea2f",
+      "heappad_sha": "93f023d7e9686aaa11269bfd43f1dc26bc0ceda122b0d33ce370a799978629f6",
+      "runner": {
+        "environment": "local",
+        "name": "local",
+        "image": ""
+      },
+      "host_cpu": "AMD Ryzen Threadripper 3970X 32-Core Processor",
+      "fingerprint": "96e03289a2c048f0c51b646b44985f8a7ead0453a55256695c7abe73a734e86a"
+    },
+    "accepted": []
+  },
+  "results": [
+    {
+      "row": "s3w",
+      "det": "dart",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 5,
+        "steps": 5
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "dart::simulation::World::step(bool)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "79bac99f63829c6676e63db59dbbb949c827dd4c099c5cf0b4010fa48a97e880",
+      "head": {
+        "guards": {
+          "hash": "0x3250ca4b2debb3f8",
+          "finite": true,
+          "contacts": 3003,
+          "cap_hit": false,
+          "resting": "0/3003",
+          "pairs": 3003
+        },
+        "time_advanced": true,
+        "allocs_per_step": 9009.0,
+        "bytes_per_step": 432432.0,
+        "allocs": 45045,
+        "bytes": 2162160,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 8.48395e-10,
+        "ir_per_step": 167767921.0
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0x3250ca4b2debb3f8",
+          "finite": true,
+          "contacts": 3003,
+          "cap_hit": false,
+          "resting": "0/3003",
+          "pairs": 3003
+        },
+        "time_advanced": true,
+        "allocs_per_step": 9009.0,
+        "bytes_per_step": 432432.0,
+        "allocs": 45045,
+        "bytes": 2162160,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 8.48395e-10,
+        "ir_per_step": 167232846.0
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.0031995807809190786,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "s3w",
+      "det": "ode",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 5,
+        "steps": 5
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "dart::simulation::World::step(bool)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "79bac99f63829c6676e63db59dbbb949c827dd4c099c5cf0b4010fa48a97e880",
+      "head": {
+        "guards": {
+          "hash": "0xf078c4d84a22c513",
+          "finite": true,
+          "contacts": 9009,
+          "cap_hit": false,
+          "resting": "0/3003",
+          "pairs": 3003
+        },
+        "time_advanced": true,
+        "allocs_per_step": 24445.4,
+        "bytes_per_step": 2876787.2,
+        "allocs": 122227,
+        "bytes": 14383936,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 8.48395e-10,
+        "ir_per_step": 326114689.2
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf078c4d84a22c513",
+            "finite": true,
+            "contacts": 9009,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 122227,
+          "bytes": 14383936,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf078c4d84a22c513",
+            "finite": true,
+            "contacts": 9009,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 122227,
+          "bytes": 14383936,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf078c4d84a22c513",
+            "finite": true,
+            "contacts": 9009,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 122227,
+          "bytes": 14383936,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf078c4d84a22c513",
+            "finite": true,
+            "contacts": 9009,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 122227,
+          "bytes": 14383936,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf078c4d84a22c513",
+            "finite": true,
+            "contacts": 9009,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 122227,
+          "bytes": 14383936,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf078c4d84a22c513",
+            "finite": true,
+            "contacts": 9009,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 122227,
+          "bytes": 14383936,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0xf078c4d84a22c513",
+            "finite": true,
+            "contacts": 9009,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 122227,
+          "bytes": 14383936,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0xf078c4d84a22c513",
+          "finite": true,
+          "contacts": 9009,
+          "cap_hit": false,
+          "resting": "0/3003",
+          "pairs": 3003
+        },
+        "time_advanced": true,
+        "allocs_per_step": 24445.4,
+        "bytes_per_step": 2876787.2,
+        "allocs": 122227,
+        "bytes": 14383936,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 8.48395e-10,
+        "ir_per_step": 326202423.2
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": -0.00026895569670924507,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "s2r",
+      "det": "dart",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 1000,
+        "steps": 200
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "dart::simulation::World::step(bool)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "79bac99f63829c6676e63db59dbbb949c827dd4c099c5cf0b4010fa48a97e880",
+      "head": {
+        "guards": {
+          "hash": "0x81239bbde9a7b865",
+          "finite": true,
+          "contacts": 0,
+          "cap_hit": false,
+          "resting": "3003/3003",
+          "pairs": 0
+        },
+        "time_advanced": true,
+        "allocs_per_step": 0.0,
+        "bytes_per_step": 0.0,
+        "allocs": 0,
+        "bytes": 0,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.0,
+        "ir_per_step": 97670.0
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x81239bbde9a7b865",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x81239bbde9a7b865",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0x81239bbde9a7b865",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0x81239bbde9a7b865",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0x81239bbde9a7b865",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0x81239bbde9a7b865",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0x81239bbde9a7b865",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0x81239bbde9a7b865",
+          "finite": true,
+          "contacts": 0,
+          "cap_hit": false,
+          "resting": "3003/3003",
+          "pairs": 0
+        },
+        "time_advanced": true,
+        "allocs_per_step": 0.0,
+        "bytes_per_step": 0.0,
+        "allocs": 0,
+        "bytes": 0,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.0,
+        "ir_per_step": 97670.0
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.0,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "s2r",
+      "det": "ode",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 1000,
+        "steps": 200
+      },
+      "method": "native",
+      "expected_ir": false,
+      "collection_signature": null,
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "79bac99f63829c6676e63db59dbbb949c827dd4c099c5cf0b4010fa48a97e880",
+      "head": {
+        "guards": {
+          "hash": "0xdd425b5cb836158f",
+          "finite": true,
+          "contacts": 0,
+          "cap_hit": false,
+          "resting": "3003/3003",
+          "pairs": 0
+        },
+        "time_advanced": true,
+        "allocs_per_step": 0.0,
+        "bytes_per_step": 0.0,
+        "allocs": 0,
+        "bytes": 0,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.0
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xdd425b5cb836158f",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xdd425b5cb836158f",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0xdd425b5cb836158f",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0xdd425b5cb836158f",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0xdd425b5cb836158f",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0xdd425b5cb836158f",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0xdd425b5cb836158f",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "3003/3003",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0xdd425b5cb836158f",
+          "finite": true,
+          "contacts": 0,
+          "cap_hit": false,
+          "resting": "3003/3003",
+          "pairs": 0
+        },
+        "time_advanced": true,
+        "allocs_per_step": 0.0,
+        "bytes_per_step": 0.0,
+        "allocs": 0,
+        "bytes": 0,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.0
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": null,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "s1p",
+      "det": "dart",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 100,
+        "steps": 50
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "dart::simulation::World::step(bool)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "ffd13f706cd1579d94b8247c684b2a5e415187e3a4cc388b65a737ca8bc52ea8",
+      "head": {
+        "guards": {
+          "hash": "0x6c7895688d50c141",
+          "finite": true,
+          "contacts": 89,
+          "cap_hit": false,
+          "resting": "0/60",
+          "pairs": 79
+        },
+        "time_advanced": true,
+        "allocs_per_step": 573.42,
+        "bytes_per_step": 399887.04,
+        "allocs": 28671,
+        "bytes": 19994352,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.18711,
+        "ir_per_step": 12114303.94
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0x6c7895688d50c141",
+          "finite": true,
+          "contacts": 89,
+          "cap_hit": false,
+          "resting": "0/60",
+          "pairs": 79
+        },
+        "time_advanced": true,
+        "allocs_per_step": 573.42,
+        "bytes_per_step": 399887.04,
+        "allocs": 28671,
+        "bytes": 19994352,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.18711,
+        "ir_per_step": 12114303.94
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.0,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "s1p",
+      "det": "ode",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 100,
+        "steps": 50
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "dart::simulation::World::step(bool)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "ffd13f706cd1579d94b8247c684b2a5e415187e3a4cc388b65a737ca8bc52ea8",
+      "head": {
+        "guards": {
+          "hash": "0xbcb5997b6def41cb",
+          "finite": true,
+          "contacts": 150,
+          "cap_hit": false,
+          "resting": "0/60",
+          "pairs": 79
+        },
+        "time_advanced": true,
+        "allocs_per_step": 335.4,
+        "bytes_per_step": 31945.04,
+        "allocs": 16770,
+        "bytes": 1597252,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.197723,
+        "ir_per_step": 15826162.96
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xbcb5997b6def41cb",
+            "finite": true,
+            "contacts": 150,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.197723,
+          "checkpoints": null,
+          "allocs": 16770,
+          "bytes": 1597252,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xbcb5997b6def41cb",
+            "finite": true,
+            "contacts": 150,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.197723,
+          "checkpoints": null,
+          "allocs": 16770,
+          "bytes": 1597252,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0xbcb5997b6def41cb",
+            "finite": true,
+            "contacts": 150,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.197723,
+          "checkpoints": null,
+          "allocs": 16770,
+          "bytes": 1597252,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0xbcb5997b6def41cb",
+            "finite": true,
+            "contacts": 150,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.197723,
+          "checkpoints": null,
+          "allocs": 16770,
+          "bytes": 1597252,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0xbcb5997b6def41cb",
+            "finite": true,
+            "contacts": 150,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.197723,
+          "checkpoints": null,
+          "allocs": 16770,
+          "bytes": 1597252,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0xbcb5997b6def41cb",
+            "finite": true,
+            "contacts": 150,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.197723,
+          "checkpoints": null,
+          "allocs": 16770,
+          "bytes": 1597252,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0xbcb5997b6def41cb",
+            "finite": true,
+            "contacts": 150,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.197723,
+          "checkpoints": null,
+          "allocs": 16770,
+          "bytes": 1597252,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0xbcb5997b6def41cb",
+          "finite": true,
+          "contacts": 150,
+          "cap_hit": false,
+          "resting": "0/60",
+          "pairs": 79
+        },
+        "time_advanced": true,
+        "allocs_per_step": 335.4,
+        "bytes_per_step": 31945.04,
+        "allocs": 16770,
+        "bytes": 1597252,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.197723,
+        "ir_per_step": 15826162.96
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.0,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "s5a",
+      "det": "dart",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 100,
+        "steps": 100
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "dart::simulation::World::step(bool)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "96ac5e422226b7f3e9be72ac79914a326ef0c1cbb4880965c3bae9f0e474385c",
+      "head": {
+        "guards": {
+          "hash": "0xa4358525a979ba85",
+          "finite": true,
+          "contacts": 210,
+          "cap_hit": false,
+          "resting": "0/90",
+          "pairs": 90
+        },
+        "time_advanced": true,
+        "allocs_per_step": 270.0,
+        "bytes_per_step": 12960.0,
+        "allocs": 27000,
+        "bytes": 1296000,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 1.69645e-08,
+        "ir_per_step": 6923282.0
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xa4358525a979ba85",
+            "finite": true,
+            "contacts": 210,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 1.69645e-08,
+          "checkpoints": null,
+          "allocs": 27000,
+          "bytes": 1296000,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xa4358525a979ba85",
+            "finite": true,
+            "contacts": 210,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 1.69645e-08,
+          "checkpoints": null,
+          "allocs": 27000,
+          "bytes": 1296000,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0xa4358525a979ba85",
+            "finite": true,
+            "contacts": 210,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 1.69645e-08,
+          "checkpoints": null,
+          "allocs": 27000,
+          "bytes": 1296000,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0xa4358525a979ba85",
+            "finite": true,
+            "contacts": 210,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 1.69645e-08,
+          "checkpoints": null,
+          "allocs": 27000,
+          "bytes": 1296000,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0xa4358525a979ba85",
+            "finite": true,
+            "contacts": 210,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 1.69645e-08,
+          "checkpoints": null,
+          "allocs": 27000,
+          "bytes": 1296000,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0xa4358525a979ba85",
+            "finite": true,
+            "contacts": 210,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 1.69645e-08,
+          "checkpoints": null,
+          "allocs": 27000,
+          "bytes": 1296000,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0xa4358525a979ba85",
+            "finite": true,
+            "contacts": 210,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 1.69645e-08,
+          "checkpoints": null,
+          "allocs": 27000,
+          "bytes": 1296000,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0xa4358525a979ba85",
+          "finite": true,
+          "contacts": 210,
+          "cap_hit": false,
+          "resting": "0/90",
+          "pairs": 90
+        },
+        "time_advanced": true,
+        "allocs_per_step": 270.0,
+        "bytes_per_step": 12960.0,
+        "allocs": 27000,
+        "bytes": 1296000,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 1.69645e-08,
+        "ir_per_step": 6923282.0
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.0,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "s5a",
+      "det": "fcl",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 100,
+        "steps": 100
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "dart::simulation::World::step(bool)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "96ac5e422226b7f3e9be72ac79914a326ef0c1cbb4880965c3bae9f0e474385c",
+      "head": {
+        "guards": {
+          "hash": "0xaec3564d7de9c000",
+          "finite": true,
+          "contacts": 180,
+          "cap_hit": false,
+          "resting": "0/90",
+          "pairs": 90
+        },
+        "time_advanced": true,
+        "allocs_per_step": 1224.0,
+        "bytes_per_step": 84149.0,
+        "allocs": 122400,
+        "bytes": 8414900,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.000536389,
+        "ir_per_step": 5993222.52
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xaec3564d7de9c000",
+            "finite": true,
+            "contacts": 180,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000536389,
+          "checkpoints": null,
+          "allocs": 122400,
+          "bytes": 8414900,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xaec3564d7de9c000",
+            "finite": true,
+            "contacts": 180,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000536389,
+          "checkpoints": null,
+          "allocs": 122400,
+          "bytes": 8414900,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0xaec3564d7de9c000",
+            "finite": true,
+            "contacts": 180,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000536389,
+          "checkpoints": null,
+          "allocs": 122400,
+          "bytes": 8414900,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0xaec3564d7de9c000",
+            "finite": true,
+            "contacts": 180,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000536389,
+          "checkpoints": null,
+          "allocs": 122400,
+          "bytes": 8414900,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0xaec3564d7de9c000",
+            "finite": true,
+            "contacts": 180,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000536389,
+          "checkpoints": null,
+          "allocs": 122400,
+          "bytes": 8414900,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0xaec3564d7de9c000",
+            "finite": true,
+            "contacts": 180,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000536389,
+          "checkpoints": null,
+          "allocs": 122400,
+          "bytes": 8414900,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0xaec3564d7de9c000",
+            "finite": true,
+            "contacts": 180,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000536389,
+          "checkpoints": null,
+          "allocs": 122400,
+          "bytes": 8414900,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0xaec3564d7de9c000",
+          "finite": true,
+          "contacts": 180,
+          "cap_hit": false,
+          "resting": "0/90",
+          "pairs": 90
+        },
+        "time_advanced": true,
+        "allocs_per_step": 1224.0,
+        "bytes_per_step": 84149.0,
+        "allocs": 122400,
+        "bytes": 8414900,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.000536389,
+        "ir_per_step": 5993222.52
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.0,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "s5a",
+      "det": "bullet",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 100,
+        "steps": 100
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "dart::simulation::World::step(bool)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "96ac5e422226b7f3e9be72ac79914a326ef0c1cbb4880965c3bae9f0e474385c",
+      "head": {
+        "guards": {
+          "hash": "0xabc68224e47eff7c",
+          "finite": true,
+          "contacts": 262,
+          "cap_hit": false,
+          "resting": "0/90",
+          "pairs": 90
+        },
+        "time_advanced": true,
+        "allocs_per_step": 263.77,
+        "bytes_per_step": 13253.99,
+        "allocs": 26377,
+        "bytes": 1325399,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 2.42815e-05,
+        "ir_per_step": 7501567.37
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xabc68224e47eff7c",
+            "finite": true,
+            "contacts": 262,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 2.42815e-05,
+          "checkpoints": null,
+          "allocs": 26377,
+          "bytes": 1325399,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xabc68224e47eff7c",
+            "finite": true,
+            "contacts": 262,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 2.42815e-05,
+          "checkpoints": null,
+          "allocs": 26377,
+          "bytes": 1325399,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0xabc68224e47eff7c",
+            "finite": true,
+            "contacts": 262,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 2.42815e-05,
+          "checkpoints": null,
+          "allocs": 26377,
+          "bytes": 1325399,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0xabc68224e47eff7c",
+            "finite": true,
+            "contacts": 262,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 2.42815e-05,
+          "checkpoints": null,
+          "allocs": 26377,
+          "bytes": 1325399,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0xabc68224e47eff7c",
+            "finite": true,
+            "contacts": 262,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 2.42815e-05,
+          "checkpoints": null,
+          "allocs": 26377,
+          "bytes": 1325399,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0xabc68224e47eff7c",
+            "finite": true,
+            "contacts": 262,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 2.42815e-05,
+          "checkpoints": null,
+          "allocs": 26377,
+          "bytes": 1325399,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0xabc68224e47eff7c",
+            "finite": true,
+            "contacts": 262,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 2.42815e-05,
+          "checkpoints": null,
+          "allocs": 26377,
+          "bytes": 1325399,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0xabc68224e47eff7c",
+          "finite": true,
+          "contacts": 262,
+          "cap_hit": false,
+          "resting": "0/90",
+          "pairs": 90
+        },
+        "time_advanced": true,
+        "allocs_per_step": 263.77,
+        "bytes_per_step": 13253.99,
+        "allocs": 26377,
+        "bytes": 1325399,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 2.42815e-05,
+        "ir_per_step": 7501567.37
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.0,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "s5a",
+      "det": "ode",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 100,
+        "steps": 100
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "dart::simulation::World::step(bool)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "96ac5e422226b7f3e9be72ac79914a326ef0c1cbb4880965c3bae9f0e474385c",
+      "head": {
+        "guards": {
+          "hash": "0x8b3c920ec30ec1ea",
+          "finite": true,
+          "contacts": 270,
+          "cap_hit": false,
+          "resting": "0/90",
+          "pairs": 90
+        },
+        "time_advanced": true,
+        "allocs_per_step": 625.41,
+        "bytes_per_step": 48014.72,
+        "allocs": 62541,
+        "bytes": 4801472,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.000182788,
+        "ir_per_step": 7043379.62
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x8b3c920ec30ec1ea",
+            "finite": true,
+            "contacts": 270,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000182788,
+          "checkpoints": null,
+          "allocs": 62541,
+          "bytes": 4801472,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x8b3c920ec30ec1ea",
+            "finite": true,
+            "contacts": 270,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000182788,
+          "checkpoints": null,
+          "allocs": 62541,
+          "bytes": 4801472,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0x8b3c920ec30ec1ea",
+            "finite": true,
+            "contacts": 270,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000182788,
+          "checkpoints": null,
+          "allocs": 62541,
+          "bytes": 4801472,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0x8b3c920ec30ec1ea",
+            "finite": true,
+            "contacts": 270,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000182788,
+          "checkpoints": null,
+          "allocs": 62541,
+          "bytes": 4801472,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0x8b3c920ec30ec1ea",
+            "finite": true,
+            "contacts": 270,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000182788,
+          "checkpoints": null,
+          "allocs": 62541,
+          "bytes": 4801472,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0x8b3c920ec30ec1ea",
+            "finite": true,
+            "contacts": 270,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000182788,
+          "checkpoints": null,
+          "allocs": 62541,
+          "bytes": 4801472,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0x8b3c920ec30ec1ea",
+            "finite": true,
+            "contacts": 270,
+            "cap_hit": false,
+            "resting": "0/90",
+            "pairs": 90
+          },
+          "max_penetration": 0.000182788,
+          "checkpoints": null,
+          "allocs": 62541,
+          "bytes": 4801472,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0x8b3c920ec30ec1ea",
+          "finite": true,
+          "contacts": 270,
+          "cap_hit": false,
+          "resting": "0/90",
+          "pairs": 90
+        },
+        "time_advanced": true,
+        "allocs_per_step": 625.41,
+        "bytes_per_step": 48014.72,
+        "allocs": 62541,
+        "bytes": 4801472,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.000182788,
+        "ir_per_step": 7043379.62
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.0,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "pend",
+      "det": "dart",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 100,
+        "steps": 1000
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "dart::simulation::World::step(bool)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "df7188efb202df2577bdd04c0888d390763d25280f63d5b2004b0dfe523b2404",
+      "head": {
+        "guards": {
+          "hash": "0x4d0cffc02a6ceb19",
+          "finite": true,
+          "contacts": 0,
+          "cap_hit": false,
+          "resting": "0/22",
+          "pairs": 0
+        },
+        "time_advanced": true,
+        "allocs_per_step": 0.0,
+        "bytes_per_step": 0.0,
+        "allocs": 0,
+        "bytes": 0,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.0,
+        "ir_per_step": 386547.262
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x4d0cffc02a6ceb19",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "0/22",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x4d0cffc02a6ceb19",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "0/22",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0x4d0cffc02a6ceb19",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "0/22",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0x4d0cffc02a6ceb19",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "0/22",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0x4d0cffc02a6ceb19",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "0/22",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0x4d0cffc02a6ceb19",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "0/22",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0x4d0cffc02a6ceb19",
+            "finite": true,
+            "contacts": 0,
+            "cap_hit": false,
+            "resting": "0/22",
+            "pairs": 0
+          },
+          "max_penetration": 0.0,
+          "checkpoints": null,
+          "allocs": 0,
+          "bytes": 0,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0x4d0cffc02a6ceb19",
+          "finite": true,
+          "contacts": 0,
+          "cap_hit": false,
+          "resting": "0/22",
+          "pairs": 0
+        },
+        "time_advanced": true,
+        "allocs_per_step": 0.0,
+        "bytes_per_step": 0.0,
+        "allocs": 0,
+        "bytes": 0,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.0,
+        "ir_per_step": 382523.262
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.010519621679896686,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [
+        "Ir +1.05% (limit +1.00%)"
+      ],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "gzb",
+      "det": "ode",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 2,
+        "steps": 3
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "stepAndRead(dart::simulation::World*)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "ceaf0c3c02713525c6121172b6adc78525863201b9b72898743334ff02496207",
+      "head": {
+        "guards": {
+          "hash": "0xcf8e1a92a18456ed",
+          "finite": true,
+          "contacts": 10000,
+          "cap_hit": true,
+          "resting": "2002/3003"
+        },
+        "time_advanced": true,
+        "allocs_per_step": 18039.333333333332,
+        "bytes_per_step": 2496501.3333333335,
+        "allocs": 54118,
+        "bytes": 7489504,
+        "libdart": "libdart.so.6.19",
+        "ir_per_step": 273676702.3333333
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xcf8e1a92a18456ed",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 54118,
+          "bytes": 7489504,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xcf8e1a92a18456ed",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 54118,
+          "bytes": 7489504,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0xcf8e1a92a18456ed",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 54118,
+          "bytes": 7489504,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0xcf8e1a92a18456ed",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 54118,
+          "bytes": 7489504,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0xcf8e1a92a18456ed",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 54118,
+          "bytes": 7489504,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0xcf8e1a92a18456ed",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 54118,
+          "bytes": 7489504,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0xcf8e1a92a18456ed",
+            "finite": true,
+            "contacts": 10000,
+            "cap_hit": true,
+            "resting": "2002/3003"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 54118,
+          "bytes": 7489504,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "54c8ed9e9812c40f16b0fe534319039a39b85ab710722cc689f962c0ddd5c22c",
+      "parent": {
+        "guards": {
+          "hash": "0xcf8e1a92a18456ed",
+          "finite": true,
+          "contacts": 10000,
+          "cap_hit": true,
+          "resting": "2002/3003"
+        },
+        "time_advanced": true,
+        "allocs_per_step": 18039.333333333332,
+        "bytes_per_step": 2496501.3333333335,
+        "allocs": 54118,
+        "bytes": 7489504,
+        "libdart": "libdart.so.6.19",
+        "ir_per_step": 273313250.0
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.0013298013665027709,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "robot",
+      "det": "dart",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 300,
+        "steps": 100
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "stepAndRead(dart::simulation::World*)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "0865c0fd2f3ce297626bfeae89be5d1ed627fc79dced1b71d95a3e787c8f140d",
+      "head": {
+        "guards": {
+          "hash": "0xd8971b5a222b0da0",
+          "finite": true,
+          "contacts": 12,
+          "cap_hit": false,
+          "resting": "0/2"
+        },
+        "time_advanced": true,
+        "allocs_per_step": 218.01,
+        "bytes_per_step": 237083.52,
+        "allocs": 21801,
+        "bytes": 23708352,
+        "libdart": "libdart.so.6.19",
+        "ir_per_step": 13696831.2
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xd8971b5a222b0da0",
+            "finite": true,
+            "contacts": 12,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 21801,
+          "bytes": 23708352,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0xd8971b5a222b0da0",
+            "finite": true,
+            "contacts": 12,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 21801,
+          "bytes": 23708352,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0xd8971b5a222b0da0",
+            "finite": true,
+            "contacts": 12,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 21801,
+          "bytes": 23708352,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0xd8971b5a222b0da0",
+            "finite": true,
+            "contacts": 12,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 21801,
+          "bytes": 23708352,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0xd8971b5a222b0da0",
+            "finite": true,
+            "contacts": 12,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 21801,
+          "bytes": 23708352,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0xd8971b5a222b0da0",
+            "finite": true,
+            "contacts": 12,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 21801,
+          "bytes": 23708352,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0xd8971b5a222b0da0",
+            "finite": true,
+            "contacts": 12,
+            "cap_hit": false,
+            "resting": "0/2"
+          },
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": 21801,
+          "bytes": 23708352,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "54c8ed9e9812c40f16b0fe534319039a39b85ab710722cc689f962c0ddd5c22c",
+      "parent": {
+        "guards": {
+          "hash": "0xd8971b5a222b0da0",
+          "finite": true,
+          "contacts": 12,
+          "cap_hit": false,
+          "resting": "0/2"
+        },
+        "time_advanced": true,
+        "allocs_per_step": 218.01,
+        "bytes_per_step": 237083.52,
+        "allocs": 21801,
+        "bytes": 23708352,
+        "libdart": "libdart.so.6.19",
+        "ir_per_step": 13695984.78
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 6.180059437828358e-05,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "dyn",
+      "det": "",
+      "version": 1,
+      "gated": false,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 20,
+        "steps": 20
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "BM_Dynamics(benchmark::State&)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "121c7f9c3991198b6984e71b902c4943f60fdb17d6e5ef7559c707b9d13792f5",
+      "head": {
+        "cases": [
+          "BM_Dynamics/10"
+        ],
+        "micro_instrumented": false,
+        "guards": null,
+        "allocs": null,
+        "bytes": null,
+        "allocs_per_step": null,
+        "bytes_per_step": null,
+        "ir_per_step": 14294146.2
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "start100k": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "size16": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "size48": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "random1": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "random2": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        }
+      },
+      "workload_sha": "ff3a3024682d2f8f42c6fc70b6456eb4701727af69d2bea369469f8acaea68c0",
+      "parent": {
+        "cases": [
+          "BM_Dynamics/10"
+        ],
+        "micro_instrumented": false,
+        "guards": null,
+        "allocs": null,
+        "bytes": null,
+        "allocs_per_step": null,
+        "bytes_per_step": null,
+        "ir_per_step": 14294146.2
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.0,
+        "allocs": null,
+        "bytes": null,
+        "guards_equal": null,
+        "class": "diagnostic"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base lacks micro instrumentation; head lacks micro instrumentation"
+    },
+    {
+      "row": "lcp",
+      "det": "",
+      "version": 1,
+      "gated": false,
+      "status": "ok",
+      "threads": 1,
+      "window": {
+        "warmup": 100,
+        "steps": 100
+      },
+      "method": "slope",
+      "expected_ir": true,
+      "collection_signature": "(anonymous namespace)::solveNative(benchmark::State&, int)",
+      "parity": "",
+      "qualification_required": true,
+      "input_sha": "c8f7748c371f2ef3ffa02f4e0b464364458dd362f55c187b34734ab053ef931b",
+      "head": {
+        "cases": [
+          "solveNative/boxed_coupled_96",
+          "solveNative/friction_32"
+        ],
+        "micro_instrumented": false,
+        "guards": null,
+        "allocs": null,
+        "bytes": null,
+        "allocs_per_step": null,
+        "bytes_per_step": null,
+        "ir_per_step": 1566349.0
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "start100k": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "size16": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "size48": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "random1": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "random2": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": null,
+          "max_penetration": null,
+          "checkpoints": null,
+          "allocs": null,
+          "bytes": null,
+          "time_advanced": null
+        }
+      },
+      "workload_sha": "3f26f98d789a77307b6622c15c20c7385baa1c9a76c8793816ff5401e944d956",
+      "parent": {
+        "cases": [
+          "solveNative/boxed_coupled_96",
+          "solveNative/friction_32"
+        ],
+        "micro_instrumented": false,
+        "guards": null,
+        "allocs": null,
+        "bytes": null,
+        "allocs_per_step": null,
+        "bytes_per_step": null,
+        "ir_per_step": 1566349.0
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": 0.0,
+        "allocs": null,
+        "bytes": null,
+        "guards_equal": null,
+        "class": "diagnostic"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base lacks micro instrumentation; head lacks micro instrumentation"
+    },
+    {
+      "row": "mt4-s3w",
+      "det": "dart",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 4,
+      "window": {
+        "warmup": 5,
+        "steps": 5
+      },
+      "method": "native",
+      "expected_ir": false,
+      "collection_signature": null,
+      "parity": "s3w/dart",
+      "qualification_required": true,
+      "input_sha": "79bac99f63829c6676e63db59dbbb949c827dd4c099c5cf0b4010fa48a97e880",
+      "head": {
+        "guards": {
+          "hash": "0x3250ca4b2debb3f8",
+          "finite": true,
+          "contacts": 3003,
+          "cap_hit": false,
+          "resting": "0/3003",
+          "pairs": 3003
+        },
+        "time_advanced": true,
+        "allocs_per_step": 9009.0,
+        "bytes_per_step": 432432.0,
+        "allocs": 45045,
+        "bytes": 2162160,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 8.48395e-10
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0x3250ca4b2debb3f8",
+            "finite": true,
+            "contacts": 3003,
+            "cap_hit": false,
+            "resting": "0/3003",
+            "pairs": 3003
+          },
+          "max_penetration": 8.48395e-10,
+          "checkpoints": null,
+          "allocs": 45045,
+          "bytes": 2162160,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0x3250ca4b2debb3f8",
+          "finite": true,
+          "contacts": 3003,
+          "cap_hit": false,
+          "resting": "0/3003",
+          "pairs": 3003
+        },
+        "time_advanced": true,
+        "allocs_per_step": 9009.0,
+        "bytes_per_step": 432432.0,
+        "allocs": 45045,
+        "bytes": 2162160,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 8.48395e-10
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": null,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    },
+    {
+      "row": "mt4-s1p",
+      "det": "dart",
+      "version": 1,
+      "gated": true,
+      "status": "ok",
+      "threads": 4,
+      "window": {
+        "warmup": 100,
+        "steps": 50
+      },
+      "method": "native",
+      "expected_ir": false,
+      "collection_signature": null,
+      "parity": "s1p/dart",
+      "qualification_required": true,
+      "input_sha": "490332fd2176e388caa3656734f10022aeba75c0f861689c28b8b92c9d4f9c18",
+      "head": {
+        "guards": {
+          "hash": "0x6c7895688d50c141",
+          "finite": true,
+          "contacts": 89,
+          "cap_hit": false,
+          "resting": "0/60",
+          "pairs": 79
+        },
+        "time_advanced": true,
+        "allocs_per_step": 573.42,
+        "bytes_per_step": 399887.04,
+        "allocs": 28671,
+        "bytes": 19994352,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.18711
+      },
+      "perturbations": {
+        "start4k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "start100k": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "size16": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "size48": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "random1": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "random2": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        },
+        "tcache0": {
+          "stable": true,
+          "guards": {
+            "hash": "0x6c7895688d50c141",
+            "finite": true,
+            "contacts": 89,
+            "cap_hit": false,
+            "resting": "0/60",
+            "pairs": 79
+          },
+          "max_penetration": 0.18711,
+          "checkpoints": null,
+          "allocs": 28671,
+          "bytes": 19994352,
+          "time_advanced": true
+        }
+      },
+      "workload_sha": "69b96a5159f1185197b7e798e77b7c59bd36a9749af5ed525b9a405d91ae60d5",
+      "parent": {
+        "guards": {
+          "hash": "0x6c7895688d50c141",
+          "finite": true,
+          "contacts": 89,
+          "cap_hit": false,
+          "resting": "0/60",
+          "pairs": 79
+        },
+        "time_advanced": true,
+        "allocs_per_step": 573.42,
+        "bytes_per_step": 399887.04,
+        "allocs": 28671,
+        "bytes": 19994352,
+        "libdart": "libdart.so.6.19",
+        "max_penetration": 0.18711
+      },
+      "parent_status": "ok",
+      "delta": {
+        "ir": null,
+        "allocs": 0.0,
+        "bytes": 0.0,
+        "guards_equal": true,
+        "class": "gated"
+      },
+      "wall_ms_per_step": {
+        "parent": null,
+        "head": null,
+        "advisory": true
+      },
+      "failures": [],
+      "gate_reason": "base perturbation check passed; base gate remains active"
+    }
+  ],
+  "verdict": {
+    "status": "FAIL",
+    "failures": [
+      "pend/dart: Ir +1.05% (limit +1.00%)"
+    ],
+    "warnings": [
+      "s3w/dart: Ir +0.32%"
+    ],
+    "ir_geomean": 0.001232498340698537
+  }
+}
