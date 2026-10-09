@@ -41,6 +41,9 @@ namespace constraint {
 /// Cumulative friction-solver statistics. Counters can be differenced around a
 /// step. maxViolation is a maximum since resetStats(); reset while no solves
 /// are running to obtain a per-step maximum.
+///
+/// New in DART 6.20: no released version has this struct, so fields may still
+/// be added before 6.20.0. From 6.20.0 on, its layout is part of the ABI.
 struct FrictionSolveStats
 {
   std::uint64_t numSolves = 0;
