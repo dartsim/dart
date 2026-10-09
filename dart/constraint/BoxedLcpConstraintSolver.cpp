@@ -41,6 +41,7 @@
 #include "dart/constraint/FbfFrictionSolver.hpp"
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/detail/ContactWarmStartCache.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/lcpsolver/Lemke.hpp"
@@ -325,6 +326,7 @@ BoxedLcpConstraintSolver::BoxedLcpConstraintSolver(
 //==============================================================================
 BoxedLcpConstraintSolver::~BoxedLcpConstraintSolver()
 {
+  detail::eraseContactWarmStartCache(this);
   std::lock_guard<std::mutex> lock(matrixFreeContactOptionsMutex());
   matrixFreeContactOptionsBySolver().erase(this);
 }
@@ -344,6 +346,8 @@ void BoxedLcpConstraintSolver::setBoxedLcpSolver(BoxedLcpSolverPtr lcpSolver)
            << "solver, which is discouraged. Ignoring this request.\n";
   }
 
+  if (mBoxedLcpSolver != lcpSolver)
+    detail::eraseContactWarmStartCache(this);
   mBoxedLcpSolver = std::move(lcpSolver);
 }
 
@@ -1073,6 +1077,33 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
   // For each constraint
   constructLcpTerms();
+
+  if (dynamic_cast<const NsgsFrictionSolver*>(mBoxedLcpSolver.get())
+      || dynamic_cast<const FbfFrictionSolver*>(mBoxedLcpSolver.get())) {
+    const auto* cache = detail::findContactWarmStartCache(this);
+    if (cache) {
+      for (std::size_t i = 0; i < numConstraints; ++i) {
+        if (!isExactBoxedLcpDynamicType<ContactConstraint>(constraintPtrs[i]))
+          continue;
+        // Native detector seeds must obey the same cache invalidation rules.
+        std::fill_n(x + constraintOffsets[i], constraintDims[i], 0.0);
+        const auto* seed = cache->seed(constraintPtrs[i]);
+        if (!seed || !seed->matched)
+          continue;
+        const auto* contact
+            = static_cast<const ContactConstraint*>(constraintPtrs[i]);
+        const Eigen::Vector3d impulse
+            = contact->mBodyNodeA->getWorldTransform().linear()
+              * seed->localImpulse;
+        double* values = x + constraintOffsets[i];
+        values[0] = std::max(0.0, contact->mContact->normal.dot(impulse));
+        if (contact->mIsFrictionOn) {
+          values[1] = contact->mTangentBasis.col(0).dot(impulse);
+          values[2] = contact->mTangentBasis.col(1).dot(impulse);
+        }
+      }
+    }
+  }
 
 #ifndef NDEBUG
   if (!isSymmetric(n, a)) {

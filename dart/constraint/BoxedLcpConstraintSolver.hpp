@@ -39,6 +39,11 @@
 namespace dart {
 namespace constraint {
 
+/// With an NSGS or FBF primary, rigid contacts reuse velocity impulses across
+/// consecutive solves independently of the collision detector. Both body-local
+/// points must match within 1 mm and normals within about 2.56 degrees.
+/// Timestep, collision-group content and primary-backend changes invalidate the
+/// history.
 class BoxedLcpConstraintSolver : public ConstraintSolver
 {
 public:
