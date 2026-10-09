@@ -21,8 +21,8 @@
 #         that invocation (the hooks enforce; avoid running the gate twice)
 #       - if DART_SKIP_HOOKS=1 (in the environment or as a command prefix),
 #         skip the affected invocations (emergency bypass, same as the git hook)
-#       - if the commit targets another repository (`git -C /other/repo
-#         commit`), skip that invocation (not this gate's business)
+#       - if the commit certainly targets another repository (`git -C /other/repo
+#         commit`), skip that invocation; uncertain cwd uses the project gates
 #       - otherwise require inspectable -m or -F <file> messages; block stdin,
 #         reused, autosquash and editor-only messages when managed hooks cannot enforce them
 #       - block commit-time staging when managed hooks will not run; the staged
@@ -557,6 +557,17 @@ def split_shell_segments(text, heredocs):
             part_isolated = True
             i += 1
             continue
+        if (
+            ch == "{"
+            and (i == 0 or text[i - 1].isspace() or text[i - 1] in ";|&()")
+            and (i + 1 == len(text) or text[i + 1].isspace())
+        ):
+            contexts.append(("command-group", "}", "", part, part_start))
+            part = []
+            part_start = i + 1
+            part_isolated = True
+            i += 1
+            continue
         if contexts and ch == contexts[-1][1]:
             context_kind = contexts[-1][0]
             if part and context_kind != "function-body":
@@ -726,8 +737,11 @@ def maybe_update_shell_cwd(
 ):
     if i >= len(tokens) or command_word(tokens[i]) != "cd":
         return current_cwd
-    if execution == EXEC_NEVER or subshell_like or separator in {"&", "|", "|&"}:
+    if execution == EXEC_NEVER:
         return current_cwd
+    # Context-dependent cd must never leave a foreign cwd falsely certain.
+    if subshell_like or separator in {"&", "|", "|&"}:
+        return None
     if mutation_policy != "allow":
         return None
     target = shell_cd_target(tokens, i, current_cwd)
@@ -1295,7 +1309,7 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
         possible_commit = subcommand == "commit" or expanded_subcommand
         dynamic_command = expanded_executable or expanded_subcommand
         changed_before_commit = content_may_change
-        fast_path_disabled_before_commit = fast_path_disabled
+        fast_path_disabled_before_commit = fast_path_disabled or target_dir is None
         fast_path_disabled |= not segment_allowed
         if possible_commit:
             _, _, stages_content = supplied_commit_message(

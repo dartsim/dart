@@ -130,6 +130,13 @@ redirections, or uninspectable syntax, requires the guard's full message and
 staged checks. Content/index changes remain tracked separately to reject unsafe
 chains of multiple commits without hook enforcement.
 
+The guard treats cwd as uncertain after a `cd` in a pipeline stage, background
+job, subshell, command substitution, or command group. That uncertainty persists
+through the context and subsequent commands until a later certain `cd`
+re-establishes cwd. A commit with uncertain cwd runs the project gates even if
+the project has current managed hooks; only a certain foreign repository is
+skipped, including explicit `git -C` targets.
+
 ## Simulation Verification Route
 
 Use `dart-verify-sim` whenever a claim depends on model/scene structure,
