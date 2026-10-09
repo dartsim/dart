@@ -206,9 +206,48 @@ def test_public_url_leaves_unbalanced_markdown_parenthesis(capsys):
     assert capsys.readouterr().out == "1: /home/example/x\n"
 
 
-def test_public_url_does_not_hide_pipe_delimited_path(capsys):
-    assert checker.scan_text("https://example.com/docs|/home/example/private.md")
+@pytest.mark.parametrize("delimiter", ["|", ",", ";"])
+@pytest.mark.parametrize("url_tail", ["", "/docs", "/a(b)"])
+def test_public_url_does_not_hide_delimited_path(delimiter, url_tail, capsys):
+    assert checker.scan_text(
+        f"https://example.com{url_tail}{delimiter}/home/example/private.md"
+    )
     assert capsys.readouterr().out == "1: /home/example/private.md\n"
+
+
+@pytest.mark.parametrize("host", ["wsl.localhost", "wsl$"])
+@pytest.mark.parametrize("separator", ["\\", "/"])
+@pytest.mark.parametrize(
+    "home", ["home/example", "home/example/private.md", "root", "root/example.md"]
+)
+def test_wsl_unc_homes_are_reported(host, separator, home, capsys):
+    path = f"//{host}/example/{home}".replace("/", separator)
+    assert checker.scan_text(f"Public summary\n`{path}`\n")
+    assert capsys.readouterr().out == f"2: {path}\n"
+    assert not checker.scan_text(path, "tests/test_check_local_paths.py")
+    assert not capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        r"\\example\example\home\example\private.md",
+        "//wsl.localhost/example/usr/share/example",
+        "//wsl$/example/rooted/example.md",
+    ],
+)
+def test_other_unc_paths_still_pass(path, capsys):
+    assert not checker.scan_text(path)
+    assert not capsys.readouterr().out
+
+
+def test_json_escaped_slashes_only_are_normalized(capsys):
+    text = "Public summary\n" + r'{"note":"\n","path":"\/home\/example\/private.md"}'
+    assert checker.scan_text(text, "notes.json")
+    assert capsys.readouterr().out == "notes.json:2: /home/example/private.md\n"
+    assert not checker.scan_text(r"https:\/\/example.com\/home\/example\/public.md")
+    assert not checker.scan_text(r"\u002fhome\u002fexample\u002fprivate.md")
+    assert not capsys.readouterr().out
 
 
 def test_reports_all_leaks_and_file_line(capsys):
@@ -536,6 +575,42 @@ def _commit(repo, message="Public fixture"):
         message,
     )
     return _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "--stdin",
+        "--text-file",
+        "--commit-msg-file",
+        "--files",
+        "--all-tracked",
+        "--staged",
+        "--commit-range",
+    ],
+)
+def test_json_escaped_paths_are_reported_in_every_mode(repo, mode):
+    path = repo / "notes.json"
+    path.write_text("Public summary\n")
+    base = _commit(repo)
+    text = "Public summary\n" + r'{"path":"\/home\/example\/private.md"}' + "\n"
+    path.write_text(text)
+    _git(repo, "add", "notes.json")
+    args = (mode,)
+    locations = ["2"]
+    if mode in {"--text-file", "--commit-msg-file", "--files"}:
+        args = (mode, "notes.json")
+    if mode in {"--files", "--all-tracked", "--staged"}:
+        locations = ["notes.json:2"]
+    if mode == "--commit-range":
+        head = _commit(repo, text)
+        args = (mode, f"{base}..{head}")
+        locations = [f"{head}:2", f"{head}:notes.json:2"]
+    result = _cli(*args, cwd=repo, text=text if mode == "--stdin" else None)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout.splitlines() == [
+        f"{location}: /home/example/private.md" for location in locations
+    ]
 
 
 def test_commit_range_reports_leak_removed_before_tip(repo):
