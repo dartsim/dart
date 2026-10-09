@@ -1278,7 +1278,7 @@ def test_guard_child_commit_uses_same_hook_and_gate_rules(
     script = "git commit -m example" + (" --no-verify" if bypassed else "")
     returncode, stderr = _run_guard(repo, env, "bash -c " + shlex.quote(script))
     assert returncode == 0, stderr
-    assert stderr.count("direct-agent-gate") == int(not installed or bypassed)
+    assert stderr.count("direct-agent-gate") == 1
 
 
 def test_guard_child_script_depth_limit_blocks_commit(tmp_path):
@@ -1452,25 +1452,47 @@ def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed)
         ("", False),
         ("git status && ", False),
         ("git add notes.md && ", False),
+        ("git add notes.md &&\n", False),
         ("git add . && ", False),
         ("git rm notes.md && ", False),
         ("git mv notes.md other.md && ", False),
-        ("pixi run build && ", False),
-        ("pixi run lint && ", False),
-        ("cmake --build build && ", False),
-        ("black . && ", False),
-        ("printf public > notes.md && ", False),
-        ("cat .git/hooks/pre-commit && ", False),
-        ("bash -c 'git add notes.md' && ", False),
-        ("git config --get core.hooksPath; ", False),
-        ("git config --local --get core.hooksPath; ", False),
+        ("git -c user.name=DART add notes.md && ", False),
+        ("git -c core.hooksPath=.git/no-hooks add notes.md && ", False),
+        ("git --no-pager -C . status && ", False),
+        ("git diff >/dev/null 2>&1 && ", False),
+        ("git status &>/dev/null && ", False),
+        ("git add notes.md 2>>/dev/null && ", False),
+        ("cd . && ", False),
+        ("pushd . && popd && ", False),
+        ("pwd && true && : && ", False),
+        ("true >notes.md && ", True),
+        ("1 >/dev/null git status && ", True),
+        ("git status >&\u0661 && ", True),
+        ("git status 2>&1 >notes.md && ", True),
+        ("git status >/dev/null >notes.md && ", True),
+        ("git status <<< public && ", True),
+        ("export FLAG=public; ", True),
+        ("FLAG=public git add notes.md && ", True),
+        ("./git status && ", True),
+        ("env git add notes.md && ", True),
+        ("command git add notes.md && ", True),
+        ("git restore notes.md && ", True),
+        ("pixi run build && ", True),
+        ("pixi run lint && ", True),
+        ("cmake --build build && ", True),
+        ("black . && ", True),
+        ("printf public > notes.md && ", True),
+        ("cat .git/hooks/pre-commit && ", True),
+        ("bash -c 'git add notes.md' && ", True),
+        ("git config --get core.hooksPath; ", True),
+        ("git config --local --get core.hooksPath; ", True),
         ("git config core.hooksPath .git/no-hooks && ", True),
         ("git config include.path hooks.conf && ", True),
         ("git config --global include.path hooks.conf && ", True),
         ("git config -- core.hooksPath --get && ", True),
         ("git config --file get core.hooksPath .git/no-hooks && ", True),
-        ("git -c core.hooksPath=.git/no-hooks status && ", True),
-        ("git -ccore.hooksPath=.git/no-hooks status && ", True),
+        ("git -c core.hooksPath=.git/no-hooks status && ", False),
+        ("git -ccore.hooksPath=.git/no-hooks status && ", False),
         ("GIT_CONFIG_COUNT=0; ", True),
         ("export GIT_CONFIG_GLOBAL=hooks.conf; ", True),
         ("git init && ", True),
@@ -1494,7 +1516,7 @@ def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed)
         ("source update.sh && ", True),
     ),
 )
-def test_guard_checks_message_after_possible_hook_changes(
+def test_guard_keeps_fast_path_only_after_allowlisted_segments(
     tmp_path, before_commit, changed
 ):
     repo, env = _init_repo(tmp_path)
@@ -1517,6 +1539,58 @@ def test_guard_checks_message_after_possible_hook_changes(
     returncode, stderr = _run_guard(repo, env, command.replace(private_path, "public"))
     assert returncode == 0, stderr
     assert stderr.count("direct-agent-gate") == int(changed)
+
+
+@pytest.mark.parametrize(
+    "route,before_commit",
+    [
+        ("home-config", "printf '[core]\nhooksPath = empty-hooks\n' > ~/.gitconfig"),
+        ("child-redirection", "bash -c true > .git/hooks/commit-msg"),
+        ("cmake-script", "cmake -Pscript.cmake"),
+        ("copy-target", "cp -t.git/hooks commit-msg"),
+        ("hook-symlink", "chmod -x managed-commit-msg"),
+        ("sibling-repo", "chmod -x ../repo/.git/hooks/commit-msg"),
+    ],
+)
+def test_guard_blocks_six_hook_state_bypasses(tmp_path, route, before_commit):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    cwd = repo
+    commit = "git commit"
+    if route == "home-config":
+        env.pop("GIT_CONFIG_GLOBAL")
+        env["XDG_CONFIG_HOME"] = str(tmp_path / "xdg")
+        assert not (tmp_path / ".gitconfig").exists()
+    elif route == "cmake-script":
+        (repo / "script.cmake").write_text('file(WRITE .git/hooks/commit-msg "")\n')
+    elif route == "copy-target":
+        (repo / "commit-msg").write_text("#!/bin/sh\nexit 0\n")
+    elif route == "hook-symlink":
+        _hook(repo, "commit-msg").rename(repo / "managed-commit-msg")
+        _hook(repo, "commit-msg").symlink_to(repo / "managed-commit-msg")
+    elif route == "sibling-repo":
+        cwd = tmp_path / "caller"
+        subprocess.run(["git", "init", "-q", str(cwd)], check=True, env=env)
+        commit = "git -C ../repo commit"
+
+    # All hooks currently enforce; only the preceding command disables delegation.
+    returncode, stderr = _run_guard(cwd, env, commit + " -m public")
+    assert returncode == 0, stderr
+    assert stderr == ""
+    private_path = "/home/" + "example/private.md"
+    command = before_commit + f" && {commit} -m '{private_path}'"
+    returncode, stderr = _run_guard(cwd, env, command)
+    assert returncode == 2, stderr
+    assert private_path in stderr
+    assert "commit message" in stderr
+    returncode, stderr = _run_guard(cwd, env, command.replace(private_path, "public"))
+    assert returncode == 0, stderr
+    assert stderr.count("direct-agent-gate") == 1
 
 
 @pytest.mark.parametrize("target", ["hooks", "hooks with spaces", "hooks=directory"])
@@ -1637,18 +1711,17 @@ def test_guard_blocks_chained_unhooked_commits_after_changes(
         [mutation, commit, commit] if before_first else [commit, mutation, commit]
     )
     returncode, stderr = _run_guard(repo, env, " && ".join(commands))
-    hook_state_preserved = mutation in {
+    fast_path_preserved = mutation in {
         "git add notes.md",
         "git rm notes.md",
         "git mv notes.md other.md",
-        "git restore notes.md",
-        "git commit -am public",
-        "env -S 'git add notes.md'",
     }
-    if route == "managed" and hook_state_preserved:
+    if route == "managed" and fast_path_preserved:
         assert returncode == 0, stderr
-        assert stderr == ""
-    elif route == "managed" and not before_first:
+        assert stderr.count("direct-agent-gate") == 1
+    elif (
+        route == "managed" and not before_first and mutation != "git commit -am public"
+    ):
         assert returncode == 0, stderr
         assert stderr.count("direct-agent-gate") == 1
     else:
