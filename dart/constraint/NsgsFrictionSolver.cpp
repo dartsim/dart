@@ -365,7 +365,7 @@ bool sweep(
   return true;
 }
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
 std::uint64_t inputFingerprint(
     int n,
     int stride,
@@ -460,7 +460,7 @@ bool NsgsFrictionSolver::solve(
       if (!std::isfinite(A[std::size_t(i) * stride + j]))
         return finish(false, false, infinity);
   }
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   const auto fingerprint = inputFingerprint(n, stride, A, b, lo, hi, findex);
 #endif
   auto& scratch = nsgsThreadScratch();
@@ -522,7 +522,7 @@ bool NsgsFrictionSolver::solve(
     }
   }
   std::copy(scratch.best.begin(), scratch.best.end(), x);
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   assert(fingerprint == inputFingerprint(n, stride, A, b, lo, hi, findex));
 #endif
   return finish(
@@ -562,29 +562,6 @@ void NsgsFrictionSolver::reserve(std::size_t numRows)
   classification.componentContacts.reserve(numRows);
   classification.componentSizes.reserve(numRows);
 }
-
-#if DART_BUILD_MODE_DEBUG
-//==============================================================================
-bool NsgsFrictionSolver::canSolve(int n, const double* A)
-{
-  if (n < 0 || n > std::numeric_limits<int>::max() - 3 || (n > 0 && !A))
-    return false;
-  const int stride = lcpsolver::dantzig::padding(n);
-  for (int i = 0; i < n; ++i) {
-    if (A[std::size_t(i) * stride + i] < 0.0)
-      return false;
-    for (int j = 0; j < n; ++j) {
-      const double a = A[std::size_t(i) * stride + j];
-      const double transpose = A[std::size_t(j) * stride + i];
-      if (!std::isfinite(a)
-          || std::abs(a - transpose)
-                 > 1e-10 * std::max({1.0, std::abs(a), std::abs(transpose)}))
-        return false;
-    }
-  }
-  return true;
-}
-#endif
 
 //==============================================================================
 void NsgsFrictionSolver::accumulateStats(const FrictionSolveStats& stats)
