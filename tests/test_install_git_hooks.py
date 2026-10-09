@@ -1402,6 +1402,23 @@ def test_guard_blocks_supplied_private_message_when_hooks_bypassed(
     assert "commit blocked" in stderr
 
 
+def test_guard_inspects_commit_after_escaped_redirect_and_background_separator(
+    tmp_path,
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    private_path = "/home/" + "example/private.md"
+    command = r"echo \>&git commit --allow-empty --no-verify -m " + private_path
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 2, stderr
+    assert private_path in stderr
+    assert "commit message" in stderr
+
+
 @pytest.mark.parametrize("option", ("--trailer {value}", "--trailer={value}"))
 @pytest.mark.parametrize("private_first", (True, False))
 def test_guard_scans_every_trailer_when_hooks_bypassed(tmp_path, option, private_first):
@@ -1637,25 +1654,26 @@ def test_guard_checks_creation_of_hook_config_files(tmp_path, key, value, target
     assert stderr.count("direct-agent-gate") == 1
 
 
-def test_guard_allows_staging_fixed_content_with_managed_hooks(tmp_path):
+@pytest.mark.parametrize("filename", ["notes.md", "notes (draft).md"])
+def test_guard_allows_staging_fixed_content_with_managed_hooks(tmp_path, filename):
     repo, env = _init_repo(tmp_path)
     _write_gate(
         repo,
         "import subprocess\n"
         "from check_local_paths import scan_text\n"
-        "staged = subprocess.check_output(['git', 'show', ':notes.md'], text=True)\n"
-        "raise SystemExit(scan_text(staged, 'notes.md'))\n",
+        f"staged = subprocess.check_output(['git', 'show', {':' + filename!r}], text=True)\n"
+        f"raise SystemExit(scan_text(staged, {filename!r}))\n",
     )
     (repo / "scripts/check_local_paths.py").write_bytes(
         (ROOT / "scripts/check_local_paths.py").read_bytes()
     )
     assert _install(repo, env).returncode == 0
     env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_PYTHON": sys.executable})
-    notes = repo / "notes.md"
+    notes = repo / filename
     notes.write_text("/home/" + "example/private.md\n")
-    subprocess.run(["git", "add", "notes.md"], cwd=repo, env=env, check=True)
+    subprocess.run(["git", "add", filename], cwd=repo, env=env, check=True)
     notes.write_text("Public summary\n")
-    command = "git add notes.md && git -c user.name=DART -c user.email=test@example.com commit -m public"
+    command = f"git add {shlex.quote(filename)} && git -c user.name=DART -c user.email=test@example.com commit -m public"
 
     # The stale index fails the gate until the command stages the worktree fix.
     returncode, stderr = _run_guard(repo, env, "git commit --no-verify -m public")
@@ -1669,7 +1687,7 @@ def test_guard_allows_staging_fixed_content_with_managed_hooks(tmp_path):
     )
     assert result.returncode == 0, result.stderr
     committed = subprocess.check_output(
-        ["git", "show", "HEAD:notes.md"], cwd=repo, env=env, text=True
+        ["git", "show", f"HEAD:{filename}"], cwd=repo, env=env, text=True
     )
     assert committed == "Public summary\n"
 
