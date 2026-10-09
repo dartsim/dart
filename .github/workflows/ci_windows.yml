@@ -217,7 +217,7 @@ jobs:
         # 4.5x and core objects 2.4x faster.
         run: |
           pixi run config
-          pixi run cmake -S . -B build/default/cpp/Release `
+          pixi run cmake -S . -B build/default/cpp `
             -DDART_MSVC_DEFAULT_OPTIONS=ON `
             -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF `
             -DCMAKE_UNITY_BUILD=ON `

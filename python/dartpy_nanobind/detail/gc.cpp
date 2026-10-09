@@ -7,18 +7,26 @@
 #include "detail/optimizer_properties.hpp"
 
 #include <dart/utils/CompositeResourceRetriever.hpp>
+#include <dart/utils/urdf/DartLoader.hpp>
 
 #include <dart/simulation/World.hpp>
 
+#include <dart/constraint/BoxedLcpConstraintSolver.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
+#include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 
 #include <dart/collision/CollisionOption.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
+#include <dart/dynamics/ContactInverseDynamics.hpp>
+#include <dart/dynamics/MeshShape.hpp>
 #include <dart/dynamics/ShapeFrame.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/SimpleFrame.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+
+#include <dart/common/Macros.hpp>
+#include <dart/common/Uri.hpp>
 
 #include <nanobind/stl/function.h>
 #include <nanobind/stl/unordered_map.h>
@@ -119,6 +127,18 @@ void enumerate_problem_gc(
   descend(problem, edges, [&problem] { problem.reset(); });
 }
 
+void enumerate_retriever_gc(
+    std::shared_ptr<dart::common::ResourceRetriever>& retriever, GcEdges& edges)
+{
+  descend(retriever, edges, [&retriever] { retriever.reset(); });
+}
+
+void enumerate_reference_frame_gc(
+    std::shared_ptr<dart::dynamics::SimpleFrame>& frame, GcEdges& edges)
+{
+  descend(frame, edges, [&frame] { frame.reset(); });
+}
+
 void enumerate_gc(dart::collision::CollisionOption& owner, GcEdges& edges)
 {
   edges.add(owner.collisionFilter, [&owner] { owner.collisionFilter.reset(); });
@@ -142,6 +162,38 @@ void enumerate_gc(dart::constraint::ConstraintSolver& owner, GcEdges& edges)
   for (const auto& skeleton : owner.getSkeletons())
     descend(skeleton, edges, [&owner] { owner.removeAllSkeletons(); });
   enumerate_gc(owner.getCollisionOption(), edges);
+  if (auto* boxed
+      = dynamic_cast<dart::constraint::BoxedLcpConstraintSolver*>(&owner)) {
+    edges.add(boxed->getBoxedLcpSolver(), [boxed] {
+      boxed->setBoxedLcpSolver(
+          std::make_shared<dart::constraint::DantzigBoxedLcpSolver>());
+    });
+    edges.add(boxed->getSecondaryBoxedLcpSolver(), [boxed] {
+      boxed->setSecondaryBoxedLcpSolver(nullptr);
+    });
+  }
+}
+
+void enumerate_gc(dart::utils::DartLoader& owner, GcEdges& edges)
+{
+  descend(owner.getOptions().mResourceRetriever, edges, [&owner] {
+    auto options = owner.getOptions();
+    options.mResourceRetriever.reset();
+    owner.setOptions(options);
+  });
+}
+
+void enumerate_gc(
+    dart::dynamics::InverseKinematics::ErrorMethod& owner, GcEdges& edges)
+{
+  if (auto* region
+      = dynamic_cast<dart::dynamics::InverseKinematics::TaskSpaceRegion*>(
+          &owner)) {
+    auto frame = std::const_pointer_cast<dart::dynamics::SimpleFrame>(
+        region->getReferenceFrame());
+    descend(
+        frame, edges, [region] { region->setReferenceFrame(nullptr); }, 2);
+  }
 }
 
 void enumerate_gc(dart::dynamics::InverseKinematics& owner, GcEdges& edges)
@@ -152,6 +204,9 @@ void enumerate_gc(dart::dynamics::InverseKinematics& owner, GcEdges& edges)
   });
   descend(owner.getSolver(), edges, [&owner] { owner.setSolver(nullptr); });
   descend(owner.getProblem(), edges, [] {});
+  auto& error = owner.getErrorMethod();
+  if (!has_gc_wrapper(complete_address(&error)))
+    enumerate_gc(error, edges);
   edges.add(owner.getTarget(), [&owner] {
     owner.setTarget(std::make_shared<dart::dynamics::SimpleFrame>());
   });
@@ -159,7 +214,32 @@ void enumerate_gc(dart::dynamics::InverseKinematics& owner, GcEdges& edges)
 
 void enumerate_gc(dart::dynamics::ShapeFrame& owner, GcEdges& edges)
 {
-  edges.add(owner.getShape(), [&owner] { owner.setShape(nullptr); });
+  descend(
+      owner.getShape(), edges, [&owner] { owner.setShape(nullptr); }, 2);
+}
+
+void enumerate_gc(dart::dynamics::Shape& owner, GcEdges& edges)
+{
+  // A live native alias must retain its retriever's Python overrides.
+  auto native = native_owner(complete_address(&owner));
+  if (native && native.use_count() > 2)
+    return;
+  if (auto* mesh = dynamic_cast<dart::dynamics::MeshShape*>(&owner)) {
+    descend(
+        mesh->getResourceRetriever(),
+        edges,
+        [mesh] {
+          DART_SUPPRESS_DEPRECATED_BEGIN
+          mesh->setMesh(nullptr, dart::common::Uri(), nullptr);
+          DART_SUPPRESS_DEPRECATED_END
+        },
+        2);
+  }
+}
+
+void enumerate_gc(dart::dynamics::ContactInverseDynamics& owner, GcEdges& edges)
+{
+  descend(owner.getSkeleton(), edges, [] {});
 }
 
 void enumerate_gc(dart::dynamics::BodyNode& owner, GcEdges& edges)

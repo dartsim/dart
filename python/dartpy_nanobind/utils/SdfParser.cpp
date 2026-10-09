@@ -49,6 +49,7 @@ namespace python {
 
 void SdfParser(nb::module_& m)
 {
+  static_assert(dartnb::GcOwner<utils::SdfParser::Options>::value);
   auto sm = m.def_submodule("SdfParser");
 
   nb::enum_<utils::SdfParser::RootJointType>(

@@ -79,6 +79,8 @@ DART_SUPPRESS_DEPRECATED_BEGIN
 
 void Shape(nb::module_& m)
 {
+  static_assert(dartnb::GcOwner<dart::dynamics::MeshShape>::value);
+  static_assert(dartnb::GcOwner<dart::dynamics::SoftMeshShape>::value);
   auto shape
       = dartnb::dart_class<dart::dynamics::Shape, dart::common::Subject>(
             m, "Shape")

@@ -5,6 +5,14 @@
 #include <vector>
 
 namespace dart {
+namespace common {
+class ResourceRetriever;
+}
+namespace dynamics {
+class ContactInverseDynamics;
+class Shape;
+class SimpleFrame;
+} // namespace dynamics
 namespace optimizer {
 class Problem;
 class Solver;
@@ -14,7 +22,8 @@ class ConstraintSolver;
 }
 namespace utils {
 class CompositeResourceRetriever;
-}
+class DartLoader;
+} // namespace utils
 } // namespace dart
 
 namespace dartnb {
@@ -55,6 +64,10 @@ struct GcEdges
 void enumerate_gc(dart::optimizer::Problem&, GcEdges&);
 void enumerate_gc(dart::optimizer::Solver&, GcEdges&);
 void enumerate_problem_gc(std::shared_ptr<dart::optimizer::Problem>&, GcEdges&);
+void enumerate_retriever_gc(
+    std::shared_ptr<dart::common::ResourceRetriever>&, GcEdges&);
+void enumerate_reference_frame_gc(
+    std::shared_ptr<dart::dynamics::SimpleFrame>&, GcEdges&);
 
 template <class T>
 struct GcProperties : std::false_type
@@ -65,14 +78,35 @@ void enumerate_gc(T& owner, GcEdges& edges)
 {
   enumerate_problem_gc(owner.mProblem, edges);
 }
+template <class T>
+auto enumerate_gc(T& owner, GcEdges& edges)
+    -> decltype(enumerate_retriever_gc(owner.mResourceRetriever, edges))
+{
+  enumerate_retriever_gc(owner.mResourceRetriever, edges);
+}
+template <class T>
+auto enumerate_gc(T& owner, GcEdges& edges)
+    -> decltype(enumerate_retriever_gc(owner.mRetriever, edges))
+{
+  enumerate_retriever_gc(owner.mRetriever, edges);
+}
+template <class T>
+auto enumerate_gc(T& owner, GcEdges& edges)
+    -> decltype(enumerate_reference_frame_gc(owner.mReferenceFrame, edges))
+{
+  enumerate_reference_frame_gc(owner.mReferenceFrame, edges);
+}
 void enumerate_gc(dart::collision::CollisionOption&, GcEdges&);
 void enumerate_gc(dart::constraint::ConstraintSolver&, GcEdges&);
 void enumerate_gc(dart::utils::CompositeResourceRetriever&, GcEdges&);
+void enumerate_gc(dart::utils::DartLoader&, GcEdges&);
 void enumerate_gc(dart::dynamics::InverseKinematics&, GcEdges&);
 void enumerate_gc(dart::simulation::World&, GcEdges&);
 void enumerate_gc(dart::dynamics::Skeleton&, GcEdges&);
 void enumerate_gc(dart::dynamics::BodyNode&, GcEdges&);
 void enumerate_gc(dart::dynamics::ShapeFrame&, GcEdges&);
+void enumerate_gc(dart::dynamics::Shape&, GcEdges&);
+void enumerate_gc(dart::dynamics::ContactInverseDynamics&, GcEdges&);
 
 // enumerate_gc overloads opt owners in; inherited owners use public base state.
 template <class T>
@@ -92,6 +126,8 @@ auto& gc_owner(T& value)
     return static_cast<dart::dynamics::ShapeFrame&>(value);
   else if constexpr (std::is_base_of_v<dart::dynamics::BodyNode, T>)
     return static_cast<dart::dynamics::BodyNode&>(value);
+  else if constexpr (std::is_base_of_v<dart::dynamics::Shape, T>)
+    return static_cast<dart::dynamics::Shape&>(value);
   else
     return value;
 }

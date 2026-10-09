@@ -52,6 +52,8 @@ namespace python {
 
 void DartLoader(nb::module_& m)
 {
+  static_assert(dartnb::GcOwner<utils::DartLoader::Options>::value);
+  static_assert(dartnb::GcOwner<utils::DartLoader>::value);
   auto dartLoaderFlags
       = nb::enum_<utils::DartLoader::Flags>(
             m, "DartLoaderFlags", nb::is_arithmetic(), nb::is_flag())

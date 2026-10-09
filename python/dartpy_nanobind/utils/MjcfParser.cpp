@@ -45,6 +45,7 @@ namespace python {
 
 void MjcfParser(nb::module_& m)
 {
+  static_assert(dartnb::GcOwner<utils::MjcfParser::Options>::value);
   auto sm = m.def_submodule("MjcfParser");
 
   dartnb::dart_class<utils::MjcfParser::Options>(sm, "Options")

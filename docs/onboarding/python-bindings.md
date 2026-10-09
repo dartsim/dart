@@ -48,7 +48,9 @@ regular tests:
 
 ```bash
 pixi run config
+# Linux/macOS:
 pixi run cmake -S . -B build/default/cpp/Release -DDART_DARTPY_BINDER=nanobind
+# Windows: use build/default/cpp instead of build/default/cpp/Release.
 pixi run test-py
 ```
 
@@ -107,15 +109,24 @@ Both paths keep returned storage alive. The NumPy export cache assumes the
 GIL and a single interpreter; isolated interpreters and free-threaded Python
 need a separate ownership and synchronization design.
 
-Python implementations retained by one C++ owner participate in cyclic GC
-through the owner's traverse and clear slots. A Python object pinned by
-several C++ owners in a cycle is conservatively retained. Explicitly clear
-Python back-references, for example `child.owner = None`, when releasing such
-cycles. A weak-owner registry alone cannot solve this: native `shared_ptr`
-aliases outside binding setters are invisible, and each shared pin owns only
-one Python reference. Reporting it once per owner would miscount GC references;
+Registered owners expose native Python references to cyclic GC through
+traverse and clear slots. Coverage includes objective/solver and constraint
+state, collision options, composite retrievers, IK/error methods and their
+properties, skeleton/body/shape state, contact inverse dynamics, and parser
+options/loaders. Collection stays conservative when native aliases exist
+outside the visible ownership graph or several owners share one Python pin.
+A weak-owner registry alone cannot solve this: native `shared_ptr` aliases
+outside binding setters are invisible, and each shared pin owns only one
+Python reference. Reporting it once per owner would miscount GC references;
 clearing a chosen owner could release a still-used Python override. Supporting
 this case requires tracking the native ownership graph.
+
+Private local-retriever state in `PackageResourceRetriever`, indirect
+`Linkage`/`Chain` graph ownership, and callbacks stored in `RaycastOption.mFilter`
+are outside this enumeration. Clear Python back-references explicitly, for
+example `child.owner = None`, and clear stored callbacks when releasing such
+cycles. Private native owners need public traversal/reset APIs, and callbacks
+need GC-visible ownership before those cases can participate safely.
 
 Reusable porting and API probes live under `scripts/nanobind/`. The regular
 `python/tests/` suite runs against the selected binder and marks accepted
