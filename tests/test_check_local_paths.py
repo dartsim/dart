@@ -949,6 +949,8 @@ def test_utf16_heuristic_requires_printable_opposite_parity(data):
     [
         ("utf-16-le", b""),
         ("utf-16-be", b""),
+        ("utf-32-le", b""),
+        ("utf-32-be", b""),
         ("utf-16-le", b"\xff\xfe"),
         ("utf-16-be", b"\xfe\xff"),
         ("utf-32-le", b"\xff\xfe\x00\x00"),
@@ -966,7 +968,7 @@ def test_utf16_heuristic_requires_printable_opposite_parity(data):
         "--commit-msg-file",
     ],
 )
-def test_utf16_files_cannot_hide_paths(repo, encoding, bom, mode):
+def test_unicode_files_cannot_hide_paths(repo, encoding, bom, mode):
     if mode == "--commit-range":
         (repo / "base.txt").write_text("Public summary\n")
         base = _commit(repo)
@@ -1000,7 +1002,9 @@ def test_utf16_files_cannot_hide_paths(repo, encoding, bom, mode):
     assert _cli(*args, cwd=repo).returncode == 0
 
 
-@pytest.mark.parametrize("encoding", ["utf-16-le", "utf-16-be"])
+@pytest.mark.parametrize(
+    "encoding", ["utf-16-le", "utf-16-be", "utf-32-le", "utf-32-be"]
+)
 @pytest.mark.parametrize(
     "mode",
     [
@@ -1013,7 +1017,7 @@ def test_utf16_files_cannot_hide_paths(repo, encoding, bom, mode):
         "--stdin",
     ],
 )
-def test_bomless_utf16_with_non_ascii_text_cannot_hide_paths(repo, encoding, mode):
+def test_bomless_unicode_with_non_ascii_text_cannot_hide_paths(repo, encoding, mode):
     if mode == "--commit-range":
         (repo / "base.txt").write_text("Public summary\n")
         base = _commit(repo)
@@ -1041,7 +1045,9 @@ def test_bomless_utf16_with_non_ascii_text_cannot_hide_paths(repo, encoding, mod
     assert b"2: /home/example/private.md\n" in result.stdout
 
 
-@pytest.mark.parametrize("encoding", ["utf-8", "utf-16-le", "utf-16-be"])
+@pytest.mark.parametrize(
+    "encoding", ["utf-8", "utf-16-le", "utf-16-be", "utf-32-le", "utf-32-be"]
+)
 def test_binary_match_must_decode_without_replacement(tmp_path, encoding):
     path = tmp_path / "asset.bin"
     invalid = (
@@ -1076,6 +1082,15 @@ def test_binary_match_must_decode_without_replacement(tmp_path, encoding):
         (["--cleanup=verbatim"], True),
         (["--cleanup=scissors"], True),
         (["--cleanup=default", "-mpublic"], True),
+        (["--amend", "--no-ed"], True),
+        (["--cle=whitespace"], True),
+        (["--cle", "whitespace"], True),
+        (["--mess", "public"], True),
+        (["--fil=message.txt"], True),
+        (["--no-ed", "--ed"], False),
+        (["--cle=strip", "--mess=public"], False),
+        (["--f", "message.txt"], False),
+        (["--r", "HEAD"], False),
     ],
 )
 def test_commit_cleanup_uses_parent_command_not_localized_template(
@@ -1108,6 +1123,9 @@ def test_commit_cleanup_uses_parent_command_not_localized_template(
         (["--cleanup=strip", "-v"], False),
         (["-v", "--no-verbose"], True),
         (["--no-verbose", "-v"], False),
+        (["--verb"], False),
+        (["-v", "--no-verb"], True),
+        (["-v", "--no-ver"], False),
     ],
 )
 def test_parent_cleanup_only_honors_scissors_in_scissors_or_verbose_mode(
