@@ -8353,6 +8353,81 @@ def test_ledger_names_malformed_record_files(monkeypatch, tmp_path, capsys, defe
     assert "malformed.json" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("tagged", [False, True])
+@pytest.mark.parametrize("history_present", [False, True])
+def test_release_redispatch_refreshes_ledger(
+    monkeypatch, tmp_path, tagged, history_present
+):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Base release")
+    head = _perf_commit(repo, "dart/dynamics/test.cpp", "head", "Measured change")
+    monkeypatch.setattr(module, "ROOT", repo)
+    if tagged:
+        _perf_git(repo, "tag", "v6.20.0", head)
+    pages = tmp_path / "pages"
+    history_path = pages / "performance/records/main/2026/history-merge.json"
+    history = _comparison_fixture(module, base, head, tier="merge")
+    if history_present:
+        module.write_json(history_path, history)
+    release = _comparison_fixture(module, base, head, tier="release")
+    release["run"].update(tag="v6.20.0", base_tag="v6.19.0", pr=None)
+    module.write_release(pages, release)
+    path = pages / "performance/releases/v6.20.0.json"
+    markdown_path = path.with_suffix(".md")
+    stored = json.loads(path.read_text())
+    assert stored["ledger"] == {
+        "entries": [],
+        "missing": [] if history_present else [head],
+    }
+    before = markdown_path.read_bytes()
+    history["verdict"]["warnings"] = ["guard evidence incomplete"]
+    module.write_json(history_path, history)
+    assert module.write_release(pages, release)
+    refreshed = json.loads(path.read_text())
+    assert refreshed["ledger"]["missing"] == []
+    assert refreshed["ledger"]["entries"][0]["commit"] == head
+    assert refreshed["ledger"]["entries"][0]["class"] == "WARN"
+    assert refreshed["results"] == stored["results"]
+    assert markdown_path.read_bytes() != before
+    assert f"`{head[:12]}`" in markdown_path.read_text()
+    assert "| WARN |" in markdown_path.read_text()
+    saved = {file: file.read_bytes() for file in path.parent.iterdir()}
+    release["run"]["time"] = "2026-10-08T10:00:00Z"
+    assert module.write_release(pages, release) == []
+    assert {file: file.read_bytes() for file in saved} == saved
+
+
+@pytest.mark.parametrize("policy", ["verdict", "rationale", "qualification"])
+def test_release_redispatch_refreshes_policy(monkeypatch, tmp_path, policy):
+    module = _load_runner()
+    repo = _perf_repository(tmp_path / "repository")
+    base = _perf_commit(repo, "dart/dynamics/test.cpp", "base", "Base release")
+    head = _perf_commit(repo, "dart/dynamics/test.cpp", "head", "Measured change")
+    _perf_git(repo, "tag", "v6.20.0", head)
+    monkeypatch.setattr(module, "ROOT", repo)
+    pages = tmp_path / "pages"
+    release = _comparison_fixture(module, base, head, tier="release")
+    release["run"].update(tag="v6.20.0", base_tag="v6.19.0", pr=None)
+    module.write_release(pages, release)
+    path = pages / "performance/releases/v6.20.0.json"
+    stored = json.loads(path.read_text())
+    if policy == "verdict":
+        release["verdict"]["warnings"] = ["guard evidence incomplete"]
+    elif policy == "rationale":
+        release["run"]["accepted"] = [{"rationale": "intended behaviour"}]
+    else:
+        release["results"][0]["gate_reason"] = "qualification refreshed"
+    assert module.write_release(pages, release)
+    refreshed = json.loads(path.read_text())
+    assert refreshed == {**release, "ledger": stored["ledger"]}
+    assert module.deterministic_measurements(
+        refreshed, include_parent=True
+    ) == module.deterministic_measurements(stored, include_parent=True)
+    assert path.with_suffix(".md").read_text() == module.release_markdown(refreshed)
+    assert module.write_release(pages, release) == []
+
+
 def test_release_records_order_precedence_and_index(monkeypatch, tmp_path, capsys):
     module = _load_runner()
     repo = _perf_repository(tmp_path / "repository")

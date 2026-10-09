@@ -3201,9 +3201,7 @@ def write_release(pages: Path, record: dict) -> list[str]:
                 raise ValueError(
                     "repeated release changed deterministic counts or guards/inputs under the same environment fingerprint"
                 )
-            print(f"Keep {run['tag']}: identical deterministic measurements")
-            return []
-        if not (previous_local and not incoming_local):
+        elif not (previous_local and not incoming_local):
             if tagged_commit == previous["commit"]:
                 print(f"Keep {run['tag']}: tagged commit is final")
                 return []
@@ -3235,6 +3233,18 @@ def write_release(pages: Path, record: dict) -> list[str]:
             "missing": report["missing"],
         }
     record = {**record, "ledger": ledger}
+    if (
+        saved is not None
+        and same
+        and saved.get("ledger") == ledger
+        and saved.get("verdict") == record.get("verdict")
+        and saved["run"].get("accepted", []) == run.get("accepted", [])
+        and release_markdown(saved) == release_markdown(record)
+    ):
+        print(
+            f"Keep {run['tag']}: identical deterministic measurements and release output"
+        )
+        return []
     directory.mkdir(parents=True, exist_ok=True)
     write_json(path, record)
     markdown_path = path.with_suffix(".md")
