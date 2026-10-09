@@ -136,10 +136,10 @@ APPROVED_CTEST_SELECTIONS = {
     },
     "test_FrictionAnalytic": {
         "arguments": (),
-        "environment": ("GTEST_FILTER=-*/Nsgs*",),
+        "environment": ("GTEST_FILTER=-*/Nsgs*:*/Fbf",),
     },
-    "test_FrictionAnalytic_nsgs": {
-        "arguments": ("--gtest_filter=*/Nsgs*",),
+    "test_FrictionAnalytic_iterative": {
+        "arguments": ("--gtest_filter=*/Nsgs*:*/Fbf",),
         "environment": (),
     },
     "test_AdaptiveSoftContactModel": {

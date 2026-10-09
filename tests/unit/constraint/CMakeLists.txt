@@ -6,6 +6,7 @@ dart_add_test(
 
 dart_add_test("unit" test_FrictionRows test_FrictionRows.cpp)
 dart_add_test("unit" test_NsgsFrictionSolver test_NsgsFrictionSolver.cpp)
+dart_add_test("unit" test_FbfFrictionSolver test_FbfFrictionSolver.cpp)
 dart_add_test("unit" test_FrictionCone test_FrictionCone.cpp)
 target_sources(
   test_FrictionCone

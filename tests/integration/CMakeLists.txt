@@ -70,24 +70,26 @@ foreach(collision_engine dart-collision-bullet dart-collision-ode)
     target_link_libraries(test_FrictionAnalytic ${collision_engine})
   endif()
 endforeach()
-# The opt-in NSGS rows solve to tight tolerances: about 14-44 s in Release,
+# The opt-in NSGS and FBF rows solve to tight tolerances and take tens of
+# seconds in Release,
 # which the gcov coverage job (roughly 360-600x slower on solver-heavy tests)
 # and the FreeBSD VM job (roughly 60-90x) cannot fit in their per-test
 # timeouts. They run as a separate entry carrying the labels those jobs
 # exclude (see the soft-foot entries below), so the fast Dantzig and PGS rows
-# still run everywhere; test_NsgsFrictionSolver still covers the NSGS code.
+# still run everywhere; test_NsgsFrictionSolver and test_FbfFrictionSolver
+# still cover the iterative solvers.
 set_tests_properties(
   test_FrictionAnalytic
   PROPERTIES
-    ENVIRONMENT "GTEST_FILTER=-*/Nsgs*"
+    ENVIRONMENT "GTEST_FILTER=-*/Nsgs*:*/Fbf"
     FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
 )
 add_test(
-  NAME test_FrictionAnalytic_nsgs
-  COMMAND $<TARGET_FILE:test_FrictionAnalytic> --gtest_filter=*/Nsgs*
+  NAME test_FrictionAnalytic_iterative
+  COMMAND $<TARGET_FILE:test_FrictionAnalytic> --gtest_filter=*/Nsgs*:*/Fbf
 )
 set_tests_properties(
-  test_FrictionAnalytic_nsgs
+  test_FrictionAnalytic_iterative
   PROPERTIES
     FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
     LABELS "no-coverage-value;long-measurement"

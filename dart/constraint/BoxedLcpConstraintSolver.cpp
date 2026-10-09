@@ -38,6 +38,7 @@
 #include "dart/constraint/ConstraintBase.hpp"
 #include "dart/constraint/ContactConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/FbfFrictionSolver.hpp"
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
@@ -179,8 +180,14 @@ void reserveBoxedLcpSolverScratch(
   }
 
   auto nsgsSolver = std::dynamic_pointer_cast<NsgsFrictionSolver>(solver);
-  if (nsgsSolver)
+  if (nsgsSolver) {
     nsgsSolver->reserve(n);
+    return;
+  }
+
+  auto fbfSolver = std::dynamic_pointer_cast<FbfFrictionSolver>(solver);
+  if (fbfSolver)
+    fbfSolver->reserve(n);
 }
 
 void reserveMatrixFreeContactScratch(
@@ -452,7 +459,8 @@ bool BoxedLcpConstraintSolver::solveMatrixFreeContactGroup(
 
   // A selected friction law must also govern large contact groups.
   const auto* primary = mBoxedLcpSolver.get();
-  if (dynamic_cast<const NsgsFrictionSolver*>(primary))
+  if (dynamic_cast<const NsgsFrictionSolver*>(primary)
+      || dynamic_cast<const FbfFrictionSolver*>(primary))
     return false;
 
   const auto& constraints = group.mConstraints;

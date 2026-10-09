@@ -57,6 +57,7 @@
 #include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
+#include "dart/constraint/FbfFrictionSolver.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/JointLimitConstraint.hpp"
@@ -375,6 +376,10 @@ class DerivedPgsBoxedLcpSolver final : public constraint::PgsBoxedLcpSolver
 };
 
 class DerivedNsgsFrictionSolver final : public constraint::NsgsFrictionSolver
+{
+};
+
+class DerivedFbfFrictionSolver final : public constraint::FbfFrictionSolver
 {
 };
 
@@ -1404,6 +1409,9 @@ void expectFrictionStatsEqual(
   EXPECT_EQ(serial.numBoxContacts, threaded.numBoxContacts);
   EXPECT_EQ(serial.numLocalFallbacks, threaded.numLocalFallbacks);
   EXPECT_EQ(serial.numIterations, threaded.numIterations);
+  EXPECT_EQ(serial.numInnerIterations, threaded.numInnerIterations);
+  EXPECT_EQ(serial.numStepShrinks, threaded.numStepShrinks);
+  EXPECT_EQ(serial.numInnerCaps, threaded.numInnerCaps);
   EXPECT_EQ(
       0,
       std::memcmp(
@@ -1492,6 +1500,92 @@ TEST(ConstraintSolver, NsgsFrictionLawsHaveBitIdenticalThreadCountResults)
     EXPECT_EQ(0u, stats.numFailed);
     EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap);
   }
+}
+
+//==============================================================================
+TEST(ConstraintSolver, FbfHasBitIdenticalThreadCountResults)
+{
+  using Fbf = constraint::FbfFrictionSolver;
+  constexpr std::size_t kNumBoxes = 130u;
+  for (const bool useNonDefaultSurfaceParams : {false, true}) {
+    SCOPED_TRACE(useNonDefaultSurfaceParams);
+    auto serialWorld = createManySingleFreeBodyContactWorld(
+        kNumBoxes, 1u, useNonDefaultSurfaceParams);
+    auto threadedWorld = createManySingleFreeBodyContactWorld(
+        kNumBoxes, 4u, useNonDefaultSurfaceParams);
+    Fbf::Options options;
+    options.maxOuterIterations = 20;
+    auto serialFbf = std::make_shared<Fbf>(options);
+    auto threadedFbf = std::make_shared<Fbf>(options);
+    auto serialSolver
+        = std::make_unique<ExposedBoxedLcpConstraintSolver>(serialFbf, nullptr);
+    auto threadedSolver = std::make_unique<ExposedBoxedLcpConstraintSolver>(
+        threadedFbf, nullptr);
+    auto* threadedProbe = threadedSolver.get();
+    serialSolver->setCollisionDetector(
+        collision::DARTCollisionDetector::create());
+    threadedSolver->setCollisionDetector(
+        collision::DARTCollisionDetector::create());
+    for (auto* solver : {serialSolver.get(), threadedSolver.get()}) {
+      solver->getCollisionOption().maxNumContacts = kNumBoxes * 4u;
+      solver->getCollisionOption().maxNumContactsPerPair = 4u;
+    }
+    serialWorld->setConstraintSolver(std::move(serialSolver));
+    threadedWorld->setConstraintSolver(std::move(threadedSolver));
+    setContactWorldSlidingVelocity(*serialWorld);
+    setContactWorldSlidingVelocity(*threadedWorld);
+
+    ASSERT_EQ(
+        1u, serialWorld->getConstraintSolver()->getNumSimulationThreads());
+    ASSERT_EQ(4u, threadedProbe->getNumSimulationThreads());
+    for (std::size_t step = 0u; step < 2u; ++step) {
+      SCOPED_TRACE(step);
+      serialWorld->step();
+      threadedWorld->step();
+      ASSERT_GE(threadedProbe->getNumConstrainedGroupsForTest(), 128u);
+      expectWorldStateBitIdentical(*serialWorld, *threadedWorld);
+      expectFrictionStatsEqual(serialFbf->getStats(), threadedFbf->getStats());
+    }
+    const auto stats = serialFbf->getStats();
+    EXPECT_GT(stats.numContacts, 0u);
+    EXPECT_GT(stats.numIterations, 0u);
+    EXPECT_GT(stats.numInnerIterations, 0u);
+    EXPECT_EQ(0u, stats.numFailed);
+    EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap);
+    EXPECT_EQ(
+        useNonDefaultSurfaceParams ? stats.numContacts : 0u,
+        stats.numBoxContacts);
+  }
+}
+
+//==============================================================================
+TEST(ConstraintSolver, FbfSelfIndexUsesDefaultPgsSecondarySemantics)
+{
+  auto referenceConstraint = std::make_shared<SelfIndexedConstraint>();
+  ExposedBoxedLcpConstraintSolver referenceSolver(
+      std::make_shared<constraint::PgsBoxedLcpSolver>(), nullptr);
+  auto referenceGroup = referenceSolver.makeGroupForTest({referenceConstraint});
+  referenceSolver.solveGroupForTest(referenceGroup);
+  ASSERT_DOUBLE_EQ(0.0, referenceConstraint->mAppliedImpulse);
+
+  auto primary = std::make_shared<constraint::FbfFrictionSolver>();
+  ExposedBoxedLcpConstraintSolver solver;
+  solver.setBoxedLcpSolver(primary);
+  ASSERT_EQ(
+      constraint::PgsBoxedLcpSolver::getStaticType(),
+      solver.getSecondaryBoxedLcpSolver()->getType());
+  auto selfIndexedConstraint = std::make_shared<SelfIndexedConstraint>();
+  auto group = solver.makeGroupForTest({selfIndexedConstraint});
+  solver.solveGroupForTest(group);
+
+  EXPECT_DOUBLE_EQ(
+      referenceConstraint->mAppliedImpulse,
+      selfIndexedConstraint->mAppliedImpulse);
+  EXPECT_EQ(2u, selfIndexedConstraint->mNumAssemblies);
+  const auto stats = primary->getStats();
+  EXPECT_EQ(1u, stats.numFailed);
+  EXPECT_EQ(0u, stats.numConverged);
+  EXPECT_EQ(0u, stats.numAcceptedAtCap);
 }
 
 //==============================================================================
@@ -3392,6 +3486,25 @@ TEST(ConstraintSolver, ParallelGroupSolveRequiresExactBuiltInSolvers)
       std::make_shared<DerivedNsgsFrictionSolver>());
   EXPECT_FALSE(solvesInParallel(derivedNsgsSecondarySolver));
 
+  ExposedThreadedConstraintSolver fbfPrimarySolver(
+      std::make_shared<constraint::FbfFrictionSolver>(),
+      std::make_shared<constraint::PgsBoxedLcpSolver>());
+  EXPECT_TRUE(solvesInParallel(fbfPrimarySolver));
+
+  ExposedThreadedConstraintSolver fbfSecondarySolver(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(),
+      std::make_shared<constraint::FbfFrictionSolver>());
+  EXPECT_TRUE(solvesInParallel(fbfSecondarySolver));
+
+  ExposedThreadedConstraintSolver derivedFbfPrimarySolver(
+      std::make_shared<DerivedFbfFrictionSolver>(), nullptr);
+  EXPECT_FALSE(solvesInParallel(derivedFbfPrimarySolver));
+
+  ExposedThreadedConstraintSolver derivedFbfSecondarySolver(
+      std::make_shared<constraint::DantzigBoxedLcpSolver>(),
+      std::make_shared<DerivedFbfFrictionSolver>());
+  EXPECT_FALSE(solvesInParallel(derivedFbfSecondarySolver));
+
   auto randomizedPrimaryPgs = std::make_shared<constraint::PgsBoxedLcpSolver>();
   auto primaryOption = randomizedPrimaryPgs->getOption();
   primaryOption.mRandomizeConstraintOrder = true;
@@ -4028,6 +4141,48 @@ TEST(ConstraintSolver, NsgsFrictionLawsBypassEnabledMatrixFreeContactSolver)
           law == Nsgs::Law::Box ? stats.numContacts : 0u, stats.numBoxContacts);
       EXPECT_EQ(0u, stats.numFailed);
     }
+  }
+}
+
+//==============================================================================
+TEST(ConstraintSolver, FbfBypassesEnabledMatrixFreeContactSolver)
+{
+  using Fbf = constraint::FbfFrictionSolver;
+  for (bool derived : {false, true}) {
+    SCOPED_TRACE(derived);
+    auto referenceWorld = createManySingleFreeBodyContactWorld(4u, 1u);
+    auto matrixFreeWorld = createManySingleFreeBodyContactWorld(4u, 1u);
+    setContactWorldSlidingVelocity(*referenceWorld);
+    setContactWorldSlidingVelocity(*matrixFreeWorld);
+    auto referenceFbf = std::make_shared<Fbf>();
+    std::shared_ptr<Fbf> matrixFreeFbf
+        = derived ? std::make_shared<DerivedFbfFrictionSolver>()
+                  : std::make_shared<Fbf>();
+    auto* referenceSolver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+        referenceWorld->getConstraintSolver());
+    auto* matrixFreeSolver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+        matrixFreeWorld->getConstraintSolver());
+    referenceSolver->setBoxedLcpSolver(referenceFbf);
+    matrixFreeSolver->setBoxedLcpSolver(matrixFreeFbf);
+    auto matrixFreeOptions
+        = matrixFreeSolver->getMatrixFreeContactSolverOptions();
+    matrixFreeOptions.mEnabled = true;
+    matrixFreeOptions.mMinRows = 1u;
+    matrixFreeOptions.mMaxIterations = 100;
+    matrixFreeSolver->setMatrixFreeContactSolverOptions(matrixFreeOptions);
+
+    for (std::size_t step = 0u; step < 5u; ++step) {
+      referenceWorld->step();
+      matrixFreeWorld->step();
+      expectWorldStateBitIdentical(*referenceWorld, *matrixFreeWorld);
+      expectFrictionStatsEqual(
+          referenceFbf->getStats(), matrixFreeFbf->getStats());
+    }
+    const auto stats = matrixFreeFbf->getStats();
+    EXPECT_GT(stats.numSolves, 0u);
+    EXPECT_GT(stats.numContacts, 0u);
+    EXPECT_EQ(0u, stats.numBoxContacts);
+    EXPECT_EQ(0u, stats.numFailed);
   }
 }
 

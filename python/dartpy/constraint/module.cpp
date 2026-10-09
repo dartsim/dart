@@ -45,7 +45,9 @@ void DynamicJointConstraint(py::module& sm);
 void BoxedLcpSolver(py::module& sm);
 void DantzigBoxedLcpSolver(py::module& sm);
 void PgsBoxedLcpSolver(py::module& sm);
+void FrictionSolveStats(py::module& sm);
 void NsgsFrictionSolver(py::module& sm);
+void FbfFrictionSolver(py::module& sm);
 
 void ConstraintSolver(py::module& sm);
 void BoxedLcpConstraintSolver(py::module& sm);
@@ -62,7 +64,9 @@ void dart_constraint(py::module& m)
   BoxedLcpSolver(sm);
   DantzigBoxedLcpSolver(sm);
   PgsBoxedLcpSolver(sm);
+  FrictionSolveStats(sm);
   NsgsFrictionSolver(sm);
+  FbfFrictionSolver(sm);
 
   ConstraintSolver(sm);
   BoxedLcpConstraintSolver(sm);
