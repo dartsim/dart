@@ -107,7 +107,7 @@ def content_decodings(data: bytes) -> list[str]:
         # NUL-containing bytes are not UTF-8 text, even if UTF-8 accepts them.
         texts.extend(
             data.decode(encoding, errors="replace").removeprefix("\ufeff")
-            for encoding in ("utf-16-le", "utf-16-be")
+            for encoding in ("utf-16-le", "utf-16-be", "utf-32-le", "utf-32-be")
         )
     return list(dict.fromkeys(texts))
 
@@ -202,6 +202,7 @@ def read_git_command(pid: int) -> list[str] | None:
         if data:
             return [os.fsdecode(arg) for arg in data.rstrip(b"\0").split(b"\0")]
     except OSError:
+        # Procfs may be unavailable; try the portable ps fallback below.
         pass
     try:
         result = subprocess.run(
@@ -220,6 +221,17 @@ def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
         args = command[command.index("commit") + 1 :]
     except ValueError:
         return None
+    # Git exposes hidden and negated options too, keeping prefix matching in sync.
+    options = {
+        option.rstrip("=")
+        for option in subprocess.run(
+            ["git", "commit", "--git-completion-helper-all"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.split()
+        if option != "--"
+    }
     cleanup = "default"
     supplied = verbose = False
     edit = None
@@ -230,6 +242,10 @@ def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
         if token == "--":
             break
         option, sep, value = token.partition("=")
+        if option.startswith("--") and option not in options:
+            matches = [name for name in options if name.startswith(option)]
+            if len(matches) == 1:
+                option = matches[0]
         if option == "--cleanup":
             if not sep and i < len(args):
                 value = args[i]
