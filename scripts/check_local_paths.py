@@ -58,9 +58,9 @@ PATTERNS = tuple(
         r"(?<![\w.:-])[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>\[\](){};,|]+",
         # Windows Actions checks out the repository in two same-named dirs.
         r"(?<![\w.:-])[A-Za-z]:[/\\]+a[/\\]+(?P<repo>[\w.-]+)[/\\]+(?P=repo)(?=[/\\]|$|[\s`\"'<>\[\](){};,|])",
-        # Network (UNC) user profiles, with either path separator.
-        r"(?<![\w:/\\])[\\/]{2}[^\\/\s]+[\\/]+Users[\\/]+[^\\/\r\n`\"'<>\[\](){};,|]+",
-        r"(?<![\w:/\\])[\\/]{2}(?:wsl\.localhost|wsl\$)[\\/]+"
+        # Network (UNC) user profiles, including JSON-escaped separators.
+        r"(?<![\w:/\\])[\\/]{2,}[^\\/\s]+[\\/]+Users[\\/]+[^\\/\r\n`\"'<>\[\](){};,|]+",
+        r"(?<![\w:/\\])[\\/]{2,}(?:wsl\.localhost|wsl\$)[\\/]+"
         r"[^\\/\s`\"'<>\[\](){};,|]+[\\/]+"
         r"(?:home[\\/]+[^\\/\s`\"'<>\[\](){};,|]+|(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|]))",
     )

@@ -578,6 +578,21 @@ def _commit(repo, message="Public fixture"):
 
 
 @pytest.mark.parametrize(
+    "escaped_path, reported_path",
+    [
+        (r"\/home\/example\/private.md", "/home/example/private.md"),
+        (
+            r"\\\\wsl.localhost\\example\\home\\example\\private.md",
+            r"\\\\wsl.localhost\\example\\home\\example\\private.md",
+        ),
+        (
+            r"\\\\corp-fs\\Users\\example\\private.md",
+            r"\\\\corp-fs\\Users\\example\\private.md",
+        ),
+        (r"C:\\Users\\example\\private.md", r"C:\\Users\\example\\private.md"),
+    ],
+)
+@pytest.mark.parametrize(
     "mode",
     [
         "--stdin",
@@ -589,11 +604,13 @@ def _commit(repo, message="Public fixture"):
         "--commit-range",
     ],
 )
-def test_json_escaped_paths_are_reported_in_every_mode(repo, mode):
+def test_json_escaped_paths_are_reported_in_every_mode(
+    repo, mode, escaped_path, reported_path
+):
     path = repo / "notes.json"
     path.write_text("Public summary\n")
     base = _commit(repo)
-    text = "Public summary\n" + r'{"path":"\/home\/example\/private.md"}' + "\n"
+    text = "Public summary\n" + '{"path":"' + escaped_path + '"}\n'
     path.write_text(text)
     _git(repo, "add", "notes.json")
     args = (mode,)
@@ -609,7 +626,7 @@ def test_json_escaped_paths_are_reported_in_every_mode(repo, mode):
     result = _cli(*args, cwd=repo, text=text if mode == "--stdin" else None)
     assert result.returncode == 1, result.stderr
     assert result.stdout.splitlines() == [
-        f"{location}: /home/example/private.md" for location in locations
+        f"{location}: {reported_path}" for location in locations
     ]
 
 
