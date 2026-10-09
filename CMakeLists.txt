@@ -226,7 +226,7 @@ dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF)
 dart_option(
   DART_ALLOW_SINGLE_PRECISION_LIBCCD
-  "Skip the check that FCL's libccd uses double precision"
+  "Build even if FCL's libccd uses single precision"
   OFF
 )
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)

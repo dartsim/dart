@@ -58,11 +58,10 @@
 
 * Build
 
-  * Stop CMake configuration when FCL's libccd is built in single precision
-    (libccd's default), which causes momentum drift on shallow contacts and
-    weaker soft-contact push recovery. Rebuild libccd with
-    `-DENABLE_DOUBLE_PRECISION=ON` and rebuild FCL against it, or skip this
-    check with
+  * Stop the build when FCL's libccd is built in single precision (libccd's
+    default), which causes momentum drift on shallow contacts and weaker
+    soft-contact push recovery. Rebuild libccd with
+    `-DENABLE_DOUBLE_PRECISION=ON` and FCL against it, or configure with
     `-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`:
     [#3590](https://github.com/dartsim/dart/issues/3590)
 
