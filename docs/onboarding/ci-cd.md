@@ -27,7 +27,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `publish_dartpy.yml`              | Publish dartpy               | nightly, version tags, dispatch | Build, repair, verify, and test wheels; publish from version tags |
 | `nightly.yml`                     | Nightly                      | daily, on demand                | Everything above on `main`; files `nightly-failure` issues |
 | `performance_dashboard_dart6.yml` | DART 6 Performance Dashboard | push, dispatch                  | Advisory wall-time dashboard on `ubuntu-24.04`, profiler and alerts off |
-| `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S6 guards |
+| `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S6 guards; release records per tag |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main`; an update removes their `maintainer-approved` label |
 | `maintainer_approval.yml`         | Maintainer Approval          | PR pushes, retargets, reopens   | Removes the `maintainer-approved` label when a PR changes after approval; pushes of conflict-free base merges keep it ([PR Lifecycle](ai-tools.md#pr-lifecycle)) |
 
@@ -42,7 +42,7 @@ nightly-only job: it never reports on PRs, so it would block every merge.
 
 ## Performance Records And Guards
 
-`perf.yml` extends the PR harness for two hosted tiers on `ubuntu-24.04`:
+`perf.yml` extends the PR harness for three hosted tiers on `ubuntu-24.04`:
 
 - The merge tier compares a qualifying push to `main` from its pre-update SHA
   (`github.event.before`) to HEAD, covering every commit in a rebase merge.
@@ -67,14 +67,35 @@ nightly-only job: it never reports on PRs, so it would block every merge.
   captures. Failed perturbation checks make the row diagnostic and fail the
   nightly `perf` group. Every `contact_benchmark` detector row must report its
   final contact pair count; a missing count fails the nightly.
+- The release tier is dispatched with
+  `gh workflow run perf.yml --ref main -f tier=release -f head=<candidate-sha>`.
+  Candidates must belong to the first-parent history of `main` or a
+  `release-6.x` branch. The tag is `v<package.xml version>` at the candidate;
+  a supplied tag must match. With no `head`, `-f tag=v6.x.y` selects an existing
+  tag's commit. An existing tag must name the selected candidate.
+  The base is the newest earlier `v6` tag merged into the candidate's parent;
+  `-f base=v6.x.y` selects another eligible baseline. Both arms use `main`'s
+  harness and Pixi environment. Comparisons involving a 6.19.x tag run the
+  portable `gzb/ode` and `robot/dart` rows. A policy FAIL is published and the
+  writer stays green; an ERROR publishes nothing. Only `main` candidates include
+  a change ledger; `release-6.x` candidates carry the tag comparison only.
+  Hosted records take precedence over local tag records even when their
+  environment fingerprints match. Identical-or-refuse checks apply only within
+  the same `runner.environment`.
+  Within that producer, a newer candidate or later measurement can replace the
+  record before tagging. Once the tag exists, its commit's record replaces any
+  stored candidate, including a newer or diverged one, and later candidates
+  from that producer cannot replace it.
 
-Both tiers publish in this repository's `gh-pages` branch:
+These tiers publish in this repository's `gh-pages` branch:
 
 | Path | Content |
 | --- | --- |
 | `performance/records/main/<yyyy>/<date>-<sha12>-<tier>.json` | Plain JSON `dart-perf/1` record: revisions, runner/host metadata, environment fingerprint, accepted rationale lines, per-row values, guards and advisory wall time |
 | `performance/dart6-ir/` | Merge-only Ir and allocation chart, alerts off; input changes split series, other continuity changes are annotated, and the chart retains 250 points |
 | `performance/guards/main.md` | Latest generated nightly S1–S6 guard table, with revision and fingerprint; replaces manual live baseline tables |
+| `performance/records/main/<yyyy>/<date>-<sha12>-backfill.json` | Local A/B record with `runner.environment: local`, pushed once by a maintainer after review; never charted |
+| `performance/releases/<tag>.{json,md}` and `index.md` | Comparison with the previous tag; main candidates include a ledger of changes; per-row release index; JSON and markdown attached by hand to the GitHub release |
 
 The nightly record is added when the newest record by measurement time differs
 in HEAD, environment fingerprint, or results (including guards and advisory
@@ -163,12 +184,12 @@ final maximum penetration.
 
 PR measurements use a read-only token and checkout with
 `persist-credentials: false`; the separate verdict job never runs PR code.
-Merge and nightly measurements also run in read-only jobs (`record-measure`
-and `nightly-measure`) with `persist-credentials: false` and upload evidence
+Merge, nightly and release measurements also run in read-only jobs (`record-measure`,
+`nightly-measure` and `release-measure`) with `persist-credentials: false` and upload evidence
 artifacts. Merge measurement has `pull-requests: read` for rationale lookup;
-its `GH_TOKEN` exists only on that lookup step. The separate writers (`record`
-and `nightly`) download the evidence and run main's publisher without building
-DART or running benchmark binaries. Both have `contents: write`; only the merge
+its `GH_TOKEN` exists only on that lookup step. The separate writers (`record`,
+`nightly` and `release`) download the evidence and run main's publisher without building
+DART or running benchmark binaries. All have `contents: write`; only the merge
 writer has `pull-requests: write`, with `GH_TOKEN` scoped to its sticky failure
 comment step. Its main publisher checkout uses `persist-credentials: false`;
 the dedicated `gh-pages` checkout retains credentials for the git publication
@@ -177,9 +198,14 @@ verdict. Merge evidence is retained per measurement attempt; writer reruns use
 that attempt's artifact name from the measurement job's outputs.
 Merge publication requires a push or dispatch on `main`; nightly publication
 requires a schedule or dispatch on `main`.
-A CI-change PR or off-main dispatch can measure but writes
-nothing. The writer refuses any runner whose environment is not
-`github-hosted`. Every write fetches `origin/gh-pages`, rebases onto it and
+Release publication requires a dispatch on `main`; its writer has only
+`contents: write` and no `GH_TOKEN`. A CI-change PR or off-main nightly or
+release dispatch can measure but writes nothing; merge measurement runs only
+on `main`. Hosted writers refuse any runner whose environment is not
+`github-hosted`. Backfill publication refuses to run inside GitHub Actions.
+It uses the maintainer's own git credentials after validating a local runner,
+one fingerprint, `main` commits and a harness commit on `main`.
+Every write fetches `origin/gh-pages`, resets to and regenerates against it and
 pushes with bounded retries after rejection; it never force-pushes. The
 repository ruleset also blocks force-push and branch deletion.
 
@@ -189,8 +215,7 @@ disabled. Removing profiler overhead intentionally introduces a one-time
 level shift; historical points across that shift are not directly comparable.
 CI has no quiet hardware: wall time and estimated cycles are advisory.
 Cache, prefetch, SIMD and threading claims require hand-run `perf stat`
-evidence. Backfill and release/tag records are P4; `release-6.19` has no
-per-commit tracking in P3.
+evidence. `release-6.x` branches are tracked by release records only.
 
 After merging workflow changes, verify the hosted behavior: dispatch the
 merge tier twice for the same `main` SHA and check identical Ir or different
@@ -203,8 +228,44 @@ skipped.
 For the repeated-SHA check, use
 `gh workflow run perf.yml --ref main -f tier=merge -f head=<main-sha>` twice.
 Manual dispatches can name an ancestor of `main` that provides the selected
-tier's harness (`nightly` requires P3); the merge base, when supplied, must be
-that commit's first parent. Historical backfill remains P4.
+tier's harness; the merge base, when supplied, must be that commit's first
+parent. For an existing release tag, use
+`gh workflow run perf.yml --ref main -f tier=release -f tag=v6.x.y`.
+Historical comparisons use [`perf-backfill`](profiling.md#revision-comparisons).
+
+Measurements stage every arm under one fixed path with a minimal environment,
+so counts on one host do not depend on the checkout location, output
+directory or environment, and per-revision deltas within one host are exact.
+Across hosts, system libraries that load at startup still shift the heap
+layout slightly: with identical fingerprints, a local run of a hosted PR
+measurement matched every guard, allocation and byte count exactly and 11 of
+17 rows' Ir exactly, while the rest differed by at most 0.1% (`s3w/dart`
++0.10%, `s3w/ode` -0.09%, the others under 0.01%). The local-to-hosted
+overlap check therefore allows 0.1% relative Ir differences and requires
+exact guards, allocations and bytes.
+
+After publishing the GitHub release, attach its performance record manually:
+
+```bash
+(
+set -e
+git fetch origin gh-pages
+git show origin/gh-pages:performance/releases/v6.x.y.json > dart-perf-v6.x.y.json
+tag_commit=$(git rev-parse --verify 'v6.x.y^{commit}')
+record_commit=$(jq -er .run.commit dart-perf-v6.x.y.json)
+if [ "$record_commit" != "$tag_commit" ]; then
+  echo 'record names another candidate; dispatch -f tag=v6.x.y first' >&2
+  exit 1
+fi
+git show origin/gh-pages:performance/releases/v6.x.y.md > dart-perf-v6.x.y.md
+gh release upload v6.x.y dart-perf-v6.x.y.json dart-perf-v6.x.y.md
+)
+```
+
+If the commit check fails, dispatch again with `-f tag=v6.x.y` and no `head`
+before uploading; the tagged commit's record replaces the stored candidate
+even if that candidate is newer or diverged. A FAIL needs an explanation of
+its changed guards or gated regressions; it does not block release by itself.
 
 ## Caching
 

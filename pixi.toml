@@ -51,6 +51,7 @@ urdfdom = ">=4.0.1,<5"
 
 [tasks]
 perf-compare = { cmd = "python scripts/perf_regression.py local" }
+perf-backfill = { cmd = "python scripts/perf_regression.py backfill" }
 
 clean = { cmd = "rm -rf build && rm -rf .deps && rm -rf .pixi && rm pixi.lock" }
 

@@ -2,15 +2,17 @@
 """Measure deterministic DART performance counts and compare revision records.
 
 ``run`` measures an installed arm; ``compare`` judges saved records; ``local``
-prepares revisions and does both. ``publish`` writes trusted main records to
-gh-pages. Wall time and RSS are advisory. Measurement requires Linux, the system
-Valgrind, and the active Pixi build environment.
+prepares revisions and does both. ``backfill`` resumes a local revision history;
+``ledger`` reports its comparison policy. ``publish`` writes trusted records to
+gh-pages, including release records. Wall time and RSS are advisory. Measurement
+requires Linux, the system Valgrind, and the active Pixi build environment.
 """
 
 from __future__ import annotations
 
 import argparse
 import contextlib
+import fcntl
 import gzip
 import hashlib
 import io
@@ -21,11 +23,13 @@ import re
 import shlex
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import tarfile
 import tempfile
 import threading
+import time
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -34,7 +38,46 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VALGRIND = "/usr/bin/valgrind"
+MEASUREMENT_ROOT = Path(os.environ.get("DART_PERF_STAGING_ROOT", "/tmp/dart-perf"))
+MEASUREMENT_LOCK_FD: int | None = None
 WORLD_SHA = "ad94d44b90f3023765e1b2a4d2ecc7390f5539fa761d6019e08b388ce5c5ff33"
+MEASURED_PATHS = (
+    "dart",
+    "examples/contact_benchmark",
+    "tests/benchmark",
+    "tests/unit/lcpsolver/DantzigProblemCases.hpp",
+    "data",
+    "CMakeLists.txt",
+    "cmake",
+)
+RELEASE_TAG = re.compile(r"v6\.\d+\.\d+")
+LOCAL_PATH = re.compile(r"""file:///[^\s'"]+|(?<![\w.~:/-])/[^\s/'"]+/""")
+# Only these comparison-policy failures can be acknowledged by a rationale.
+WAIVABLE_FAILURES = (
+    ("ir", "Perf-Regression-Rationale", r"[^:]+: Ir \+\d+\.\d+% \(limit \+1\.00%\)"),
+    (
+        "geomean",
+        "Perf-Regression-Rationale",
+        r"Ir geomean \+\d+\.\d+% \(limit \+0\.50%\); rationale required for .+",
+    ),
+    ("allocs", "Perf-Regression-Rationale", r"[^:]+: allocations \+\S+/step"),
+    ("bytes", "Perf-Regression-Rationale", r"[^:]+: requested bytes \+\S+/step"),
+    (
+        "guards",
+        "Rebaseline-Rationale",
+        r"[^:]+: guards changed; Rebaseline-Rationale required",
+    ),
+    (
+        "input",
+        "Rebaseline-Rationale",
+        r"[^:]+: input_sha changed; Rebaseline-Rationale required",
+    ),
+    (
+        "percent",
+        "Rebaseline-Rationale",
+        r"[^:]+: Rebaseline-Rationale must state a signed percentage \(measured Ir \+\d+\.\d+%\)",
+    ),
+)
 PERTURBATIONS = (
     "start4k",
     "start100k",
@@ -336,25 +379,83 @@ def guard_evidence(metrics: dict) -> tuple:
 
 def identity(path: str, prefix: Path) -> None:
     if not Path(path).resolve().is_relative_to(prefix.resolve()):
-        raise ValueError(f"arm identity: {path} is outside {prefix}")
+        raise ValueError(
+            f"arm identity: {Path(path).name} is outside the install prefix"
+        )
 
 
 def environment(prefix: Path) -> dict[str, str]:
-    env = os.environ.copy()
-    for key in ("LD_PRELOAD", "HEAPPAD", "PERF_WARMUP", "PERF_WINDOW", "PERF_MICRO"):
-        env.pop(key, None)
-    env.update(LC_ALL="C", GLIBC_TUNABLES="glibc.cpu.hwcaps=-FMA")
-    # Only the arm and the active Pixi environment supply libraries; an inherited
-    # path could load other dependencies that the fingerprint does not record.
     paths = [str(prefix / "lib")]
-    if env.get("CONDA_PREFIX"):
-        paths.append(str(Path(env["CONDA_PREFIX"]) / "lib"))
-    env["LD_LIBRARY_PATH"] = ":".join(paths)
-    return env
+    if os.environ.get("CONDA_PREFIX"):
+        paths.append(str(MEASUREMENT_ROOT / "arm/dependencies/lib"))
+    return {
+        "PATH": "/usr/bin:/bin",
+        "LC_ALL": "C",
+        "GLIBC_TUNABLES": "glibc.cpu.hwcaps=-FMA",
+        "LD_LIBRARY_PATH": ":".join(paths),
+        "LD_PRELOAD": str(MEASUREMENT_ROOT / "arm/osgpath.so"),
+    }
+
+
+def make_writable_directories(tree: Path) -> None:
+    if tree.is_symlink():
+        raise ValueError("performance staging slot cannot be a symlink")
+    tree.chmod(tree.stat().st_mode | stat.S_IRWXU)
+    for parent, directories, _ in os.walk(tree):
+        for name in directories:
+            directory = Path(parent) / name
+            if not directory.is_symlink():
+                directory.chmod(directory.stat().st_mode | stat.S_IRWXU)
+
+
+@contextlib.contextmanager
+def perf_workspace(paths=()):
+    global MEASUREMENT_LOCK_FD
+    if not MEASUREMENT_ROOT.is_absolute():
+        raise ValueError("DART_PERF_STAGING_ROOT must name an absolute directory")
+    MEASUREMENT_ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
+    info = MEASUREMENT_ROOT.lstat()
+    if (
+        not stat.S_ISDIR(info.st_mode)
+        or info.st_uid != os.getuid()
+        or info.st_mode & 0o077
+        or os.path.ismount(MEASUREMENT_ROOT)
+        or info.st_dev != MEASUREMENT_ROOT.parent.stat().st_dev
+    ):
+        raise ValueError(
+            "performance staging root must be a private owned directory on its "
+            f"parent filesystem (owner uid {info.st_uid}); choose another absolute "
+            "directory with DART_PERF_STAGING_ROOT"
+        )
+    slot = MEASUREMENT_ROOT / "arm"
+    if any(
+        root.is_relative_to(alias) or alias.is_relative_to(root)
+        for path in paths
+        for root in (Path(path).absolute(), Path(path).resolve())
+        for alias in (slot.absolute(), slot.resolve())
+    ):
+        raise ValueError("performance inputs and outputs must be outside staging")
+    with (MEASUREMENT_ROOT / ".lock").open("a", encoding="utf-8") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if slot.exists():
+            make_writable_directories(slot)
+            shutil.rmtree(slot)
+        slot.mkdir()
+        MEASUREMENT_LOCK_FD = lock.fileno()
+        try:
+            yield slot
+        finally:
+            MEASUREMENT_LOCK_FD = None
 
 
 class UnsupportedRow(ValueError):
     pass
+
+
+class UnknownOption(ValueError):
+    def __init__(self, flag: str, message: str):
+        super().__init__(message)
+        self.flag = flag
 
 
 class BuildFailure(ValueError):
@@ -386,11 +487,13 @@ def execute(
     with log.open("w", encoding="utf-8") as output:
         process = subprocess.Popen(
             command,
-            cwd=ROOT,
+            cwd=ROOT if build else MEASUREMENT_ROOT,
             env=env,
             stdout=output,
             stderr=subprocess.STDOUT,
             start_new_session=True,
+            # Orphans retain the slot lock until their last inherited fd closes.
+            pass_fds=() if MEASUREMENT_LOCK_FD is None else (MEASUREMENT_LOCK_FD,),
         )
         with RUNNING_LOCK:
             RUNNING[id(process)] = process
@@ -398,7 +501,7 @@ def execute(
             process.wait(timeout=timeout)
         except subprocess.TimeoutExpired as error:
             kill_group(process)
-            raise ValueError(f"timeout: see {log}") from error
+            raise ValueError(f"timeout: see {log.name}") from error
         except BaseException:
             kill_group(process)
             raise
@@ -414,7 +517,7 @@ def execute(
             and not any(marker in lower for marker in RUNNER_ERROR_MARKERS)
         )
         error = BuildFailure if source_error else ValueError
-        raise error(f"exit {process.returncode}: see {log}")
+        raise error(f"exit {process.returncode}: see {log.name}")
     unsupported = re.search(r"^UNSUPPORTED: (.+)$", text, re.MULTILINE)
     if process.returncode == 3 and unsupported:
         raise UnsupportedRow(unsupported[1])
@@ -423,8 +526,11 @@ def execute(
     # measured correctness failures, not infrastructure ones.
     if process.returncode and failed_guards(text):
         return text
+    unknown = re.search(r"^Unknown option: (\S+)$", text, re.MULTILINE)
+    if process.returncode == 1 and unknown:
+        raise UnknownOption(unknown[1], f"exit 1: see {log.name}")
     if process.returncode:
-        raise ValueError(f"exit {process.returncode}: see {log}")
+        raise ValueError(f"exit {process.returncode}: see {log.name}")
     return text
 
 
@@ -462,11 +568,12 @@ def row_command(row: Row, args, world: Path, warmup: int, steps: int) -> list[st
 
 
 def perturb_environment(env: dict, args, config: str) -> dict:
-    env.update(LD_PRELOAD=str(args.shim))
+    env["LD_PRELOAD"] += f":{args.shim}"
     if config == "tcache0":
         env["GLIBC_TUNABLES"] += ":glibc.malloc.tcache_count=0"
     elif config:
-        env.update(LD_PRELOAD=f"{args.shim}:{args.heappad}", HEAPPAD=config)
+        env["LD_PRELOAD"] += f":{args.heappad}"
+        env["HEAPPAD"] = config
     return env
 
 
@@ -476,17 +583,22 @@ def native(row: Row, args, world: Path, config: str = "") -> dict:
     if row.driver == PB:
         env["PERF_WINDOW"] = "stepAndRead"
     tag = row.key.replace("/", ".") + ".native" + (f".{config}" if config else "")
-    text = execute(
-        [
-            "/usr/bin/time",
-            "-f",
-            "PERFTIME maxrss_kb=%M",
-            *row_command(row, args, world, row.warmup, row.steps),
-        ],
-        env,
-        args.output_dir / f"{tag}.log",
-        args.timeout,
-    )
+    try:
+        text = execute(
+            [
+                "/usr/bin/time",
+                "-f",
+                "PERFTIME maxrss_kb=%M",
+                *row_command(row, args, world, row.warmup, row.steps),
+            ],
+            env,
+            args.output_dir / f"{tag}.log",
+            args.timeout,
+        )
+    except UnknownOption as error:
+        if error.flag in row.args:
+            raise UnsupportedRow(f"{row.driver} lacks {error.flag}") from error
+        raise
     match = re.search(
         r"^STEPALLOC steps=(\d+) measured=(\d+) allocs=(\d+) bytes=(\d+) libdart=(.+)$",
         text,
@@ -512,7 +624,7 @@ def native(row: Row, args, world: Path, config: str = "") -> dict:
         "bytes_per_step": size / measured,
         "allocs": allocs,
         "bytes": size,
-        "libdart": match[5],
+        "libdart": Path(match[5]).name,
         "max_rss_kb": int(rss[1]),
         "wall_ms_per_step": float(field(text, "Avg Step Time").split()[0]),
     }
@@ -593,7 +705,9 @@ def callgrind(row: Row, args, world: Path, steps: int) -> dict[str, int]:
                 re.MULTILINE,
             )
             if not native_lib or Path(obj).resolve() != Path(native_lib[1]).resolve():
-                raise ValueError(f"callgrind/native libdart identity differs: {obj}")
+                raise ValueError(
+                    f"callgrind/native libdart identity differs: {Path(obj).name}"
+                )
         samples.append(dict(zip(events[1].split(), map(int, summary[1].split()))))
     if not samples:
         raise ValueError(f"missing callgrind counts or libdart identity: {tag}")
@@ -632,12 +746,21 @@ def robot_data_paths(source_dir: Path) -> list[Path]:
         for reference in references:
             path = (model.parent / reference.removeprefix("file://")).resolve()
             # Never hash a resource from outside the selected revision.
-            path.relative_to(source_dir)
+            if not path.is_relative_to(source_dir):
+                display = reference
+                referenced = Path(reference.removeprefix("file://"))
+                if referenced.is_absolute():
+                    display = (
+                        referenced.relative_to(source_dir).as_posix()
+                        if referenced.is_relative_to(source_dir)
+                        else referenced.name
+                    )
+                raise ValueError(f"{model.name}: {display} is outside the revision")
             paths.add(path)
     return sorted(paths)
 
 
-def measure(row: Row, args, world: Path) -> dict:
+def row_result(row: Row, args=None) -> dict:
     result = {
         "row": row.row,
         "det": row.det,
@@ -646,16 +769,23 @@ def measure(row: Row, args, world: Path) -> dict:
         "status": "ok",
         "threads": row.threads,
         "window": {"warmup": row.warmup, "steps": row.steps},
-        "method": "slope" if row.ir and not args.native_only else "native",
-        "expected_ir": row.ir and not args.native_only,
+        "method": (
+            "slope" if row.ir and not getattr(args, "native_only", False) else "native"
+        ),
+        "expected_ir": row.ir and not getattr(args, "native_only", False),
         "collection_signature": (
             COLLECTION_SIGNATURES[row.driver]
-            if row.ir and not args.native_only
+            if row.ir and not getattr(args, "native_only", False)
             else None
         ),
         "parity": row.parity,
         "qualification_required": row.perturb,
     }
+    return result
+
+
+def measure(row: Row, args, world: Path) -> dict:
+    result = row_result(row, args)
     result["input_sha"] = None
     try:
         try:
@@ -681,9 +811,10 @@ def measure(row: Row, args, world: Path) -> dict:
             kind = (
                 ValueError if getattr(args, "base_arm", False) else BenchmarkCaseError
             )
-            raise kind(
-                f"{row.key}: failed to load revision inputs from {args.source_dir}: {error}"
-            ) from error
+            text = str(error)
+            for source in (args.source_dir, args.source_dir.resolve()):
+                text = text.replace(f"{source}/", "")
+            raise kind(f"{row.key}: failed to load revision inputs: {text}") from error
         metrics = (
             native(row, args, world) if row.det else micro_perturb(row, args, world, "")
         )
@@ -904,9 +1035,27 @@ def workload_hashes(
     )
 
     def normalize(command):
-        roots = [(source, "<SOURCE>"), (build, "<BUILD>"), (prefix, "<PREFIX>")]
+        slot = MEASUREMENT_ROOT / "arm"
+        roots = [
+            (source, "<SOURCE>"),
+            (build, "<BUILD>"),
+            (prefix, "<PREFIX>"),
+            (slot / "source", "<SOURCE>"),
+            (slot / "harness", "<SOURCE>"),
+            (slot / "build", "<BUILD>"),
+            (slot / "driver", "<BUILD>"),
+            (slot / "prefix", "<PREFIX>"),
+            (slot / "dependencies", "<DEPENDENCY>"),
+        ]
+        if dependency := os.environ.get("CONDA_PREFIX"):
+            roots.append((Path(dependency), "<DEPENDENCY>"))
         for path, label in sorted(
-            ((str(path.resolve()), label) for path, label in roots if path is not None),
+            {
+                (str(root), label)
+                for path, label in roots
+                if path is not None
+                for root in (path.absolute(), path.resolve())
+            },
             key=lambda item: len(item[0]),
             reverse=True,
         ):
@@ -975,6 +1124,21 @@ def workload_hashes(
     return hashes
 
 
+def sample_data_hash(data: Path) -> str:
+    if not data.is_dir():
+        raise ValueError("missing benchmark sample data")
+    return sha(
+        json.dumps(
+            {
+                path.relative_to(data).as_posix(): sha(path.read_bytes())
+                for path in sorted(data.rglob("*"))
+                if path.is_file()
+            },
+            sort_keys=True,
+        ).encode()
+    )
+
+
 def installed_provenance(args) -> dict:
     path = args.prefix / "share/dart/perf-build.json"
     if not path.is_file():
@@ -998,18 +1162,28 @@ def installed_provenance(args) -> dict:
         )
         or any(
             not isinstance(stamp.get(key), str) or not stamp[key].strip()
-            for key in ("compiler", "pixi_lock_sha", "preset")
+            for key in ("compiler", "pixi_lock_sha", "preset", "staging_root")
         )
         or not isinstance(stamp.get("compiler_sha"), str)
         or not re.fullmatch(r"[0-9a-f]{64}", stamp["compiler_sha"])
+        or not isinstance(stamp.get("sample_data_sha"), str)
+        or not re.fullmatch(r"[0-9a-f]{64}", stamp["sample_data_sha"])
     ):
         raise ValueError(f"invalid installed build provenance: {path}")
     if stamp.get("commit") != args.commit:
         raise ValueError("installed build provenance commit differs from --commit")
+    if stamp["staging_root"] != str(MEASUREMENT_ROOT):
+        raise ValueError(
+            "installed build provenance staging root differs; rebuild with the current staging root"
+        )
     if stamp.get("libdart_sha") != sha((args.prefix / "lib/libdart.so").read_bytes()):
         raise ValueError("installed build provenance libdart hash differs")
     if stamp["libraries"] != library_hashes(args.prefix):
         raise ValueError("installed build provenance DART library hashes differ")
+    if stamp["sample_data_sha"] != sample_data_hash(
+        args.prefix / "share/doc/dart/data"
+    ):
+        raise ValueError("installed build provenance sample data hash differs")
     return stamp
 
 
@@ -1035,7 +1209,7 @@ def fingerprint(args, provenance: dict | None = None) -> dict:
         Path(__file__).read_bytes()
         + b"".join(
             path.read_bytes()
-            for path in sorted((ROOT / "tools/perf").glob("*"))
+            for path in sorted((ROOT / "tools/perf").rglob("*"))
             if path.is_file()
         )
     )
@@ -1049,21 +1223,24 @@ def fingerprint(args, provenance: dict | None = None) -> dict:
         "glibc": command_output(["getconf", "GNU_LIBC_VERSION"]).split()[-1],
         "pixi_lock_sha": provenance["pixi_lock_sha"],
         "runtime_pixi_lock_sha": sha(
-            (Path(env.get("PIXI_PROJECT_ROOT", ROOT)) / "pixi.lock").read_bytes()
+            (Path(os.environ.get("PIXI_PROJECT_ROOT", ROOT)) / "pixi.lock").read_bytes()
         ),
-        "runtime_environment": env.get(
-            "PIXI_ENVIRONMENT_NAME", env.get("CONDA_PREFIX")
-        ),
+        "runtime_environment": os.environ.get("PIXI_ENVIRONMENT_NAME")
+        or Path(os.environ.get("CONDA_PREFIX", "")).name,
+        "staging_root": str(MEASUREMENT_ROOT),
         "preset": provenance["preset"],
         "harness_sha": harness,
         "allocshim_sha": sha(args.shim.read_bytes()),
+        "osgpath_sha": sha((MEASUREMENT_ROOT / "arm/osgpath.so").read_bytes()),
         "heappad_sha": sha(args.heappad.read_bytes()) if args.perturb else None,
     }
     values["runner"] = {
         "environment": os.environ.get("RUNNER_ENVIRONMENT", "local"),
-        "name": os.environ.get("RUNNER_NAME", os.uname().nodename),
-        "image": "/".join(
-            os.environ.get(key, "") for key in ("ImageOS", "ImageVersion")
+        "name": os.environ.get("RUNNER_NAME", "local"),
+        "image": (
+            f"{os.environ['ImageOS']}/{os.environ['ImageVersion']}"
+            if os.environ.get("ImageOS") and os.environ.get("ImageVersion")
+            else ""
         ),
     }
     values["host_cpu"] = next(
@@ -1085,6 +1262,18 @@ def fingerprint(args, provenance: dict | None = None) -> dict:
         ).encode()
     )
     return values
+
+
+def planned_rows(args) -> list[Row]:
+    rows = select_rows(args.rows)
+    for row in list(rows):
+        if row.parity and all(other.key != row.parity for other in rows):
+            rows.append(
+                next(
+                    other for other in [*ROWS, *NIGHTLY_ROWS] if other.key == row.parity
+                )
+            )
+    return rows
 
 
 def run_arm(args) -> dict:
@@ -1111,6 +1300,64 @@ def run_arm(args) -> dict:
         setattr(args, option, path)
     args.commit = commit
     provenance = installed_provenance(args)
+    paths = [
+        args.prefix,
+        args.bin_dir,
+        args.source_dir / "data",
+        args.output_dir,
+        args.shim,
+        args.heappad,
+    ]
+    if dependency := os.environ.get("CONDA_PREFIX"):
+        paths.append(Path(dependency))
+    with perf_workspace(paths) as slot:
+        arm = argparse.Namespace(**vars(args))
+        arm.prefix = slot / "prefix"
+        shutil.copytree(args.prefix, arm.prefix)
+        make_writable_directories(arm.prefix)
+        arm.bin_dir = arm.prefix / "bin"
+        if args.bin_dir != args.prefix / "bin":
+
+            def copy_binary(source, destination):
+                destination = Path(destination)
+                if destination.is_file():
+                    destination.chmod(destination.stat().st_mode | stat.S_IWUSR)
+                return shutil.copy2(source, destination)
+
+            shutil.copytree(
+                args.bin_dir,
+                arm.bin_dir,
+                dirs_exist_ok=True,
+                copy_function=copy_binary,
+            )
+            make_writable_directories(arm.bin_dir)
+        arm.source_dir = slot / "inputs-source"
+        arm.source_dir.symlink_to(args.source_dir.resolve(), target_is_directory=True)
+        (slot / "source").mkdir()
+        (slot / "source/data").symlink_to(
+            arm.prefix / "share/doc/dart/data", target_is_directory=True
+        )
+        if dependency := os.environ.get("CONDA_PREFIX"):
+            (slot / "dependencies").symlink_to(
+                Path(dependency).resolve(), target_is_directory=True
+            )
+        build_shims(args, slot, names=("osgpath",))
+        if dependency and (Path(dependency) / "lib/libosgDB.so").is_file():
+            validate_osg_shim(slot / "osgpath.so", Path(dependency) / "lib/libosgDB.so")
+        arm.shim, arm.heappad = slot / "allocshim.so", slot / "heappad.so"
+        shutil.copy2(args.shim, arm.shim)
+        if args.perturb:
+            shutil.copy2(args.heappad, arm.heappad)
+        arm.output_dir = slot / "run"
+        arm.output_dir.mkdir()
+        try:
+            return _measure_arm(arm, provenance)
+        finally:
+            shutil.copytree(arm.output_dir, args.output_dir, dirs_exist_ok=True)
+
+
+def _measure_arm(args, provenance) -> dict:
+    commit = args.commit
     env_fingerprint = fingerprint(args, provenance)
     inputs = args.output_dir.parent / "inputs"
     inputs.mkdir(exist_ok=True)
@@ -1124,14 +1371,7 @@ def run_arm(args) -> dict:
         with tempfile.NamedTemporaryFile(dir=inputs, delete=False) as temporary:
             temporary.write(data)
         os.replace(temporary.name, world)
-    rows = select_rows(args.rows)
-    for row in list(rows):
-        if row.parity and all(other.key != row.parity for other in rows):
-            rows.append(
-                next(
-                    other for other in [*ROWS, *NIGHTLY_ROWS] if other.key == row.parity
-                )
-            )
+    rows = planned_rows(args)
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         try:
             results = list(pool.map(lambda row: measure(row, args, world), rows))
@@ -1173,6 +1413,7 @@ def run_arm(args) -> dict:
         "schema": "dart-perf/1",
         "run": {
             "tier": "local",
+            "harness_commit": command_output(["git", "rev-parse", "HEAD"]),
             "commit": commit,
             "parent": "",
             "branch": command_output(["git", "branch", "--show-current"]),
@@ -1359,7 +1600,12 @@ def compare(base: dict, head: dict, body: str = "") -> dict:
         parent, child = parents.get(key), children.get(key)
         bm = parent.get("head", {}) if parent else {}
         hm = child.get("head", {}) if child else {}
-        result = {**(child or parent), "parent": bm, "head": hm}
+        result = {
+            **(child or parent),
+            "parent": bm,
+            "parent_status": parent.get("status") if parent else None,
+            "head": hm,
+        }
         input_changed = bool(
             parent and child and parent.get("input_sha") != child.get("input_sha")
         )
@@ -1595,6 +1841,27 @@ def markdown_cell(value) -> str:
     )
 
 
+def row_change(row: dict) -> str:
+    classification = row["delta"]["class"]
+    if classification == "gated":
+        change = row["delta"]
+        # Match the gate: Ir increases below its +0.30% warning threshold are
+        # neutral; allocation and byte increases regress even when acknowledged.
+        classification = (
+            "regressed"
+            if row["failures"]
+            or any((change[key] or 0) > 0 for key in ("allocs", "bytes"))
+            or (change["ir"] is not None and at_least(change["ir"], 0.003))
+            else (
+                "improved"
+                if any((change[key] or 0) < 0 for key in ("allocs", "bytes"))
+                or (change["ir"] is not None and at_least(-change["ir"], 0.01))
+                else "neutral"
+            )
+        )
+    return classification
+
+
 def markdown(record: dict) -> str:
     verdict = record["verdict"]
     env = record["run"]["env"]
@@ -1620,24 +1887,7 @@ def markdown(record: dict) -> str:
     ]
     counts = {}
     for row in record["results"]:
-        classification = row["delta"]["class"]
-        if classification == "gated":
-            change = row["delta"]
-            # Match the gate: Ir increases below its +0.30% warning threshold are
-            # neutral; allocation and byte increases regress even when
-            # acknowledged.
-            classification = (
-                "regressed"
-                if row["failures"]
-                or any((change[key] or 0) > 0 for key in ("allocs", "bytes"))
-                or (change["ir"] is not None and at_least(change["ir"], 0.003))
-                else (
-                    "improved"
-                    if any((change[key] or 0) < 0 for key in ("allocs", "bytes"))
-                    or (change["ir"] is not None and at_least(-change["ir"], 0.01))
-                    else "neutral"
-                )
-            )
+        classification = row_change(row)
         counts[classification] = counts.get(classification, 0) + 1
     lines += [", ".join(f"{count} {kind}" for kind, count in counts.items()) + ".", ""]
     lines += [f"- {item}" for item in [*verdict["failures"], *verdict["warnings"]]]
@@ -1696,12 +1946,14 @@ def finite_or_none(value: float) -> float | None:
 
 
 def write_json(path: Path, value: dict) -> None:
-    path.write_text(
-        json.dumps(value, indent=2, allow_nan=False) + "\n", encoding="utf-8"
-    )
+    text = json.dumps(value, indent=2, allow_nan=False) + "\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(text, encoding="utf-8")
+    temporary.replace(path)
 
 
-def read_record(path: Path) -> dict:
+def read_record(path: Path, *, comparison: bool = False) -> dict:
     if path.stat().st_size > 16 * 1024 * 1024:
         raise ValueError("record exceeds 16 MiB")
     record = json.loads(
@@ -1729,24 +1981,119 @@ def read_record(path: Path) -> dict:
         raise ValueError("measurement record repeats a row")
     # A comparison report has the same schema, but its rows carry the base's
     # qualification and per-arm deltas, not one revision's measurements.
-    if "verdict" in record:
+    if comparison:
+        json.dumps(record, allow_nan=False)
+        if (
+            not isinstance(record.get("run"), dict)
+            or not isinstance(record.get("verdict"), dict)
+            or record["verdict"].get("status") not in ("PASS", "WARN", "FAIL")
+            or not isinstance(record["verdict"].get("failures"), list)
+            or not isinstance(record["verdict"].get("warnings"), list)
+            or "ir_geomean" not in record["verdict"]
+            or not all(
+                isinstance(item, str)
+                for kind in ("failures", "warnings")
+                for item in record["verdict"][kind]
+            )
+            or not (
+                record["verdict"]["ir_geomean"] is None
+                or type(record["verdict"]["ir_geomean"]) in (int, float)
+            )
+            or not all(
+                isinstance(row.get("parent"), dict)
+                and row.get("parent_status") in (None, "ok", "broken", "unsupported")
+                and isinstance(row.get("head"), dict)
+                and isinstance(row.get("delta"), dict)
+                and all(
+                    key in row["delta"]
+                    for key in ("class", "ir", "allocs", "bytes", "guards_equal")
+                )
+                and row["delta"]["class"]
+                in (
+                    "gated",
+                    "new",
+                    "broken",
+                    "unsupported",
+                    "diagnostic",
+                    "behaviour-change",
+                )
+                and all(
+                    value is None or type(value) in (int, float)
+                    for value in (
+                        row["delta"][key] for key in ("ir", "allocs", "bytes")
+                    )
+                )
+                and (
+                    row["delta"]["guards_equal"] is None
+                    or isinstance(row["delta"]["guards_equal"], bool)
+                )
+                and isinstance(row.get("failures"), list)
+                and all(isinstance(item, str) for item in row["failures"])
+                and all(
+                    metrics.get("guards") is None or isinstance(metrics["guards"], dict)
+                    for metrics in (row["parent"], row["head"])
+                )
+                for row in record["results"]
+            )
+            or not isinstance(record["run"].get("accepted", []), list)
+            or not all(
+                isinstance(item, dict) and isinstance(item.get("rationale"), str)
+                for item in record["run"].get("accepted", [])
+            )
+        ):
+            raise ValueError("missing or unsupported comparison record")
+    elif "verdict" in record:
         raise ValueError("comparison report given where a measurement record belongs")
     return record
 
 
-def validate_publication_environment(env: dict) -> None:
+def validate_publication_environment(env: dict, *, local: bool = False) -> None:
     if (
         not isinstance(env, dict)
         or not isinstance(env.get("runner"), dict)
-        or env["runner"].get("environment") != "github-hosted"
+        or env["runner"].get("environment") != ("local" if local else "github-hosted")
     ):
-        raise ValueError("refusing to publish measurements from a non-hosted runner")
+        raise ValueError("refusing publication from an unexpected measurement runner")
     if not re.fullmatch(r"[0-9a-f]{64}", env.get("fingerprint", "")):
         raise ValueError("publication environment fingerprint must be a SHA256")
 
 
-def publication_record(path: Path, tier: str, pr: int | None = None) -> dict:
-    """Normalize trusted main measurements into the durable Appendix B record."""
+def find_local_path(value, location: str = "") -> str | None:
+    """Return the first JSON location containing a local path."""
+    if location == "run.accepted":
+        return None
+    if isinstance(value, str):
+        return location if LOCAL_PATH.search(value) else None
+    if isinstance(value, dict):
+        if any(isinstance(key, str) and LOCAL_PATH.search(key) for key in value):
+            return f"{location}.<key>" if location else "<key>"
+        children = ((str(key), item) for key, item in value.items())
+    elif isinstance(value, list):
+        children = ((str(index), item) for index, item in enumerate(value))
+    else:
+        return None
+    for key, item in children:
+        found = find_local_path(item, f"{location}.{key}" if location else key)
+        if found:
+            return found
+    return None
+
+
+def publication_record(
+    path: Path,
+    tier: str,
+    pr: int | None = None,
+    tag: str | None = None,
+    base_tag: str | None = None,
+) -> dict:
+    """Normalize trusted measurements into a durable performance record."""
+    if tier not in ("merge", "nightly", "release", "backfill"):
+        raise ValueError("unsupported publication tier")
+    if tier == "release":
+        if not tag or not base_tag:
+            raise ValueError("release publication requires tag and base-tag")
+    elif tag is not None or base_tag is not None:
+        raise ValueError("tag and base-tag require release publication")
     if path.stat().st_size > 16 * 1024 * 1024:
         raise ValueError("record exceeds 16 MiB")
     record = json.loads(path.read_text(encoding="utf-8"))
@@ -1761,24 +2108,49 @@ def publication_record(path: Path, tier: str, pr: int | None = None) -> dict:
     ):
         raise ValueError("missing or unsupported publication record")
     run = record["run"]
-    validate_publication_environment(run.get("env", {}))
+    local = tier == "backfill"
+    validate_publication_environment(run.get("env", {}), local=local)
     if not re.fullmatch(r"[0-9a-f]{40}", run.get("commit", "")):
         raise ValueError("publication commit must be a full SHA")
     measured = datetime.fromisoformat(run["time"].replace("Z", "+00:00"))
     if measured.tzinfo is None:
         raise ValueError("publication time must include its timezone")
     run["time"] = measured.astimezone(timezone.utc).isoformat()
-    if pr is not None and pr <= 0:
+    if pr is not None and (not isinstance(pr, int) or pr <= 0):
         raise ValueError("publication PR number must be positive")
-    if tier == "merge":
+    release = tier == "release" or (local and run.get("tier") == "release")
+    if tier != "nightly":
         if not re.fullmatch(r"[0-9a-f]{40}", run.get("parent", "")):
-            raise ValueError("merge publication requires the comparison-base SHA")
+            raise ValueError("publication requires the comparison-base SHA")
         if record.get("verdict", {}).get("status") not in ("PASS", "WARN", "FAIL"):
-            raise ValueError("merge publication requires a completed comparison")
+            raise ValueError("publication requires a completed comparison")
     else:
         run["parent"] = None
         record.pop("verdict", None)
-    run.update(tier=tier, branch="main", pr=pr, accepted=run.get("accepted", []))
+    if local:
+        if not re.fullmatch(r"[0-9a-f]{40}", run.get("harness_commit", "")):
+            raise ValueError("backfill publication requires the harness commit")
+    branch = "main"
+    if release:
+        tag = tag if tier == "release" else run.get("tag")
+        base_tag = base_tag if tier == "release" else run.get("base_tag")
+        if not tag or not base_tag:
+            raise ValueError("release record requires tag and base_tag")
+        scope = release_scope(run["commit"], tag, base_tag)
+        if (
+            scope["head"] != run["commit"]
+            or scope["base"] != run["parent"]
+            or (run.get("tier") == "release" and run.get("branch") != scope["branch"])
+        ):
+            raise ValueError("release publication scope differs from measurement")
+        branch = scope["branch"]
+        run.update(tag=scope["tag"], base_tag=scope["base_tag"])
+    run.update(
+        tier="release" if release else tier,
+        branch=branch,
+        pr=None if release else pr if pr is not None else run.get("pr"),
+        accepted=run.get("accepted", []),
+    )
     keys = []
     for row in record["results"]:
         if (
@@ -1794,10 +2166,14 @@ def publication_record(path: Path, tier: str, pr: int | None = None) -> dict:
             raise ValueError("invalid or incomplete publication row")
         keys.append(row_key(row))
         if "head_env" in row:
-            validate_publication_environment(row["head_env"])
+            validate_publication_environment(row["head_env"], local=local)
         if tier == "nightly":
             row.pop("parent", None)
             row.pop("delta", None)
+        for arm in ("parent", "head"):
+            metrics = row.get(arm, {})
+            if "libdart" in metrics:
+                metrics["libdart"] = Path(metrics["libdart"]).name
         row["wall_ms_per_step"] = {
             "parent": row.get("parent", {}).get("wall_ms_per_step"),
             "head": row["head"].get("wall_ms_per_step"),
@@ -1805,17 +2181,35 @@ def publication_record(path: Path, tier: str, pr: int | None = None) -> dict:
         }
     if len(keys) != len(set(keys)):
         raise ValueError("publication record repeats a row")
+    location = find_local_path(record)
+    if location:
+        raise ValueError(f"publication record contains a local path at {location}")
+    if local:
+        if not is_ancestor(run["harness_commit"], "origin/main"):
+            raise ValueError("backfill harness commit must be on main")
+        if not release and not is_ancestor(run["commit"], "origin/main"):
+            raise ValueError("backfill commit must be on main")
     return record
 
 
 def publication_guard(tier: str) -> None:
     """The record's runner claim cannot replace checking the actual CI context."""
+    if tier == "backfill":
+        if "GITHUB_ACTIONS" in os.environ:
+            raise ValueError("backfill publication is forbidden in GitHub Actions")
+        return
+    if tier not in ("merge", "nightly", "release"):
+        raise ValueError("unsupported publication tier")
     if os.environ.get("RUNNER_ENVIRONMENT") != "github-hosted":
         raise ValueError("refusing to publish from a non-hosted runner")
     events = (
         ("push", "workflow_dispatch")
         if tier == "merge"
-        else ("schedule", "workflow_dispatch")
+        else (
+            ("workflow_dispatch",)
+            if tier == "release"
+            else ("schedule", "workflow_dispatch")
+        )
     )
     if (
         os.environ.get("GITHUB_EVENT_NAME") not in events
@@ -1864,25 +2258,12 @@ def merge_comment(record: dict, report: str, previous: str = "") -> str | None:
     message = "Post-merge performance check now passes."
     if status == "FAIL":
         message = "Post-merge performance check failed."
-        # Only these comparison-policy failures can be acknowledged by a rationale.
-        rationale_patterns = {
-            "Perf-Regression-Rationale": (
-                r"(?:[^:]+: (?:(?:allocations|requested bytes) \+\S+/step|"
-                r"Ir \+\d+\.\d+% \(limit \+1\.00%\))|"
-                r"Ir geomean \+\d+\.\d+% \(limit \+0\.50%\); rationale required for .+)"
-            ),
-            "Rebaseline-Rationale": (
-                r"[^:]+: (?:(?:input_sha|guards) changed; Rebaseline-Rationale required|"
-                r"Rebaseline-Rationale must state a signed percentage "
-                r"\(measured Ir \+\d+\.\d+%\))"
-            ),
-        }
         rationales, fixes = set(), []
         for failure in record["verdict"].get("failures", []):
             kind = next(
                 (
                     kind
-                    for kind, pattern in rationale_patterns.items()
+                    for _, kind, pattern in WAIVABLE_FAILURES
                     if re.fullmatch(pattern, failure)
                 ),
                 None,
@@ -1914,6 +2295,34 @@ def merge_comment(record: dict, report: str, previous: str = "") -> str | None:
     return None if body == previous else body
 
 
+def is_ancestor(base: str, head: str) -> bool:
+    def check():
+        return subprocess.run(
+            [
+                "git",
+                "-C",
+                str(ROOT),
+                "merge-base",
+                "--is-ancestor",
+                base,
+                head,
+            ],
+            text=True,
+            capture_output=True,
+        )
+
+    ancestry = check()
+    if ancestry.returncode not in (0, 1):
+        # A concurrent writer may name a main commit newer than this checkout.
+        subprocess.run(
+            ["git", "-C", str(ROOT), "fetch", "--quiet", "origin", "main"],
+            capture_output=True,
+        )
+        ancestry = check()
+    # A commit still unknown keeps the published table; the record is written.
+    return ancestry.returncode == 0
+
+
 def nightly_table_can_advance(record: dict, previous: str) -> bool:
     """The table's full SHA and measurement time identify its published nightly."""
     if not previous:
@@ -1927,32 +2336,85 @@ def nightly_table_can_advance(record: dict, previous: str) -> bool:
     run = record["run"]
     if commit == run["commit"]:
         return datetime.fromisoformat(run["time"]) > datetime.fromisoformat(measured)
+    return is_ancestor(commit, run["commit"])
 
-    def is_ancestor():
-        return subprocess.run(
-            [
-                "git",
-                "-C",
-                str(ROOT),
-                "merge-base",
-                "--is-ancestor",
-                commit,
-                run["commit"],
-            ],
-            text=True,
-            capture_output=True,
-        )
 
-    ancestry = is_ancestor()
-    if ancestry.returncode not in (0, 1):
-        # A concurrent writer may name a main commit newer than this checkout.
-        subprocess.run(
-            ["git", "-C", str(ROOT), "fetch", "--quiet", "origin", "main"],
-            capture_output=True,
-        )
-        ancestry = is_ancestor()
-    # A commit still unknown keeps the published table; the record is written.
-    return ancestry.returncode == 0
+def release_scope(head: str | None, tag: str | None, base: str | None) -> dict:
+    """Resolve a release candidate and previous tag before configuring a build."""
+
+    def git(*arguments):
+        return command_output(["git", "-C", str(ROOT), *arguments])
+
+    def resolve(revision):
+        try:
+            return git(
+                "rev-parse", "--verify", "--end-of-options", f"{revision}^{{commit}}"
+            )
+        except (subprocess.CalledProcessError, ValueError) as error:
+            raise ValueError(f"unknown release revision: {revision}") from error
+
+    if tag is not None and not RELEASE_TAG.fullmatch(tag):
+        raise ValueError("release tag must have the form v6.x.y")
+    tags = set(git("tag", "--list").splitlines())
+    if head is None:
+        if tag not in tags:
+            raise ValueError("release head is required when the tag does not exist")
+        head = tag
+    head = resolve(head)
+    try:
+        version = ET.fromstring(git("show", f"{head}:package.xml")).findtext("version")
+    except (subprocess.CalledProcessError, ValueError, ET.ParseError) as error:
+        raise ValueError(
+            "release candidate has no valid package.xml version"
+        ) from error
+    derived = f"v{version}"
+    if not RELEASE_TAG.fullmatch(derived) or (tag and tag != derived):
+        raise ValueError("release tag differs from the package.xml version")
+    tag = tag or derived
+    if tag in tags and resolve(tag) != head:
+        raise ValueError("release tag does not name the candidate commit")
+    branches = git(
+        "for-each-ref", "--format=%(refname:short)", "refs/remotes/origin"
+    ).splitlines()
+    candidates = [
+        "origin/main",
+        *sorted(
+            branch
+            for branch in branches
+            if re.fullmatch(r"origin/release-6\.\d+", branch)
+        ),
+    ]
+    branch = next(
+        (
+            candidate.removeprefix("origin/")
+            for candidate in candidates
+            if candidate in branches
+            and head in git("rev-list", "--first-parent", candidate).splitlines()
+        ),
+        None,
+    )
+    if branch is None:
+        raise ValueError("release candidate is not on main or a release branch")
+    try:
+        previous = [
+            name
+            for name in git("tag", "--merged", f"{head}^").splitlines()
+            if RELEASE_TAG.fullmatch(name) and name != tag
+        ]
+    except subprocess.CalledProcessError as error:
+        raise ValueError("release candidate has no previous release") from error
+    if not previous or (base is not None and base not in previous):
+        raise ValueError("release base must be an earlier merged v6 tag")
+    base_tag = base or max(
+        previous, key=lambda name: tuple(map(int, name[1:].split(".")))
+    )
+    return {
+        "head": head,
+        "tag": tag,
+        "base_tag": base_tag,
+        "base": resolve(base_tag),
+        "branch": branch,
+    }
 
 
 def guard_table(record: dict, previous: str = "") -> str:
@@ -2235,22 +2697,609 @@ def chart_data(pages: Path, record: dict) -> None:
     )
 
 
+def load_records(paths) -> dict:
+    """Read a comparison history, detecting conflicts before choosing duplicates."""
+    records, histories = {}, {}
+    if isinstance(paths, Path):
+        paths = [paths]
+    files = sorted(
+        {
+            file
+            for path in paths
+            for file in (path.rglob("*.json") if path.is_dir() else [path])
+        }
+    )
+    for path in files:
+        try:
+            if path.stat().st_size > 16 * 1024 * 1024:
+                raise ValueError("record exceeds 16 MiB")
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            comparison = isinstance(raw, dict) and "verdict" in raw
+            record = read_record(path, comparison=comparison)
+            run = record["run"]
+            if run.get("tier") not in ("merge", "backfill"):
+                continue
+            if not comparison:
+                raise ValueError("history requires a completed comparison")
+            commit = run["commit"]
+            fingerprint = run["env"]["fingerprint"]
+            if not re.fullmatch(r"[0-9a-f]{40}", commit) or not re.fullmatch(
+                r"[0-9a-f]{64}", fingerprint
+            ):
+                raise ValueError("invalid history commit or fingerprint")
+            if not re.fullmatch(r"[0-9a-f]{40}", run.get("parent", "")):
+                raise ValueError("invalid history parent commit")
+            measured = datetime.fromisoformat(run["time"].replace("Z", "+00:00"))
+            if measured.tzinfo is None:
+                raise ValueError("history time must include its timezone")
+            source = run["env"]["runner"]["environment"]
+            if source not in ("local", "github-hosted"):
+                raise ValueError("invalid history measurement runner")
+            histories.setdefault(commit, []).append((path, record, source, measured))
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            raise ValueError(f"{path.name}: {error}") from error
+    for commit, history in histories.items():
+        hosted = any(source != "local" for _, _, source, _ in history)
+        identities = {}
+        ranked = []
+        for path, record, source, measured in history:
+            if hosted and source == "local":
+                continue
+            run = record["run"]
+            identity = (run["env"]["fingerprint"], run["tier"], source)
+            counts = (
+                run["parent"],
+                deterministic_measurements(record, include_parent=True),
+            )
+            if identity in identities:
+                previous_path, previous_counts = identities[identity]
+                if previous_counts != counts:
+                    raise ValueError(
+                        "conflicting deterministic measurements in "
+                        f"{previous_path.name} and {path.name}"
+                    )
+            else:
+                identities[identity] = (path, counts)
+            ranked.append((run["tier"] == "merge", measured, record))
+        records[commit] = max(ranked, key=lambda candidate: candidate[:2])[2]
+    return records
+
+
+def ledger_entries(
+    records: dict, since: str, until: str, intent: Path | None = None
+) -> dict:
+    """Attribute comparison policy to commits in first-parent order."""
+
+    def git(*arguments):
+        return command_output(["git", "-C", str(ROOT), *arguments])
+
+    commits = git(
+        "rev-list", "--first-parent", "--reverse", until, f"^{since}"
+    ).splitlines()
+    measured = set(
+        git(
+            "rev-list", "--first-parent", until, f"^{since}", "--", *MEASURED_PATHS
+        ).splitlines()
+    )
+    intentions = {}
+    if intent is not None:
+        for line in intent.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            columns = line.split("\t")
+            if (
+                len(columns) != 3
+                or columns[1] not in ("perf", "behaviour", "unrelated")
+                or not columns[2].strip()
+            ):
+                raise ValueError(f"{intent.name}: invalid intent row")
+            key, value, reason = columns
+            if re.fullmatch(r"#[1-9]\d*", key):
+                matches = [
+                    commit
+                    for commit in commits
+                    if records.get(commit, {}).get("run", {}).get("pr") == int(key[1:])
+                ]
+            elif re.fullmatch(r"[0-9a-f]{7,40}", key):
+                matches = [commit for commit in commits if commit.startswith(key)]
+                if len(matches) != 1:
+                    matches = []
+            else:
+                matches = []
+            if not matches:
+                raise ValueError(
+                    f"{intent.name}: unknown or ambiguous intent key {key}"
+                )
+            for commit in matches:
+                intentions[commit] = (value, reason)
+
+    entries, covered = [], set()
+    for commit in commits:
+        if commit not in records:
+            continue
+        record = records[commit]
+        run, verdict = record["run"], record["verdict"]
+        covered.update(
+            git("rev-list", "--first-parent", commit, f"^{run['parent']}").splitlines()
+        )
+        rows = {row_key(row): row for row in record["results"]}
+        attributable, inherited = [], []
+        for failure in verdict["failures"]:
+            key, separator, reason = failure.partition(": ")
+            row = rows.get(key)
+            parent = row.get("parent", {}) if row else None
+            base_reason = separator and reason in (
+                "missing or failed base measurement",
+                "base state is non-finite",
+                "base perturbation check failed",
+            )
+            same_defect = False
+            if row is not None and row.get("parent_status") != "unsupported":
+                head = row.get("head", {})
+                if reason == "head perturbation check failed":
+                    same_defect = (
+                        f"{key}: base perturbation check failed" in verdict["failures"]
+                    )
+                elif row["delta"]["class"] == "broken" and reason in row["failures"]:
+                    same_defect = (
+                        (
+                            not parent
+                            and not head
+                            # shortcut: legacy empty bases lack status, rerun to distinguish unsupported rows.
+                            and row.get("parent_status", "broken") == "broken"
+                        )
+                        or (
+                            reason
+                            in (
+                                "non-finite state",
+                                "missing or failed head measurement",
+                            )
+                            and (parent.get("guards") or {}).get("finite") is False
+                            and (
+                                (head.get("guards") or {}).get("finite") is False
+                                or reason == "non-finite state"
+                            )
+                        )
+                        or (
+                            reason == "simulation time did not advance"
+                            and parent.get("time_advanced") is False
+                            and (parent.get("guards") or {}).get("finite") is not False
+                        )
+                    )
+            (inherited if base_reason or same_defect else attributable).append(failure)
+        rules, nonwaivable = set(), []
+        for failure in attributable:
+            rule = next(
+                (
+                    rule
+                    for rule, _, pattern in WAIVABLE_FAILURES
+                    if re.fullmatch(pattern, failure)
+                ),
+                None,
+            )
+            if rule is None:
+                nonwaivable.append(failure)
+                continue
+            rules.add(rule)
+        classification = (
+            "NO-BASE"
+            if verdict["failures"] and not attributable
+            else (
+                "BROKEN"
+                if nonwaivable
+                else (
+                    "NEEDS-RATIONALE"
+                    if attributable
+                    else (
+                        "WARN"
+                        if any(
+                            not warning.endswith("(advisory)")
+                            for warning in verdict["warnings"]
+                        )
+                        else "PASS"
+                    )
+                )
+            )
+        )
+        listed = []
+        for key, row in rows.items():
+            change = row_change(row)
+            if change in ("regressed", "improved", "behaviour-change", "broken", "new"):
+                listed.append(
+                    {
+                        "row": key,
+                        "class": row["delta"]["class"],
+                        "change": change,
+                        **{
+                            name: row["delta"].get(name)
+                            for name in ("ir", "allocs", "bytes", "guards_equal")
+                        },
+                    }
+                )
+        groups = set()
+        for path in git(
+            "diff", "--name-only", run["parent"], commit, "--", *MEASURED_PATHS
+        ).splitlines():
+            parts = path.split("/")
+            if parts[-1] == "CMakeLists.txt" or path.startswith("cmake/"):
+                groups.add("cmake")
+            elif path.startswith("dart/collision/"):
+                groups.add(
+                    "collision/"
+                    + (
+                        parts[2]
+                        if len(parts) > 3 and parts[2] in DETECTORS
+                        else "other"
+                    )
+                )
+            elif path.startswith("dart/"):
+                groups.add(parts[1] if len(parts) > 2 else "dart/other")
+            else:
+                groups.add("workload")
+        value, reason = intentions.get(commit, (None, ""))
+        entries.append(
+            {
+                "commit": commit,
+                "pr": run.get("pr"),
+                "tier": run["tier"],
+                "parent": run["parent"],
+                "class": classification,
+                "rules": sorted(rules),
+                "rows": listed,
+                "groups": sorted(groups),
+                "ir_geomean": verdict["ir_geomean"],
+                "failures": nonwaivable,
+                "inherited": inherited,
+                "accepted": run.get("accepted", []),
+                "intent": value,
+                "reason": reason,
+            }
+        )
+    denominator = [
+        entry
+        for entry in entries
+        if entry["pr"] and entry["intent"] not in ("perf", "behaviour")
+    ]
+    headline = {
+        "k": sum(
+            entry["intent"] == "unrelated"
+            and entry["class"] != "BROKEN"
+            and (entry["class"] == "NEEDS-RATIONALE" or bool(entry["accepted"]))
+            for entry in denominator
+        ),
+        "n": len(denominator),
+        "broken": sum(entry["class"] == "BROKEN" for entry in entries),
+        "rules": {
+            rule: sum(rule in entry["rules"] for entry in entries)
+            for rule in (
+                "ir",
+                "geomean",
+                "allocs",
+                "bytes",
+                "guards",
+                "input",
+                "percent",
+            )
+        },
+        "needing_intent": sum(
+            not entry["intent"]
+            and (
+                entry["class"] != "PASS"
+                or bool(entry["rows"])
+                or bool(entry["accepted"])
+            )
+            for entry in entries
+        ),
+    }
+    return {
+        "since": since,
+        "until": until,
+        "missing": [
+            commit for commit in commits if commit in measured and commit not in covered
+        ],
+        "entries": entries,
+        "headline": headline,
+    }
+
+
+def ledger_markdown(report: dict) -> str:
+    headline = report["headline"]
+    entries = report["entries"]
+    lines = [
+        "# DART performance ledger",
+        "",
+        f"Range: `{report['since']}` → `{report['until']}`; {len(entries)} records "
+        f"({sum(entry['tier'] == 'merge' for entry in entries)} merge, "
+        f"{sum(entry['tier'] == 'backfill' for entry in entries)} backfill).",
+        "Missing: "
+        + (", ".join(f"`{commit[:12]}`" for commit in report["missing"]) or "none")
+        + ".",
+        "",
+        f"Unrelated merges needing a rationale: {headline['k']}/{headline['n']} "
+        f"(target: at most 1 in 10). Broken: {headline['broken']}. Rules: "
+        + ", ".join(f"{rule} {count}" for rule, count in headline["rules"].items())
+        + f". Needing an intent: {headline['needing_intent']}.",
+        "",
+        "| Path group | PASS | WARN | NEEDS-RATIONALE | BROKEN | NO-BASE |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
+    for group in sorted({group for entry in entries for group in entry["groups"]}):
+        values = [
+            group,
+            *(
+                sum(
+                    group in entry["groups"] and entry["class"] == kind
+                    for entry in entries
+                )
+                for kind in ("PASS", "WARN", "NEEDS-RATIONALE", "BROKEN", "NO-BASE")
+            ),
+        ]
+        lines.append("| " + " | ".join(map(markdown_cell, values)) + " |")
+    for title, intended in (("Unrelated or unlabelled", False), ("Intended", True)):
+        lines += [
+            "",
+            f"## {title}",
+            "",
+            "| Commit | PR | Class | Rules | Rows | Ir geomean | Paths | Accepted | Intent |",
+            "|---|---|---|---|---|---|---|---|---|",
+        ]
+        for entry in entries:
+            if (entry["intent"] in ("perf", "behaviour")) != intended:
+                continue
+            values = [
+                f"`{entry['commit'][:12]}`",
+                f"#{entry['pr']}" if entry["pr"] else "—",
+                entry["class"],
+                ", ".join(entry["rules"]) or "—",
+                ", ".join(
+                    f"{row['row']}: {row['change']} ({percent(row['ir'])})"
+                    for row in entry["rows"]
+                )
+                or "—",
+                percent(entry["ir_geomean"]),
+                ", ".join(entry["groups"]) or "—",
+                "; ".join(item["rationale"] for item in entry["accepted"]) or "—",
+                f"{entry['intent']}: {entry['reason']}" if entry["intent"] else "—",
+            ]
+            lines.append("| " + " | ".join(map(markdown_cell, values)) + " |")
+    return "\n".join(lines) + "\n"
+
+
+def release_markdown(record: dict) -> str:
+    run = record["run"]
+    source = "local" if run["env"]["runner"]["environment"] == "local" else "hosted"
+    lines = [
+        f"# Perf release `{run['base_tag']}` → `{run['tag']}` (`{run['branch']}`)",
+        "",
+        f"`{run['parent'][:12]}` → `{run['commit'][:12]}`; source: {source}.",
+        "",
+        markdown(record).rstrip(),
+        "",
+        "## Ledger",
+        "",
+    ]
+    if run["branch"].startswith("release-6."):
+        lines.append(f"{run['branch']} is tracked by tags only.")
+    else:
+        ledger = record["ledger"]
+        lines += [
+            "Missing: "
+            + (", ".join(f"`{commit[:12]}`" for commit in ledger["missing"]) or "none")
+            + ".",
+            "",
+            "| Commit | PR | Class | Rules | Rows | Ir geomean | Paths | Accepted |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
+        for entry in ledger["entries"]:
+            values = [
+                f"`{entry['commit'][:12]}`",
+                f"#{entry['pr']}" if entry["pr"] else "—",
+                entry["class"],
+                ", ".join(entry["rules"]) or "—",
+                ", ".join(
+                    f"{row['row']}: {row['change']} ({percent(row['ir'])})"
+                    for row in entry["rows"]
+                )
+                or "—",
+                percent(entry["ir_geomean"]),
+                ", ".join(entry["groups"]) or "—",
+                "; ".join(item["rationale"] for item in entry["accepted"]) or "—",
+            ]
+            lines.append("| " + " | ".join(map(markdown_cell, values)) + " |")
+    lines += ["", f"[JSON record]({run['tag']}.json)"]
+    return "\n".join(lines) + "\n"
+
+
+def release_index(pages: Path) -> str:
+    records = [
+        read_record(path, comparison=True)
+        for path in (pages / "performance/releases").glob("*.json")
+    ]
+    records.sort(
+        key=lambda record: tuple(map(int, record["run"]["tag"][1:].split("."))),
+        reverse=True,
+    )
+    lines = [
+        "# DART release performance",
+        "",
+        "| Tag | Base | Branch | Verdict | Row | Ir/step | ΔIr | Allocs/step | Guards | Fingerprint | Source | Measured (UTC) |",
+        "|---|---|---|---|---|---:|---:|---:|---|---|---|---|",
+    ]
+    for record in records:
+        run = record["run"]
+        source = "local" if run["env"]["runner"]["environment"] == "local" else "hosted"
+        for row in record["results"]:
+            head, change = row["head"], row["delta"]
+            equal = change.get("guards_equal")
+            guard = "unavailable" if equal is None else "same" if equal else "changed"
+            guard_hash = (head.get("guards") or {}).get("hash")
+            if guard_hash:
+                if not isinstance(guard_hash, str):
+                    guard_hash = json.dumps(guard_hash, sort_keys=True)
+                guard += f", {guard_hash[:12]}"
+            values = [
+                f"[{run['tag']}]({run['tag']}.md)",
+                run["base_tag"],
+                run["branch"],
+                record["verdict"]["status"],
+                row_key(row),
+                head.get("ir_per_step", "—"),
+                percent(change.get("ir")),
+                head.get("allocs_per_step", "—"),
+                guard,
+                run["env"]["fingerprint"][:8],
+                source,
+                datetime.fromisoformat(run["time"].replace("Z", "+00:00"))
+                .astimezone(timezone.utc)
+                .isoformat(),
+            ]
+            lines.append("| " + " | ".join(map(markdown_cell, values)) + " |")
+    return "\n".join(lines) + "\n"
+
+
+def write_release(pages: Path, record: dict) -> list[str]:
+    run = record["run"]
+    directory = pages / "performance/releases"
+    path = directory / f"{run['tag']}.json"
+    tagged = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(ROOT),
+            "rev-parse",
+            "--verify",
+            "--end-of-options",
+            f"{run['tag']}^{{commit}}",
+        ],
+        text=True,
+        capture_output=True,
+    )
+    tagged_commit = tagged.stdout.strip() if tagged.returncode == 0 else None
+    saved = read_record(path, comparison=True) if path.exists() else None
+    if tagged_commit is not None and tagged_commit != run["commit"]:
+        if saved is not None and saved["run"]["commit"] == tagged_commit:
+            print(f"Keep {run['tag']}: tagged commit is final")
+        else:
+            print(f"Skip {run['tag']}: tag does not name the candidate commit")
+        return []
+    if saved is not None:
+        previous = saved["run"]
+        previous_source = previous["env"]["runner"]["environment"]
+        incoming_source = run["env"]["runner"]["environment"]
+        previous_local = previous_source == "local"
+        incoming_local = incoming_source == "local"
+        if not previous_local and incoming_local:
+            print(f"Keep {run['tag']}: hosted measurements take precedence")
+            return []
+        identity = ("commit", "parent")
+        same = (
+            all(previous[key] == run[key] for key in identity)
+            and previous["env"]["fingerprint"] == run["env"]["fingerprint"]
+            and previous_source == incoming_source
+        )
+        if same:
+            if deterministic_measurements(
+                saved, include_parent=True
+            ) != deterministic_measurements(record, include_parent=True):
+                raise ValueError(
+                    "repeated release changed deterministic counts or guards/inputs under the same environment fingerprint"
+                )
+        elif not (previous_local and not incoming_local):
+            if tagged_commit == previous["commit"]:
+                print(f"Keep {run['tag']}: tagged commit is final")
+                return []
+            if tagged_commit != run["commit"]:
+                descendant = previous["commit"] != run["commit"] and is_ancestor(
+                    previous["commit"], run["commit"]
+                )
+                later = previous["commit"] == run["commit"] and datetime.fromisoformat(
+                    run["time"].replace("Z", "+00:00")
+                ) > datetime.fromisoformat(previous["time"].replace("Z", "+00:00"))
+                if not descendant and not later:
+                    print(f"Keep {run['tag']}: older or diverged candidate")
+                    return []
+    if run["branch"].startswith("release-6."):
+        ledger = {"entries": [], "missing": []}
+    else:
+        history = pages / "performance/records/main"
+        report = ledger_entries(
+            load_records([history]) if history.exists() else {},
+            run["parent"],
+            run["commit"],
+        )
+        ledger = {
+            "entries": [
+                entry
+                for entry in report["entries"]
+                if entry["accepted"] or entry["class"] != "PASS" or entry["rows"]
+            ],
+            "missing": report["missing"],
+        }
+    record = {**record, "ledger": ledger}
+    if (
+        saved is not None
+        and same
+        and saved.get("ledger") == ledger
+        and saved.get("verdict") == record.get("verdict")
+        and saved["run"].get("accepted", []) == run.get("accepted", [])
+        and release_markdown(saved) == release_markdown(record)
+    ):
+        print(
+            f"Keep {run['tag']}: identical deterministic measurements and release output"
+        )
+        return []
+    directory.mkdir(parents=True, exist_ok=True)
+    write_json(path, record)
+    markdown_path = path.with_suffix(".md")
+    markdown_path.write_text(release_markdown(record), encoding="utf-8")
+    index = directory / "index.md"
+    index.write_text(release_index(pages), encoding="utf-8")
+    return [str(file.relative_to(pages)) for file in (path, markdown_path, index)]
+
+
 def write_publication(pages: Path, record: dict) -> list[str]:
     run = record["run"]
+    if run["tier"] == "release":
+        return write_release(pages, record)
     changed = []
     records = pages / "performance/records/main"
     repeated = False
     chart_repeated = False
-    for index, path in enumerate(
-        sorted(records.glob(f"*/*-{run['tier']}.json"), reverse=True)
+    tiers = (
+        ("merge", "backfill")
+        if run["tier"] in ("merge", "backfill")
+        else (run["tier"],)
+    )
+    history = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in sorted(
+            {path for tier in tiers for path in records.glob(f"*/*-{tier}.json")},
+            reverse=True,
+        )
+    ]
+    incoming_source = run["env"]["runner"]["environment"]
+    if incoming_source == "local" and any(
+        saved["run"]["commit"] == run["commit"]
+        and saved["run"]["env"]["runner"]["environment"] != "local"
+        for saved in history
     ):
-        saved = json.loads(path.read_text(encoding="utf-8"))
+        print(f"Keep {run['commit'][:12]}: hosted measurements take precedence")
+        return []
+    for index, saved in enumerate(history):
         previous = saved["run"]
-        if (previous["commit"], previous["env"]["fingerprint"]) == (
+        if (
+            previous["tier"] != run["tier"]
+            or previous["env"]["runner"]["environment"] != incoming_source
+        ):
+            continue
+        if (
+            previous["commit"],
+            previous["env"]["fingerprint"],
+        ) == (
             run["commit"],
             run["env"]["fingerprint"],
         ) and head_fingerprints(saved) == head_fingerprints(record):
-            if run["tier"] == "merge":
+            if run["tier"] in ("merge", "backfill"):
                 if previous.get("parent") != run.get("parent") or (
                     deterministic_measurements(saved, include_parent=True)
                     != deterministic_measurements(record, include_parent=True)
@@ -2295,7 +3344,7 @@ def write_publication(pages: Path, record: dict) -> list[str]:
         path.parent.mkdir(parents=True, exist_ok=True)
         write_json(path, record)
         changed.append(str(path.relative_to(pages)))
-        if run["tier"] == "merge" and not chart_repeated:
+        if run["tier"] == "merge" and incoming_source != "local" and not chart_repeated:
             chart_data(pages, record)
             changed.append("performance/dart6-ir")
     return changed
@@ -2303,7 +3352,41 @@ def write_publication(pages: Path, record: dict) -> list[str]:
 
 def publish(args) -> bool:
     publication_guard(args.tier)
-    record = publication_record(args.record, args.tier, args.pr)
+    requested = [args.record] if isinstance(args.record, Path) else args.record
+    files = sorted(
+        {
+            file
+            for path in requested
+            for file in (path.rglob("*.json") if path.is_dir() else [path])
+        }
+    )
+    if not files:
+        raise ValueError("publication requires at least one record")
+    if len(files) != 1 and args.tier != "backfill":
+        raise ValueError("only backfill publication accepts multiple records")
+    records = [
+        publication_record(
+            path,
+            args.tier,
+            args.pr,
+            getattr(args, "tag", None),
+            getattr(args, "base_tag", None),
+        )
+        for path in files
+    ]
+    if (
+        args.tier == "backfill"
+        and len({record["run"]["env"]["fingerprint"] for record in records}) != 1
+    ):
+        raise ValueError("backfill publication requires one environment fingerprint")
+    records.sort(key=lambda record: record["run"]["tier"] == "release")
+    release_refs = sorted(
+        {
+            f"refs/tags/{record['run']['tag']}"
+            for record in records
+            if record["run"]["tier"] == "release"
+        }
+    )
     pages = args.pages_dir.resolve()
 
     def git(*arguments: str, check: bool = True):
@@ -2319,10 +3402,35 @@ def publish(args) -> bool:
         raise ValueError("publication requires a clean dedicated gh-pages checkout")
     if git("branch", "--show-current").stdout.strip() != "gh-pages":
         raise ValueError("publication requires a dedicated gh-pages checkout")
-    git("config", "user.name", "github-actions[bot]")
-    git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
+    if args.tier != "backfill":
+        git("config", "user.name", "github-actions[bot]")
+        git(
+            "config",
+            "user.email",
+            "41898282+github-actions[bot]@users.noreply.github.com",
+        )
     for attempt in range(5):
         git("fetch", "origin", "gh-pages")
+        if release_refs:
+            remote_tags = command_output(
+                ["git", "ls-remote", "--refs", "origin", *release_refs]
+            )
+            present = [line.split()[1] for line in remote_tags.splitlines()]
+            if present:
+                subprocess.run(
+                    [
+                        "git",
+                        "-C",
+                        str(ROOT),
+                        "fetch",
+                        "--no-tags",
+                        "origin",
+                        *(f"{ref}:{ref}" for ref in present),
+                    ],
+                    check=True,
+                    text=True,
+                    capture_output=True,
+                )
         if (
             attempt == 0
             and git(
@@ -2333,15 +3441,36 @@ def publish(args) -> bool:
         # Regenerate even when Git could replay our commit without a conflict:
         # concurrent records can change deduplication and derived table/chart state.
         git("checkout", "-B", "gh-pages", "origin/gh-pages")
-        paths = write_publication(pages, record)
+        with tempfile.TemporaryDirectory() as temporary:
+            staged = Path(temporary) / "pages"
+            shutil.copytree(pages, staged, ignore=shutil.ignore_patterns(".git"))
+            paths = list(
+                dict.fromkeys(
+                    path
+                    for record in records
+                    for path in write_publication(staged, record)
+                )
+            )
+            for path in paths:
+                source, destination = staged / path, pages / path
+                if source.is_dir():
+                    shutil.copytree(source, destination, dirs_exist_ok=True)
+                else:
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(source, destination)
+        for path in paths:
+            print(path)
         if paths:
             git("add", "--", *paths)
         if git("diff", "--cached", "--quiet", check=False).returncode:
-            git(
-                "commit",
-                "-m",
-                f"Record DART {args.tier} performance for {record['run']['commit'][:12]}",
+            subject = (
+                f"Record DART backfill performance for "
+                f"{sum(record['run']['tier'] == 'backfill' for record in records)} commits and "
+                f"{sum(record['run']['tier'] == 'release' for record in records)} tags"
+                if args.tier == "backfill"
+                else f"Record DART {args.tier} performance for {records[0]['run']['commit'][:12]}"
             )
+            git("commit", "-m", subject)
         if (
             git("rev-parse", "HEAD").stdout
             == git("rev-parse", "origin/gh-pages").stdout
@@ -2401,13 +3530,829 @@ def parser() -> argparse.ArgumentParser:
         item.add_argument("--json", type=Path)
         item.add_argument("--markdown", type=Path)
     publication = sub.add_parser(
-        "publish", help="publish trusted main records to gh-pages"
+        "publish", help="publish trusted performance records to gh-pages"
     )
-    publication.add_argument("--record", type=Path, required=True)
-    publication.add_argument("--tier", choices=("merge", "nightly"), required=True)
+    publication.add_argument("--record", type=Path, nargs="+", required=True)
+    publication.add_argument(
+        "--tier", choices=("merge", "nightly", "release", "backfill"), required=True
+    )
     publication.add_argument("--pages-dir", type=Path, required=True)
     publication.add_argument("--pr", type=int)
+    publication.add_argument("--tag")
+    publication.add_argument("--base-tag")
+    backfill_cli = sub.add_parser("backfill", help="measure and resume a revision list")
+    backfill_cli.add_argument("--revs", type=Path, required=True)
+    backfill_cli.add_argument(
+        "--output-dir", type=Path, default=ROOT / "build/perf-backfill"
+    )
+    backfill_cli.add_argument(
+        "--rows", default="s3w,s2r,s1p,s5a,pend,gzb,robot,dyn,lcp,mt4-s3w,mt4-s1p,S6"
+    )
+    backfill_cli.add_argument("--jobs", type=int, default=os.cpu_count() or 1)
+    backfill_cli.add_argument("--timeout", type=int, default=900)
+    backfill_cli.add_argument(
+        "--plan-only", action="store_true", help="list revisions without building"
+    )
+    backfill_cli.set_defaults(
+        nightly=False,
+        cache_sim=False,
+        native_only=False,
+        perturb=True,
+        shim=None,
+        heappad=None,
+    )
+    ledger_cli = sub.add_parser("ledger", help="report changes and rationale friction")
+    ledger_cli.add_argument("--records", type=Path, nargs="+", required=True)
+    ledger_cli.add_argument("--since", required=True)
+    ledger_cli.add_argument("--until", default="origin/main")
+    ledger_cli.add_argument("--intent", type=Path)
+    ledger_cli.add_argument("--json", type=Path)
+    ledger_cli.add_argument("--markdown", type=Path)
     return result
+
+
+def has_contact_driver(revision: str) -> bool:
+    return (
+        subprocess.run(
+            [
+                "git",
+                "cat-file",
+                "-e",
+                f"{revision}:examples/contact_benchmark/CMakeLists.txt",
+            ],
+            cwd=ROOT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        ).returncode
+        == 0
+    )
+
+
+def build_shims(args, shims: Path, names=("allocshim", "heappad")) -> None:
+    shims.mkdir(parents=True, exist_ok=True)
+    options = ["-O2", "-shared", "-fPIC"]
+    for name in names:
+        compiler = "/usr/bin/c++" if name == "osgpath" else "/usr/bin/cc"
+        compiler_sha = sha(Path(compiler).resolve(strict=True).read_bytes())
+        suffix = "cpp" if name == "osgpath" else "c"
+        source = ROOT / f"tools/perf/{name}.{suffix}"
+        binary, stamp = shims / f"{name}.so", shims / f"{name}.sha256"
+        identity = sha(
+            json.dumps(
+                [sha(source.read_bytes()), compiler_sha, options, "-ldl"]
+            ).encode()
+        )
+        if (
+            binary.is_file()
+            and stamp.is_file()
+            and stamp.read_text(encoding="utf-8", errors="replace").strip() == identity
+        ):
+            continue
+        stamp.unlink(missing_ok=True)
+        binary.unlink(missing_ok=True)
+        execute(
+            [
+                compiler,
+                *options,
+                "-o",
+                str(binary),
+                str(source),
+                "-ldl",
+            ],
+            os.environ.copy(),
+            shims / f"{name}.log",
+            args.timeout,
+            build=True,
+        )
+        stamp.write_text(identity + "\n", encoding="utf-8")
+
+
+def validate_osg_shim(shim: Path, library: Path) -> None:
+    symbols = []
+    for path in (shim, library):
+        exported = subprocess.check_output(
+            ["/usr/bin/nm", "-D", "--defined-only", str(path)], text=True
+        )
+        symbols.append(
+            {
+                line.split()[-1]
+                for line in exported.splitlines()
+                if "appendPlatformSpecificLibraryFilePaths" in line
+            }
+        )
+    if len(symbols[0]) != 1 or not symbols[0].issubset(symbols[1]):
+        raise ValueError(
+            "active OSG plugin discovery ABI differs from normalization shim"
+        )
+
+
+def install_targets(build: Path) -> list[str]:
+    """Find configured targets required by install without building the ALL graph."""
+    reply = build / ".cmake/api/v1/reply"
+    try:
+        index_path = max(reply.glob("index-*.json"))
+        index = json.loads(index_path.read_text())
+        model = json.loads(
+            (reply / index["reply"]["codemodel-v2"]["jsonFile"]).read_text()
+        )
+        targets = [
+            json.loads((reply / target["jsonFile"]).read_text())
+            for target in model["configurations"][0]["targets"]
+        ]
+        return sorted(target["name"] for target in targets if "install" in target)
+    except (OSError, ValueError, KeyError, IndexError, TypeError) as error:
+        raise ValueError(
+            "cannot read install targets from the CMake File API"
+        ) from error
+
+
+def build_arm(args, revision, source, build, driver_build, prefix, drivers, log_prefix):
+    dependency = os.environ.get("CONDA_PREFIX")
+    if not dependency:
+        raise ValueError("building requires the active Pixi environment (CONDA_PREFIX)")
+    dependency = Path(dependency)
+    with perf_workspace(
+        (
+            source,
+            build,
+            driver_build,
+            prefix,
+            log_prefix,
+            dependency,
+            ROOT / "tools/perf",
+        )
+    ) as slot:
+        for tree in (build, driver_build):
+            tree.mkdir(parents=True, exist_ok=True)
+        for name, tree in (
+            ("source", source),
+            ("build", build),
+            ("driver", driver_build),
+            ("harness", ROOT),
+            ("dependencies", dependency),
+        ):
+            (slot / name).symlink_to(tree.resolve(), target_is_directory=True)
+        env = os.environ.copy()
+        env["CONDA_PREFIX"] = str(slot / "dependencies")
+        pkgconfig = []
+        # Dependency metadata can embed the original install prefix literally.
+        for directory in ("lib/pkgconfig", "share/pkgconfig"):
+            metadata = slot / "pkgconfig" / directory
+            metadata.mkdir(parents=True)
+            for path in (dependency / directory).glob("*.pc"):
+                contents = path.read_text(encoding="utf-8").replace(
+                    "${pcfiledir}", str(slot / "dependencies" / directory)
+                )
+                for root in sorted(
+                    {str(dependency.absolute()), str(dependency.resolve())},
+                    key=len,
+                    reverse=True,
+                ):
+                    contents = contents.replace(root, str(slot / "dependencies"))
+                (metadata / path.name).write_text(contents, encoding="utf-8")
+            pkgconfig.append(str(metadata))
+        env["PKG_CONFIG_PATH"] = os.pathsep.join(pkgconfig)
+        _build_arm(
+            args,
+            revision,
+            slot / "source",
+            slot / "build",
+            slot / "driver",
+            slot / "prefix",
+            drivers,
+            log_prefix,
+            slot / "dependencies",
+            slot / "harness",
+            env,
+        )
+        if prefix.exists():
+            shutil.rmtree(prefix)
+        shutil.copytree(slot / "prefix", prefix)
+
+
+def _build_arm(
+    args,
+    revision,
+    source,
+    build,
+    driver_build,
+    prefix,
+    drivers,
+    log_prefix,
+    dependency,
+    harness,
+    env,
+):
+    options = [
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-DCMAKE_SKIP_RPATH=ON",
+        f"-DCMAKE_INSTALL_PREFIX={prefix}",
+        f"-DCMAKE_PREFIX_PATH={dependency}",
+        "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
+        "-DCMAKE_C_COMPILER=/usr/bin/cc",
+        "-DBUILD_TESTING=ON",
+        "-DDART_BUILD_DARTPY=OFF",
+        "-DDART_BUILD_PROFILE=OFF",
+        "-DDART_ENABLE_SIMD=OFF",
+        "-DDART_BUILD_GUI_OSG=ON",
+        "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
+        "-DDART_USE_SYSTEM_GOOGLETEST=ON",
+        "-DDART_USE_SYSTEM_IMGUI=ON",
+        "-DDART_USE_SYSTEM_TRACY=ON",
+        "-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
+        "-DDART_DISABLE_COMPILER_CACHE=ON",
+    ]
+    query = build / ".cmake/api/v1/query/codemodel-v2"
+    query.parent.mkdir(parents=True, exist_ok=True)
+    query.touch()
+    execute(
+        [
+            "cmake",
+            "-G",
+            "Ninja",
+            "--fresh",
+            "-S",
+            str(source),
+            "-B",
+            str(build),
+            *options,
+        ],
+        env,
+        Path(f"{log_prefix}.configure.log"),
+        args.timeout,
+        build=True,
+    )
+    workload_sources = workload_hashes(source, drivers, build, prefix)
+    targets = ["dart-utils-urdf", *drivers]
+    if CB not in drivers:
+        targets += [
+            "dart-collision-ode",
+            "dart-collision-bullet",
+            "dart-gui-osg",
+        ]
+    # Historical libraries share one install component, including optional ones.
+    targets = sorted(set(targets) | set(install_targets(build)))
+    execute(
+        [
+            "cmake",
+            "--build",
+            str(build),
+            "--parallel",
+            str(args.jobs),
+            "--target",
+            *targets,
+        ],
+        env,
+        Path(f"{log_prefix}.build.log"),
+        max(args.timeout, 3600),
+        build=True,
+    )
+    if prefix.exists():
+        shutil.rmtree(prefix)
+    execute(
+        ["cmake", "--install", str(build), "--prefix", str(prefix)],
+        env,
+        Path(f"{log_prefix}.install.log"),
+        args.timeout,
+        build=True,
+    )
+    binary = prefix / "bin"
+    binary.mkdir(exist_ok=True)
+    for target in targets:
+        if (build / "bin" / target).is_file():
+            shutil.copy2(build / "bin" / target, binary / target)
+    execute(
+        [
+            "cmake",
+            "-G",
+            "Ninja",
+            "--fresh",
+            "-S",
+            str(harness / "tools/perf"),
+            "-B",
+            str(driver_build),
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+            "-DCMAKE_SKIP_RPATH=ON",
+            f"-DCMAKE_PREFIX_PATH={prefix};{dependency}",
+            "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
+        ],
+        env,
+        Path(f"{log_prefix}.driver-configure.log"),
+        args.timeout,
+        build=True,
+    )
+    workload_sources |= workload_hashes(harness, [PB], driver_build, prefix)
+    execute(
+        ["cmake", "--build", str(driver_build), "--parallel", str(args.jobs)],
+        env,
+        Path(f"{log_prefix}.driver-build.log"),
+        max(args.timeout, 3600),
+        build=True,
+    )
+    shutil.copy2(driver_build / "portable_step_bench", binary / "portable_step_bench")
+    compiler = cmake_compiler(build)
+    if cmake_compiler(driver_build) != compiler:
+        raise ValueError("DART and portable driver compiler provenance differs")
+    sample_data_sha = sample_data_hash(source / "data")
+    if sample_data_sha != sample_data_hash(prefix / "share/doc/dart/data"):
+        raise ValueError("installed sample data differs from the source revision")
+    write_json(
+        prefix / "share/dart/perf-build.json",
+        {
+            "schema": "dart-perf-build/1",
+            "commit": revision,
+            **compiler,
+            "pixi_lock_sha": sha((ROOT / "pixi.lock").read_bytes()),
+            "preset": "perf-1",
+            "libdart_sha": sha((prefix / "lib/libdart.so").read_bytes()),
+            "libraries": library_hashes(prefix),
+            "workload_sources": workload_sources,
+            "sample_data_sha": sample_data_sha,
+            "staging_root": str(MEASUREMENT_ROOT),
+            "binaries": {
+                path.name: sha(path.read_bytes())
+                for path in binary.iterdir()
+                if path.is_file()
+            },
+        },
+    )
+
+
+def broken_arm(rows, args, run, marker) -> dict:
+    return {
+        "schema": "dart-perf/1",
+        "run": {
+            **run,
+            "commit": marker["commit"],
+            "describe": command_output(
+                [
+                    "git",
+                    "describe",
+                    "--tags",
+                    "--match",
+                    "v6*",
+                    "--always",
+                    marker["commit"],
+                ]
+            ),
+            "time": marker["time"],
+        },
+        "results": [
+            {
+                **row_result(row, args),
+                "status": "broken",
+                "gated": False,
+                "perturbations": {},
+                "error": f"build failed: {marker['error']}",
+                "error_kind": "build",
+                "head": {},
+            }
+            for row in rows
+        ],
+    }
+
+
+def arm_namespace(args, revision, source, prefix, output, shims, base_arm=False):
+    arm = argparse.Namespace(**vars(args))
+    arm.nightly = False  # The caller has already selected its row set.
+    arm.prefix, arm.bin_dir, arm.commit = prefix, prefix / "bin", revision
+    arm.source_dir = source
+    arm.base_arm = base_arm
+    arm.output_dir = output
+    arm.shim, arm.heappad = shims / "allocshim.so", shims / "heappad.so"
+    return arm
+
+
+def host_identity(args) -> dict:
+    libraries = sorted(
+        {
+            Path(line.split()[-1]).resolve()
+            for line in Path("/proc/self/maps").read_text().splitlines()
+            if line.split()
+            and Path(line.split()[-1]).name in {"libc.so.6", "libm.so.6"}
+        }
+    )
+    if {path.name for path in libraries} != {"libc.so.6", "libm.so.6"}:
+        raise ValueError("cannot identify the mapped glibc libraries")
+    return {
+        "harness_commit": command_output(["git", "rev-parse", "HEAD"]),
+        "staging_root": str(MEASUREMENT_ROOT),
+        "rows": args.rows,
+        "valgrind": command_output([VALGRIND, "--version"]).removeprefix("valgrind-"),
+        **valgrind_hashes(),
+        "compiler_sha": sha(Path("/usr/bin/c++").resolve().read_bytes()),
+        "glibc": command_output(["getconf", "GNU_LIBC_VERSION"]).split()[-1],
+        "glibc_sha": sha(b"".join(path.read_bytes() for path in libraries)),
+    }
+
+
+def hosted_reference() -> dict:
+    try:
+        paths = command_output(
+            [
+                "git",
+                "ls-tree",
+                "-r",
+                "--name-only",
+                "origin/gh-pages",
+                "--",
+                "performance/records/main",
+            ]
+        ).splitlines()
+        records = [
+            json.loads(command_output(["git", "show", f"origin/gh-pages:{path}"]))
+            for path in paths
+            if path.endswith("-merge.json")
+        ]
+        return max(records, key=lambda record: record["run"]["time"])["run"]["env"]
+    except (subprocess.CalledProcessError, ValueError, KeyError) as error:
+        raise ValueError(
+            "no hosted merge reference is available; run git fetch origin gh-pages"
+        ) from error
+
+
+def backfill_plan(args) -> dict:
+    revisions, pairs, skipped = [], [], []
+    for line in args.revs.read_text(encoding="utf-8").splitlines():
+        revision = line.split("#", 1)[0].strip()
+        if not revision:
+            continue
+        commit = command_output(
+            ["git", "rev-parse", "--verify", f"{revision}^{{commit}}"]
+        )
+        tag_exists = (
+            re.fullmatch(RELEASE_TAG, revision)
+            and subprocess.run(
+                ["git", "show-ref", "--verify", "--quiet", f"refs/tags/{revision}"],
+                cwd=ROOT,
+                check=False,
+            ).returncode
+            == 0
+        )
+        if tag_exists:
+            scope = release_scope(None, revision, None)
+            pair = {
+                "commit": scope["head"],
+                "parent": scope["base"],
+                "branch": scope["branch"],
+                "tag": scope["tag"],
+                "base_tag": scope["base_tag"],
+            }
+        else:
+            if not has_contact_driver(commit):
+                raise ValueError(f"{commit[:12]} lacks examples/contact_benchmark")
+            changed = command_output(
+                [
+                    "git",
+                    "diff",
+                    "--name-only",
+                    f"{commit}^1",
+                    commit,
+                    "--",
+                    *MEASURED_PATHS,
+                ]
+            )
+            if not changed:
+                skipped.append(commit)
+                continue
+            base = command_output(
+                [
+                    "git",
+                    "rev-list",
+                    "--first-parent",
+                    "-n1",
+                    f"{commit}^1",
+                    "--",
+                    *MEASURED_PATHS,
+                ]
+            )
+            if not base:
+                raise ValueError(f"{commit[:12]} has no measured-path base")
+            pair = {
+                "commit": commit,
+                "parent": base,
+                "branch": "main",
+                "tag": None,
+                "base_tag": None,
+            }
+        pairs.append(pair)
+        for arm in (pair["parent"], pair["commit"]):
+            if arm not in revisions:
+                revisions.append(arm)
+    return {"revisions": revisions, "pairs": pairs, "skipped": skipped}
+
+
+def backfill_records(args, plan: dict, run: dict) -> list[dict]:
+    output = args.output_dir.resolve()
+    arms, markers = {}, {}
+    for revision in plan["revisions"]:
+        directory = output / "runs" / revision
+        if (directory / "record.json").is_file():
+            arms[revision] = read_record(directory / "record.json")
+        else:
+            markers[revision] = json.loads(
+                (directory / "build-failure.json").read_text()
+            )
+    reference = next(iter(arms.values()), None)
+    if reference is None and run.get("fingerprint"):
+        for path in sorted((output / "runs").glob("*/record.json")):
+            with contextlib.suppress(ValueError, KeyError, OSError, TypeError):
+                previous = read_record(path)
+                if (
+                    previous["run"]["commit"] == path.parent.name
+                    and previous["run"]["env"]["fingerprint"] == run["fingerprint"]
+                ) and not any(
+                    row.get("error_kind") == "infrastructure"
+                    for row in previous["results"]
+                ):
+                    reference = previous
+                    break
+    if reference is None and plan["pairs"]:
+        raise ValueError(
+            "no measured arm is available to identify the build-failure records"
+        )
+    for revision, marker in markers.items():
+        arm = argparse.Namespace(**vars(args))
+        if not has_contact_driver(revision):
+            arm.rows = "gzb,robot"
+        arms[revision] = broken_arm(planned_rows(arm), arm, reference["run"], marker)
+    records_dir = output / "records"
+    if records_dir.exists():
+        shutil.rmtree(records_dir)
+    quick = {row.key for row in select_rows("")}
+    records = []
+    for pair in plan["pairs"]:
+        trimmed = []
+        for revision in (pair["parent"], pair["commit"]):
+            arm = json.loads(json.dumps(arms[revision]))
+            arm["results"] = [row for row in arm["results"] if row_key(row) in quick]
+            for row in arm["results"]:
+                for key in ("wall_ms_per_step", "max_rss_kb"):
+                    row.get("head", {}).pop(key, None)
+            trimmed.append(arm)
+        record = compare(*trimmed, "")
+        subject = command_output(["git", "show", "-s", "--format=%s", pair["commit"]])
+        pr = re.search(r"\(#(\d+)\)$", subject)
+        record["run"].update(
+            tier="release" if pair["tag"] else "backfill",
+            branch=pair["branch"],
+            parent=pair["parent"],
+            pr=None if pair["tag"] or not pr else int(pr[1]),
+            harness_commit=run["identity"]["harness_commit"],
+            accepted=[],
+        )
+        if pair["tag"]:
+            record["run"].update(tag=pair["tag"], base_tag=pair["base_tag"])
+            path = records_dir / "releases" / f"{pair['tag']}.json"
+        else:
+            path = records_dir / "main" / f"{pair['commit']}.json"
+        write_json(path, record)
+        records.append(record)
+    return records
+
+
+def backfill_git(command: list[str]) -> None:
+    process = subprocess.Popen(command, cwd=ROOT)
+    try:
+        returncode = process.wait()
+    except BaseException:
+        process.terminate()
+        process.wait()
+        raise
+    if returncode:
+        raise subprocess.CalledProcessError(returncode, command)
+
+
+def backfill(args) -> list[dict]:
+    plan = backfill_plan(args)
+    output = args.output_dir.resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    with (output / ".lock").open("a", encoding="utf-8") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise ValueError("another backfill holds the output lock") from error
+        if command_output(
+            [
+                "git",
+                "status",
+                "--porcelain",
+                "--ignored",
+                "--",
+                "scripts/perf_regression.py",
+                "tools/perf",
+                "pixi.lock",
+            ]
+        ):
+            raise ValueError("the harness checkout is dirty")
+        identity = host_identity(args)
+        run_path = output / "run.json"
+        if run_path.exists():
+            run = json.loads(run_path.read_text(encoding="utf-8"))
+            if identity != run["identity"]:
+                raise ValueError("the backfill run identity has changed")
+        else:
+            reference = hosted_reference()
+            for key in (
+                "valgrind",
+                "valgrind_sha",
+                "callgrind_sha",
+                "compiler_sha",
+                "glibc",
+            ):
+                if identity.get(key) != reference.get(key):
+                    raise ValueError(f"the hosted reference differs: {key}")
+            run = {
+                "identity": identity,
+                "reference": {
+                    key: reference[key]
+                    for key in ("valgrind_guest_cpu", "compiler", "preset")
+                },
+            }
+            write_json(run_path, run)
+        if (output / "records").exists():
+            shutil.rmtree(output / "records")
+        shims = output / "shims"
+        build_shims(args, shims)
+        source, build, driver, prefix = (
+            output / name for name in ("src", "build", "driver", "prefix")
+        )
+        if source.is_symlink():
+            raise ValueError("backfill source must be a dedicated linked worktree")
+        if not source.exists() and plan["revisions"]:
+            backfill_git(
+                [
+                    "git",
+                    "worktree",
+                    "add",
+                    "--detach",
+                    str(source),
+                    plan["revisions"][0],
+                ]
+            )
+        if plan["revisions"]:
+            git_file = source / ".git"
+            if git_file.is_symlink() or not git_file.is_file():
+                raise ValueError("backfill source must be a dedicated linked worktree")
+            top = command_output(
+                ["git", "-C", str(source), "rev-parse", "--show-toplevel"]
+            )
+            common = command_output(
+                ["git", "-C", str(source), "rev-parse", "--git-common-dir"]
+            )
+            harness_common = command_output(["git", "rev-parse", "--git-common-dir"])
+            git_dir = command_output(
+                ["git", "-C", str(source), "rev-parse", "--absolute-git-dir"]
+            )
+            backlink = Path(git_dir) / "gitdir"
+            if (
+                Path(top).resolve() != source.resolve()
+                or source.resolve() == ROOT.resolve()
+                or (source / common).resolve() != (ROOT / harness_common).resolve()
+                or not backlink.is_file()
+                or Path(backlink.read_text().strip()).resolve() != git_file.resolve()
+            ):
+                raise ValueError("backfill source must be a dedicated linked worktree")
+        for revision in plan["revisions"]:
+            if host_identity(args) != run["identity"]:
+                raise ValueError("the backfill run identity has changed")
+            directory = output / "runs" / revision
+            directory.mkdir(parents=True, exist_ok=True)
+            record_path, failure_path = (
+                directory / "record.json",
+                directory / "build-failure.json",
+            )
+            done = False
+            if record_path.is_file():
+                with contextlib.suppress(ValueError, KeyError, OSError, TypeError):
+                    previous = read_record(record_path)
+                    done = (
+                        previous["run"]["commit"] == revision
+                        and run.get("fingerprint") is not None
+                        and previous["run"]["env"]["fingerprint"] == run["fingerprint"]
+                        and not any(
+                            row.get("error_kind") == "infrastructure"
+                            for row in previous["results"]
+                        )
+                    )
+            if not done and failure_path.is_file():
+                with contextlib.suppress(ValueError, KeyError, OSError, TypeError):
+                    previous = json.loads(failure_path.read_text())
+                    done = (
+                        previous["commit"] == revision
+                        and previous["identity"] == run["identity"]
+                    )
+            if done:
+                print(f"skip {revision[:12]}")
+                continue
+            record_path.unlink(missing_ok=True)
+            failure_path.unlink(missing_ok=True)
+            backfill_git(
+                ["git", "-C", str(source), "checkout", "--detach", "--force", revision]
+            )
+            backfill_git(["git", "-C", str(source), "clean", "-ffdx"])
+            arm = arm_namespace(args, revision, source, prefix, directory, shims)
+            if not has_contact_driver(revision):
+                arm.rows = "gzb,robot"
+            drivers = sorted({row.driver for row in planned_rows(arm)} - {PB})
+            clean_retry = False
+            for attempt in (1, 2):
+                started = time.monotonic()
+                build_error = None
+                try:
+                    build_arm(
+                        arm,
+                        revision,
+                        source,
+                        build,
+                        driver,
+                        prefix,
+                        drivers,
+                        directory / "arm",
+                    )
+                except ValueError as error:
+                    build_error = error
+                finally:
+                    head = subprocess.check_output(
+                        ["git", "-C", str(source), "rev-parse", "HEAD"], text=True
+                    ).strip()
+                    dirty = subprocess.check_output(
+                        ["git", "-C", str(source), "status", "--porcelain"], text=True
+                    ).strip()
+                    if head != revision or dirty:
+                        raise ValueError("the source tree moved during the build")
+                if isinstance(build_error, BuildFailure):
+                    if attempt == 1:
+                        for tree in (build, driver):
+                            if tree.exists():
+                                shutil.rmtree(tree)
+                        clean_retry = True
+                        continue
+                    if not clean_retry:
+                        raise ValueError(
+                            "build failed after an infrastructure retry"
+                        ) from build_error
+                    write_json(
+                        failure_path,
+                        {
+                            "commit": revision,
+                            "identity": run["identity"],
+                            "error": str(build_error),
+                            "error_kind": "build",
+                            "time": datetime.now(timezone.utc).isoformat(),
+                        },
+                    )
+                    record_path.unlink(missing_ok=True)
+                    print(f"{revision[:12]} build failed (recorded)")
+                    break
+                if build_error is not None:
+                    if attempt == 1:
+                        continue
+                    raise build_error
+                built = time.monotonic() - started
+                measured = time.monotonic()
+                try:
+                    record = run_arm(arm)
+                except ValueError:
+                    if attempt == 1:
+                        continue
+                    raise
+                if host_identity(args) != run["identity"]:
+                    os.replace(record_path, directory / "record.drift.json")
+                    raise ValueError("the backfill run identity has changed")
+                env = record["run"]["env"]
+                if "fingerprint" not in run:
+                    for key, value in run["reference"].items():
+                        if env.get(key) != value:
+                            os.replace(record_path, directory / "record.drift.json")
+                            raise ValueError(f"the hosted reference differs: {key}")
+                    run["fingerprint"] = env["fingerprint"]
+                    write_json(run_path, run)
+                if env["fingerprint"] != run["fingerprint"]:
+                    os.replace(record_path, directory / "record.drift.json")
+                    raise ValueError("a second backfill fingerprint appeared")
+                if any(
+                    row.get("error_kind") == "infrastructure"
+                    for row in record["results"]
+                ):
+                    if attempt == 1:
+                        continue
+                    os.replace(record_path, directory / "record.infrastructure.json")
+                    raise ValueError(
+                        f"infrastructure errors persist at {revision[:12]}"
+                    )
+                print(
+                    f"{revision[:12]} built {built:.0f}s measured {time.monotonic() - measured:.0f}s"
+                )
+                break
+        records = backfill_records(args, plan, run)
+        print(
+            f"assembled {len(records)} records ({sum(bool(pair['tag']) for pair in plan['pairs'])} tags)"
+        )
+        return records
 
 
 def local_arms(args) -> tuple[dict, dict]:
@@ -2438,35 +4383,18 @@ def local_arms(args) -> tuple[dict, dict]:
     if not dependency:
         raise ValueError("local requires the active Pixi environment (CONDA_PREFIX)")
     shims = output / "shims"
-    shims.mkdir()
     revisions = [
         command_output(["git", "rev-parse", "--verify", f"{rev}^{{commit}}"])
         for rev in ((args.head,) if args.smoke else (args.base, args.head))
     ]
-    has_contact_driver = [
-        subprocess.run(
-            [
-                "git",
-                "cat-file",
-                "-e",
-                f"{rev}:examples/contact_benchmark/CMakeLists.txt",
-            ],
-            cwd=ROOT,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
-        ).returncode
-        == 0
-        for rev in revisions
-    ]
+    contact_drivers = [has_contact_driver(revision) for revision in revisions]
     # Only a base that predates the contact driver narrows the default rows; a
     # head that drops it must not hide the rows it no longer measures.
-    if not args.smoke and has_contact_driver[0] and not has_contact_driver[1]:
+    if not args.smoke and contact_drivers[0] and not contact_drivers[1]:
         raise ValueError("the head revision lacks examples/contact_benchmark")
-    portable_only = not has_contact_driver[0]
-    if portable_only and not args.rows:
+    if not contact_drivers[0] and not args.rows:
         args.rows = "gzb,robot"
-    drivers = sorted({row.driver for row in select_rows(args.rows)} - {PB})
+    drivers = sorted({row.driver for row in planned_rows(args)} - {PB})
     records = []
     for label, revision in zip(("a", "b"), revisions):
         source, build = output / f"src-{label}", output / f"build-{label}"
@@ -2475,172 +4403,43 @@ def local_arms(args) -> tuple[dict, dict]:
         with tarfile.open(fileobj=io.BytesIO(archive)) as contents:
             contents.extractall(source, filter="data")
         prefix = output / label
-        options = [
-            "-DCMAKE_BUILD_TYPE=Release",
-            "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-            f"-DCMAKE_INSTALL_PREFIX={prefix}",
-            f"-DCMAKE_PREFIX_PATH={dependency}",
-            "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
-            "-DCMAKE_C_COMPILER=/usr/bin/cc",
-            "-DBUILD_TESTING=ON",
-            "-DDART_BUILD_DARTPY=OFF",
-            "-DDART_BUILD_PROFILE=OFF",
-            "-DDART_ENABLE_SIMD=OFF",
-            "-DDART_BUILD_GUI_OSG=ON",
-            "-DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON",
-            "-DDART_USE_SYSTEM_GOOGLETEST=ON",
-            "-DDART_USE_SYSTEM_IMGUI=ON",
-            "-DDART_USE_SYSTEM_TRACY=ON",
-            "-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
-            "-DDART_DISABLE_COMPILER_CACHE=ON",
-        ]
         try:
             if label == "a":
-                for name in ("allocshim", "heappad"):
-                    execute(
-                        [
-                            "/usr/bin/cc",
-                            "-O2",
-                            "-shared",
-                            "-fPIC",
-                            "-o",
-                            str(shims / f"{name}.so"),
-                            str(ROOT / f"tools/perf/{name}.c"),
-                            "-ldl",
-                        ],
-                        os.environ.copy(),
-                        shims / f"{name}.log",
-                        args.timeout,
-                        build=True,
-                    )
-            execute(
-                ["cmake", "-G", "Ninja", "-S", str(source), "-B", str(build), *options],
-                os.environ.copy(),
-                output / f"{label}.configure.log",
-                args.timeout,
-                build=True,
-            )
-            workload_sources = workload_hashes(source, drivers, build, prefix)
-            targets = ["dart-utils-urdf", *drivers]
-            if CB not in drivers:
-                targets += [
-                    "dart-collision-ode",
-                    "dart-collision-bullet",
-                    "dart-gui-osg",
-                ]
-            execute(
-                [
-                    "cmake",
-                    "--build",
-                    str(build),
-                    "--parallel",
-                    str(args.jobs),
-                    "--target",
-                    *targets,
-                ],
-                os.environ.copy(),
-                output / f"{label}.build.log",
-                max(args.timeout, 3600),
-                build=True,
-            )
-            execute(
-                ["cmake", "--install", str(build), "--prefix", str(prefix)],
-                os.environ.copy(),
-                output / f"{label}.install.log",
-                args.timeout,
-                build=True,
-            )
-            binary = prefix / "bin"
-            binary.mkdir(exist_ok=True)
-            for target in targets:
-                if (build / "bin" / target).is_file():
-                    shutil.copy2(build / "bin" / target, binary / target)
-            driver_build = output / f"driver-{label}"
-            execute(
-                [
-                    "cmake",
-                    "-G",
-                    "Ninja",
-                    "-S",
-                    str(ROOT / "tools/perf"),
-                    "-B",
-                    str(driver_build),
-                    "-DCMAKE_BUILD_TYPE=Release",
-                    "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-                    f"-DCMAKE_PREFIX_PATH={prefix};{dependency}",
-                    "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
-                ],
-                os.environ.copy(),
-                output / f"{label}.driver-configure.log",
-                args.timeout,
-                build=True,
-            )
-            workload_sources |= workload_hashes(ROOT, [PB], driver_build, prefix)
-            execute(
-                ["cmake", "--build", str(driver_build), "--parallel", str(args.jobs)],
-                os.environ.copy(),
-                output / f"{label}.driver-build.log",
-                args.timeout,
-                build=True,
-            )
-            shutil.copy2(
-                driver_build / "portable_step_bench", binary / "portable_step_bench"
-            )
-            compiler = cmake_compiler(build)
-            if cmake_compiler(driver_build) != compiler:
-                raise ValueError("DART and portable driver compiler provenance differs")
-            write_json(
-                prefix / "share/dart/perf-build.json",
-                {
-                    "schema": "dart-perf-build/1",
-                    "commit": revision,
-                    **compiler,
-                    "pixi_lock_sha": sha((ROOT / "pixi.lock").read_bytes()),
-                    "preset": "perf-1",
-                    "libdart_sha": sha((prefix / "lib/libdart.so").read_bytes()),
-                    "libraries": library_hashes(prefix),
-                    "workload_sources": workload_sources,
-                    "binaries": {
-                        path.name: sha(path.read_bytes())
-                        for path in binary.iterdir()
-                        if path.is_file()
-                    },
-                },
+                build_shims(args, shims)
+            build_arm(
+                args,
+                revision,
+                source,
+                build,
+                output / f"driver-{label}",
+                prefix,
+                drivers,
+                output / label,
             )
         except BuildFailure as error:
+            marker = {
+                "commit": revision,
+                "error": str(error),
+                "error_kind": "build",
+                "time": datetime.now(timezone.utc).isoformat(),
+            }
             if args.smoke:
-                write_json(
-                    output / "build-failure.json",
-                    {"commit": revision, "error": str(error), "error_kind": "build"},
-                )
+                write_json(output / "build-failure.json", marker)
             if label == "a":
                 raise
             records.append(
-                {
-                    "schema": "dart-perf/1",
-                    "run": {**records[0]["run"], "commit": revision},
-                    "results": [
-                        {
-                            **row,
-                            "status": "broken",
-                            "gated": False,
-                            "perturbations": {},
-                            "error": f"head build failed: {error}",
-                            "error_kind": "build",
-                            "head": {},
-                        }
-                        for row in records[0]["results"]
-                    ],
-                }
+                broken_arm(planned_rows(args), args, records[0]["run"], marker)
             )
             break
-        arm = argparse.Namespace(**vars(args))
-        arm.nightly = False  # local already selected the nightly rows before building.
-        arm.prefix, arm.bin_dir, arm.commit = prefix, binary, revision
-        arm.source_dir = source
-        arm.base_arm = label == "a" and not args.smoke
-        arm.output_dir = output / f"{label}-run"
-        arm.shim, arm.heappad = shims / "allocshim.so", shims / "heappad.so"
+        arm = arm_namespace(
+            args,
+            revision,
+            source,
+            prefix,
+            output / f"{label}-run",
+            shims,
+            base_arm=label == "a" and not args.smoke,
+        )
         records.append(run_arm(arm))
     if args.smoke:
         records[0]["run"]["mode"] = "smoke"
@@ -2654,8 +4453,42 @@ def local_arms(args) -> tuple[dict, dict]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    def interrupt(signum, frame):
+        raise KeyboardInterrupt
+
+    for signum in (signal.SIGTERM, signal.SIGHUP):
+        if signal.getsignal(signum) is not signal.SIG_IGN:
+            signal.signal(signum, interrupt)
     args = parser().parse_args(argv)
     try:
+        if args.command == "backfill":
+            if args.jobs < 1:
+                raise ValueError("--jobs must be a positive integer")
+            select_rows(args.rows)
+            if args.plan_only:
+                plan = backfill_plan(args)
+                for revision in plan["revisions"]:
+                    print(revision)
+                tags = sum(bool(pair["tag"]) for pair in plan["pairs"])
+                print(
+                    f"planned {len(plan['revisions'])} revisions for "
+                    f"{len(plan['pairs']) - tags} commits and {tags} tags "
+                    f"({len(plan['skipped'])} skipped)"
+                )
+            else:
+                backfill(args)
+            return 0
+        if args.command == "ledger":
+            record = ledger_entries(
+                load_records(args.records), args.since, args.until, args.intent
+            )
+            report = ledger_markdown(record)
+            print(report, end="")
+            if args.json:
+                write_json(args.json, record)
+            if args.markdown:
+                args.markdown.write_text(report, encoding="utf-8")
+            return 0
         if args.command == "publish":
             print(
                 "Performance records published"
