@@ -46,4 +46,5 @@ exercised by the infrastructure checker.
 | `dart-test`       | `$dart-test`       | `docs/onboarding/testing.md`, `pixi run test`, `pixi run test-py`                       |
 | `dart-python`     | `$dart-python`     | `docs/onboarding/python-bindings.md`, `python/examples/`, `python/tests/`               |
 | `dart-io`         | `$dart-io`         | `docs/onboarding/io-parsing.md`, `dart/utils/`, `tests/integration/test_DartLoader.cpp` |
+| `dart-perf`       | `$dart-perf`       | `docs/onboarding/profiling.md` § "Performance Methodology", `pixi run perf-compare` |
 | `dart-verify-sim` | `$dart-verify-sim` | `docs/ai/verification.md`, `pixi run bm-boxes-headless`, `pixi run agent-capture`, `pixi run image-verdict`, `pixi run verification-bundle` |

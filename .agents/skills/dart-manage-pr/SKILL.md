@@ -89,15 +89,9 @@ gh pr checks <PR_NUMBER>
      maintained `release-6.*` branch; none exists right now).
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
-   - Confirm the PR body is readable and follows template order (Summary first
-     as the skimmable user/downstream outcome, then Motivation, Changes,
-     optional Before / After, Testing, Breaking Changes, Related Issues /
-     PRs); mechanics belong in Changes unless they explain user-visible risk.
-   - When the PR has meaningful user-facing API, workflow, behavior, or
-     performance impact, confirm a concise Before / After section compares the
-     old and new surfaces, with an explicit baseline for performance claims
-     (path, parent commit or `main`, workload, metric, limitations) and rows
-     phrased as user-visible before/after.
+   - Check the body against `docs/onboarding/contributing.md` § "PR
+     Descriptions": Effect first, key comparisons and evidence easy to assess,
+     and mechanism, method, and full data afterward.
    - Ensure transient visual evidence (screenshots, headless renders, GIFs,
      videos) is hosted as GitHub PR/issue Markdown attachments
      (`https://github.com/user-attachments/assets/...`), never committed to
