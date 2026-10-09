@@ -126,6 +126,10 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         "C:/tools/example/example/notes.md",
         "WORKDIR /workspaces/example",
         "WORKDIR /workspace/example",
+        "WORKDIR //workspace//example",
+        "WORKDIR //workspaces//example",
+        "C://home/example",
+        "C://workspace/example",
         "/rooted/file.md",
         "/Root 1 0 R",
     ),
@@ -194,6 +198,87 @@ def test_special_use_hosts_do_not_mask_paths(suffix, capsys):
         f"http://printer.{suffix}/scratchpad/example.md"
     )  # path-fixture
     assert capsys.readouterr().out == "1: scratchpad/example.md\n"  # path-fixture
+
+
+@pytest.mark.parametrize(
+    "host",
+    [
+        "app.test",
+        "app.invalid",
+        "app.example",
+        "app.localhost",
+        "app.local",
+        "app.internal",
+        "app.home.arpa",
+        "foo..bar",
+        "-foo.bar",
+        "foo-.bar",
+        "foo.-bar",
+        "foo.bar-",
+        ".foo.bar",
+        "foo.bar..",
+        "foo_bar.com",
+        "a" * 64 + ".com",
+    ],
+)
+def test_non_public_dns_hosts_do_not_mask_home_paths(host, capsys):
+    assert checker.scan_text(f"http://{host}/home/example/private.md")
+    assert capsys.readouterr().out == "1: /home/example/private.md\n"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/home//example/private.md",
+        "//home///example/private.md",
+        "/Users//example/private.md",
+        "/workspace//example/private.md",
+        "/workspaces//example/private.md",
+        "/__w//example/private.md",
+        "/mnt//c//Users//example/private.md",
+        "/c//Users//example/private.md",
+        "/tmp//claude-example/example/private.md",
+        ".claude//projects//example/private.md",
+        ".sisyphus//example.md",
+        ".ab//example.md",
+        "scratchpad//example.md",
+        r"C:\\Users\\example\private.md",
+        r"D:\\a\\example\\example\private.md",
+        r"\\example\\Users\\example\private.md",
+        r"\\wsl.localhost\\example\\home\\example\private.md",
+    ],
+)
+def test_redundant_root_separators_do_not_hide_paths(path, capsys):
+    assert checker.scan_text(path)
+    assert capsys.readouterr().out.startswith("1: ")
+
+
+@pytest.mark.parametrize(
+    "mode,expected", [("strip", False), ("verbatim", True), ("whitespace", True)]
+)
+@pytest.mark.parametrize(
+    "cleanup_option", ["--cleanup={mode}", "--cleanup {mode}", "--cle={mode}"]
+)
+@pytest.mark.parametrize(
+    "strategy", [[], ["-s", "ort"], ["-sort"], ["-X", "ours"], ["-Xours"]]
+)
+def test_merge_cleanup_keeps_editor_appended_comments(
+    mode, expected, cleanup_option, strategy
+):
+    text = "Public merge\n# Lines starting with '#' will be ignored,\n# /home/example/private.md\n"
+    assert (
+        checker.scan_commit_message(
+            text,
+            [
+                "git",
+                "merge",
+                "--edit",
+                *strategy,
+                *cleanup_option.format(mode=mode).split(),
+            ],
+        )
+        == expected
+    )
 
 
 def test_public_url_with_balanced_parentheses_is_fully_masked(capsys):
@@ -271,6 +356,7 @@ def test_urls_do_not_hide_adjacent_paths_or_file_urls(capsys):
     assert capsys.readouterr().out.splitlines() == [
         "1: /home/example",
         "2: scratchpad/example.md",
+        "3: ///Users/example/private.md",
         "3: /Users/example/private.md",
         "4: /home/example",
     ]

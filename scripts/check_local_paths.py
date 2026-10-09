@@ -34,12 +34,12 @@ URI = re.compile(
 PATTERNS = tuple(
     re.compile(pattern + PATH_TAIL, re.IGNORECASE)
     for pattern in (
-        r"(?<![\w.-])\.sisyphus[/\\]",
-        r"(?<![\w.-])\.ab[/\\]",
-        r"/tmp/claude\-[^\s/\\`\"'<>]+",
-        r"(?<![\w.-])\.claude[/\\]projects[/\\]",
-        r"(?<![\w.-])scratchpad[/\\]",
-        r"(?<![\w.-])task_\d+(?:[/\\]|-[\w-]+)",
+        r"(?<![\w.-])\.sisyphus[/\\]+",
+        r"(?<![\w.-])\.ab[/\\]+",
+        r"/+tmp/+claude\-[^\s/\\`\"'<>]+",
+        r"(?<![\w.-])\.claude[/\\]+projects[/\\]+",
+        r"(?<![\w.-])scratchpad[/\\]+",
+        r"(?<![\w.-])task_\d+(?:[/\\]+|-[\w-]+)",
         # Generic home-relative paths such as ~/.config name no user or machine.
         # Private agent project dirs, scratchpads and numbered worktrees still
         # match above, so ~/ alone is not reported.
@@ -48,13 +48,13 @@ PATTERNS = tuple(
         # A host or path character before /home or /Users is not a home, and a
         # drive letter (C:/Users) is left to the Windows pattern below; other
         # labels such as cwd: or file: still precede a reported home.
-        r"(?:(?<=\.\.)|(?<![\w.-])(?<!\b[A-Za-z]:))/(?:home|Users|(?:mnt/)?[A-Za-z]/Users)/[^\s/\\`\"'<>\[\](){};,|]+",
+        r"(?:(?<=\.\.)|(?<![\w./-])(?<!\b[A-Za-z]:))/+(?:home|Users|(?:mnt/+)?[A-Za-z]/+Users)/+[^\s/\\`\"'<>\[\](){};,|]+",
         # A standalone Docker WORKDIR naming one workspace directory is generic;
         # deeper paths and the same roots in published prose still identify work.
-        r"(?!(?<=^WORKDIR )/(?:workspace|workspaces)/[^/\s]+$)"
-        r"(?:(?<=\.\.)|(?<![\w.-])(?<!\b[A-Za-z]:))/(?:workspace|workspaces|__w)/[^\s/\\`\"'<>\[\](){};,|]+",
+        r"(?!(?<=^WORKDIR )/+(?:workspace|workspaces)/+[^/\s]+$)"
+        r"(?:(?<=\.\.)|(?<![\w./-])(?<!\b[A-Za-z]:))/+(?:workspace|workspaces|__w)/+[^\s/\\`\"'<>\[\](){};,|]+",
         # Unix root homes are case-sensitive; PDF /Root entries are not paths.
-        r"(?<![\w.-])(?<!\b[A-Za-z]:)/(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|])",
+        r"(?<![\w./-])(?<!\b[A-Za-z]:)/+(?-i:root)(?=[/\\]|$|[\s`\"'<>\[\](){};,.:|])",
         r"(?<![\w.:-])[A-Za-z]:[/\\]+Users[/\\]+[^/\\\r\n`\"'<>\[\](){};,|]+",
         # Windows Actions checks out the repository in two same-named dirs.
         r"(?<![\w.:-])[A-Za-z]:[/\\]+a[/\\]+(?P<repo>[\w.-]+)[/\\]+(?P=repo)(?=[/\\]|$|[\s`\"'<>\[\](){};,|])",
@@ -128,7 +128,7 @@ GIT_SCISSORS_INSTRUCTION = re.compile(
 
 
 def is_public_host(host: str | None) -> bool:
-    host = (host or "").rstrip(".")
+    host = (host or "").lower().removesuffix(".")
     try:
         address = ipaddress.ip_address(host)
         # Python counts some multicast ranges (SSDP, link-local) as global.
@@ -138,8 +138,27 @@ def is_public_host(host: str | None) -> bool:
         if re.fullmatch(r"[0-9.]+|0x[0-9a-f.x]+", host, re.IGNORECASE):
             return False
         # Special-use DNS suffixes identify local machines and private networks.
-        return "." in host and not host.endswith(
-            (".localhost", ".local", ".home.arpa", ".internal", ".lan", ".localdomain")
+        return (
+            "." in host
+            and len(host) <= 253
+            and all(
+                re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label)
+                for label in host.split(".")
+            )
+            and not any(
+                host == suffix or host.endswith("." + suffix)
+                for suffix in (
+                    "test",
+                    "invalid",
+                    "example",
+                    "localhost",
+                    "local",
+                    "home.arpa",
+                    "internal",
+                    "lan",
+                    "localdomain",
+                )
+            )
         )
 
 
@@ -268,14 +287,15 @@ def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
             i += 1
         if option == "-c":
             config_args.extend(("-c", value))
-    if i >= len(command) or command[i] != "commit":
+    if i >= len(command) or command[i] not in {"commit", "merge"}:
         return None
+    subcommand = command[i]
     args = command[i + 1 :]
     # Git exposes hidden and negated options too, keeping prefix matching in sync.
     options = {
         option.rstrip("=")
         for option in subprocess.run(
-            ["git", "commit", "--git-completion-helper-all"],
+            ["git", subcommand, "--git-completion-helper-all"],
             check=True,
             capture_output=True,
             text=True,
@@ -304,7 +324,7 @@ def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
         elif option in {"--edit", "--no-edit"}:
             edit = option == "--edit"
         elif option in {"--verbose", "--no-verbose"}:
-            verbose = option == "--verbose"
+            verbose = subcommand == "commit" and option == "--verbose"
         elif option in {"--message", "--file", "--reuse-message", "--reedit-message"}:
             supplied = True
             if option == "--reedit-message" and edit is None:
@@ -318,13 +338,19 @@ def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
             "--fixup",
             "--squash",
             "--pathspec-from-file",
+            "--strategy",
+            "--strategy-option",
+            "--into-name",
         }:
             i += int(not sep)
         elif token.startswith("-") and not token.startswith("--"):
             for offset, short in enumerate(token[1:], 2):
+                if subcommand == "merge" and short in "sX":
+                    i += int(offset == len(token))
+                    break
                 if short == "e":
                     edit = True
-                verbose |= short == "v"
+                verbose |= subcommand == "commit" and short == "v"
                 if short in "mFCc":
                     supplied = True
                     if short == "c" and edit is None:

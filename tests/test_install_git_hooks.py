@@ -708,6 +708,53 @@ def test_commit_msg_hook_blocks_inline_hash_message(tmp_path, prefix):
     assert f"1: {private_path}" in result.stderr
 
 
+@pytest.mark.parametrize(
+    "cleanup,expected", [("strip", 0), ("verbatim", 1), ("whitespace", 1)]
+)
+def test_merge_hook_checks_editor_comments_kept_by_cleanup(tmp_path, cleanup, expected):
+    repo, env = _init_repo(tmp_path)
+
+    def git(*args, check=True):
+        return subprocess.run(
+            ["git", *args],
+            cwd=repo,
+            env=env,
+            check=check,
+            capture_output=True,
+            text=True,
+        )
+
+    git("config", "user.name", "Example")
+    git("config", "user.email", "test@example.com")
+    git("checkout", "-b", "base")
+    git("commit", "--allow-empty", "-qm", "Public base")
+    git("checkout", "-b", "topic")
+    (repo / "topic.md").write_text("Public topic\n")
+    git("add", "topic.md")
+    git("commit", "-qm", "Public topic")
+    git("checkout", "base")
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    assert _install(repo, env).returncode == 0
+    private_path = "/home/" + "example/private.md"
+    editor = repo / "editor.sh"
+    editor.write_text(
+        '#!/bin/sh\nprintf "\\n# %s\\n" ' + shlex.quote(private_path) + ' >> "$1"\n'
+    )
+    editor.chmod(0o755)
+    env["GIT_EDITOR"] = str(editor)
+    result = git(
+        "merge", "--no-ff", "--edit", f"--cleanup={cleanup}", "topic", check=False
+    )
+    assert result.returncode == expected, result.stderr
+    if expected:
+        assert private_path in result.stderr
+    else:
+        assert private_path not in git("log", "-1", "--format=%B").stdout
+
+
 def test_commit_msg_hook_reports_unavailable_checker(tmp_path):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0
@@ -772,6 +819,9 @@ def test_guard_expanded_command_positions_require_fallback(
     assert returncode == 2, stderr
     if "$(" in command or "`" in command:
         assert "simple command" in stderr
+    elif command.startswith("${"):
+        assert "simple command" in stderr
+        assert "staged-gate-failed" not in stderr
     elif arguments == "-m public":
         assert "staged-gate-failed" in stderr
     else:
@@ -1621,6 +1671,11 @@ def test_guard_blocks_dynamic_or_unparseable_child_script(tmp_path, command):
 )
 def test_guard_skips_child_scripts_without_commits(tmp_path, command):
     returncode, stderr = _guard_verdict(tmp_path, command)
+    if "git commit" in command:
+        assert returncode == 2, stderr
+        assert "simple command" in stderr
+        assert "would run" not in stderr
+        return
     assert returncode == 0, stderr
     assert "would run" not in stderr
 
@@ -1854,7 +1909,7 @@ def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed)
         ("pixi run lint && ", True),
         ("cmake --build build && ", True),
         ("black . && ", True),
-        ("cat .git/hooks/pre-commit && ", True),
+        ("cat .git/hooks/pre-commit && ", "blocked"),
         ("bash -c 'git add notes.md' && ", True),
         ("git config --get core.hooksPath; ", True),
         ("git config --local --get core.hooksPath; ", True),
@@ -1869,17 +1924,17 @@ def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed)
         ("export GIT_CONFIG_GLOBAL=hooks.conf; ", True),
         ("git init && ", True),
         ("git clone source target && ", True),
-        ("rm .git/hooks/commit-msg && ", True),
+        ("rm .git/hooks/commit-msg && ", "blocked"),
         ("rm -rf .git && ", True),
-        ("mv .git/hooks/commit-msg saved && ", True),
-        ("cp replacement .git/hooks/commit-msg && ", True),
-        ("ln -sf replacement .git/hooks/commit-msg && ", True),
-        ("chmod -x .git/hooks/commit-msg && ", True),
-        ("bash -c 'chmod -x .git/hooks/commit-msg' && ", True),
+        ("mv .git/hooks/commit-msg saved && ", "blocked"),
+        ("cp replacement .git/hooks/commit-msg && ", "blocked"),
+        ("ln -sf replacement .git/hooks/commit-msg && ", "blocked"),
+        ("chmod -x .git/hooks/commit-msg && ", "blocked"),
+        ("bash -c 'chmod -x .git/hooks/commit-msg' && ", "blocked"),
         ("python update.py && ", True),
         ("cmake -P update.cmake && ", True),
         ("cmake -E env python update.py && ", True),
-        ("sed -n 'e chmod -x .git/hooks/pre-commit' notes.md && ", True),
+        ("sed -n 'e chmod -x .git/hooks/pre-commit' notes.md && ", "blocked"),
         ("source update.sh && ", True),
     ),
 )
@@ -1897,15 +1952,18 @@ def test_guard_keeps_fast_path_only_after_allowlisted_segments(
     command = before_commit + f"git commit -m '{private_path}'"
     returncode, stderr = _run_guard(repo, env, command)
     assert returncode == (2 if changed else 0), stderr
-    if changed:
+    if changed == "blocked":
+        assert "simple command" in stderr
+        assert "direct-agent-gate" not in stderr
+    elif changed:
         assert private_path in stderr
         assert "commit message" in stderr
     else:
         assert stderr == ""
 
     returncode, stderr = _run_guard(repo, env, command.replace(private_path, "public"))
-    assert returncode == 0, stderr
-    assert stderr.count("direct-agent-gate") == int(changed)
+    assert returncode == (2 if changed == "blocked" else 0), stderr
+    assert stderr.count("direct-agent-gate") == int(changed is True)
 
 
 @pytest.mark.parametrize(
@@ -1953,13 +2011,13 @@ def test_guard_blocks_six_hook_state_bypasses(tmp_path, route, before_commit):
     command = before_commit + f" && {commit} -m '{private_path}'"
     returncode, stderr = _run_guard(cwd, env, command)
     assert returncode == 2, stderr
-    if route == "home-config":
+    if route in {"home-config", "copy-target", "sibling-repo"}:
         assert "simple command" in stderr
     else:
         assert private_path in stderr
         assert "commit message" in stderr
     returncode, stderr = _run_guard(cwd, env, command.replace(private_path, "public"))
-    if route == "home-config":
+    if route in {"home-config", "copy-target", "sibling-repo"}:
         assert returncode == 2, stderr
         assert "simple command" in stderr
         assert "direct-agent-gate" not in stderr
@@ -2203,6 +2261,12 @@ def test_guard_uninspectable_messages_require_managed_hooks(tmp_path, route, arg
     "arguments",
     [
         "-a -m public",
+        "-m public --patch",
+        "-m public -p",
+        "-m public -qp",
+        "-m public --interactive",
+        "-m public --pat",
+        "-m public --inter",
         "--all -m public",
         "--al -m public",
         "-qam public",
@@ -2517,6 +2581,29 @@ def test_guard_skips_non_commits_and_bypasses(tmp_path, command):
     returncode, stderr = _guard_verdict(tmp_path, command)
     assert returncode == 0
     assert "would run" not in stderr
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "sudo",
+        "doas",
+        "custom-wrapper",
+        "env X=1 sudo",
+        "command sudo",
+        "$WRAPPER",
+        '"${WRAPPER}"',
+    ],
+)
+def test_guard_blocks_unrecognized_git_commit_invocations(tmp_path, prefix):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    returncode, stderr = _run_guard(
+        repo, env, prefix + " git commit --no-verify -m /home/" + "example/private.md"
+    )
+    assert returncode == 2, stderr
+    assert "commit blocked" in stderr
+    assert "direct-agent-gate" not in stderr
 
 
 def test_guard_checks_skip_assignment_inside_shell_conditionals(tmp_path):
