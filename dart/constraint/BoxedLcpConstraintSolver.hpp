@@ -39,6 +39,12 @@
 namespace dart {
 namespace constraint {
 
+/// With an NSGS or FBF primary, an additional rigid-contact cache reuses
+/// velocity impulses independently of the collision detector. It matches both
+/// body-local points within 1 mm and normals within about 2.56 degrees.
+/// Compatible detector seed components retain their existing point tolerance
+/// while the pair and normals persist. Timestep, collision-group content and
+/// primary-backend changes invalidate the history.
 class BoxedLcpConstraintSolver : public ConstraintSolver
 {
 public:

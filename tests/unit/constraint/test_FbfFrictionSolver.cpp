@@ -288,6 +288,32 @@ private:
 
 } // namespace
 
+TEST(FbfFrictionSolver, WarmStartResidualIncreaseRequestsSecondary)
+{
+  // A complete SPD sweep raises the warm residual by 7.81e-6 m/s.
+  for (double tolerance : {1e-5, 1e-6}) {
+    SCOPED_TRACE(tolerance);
+    Problem p(2);
+    p.A[1] = p.A[p.stride] = 0.9;
+    p.b = {1.9, 1.9};
+    p.x = {0.99989, 1.00011};
+    const auto startingImpulse = p.x;
+    FbfFrictionSolver::Options options;
+    options.maxOuterIterations = 1;
+    options.tolerance = tolerance;
+    FbfFrictionSolver solver(options);
+    EXPECT_FALSE(p.solve(solver));
+    EXPECT_EQ(startingImpulse, p.x);
+    const auto stats = solver.getStats();
+    EXPECT_EQ(0u, stats.numAcceptedAtCap);
+    EXPECT_EQ(1u, stats.numFailed);
+    EXPECT_EQ(0u, stats.numConverged);
+    EXPECT_EQ(1u, stats.numIterations);
+    EXPECT_EQ(1u, stats.numInnerIterations);
+    EXPECT_DOUBLE_EQ(0.0, stats.maxViolation);
+  }
+}
+
 TEST(FbfFrictionSolver, DivergenceUsesExistingSecondaryAndReassembly)
 {
   auto primary = std::make_shared<FbfFrictionSolver>();
