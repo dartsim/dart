@@ -1425,8 +1425,10 @@ void ConstraintSolver::solve()
   const auto* boxed = dynamic_cast<const BoxedLcpConstraintSolver*>(this);
   if (boxed) {
     const auto* primary = boxed->getBoxedLcpSolver().get();
-    if (dynamic_cast<const NsgsFrictionSolver*>(primary)
-        || dynamic_cast<const FbfFrictionSolver*>(primary)) {
+    if (!isExactDynamicType<DantzigBoxedLcpSolver>(primary)
+        && !isExactDynamicType<PgsBoxedLcpSolver>(primary)
+        && (dynamic_cast<const NsgsFrictionSolver*>(primary)
+            || dynamic_cast<const FbfFrictionSolver*>(primary))) {
       contactCache = &detail::getOrCreateContactWarmStartCache(this);
       contactCache->begin(
           mTimeStep,
@@ -3804,8 +3806,10 @@ void ConstraintSolver::reserveConstrainedGroupsScratch()
   const auto* boxed = dynamic_cast<const BoxedLcpConstraintSolver*>(this);
   if (boxed) {
     const auto* primary = boxed->getBoxedLcpSolver().get();
-    if (dynamic_cast<const NsgsFrictionSolver*>(primary)
-        || dynamic_cast<const FbfFrictionSolver*>(primary)) {
+    if (!isExactDynamicType<DantzigBoxedLcpSolver>(primary)
+        && !isExactDynamicType<PgsBoxedLcpSolver>(primary)
+        && (dynamic_cast<const NsgsFrictionSolver*>(primary)
+            || dynamic_cast<const FbfFrictionSolver*>(primary))) {
       detail::getOrCreateContactWarmStartCache(this).reserve(
           mContactConstraints.size());
     }

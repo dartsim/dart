@@ -1078,8 +1078,11 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   // For each constraint
   constructLcpTerms();
 
-  if (dynamic_cast<const NsgsFrictionSolver*>(mBoxedLcpSolver.get())
-      || dynamic_cast<const FbfFrictionSolver*>(mBoxedLcpSolver.get())) {
+  const auto* primary = mBoxedLcpSolver.get();
+  if (!isExactBoxedLcpDynamicType<DantzigBoxedLcpSolver>(primary)
+      && !isExactBoxedLcpDynamicType<PgsBoxedLcpSolver>(primary)
+      && (dynamic_cast<const NsgsFrictionSolver*>(primary)
+          || dynamic_cast<const FbfFrictionSolver*>(primary))) {
     const auto* cache = detail::findContactWarmStartCache(this);
     if (cache) {
       for (std::size_t i = 0; i < numConstraints; ++i) {
