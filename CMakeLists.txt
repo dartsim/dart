@@ -436,15 +436,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
     # TODO: These warnings should be properly addressed and these compiler options removed
     add_compile_options(
-      -Wno-overloaded-virtual
-      -Wno-alloc-size-larger-than
-      -Wno-dangling-pointer
-    )
-  endif()
-  if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
-    # TODO: These warnings should be properly addressed and these compiler options removed
-    add_compile_options(
-      -Wno-overloaded-virtual
+      $<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual>
       -Wno-alloc-size-larger-than
       -Wno-dangling-pointer
     )
