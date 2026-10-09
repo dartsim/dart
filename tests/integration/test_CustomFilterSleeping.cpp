@@ -406,3 +406,73 @@ TEST(CustomFilterSleeping, TimeStepChangeRestartsJointCoupledDwell)
     EXPECT_GE(sleepStep, 2000u);
   }
 }
+
+TEST(CustomFilterSleeping, JointDwellDoesNotAccrueOutsideSolvedContactIsland)
+{
+  for (const bool tracked : {false, true}) {
+    SCOPED_TRACE(tracked ? "tracked custom filter" : "custom filter");
+    auto scene = createJointScene(0.001, true, JointMount::WorldBall, tracked);
+    auto* joint = scene.model->getRootJoint();
+    auto transform = joint->getTransformFromParentBodyNode();
+    transform.translation().z() += 1.0;
+    joint->setTransformFromParentBodyNode(transform);
+    scene.flap->setGravityMode(false);
+    scene.world->addSkeleton(createBox(
+        "supported",
+        Eigen::Vector3d::Constant(0.2),
+        Eigen::Vector3d(-2.0, 0.0, 0.1)));
+    for (std::size_t i = 0; i < 5; ++i)
+      scene.world->step();
+    ASSERT_LT(scene.model->getIslandIndex(), 0);
+    ASSERT_DOUBLE_EQ(0.0, scene.model->getRestDwellTime());
+
+    // A temporarily missed support can leave quiet dwell from earlier solves.
+    scene.model->setRestDwellTime(1.0);
+    for (std::size_t i = 0; i < 100; ++i) {
+      scene.world->step();
+      ASSERT_GT(
+          scene.world->getConstraintSolver()
+              ->getLastCollisionResult()
+              .getNumContacts(),
+          0u);
+      ASSERT_LT(scene.model->getIslandIndex(), 0);
+      ASSERT_DOUBLE_EQ(0.0, scene.model->getRestDwellTime());
+      ASSERT_FALSE(scene.model->isSleepCandidate());
+      ASSERT_FALSE(scene.model->isResting());
+    }
+  }
+}
+
+TEST(CustomFilterSleeping, StaticSupportBecomingMobileInvalidatesReadyCache)
+{
+  for (const bool tracked : {false, true}) {
+    SCOPED_TRACE(tracked ? "tracked custom filter" : "custom filter");
+    auto world = createWorld(0.001, tracked);
+    auto support = createBox(
+        "support",
+        Eigen::Vector3d(2.0, 2.0, 0.2),
+        Eigen::Vector3d(0.0, 0.0, -0.1),
+        10.0);
+    support->setMobile(false);
+    auto sleeper = createBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(0.2),
+        Eigen::Vector3d(0.0, 0.0, 0.1));
+    world->addSkeleton(support);
+    world->addSkeleton(sleeper);
+    ASSERT_TRUE(settle(*world, *sleeper));
+    for (std::size_t i = 0; i < 10; ++i)
+      world->step();
+    ASSERT_EQ(
+        0u,
+        world->getConstraintSolver()
+            ->getLastCollisionResult()
+            .getNumContacts());
+    ASSERT_TRUE(sleeper->isResting());
+
+    support->setMobile(true);
+    world->step();
+    EXPECT_LT(support->getBodyNode(0)->getLinearVelocity().z(), -0.005);
+    EXPECT_FALSE(sleeper->isResting());
+  }
+}

@@ -2599,10 +2599,11 @@ bool World::hasDeactivationStateChangedSince(
         || skel->mDeactivationStateVersion - globalVersion - 1u >= window) {
       return false;
     }
-    // Active material writes cannot invalidate another island's sleep. Quiet
-    // bodies still restart their dwell, and supports and sleepers still wake.
-    return !customFilterSleeping || !skel->isMobile() || skel->isResting()
-           || skel->isSleepCandidate() || skel->getRestDwellTime() > 0.0;
+    // Active material writes cannot invalidate another island's sleep. A ready
+    // cache must still notice a static support becoming mobile.
+    return !customFilterSleeping || mAllRestingSnapshotReady
+           || !skel->isMobile() || skel->isResting() || skel->isSleepCandidate()
+           || skel->getRestDwellTime() > 0.0;
   };
   for (const auto& skel : mSkeletons) {
     if (changed(skel.get()))
