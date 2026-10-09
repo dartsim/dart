@@ -22,7 +22,7 @@ Before every commit, run:
 pixi run lint
 ```
 
-Install the commit safety gates once per clone:
+Install the commit and push safety gates once per clone:
 
 ```bash
 pixi run install-hooks
@@ -44,10 +44,20 @@ template makes matching scissors end the scan before a verbose diff:
 pixi run python scripts/check_agent_hook.py --profile staged
 ```
 
-Existing hooks are preserved as `pre-commit.local` or `commit-msg.local` and
-chained.
+The managed `pre-push` hook scans every updated ref's commit messages, file
+names and added lines, including commits created by cherry-pick, rebase,
+revert, `git am` and sequencer operations that skip commit hooks. It runs
+`scripts/check_local_paths.py --commit-range <base>..<local sha>` using the
+remote SHA for existing refs or the merge base with the remote's default branch
+for new refs. Missing base objects are fetched without changing refs or
+`FETCH_HEAD`; an empty remote or unrelated history scans all local history.
+Deletions skip scanning. Findings or lookup/scan errors block the push.
+
+Existing hooks are preserved as `<hook>.local` and chained; a foreign pre-push
+hook receives the same ref-update stdin as the managed hook.
 Emergency escape hatch:
-`DART_SKIP_HOOKS=1 git commit ...`. Codex and Claude sessions also use tracked
+`DART_SKIP_HOOKS=1 git commit ...` or `DART_SKIP_HOOKS=1 git push ...`.
+Codex and Claude sessions also use tracked
 PreToolUse hooks for agent-issued `git commit` calls before `install-hooks` has
 been run. When verification is bypassed with `--no-verify`/`-n` (including
 accepted abbreviations), hooks are overridden, or managed hooks are

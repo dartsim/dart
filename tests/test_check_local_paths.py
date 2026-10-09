@@ -1048,7 +1048,7 @@ def test_bomless_unicode_with_non_ascii_text_cannot_hide_paths(repo, encoding, m
 @pytest.mark.parametrize(
     "encoding", ["utf-8", "utf-16-le", "utf-16-be", "utf-32-le", "utf-32-be"]
 )
-def test_binary_match_must_decode_without_replacement(tmp_path, encoding):
+def test_binary_match_keeps_valid_prefix_before_replacement(tmp_path, encoding):
     path = tmp_path / "asset.bin"
     invalid = (
         b"\xff"
@@ -1058,9 +1058,81 @@ def test_binary_match_must_decode_without_replacement(tmp_path, encoding):
     path.write_bytes(
         "/home/example/".encode(encoding) + invalid + "\n".encode(encoding)
     )
-    assert _cli("--files", path, cwd=tmp_path).returncode == 0
+    result = _cli("--files", path, cwd=tmp_path)
+    assert result.returncode == 1
+    assert "/home/example/\n" in result.stdout
     path.write_bytes("/home/example/private.md\n".encode(encoding) + invalid)
     assert _cli("--files", path, cwd=tmp_path).returncode == 1
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "--files",
+        "--all-tracked",
+        "--staged",
+        "--commit-range",
+        "--text-file",
+        "--commit-msg-file",
+        "--stdin",
+    ],
+)
+def test_invalid_byte_after_path_keeps_valid_prefix(repo, mode):
+    if mode == "--commit-range":
+        (repo / "base.txt").write_text("Public summary\n")
+        base = _commit(repo)
+    data = b"header /home/example/private.md\xfftail"
+    path = repo / "notes.txt"
+    path.write_bytes(data)
+    _git(repo, "add", path.name)
+    args = (
+        (mode, path)
+        if mode in {"--files", "--text-file", "--commit-msg-file"}
+        else (mode,)
+    )
+    if mode == "--commit-range":
+        head = _commit(repo)
+        args = (mode, f"{base}..{head}")
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), *map(str, args)],
+        cwd=repo,
+        input=data if mode == "--stdin" else None,
+        capture_output=True,
+    )
+    assert result.returncode == 1, result.stderr
+    assert b"1: /home/example/private.md\n" in result.stdout
+    assert b"tail" not in result.stdout
+
+
+@pytest.mark.parametrize("path", [r"C:\Users\Example", "//example.local/Users/example"])
+def test_replacement_delimits_profile_names_that_allow_spaces(path, capsys):
+    assert checker.scan_text(path + "\ufffdtail/private.md")
+    assert capsys.readouterr().out == f"1: {path}\n"
+
+
+@pytest.mark.parametrize("mode", ["--staged", "--commit-range"])
+def test_bare_cr_in_added_line_cannot_hide_path(repo, mode):
+    (repo / "notes.txt").write_text("Public summary\n")
+    base = _commit(repo)
+    (repo / "notes.txt").write_bytes(b"prefix\r/home/example/private.md\n")
+    _git(repo, "add", "notes.txt")
+    args = (mode,)
+    if mode == "--commit-range":
+        head = _commit(repo)
+        args = (mode, f"{base}..{head}")
+    result = _cli(*args, cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert "notes.txt:1: /home/example/private.md\n" in result.stdout
+
+
+def test_commit_range_scans_messages_without_cleanup(repo):
+    (repo / "base.txt").write_text("Public summary\n")
+    base = _commit(repo)
+    (repo / "notes.txt").write_text("Public summary\n")
+    head = _commit(repo, "Public subject\n\n# /home/example/private.md")
+    result = _cli("--commit-range", f"{base}..{head}", cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == f"{head}:3: /home/example/private.md\n"
 
 
 @pytest.mark.parametrize("comment_string", ["#", ";", "//"])

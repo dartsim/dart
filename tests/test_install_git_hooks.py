@@ -67,7 +67,234 @@ def _write_gate(
     gate.write_text(body)
 
 
-@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+def _push_repo(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    env["DART_HOOK_PYTHON"] = sys.executable
+
+    def git(*args, check=True):
+        return subprocess.run(
+            ["git", *args],
+            cwd=repo,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=check,
+        )
+
+    git("config", "user.name", "DART Test")
+    git("config", "user.email", "test@example.com")
+    git("checkout", "-b", "main")
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    git("add", ".")
+    git("commit", "-qm", "Public base")
+    remote = tmp_path / "remote.git"
+    git("init", "--bare", "--initial-branch=main", str(remote))
+    git("remote", "add", "origin", str(remote))
+    git("push", "origin", "main")
+    return repo, env, git
+
+
+@pytest.mark.parametrize("leak", ["message", "content"])
+@pytest.mark.parametrize("new_ref", [False, True])
+def test_pre_push_blocks_cherry_picked_local_path(tmp_path, leak, new_ref):
+    repo, env, git = _push_repo(tmp_path)
+    base = git("rev-parse", "HEAD").stdout.strip()
+    private_path = "/home/" + "example/private.md"
+    git("checkout", "-b", "donor")
+    (repo / "notes.md").write_text(
+        private_path + "\n" if leak == "content" else "Public summary\n"
+    )
+    git("add", "notes.md")
+    git("commit", "-qm", private_path if leak == "message" else "Public change")
+    donor = git("rev-parse", "HEAD").stdout.strip()
+    git("checkout", "-b", "topic", base)
+    # A different parent forces cherry-pick to create a new commit.
+    git("commit", "--allow-empty", "-qm", "Public topic")
+    assert _install(repo, env).returncode == 0
+    git("cherry-pick", donor)
+    target = "topic" if new_ref else "main"
+    result = git("push", "origin", f"HEAD:refs/heads/{target}", check=False)
+    assert result.returncode != 0, result.stderr
+    assert private_path in result.stdout
+    assert "push blocked" in result.stderr
+    assert git("ls-remote", "origin", f"refs/heads/{target}").stdout.strip() == (
+        "" if new_ref else f"{base}\trefs/heads/main"
+    )
+
+
+def test_pre_push_allows_clean_updates_and_branch_deletion(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    git("commit", "--allow-empty", "-qm", "Public change")
+    pushed = git("push", "origin", "main", "HEAD:refs/heads/topic")
+    assert pushed.stderr.count("DART pre-push: scanning") == 2
+    result = git("push", "origin", ":refs/heads/topic")
+    assert "--commit-range" not in result.stderr
+    assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
+
+
+@pytest.mark.parametrize("new_ref", [False, True])
+def test_pre_push_fetches_missing_remote_base_without_changing_refs(tmp_path, new_ref):
+    repo, env, git = _push_repo(tmp_path)
+    git("clone", str(tmp_path / "remote.git"), str(tmp_path / "other"))
+    git(
+        "-C",
+        str(tmp_path / "other"),
+        "-c",
+        "user.name=DART Test",
+        "-c",
+        "user.email=test@example.com",
+        "commit",
+        "--allow-empty",
+        "-qm",
+        "Remote change",
+    )
+    git("-C", str(tmp_path / "other"), "push", "origin", "main")
+    refs_before = git("show-ref").stdout
+    fetch_head = repo / ".git/FETCH_HEAD"
+    fetch_head.write_text("Keep existing fetch state\n")
+    assert _install(repo, env).returncode == 0
+    target = "topic" if new_ref else "main"
+    result = git("push", "--force", "origin", f"HEAD:refs/heads/{target}")
+    assert "DART pre-push: scanning" in result.stderr
+    assert fetch_head.read_text() == "Keep existing fetch state\n"
+    # A successful push may update its tracking ref, but fetching the base must not.
+    if new_ref:
+        assert git("show-ref", "refs/remotes/origin/main").stdout in refs_before
+
+
+@pytest.mark.parametrize("mode", ["pixi", "without-tomllib"])
+def test_pre_push_selects_compatible_python(tmp_path, mode):
+    repo, env, git = _push_repo(tmp_path)
+    env.pop("DART_HOOK_PYTHON")
+    if mode == "pixi":
+        python = repo / ".pixi/envs/default/bin/python"
+        python.parent.mkdir(parents=True)
+    else:
+        python = tmp_path / "python3"
+        env["DART_HOOK_PYTHON"] = str(python)
+    python.write_text(
+        '#!/bin/sh\n[ "$1" = "-c" ] && [ "$2" = "import tomllib" ] && exit 1\n'
+        '[ "$1" = "-c" ] || echo selected-pre-push-python >&2\n'
+        f'exec "{sys.executable}" "$@"\n'
+    )
+    python.chmod(0o755)
+    assert _install(repo, env).returncode == 0
+    private_path = "/home/" + "example/private.md"
+    git(
+        "-c",
+        "core.hooksPath=unused-hooks",
+        "commit",
+        "--allow-empty",
+        "-qm",
+        private_path,
+    )
+    result = git("push", "origin", "main", check=False)
+    assert result.returncode != 0
+    assert private_path in result.stdout
+    assert "selected-pre-push-python" in result.stderr
+    assert "push blocked" in result.stderr
+
+
+def test_pre_push_blocks_when_checker_unavailable_but_allows_deletion(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    git("push", "origin", "HEAD:refs/heads/topic")
+    assert _install(repo, env).returncode == 0
+    git("commit", "--allow-empty", "-qm", "Public change")
+    (repo / "scripts/check_local_paths.py").unlink()
+    result = git("push", "origin", "main", check=False)
+    assert result.returncode != 0
+    assert "gate unavailable" in result.stderr
+    git("push", "origin", ":refs/heads/topic")
+
+
+def test_pre_push_new_ref_uses_remote_default_branch_merge_base(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    private_path = "/home/" + "example/private.md"
+    git("commit", "--allow-empty", "-qm", private_path)
+    git("push", "origin", "HEAD:refs/heads/trunk")
+    git(
+        "--git-dir",
+        str(tmp_path / "remote.git"),
+        "symbolic-ref",
+        "HEAD",
+        "refs/heads/trunk",
+    )
+    assert _install(repo, env).returncode == 0
+    git("commit", "--allow-empty", "-qm", "Public change")
+    result = git("push", "origin", "HEAD:refs/heads/topic")
+    assert "DART pre-push: scanning" in result.stderr
+    assert private_path not in result.stdout
+
+
+@pytest.mark.parametrize("history", ["empty-remote", "unrelated"])
+def test_pre_push_without_merge_base_scans_all_local_history(tmp_path, history):
+    repo, env, git = _push_repo(tmp_path)
+    if history == "empty-remote":
+        git(
+            "--git-dir",
+            str(tmp_path / "remote.git"),
+            "update-ref",
+            "-d",
+            "refs/heads/main",
+        )
+    else:
+        git("checkout", "--orphan", "isolated")
+    private_path = "/home/" + "example/private.md"
+    git("commit", "--allow-empty", "-qm", private_path)
+    assert _install(repo, env).returncode == 0
+    result = git("push", "origin", "HEAD:refs/heads/topic", check=False)
+    assert result.returncode != 0
+    assert private_path in result.stdout
+    assert "push blocked" in result.stderr
+
+
+def test_pre_push_replays_stdin_to_foreign_hook_and_scans_every_ref(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    hook = _hook(repo, "pre-push")
+    hook.write_text('#!/bin/sh\ncat > push-input.txt\n[ "$1" = origin ] || exit 9\n')
+    hook.chmod(0o755)
+    assert _install(repo, env).returncode == 0
+    base = git("rev-parse", "HEAD").stdout.strip()
+    private_path = "/home/" + "example/private.md"
+    git(
+        "-c",
+        "core.hooksPath=unused-hooks",
+        "commit",
+        "--allow-empty",
+        "-qm",
+        private_path,
+    )
+    head = git("rev-parse", "HEAD").stdout.strip()
+    result = git(
+        "push",
+        "origin",
+        f"{base}:refs/heads/clean",
+        "HEAD:refs/heads/leaked",
+        check=False,
+    )
+    assert result.returncode != 0, result.stderr
+    assert private_path in result.stdout
+    lines = (repo / "push-input.txt").read_text().splitlines()
+    assert len(lines) == 2
+    assert any(head in line and "refs/heads/leaked" in line for line in lines)
+
+
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg", "pre-push"])
+def test_guard_requires_every_current_managed_hook(tmp_path, name):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    _hook(repo, name).unlink()
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
+    returncode, stderr = _run_guard(repo, env, "git commit -m public")
+    assert returncode == 0, stderr
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg", "pre-push"])
 def test_install_writes_executable_hook_and_is_idempotent(tmp_path, name):
     repo, env = _init_repo(tmp_path)
 
@@ -77,7 +304,7 @@ def test_install_writes_executable_hook_and_is_idempotent(tmp_path, name):
     assert hook.exists()
     assert os.access(hook, os.X_OK)
     assert "DART-MANAGED-HOOK" in hook.read_text()
-    assert "DART-MANAGED-HOOK v10 " in hook.read_text()
+    assert "DART-MANAGED-HOOK v11 " in hook.read_text()
     digest = hashlib.sha256(hook.read_bytes()).hexdigest()
 
     second = _install(repo, env)
@@ -85,7 +312,7 @@ def test_install_writes_executable_hook_and_is_idempotent(tmp_path, name):
     assert hashlib.sha256(hook.read_bytes()).hexdigest() == digest
 
 
-@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg", "pre-push"])
 def test_installed_hook_honors_skip_and_dry_run(tmp_path, name):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0
@@ -232,7 +459,7 @@ def test_hooks_select_python_for_their_own_requirements(tmp_path, name):
         assert "direct-agent-gate" not in run.stderr
 
 
-@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg", "pre-push"])
 def test_foreign_hook_is_preserved_and_chained(tmp_path, name):
     repo, env = _init_repo(tmp_path)
     hook = _hook(repo, name)
@@ -259,7 +486,7 @@ def test_foreign_hook_is_preserved_and_chained(tmp_path, name):
     assert run.returncode == 7
 
 
-@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg", "pre-push"])
 def test_disabled_foreign_hook_stays_disabled_when_preserved(tmp_path, name):
     repo, env = _init_repo(tmp_path)
     hook = _hook(repo, name)
@@ -288,10 +515,11 @@ def test_disabled_foreign_hook_stays_disabled_when_preserved(tmp_path, name):
     )
 
     assert run.returncode == 0
-    assert "direct-agent-gate" in run.stderr
+    if name != "pre-push":
+        assert "direct-agent-gate" in run.stderr
 
 
-@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg", "pre-push"])
 def test_refuses_when_foreign_hook_and_local_both_exist(tmp_path, name):
     repo, env = _init_repo(tmp_path)
     hook = _hook(repo, name)
@@ -319,11 +547,13 @@ def test_refuses_when_core_hookspath_is_set(tmp_path, hooks_path):
     assert "core.hooksPath" in result.stderr
     assert not (repo / ".githooks" / "pre-commit").exists()
     assert not (repo / ".githooks" / "commit-msg").exists()
+    assert not (repo / ".githooks" / "pre-push").exists()
     assert not (repo / "pre-commit").exists()
     assert not (repo / "commit-msg").exists()
+    assert not (repo / "pre-push").exists()
 
 
-@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg", "pre-push"])
 @pytest.mark.parametrize("target_kind", ["foreign", "managed", "dangling"])
 def test_install_preserves_hook_symlink_without_writing_target(
     tmp_path, name, target_kind
@@ -350,7 +580,7 @@ def test_install_preserves_hook_symlink_without_writing_target(
         assert target.read_bytes() == content
 
 
-@pytest.mark.parametrize("name", ["pre-commit", "commit-msg"])
+@pytest.mark.parametrize("name", ["pre-commit", "commit-msg", "pre-push"])
 def test_install_refuses_symlink_hook_backup_conflict_before_any_writes(tmp_path, name):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0
