@@ -125,14 +125,5 @@ void DantzigBoxedLcpSolver::reserve(std::size_t n)
   scratch.reserveState(n);
 }
 
-#if DART_BUILD_MODE_DEBUG
-//==============================================================================
-bool DantzigBoxedLcpSolver::canSolve(int /*n*/, const double* /*A*/)
-{
-  // TODO(JS): Not implemented.
-  return true;
-}
-#endif
-
 } // namespace constraint
 } // namespace dart

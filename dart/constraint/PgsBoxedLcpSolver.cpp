@@ -43,8 +43,6 @@
 #include <cmath>
 #include <cstring>
 
-#define PGS_EPSILON 10e-9
-
 namespace dart {
 namespace constraint {
 
@@ -256,27 +254,6 @@ void PgsBoxedLcpSolver::reserve(std::size_t n)
   scratch.cacheOrder.reserve(n);
   scratch.cacheD.reserve(n);
 }
-
-#if DART_BUILD_MODE_DEBUG
-//==============================================================================
-bool PgsBoxedLcpSolver::canSolve(int n, const double* A)
-{
-  const int nskip = ::dart::lcpsolver::dantzig::padding(n);
-
-  // Return false if A has zero-diagonal or A is nonsymmetric matrix
-  for (auto i = 0; i < n; ++i) {
-    if (A[nskip * i + i] < PGS_EPSILON)
-      return false;
-
-    for (auto j = 0; j < n; ++j) {
-      if (std::abs(A[nskip * i + j] - A[nskip * j + i]) > PGS_EPSILON)
-        return false;
-    }
-  }
-
-  return true;
-}
-#endif
 
 //==============================================================================
 void PgsBoxedLcpSolver::setOption(const PgsBoxedLcpSolver::Option& option)

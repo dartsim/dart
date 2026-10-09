@@ -83,11 +83,6 @@ public:
   /// Reserves the thread-local PGS scratch used by solve().
   void reserve(std::size_t n);
 
-#if DART_BUILD_MODE_DEBUG
-  // Documentation inherited.
-  bool canSolve(int n, const double* A) override;
-#endif
-
   /// Sets options
   void setOption(const Option& option);
 

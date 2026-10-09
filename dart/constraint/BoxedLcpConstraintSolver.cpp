@@ -856,7 +856,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   auto& lcpFIndex = scratch.lcpFIndex;
 
   if (useInlineLcpBuffer) {
-#if !DART_BUILD_MODE_RELEASE
+#ifndef NDEBUG
     std::fill_n(inlineA.data(), matrixSize, 0.0);
 #endif
     std::fill_n(inlineX.data(), n, 0.0);
@@ -878,7 +878,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
     lcpLo.resize(n);
     lcpHi.resize(n);
     lcpFIndex.resize(n);
-#if !DART_BUILD_MODE_RELEASE
+#ifndef NDEBUG
     std::fill_n(lcpA.data(), matrixSize, 0.0);
 #endif
     std::fill_n(lcpX.data(), n, 0.0);
@@ -936,14 +936,14 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
 
   const auto resetLcpTerms = [&]() {
     if (useInlineLcpBuffer) {
-#if !DART_BUILD_MODE_RELEASE
+#ifndef NDEBUG
       std::fill_n(inlineA.data(), matrixSize, 0.0);
 #endif
       std::fill_n(x, n, 0.0);
       std::fill_n(w, n, 0.0);
       std::fill_n(fIndex, n, -1);
     } else {
-#if !DART_BUILD_MODE_RELEASE
+#ifndef NDEBUG
       std::fill_n(a, matrixSize, 0.0);
 #endif
       std::fill_n(x, n, 0.0);
@@ -1066,7 +1066,7 @@ void BoxedLcpConstraintSolver::solveConstrainedGroup(ConstrainedGroup& group)
   // For each constraint
   constructLcpTerms();
 
-#if !defined(NDEBUG)
+#ifndef NDEBUG
   if (!isSymmetric(n, a)) {
     dtwarn << "[BoxedLcpConstraintSolver::solveConstrainedGroup] LCP matrix is "
               "not symmetric. Continuing to avoid assertion failure.\n";

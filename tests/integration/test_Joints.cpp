@@ -518,7 +518,7 @@ TEST_F(JOINTS, POSITION_LIMIT)
   joint1->setPositionLowerLimit(0, -limit1);
   joint1->setPositionUpperLimit(0, limit1);
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -598,7 +598,7 @@ TEST_F(JOINTS, POSITION_AND_VELOCITY_LIMIT)
   joint1->setVelocityLowerLimit(0, -velLimit1);
   joint1->setVelocityUpperLimit(0, velLimit1);
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -757,7 +757,7 @@ void testJointCoulombFrictionForce(double _timeStep)
   EXPECT_EQ(joint0->getCoulombFriction(0), frictionForce);
   EXPECT_EQ(joint1->getCoulombFriction(0), frictionForce);
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -1076,7 +1076,7 @@ void testServoMotor()
   for (auto pendulum : pendulums)
     world->addSkeleton(pendulum);
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -1201,7 +1201,7 @@ void testMimicJoint()
 
   world->addSkeleton(pendulum);
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   double simTime = 0.2;
 #else
   double simTime = 2.0;
@@ -1489,7 +1489,7 @@ TEST_F(JOINTS, PARTIAL_MIMIC_JOINT)
 
   world->addSkeleton(skeleton);
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   const std::size_t numSteps = 400;
 #else
   const std::size_t numSteps = 2000;
@@ -1606,7 +1606,7 @@ TEST_F(JOINTS, JOINT_COULOMB_FRICTION_AND_POSITION_LIMIT)
   EXPECT_EQ(joint0->getCoulombFriction(0), frictionForce);
   EXPECT_EQ(joint1->getCoulombFriction(0), frictionForce);
 
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   double simTime = 0.2;
 #else
   double simTime = 2.0;

@@ -62,6 +62,20 @@
     must be rebuilt against DART 6.20:
     [#3552](https://github.com/dartsim/dart/pull/3552)
 
+  * `dart/config.hpp` no longer defines `DART_BUILD_MODE_DEBUG` or
+    `DART_BUILD_MODE_RELEASE`, and the installed headers no longer change with
+    the build type DART was built with. `BoxedLcpSolver::canSolve()`, which only
+    Debug builds declared and nothing called, is removed along with its
+    overrides. `MemoryManager::hasAllocated()` is now always declared and
+    returns `false` when DART is built with `NDEBUG`, and `MemoryManager` has the
+    same layout in every build type, so rebuild code that uses it. DART's
+    internal debug-only code now follows `NDEBUG` instead of the build type:
+    builds with assertions enabled run it whatever their build type, and
+    `NDEBUG` builds of any build type (such as `None` with `-DNDEBUG`) take the
+    same code paths as `Release`. Code that tested the removed macros should use
+    `NDEBUG` or its own build settings:
+    [#3627](https://github.com/dartsim/dart/pull/3627)
+
 * Build
 
   * Build DART as C++17 regardless of the compiler default, so GCC 16 (which
