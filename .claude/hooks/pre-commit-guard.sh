@@ -174,6 +174,9 @@ GIT_CONFIG_FILE_ENV = {
     "XDG_CONFIG_HOME",
 }
 ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
+SHELL_OPERATOR_RE = re.compile(
+    r"&>>|<<<|<<-|;;&|&&|\|\||\|&|;;|;&|<<|>>|<&|>&|<>|>\||&>|[<>&|;(){}]"
+)
 
 
 def record_env_assignment(env, token):
@@ -421,6 +424,32 @@ def child_shell_script(tokens, i, raw_part, heredocs, parsed):
     return script, dynamic
 
 
+def shell_tokens(text, i=0):
+    """Yield raw words and operator tokens, retaining quotes and escapes."""
+    while i < len(text):
+        if text[i] in " \t\r\n":
+            i += 1
+            continue
+        start = i
+        operator = SHELL_OPERATOR_RE.match(text, i)
+        if operator:
+            i += len(operator[0])
+            yield operator[0], True, i
+            continue
+        quote = ""
+        while i < len(text):
+            ch = text[i]
+            if ch == "\\" and quote != "'\''":
+                i += 2
+                continue
+            if ch in "\"'\''" and (not quote or ch == quote):
+                quote = "" if quote else ch
+            elif not quote and ch in " \t\r\n<>&|;(){}":
+                break
+            i += 1
+        yield text[start:i], False, i
+
+
 def split_shell_segments(text, heredocs):
     # Child shell syntax belongs to extracted arguments; this layer is Bash.
     text = strip_heredoc_bodies(text, heredocs)
@@ -538,20 +567,17 @@ def split_shell_segments(text, heredocs):
             part_isolated = True
             i += 1
             continue
-        if text.startswith("<<<", i):
-            part.append(" <<< ")
-            i += 3
-            continue
-        if ch == "&" and (
-            i > 0 and text[i - 1] in "<>" or text[i + 1 : i + 2] == ">"
-        ):
-            part.append(ch)
-            i += 1
-            continue
         separator = ""
-        if text.startswith("&&", i) or text.startswith("||", i):
-            separator = text[i : i + 2]
-        elif ch in ";&|\n":
+        if ch in "<>&|;":
+            operator, is_operator, end = next(shell_tokens(text, i))
+            if is_operator and operator in {
+                "<", ">", "<<", "<<-", "<<<", ">>", "<&", ">&", "<>", ">|", "&>", "&>>",
+            }:
+                part.append(" <<< " if operator == "<<<" else operator)
+                i = end
+                continue
+            separator = operator
+        elif ch == "\n":
             separator = ch
         if separator:
             segment = (
@@ -1051,20 +1077,22 @@ def preceding_segment_allowed(raw_part):
     if has_shell_expansion(raw_part, globs=True):
         return False
     try:
-        lexer = shlex.shlex(raw_part, posix=True, punctuation_chars="<>&|;(){}")
-        lexer.whitespace_split = True
-        lexer.commenters = ""
-        words = list(lexer)
+        words = [
+            (word if is_operator else shlex.split(word)[0], is_operator)
+            for word, is_operator, _ in shell_tokens(raw_part)
+        ]
     except ValueError:
         return False
     tokens = []
     i = 0
     while i < len(words):
-        word = words[i]
-        if any(char in word for char in "<>&|;(){}"):
+        word, is_operator = words[i]
+        if is_operator:
             if i + 1 >= len(words):
                 return False
-            target = words[i + 1]
+            target, target_is_operator = words[i + 1]
+            if target_is_operator:
+                return False
             if not (
                 word in {">", ">>", "&>", "&>>"} and target == "/dev/null"
                 or word == ">&" and target.isascii() and target.isdecimal()
