@@ -522,6 +522,8 @@ public:
   bool mRecordValid = false;
   // Whether this step's start replayed the record successfully.
   bool mReplayVerified = false;
+  // Current step's custom-filter eligibility, refreshed by its wake check.
+  bool mStepCustomBodyFilter = false;
 
   std::vector<char> mIslandJointDwellReady;
 
@@ -1472,9 +1474,7 @@ void World::step(bool _resetCommand)
     return;
   }
 
-  const bool customFilterSleeping = isCustomBodyNodeFilter(
-      *mDeactivationState,
-      mConstraintSolver->getCollisionOption().collisionFilter.get());
+  const bool customFilterSleeping = mDeactivationState->mStepCustomBodyFilter;
   const bool lastStepHadNoContacts
       = mConstraintSolver->getLastCollisionResult().getNumContacts() == 0;
   bool allRestingFastPathReady = false;
@@ -2667,6 +2667,27 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   const auto* collisionFilter = collisionOption.collisionFilter.get();
+  // Classify once per step. The default filter needs only the same exact-type
+  // check as snapshot tracking; World::step reuses the custom-filter decision.
+  bool collisionFilterTrackable
+      = collisionFilter == nullptr
+        || typeid(*collisionFilter)
+               == typeid(collision::BodyNodeCollisionFilter);
+  bool collisionFilterReplayed = false;
+  deactivationState.mStepCustomBodyFilter = false;
+  if (!collisionFilterTrackable) {
+    const auto* tracker = dynamic_cast<
+        const collision::detail::CollisionFilterSnapshotTracker*>(
+        collisionFilter);
+    collisionFilterTrackable = tracker != nullptr;
+    deactivationState.mStepCustomBodyFilter
+        = dynamic_cast<const collision::BodyNodeCollisionFilter*>(
+              collisionFilter)
+              != nullptr
+          && (deactivationState.mCustomFilterSleeping || tracker != nullptr);
+    collisionFilterReplayed
+        = deactivationState.mStepCustomBodyFilter && tracker == nullptr;
+  }
   // A sleep candidate is checked like a resting body: the next solve may
   // freeze it on evidence gathered before the change.
   const bool restingOrCandidate
@@ -2749,14 +2770,11 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
 
   // Adding a custom contact surface handler wakes resting bodies and clears
   // candidacy; see usesBuiltInContactSurfaceHandler().
-  const bool collisionFilterReplayed
-      = isReplayed(deactivationState, collisionFilter);
   bool worldStateUnchanged
       = recordedStateUnchanged
         && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
         && mLastStepRestingWorldStateCollisionFilterTrackable
-        && (isCollisionFilterSnapshotTrackable(collisionFilter)
-            || collisionFilterReplayed);
+        && (collisionFilterTrackable || collisionFilterReplayed);
 
   if (worldStateUnchanged && collisionFilterReplayed) {
     deactivationState.mReplayVerified
