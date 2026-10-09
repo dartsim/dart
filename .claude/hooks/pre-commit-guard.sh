@@ -1,55 +1,29 @@
 #!/bin/sh
-# DART Claude Code/Codex PreToolUse guard for Bash `git commit` calls.
+# DART Claude Code/Codex PreToolUse guard, shared by both hook configurations.
+# Reads .tool_input.command or .cmd from JSON stdin; exit 2 blocks the tool call.
 #
-# Wired via .claude/settings.json and .codex/hooks.json. It enforces the
-# fast staged-file gate for agent sessions even before `pixi run install-hooks` has
-# been run, so an agent cannot commit past the gate by forgetting it.
+# Three paths:
+#   * Raw command without case-sensitive "commit": allow before tokenization.
+#   * Simple commands joined by &&, ; or newlines: inspect every Git commit,
+#     retaining message extraction, plain-cd tracking, foreign-repo skipping,
+#     child-shell checks and allowlisted delegation to current managed hooks.
+#   * Other commands containing "commit": use the project gate and scan ALL raw
+#     text, including heredoc bodies. Never delegate or skip as foreign; block
+#     external/uninspectable message sources and ask for a simple commit command.
 #
-# Scope:
-#   Git aliases expanding to commit, git am/applypatch imports, and alternate
-#   GIT_INDEX_FILE indexes are not inspected by the local hooks; PR Text checks
-#   every PR commit's messages, names and added lines with the base checker.
-#
-# Contract:
-#   * reads the hook JSON from stdin, extracts .tool_input.command or .cmd
-#   * exits 0 fast for anything that is not a `git commit` invocation
-#   * evaluates every git commit split by the shell tokenizer:
-#       - if all executable git hooks are current DART-managed hooks and the
-#         commit is not using --no-verify/-n (including accepted abbreviations)
-#         or a core.hooksPath override, its arguments cannot expand, and all
-#         earlier segments are allowlisted with only safe redirections, skip
-#         that invocation (the hooks enforce; avoid running the gate twice)
-#       - if DART_SKIP_HOOKS=1 (in the environment or as a command prefix),
-#         skip the affected invocations (emergency bypass, same as the git hook)
-#       - if the commit certainly targets another repository (`git -C /other/repo
-#         commit`), skip that invocation; uncertain cwd uses the project gates
-#       - otherwise require inspectable -m or -F <file> messages; block stdin,
-#         reused, autosquash and editor-only messages when managed hooks cannot enforce them
-#       - block commit-time staging when managed hooks will not run; the staged
-#         scan cannot inspect files that the commit command has yet to stage
-#       - block multiple unhooked commits after commands that can change files
-#         or the index; a single pre-tool staged scan cannot cover those changes
-#       - scan all supplied messages needing enforcement with
-#         `scripts/check_local_paths.py --stdin` and run the staged gate once:
-#         `scripts/check_agent_hook.py --profile staged`; on failure
-#         exit 2 with a concise message (exit 2 blocks the tool call and surfaces stderr)
-#   * DART_HOOK_DRY_RUN=1 prints the command it would run and exits 0 (test aid)
-#   * without an injected interpreter, unavailable python3 prints a notice and
-#     exits 0; an injected interpreter fails closed
-#
-# JSON is parsed with the selected Python interpreter (no jq dependency). No heavy subprocess runs
-# unless the command is an actual git commit.
+# Simple commits without managed enforcement must supply inspectable messages,
+# stage files beforehand, and avoid multiple commits after content/index changes.
+# Git aliases, am/applypatch imports and alternate GIT_INDEX_FILE indexes remain
+# out of scope; PR Text scans every resulting commit with the base checker.
+# DART_SKIP_HOOKS=1 in the environment bypasses the guard; simple command prefixes
+# retain their existing emergency bypass. DART_HOOK_DRY_RUN prints the gate only.
+# Missing Python prints a notice and allows; an injected interpreter fails closed.
 
 input=$(cat)
 
-# Fast path: ordinary non-git/non-commit Bash calls can be skipped before
-# spawning the Python tokenizer (measured ~70 ms per spawn, paid on every Bash
-# tool call). A real git commit may spell the subcommand through shell quote or
-# backslash removal (`git com\mit`, `git com"mit"`), so the conservative sentinel
-# also falls through when the raw hook JSON contains g-i-t followed by c-o-m-m-i-t
-# in order. False positives still reach the tokenizer, which classifies them.
+# Only Unicode escapes can hide ASCII "commit" in JSON; decode those below.
 case "$input" in
-    *commit*|*[gG]*[iI]*[tT]*[cC]*[oO]*[mM]*[mM]*[iI]*[tT]*|*'$'*|*'`'*) ;;
+    *commit*|*'\u'*) ;;
     *) exit 0 ;;
 esac
 
@@ -77,13 +51,7 @@ if [ -z "$python_cmd" ]; then
     exit 0
 fi
 
-# Extract the command and decide whether it is a `git commit` against THIS
-# repository, in one Python pass. Handles env-var prefixes (quote-aware),
-# wrapper prefixes (command/exec/time/nice/nohup/env), subshell and brace-group
-# openers, backslash-escaped/path-qualified git, `git -C dir commit`,
-# `git -c k=v commit`, hook overrides via `--config-env` or command-scoped Git
-# config file environment, and && / || / & / ; / | command chains; ignores "commit"
-# as a substring elsewhere.
+# Decode once, then choose precise simple-chain inspection or a raw-text gate.
 guard_result=$(printf '%s' "$input" | "$python_cmd" -c '
 import json
 import os
@@ -100,6 +68,9 @@ except Exception:
 
 tool_input = data.get("tool_input") or {}
 cmd = tool_input.get("command") or tool_input.get("cmd") or ""
+if "commit" not in cmd:
+    print("skip")
+    sys.exit(0)
 
 OPTS_WITH_ARG = {
     "-C",
@@ -121,12 +92,17 @@ class UninspectableShellScript(Exception):
     pass
 
 
+class ConservativeShellCommand(Exception):
+    pass
+
+
 READ_ONLY_GIT_COMMANDS = {
     "status", "diff", "log", "show", "rev-parse", "ls-files", "ls-tree",
 }
-SHELL_CONTROL_PREFIXES = {"!", "if", "then", "else", "elif", "while", "until", "do"}
-SHELL_GROUP_OPENERS = {"(", "{"}
-CWD_UNCERTAIN_PREFIXES = {"then", "else", "elif", "do"}
+COMPOUND_WORDS = {
+    "!", "if", "then", "else", "elif", "fi", "case", "esac", "for", "while",
+    "until", "select", "do", "done", "function", "coproc", "{", "}", "[[", "]]",
+}
 EXEC_ALWAYS = "always"
 EXEC_NEVER = "never"
 EXEC_MAYBE = "maybe"
@@ -235,7 +211,7 @@ def is_hooks_path_override(option):
 
 
 def command_word(token):
-    return token.lstrip("({").lstrip("\\")
+    return token.lstrip("\\")
 
 
 def command_basename(token):
@@ -244,26 +220,6 @@ def command_basename(token):
 
 def is_git_executable(token):
     return command_basename(token).lower() in {"git", "git.exe"}
-
-
-def skip_shell_prefixes(tokens, i):
-    while i < len(tokens):
-        if tokens[i] in SHELL_GROUP_OPENERS:
-            i += 1
-            continue
-        if command_word(tokens[i]) in SHELL_CONTROL_PREFIXES:
-            i += 1
-            continue
-        break
-    return i
-
-
-def segment_allows_cwd_update(tokens):
-    for token in tokens:
-        if token in SHELL_GROUP_OPENERS:
-            continue
-        return command_word(token) not in CWD_UNCERTAIN_PREFIXES
-    return True
 
 
 def heredoc_delimiters(line):
@@ -390,9 +346,9 @@ def text_has_commit(text):
     return re.search(r"\bgit(?:\.exe)?\b[^\n]*\bcommit\b", text) is not None
 
 
-def child_shell_script(tokens, i, raw_part, heredocs, parsed):
+def child_shell_script(tokens, i, raw_part, heredocs):
     script = None
-    dynamic = not parsed
+    dynamic = False
     j = i + 1
     while j < len(tokens):
         token = tokens[j]
@@ -424,17 +380,22 @@ def child_shell_script(tokens, i, raw_part, heredocs, parsed):
     return script, dynamic
 
 
-def shell_tokens(text, i=0):
-    """Yield raw words and operator tokens, retaining quotes and escapes."""
+def shell_tokens(text, i=0, comments=False):
+    """Yield raw words and operators in one pass, retaining quotes and escapes."""
     while i < len(text):
-        if text[i] in " \t\r\n":
+        if text[i] in " \t\r":
             i += 1
+            continue
+        if comments and text[i] == "#":
+            end = text.find("\n", i)
+            i = len(text) if end < 0 else end
             continue
         start = i
         operator = SHELL_OPERATOR_RE.match(text, i)
-        if operator:
-            i += len(operator[0])
-            yield operator[0], True, i
+        if operator or text[i] == "\n" or comments and text[i] == "`":
+            word = operator[0] if operator else text[i]
+            i += len(word)
+            yield word, True, i
             continue
         quote = ""
         while i < len(text):
@@ -444,196 +405,211 @@ def shell_tokens(text, i=0):
                 continue
             if ch in "\"'\''" and (not quote or ch == quote):
                 quote = "" if quote else ch
-            elif not quote and ch in " \t\r\n<>&|;()":
+            elif not quote and (ch in " \t\r\n<>&|;()" or comments and ch == "`"):
                 break
             i += 1
         yield text[start:i], False, i
 
 
-def brace_context_word(part, suffix):
-    """Recognize complete raw brace words only in command position."""
-    prefix = "".join(part)
-    preceding = []
-    for word, _, end in shell_tokens(prefix + suffix):
-        if end > len(prefix):
-            if word != suffix[0] or end - len(word) != len(prefix):
-                return ""
-            command_prefix = preceding.copy()
-            while command_prefix and command_prefix[0] in SHELL_CONTROL_PREFIXES:
-                command_prefix.pop(0)
-            if word == "{" and re.fullmatch(
-                r"(?:[A-Za-z_][A-Za-z0-9_]*\s*\(\s*\)"
-                r"|function\s+[A-Za-z_][A-Za-z0-9_]*(?:\s*\(\s*\))?)\s*",
-                " ".join(command_prefix),
-            ):
-                return "function-body"
-            if word == "}" and preceding:
-                return ""
-            if all(
-                token in SHELL_CONTROL_PREFIXES | {"time", "coproc"}
-                for token in preceding
-            ):
-                return "command-group"
-            return ""
-        preceding.append(word)
-    return ""
-
-
-def split_shell_segments(text, heredocs):
-    # Child shell syntax belongs to extracted arguments; this layer is Bash.
-    text = strip_heredoc_bodies(text, heredocs)
-    part = []
-    part_start = 0
+def literal_heredoc_messages(text):
+    # Normalize only a literal cat body whose first delimiter closes the substitution.
+    opening = re.compile(
+        r"(?P<option>-m|--message)(?P<join>[ \t]+|=)"
+        r"\"\$\(cat[ \t]+<<(?P<tabs>-?)[ \t]*"
+        r"(?P<quote>['\''\"])(?P<delimiter>[A-Za-z_][A-Za-z0-9_]*)"
+        r"(?P=quote)[ \t]*\r?\n"
+    )
+    result = []
+    start = i = 0
     quote = ""
-    contexts = []
-    part_isolated = False
-    previous_separator = ""
-    i = 0
     while i < len(text):
         ch = text[i]
-        if quote:
-            if quote == "\"" and ch == "\\":
-                part.append(ch)
-                if i + 1 < len(text):
-                    part.append(text[i + 1])
-                    i += 2
-                else:
-                    i += 1
-                continue
-            if quote == "\"" and text.startswith("$(", i):
-                part.append("$DART_DYNAMIC_SCRIPT")
-                contexts.append(("command-substitution", ")", quote, part, part_start))
-                part = []
-                part_start = i + 2
-                part_isolated = True
-                quote = ""
-                i += 2
-                continue
-            if quote == "\"" and ch == "`":
-                part.append("$DART_DYNAMIC_SCRIPT")
-                contexts.append(("command-substitution", "`", quote, part, part_start))
-                part = []
-                part_start = i + 1
-                part_isolated = True
-                quote = ""
-                i += 1
-                continue
-            part.append(ch)
-            if ch == quote:
-                quote = ""
-            i += 1
-            continue
-        if ch == "\\":
-            part.append(ch)
-            if i + 1 < len(text):
-                part.append(text[i + 1])
-                i += 2
-            else:
-                i += 1
-            continue
-        if ch in "\"'\''":
-            quote = ch
-            part.append(ch)
-            i += 1
-            continue
-        if ch == "`":
-            if contexts and contexts[-1][1] == "`":
-                if part:
-                    yield "".join(part), "", True, True, text[part_start:i]
-                _, _, restore_quote, outer_part, part_start = contexts.pop()
-                part = outer_part
-                quote = restore_quote
-            else:
-                part.append("$DART_DYNAMIC_SCRIPT")
-                contexts.append(("command-substitution", "`", "", part, part_start))
-                part = []
-                part_start = i + 1
-                part_isolated = True
-            i += 1
-            continue
-        if text.startswith("$(", i):
-            part.append("$DART_DYNAMIC_SCRIPT")
-            contexts.append(("command-substitution", ")", "", part, part_start))
-            part = []
-            part_start = i + 2
-            part_isolated = True
+        if not quote and (i == 0 or text[i - 1].isspace()):
+            match = opening.match(text, i)
+            if match:
+                delimiter = re.compile(
+                    r"(?m)^" + (r"\t*" if match["tabs"] else "")
+                    + re.escape(match["delimiter"]) + r"\r?\n"
+                ).search(text, match.end())
+                closing = re.match(r"[ \t]*\)\"", text[delimiter.end():]) if delimiter else None
+                if closing:
+                    body = text[match.end():delimiter.start()]
+                    if match["tabs"]:
+                        body = "\n".join(line.lstrip("\t") for line in body.split("\n"))
+                    result.append(text[start:i])
+                    result.append(match["option"] + match["join"] + shlex.quote(body.rstrip("\n")))
+                    start = i = delimiter.end() + closing.end()
+                    continue
+        if ch == "\\" and quote != "'\''":
             i += 2
             continue
-        if ch == "(":
-            if re.search(
-                r"(?:^|\s)(?:function\s+)?[A-Za-z_][A-Za-z0-9_]*\s*$",
-                "".join(part),
-            ) and re.match(r"\(\s*\)", text[i:]):
-                part.append(ch)
-                i += 1
-                continue
-            contexts.append(("subshell", ")", "", part, part_start))
-            part = []
-            part_start = i + 1
-            part_isolated = True
-            i += 1
-            continue
-        brace_kind = brace_context_word(part, text[i:]) if ch in "{}" else ""
-        if ch == "{" and brace_kind:
-            contexts.append((brace_kind, "}", "", part, part_start))
-            part = []
-            part_start = i + 1
-            part_isolated = True
-            previous_separator = ""
-            i += 1
-            continue
-        if contexts and ch == contexts[-1][1] and (
-            ch != "}" or brace_kind and previous_separator in {";", "\n", "&"}
-        ):
-            context_kind = contexts[-1][0]
-            if part and context_kind != "function-body":
-                yield "".join(part), "", True, True, text[part_start:i]
-            _, _, restore_quote, outer_part, part_start = contexts.pop()
-            part = outer_part
-            quote = restore_quote
-            part_isolated = True
-            previous_separator = ""
-            i += 1
-            continue
-        separator = ""
-        if ch in "<>&|;":
-            operator, is_operator, end = next(shell_tokens(text, i))
-            if is_operator and operator in {
-                "<", ">", "<<", "<<-", "<<<", ">>", "<&", ">&", "<>", ">|", "&>", "&>>",
-            }:
-                part.append(" <<< " if operator == "<<<" else operator)
-                i = end
-                continue
-            separator = operator
-        elif ch == "\n":
-            separator = ch
-        if separator:
-            segment = (
-                ""
-                if any(context[0] == "function-body" for context in contexts)
-                else "".join(part)
-            )
-            yield (
-                segment,
-                separator,
-                part_isolated or bool(contexts),
-                bool(contexts),
-                text[part_start:i],
-            )
-            part = []
-            part_start = i + len(separator)
-            part_isolated = bool(contexts)
-            previous_separator = separator
-            i += len(separator)
-            continue
-        part.append(ch)
+        if ch in "\"'\''" and (not quote or ch == quote):
+            quote = "" if quote else ch
         i += 1
-    if any(context[1] == "}" for context in contexts):
-        raise UninspectableShellScript
-    yield (
-        "".join(part), "", part_isolated or bool(contexts), bool(contexts),
-        text[part_start:],
-    )
+    result.append(text[start:])
+    return "".join(result)
+
+
+def simple_shell_segments(text, heredocs):
+    """Admit a bounded simple chain; leave all compound syntax to the raw scan."""
+    text = strip_heredoc_bodies(literal_heredoc_messages(text), heredocs)
+    segments = []
+    start = 0
+    for word, operator, end in shell_tokens(text):
+        if operator:
+            if word in {"&&", ";", "\n"}:
+                segments.append((text[start:end - len(word)], word))
+                start = end
+            elif word not in {"<", ">", "<<<", ">>", "<&", ">&", "<>", ">|", "&>", "&>>"}:
+                raise ConservativeShellCommand
+            continue
+        if word.startswith("#"):
+            raise ConservativeShellCommand
+        try:
+            shlex.split(word)
+        except ValueError:
+            raise ConservativeShellCommand
+        quote = ""
+        i = 0
+        while i < len(word):
+            ch = word[i]
+            if ch == "\\" and quote != "'\''":
+                if word.startswith("\\\n", i) or word.startswith("\\\r\n", i):
+                    raise ConservativeShellCommand
+                i += 2
+                continue
+            if ch in "\"'\''" and (not quote or ch == quote):
+                quote = "" if quote else ch
+            elif quote != "'\''" and (
+                ch == "`" or word.startswith(("$(", "$'\''", '\''$"'\''), i)
+            ):
+                raise ConservativeShellCommand
+            i += 1
+    segments.append((text[start:], ""))
+    for part, _ in segments:
+        tokens = shlex.split(part)
+        tokens, i, _, _, _, _ = command_prefix(tokens, None)
+        if i < len(tokens) and tokens[i] in COMPOUND_WORDS:
+            raise ConservativeShellCommand
+        head = command_basename(tokens[i]) if i < len(tokens) else ""
+        if head.startswith("-"):
+            raise ConservativeShellCommand
+        if head in {"eval", "source", "."} and "commit" in part:
+            raise ConservativeShellCommand
+        if any(operator for _, operator, _ in shell_tokens(part)):
+            if not preceding_segment_allowed(part) and head not in SHELLS | NON_POSIX_SHELLS:
+                raise ConservativeShellCommand
+        if heredocs and any(token in heredocs for token in tokens):
+            if i >= len(tokens) or command_basename(tokens[i]) not in SHELLS | NON_POSIX_SHELLS:
+                raise ConservativeShellCommand
+    return segments
+
+
+def conservative_message_inspectable(text, depth=0, script_data=False):
+    # This only looks for message-source risks; it never infers execution or cwd.
+    if depth >= MAX_SHELL_DEPTH:
+        return "commit" not in text
+    text = literal_heredoc_messages(text)
+    # Bash removes active escaped newlines before recognizing command words.
+    text = text.replace("\\\r\n", "").replace("\\\n", "")
+    parts = [([], [])]
+    redirect_target = False
+    backtick_open = False
+    for word, operator, _ in shell_tokens(text, comments=True):
+        if operator:
+            if word == "(" and parts[-1][1] and parts[-1][1][-1].endswith("$"):
+                parts[-1][0][-1] += "DART_DYNAMIC_SOURCE"
+                parts[-1][1][-1] += "DART_DYNAMIC_SOURCE"
+            elif word == "`":
+                if not backtick_open:
+                    if parts[-1][1] and parts[-1][1][-1].endswith("="):
+                        parts[-1][0][-1] += "$DART_DYNAMIC_SOURCE"
+                        parts[-1][1][-1] += "$DART_DYNAMIC_SOURCE"
+                    else:
+                        parts[-1][0].append("$DART_DYNAMIC_SOURCE")
+                        parts[-1][1].append("$DART_DYNAMIC_SOURCE")
+                backtick_open = not backtick_open
+            if word not in {"<", ">", "<<", "<<-", "<<<", ">>", "<&", ">&", "<>", ">|", "&>", "&>>"}:
+                parts.append(([], []))
+            else:
+                if parts[-1][0] and parts[-1][0][-1].isascii() and parts[-1][0][-1].isdecimal():
+                    parts[-1][0].pop()
+                    parts[-1][1].pop()
+                redirect_target = True
+            continue
+        if redirect_target:
+            redirect_target = False
+            continue
+        try:
+            token = shlex.split(word)[0]
+        except (ValueError, IndexError):
+            if "commit" in word:
+                return False
+            continue
+        parts[-1][0].append(token)
+        parts[-1][1].append(word)
+    for tokens, raw_words in parts:
+        raw_part = " ".join(raw_words)
+        for i, token in enumerate(tokens):
+            message_value = i > 0 and tokens[i - 1] in {"-m", "--message", "--trailer"}
+            if script_data and not message_value and "commit" in token and any(ch.isspace() for ch in token):
+                if not token.startswith(("-m", "--message=", "--trailer=")) and not conservative_message_inspectable(token, depth + 1):
+                    return False
+            native_shell = command_basename(token).lower().removesuffix(".exe")
+            if native_shell in NON_POSIX_SHELLS:
+                script = " ".join(tokens[i + 1:])
+                escape = "^" if native_shell == "cmd" else "`"
+                script = script.replace(escape + "\r\n", "").replace(escape + "\n", "").replace(escape, "")
+                if "commit" in script.lower() and not conservative_message_inspectable(script, depth + 1, script_data=True):
+                    return False
+            if command_basename(token) == "env":
+                for j in range(i + 1, len(tokens)):
+                    option, sep, value = tokens[j].partition("=")
+                    split_option = re.match(r"^-[iv]*S(?P<value>.*)$", tokens[j], re.DOTALL)
+                    attached = bool(split_option and split_option["value"])
+                    if split_option or option == "--split-string":
+                        rest = j + 1
+                        if attached:
+                            value = split_option["value"]
+                        elif not sep and j + 1 < len(tokens):
+                            value = tokens[j + 1]
+                            rest += 1
+                        script = value + " " + " ".join(raw_words[rest:])
+                        if "commit" in script and not conservative_message_inspectable(script, depth + 1):
+                            return False
+            if token == "eval":
+                script = " ".join(tokens[i + 1:])
+                if "commit" in script and not conservative_message_inspectable(script, depth + 1):
+                    return False
+            if token == "commit" and i == 0:
+                if any(has_shell_expansion(word) for word in raw_words[i + 1:]):
+                    return False
+                _, inspectable, _ = supplied_commit_message(
+                    tokens[i + 1:], None, raw_part=raw_part, conservative=True
+                )
+                if not inspectable:
+                    return False
+            if command_basename(token) in SHELLS:
+                script, dynamic = child_shell_script(tokens, i, raw_part, {})
+                if script and "commit" in script:
+                    if dynamic or not conservative_message_inspectable(script, depth + 1):
+                        return False
+            if not is_git_executable(token) and not has_shell_expansion(token):
+                continue
+            j = i + 1
+            while j < len(tokens) and tokens[j].startswith("-"):
+                j += 2 if tokens[j] in OPTS_WITH_ARG else 1
+            if j < len(tokens) and (tokens[j] == "commit" or has_shell_expansion(tokens[j])):
+                if (not is_git_executable(token) or has_shell_expansion(tokens[j])) and any(
+                    has_shell_expansion(word) for word in raw_words[j + 1:]
+                ):
+                    return False
+                _, inspectable, _ = supplied_commit_message(
+                    tokens[j + 1:], None, raw_part=raw_part, conservative=True
+                )
+                if not inspectable:
+                    return False
+    return True
 
 
 def env_config_has_hooks_path_override(env):
@@ -709,21 +685,9 @@ def shell_cd_target(tokens, i, current_cwd):
 def known_shell_status(tokens, current_cwd):
     """Return a segment status only when it can be determined statically."""
     i, _ = skip_env_prefix(tokens, 0)
-    while i < len(tokens):
-        if tokens[i] in SHELL_GROUP_OPENERS:
-            i += 1
-            continue
-        head = command_word(tokens[i])
-        if head == "!":
-            return None
-        if head in SHELL_CONTROL_PREFIXES:
-            i += 1
-            continue
-        break
-    i, _ = skip_env_prefix(tokens, i)
     if i >= len(tokens):
         return None
-    head = command_word(tokens[i]).rstrip(")}")
+    head = command_word(tokens[i])
     if head in {":", "true"}:
         return True
     if head == "false":
@@ -731,9 +695,7 @@ def known_shell_status(tokens, current_cwd):
     if head != "cd":
         return None
     target = shell_cd_target(tokens, i, current_cwd)
-    if target is None:
-        return None
-    return os.path.isdir(target)
+    return os.path.isdir(target) if target is not None else None
 
 
 def next_segment_execution(separator, current_execution, status):
@@ -743,25 +705,16 @@ def next_segment_execution(separator, current_execution, status):
         if current_execution == EXEC_ALWAYS and status is False:
             return EXEC_NEVER
         return EXEC_MAYBE
-    if separator == "||":
-        if current_execution == EXEC_ALWAYS and status is False:
-            return EXEC_ALWAYS
-        if current_execution == EXEC_ALWAYS and status is True:
-            return EXEC_NEVER
-        return EXEC_MAYBE
     return EXEC_ALWAYS
 
 
 def maybe_update_shell_cwd(
-    tokens, i, current_cwd, separator, subshell_like, execution, mutation_policy
+    tokens, i, current_cwd, execution, mutation_policy
 ):
     if i >= len(tokens) or command_word(tokens[i]) != "cd":
         return current_cwd
     if execution == EXEC_NEVER:
         return current_cwd
-    # Context-dependent cd must never leave a foreign cwd falsely certain.
-    if subshell_like or separator in {"&", "|", "|&"}:
-        return None
     if mutation_policy != "allow":
         return None
     target = shell_cd_target(tokens, i, current_cwd)
@@ -774,7 +727,7 @@ def maybe_update_shell_cwd(
 
 def commit_args_disable_hooks(args):
     for token in args:
-        t = token.strip(")}")
+        t = token
         if t == "--":
             return False
         # Git accepts unique long-option prefixes; "--no-ver" is ambiguous.
@@ -790,7 +743,7 @@ def commit_args_disable_hooks(args):
     return False
 
 
-def supplied_commit_message(args, cwd, inspect_message=True, raw_part=""):
+def supplied_commit_message(args, cwd, inspect_message=True, raw_part="", conservative=False):
     # Track the message source separately: trailers alone still need an editor.
     messages = []
     supplied = False
@@ -805,7 +758,10 @@ def supplied_commit_message(args, cwd, inspect_message=True, raw_part=""):
             stages_content |= bool(args[i:])
             break
         option, sep, value = token.partition("=")
-        for name in ("--fixup", "--squash"):
+        for name in (
+            ("--message", "--file", "--reuse-message", "--reedit-message", "--template", "--fixup", "--squash")
+            if conservative else ("--fixup", "--squash")
+        ):
             if option.startswith("--") and name.startswith(option):
                 option = name
                 break
@@ -843,18 +799,17 @@ def supplied_commit_message(args, cwd, inspect_message=True, raw_part=""):
                 if short_option in COMMIT_SHORT_OPTS_WITH_ATTACHED_ARG:
                     option = "-" + short_option
                     value = token[offset:]
-                    if (
-                        not value
-                        and short_option not in {"S", "u", "U"}
-                        and i < len(args)
-                    ):
-                        value = args[i]
-                        value_word = args[i]
-                        i += 1
+                    if not value and short_option not in {"S", "u", "U"}:
+                        if i < len(args):
+                            value = args[i]
+                            value_word = args[i]
+                            i += 1
+                        elif conservative:
+                            uninspectable = True
                     break
         else:
             stages_content |= (
-                not token.startswith("-") and bool(token.rstrip(")}"))
+                not token.startswith("-") and bool(token)
                 and not argument_has_expansion(raw_part, token, globs=True)
             )
             continue
@@ -872,12 +827,12 @@ def supplied_commit_message(args, cwd, inspect_message=True, raw_part=""):
             supplied |= option != "--trailer"
         elif option in {
             "-C", "-c", "--reuse-message", "--reedit-message", "--fixup", "--squash",
-        }:
+        } or conservative and option in {"-t", "--template"}:
             # Autosquash can reuse more than a subject (amend/reword bodies).
             uninspectable = True
         elif option in {"-F", "--file"}:
             supplied = True
-            if value == "-":
+            if conservative or value == "-":
                 uninspectable = True
                 continue
             path = shell_expand_path_token(value, cwd)
@@ -988,17 +943,12 @@ def unwrap_wrapper(tokens, i, head):
 def command_prefix(tokens, current_cwd, inherited_env=None):
     command_env = dict(os.environ if inherited_env is None else inherited_env)
     i, bypass = skip_env_prefix(tokens, 0, command_env)
-    i = skip_shell_prefixes(tokens, i)
-    next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
-    bypass = bypass or env_bypass
-    i = next_i
     command_cwd = None
     cwd_mutation_policy = "allow"
     if bypass:
         return tokens, i, bypass, command_env, command_cwd, cwd_mutation_policy
     # unwrap common wrappers: command git commit, time git commit, env X=1 git commit
     while i < len(tokens):
-        i = skip_shell_prefixes(tokens, i)
         next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
         bypass = bypass or env_bypass
         i = next_i
@@ -1159,44 +1109,19 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
                 content_may_change=False, depth=0, fast_path_disabled=False):
     heredocs = {}
     segment_execution = EXEC_ALWAYS
-    previous_separator = ""
-    for (
-        part,
-        separator,
-        isolated_context,
-        separator_isolated,
-        source_part,
-    ) in split_shell_segments(text, heredocs):
+    for part, separator in simple_shell_segments(text, heredocs):
         raw_part = part.strip()
-        subshell_like = isolated_context or previous_separator in {"|", "|&"}
-        part = raw_part.lstrip("({").strip()
-        parsed = True
-        try:
-            tokens = shlex.split(part)
-        except ValueError:
-            parsed = False
-            tokens = part.split()
-        if depth and not parsed and text_has_commit(part):
-            raise UninspectableShellScript
+        if not raw_part:
+            continue
+        tokens = shlex.split(raw_part)
         cwd_execution = segment_execution
-        if not segment_allows_cwd_update(tokens) and cwd_execution != EXEC_NEVER:
-            cwd_execution = EXEC_MAYBE
-        if not separator_isolated:
-            status = (
-                None
-                if isolated_context
-                else known_shell_status(tokens, current_cwd)
-            )
-            segment_execution = next_segment_execution(
-                separator, cwd_execution, status
-            )
-        previous_separator = separator
+        segment_execution = next_segment_execution(
+            separator, cwd_execution, known_shell_status(tokens, current_cwd)
+        )
         (
             tokens, i, bypass, command_env, command_cwd, cwd_mutation_policy,
         ) = command_prefix(tokens, current_cwd, inherited_env)
-        segment_allowed = parsed and preceding_segment_allowed(source_part)
-        if not parsed:
-            fast_path_disabled = True
+        segment_allowed = preceding_segment_allowed(raw_part)
         if bypass:
             content_may_change = True
             fast_path_disabled = True
@@ -1212,8 +1137,6 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
                 heredocs[token][0] if token in heredocs else token
                 for token in tokens[i + 1 :]
             )
-            if "$DART_DYNAMIC_SCRIPT" in script:
-                script += "\n" + source_part
             escape = "^" if shell == "cmd" else "`"
             script = (
                 script.replace(escape + "\r\n", "")
@@ -1238,12 +1161,9 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
         if command_basename(tokens[i]) in SHELLS:
             fast_path_disabled |= not segment_allowed
             script, dynamic = child_shell_script(
-                tokens, i, raw_part, heredocs, parsed
+                tokens, i, raw_part, heredocs
             )
-            if dynamic and text_has_commit(
-                text if not parsed or "$DART_DYNAMIC_SCRIPT" in (script or "")
-                else script or ""
-            ):
+            if dynamic and text_has_commit(script or ""):
                 raise UninspectableShellScript
             if script is not None:
                 if depth >= MAX_SHELL_DEPTH:
@@ -1268,17 +1188,13 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
                 tokens,
                 i,
                 current_cwd,
-                separator,
-                subshell_like,
                 cwd_execution,
                 cwd_mutation_policy,
             )
             if (
                 cwd_execution != EXEC_NEVER
-                and not subshell_like
-                and separator not in {"&", "|", "|&"}
                 and i < len(tokens)
-                and command_word(tokens[i]).rstrip(")}")
+                and command_word(tokens[i])
                 in {"eval", "source", "."}
             ):
                 current_cwd = None
@@ -1324,7 +1240,7 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
             break
         if not target_dir:
             target_dir = command_cwd or current_cwd
-        subcommand = command_word(tokens[i]).rstrip(")}") if i < len(tokens) else ""
+        subcommand = command_word(tokens[i]) if i < len(tokens) else ""
         expanded_subcommand = bool(subcommand) and argument_has_expansion(raw_part, tokens[i])
         possible_commit = subcommand == "commit" or expanded_subcommand
         dynamic_command = expanded_executable or expanded_subcommand
@@ -1467,9 +1383,19 @@ try:
         elif not inspectable and verdict != "commit-stages-content":
             verdict = "commit-uninspectable"
         messages.append(message)
+except ConservativeShellCommand:
+    verdict = "commit-conservative"
+    target_repo_root = (
+        os.environ.get("CLAUDE_PROJECT_DIR")
+        or os.environ.get("CODEX_PROJECT_DIR")
+        or os.getcwd()
+    )
+    messages = [cmd]
+    if not conservative_message_inspectable(cmd):
+        verdict = "commit-conservative-uninspectable"
 except UninspectableShellScript:
     verdict = "commit-uninspectable-shell"
-if unsafe_chain and verdict != "commit-uninspectable-shell":
+if unsafe_chain and verdict not in {"commit-uninspectable-shell", "commit-conservative", "commit-conservative-uninspectable"}:
     verdict = "commit-unsafe-chain"
 print(verdict)
 print(target_repo_root)
@@ -1492,7 +1418,9 @@ if [ "$verdict" != "commit" ] \
     && [ "$verdict" != "commit-uninspectable" ] \
     && [ "$verdict" != "commit-unsafe-chain" ] \
     && [ "$verdict" != "commit-stages-content" ] \
-    && [ "$verdict" != "commit-uninspectable-shell" ]; then
+    && [ "$verdict" != "commit-uninspectable-shell" ] \
+    && [ "$verdict" != "commit-conservative" ] \
+    && [ "$verdict" != "commit-conservative-uninspectable" ]; then
     if [ "$verdict" = "skip" ]; then
         exit 0
     fi
@@ -1513,6 +1441,12 @@ fi
 if [ -n "${DART_HOOK_DRY_RUN:-}" ]; then
     echo "DART guard (dry run): would run 'python3 scripts/check_agent_hook.py --profile staged' in $repo_root" >&2
     exit 0
+fi
+
+if [ "$verdict" = "commit-conservative-uninspectable" ]; then
+    echo "DART guard: complex command commit message cannot be inspected — commit blocked." >&2
+    echo "  Run the commit as a simple command with an inspectable message." >&2
+    exit 2
 fi
 
 if [ "$verdict" = "commit-uninspectable-shell" ]; then
