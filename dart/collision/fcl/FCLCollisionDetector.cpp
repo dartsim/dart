@@ -71,14 +71,13 @@
 #include <cmath>
 #include <cstdint>
 
-// FCL's GJK/EPA computes in libccd's precision. Stop the build when that is
-// single precision: FCL contacts then drift (#3590).
-#if __has_include(<ccd/config.h>)
-  #include <ccd/config.h>
-  #if defined(CCD_SINGLE) && !DART_ALLOW_SINGLE_PRECISION_LIBCCD
-    #error                                                                     \
-        "FCL's libccd is single precision (CCD_SINGLE), which causes momentum drift on shallow contacts and weaker soft-contact push recovery. Rebuild libccd with -DENABLE_DOUBLE_PRECISION=ON and FCL against it (FreeBSD math/libccd: DOUBLE_PECISION, the port's spelling; vcpkg: ccd[double-precision]), or configure DART with -DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON."
-  #endif
+// FCL's GJK/EPA computes in libccd's precision, and FCL's headers already
+// require libccd's. Stop the build when it is single precision: FCL contacts
+// then drift (#3590).
+#include <ccd/config.h>
+#if defined(CCD_SINGLE) && !DART_ALLOW_SINGLE_PRECISION_LIBCCD
+  #error                                                                       \
+      "FCL's libccd is single precision (CCD_SINGLE), which causes momentum drift on shallow contacts and weaker soft-contact push recovery. Rebuild libccd with -DENABLE_DOUBLE_PRECISION=ON and FCL against it (FreeBSD math/libccd: DOUBLE_PECISION, the port's spelling; vcpkg: ccd[double-precision]), or configure DART with -DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON."
 #endif
 
 namespace dart {
