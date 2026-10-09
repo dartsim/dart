@@ -755,6 +755,51 @@ def test_merge_hook_checks_editor_comments_kept_by_cleanup(tmp_path, cleanup, ex
         assert private_path not in git("log", "-1", "--format=%B").stdout
 
 
+@pytest.mark.parametrize("mode", ["autoedit-no", "no-edit", "non-interactive"])
+def test_merge_hook_blocks_annotated_tag_comments_with_default_cleanup(tmp_path, mode):
+    repo, env = _init_repo(tmp_path)
+
+    def git(*args, check=True):
+        return subprocess.run(
+            ["git", *args],
+            cwd=repo,
+            env=env,
+            check=check,
+            capture_output=True,
+            text=True,
+        )
+
+    git("config", "user.name", "Example")
+    git("config", "user.email", "test@example.com")
+    git("checkout", "-b", "base")
+    git("commit", "--allow-empty", "-qm", "Public base")
+    git("checkout", "-b", "topic")
+    git("commit", "--allow-empty", "-qm", "Public topic")
+    private_path = "/home/" + "example/private.md"
+    git("tag", "-a", "topic-tag", "--cleanup=verbatim", "-m", f"# Build {private_path}")
+    git("checkout", "base")
+    base = git("rev-parse", "HEAD").stdout.strip()
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    assert _install(repo, env).returncode == 0
+    env.pop("GIT_MERGE_AUTOEDIT", None)
+    env["GIT_EDITOR"] = ":"
+    if mode == "autoedit-no":
+        env["GIT_MERGE_AUTOEDIT"] = "no"
+    result = git(
+        "merge",
+        "--no-ff",
+        *(["--no-edit"] if mode == "no-edit" else []),
+        "topic-tag",
+        check=False,
+    )
+    assert result.returncode != 0, result.stderr
+    assert private_path in result.stderr
+    assert git("rev-parse", "HEAD").stdout.strip() == base
+
+
 def test_commit_msg_hook_reports_unavailable_checker(tmp_path):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0
