@@ -35,6 +35,7 @@
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/ShapeFrame.hpp>
+#include <dart/dynamics/ShapeNode.hpp>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -72,7 +73,7 @@ void CollisionResult(py::module& m)
           +[](dart::collision::CollisionResult* self, std::size_t index)
               -> dart::collision::Contact& { return self->getContact(index); },
           ::py::arg("index"),
-          ::py::return_value_policy::reference,
+          ::py::return_value_policy::reference_internal,
           "Return the index-th contact.")
       .def(
           "getContact",
@@ -81,7 +82,7 @@ void CollisionResult(py::module& m)
             return self->getContact(index);
           },
           ::py::arg("index"),
-          ::py::return_value_policy::reference,
+          ::py::return_value_policy::reference_internal,
           "Return (const) the index-th contact.")
       .def(
           "getContacts",
@@ -89,7 +90,7 @@ void CollisionResult(py::module& m)
               -> const std::vector<dart::collision::Contact>& {
             return self->getContacts();
           },
-          ::py::return_value_policy::reference,
+          ::py::return_value_policy::reference_internal,
           "Return contacts.")
       .def(
           "getCollidingBodyNodes",
@@ -97,15 +98,29 @@ void CollisionResult(py::module& m)
               -> const std::unordered_set<const dynamics::BodyNode*>& {
             return self->getCollidingBodyNodes();
           },
-          ::py::return_value_policy::reference,
+          ::py::return_value_policy::reference_internal,
           "Return the set of BodyNodes that are in collision.")
       .def(
           "getCollidingShapeFrames",
-          +[](const dart::collision::CollisionResult* self)
-              -> const std::unordered_set<const dynamics::ShapeFrame*>& {
-            return self->getCollidingShapeFrames();
+          +[](const dart::collision::CollisionResult* self) -> py::set {
+            py::set frames;
+            for (const auto* frame : self->getCollidingShapeFrames()) {
+              py::object owner
+                  = py::cast(self, py::return_value_policy::reference);
+              // CollisionResult stores raw frames; keep their bodies alive too.
+              if (const auto* node = frame->asShapeNode()) {
+                owner = py::make_tuple(
+                    owner,
+                    py::cast(
+                        node->getBodyNode(),
+                        py::return_value_policy::reference));
+              }
+              frames.add(py::cast(
+                  frame, py::return_value_policy::reference_internal, owner));
+            }
+            return frames;
           },
-          ::py::return_value_policy::reference,
+          ::py::return_value_policy::reference_internal,
           "Return the set of ShapeFrames that are in collision.")
       .def(
           "inCollision",
