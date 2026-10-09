@@ -30,6 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/Recording.hpp>
 #include <dart/simulation/World.hpp>
 
 #include <dart/constraint/BoxedLcpConstraintSolver.hpp>
@@ -248,6 +249,61 @@ Eigen::Vector3d contactForce(const JointScene& scene)
 }
 
 } // namespace
+
+TEST(CustomFilterSleeping, RecordingPreservesRestingContactsAndForces)
+{
+  for (const int filterKind : {0, 1, 2}) {
+    SCOPED_TRACE(filterKind);
+    auto world = createWorld(0.001, filterKind == 2);
+    if (filterKind == 0) {
+      world->getConstraintSolver()->getCollisionOption().collisionFilter
+          = std::make_shared<collision::BodyNodeCollisionFilter>();
+    }
+    world->addSkeleton(createFloor());
+    auto sleeper = createBox(
+        "sleeper",
+        Eigen::Vector3d::Constant(0.2),
+        Eigen::Vector3d(0.0, 0.0, 0.1));
+    world->addSkeleton(sleeper);
+    ASSERT_TRUE(settle(*world, *sleeper));
+    const auto solved = world->getLastCollisionResult();
+    ASSERT_GT(solved.getNumContacts(), 0u);
+    double forceMagnitude = 0.0;
+    for (const auto& contact : solved.getContacts())
+      forceMagnitude += contact.force.norm();
+    ASSERT_GT(forceMagnitude, 0.0);
+
+    auto* recording = world->getRecording();
+    for (int frame = 0; frame < 4; ++frame) {
+      if (frame > 0) {
+        world->step();
+        ASSERT_TRUE(sleeper->isResting());
+        ASSERT_EQ(
+            world->getConstraintSolver()
+                ->getLastCollisionResult()
+                .getNumContacts(),
+            0u);
+      }
+      // The default filter records exactly the solver's result, including
+      // empty fast-path frames; custom filters keep the last solved contacts.
+      const auto& expected
+          = filterKind == 0
+                ? world->getConstraintSolver()->getLastCollisionResult()
+                : solved;
+      world->bake();
+      ASSERT_EQ(recording->getNumFrames(), frame + 1);
+      ASSERT_EQ(
+          recording->getNumContacts(frame),
+          static_cast<int>(expected.getNumContacts()));
+      for (int i = 0; i < recording->getNumContacts(frame); ++i) {
+        EXPECT_TRUE(recording->getContactPoint(frame, i).isApprox(
+            expected.getContact(i).point));
+        EXPECT_TRUE(recording->getContactForce(frame, i).isApprox(
+            expected.getContact(i).force));
+      }
+    }
+  }
+}
 
 TEST(CustomFilterSleeping, ActiveMaterialWritesKeepUnrelatedIslandAsleep)
 {

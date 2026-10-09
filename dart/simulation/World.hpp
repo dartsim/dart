@@ -728,6 +728,10 @@ private:
 
   /// Collision-side deactivation state, including custom-filter decisions and
   /// the resting contacts getLastCollisionResult() keeps reporting.
+  /// World's layout is not ABI-stable from 6.19 to 6.20: the thread, memory,
+  /// and simulation-mode members above were added in 6.20. Keep new state
+  /// behind this pointer so 6.20.x can extend it without changing
+  /// sizeof(World).
   std::unique_ptr<WorldDeactivationState> mDeactivationState;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END

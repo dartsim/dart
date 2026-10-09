@@ -427,7 +427,9 @@ public:
 
   const collision::CollisionFilter* mTarget = nullptr;
   mutable std::mutex mMutex;
-  mutable std::vector<FilterDecision> mDecisions; // capacity kept across steps
+  // Grow only at a new high-water mark and keep capacity across steps, like
+  // contact constraints, collision results, and the pooled manifold cache.
+  mutable std::vector<FilterDecision> mDecisions;
 };
 
 // Disarms the recorder when the solve returns or throws.
@@ -3502,7 +3504,7 @@ void World::bake()
   // recording's layout was last refreshed by addSkeleton/removeSkeleton.
   mRecording->updateNumGenCoords(mSkeletons);
 
-  const auto collisionResult = getConstraintSolver()->getLastCollisionResult();
+  const auto& collisionResult = getLastCollisionResult();
   const auto nContacts = static_cast<int>(collisionResult.getNumContacts());
   const auto nSkeletons = getNumSkeletons();
 

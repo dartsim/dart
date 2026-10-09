@@ -1469,6 +1469,54 @@ TEST(StepAllocation, NativeCustomFilterFirstPostBakeHasNoAllocation)
   }
 }
 
+TEST(StepAllocation, NativeCustomFilterIncreasedOverlapRetainsCapacity)
+{
+  const std::string label = "native_dart_custom_filter_increased_overlap";
+  dart::test::CountingMemoryAllocator allocator;
+  dart::simulation::WorldConfig config(label);
+  config.baseAllocator = &allocator;
+  config.collisionDetector = dart::simulation::CollisionDetectorType::Dart;
+  auto world = dart::simulation::World::create(config);
+  world->getConstraintSolver()->getCollisionOption().collisionFilter
+      = std::make_shared<PreparedStepBodyNodeCollisionFilter>();
+  auto options = world->getDeactivationOptions();
+  options.mTimeUntilSleep = 1000.0;
+  world->setDeactivationOptions(options);
+  world->addSkeleton(createGround());
+  for (std::size_t i = 0; i < 8; ++i) {
+    world->addSkeleton(createBox(
+        i,
+        Eigen::Vector3d(static_cast<double>(i) - 3.5, 0.0, 2.0),
+        Eigen::Vector3d::Constant(kBoxEdge),
+        dart::Color::Red()));
+  }
+  world->enterSimulationMode();
+  world->step();
+  ASSERT_EQ(world->getLastCollisionResult().getNumContacts(), 0u);
+
+  for (std::size_t i = 1; i < world->getNumSkeletons(); ++i) {
+    auto* joint = world->getSkeleton(i)->getRootJoint();
+    auto transform = joint->getTransformFromParentBodyNode();
+    transform.translation().z() = 0.5 * (kGroundThickness + kBoxEdge);
+    joint->setTransformFromParentBodyNode(transform);
+  }
+  // Both contact-constraint buffers and the recorder reach the new overlap
+  // high-water mark before subsequent same-shape steps are measured.
+  world->step();
+  world->step();
+  ASSERT_GE(world->getLastCollisionResult().getNumContacts(), 8u);
+  const auto measurement = measureWorldStepsNow(world, allocator, 8);
+  reportMeasurement(label, measurement);
+  EXPECT_GE(measurement.lastStepContacts, 8u);
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+  if (!measurement.rawHeap.skipped) {
+    EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+  }
+  for (std::size_t i = 1; i < world->getNumSkeletons(); ++i)
+    EXPECT_FALSE(world->getSkeleton(i)->isResting());
+}
+
 TEST(StepAllocation, DartThreadedReversedRigidDispatchRetainsScratch)
 {
   constexpr std::size_t kNumSpheres = 32u;
