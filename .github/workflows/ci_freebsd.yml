@@ -16,8 +16,8 @@
 name: CI FreeBSD (VM)
 
 on:
-  # Nightly only (~1.5 h in the VM): nightly.yml calls this every
-  # night; dispatch it to check a branch on demand.
+  # Nightly only: nightly.yml calls this every night; dispatch it to check a
+  # branch on demand.
   workflow_dispatch:
   workflow_call:
 
@@ -44,10 +44,9 @@ jobs:
     # host setup. They do not carry the `ubuntu-24.04` label, so pinning it keeps
     # this job on GitHub-hosted runners where the VM action works.
     runs-on: ubuntu-24.04
-    # The VM runs under KVM, but the test suite is still far slower than on
-    # the Linux runner. Keep the timeout high enough for it, but do not mask ctest
-    # failures: release validation must go red when the FreeBSD test suite fails.
-    timeout-minutes: 120
+    # Slower hosted VMs need over two hours for the build and test suite.
+    # Allow runner-speed variation while retaining ctest's per-test timeout.
+    timeout-minutes: 180
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -138,6 +137,6 @@ jobs:
             # `long-measurement` tests are excluded: the soft-foot push-recovery
             # sweep alone measures 3674 s in the VM (~190x bare metal),
             # which starves the remaining suite inside this job's
-            # 120-minute wall clock, and a deterministic parameter sweep adds
+            # wall-clock budget, and a deterministic parameter sweep adds
             # no portability signal beyond the correctness gates that stay in.
             ctest --test-dir build/freebsd/cpp/Release --output-on-failure --timeout 1800 --label-exclude long-measurement
