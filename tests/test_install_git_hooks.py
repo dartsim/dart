@@ -2456,14 +2456,24 @@ def test_guard_treats_unparsed_cd_status_as_uncertain(tmp_path):
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
-def test_guard_does_not_carry_pipeline_cd_cwd(tmp_path):
+@pytest.mark.parametrize(
+    "pipeline",
+    [
+        "true | cd {other}",
+        "true |& cd {other}",
+        "cd {other} | cat",
+        "cd {other} |& cat",
+    ],
+)
+def test_guard_does_not_carry_pipeline_cd_cwd(tmp_path, pipeline):
     repo, env = _init_repo(tmp_path)
     other = tmp_path / "other"
     other.mkdir()
     subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
     env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
 
-    returncode, stderr = _run_guard(repo, env, f"true | cd {other}; git commit -m x")
+    command = pipeline.format(other=other)
+    returncode, stderr = _run_guard(repo, env, f"{command}; git commit -m x")
 
     assert returncode == 0
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
