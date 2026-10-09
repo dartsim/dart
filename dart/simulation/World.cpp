@@ -513,7 +513,9 @@ public:
   const bool mCustomFilterSleeping;
 
   std::size_t mSolverSkeletonOwnershipCheckCount = 0u;
-  std::size_t mSolverSkeletonListVersion = 0u;
+  std::size_t mSolverSkeletonCount = 0u;
+  std::weak_ptr<const collision::CollisionGroup> mSolverSkeletonGroup;
+  std::size_t mSolverSkeletonGroupVersion = 0u;
   bool mSolverSkeletonOwnershipValid = false;
   bool mOwnsSolverSkeletons = false;
 
@@ -3391,9 +3393,15 @@ bool World::ownsSolverSkeletons()
     return false;
 
   auto& state = *mDeactivationState;
-  const auto version = mConstraintSolver->mSkeletonListVersion;
+  const auto group = mConstraintSolver->getCollisionGroup();
+  const auto version = group->getContentVersion();
+  // Shapeless skeletons cannot be contact supports: a swap that changes neither
+  // count nor group content cannot change the support-motion hazard. World list
+  // edits invalidate this cache at insertion/removal.
   if (!state.mSolverSkeletonOwnershipValid
-      || state.mSolverSkeletonListVersion != version) {
+      || state.mSolverSkeletonCount != solverSkeletons.size()
+      || state.mSolverSkeletonGroup.lock() != group
+      || state.mSolverSkeletonGroupVersion != version) {
     ++state.mSolverSkeletonOwnershipCheckCount;
     // World snapshots cover only its own skeletons, regardless of solver order.
     state.mOwnsSolverSkeletons
@@ -3404,7 +3412,9 @@ bool World::ownsSolverSkeletons()
               [&](const auto& skel) {
                 return mMapForSkeletons.find(skel) != mMapForSkeletons.end();
               });
-    state.mSolverSkeletonListVersion = version;
+    state.mSolverSkeletonCount = solverSkeletons.size();
+    state.mSolverSkeletonGroup = group;
+    state.mSolverSkeletonGroupVersion = version;
     state.mSolverSkeletonOwnershipValid = true;
   }
   return state.mOwnsSolverSkeletons;

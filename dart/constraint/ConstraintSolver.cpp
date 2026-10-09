@@ -987,7 +987,6 @@ void ConstraintSolver::addSkeleton(const SkeletonPtr& skeleton)
 
   mCollisionGroup->subscribeTo(skeleton);
   mSkeletons.push_back(skeleton);
-  ++mSkeletonListVersion;
   mConstrainedGroups.reserve(mSkeletons.size());
   mIslandSkeletons.reserve(mSkeletons.size());
 
@@ -1036,8 +1035,6 @@ void ConstraintSolver::removeSkeleton(const SkeletonPtr& skeleton)
   mCollisionGroup->unsubscribeFrom(skeleton.get());
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), skeleton), mSkeletons.end());
-  if (contained)
-    ++mSkeletonListVersion;
   mConstrainedGroups.reserve(mSkeletons.size());
   mIslandSkeletons.clear();
 }
@@ -1054,8 +1051,6 @@ void ConstraintSolver::removeSkeletons(
 void ConstraintSolver::removeAllSkeletons()
 {
   mCollisionGroup->removeAllShapeFrames();
-  if (!mSkeletons.empty())
-    ++mSkeletonListVersion;
   mSkeletons.clear();
   mIslandSkeletons.clear();
 }
@@ -1656,7 +1651,6 @@ bool ConstraintSolver::checkAndAddSkeleton(const SkeletonPtr& skeleton)
 {
   if (!hasSkeleton(skeleton)) {
     mSkeletons.push_back(skeleton);
-    ++mSkeletonListVersion;
     mIslandSkeletons.reserve(mSkeletons.size());
     return true;
   } else {

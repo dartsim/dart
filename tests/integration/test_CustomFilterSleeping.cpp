@@ -36,6 +36,7 @@
 #include <dart/constraint/ConstraintSolver.hpp>
 
 #include <dart/collision/CollisionFilter.hpp>
+#include <dart/collision/CollisionGroup.hpp>
 #include <dart/collision/CollisionResult.hpp>
 #include <dart/collision/dart/DARTCollisionDetector.hpp>
 #include <dart/collision/detail/CollisionFilterSnapshotTracker.hpp>
@@ -59,17 +60,27 @@
 
 using namespace dart;
 
+namespace dart::simulation {
+struct WorldTestAccess
+{
+  static bool ownsSolverSkeletons(World& world)
+  {
+    return world.ownsSolverSkeletons();
+  }
+
+  static std::size_t getSolverSkeletonOwnershipCheckCount(const World& world)
+  {
+    return world.getSolverSkeletonOwnershipCheckCount();
+  }
+};
+} // namespace dart::simulation
+
+using dart::simulation::WorldTestAccess;
+
 namespace {
 
 class CustomFilter : public collision::BodyNodeCollisionFilter
 {
-};
-
-class OwnershipTestWorld : public simulation::World
-{
-public:
-  using World::getSolverSkeletonOwnershipCheckCount;
-  using World::ownsSolverSkeletons;
 };
 
 class OwnershipTestSolver : public constraint::BoxedLcpConstraintSolver
@@ -493,7 +504,7 @@ TEST(CustomFilterSleeping, StaticSupportBecomingMobileInvalidatesReadyCache)
 
 TEST(CustomFilterSleeping, SkeletonOwnershipHasConstantSteadyStateCost)
 {
-  OwnershipTestWorld world;
+  simulation::World world;
   world.setCollisionDetector(collision::DARTCollisionDetector::create());
   world.getConstraintSolver()->getCollisionOption().collisionFilter
       = std::make_shared<CustomFilter>();
@@ -502,13 +513,15 @@ TEST(CustomFilterSleeping, SkeletonOwnershipHasConstantSteadyStateCost)
   auto* solver = world.getConstraintSolver();
 
   auto expectNoSteadyStateChecks = [&](bool owned) {
-    ASSERT_EQ(owned, world.ownsSolverSkeletons());
-    const auto checks = world.getSolverSkeletonOwnershipCheckCount();
+    ASSERT_EQ(owned, WorldTestAccess::ownsSolverSkeletons(world));
+    const auto checks
+        = WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world);
     for (std::size_t step = 0; step < 8; ++step) {
       world.step();
-      EXPECT_EQ(owned, world.ownsSolverSkeletons());
+      EXPECT_EQ(owned, WorldTestAccess::ownsSolverSkeletons(world));
     }
-    EXPECT_EQ(checks, world.getSolverSkeletonOwnershipCheckCount());
+    EXPECT_EQ(
+        checks, WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world));
   };
 
   expectNoSteadyStateChecks(true);
@@ -517,11 +530,26 @@ TEST(CustomFilterSleeping, SkeletonOwnershipHasConstantSteadyStateCost)
   solver->addSkeleton(first);
   expectNoSteadyStateChecks(true);
 
-  auto foreign = dynamics::Skeleton::create();
+  auto shapeless = dynamics::Skeleton::create();
+  const auto shapelessChecks
+      = WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world);
+  solver->removeSkeleton(first);
+  solver->addSkeleton(shapeless);
+  expectNoSteadyStateChecks(true);
+  solver->removeSkeleton(shapeless);
+  solver->addSkeleton(first);
+  expectNoSteadyStateChecks(true);
+  EXPECT_EQ(
+      shapelessChecks,
+      WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world));
+
+  auto foreign = createFloor();
   solver->addSkeleton(foreign);
-  const auto checks = world.getSolverSkeletonOwnershipCheckCount();
+  const auto checks
+      = WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world);
   expectNoSteadyStateChecks(false);
-  EXPECT_EQ(checks, world.getSolverSkeletonOwnershipCheckCount());
+  EXPECT_EQ(
+      checks, WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world));
   solver->removeSkeleton(first);
   expectNoSteadyStateChecks(false);
   world.removeSkeleton(first);
@@ -544,17 +572,29 @@ TEST(CustomFilterSleeping, SkeletonOwnershipHasConstantSteadyStateCost)
   for (std::size_t i = world.getNumSkeletons(); i > 0; --i)
     solver->addSkeleton(world.getSkeleton(i - 1));
   expectNoSteadyStateChecks(true);
-  const auto replacementChecks = world.getSolverSkeletonOwnershipCheckCount();
+  const auto groupChecks
+      = WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world);
+  solver->setCollisionDetector(collision::DARTCollisionDetector::create());
+  expectNoSteadyStateChecks(true);
+  EXPECT_EQ(
+      groupChecks + 1,
+      WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world));
+  const auto replacementChecks
+      = WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world);
   world.setConstraintSolver(std::make_unique<OwnershipTestSolver>());
   world.getConstraintSolver()->getCollisionOption().collisionFilter
       = std::make_shared<CustomFilter>();
   expectNoSteadyStateChecks(true);
   EXPECT_EQ(
-      replacementChecks + 1, world.getSolverSkeletonOwnershipCheckCount());
+      replacementChecks + 1,
+      WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world));
   auto* replacementSolver
       = static_cast<OwnershipTestSolver*>(world.getConstraintSolver());
   replacementSolver->removeSkeleton(first);
   ASSERT_TRUE(replacementSolver->checkAndAddSkeleton(foreign));
+  // checkAndAddSkeleton does not subscribe shapes, so this cannot add support.
+  expectNoSteadyStateChecks(true);
+  replacementSolver->getCollisionGroup()->subscribeTo(foreign);
   expectNoSteadyStateChecks(false);
   replacementSolver->removeSkeleton(foreign);
   ASSERT_TRUE(replacementSolver->checkAndAddSkeleton(first));
@@ -563,7 +603,7 @@ TEST(CustomFilterSleeping, SkeletonOwnershipHasConstantSteadyStateCost)
 
 TEST(CustomFilterSleeping, ContactStepsReuseSkeletonOwnership)
 {
-  OwnershipTestWorld world;
+  simulation::World world;
   world.setCollisionDetector(collision::DARTCollisionDetector::create());
   auto* solver = world.getConstraintSolver();
   solver->getCollisionOption().collisionFilter
@@ -576,13 +616,15 @@ TEST(CustomFilterSleeping, ContactStepsReuseSkeletonOwnership)
   solver->addSkeleton(floor);
   world.step();
   ASSERT_GT(world.getLastCollisionResult().getNumContacts(), 0u);
-  const auto checks = world.getSolverSkeletonOwnershipCheckCount();
+  const auto checks
+      = WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world);
   ASSERT_EQ(checks, 1u);
   for (std::size_t step = 0; step < 8; ++step) {
     world.step();
     ASSERT_GT(world.getLastCollisionResult().getNumContacts(), 0u);
   }
-  EXPECT_EQ(checks, world.getSolverSkeletonOwnershipCheckCount());
+  EXPECT_EQ(
+      checks, WorldTestAccess::getSolverSkeletonOwnershipCheckCount(world));
 }
 
 TEST(CustomFilterSleeping, SolverOnlySupportKeepsBodiesAwake)

@@ -443,12 +443,6 @@ public:
   /// \}
 
 protected:
-  /// Whether the solver and World own the same skeletons.
-  bool ownsSolverSkeletons();
-
-  /// Number of full skeleton membership checks, for deterministic cost tests.
-  std::size_t getSolverSkeletonOwnershipCheckCount() const;
-
   /// Runs the post-step rest-detection pass: puts quiet mobile skeletons to
   /// sleep after the configured dwell time and wakes skeletons that have begun
   /// moving again. \p disturbedThisStep marks skeletons that were woken or kept
@@ -724,6 +718,14 @@ public:
   common::SlotRegister<NameChangedSignal> onNameChanged;
 
 private:
+  friend struct WorldTestAccess;
+
+  /// Whether solver support motion is covered by World's skeleton snapshots.
+  bool ownsSolverSkeletons();
+
+  /// Number of full skeleton membership checks, for deterministic cost tests.
+  std::size_t getSolverSkeletonOwnershipCheckCount() const;
+
   /// Collision-side deactivation state, including custom-filter decisions and
   /// the resting contacts getLastCollisionResult() keeps reporting.
   std::unique_ptr<WorldDeactivationState> mDeactivationState;

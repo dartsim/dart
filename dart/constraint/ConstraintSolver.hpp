@@ -484,9 +484,6 @@ protected:
 private:
   friend class simulation::World;
 
-  /// Changes whenever a skeleton is added or removed, including empty ones.
-  std::size_t mSkeletonListVersion = 0u;
-
   /// Prepares scratch with a query filter in a copy of the collision option.
   void prepareForSimulationWithQueryFilter(
       const std::shared_ptr<collision::CollisionFilter>& queryFilter);
