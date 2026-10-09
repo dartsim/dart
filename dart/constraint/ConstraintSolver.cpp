@@ -1717,7 +1717,9 @@ bool ConstraintSolver::updateConstraintsWithQueryFilter(
     bool hasAwakeMobileSkeleton = false;
     if (mDeactivationActive) {
       for (const auto& skeleton : mSkeletons) {
-        if (skeleton->isMobile() && !skeleton->isResting()) {
+        // A skeleton without bodies cannot touch a resting one.
+        if (skeleton->isMobile() && !skeleton->isResting()
+            && skeleton->getNumBodyNodes() > 0u) {
           hasAwakeMobileSkeleton = true;
           break;
         }
@@ -3139,7 +3141,8 @@ void ConstraintSolver::buildConstrainedGroups()
       bool hasUngroupedAwakeMobileSkeleton = false;
       for (std::size_t i = 0; i < mSkeletons.size(); ++i) {
         const auto& skeleton = mSkeletons[i];
-        if (!skeleton->isMobile())
+        // A skeleton without bodies has nothing that can move.
+        if (!skeleton->isMobile() || skeleton->getNumBodyNodes() == 0u)
           continue;
 
         const auto root = ConstraintBase::getRootSkeleton(skeleton);

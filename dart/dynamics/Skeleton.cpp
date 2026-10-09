@@ -4043,7 +4043,11 @@ void Skeleton::setResting(bool _resting)
     // so velocity-actuator commands behave exactly as before.
     for (std::size_t i = 0; i < getNumDofs(); ++i)
       setVelocity(i, 0.0);
-    computeForwardKinematics(false, true, false);
+    // A frozen body must not report the residual acceleration of its last
+    // solve. resetAccelerations() leaves acceleration-actuator commands alone.
+    for (std::size_t i = 0; i < getNumJoints(); ++i)
+      getJoint(i)->resetAccelerations();
+    computeForwardKinematics(false, true, true);
   }
 }
 

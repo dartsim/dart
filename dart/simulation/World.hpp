@@ -124,6 +124,7 @@ struct WorldConfig final
 DART_COMMON_DECLARE_SHARED_WEAK(World)
 
 class SimulationThreadPool;
+class WorldDeactivationState;
 
 /// class World
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_BEGIN
@@ -274,6 +275,18 @@ public:
   /// world hasn't stepped forward yet, then the result would be empty. Note
   /// that this function does not return the collision checking result of
   /// World::checkCollision().
+  ///
+  /// With automatic deactivation, the result also holds the contacts of
+  /// resting bodies as solved in the step that put them to sleep, forces
+  /// included, so it can hold more contacts than
+  /// CollisionOption::maxNumContacts.
+  /// ConstraintSolver::getLastCollisionResult() holds only the contacts the
+  /// solver computed in the last step. The returned reference stays valid until
+  /// the next step or change to the world. Several threads may call this
+  /// function at once, but the result's accessors that build caches on first
+  /// use, such as CollisionResult::inCollision() and getCollidingBodyNodes(),
+  /// are not synchronized: concurrent readers should copy the result or read
+  /// its contacts.
   const collision::CollisionResult& getLastCollisionResult() const;
 
   /// Sets the collision detector used by the world's constraint solver.
@@ -702,6 +715,11 @@ public:
   // Slot registers
   //--------------------------------------------------------------------------
   common::SlotRegister<NameChangedSignal> onNameChanged;
+
+private:
+  /// Collision-side deactivation state, including the resting contacts that
+  /// getLastCollisionResult() keeps reporting.
+  std::unique_ptr<WorldDeactivationState> mDeactivationState;
 };
 DART_DECLARE_CLASS_WITH_VIRTUAL_BASE_END
 

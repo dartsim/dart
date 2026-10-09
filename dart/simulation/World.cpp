@@ -36,12 +36,11 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "dart/simulation/World.hpp"
-
 #include "dart/collision/CollisionDetector.hpp"
 #include "dart/collision/CollisionFilter.hpp"
 #include "dart/collision/CollisionGroup.hpp"
 #include "dart/collision/CollisionObject.hpp"
+#include "dart/collision/CollisionResult.hpp"
 #include "dart/collision/detail/CollisionFilterSnapshotTracker.hpp"
 #include "dart/collision/fcl/FCLCollisionDetector.hpp"
 #include "dart/common/Console.hpp"
@@ -60,6 +59,7 @@
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/PlaneShape.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/simulation/World.hpp"
 
 #include <algorithm>
 #include <condition_variable>
@@ -337,6 +337,60 @@ bool hasDwellingMobileSkeleton(
   return false;
 }
 
+// An unordered pair of collision objects, in address order.
+struct PairKey
+{
+  const collision::CollisionObject* first;
+  const collision::CollisionObject* second;
+};
+
+bool operator<(const PairKey& a, const PairKey& b)
+{
+  const std::less<const collision::CollisionObject*> less;
+  return less(a.first, b.first)
+         || (a.first == b.first && less(a.second, b.second));
+}
+
+bool operator==(const PairKey& a, const PairKey& b)
+{
+  return a.first == b.first && a.second == b.second;
+}
+
+PairKey makePairKey(const collision::Contact& contact)
+{
+  const collision::CollisionObject* a = contact.collisionObject1;
+  const collision::CollisionObject* b = contact.collisionObject2;
+  return std::less<const collision::CollisionObject*>()(b, a) ? PairKey{b, a}
+                                                              : PairKey{a, b};
+}
+
+bool containsPair(const std::vector<PairKey>& sortedPairs, const PairKey& pair)
+{
+  return std::binary_search(sortedPairs.begin(), sortedPairs.end(), pair);
+}
+
+const dynamics::Skeleton* getSkeletonOf(
+    const collision::CollisionObject* object)
+{
+  const auto* bodyNode = object ? object->getBodyNode() : nullptr;
+  return bodyNode ? bodyNode->getSkeletonRawPtr() : nullptr;
+}
+
+// A contact the solver no longer solves: neither body moves, and at least one
+// of them is a resting mobile skeleton.
+bool isRestingPair(const collision::Contact& contact)
+{
+  const auto* skeleton1 = getSkeletonOf(contact.collisionObject1);
+  const auto* skeleton2 = getSkeletonOf(contact.collisionObject2);
+  if (skeleton1 == nullptr || skeleton2 == nullptr)
+    return false;
+
+  const bool resting1 = skeleton1->isMobile() && skeleton1->isResting();
+  const bool resting2 = skeleton2->isMobile() && skeleton2->isResting();
+  return (resting1 || resting2) && (resting1 || !skeleton1->isMobile())
+         && (resting2 || !skeleton2->isMobile());
+}
+
 common::MemoryAllocator& resolveWorldMemoryBaseAllocator(
     const WorldConfig& config)
 {
@@ -352,6 +406,143 @@ common::MemoryManager::Options makeWorldMemoryManagerOptions(
   options.freeListGrowthPolicy = config.freeListGrowthPolicy;
   options.frameAllocatorInitialCapacity = config.frameScratchInitialCapacity;
   return options;
+}
+
+} // namespace
+
+//==============================================================================
+// Collision-side state of automatic deactivation (#3056). It only holds data;
+// the functions below and World implement the logic.
+class WorldDeactivationState
+{
+public:
+  // Contacts of resting pairs, as solved when the set of resting skeletons
+  // last changed; the solver no longer computes or solves them. Their
+  // CollisionObjects are only used while mRetainedGroup and
+  // mRetainedGroupVersion still match the solver's collision group, which
+  // proves the objects are alive.
+  std::vector<collision::Contact> mRetainedContacts;
+  std::vector<PairKey> mRetainedPairs;    // sorted and unique
+  std::vector<char> mRestingAtLastUpdate; // resting flag of each skeleton
+  std::weak_ptr<const collision::CollisionGroup> mRetainedGroup;
+  std::size_t mRetainedGroupVersion = 0u;
+
+  // What World::getLastCollisionResult() reports while contacts are retained:
+  // the solver's contacts of the other pairs, then the retained ones. Built on
+  // the first read after a full step.
+  std::mutex mViewMutex;
+  bool mViewDirty = false;
+  collision::CollisionResult mView;
+};
+
+namespace {
+
+//==============================================================================
+void clearRetainedContacts(WorldDeactivationState& state)
+{
+  state.mRetainedContacts.clear();
+  state.mRetainedPairs.clear();
+  state.mRestingAtLastUpdate.clear();
+  state.mRetainedGroup.reset();
+  state.mRetainedGroupVersion = 0u;
+  state.mViewDirty = false;
+  state.mView.clear();
+}
+
+//==============================================================================
+// Whether there are retained contacts and every object they name is still in
+// the solver's collision group. Removing an object from a group either bumps
+// its content version right away or destroys the group.
+bool isRetentionAlive(
+    const WorldDeactivationState& state,
+    const constraint::ConstraintSolver& solver)
+{
+  if (state.mRetainedContacts.empty())
+    return false;
+
+  const auto group = state.mRetainedGroup.lock();
+  return group != nullptr && group == solver.getCollisionGroup()
+         && group->getContentVersion() == state.mRetainedGroupVersion;
+}
+
+//==============================================================================
+void sortRetainedPairs(WorldDeactivationState& state)
+{
+  auto& pairs = state.mRetainedPairs;
+  pairs.clear();
+  for (const auto& contact : state.mRetainedContacts)
+    pairs.push_back(makePairKey(contact));
+  std::sort(pairs.begin(), pairs.end());
+  pairs.erase(std::unique(pairs.begin(), pairs.end()), pairs.end());
+}
+
+//==============================================================================
+// Runs at the end of every full step with deactivation on. Whenever the set of
+// resting skeletons changes, drops the retained contacts of pairs that are no
+// longer resting and retains this step's contacts of the pairs that froze in
+// it, with the forces of their final solve. A resting pair missing from that
+// solve's result (a one-frame contact miss) waits for the next change.
+// `keep` is false when nothing rests, when the collision group changed during
+// the step (the solver result may name freed objects), or when the collision
+// filter is untracked (its bodies are woken at the next step start).
+void updateRetainedContacts(
+    WorldDeactivationState& state,
+    const constraint::ConstraintSolver& solver,
+    const std::vector<dynamics::SkeletonPtr>& skeletons,
+    bool keep)
+{
+  if (!keep) {
+    if (!state.mRetainedContacts.empty() || !state.mRestingAtLastUpdate.empty())
+      clearRetainedContacts(state);
+    return;
+  }
+
+  const auto group = solver.getCollisionGroup();
+  bool restingSetChanged
+      = state.mRestingAtLastUpdate.size() != skeletons.size();
+  if (!state.mRetainedContacts.empty() && !isRetentionAlive(state, solver)) {
+    // The retained objects may be gone; drop them without touching them.
+    state.mRetainedContacts.clear();
+    restingSetChanged = true;
+  }
+  for (std::size_t i = 0; i < skeletons.size() && !restingSetChanged; ++i) {
+    restingSetChanged
+        = (state.mRestingAtLastUpdate[i] != 0) != skeletons[i]->isResting();
+  }
+
+  if (restingSetChanged) {
+    auto& retained = state.mRetainedContacts;
+    retained.erase(
+        std::remove_if(
+            retained.begin(),
+            retained.end(),
+            [](const collision::Contact& contact) {
+              return !isRestingPair(contact);
+            }),
+        retained.end());
+    sortRetainedPairs(state);
+
+    const std::size_t numRetained = retained.size();
+    for (const auto& contact : solver.getLastCollisionResult().getContacts()) {
+      if (isRestingPair(contact)
+          && !containsPair(state.mRetainedPairs, makePairKey(contact))) {
+        retained.push_back(contact);
+        // The detector's own data, such as the dart detector's manifold
+        // cache, does not outlive the step.
+        retained.back().userData = nullptr;
+      }
+    }
+    if (retained.size() != numRetained)
+      sortRetainedPairs(state);
+
+    state.mRestingAtLastUpdate.resize(skeletons.size());
+    for (std::size_t i = 0; i < skeletons.size(); ++i)
+      state.mRestingAtLastUpdate[i] = skeletons[i]->isResting() ? 1 : 0;
+    state.mRetainedGroup = group;
+    state.mRetainedGroupVersion = group->getContentVersion();
+  }
+
+  state.mViewDirty = !state.mRetainedContacts.empty();
 }
 
 } // namespace
@@ -775,7 +966,8 @@ World::World(const WorldConfig& config)
         resolveWorldMemoryBaseAllocator(config),
         makeWorldMemoryManagerOptions(config))),
     mRecording(new Recording(mSkeletons)),
-    onNameChanged(mNameChangedSignal)
+    onNameChanged(mNameChangedSignal),
+    mDeactivationState(std::make_unique<WorldDeactivationState>())
 {
   mIndices.push_back(0);
 
@@ -1140,10 +1332,16 @@ void World::step(bool _resetCommand)
         });
   }
 
-  // Detect activated constraints and compute constraint impulses
+  // Detect activated constraints and compute constraint impulses. The group
+  // stamp also proves that contacts remain alive through this solve.
+  const auto collisionGroup = mConstraintSolver->getCollisionGroup();
+  const std::size_t collisionGroupVersion = collisionGroup->getContentVersion();
   {
     mConstraintSolver->solve();
   }
+  const bool collisionGroupUnchanged
+      = mConstraintSolver->getCollisionGroup() == collisionGroup
+        && collisionGroup->getContentVersion() == collisionGroupVersion;
 
   {
     parallelForIndexRange(
@@ -1204,7 +1402,10 @@ void World::step(bool _resetCommand)
             // Same per-DOF setter path as setVelocities(), without a vector.
             for (std::size_t dof = 0; dof < skel->getNumDofs(); ++dof)
               skel->setVelocity(dof, 0.0);
-            skel->computeForwardKinematics(false, true, false);
+            // The final impulse added acceleration; a frozen body has none.
+            for (std::size_t joint = 0; joint < skel->getNumJoints(); ++joint)
+              skel->getJoint(joint)->resetAccelerations();
+            skel->computeForwardKinematics(false, true, true);
           }
 
           if (_resetCommand) {
@@ -1226,8 +1427,10 @@ void World::step(bool _resetCommand)
   mTime += mTimeStep;
   mFrame++;
 
+  // A snapshot can only serve a next step on which a mobile body can freeze.
   if (deactivationEnabled
-      && mConstraintSolver->getLastCollisionResult().getNumContacts() == 0) {
+      && mConstraintSolver->getLastCollisionResult().getNumContacts() == 0
+      && hasRestingOrCandidateMobileSkeleton(mSkeletons)) {
     updateAllRestingKinematicSnapshot(_resetCommand);
   } else {
     invalidateAllRestingKinematicSnapshot();
@@ -1237,6 +1440,14 @@ void World::step(bool _resetCommand)
     updateLastStepRestingWorldState();
   else
     invalidateLastStepRestingWorldState();
+
+  updateRetainedContacts(
+      *mDeactivationState,
+      *mConstraintSolver,
+      mSkeletons,
+      collisionGroupUnchanged && hasRestingMobileSkeleton()
+          && isCollisionFilterSnapshotTrackable(
+              mConstraintSolver->getCollisionOption().collisionFilter.get()));
 }
 
 //==============================================================================
@@ -1950,7 +2161,8 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
       copySkeletonPositions(*skel, snapshot.mPositions);
     }
 
-    if (!skel->isMobile())
+    // A skeleton without bodies cannot disturb a contact island.
+    if (!skel->isMobile() || skel->getNumBodyNodes() == 0u)
       continue;
 
     hasMobileSkeleton = true;
@@ -2328,6 +2540,7 @@ void World::wakeRestingSkeletonsForWorldChange()
 
   invalidateAllRestingKinematicSnapshot();
   invalidateLastStepRestingWorldState();
+  clearRetainedContacts(*mDeactivationState);
 }
 
 //==============================================================================
@@ -2705,7 +2918,26 @@ bool World::checkCollision(
 //==============================================================================
 const collision::CollisionResult& World::getLastCollisionResult() const
 {
-  return mConstraintSolver->getLastCollisionResult();
+  auto& state = *mDeactivationState;
+  const auto& solved = mConstraintSolver->getLastCollisionResult();
+  if (!mDeactivationOptions.mEnabled
+      || !isRetentionAlive(state, *mConstraintSolver)) {
+    return solved;
+  }
+
+  std::lock_guard<std::mutex> lock(state.mViewMutex);
+  if (state.mViewDirty) {
+    auto& view = state.mView;
+    view.clear();
+    for (const auto& contact : solved.getContacts()) {
+      if (!containsPair(state.mRetainedPairs, makePairKey(contact)))
+        view.addContact(contact);
+    }
+    for (const auto& contact : state.mRetainedContacts)
+      view.addContact(contact);
+    state.mViewDirty = false;
+  }
+  return state.mView;
 }
 
 //==============================================================================
