@@ -914,6 +914,177 @@ def test_commit_msg_hook_uses_cleanup_with_localized_editor(
         assert private_path in result.stderr
 
 
+@pytest.mark.parametrize(
+    "shell",
+    (
+        "powershell",
+        "PowerShell",
+        "powershell.exe",
+        "POWERSHELL.EXE",
+        "pwsh",
+        "PwSh",
+        "pwsh.exe",
+        "PWSH.EXE",
+        "cmd",
+        "CmD",
+        "cmd.exe",
+        "CMD.EXE",
+    ),
+)
+@pytest.mark.parametrize("installed", (False, True))
+def test_guard_fails_closed_for_non_posix_child_commits(tmp_path, shell, installed):
+    repo, env = _init_repo(tmp_path)
+    if installed:
+        assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    options = "/D /S /C" if shell.lower().startswith("cmd") else "-NoProfile -Command"
+    private_path = r"C:\Users" + r"\example\private.md"
+    script = f"git commit --allow-empty --no-verify -m '{private_path}'"
+    returncode, stderr = _run_guard(repo, env, f'{shell} {options} "{script}"')
+    assert returncode == 2, stderr
+    assert "shell script cannot be inspected" in stderr
+
+    script = (
+        "echo example" if shell.lower().startswith("cmd") else "Write-Output example"
+    )
+    returncode, stderr = _run_guard(repo, env, f'{shell} {options} "{script}"')
+    assert returncode == 0, stderr
+    assert stderr == ""
+
+
+@pytest.mark.parametrize(
+    "command",
+    ("powershell -NoProfile -Command -", "pwsh -NoProfile -Command -", "cmd /Q"),
+)
+def test_guard_fails_closed_for_non_posix_stdin_commits(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    returncode, stderr = _run_guard(
+        repo, env, command + " <<'EOF'\nGIT.EXE COMMIT --allow-empty -m example\nEOF"
+    )
+    assert returncode == 2, stderr
+    assert "shell script cannot be inspected" in stderr
+
+    returncode, stderr = _run_guard(repo, env, command + " <<'EOF'\ngit status\nEOF")
+    assert returncode == 0, stderr
+    assert stderr == ""
+
+
+@pytest.mark.parametrize(
+    "command,continuation",
+    (
+        ("powershell -NoProfile -Command", "`"),
+        ("pwsh -NoProfile -Command", "`"),
+        ("cmd /C", "^"),
+    ),
+)
+@pytest.mark.parametrize("newline", ("\n", "\r\n"))
+def test_guard_fails_closed_for_non_posix_commit_continuations(
+    tmp_path, command, continuation, newline
+):
+    repo, env = _init_repo(tmp_path)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    script = f"git {continuation}{newline}commit --allow-empty -m example"
+    returncode, stderr = _run_guard(repo, env, f'{command} "{script}"')
+    assert returncode == 2, stderr
+    assert "shell script cannot be inspected" in stderr
+
+    script = "git status" + newline + "echo commit"
+    returncode, stderr = _run_guard(repo, env, f'{command} "{script}"')
+    assert returncode == 0, stderr
+    assert stderr == ""
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        'powershell -Command "git commit -m `"example`""',
+        'pwsh -Command "git commit -m `"example`""',
+        'powershell -Command "git com`mit --allow-empty -m example"',
+        'cmd /C "git com^mit --allow-empty -m example"',
+    ),
+)
+def test_guard_fails_closed_for_non_posix_commit_escapes(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 2, stderr
+    assert "shell script cannot be inspected" in stderr
+
+
+@pytest.mark.parametrize("shell", ("powershell", "pwsh"))
+def test_guard_fails_closed_for_non_posix_subexpression_commits(tmp_path, shell):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    returncode, stderr = _run_guard(
+        repo, env, f'{shell} -Command "$(git commit --allow-empty -m example)"'
+    )
+    assert returncode == 2, stderr
+    assert "shell script cannot be inspected" in stderr
+
+
+@pytest.mark.parametrize(
+    "script",
+    (
+        'Write-Output `"example`"',
+        "git status`nWrite-Output example",
+        "Write-Output example\\",
+        'Write-Output `"example\\`"',
+    ),
+)
+@pytest.mark.parametrize("private", (False, True))
+def test_guard_keeps_commit_free_native_script_command_boundaries(
+    tmp_path, script, private
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    message = "/home/" + "example/private.md" if private else "example"
+    command = f'powershell -Command "{script}" && git commit -m {shlex.quote(message)}'
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == (2 if private else 0), stderr
+    if private:
+        assert "commit message" in stderr
+        assert message in stderr
+    else:
+        assert stderr.count("direct-agent-gate") == 1
+
+
+@pytest.mark.parametrize("shell", ("powershell", "pwsh"))
+def test_guard_keeps_native_child_inside_posix_backticks(tmp_path, shell):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    command = f'echo `{shell} -Command "Write-Output example"` && git commit -m example'
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == 0, stderr
+    assert stderr.count("direct-agent-gate") == 1
+
+
+@pytest.mark.parametrize("shell", ("powershell", "pwsh"))
+@pytest.mark.parametrize("subexpression", (False, True))
+def test_guard_fails_closed_for_native_dynamic_git_commits(
+    tmp_path, shell, subexpression
+):
+    repo, env = _init_repo(tmp_path)
+    env.update({"CLAUDE_PROJECT_DIR": str(repo), "SUBCOMMAND": "commit"})
+    script = "git $SUBCOMMAND --allow-empty --no-verify -m example"
+    if subexpression:
+        script = "$({})".format(script)
+    returncode, stderr = _run_guard(repo, env, f'{shell} -Command "{script}"')
+    assert returncode == 2, stderr
+    assert "shell script cannot be inspected" in stderr
+
+    script = "git status; Write-Output $MESSAGE"
+    returncode, stderr = _run_guard(repo, env, f'{shell} -Command "{script}"')
+    assert returncode == 0, stderr
+    assert stderr == ""
+
+
 @pytest.mark.parametrize("shell", ("bash", "sh", "zsh", "dash", "ksh"))
 @pytest.mark.parametrize(
     "wrapper", ("", "env X=1 ", "command ", "exec ", "nohup ", "timeout 5 ")
@@ -1159,6 +1330,40 @@ def test_guard_checks_later_commit_messages(tmp_path, separator, first_bypassed)
     assert stderr.count("direct-agent-gate") == 1
 
 
+@pytest.mark.parametrize(
+    "before_commit,changed",
+    (
+        ("", False),
+        ("git status && ", False),
+        ("git config core.hooksPath .git/no-hooks && ", True),
+        ("rm .git/hooks/commit-msg && ", True),
+    ),
+)
+def test_guard_checks_message_after_possible_hook_changes(
+    tmp_path, before_commit, changed
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    private_path = "/home/" + "example/private.md"
+    command = before_commit + f"git commit -m '{private_path}'"
+    returncode, stderr = _run_guard(repo, env, command)
+    assert returncode == (2 if changed else 0), stderr
+    if changed:
+        assert private_path in stderr
+        assert "commit message" in stderr
+    else:
+        assert stderr == ""
+
+    returncode, stderr = _run_guard(repo, env, command.replace(private_path, "public"))
+    assert returncode == 0, stderr
+    assert stderr.count("direct-agent-gate") == int(changed)
+
+
 @pytest.mark.parametrize("route", ["missing", "no-verify", "managed"])
 @pytest.mark.parametrize("before_first", [True, False])
 @pytest.mark.parametrize(
@@ -1196,9 +1401,9 @@ def test_guard_blocks_chained_unhooked_commits_after_changes(
         [mutation, commit, commit] if before_first else [commit, mutation, commit]
     )
     returncode, stderr = _run_guard(repo, env, " && ".join(commands))
-    if route == "managed":
+    if route == "managed" and not before_first:
         assert returncode == 0, stderr
-        assert stderr == ""
+        assert stderr.count("direct-agent-gate") == 1
     else:
         assert returncode == 2, stderr
         assert "separate tool calls" in stderr

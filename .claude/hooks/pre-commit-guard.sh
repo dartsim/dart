@@ -16,7 +16,8 @@
 #   * evaluates every git commit split by the shell tokenizer:
 #       - if all executable git hooks are current DART-managed hooks and the
 #         commit is not using --no-verify/-n (including accepted abbreviations)
-#         or a core.hooksPath override, and its arguments cannot expand, skip
+#         or a core.hooksPath override, its arguments cannot expand, and no
+#         earlier command may change hook state, skip
 #         that invocation (the hooks enforce; avoid running the gate twice)
 #       - if DART_SKIP_HOOKS=1 (in the environment or as a command prefix),
 #         skip the affected invocations (emergency bypass, same as the git hook)
@@ -48,7 +49,7 @@ input=$(cat)
 # also falls through when the raw hook JSON contains g-i-t followed by c-o-m-m-i-t
 # in order. False positives still reach the tokenizer, which classifies them.
 case "$input" in
-    *commit*|*g*i*t*c*o*m*m*i*t*|*'$'*|*'`'*) ;;
+    *commit*|*[gG]*[iI]*[tT]*[cC]*[oO]*[mM]*[mM]*[iI]*[tT]*|*'$'*|*'`'*) ;;
     *) exit 0 ;;
 esac
 
@@ -112,6 +113,7 @@ OPTS_WITH_ARG = {
 CONFIG_ENV_PREFIX = "--config-env="
 WRAPPERS = {"command", "exec", "time", "nice", "nohup", "timeout"}
 SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
+NON_POSIX_SHELLS = {"powershell", "pwsh", "cmd"}
 MAX_SHELL_DEPTH = 8
 
 
@@ -425,11 +427,36 @@ def split_shell_segments(text, heredocs):
     quote = ""
     contexts = []
     part_isolated = False
+    native_shell = ""
     i = 0
     while i < len(text):
         ch = text[i]
+        if (
+            not quote and not native_shell and ch.isspace()
+            and part and not part[-1].isspace()
+        ):
+            try:
+                tokens = shlex.split("".join(part))
+            except ValueError:
+                tokens = []
+            tokens, command_i, _, _, _, _ = command_prefix(tokens, None, {})
+            if command_i < len(tokens):
+                shell = command_basename(tokens[command_i]).lower().removesuffix(".exe")
+                if shell in NON_POSIX_SHELLS:
+                    native_shell = shell
+        closing_context = not quote and contexts and ch == contexts[-1][1]
+        if (
+            native_shell and quote != "'\''"
+            and ch == ("^" if native_shell == "cmd" else "`")
+            and not closing_context
+        ):
+            # Native escapes and continuations must stay in their script text.
+            end = i + (3 if text.startswith("\r\n", i + 1) else 2)
+            part.append(text[i:end])
+            i = end
+            continue
         if quote:
-            if quote == "\"" and ch == "\\":
+            if not native_shell and quote == "\"" and ch == "\\":
                 part.append(ch)
                 if i + 1 < len(text):
                     part.append(text[i + 1])
@@ -437,7 +464,7 @@ def split_shell_segments(text, heredocs):
                 else:
                     i += 1
                 continue
-            if quote == "\"" and text.startswith("$(", i):
+            if not native_shell and quote == "\"" and text.startswith("$(", i):
                 part.append("$DART_DYNAMIC_SCRIPT")
                 contexts.append(("command-substitution", ")", quote, part))
                 part = []
@@ -445,7 +472,7 @@ def split_shell_segments(text, heredocs):
                 quote = ""
                 i += 2
                 continue
-            if quote == "\"" and ch == "`":
+            if not native_shell and quote == "\"" and ch == "`":
                 part.append("$DART_DYNAMIC_SCRIPT")
                 contexts.append(("command-substitution", "`", quote, part))
                 part = []
@@ -458,7 +485,7 @@ def split_shell_segments(text, heredocs):
                 quote = ""
             i += 1
             continue
-        if ch == "\\":
+        if not native_shell and ch == "\\":
             part.append(ch)
             if i + 1 < len(text):
                 part.append(text[i + 1])
@@ -471,13 +498,14 @@ def split_shell_segments(text, heredocs):
             part.append(ch)
             i += 1
             continue
-        if ch == "`":
+        if ch == "`" and (not native_shell or closing_context):
             if contexts and contexts[-1][1] == "`":
                 if part:
                     yield "".join(part), "", True, True
                 _, _, restore_quote, outer_part = contexts.pop()
                 part = outer_part
                 quote = restore_quote
+                native_shell = ""
             else:
                 part.append("$DART_DYNAMIC_SCRIPT")
                 contexts.append(("command-substitution", "`", "", part))
@@ -485,14 +513,14 @@ def split_shell_segments(text, heredocs):
                 part_isolated = True
             i += 1
             continue
-        if text.startswith("$(", i):
+        if not native_shell and text.startswith("$(", i):
             part.append("$DART_DYNAMIC_SCRIPT")
             contexts.append(("command-substitution", ")", "", part))
             part = []
             part_isolated = True
             i += 2
             continue
-        if ch == "(":
+        if not native_shell and ch == "(":
             if re.search(
                 r"(?:^|\s)(?:function\s+)?[A-Za-z_][A-Za-z0-9_]*\s*$",
                 "".join(part),
@@ -525,6 +553,7 @@ def split_shell_segments(text, heredocs):
             _, _, restore_quote, outer_part = contexts.pop()
             part = outer_part
             quote = restore_quote
+            native_shell = ""
             part_isolated = True
             i += 1
             continue
@@ -550,6 +579,7 @@ def split_shell_segments(text, heredocs):
                 bool(contexts),
             )
             part = []
+            native_shell = ""
             part_isolated = bool(contexts)
             i += len(separator)
             continue
@@ -904,6 +934,104 @@ def unwrap_wrapper(tokens, i, head):
     return i
 
 
+def command_prefix(tokens, current_cwd, inherited_env=None):
+    command_env = dict(os.environ if inherited_env is None else inherited_env)
+    i, bypass = skip_env_prefix(tokens, 0, command_env)
+    i = skip_shell_prefixes(tokens, i)
+    next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
+    bypass = bypass or env_bypass
+    i = next_i
+    command_cwd = None
+    cwd_mutation_policy = "allow"
+    if bypass:
+        return tokens, i, bypass, command_env, command_cwd, cwd_mutation_policy
+    # unwrap common wrappers: command git commit, time git commit, env X=1 git commit
+    while i < len(tokens):
+        i = skip_shell_prefixes(tokens, i)
+        next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
+        bypass = bypass or env_bypass
+        i = next_i
+        if bypass or i >= len(tokens):
+            break
+        head = command_basename(tokens[i])
+        if head == "builtin" and command_word(tokens[i]) == "builtin":
+            builtin_i = i + 1
+            if builtin_i < len(tokens) and tokens[builtin_i] == "--":
+                builtin_i += 1
+            if builtin_i < len(tokens) and command_word(tokens[builtin_i]) in {
+                "cd",
+                "eval",
+                "source",
+                ".",
+            }:
+                i = builtin_i
+                continue
+            break
+        if head in WRAPPERS:
+            if not (
+                head == "command" and command_word(tokens[i]) == "command"
+            ):
+                cwd_mutation_policy = "unknown"
+            i = unwrap_wrapper(tokens, i, head)
+            if i is None:
+                i = len(tokens)
+                break
+            continue
+        if head == "env":
+            cwd_mutation_policy = "unknown"
+            i += 1
+            while i < len(tokens):
+                t = tokens[i]
+                if t == "--":
+                    i += 1
+                    break
+                if t in {"-S", "--split-string"} and i + 1 < len(tokens):
+                    split_tokens = split_env_split_string(tokens[i + 1])
+                    tokens = tokens[:i] + split_tokens + tokens[i + 2 :]
+                    continue
+                if t.startswith("--split-string="):
+                    split_tokens = split_env_split_string(
+                        t[len("--split-string=") :]
+                    )
+                    tokens = tokens[:i] + split_tokens + tokens[i + 1 :]
+                    continue
+                if t in ENV_OPTS_WITH_ARG:
+                    if t in {"-C", "--chdir"} and i + 1 < len(tokens):
+                        command_cwd = shell_expand_path_token(
+                            tokens[i + 1], current_cwd
+                        )
+                    i += 2
+                    continue
+                if t.startswith(ENV_CHDIR_PREFIX):
+                    command_cwd = shell_expand_path_token(
+                        t[len(ENV_CHDIR_PREFIX) :], current_cwd
+                    )
+                    i += 1
+                    continue
+                if any(
+                    t.startswith(prefix)
+                    for prefix in ENV_OPTS_WITH_ARG_PREFIXES
+                ):
+                    i += 1
+                    continue
+                if t in ENV_OPTS_NO_ARG or any(
+                    t.startswith(prefix)
+                    for prefix in ENV_OPTS_NO_ARG_PREFIXES
+                ):
+                    i += 1
+                    continue
+                next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
+                if next_i == i:
+                    break
+                bypass = bypass or env_bypass
+                i = next_i
+            if bypass:
+                break
+            continue
+        break
+    return tokens, i, bypass, command_env, command_cwd, cwd_mutation_policy
+
+
 def git_common_dir(path, options=(), env=None):
     result = subprocess.run(
         ["git", "-C", path, *options, "rev-parse", "--git-common-dir"],
@@ -962,106 +1090,40 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
                 separator, cwd_execution, status
             )
         previous_separator = separator
-        command_env = dict(os.environ if inherited_env is None else inherited_env)
-        i, bypass = skip_env_prefix(tokens, 0, command_env)
-        i = skip_shell_prefixes(tokens, i)
-        next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
-        bypass = bypass or env_bypass
-        i = next_i
-        command_cwd = None
-        cwd_mutation_policy = "allow"
-        if bypass:
-            content_may_change = True
-            continue  # command-level bypass, same as the git hook
-        # unwrap common wrappers: command git commit, time git commit, env X=1 git commit
-        while i < len(tokens):
-            i = skip_shell_prefixes(tokens, i)
-            next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
-            bypass = bypass or env_bypass
-            i = next_i
-            if bypass or i >= len(tokens):
-                break
-            head = command_basename(tokens[i])
-            if head == "builtin" and command_word(tokens[i]) == "builtin":
-                builtin_i = i + 1
-                if builtin_i < len(tokens) and tokens[builtin_i] == "--":
-                    builtin_i += 1
-                if builtin_i < len(tokens) and command_word(tokens[builtin_i]) in {
-                    "cd",
-                    "eval",
-                    "source",
-                    ".",
-                }:
-                    i = builtin_i
-                    continue
-                break
-            if head in WRAPPERS:
-                if not (
-                    head == "command" and command_word(tokens[i]) == "command"
-                ):
-                    cwd_mutation_policy = "unknown"
-                i = unwrap_wrapper(tokens, i, head)
-                if i is None:
-                    i = len(tokens)
-                    break
-                continue
-            if head == "env":
-                cwd_mutation_policy = "unknown"
-                i += 1
-                while i < len(tokens):
-                    t = tokens[i]
-                    if t == "--":
-                        i += 1
-                        break
-                    if t in {"-S", "--split-string"} and i + 1 < len(tokens):
-                        split_tokens = split_env_split_string(tokens[i + 1])
-                        tokens = tokens[:i] + split_tokens + tokens[i + 2 :]
-                        continue
-                    if t.startswith("--split-string="):
-                        split_tokens = split_env_split_string(
-                            t[len("--split-string=") :]
-                        )
-                        tokens = tokens[:i] + split_tokens + tokens[i + 1 :]
-                        continue
-                    if t in ENV_OPTS_WITH_ARG:
-                        if t in {"-C", "--chdir"} and i + 1 < len(tokens):
-                            command_cwd = shell_expand_path_token(
-                                tokens[i + 1], current_cwd
-                            )
-                        i += 2
-                        continue
-                    if t.startswith(ENV_CHDIR_PREFIX):
-                        command_cwd = shell_expand_path_token(
-                            t[len(ENV_CHDIR_PREFIX) :], current_cwd
-                        )
-                        i += 1
-                        continue
-                    if any(
-                        t.startswith(prefix)
-                        for prefix in ENV_OPTS_WITH_ARG_PREFIXES
-                    ):
-                        i += 1
-                        continue
-                    if t in ENV_OPTS_NO_ARG or any(
-                        t.startswith(prefix)
-                        for prefix in ENV_OPTS_NO_ARG_PREFIXES
-                    ):
-                        i += 1
-                        continue
-                    next_i, env_bypass = skip_env_prefix(tokens, i, command_env)
-                    if next_i == i:
-                        break
-                    bypass = bypass or env_bypass
-                    i = next_i
-                if bypass:
-                    break
-                continue
-            break
+        (
+            tokens, i, bypass, command_env, command_cwd, cwd_mutation_policy,
+        ) = command_prefix(tokens, current_cwd, inherited_env)
         if bypass:
             content_may_change = True
             continue
         if i >= len(tokens):
             content_may_change |= bool(tokens)
+            continue
+        shell = command_basename(tokens[i]).lower().removesuffix(".exe")
+        if shell in NON_POSIX_SHELLS:
+            # These scripts use syntax the POSIX tokenizer cannot inspect.
+            script = raw_part + "\n" + "\n".join(
+                heredocs[token][0] for token in tokens[i + 1 :] if token in heredocs
+            )
+            escape = "^" if shell == "cmd" else "`"
+            script = (
+                script.replace(escape + "\r\n", "")
+                .replace(escape + "\n", "")
+                .replace(escape, "")
+            )
+            if text_has_commit(script.lower()):
+                raise UninspectableShellScript
+            # Preserve dynamic Git detection inside opaque script arguments.
+            for argument in tokens[i + 1 :]:
+                argument = heredocs[argument][0] if argument in heredocs else argument
+                if has_shell_expansion(argument) and (
+                    depth >= MAX_SHELL_DEPTH or any(git_commits(
+                        argument, command_cwd or current_cwd, command_env,
+                        content_may_change, depth + 1,
+                    ))
+                ):
+                    raise UninspectableShellScript
+            content_may_change = True
             continue
         if command_basename(tokens[i]) in SHELLS:
             script, dynamic = child_shell_script(
@@ -1276,7 +1338,7 @@ try:
             or os.environ.get("CODEX_PROJECT_DIR")
             or os.getcwd()
         )
-        if not bypassed and managed_hooks_current(root):
+        if not bypassed and not changed_before_commit and managed_hooks_current(root):
             continue
         unhooked_commits += 1
         unsafe_chain |= unhooked_commits > 1 and changed_before_commit
