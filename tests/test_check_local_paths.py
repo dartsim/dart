@@ -550,6 +550,27 @@ def test_commit_range_reports_leak_removed_before_tip(repo):
     assert result.stdout == f"{leaked}:notes.md:2: /home/example/private.md\n"
 
 
+@pytest.mark.parametrize("mode", ["--staged", "--commit-range"])
+def test_git_output_filenames_are_literal_pathspecs(repo, mode):
+    (repo / "notes.md").write_text("Public summary\n")
+    base = _commit(repo)
+    filename = ":(exclude)**"
+    path = repo / filename
+    path.write_text("Public summary\n/home/example/private.md\n")
+    _git(repo, "--literal-pathspecs", "add", "--", filename)
+    args = (mode,)
+    prefix = ""
+    if mode == "--commit-range":
+        leaked = _commit(repo)
+        path.unlink()
+        head = _commit(repo)
+        args = (mode, f"{base}..{head}")
+        prefix = f"{leaked}:"
+    result = _cli(*args, cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert result.stdout == f"{prefix}{filename}:2: /home/example/private.md\n"
+
+
 @pytest.mark.parametrize("operation", ["delete", "rename", "copy"])
 def test_commit_range_cleanup_ignores_removed_names(repo, operation):
     (repo / "notes.md").write_text("Public summary\n")
@@ -1143,7 +1164,16 @@ def test_commit_range_scans_messages_without_cleanup(repo):
         (["-m", "public"], True),
         (["-F", "message.txt"], True),
         (["-C", "HEAD"], True),
-        (["-c", "HEAD"], True),
+        (["-c", "HEAD"], False),
+        (["-cHEAD"], False),
+        (["--reedit-message=HEAD"], False),
+        (["--reedit-message", "HEAD"], False),
+        (["--reed=HEAD"], False),
+        (["--reed", "HEAD"], False),
+        (["-c", "HEAD", "--no-edit"], True),
+        (["--reed=HEAD", "--no-ed"], True),
+        (["--no-edit", "-c", "HEAD"], True),
+        (["--no-ed", "--reed=HEAD"], True),
         (["-F", "message.txt", "-e"], False),
         (["--file=message.txt", "--edit"], False),
         (["--no-edit"], True),
@@ -1181,6 +1211,54 @@ def test_commit_cleanup_uses_parent_command_not_localized_template(
         )
         == expected
     )
+
+
+@pytest.mark.parametrize("configured", ["verbatim", "whitespace", "default"])
+@pytest.mark.parametrize(
+    "global_args,arguments,expected",
+    [
+        ([], [], True),
+        (["-c", "commit.cleanup=strip"], [], False),
+        (["-c", "commit.cleanup=whitespace"], [], True),
+        (["-c", "commit.cleanup=verbatim"], [], True),
+        (["-c", "commit.cleanup=strip", "-c", "commit.cleanup=verbatim"], [], True),
+        ([], ["--cleanup=strip"], False),
+        ([], ["--cleanup=default"], False),
+    ],
+)
+def test_commit_cleanup_resolves_repository_config(
+    repo, monkeypatch, configured, global_args, arguments, expected
+):
+    _git(repo, "config", "commit.cleanup", configured)
+    monkeypatch.chdir(repo)
+    if configured == "default" and not global_args and not arguments:
+        expected = False
+    assert (
+        checker.scan_commit_message(
+            "Public summary\n# /home/example/private.md\n",
+            git_command=["git", *global_args, "commit", *arguments],
+            comment_string="#",
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize("source", ["config", "option"])
+@pytest.mark.parametrize("arguments", [[], ["-m", "public"], ["--no-edit"]])
+def test_scissors_cleanup_only_truncates_editor_messages(
+    repo, monkeypatch, source, arguments
+):
+    monkeypatch.chdir(repo)
+    if source == "config":
+        _git(repo, "config", "commit.cleanup", "scissors")
+    else:
+        arguments = ["--cleanup=scissors", *arguments]
+    assert checker.scan_commit_message(
+        "Public summary\n# ------------------------ >8 ------------------------\n"
+        "/home/example/private.md\n",
+        git_command=["git", "commit", *arguments],
+        comment_string="#",
+    ) == ("-m" in arguments or "--no-edit" in arguments)
 
 
 @pytest.mark.parametrize(
@@ -1261,7 +1339,11 @@ def test_commit_cleanup_preserves_configured_comment_string_spaces(monkeypatch, 
     monkeypatch.setattr(
         checker.subprocess,
         "run",
-        lambda command, **kwargs: subprocess.CompletedProcess(command, 0, "// \n"),
+        lambda command, **kwargs: subprocess.CompletedProcess(
+            command,
+            1 if command[-1] == "commit.cleanup" else 0,
+            "" if command[-1] == "commit.cleanup" else "// \n",
+        ),
     )
     assert checker.scan_commit_message(
         "Public summary\n// See /home/example/private.md\n//See /home/example/private.md\n",

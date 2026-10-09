@@ -822,10 +822,27 @@ def test_commit_msg_hook_scans_template_instruction_from_file_parent(tmp_path):
     "arguments,expected",
     [([], 0), (["-F", "message.txt"], 1), (["--cleanup=whitespace"], 1)],
 )
+@pytest.mark.parametrize(
+    "configured,global_args",
+    [
+        (None, []),
+        ("verbatim", []),
+        ("whitespace", []),
+        ("strip", ["-c", "commit.cleanup=verbatim"]),
+    ],
+)
 def test_commit_msg_hook_uses_cleanup_with_localized_editor(
-    tmp_path, arguments, expected
+    tmp_path, arguments, expected, configured, global_args
 ):
     repo, env = _init_repo(tmp_path)
+    if configured is not None:
+        subprocess.run(
+            ["git", "config", "commit.cleanup", configured],
+            cwd=repo,
+            env=env,
+            check=True,
+        )
+        expected = 1
     _write_gate(repo)
     (repo / "scripts/check_local_paths.py").write_bytes(
         (ROOT / "scripts/check_local_paths.py").read_bytes()
@@ -849,6 +866,7 @@ def test_commit_msg_hook_uses_cleanup_with_localized_editor(
             "user.email=example@example.com",
             "-c",
             "core.commentChar=;",
+            *global_args,
             "commit",
             "--allow-empty",
             *arguments,
