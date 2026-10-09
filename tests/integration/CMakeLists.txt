@@ -82,11 +82,13 @@ set_tests_properties(
     ENVIRONMENT "GTEST_FILTER=-*/Nsgs*"
     FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
 )
-add_test(NAME test_FrictionAnalytic_nsgs COMMAND test_FrictionAnalytic)
+add_test(
+  NAME test_FrictionAnalytic_nsgs
+  COMMAND $<TARGET_FILE:test_FrictionAnalytic> --gtest_filter=*/Nsgs*
+)
 set_tests_properties(
   test_FrictionAnalytic_nsgs
   PROPERTIES
-    ENVIRONMENT "GTEST_FILTER=*/Nsgs*"
     FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
     LABELS "no-coverage-value;long-measurement"
 )
