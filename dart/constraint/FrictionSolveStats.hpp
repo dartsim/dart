@@ -55,8 +55,16 @@ struct FrictionSolveStats
   std::uint64_t numBoxContacts = 0;
   /// Local contact QPs that needed the slow certificate path.
   std::uint64_t numLocalFallbacks = 0;
-  /// Gauss-Seidel sweeps.
+  /// Gauss-Seidel sweeps (NSGS) or outer iterations (FBF; groups without a
+  /// frictional cone contact count one per plain Gauss-Seidel sweep).
   std::uint64_t numIterations = 0;
+  /// FBF Gauss-Seidel sweeps, including sweeps for rejected step sizes and the
+  /// plain sweeps of groups without a frictional cone contact.
+  std::uint64_t numInnerIterations = 0;
+  /// FBF step-size reductions.
+  std::uint64_t numStepShrinks = 0;
+  /// FBF inner solves stopped by maxInnerSweeps above their target.
+  std::uint64_t numInnerCaps = 0;
   /// Largest final law violation [m/s] among accepted solves (converged or at
   /// the cap) since resetStats(). Failed solves do not contribute.
   double maxViolation = 0.0;

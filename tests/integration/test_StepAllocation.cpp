@@ -46,6 +46,7 @@
 #include "dart/constraint/BoxedLcpSolver.hpp"
 #include "dart/constraint/ConstraintSolver.hpp"
 #include "dart/constraint/ContactSurface.hpp"
+#include "dart/constraint/FbfFrictionSolver.hpp"
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
@@ -2222,6 +2223,81 @@ TEST(StepAllocation, NsgsFirstPreparedStepOnFreshThread)
       EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
     }
   }
+}
+
+TEST(StepAllocation, FbfFirstPreparedStepOnFreshThread)
+{
+  class DerivedFbf final : public dart::constraint::FbfFrictionSolver
+  {
+  };
+
+  for (const bool subclass : {false, true}) {
+    SCOPED_TRACE(subclass ? "subclass" : "exact type");
+    StepAllocationMeasurement measurement;
+    dart::constraint::FrictionSolveStats stats;
+    // Counters are process-wide: exclude thread startup, setup and teardown.
+    std::thread worker([&] {
+      dart::test::CountingMemoryAllocator allocator;
+      auto world = createCountedStackedBoxesWorld(
+          "fbf_first_prepared_step",
+          dart::collision::DARTCollisionDetector::create(),
+          allocator);
+      std::shared_ptr<dart::constraint::FbfFrictionSolver> fbf;
+      if (subclass)
+        fbf = std::make_shared<DerivedFbf>();
+      else
+        fbf = std::make_shared<dart::constraint::FbfFrictionSolver>();
+      auto* solver = static_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+          world->getConstraintSolver());
+      solver->setBoxedLcpSolver(fbf);
+      world->enterSimulationMode();
+      fbf->resetStats();
+      measurement = measureWorldStepsNow(world, allocator, 1);
+      stats = fbf->getStats();
+    });
+    worker.join();
+    EXPECT_GT(measurement.lastStepContacts, 0u);
+    EXPECT_GT(stats.numContacts, 0u);
+    EXPECT_EQ(0u, stats.numFailed);
+    EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap);
+    expectNoGlobalHeapAllocationsWhenReliable("fbf_first_step", measurement);
+    EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+    if (!measurement.rawHeap.skipped) {
+      EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+    }
+  }
+}
+
+TEST(StepAllocation, FbfSteadyState)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  auto world = createAllocationGateWorld(
+      dart::collision::DARTCollisionDetector::create(), false, 1u);
+  addGridBoxes(world, 2, 2);
+  auto fbf = std::make_shared<dart::constraint::FbfFrictionSolver>();
+  auto* solver = static_cast<dart::constraint::BoxedLcpConstraintSolver*>(
+      world->getConstraintSolver());
+  solver->setBoxedLcpSolver(fbf);
+  ASSERT_EQ(1u, solver->getNumSimulationThreads());
+  for (int step = 0; step < 300; ++step)
+    world->step();
+
+  fbf->resetStats();
+  dart::test::CountingMemoryAllocator allocator;
+  const auto measurement = measureWorldStepsNow(world, allocator, 100, 300);
+  const auto stats = fbf->getStats();
+  reportMeasurement("dart_fbf_steady", measurement);
+  EXPECT_GT(measurement.lastStepContacts, 0u);
+  EXPECT_EQ(0u, countResting(world));
+  EXPECT_GT(stats.numContacts, 0u);
+  EXPECT_GT(stats.numIterations, 0u);
+  EXPECT_GT(stats.numInnerIterations, 0u);
+  EXPECT_EQ(0u, stats.numFailed);
+  EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap);
+  EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+  EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
 }
 
 TEST(StepAllocation, NsgsFrictionLawsSteadyState)

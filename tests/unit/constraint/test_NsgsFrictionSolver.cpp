@@ -188,6 +188,9 @@ TEST(NsgsFrictionSolver, ThreeLawsAndReadOnlyTerms)
         law == NsgsFrictionSolver::Law::Box ? 1u : 0u, stats.numBoxContacts);
     EXPECT_LE(stats.maxViolation, options.tolerance);
     EXPECT_EQ(0u, stats.numFailed);
+    EXPECT_EQ(0u, stats.numInnerIterations);
+    EXPECT_EQ(0u, stats.numStepShrinks);
+    EXPECT_EQ(0u, stats.numInnerCaps);
   }
 }
 

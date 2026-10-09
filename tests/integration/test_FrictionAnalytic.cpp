@@ -37,6 +37,7 @@
 
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/FbfFrictionSolver.hpp"
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "friction_scenes.hpp"
@@ -53,7 +54,8 @@ enum class Backend
   Pgs,
   NsgsCoulomb,
   NsgsAssociated,
-  NsgsBox
+  NsgsBox,
+  Fbf
 };
 
 class FrictionAnalytic : public ::testing::TestWithParam<Backend>
@@ -67,12 +69,19 @@ protected:
     // gz's detector when built, else FCL (always built).
     solver->setCollisionDetector(fe::makeDetector(HAVE_ODE ? "ode" : "fcl"));
     std::shared_ptr<dart::constraint::NsgsFrictionSolver> nsgs;
+    std::shared_ptr<dart::constraint::FbfFrictionSolver> fbf;
     if (GetParam() == Backend::Pgs) {
       solver->setBoxedLcpSolver(
           std::make_shared<dart::constraint::PgsBoxedLcpSolver>());
     } else if (GetParam() == Backend::Dantzig) {
       solver->setBoxedLcpSolver(
           std::make_shared<dart::constraint::DantzigBoxedLcpSolver>());
+    } else if (GetParam() == Backend::Fbf) {
+      dart::constraint::FbfFrictionSolver::Options options;
+      options.tolerance = 1e-7;
+      options.maxOuterIterations = 1000;
+      fbf = std::make_shared<dart::constraint::FbfFrictionSolver>(options);
+      solver->setBoxedLcpSolver(fbf);
     } else {
       using Nsgs = dart::constraint::NsgsFrictionSolver;
       Nsgs::Options options;
@@ -87,17 +96,26 @@ protected:
       solver->setBoxedLcpSolver(nsgs);
     }
     auto metrics = fe::run(scene);
-    if (nsgs) {
-      const auto stats = nsgs->getStats();
+    const auto expectStats = [&](const auto& stats) {
       EXPECT_GT(stats.numSolves, 0u) << id;
       EXPECT_EQ(stats.numFailed, 0u) << id;
       EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap)
           << id;
       EXPECT_LE(stats.maxViolation, 1e-5) << id;
+    };
+    if (nsgs) {
+      const auto stats = nsgs->getStats();
+      expectStats(stats);
       EXPECT_EQ(
           stats.numBoxContacts,
           GetParam() == Backend::NsgsBox ? stats.numContacts : 0u)
           << id;
+    }
+    if (fbf) {
+      const auto stats = fbf->getStats();
+      expectStats(stats);
+      EXPECT_EQ(stats.numStepShrinks, 0u) << id;
+      EXPECT_EQ(stats.numBoxContacts, 0u) << id;
     }
     // Maxima over steps skip NaN, so a non-finite state must fail here.
     for (std::size_t i = 0; i < scene.world->getNumSkeletons(); ++i) {
@@ -167,6 +185,9 @@ TEST_P(FrictionAnalytic, IsotropyPush)
 // so the stop check uses A1's 1e-5 m.
 TEST_P(FrictionAnalytic, SlideToStop)
 {
+  if (GetParam() == Backend::Fbf)
+    GTEST_SKIP()
+        << "FBF runs only the A1, A4, A7 and A10 rows (T0 runtime budget)";
   for (const double phi : {30.0, 45.0}) {
     auto m = run("A5", {{"phi", phi}, {"v0", 1.0}, {"T", 0.25}});
     if (!associated()) {
@@ -223,6 +244,9 @@ TEST_P(FrictionAnalytic, Conveyor)
 // A13: gz-physics' slip-compliance expectation, v = slip F within 1e-4.
 TEST_P(FrictionAnalytic, SlipCompliance)
 {
+  if (GetParam() == Backend::Fbf)
+    GTEST_SKIP()
+        << "FBF runs only the A1, A4, A7 and A10 rows (T0 runtime budget)";
   for (const double dir : {0.0, 1.0}) {
     const auto m = run("A13", {{"slip", 0.05}, {"dir", dir}, {"T", 0.4}});
     EXPECT_LT(m.at("v_err"), 1e-4) << dir;
@@ -234,6 +258,9 @@ TEST_P(FrictionAnalytic, SlipCompliance)
 // frictionless normal impulses, keep it upright at mu = 0.6.
 TEST_P(FrictionAnalytic, PainleveBox)
 {
+  if (GetParam() == Backend::Fbf)
+    GTEST_SKIP()
+        << "FBF runs only the A1, A4, A7 and A10 rows (T0 runtime budget)";
   auto m = run("C1", {{"mu", 0.4}, {"v0", 1.5}, {"T", 0.4}});
   if (!associated()) {
     EXPECT_EQ(m.at("tipped"), 0.0);
@@ -249,6 +276,9 @@ TEST_P(FrictionAnalytic, PainleveBox)
 // R1: a resting stack; PGS30 truncation lets it drift.
 TEST_P(FrictionAnalytic, Stack)
 {
+  if (GetParam() == Backend::Fbf)
+    GTEST_SKIP()
+        << "FBF runs only the A1, A4, A7 and A10 rows (T0 runtime budget)";
   auto m = run("R1", {{"n", 2.0}, {"T", 0.3}});
   EXPECT_LT(m.at("max_disp"), 1e-3);
   EXPECT_LT(m.at("top_drift"), pgs() ? 1e-4 : 1e-6);
@@ -262,7 +292,8 @@ INSTANTIATE_TEST_SUITE_P(
         Backend::Pgs,
         Backend::NsgsCoulomb,
         Backend::NsgsAssociated,
-        Backend::NsgsBox),
+        Backend::NsgsBox,
+        Backend::Fbf),
     [](const ::testing::TestParamInfo<Backend>& info) {
       switch (info.param) {
         case Backend::Dantzig:
@@ -275,6 +306,8 @@ INSTANTIATE_TEST_SUITE_P(
           return "NsgsAssociated";
         case Backend::NsgsBox:
           return "NsgsBox";
+        case Backend::Fbf:
+          return "Fbf";
       }
       return "Unknown";
     });

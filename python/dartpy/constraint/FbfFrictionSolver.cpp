@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/constraint/NsgsFrictionSolver.hpp>
+#include <dart/constraint/FbfFrictionSolver.hpp>
 
 #include <pybind11/pybind11.h>
 
@@ -39,25 +39,23 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void NsgsFrictionSolver(py::module& m)
+void FbfFrictionSolver(py::module& m)
 {
-  using Solver = constraint::NsgsFrictionSolver;
+  using Solver = constraint::FbfFrictionSolver;
 
   auto solver = ::py::
       class_<Solver, constraint::BoxedLcpSolver, std::shared_ptr<Solver>>(
-          m, "NsgsFrictionSolver");
-
-  ::py::enum_<Solver::Law>(solver, "Law")
-      .value("Coulomb", Solver::Law::Coulomb)
-      .value("Associated", Solver::Law::Associated)
-      .value("Box", Solver::Law::Box);
+          m, "FbfFrictionSolver");
 
   ::py::class_<Solver::Options>(solver, "Options")
       .def(::py::init<>())
-      .def_readwrite("law", &Solver::Options::law)
       .def_readwrite("boxForAnisotropic", &Solver::Options::boxForAnisotropic)
-      .def_readwrite("maxSweeps", &Solver::Options::maxSweeps)
-      .def_readwrite("tolerance", &Solver::Options::tolerance);
+      .def_readwrite("maxOuterIterations", &Solver::Options::maxOuterIterations)
+      .def_readwrite("tolerance", &Solver::Options::tolerance)
+      .def_readwrite("stepScale", &Solver::Options::stepScale)
+      .def_readwrite("maxInnerSweeps", &Solver::Options::maxInnerSweeps)
+      .def_readwrite(
+          "innerToleranceFactor", &Solver::Options::innerToleranceFactor);
 
   solver.def(::py::init<>())
       .def(::py::init<const Solver::Options&>(), ::py::arg("options"))
