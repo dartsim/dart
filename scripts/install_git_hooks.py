@@ -168,17 +168,19 @@ def resolve_hooks_dir() -> Path:
         ["git", "config", "--get", "core.hooksPath"],
         capture_output=True,
         text=True,
-    ).stdout.strip()
-    if hooks_path:
+    )
+    if hooks_path.returncode == 0:
         sys.exit(
             "error: core.hooksPath is set "
-            f"({hooks_path}); refusing to install into a custom hooks\n"
+            f"({hooks_path.stdout.strip()!r}); refusing to install into a custom hooks\n"
             "  directory that may be shared across repositories. Add the gate "
             "to your own\n"
             '  hook manager (run `python3 scripts/check_agent_hook.py --profile staged` from pre-commit and `python3 scripts/check_local_paths.py --commit-msg-file "$1"` from commit-msg), '
             "or unset\n"
             "  core.hooksPath and re-run `pixi run install-hooks`."
         )
+    if hooks_path.returncode != 1:
+        sys.exit(f"error: cannot read core.hooksPath: {hooks_path.stderr.strip()}")
     raw = Path(run_git(["rev-parse", "--git-path", "hooks"]))
     if not raw.is_absolute():
         raw = (Path.cwd() / raw).resolve()
@@ -200,10 +202,10 @@ def main() -> int:
     for hook in hooks:
         local = hook.with_name(f"{hook.name}.local")
         if (
-            hook.exists()
+            hook.is_symlink()
+            or hook.exists()
             and SENTINEL not in hook.read_text(errors="replace")
-            and local.exists()
-        ):
+        ) and (local.exists() or local.is_symlink()):
             sys.exit(
                 f"error: refusing to overwrite an existing {hook.name} hook.\n"
                 f"  A foreign hook exists at {hook} AND {local} is already\n"
@@ -213,7 +215,11 @@ def main() -> int:
             )
 
     for hook in hooks:
-        if hook.exists() and SENTINEL not in hook.read_text(errors="replace"):
+        if (
+            hook.is_symlink()
+            or hook.exists()
+            and SENTINEL not in hook.read_text(errors="replace")
+        ):
             local = hook.with_name(f"{hook.name}.local")
             shutil.move(str(hook), str(local))
             print(

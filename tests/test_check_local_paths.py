@@ -24,12 +24,12 @@ SPEC.loader.exec_module(checker)
         "../.sisyphus/notes/example.md",
         "checkout/.ab/control/example.json",
         ".ab/example.json",
-        "/tmp/claude-example/notes.md",
+        "/tmp/claude-example/example/notes.md",
         ".claude/projects/example/notes.md",
         "scratchpad/example.md",
         "checkout/scratchpad/example.md",
         "task_2/scripts/example.py",
-        "checkout/task_12-example",
+        "checkout/task_12-example/example",
         "/home/example/worktree/file.md",
         "/home/example",
         "/Users/example",
@@ -60,7 +60,7 @@ SPEC.loader.exec_module(checker)
         r"C:\Users\example",
         r"C:\Users\Example User",
         "C:/Users/example",
-        "/root",  # path-fixture
+        "/" "root",
         "/root/example.md",
         r"/root\example.md",
         "/Users/example/worktree/file.md",
@@ -106,7 +106,7 @@ def test_private_paths_are_reported_with_line_and_match(path, capsys):
         "HTTP://example.com/.ab/example.json",
         "https://example.com/.sisyphus/plans/example.md",
         "https://example.com/.claude/projects/example/notes.md",
-        "https://example.com/tmp/claude-example/notes.md",
+        "https://example.com/tmp/claude-example/example/notes.md",
         "https://example.com/root/notes.md",
         "https://example.com/C:/Users/example/notes.md",
         "example.com/home/docs",
@@ -190,8 +190,10 @@ def test_local_file_and_editor_uri_paths_are_reported(uri, capsys):
 
 @pytest.mark.parametrize("suffix", ("home.arpa", "internal", "lan", "localdomain"))
 def test_special_use_hosts_do_not_mask_paths(suffix, capsys):
-    assert checker.scan_text(f"http://printer.{suffix}/scratchpad/x.md")  # path-fixture
-    assert capsys.readouterr().out == "1: scratchpad/x.md\n"  # path-fixture
+    assert checker.scan_text(
+        f"http://printer.{suffix}/scratchpad/example.md"
+    )  # path-fixture
+    assert capsys.readouterr().out == "1: scratchpad/example.md\n"  # path-fixture
 
 
 def test_public_url_with_balanced_parentheses_is_fully_masked(capsys):
@@ -235,18 +237,18 @@ def test_urls_do_not_hide_adjacent_paths_or_file_urls(capsys):
     ]
 
 
-def test_allowlist_is_limited_to_exact_file_and_line():
-    assert not checker.scan_text(".sisyphus/\n", ".gitignore")  # path-fixture
+def test_allowlist_is_limited_to_exact_file_and_matched_fixture():
+    assert not checker.scan_text(".sisyphus" "/\n", ".gitignore")  # path-fixture
     assert checker.scan_text(".sisyphus/plans/example.md\n", ".gitignore")
-    assert checker.scan_text(".sisyphus/\n", "nested/.gitignore")  # path-fixture
+    assert checker.scan_text(".sisyphus" "/\n", "nested/.gitignore")  # path-fixture
     assert not checker.scan_text(
         "/home/example/fixture\n", "tests/test_check_local_paths.py"
     )
     assert checker.scan_text("/home/example/fixture\n", "tests/test_other.py")
     assert not checker.scan_text(
-        "/root # path-fixture\n", "tests/test_check_local_paths.py"
+        "/root/path-fixture\n", "tests/test_check_local_paths.py"
     )
-    assert checker.scan_text(".sisyphus/\n")  # path-fixture
+    assert checker.scan_text(".sisyphus" "/\n")  # path-fixture
 
 
 def _cli(*args, cwd, text=None):
@@ -601,7 +603,7 @@ def test_commit_range_scans_binary_and_encoded_blobs(repo, encoding, bom):
 def test_commit_range_checks_names_and_keeps_per_file_allowlist(repo):
     (repo / "notes.md").write_text("Public summary\n")
     base = _commit(repo)
-    (repo / ".gitignore").write_text(".sisyphus/\n")  # path-fixture
+    (repo / ".gitignore").write_text(".sisyphus" "/\n")  # path-fixture
     (repo / "tests").mkdir()
     (repo / "tests/test_check_local_paths.py").write_text("/home/example/fixture\n")
     allowed = _commit(repo)
@@ -934,16 +936,40 @@ def test_staged_binary_cannot_hide_embedded_path(repo):
 
 
 @pytest.mark.parametrize(
+    "data",
+    [b"\x00\xff" * 20, b"\x00\x00" * 20, b"x\x00" * 5 + b"\xff\x00" * 5],
+)
+def test_utf16_heuristic_requires_printable_opposite_parity(data):
+    assert checker.text_encoding(data) is None
+    assert checker.decode(data) == data.decode("utf-8", errors="replace")
+
+
+@pytest.mark.parametrize(
     "encoding,bom",
     [
+        ("utf-16-le", b""),
+        ("utf-16-be", b""),
         ("utf-16-le", b"\xff\xfe"),
         ("utf-16-be", b"\xfe\xff"),
         ("utf-32-le", b"\xff\xfe\x00\x00"),
         ("utf-32-be", b"\x00\x00\xfe\xff"),
     ],
 )
-@pytest.mark.parametrize("mode", ["--files", "--all-tracked", "--staged"])
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "--files",
+        "--all-tracked",
+        "--staged",
+        "--commit-range",
+        "--text-file",
+        "--commit-msg-file",
+    ],
+)
 def test_utf16_files_cannot_hide_paths(repo, encoding, bom, mode):
+    if mode == "--commit-range":
+        (repo / "base.txt").write_text("Public summary\n")
+        base = _commit(repo)
     path = repo / "notes.txt"
     path.write_bytes(
         bom + "Public summary\n/home/example/private.md\n".encode(encoding)
@@ -951,12 +977,26 @@ def test_utf16_files_cannot_hide_paths(repo, encoding, bom, mode):
     _git(repo, "add", path.name)
     if mode == "--staged":
         path.write_text("Public worktree hides staged leak\n")
-    args = (mode, path) if mode == "--files" else (mode,)
+    args = (
+        (mode, path)
+        if mode in {"--files", "--text-file", "--commit-msg-file"}
+        else (mode,)
+    )
+    if mode == "--commit-range":
+        head = _commit(repo, "Encoded fixture")
+        args = (mode, f"{base}..{head}")
     result = _cli(*args, cwd=repo)
     assert result.returncode == 1, result.stderr
-    assert result.stdout == "notes.txt:2: /home/example/private.md\n"
+    prefix = head + ":" if mode == "--commit-range" else ""
+    filename = "" if mode in {"--text-file", "--commit-msg-file"} else "notes.txt:"
+    assert result.stdout == prefix + filename + "2: /home/example/private.md\n"
+    if mode == "--commit-range":
+        base = head
     path.write_bytes(bom + "Public summary\n".encode(encoding))
     _git(repo, "add", path.name)
+    if mode == "--commit-range":
+        head = _commit(repo)
+        args = (mode, f"{base}..{head}")
     assert _cli(*args, cwd=repo).returncode == 0
 
 
@@ -967,6 +1007,8 @@ def test_utf16_files_cannot_hide_paths(repo, encoding, bom, mode):
         ("utf-16-be", b"\xfe\xff"),
         ("utf-32-le", b"\xff\xfe\x00\x00"),
         ("utf-32-be", b"\x00\x00\xfe\xff"),
+        ("utf-16-le", b""),
+        ("utf-16-be", b""),
     ],
 )
 def test_staged_utf16_scans_whole_blob_including_unchanged_lines(repo, encoding, bom):
@@ -1069,19 +1111,21 @@ def test_staged_only_checks_added_index_lines_and_reports_new_line_numbers(repo)
     tracked.write_text("/home/example/unstaged\n")
     assert _cli("--staged", cwd=repo).returncode == 0
 
-    tracked.write_text(".sisyphus/plans/example.md\npublic\n/tmp/claude-example/log\n")
+    tracked.write_text(
+        ".sisyphus/plans/example.md\npublic\n/tmp/claude-example/example/log\n"
+    )
     _git(repo, "add", tracked.name)
     tracked.write_text("Public worktree hides staged leak\n")
     result = _cli("--staged", cwd=repo)
     assert result.returncode == 1
-    assert result.stdout == "notes with spaces.md:3: /tmp/claude-example/log\n"
+    assert result.stdout == "notes with spaces.md:3: /tmp/claude-example/example/log\n"
 
     _git(repo, "rm", "-f", tracked.name)
     assert _cli("--staged", cwd=repo).returncode == 0
 
 
 def test_staged_new_file_allows_gitignore_and_checker_fixtures(repo):
-    (repo / ".gitignore").write_text(".sisyphus/\n")  # path-fixture
+    (repo / ".gitignore").write_text(".sisyphus" "/\n")  # path-fixture
     fixture = repo / "tests" / "test_check_local_paths.py"
     fixture.parent.mkdir()
     fixture.write_text("/home/example/fixture\n")
@@ -1094,12 +1138,15 @@ def test_staged_new_file_allows_gitignore_and_checker_fixtures(repo):
 
 
 @pytest.mark.parametrize("mode", ("--files", "--all-tracked", "--staged"))
-def test_checker_test_exemption_rejects_non_fixture_home(repo, mode):
+@pytest.mark.parametrize(
+    "beside", ["", "/home/example/fixture ", "example ", "# path-fixture "]
+)
+def test_checker_test_exemption_rejects_non_fixture_home(repo, mode, beside):
     fixture = repo / "tests" / "test_check_local_paths.py"
     fixture.parent.mkdir()
     # Construct a non-fixture user without publishing a real home path.
     path = "/home/" + "example"[::-1] + "/client/private.md"
-    fixture.write_text(path + "\n")
+    fixture.write_text(beside + path + "\n")
     _git(repo, "add", ".")
     args = (mode, fixture) if mode == "--files" else (mode,)
     result = _cli(*args, cwd=repo)
