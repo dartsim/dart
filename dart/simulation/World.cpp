@@ -2394,8 +2394,11 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
   // Another World's changes move only the global version. If none of this
   // World's skeletons changed, catch the record up so that such a change
   // alone does not force the per-skeleton validation below.
-  const bool deactivationStateChanged = hasDeactivationStateChangedSince(
-      *collisionGroup, mAllRestingSnapshotDeactivationStateVersion);
+  const bool deactivationStateChanged
+      = dynamics::Skeleton::getGlobalDeactivationStateVersion()
+            != mAllRestingSnapshotDeactivationStateVersion
+        && hasDeactivationStateChangedSince(
+            *collisionGroup, mAllRestingSnapshotDeactivationStateVersion);
   if (!deactivationStateChanged) {
     mAllRestingSnapshotDeactivationStateVersion
         = dynamics::Skeleton::getGlobalDeactivationStateVersion();
@@ -2722,8 +2725,12 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
   // Another World's changes move only the global version. If none of this
   // World's skeletons changed, catch the record up so that the next steps
   // compare in O(1) again.
-  const bool deactivationStateChanged = hasDeactivationStateChangedSince(
-      *collisionGroup, mLastStepRestingWorldStateDeactivationStateVersion);
+  const bool deactivationStateChanged
+      = dynamics::Skeleton::getGlobalDeactivationStateVersion()
+            != mLastStepRestingWorldStateDeactivationStateVersion
+        && hasDeactivationStateChangedSince(
+            *collisionGroup,
+            mLastStepRestingWorldStateDeactivationStateVersion);
   if (!deactivationStateChanged) {
     mLastStepRestingWorldStateDeactivationStateVersion
         = dynamics::Skeleton::getGlobalDeactivationStateVersion();
