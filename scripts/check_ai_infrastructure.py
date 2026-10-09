@@ -134,6 +134,14 @@ APPROVED_CTEST_SELECTIONS = {
         "arguments": (),
         "environment": ("GTEST_FILTER=ConstraintSolver.*",),
     },
+    "test_FrictionAnalytic": {
+        "arguments": (),
+        "environment": ("GTEST_FILTER=-*/Nsgs*",),
+    },
+    "test_FrictionAnalytic_nsgs": {
+        "arguments": ("--gtest_filter=*/Nsgs*",),
+        "environment": (),
+    },
     "test_AdaptiveSoftContactModel": {
         "arguments": ("--gtest_filter=AdaptiveSoftContactModelTest.*",),
         "environment": (),
