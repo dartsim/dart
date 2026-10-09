@@ -1040,8 +1040,91 @@ def git_worktree_root(path, options=(), env=None):
     return os.path.realpath(result.stdout.strip()) if result.returncode == 0 else ""
 
 
+def paths_may_change_hooks(tokens, raw_part, cwd, ancestors=True):
+    if cwd is None or has_shell_expansion(raw_part, globs=True):
+        return True
+    try:
+        words = list(shlex.shlex(raw_part, posix=True, punctuation_chars="<>"))
+    except ValueError:
+        return True
+    tokens = list(tokens) + [
+        words[index + 1] for index, word in enumerate(words[:-1])
+        if ">" in word and set(word) <= {"<", ">"}
+    ]
+    if not tokens:
+        return False
+    result = subprocess.run(
+        ["git", "-C", cwd, "rev-parse", "--git-path", "hooks",
+         "--git-path", "config", "--git-path", "config.worktree"],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        return True
+    protected = [shell_expand_path_token(path, cwd) for path in result.stdout.splitlines()]
+    # Config includes can redirect hooks without changing the repository config.
+    config = subprocess.run(
+        ["git", "-C", cwd, "config", "--show-origin", "--list"],
+        capture_output=True, text=True,
+    )
+    if config.returncode != 0:
+        return True
+    for line in config.stdout.splitlines():
+        origin, _, setting = line.partition("\t")
+        if origin.startswith("file:"):
+            config_path = shell_expand_path_token(origin[5:], cwd)
+            protected.append(config_path)
+            key, _, value = setting.partition("=")
+            if value and (
+                key.lower() == "include.path"
+                or key.lower().startswith("includeif.") and key.lower().endswith(".path")
+            ):
+                protected.append(shell_expand_path_token(value, os.path.dirname(config_path)))
+    protected += [os.path.realpath(path) for path in protected]
+    for token in tokens:
+        # Also inspect attached redirection targets and options such as of=path.
+        for value in (token, re.split(r"[><=]", token)[-1]):
+            if not value or value.startswith("-"):
+                continue
+            path = shell_expand_path_token(value, cwd)
+            for path in (path, os.path.realpath(path)):
+                if any(
+                    path == target or path.startswith(target + os.sep)
+                    or ancestors and target.startswith(path + os.sep)
+                    for target in protected
+                ):
+                    return True
+    return False
+
+
+def non_git_may_change_hooks(tokens, i, raw_part, cwd):
+    head = command_basename(tokens[i])
+    if head in {"cd", "true", "false", ":", "pwd"} and not re.search(r">", raw_part):
+        return False
+    # Opaque scripts and unknown commands cannot promise to preserve hooks.
+    if head not in {
+        "cp", "mv", "rm", "ln", "chmod", "chown", "install", "mkdir", "rmdir",
+        "touch", "tee", "truncate", "dd", "cat", "echo", "printf",
+        "make", "ninja", "cmake", "clang-format", "black", "isort", "codespell",
+        "gersemi", "pixi",
+    }:
+        return True
+    if head == "cmake" and any(token in {"-P", "-E"} for token in tokens[i + 1 :]):
+        return True
+    if head == "pixi" and tokens[i + 1 : i + 3] not in (
+        ["run", "build"], ["run", "lint"], ["run", "check-lint"],
+    ):
+        return True
+    return paths_may_change_hooks(
+        [] if head in {"cat", "echo", "printf"} else tokens[i + 1 :], raw_part, cwd,
+        ancestors=head not in {
+            "make", "ninja", "cmake", "clang-format", "black", "isort",
+            "codespell", "gersemi", "pixi",
+        },
+    )
+
+
 def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
-                content_may_change=False, depth=0):
+                content_may_change=False, depth=0, hooks_may_change=False):
     heredocs = {}
     segment_execution = EXEC_ALWAYS
     previous_separator = ""
@@ -1079,11 +1162,20 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
         (
             tokens, i, bypass, command_env, command_cwd, cwd_mutation_policy,
         ) = command_prefix(tokens, current_cwd, inherited_env)
+        segment_config_env = any(
+            token.partition("=")[0].startswith("GIT_CONFIG")
+            or token.partition("=")[0] in GIT_CONFIG_FILE_ENV
+            for token in tokens
+        )
+        if not parsed:
+            hooks_may_change = True
         if bypass:
             content_may_change = True
+            hooks_may_change = True
             continue
         if i >= len(tokens):
             content_may_change |= bool(tokens)
+            hooks_may_change |= segment_config_env
             continue
         shell = command_basename(tokens[i]).lower().removesuffix(".exe")
         if shell in NON_POSIX_SHELLS:
@@ -1108,13 +1200,15 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
                 if has_shell_expansion(argument) and (
                     depth >= MAX_SHELL_DEPTH or any(git_commits(
                         argument, command_cwd or current_cwd, command_env,
-                        content_may_change, depth + 1,
+                        content_may_change, depth + 1, hooks_may_change,
                     ))
                 ):
                     raise UninspectableShellScript
             content_may_change = True
+            hooks_may_change = True
             continue
         if command_basename(tokens[i]) in SHELLS:
+            hooks_may_change |= segment_config_env
             script, dynamic = child_shell_script(
                 tokens, i, raw_part, heredocs, parsed
             )
@@ -1128,17 +1222,22 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
                     if text_has_commit(script):
                         raise UninspectableShellScript
                     content_may_change = True
+                    hooks_may_change = True
                 else:
-                    content_may_change = yield from git_commits(
+                    content_may_change, hooks_may_change = yield from git_commits(
                         script, command_cwd or current_cwd, command_env,
-                        content_may_change, depth + 1,
+                        content_may_change, depth + 1, hooks_may_change,
                     )
             else:
                 content_may_change = True
+                hooks_may_change = True
             continue
         expanded_executable = argument_has_expansion(raw_part, tokens[i])
         if not is_git_executable(tokens[i]) and not expanded_executable:
             content_may_change = True
+            hooks_may_change |= segment_config_env or non_git_may_change_hooks(
+                tokens, i, raw_part, command_cwd or current_cwd
+            )
             current_cwd = maybe_update_shell_cwd(
                 tokens,
                 i,
@@ -1162,9 +1261,11 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
         target_dir = None
         repository_paths = {}
         hooks_path_override = False
+        config_option = False
         while i < len(tokens):
             t = tokens[i]
             if t.startswith(CONFIG_ENV_PREFIX):
+                config_option = True
                 option, _ = strip_outer_quotes(t[len(CONFIG_ENV_PREFIX) :])
                 if is_hooks_path_override(option):
                     hooks_path_override = True
@@ -1179,6 +1280,7 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
                 i += 1
                 continue
             if t in OPTS_WITH_ARG:
+                config_option |= t in {"-c", "--config-env"}
                 if t == "-C" and i + 1 < len(tokens):
                     target_dir = shell_expand_path_token(
                         tokens[i + 1], target_dir or command_cwd or current_cwd
@@ -1194,6 +1296,7 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
                 i += 2
                 continue
             if t.startswith("-"):
+                config_option |= t.startswith("-c")
                 i += 1
                 continue
             break
@@ -1204,6 +1307,8 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
         possible_commit = subcommand == "commit" or expanded_subcommand
         dynamic_command = expanded_executable or expanded_subcommand
         changed_before_commit = content_may_change
+        hooks_changed_before_commit = hooks_may_change
+        hooks_may_change |= config_option or segment_config_env
         if possible_commit:
             _, _, stages_content = supplied_commit_message(
                 tokens[i + 1 :], target_dir, inspect_message=False
@@ -1211,6 +1316,29 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
             content_may_change |= stages_content
         elif subcommand not in READ_ONLY_GIT_COMMANDS:
             content_may_change = True
+        if not possible_commit:
+            config_read = False
+            config_i = i + 1
+            while subcommand == "config" and config_i < len(tokens):
+                token = tokens[config_i]
+                if token == "--":
+                    break
+                if token in {"--get", "--get-all", "--get-regexp", "--get-urlmatch", "--list", "-l", "get", "list"}:
+                    config_read = True
+                    break
+                if not token.startswith("-"):
+                    break
+                config_i += 2 if token in {"-f", "--file", "--blob", "--type", "--default"} else 1
+            hooks_may_change |= (
+                dynamic_command
+                or subcommand == "config" and not config_read
+                or subcommand not in READ_ONLY_GIT_COMMANDS | {"config", "add", "rm", "mv", "restore"}
+                or paths_may_change_hooks(
+                    tokens[i + 1 :] if subcommand not in READ_ONLY_GIT_COMMANDS | {"config", "add"}
+                    else [],
+                    raw_part, target_dir,
+                )
+            )
         # Git aliases and git am/applypatch imports are out of scope; PR Text
         # scans every resulting PR commit with the base checker.
         if possible_commit:
@@ -1279,9 +1407,10 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
                 tokens[i + 1 :],
                 target_dir,
                 changed_before_commit,
+                hooks_changed_before_commit,
                 raw_part,
             )
-    return content_may_change
+    return content_may_change, hooks_may_change
 
 
 def managed_hooks_current(root):
@@ -1320,14 +1449,14 @@ messages = []
 unhooked_commits = 0
 unsafe_chain = False
 try:
-    for bypassed, root, args, cwd, changed_before_commit, raw_part in git_commits(cmd):
+    for bypassed, root, args, cwd, changed_before_commit, hooks_changed_before_commit, raw_part in git_commits(cmd):
         root = (
             root
             or os.environ.get("CLAUDE_PROJECT_DIR")
             or os.environ.get("CODEX_PROJECT_DIR")
             or os.getcwd()
         )
-        if not bypassed and not changed_before_commit and managed_hooks_current(root):
+        if not bypassed and not hooks_changed_before_commit and managed_hooks_current(root):
             continue
         unhooked_commits += 1
         unsafe_chain |= unhooked_commits > 1 and changed_before_commit
