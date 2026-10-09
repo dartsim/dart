@@ -585,7 +585,8 @@
     friction solver for contact groups with one reactive body, on every
     collision detector. Refine cached guesses before accepting them, preserve
     compatible detector seeds, and reset impulse history after capped or
-    failed solves and changes to timestep, collision geometry, or solver.
+    failed solves and changes to timestep, collision geometry, or solver:
+    [#3636](https://github.com/dartsim/dart/pull/3636)
 
   * Allow resting islands that use a custom `BodyNodeCollisionFilter` to sleep
     while their collision decisions stay unchanged, and keep reporting their
