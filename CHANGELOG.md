@@ -63,9 +63,11 @@
     overrides. `MemoryManager::hasAllocated()` is now always declared and
     returns `false` when DART is built with `NDEBUG`, and `MemoryManager` has the
     same layout in every build type, so rebuild code that uses it. DART's
-    internal debug-only checks now follow `NDEBUG`, so builds that keep
-    assertions enabled outside `CMAKE_BUILD_TYPE=Debug` also run them. Code that
-    tested the removed macros should use `NDEBUG` or its own build settings:
+    internal debug-only code now follows `NDEBUG` instead of the build type:
+    builds with assertions enabled run it whatever their build type, and
+    `NDEBUG` builds of any build type (such as `None` with `-DNDEBUG`) take the
+    same code paths as `Release`. Code that tested the removed macros should use
+    `NDEBUG` or its own build settings:
     [#3627](https://github.com/dartsim/dart/pull/3627)
 
 * Build
