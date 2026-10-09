@@ -105,26 +105,25 @@ findings and lookup or scan errors block the push.
 
 The shared Claude/Codex agent guard uses three paths:
 
-1. **Fast allow:** raw command text without the case-sensitive substring
-   `commit` returns immediately before shell tokenization. This deliberately
-   leaves dynamically generated or split spellings of the subcommand to the
-   installed hooks and PR Text backstop.
+1. **Fast allow:** raw command text without both whole words `git` and
+   `commit` (case-sensitive regex word boundaries) returns immediately before
+   shell tokenization. Commit spellings without the word `commit`, such as
+   user-configured aliases, dynamically generated or split spellings, rely on
+   installed hooks and the PR Text check.
 2. **Precise simple chain:** simple commands joined only by `&&`, `;` or
    newlines retain message extraction, plain `cd` tracking, foreign-repository
    skipping and child-shell inspection. Quoted literal `cat` heredoc messages
    (`-m "$(cat <<'EOF' ... EOF)"`) and already supported child-shell inputs are
-   inspected exactly. Pipes, `||`, background jobs, subshells, brace groups,
-   compound commands, function definitions, comments, process substitutions and
-   other command substitutions take the conservative path. Unsupported quoting,
-   escaped newlines and redirection placements also take that path.
-3. **Conservative command:** any other command containing `commit` uses the
-   project's staged gate and scans the entire original raw command, including
-   comments and heredoc bodies. It never trusts managed-hook delegation or skips
-   a foreign target. Commit-shaped risks with external message sources (`-F`/
-   `--file`, reuse/reedit, templates, fixup/squash reuse or an editor without
-   `-m`) are blocked with instructions to run the commit as a simple command.
-   Inline messages in groups and function definitions can pass when the raw
-   text and staged gate pass; the guard does not emulate their execution.
+   inspected exactly.
+3. **Block:** anything else containing both words is rejected with instructions
+   to run `git commit` as its own simple command, optionally after `cd`/`git add`
+   joined by `&&`. This includes pipes, `||`, background jobs, subshells, brace
+   groups, conditionals, loops, functions, comments, process substitutions and
+   other command substitutions, as well as unsupported quoting, escaped
+   newlines and redirection placements. In complex syntax the guard cannot know
+   what runs before a commit, so it cannot trust hooks or scan staged content
+   at the right time. It blocks even public inline messages and foreign targets;
+   no raw-text or staged scan substitutes for knowing that execution order.
 
 On the precise path, `--no-verify`/`-n` (including accepted abbreviations), a
 `core.hooksPath` override, or missing/outdated managed hooks requires the guard
