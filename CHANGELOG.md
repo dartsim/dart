@@ -814,7 +814,7 @@
     shape frames, keep contacts usable after their collision result is
     released, return the actual constraint count, and allow Python collision
     filters to override collision checks or inherit the built-in behavior:
-    [#XXXX](https://github.com/dartsim/dart/pull/XXXX)
+    [#3626](https://github.com/dartsim/dart/pull/3626)
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
     including a Python analytical callback bridge that lets ssik-like solvers
