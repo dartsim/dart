@@ -58,6 +58,14 @@
 
 * Build
 
+  * Stop CMake configuration when FCL's libccd is built in single precision
+    (libccd's default), which causes momentum drift on shallow contacts and
+    weaker soft-contact push recovery. Rebuild libccd with
+    `-DENABLE_DOUBLE_PRECISION=ON` and rebuild FCL against it, or skip this
+    check with
+    `-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`:
+    [#3590](https://github.com/dartsim/dart/issues/3590)
+
   * Build DART as C++17 regardless of the compiler default, so GCC 16 (which
     defaults to C++20) builds with the default warnings-as-errors setting:
     [#3505](https://github.com/dartsim/dart/pull/3505)

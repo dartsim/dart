@@ -224,6 +224,11 @@ dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF)
+dart_option(
+  DART_ALLOW_SINGLE_PRECISION_LIBCCD
+  "Skip the check that FCL's libccd uses double precision"
+  OFF
+)
 dart_option(DART_VERBOSE "Whether print detailed information in CMake process" OFF)
 
 dart_configure_compiler_cache()

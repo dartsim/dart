@@ -21,6 +21,101 @@ dart_check_required_package(EIGEN3 "eigen3")
 dart_find_package(fcl)
 dart_check_required_package(fcl "fcl")
 
+# Check only during DART's own configure; the opt-out bypasses all header lookup.
+if(NOT DART_ALLOW_SINGLE_PRECISION_LIBCCD)
+  # Walk FCL's link interface depth-first, the order in which CMake collects
+  # its include directories. Skipped $<LINK_ONLY:...> entries don't carry any.
+  # Not modeled: CPATH and -I flags in CMAKE_CXX_FLAGS. A libccd supplied only
+  # that way goes unchecked, so the check can miss it but never rejects a
+  # double-precision build.
+  set(_dart_fcl_ccd_targets "")
+  set(_dart_fcl_pending fcl)
+  while(_dart_fcl_pending)
+    list(POP_FRONT _dart_fcl_pending _dart_fcl_target)
+    if(
+      NOT TARGET "${_dart_fcl_target}"
+      OR _dart_fcl_target IN_LIST _dart_fcl_ccd_targets
+    )
+      continue()
+    endif()
+    list(APPEND _dart_fcl_ccd_targets "${_dart_fcl_target}")
+    get_target_property(
+      _dart_fcl_links
+      "${_dart_fcl_target}"
+      INTERFACE_LINK_LIBRARIES
+    )
+    if(_dart_fcl_links)
+      list(PREPEND _dart_fcl_pending ${_dart_fcl_links})
+    endif()
+  endwhile()
+
+  set(_dart_fcl_ccd_includes "")
+  foreach(_dart_fcl_target IN LISTS _dart_fcl_ccd_targets)
+    get_target_property(
+      _dart_fcl_includes
+      "${_dart_fcl_target}"
+      INTERFACE_INCLUDE_DIRECTORIES
+    )
+    foreach(_dart_fcl_include IN LISTS _dart_fcl_includes)
+      if(_dart_fcl_include MATCHES "^\\$<BUILD_INTERFACE:([^<>]*)>$")
+        set(_dart_fcl_include "${CMAKE_MATCH_1}")
+      endif()
+      if(NOT _dart_fcl_include MATCHES "\\$<")
+        list(APPEND _dart_fcl_ccd_includes "${_dart_fcl_include}")
+      endif()
+    endforeach()
+  endforeach()
+  # Then the directories the compiler searches by itself.
+  list(
+    APPEND _dart_fcl_ccd_includes
+    ${FCL_INCLUDE_DIRS}
+    ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES}
+  )
+
+  # Take the first match, in the compiler's order.
+  unset(_dart_fcl_ccd_include_dir CACHE)
+  unset(_dart_fcl_ccd_include_dir)
+  foreach(_dart_fcl_include IN LISTS _dart_fcl_ccd_includes)
+    if(
+      NOT _dart_fcl_include MATCHES "\\$<"
+      AND EXISTS "${_dart_fcl_include}/ccd/config.h"
+    )
+      set(_dart_fcl_ccd_include_dir "${_dart_fcl_include}")
+      break()
+    endif()
+  endforeach()
+
+  if(_dart_fcl_ccd_include_dir)
+    set(_dart_fcl_ccd_header "${_dart_fcl_ccd_include_dir}/ccd/config.h")
+    file(
+      STRINGS "${_dart_fcl_ccd_header}"
+      _dart_fcl_ccd_single
+      REGEX "^[ \t]*#[ \t]*define[ \t]+CCD_SINGLE([ \t]|$)"
+    )
+    if(_dart_fcl_ccd_single)
+      message(
+        FATAL_ERROR
+        "FCL's GJK/EPA runs in single precision because ${_dart_fcl_ccd_header} "
+        "defines CCD_SINGLE, causing momentum drift on shallow contacts "
+        "and weaker soft-contact push recovery. Rebuild libccd with "
+        "-DENABLE_DOUBLE_PRECISION=ON and rebuild FCL against it "
+        "(FreeBSD math/libccd: DOUBLE_PECISION; vcpkg: ccd[double-precision]), "
+        "or skip this check with -DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON."
+      )
+    else()
+      message(
+        STATUS
+        "FCL's libccd headers use double precision: ${_dart_fcl_ccd_header}"
+      )
+    endif()
+  else()
+    message(
+      STATUS
+      "FCL's ccd/config.h was not found; libccd precision not checked."
+    )
+  endif()
+endif()
+
 # ASSIMP
 dart_find_package(assimp)
 dart_check_required_package(assimp "assimp")
