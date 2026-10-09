@@ -2698,11 +2698,19 @@ def test_guard_does_not_carry_function_definition_body_cwd(tmp_path, definition)
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
-def test_guard_does_not_execute_function_definition_body_commit(tmp_path):
+@pytest.mark.parametrize(
+    "command",
+    (
+        "commit_later() { git commit -m x; }",
+        "function commit_later() { git commit -m x; }",
+        "if commit_later() { git commit -m x; }; then true; fi",
+        "commit_later() { { git commit -m x; }; }",
+    ),
+)
+def test_guard_does_not_execute_function_definition_body_commit(tmp_path, command):
     repo, env = _init_repo(tmp_path)
     env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
 
-    command = "commit_later() { git commit -m x; }"
     returncode, stderr = _run_guard(repo, env, command)
 
     assert returncode == 0
@@ -2736,6 +2744,78 @@ def test_guard_treats_brace_group_cd_cwd_as_uncertain(tmp_path):
 
     assert returncode == 0
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
+
+
+@pytest.mark.parametrize(
+    "command_template",
+    (
+        "git commit --no-verify -m {{ -m {private_path}",
+        "{{ git commit --no-verify -m fix}}{private_path}; }}",
+        "{{ git commit --no-verify -m }} -m {private_path}; }}",
+        "git commit --no-verify -m function -m name -m {{ -m {private_path}",
+    ),
+)
+def test_guard_blocks_private_messages_with_literal_braces(tmp_path, command_template):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    private_path = "/home/" + "example/private.md"
+
+    returncode, stderr = _run_guard(
+        repo, env, command_template.format(private_path=private_path)
+    )
+
+    assert returncode == 2, stderr
+    assert private_path in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        "git commit --no-verify -m {",
+        "git commit --no-verify -m '{'",
+        r"git commit --no-verify -m \{",
+        "{ git commit --no-verify -m fix}; }",
+        "{ git commit --no-verify -m }; }",
+        "{ git commit --no-verify -m '}'; }",
+        r"{ git commit --no-verify -m \}; }",
+        "true && { git commit --no-verify -m fix; }",
+        "if true; then { git commit --no-verify -m fix; }; fi",
+        "{ { git commit --no-verify -m fix & }; }",
+    ),
+)
+def test_guard_checks_commits_with_brace_words(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0, stderr
+    assert "direct-agent-gate" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        "{ git commit -m fix",
+        "{ git commit -m fix }",
+        "commit_later() { git commit -m fix;",
+        "{ { git commit -m fix; } }",
+    ),
+)
+def test_guard_fails_closed_for_unmatched_brace_contexts(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 2, stderr
+    assert "shell script cannot be inspected" in stderr
 
 
 def test_guard_ignores_quoted_shell_separators(tmp_path):

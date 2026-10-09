@@ -175,7 +175,7 @@ GIT_CONFIG_FILE_ENV = {
 }
 ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=(?P<value>.*)$")
 SHELL_OPERATOR_RE = re.compile(
-    r"&>>|<<<|<<-|;;&|&&|\|\||\|&|;;|;&|<<|>>|<&|>&|<>|>\||&>|[<>&|;(){}]"
+    r"&>>|<<<|<<-|;;&|&&|\|\||\|&|;;|;&|<<|>>|<&|>&|<>|>\||&>|[<>&|;()]"
 )
 
 
@@ -444,10 +444,39 @@ def shell_tokens(text, i=0):
                 continue
             if ch in "\"'\''" and (not quote or ch == quote):
                 quote = "" if quote else ch
-            elif not quote and ch in " \t\r\n<>&|;(){}":
+            elif not quote and ch in " \t\r\n<>&|;()":
                 break
             i += 1
         yield text[start:i], False, i
+
+
+def brace_context_word(part, suffix):
+    """Recognize complete raw brace words only in command position."""
+    prefix = "".join(part)
+    preceding = []
+    for word, _, end in shell_tokens(prefix + suffix):
+        if end > len(prefix):
+            if word != suffix[0] or end - len(word) != len(prefix):
+                return ""
+            command_prefix = preceding.copy()
+            while command_prefix and command_prefix[0] in SHELL_CONTROL_PREFIXES:
+                command_prefix.pop(0)
+            if word == "{" and re.fullmatch(
+                r"(?:[A-Za-z_][A-Za-z0-9_]*\s*\(\s*\)"
+                r"|function\s+[A-Za-z_][A-Za-z0-9_]*(?:\s*\(\s*\))?)\s*",
+                " ".join(command_prefix),
+            ):
+                return "function-body"
+            if word == "}" and preceding:
+                return ""
+            if all(
+                token in SHELL_CONTROL_PREFIXES | {"time", "coproc"}
+                for token in preceding
+            ):
+                return "command-group"
+            return ""
+        preceding.append(word)
+    return ""
 
 
 def split_shell_segments(text, heredocs):
@@ -458,6 +487,7 @@ def split_shell_segments(text, heredocs):
     quote = ""
     contexts = []
     part_isolated = False
+    previous_separator = ""
     i = 0
     while i < len(text):
         ch = text[i]
@@ -543,32 +573,18 @@ def split_shell_segments(text, heredocs):
             part_isolated = True
             i += 1
             continue
-        if ch == "{" and (
-            (contexts and contexts[-1][0] == "function-body")
-            or re.search(
-                r"(?:^|\s)(?:[A-Za-z_][A-Za-z0-9_]*\s*\(\s*\)"
-                r"|function\s+[A-Za-z_][A-Za-z0-9_]*)\s*$",
-                "".join(part),
-            )
-        ):
-            contexts.append(("function-body", "}", "", part, part_start))
+        brace_kind = brace_context_word(part, text[i:]) if ch in "{}" else ""
+        if ch == "{" and brace_kind:
+            contexts.append((brace_kind, "}", "", part, part_start))
             part = []
             part_start = i + 1
             part_isolated = True
+            previous_separator = ""
             i += 1
             continue
-        if (
-            ch == "{"
-            and (i == 0 or text[i - 1].isspace() or text[i - 1] in ";|&()")
-            and (i + 1 == len(text) or text[i + 1].isspace())
+        if contexts and ch == contexts[-1][1] and (
+            ch != "}" or brace_kind and previous_separator in {";", "\n", "&"}
         ):
-            contexts.append(("command-group", "}", "", part, part_start))
-            part = []
-            part_start = i + 1
-            part_isolated = True
-            i += 1
-            continue
-        if contexts and ch == contexts[-1][1]:
             context_kind = contexts[-1][0]
             if part and context_kind != "function-body":
                 yield "".join(part), "", True, True, text[part_start:i]
@@ -576,6 +592,7 @@ def split_shell_segments(text, heredocs):
             part = outer_part
             quote = restore_quote
             part_isolated = True
+            previous_separator = ""
             i += 1
             continue
         separator = ""
@@ -606,10 +623,13 @@ def split_shell_segments(text, heredocs):
             part = []
             part_start = i + len(separator)
             part_isolated = bool(contexts)
+            previous_separator = separator
             i += len(separator)
             continue
         part.append(ch)
         i += 1
+    if any(context[1] == "}" for context in contexts):
+        raise UninspectableShellScript
     yield (
         "".join(part), "", part_isolated or bool(contexts), bool(contexts),
         text[part_start:],
