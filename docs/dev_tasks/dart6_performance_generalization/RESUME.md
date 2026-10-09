@@ -35,32 +35,25 @@ August 2026; re-run before treating these numbers as current; artifacts `/tmp/au
   dart/fcl/bullet/ode; S4/S5 fcl match the recorded drift values; S4/S5
   bullet re-baselined by merged #3355's analytic PlaneShape path (new values
   in the audit dir are the current guards).
-- Criterion 4 (general evidence): refresh representative arm, humanoid,
-  many-object, resting, and dynamic workloads with same-host DART revision
-  comparisons, behavior guards, and GUI/headless evidence. The WP-SS
-  small-scene-overhead family remains.
+- Criterion 4 (general evidence): refresh representative DART workloads
+  with same-host revision comparisons, behavior guards, and GUI/headless
+  evidence. #3369 merged the MJCF stacked-joint and collision
+  fidelity work; the WP-SS small-scene-overhead family remains.
 - Side products: #3366 fixes a dartpy `getDofs`/`getChainDofs` ownership bug
   (heap corruption, SIGSEGV at teardown); #3368 (dep-min lane) removes the
-  `dart` detector's O(n^2) broadphase with bit-identical guards; #3369 merged
-  the MJCF stacked-joint and collision-fidelity work.
+  `dart` detector's O(n^2) broadphase with bit-identical guards.
 
-#3366, #3368, and #3369 have merged. Refresh the DART workload matrix on the
-current merged base against parent/base revisions before cutting the next
-evidence-driven packet.
+#3366, #3368, and #3369 have merged; docs refresh is this PR. Re-baseline
+the `dart` detector rows on the current merged base before cutting
+the next evidence-driven packet.
 
 A fresh session should start from current `origin/release-6.20` (the audited
 head above or later; re-fetch — the maintainer merges frequently), read this
-README plus the lane docs, and refresh the representative-workload evidence
-on the merged base. The north-star requirement is broader than "latest packet
-merged": finish issue #3056 on DART 6.20 with DART revision comparisons showing
-the result is general. The whole remaining effort should land in a few large,
-cohesive PRs.
-
-WP-SS candidate seams from the 2026-07-10 diagnostic arm-scene profile remain:
-small-LCP construct/solve (WP-SS.1, ~11.35 µs per group, including ~5 µs
-`constructLcpTerms`), `dart` small-scene collision overhead (WP-SS.2), and
-small-skeleton integration (WP-SS.3, ~12 µs; `updateConstraints` self ~11.8 µs).
-Re-profile on the merged base before selecting an implementation packet.
+README plus the lane docs, and refresh DART workload evidence on the merged base
+rather than redoing the completed audit. The maintainer's
+north-star requirement is broader than "latest packet merged": finish issue
+#3056 on DART 6.20 with DART revision evidence showing the result is
+general. The whole remaining effort should land in a few large, cohesive PRs.
 
 Do not open a small follow-up PR merely because a packet exists. Prefer one
 consolidated evidence/closeout branch unless the audit identifies a real
@@ -85,8 +78,7 @@ Recommended next session plan (items 1-2 are DONE for the 2026-07-10 cycle;
 kept for the method):
 
 1. Verify live state: `git fetch origin release-6.20`, inspect open
-   PRs/issues, and avoid touching dirty sibling worktrees
-   such as `/home/js/dev/dartsim/dart/task_3-fix-simd`.
+   PRs/issues, and avoid touching dirty sibling worktrees used for other work.
 2. Run a current-head acceptance audit against the README north-star gate:
    tests, benchmark matrix, GUI/headless artifacts, decision status, and
    remaining issue #3056 closure evidence.

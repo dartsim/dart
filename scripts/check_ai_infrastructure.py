@@ -1487,6 +1487,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 "tests/test_sync_ai_commands.py",
                 "tests/test_ai_infrastructure.py",
                 "tests/test_install_git_hooks.py",
+                "tests/test_check_local_paths.py",
                 "-q",
             ],
             "depends-on": [],
