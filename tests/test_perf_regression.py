@@ -1508,8 +1508,13 @@ def test_run_arm_loads_installed_sample_data_before_unchecked_source(
     assert module.run_arm(args) == {"sample_data": "installed revision"}
 
 
-def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
+@pytest.mark.parametrize("default_staging", [False, True])
+def test_fingerprint_includes_active_runtime_environment(
+    monkeypatch, tmp_path, default_staging
+):
     module = _load_runner()
+    if default_staging:
+        monkeypatch.setattr(module, "DEFAULT_MEASUREMENT_ROOT", module.MEASUREMENT_ROOT)
     _fake_runtime_shim(module)
     _fake_valgrind(module, monkeypatch, tmp_path)
     args = module.parser().parse_args(
@@ -1561,7 +1566,22 @@ def test_fingerprint_includes_active_runtime_environment(monkeypatch, tmp_path):
     first = module.fingerprint(args)
     assert first["runtime_pixi_lock_sha"] == module.sha(b"runtime lock")
     assert first["runtime_environment"] == "default"
-    assert first["staging_root"] == str(module.MEASUREMENT_ROOT)
+    assert first["staging_root"] == (
+        "default"
+        if default_staging
+        else f"sha256:{module.sha(str(module.MEASUREMENT_ROOT).encode())}"
+    )
+    assert first["fingerprint"] == module.sha(
+        json.dumps(
+            {
+                key: str(module.MEASUREMENT_ROOT) if key == "staging_root" else value
+                for key, value in first.items()
+                if key not in ("runner", "host_cpu", "fingerprint")
+            },
+            sort_keys=True,
+        ).encode()
+    )
+    assert str(module.MEASUREMENT_ROOT) not in json.dumps(first)
     assert first["osgpath_sha"] == module.sha(b"runtime shim")
     monkeypatch.delenv("PIXI_ENVIRONMENT_NAME")
     for key in ("RUNNER_NAME", "ImageOS", "ImageVersion"):
@@ -4095,12 +4115,6 @@ def test_local_uses_independent_source_and_cmake_caches(
                 targets = set(command[command.index("--target") + 1 :])
                 assert targets & module.WORKLOAD_SOURCES.keys() == expected_drivers
                 libraries = {"dart-utils-urdf"}
-                if module.CB not in expected_drivers:
-                    libraries |= {
-                        "dart-collision-ode",
-                        "dart-collision-bullet",
-                        "dart-gui-osg",
-                    }
                 assert targets == libraries | expected_drivers
                 (build / "bin").mkdir()
                 for driver in expected_drivers:
@@ -5466,8 +5480,9 @@ def _trusted_publication(monkeypatch, event="push"):
 
 
 @pytest.mark.parametrize("tier", ["merge", "nightly", "release", "backfill"])
+@pytest.mark.parametrize("staging", ["default", "custom"])
 def test_publication_schema_normalizes_tier_and_advisory_wall(
-    monkeypatch, tmp_path, tier
+    monkeypatch, tmp_path, tier, staging
 ):
     module = _load_runner()
     path = tmp_path / "record.json"
@@ -5493,6 +5508,9 @@ def test_publication_schema_normalizes_tier_and_advisory_wall(
             "name": "local",
             "image": "",
         }
+    staging_root = "/tmp/dart-perf" if staging == "default" else str(tmp_path)
+    fixture["run"]["env"]["staging_root"] = staging_root
+    fixture["results"][0]["head_env"] = copy.deepcopy(fixture["run"]["env"])
     module.write_json(path, fixture)
     extra = {"tag": "v6.20.0", "base_tag": "v6.19.5"} if tier == "release" else {}
     record = module.publication_record(path, tier, 3570, **extra)
@@ -5505,6 +5523,14 @@ def test_publication_schema_normalizes_tier_and_advisory_wall(
     assert record["run"]["harness_commit"] == "c" * 40
     assert record["run"]["time"] == "2026-10-08T08:00:00+00:00"
     row = record["results"][0]
+    public_root = (
+        "default"
+        if staging == "default"
+        else f"sha256:{module.sha(staging_root.encode())}"
+    )
+    assert record["run"]["env"]["staging_root"] == public_root
+    assert row["head_env"]["staging_root"] == public_root
+    assert module.find_local_path(record) is None
     assert row["head"]["libdart"] == "libdart.so.6.20"
     assert row["wall_ms_per_step"] == {
         "parent": None if tier == "nightly" else 12.3,
@@ -5515,6 +5541,8 @@ def test_publication_schema_normalizes_tier_and_advisory_wall(
         assert record["run"]["parent"] is None
         assert "parent" not in row and "delta" not in row
         assert "verdict" not in record
+    module.write_json(path, record)
+    assert module.publication_record(path, tier, 3570, **extra) == record
 
 
 @pytest.mark.parametrize(
@@ -5570,6 +5598,10 @@ def test_publication_context_refuses_untrusted_writes(
         "duplicate",
         "infrastructure",
         "local-path",
+        "default-path-elsewhere",
+        "nested-staging-root",
+        "staging-root-type",
+        "staging-root-empty",
     ],
 )
 def test_publication_rejects_invalid_measurement_before_git(tmp_path, defect):
@@ -5600,6 +5632,14 @@ def test_publication_rejects_invalid_measurement_before_git(tmp_path, defect):
         record["results"][0]["error_kind"] = "infrastructure"
     elif defect == "local-path":
         record["results"][0]["error"] = f"failed to read {tmp_path / 'data/input.sdf'}"
+    elif defect == "default-path-elsewhere":
+        record["run"]["env"]["other"] = "/tmp/dart-perf"
+    elif defect == "nested-staging-root":
+        record["results"][0]["head"]["staging_root"] = "/tmp/dart-perf"
+    elif defect in ("staging-root-type", "staging-root-empty"):
+        record["run"]["env"]["staging_root"] = (
+            {} if defect == "staging-root-type" else ""
+        )
     path = tmp_path / "record.json"
     path.write_text(json.dumps(record))
     with pytest.raises(ValueError):
@@ -7066,7 +7106,49 @@ def test_install_targets_tracks_only_the_current_configured_install(tmp_path):
     assert str(tmp_path) not in str(error.value)
 
 
-def test_build_arm_uses_fresh_caches_and_empties_install_prefix(monkeypatch, tmp_path):
+@pytest.mark.parametrize("gui", [False, True])
+def test_install_targets_reads_configured_gui_from_cmake(tmp_path, gui):
+    module = _load_runner()
+    source, build = tmp_path / "source", tmp_path / "build"
+    source.mkdir()
+    (source / "fixture.c").write_text("int perf_fixture(void) { return 0; }\n")
+    (source / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.22)\n"
+        "project(perf_fixture C)\n"
+        "add_library(dart STATIC fixture.c)\n"
+        "install(TARGETS dart)\n"
+        "if(GUI)\n"
+        "  add_library(dart-gui-osg STATIC fixture.c)\n"
+        "  install(TARGETS dart-gui-osg)\n"
+        "endif()\n"
+        "add_library(UNIT_dynamics STATIC EXCLUDE_FROM_ALL fixture.c)\n"
+        "add_custom_target(contact_benchmark)\n"
+    )
+    query = build / ".cmake/api/v1/query/codemodel-v2"
+    query.parent.mkdir(parents=True)
+    query.touch()
+    subprocess.run(
+        [
+            "cmake",
+            "-G",
+            "Ninja",
+            "-S",
+            str(source),
+            "-B",
+            str(build),
+            f"-DGUI={'ON' if gui else 'OFF'}",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert module.install_targets(build) == ["dart", *(["dart-gui-osg"] if gui else [])]
+
+
+@pytest.mark.parametrize("gui", [False, True])
+def test_build_arm_uses_fresh_caches_and_empties_install_prefix(
+    monkeypatch, tmp_path, gui
+):
     module = _load_runner()
     root = tmp_path / "harness"
     root.mkdir()
@@ -7088,9 +7170,8 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(monkeypatch, tmp
         lambda *args: {"compiler": "GNU 13.3.0", "compiler_sha": "1" * 64},
     )
     monkeypatch.setattr(module, "library_hashes", lambda *args: {})
-    monkeypatch.setattr(
-        module, "install_targets", lambda *args: ["dart-optimizer-ipopt"]
-    )
+    installed_targets = ["dart-optimizer-ipopt", *(["dart-gui-osg"] if gui else [])]
+    monkeypatch.setattr(module, "install_targets", lambda *args: installed_targets)
 
     def execute(command, env, log, timeout, **kwargs):
         assert kwargs["build"]
@@ -7107,8 +7188,10 @@ def test_build_arm_uses_fresh_caches_and_empties_install_prefix(monkeypatch, tmp
             if Path(command[2]).resolve() == driver:
                 (driver / "portable_step_bench").write_bytes(b"driver")
             else:
-                assert "dart-optimizer-ipopt" in command
-                assert "all" not in command
+                assert set(command[command.index("--target") + 1 :]) == {
+                    "dart-utils-urdf",
+                    *installed_targets,
+                }
         elif command[:2] == ["cmake", "--install"]:
             staged_prefix = Path(command[command.index("--prefix") + 1])
             assert staged_prefix == module.MEASUREMENT_ROOT / "arm/prefix"
@@ -7592,6 +7675,33 @@ def test_write_json_preserves_the_previous_record_until_atomic_replace(
     with pytest.raises(KeyboardInterrupt):
         module.write_json(path, {"complete": "after"})
     assert path.read_bytes() == previous
+
+
+def test_backfill_default_staging_records_remain_publishable(monkeypatch, tmp_path):
+    module, args, revisions, identity, builds, measurements = _backfill_test_setup(
+        monkeypatch, tmp_path
+    )
+    for revision in revisions:
+        record = _measurement_fixture(module, revision)
+        record["run"]["env"]["staging_root"] = "/tmp/dart-perf"
+        module.write_json(args.output_dir / "runs" / revision / "record.json", record)
+    records = module.backfill_records(
+        args,
+        module.backfill_plan(args),
+        {"identity": identity, "fingerprint": "1" * 64},
+    )
+    assert len(records) == 2
+    for record in records:
+        assert record["run"]["env"]["staging_root"] == "/tmp/dart-perf"
+        record["results"][0]["head_env"] = copy.deepcopy(record["run"]["env"])
+        path = args.output_dir / "records/main" / f"{record['run']['commit']}.json"
+        module.write_json(path, record)
+        published = module.publication_record(path, "backfill")
+        assert published["run"]["env"]["staging_root"] == "default"
+        assert published["results"][0]["head_env"]["staging_root"] == "default"
+        assert published["run"]["env"]["fingerprint"] == "1" * 64
+        assert module.find_local_path(published) is None
+        assert json.loads(path.read_text()) == record
 
 
 def test_backfill_records_pair_bases_and_cover_build_failures(monkeypatch, tmp_path):
