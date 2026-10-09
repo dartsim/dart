@@ -1438,23 +1438,34 @@ TEST(
 
 TEST(StepAllocation, NativeCustomFilterFirstPostBakeHasNoAllocation)
 {
-  const std::string label = "native_dart_custom_filter_first_post_bake_gate";
-  dart::test::CountingMemoryAllocator allocator;
-  dart::simulation::WorldConfig config(label);
-  config.baseAllocator = &allocator;
-  auto world = createStackedBoxesWorld(
-      1u, dart::collision::DARTCollisionDetector::create(), config);
-  world->getConstraintSolver()->getCollisionOption().collisionFilter
-      = std::make_shared<PreparedStepBodyNodeCollisionFilter>();
-  world->enterSimulationMode();
-  ASSERT_TRUE(world->isInSimulationMode());
+  for (const int ownership : {0, 1, 2}) {
+    SCOPED_TRACE(ownership);
+    const std::string label = "native_dart_custom_filter_first_post_bake_gate";
+    dart::test::CountingMemoryAllocator allocator;
+    dart::simulation::WorldConfig config(label);
+    config.baseAllocator = &allocator;
+    auto world = createStackedBoxesWorld(
+        1u, dart::collision::DARTCollisionDetector::create(), config);
+    world->getConstraintSolver()->getCollisionOption().collisionFilter
+        = std::make_shared<PreparedStepBodyNodeCollisionFilter>();
+    if (ownership == 1) {
+      auto first = world->getSkeleton(0);
+      world->getConstraintSolver()->removeSkeleton(first);
+      world->getConstraintSolver()->addSkeleton(first);
+    } else if (ownership == 2) {
+      world->getConstraintSolver()->addSkeleton(
+          dart::dynamics::Skeleton::create());
+    }
+    world->enterSimulationMode();
+    ASSERT_TRUE(world->isInSimulationMode());
 
-  const auto measurement = measureWorldStepsNow(world, allocator, 1);
-  reportMeasurement(label, measurement);
-  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
-  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
-  if (!measurement.rawHeap.skipped) {
-    EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+    const auto measurement = measureWorldStepsNow(world, allocator, 1);
+    reportMeasurement(label, measurement);
+    expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
+    EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+    if (!measurement.rawHeap.skipped) {
+      EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+    }
   }
 }
 

@@ -550,7 +550,10 @@
     last solved contacts and forces, and allow disabling custom-filter sleeping
     with `DART_CUSTOM_FILTER_SLEEPING`. Keep custom-filter bodies awake when the
     constraint solver registers skeletons outside the `World`. Downstream code
-    that constructs or subclasses `World` must rebuild against DART 6.20.
+    that constructs or subclasses `World` or concrete `ConstraintSolver` types
+    must rebuild against DART 6.20. Cache skeleton ownership checks so custom
+    filters incur constant checking cost on unchanged steps, including reordered
+    solver lists and solver-only skeletons.
 
   * Add opt-in `NsgsFrictionSolver` with exact Coulomb, associated, and box
     friction laws, cumulative `FrictionSolveStats`, clone support, and

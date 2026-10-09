@@ -512,6 +512,11 @@ public:
   // by revision (DART_CUSTOM_FILTER_SLEEPING, read at construction).
   const bool mCustomFilterSleeping;
 
+  std::size_t mSolverSkeletonOwnershipCheckCount = 0u;
+  std::size_t mSolverSkeletonListVersion = 0u;
+  bool mSolverSkeletonOwnershipValid = false;
+  bool mOwnsSolverSkeletons = false;
+
   // The decisions such a filter made for every pair the last solve's contact
   // query asked about, and what they refer to. Bullet's dispatcher may keep a
   // reference to the recorder after the solve.
@@ -574,22 +579,6 @@ bool isReplayed(
                 const collision::detail::CollisionFilterSnapshotTracker*>(
                 filter)
                 == nullptr;
-}
-
-// World snapshots cover only the skeletons it owns.
-bool ownsSolverSkeletons(
-    const std::vector<dynamics::SkeletonPtr>& skeletons,
-    const constraint::ConstraintSolver& solver)
-{
-  const auto& solverSkeletons = solver.getSkeletons();
-  return solverSkeletons == skeletons
-         || std::all_of(
-             solverSkeletons.begin(),
-             solverSkeletons.end(),
-             [&](const auto& skel) {
-               return std::find(skeletons.begin(), skeletons.end(), skel)
-                      != skeletons.end();
-             });
 }
 
 //==============================================================================
@@ -1828,10 +1817,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // While a custom handler is installed, every quiet dwell stays 0: no body
   // becomes a candidate (every rest path needs candidacy), and removing the
   // handler restarts the full sleep delay (#3056).
-  const bool canSleep
-      = usesBuiltInContactSurfaceHandler(*mConstraintSolver)
-        && (!customFilterSleeping
-            || ownsSolverSkeletons(mSkeletons, *mConstraintSolver));
+  const bool canSleep = usesBuiltInContactSurfaceHandler(*mConstraintSolver)
+                        && (!customFilterSleeping || ownsSolverSkeletons());
   constexpr double kSupportNormalMinVerticalComponent = 0.5;
   const auto& contacts = mConstraintSolver->getLastCollisionResult();
   const double gravityNorm = mGravity.norm();
@@ -2775,8 +2762,7 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
 
   bool recordedStateUnchanged
       = skeletonStateUnchanged && !deactivationStateChanged
-        && (!deactivationState.mStepCustomBodyFilter
-            || ownsSolverSkeletons(mSkeletons, *mConstraintSolver))
+        && (!deactivationState.mStepCustomBodyFilter || ownsSolverSkeletons())
         && mLastStepRestingWorldStateCollisionDetector
                == collisionDetector.get()
         && mLastStepRestingWorldStateCollisionGroup == collisionGroup.get()
@@ -3064,6 +3050,7 @@ std::string World::addSkeleton(const dynamics::SkeletonPtr& _skeleton)
   }
 
   mSkeletons.push_back(_skeleton);
+  mDeactivationState->mSolverSkeletonOwnershipValid = false;
   mMapForSkeletons[_skeleton] = _skeleton;
 
   mNameConnectionsForSkeletons.push_back(_skeleton->onNameChanged.connect(
@@ -3126,6 +3113,7 @@ void World::removeSkeleton(const dynamics::SkeletonPtr& _skeleton)
   mSkeletons.erase(
       remove(mSkeletons.begin(), mSkeletons.end(), _skeleton),
       mSkeletons.end());
+  mDeactivationState->mSolverSkeletonOwnershipValid = false;
   refreshSkeletonDofIndices();
   invalidateSimulationMode();
 
@@ -3396,6 +3384,39 @@ collision::ConstCollisionDetectorPtr World::getCollisionDetector() const
 }
 
 //==============================================================================
+bool World::ownsSolverSkeletons()
+{
+  const auto& solverSkeletons = mConstraintSolver->getSkeletons();
+  if (solverSkeletons.size() != mSkeletons.size())
+    return false;
+
+  auto& state = *mDeactivationState;
+  const auto version = mConstraintSolver->mSkeletonListVersion;
+  if (!state.mSolverSkeletonOwnershipValid
+      || state.mSolverSkeletonListVersion != version) {
+    ++state.mSolverSkeletonOwnershipCheckCount;
+    // World snapshots cover only its own skeletons, regardless of solver order.
+    state.mOwnsSolverSkeletons
+        = solverSkeletons == mSkeletons
+          || std::all_of(
+              solverSkeletons.begin(),
+              solverSkeletons.end(),
+              [&](const auto& skel) {
+                return mMapForSkeletons.find(skel) != mMapForSkeletons.end();
+              });
+    state.mSolverSkeletonListVersion = version;
+    state.mSolverSkeletonOwnershipValid = true;
+  }
+  return state.mOwnsSolverSkeletons;
+}
+
+//==============================================================================
+std::size_t World::getSolverSkeletonOwnershipCheckCount() const
+{
+  return mDeactivationState->mSolverSkeletonOwnershipCheckCount;
+}
+
+//==============================================================================
 void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
 {
   if (!solver) {
@@ -3408,6 +3429,7 @@ void World::setConstraintSolver(constraint::UniqueConstraintSolverPtr solver)
     solver->setFromOtherConstraintSolver(*mConstraintSolver);
 
   mConstraintSolver = std::move(solver);
+  mDeactivationState->mSolverSkeletonOwnershipValid = false;
   mConstraintSolver->setTimeStep(mTimeStep);
   mConstraintSolver->setNumSimulationThreads(mNumSimulationThreads);
   invalidateAllRestingKinematicSnapshot();

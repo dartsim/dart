@@ -443,6 +443,12 @@ public:
   /// \}
 
 protected:
+  /// Whether the solver and World own the same skeletons.
+  bool ownsSolverSkeletons();
+
+  /// Number of full skeleton membership checks, for deterministic cost tests.
+  std::size_t getSolverSkeletonOwnershipCheckCount() const;
+
   /// Runs the post-step rest-detection pass: puts quiet mobile skeletons to
   /// sleep after the configured dwell time and wakes skeletons that have begun
   /// moving again. \p disturbedThisStep marks skeletons that were woken or kept
