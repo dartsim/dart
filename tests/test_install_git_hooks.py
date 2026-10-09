@@ -800,6 +800,127 @@ def test_commit_msg_hook_blocks_inline_hash_message(tmp_path, prefix):
     assert f"1: {private_path}" in result.stderr
 
 
+def test_commit_msg_hook_auto_comment_without_instructions_fails_closed(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    assert _install(repo, env).returncode == 0
+    private_path = "/home/" + "example/private.md"
+    message = repo / "message.txt"
+    message.write_text(f"Public summary\n# {private_path}\n")
+    editor = repo / "editor.sh"
+    editor.write_text('#!/bin/sh\ncat message.txt > "$1"\n')
+    editor.chmod(0o755)
+    command = [
+        "git",
+        "-c",
+        "user.name=Example",
+        "-c",
+        "user.email=example@example.com",
+        "-c",
+        "core.commentChar=auto",
+        "commit",
+        "--allow-empty",
+        "-e",
+        "-F",
+        message.name,
+    ]
+    result = subprocess.run(
+        command,
+        cwd=repo,
+        env={**env, "GIT_EDITOR": str(editor)},
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1, result.stderr
+    assert private_path in result.stderr
+    # Prove Git retains this hash line after selecting another comment character.
+    result = subprocess.run(
+        [*command[:1], "-c", "core.hooksPath=" + os.devnull, *command[1:]],
+        cwd=repo,
+        env={**env, "GIT_EDITOR": str(editor)},
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    published = subprocess.run(
+        ["git", "show", "-s", "--format=%B", "HEAD"],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert f"# {private_path}" in published.stdout
+
+
+@pytest.mark.parametrize("arguments", [[], ["--no-verbose"], ["--no-verbose", "-v"]])
+def test_commit_msg_hook_configured_verbose_ignores_fixture_diff(tmp_path, arguments):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    fixture = repo / "tests/test_check_local_paths.py"
+    fixture.parent.mkdir()
+    fixture.write_text('fixture = "' + "/home/" + 'example/private.md"\n')
+    command = [
+        "git",
+        "-c",
+        "user.name=Example",
+        "-c",
+        "user.email=example@example.com",
+        "commit",
+    ]
+    subprocess.run(["git", "add", "."], cwd=repo, env=env, check=True)
+    subprocess.run(
+        [*command, "-qm", "Public base"],
+        cwd=repo,
+        env=env,
+        check=True,
+        capture_output=True,
+    )
+    fixture.write_text(fixture.read_text() + "# Public fixture update\n")
+    subprocess.run(["git", "add", "."], cwd=repo, env=env, check=True)
+    subprocess.run(
+        ["git", "config", "commit.verbose", "true"], cwd=repo, env=env, check=True
+    )
+    assert _install(repo, env).returncode == 0
+    editor = repo / "editor.sh"
+    editor.write_text(
+        '#!/bin/sh\nprintf "Public summary\\n" > summary.txt\ncat "$1" >> summary.txt\ncat summary.txt > "$1"\n'
+    )
+    editor.chmod(0o755)
+    result = subprocess.run(
+        [*command, *arguments],
+        cwd=repo,
+        env={**env, "GIT_EDITOR": str(editor)},
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def test_pre_push_blocks_gitlink_hidden_by_diff_config(tmp_path):
+    repo, env, git = _push_repo(tmp_path)
+    base = git("rev-parse", "HEAD").stdout.strip()
+    private_path = "scratchpad" + "/private-module"
+    git("config", "diff.ignoreSubmodules", "all")
+    git("update-index", "--add", "--cacheinfo", f"160000,{base},{private_path}")
+    git("commit", "-qm", "Public gitlink")
+    assert _install(repo, env).returncode == 0
+    result = git("push", "origin", "main", check=False)
+    assert result.returncode != 0, result.stderr
+    assert private_path in result.stdout
+    assert "push blocked" in result.stderr
+    assert (
+        git("ls-remote", "origin", "refs/heads/main").stdout.strip()
+        == f"{base}\trefs/heads/main"
+    )
+
+
 @pytest.mark.parametrize(
     "cleanup,expected", [("strip", 0), ("verbatim", 1), ("whitespace", 1)]
 )

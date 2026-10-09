@@ -175,7 +175,7 @@ def scan_line(
     # Invalid bytes delimit text; keep any valid path prefix beside them.
     line = line.replace("\ufffd", "\n").replace(r"\/", "/")
     allowed = ALLOWLIST.get(filename)
-    if filename == ".gitignore" and allowed.fullmatch(line):
+    if filename == ".gitignore" and allowed.fullmatch(line.removesuffix("\r")):
         return False
     url_paths = []
 
@@ -308,6 +308,16 @@ def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
     }
     cleanup = None
     supplied = verbose = False
+    if subcommand == "commit":
+        result = subprocess.run(
+            ["git", *config_args, "config", "--bool-or-int", "--get", "commit.verbose"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode not in (0, 1):
+            result.check_returncode()
+        value = result.stdout.strip()
+        verbose = value == "true" or (value not in {"", "false"} and int(value) > 0)
     edit = None
     i = 0
     while i < len(args):
@@ -399,9 +409,12 @@ def scan_commit_message(
                 if result.returncode == 0 and result.stdout.rstrip("\n"):
                     comment_string = result.stdout.rstrip("\n")
                     break
-            if not comment_string or comment_string == "auto":
-                comment_string = instruction["char"] if instruction else "#"
-        strip_comments = mode == "strip"
+            if comment_string == "auto":
+                # Git selects this before editing; edited text cannot recover it.
+                comment_string = instruction["char"] if instruction else None
+            elif not comment_string:
+                comment_string = "#"
+        strip_comments = mode == "strip" and comment_string is not None
         cut_at_scissors = mode == "scissors" or verbose
     else:
         # Unreadable or unparsable commands fall back to English-template evidence.
@@ -439,6 +452,10 @@ def scan_changes(
         root,
         *revisions,
         "--no-renames",
+        "--ignore-submodules=none",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--no-color",
         "--raw",
         "-z",
         "--diff-filter=ACMRT",
@@ -465,6 +482,7 @@ def scan_changes(
             root,
             *revisions,
             "--no-renames",
+            "--ignore-submodules=none",
             "--no-ext-diff",
             "--no-textconv",
             "--no-color",

@@ -686,6 +686,51 @@ def _commit(repo, message="Public fixture"):
     return _git(repo, "rev-parse", "HEAD").stdout.strip()
 
 
+@pytest.mark.parametrize("mode", ["--staged", "--commit-range"])
+@pytest.mark.parametrize("root_commit", [False, True])
+def test_gitlink_names_are_scanned_despite_diff_config(repo, mode, root_commit):
+    (repo / "notes.md").write_text("Public summary\n")
+    base = _commit(repo)
+    if root_commit:
+        _git(repo, "checkout", "--orphan", "topic")
+        _git(repo, "rm", "-r", "--cached", ".")
+    filename = "scratchpad" + "/private-module"
+    _git(repo, "config", "diff.ignoreSubmodules", "all")
+    _git(repo, "update-index", "--add", "--cacheinfo", f"160000,{base},{filename}")
+    args = (mode,)
+    if mode == "--commit-range":
+        _git(
+            repo,
+            "-c",
+            "user.name=Example",
+            "-c",
+            "user.email=example@example.com",
+            "commit",
+            "-qm",
+            "Public gitlink",
+        )
+        head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+        args = (mode, head if root_commit else f"{base}..{head}")
+    result = _cli(*args, cwd=repo)
+    assert result.returncode == 1, result.stderr
+    assert filename in result.stdout
+
+
+@pytest.mark.parametrize("mode", ["--staged", "--commit-range", "--all-tracked"])
+@pytest.mark.parametrize("entry,expected", [("", 0), (" ", 1), ("private.md", 1)])
+def test_crlf_ignore_entry_preserves_exact_allowlist(repo, mode, entry, expected):
+    (repo / "notes.md").write_text("Public summary\n")
+    base = _commit(repo)
+    (repo / ".gitignore").write_bytes((".sisyphus" + "/" + entry + "\r\n").encode())
+    _git(repo, "add", ".gitignore")
+    args = (mode,)
+    if mode == "--commit-range":
+        head = _commit(repo)
+        args = (mode, f"{base}..{head}")
+    result = _cli(*args, cwd=repo)
+    assert result.returncode == expected, result.stdout + result.stderr
+
+
 @pytest.mark.parametrize(
     "escaped_path, reported_path",
     [
@@ -1564,6 +1609,35 @@ def test_parent_cleanup_only_honors_scissors_in_scissors_or_verbose_mode(
     )
 
 
+@pytest.mark.parametrize(
+    "configured,global_args,arguments,verbose",
+    [
+        ("true", [], [], True),
+        ("2", [], [], True),
+        ("false", [], [], False),
+        ("true", [], ["--no-verbose"], False),
+        ("true", [], ["--no-verbose", "-v"], True),
+        ("false", [], ["--verbose"], True),
+        ("true", ["-c", "commit.verbose=false"], [], False),
+        ("false", ["-ccommit.verbose=true"], [], True),
+    ],
+)
+def test_commit_verbose_config_precedes_command_overrides(
+    repo, monkeypatch, configured, global_args, arguments, verbose
+):
+    _git(repo, "config", "commit.verbose", configured)
+    monkeypatch.chdir(repo)
+    command = ["git", *global_args, "commit", *arguments]
+    assert checker.commit_cleanup(command) == ("strip", verbose)
+    message = (
+        "Public summary\n# ------------------------ >8 ------------------------\n"
+        + "/home/"
+        + "example/private.md\n"
+    )
+    assert checker.scan_commit_message(message, command, "#") == (not verbose)
+    assert checker.commit_cleanup(["git", "merge", "--edit"]) == ("whitespace", False)
+
+
 @pytest.mark.parametrize("template,expected", [(True, False), (False, True)])
 def test_unreadable_git_parent_falls_back_to_english_template(
     tmp_path, template, expected
@@ -1610,8 +1684,8 @@ def test_commit_cleanup_preserves_configured_comment_string_spaces(monkeypatch, 
         "run",
         lambda command, **kwargs: subprocess.CompletedProcess(
             command,
-            1 if command[-1] == "commit.cleanup" else 0,
-            "" if command[-1] == "commit.cleanup" else "// \n",
+            1 if command[-1] in {"commit.cleanup", "commit.verbose"} else 0,
+            "" if command[-1] in {"commit.cleanup", "commit.verbose"} else "// \n",
         ),
     )
     assert checker.scan_commit_message(
