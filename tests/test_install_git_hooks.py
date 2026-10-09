@@ -199,16 +199,54 @@ def test_pre_push_selects_compatible_python(tmp_path, mode):
     assert "push blocked" in result.stderr
 
 
-def test_pre_push_blocks_when_checker_unavailable_but_allows_deletion(tmp_path):
+@pytest.mark.parametrize("unavailable", ["checker", "python"])
+@pytest.mark.parametrize("local_status", [0, 7])
+def test_pre_push_skips_unavailable_gate_and_honors_local_hook(
+    tmp_path, unavailable, local_status
+):
     repo, env, git = _push_repo(tmp_path)
-    git("push", "origin", "HEAD:refs/heads/topic")
-    assert _install(repo, env).returncode == 0
+    base = git("rev-parse", "HEAD").stdout.strip()
     git("commit", "--allow-empty", "-qm", "Public change")
-    (repo / "scripts/check_local_paths.py").unlink()
-    result = git("push", "origin", "main", check=False)
-    assert result.returncode != 0
-    assert "gate unavailable" in result.stderr
-    git("push", "origin", ":refs/heads/topic")
+    if unavailable == "checker":
+        git("rm", "scripts/check_local_paths.py")
+        git("commit", "-qm", "Checkout without checker")
+    else:
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        python = bin_dir / "python3"
+        python.write_text("#!/bin/sh\nexit 1\n")
+        python.chmod(0o755)
+        env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
+        env["DART_HOOK_PYTHON"] = str(python)
+    hook = _hook(repo, "pre-push")
+    hook.write_text(f"#!/bin/sh\ncat > push-input.txt\nexit {local_status}\n")
+    hook.chmod(0o755)
+    assert _install(repo, env).returncode == 0
+
+    result = git("push", "origin", "main", "HEAD:refs/heads/topic", check=False)
+
+    assert len((repo / "push-input.txt").read_text().splitlines()) == 2
+    assert "DART pre-push: scanning" not in result.stderr
+    if local_status:
+        assert result.returncode != 0, result.stderr
+        assert git("ls-remote", "origin", "refs/heads/main").stdout.strip() == (
+            f"{base}\trefs/heads/main"
+        )
+        assert git("ls-remote", "origin", "refs/heads/topic").stdout == ""
+    else:
+        assert result.returncode == 0, result.stderr
+        assert (
+            result.stderr.count(
+                "DART pre-push: local-path gate unavailable in this checkout; skipping scan."
+            )
+            == 1
+        )
+        head = git("rev-parse", "HEAD").stdout.strip()
+        for ref in ("main", "topic"):
+            assert git("ls-remote", "origin", f"refs/heads/{ref}").stdout.strip() == (
+                f"{head}\trefs/heads/{ref}"
+            )
+        git("push", "origin", ":refs/heads/topic")
 
 
 def test_pre_push_new_ref_uses_remote_default_branch_merge_base(tmp_path):
@@ -304,7 +342,7 @@ def test_install_writes_executable_hook_and_is_idempotent(tmp_path, name):
     assert hook.exists()
     assert os.access(hook, os.X_OK)
     assert "DART-MANAGED-HOOK" in hook.read_text()
-    assert "DART-MANAGED-HOOK v11 " in hook.read_text()
+    assert "DART-MANAGED-HOOK v12 " in hook.read_text()
     digest = hashlib.sha256(hook.read_bytes()).hexdigest()
 
     second = _install(repo, env)

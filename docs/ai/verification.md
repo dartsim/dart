@@ -90,7 +90,7 @@ and pre-push, and Python with `tomllib` (3.11+) for pre-commit. All share
 foreign-hook chaining,
 `DART_SKIP_HOOKS=1`, and `DART_HOOK_DRY_RUN=1`. Older worktrees without the
 checker or a compatible Python interpreter print a notice and skip the message
-scan; the pre-commit hook retains its staged whitespace fallback.
+and pre-push scans; the pre-commit hook retains its staged whitespace fallback.
 
 The pre-push hook reads Git's `<local ref> <local sha> <remote ref> <remote sha>`
 stdin and runs `scripts/check_local_paths.py --commit-range <base>..<local sha>`
@@ -99,8 +99,9 @@ including cherry-picked, rebased, reverted and imported commits. Existing refs
 use the remote SHA; new refs use the merge base with the remote's default
 branch. Missing base objects are fetched without changing refs or `FETCH_HEAD`.
 An empty remote or unrelated history scans all local history. Deletions skip
-scanning. Foreign pre-push hooks receive the same stdin. Findings, unavailable
-checkers/interpreters and lookup or scan errors block the push.
+scanning. Foreign pre-push hooks receive the same stdin and their failures block
+the push. Unavailable checkers/interpreters print a notice and skip scanning;
+findings and lookup or scan errors block the push.
 
 When `--no-verify`/`-n` (including accepted abbreviations), a `core.hooksPath`
 override, or a missing/outdated managed hook prevents enforcement, the shared

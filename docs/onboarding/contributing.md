@@ -51,7 +51,8 @@ revert, `git am` and sequencer operations that skip commit hooks. It runs
 remote SHA for existing refs or the merge base with the remote's default branch
 for new refs. Missing base objects are fetched without changing refs or
 `FETCH_HEAD`; an empty remote or unrelated history scans all local history.
-Deletions skip scanning. Findings or lookup/scan errors block the push.
+Deletions skip scanning. Unavailable checkers/interpreters print a notice and
+skip scanning; findings or lookup/scan errors block the push.
 
 Existing hooks are preserved as `<hook>.local` and chained; a foreign pre-push
 hook receives the same ref-update stdin as the managed hook.
