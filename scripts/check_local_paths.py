@@ -146,6 +146,8 @@ def scan_line(
     filename: str | None = None,
     commit: str | None = None,
 ) -> bool:
+    # Invalid bytes delimit text; keep any valid path prefix beside them.
+    line = line.replace("\ufffd", "\n")
     allowed = ALLOWLIST.get(filename)
     if filename == ".gitignore" and allowed.fullmatch(line):
         return False
@@ -173,7 +175,6 @@ def scan_line(
             for text in (line, *url_paths)
             for pattern in PATTERNS
             for match in pattern.finditer(text)
-            if "\ufffd" not in match.group()
             if not (
                 filename != ".gitignore" and allowed and allowed.search(match.group())
             )
@@ -378,7 +379,8 @@ def scan_changes(
             filename,
         ).decode("utf-8", errors="replace")
         number = None
-        for line in diff.splitlines():
+        # Git patch records end at LF; a bare CR belongs to the added line.
+        for line in diff.split("\n"):
             hunk = HUNK.match(line)
             if hunk:
                 number = int(hunk.group(1))
@@ -408,6 +410,9 @@ def scan_commit_range(root: Path, commit_range: str) -> bool:
     )
     for entry in commits.decode("ascii").splitlines():
         commit, *parents = entry.split()
+        message = git_output(root, "show", "-s", "--format=%B", commit)
+        for text in content_decodings(message):
+            found |= scan_text(text, commit=commit)
         # First-parent diffs include merge resolutions; side commits are scanned too.
         revisions = (
             ("diff", parents[0], commit)
@@ -440,7 +445,7 @@ def main() -> int:
     mode.add_argument("--all-tracked", action="store_true")
     mode.add_argument(
         "--commit-range",
-        help="scan names and added lines of every commit in BASE..HEAD",
+        help="scan messages, names and added lines of every commit in BASE..HEAD",
     )
     mode.add_argument(
         "--text-file", type=Path, help="scan free text without exceptions"

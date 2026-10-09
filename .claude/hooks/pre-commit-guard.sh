@@ -14,7 +14,7 @@
 #   * reads the hook JSON from stdin, extracts .tool_input.command or .cmd
 #   * exits 0 fast for anything that is not a `git commit` invocation
 #   * evaluates every git commit split by the shell tokenizer:
-#       - if both executable git hooks are current DART-managed hooks and the
+#       - if all executable git hooks are current DART-managed hooks and the
 #         commit is not using --no-verify/-n (including accepted abbreviations)
 #         or a core.hooksPath override, and its arguments cannot expand, skip
 #         that invocation (the hooks enforce; avoid running the gate twice)
@@ -1246,6 +1246,7 @@ def managed_hooks_current(root):
     for name, command in (
         ("pre-commit", "scripts/check_agent_hook.py --profile staged"),
         ("commit-msg", "scripts/check_local_paths.py --commit-msg-file \"$1\" --git-pid \"$PPID\""),
+        ("pre-push", "scripts/check_local_paths.py --commit-range \"$commit_range\""),
     ):
         path = os.path.join(os.path.dirname(hook_path), name)
         try:
@@ -1255,7 +1256,7 @@ def managed_hooks_current(root):
             return False
         if (
             not os.access(path, os.X_OK)
-            or "DART-MANAGED-HOOK v10  (sentinel line: do not edit; the installer keys on it)"
+            or "DART-MANAGED-HOOK v11  (sentinel line: do not edit; the installer keys on it)"
             not in content
             or "if ! \"$python_cmd\" " + command + "; then" not in content
         ):

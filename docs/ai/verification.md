@@ -68,14 +68,14 @@ Local hooks and the agent guard are conveniences that explicit bypasses can
 skip. The PR Text workflow checks the title, body and every PR commit's messages,
 names and added lines
 using the base branch's checker as the backstop before merge.
-Git aliases expanding to commit, `git am`/applypatch imports, and alternate
-`GIT_INDEX_FILE` indexes are not inspected by the local hooks; PR Text's base
-checker is the backstop for every PR commit's messages, names and added lines.
+The pre-push hook scans committed history even when aliases, imports,
+sequencer operations or alternate `GIT_INDEX_FILE` indexes bypass commit hooks.
 GitHub may omit this workflow for SHA-like branch names; those PRs rely on CI's
 tracked-file scan and review.
 
-`pixi run install-hooks` installs managed `pre-commit` and `commit-msg` hooks.
-The latter runs `scripts/check_local_paths.py --commit-msg-file "$1"`. When
+`pixi run install-hooks` installs managed `pre-commit`, `commit-msg` and
+`pre-push` hooks. The commit-msg hook runs
+`scripts/check_local_paths.py --commit-msg-file "$1"`. When
 Git's "Lines starting with" editor template instruction is present (including
 its wrapped form), the scan skips every line starting with its comment string.
 The "Do not modify or remove the line above" instruction immediately after a
@@ -85,11 +85,22 @@ Without a template instruction, as with `-m` or `-F`, every line is
 scanned, including hash-prefixed
 and status-shaped lines. Only template evidence makes matching scissors stop
 the scan and exclude a verbose diff; literal scissors lines remain ordinary
-text. Each hook selects a compatible interpreter: Python 3.9+ for commit-msg,
-and Python with `tomllib` (3.11+) for pre-commit. Both share foreign-hook chaining,
+text. Each hook selects a compatible interpreter: Python 3.9+ for commit-msg
+and pre-push, and Python with `tomllib` (3.11+) for pre-commit. All share
+foreign-hook chaining,
 `DART_SKIP_HOOKS=1`, and `DART_HOOK_DRY_RUN=1`. Older worktrees without the
 checker or a compatible Python interpreter print a notice and skip the message
 scan; the pre-commit hook retains its staged whitespace fallback.
+
+The pre-push hook reads Git's `<local ref> <local sha> <remote ref> <remote sha>`
+stdin and runs `scripts/check_local_paths.py --commit-range <base>..<local sha>`
+for each updated ref. It scans every commit's message, names and added lines,
+including cherry-picked, rebased, reverted and imported commits. Existing refs
+use the remote SHA; new refs use the merge base with the remote's default
+branch. Missing base objects are fetched without changing refs or `FETCH_HEAD`.
+An empty remote or unrelated history scans all local history. Deletions skip
+scanning. Foreign pre-push hooks receive the same stdin. Findings, unavailable
+checkers/interpreters and lookup or scan errors block the push.
 
 When `--no-verify`/`-n` (including accepted abbreviations), a `core.hooksPath`
 override, or a missing/outdated managed hook prevents enforcement, the shared
