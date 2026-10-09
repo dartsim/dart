@@ -32,8 +32,6 @@
 
 #include <dart/constraint/detail/FrictionRows.hpp>
 
-#include <dart/lcpsolver/dantzig/DantzigCommon.hpp>
-
 #include <algorithm>
 
 #include <cmath>
@@ -315,27 +313,6 @@ std::uint64_t lcpFingerprint(
     hash = (hash ^ std::uint64_t(findex[i])) * 1099511628211ull;
   }
   return hash;
-}
-
-//==============================================================================
-bool canSolveFrictionLcp(int n, const double* A)
-{
-  if (n < 0 || n > std::numeric_limits<int>::max() - 3 || (n > 0 && !A))
-    return false;
-  const int stride = lcpsolver::dantzig::padding(n);
-  for (int i = 0; i < n; ++i) {
-    if (A[std::size_t(i) * stride + i] < 0.0)
-      return false;
-    for (int j = 0; j < n; ++j) {
-      const double a = A[std::size_t(i) * stride + j];
-      const double transpose = A[std::size_t(j) * stride + i];
-      if (!std::isfinite(a)
-          || std::abs(a - transpose)
-                 > 1e-10 * std::max({1.0, std::abs(a), std::abs(transpose)}))
-        return false;
-    }
-  }
-  return true;
 }
 
 } // namespace dart::constraint::detail

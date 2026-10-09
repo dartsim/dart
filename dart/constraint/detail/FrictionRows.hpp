@@ -207,9 +207,6 @@ std::uint64_t lcpFingerprint(
     const double* hi,
     const int* findex);
 
-/// Finite LCP matrix, symmetric within 1e-10 relative, nonnegative diagonal.
-bool canSolveFrictionLcp(int n, const double* A);
-
 } // namespace dart::constraint::detail
 
 #endif // DART_CONSTRAINT_DETAIL_FRICTIONROWS_HPP_

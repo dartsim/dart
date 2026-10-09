@@ -556,14 +556,6 @@ void FbfFrictionSolver::reserve(std::size_t numRows)
   classification.componentSizes.reserve(numRows);
 }
 
-#if DART_BUILD_MODE_DEBUG
-//==============================================================================
-bool FbfFrictionSolver::canSolve(int n, const double* A)
-{
-  return detail::canSolveFrictionLcp(n, A);
-}
-#endif
-
 //==============================================================================
 void FbfFrictionSolver::accumulateStats(const FrictionSolveStats& stats)
 {

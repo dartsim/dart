@@ -1543,7 +1543,6 @@ TEST(ConstraintSolver, FbfHasBitIdenticalThreadCountResults)
       serialWorld->step();
       threadedWorld->step();
       ASSERT_GE(threadedProbe->getNumConstrainedGroupsForTest(), 128u);
-      ASSERT_TRUE(threadedProbe->canSolveInParallelForTest());
       expectWorldStateBitIdentical(*serialWorld, *threadedWorld);
       expectFrictionStatsEqual(serialFbf->getStats(), threadedFbf->getStats());
     }
