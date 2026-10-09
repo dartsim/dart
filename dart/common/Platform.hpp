@@ -33,40 +33,35 @@
 #ifndef DART_COMMON_PLATFORM_HPP_
 #define DART_COMMON_PLATFORM_HPP_
 
-// Operating systems and architectures
+// Operating systems
 #if defined(__linux__)
 
   #define DART_OS_LINUX 1
-  #if __x86_64__ || __ppc64__
-    #define DART_ARCH_64BITS 1
-  #else
-    #define DART_ARCH_32BITS 1
-  #endif
+
+#elif defined(__FreeBSD__)
+
+  #define DART_OS_FREEBSD 1
 
 #elif defined(__APPLE__)
 
   #define DART_OS_MACOS 1
-  #if __LP64__
-    #define DART_ARCH_64BITS 1
-  #else
-    #define DART_ARCH_32BITS 1
-  #endif
 
 #elif defined(_WIN32)
 
   #define DART_OS_WINDOWS 1
-  #define DART_ARCH_32BITS 1
-
-#elif defined(_WIN64)
-
-  #define DART_OS_WINDOWS 1
-  #define DART_ARCH_64BITS 1
 
 #else
 
   #error Unsupported platform.
 
 #endif // if defined(__linux__)
+
+// LP64 on Unix-likes, LLP64 on 64-bit Windows.
+#if defined(__LP64__) || defined(_WIN64)
+  #define DART_ARCH_64BITS 1
+#else
+  #define DART_ARCH_32BITS 1
+#endif
 
 // Define undefined preprocessors as 0
 #ifndef DART_OS_WINDOWS
@@ -75,6 +70,10 @@
 
 #ifndef DART_OS_LINUX
   #define DART_OS_LINUX 0
+#endif
+
+#ifndef DART_OS_FREEBSD
+  #define DART_OS_FREEBSD 0
 #endif
 
 #ifndef DART_OS_MACOS

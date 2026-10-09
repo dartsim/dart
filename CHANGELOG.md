@@ -6,6 +6,12 @@
 
 * Breaking Changes
 
+  * dartpy is now built with pybind11 3.x, whose internals ABI differs from
+    the pybind11 2.x used for DART 6.19 wheels. Separately compiled extension
+    modules that pass dartpy objects across the Python/C++ boundary must be
+    rebuilt against the same pybind11 release as dartpy, since pybind11 only
+    shares bound types between modules built with matching internals.
+
   * Remove the legacy `dart/integration` module (`Integrator`,
     `EulerIntegrator`, `RK4Integrator`, `SemiImplicitEulerIntegrator`, and
     `IntegrableSystem`) along with its installed `include/dart/integration`
@@ -56,7 +62,26 @@
     must be rebuilt against DART 6.20:
     [#3552](https://github.com/dartsim/dart/pull/3552)
 
+  * `dart/config.hpp` no longer defines `DART_BUILD_MODE_DEBUG` or
+    `DART_BUILD_MODE_RELEASE`, and the installed headers no longer change with
+    the build type DART was built with. `BoxedLcpSolver::canSolve()`, which only
+    Debug builds declared and nothing called, is removed along with its
+    overrides. `MemoryManager::hasAllocated()` is now always declared and
+    returns `false` when DART is built with `NDEBUG`, and `MemoryManager` has the
+    same layout in every build type, so rebuild code that uses it. DART's
+    internal debug-only code now follows `NDEBUG` instead of the build type:
+    builds with assertions enabled run it whatever their build type, and
+    `NDEBUG` builds of any build type (such as `None` with `-DNDEBUG`) take the
+    same code paths as `Release`. Code that tested the removed macros should use
+    `NDEBUG` or its own build settings:
+    [#3627](https://github.com/dartsim/dart/pull/3627)
+
 * Build
+
+  * Correct `DART_ARCH_64BITS` / `DART_ARCH_32BITS` on 64-bit Windows and
+    non-x86 64-bit Linux targets such as aarch64, and recognize FreeBSD in
+    `dart/common/Platform.hpp`:
+    [#3624](https://github.com/dartsim/dart/pull/3624)
 
   * Stop the build when FCL's libccd is built in single precision (libccd's
     default), which causes momentum drift on shallow contacts and weaker
@@ -810,6 +835,12 @@
     `InteractiveFrame.getShapeFrames()` from deleting DART-owned objects with
     the returned list, and bind `ModularFunction`'s default constructor:
     [#3619](https://github.com/dartsim/dart/pull/3619)
+
+  * Fix dartpy crashes when discarding copied joints or reading colliding
+    shape frames, keep contacts usable after their collision result is
+    released, return the actual constraint count, and allow Python collision
+    filters to override collision checks or inherit the built-in behavior:
+    [#3626](https://github.com/dartsim/dart/pull/3626)
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
     including a Python analytical callback bridge that lets ssik-like solvers

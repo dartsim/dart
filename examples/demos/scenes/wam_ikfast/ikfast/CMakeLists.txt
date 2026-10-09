@@ -26,8 +26,8 @@ target_compile_definitions(
 target_compile_options(dart_demos_wam_ikfast PRIVATE -w)
 # dart_demos_ikfast_output_dir is set by the parent examples/demos/CMakeLists.txt
 # (to that project's own build dir) before this subdirectory is added, so this
-# child scope inherits it. WamIkFastScene.cpp is compiled with the same path as
-# DART_DEMOS_IKFAST_DIR so its dlopen lookup finds the library here, identically
+# child scope inherits it. WamIkFastScene.cpp's DART_DEMOS_IKFAST_LIBRARY
+# uses the target's absolute path so its dlopen lookup finds the library here
 # in the in-source and standalone builds. The generator expression prevents
 # multi-config generators from appending Debug/Release below this directory.
 set_target_properties(

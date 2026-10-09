@@ -32,10 +32,6 @@
 
 #include "dart/common/MemoryManager.hpp"
 
-#if DART_BUILD_MODE_DEBUG
-  #include "dart/common/Logging.hpp"
-#endif
-
 namespace dart::common {
 
 //==============================================================================
@@ -60,11 +56,7 @@ MemoryManager::MemoryManager(
         mBaseAllocator,
         options.freeListInitialAllocation,
         options.freeListGrowthPolicy),
-#if DART_BUILD_MODE_RELEASE
-    mPoolAllocator(mFreeListAllocator),
-#else
     mPoolAllocator(mFreeListAllocator.getInternalAllocator()),
-#endif
     mFrameAllocator(mBaseAllocator, options.frameAllocatorInitialCapacity)
 {
   // Do nothing
@@ -85,21 +77,13 @@ MemoryAllocator& MemoryManager::getBaseAllocator()
 //==============================================================================
 FreeListAllocator& MemoryManager::getFreeListAllocator()
 {
-#if DART_BUILD_MODE_RELEASE
-  return mFreeListAllocator;
-#else
   return mFreeListAllocator.getInternalAllocator();
-#endif
 }
 
 //==============================================================================
 PoolAllocator& MemoryManager::getPoolAllocator()
 {
-#if DART_BUILD_MODE_RELEASE
-  return mPoolAllocator;
-#else
   return mPoolAllocator.getInternalAllocator();
-#endif
 }
 
 //==============================================================================
@@ -115,9 +99,17 @@ void* MemoryManager::allocate(Type type, size_t bytes)
     case Type::Base:
       return mBaseAllocator.allocate(bytes);
     case Type::Free:
+#ifndef NDEBUG
       return mFreeListAllocator.allocate(bytes);
+#else
+      return mFreeListAllocator.getInternalAllocator().allocate(bytes);
+#endif
     case Type::Pool:
+#ifndef NDEBUG
       return mPoolAllocator.allocate(bytes);
+#else
+      return mPoolAllocator.getInternalAllocator().allocate(bytes);
+#endif
     case Type::Frame:
       return mFrameAllocator.allocate(bytes);
   }
@@ -144,10 +136,18 @@ void MemoryManager::deallocate(Type type, void* pointer, size_t bytes)
       mBaseAllocator.deallocate(pointer, bytes);
       break;
     case Type::Free:
+#ifndef NDEBUG
       mFreeListAllocator.deallocate(pointer, bytes);
+#else
+      mFreeListAllocator.getInternalAllocator().deallocate(pointer, bytes);
+#endif
       break;
     case Type::Pool:
+#ifndef NDEBUG
       mPoolAllocator.deallocate(pointer, bytes);
+#else
+      mPoolAllocator.getInternalAllocator().deallocate(pointer, bytes);
+#endif
       break;
     case Type::Frame:
       mFrameAllocator.deallocate(pointer, bytes);
@@ -167,19 +167,12 @@ void MemoryManager::deallocateUsingPool(void* pointer, size_t bytes)
   deallocate(Type::Pool, pointer, bytes);
 }
 
-#if DART_BUILD_MODE_DEBUG
 //==============================================================================
 bool MemoryManager::hasAllocated(void* pointer, size_t size) const noexcept
 {
-  if (mFreeListAllocator.hasAllocated(pointer, size))
-    return true;
-
-  if (mPoolAllocator.hasAllocated(pointer, size))
-    return true;
-
-  return false;
+  return mFreeListAllocator.hasAllocated(pointer, size)
+         || mPoolAllocator.hasAllocated(pointer, size);
 }
-#endif
 
 //==============================================================================
 void MemoryManager::print(std::ostream& os, int indent) const
@@ -189,9 +182,17 @@ void MemoryManager::print(std::ostream& os, int indent) const
   }
   const std::string spaces(indent, ' ');
   os << spaces << "free_allocator:\n";
+#ifndef NDEBUG
   mFreeListAllocator.print(os, indent + 2);
+#else
+  mFreeListAllocator.getInternalAllocator().print(os, indent + 2);
+#endif
   os << spaces << "pool_allocator:\n";
+#ifndef NDEBUG
   mPoolAllocator.print(os, indent + 2);
+#else
+  mPoolAllocator.getInternalAllocator().print(os, indent + 2);
+#endif
   os << spaces << "frame_allocator:\n";
   mFrameAllocator.print(os, indent + 2);
   os << spaces << "base_allocator:\n";

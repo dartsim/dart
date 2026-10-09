@@ -102,7 +102,7 @@ TEST(Issue1184, Accuracy)
   // that bound do not flip the assertion, while still catching real failures
   // (fall-through / not-settling is centimeter-scale). See
   // https://github.com/dartsim/dart/issues/1184.
-#if DART_BUILD_MODE_DEBUG
+#ifndef NDEBUG
   const auto groundInfoFunctions = {makePlaneGround};
   const auto objectShapeFunctions = {makeSphereObject};
   const auto halfsizes = {10.0};

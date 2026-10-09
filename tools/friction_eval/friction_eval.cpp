@@ -304,13 +304,6 @@ public:
     return ok;
   }
 
-#if DART_BUILD_MODE_DEBUG
-  bool canSolve(int n, const double* A) override
-  {
-    return mInner->canSolve(n, A);
-  }
-#endif
-
 private:
   std::shared_ptr<BoxedLcpSolver> mInner;
   Telemetry& mTelemetry;
@@ -427,13 +420,6 @@ public:
     std::copy(best.begin(), best.end(), x);
     return true;
   }
-
-#if DART_BUILD_MODE_DEBUG
-  bool canSolve(int n, const double* A) override
-  {
-    return mPgs.canSolve(n, A);
-  }
-#endif
 
   const Stats& getStats() const
   {
@@ -1425,12 +1411,6 @@ int selfTest()
       x[0] = fe::kNaN;
       return true;
     }
-#if DART_BUILD_MODE_DEBUG
-    bool canSolve(int, const double*) override
-    {
-      return true;
-    }
-#endif
   };
   const auto solveOk = [](BoxedLcpSolver& solver, Problem& terms) {
     return solver.solve(

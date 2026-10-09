@@ -33,9 +33,6 @@
 #ifndef DART_COMMON_MEMORYMANAGER_HPP_
 #define DART_COMMON_MEMORYMANAGER_HPP_
 
-#if DART_BUILD_MODE_DEBUG
-  #include <mutex>
-#endif
 #include <dart/common/FrameAllocator.hpp>
 #include <dart/common/FreeListAllocator.hpp>
 #include <dart/common/PoolAllocator.hpp>
@@ -178,10 +175,10 @@ public:
   template <typename T>
   void destroyUsingPool(T* pointer) noexcept;
 
-#if DART_BUILD_MODE_DEBUG
-  /// Returns true if a pointer is allocated by the internal allocator.
+  /// Returns true if a pointer was allocated by the free-list or pool allocator
+  /// and has not been deallocated. Allocations are tracked only when DART is
+  /// built without NDEBUG; otherwise this always returns false.
   [[nodiscard]] bool hasAllocated(void* pointer, size_t size) const noexcept;
-#endif
 
   /// Prints state of the memory manager.
   void print(std::ostream& os = std::cout, int indent = 0) const;
@@ -194,19 +191,11 @@ private:
   /// The base allocator to allocate memory chunk.
   MemoryAllocator& mBaseAllocator;
 
-#if DART_BUILD_MODE_RELEASE
-  /// The free list allocator.
-  FreeListAllocator mFreeListAllocator;
-
-  /// The pool allocator.
-  PoolAllocator mPoolAllocator;
-#else
-  /// The free list allocator.
+  /// The free list allocator. Allocations are tracked only without NDEBUG.
   FreeListAllocator::Debug mFreeListAllocator;
 
-  /// The pool allocator.
+  /// The pool allocator. Allocations are tracked only without NDEBUG.
   PoolAllocator::Debug mPoolAllocator;
-#endif
 
   /// The frame allocator.
   /// No debug wrapper: arena semantics are incompatible with per-allocation
