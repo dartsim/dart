@@ -71,6 +71,7 @@
 #include "dart/constraint/BallJointConstraint.hpp"
 #include "dart/constraint/BoxedLcpConstraintSolver.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
+#include "dart/constraint/FbfFrictionSolver.hpp"
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/RevoluteJointConstraint.hpp"
@@ -397,6 +398,73 @@ TEST(World, CloneNsgsPrimaryAndSecondaryOptions)
     primary->setOptions(constraint::NsgsFrictionSolver::Options{});
     expectOptions(copied->getOptions(), options);
   }
+}
+
+//==============================================================================
+TEST(World, CloneFbfPrimaryAndSecondaryOptions)
+{
+  using Fbf = constraint::FbfFrictionSolver;
+  auto source = createCloneContactWorld();
+  auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+      source->getConstraintSolver());
+  const Fbf::Options options{false, 71, 2e-7, 0.7, 9, 0.05};
+  const Fbf::Options secondaryOptions{true, 33, 3e-6, 0.4, 5, 0.2};
+  auto primary = std::make_shared<Fbf>(options);
+  auto secondary = std::make_shared<Fbf>(secondaryOptions);
+  solver->setBoxedLcpSolver(primary);
+  solver->setSecondaryBoxedLcpSolver(secondary);
+  auto clone = source->clone();
+  const auto* copiedSolver
+      = static_cast<const constraint::BoxedLcpConstraintSolver*>(
+          clone->getConstraintSolver());
+  const auto copied
+      = std::dynamic_pointer_cast<const Fbf>(copiedSolver->getBoxedLcpSolver());
+  const auto copiedSecondary = std::dynamic_pointer_cast<const Fbf>(
+      copiedSolver->getSecondaryBoxedLcpSolver());
+  ASSERT_NE(nullptr, copied);
+  ASSERT_NE(nullptr, copiedSecondary);
+  EXPECT_NE(primary, copied);
+  EXPECT_NE(secondary, copiedSecondary);
+  const auto expectOptions = [](const auto& actual, const auto& expected) {
+    EXPECT_EQ(expected.boxForAnisotropic, actual.boxForAnisotropic);
+    EXPECT_EQ(expected.maxOuterIterations, actual.maxOuterIterations);
+    EXPECT_EQ(expected.tolerance, actual.tolerance);
+    EXPECT_EQ(expected.stepScale, actual.stepScale);
+    EXPECT_EQ(expected.maxInnerSweeps, actual.maxInnerSweeps);
+    EXPECT_EQ(expected.innerToleranceFactor, actual.innerToleranceFactor);
+  };
+  expectOptions(copied->getOptions(), options);
+  expectOptions(copiedSecondary->getOptions(), secondaryOptions);
+  const auto expectFreshStats = [](const auto& stats) {
+    EXPECT_EQ(0u, stats.numSolves);
+    EXPECT_EQ(0u, stats.numConverged);
+    EXPECT_EQ(0u, stats.numAcceptedAtCap);
+    EXPECT_EQ(0u, stats.numFailed);
+    EXPECT_EQ(0u, stats.numContacts);
+    EXPECT_EQ(0u, stats.numBoxContacts);
+    EXPECT_EQ(0u, stats.numLocalFallbacks);
+    EXPECT_EQ(0u, stats.numIterations);
+    EXPECT_EQ(0u, stats.numInnerIterations);
+    EXPECT_EQ(0u, stats.numStepShrinks);
+    EXPECT_EQ(0u, stats.numInnerCaps);
+    EXPECT_EQ(0.0, stats.maxViolation);
+  };
+  expectFreshStats(copied->getStats());
+  expectFreshStats(copiedSecondary->getStats());
+  expectCloneContactStepsIdentical(source, clone);
+  EXPECT_GT(copied->getStats().numSolves, 0u);
+  auto advancedClone = source->clone();
+  const auto* advancedSolver
+      = static_cast<const constraint::BoxedLcpConstraintSolver*>(
+          advancedClone->getConstraintSolver());
+  const auto advanced = std::dynamic_pointer_cast<const Fbf>(
+      advancedSolver->getBoxedLcpSolver());
+  ASSERT_NE(nullptr, advanced);
+  expectFreshStats(advanced->getStats());
+  primary->setOptions(Fbf::Options{});
+  secondary->setOptions(Fbf::Options{});
+  expectOptions(copied->getOptions(), options);
+  expectOptions(copiedSecondary->getOptions(), secondaryOptions);
 }
 
 //==============================================================================

@@ -44,6 +44,12 @@
 #else
   #define FRICTION_EVAL_NSGS 0
 #endif
+#if __has_include(<dart/constraint/FbfFrictionSolver.hpp>)
+  #include <dart/constraint/FbfFrictionSolver.hpp>
+  #define FRICTION_EVAL_FBF 1
+#else
+  #define FRICTION_EVAL_FBF 0
+#endif
 
 #include <Eigen/Dense>
 
@@ -499,6 +505,8 @@ struct Options
   double erp = -1.0, cfm = -1.0, maxErv = -1.0;
   int threads = 1;
   int sweeps = 100;
+  int outer = 100, innerSweeps = 20;
+  double stepScale = 0.5, innerFactor = 0.1;
   double tolerance = 1e-5;
   bool boxForAnisotropic = true;
   long maxContacts = -1, maxContactsPerPair = -1;
@@ -514,6 +522,9 @@ struct Probes
   std::shared_ptr<VelocityAlignedHandler> va;
 #if FRICTION_EVAL_NSGS
   std::shared_ptr<dart::constraint::NsgsFrictionSolver> nsgs;
+#endif
+#if FRICTION_EVAL_FBF
+  std::shared_ptr<dart::constraint::FbfFrictionSolver> fbf;
 #endif
 };
 
@@ -547,6 +558,20 @@ std::shared_ptr<BoxedLcpSolver> makeBackend(
   }
 #else
   (void)options;
+#endif
+#if FRICTION_EVAL_FBF
+  if (name == "fbf") {
+    using Fbf = dart::constraint::FbfFrictionSolver;
+    Fbf::Options fbfOptions;
+    fbfOptions.boxForAnisotropic = options.boxForAnisotropic;
+    fbfOptions.maxOuterIterations = options.outer;
+    fbfOptions.tolerance = options.tolerance;
+    fbfOptions.stepScale = options.stepScale;
+    fbfOptions.maxInnerSweeps = options.innerSweeps;
+    fbfOptions.innerToleranceFactor = options.innerFactor;
+    probes.fbf = std::make_shared<Fbf>(fbfOptions);
+    return probes.fbf;
+  }
 #endif
   return nullptr;
 }
@@ -917,6 +942,23 @@ CellResult runCell(const Options& o, const fe::Params& params)
     m["nsgs_local_fallbacks"] = stats.numLocalFallbacks;
     m["nsgs_sweeps"] = stats.numIterations;
     m["nsgs_violation_max"] = stats.maxViolation;
+  }
+#endif
+#if FRICTION_EVAL_FBF
+  if (probes.fbf) {
+    const auto stats = probes.fbf->getStats();
+    m["fbf_solves"] = stats.numSolves;
+    m["fbf_converged"] = stats.numConverged;
+    m["fbf_capped"] = stats.numAcceptedAtCap;
+    m["fbf_failed"] = stats.numFailed;
+    m["fbf_contacts"] = stats.numContacts;
+    m["fbf_box_contacts"] = stats.numBoxContacts;
+    m["fbf_local_fallbacks"] = stats.numLocalFallbacks;
+    m["fbf_outer"] = stats.numIterations;
+    m["fbf_inner"] = stats.numInnerIterations;
+    m["fbf_shrinks"] = stats.numStepShrinks;
+    m["fbf_inner_caps"] = stats.numInnerCaps;
+    m["fbf_violation_max"] = stats.maxViolation;
   }
 #endif
   return result;
@@ -1374,12 +1416,14 @@ int selfTest()
             && boxResidual(unit, x.data(), 0.0).natural < 1e-6,
         name + " solves the unit contact");
   }
-#if FRICTION_EVAL_NSGS
+#if FRICTION_EVAL_NSGS || FRICTION_EVAL_FBF
   const Problem oblique = contactProblem(
       "oblique",
       Eigen::Matrix3d::Identity(),
       Eigen::Vector3d(1, 2, 2),
       {{0.5, 0.5}});
+#endif
+#if FRICTION_EVAL_NSGS
   for (const std::string name : {"nsgs-c", "nsgs-a", "nsgs-b"}) {
     const auto x = solveWith(name, oblique);
     const double normal
@@ -1392,6 +1436,15 @@ int selfTest()
             < 1e-6,
         name + " selects its contact law");
   }
+#endif
+#if FRICTION_EVAL_FBF
+  const auto fbfImpulse = solveWith("fbf", oblique);
+  const double fbfTangent = 0.5 / std::sqrt(2.0);
+  check(
+      std::abs(fbfImpulse[0] - 1.0) + std::abs(fbfImpulse[1] - fbfTangent)
+              + std::abs(fbfImpulse[2] - fbfTangent)
+          < 1e-4,
+      "fbf selects exact Coulomb friction");
 #endif
 
   // A non-finite solution is a failure, never a zero residual: PGS-tight
@@ -1594,6 +1647,14 @@ int main(int argc, char** argv)
         o.threads = std::stoi(value());
       } else if (arg == "--sweeps") {
         o.sweeps = std::stoi(value());
+      } else if (arg == "--outer") {
+        o.outer = std::stoi(value());
+      } else if (arg == "--inner-sweeps") {
+        o.innerSweeps = std::stoi(value());
+      } else if (arg == "--step-scale") {
+        o.stepScale = std::stod(value());
+      } else if (arg == "--inner-factor") {
+        o.innerFactor = std::stod(value());
       } else if (arg == "--tolerance") {
         o.tolerance = std::stod(value());
       } else if (arg == "--box-for-anisotropic") {
@@ -1648,3 +1709,6 @@ int main(int argc, char** argv)
     return 2;
   }
 }
+
+#undef FRICTION_EVAL_FBF
+#undef FRICTION_EVAL_NSGS

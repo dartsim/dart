@@ -41,6 +41,9 @@ namespace constraint {
 /// Cumulative friction-solver statistics. Counters can be differenced around a
 /// step. maxViolation is a maximum since resetStats(); reset while no solves
 /// are running to obtain a per-step maximum.
+///
+/// New in DART 6.20: no released version has this struct, so fields may still
+/// be added before 6.20.0. From 6.20.0 on, its layout is part of the ABI.
 struct FrictionSolveStats
 {
   std::uint64_t numSolves = 0;
@@ -55,8 +58,16 @@ struct FrictionSolveStats
   std::uint64_t numBoxContacts = 0;
   /// Local contact QPs that needed the slow certificate path.
   std::uint64_t numLocalFallbacks = 0;
-  /// Gauss-Seidel sweeps.
+  /// Gauss-Seidel sweeps (NSGS) or outer iterations (FBF; groups without a
+  /// frictional cone contact count one per plain Gauss-Seidel sweep).
   std::uint64_t numIterations = 0;
+  /// FBF Gauss-Seidel sweeps, including sweeps for rejected step sizes and the
+  /// plain sweeps of groups without a frictional cone contact.
+  std::uint64_t numInnerIterations = 0;
+  /// FBF step-size reductions.
+  std::uint64_t numStepShrinks = 0;
+  /// FBF inner solves stopped by maxInnerSweeps above their target.
+  std::uint64_t numInnerCaps = 0;
   /// Largest final law violation [m/s] among accepted solves (converged or at
   /// the cap) since resetStats(). Failed solves do not contribute.
   double maxViolation = 0.0;

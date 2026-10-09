@@ -30,7 +30,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/constraint/NsgsFrictionSolver.hpp>
+#include <dart/constraint/FrictionSolveStats.hpp>
 
 #include <pybind11/pybind11.h>
 
@@ -39,34 +39,24 @@ namespace py = pybind11;
 namespace dart {
 namespace python {
 
-void NsgsFrictionSolver(py::module& m)
+void FrictionSolveStats(py::module& m)
 {
-  using Solver = constraint::NsgsFrictionSolver;
+  using Stats = constraint::FrictionSolveStats;
 
-  auto solver = ::py::
-      class_<Solver, constraint::BoxedLcpSolver, std::shared_ptr<Solver>>(
-          m, "NsgsFrictionSolver");
-
-  ::py::enum_<Solver::Law>(solver, "Law")
-      .value("Coulomb", Solver::Law::Coulomb)
-      .value("Associated", Solver::Law::Associated)
-      .value("Box", Solver::Law::Box);
-
-  ::py::class_<Solver::Options>(solver, "Options")
+  ::py::class_<Stats>(m, "FrictionSolveStats")
       .def(::py::init<>())
-      .def_readwrite("law", &Solver::Options::law)
-      .def_readwrite("boxForAnisotropic", &Solver::Options::boxForAnisotropic)
-      .def_readwrite("maxSweeps", &Solver::Options::maxSweeps)
-      .def_readwrite("tolerance", &Solver::Options::tolerance);
-
-  solver.def(::py::init<>())
-      .def(::py::init<const Solver::Options&>(), ::py::arg("options"))
-      .def_static("getStaticType", &Solver::getStaticType)
-      .def("setOptions", &Solver::setOptions, ::py::arg("options"))
-      .def("getOptions", &Solver::getOptions, ::py::return_value_policy::copy)
-      .def("reserve", &Solver::reserve, ::py::arg("numRows"))
-      .def("getStats", &Solver::getStats)
-      .def("resetStats", &Solver::resetStats);
+      .def_readonly("numSolves", &Stats::numSolves)
+      .def_readonly("numConverged", &Stats::numConverged)
+      .def_readonly("numAcceptedAtCap", &Stats::numAcceptedAtCap)
+      .def_readonly("numFailed", &Stats::numFailed)
+      .def_readonly("numContacts", &Stats::numContacts)
+      .def_readonly("numBoxContacts", &Stats::numBoxContacts)
+      .def_readonly("numLocalFallbacks", &Stats::numLocalFallbacks)
+      .def_readonly("numIterations", &Stats::numIterations)
+      .def_readonly("numInnerIterations", &Stats::numInnerIterations)
+      .def_readonly("numStepShrinks", &Stats::numStepShrinks)
+      .def_readonly("numInnerCaps", &Stats::numInnerCaps)
+      .def_readonly("maxViolation", &Stats::maxViolation);
 }
 
 } // namespace python

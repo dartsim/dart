@@ -45,7 +45,7 @@ python3 tools/friction_eval/friction_eval.py run --bin B619=PATH --bin B620=PATH
 python3 tools/friction_eval/friction_eval.py report DIR > summary.md
 ```
 
-Options: `--solver dantzig|pgs|pgs100|pgs-tight|dzr|mf-pgs|nsgs-c|nsgs-a|nsgs-b`,
+Options: `--solver dantzig|pgs|pgs100|pgs-tight|dzr|mf-pgs|nsgs-c|nsgs-a|nsgs-b|fbf`,
 `--detector ode|dart|fcl|bullet` (FCL with its analytic primitives),
 `--dt`, `--erp`, `--cfm`, `--max-erv`, `--deactivation on|off` (default off),
 `--split on|off`, `--threads`, `--max-contacts`, `--max-contacts-per-pair`,
@@ -58,6 +58,15 @@ so their trajectories are an ablation rather than an exact-Coulomb oracle.
 NSGS rows also report cumulative `nsgs_*` solver statistics, including the
 largest final law violation among accepted solves since the last stats reset
 in `nsgs_violation_max`.
+The FBF backend selects exact Coulomb friction with a certified step size and
+requires a build containing `FbfFrictionSolver`. It accepts `--outer` (default
+100), `--inner-sweeps` (default 20), `--step-scale` (default 0.5),
+`--inner-factor` (default 0.1), `--tolerance` and `--box-for-anisotropic`.
+Its cumulative metrics are `fbf_solves`, `fbf_converged`, `fbf_capped`,
+`fbf_failed`, `fbf_contacts`, `fbf_box_contacts`, `fbf_local_fallbacks`,
+`fbf_outer`, `fbf_inner`, `fbf_shrinks`, `fbf_inner_caps`, and
+`fbf_violation_max` (the largest final law violation among accepted solves).
+FBF and NSGS are excluded from the L1 bank.
 P1 accepts `v0` to launch its independent bodies with oblique slip. Parallel
 island solves require at least 128 constrained groups; use 900 independent
 bodies to compare serial and parallel state hashes:

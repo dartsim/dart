@@ -48,6 +48,7 @@
 #include "dart/constraint/CouplerConstraint.hpp"
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/DynamicJointConstraint.hpp"
+#include "dart/constraint/FbfFrictionSolver.hpp"
 #include "dart/constraint/JointConstraint.hpp"
 #include "dart/constraint/JointCoulombFrictionConstraint.hpp"
 #include "dart/constraint/LCPSolver.hpp"
@@ -318,7 +319,8 @@ bool isParallelSafeBuiltInBoxedSolver(const ConstBoxedLcpSolverPtr& solver)
     return true;
 
   if (!isExactBoxedSolverType<PgsBoxedLcpSolver>(solver))
-    return isExactBoxedSolverType<NsgsFrictionSolver>(solver);
+    return isExactBoxedSolverType<NsgsFrictionSolver>(solver)
+           || isExactBoxedSolverType<FbfFrictionSolver>(solver);
 
   return !isRandomizedPgsSolver(solver);
 }
