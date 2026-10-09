@@ -219,9 +219,10 @@ def read_git_command(pid: int) -> list[str] | None:
 
 def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
     try:
-        args = command[command.index("commit") + 1 :]
+        commit_index = command.index("commit")
     except ValueError:
         return None
+    args = command[commit_index + 1 :]
     # Git exposes hidden and negated options too, keeping prefix matching in sync.
     options = {
         option.rstrip("=")
@@ -233,7 +234,7 @@ def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
         ).stdout.split()
         if option != "--"
     }
-    cleanup = "default"
+    cleanup = None
     supplied = verbose = False
     edit = None
     i = 0
@@ -258,6 +259,8 @@ def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
             verbose = option == "--verbose"
         elif option in {"--message", "--file", "--reuse-message", "--reedit-message"}:
             supplied = True
+            if option == "--reedit-message" and edit is None:
+                edit = True
             i += int(not sep)
         elif option in {
             "--author",
@@ -276,14 +279,41 @@ def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
                 verbose |= short == "v"
                 if short in "mFCc":
                     supplied = True
+                    if short == "c" and edit is None:
+                        edit = True
                     i += int(offset == len(token))
                     break
                 if short in "tSuU":
                     i += int(short == "t" and offset == len(token))
                     break
+    if cleanup is None:
+        # The hook already runs in Git's repository; replay only config overrides.
+        config_args = []
+        globals_iter = iter(command[1:commit_index])
+        for token in globals_iter:
+            if token == "-c":
+                config_args.extend(("-c", next(globals_iter)))
+            elif token in {
+                "-C",
+                "--git-dir",
+                "--work-tree",
+                "--namespace",
+                "--config-env",
+            }:
+                next(globals_iter)
+        result = subprocess.run(
+            ["git", *config_args, "config", "--get", "commit.cleanup"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode not in (0, 1):
+            result.check_returncode()
+        cleanup = result.stdout.rstrip("\n") if result.returncode == 0 else "default"
+    use_editor = edit if edit is not None else not supplied
     if cleanup == "default":
-        use_editor = edit if edit is not None else not supplied
         cleanup = "strip" if use_editor else "whitespace"
+    elif cleanup == "scissors" and not use_editor:
+        cleanup = "whitespace"
     return cleanup, verbose
 
 
@@ -332,7 +362,7 @@ def scan_commit_message(
 
 def git_output(root: Path, *args: str) -> bytes:
     return subprocess.run(
-        ["git", *args], cwd=root, check=True, capture_output=True
+        ["git", "--literal-pathspecs", *args], cwd=root, check=True, capture_output=True
     ).stdout
 
 
