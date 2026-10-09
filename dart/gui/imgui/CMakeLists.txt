@@ -191,7 +191,15 @@ function(dart_patch_imgui_opengl2_backend out_var source_path)
   endif()
 
   set(patched_source "${CMAKE_CURRENT_BINARY_DIR}/imgui_impl_opengl2_dart.cpp")
-  file(WRITE "${patched_source}" "${imgui_opengl2_contents}")
+  # Rewrite only on change, so a reconfigure doesn't rebuild ImGui. Not
+  # file(CONFIGURE): it would substitute @VAR@ in this third-party source.
+  set(previous_contents "")
+  if(EXISTS "${patched_source}")
+    file(READ "${patched_source}" previous_contents)
+  endif()
+  if(NOT "${previous_contents}" STREQUAL "${imgui_opengl2_contents}")
+    file(WRITE "${patched_source}" "${imgui_opengl2_contents}")
+  endif()
   set(${out_var} "${patched_source}" PARENT_SCOPE)
 endfunction()
 
@@ -339,8 +347,10 @@ if(DART_USE_SYSTEM_IMGUI)
     "${CMAKE_CURRENT_BINARY_DIR}/external_imgui_compat.cpp"
   )
   file(
-    WRITE "${imgui_compat_source}"
-    "namespace dart_external_imgui { void keep_component() {} }\n"
+    CONFIGURE
+    OUTPUT "${imgui_compat_source}"
+    CONTENT "namespace dart_external_imgui { void keep_component() {} }\n"
+    @ONLY
   )
 
   set(imgui_compat_sources ${imgui_compat_source})
