@@ -62,6 +62,7 @@
 #include "dart/simulation/World.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <condition_variable>
 #include <iostream>
 #include <limits>
@@ -74,7 +75,9 @@
 #include <typeinfo>
 #include <vector>
 
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
 
 namespace dart {
 namespace simulation {
@@ -391,6 +394,89 @@ bool isRestingPair(const collision::Contact& contact)
          && (resting2 || !skeleton2->isMobile());
 }
 
+// Whether a skeleton with bodies can move (a skeleton without bodies never
+// keeps others awake; see ConstraintSolver::buildConstrainedGroups()).
+struct FilterDecision
+{
+  const collision::CollisionObject* object1;
+  const collision::CollisionObject* object2;
+  bool ignored;
+};
+
+// Forwards to a collision filter and records each of its decisions.
+class CollisionFilterRecorder final : public collision::CollisionFilter
+{
+public:
+  bool ignoresCollision(
+      const collision::CollisionObject* object1,
+      const collision::CollisionObject* object2) const override
+  {
+    // Bullet's dispatcher keeps the last query filter between collide()
+    // calls. Outside World's solve the recorder is disarmed and filters
+    // nothing.
+    if (mTarget == nullptr)
+      return false;
+
+    const bool ignored = mTarget->ignoresCollision(object1, object2);
+    // CollisionFilter makes no promise about the calling thread.
+    std::lock_guard<std::mutex> lock(mMutex);
+    mDecisions.push_back({object1, object2, ignored});
+    return ignored;
+  }
+
+  const collision::CollisionFilter* mTarget = nullptr;
+  mutable std::mutex mMutex;
+  mutable std::vector<FilterDecision> mDecisions; // capacity kept across steps
+};
+
+// Disarms the recorder when the solve returns or throws.
+struct RecorderDisarm
+{
+  CollisionFilterRecorder& recorder;
+
+  ~RecorderDisarm()
+  {
+    recorder.mTarget = nullptr;
+  }
+};
+
+// DART_CUSTOM_FILTER_SLEEPING=0|false|off|no (any letter case) turns decision
+// replay off for the World objects created afterwards (#3056): custom
+// collision filters that World cannot track then keep its bodies awake. A
+// temporary escape hatch for 6.20.x, read like
+// DART_SOFT_FACE_INTERIOR_CONTACTS.
+bool readCustomFilterSleepingSwitch()
+{
+  const char* value = std::getenv("DART_CUSTOM_FILTER_SLEEPING");
+  if (value == nullptr)
+    return true;
+
+  std::string lower(value);
+  std::transform(
+      lower.begin(), lower.end(), lower.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+      });
+  const bool off
+      = lower == "0" || lower == "false" || lower == "off" || lower == "no";
+  const bool on = lower.empty() || lower == "1" || lower == "true"
+                  || lower == "on" || lower == "yes";
+  if (off) {
+    static std::atomic<bool> reported{false};
+    if (!reported.exchange(true)) {
+      dtmsg << "[World] DART_CUSTOM_FILTER_SLEEPING=" << value
+            << ": custom collision filters keep bodies awake.\n";
+    }
+  } else if (!on) {
+    static std::atomic<bool> reported{false};
+    if (!reported.exchange(true)) {
+      dtwarn << "[World] Ignoring DART_CUSTOM_FILTER_SLEEPING=" << value
+             << "; set it to 0, false, off or no to keep the bodies of worlds "
+                "with custom collision filters awake.\n";
+    }
+  }
+  return !off;
+}
+
 common::MemoryAllocator& resolveWorldMemoryBaseAllocator(
     const WorldConfig& config)
 {
@@ -416,6 +502,26 @@ common::MemoryManager::Options makeWorldMemoryManagerOptions(
 class WorldDeactivationState
 {
 public:
+  explicit WorldDeactivationState(bool customFilterSleeping)
+    : mCustomFilterSleeping(customFilterSleeping)
+  {
+  }
+
+  // Whether World replays the decisions of collision filters it cannot track
+  // by revision (DART_CUSTOM_FILTER_SLEEPING, read at construction).
+  const bool mCustomFilterSleeping;
+
+  // The decisions such a filter made for every pair the last solve's contact
+  // query asked about, and what they refer to. Bullet's dispatcher may keep a
+  // reference to the recorder after the solve.
+  std::shared_ptr<CollisionFilterRecorder> mRecorder;
+  const collision::CollisionFilter* mRecordedFilter = nullptr;
+  std::weak_ptr<const collision::CollisionGroup> mRecordedGroup;
+  std::size_t mRecordedGroupVersion = 0u;
+  bool mRecordValid = false;
+  // Whether this step's start replayed the record successfully.
+  bool mReplayVerified = false;
+
   // Contacts of resting pairs, as solved when the set of resting skeletons
   // last changed; the solver no longer computes or solves them. Their
   // CollisionObjects are only used while mRetainedGroup and
@@ -436,6 +542,110 @@ public:
 };
 
 namespace {
+
+//==============================================================================
+// Whether World follows `filter` by replaying its decisions: a
+// BodyNodeCollisionFilter subclass that exposes no revision of its own state,
+// such as gz-physics' BitmaskContactFilter.
+bool isCustomBodyNodeFilter(
+    const WorldDeactivationState& state,
+    const collision::CollisionFilter* filter)
+{
+  return state.mCustomFilterSleeping && filter != nullptr
+         && typeid(*filter) != typeid(collision::BodyNodeCollisionFilter)
+         && dynamic_cast<const collision::BodyNodeCollisionFilter*>(filter)
+                != nullptr;
+}
+
+bool isReplayed(
+    const WorldDeactivationState& state,
+    const collision::CollisionFilter* filter)
+{
+  return isCustomBodyNodeFilter(state, filter)
+         && dynamic_cast<
+                const collision::detail::CollisionFilterSnapshotTracker*>(
+                filter)
+                == nullptr;
+}
+
+//==============================================================================
+// Invalidates the previous record and arms the recorder for `filter`.
+CollisionFilterRecorder& armRecorder(
+    WorldDeactivationState& state, const collision::CollisionFilter* filter)
+{
+  state.mRecordValid = false;
+  if (!state.mRecorder)
+    state.mRecorder = std::make_shared<CollisionFilterRecorder>();
+  state.mRecorder->mDecisions.clear();
+  state.mRecorder->mTarget = filter;
+  return *state.mRecorder;
+}
+
+//==============================================================================
+// Keeps the record of the solve that just ran only if it holds a decision for
+// every pair the query could have reported: the query did not stop at its
+// contact limit, contacts were enabled, and the collision group and filter
+// stayed the same.
+void finishRecord(
+    WorldDeactivationState& state,
+    const constraint::ConstraintSolver& solver,
+    const std::shared_ptr<collision::CollisionFilter>& filter,
+    const collision::ConstCollisionGroupPtr& group,
+    std::size_t groupVersion,
+    bool queryComplete,
+    bool enableContact,
+    bool restingAtSolve)
+{
+  const bool recordValid
+      = queryComplete && enableContact && solver.getCollisionGroup() == group
+        && group->getContentVersion() == groupVersion
+        && solver.getCollisionOption().collisionFilter == filter;
+  if (!recordValid)
+    return;
+
+  // While a body rests, BodyNodeCollisionFilter skips resting pairs during the
+  // solver's query only; keep the filter's own decisions, which replay asks
+  // for outside the query.
+  if (restingAtSolve) {
+    for (auto& decision : state.mRecorder->mDecisions) {
+      decision.ignored
+          = filter->ignoresCollision(decision.object1, decision.object2);
+    }
+  }
+  state.mRecordedFilter = filter.get();
+  state.mRecordedGroup = group;
+  state.mRecordedGroupVersion = groupVersion;
+  state.mRecordValid = true;
+}
+
+//==============================================================================
+// Whether the solver's collision filter makes every recorded decision again.
+// Resting bodies and their supports do not move, and other edits are caught by
+// World's version and snapshot checks, so the pairs the last query asked about
+// are all the pairs that can produce contacts.
+bool replayRecord(
+    const WorldDeactivationState& state,
+    const constraint::ConstraintSolver& solver)
+{
+  const auto* filter = solver.getCollisionOption().collisionFilter.get();
+  if (!state.mRecordValid || filter != state.mRecordedFilter)
+    return false;
+
+  // The recorded objects are alive while the group keeps its content version.
+  const auto group = state.mRecordedGroup.lock();
+  if (group == nullptr || group != solver.getCollisionGroup()
+      || group->getContentVersion() != state.mRecordedGroupVersion) {
+    return false;
+  }
+
+  for (const auto& decision : state.mRecorder->mDecisions) {
+    if (filter->ignoresCollision(decision.object1, decision.object2)
+        != decision.ignored) {
+      return false;
+    }
+  }
+  return true;
+}
 
 //==============================================================================
 void clearRetainedContacts(WorldDeactivationState& state)
@@ -967,7 +1177,8 @@ World::World(const WorldConfig& config)
         makeWorldMemoryManagerOptions(config))),
     mRecording(new Recording(mSkeletons)),
     onNameChanged(mNameChangedSignal),
-    mDeactivationState(std::make_unique<WorldDeactivationState>())
+    mDeactivationState(std::make_unique<WorldDeactivationState>(
+        readCustomFilterSleepingSwitch()))
 {
   mIndices.push_back(0);
 
@@ -1336,7 +1547,34 @@ void World::step(bool _resetCommand)
   // stamp also proves that contacts remain alive through this solve.
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   const std::size_t collisionGroupVersion = collisionGroup->getContentVersion();
-  {
+  const auto collisionFilter
+      = mConstraintSolver->getCollisionOption().collisionFilter;
+  auto& deactivationState = *mDeactivationState;
+  if (isReplayed(deactivationState, collisionFilter.get())
+      && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
+      && (mFrame < 2 || mDeactivationOptions.mTimeUntilSleep <= mTimeStep
+          || hasRestingOrCandidateMobileSkeleton(mSkeletons)
+          || hasDwellingMobileSkeleton(mSkeletons))) {
+    // Record before a body can freeze; moving bodies with no quiet dwell
+    // need no replay record.
+    const bool enableContact
+        = mConstraintSolver->getCollisionOption().enableContact;
+    const bool restingAtSolve = hasRestingMobileSkeleton();
+    const RecorderDisarm disarm{
+        armRecorder(deactivationState, collisionFilter.get())};
+    const bool queryComplete
+        = mConstraintSolver->solveWithQueryFilter(deactivationState.mRecorder);
+    finishRecord(
+        deactivationState,
+        *mConstraintSolver,
+        collisionFilter,
+        collisionGroup,
+        collisionGroupVersion,
+        queryComplete,
+        enableContact,
+        restingAtSolve);
+  } else {
+    deactivationState.mRecordValid = false;
     mConstraintSolver->solve();
   }
   const bool collisionGroupUnchanged
@@ -1442,12 +1680,12 @@ void World::step(bool _resetCommand)
     invalidateLastStepRestingWorldState();
 
   updateRetainedContacts(
-      *mDeactivationState,
+      deactivationState,
       *mConstraintSolver,
       mSkeletons,
       collisionGroupUnchanged && hasRestingMobileSkeleton()
-          && isCollisionFilterSnapshotTrackable(
-              mConstraintSolver->getCollisionOption().collisionFilter.get()));
+          && (isCollisionFilterSnapshotTrackable(collisionFilter.get())
+              || isReplayed(deactivationState, collisionFilter.get())));
 }
 
 //==============================================================================
@@ -2047,7 +2285,10 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
   const auto* collisionFilter = collisionOption.collisionFilter.get();
-  if (!isCollisionFilterSnapshotTrackable(collisionFilter)) {
+  if (!isCollisionFilterSnapshotTrackable(collisionFilter)
+      && !(
+          isReplayed(*mDeactivationState, collisionFilter)
+          && mDeactivationState->mReplayVerified)) {
     invalidateAllRestingKinematicSnapshot();
     return false;
   }
@@ -2186,9 +2427,10 @@ bool World::isAllRestingFastPathReady(bool _resetCommand, bool* snapshotStale)
 //==============================================================================
 void World::updateAllRestingKinematicSnapshot(bool _resetCommand)
 {
-  const auto& collisionOption = mConstraintSolver->getCollisionOption();
-  if (!isCollisionFilterSnapshotTrackable(
-          collisionOption.collisionFilter.get())) {
+  const auto* collisionFilter
+      = mConstraintSolver->getCollisionOption().collisionFilter.get();
+  if (!isCollisionFilterSnapshotTrackable(collisionFilter)
+      && !isReplayed(*mDeactivationState, collisionFilter)) {
     invalidateAllRestingKinematicSnapshot();
     return;
   }
@@ -2334,6 +2576,8 @@ bool World::hasDeactivationStateChangedSince(
 //==============================================================================
 void World::wakeRestingSkeletonsIfStepStateChanged()
 {
+  auto& deactivationState = *mDeactivationState;
+  deactivationState.mReplayVerified = false;
   const auto collisionDetector = mConstraintSolver->getCollisionDetector();
   const auto collisionGroup = mConstraintSolver->getCollisionGroup();
   const auto& collisionOption = mConstraintSolver->getCollisionOption();
@@ -2420,11 +2664,20 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
 
   // Adding a custom contact surface handler wakes resting bodies and clears
   // candidacy; see usesBuiltInContactSurfaceHandler().
-  const bool worldStateUnchanged
+  const bool collisionFilterReplayed
+      = isReplayed(deactivationState, collisionFilter);
+  bool worldStateUnchanged
       = recordedStateUnchanged
         && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
         && mLastStepRestingWorldStateCollisionFilterTrackable
-        && isCollisionFilterSnapshotTrackable(collisionFilter);
+        && (isCollisionFilterSnapshotTrackable(collisionFilter)
+            || collisionFilterReplayed);
+
+  if (worldStateUnchanged && collisionFilterReplayed) {
+    deactivationState.mReplayVerified
+        = replayRecord(deactivationState, *mConstraintSolver);
+    worldStateUnchanged = deactivationState.mReplayVerified;
+  }
 
   if (!worldStateUnchanged)
     wakeRestingSkeletonsForWorldChange();
@@ -2455,7 +2708,9 @@ void World::updateLastStepRestingWorldState()
       = collisionOption.collisionFilter.get();
   mLastStepRestingWorldStateCollisionFilterTrackable
       = isCollisionFilterSnapshotTrackable(
-          mLastStepRestingWorldStateCollisionFilter);
+            mLastStepRestingWorldStateCollisionFilter)
+        || isReplayed(
+            *mDeactivationState, mLastStepRestingWorldStateCollisionFilter);
   mLastStepRestingWorldStateCollisionFilterRevision
       = mLastStepRestingWorldStateCollisionFilterTrackable
             ? getCollisionFilterSnapshotRevision(

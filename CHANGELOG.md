@@ -545,10 +545,11 @@
 
 * Simulation
 
-  * Keep reporting the last solved contacts and forces of resting islands
-    through `World::getLastCollisionResult()`, and report zero acceleration
-    while their bodies sleep. Downstream code that constructs or subclasses
-    `World` must rebuild against DART 6.20.
+  * Allow resting islands that use a custom `BodyNodeCollisionFilter` to sleep
+    while their collision decisions remain unchanged. Keep reporting their
+    last solved contacts and forces, and allow disabling custom-filter sleeping
+    with `DART_CUSTOM_FILTER_SLEEPING`. Downstream code that constructs or
+    subclasses `World` must rebuild against DART 6.20.
 
   * Add opt-in `NsgsFrictionSolver` with exact Coulomb, associated, and box
     friction laws, cumulative `FrictionSolveStats`, clone support, and
