@@ -77,7 +77,7 @@ def test_install_writes_executable_hook_and_is_idempotent(tmp_path, name):
     assert hook.exists()
     assert os.access(hook, os.X_OK)
     assert "DART-MANAGED-HOOK" in hook.read_text()
-    assert "DART-MANAGED-HOOK v9 " in hook.read_text()
+    assert "DART-MANAGED-HOOK v10 " in hook.read_text()
     digest = hashlib.sha256(hook.read_bytes()).hexdigest()
 
     second = _install(repo, env)
@@ -466,6 +466,133 @@ def _run_guard(
         text=True,
     )
     return run.returncode, run.stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "$G commit",
+        "${GIT:-git} commit",
+        '"$(command -v git)" commit',
+        "git $SUB",
+        'git "${SUB:-commit}"',
+        "`command -v git` commit",
+    ],
+)
+@pytest.mark.parametrize(
+    "arguments", ["-m public", "", "-m $MESSAGE", "$FLAGS -m public"]
+)
+def test_guard_expanded_command_positions_require_fallback(
+    tmp_path, command, arguments
+):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    _write_gate(repo, "raise SystemExit('staged-gate-failed')\n")
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    returncode, stderr = _run_guard(repo, env, f"{command} {arguments}")
+    assert returncode == 2, stderr
+    if arguments == "-m public":
+        assert "staged-gate-failed" in stderr
+    else:
+        assert "cannot be inspected" in stderr
+
+
+def test_commit_msg_hook_passes_git_parent_pid(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    scripts = repo / "scripts"
+    scripts.mkdir()
+    (scripts / "check_local_paths.py").write_text(
+        "import sys\nprint(' '.join(sys.argv[1:]))\n"
+    )
+    result = subprocess.run(
+        [str(_hook(repo, "commit-msg")), "message.txt"],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == f"--commit-msg-file message.txt --git-pid {os.getpid()}\n"
+
+
+def test_commit_msg_hook_scans_template_instruction_from_file_parent(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    assert _install(repo, env).returncode == 0
+    message = repo / "message.txt"
+    private_path = "scratchpad" + "/example.md"
+    message.write_text(
+        "Public summary\n# Lines starting with '#' will be ignored,\n"
+        f"# {private_path}\n"
+    )
+    result = subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Example",
+            "-c",
+            "user.email=example@example.com",
+            "commit",
+            "--allow-empty",
+            "-F",
+            message.name,
+        ],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1, result.stderr
+    assert private_path in result.stderr
+
+
+@pytest.mark.parametrize(
+    "arguments,expected",
+    [([], 0), (["-F", "message.txt"], 1), (["--cleanup=whitespace"], 1)],
+)
+def test_commit_msg_hook_uses_cleanup_with_localized_editor(
+    tmp_path, arguments, expected
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    assert _install(repo, env).returncode == 0
+    private_path = "scratchpad" + "/example.md"
+    message = (
+        "Public summary\n; Veuillez saisir le message de validation.\n"
+        + f"; Voir {private_path}\n"
+    )
+    (repo / "message.txt").write_text(message)
+    editor = repo / "editor.sh"
+    editor.write_text('#!/bin/sh\ncat message.txt > "$1"\n')
+    editor.chmod(0o755)
+    result = subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=Example",
+            "-c",
+            "user.email=example@example.com",
+            "-c",
+            "core.commentChar=;",
+            "commit",
+            "--allow-empty",
+            *arguments,
+        ],
+        cwd=repo,
+        env={**env, "GIT_EDITOR": str(editor)},
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == expected, result.stderr
+    if expected:
+        assert private_path in result.stderr
 
 
 @pytest.mark.parametrize("shell", ("bash", "sh", "zsh", "dash", "ksh"))

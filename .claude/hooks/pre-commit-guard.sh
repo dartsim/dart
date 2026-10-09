@@ -48,7 +48,7 @@ input=$(cat)
 # also falls through when the raw hook JSON contains g-i-t followed by c-o-m-m-i-t
 # in order. False positives still reach the tokenizer, which classifies them.
 case "$input" in
-    *commit*|*g*i*t*c*o*m*m*i*t*) ;;
+    *commit*|*g*i*t*c*o*m*m*i*t*|*'$'*|*'`'*) ;;
     *) exit 0 ;;
 esac
 
@@ -1085,7 +1085,8 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
             else:
                 content_may_change = True
             continue
-        if not is_git_executable(tokens[i]):
+        expanded_executable = argument_has_expansion(raw_part, tokens[i])
+        if not is_git_executable(tokens[i]) and not expanded_executable:
             content_may_change = True
             current_cwd = maybe_update_shell_cwd(
                 tokens,
@@ -1148,8 +1149,11 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
         if not target_dir:
             target_dir = command_cwd or current_cwd
         subcommand = command_word(tokens[i]).rstrip(")}") if i < len(tokens) else ""
+        expanded_subcommand = bool(subcommand) and argument_has_expansion(raw_part, tokens[i])
+        possible_commit = subcommand == "commit" or expanded_subcommand
+        dynamic_command = expanded_executable or expanded_subcommand
         changed_before_commit = content_may_change
-        if subcommand == "commit":
+        if possible_commit:
             _, _, stages_content = supplied_commit_message(
                 tokens[i + 1 :], target_dir, inspect_message=False
             )
@@ -1158,7 +1162,7 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
             content_may_change = True
         # Git aliases and git am/applypatch imports are out of scope; PR Text
         # scans every resulting PR commit with the base checker.
-        if i < len(tokens) and command_word(tokens[i]).rstrip(")}") == "commit":
+        if possible_commit:
             repository_options = []
             for option, value in repository_paths.items():
                 path = shell_expand_path_token(value, target_dir)
@@ -1178,6 +1182,8 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
                 argument_has_expansion(raw_part, token, globs=True)
                 for token in tokens[i + 1 :]
             )
+            if dynamic_command and expanded_args:
+                raise UninspectableShellScript
             project = (
                 os.environ.get("CLAUDE_PROJECT_DIR")
                 or os.environ.get("CODEX_PROJECT_DIR")
@@ -1217,7 +1223,7 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
             ):
                 target_root = git_worktree_root(project)
             yield (
-                no_verify or hooks_path_override or expanded_args,
+                no_verify or hooks_path_override or expanded_args or dynamic_command,
                 target_root,
                 tokens[i + 1 :],
                 target_dir,
@@ -1239,7 +1245,7 @@ def managed_hooks_current(root):
         hook_path = os.path.join(root, hook_path)
     for name, command in (
         ("pre-commit", "scripts/check_agent_hook.py --profile staged"),
-        ("commit-msg", "scripts/check_local_paths.py --commit-msg-file \"$1\""),
+        ("commit-msg", "scripts/check_local_paths.py --commit-msg-file \"$1\" --git-pid \"$PPID\""),
     ):
         path = os.path.join(os.path.dirname(hook_path), name)
         try:
@@ -1249,7 +1255,7 @@ def managed_hooks_current(root):
             return False
         if (
             not os.access(path, os.X_OK)
-            or "DART-MANAGED-HOOK v9  (sentinel line: do not edit; the installer keys on it)"
+            or "DART-MANAGED-HOOK v10  (sentinel line: do not edit; the installer keys on it)"
             not in content
             or "if ! \"$python_cmd\" " + command + "; then" not in content
         ):

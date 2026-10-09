@@ -4,13 +4,10 @@
 Idempotently writes both hooks so every ``git commit`` runs the fast staged
 gate (``scripts/check_agent_hook.py --profile staged``) and scans its message
 (``scripts/check_local_paths.py --commit-msg-file "$1"``) with compatible
-Python interpreter selection for each gate. The message scan skips comment
-lines only when Git's "Lines starting with" template instruction identifies
-their comment string. The scissors instruction alone enables stopping at a
-matching scissors line while retaining comments above it. Without either
-instruction, including for
-``-m``/``-F``, it scans hash-prefixed and status-shaped lines too. It stops at
-Git's scissors line, excluding verbose diffs. No
+Python interpreter selection for each gate. The message scan derives cleanup
+from the parent Git command, independent of the editor template's language.
+Strip cleanup skips configured comments; whitespace cleanup scans every line.
+Scissors cleanup or verbose mode excludes text after Git's scissors line. No
 ``pre-merge-commit`` hook is installed: an automatic merge only combines
 commits these hooks or CI already scanned, and a conflicted merge ends with
 ``git commit``, which runs both hooks. Behaviour:
@@ -47,12 +44,16 @@ import sys
 from pathlib import Path
 
 SENTINEL = "DART-MANAGED-HOOK"
-HOOK_VERSION = "9"
+HOOK_VERSION = "10"
 
 
 def hook_template(name: str) -> str:
     script = "check_agent_hook.py" if name == "pre-commit" else "check_local_paths.py"
-    arguments = "--profile staged" if name == "pre-commit" else '--commit-msg-file "$1"'
+    arguments = (
+        "--profile staged"
+        if name == "pre-commit"
+        else '--commit-msg-file "$1" --git-pid "$PPID"'
+    )
     command = f"scripts/{script} {arguments}"
     display_command = command.replace('"', '\\"')
     gate = "agent" if name == "pre-commit" else "local-path"

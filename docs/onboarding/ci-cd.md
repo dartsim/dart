@@ -40,6 +40,10 @@ Required checks on `main`: `Release` and
 `API Documentation`, and the two Read the Docs builds. Never require a
 nightly-only job: it never reports on PRs, so it would block every merge.
 
+Once the PR Text workflow is on `main`, the maintainer should add
+`No local paths in PR text` to the `main` ruleset's required checks. The
+repository ruleset is configured by the maintainer, not in code.
+
 ## Performance Records And Guards
 
 `perf.yml` extends the PR harness for two hosted tiers on `ubuntu-24.04`:

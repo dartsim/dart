@@ -1000,6 +1000,186 @@ def test_utf16_files_cannot_hide_paths(repo, encoding, bom, mode):
     assert _cli(*args, cwd=repo).returncode == 0
 
 
+@pytest.mark.parametrize("encoding", ["utf-16-le", "utf-16-be"])
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "--files",
+        "--all-tracked",
+        "--staged",
+        "--commit-range",
+        "--text-file",
+        "--commit-msg-file",
+        "--stdin",
+    ],
+)
+def test_bomless_utf16_with_non_ascii_text_cannot_hide_paths(repo, encoding, mode):
+    if mode == "--commit-range":
+        (repo / "base.txt").write_text("Public summary\n")
+        base = _commit(repo)
+    path = repo / "notes.txt"
+    data = ("日本語" * 100 + "\n/home/example/private.md\n").encode(encoding)
+    path.write_bytes(data)
+    _git(repo, "add", path.name)
+    args = (
+        (mode, path)
+        if mode in {"--files", "--text-file", "--commit-msg-file"}
+        else (mode,)
+    )
+    if mode == "--staged":
+        path.write_text("Public worktree hides staged leak\n")
+    if mode == "--commit-range":
+        head = _commit(repo)
+        args = (mode, f"{base}..{head}")
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), *map(str, args)],
+        cwd=repo,
+        input=data if mode == "--stdin" else None,
+        capture_output=True,
+    )
+    assert result.returncode == 1, result.stderr
+    assert b"2: /home/example/private.md\n" in result.stdout
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-16-le", "utf-16-be"])
+def test_binary_match_must_decode_without_replacement(tmp_path, encoding):
+    path = tmp_path / "asset.bin"
+    invalid = (
+        b"\xff"
+        if encoding == "utf-8"
+        else "\ud800".encode(encoding, errors="surrogatepass")
+    )
+    path.write_bytes(
+        "/home/example/".encode(encoding) + invalid + "\n".encode(encoding)
+    )
+    assert _cli("--files", path, cwd=tmp_path).returncode == 0
+    path.write_bytes("/home/example/private.md\n".encode(encoding) + invalid)
+    assert _cli("--files", path, cwd=tmp_path).returncode == 1
+
+
+@pytest.mark.parametrize("comment_string", ["#", ";", "//"])
+@pytest.mark.parametrize(
+    "arguments,expected",
+    [
+        ([], False),
+        (["-m", "public"], True),
+        (["-F", "message.txt"], True),
+        (["-C", "HEAD"], True),
+        (["-c", "HEAD"], True),
+        (["-F", "message.txt", "-e"], False),
+        (["--file=message.txt", "--edit"], False),
+        (["--no-edit"], True),
+        (["-F", "message.txt", "-e", "--no-edit"], True),
+        (["--no-edit", "--edit"], False),
+        (["-F", "message.txt", "--cleanup=strip"], False),
+        (["--cleanup=whitespace"], True),
+        (["--cleanup=verbatim"], True),
+        (["--cleanup=scissors"], True),
+        (["--cleanup=default", "-mpublic"], True),
+    ],
+)
+def test_commit_cleanup_uses_parent_command_not_localized_template(
+    comment_string, arguments, expected
+):
+    message = (
+        "Public summary\n"
+        f"{comment_string} Veuillez saisir le message de validation.\n"
+        f"{comment_string} Voir /home/example/private.md\n"
+    )
+    assert (
+        checker.scan_commit_message(
+            message,
+            git_command=["git", "commit", *arguments],
+            comment_string=comment_string,
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize(
+    "arguments,expected",
+    [
+        ([], True),
+        (["--cleanup=whitespace"], True),
+        (["--cleanup=verbatim"], True),
+        (["--cleanup=scissors"], False),
+        (["-v"], False),
+        (["--verbose"], False),
+        (["--cleanup=strip", "-v"], False),
+        (["-v", "--no-verbose"], True),
+        (["--no-verbose", "-v"], False),
+    ],
+)
+def test_parent_cleanup_only_honors_scissors_in_scissors_or_verbose_mode(
+    arguments, expected
+):
+    message = (
+        "Public summary\n# ------------------------ >8 ------------------------\n"
+        "diff --git a/notes.md b/notes.md\n+/home/example/private.md\n"
+    )
+    assert (
+        checker.scan_commit_message(
+            message,
+            git_command=["git", "commit", *arguments],
+            comment_string="#",
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize("template,expected", [(True, False), (False, True)])
+def test_unreadable_git_parent_falls_back_to_english_template(
+    tmp_path, template, expected
+):
+    message = tmp_path / "message.txt"
+    message.write_text(
+        ("# Lines starting with '#' will be ignored,\n" if template else "")
+        + "# /home/example/private.md\n"
+    )
+    assert _cli(
+        "--commit-msg-file", message, "--git-pid", "2147483647", cwd=tmp_path
+    ).returncode == int(expected)
+
+
+def test_read_git_command_uses_proc_nul_delimited_arguments(monkeypatch):
+    monkeypatch.setattr(
+        Path, "read_bytes", lambda self: b"git\0commit\0-F\0message with spaces.txt\0"
+    )
+    assert checker.read_git_command(123) == [
+        "git",
+        "commit",
+        "-F",
+        "message with spaces.txt",
+    ]
+
+
+def test_read_git_command_falls_back_to_ps(monkeypatch):
+    def unreadable(self):
+        raise OSError("process command line unavailable")
+
+    monkeypatch.setattr(Path, "read_bytes", unreadable)
+
+    def ps(command, **kwargs):
+        assert command == ["ps", "-o", "args=", "-p", "123"]
+        return subprocess.CompletedProcess(command, 0, "git commit --cleanup=strip\n")
+
+    monkeypatch.setattr(checker.subprocess, "run", ps)
+    assert checker.read_git_command(123) == ["git", "commit", "--cleanup=strip"]
+
+
+def test_commit_cleanup_preserves_configured_comment_string_spaces(monkeypatch, capsys):
+    monkeypatch.setattr(
+        checker.subprocess,
+        "run",
+        lambda command, **kwargs: subprocess.CompletedProcess(command, 0, "// \n"),
+    )
+    assert checker.scan_commit_message(
+        "Public summary\n// See /home/example/private.md\n//See /home/example/private.md\n",
+        git_command=["git", "commit"],
+    )
+    assert capsys.readouterr().out == "3: /home/example/private.md\n"
+
+
 @pytest.mark.parametrize(
     "encoding,bom",
     [
