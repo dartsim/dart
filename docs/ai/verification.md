@@ -103,14 +103,35 @@ scanning. Foreign pre-push hooks receive the same stdin and their failures block
 the push. Unavailable checkers/interpreters print a notice and skip scanning;
 findings and lookup or scan errors block the push.
 
-When `--no-verify`/`-n` (including accepted abbreviations), a `core.hooksPath`
-override, or a missing/outdated managed hook prevents enforcement, the shared
-Claude/Codex agent guard checks
-every commit split by its shell tokenizer, runs the staged gate once and scans
-all such commits' supplied `-m`/`--message`, readable `-F`/`--file` messages and
-trailers through `scripts/check_local_paths.py --stdin`. It joins supplied
-message parts without a comment exemption. It blocks stdin (`-F -`/`--file=-`),
-reused (`-C`/`-c`/`--reuse-message`/`--reedit-message`) and editor-only messages
+The shared Claude/Codex agent guard uses three paths:
+
+1. **Fast allow:** raw command text without the case-sensitive substring
+   `commit` returns immediately before shell tokenization. This deliberately
+   leaves dynamically generated or split spellings of the subcommand to the
+   installed hooks and PR Text backstop.
+2. **Precise simple chain:** simple commands joined only by `&&`, `;` or
+   newlines retain message extraction, plain `cd` tracking, foreign-repository
+   skipping and child-shell inspection. Quoted literal `cat` heredoc messages
+   (`-m "$(cat <<'EOF' ... EOF)"`) and already supported child-shell inputs are
+   inspected exactly. Pipes, `||`, background jobs, subshells, brace groups,
+   compound commands, function definitions, comments, process substitutions and
+   other command substitutions take the conservative path. Unsupported quoting,
+   escaped newlines and redirection placements also take that path.
+3. **Conservative command:** any other command containing `commit` uses the
+   project's staged gate and scans the entire original raw command, including
+   comments and heredoc bodies. It never trusts managed-hook delegation or skips
+   a foreign target. Commit-shaped risks with external message sources (`-F`/
+   `--file`, reuse/reedit, templates, fixup/squash reuse or an editor without
+   `-m`) are blocked with instructions to run the commit as a simple command.
+   Inline messages in groups and function definitions can pass when the raw
+   text and staged gate pass; the guard does not emulate their execution.
+
+On the precise path, `--no-verify`/`-n` (including accepted abbreviations), a
+`core.hooksPath` override, or missing/outdated managed hooks requires the guard
+to run the staged gate once and scan all supplied `-m`/`--message`, readable
+`-F`/`--file` messages and trailers through
+`scripts/check_local_paths.py --stdin`. It joins message parts without a
+comment exemption. It blocks stdin, reused/autosquash and editor-only messages
 when managed hooks cannot enforce them, asking for `-m` or `-F <file>` or for
 the hooks to run.
 It also blocks commit-time staging (`-a`/`--all`, `-i`/`--include`,
@@ -129,13 +150,6 @@ builds, formatters, file operations, Git config writes, exports, scripts, file
 redirections, or uninspectable syntax, requires the guard's full message and
 staged checks. Content/index changes remain tracked separately to reject unsafe
 chains of multiple commits without hook enforcement.
-
-The guard treats cwd as uncertain after a `cd` in a pipeline stage, background
-job, subshell, command substitution, or command group. That uncertainty persists
-through the context and subsequent commands until a later certain `cd`
-re-establishes cwd. A commit with uncertain cwd runs the project gates even if
-the project has current managed hooks; only a certain foreign repository is
-skipped, including explicit `git -C` targets.
 
 ## Simulation Verification Route
 

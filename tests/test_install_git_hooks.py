@@ -764,6 +764,10 @@ def test_guard_expanded_command_positions_require_fallback(
     _write_gate(repo, "raise SystemExit('staged-gate-failed')\n")
     env["CLAUDE_PROJECT_DIR"] = str(repo)
     returncode, stderr = _run_guard(repo, env, f"{command} {arguments}")
+    if "commit" not in command:
+        assert returncode == 0, stderr
+        assert stderr == ""
+        return
     assert returncode == 2, stderr
     if arguments == "-m public":
         assert "staged-gate-failed" in stderr
@@ -962,14 +966,14 @@ def test_guard_fails_closed_for_non_posix_child_commits(tmp_path, shell, install
     "command",
     ("powershell -NoProfile -Command -", "pwsh -NoProfile -Command -", "cmd /Q"),
 )
-def test_guard_fails_closed_for_non_posix_stdin_commits(tmp_path, command):
+def test_guard_applies_case_sensitive_fast_allow_to_non_posix_stdin(tmp_path, command):
     repo, env = _init_repo(tmp_path)
     env["CLAUDE_PROJECT_DIR"] = str(repo)
     returncode, stderr = _run_guard(
         repo, env, command + " <<'EOF'\nGIT.EXE COMMIT --allow-empty -m example\nEOF"
     )
-    assert returncode == 2, stderr
-    assert "shell script cannot be inspected" in stderr
+    assert returncode == 0, stderr
+    assert stderr == ""
 
     returncode, stderr = _run_guard(repo, env, command + " <<'EOF'\ngit status\nEOF")
     assert returncode == 0, stderr
@@ -1014,6 +1018,10 @@ def test_guard_fails_closed_for_non_posix_commit_escapes(tmp_path, command, scri
     repo, env = _init_repo(tmp_path)
     env["CLAUDE_PROJECT_DIR"] = str(repo)
     returncode, stderr = _run_guard(repo, env, f"{command} {shlex.quote(script)}")
+    if "commit" not in script:
+        assert returncode == 0, stderr
+        assert stderr == ""
+        return
     assert returncode == 2, stderr
     assert "shell script cannot be inspected" in stderr
 
@@ -1032,36 +1040,54 @@ def test_guard_fails_closed_for_non_posix_subexpression_commits(tmp_path, shell)
 
 
 @pytest.mark.parametrize(
-    "command,script,expected",
+    "command,script",
     [
-        (command, script.format(escape=escape), expected)
+        (command, script.format(escape=escape))
         for command, escape in (
             ("powershell -Command", "`"),
             ("pwsh -Command", "`"),
             ("cmd /C", "^"),
         )
-        for script, expected in (
-            ("git commit --allow-empty --no-verify -m example", 2),
-            ("git com{escape}mit --allow-empty --no-verify -m example", 2),
-            ("git {escape}\ncommit --allow-empty --no-verify -m example", 2),
-            ("git {escape}\r\ncommit --allow-empty --no-verify -m example", 2),
-            ("git status", 0),
-            ("Write-Output example", 0),
+        for script in (
+            "git commit --allow-empty --no-verify -m example",
+            "git com{escape}mit --allow-empty --no-verify -m example",
+            "git {escape}\ncommit --allow-empty --no-verify -m example",
+            "git {escape}\r\ncommit --allow-empty --no-verify -m example",
+            "git status",
+            "Write-Output example",
         )
     ],
 )
 def test_guard_inspects_native_script_from_posix_substitution(
-    tmp_path, command, script, expected
+    tmp_path, command, script
 ):
     repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
     env["CLAUDE_PROJECT_DIR"] = str(repo)
     command = f'{command} "$(printf %s {shlex.quote(script)})"'
     returncode, stderr = _run_guard(repo, env, command)
-    assert returncode == expected, stderr
-    if expected:
-        assert "shell script cannot be inspected" in stderr
-    else:
-        assert stderr == ""
+    assert returncode == 0, stderr
+    assert stderr.count("direct-agent-gate") == int("commit" in command)
+
+
+@pytest.mark.parametrize("command", ("powershell -Command", "pwsh -Command", "cmd /C"))
+def test_guard_generated_native_external_message_requires_simple_command(
+    tmp_path, command
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    (repo / "message.txt").write_text("Public summary\n")
+    script = "git commit --no-verify -F message.txt"
+
+    returncode, stderr = _run_guard(
+        repo, env, f'{command} "$(printf %s {shlex.quote(script)})"'
+    )
+
+    assert returncode == 2, stderr
+    assert "cannot be inspected" in stderr
+    assert "simple command" in stderr
 
 
 @pytest.mark.parametrize("shell", ("powershell", "pwsh"))
@@ -1166,6 +1192,250 @@ def test_guard_handles_thousands_of_non_native_arguments_within_timeout(tmp_path
     assert private_path in stderr
 
 
+@pytest.mark.parametrize(
+    "command",
+    (
+        "git status # unmatched { syntax",
+        "git COMMIT",
+        "git $SUB",
+        r"git com\mit -m x",
+        'git com"mit" -m x',
+        "git 'com'mit -m x",
+    ),
+)
+def test_guard_fast_allows_raw_commands_without_commit(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo, "raise SystemExit('staged-gate-failed')\n")
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+
+    returncode, stderr = _run_guard(repo, env, command, timeout=5)
+
+    assert returncode == 0, stderr
+    assert stderr == ""
+
+
+@pytest.mark.parametrize("with_commit", (False, True))
+def test_guard_handles_thousands_of_brace_arguments_within_timeout(
+    tmp_path, with_commit
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    paths = " ".join(
+        f"fixtures/{{source,target}}_{index:04d}.md" for index in range(2000)
+    )
+    command = f"git add {paths}"
+    if with_commit:
+        command += " && git commit --no-verify -m public"
+
+    returncode, stderr = _run_guard(repo, env, command, timeout=5)
+
+    assert returncode == 0, stderr
+    assert stderr.count("direct-agent-gate") == int(with_commit)
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        "{ (git commit -m public) }",
+        "{ if true; then git commit -m public; fi }",
+        "{ { git commit -m fix; } }",
+        "time f() { true; git commit -m public; }",
+        "time -p f() { git commit -m public; }",
+        "coproc worker { git commit -m public; }",
+        "{ git commit --message=public; }",
+        "{ git commit -qm public; }",
+        "{ git commit -m 'Example --file=message.txt -C HEAD'; }",
+        "{ >/dev/null git commit -m public; }",
+        "{ git\\\n commit -m public; }",
+        "git status # git commit; {",
+        "true & echo commit",
+        "DART_SKIP_HOOKS=1 git commit -m public & true",
+    ),
+)
+@pytest.mark.parametrize("failed_gate", (False, True))
+def test_guard_complex_inline_commands_use_project_gate(tmp_path, command, failed_gate):
+    repo, env = _init_repo(tmp_path)
+    assert _install(repo, env).returncode == 0
+    _write_gate(
+        repo,
+        "import sys\nprint('direct-agent-gate', file=sys.stderr)\n"
+        f"sys.exit({int(failed_gate)})\n",
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == (2 if failed_gate else 0), stderr
+    assert "direct-agent-gate" in stderr
+    assert "cannot be inspected" not in stderr
+
+
+@pytest.mark.parametrize(
+    "command_template",
+    (
+        "case x in x) {{ git commit --no-verify -m {private_path}; }};; esac",
+        "coproc worker {{ git commit --no-verify -m {private_path}; }}",
+        "time f() {{ true; git commit -m {private_path}; }}",
+        "git status # git commit; {{ {private_path}",
+        "cat <<'EOF'\n{private_path}\nEOF\n{{ git commit -m public; }}",
+        "cat <<'EOF'\ngit commit -m public\n{private_path}\nEOF",
+    ),
+)
+def test_guard_scans_all_complex_command_text(tmp_path, command_template):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    (repo / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    private_path = "/home/" + "example/private.md"
+
+    returncode, stderr = _run_guard(
+        repo, env, command_template.format(private_path=private_path)
+    )
+
+    assert returncode == 2, stderr
+    assert private_path in stderr
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    (
+        "",
+        "--trailer 'Note: public'",
+        "-F message.txt",
+        "-Fmessage.txt -m public",
+        "--file=message.txt -m public",
+        "--fil message.txt -m public",
+        "-c HEAD -m public",
+        "-CHEAD -m public",
+        "--reuse-message=HEAD -m public",
+        "--reedit-message HEAD -m public",
+        "--ree HEAD -m public",
+        "-t template.txt -m public",
+        "-ttemplate.txt -m public",
+        "--template=template.txt -m public",
+        "--templ template.txt -m public",
+        "--fixup=HEAD -m public",
+        "--fixup=amend:HEAD -m public",
+        "--fixup=reword:HEAD -m public",
+        "--fix HEAD -m public",
+        "--squash=HEAD -m public",
+        "--sq HEAD -m public",
+    ),
+)
+def test_guard_complex_commit_external_messages_require_simple_command(
+    tmp_path, arguments
+):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    (repo / "message.txt").write_text("Public summary\n")
+    (repo / "template.txt").write_text("Public template\n")
+
+    returncode, stderr = _run_guard(repo, env, "{ git commit " + arguments + "; }")
+
+    assert returncode == 2, stderr
+    assert "cannot be inspected" in stderr
+    assert "simple command" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    (
+        "case x in x) git commit -F message.txt;; esac",
+        "coproc worker { git commit -C HEAD -m public; }",
+        "time f() { git commit -t template.txt -m public; }",
+        "{ sh -c 'git commit -F message.txt'; }",
+        "{ env -S 'sh -c \"git commit -F message.txt\"'; }",
+        "{ env -S'sh -c \"git commit -F message.txt\"'; }",
+        "{ env -iS'git commit -F message.txt'; }",
+        "{ pwsh -Command 'git commit -F message.txt'; }",
+        "{ >/dev/null git commit -F message.txt; }",
+        "{ git\\\n commit -F message.txt; }",
+        "{ $G commit -F message.txt; }",
+        "{ $G commit; }",
+        "{ git commit -m public; git commit; }",
+    ),
+)
+def test_guard_complex_message_sources_stay_uninspectable(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 2, stderr
+    assert "cannot be inspected" in stderr
+    assert "simple command" in stderr
+
+
+def test_guard_heredoc_message_stops_at_first_delimiter(tmp_path):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    command = (
+        "git commit --no-verify -m \"$(cat <<'EOF'\npublic\nEOF\n"
+        "git commit --no-verify -F message.txt\n"
+        "cat <<'EOF'\ntext\nEOF\n)\""
+    )
+
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 2, stderr
+    assert "cannot be inspected" in stderr
+    assert "simple command" in stderr
+
+
+@pytest.mark.parametrize("arguments", ("-F message.txt", "-m public"))
+def test_guard_ansi_quoted_git_uses_conservative_path(tmp_path, arguments):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    assert _install(repo, env).returncode == 0
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+
+    returncode, stderr = _run_guard(repo, env, "$'git' commit --no-verify " + arguments)
+
+    assert returncode == (2 if arguments.startswith("-F") else 0), stderr
+    if returncode:
+        assert "cannot be inspected" in stderr
+        assert "simple command" in stderr
+    else:
+        assert "direct-agent-gate" in stderr
+
+
+@pytest.mark.parametrize("installed", (False, True))
+def test_guard_literal_heredoc_message_keeps_precise_path(tmp_path, installed):
+    repo, env = _init_repo(tmp_path)
+    _write_gate(repo)
+    if installed:
+        assert _install(repo, env).returncode == 0
+    message = (
+        "Public summary\n"
+        "Text { braces }; git commit --file message.txt\n"
+        "Quote 'example' and \"example\""
+    )
+    (repo / "scripts/check_local_paths.py").write_text(
+        "import sys\nassert sys.argv[1:] == ['--stdin']\n"
+        f"assert sys.stdin.read() == {message!r}\n"
+        "print('direct-message-gate', file=sys.stderr)\n"
+    )
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+
+    returncode, stderr = _run_guard(
+        repo, env, "git commit -m \"$(cat <<'EOF'\n" + message + '\nEOF\n)"'
+    )
+
+    assert returncode == 0, stderr
+    assert stderr.count("direct-agent-gate") == int(not installed)
+    assert stderr.count("direct-message-gate") == int(not installed)
+
+
 @pytest.mark.parametrize("shell", ("powershell", "pwsh"))
 def test_guard_keeps_native_child_inside_posix_backticks(tmp_path, shell):
     repo, env = _init_repo(tmp_path)
@@ -1179,7 +1449,7 @@ def test_guard_keeps_native_child_inside_posix_backticks(tmp_path, shell):
 
 @pytest.mark.parametrize("shell", ("powershell", "pwsh"))
 @pytest.mark.parametrize("subexpression", (False, True))
-def test_guard_fails_closed_for_native_dynamic_git_commits(
+def test_guard_fast_allows_native_scripts_without_raw_commit(
     tmp_path, shell, subexpression
 ):
     repo, env = _init_repo(tmp_path)
@@ -1190,8 +1460,8 @@ def test_guard_fails_closed_for_native_dynamic_git_commits(
     returncode, stderr = _run_guard(
         repo, env, f"{shell} -Command {shlex.quote(script)}"
     )
-    assert returncode == 2, stderr
-    assert "shell script cannot be inspected" in stderr
+    assert returncode == 0, stderr
+    assert stderr == ""
 
     script = "git status; Write-Output $MESSAGE"
     returncode, stderr = _run_guard(
@@ -1247,7 +1517,7 @@ def test_guard_blocks_dynamic_or_unparseable_child_script(tmp_path, command):
     env["CLAUDE_PROJECT_DIR"] = str(repo)
     returncode, stderr = _run_guard(repo, env, command)
     assert returncode == 2, stderr
-    assert "shell script cannot be inspected" in stderr
+    assert "cannot be inspected" in stderr
 
 
 @pytest.mark.parametrize(
@@ -2090,9 +2360,6 @@ def test_guard_fails_closed_for_unknown_injected_classifier_result(tmp_path):
         "env --split-string='git commit -m x'",
         "(git commit -m x)",
         'FOO="a b" git commit -m x',
-        "git com\\mit -m x",
-        'git com"mit" -m x',
-        "git 'com'mit -m x",
         "pixi run lint && git commit -m x",
     ],
 )
@@ -2149,10 +2416,6 @@ def test_guard_detects_commit_after_background_operator(tmp_path, command):
         "env -S 'DART_SKIP_HOOKS=1 git commit -m x'",
         "env -S 'git log --grep commit'",
         "git -C /somewhere/else commit -m x",
-        # A background operator must not turn a non-commit chain into a gate,
-        # and must still honor a DART_SKIP_HOOKS bypass on the commit segment.
-        "true & echo commit",
-        "DART_SKIP_HOOKS=1 git commit -m x & true",
     ],
 )
 def test_guard_skips_non_commits_and_bypasses(tmp_path, command):
@@ -2161,13 +2424,13 @@ def test_guard_skips_non_commits_and_bypasses(tmp_path, command):
     assert "would run" not in stderr
 
 
-def test_guard_respects_skip_assignment_inside_shell_conditionals(tmp_path):
+def test_guard_checks_skip_assignment_inside_shell_conditionals(tmp_path):
     command = "if true; then DART_SKIP_HOOKS=1 git commit -m x; fi"
 
     returncode, stderr = _guard_verdict(tmp_path, command)
 
     assert returncode == 0
-    assert "would run" not in stderr
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
 @pytest.mark.parametrize("use_absolute", [False, True])
@@ -2370,7 +2633,7 @@ def test_guard_preserves_shell_cwd_for_relative_commit_paths(tmp_path, command):
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
-def test_guard_does_not_preserve_failed_cd_cwd_for_or_chain(tmp_path):
+def test_guard_checks_foreign_commit_in_or_chain(tmp_path):
     repo, env = _init_repo(tmp_path)
     (repo / "docs").mkdir()
     other = tmp_path / "other"
@@ -2381,13 +2644,14 @@ def test_guard_does_not_preserve_failed_cd_cwd_for_or_chain(tmp_path):
     returncode, stderr = _run_guard(repo, env, f"cd docs || git -C {other} commit -m x")
 
     assert returncode == 0
-    assert "would run" not in stderr
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
 @pytest.mark.parametrize(
     "command_template",
     [
         "false && cd {other}; git commit -m x",
+        "false &&\ncd {other}; git commit -m x",
         "true || cd {other}; git commit -m x",
     ],
 )
@@ -2410,6 +2674,7 @@ def test_guard_does_not_carry_cwd_from_skipped_conditional_cd(
     "command_template",
     [
         "true && cd {other}; git commit -m x",
+        "true &&\ncd {other}; git commit -m x",
         "false || cd {other}; git commit -m x",
     ],
 )
@@ -2423,7 +2688,7 @@ def test_guard_carries_cwd_from_executed_conditional_cd(tmp_path, command_templa
     returncode, stderr = _run_guard(repo, env, command_template.format(other=other))
 
     assert returncode == 0
-    assert "would run" not in stderr
+    assert ("would run" in stderr) == ("||" in command_template)
 
 
 def test_guard_keeps_uncertain_conditional_cd_cwd_fail_closed(tmp_path):
@@ -2498,7 +2763,7 @@ def test_guard_checks_uncertain_context_cd_from_foreign_repo(
     )
     (repo / "scripts/check_local_paths.py").write_text(
         "import sys\nassert sys.argv[1:] == ['--stdin']\n"
-        "assert sys.stdin.read() == 'x'\n"
+        f"assert sys.stdin.read() == {command!r}\n"
         "print('direct-message-gate', file=sys.stderr)\n"
         f"sys.exit({int(failed_gate == 'message')})\n"
     )
@@ -2555,7 +2820,7 @@ def test_guard_checks_uncertain_cwd_even_with_managed_project_hooks(tmp_path, co
         '(cd "$CLAUDE_PROJECT_DIR"); cd "$OTHER_REPO" && git commit --no-verify -m x',
     ],
 )
-def test_guard_skips_certain_foreign_repo_after_context_cd(tmp_path, command):
+def test_guard_skips_foreign_repo_only_in_simple_chain(tmp_path, command):
     repo, env = _init_repo(tmp_path)
     other = tmp_path / "other"
     other.mkdir()
@@ -2571,7 +2836,7 @@ def test_guard_skips_certain_foreign_repo_after_context_cd(tmp_path, command):
     returncode, stderr = _run_guard(repo, env, command)
 
     assert returncode == 0, stderr
-    assert "would run" not in stderr
+    assert ("would run" in stderr) == ("(" in command)
 
 
 @pytest.mark.parametrize(
@@ -2707,14 +2972,14 @@ def test_guard_does_not_carry_function_definition_body_cwd(tmp_path, definition)
         "commit_later() { { git commit -m x; }; }",
     ),
 )
-def test_guard_does_not_execute_function_definition_body_commit(tmp_path, command):
+def test_guard_checks_function_definition_body_commit(tmp_path, command):
     repo, env = _init_repo(tmp_path)
     env.update({"CLAUDE_PROJECT_DIR": str(repo), "DART_HOOK_DRY_RUN": "1"})
 
     returncode, stderr = _run_guard(repo, env, command)
 
     assert returncode == 0
-    assert "would run" not in stderr
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
 def test_guard_does_not_treat_path_qualified_builtin_as_shell_builtin(tmp_path):
@@ -2807,15 +3072,16 @@ def test_guard_checks_commits_with_brace_words(tmp_path, command):
         "{ { git commit -m fix; } }",
     ),
 )
-def test_guard_fails_closed_for_unmatched_brace_contexts(tmp_path, command):
+def test_guard_checks_unmatched_brace_contexts(tmp_path, command):
     repo, env = _init_repo(tmp_path)
     assert _install(repo, env).returncode == 0
+    _write_gate(repo)
     env["CLAUDE_PROJECT_DIR"] = str(repo)
 
     returncode, stderr = _run_guard(repo, env, command)
 
-    assert returncode == 2, stderr
-    assert "shell script cannot be inspected" in stderr
+    assert returncode == 0, stderr
+    assert "direct-agent-gate" in stderr
 
 
 def test_guard_ignores_quoted_shell_separators(tmp_path):
@@ -2928,7 +3194,7 @@ def test_guard_preserves_conditional_cd_cwd_for_relative_commit_paths(tmp_path):
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
-def test_guard_skips_conditional_cd_commit_in_another_repo(tmp_path):
+def test_guard_checks_conditional_cd_commit_in_another_repo(tmp_path):
     repo, env = _init_repo(tmp_path)
     other = tmp_path / "other"
     other.mkdir()
@@ -2940,7 +3206,7 @@ def test_guard_skips_conditional_cd_commit_in_another_repo(tmp_path):
     )
 
     assert returncode == 0
-    assert "would run" not in stderr
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
 @pytest.mark.parametrize(
@@ -2972,11 +3238,11 @@ def test_guard_does_not_preserve_conditional_branch_cd_cwd(tmp_path, command_tem
         "cat <<-EOF\n\tgit commit -m example\n\tEOF",
     ],
 )
-def test_guard_ignores_git_commit_inside_heredoc_body(tmp_path, command):
+def test_guard_checks_git_commit_inside_heredoc_body(tmp_path, command):
     returncode, stderr = _guard_verdict(tmp_path, command)
 
     assert returncode == 0
-    assert "would run" not in stderr
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
 def test_guard_detects_git_commit_after_heredoc_body(tmp_path):
@@ -3071,7 +3337,11 @@ def test_guard_expanded_arguments_run_staged_gate_with_managed_hooks(
         repo, env, f"git commit {argument} -m 'Public summary'"
     )
     assert returncode == 2
-    assert "staged-gate-failed" in stderr
+    if argument in {"$(printf -- --no-verify)", "`printf -- --no-verify`"}:
+        assert "cannot be inspected" in stderr
+        assert "simple command" in stderr
+    else:
+        assert "staged-gate-failed" in stderr
 
 
 @pytest.mark.parametrize("option", ["-m", "--message=", "-F", "--file=", "--trailer="])
