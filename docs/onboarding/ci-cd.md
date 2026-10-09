@@ -30,6 +30,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S6 guards; release records per tag |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main`; an update removes their `maintainer-approved` label |
 | `maintainer_approval.yml`         | Maintainer Approval          | PR pushes, retargets, reopens   | Removes the `maintainer-approved` label when a PR changes after approval; pushes of conflict-free base merges keep it ([PR Lifecycle](ai-tools.md#pr-lifecycle)) |
+| `pr_text.yml`                     | PR Text                      | PR opens, edits, reopens, pushes | Checks PR title, body, messages, file names and added lines of every PR commit with only the base branch's local-path checker; fetches PR git objects without checking out or executing PR code; skips with a notice until the checker exists on the base |
 
 To acknowledge an intended regression, add `Perf-Regression-Rationale: <rows>: <reason>` (or `Rebaseline-Rationale: <rows>: <reason>` for changed guards, including a signed Ir percentage when above +1%) to the PR body and run `gh run rerun <run-id> --failed`; editing the body alone does not trigger a run.
 
@@ -39,6 +40,10 @@ Required checks on `main`: `Release` and
 `ubuntu-latest` (CI gz-physics),
 `API Documentation`, and the two Read the Docs builds. Never require a
 nightly-only job: it never reports on PRs, so it would block every merge.
+
+Once the PR Text workflow is on `main`, the maintainer should add
+`No local paths in PR text` to the `main` ruleset's required checks. The
+repository ruleset is configured by the maintainer, not in code.
 
 ## Performance Records And Guards
 
@@ -300,9 +305,10 @@ gate does.
 ## Nightly
 
 `nightly.yml` runs every workflow in the index except the wall-time performance
-dashboard, lockfile refresh, and maintainer approval against `main` each night
-at 08:17 UTC, including the nightly-only jobs. It is scheduled directly on
-`main`, the default branch, with no dispatcher. Run it on demand with
+dashboard, lockfile refresh, maintainer approval, and PR text against `main`
+each night at 08:17 UTC, including the nightly-only jobs. It is scheduled
+directly on `main`, the default branch, with no dispatcher. Run it on demand
+with
 `gh workflow run nightly.yml --ref main`.
 
 Its `report` job (`scripts/nightly_ci_report.py`) groups jobs by their
