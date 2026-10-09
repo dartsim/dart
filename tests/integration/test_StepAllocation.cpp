@@ -48,6 +48,7 @@
 #include "dart/constraint/ContactSurface.hpp"
 #include "dart/constraint/FbfFrictionSolver.hpp"
 #include "dart/constraint/NsgsFrictionSolver.hpp"
+#include "dart/constraint/detail/ContactWarmStartCache.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/ConvexMeshShape.hpp"
@@ -2299,6 +2300,10 @@ TEST(StepAllocation, NsgsFirstPreparedStepOnFreshThread)
       nsgs->resetStats();
       measurement = measureWorldStepsNow(world, allocator, 1);
       stats = nsgs->getStats();
+      const auto* cache
+          = dart::constraint::detail::findContactWarmStartCache(solver);
+      ASSERT_NE(nullptr, cache);
+      EXPECT_EQ(0u, cache->size());
     });
     worker.join();
     EXPECT_GT(measurement.lastStepContacts, 0u);
@@ -2341,6 +2346,9 @@ TEST(StepAllocation, FbfFirstPreparedStepOnFreshThread)
       fbf->resetStats();
       measurement = measureWorldStepsNow(world, allocator, 1);
       stats = fbf->getStats();
+      const auto* cache
+          = dart::constraint::detail::findContactWarmStartCache(solver);
+      EXPECT_EQ(nullptr, cache);
     });
     worker.join();
     EXPECT_GT(measurement.lastStepContacts, 0u);
@@ -2375,6 +2383,9 @@ TEST(StepAllocation, FbfSteadyState)
   dart::test::CountingMemoryAllocator allocator;
   const auto measurement = measureWorldStepsNow(world, allocator, 100, 300);
   const auto stats = fbf->getStats();
+  const auto* cache
+      = dart::constraint::detail::findContactWarmStartCache(solver);
+  EXPECT_EQ(nullptr, cache);
   reportMeasurement("dart_fbf_steady", measurement);
   EXPECT_GT(measurement.lastStepContacts, 0u);
   EXPECT_EQ(0u, countResting(world));
@@ -2414,6 +2425,10 @@ TEST(StepAllocation, NsgsFrictionLawsSteadyState)
     dart::test::CountingMemoryAllocator allocator;
     const auto measurement = measureWorldStepsNow(world, allocator, 100, 300);
     const auto stats = nsgs->getStats();
+    const auto* cache
+        = dart::constraint::detail::findContactWarmStartCache(solver);
+    ASSERT_NE(nullptr, cache);
+    EXPECT_EQ(0u, cache->size());
     reportMeasurement(
         "dart_nsgs_law_" + std::to_string(static_cast<int>(law)), measurement);
     EXPECT_GT(measurement.lastStepContacts, 0u);
@@ -2422,6 +2437,53 @@ TEST(StepAllocation, NsgsFrictionLawsSteadyState)
     EXPECT_GT(stats.numIterations, 0u);
     EXPECT_EQ(0u, stats.numFailed);
     EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap);
+    EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
+    EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+  }
+}
+
+TEST(StepAllocation, ContactWarmStartParallelSteadyState)
+{
+  if (!dart::test::ScopedRawHeapAllocationCounter::isAvailable())
+    GTEST_SKIP() << dart::test::ScopedRawHeapAllocationCounter::skipReason();
+
+  for (const bool useFbf : {false, true}) {
+    SCOPED_TRACE(useFbf ? "FBF" : "NSGS");
+    auto world = createAllocationGateWorld(
+        dart::collision::DARTCollisionDetector::create(), false, 4u);
+    addGridBoxes(world, 1, 12);
+    auto* solver = static_cast<AllocationGateConstraintSolver*>(
+        world->getConstraintSolver());
+    dart::constraint::FbfFrictionSolver::Options options;
+    options.maxOuterIterations = 4;
+    solver->setBoxedLcpSolver(
+        useFbf ? dart::constraint::BoxedLcpSolverPtr(
+            std::make_shared<dart::constraint::FbfFrictionSolver>(options))
+               : dart::constraint::BoxedLcpSolverPtr(
+                   std::make_shared<dart::constraint::NsgsFrictionSolver>()));
+    for (int i = 0; i < 50; ++i)
+      world->step();
+    ASSERT_GE(solver->getNumConstrainedGroups(), 128u);
+    ASSERT_TRUE(solver->canSolveInParallel());
+    const auto* cache
+        = dart::constraint::detail::findContactWarmStartCache(solver);
+    if (useFbf) {
+      EXPECT_EQ(nullptr, cache);
+    } else {
+      ASSERT_NE(nullptr, cache);
+      ASSERT_GT(cache->size(), 0u);
+    }
+    dart::test::CountingMemoryAllocator allocator;
+    const auto measurement = measureWorldStepsNow(world, allocator, 20, 50);
+    reportMeasurement(
+        useFbf ? "dart_fbf_parallel_cache" : "dart_nsgs_parallel_cache",
+        measurement);
+    EXPECT_GT(measurement.lastStepContacts, 0u);
+    if (useFbf)
+      EXPECT_EQ(nullptr, cache);
+    else
+      EXPECT_GT(cache->size(), 0u);
+    EXPECT_EQ(0u, countResting(world));
     EXPECT_TRUE(hasNoGlobalHeapAllocations(measurement));
     EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
   }

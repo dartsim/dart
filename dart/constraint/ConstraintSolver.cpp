@@ -56,6 +56,7 @@
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
+#include "dart/constraint/detail/ContactWarmStartCache.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/Joint.hpp"
@@ -1276,6 +1277,8 @@ void ConstraintSolver::setCollisionDetector(
   if (mCollisionDetector == collisionDetector)
     return;
 
+  if (auto* cache = detail::findContactWarmStartCache(this))
+    cache->clear();
   mCollisionDetector = collisionDetector;
   configureDARTCollisionThreads(mCollisionDetector, mNumSimulationThreads);
 
@@ -1431,7 +1434,41 @@ bool ConstraintSolver::solveWithQueryFilter(
     contactQueryComplete = updateConstraintsWithQueryFilter(true, queryFilter);
   }
 
+  detail::ContactWarmStartCache* contactCache = nullptr;
+  const auto* boxed = dynamic_cast<const BoxedLcpConstraintSolver*>(this);
+  if (boxed) {
+    const auto* primary = boxed->getBoxedLcpSolver().get();
+    if (!isExactDynamicType<DantzigBoxedLcpSolver>(primary)
+        && !isExactDynamicType<PgsBoxedLcpSolver>(primary)
+        && dynamic_cast<const NsgsFrictionSolver*>(primary)) {
+      contactCache = &detail::getOrCreateContactWarmStartCache(this);
+      contactCache->begin(
+          mTimeStep,
+          mContactConstraints.size(),
+          mCollisionGroup.get(),
+          mCollisionGroup ? mCollisionGroup->getContentVersion() : 0u);
+      for (const auto& constraint : mContactConstraints) {
+        if (!isExactDynamicType<ContactConstraint>(constraint.get())
+            || !constraint->isActive())
+          continue;
+        const auto& contact = *constraint->mContact;
+        detail::ContactWarmStartCache::Key key;
+        key.frames[0] = contact.getShapeFrame1();
+        key.frames[1] = contact.getShapeFrame2();
+        const auto& transformA = constraint->mBodyNodeA->getWorldTransform();
+        const auto& transformB = constraint->mBodyNodeB->getWorldTransform();
+        key.points[0] = transformA.inverse() * contact.point;
+        key.points[1] = transformB.inverse() * contact.point;
+        key.normals[0] = transformA.linear().transpose() * contact.normal;
+        key.normals[1] = transformB.linear().transpose() * contact.normal;
+        contactCache->add(constraint.get(), key);
+      }
+    }
+  }
+
   if (mActiveConstraints.empty()) {
+    if (contactCache)
+      contactCache->finish();
     clearInactiveConstrainedGroups();
     return contactQueryComplete;
   }
@@ -1448,6 +1485,10 @@ bool ConstraintSolver::solveWithQueryFilter(
     DART_PROFILE_SCOPED_IF_N(
         profileRecording, "ConstraintSolver::solveConstrainedGroups");
     solveConstrainedGroups();
+  }
+
+  if (contactCache) {
+    contactCache->finish();
   }
 
   if (splitImpulse) {
@@ -3791,6 +3832,16 @@ void ConstraintSolver::solveConstrainedGroups()
 //==============================================================================
 void ConstraintSolver::reserveConstrainedGroupsScratch()
 {
+  const auto* boxed = dynamic_cast<const BoxedLcpConstraintSolver*>(this);
+  if (boxed) {
+    const auto* primary = boxed->getBoxedLcpSolver().get();
+    if (!isExactDynamicType<DantzigBoxedLcpSolver>(primary)
+        && !isExactDynamicType<PgsBoxedLcpSolver>(primary)
+        && dynamic_cast<const NsgsFrictionSolver*>(primary)) {
+      detail::getOrCreateContactWarmStartCache(this).reserve(
+          mContactConstraints.size());
+    }
+  }
   const auto groupCount = mConstrainedGroups.size();
   mGroupResting.reserve(groupCount);
   mGroupAllSleepCandidates.reserve(groupCount);

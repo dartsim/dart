@@ -66,6 +66,7 @@
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
 #include "dart/constraint/ServoMotorConstraint.hpp"
 #include "dart/constraint/SoftContactConstraint.hpp"
+#include "dart/constraint/detail/ContactWarmStartCache.hpp"
 #include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
@@ -106,6 +107,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -1388,6 +1390,36 @@ TEST(ConstraintSolver, ThreadedDefaultContactRebuildMatchesSerialSurfaceParams)
 
 namespace {
 
+class WarmStartContactSurfaceHandler final
+  : public constraint::DefaultContactSurfaceHandler
+{
+public:
+  constraint::ContactConstraintPtr createConstraint(
+      collision::Contact& contact,
+      std::size_t numContactsOnCollisionObject,
+      double timeStep) const override
+  {
+    if (reversePair) {
+      std::swap(contact.collisionObject1, contact.collisionObject2);
+      contact.normal = -contact.normal;
+    }
+    auto params = createParams(contact, numContactsOnCollisionObject);
+    params.mFirstFrictionalDirection = direction;
+    return DefaultContactSurfaceHandler::createConstraint(
+        contact, timeStep, params);
+  }
+
+  bool reversePair = false;
+  Eigen::Vector3d direction = Eigen::Vector3d::UnitX();
+};
+
+Eigen::Vector3d contactImpulseWithUpwardNormal(const World& world)
+{
+  const auto& contact = world.getLastCollisionResult().getContact(0);
+  const double sign = contact.normal.z() >= 0.0 ? 1.0 : -1.0;
+  return sign * world.getTimeStep() * contact.force;
+}
+
 void setContactWorldSlidingVelocity(World& world)
 {
   for (std::size_t i = 1u; i < world.getNumSkeletons(); ++i) {
@@ -1449,56 +1481,509 @@ void expectWorldStateBitIdentical(const World& serial, const World& threaded)
 } // namespace
 
 //==============================================================================
+TEST(ConstraintSolver, ContactWarmStartRejectsCappedAndFailedPrimaryResults)
+{
+  std::vector<collision::CollisionDetectorPtr> detectors{
+      collision::DARTCollisionDetector::create()};
+#if HAVE_ODE
+  detectors.push_back(collision::OdeCollisionDetector::create());
+#endif
+  for (const auto& detector : detectors) {
+    SCOPED_TRACE(detector->getType());
+    for (const auto& [budget, fallback] :
+         {std::pair{0, 0},
+          std::pair{-1, 0},
+          std::pair{-1, 1},
+          std::pair{-1, 2}}) {
+      SCOPED_TRACE(budget);
+      SCOPED_TRACE(fallback);
+      auto world = createSingleFreeBodyContactWorld(false);
+      auto sphere = world->getSkeleton("box");
+      sphere->getBodyNode(0)->getShapeNode(0)->setShape(
+          std::make_shared<dynamics::SphereShape>(0.5));
+      const auto initialPositions = sphere->getPositions();
+      auto* joint = static_cast<dynamics::FreeJoint*>(sphere->getJoint(0));
+      auto resetBody = [&](double verticalVelocity) {
+        sphere->setPositions(initialPositions);
+        joint->setAngularVelocity(Eigen::Vector3d::Zero());
+        joint->setLinearVelocity(Eigen::Vector3d(0.0, 0.0, verticalVelocity));
+      };
+      auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+          world->getConstraintSolver());
+      solver->setCollisionDetector(detector->cloneWithoutCollisionObjects());
+      solver->setSecondaryBoxedLcpSolver(nullptr);
+      auto nsgs = std::make_shared<constraint::NsgsFrictionSolver>();
+      solver->setBoxedLcpSolver(nsgs);
+      resetBody(-0.1);
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      const auto initialStats = nsgs->getStats();
+      ASSERT_EQ(1u, initialStats.numConverged);
+      const auto* cache = constraint::detail::findContactWarmStartCache(solver);
+      ASSERT_NE(nullptr, cache);
+      ASSERT_EQ(1u, cache->size());
+
+      auto nsgsOptions = nsgs->getOptions();
+      nsgsOptions.maxSweeps = budget;
+      nsgs->setOptions(nsgsOptions);
+      if (fallback == 1) {
+        solver->setSecondaryBoxedLcpSolver(
+            std::make_shared<constraint::PgsBoxedLcpSolver>());
+      } else if (fallback == 2) {
+        solver->setSecondaryBoxedLcpSolver(
+            std::make_shared<constraint::NsgsFrictionSolver>());
+      }
+      nsgs->resetStats();
+      resetBody(-1.0);
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      const auto rejectedStats = nsgs->getStats();
+      EXPECT_EQ(0u, rejectedStats.numConverged);
+      EXPECT_EQ(budget == 0 ? 1u : 0u, rejectedStats.numAcceptedAtCap);
+      EXPECT_EQ(budget < 0 ? 1u : 0u, rejectedStats.numFailed);
+      EXPECT_EQ(0u, cache->size());
+      if (budget == 0 || fallback != 0) {
+        EXPECT_GT(contactImpulseWithUpwardNormal(*world).z(), 0.0);
+      } else {
+        EXPECT_EQ(0.0, contactImpulseWithUpwardNormal(*world).squaredNorm());
+      }
+
+      nsgsOptions.maxSweeps = 0;
+      nsgs->setOptions(nsgsOptions);
+      solver->setSecondaryBoxedLcpSolver(nullptr);
+      nsgs->resetStats();
+      resetBody(-1.0);
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      if (detector->getType()
+              == collision::DARTCollisionDetector::getStaticType()
+          && (budget == 0 || fallback != 0)) {
+        EXPECT_GT(contactImpulseWithUpwardNormal(*world).z(), 0.0);
+      } else {
+        EXPECT_EQ(0.0, contactImpulseWithUpwardNormal(*world).squaredNorm());
+      }
+      EXPECT_EQ(nsgs->getStats().numConverged, cache->size());
+    }
+  }
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactWarmStartRejectsOnlyTheUnconvergedGroup)
+{
+  std::vector<collision::CollisionDetectorPtr> detectors{
+      collision::DARTCollisionDetector::create()};
+#if HAVE_ODE
+  detectors.push_back(collision::OdeCollisionDetector::create());
+#endif
+  for (const auto& detector : detectors) {
+    SCOPED_TRACE(detector->getType());
+    auto world = createManySingleFreeBodyContactWorld(2u, 1u);
+    world->setGravity(Eigen::Vector3d::Zero());
+    std::array<dynamics::SkeletonPtr, 2> spheres;
+    std::array<Eigen::VectorXd, 2> initialPositions;
+    for (std::size_t i = 0; i < spheres.size(); ++i) {
+      spheres[i] = world->getSkeleton("box_" + std::to_string(i));
+      spheres[i]->getBodyNode(0)->getShapeNode(0)->setShape(
+          std::make_shared<dynamics::SphereShape>(0.5));
+      initialPositions[i] = spheres[i]->getPositions();
+    }
+    auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+        world->getConstraintSolver());
+    solver->setCollisionDetector(detector->cloneWithoutCollisionObjects());
+    solver->setSecondaryBoxedLcpSolver(nullptr);
+    constraint::NsgsFrictionSolver::Options nsgsOptions;
+    nsgsOptions.maxSweeps = 0;
+    auto nsgs = std::make_shared<constraint::NsgsFrictionSolver>(nsgsOptions);
+    solver->setBoxedLcpSolver(nsgs);
+    for (std::size_t cappedBody = 0; cappedBody < spheres.size();
+         ++cappedBody) {
+      SCOPED_TRACE(cappedBody);
+      for (std::size_t i = 0; i < spheres.size(); ++i) {
+        spheres[i]->setPositions(initialPositions[i]);
+        auto* joint
+            = static_cast<dynamics::FreeJoint*>(spheres[i]->getJoint(0));
+        joint->setAngularVelocity(Eigen::Vector3d::Zero());
+        joint->setLinearVelocity(
+            Eigen::Vector3d(0.0, 0.0, i == cappedBody ? -1.0 : 1.0));
+      }
+      nsgs->resetStats();
+      world->step();
+      ASSERT_EQ(2u, world->getLastCollisionResult().getNumContacts());
+      const auto stats = nsgs->getStats();
+      EXPECT_EQ(2u, stats.numSolves);
+      EXPECT_EQ(1u, stats.numConverged);
+      EXPECT_EQ(1u, stats.numAcceptedAtCap);
+      EXPECT_EQ(0u, stats.numFailed);
+      const auto* cache = constraint::detail::findContactWarmStartCache(solver);
+      ASSERT_NE(nullptr, cache);
+      EXPECT_EQ(1u, cache->size());
+    }
+  }
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactWarmStartIsIndependentOfOtherCoupledGroups)
+{
+  auto world = createManySingleFreeBodyContactWorld(3u, 1u);
+  for (std::size_t i = 0; i < 3u; ++i) {
+    world->getSkeleton("box_" + std::to_string(i))
+        ->getBodyNode(0)
+        ->getShapeNode(0)
+        ->setShape(std::make_shared<dynamics::SphereShape>(0.5));
+  }
+  auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+      world->getConstraintSolver());
+  auto nsgs = std::make_shared<constraint::NsgsFrictionSolver>();
+  solver->setBoxedLcpSolver(nsgs);
+  solver->setSecondaryBoxedLcpSolver(nullptr);
+  solver->addConstraint(std::make_shared<constraint::BallJointConstraint>(
+      world->getSkeleton("box_1")->getBodyNode(0),
+      world->getSkeleton("box_2")->getBodyNode(0),
+      Eigen::Vector3d(3.0, 0.0, 0.49)));
+  for (int step = 0; step < 2; ++step) {
+    nsgs->resetStats();
+    world->step();
+    ASSERT_EQ(3u, world->getLastCollisionResult().getNumContacts());
+    EXPECT_EQ(2u, nsgs->getStats().numSolves);
+    const auto* cache = constraint::detail::findContactWarmStartCache(solver);
+    ASSERT_NE(nullptr, cache);
+    EXPECT_EQ(1u, cache->size());
+  }
+}
+
+//==============================================================================
+TEST(ConstraintSolver, ContactWarmStartPreservesImpulseAndInvalidatesHistory)
+{
+  std::vector<collision::CollisionDetectorPtr> detectors{
+      collision::DARTCollisionDetector::create()};
+#if HAVE_ODE
+  detectors.push_back(collision::OdeCollisionDetector::create());
+#endif
+  for (const auto& detector : detectors) {
+    SCOPED_TRACE(detector->getType());
+    for (const bool splitImpulse : {false, true}) {
+      SCOPED_TRACE(splitImpulse);
+      auto world = createSingleFreeBodyContactWorld(false);
+      auto box = world->getSkeleton("box");
+      box->getBodyNode(0)->getShapeNode(0)->setShape(
+          std::make_shared<dynamics::SphereShape>(0.5));
+      const auto initialPositions = box->getPositions();
+      auto* joint = static_cast<dynamics::FreeJoint*>(box->getJoint(0));
+      auto resetBody = [&] {
+        box->setPositions(initialPositions);
+        joint->setAngularVelocity(Eigen::Vector3d::Zero());
+        joint->setLinearVelocity(Eigen::Vector3d(0.2, 0.1, -0.1));
+      };
+      auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+          world->getConstraintSolver());
+      solver->setCollisionDetector(detector->cloneWithoutCollisionObjects());
+      solver->setSecondaryBoxedLcpSolver(nullptr);
+      solver->setSplitImpulseEnabled(splitImpulse);
+      auto handler = std::make_shared<WarmStartContactSurfaceHandler>();
+      solver->addContactSurfaceHandler(handler);
+      auto nsgs = std::make_shared<constraint::NsgsFrictionSolver>();
+      solver->setBoxedLcpSolver(nsgs);
+      resetBody();
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      const Eigen::Vector3d solvedImpulse
+          = contactImpulseWithUpwardNormal(*world);
+      ASSERT_GT(solvedImpulse.z(), 0.0);
+      ASSERT_GT(solvedImpulse.head<2>().norm(), 0.0);
+      const auto* cache = constraint::detail::findContactWarmStartCache(solver);
+      ASSERT_NE(nullptr, cache);
+      EXPECT_EQ(1u, cache->size());
+
+      auto setBudget = [&](int budget) {
+        auto nsgsOptions = nsgs->getOptions();
+        nsgsOptions.maxSweeps = budget;
+        nsgs->setOptions(nsgsOptions);
+      };
+      setBudget(0);
+      nsgs->resetStats();
+      // A zero iteration budget can only apply the assembled warm start.
+      handler->direction = Eigen::Vector3d::UnitY();
+      handler->reversePair = true;
+      resetBody();
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      EXPECT_TRUE(contactImpulseWithUpwardNormal(*world).isApprox(
+          solvedImpulse, 1e-12));
+      EXPECT_EQ(0u, nsgs->getStats().numIterations);
+      EXPECT_EQ(1u, cache->size());
+
+      // Replacing geometry on the same frame also invalidates old impulses.
+      box->getBodyNode(0)->getShapeNode(0)->setShape(
+          std::make_shared<dynamics::SphereShape>(0.5));
+      resetBody();
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      EXPECT_EQ(0.0, contactImpulseWithUpwardNormal(*world).squaredNorm());
+      setBudget(100);
+      resetBody();
+      world->step();
+      ASSERT_GT(contactImpulseWithUpwardNormal(*world).z(), 0.0);
+      setBudget(0);
+      solver->setCollisionDetector(detector->cloneWithoutCollisionObjects());
+      resetBody();
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      EXPECT_EQ(0.0, contactImpulseWithUpwardNormal(*world).squaredNorm());
+      setBudget(100);
+      resetBody();
+      world->step();
+      ASSERT_GT(contactImpulseWithUpwardNormal(*world).z(), 0.0);
+      setBudget(0);
+
+      world->setTimeStep(0.002);
+      resetBody();
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      EXPECT_EQ(0.0, contactImpulseWithUpwardNormal(*world).squaredNorm());
+
+      // Reseed, then remove contact for a step before returning to the pair.
+      setBudget(100);
+      resetBody();
+      world->step();
+      ASSERT_GT(contactImpulseWithUpwardNormal(*world).z(), 0.0);
+      setBudget(0);
+      auto away = Eigen::Isometry3d::Identity();
+      away.translation().z() = 2.0;
+      joint->setTransform(away);
+      world->step();
+      ASSERT_EQ(0u, world->getLastCollisionResult().getNumContacts());
+      EXPECT_EQ(0u, cache->size());
+      resetBody();
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      EXPECT_EQ(0.0, contactImpulseWithUpwardNormal(*world).squaredNorm());
+
+      setBudget(100);
+      resetBody();
+      world->step();
+      ASSERT_GT(contactImpulseWithUpwardNormal(*world).z(), 0.0);
+      setBudget(0);
+      world->removeSkeleton(box);
+      auto replacement = createSolverTestBox(
+          "replacement",
+          Eigen::Vector3d::Ones(),
+          Eigen::Vector3d(0.0, 0.0, 0.49),
+          true);
+      replacement->getBodyNode(0)->getShapeNode(0)->setShape(
+          std::make_shared<dynamics::SphereShape>(0.5));
+      world->addSkeleton(replacement);
+      world->step();
+      ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+      EXPECT_EQ(0.0, contactImpulseWithUpwardNormal(*world).squaredNorm());
+    }
+  }
+}
+
+//==============================================================================
+TEST(
+    ConstraintSolver, NativeWarmStartRetainsPointToleranceWithinNormalTolerance)
+{
+  for (const bool missingFrictionBasis : {false, true}) {
+    SCOPED_TRACE(
+        missingFrictionBasis ? "missing friction basis" : "frictionless");
+    auto world = createSingleFreeBodyContactWorld(false);
+    auto sphere = world->getSkeleton("box");
+    auto* shape = sphere->getBodyNode(0)->getShapeNode(0);
+    shape->setShape(std::make_shared<dynamics::SphereShape>(0.25));
+    shape->getDynamicsAspect()->setFrictionCoeff(
+        missingFrictionBasis ? 0.5 : 0.0);
+    auto* joint = static_cast<dynamics::FreeJoint*>(sphere->getJoint(0));
+    auto pose = Eigen::Isometry3d::Identity();
+    pose.translation().z() = 0.2495;
+    auto resetBody = [&](double angle) {
+      pose.linear() = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitY())
+                          .toRotationMatrix();
+      joint->setTransform(pose);
+      joint->setAngularVelocity(Eigen::Vector3d::Zero());
+      joint->setLinearVelocity(Eigen::Vector3d::Zero());
+    };
+    auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+        world->getConstraintSolver());
+    solver->setSecondaryBoxedLcpSolver(nullptr);
+    auto nsgs = std::make_shared<constraint::NsgsFrictionSolver>();
+    solver->setBoxedLcpSolver(nsgs);
+    resetBody(0.0);
+    if (missingFrictionBasis)
+      joint->setLinearVelocity(Eigen::Vector3d(0.2, 0.1, 0.0));
+    world->step();
+    ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+    const auto& first = world->getLastCollisionResult().getContact(0);
+    ASSERT_NE(nullptr, first.userData);
+    auto* native
+        = static_cast<collision::native::CachedContact*>(first.userData);
+    const Eigen::Vector3d solvedImpulse
+        = contactImpulseWithUpwardNormal(*world);
+    ASSERT_GT(solvedImpulse.z(), 0.0);
+    if (missingFrictionBasis) {
+      ASSERT_TRUE(native->hasCachedFrictionBasis);
+      ASSERT_GT(solvedImpulse.head<2>().squaredNorm(), 0.0);
+      native->hasCachedFrictionBasis = false;
+    }
+    Eigen::Vector3d previousPoint = pose.inverse() * first.point;
+    Eigen::Vector3d previousNormal = pose.linear().transpose() * first.normal;
+    auto nsgsOptions = nsgs->getOptions();
+    nsgsOptions.maxSweeps = 0;
+    nsgs->setOptions(nsgsOptions);
+    nsgs->resetStats();
+
+    // A 5 mm local-point change misses the new cache but keeps the native
+    // seed.
+    resetBody(0.02);
+    world->step();
+    ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+    const auto& retained = world->getLastCollisionResult().getContact(0);
+    EXPECT_EQ(native, retained.userData);
+    const Eigen::Vector3d retainedPoint = pose.inverse() * retained.point;
+    const Eigen::Vector3d retainedNormal
+        = pose.linear().transpose() * retained.normal;
+    EXPECT_GT((retainedPoint - previousPoint).norm(), 0.001);
+    EXPECT_LT((retainedPoint - previousPoint).norm(), 0.02);
+    EXPECT_GT(retainedNormal.dot(previousNormal), 0.999);
+    const Eigen::Vector3d retainedImpulse
+        = contactImpulseWithUpwardNormal(*world);
+    if (missingFrictionBasis) {
+      EXPECT_NEAR(solvedImpulse.z(), retainedImpulse.z(), 1e-12);
+      EXPECT_EQ(0.0, retainedImpulse.head<2>().squaredNorm());
+    } else {
+      EXPECT_TRUE(retainedImpulse.isApprox(solvedImpulse, 1e-12));
+    }
+    ASSERT_GT(native->cachedNormalImpulse, 0.0);
+    previousPoint = retainedPoint;
+    previousNormal = retainedNormal;
+
+    // A further 0.05 rad remains inside 20 mm but invalidates the local
+    // normal.
+    resetBody(0.07);
+    world->step();
+    ASSERT_EQ(1u, world->getLastCollisionResult().getNumContacts());
+    const auto& invalidated = world->getLastCollisionResult().getContact(0);
+    EXPECT_EQ(native, invalidated.userData);
+    const Eigen::Vector3d invalidatedPoint = pose.inverse() * invalidated.point;
+    const Eigen::Vector3d invalidatedNormal
+        = pose.linear().transpose() * invalidated.normal;
+    EXPECT_GT((invalidatedPoint - previousPoint).norm(), 0.001);
+    EXPECT_LT((invalidatedPoint - previousPoint).norm(), 0.02);
+    EXPECT_LT(invalidatedNormal.dot(previousNormal), 0.999);
+    EXPECT_EQ(0.0, contactImpulseWithUpwardNormal(*world).squaredNorm());
+    EXPECT_EQ(0u, nsgs->getStats().numIterations);
+  }
+}
+
+//==============================================================================
+TEST(ConstraintSolver, LegacyPrimariesDoNotUseOrRetainContactWarmStart)
+{
+#if HAVE_ODE
+  for (const bool usePgs : {false, true}) {
+    SCOPED_TRACE(usePgs ? "PGS" : "Dantzig");
+    auto world = createSingleFreeBodyContactWorld(false);
+    auto* solver = static_cast<constraint::BoxedLcpConstraintSolver*>(
+        world->getConstraintSolver());
+    solver->setCollisionDetector(collision::OdeCollisionDetector::create());
+    solver->setSecondaryBoxedLcpSolver(nullptr);
+    auto nsgs = std::make_shared<constraint::NsgsFrictionSolver>();
+    const auto positions = world->getSkeleton("box")->getPositions();
+    world->step();
+    EXPECT_EQ(nullptr, constraint::detail::findContactWarmStartCache(solver));
+    solver->setBoxedLcpSolver(nsgs);
+    world->getSkeleton("box")->setPositions(positions);
+    world->step();
+    const auto* cache = constraint::detail::findContactWarmStartCache(solver);
+    ASSERT_NE(nullptr, cache);
+    ASSERT_GT(cache->size(), 0u);
+    solver->setBoxedLcpSolver(
+        usePgs ? constraint::BoxedLcpSolverPtr(
+            std::make_shared<constraint::PgsBoxedLcpSolver>())
+               : constraint::BoxedLcpSolverPtr(
+                   std::make_shared<constraint::DantzigBoxedLcpSolver>()));
+    world->step();
+    cache = constraint::detail::findContactWarmStartCache(solver);
+    EXPECT_TRUE(cache == nullptr || cache->size() == 0u);
+    auto options = nsgs->getOptions();
+    options.maxSweeps = 0;
+    nsgs->setOptions(options);
+    solver->setBoxedLcpSolver(nsgs);
+    world->getSkeleton("box")->setPositions(positions);
+    world->step();
+    ASSERT_GT(world->getLastCollisionResult().getNumContacts(), 0u);
+    for (const auto& contact : world->getLastCollisionResult().getContacts())
+      EXPECT_EQ(0.0, contact.force.squaredNorm());
+  }
+#else
+  GTEST_SKIP() << "ODE collision detector unavailable";
+#endif
+}
+
+//==============================================================================
 TEST(ConstraintSolver, NsgsFrictionLawsHaveBitIdenticalThreadCountResults)
 {
   using Nsgs = constraint::NsgsFrictionSolver;
-  constexpr std::size_t kNumBoxes = 192u;
-  for (const auto law :
-       {Nsgs::Law::Coulomb, Nsgs::Law::Associated, Nsgs::Law::Box}) {
-    SCOPED_TRACE(static_cast<int>(law));
-    auto serialWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
-    auto threadedWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 4u);
-    Nsgs::Options options;
-    options.law = law;
-    auto serialNsgs = std::make_shared<Nsgs>(options);
-    auto threadedNsgs = std::make_shared<Nsgs>(options);
-    auto serialSolver = std::make_unique<ExposedBoxedLcpConstraintSolver>(
-        serialNsgs, nullptr);
-    auto threadedSolver = std::make_unique<ExposedBoxedLcpConstraintSolver>(
-        threadedNsgs, nullptr);
-    auto* threadedProbe = threadedSolver.get();
-    serialSolver->setCollisionDetector(
-        collision::DARTCollisionDetector::create());
-    threadedSolver->setCollisionDetector(
-        collision::DARTCollisionDetector::create());
-    for (auto* solver : {serialSolver.get(), threadedSolver.get()}) {
-      solver->getCollisionOption().maxNumContacts = kNumBoxes * 4u;
-      solver->getCollisionOption().maxNumContactsPerPair = 4u;
-    }
-    serialWorld->setConstraintSolver(std::move(serialSolver));
-    threadedWorld->setConstraintSolver(std::move(threadedSolver));
-    // Exercise friction with an oblique sliding velocity, not only normal rows.
-    setContactWorldSlidingVelocity(*serialWorld);
-    setContactWorldSlidingVelocity(*threadedWorld);
+  constexpr std::size_t kNumBoxes = 130u;
+  std::vector<collision::CollisionDetectorPtr> detectors{
+      collision::DARTCollisionDetector::create()};
+#if HAVE_ODE
+  detectors.push_back(collision::OdeCollisionDetector::create());
+#endif
+  for (const auto& detector : detectors) {
+    SCOPED_TRACE(detector->getType());
+    for (const std::size_t threads : {1u, 2u, 4u, 8u, 12u}) {
+      SCOPED_TRACE(threads);
+      for (const auto law :
+           {Nsgs::Law::Coulomb, Nsgs::Law::Associated, Nsgs::Law::Box}) {
+        SCOPED_TRACE(static_cast<int>(law));
+        auto serialWorld = createManySingleFreeBodyContactWorld(kNumBoxes, 1u);
+        auto threadedWorld
+            = createManySingleFreeBodyContactWorld(kNumBoxes, threads);
+        Nsgs::Options options;
+        options.law = law;
+        auto serialNsgs = std::make_shared<Nsgs>(options);
+        auto threadedNsgs = std::make_shared<Nsgs>(options);
+        auto serialSolver = std::make_unique<ExposedBoxedLcpConstraintSolver>(
+            serialNsgs, nullptr);
+        auto threadedSolver = std::make_unique<ExposedBoxedLcpConstraintSolver>(
+            threadedNsgs, nullptr);
+        auto* threadedProbe = threadedSolver.get();
+        serialSolver->setCollisionDetector(
+            detector->cloneWithoutCollisionObjects());
+        threadedSolver->setCollisionDetector(
+            detector->cloneWithoutCollisionObjects());
+        for (auto* solver : {serialSolver.get(), threadedSolver.get()}) {
+          solver->getCollisionOption().maxNumContacts = kNumBoxes * 4u;
+          solver->getCollisionOption().maxNumContactsPerPair = 4u;
+        }
+        serialWorld->setConstraintSolver(std::move(serialSolver));
+        threadedWorld->setConstraintSolver(std::move(threadedSolver));
+        // Exercise friction with an oblique sliding velocity, not only normal
+        // rows.
+        setContactWorldSlidingVelocity(*serialWorld);
+        setContactWorldSlidingVelocity(*threadedWorld);
 
-    ASSERT_EQ(
-        1u, serialWorld->getConstraintSolver()->getNumSimulationThreads());
-    ASSERT_EQ(4u, threadedProbe->getNumSimulationThreads());
-    for (std::size_t step = 0u; step < 10u; ++step) {
-      SCOPED_TRACE(step);
-      serialWorld->step();
-      threadedWorld->step();
-      ASSERT_GE(threadedProbe->getNumConstrainedGroupsForTest(), 128u);
-      ASSERT_TRUE(threadedProbe->canSolveInParallelForTest());
-      expectWorldStateBitIdentical(*serialWorld, *threadedWorld);
-      expectFrictionStatsEqual(
-          serialNsgs->getStats(), threadedNsgs->getStats());
+        ASSERT_EQ(
+            1u, serialWorld->getConstraintSolver()->getNumSimulationThreads());
+        ASSERT_EQ(threads, threadedProbe->getNumSimulationThreads());
+        for (std::size_t step = 0u; step < 12u; ++step) {
+          SCOPED_TRACE(step);
+          serialWorld->step();
+          threadedWorld->step();
+          ASSERT_GE(threadedProbe->getNumConstrainedGroupsForTest(), 128u);
+          if (threads > 1u) {
+            ASSERT_TRUE(threadedProbe->canSolveInParallelForTest());
+          }
+          expectWorldStateBitIdentical(*serialWorld, *threadedWorld);
+          expectFrictionStatsEqual(
+              serialNsgs->getStats(), threadedNsgs->getStats());
+        }
+        const auto stats = serialNsgs->getStats();
+        EXPECT_GT(stats.numContacts, 0u);
+        EXPECT_GT(stats.numIterations, 0u);
+        EXPECT_EQ(0u, stats.numFailed);
+        EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap);
+      }
     }
-    const auto stats = serialNsgs->getStats();
-    EXPECT_GT(stats.numContacts, 0u);
-    EXPECT_GT(stats.numIterations, 0u);
-    EXPECT_EQ(0u, stats.numFailed);
-    EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap);
   }
 }
 
@@ -1507,54 +1992,69 @@ TEST(ConstraintSolver, FbfHasBitIdenticalThreadCountResults)
 {
   using Fbf = constraint::FbfFrictionSolver;
   constexpr std::size_t kNumBoxes = 130u;
-  for (const bool useNonDefaultSurfaceParams : {false, true}) {
-    SCOPED_TRACE(useNonDefaultSurfaceParams);
-    auto serialWorld = createManySingleFreeBodyContactWorld(
-        kNumBoxes, 1u, useNonDefaultSurfaceParams);
-    auto threadedWorld = createManySingleFreeBodyContactWorld(
-        kNumBoxes, 4u, useNonDefaultSurfaceParams);
-    Fbf::Options options;
-    options.maxOuterIterations = 20;
-    auto serialFbf = std::make_shared<Fbf>(options);
-    auto threadedFbf = std::make_shared<Fbf>(options);
-    auto serialSolver
-        = std::make_unique<ExposedBoxedLcpConstraintSolver>(serialFbf, nullptr);
-    auto threadedSolver = std::make_unique<ExposedBoxedLcpConstraintSolver>(
-        threadedFbf, nullptr);
-    auto* threadedProbe = threadedSolver.get();
-    serialSolver->setCollisionDetector(
-        collision::DARTCollisionDetector::create());
-    threadedSolver->setCollisionDetector(
-        collision::DARTCollisionDetector::create());
-    for (auto* solver : {serialSolver.get(), threadedSolver.get()}) {
-      solver->getCollisionOption().maxNumContacts = kNumBoxes * 4u;
-      solver->getCollisionOption().maxNumContactsPerPair = 4u;
-    }
-    serialWorld->setConstraintSolver(std::move(serialSolver));
-    threadedWorld->setConstraintSolver(std::move(threadedSolver));
-    setContactWorldSlidingVelocity(*serialWorld);
-    setContactWorldSlidingVelocity(*threadedWorld);
+  std::vector<collision::CollisionDetectorPtr> detectors{
+      collision::DARTCollisionDetector::create()};
+#if HAVE_ODE
+  detectors.push_back(collision::OdeCollisionDetector::create());
+#endif
+  for (const auto& detector : detectors) {
+    SCOPED_TRACE(detector->getType());
+    for (const std::size_t threads : {1u, 2u, 4u, 8u, 12u}) {
+      SCOPED_TRACE(threads);
+      for (const bool useNonDefaultSurfaceParams : {false, true}) {
+        SCOPED_TRACE(useNonDefaultSurfaceParams);
+        auto serialWorld = createManySingleFreeBodyContactWorld(
+            kNumBoxes, 1u, useNonDefaultSurfaceParams);
+        auto threadedWorld = createManySingleFreeBodyContactWorld(
+            kNumBoxes, threads, useNonDefaultSurfaceParams);
+        Fbf::Options options;
+        options.maxOuterIterations = 4;
+        auto serialFbf = std::make_shared<Fbf>(options);
+        auto threadedFbf = std::make_shared<Fbf>(options);
+        auto serialSolver = std::make_unique<ExposedBoxedLcpConstraintSolver>(
+            serialFbf, nullptr);
+        auto threadedSolver = std::make_unique<ExposedBoxedLcpConstraintSolver>(
+            threadedFbf, nullptr);
+        auto* threadedProbe = threadedSolver.get();
+        serialSolver->setCollisionDetector(
+            detector->cloneWithoutCollisionObjects());
+        threadedSolver->setCollisionDetector(
+            detector->cloneWithoutCollisionObjects());
+        for (auto* solver : {serialSolver.get(), threadedSolver.get()}) {
+          solver->getCollisionOption().maxNumContacts = kNumBoxes * 4u;
+          solver->getCollisionOption().maxNumContactsPerPair = 4u;
+        }
+        serialWorld->setConstraintSolver(std::move(serialSolver));
+        threadedWorld->setConstraintSolver(std::move(threadedSolver));
+        setContactWorldSlidingVelocity(*serialWorld);
+        setContactWorldSlidingVelocity(*threadedWorld);
 
-    ASSERT_EQ(
-        1u, serialWorld->getConstraintSolver()->getNumSimulationThreads());
-    ASSERT_EQ(4u, threadedProbe->getNumSimulationThreads());
-    for (std::size_t step = 0u; step < 2u; ++step) {
-      SCOPED_TRACE(step);
-      serialWorld->step();
-      threadedWorld->step();
-      ASSERT_GE(threadedProbe->getNumConstrainedGroupsForTest(), 128u);
-      expectWorldStateBitIdentical(*serialWorld, *threadedWorld);
-      expectFrictionStatsEqual(serialFbf->getStats(), threadedFbf->getStats());
+        ASSERT_EQ(
+            1u, serialWorld->getConstraintSolver()->getNumSimulationThreads());
+        ASSERT_EQ(threads, threadedProbe->getNumSimulationThreads());
+        for (std::size_t step = 0u; step < 12u; ++step) {
+          SCOPED_TRACE(step);
+          serialWorld->step();
+          threadedWorld->step();
+          ASSERT_GE(threadedProbe->getNumConstrainedGroupsForTest(), 128u);
+          if (threads > 1u) {
+            ASSERT_TRUE(threadedProbe->canSolveInParallelForTest());
+          }
+          expectWorldStateBitIdentical(*serialWorld, *threadedWorld);
+          expectFrictionStatsEqual(
+              serialFbf->getStats(), threadedFbf->getStats());
+        }
+        const auto stats = serialFbf->getStats();
+        EXPECT_GT(stats.numContacts, 0u);
+        EXPECT_GT(stats.numIterations, 0u);
+        EXPECT_GT(stats.numInnerIterations, 0u);
+        EXPECT_EQ(0u, stats.numFailed);
+        EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap);
+        EXPECT_EQ(
+            useNonDefaultSurfaceParams ? stats.numContacts : 0u,
+            stats.numBoxContacts);
+      }
     }
-    const auto stats = serialFbf->getStats();
-    EXPECT_GT(stats.numContacts, 0u);
-    EXPECT_GT(stats.numIterations, 0u);
-    EXPECT_GT(stats.numInnerIterations, 0u);
-    EXPECT_EQ(0u, stats.numFailed);
-    EXPECT_EQ(stats.numSolves, stats.numConverged + stats.numAcceptedAtCap);
-    EXPECT_EQ(
-        useNonDefaultSurfaceParams ? stats.numContacts : 0u,
-        stats.numBoxContacts);
   }
 }
 

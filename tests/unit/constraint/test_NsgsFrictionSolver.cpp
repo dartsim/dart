@@ -7,6 +7,7 @@
 #include "dart/constraint/DantzigBoxedLcpSolver.hpp"
 #include "dart/constraint/NsgsFrictionSolver.hpp"
 #include "dart/constraint/PgsBoxedLcpSolver.hpp"
+#include "dart/constraint/detail/ContactWarmStartCache.hpp"
 #include "dart/constraint/detail/FrictionCone.hpp"
 #include "dart/lcpsolver/dantzig/DantzigCommon.hpp"
 
@@ -220,6 +221,77 @@ TEST(NsgsFrictionSolver, CapReturnsBestCompletedIterateInBothTerminationModes)
     EXPECT_EQ(0u, stats.numFailed);
     EXPECT_EQ(3u, stats.numIterations);
     EXPECT_NEAR(0.8638191468189201, stats.maxViolation, 1e-14);
+  }
+}
+
+TEST(NsgsFrictionSolver, WarmStartResidualIncreaseRequestsSecondary)
+{
+  // Four redundant box contacts: completed sweeps raise the warm residual by
+  // 4.52e-9 m/s, below the requested accuracy, while the seed remains best.
+  const int coefficients[12][12]
+      = {{8, 3, -3, 2, 3, -3, -4, 3, -3, 2, 3, -3},
+         {3, 8, 3, 3, 2, 3, -3, 2, -3, -3, 8, -3},
+         {-3, 3, 8, 3, -3, 8, 3, -3, 2, -3, 3, 2},
+         {2, 3, 3, 8, 3, 3, 2, 3, 3, -4, 3, 3},
+         {3, 2, -3, 3, 8, -3, -3, 8, 3, -3, 2, 3},
+         {-3, 3, 8, 3, -3, 8, 3, -3, 2, -3, 3, 2},
+         {-4, -3, 3, 2, -3, 3, 8, -3, 3, 2, -3, 3},
+         {3, 2, -3, 3, 8, -3, -3, 8, 3, -3, 2, 3},
+         {-3, -3, 2, 3, 3, 2, 3, 3, 8, -3, -3, 8},
+         {2, -3, -3, -4, -3, -3, 2, -3, -3, 8, -3, -3},
+         {3, 8, 3, 3, 2, 3, -3, 2, -3, -3, 8, -3},
+         {-3, -3, 2, 3, 3, 2, 3, 3, 8, -3, -3, 8}};
+  for (double tolerance : {1e-7, 1e-10}) {
+    SCOPED_TRACE(tolerance);
+    Problem p(12);
+    for (int i = 0; i < p.n; ++i) {
+      for (int j = 0; j < p.n; ++j)
+        p.A[i * p.stride + j] = 0.0005 * coefficients[i][j];
+      p.A[i * p.stride + i] += 4e-8;
+      p.lo[i] = i % 3 == 0 ? 0.0 : -0.6;
+      p.hi[i] = i % 3 == 0 ? std::numeric_limits<double>::infinity() : 0.6;
+      p.findex[i] = i % 3 == 0 ? -1 : i - i % 3;
+    }
+    p.b
+        = {0.0087733674577355359,
+           0.0043871828546708609,
+           -7.0252095506881694e-9,
+           0.0087733986254160626,
+           0.0043872473398251597,
+           -7.0252095393737846e-9,
+           0.0087734659466570282,
+           0.0043872473398251345,
+           5.7459944769324346e-8,
+           0.0087734347789764997,
+           0.0043871828546708357,
+           5.7459944758009971e-8};
+    p.x
+        = {1.6346776417705833,
+           0.66792026664810256,
+           0.26712925665674037,
+           0.55840997534980608,
+           0.3350459851638361,
+           -0.072886491795311217,
+           3.828260676856003,
+           2.0527797998193216,
+           -1.630741452978923,
+           2.7519926860587471,
+           1.3314194859649182,
+           1.4364986193345932};
+    const auto startingImpulse = p.x;
+    NsgsFrictionSolver::Options options;
+    options.law = NsgsFrictionSolver::Law::Box;
+    options.maxSweeps = 1000;
+    options.tolerance = tolerance;
+    NsgsFrictionSolver solver(options);
+    EXPECT_FALSE(p.solve(solver));
+    EXPECT_EQ(startingImpulse, p.x);
+    const auto stats = solver.getStats();
+    EXPECT_EQ(0u, stats.numAcceptedAtCap);
+    EXPECT_EQ(1u, stats.numFailed);
+    EXPECT_EQ(0u, stats.numConverged);
+    EXPECT_EQ(1000u, stats.numIterations);
+    EXPECT_DOUBLE_EQ(0.0, stats.maxViolation);
   }
 }
 
@@ -488,6 +560,128 @@ TEST(NsgsFrictionSolver, StatsAccumulateAcrossThreadsAndReset)
   EXPECT_EQ(0u, stats.numContacts);
   EXPECT_EQ(0u, stats.numIterations);
   EXPECT_EQ(0.0, stats.maxViolation);
+}
+
+TEST(NsgsFrictionSolver, WarmStartResultRecordsEachSolveAndItsOwner)
+{
+  NsgsFrictionSolver::Options options;
+  options.maxSweeps = 0;
+  NsgsFrictionSolver solver(options);
+  Problem p(1);
+  ASSERT_TRUE(p.solve(solver));
+  auto result = detail::contactWarmStartSolveResult();
+  EXPECT_EQ(&solver, result.solver);
+  EXPECT_TRUE(result.success);
+  EXPECT_FALSE(result.converged);
+  EXPECT_DOUBLE_EQ(1.0, result.violation);
+
+  p.x[0] = 1.0;
+  ASSERT_TRUE(p.solve(solver));
+  result = detail::contactWarmStartSolveResult();
+  EXPECT_EQ(&solver, result.solver);
+  EXPECT_TRUE(result.success);
+  EXPECT_TRUE(result.converged);
+  EXPECT_DOUBLE_EQ(0.0, result.violation);
+  EXPECT_DOUBLE_EQ(1.0, solver.getStats().maxViolation);
+
+  p.b[0] = std::numeric_limits<double>::quiet_NaN();
+  ASSERT_FALSE(p.solve(solver));
+  result = detail::contactWarmStartSolveResult();
+  EXPECT_EQ(&solver, result.solver);
+  EXPECT_FALSE(result.success);
+  EXPECT_FALSE(result.converged);
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), result.violation);
+
+  NsgsFrictionSolver other;
+  p = Problem(1);
+  ASSERT_TRUE(p.solve(other));
+  result = detail::contactWarmStartSolveResult();
+  EXPECT_EQ(&other, result.solver);
+  EXPECT_TRUE(result.success);
+  EXPECT_TRUE(result.converged);
+  EXPECT_DOUBLE_EQ(0.0, result.violation);
+}
+
+TEST(NsgsFrictionSolver, WarmStartResultIsLocalToTheSolvingThread)
+{
+  NsgsFrictionSolver::Options options;
+  options.maxSweeps = 0;
+  NsgsFrictionSolver solver(options);
+  Problem p(1);
+  p.x[0] = 1.0;
+  ASSERT_TRUE(p.solve(solver));
+
+  auto worker = std::async(std::launch::async, [&] {
+    Problem capped(1);
+    capped.solve(solver);
+    return detail::contactWarmStartSolveResult();
+  });
+  const auto capped = worker.get();
+  EXPECT_EQ(&solver, capped.solver);
+  EXPECT_TRUE(capped.success);
+  EXPECT_FALSE(capped.converged);
+  EXPECT_DOUBLE_EQ(1.0, capped.violation);
+
+  const auto converged = detail::contactWarmStartSolveResult();
+  EXPECT_EQ(&solver, converged.solver);
+  EXPECT_TRUE(converged.success);
+  EXPECT_TRUE(converged.converged);
+  EXPECT_DOUBLE_EQ(0.0, converged.violation);
+}
+
+TEST(NsgsFrictionSolver, WarmStartRefinementHonorsTheOwnerAndIterationBudget)
+{
+  for (const int budget : {0, 1}) {
+    SCOPED_TRACE(budget);
+    NsgsFrictionSolver::Options options;
+    options.maxSweeps = budget;
+    NsgsFrictionSolver solver(options);
+    NsgsFrictionSolver other(options);
+    for (const auto* requested :
+         std::array<const BoxedLcpSolver*, 3>{{nullptr, &solver, &other}}) {
+      SCOPED_TRACE(requested);
+      Problem p(1);
+      const double startingImpulse = 1.0 - 0.5 * options.tolerance;
+      p.x[0] = startingImpulse;
+      solver.resetStats();
+      detail::contactWarmStartRefinementSolver() = requested;
+      ASSERT_TRUE(p.solve(solver));
+      const bool refined = requested == &solver && budget > 0;
+      EXPECT_EQ(refined ? 1u : 0u, solver.getStats().numIterations);
+      EXPECT_EQ(1u, solver.getStats().numConverged);
+      EXPECT_DOUBLE_EQ(refined ? 1.0 : startingImpulse, p.x[0]);
+      EXPECT_DOUBLE_EQ(options.tolerance, solver.getOptions().tolerance);
+      EXPECT_EQ(nullptr, detail::contactWarmStartRefinementSolver());
+
+      p.x[0] = startingImpulse;
+      solver.resetStats();
+      ASSERT_TRUE(p.solve(solver));
+      EXPECT_EQ(0u, solver.getStats().numIterations);
+      EXPECT_DOUBLE_EQ(startingImpulse, p.x[0]);
+    }
+  }
+}
+
+TEST(NsgsFrictionSolver, WarmStartRefinementKeepsTheCertifiedBestIterate)
+{
+  Problem p(2);
+  p.A[1] = p.A[p.stride] = 0.9;
+  p.b = {1.9, 1.9};
+  p.x = {0.99989, 1.00011};
+  const auto startingImpulse = p.x;
+  NsgsFrictionSolver::Options options;
+  // The starting violation is 1.1e-5; a complete sweep raises it to 1.881e-5.
+  options.tolerance = 1.2e-5;
+  NsgsFrictionSolver solver(options);
+  detail::contactWarmStartRefinementSolver() = &solver;
+  ASSERT_TRUE(p.solve(solver));
+  EXPECT_EQ(startingImpulse, p.x);
+  const auto stats = solver.getStats();
+  EXPECT_EQ(1u, stats.numIterations);
+  EXPECT_EQ(1u, stats.numConverged);
+  EXPECT_EQ(0u, stats.numFailed);
+  EXPECT_NEAR(1.1e-5, stats.maxViolation, 1e-14);
+  EXPECT_EQ(nullptr, detail::contactWarmStartRefinementSolver());
 }
 
 TEST(NsgsFrictionSolver, AnisotropyDefaultsToBoxAndCanSelectEllipse)
