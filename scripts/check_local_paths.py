@@ -13,6 +13,7 @@ import argparse
 import ipaddress
 import os
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -100,6 +101,17 @@ def decode(data: bytes) -> str:
     return data.decode(text_encoding(data) or "utf-8", errors="replace")
 
 
+def content_decodings(data: bytes) -> list[str]:
+    texts = [decode(data)]
+    if b"\0" in data:
+        # NUL-containing bytes are not UTF-8 text, even if UTF-8 accepts them.
+        texts.extend(
+            data.decode(encoding, errors="replace").removeprefix("\ufeff")
+            for encoding in ("utf-16-le", "utf-16-be")
+        )
+    return list(dict.fromkeys(texts))
+
+
 SCISSORS = re.compile(r"(?P<char>[^\r\n]+) -{24} >8 -{24}")
 # Git wraps its editor instruction ("... Lines starting" / "<c> with '<c>' will
 # be ignored, ..."); accept the wrapped second line and a one-line variant.
@@ -161,6 +173,7 @@ def scan_line(
             for text in (line, *url_paths)
             for pattern in PATTERNS
             for match in pattern.finditer(text)
+            if "\ufffd" not in match.group()
             if not (
                 filename != ".gitignore" and allowed and allowed.search(match.group())
             )
@@ -183,24 +196,116 @@ def scan_text(
     return found
 
 
-def scan_commit_message(text: str) -> bool:
-    # Only Git's editor-template evidence makes scissors a verbose-diff boundary;
-    # a scissors-shaped line in supplied text is scanned like any other line.
+def read_git_command(pid: int) -> list[str] | None:
+    try:
+        data = Path(f"/proc/{pid}/cmdline").read_bytes()
+        if data:
+            return [os.fsdecode(arg) for arg in data.rstrip(b"\0").split(b"\0")]
+    except OSError:
+        pass
+    try:
+        result = subprocess.run(
+            ["ps", "-o", "args=", "-p", str(pid)],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return shlex.split(result.stdout) or None
+    except (OSError, ValueError, subprocess.CalledProcessError):
+        return None
+
+
+def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
+    try:
+        args = command[command.index("commit") + 1 :]
+    except ValueError:
+        return None
+    cleanup = "default"
+    supplied = verbose = False
+    edit = None
+    i = 0
+    while i < len(args):
+        token = args[i]
+        i += 1
+        if token == "--":
+            break
+        option, sep, value = token.partition("=")
+        if option == "--cleanup":
+            if not sep and i < len(args):
+                value = args[i]
+                i += 1
+            cleanup = value
+        elif option in {"--edit", "--no-edit"}:
+            edit = option == "--edit"
+        elif option in {"--verbose", "--no-verbose"}:
+            verbose = option == "--verbose"
+        elif option in {"--message", "--file", "--reuse-message", "--reedit-message"}:
+            supplied = True
+            i += int(not sep)
+        elif option in {
+            "--author",
+            "--date",
+            "--template",
+            "--trailer",
+            "--fixup",
+            "--squash",
+            "--pathspec-from-file",
+        }:
+            i += int(not sep)
+        elif token.startswith("-") and not token.startswith("--"):
+            for offset, short in enumerate(token[1:], 2):
+                if short == "e":
+                    edit = True
+                verbose |= short == "v"
+                if short in "mFCc":
+                    supplied = True
+                    i += int(offset == len(token))
+                    break
+                if short in "tSuU":
+                    i += int(short == "t" and offset == len(token))
+                    break
+    if cleanup == "default":
+        use_editor = edit if edit is not None else not supplied
+        cleanup = "strip" if use_editor else "whitespace"
+    return cleanup, verbose
+
+
+def scan_commit_message(
+    text: str, git_command: list[str] | None = None, comment_string: str | None = None
+) -> bool:
     lines = text.splitlines()
     instruction = GIT_TEMPLATE_INSTRUCTION.search(text)
-    strip_comments = instruction is not None
-    if instruction is None:
-        for line, following in zip(lines, lines[1:]):
-            candidate = GIT_SCISSORS_INSTRUCTION.match(following)
-            scissors = SCISSORS.fullmatch(line)
-            if scissors and candidate and scissors["char"] == candidate["char"]:
-                instruction = candidate
-                break
-    comment_string = instruction["char"] if instruction else None
+    cleanup = commit_cleanup(git_command) if git_command else None
+    if cleanup is not None:
+        mode, verbose = cleanup
+        if comment_string is None:
+            for key in ("core.commentString", "core.commentChar"):
+                result = subprocess.run(
+                    ["git", "config", "--get", key], capture_output=True, text=True
+                )
+                if result.returncode == 0 and result.stdout.rstrip("\n"):
+                    comment_string = result.stdout.rstrip("\n")
+                    break
+            if not comment_string or comment_string == "auto":
+                comment_string = instruction["char"] if instruction else "#"
+        strip_comments = mode == "strip"
+        cut_at_scissors = mode == "scissors" or verbose
+    else:
+        # If the parent command cannot be read, fall back to English-template evidence.
+        strip_comments = instruction is not None
+        if instruction is None:
+            for line, following in zip(lines, lines[1:]):
+                candidate = GIT_SCISSORS_INSTRUCTION.match(following)
+                scissors = SCISSORS.fullmatch(line)
+                if scissors and candidate and scissors["char"] == candidate["char"]:
+                    instruction = candidate
+                    break
+        comment_string = instruction["char"] if instruction else None
+        cut_at_scissors = instruction is not None
     found = False
     for number, line in enumerate(lines, 1):
         scissors = SCISSORS.fullmatch(line)
-        if scissors and scissors["char"] == comment_string:
+        if cut_at_scissors and scissors and scissors["char"] == comment_string:
             break
         if strip_comments and line.startswith(comment_string):
             continue
@@ -238,11 +343,10 @@ def scan_changes(
         if metadata.split()[1] == b"160000":
             continue
         data = git_output(root, "show", f"{commit or ''}:{filename}")
-        encoding = text_encoding(data)
-        if encoding:
-            found |= scan_text(
-                data.decode(encoding, errors="replace"), filename, commit
-            )
+        texts = content_decodings(data)
+        if text_encoding(data) or len(texts) > 1:
+            for text in texts:
+                found |= scan_text(text, filename, commit)
             continue
         diff = git_output(
             root,
@@ -305,7 +409,9 @@ def scan_file(path: Path, filename: str) -> bool:
         return found
     # A tracked symlink publishes its target, not the external file's contents.
     data = os.fsencode(os.readlink(path)) if path.is_symlink() else path.read_bytes()
-    return scan_text(decode(data), filename) | found
+    for text in content_decodings(data):
+        found |= scan_text(text, filename)
+    return found
 
 
 def main() -> int:
@@ -329,14 +435,39 @@ def main() -> int:
         type=Path,
         help="scan commit text, excluding editor template comments and Git scissors",
     )
+    parser.add_argument(
+        "--git-pid", type=int, help="parent Git process for commit cleanup"
+    )
     args = parser.parse_args()
     try:
         if args.stdin:
-            return int(scan_text(sys.stdin.read()))
+            return int(
+                any(
+                    [
+                        scan_text(text)
+                        for text in content_decodings(sys.stdin.buffer.read())
+                    ]
+                )
+            )
         if args.text_file:
-            return int(scan_text(decode(args.text_file.read_bytes())))
+            return int(
+                any(
+                    [
+                        scan_text(text)
+                        for text in content_decodings(args.text_file.read_bytes())
+                    ]
+                )
+            )
         if args.commit_msg_file:
-            return int(scan_commit_message(decode(args.commit_msg_file.read_bytes())))
+            command = read_git_command(args.git_pid) if args.git_pid else None
+            return int(
+                any(
+                    [
+                        scan_commit_message(text, command)
+                        for text in content_decodings(args.commit_msg_file.read_bytes())
+                    ]
+                )
+            )
         try:
             root = Path(
                 os.fsdecode(

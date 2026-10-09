@@ -2,6 +2,8 @@
 # of it. Rebase merges can publish every PR commit, including removed leaks.
 # Fetch PR objects for scanning; never check out or execute PR code.
 # Title and description edits rerun only this check, not CI.
+# Once this workflow is on main, the maintainer should add
+# "No local paths in PR text" to the main ruleset's required checks.
 # GitHub may not trigger pull_request_target for SHA-like branch names;
 # those PRs rely on CI's tracked-file scan and review.
 name: PR Text
