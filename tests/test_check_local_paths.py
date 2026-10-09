@@ -1243,6 +1243,74 @@ def test_commit_cleanup_resolves_repository_config(
     )
 
 
+@pytest.mark.parametrize(
+    "global_args",
+    [
+        ["-C", "commit"],
+        ["-Ccommit"],
+        ["--git-dir", "commit"],
+        ["--git-dir=commit"],
+        ["--work-tree", "commit"],
+        ["--work-tree=commit"],
+        ["--namespace", "commit"],
+        ["--namespace=commit"],
+        ["--exec-path"],
+        ["--exec-path=commit"],
+        ["--config-env", "example.key=EXAMPLE_VALUE"],
+        ["--config-env=example.key=EXAMPLE_VALUE"],
+        ["--super-prefix", "commit"],
+        ["--super-prefix=commit"],
+        ["--attr-source", "commit"],
+        ["--attr-source=commit"],
+        [
+            "-p",
+            "-P",
+            "--paginate",
+            "--no-pager",
+            "--bare",
+            "--no-replace-objects",
+            "--no-lazy-fetch",
+            "--literal-pathspecs",
+            "--glob-pathspecs",
+            "--noglob-pathspecs",
+            "--icase-pathspecs",
+            "--no-optional-locks",
+            "--no-advice",
+        ],
+    ],
+)
+@pytest.mark.parametrize(
+    "override", [["-c", "commit.cleanup=strip"], ["-ccommit.cleanup=strip"]]
+)
+def test_commit_cleanup_parses_global_options(repo, monkeypatch, global_args, override):
+    monkeypatch.chdir(repo)
+    _git(repo, "config", "commit.cleanup", "verbatim")
+    assert checker.commit_cleanup(
+        ["git", *global_args, *override, "commit", "-m", "public"]
+    ) == ("strip", False)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        ["git", "-C", "commit"],
+        ["git", "-c"],
+        ["git", "--namespace"],
+        ["git", "--unknown", "commit"],
+        ["git", "--no-pager=value", "commit"],
+        ["git", "status", "commit"],
+        ["git"],
+        [],
+    ],
+)
+@pytest.mark.parametrize("template", [True, False])
+def test_unparsable_git_command_falls_back_to_content(command, template):
+    message = (
+        "# Lines starting with '#' will be ignored,\n" if template else ""
+    ) + "# /home/example/private.md\n"
+    assert checker.scan_commit_message(message, git_command=command) == (not template)
+
+
 @pytest.mark.parametrize("source", ["config", "option"])
 @pytest.mark.parametrize("arguments", [[], ["-m", "public"], ["--no-edit"]])
 def test_scissors_cleanup_only_truncates_editor_messages(

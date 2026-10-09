@@ -217,12 +217,57 @@ def read_git_command(pid: int) -> list[str] | None:
         return None
 
 
+# None denotes an optional value accepted only with '='.
+GIT_GLOBAL_OPTIONS = {
+    "-C": 1,
+    "-c": 1,
+    "--git-dir": 1,
+    "--work-tree": 1,
+    "--namespace": 1,
+    "--exec-path": None,
+    "--config-env": 1,
+    "--super-prefix": 1,
+    "--attr-source": 1,
+    "-p": 0,
+    "-P": 0,
+    "--paginate": 0,
+    "--no-pager": 0,
+    "--bare": 0,
+    "--no-replace-objects": 0,
+    "--no-lazy-fetch": 0,
+    "--literal-pathspecs": 0,
+    "--glob-pathspecs": 0,
+    "--noglob-pathspecs": 0,
+    "--icase-pathspecs": 0,
+    "--no-optional-locks": 0,
+    "--no-advice": 0,
+}
+
+
 def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
-    try:
-        commit_index = command.index("commit")
-    except ValueError:
+    config_args = []
+    i = 1
+    while i < len(command) and command[i].startswith("-"):
+        token = command[i]
+        i += 1
+        option, sep, value = token.partition("=")
+        if token.startswith(("-C", "-c")) and len(token) > 2:
+            option, sep, value = token[:2], "attached", token[2:]
+        if option not in GIT_GLOBAL_OPTIONS:
+            return None
+        arity = GIT_GLOBAL_OPTIONS[option]
+        if arity == 0 and sep:
+            return None
+        if arity == 1 and not sep:
+            if i == len(command):
+                return None
+            value = command[i]
+            i += 1
+        if option == "-c":
+            config_args.extend(("-c", value))
+    if i >= len(command) or command[i] != "commit":
         return None
-    args = command[commit_index + 1 :]
+    args = command[i + 1 :]
     # Git exposes hidden and negated options too, keeping prefix matching in sync.
     options = {
         option.rstrip("=")
@@ -288,19 +333,6 @@ def commit_cleanup(command: list[str]) -> tuple[str, bool] | None:
                     break
     if cleanup is None:
         # The hook already runs in Git's repository; replay only config overrides.
-        config_args = []
-        globals_iter = iter(command[1:commit_index])
-        for token in globals_iter:
-            if token == "-c":
-                config_args.extend(("-c", next(globals_iter)))
-            elif token in {
-                "-C",
-                "--git-dir",
-                "--work-tree",
-                "--namespace",
-                "--config-env",
-            }:
-                next(globals_iter)
         result = subprocess.run(
             ["git", *config_args, "config", "--get", "commit.cleanup"],
             capture_output=True,
@@ -338,7 +370,7 @@ def scan_commit_message(
         strip_comments = mode == "strip"
         cut_at_scissors = mode == "scissors" or verbose
     else:
-        # If the parent command cannot be read, fall back to English-template evidence.
+        # Unreadable or unparsable commands fall back to English-template evidence.
         strip_comments = instruction is not None
         if instruction is None:
             for line, following in zip(lines, lines[1:]):

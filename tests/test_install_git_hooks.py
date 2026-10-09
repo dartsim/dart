@@ -818,6 +818,39 @@ def test_commit_msg_hook_scans_template_instruction_from_file_parent(tmp_path):
     assert private_path in result.stderr
 
 
+@pytest.mark.parametrize("global_args", [[], ["-c", "commit.cleanup=strip"]])
+def test_commit_msg_hook_with_commit_named_directory(tmp_path, global_args):
+    repo, env = _init_repo(tmp_path)
+    target = tmp_path / "commit"
+    repo.rename(target)
+    _write_gate(target)
+    (target / "scripts/check_local_paths.py").write_bytes(
+        (ROOT / "scripts/check_local_paths.py").read_bytes()
+    )
+    assert _install(target, env).returncode == 0
+    result = subprocess.run(
+        [
+            "git",
+            "-C",
+            "commit",
+            "-c",
+            "user.name=Example",
+            "-c",
+            "user.email=example@example.com",
+            *global_args,
+            "commit",
+            "--allow-empty",
+            "-m",
+            "Public summary",
+        ],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+
+
 @pytest.mark.parametrize(
     "arguments,expected",
     [([], 0), (["-F", "message.txt"], 1), (["--cleanup=whitespace"], 1)],
