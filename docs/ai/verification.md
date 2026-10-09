@@ -117,14 +117,18 @@ It also blocks commit-time staging (`-a`/`--all`, `-i`/`--include`,
 `-o`/`--only`, or pathspecs) when managed hooks will not run, asking to stage
 the files first or let the hooks run because the staged scan cannot see that
 content yet.
-With current managed hooks, ordinary staging, builds and formatters keep the
-guard fast path so Git checks the index after those commands run. Earlier
-segments disable that fast path only when they may change hook state: Git
-configuration writes (including include paths), command-scoped Git config or
-config environment changes, init/clone, writes or file operations affecting the
-hooks directory, a configured hooksPath target or loaded config files, and
-segments the guard cannot inspect. Content/index changes remain tracked
-separately to reject unsafe chains of multiple commits without hook enforcement.
+With current managed hooks, the guard keeps its fast path only when every
+preceding segment is allowlisted: read-only Git commands (`status`, `diff`,
+`log`, `show`, `rev-parse`, `ls-files`, `ls-tree`), `git add`, `git rm`, `git mv`,
+`cd`/`pushd`/`popd`, `pwd`, `true`, or `:`. Git global options that do not persist,
+such as `git -c key=value add`, are allowed. Output redirections must target
+`/dev/null` or duplicate a file descriptor (such as `2>&1`). Ordinary
+`git add <fixed file> && git commit` retains the fast path so Git checks the
+index after staging runs. Any other preceding segment, including child shells,
+builds, formatters, file operations, Git config writes, exports, scripts, file
+redirections, or uninspectable syntax, requires the guard's full message and
+staged checks. Content/index changes remain tracked separately to reject unsafe
+chains of multiple commits without hook enforcement.
 
 ## Simulation Verification Route
 
