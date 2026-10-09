@@ -546,14 +546,12 @@
 * Simulation
 
   * Allow resting islands that use a custom `BodyNodeCollisionFilter` to sleep
-    while their collision decisions remain unchanged. Keep reporting their
-    last solved contacts and forces, and allow disabling custom-filter sleeping
-    with `DART_CUSTOM_FILTER_SLEEPING`. Keep custom-filter bodies awake when the
-    constraint solver registers skeletons outside the `World`. Downstream code
-    that constructs or subclasses `World` must rebuild against DART 6.20.
-    Cache skeleton ownership checks so custom filters incur constant checking
-    cost on unchanged steps, including reordered solver lists and solver-only
-    skeletons.
+    while their collision decisions stay unchanged, and keep reporting their
+    last solved contacts and forces. Such islands stay awake while the
+    constraint solver holds skeletons the `World` does not own. Set
+    `DART_CUSTOM_FILTER_SLEEPING=0` to disable custom-filter sleeping.
+    Downstream code that constructs or subclasses `World` must rebuild against
+    DART 6.20: [#3632](https://github.com/dartsim/dart/pull/3632)
 
   * Add opt-in `NsgsFrictionSolver` with exact Coulomb, associated, and box
     friction laws, cumulative `FrictionSolveStats`, clone support, and
