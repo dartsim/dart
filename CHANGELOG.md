@@ -78,6 +78,10 @@
 
 * Build
 
+  * Accept `CMAKE_BUILD_TYPE=None`, which distribution packaging uses to apply
+    its own compiler flags, without the unknown-build-type warning:
+    [#3633](https://github.com/dartsim/dart/pull/3633)
+
   * Correct `DART_ARCH_64BITS` / `DART_ARCH_32BITS` on 64-bit Windows and
     non-x86 64-bit Linux targets such as aarch64, and recognize FreeBSD in
     `dart/common/Platform.hpp`:
