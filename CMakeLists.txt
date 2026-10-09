@@ -299,7 +299,7 @@ if(NOT CMAKE_BUILD_TYPE)
     CMAKE_BUILD_TYPE
     Release
     CACHE STRING
-    "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel"
+    "Choose the type of build, options are: Debug | Release | RelWithDebInfo | MinSizeRel | None"
     FORCE
   )
 endif()
@@ -309,11 +309,11 @@ if(
   NOT
     "${CMAKE_BUILD_TYPE_UPPERCASE}"
       MATCHES
-      "^(DEBUG|RELEASE|RELWITHDEBINFO|MINSIZEREL)$"
+      "^(DEBUG|RELEASE|RELWITHDEBINFO|MINSIZEREL|NONE)$"
 )
   message(
     WARNING
-    "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel"
+    "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel | None"
   )
 endif()
 
