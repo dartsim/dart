@@ -111,19 +111,7 @@ void ConstraintSolver(py::module& m)
           })
       .def(
           "getNumConstraints",
-          +[](const dart::constraint::ConstraintSolver* self) -> bool {
-            return self->getNumConstraints();
-          })
-      .def(
-          "getConstraint",
-          +[](dart::constraint::ConstraintSolver* self,
-              std::size_t index) -> constraint::ConstraintBasePtr {
-            return self->getConstraint(index);
-          },
-          ::py::arg("index"))
-      .def(
-          "getNumConstraints",
-          +[](const dart::constraint::ConstraintSolver* self) -> bool {
+          +[](const dart::constraint::ConstraintSolver* self) -> std::size_t {
             return self->getNumConstraints();
           })
       .def(

@@ -38,6 +38,7 @@
 #include <pybind11/pybind11.h>
 
 #include <memory>
+#include <type_traits>
 
 namespace py = pybind11;
 
@@ -54,14 +55,15 @@ public:
       const dart::collision::CollisionObject* object1,
       const dart::collision::CollisionObject* object2) const override
   {
-    PYBIND11_OVERLOAD_PURE(
-        bool,
-        CollisionFilterBase,
-        ignoresCollision,
-        object1,
-        object2,
-        "Returns true if the given two CollisionObjects should be checked by "
-        "the collision detector, false otherwise.");
+    if constexpr (std::is_same_v<
+                      CollisionFilterBase,
+                      dart::collision::CollisionFilter>) {
+      PYBIND11_OVERLOAD_PURE(
+          bool, CollisionFilterBase, ignoresCollision, object1, object2);
+    } else {
+      PYBIND11_OVERLOAD(
+          bool, CollisionFilterBase, ignoresCollision, object1, object2);
+    }
   }
 };
 

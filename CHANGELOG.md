@@ -6,6 +6,12 @@
 
 * Breaking Changes
 
+  * dartpy is now built with pybind11 3.x, whose internals ABI differs from
+    the pybind11 2.x used for DART 6.19 wheels. Separately compiled extension
+    modules that pass dartpy objects across the Python/C++ boundary must be
+    rebuilt against the same pybind11 release as dartpy, since pybind11 only
+    shares bound types between modules built with matching internals.
+
   * Remove the legacy `dart/integration` module (`Integrator`,
     `EulerIntegrator`, `RK4Integrator`, `SemiImplicitEulerIntegrator`, and
     `IntegrableSystem`) along with its installed `include/dart/integration`
@@ -803,6 +809,12 @@
     `InteractiveFrame.getShapeFrames()` from deleting DART-owned objects with
     the returned list, and bind `ModularFunction`'s default constructor:
     [#3619](https://github.com/dartsim/dart/pull/3619)
+
+  * Fix dartpy crashes when discarding copied joints or reading colliding
+    shape frames, keep contacts usable after their collision result is
+    released, return the actual constraint count, and allow Python collision
+    filters to override collision checks or inherit the built-in behavior:
+    [#3626](https://github.com/dartsim/dart/pull/3626)
 
   * Add dartpy bindings for inverse-kinematics gradient and analytical methods,
     including a Python analytical callback bridge that lets ssik-like solvers

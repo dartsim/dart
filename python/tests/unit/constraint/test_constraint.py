@@ -159,5 +159,17 @@ def test_matrix_free_contact_solver_options_round_trip():
     assert stored.mEpsilonForDivision == 1e-9
 
 
+@pytest.mark.parametrize("count", [0, 1, 2])
+def test_num_constraints_returns_count(count):
+    solver = dart.constraint.BoxedLcpConstraintSolver()
+    skel = dart.dynamics.Skeleton()
+    body = skel.createFreeJointAndBodyNodePair()[1]
+    for _ in range(count):
+        solver.addConstraint(dart.constraint.BallJointConstraint(body, [0, 0, 0]))
+    result = solver.getNumConstraints()
+    assert type(result) is int
+    assert result == count
+
+
 if __name__ == "__main__":
     pytest.main()

@@ -1,4 +1,7 @@
 import platform
+import subprocess
+import sys
+import textwrap
 
 import dartpy as dart
 import numpy as np
@@ -268,6 +271,148 @@ def test_raycast():
     assert np.isclose(ray_hit.mPoint, [0, 0, 0]).all()
     assert np.isclose(ray_hit.mNormal, [-1, 0, 0]).all()
     assert ray_hit.mFraction == pytest.approx(0.5)
+
+
+def run_isolated(script):
+    # A use-after-free crashes the interpreter, so run each case in a
+    # subprocess and require a clean exit.
+    result = subprocess.run(
+        [sys.executable, "-c", textwrap.dedent(script)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, (
+        f"subprocess exited with {result.returncode}\n"
+        f"stdout: {result.stdout[-2000:]}\nstderr: {result.stderr[-2000:]}"
+    )
+    assert "done" in result.stdout
+
+
+# Keep the scene owners alive while testing the CollisionResult's storage.
+COLLISION_SCENE = """
+import gc
+import dartpy as dart
+import numpy as np
+
+skels = [dart.dynamics.Skeleton("a"), dart.dynamics.Skeleton("b")]
+for skel in skels:
+    body = skel.createFreeJointAndBodyNodePair()[1]
+    shape = body.createShapeNode(dart.dynamics.BoxShape([1, 1, 1]))
+    shape.createCollisionAspect()
+    del shape
+skels[1].getJoint(0).setPosition(3, 0.5)
+detector = dart.collision.FCLCollisionDetector()
+group = detector.createCollisionGroup()
+for skel in skels:
+    group.addShapeFramesOf(skel)
+option = dart.collision.CollisionOption(True, 100, None)
+"""
+
+
+@pytest.mark.parametrize("accessor", ["getContact", "getContacts"])
+@pytest.mark.parametrize("source", ["result", "world"])
+def test_contacts_keep_result_alive(accessor, source):
+    run_isolated(
+        COLLISION_SCENE
+        + textwrap.dedent(
+            f"""
+            if "{source}" == "world":
+                world = dart.simulation.World()
+                world.setCollisionDetector(detector)
+                for skel in skels:
+                    world.addSkeleton(skel)
+                world.step()
+                result = world.getLastCollisionResult()
+            else:
+                result = dart.collision.CollisionResult()
+                assert group.collide(option, result)
+            assert result.getNumContacts() > 0
+            before = result.getContact(0).point.copy()
+            if "{accessor}" == "getContacts":
+                contact = result.getContacts()[0]
+            else:
+                contact = result.getContact(0)
+            del result
+            gc.collect()
+            replacements = []
+            for _ in range(200):
+                other = dart.collision.CollisionResult()
+                assert group.collide(option, other)
+                for i in range(other.getNumContacts()):
+                    other.getContact(i).point = [91, 92, 93]
+                replacements.append(other)
+            np.testing.assert_array_equal(contact.point, before)
+            print("done")
+            """
+        )
+    )
+
+
+def test_colliding_shape_frames_survive_exit():
+    run_isolated(
+        COLLISION_SCENE
+        + """
+result = dart.collision.CollisionResult()
+assert group.collide(option, result)
+frames = result.getCollidingShapeFrames()
+assert len(frames) == 2
+assert {frame.getName() for frame in frames} == {
+    skel.getBodyNode(0).getShapeNode(0).getName() for skel in skels
+}
+gc.collect()
+for skel in skels:
+    assert skel.getBodyNode(0).getShapeNode(0).getName()
+print("done")
+"""
+    )
+
+
+@pytest.mark.parametrize("base", ["CompositeCollisionFilter", "BodyNodeCollisionFilter"])
+def test_collision_filter_python_override(base):
+    run_isolated(
+        COLLISION_SCENE
+        + textwrap.dedent(
+            f"""
+            class Filter(dart.collision.{base}):
+                def ignoresCollision(self, object1, object2):
+                    self.calls += 1
+                    assert object1.getShapeFrame().getName()
+                    assert object2.getShapeFrame().getName()
+                    return True
+
+            collision_filter = Filter()
+            collision_filter.calls = 0
+            option.collisionFilter = collision_filter
+            assert not group.collide(option)
+            assert collision_filter.calls > 0
+            print("done")
+            """
+        )
+    )
+
+
+@pytest.mark.parametrize("base", ["CompositeCollisionFilter", "BodyNodeCollisionFilter"])
+def test_collision_filter_cpp_fallback(base):
+    run_isolated(
+        COLLISION_SCENE
+        + textwrap.dedent(
+            f"""
+            class Filter(dart.collision.{base}):
+                pass
+
+            collision_filter = Filter()
+            option.collisionFilter = collision_filter
+            assert group.collide(option)
+            if "{base}" == "BodyNodeCollisionFilter":
+                collision_filter.addBodyNodePairToBlackList(
+                    skels[0].getBodyNode(0), skels[1].getBodyNode(0)
+                )
+                assert not group.collide(option)
+            print("done")
+            """
+        )
+    )
 
 
 if __name__ == "__main__":
