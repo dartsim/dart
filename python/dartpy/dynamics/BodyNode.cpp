@@ -819,18 +819,26 @@ void BodyNode(py::module& m)
       .def(
           "copyTo",
           +[](dart::dynamics::BodyNode* self,
-              dart::dynamics::BodyNode* _newParent)
-              -> std::pair<dart::dynamics::Joint*, dart::dynamics::BodyNode*> {
-            return self->copyTo(_newParent);
+              dart::dynamics::BodyNode* _newParent) -> py::object {
+            return py::cast(
+                self->copyTo(_newParent),
+                py::return_value_policy::reference_internal,
+                py::cast(
+                    _newParent ? _newParent->getSkeleton()
+                               : self->getSkeleton()));
           },
           ::py::arg("newParent"))
       .def(
           "copyTo",
           +[](dart::dynamics::BodyNode* self,
               dart::dynamics::BodyNode* _newParent,
-              bool _recursive)
-              -> std::pair<dart::dynamics::Joint*, dart::dynamics::BodyNode*> {
-            return self->copyTo(_newParent, _recursive);
+              bool _recursive) -> py::object {
+            return py::cast(
+                self->copyTo(_newParent, _recursive),
+                py::return_value_policy::reference_internal,
+                py::cast(
+                    _newParent ? _newParent->getSkeleton()
+                               : self->getSkeleton()));
           },
           ::py::arg("newParent"),
           ::py::arg("recursive"))
@@ -838,9 +846,11 @@ void BodyNode(py::module& m)
           "copyTo",
           +[](const dart::dynamics::BodyNode* self,
               const dart::dynamics::SkeletonPtr& _newSkeleton,
-              dart::dynamics::BodyNode* _newParent)
-              -> std::pair<dart::dynamics::Joint*, dart::dynamics::BodyNode*> {
-            return self->copyTo(_newSkeleton, _newParent);
+              dart::dynamics::BodyNode* _newParent) -> py::object {
+            return py::cast(
+                self->copyTo(_newSkeleton, _newParent),
+                py::return_value_policy::reference_internal,
+                py::cast(_newSkeleton));
           },
           ::py::arg("newSkeleton"),
           ::py::arg("newParent"))
@@ -849,9 +859,11 @@ void BodyNode(py::module& m)
           +[](const dart::dynamics::BodyNode* self,
               const dart::dynamics::SkeletonPtr& _newSkeleton,
               dart::dynamics::BodyNode* _newParent,
-              bool _recursive)
-              -> std::pair<dart::dynamics::Joint*, dart::dynamics::BodyNode*> {
-            return self->copyTo(_newSkeleton, _newParent, _recursive);
+              bool _recursive) -> py::object {
+            return py::cast(
+                self->copyTo(_newSkeleton, _newParent, _recursive),
+                py::return_value_policy::reference_internal,
+                py::cast(_newSkeleton));
           },
           ::py::arg("newSkeleton"),
           ::py::arg("newParent"),

@@ -2,6 +2,8 @@ import subprocess
 import sys
 import textwrap
 
+import pytest
+
 
 def run_isolated(script):
     # A use-after-free crashes the interpreter, so run each case in a
@@ -76,6 +78,60 @@ def test_getchildframes_does_not_take_ownership():
         world = dart.simulation.World()
         world.addSkeleton(skel)
         world.step()
+        print("done")
+        """
+    )
+
+
+@pytest.mark.parametrize("overload", range(4))
+def test_copyto_does_not_take_ownership(overload):
+    run_isolated(
+        f"""
+        import gc
+        import dartpy as dart
+
+        src = dart.dynamics.Skeleton("src")
+        joint, body = src.createRevoluteJointAndBodyNodePair()
+        del joint
+        dst = dart.dynamics.Skeleton("dst")
+        parent = dst.createRevoluteJointAndBodyNodePair()[1]
+        args = ((parent,), (parent, False), (dst, None), (dst, None, False))
+        pair = body.copyTo(*args[{overload}])
+        name = pair[0].getName()
+        del pair
+        gc.collect()
+        assert dst.getJoint(1).getName() == name
+        world = dart.simulation.World()
+        world.addSkeleton(dst)
+        world.step()
+        print("done")
+        """
+    )
+
+
+@pytest.mark.parametrize("overload", range(4))
+def test_copyto_joint_keeps_destination_alive(overload):
+    run_isolated(
+        f"""
+        import gc
+        import dartpy as dart
+
+        src = dart.dynamics.Skeleton("src")
+        body = src.createRevoluteJointAndBodyNodePair()[1]
+        dst = dart.dynamics.Skeleton("dst")
+        parent = dst.createRevoluteJointAndBodyNodePair()[1]
+        args = ((parent,), (parent, False), (dst, None), (dst, None, False))
+        pair = body.copyTo(*args[{overload}])
+        joint = pair[0]
+        name = joint.getName()
+        del pair, dst, parent, args
+        gc.collect()
+        replacements = []
+        for _ in range(200):
+            other = dart.dynamics.Skeleton()
+            other.createRevoluteJointAndBodyNodePair()[0].setName("replacement")
+            replacements.append(other)
+        assert joint.getName() == name
         print("done")
         """
     )

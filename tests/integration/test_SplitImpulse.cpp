@@ -105,13 +105,6 @@ public:
     return success;
   }
 
-#if DART_BUILD_MODE_DEBUG
-  bool canSolve(int n, const double* A) override
-  {
-    return mSolver.canSolve(n, A);
-  }
-#endif
-
   std::size_t mSolveCalls = 0;
   std::size_t mFailures = 0;
 

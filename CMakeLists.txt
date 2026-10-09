@@ -305,18 +305,12 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPERCASE)
 
-set(DART_BUILD_MODE_DEBUG FALSE)
-set(DART_BUILD_MODE_RELEASE FALSE)
-
-if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
-  set(DART_BUILD_MODE_DEBUG TRUE)
-elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELEASE")
-  set(DART_BUILD_MODE_RELEASE TRUE)
-elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "RELWITHDEBINFO")
-  set(DART_BUILD_MODE_RELEASE TRUE)
-elseif("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "MINSIZEREL")
-  set(DART_BUILD_MODE_RELEASE TRUE)
-else()
+if(
+  NOT
+    "${CMAKE_BUILD_TYPE_UPPERCASE}"
+      MATCHES
+      "^(DEBUG|RELEASE|RELWITHDEBINFO|MINSIZEREL)$"
+)
   message(
     WARNING
     "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} unknown. Valid options are: Debug | Release | RelWithDebInfo | MinSizeRel"
@@ -332,7 +326,7 @@ endif()
 # - ERROR: To enable log with DART_ERROR() and below
 # - FATAL: To enable log with DART_FATAL()
 # - OFF: To turn off all the logs
-if(DART_BUILD_MODE_DEBUG)
+if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
   set(
     DART_ACTIVE_LOG_LEVEL
     "DEBUG"
@@ -352,7 +346,7 @@ set_property(
   PROPERTY STRINGS TRACE DEBUG INFO WARN ERROR FATAL OFF
 )
 
-if(DART_BUILD_MODE_DEBUG)
+if("${CMAKE_BUILD_TYPE_UPPERCASE}" STREQUAL "DEBUG")
   option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 else()
   option(DART_TREAT_WARNINGS_AS_ERRORS "Treat warnings as errors" ON)
@@ -436,15 +430,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
     # TODO: These warnings should be properly addressed and these compiler options removed
     add_compile_options(
-      -Wno-overloaded-virtual
-      -Wno-alloc-size-larger-than
-      -Wno-dangling-pointer
-    )
-  endif()
-  if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
-    # TODO: These warnings should be properly addressed and these compiler options removed
-    add_compile_options(
-      -Wno-overloaded-virtual
+      $<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual>
       -Wno-alloc-size-larger-than
       -Wno-dangling-pointer
     )

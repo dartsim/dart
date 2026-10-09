@@ -375,14 +375,6 @@ void NsgsFrictionSolver::reserve(std::size_t numRows)
   classification.componentSizes.reserve(numRows);
 }
 
-#if DART_BUILD_MODE_DEBUG
-//==============================================================================
-bool NsgsFrictionSolver::canSolve(int n, const double* A)
-{
-  return detail::canSolveFrictionLcp(n, A);
-}
-#endif
-
 //==============================================================================
 void NsgsFrictionSolver::accumulateStats(const FrictionSolveStats& stats)
 {

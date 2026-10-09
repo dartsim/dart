@@ -38,7 +38,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 VALGRIND = "/usr/bin/valgrind"
-MEASUREMENT_ROOT = Path(os.environ.get("DART_PERF_STAGING_ROOT", "/tmp/dart-perf"))
+DEFAULT_MEASUREMENT_ROOT = Path("/tmp/dart-perf")
+MEASUREMENT_ROOT = Path(
+    os.environ.get("DART_PERF_STAGING_ROOT", str(DEFAULT_MEASUREMENT_ROOT))
+)
 MEASUREMENT_LOCK_FD: int | None = None
 WORLD_SHA = "ad94d44b90f3023765e1b2a4d2ecc7390f5539fa761d6019e08b388ce5c5ff33"
 MEASURED_PATHS = (
@@ -1187,6 +1190,14 @@ def installed_provenance(args) -> dict:
     return stamp
 
 
+def public_staging_root(root: str) -> str:
+    if root in ("default", str(DEFAULT_MEASUREMENT_ROOT)):
+        return "default"
+    if re.fullmatch(r"sha256:[0-9a-f]{64}", root):
+        return root
+    return f"sha256:{sha(root.encode())}"
+
+
 def fingerprint(args, provenance: dict | None = None) -> dict:
     if provenance is None:
         provenance = installed_provenance(args)
@@ -1261,6 +1272,7 @@ def fingerprint(args, provenance: dict | None = None) -> dict:
             sort_keys=True,
         ).encode()
     )
+    values["staging_root"] = public_staging_root(values["staging_root"])
     return values
 
 
@@ -2056,6 +2068,10 @@ def validate_publication_environment(env: dict, *, local: bool = False) -> None:
         raise ValueError("refusing publication from an unexpected measurement runner")
     if not re.fullmatch(r"[0-9a-f]{64}", env.get("fingerprint", "")):
         raise ValueError("publication environment fingerprint must be a SHA256")
+    if "staging_root" in env:
+        if not isinstance(env["staging_root"], str) or not env["staging_root"]:
+            raise ValueError("publication staging root must be a nonempty string")
+        env["staging_root"] = public_staging_root(env["staging_root"])
 
 
 def find_local_path(value, location: str = "") -> str | None:
@@ -3786,12 +3802,6 @@ def _build_arm(
     )
     workload_sources = workload_hashes(source, drivers, build, prefix)
     targets = ["dart-utils-urdf", *drivers]
-    if CB not in drivers:
-        targets += [
-            "dart-collision-ode",
-            "dart-collision-bullet",
-            "dart-gui-osg",
-        ]
     # Historical libraries share one install component, including optional ones.
     targets = sorted(set(targets) | set(install_targets(build)))
     execute(
