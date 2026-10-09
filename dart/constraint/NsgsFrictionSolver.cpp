@@ -322,7 +322,9 @@ bool NsgsFrictionSolver::solve(
       failed = true;
       break;
     }
-    producedNoWorse |= currentViolation <= startingViolation;
+    // Residual changes within tolerance do not establish divergence.
+    producedNoWorse
+        |= currentViolation - startingViolation <= mOptions.tolerance;
     if (currentViolation < bestViolation) {
       bestViolation = currentViolation;
       std::copy(x, x + n, scratch.best.begin());

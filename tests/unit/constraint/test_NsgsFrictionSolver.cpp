@@ -223,6 +223,79 @@ TEST(NsgsFrictionSolver, CapReturnsBestCompletedIterateInBothTerminationModes)
   }
 }
 
+TEST(NsgsFrictionSolver, WarmStartResidualChangeWithinToleranceIsAcceptedAtCap)
+{
+  // Four redundant box contacts: completed sweeps raise the warm residual by
+  // 4.52e-9 m/s, below the requested accuracy, while the seed remains best.
+  const int coefficients[12][12]
+      = {{8, 3, -3, 2, 3, -3, -4, 3, -3, 2, 3, -3},
+         {3, 8, 3, 3, 2, 3, -3, 2, -3, -3, 8, -3},
+         {-3, 3, 8, 3, -3, 8, 3, -3, 2, -3, 3, 2},
+         {2, 3, 3, 8, 3, 3, 2, 3, 3, -4, 3, 3},
+         {3, 2, -3, 3, 8, -3, -3, 8, 3, -3, 2, 3},
+         {-3, 3, 8, 3, -3, 8, 3, -3, 2, -3, 3, 2},
+         {-4, -3, 3, 2, -3, 3, 8, -3, 3, 2, -3, 3},
+         {3, 2, -3, 3, 8, -3, -3, 8, 3, -3, 2, 3},
+         {-3, -3, 2, 3, 3, 2, 3, 3, 8, -3, -3, 8},
+         {2, -3, -3, -4, -3, -3, 2, -3, -3, 8, -3, -3},
+         {3, 8, 3, 3, 2, 3, -3, 2, -3, -3, 8, -3},
+         {-3, -3, 2, 3, 3, 2, 3, 3, 8, -3, -3, 8}};
+  for (double tolerance : {1e-7, 1e-10}) {
+    SCOPED_TRACE(tolerance);
+    Problem p(12);
+    for (int i = 0; i < p.n; ++i) {
+      for (int j = 0; j < p.n; ++j)
+        p.A[i * p.stride + j] = 0.0005 * coefficients[i][j];
+      p.A[i * p.stride + i] += 4e-8;
+      p.lo[i] = i % 3 == 0 ? 0.0 : -0.6;
+      p.hi[i] = i % 3 == 0 ? std::numeric_limits<double>::infinity() : 0.6;
+      p.findex[i] = i % 3 == 0 ? -1 : i - i % 3;
+    }
+    p.b
+        = {0.0087733674577355359,
+           0.0043871828546708609,
+           -7.0252095506881694e-9,
+           0.0087733986254160626,
+           0.0043872473398251597,
+           -7.0252095393737846e-9,
+           0.0087734659466570282,
+           0.0043872473398251345,
+           5.7459944769324346e-8,
+           0.0087734347789764997,
+           0.0043871828546708357,
+           5.7459944758009971e-8};
+    p.x
+        = {1.6346776417705833,
+           0.66792026664810256,
+           0.26712925665674037,
+           0.55840997534980608,
+           0.3350459851638361,
+           -0.072886491795311217,
+           3.828260676856003,
+           2.0527797998193216,
+           -1.630741452978923,
+           2.7519926860587471,
+           1.3314194859649182,
+           1.4364986193345932};
+    const auto startingImpulse = p.x;
+    NsgsFrictionSolver::Options options;
+    options.law = NsgsFrictionSolver::Law::Box;
+    options.maxSweeps = 1000;
+    options.tolerance = tolerance;
+    NsgsFrictionSolver solver(options);
+    const bool accepted = tolerance == 1e-7;
+    EXPECT_EQ(accepted, p.solve(solver));
+    EXPECT_EQ(startingImpulse, p.x);
+    const auto stats = solver.getStats();
+    EXPECT_EQ(accepted ? 1u : 0u, stats.numAcceptedAtCap);
+    EXPECT_EQ(accepted ? 0u : 1u, stats.numFailed);
+    EXPECT_EQ(0u, stats.numConverged);
+    EXPECT_EQ(1000u, stats.numIterations);
+    EXPECT_NEAR(
+        accepted ? 1.5899341954771166e-7 : 0.0, stats.maxViolation, 1e-13);
+  }
+}
+
 TEST(NsgsFrictionSolver, DivergenceUsesExistingSecondaryAndReassembly)
 {
   auto primary = std::make_shared<NsgsFrictionSolver>();
