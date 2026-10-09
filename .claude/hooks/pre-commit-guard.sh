@@ -726,7 +726,7 @@ def maybe_update_shell_cwd(
 ):
     if i >= len(tokens) or command_word(tokens[i]) != "cd":
         return current_cwd
-    if execution == EXEC_NEVER or subshell_like or separator in {"&", "|"}:
+    if execution == EXEC_NEVER or subshell_like or separator in {"&", "|", "|&"}:
         return current_cwd
     if mutation_policy != "allow":
         return None
@@ -1134,7 +1134,7 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
         source_part,
     ) in split_shell_segments(text, heredocs):
         raw_part = part.strip()
-        subshell_like = isolated_context or previous_separator == "|"
+        subshell_like = isolated_context or previous_separator in {"|", "|&"}
         part = raw_part.lstrip("({").strip()
         parsed = True
         try:
@@ -1242,7 +1242,7 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
             if (
                 cwd_execution != EXEC_NEVER
                 and not subshell_like
-                and separator not in {"&", "|"}
+                and separator not in {"&", "|", "|&"}
                 and i < len(tokens)
                 and command_word(tokens[i]).rstrip(")}")
                 in {"eval", "source", "."}
