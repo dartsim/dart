@@ -32,32 +32,9 @@ gh pr list --repo dartsim/dart --state merged --base <target-branch> --limit 10 
 Use these practices:
 
 - Keep titles plain, scoped, and outcome-focused. Do not add agent prefixes.
-- Fill the PR template in DART's default order: Summary, Motivation / Problem,
-  Changes / Key Changes, optional Before / After, Testing, Breaking Changes,
-  and Related Issues / PRs. Keep Summary first because reviewers need the
-  skimmable outcome before the rationale. If the motivation is necessary to
-  understand the outcome, make the first Summary sentence problem-oriented,
-  then put the fuller why in Motivation / Problem rather than moving Motivation
-  above Summary.
-- Write the opening Summary and Motivation from the perspective of a user or
-  downstream maintainer who is not already familiar with the implementation:
-  lead with what changes for them, what stays compatible, how they would opt in
-  or migrate, and why the evidence matters. Keep implementation details in
-  Changes unless they explain a user-visible outcome or risk.
-- When the change has meaningful user-facing API, workflow, behavior, or
-  performance impact, add a concise `## Before / After` section before
-  Testing. Use a small table or bullets that cover only relevant dimensions
-  such as public API, commands/workflows, behavior, migration, and performance
-  baseline. Phrase each row as a user-visible before/after, then name the
-  implementation mechanism only as supporting context. For performance claims,
-  name the baseline explicitly: CPU path, parent commit, `main`, or prior
-  implementation, plus workload, metric, and important limitations.
-- Write the body for a human skimming it: bullets that each carry one
-  highlight; mechanism in one sentence, details elsewhere.
-- In Testing, list only checks that CI does not run on the PR (a reporter's
-  toolchain reproduction, a negative check proving a new test bites, hardware
-  runs, independent review passes), not jobs CI runs anyway; the local gates
-  in steps 5-7 still run and their record stays in task evidence.
+- Follow `docs/onboarding/contributing.md` § "PR Descriptions" for the
+  Effect-first template order, comparisons, plots, collapsed raw tables, and
+  Testing content. This is the PR-description owner for agents and contributors.
 - For CI, performance, or infrastructure work, include evidence such as CI run
   observations, timing, reruns, benchmark output, or why a skipped check is
   expected.
@@ -68,18 +45,8 @@ Use these practices:
   - Prefer an existing headless example path such as `--headless`,
     `--frames`, `--width`, `--height`, and `--shot` over manual
     screenshots.
-  - PRs fixing or changing dynamics, collision/contact, constraint, simulation,
-    or rendering behavior include a before/after visual pair by default,
-    next to the text oracle. Capture the base revision and PR head with the
-    same scene, camera, steps, dimensions, and renderer; compose side by side
-    with `pixi run image-compose` and publish with `pixi run evidence-publish`
-    after explicit maintainer/user approval for uploads.
-  - Magnify small effects with a closer camera, side view, contrasting colors,
-    or debug layers such as contacts. Interpenetration and penetration depth
-    need a close side view: a distant still hides them. If the pair looks
-    identical, check the text oracle on both revisions and enlarge the scene
-    until the effect shows. Skip only with a stated reason, such as a
-    headless-only or invisible change.
+  - Follow `docs/ai/verification.md` § "Simulation Verification Route" for
+    before/after 3D highlights, matched captures, and compute-only plots.
   - Inspect the images yourself and include the commands plus any environment
     variables such as software rendering flags in the PR body.
   - Upload transient comparison images, GIFs, and videos through the GitHub

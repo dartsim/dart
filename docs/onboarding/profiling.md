@@ -9,6 +9,101 @@ Temporary packet-by-packet findings belong under `docs/dev_tasks/` until the
 related work lands. Promote only repeatable commands, gates, and current owner
 surfaces here.
 
+## Performance Methodology
+
+Use this method for performance investigations and claims. Agents load
+`dart-perf`; contributors follow the same standard here.
+
+### Reproduce the User's Scenario
+
+Before optimizing, reproduce the reported world/model, collision detector,
+solver and settings, timestep, thread counts, and simulated duration. Record
+initial state, seeds, contact caps, and sleeping/deactivation settings. State
+every deviation and its effect on the claim; a convenient microbenchmark does
+not establish an improvement in the user's workload.
+
+### Choose the Right Numbers
+
+Use two complementary measurements:
+
+- **Exact-count regression gates:** [`scripts/perf_regression.py`](../../scripts/perf_regression.py)
+  compares DART base and head revisions using Callgrind instruction counts,
+  allocation counts/requested bytes, and state/behavior guard hashes. Follow
+  [Revision Comparisons](#revision-comparisons) for A/B commands, matching
+  inputs/toolchain/environment fingerprints, qualification, and rationale
+  policy. Its wall time and hosted dashboard timings are advisory; count
+  reductions alone do not establish a user-facing speed-up.
+- **Wall-time evidence:** measure normal Release builds on the same controlled
+  machine. Fix CPU affinity to one hardware thread per physical core and keep
+  its SMT siblings idle; keep the solver and world single-threaded unless
+  threading is the measured variable. Record the CPU governor/scaling state
+  and background load.
+  Run serially, including builds and other benchmarks, and alternate baseline
+  and candidate runs to expose drift. Run at least three independent repeats
+  per revision; report the median and min-max range, retaining all samples.
+  Exclude and document warm-up, then measure the same fixed simulated duration
+  and timestep in both arms. Measure settling and resting windows separately;
+  warm-up must not erase the transient the user reported. Keep profiler and
+  diagnostic overhead out of acceptance timings.
+
+### Guard Behavior
+
+Every performance claim needs a correctness check on both revisions over the
+same workload and measurement windows. Choose guards that catch the reported
+failure: sinking/penetration census and depth, sleeping/resting counts, finite
+state and state hashes, contact/pair counts, or contact-cap hits. Exact hashes
+prove equality only for the recorded samples; use tolerances and physical
+invariants when exact equality is inappropriate. Report behavior regressions
+beside timing, even when speed improves. Changed physics or workload must be
+classified explicitly, with its compatibility impact; never present omitted
+contacts or incorrect sleeping as a performance win.
+
+### Attribute Before Optimizing
+
+Separate engine time (for example, `World::step`) from host/integration work
+such as transport, callbacks, logging, and rendering. Report the timed boundary
+and end-to-end time separately. Profile settling transients and resting steady
+state in distinct windows, using Callgrind or `perf` with symbols and resolved
+stacks. Rank candidate changes by measured share of the relevant window, then
+remeasure the full scenario after each change. Pair cache, SIMD, or threading
+claims with hardware-counter evidence as described in
+[the performance CI owner](ci-cd.md#performance-records-and-guards).
+
+### Report the Effect
+
+Follow [PR Descriptions](contributing.md#pr-descriptions): lead with what users
+get, the speed-up versus a named DART baseline revision, real-time factor
+(simulated seconds / measured wall seconds), and behavior results. State
+whether the speed-up uses engine or end-to-end time. Show time-series plots for
+transients and comparison plots with repeat ranges; keep raw samples/tables
+available behind the plots. Record CPU/hardware, affinity and SMT policy,
+governor, threads, compiler/dependency versions, build flags, exact baseline
+and candidate revisions, reproduction commands, windows, and caveats. Bound
+the claim to measured workloads and explain unavailable or noisy evidence.
+
+Public comparisons use DART revisions only (old versus new). Cross-engine
+tooling, artifacts, and results stay in private workspaces, outside the public
+DART repository and its GitHub content. Model-format compatibility support
+remains in scope. Use the existing
+[visual-evidence selection and publication flow](../ai/verification.md#visual-verification-headless-capture)
+for plots and claim-tied simulation highlights; publish images through its
+prerelease backend after upload approval, and keep transient media out of Git.
+For visible physics changes, follow the
+[simulation verification route](../ai/verification.md#simulation-verification-route).
+
+### Preserve Downstream Compatibility
+
+Keep downstream simulator behavior acceptable against the last released DART
+version, naming the release tag and recording remaining differences. Use the
+existing [Gazebo compatibility lanes](../../tools/gazebo/README.md#unpatched-compatibility-lanes)
+and [failure comparisons](../../tools/gazebo/README.md#comparing-failures),
+alongside `pixi run -e gazebo test-gz` when affected. The stored lane baselines
+are DART 6.19.4; if that is not the last release, compare that release explicitly.
+The patched forward lane alone does not prove released-simulator compatibility.
+Refactors are acceptable when these behavior and compatibility checks hold;
+explain inherited failures and report new regressions rather than trading
+physics correctness for speed.
+
 ## Built-in Text Profiler
 
 DART 6.20 has the `dart/common/Profile.hpp` front end. The default Pixi
@@ -453,16 +548,8 @@ question.
 
 ## Reporting
 
-Every performance PR should match the #3307-style comparison and report bar,
-not just a timing snippet. Record:
-
-- exact commit SHAs for the recorded baseline, parent/current base, and PR head;
-- exact configure, build, benchmark, and profile commands;
-- compiler, CPU model, governor/scaling state, Pixi environment, and optional
-  detector availability;
-- profile summary lines that explain the chosen optimization target;
-- the full benchmark evidence table with contacts, pairs, resting counts,
-  cap-hit status, and final-state hashes where applicable.
+Follow [Performance Methodology](#performance-methodology) for measurement,
+behavior guards, attribution, and Effect-first evidence.
 
 For `contact_benchmark` rows using ODE, keep `--max-contacts-per-pair 4`; larger
 caps measure a different detector behavior on this branch.

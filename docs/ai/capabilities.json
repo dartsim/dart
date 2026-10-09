@@ -143,6 +143,12 @@
       "gate_profile": "reference"
     },
     {
+      "name": "dart-perf",
+      "category": "performance",
+      "status": "active",
+      "gate_profile": "reference"
+    },
+    {
       "name": "dart-verify-sim",
       "category": "verification",
       "status": "active",
