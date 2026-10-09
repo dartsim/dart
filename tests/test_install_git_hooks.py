@@ -2457,6 +2457,124 @@ def test_guard_treats_unparsed_cd_status_as_uncertain(tmp_path):
 
 
 @pytest.mark.parametrize(
+    "command",
+    [
+        'true |& { cd "$CLAUDE_PROJECT_DIR"; git commit --no-verify -m x; }',
+        'true | { cd "$CLAUDE_PROJECT_DIR"; git commit --no-verify -m x; }',
+        'true | cd "$CLAUDE_PROJECT_DIR"; git commit --no-verify -m x',
+        'true |& cd "$CLAUDE_PROJECT_DIR"; git commit --no-verify -m x',
+        '( cd "$CLAUDE_PROJECT_DIR"; git commit --no-verify -m x )',
+        '( true; cd "$CLAUDE_PROJECT_DIR"; true ); git commit --no-verify -m x',
+        '{ cd "$CLAUDE_PROJECT_DIR"; git commit --no-verify -m x; }',
+        '{ cd "$CLAUDE_PROJECT_DIR"; true; }; git commit --no-verify -m x',
+        '{ cd "$OTHER_REPO"; git commit --no-verify -m x; }',
+        'cd "$CLAUDE_PROJECT_DIR" & git commit --no-verify -m x',
+        'cd "$CLAUDE_PROJECT_DIR" | true; git commit --no-verify -m x',
+        'echo $(cd "$CLAUDE_PROJECT_DIR"; pwd); git commit --no-verify -m x',
+        'echo `cd "$CLAUDE_PROJECT_DIR"; pwd`; git commit --no-verify -m x',
+        "bash -O lastpipe -c 'true | cd \"$CLAUDE_PROJECT_DIR\"; git commit --no-verify -m x'",
+        "zsh -c 'true | cd \"$CLAUDE_PROJECT_DIR\"; git commit --no-verify -m x'",
+    ],
+)
+@pytest.mark.parametrize("failed_gate", [None, "message", "staged"])
+def test_guard_checks_uncertain_context_cd_from_foreign_repo(
+    tmp_path, command, failed_gate
+):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update(
+        {
+            "CLAUDE_PROJECT_DIR": str(repo),
+            "OTHER_REPO": str(other),
+            "DART_HOOK_PYTHON": sys.executable,
+        }
+    )
+    _write_gate(
+        repo,
+        "import sys\nprint('direct-agent-gate', file=sys.stderr)\n"
+        f"sys.exit({int(failed_gate == 'staged')})\n",
+    )
+    (repo / "scripts/check_local_paths.py").write_text(
+        "import sys\nassert sys.argv[1:] == ['--stdin']\n"
+        "assert sys.stdin.read() == 'x'\n"
+        "print('direct-message-gate', file=sys.stderr)\n"
+        f"sys.exit({int(failed_gate == 'message')})\n"
+    )
+
+    returncode, stderr = _run_guard(other, env, command)
+
+    assert returncode == (2 if failed_gate else 0), stderr
+    assert "direct-message-gate" in stderr
+    assert ("direct-agent-gate" in stderr) == (failed_gate != "message")
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "true | cd {project}; git commit -m x",
+        "( cd {project}; git commit -m x )",
+        "{{ cd {other}; git commit -m x; }}",
+    ],
+)
+def test_guard_checks_uncertain_cwd_even_with_managed_project_hooks(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    assert _install(repo, env).returncode == 0
+    env.update(
+        {
+            "CLAUDE_PROJECT_DIR": str(repo),
+            "DART_HOOK_PYTHON": sys.executable,
+        }
+    )
+    _write_gate(repo, "raise SystemExit('staged-gate-failed')\n")
+    (repo / "scripts/check_local_paths.py").write_text(
+        "import sys\nprint('direct-message-gate', file=sys.stderr)\n"
+    )
+
+    returncode, stderr = _run_guard(
+        other,
+        env,
+        command.format(project=shlex.quote(str(repo)), other=shlex.quote(str(other))),
+    )
+
+    assert returncode == 2, stderr
+    assert "direct-message-gate" in stderr
+    assert "staged-gate-failed" in stderr
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        'git -C "$OTHER_REPO" commit --no-verify -m x',
+        'cd "$OTHER_REPO" && git commit --no-verify -m x',
+        '(cd "$CLAUDE_PROJECT_DIR"); git -C "$OTHER_REPO" commit --no-verify -m x',
+        '(cd "$CLAUDE_PROJECT_DIR"); cd "$OTHER_REPO" && git commit --no-verify -m x',
+    ],
+)
+def test_guard_skips_certain_foreign_repo_after_context_cd(tmp_path, command):
+    repo, env = _init_repo(tmp_path)
+    other = tmp_path / "other"
+    other.mkdir()
+    subprocess.run(["git", "init", "-q", str(other)], check=True, env=env)
+    env.update(
+        {
+            "CLAUDE_PROJECT_DIR": str(repo),
+            "OTHER_REPO": str(other),
+            "DART_HOOK_DRY_RUN": "1",
+        }
+    )
+
+    returncode, stderr = _run_guard(repo, env, command)
+
+    assert returncode == 0, stderr
+    assert "would run" not in stderr
+
+
+@pytest.mark.parametrize(
     "pipeline",
     [
         "true | cd {other}",
@@ -2465,7 +2583,7 @@ def test_guard_treats_unparsed_cd_status_as_uncertain(tmp_path):
         "cd {other} |& cat",
     ],
 )
-def test_guard_does_not_carry_pipeline_cd_cwd(tmp_path, pipeline):
+def test_guard_treats_pipeline_cd_cwd_as_uncertain(tmp_path, pipeline):
     repo, env = _init_repo(tmp_path)
     other = tmp_path / "other"
     other.mkdir()
@@ -2479,7 +2597,7 @@ def test_guard_does_not_carry_pipeline_cd_cwd(tmp_path, pipeline):
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
-def test_guard_does_not_carry_multisegment_subshell_cd_cwd(tmp_path):
+def test_guard_treats_multisegment_subshell_cd_cwd_as_uncertain(tmp_path):
     repo, env = _init_repo(tmp_path)
     other = tmp_path / "other"
     other.mkdir()
@@ -2494,7 +2612,7 @@ def test_guard_does_not_carry_multisegment_subshell_cd_cwd(tmp_path):
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
-def test_guard_does_not_carry_command_substitution_cd_cwd(tmp_path):
+def test_guard_treats_command_substitution_cd_cwd_as_uncertain(tmp_path):
     repo, env = _init_repo(tmp_path)
     other = tmp_path / "other"
     other.mkdir()
@@ -2523,7 +2641,7 @@ def test_guard_does_not_use_command_substitution_status_for_outer_chain(tmp_path
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
-def test_guard_does_not_carry_backtick_command_substitution_cd_cwd(tmp_path):
+def test_guard_treats_backtick_command_substitution_cd_cwd_as_uncertain(tmp_path):
     repo, env = _init_repo(tmp_path)
     other = tmp_path / "other"
     other.mkdir()
@@ -2605,7 +2723,7 @@ def test_guard_does_not_treat_path_qualified_builtin_as_shell_builtin(tmp_path):
     assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
-def test_guard_carries_brace_group_cd_cwd(tmp_path):
+def test_guard_treats_brace_group_cd_cwd_as_uncertain(tmp_path):
     repo, env = _init_repo(tmp_path)
     other = tmp_path / "other"
     other.mkdir()
@@ -2617,7 +2735,7 @@ def test_guard_carries_brace_group_cd_cwd(tmp_path):
     )
 
     assert returncode == 0
-    assert "would run" not in stderr
+    assert "would run 'python3 scripts/check_agent_hook.py --profile staged'" in stderr
 
 
 def test_guard_ignores_quoted_shell_separators(tmp_path):
