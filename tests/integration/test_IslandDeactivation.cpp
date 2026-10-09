@@ -5699,6 +5699,28 @@ TEST(IslandDeactivation, CustomFilterSleepingKillSwitch)
 }
 
 //==============================================================================
+TEST(IslandDeactivation, CustomFilterSleepingKillSwitchKeepsTrackedJointDwell)
+{
+  const ScopedEnvironmentVariable killSwitch(
+      "DART_CUSTOM_FILTER_SLEEPING", "off");
+  auto world = makeSleepWorld();
+  world->getConstraintSolver()->getCollisionOption().collisionFilter
+      = std::make_shared<RevisionedTogglePairCollisionFilter>(
+          nullptr, nullptr, false);
+  world->addSkeleton(createFloor());
+  auto model = createPlateAndSlab("hinged", 0.0, true);
+  world->addSkeleton(model);
+
+  for (std::size_t i = 0; i < 1500; ++i)
+    world->step();
+  EXPECT_FALSE(model->isResting());
+
+  for (std::size_t i = 0; i < 1500; ++i)
+    world->step();
+  EXPECT_TRUE(model->isResting());
+}
+
+//==============================================================================
 TEST(IslandDeactivation, ReplayAndRetentionDeterministicAcrossThreads)
 {
   struct Run

@@ -51,9 +51,10 @@ namespace simulation {
 ///
 /// BodyNodeCollisionFilter subclasses without a snapshot revision can sleep:
 /// World records the solver query's pair decisions and replays them before
-/// keeping bodies asleep. A changed decision wakes them. Other custom filters
-/// still keep bodies awake. Set DART_CUSTOM_FILTER_SLEEPING to 0, false, off or
-/// no (case-insensitive) before constructing a World to disable this replay.
+/// keeping bodies asleep. A changed decision wakes them. Custom filters without
+/// a snapshot revision that do not derive from BodyNodeCollisionFilter keep
+/// bodies awake. Set DART_CUSTOM_FILTER_SLEEPING to 0, false, off or no
+/// (case-insensitive) before constructing a World to disable this replay.
 /// This temporary escape hatch for 6.20.x leaves default filters unchanged.
 struct DeactivationOptions
 {

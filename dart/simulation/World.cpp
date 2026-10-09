@@ -465,14 +465,14 @@ bool readCustomFilterSleepingSwitch()
     static std::atomic<bool> reported{false};
     if (!reported.exchange(true)) {
       dtmsg << "[World] DART_CUSTOM_FILTER_SLEEPING=" << value
-            << ": custom collision filters keep bodies awake.\n";
+            << ": custom-filter decision replay is disabled.\n";
     }
   } else if (!on) {
     static std::atomic<bool> reported{false};
     if (!reported.exchange(true)) {
       dtwarn << "[World] Ignoring DART_CUSTOM_FILTER_SLEEPING=" << value
-             << "; set it to 0, false, off or no to keep the bodies of worlds "
-                "with custom collision filters awake.\n";
+             << "; set it to 0, false, off or no to disable custom-filter "
+                "decision replay.\n";
     }
   }
   return !off;
@@ -547,24 +547,27 @@ public:
 namespace {
 
 //==============================================================================
-// Whether World follows `filter` by replaying its decisions: a
-// BodyNodeCollisionFilter subclass that exposes no revision of its own state,
-// such as gz-physics' BitmaskContactFilter.
+// Custom body filters can sleep through revision tracking or decision replay.
 bool isCustomBodyNodeFilter(
     const WorldDeactivationState& state,
     const collision::CollisionFilter* filter)
 {
-  return state.mCustomFilterSleeping && filter != nullptr
+  return filter != nullptr
          && typeid(*filter) != typeid(collision::BodyNodeCollisionFilter)
          && dynamic_cast<const collision::BodyNodeCollisionFilter*>(filter)
-                != nullptr;
+                != nullptr
+         && (state.mCustomFilterSleeping
+             || dynamic_cast<
+                    const collision::detail::CollisionFilterSnapshotTracker*>(
+                    filter)
+                    != nullptr);
 }
 
 bool isReplayed(
     const WorldDeactivationState& state,
     const collision::CollisionFilter* filter)
 {
-  return isCustomBodyNodeFilter(state, filter)
+  return state.mCustomFilterSleeping && isCustomBodyNodeFilter(state, filter)
          && dynamic_cast<
                 const collision::detail::CollisionFilterSnapshotTracker*>(
                 filter)
