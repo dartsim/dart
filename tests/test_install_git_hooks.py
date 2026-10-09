@@ -4211,3 +4211,27 @@ def test_guard_without_python_reads_only_the_command(tmp_path, command, expected
     payload = {"cwd": "/tmp/git-commit-worktree", "tool_input": {"command": command}}
     run = _run_guard_without_classifier(tmp_path, payload, path=str(bin_dir))
     assert run.returncode == expected, run.stderr
+
+
+def test_guard_without_python_blocks_unparsed_command_layouts(tmp_path):
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    for tool in ("bash", "sh", "cat", "dirname", "git", "grep", "sed", "tr"):
+        found = shutil.which(tool)
+        if found:
+            (bin_dir / tool).symlink_to(found)
+    hooks = tmp_path / "hooks"
+    hooks.mkdir()
+    guard = hooks / GUARD.name
+    shutil.copy2(GUARD, guard)
+    repo, env = _init_repo(tmp_path)
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    env.pop("DART_HOOK_PYTHON", None)
+    env["PATH"] = str(bin_dir)
+    payload = '{"tool_input": {"command":\n"git commit --no-verify -m x"}}'
+
+    run = subprocess.run(
+        [str(guard)], cwd=repo, input=payload, env=env, capture_output=True, text=True
+    )
+
+    assert run.returncode == 2, run.stderr

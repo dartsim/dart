@@ -52,8 +52,10 @@ t = json.load(sys.stdin).get("tool_input") or {}
 print(t.get("command") or t.get("cmd") or "")' 2>/dev/null; then
         return
     fi
-    printf '%s' "$input" \
-        | sed -E -n 's/.*"(command|cmd)"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\2/p'
+    extracted=$(printf '%s' "$input" \
+        | sed -E -n 's/.*"(command|cmd)"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\2/p')
+    # Unparsed layouts fall back to the whole payload, which can only over-block.
+    printf '%s' "${extracted:-$input}"
 }
 may_commit() {
     text=$(command_text)
