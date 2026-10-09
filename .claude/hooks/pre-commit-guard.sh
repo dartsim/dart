@@ -652,7 +652,9 @@ def supplied_commit_message(args, cwd, inspect_message=True, raw_part=""):
                 break
         if (
             token.startswith("--")
-            and any(name.startswith(option) for name in ("--all", "--include", "--only"))
+            and any(name.startswith(option) for name in (
+                "--all", "--include", "--only", "--patch", "--interactive",
+            ))
         ):
             stages_content = True
             continue
@@ -679,7 +681,7 @@ def supplied_commit_message(args, cwd, inspect_message=True, raw_part=""):
         elif token.startswith("-") and not token.startswith("--"):
             option = ""
             for offset, short_option in enumerate(token[1:], 2):
-                if short_option in {"a", "i", "o"}:
+                if short_option in {"a", "i", "o", "p"}:
                     stages_content = True
                 if short_option in COMMIT_SHORT_OPTS_WITH_ATTACHED_ARG:
                     option = "-" + short_option
@@ -1064,6 +1066,11 @@ def git_commits(text, current_cwd=os.getcwd(), inherited_env=None,
                 fast_path_disabled = True
             continue
         expanded_executable = argument_has_expansion(raw_part, tokens[i])
+        if (
+            not is_git_executable(tokens[i])
+            and re.search(r"\bgit\b", raw_part) and re.search(r"\bcommit\b", raw_part)
+        ):
+            raise ComplexShellCommand
         if not is_git_executable(tokens[i]) and not expanded_executable:
             content_may_change = True
             fast_path_disabled |= not segment_allowed

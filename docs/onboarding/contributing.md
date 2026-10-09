@@ -33,7 +33,9 @@ blocks the commit on staged whitespace, local file names or text, or relevant
 AI-infrastructure drift. A managed `commit-msg` hook also scans the commit
 message for local paths. Git's "Lines starting with" editor template instruction
 identifies the comment string whose lines Git strips; the scan skips those
-lines. The "Do not modify or remove the line above" instruction immediately
+lines. When the parent Git invocation is available, commit and merge cleanup
+options determine which comments and scissors Git removes.
+The "Do not modify or remove the line above" instruction immediately
 after a matching scissors line only enables stopping there; comment lines above
 the cut are scanned because Git keeps them. Without a template instruction (`-m` or
 `-F`), all lines are scanned,
@@ -70,8 +72,10 @@ stdin, reused (`-C`/`-c`/`--reuse-message`/`--reedit-message`), autosquash
 messages when hooks cannot enforce them: supply `-m` or `-F <file>`, or let the
 managed hooks run.
 When managed hooks will not run, the guard also blocks commit-time staging
-(`-a`/`--all`, `-i`/`--include`, `-o`/`--only`, or pathspecs); stage the files
-first or let the hooks run so the staged scan can inspect all committed content.
+(`-a`/`--all`, `-i`/`--include`, `-o`/`--only`, `-p`/`--patch`, `--interactive`,
+or pathspecs); stage the files first or let the hooks run so the staged scan can
+inspect all committed content. Unrecognized commands containing both words
+`git` and `commit` are blocked, including unknown wrappers.
 Multiple commits without managed hooks are blocked when any earlier command can
 change files or the index. Split the commits into separate tool calls or let the
 hooks run; read-only Git commands between commits remain supported.

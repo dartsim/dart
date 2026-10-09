@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -3802,6 +3803,20 @@ def test_windows_launcher_does_not_shadow_native_exit_code():
     assert "$LASTEXITCODE = $null" not in launcher
     assert "$global:LASTEXITCODE = $null" in launcher
     assert "$nativeExitCode = $global:LASTEXITCODE" in launcher
+
+
+def test_windows_smoke_preserves_successful_diagnostic_exit_code(monkeypatch, capsys):
+    workflow = (ROOT / ".github/workflows/ci_windows.yml").read_text()
+    command = re.search(r"\$hookCommand = (.*)", workflow)[1]
+    # Native stderr can make PowerShell 5.1's $? false even for an exit of zero.
+    assert "if (-not $?)" not in command
+    assert "exit $LASTEXITCODE" in command
+    payloads = re.findall(r"\$env:DART_HOOK_PAYLOAD = '(.*)'", workflow)
+    payload = next(item for item in payloads if "git commit" in item)
+    monkeypatch.setenv("DART_HOOK_DRY_RUN", "1")
+    monkeypatch.delenv("DART_SKIP_HOOKS", raising=False)
+    assert bridge.forward(ROOT, payload.encode()) == 0
+    assert "would run" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("input_key", ("command", "cmd"))
