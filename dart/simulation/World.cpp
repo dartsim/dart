@@ -576,6 +576,22 @@ bool isReplayed(
                 == nullptr;
 }
 
+// World snapshots cover only the skeletons it owns.
+bool ownsSolverSkeletons(
+    const std::vector<dynamics::SkeletonPtr>& skeletons,
+    const constraint::ConstraintSolver& solver)
+{
+  const auto& solverSkeletons = solver.getSkeletons();
+  return solverSkeletons == skeletons
+         || std::all_of(
+             solverSkeletons.begin(),
+             solverSkeletons.end(),
+             [&](const auto& skel) {
+               return std::find(skeletons.begin(), skeletons.end(), skel)
+                      != skeletons.end();
+             });
+}
+
 //==============================================================================
 // Custom-filter sleepers report no residual acceleration from their last
 // solve. Joint resets leave acceleration-actuator commands alone.
@@ -895,8 +911,26 @@ void World::enterSimulationMode()
   mInitialRestSpeedLimits.clear();
   refreshSkeletonDofIndices();
   reserveSimulationScratch();
-  if (mConstraintSolver)
-    mConstraintSolver->prepareForSimulation();
+  if (mConstraintSolver) {
+    const auto filter = mConstraintSolver->getCollisionOption().collisionFilter;
+    if (mDeactivationOptions.mEnabled
+        && isReplayed(*mDeactivationState, filter.get())) {
+      // Warm the exact preparation queries without replacing a valid record.
+      auto recorder = std::make_shared<CollisionFilterRecorder>();
+      recorder->mTarget = filter.get();
+      const RecorderDisarm disarm{*recorder};
+      mConstraintSolver->prepareForSimulationWithQueryFilter(recorder);
+      if (!mDeactivationState->mRecorder) {
+        mDeactivationState->mRecorder = recorder;
+        recorder->mDecisions.clear();
+      } else {
+        mDeactivationState->mRecorder->mDecisions.reserve(
+            recorder->mDecisions.capacity());
+      }
+    } else {
+      mConstraintSolver->prepareForSimulation();
+    }
+  }
   reserveSimulationScratch();
   mSimulationModeStructuralVersion
       = dynamics::Skeleton::getGlobalStructuralVersion();
@@ -1794,7 +1828,10 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
   // While a custom handler is installed, every quiet dwell stays 0: no body
   // becomes a candidate (every rest path needs candidacy), and removing the
   // handler restarts the full sleep delay (#3056).
-  const bool canSleep = usesBuiltInContactSurfaceHandler(*mConstraintSolver);
+  const bool canSleep
+      = usesBuiltInContactSurfaceHandler(*mConstraintSolver)
+        && (!customFilterSleeping
+            || ownsSolverSkeletons(mSkeletons, *mConstraintSolver));
   constexpr double kSupportNormalMinVerticalComponent = 0.5;
   const auto& contacts = mConstraintSolver->getLastCollisionResult();
   const double gravityNorm = mGravity.norm();
@@ -2736,8 +2773,10 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
         = dynamics::Skeleton::getGlobalDeactivationStateVersion();
   }
 
-  const bool recordedStateUnchanged
+  bool recordedStateUnchanged
       = skeletonStateUnchanged && !deactivationStateChanged
+        && (!deactivationState.mStepCustomBodyFilter
+            || ownsSolverSkeletons(mSkeletons, *mConstraintSolver))
         && mLastStepRestingWorldStateCollisionDetector
                == collisionDetector.get()
         && mLastStepRestingWorldStateCollisionGroup == collisionGroup.get()
@@ -2754,6 +2793,14 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
         && mLastStepRestingWorldStateCollisionFilter == collisionFilter
         && mLastStepRestingWorldStateCollisionFilterRevision
                == getCollisionFilterSnapshotRevision(collisionFilter);
+
+  if (recordedStateUnchanged && collisionFilterReplayed
+      && !mLastStepRestingWorldSkeletonStates.empty()
+      && (restingOrCandidate || deactivationState.mRecordValid)) {
+    deactivationState.mReplayVerified
+        = replayRecord(deactivationState, *mConstraintSolver);
+    recordedStateUnchanged = deactivationState.mReplayVerified;
+  }
 
   if (!restingOrCandidate) {
     // Dwell rule: a between-step change to this World (a relaxed joint limit,
@@ -2777,17 +2824,11 @@ void World::wakeRestingSkeletonsIfStepStateChanged()
 
   // Adding a custom contact surface handler wakes resting bodies and clears
   // candidacy; see usesBuiltInContactSurfaceHandler().
-  bool worldStateUnchanged
+  const bool worldStateUnchanged
       = recordedStateUnchanged
         && usesBuiltInContactSurfaceHandler(*mConstraintSolver)
         && mLastStepRestingWorldStateCollisionFilterTrackable
         && (collisionFilterTrackable || collisionFilterReplayed);
-
-  if (worldStateUnchanged && collisionFilterReplayed) {
-    deactivationState.mReplayVerified
-        = replayRecord(deactivationState, *mConstraintSolver);
-    worldStateUnchanged = deactivationState.mReplayVerified;
-  }
 
   if (!worldStateUnchanged)
     wakeRestingSkeletonsForWorldChange();

@@ -484,6 +484,10 @@ protected:
 private:
   friend class simulation::World;
 
+  /// Prepares scratch with a query filter in a copy of the collision option.
+  void prepareForSimulationWithQueryFilter(
+      const std::shared_ptr<collision::CollisionFilter>& queryFilter);
+
   /// Same as solve(), with a query filter in a copy of the collision option.
   /// Returns false if the query may have stopped before visiting every pair.
   bool solveWithQueryFilter(

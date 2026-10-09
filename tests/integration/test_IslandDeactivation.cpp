@@ -4401,6 +4401,7 @@ TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
   {
     MoveStopper,
     IgnoreStopper,
+    CustomIgnoreStopper,
     RemoveWeld,
   };
   struct Row
@@ -4415,6 +4416,9 @@ TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
                false},
            Row{"stopper contact ignored one step before candidacy",
                Release::IgnoreStopper,
+               false},
+           Row{"custom filter ignores stopper one step before candidacy",
+               Release::CustomIgnoreStopper,
                false},
            Row{"weld removed while a sleep candidate",
                Release::RemoveWeld,
@@ -4433,6 +4437,12 @@ TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
     // A static plate just downhill of the box, or a weld to the world.
     auto stopper = createWeldedBox(
         "stopper", Eigen::Vector3d(0.1, 2.0, 0.3), Eigen::Vector3d::Zero());
+    auto customFilter = std::make_shared<TogglePairCollisionFilter>(
+        boxBody, stopper->getBodyNode(0), false);
+    if (row.release == Release::CustomIgnoreStopper) {
+      world->getConstraintSolver()->getCollisionOption().collisionFilter
+          = customFilter;
+    }
     auto placeStopper = [&](double x) {
       Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
       tf.linear() = ramp.tilt;
@@ -4478,6 +4488,9 @@ TEST(IslandDeactivation, ReleasedBoxSlidesDownRamp)
         filter->addBodyNodePairToBlackList(boxBody, stopper->getBodyNode(0));
         break;
       }
+      case Release::CustomIgnoreStopper:
+        customFilter->setIgnorePair(true);
+        break;
       case Release::RemoveWeld:
         world->getConstraintSolver()->removeConstraint(holder);
         break;

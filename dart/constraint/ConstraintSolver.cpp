@@ -1458,6 +1458,13 @@ bool ConstraintSolver::solveWithQueryFilter(
 //==============================================================================
 void ConstraintSolver::prepareForSimulation()
 {
+  prepareForSimulationWithQueryFilter(nullptr);
+}
+
+//==============================================================================
+void ConstraintSolver::prepareForSimulationWithQueryFilter(
+    const std::shared_ptr<collision::CollisionFilter>& queryFilter)
+{
   // solve() uses a non-empty previous active set as evidence that constraint
   // impulses may need clearing, and clears stale freeze flags and island
   // indices on a solve without active constraints only if the previous solve
@@ -1518,7 +1525,7 @@ void ConstraintSolver::prepareForSimulation()
     // collides, which keeps re-entry cheap in resting worlds.
     constexpr int kPreparationPasses = 2;
     for (int pass = 0; pass < kPreparationPasses; ++pass) {
-      updateConstraints(false);
+      updateConstraintsWithQueryFilter(false, queryFilter);
       {
         const ScopedAssignment<bool> deactivationActive(
             mDeactivationActive, false);

@@ -476,3 +476,57 @@ TEST(CustomFilterSleeping, StaticSupportBecomingMobileInvalidatesReadyCache)
     EXPECT_FALSE(sleeper->isResting());
   }
 }
+
+TEST(CustomFilterSleeping, SolverOnlySupportKeepsBodiesAwake)
+{
+  for (const bool replaceSleepingSupport : {false, true}) {
+    SCOPED_TRACE(
+        replaceSleepingSupport ? "replace support after sleep"
+                               : "solver-only support from the first step");
+    auto world = createWorld();
+    auto support = createFloor();
+    auto box = createBox(
+        "box", Eigen::Vector3d::Constant(0.2), Eigen::Vector3d(0.0, 0.0, 0.1));
+    world->addSkeleton(box);
+    if (replaceSleepingSupport) {
+      auto ownedSupport = createFloor();
+      world->addSkeleton(ownedSupport);
+      ASSERT_TRUE(settle(*world, *box));
+      world->getConstraintSolver()->removeSkeleton(ownedSupport);
+    }
+    world->getConstraintSolver()->addSkeleton(support);
+    ASSERT_EQ(
+        replaceSleepingSupport ? world->getNumSkeletons() : 2u,
+        world->getConstraintSolver()->getSkeletons().size());
+
+    std::size_t restingSteps = 0;
+    for (std::size_t i = 0; i < 1000; ++i) {
+      world->step();
+      restingSteps += box->isResting() ? 1u : 0u;
+    }
+    EXPECT_EQ(0u, restingSteps);
+    EXPECT_FALSE(box->isSleepCandidate());
+
+    const double startZ = box->getBodyNode(0)->getTransform().translation().z();
+    auto transform = support->getRootJoint()->getTransformFromParentBodyNode();
+    transform.translation().x() += 10.0;
+    support->getRootJoint()->setTransformFromParentBodyNode(transform);
+    for (std::size_t i = 0; i < 40; ++i)
+      world->step();
+    EXPECT_LT(
+        box->getBodyNode(0)->getTransform().translation().z(), startZ - 0.005);
+    EXPECT_FALSE(box->isResting());
+  }
+}
+
+TEST(CustomFilterSleeping, SolverOnlySupportPreservesDefaultFilterSleep)
+{
+  auto world = createWorld();
+  world->getConstraintSolver()->getCollisionOption().collisionFilter
+      = std::make_shared<collision::BodyNodeCollisionFilter>();
+  world->getConstraintSolver()->addSkeleton(createFloor());
+  auto box = createBox(
+      "box", Eigen::Vector3d::Constant(0.2), Eigen::Vector3d(0.0, 0.0, 0.1));
+  world->addSkeleton(box);
+  EXPECT_TRUE(settle(*world, *box));
+}

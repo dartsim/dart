@@ -163,6 +163,11 @@ public:
   }
 };
 
+class PreparedStepBodyNodeCollisionFilter final
+  : public dart::collision::BodyNodeCollisionFilter
+{
+};
+
 dart::dynamics::SkeletonPtr createBox(
     std::size_t index,
     const Eigen::Vector3d& position,
@@ -1429,6 +1434,28 @@ TEST(
 {
   expectNativeGlobalAndBaseAllocatorGate(
       PreparationMode::Explicit, "native_dart_explicit_first_post_bake_gate");
+}
+
+TEST(StepAllocation, NativeCustomFilterFirstPostBakeHasNoAllocation)
+{
+  const std::string label = "native_dart_custom_filter_first_post_bake_gate";
+  dart::test::CountingMemoryAllocator allocator;
+  dart::simulation::WorldConfig config(label);
+  config.baseAllocator = &allocator;
+  auto world = createStackedBoxesWorld(
+      1u, dart::collision::DARTCollisionDetector::create(), config);
+  world->getConstraintSolver()->getCollisionOption().collisionFilter
+      = std::make_shared<PreparedStepBodyNodeCollisionFilter>();
+  world->enterSimulationMode();
+  ASSERT_TRUE(world->isInSimulationMode());
+
+  const auto measurement = measureWorldStepsNow(world, allocator, 1);
+  reportMeasurement(label, measurement);
+  expectNoGlobalHeapAllocationsWhenReliable(label, measurement);
+  EXPECT_TRUE(hasNoCountingAllocatorGrowth(measurement));
+  if (!measurement.rawHeap.skipped) {
+    EXPECT_TRUE(hasNoRawHeapAllocations(measurement));
+  }
 }
 
 TEST(StepAllocation, DartThreadedReversedRigidDispatchRetainsScratch)
