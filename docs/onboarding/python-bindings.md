@@ -115,6 +115,15 @@ state, collision options, composite retrievers, IK/error methods and their
 properties, skeleton/body/shape state, contact inverse dynamics, and parser
 options/loaders. Collection stays conservative when native aliases exist
 outside the visible ownership graph or several owners share one Python pin.
+Direct traversal requires exclusive native ownership. Borrowed graph and field
+proxies, including body and shape nodes, cannot prove that exclusivity and
+retain their cycles until Python back-references are cleared explicitly. This
+prevents GC from clearing simulation state still used by a live native owner.
+Directly constructed `InverseKinematics` objects also keep an internal native
+reference and require that cleanup; `getOrCreateIK()` owners can prove
+exclusivity when no other native references remain. An IK cycle whose Python
+child also retains its Skeleton has the body's additional IK reference and
+therefore requires explicit back-reference cleanup too.
 A weak-owner registry alone cannot solve this: native `shared_ptr` aliases
 outside binding setters are invisible, and each shared pin owns only one
 Python reference. Reporting it once per owner would miscount GC references;

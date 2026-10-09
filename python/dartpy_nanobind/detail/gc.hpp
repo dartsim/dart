@@ -145,6 +145,17 @@ struct GcOwner<
 {
 };
 
+bool gc_owner_is_exclusive(PyObject* self, void* complete);
+
+template <class T>
+bool gc_owner_is_exclusive(PyObject* self, T* pointer)
+{
+  if constexpr (std::is_polymorphic_v<T>)
+    return gc_owner_is_exclusive(self, dynamic_cast<void*>(pointer));
+  else
+    return gc_owner_is_exclusive(self, static_cast<void*>(pointer));
+}
+
 template <class T>
 struct GcSlots
 {
@@ -154,8 +165,11 @@ struct GcSlots
     if (!nanobind::inst_ready(self))
       return 0;
     try {
+      auto* owner = nanobind::inst_ptr<T>(self);
+      if (!gc_owner_is_exclusive(self, owner))
+        return 0;
       GcEdges edges;
-      enumerate_gc(gc_owner(*nanobind::inst_ptr<T>(self)), edges);
+      enumerate_gc(gc_owner(*owner), edges);
       return edges.traverse(visit, arg);
     } catch (...) {
       PyErr_SetString(PyExc_RuntimeError, "DART GC traversal failed");
@@ -167,8 +181,11 @@ struct GcSlots
     if (!nanobind::inst_ready(self))
       return 0;
     try {
+      auto* owner = nanobind::inst_ptr<T>(self);
+      if (!gc_owner_is_exclusive(self, owner))
+        return 0;
       GcEdges edges;
-      enumerate_gc(gc_owner(*nanobind::inst_ptr<T>(self)), edges);
+      enumerate_gc(gc_owner(*owner), edges);
       edges.clear();
       return 0;
     } catch (...) {

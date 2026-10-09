@@ -22,7 +22,13 @@ KINDS = (
 
 def case(kind):
     if kind not in KINDS[-2:]:
-        return make_case(kind)
+        child, owner = make_case(kind)
+        if kind == "Solver->InverseKinematics":
+            # The strict probe needs one native IK owner. Keep its node alive
+            # through child.skeleton, but release the BodyNode's additional IK
+            # owner. The body-owned cycle has a separate retention regression.
+            child.skeleton.getBodyNode(0).clearIK()
+        return child, owner
     owner = dart.simulation.World()
     if kind == "Shape->World":
 

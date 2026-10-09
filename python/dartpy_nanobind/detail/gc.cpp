@@ -74,6 +74,15 @@ void descend(
 }
 } // namespace
 
+bool gc_owner_is_exclusive(PyObject* self, void* complete)
+{
+  if (auto owner = native_owner(complete))
+    return owner.use_count() == 2; // Wrapper payload and this lookup.
+  // shortcut: BodyNodePtr hides aliases, so borrowed proxies stay conservative;
+  // upgrade when a GC-visible native ownership graph can prove exclusivity.
+  return nb::inst_state(self).second;
+}
+
 int GcEdges::traverse(visitproc visit, void* arg) const
 {
   auto counts = edge_counts(*this);

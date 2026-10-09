@@ -102,6 +102,36 @@ def test_task_space_reference_frame_cycle_collects(kind):
     )
 
 
+def test_direct_ik_factory_cycle_requires_explicit_cleanup():
+    """The factory's affiliation holder prevents proving exclusive ownership."""
+    run_isolated(
+        f"""
+        import weakref
+        class Frame(dart.dynamics.SimpleFrame):
+            pass
+        skeleton = dart.dynamics.Skeleton()
+        joint, body = skeleton.createFreeJointAndBodyNodePair()
+        frame = Frame()
+        frame.setName('factory_cycle_frame')
+        owner = dart.dynamics.InverseKinematics(body)
+        owner.getErrorMethod().setReferenceFrame(frame)
+        frame.owner = owner
+        refs = weakref.ref(frame), weakref.ref(owner)
+        del frame, owner, skeleton, joint, body
+        gc.collect()
+        # Nanobind keeps both native factory ownership and node affiliation.
+        # Their shared references cannot prove that clearing native edges is safe.
+        assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
+        if {IS_NANOBIND!r}:
+            assert refs[1]().getErrorMethod().getReferenceFrame() is refs[0]()
+            assert refs[0]().getName() == 'factory_cycle_frame'
+            refs[0]().owner = None
+        gc.collect()
+        assert all(ref() is None for ref in refs)
+        """
+    )
+
+
 @pytest.mark.parametrize("kind", ["ik", "region", "unique_properties", "properties"])
 def test_task_space_live_native_alias_preserves_reference_frame(kind):
     run_isolated(
@@ -387,6 +417,34 @@ def test_all_eight_native_ownership_cycles():
     )
 
 
+def test_body_owned_ik_solver_cycle_requires_explicit_cleanup():
+    """The retained node graph owns the IK in addition to its Python wrapper."""
+    tools = Path(__file__).resolve().parents[4] / "scripts/nanobind"
+    run_isolated(
+        f"""
+        import sys, weakref
+        sys.path.insert(0, {str(tools)!r})
+        from probe_cycles import make_case
+        for _ in range(20):
+            child, owner = make_case('Solver->InverseKinematics')
+            refs = weakref.ref(child), weakref.ref(owner)
+            del child, owner
+            gc.collect()
+            assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
+            if {IS_NANOBIND!r}:
+                assert refs[1]().getSolver() is refs[0]()
+                assert refs[0]().owner is refs[1]()
+                assert refs[0]().skeleton.getBodyNode(0).getIK(False) is refs[1]()
+                # Release the native graph's extra IK owner, then disconnect
+                # the Python backedge before destroying the affiliated node.
+                refs[0]().skeleton.getBodyNode(0).clearIK()
+                refs[0]().owner = None
+            gc.collect()
+            assert all(ref() is None for ref in refs)
+        """
+    )
+
+
 @pytest.mark.skipif(
     not IS_NANOBIND,
     reason="native-owner tp_clear slots are implemented by the nanobind binder",
@@ -490,6 +548,136 @@ def test_shared_skeleton_in_live_world_preserves_python_shape():
     del fetched, live
     gc.collect()
     assert ref() is None
+
+
+@pytest.mark.parametrize(
+    "owner_kind", ["skeleton", "body", "shape_frame", "simple_frame"]
+)
+def test_live_world_preserves_shape_with_direct_graph_wrapper_backref(owner_kind):
+    run_isolated(
+        f"""
+        import weakref
+        class Shape(dart.dynamics.BoxShape):
+            def getVolume(self):
+                return super().getVolume() + self.offset
+        shape = Shape([1, 2, 3])
+        shape.offset = 17
+        shape.label = 'retained_python_state'
+        live = dart.simulation.World()
+        if {owner_kind!r} == 'simple_frame':
+            frame = dart.dynamics.SimpleFrame()
+            frame.setShape(shape)
+            shape.owner = frame
+            owner_ref = weakref.ref(frame)
+            live.addSimpleFrame(frame)
+            del frame
+        else:
+            skeleton = dart.dynamics.Skeleton()
+            joint, body = skeleton.createFreeJointAndBodyNodePair()
+            frame = body.createShapeNode(shape)
+            owner = {{'skeleton': skeleton, 'body': body, 'shape_frame': frame}}[{owner_kind!r}]
+            shape.owner = owner
+            owner_ref = weakref.ref(owner)
+            live.addSkeleton(skeleton)
+            del owner, frame, joint, body, skeleton
+        shape_ref = weakref.ref(shape)
+        del shape
+        # The World owns native graph objects without keeping their Python
+        # wrappers as external roots. GC must preserve that live native state.
+        for _ in range(3):
+            gc.collect()
+        if {owner_kind!r} == 'simple_frame':
+            fetched = live.getSimpleFrame(0).getShape()
+        else:
+            fetched = live.getSkeleton(0).getBodyNode(0).getShapeNode(0).getShape()
+        assert fetched is not None, 'GC cleared a shape still owned by a live World'
+        assert dart.dynamics.Shape.getVolume(fetched) == 6
+        assert tuple(ref() is not None for ref in (shape_ref, owner_ref)) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
+        if {IS_NANOBIND!r}:
+            assert fetched is shape_ref()
+            assert fetched.owner is owner_ref()
+            assert fetched.label == 'retained_python_state'
+            assert fetched.getVolume() == 23
+            # Shared native graph roots may retain the Python backedge
+            # conservatively. Disconnect it before destroying the live graph.
+            fetched.owner = None
+        else:
+            assert fetched.getVolume() == 6
+        del fetched, live
+        gc.collect()
+        assert shape_ref() is None and owner_ref() is None
+        """
+    )
+
+
+def test_live_world_preserves_constraint_with_borrowed_solver_backref():
+    run_isolated(
+        f"""
+        import weakref
+        class Constraint(dart.constraint.BallJointConstraint):
+            pass
+        live = dart.simulation.World()
+        skeleton = dart.dynamics.Skeleton()
+        _, first = skeleton.createFreeJointAndBodyNodePair()
+        _, second = skeleton.createFreeJointAndBodyNodePair()
+        child = Constraint(first, second, [0, 0, 0])
+        child.skeleton = skeleton
+        child.label = 'retained_constraint_state'
+        owner = live.getConstraintSolver()
+        owner.addConstraint(child)
+        child.owner = owner
+        live.addSkeleton(skeleton)
+        refs = weakref.ref(child), weakref.ref(owner)
+        del child, owner, first, second, _, skeleton
+        for _ in range(3):
+            gc.collect()
+        assert live.getConstraintSolver().getNumConstraints() == 1
+        fetched = live.getConstraintSolver().getConstraint(0)
+        assert fetched.getDimension() == 3
+        assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
+        if {IS_NANOBIND!r}:
+            assert fetched is refs[0]()
+            assert fetched.owner is refs[1]()
+            assert fetched.label == 'retained_constraint_state'
+            fetched.owner = None
+        del fetched, live
+        gc.collect()
+        assert all(ref() is None for ref in refs)
+        """
+    )
+
+
+def test_live_solver_preserves_objective_with_native_problem_backref():
+    run_isolated(
+        f"""
+        import weakref
+        class Function(dart.optimizer.Function):
+            def eval(self, x):
+                return float(x[0] ** 2 + self.offset)
+        owner = dart.optimizer.Problem(1)
+        child = Function()
+        child.offset = 5
+        child.owner = owner
+        owner.setObjective(child)
+        live = dart.optimizer.GradientDescentSolver(owner)
+        refs = weakref.ref(child), weakref.ref(owner)
+        del child, owner
+        for _ in range(3):
+            gc.collect()
+        assert live.getProblem().getDimension() == 1
+        fetched = live.getProblem().getObjective()
+        assert fetched is not None, 'GC cleared the live solver objective'
+        assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
+        if {IS_NANOBIND!r}:
+            assert fetched is refs[0]()
+            assert fetched.owner is refs[1]()
+            assert fetched.eval([2.0]) == 9
+            fetched.owner = None
+        del fetched, live
+        gc.collect()
+        assert all(ref() is None for ref in refs)
+        """
+    )
 
 
 def test_multiple_cpp_owners_preserve_a_shared_python_pin_until_cleanup():

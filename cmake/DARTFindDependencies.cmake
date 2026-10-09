@@ -156,6 +156,20 @@ if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
   endif()
 endif()
 
+if(
+  DART_BUILD_DARTPY
+  AND DART_DARTPY_BINDER STREQUAL "nanobind"
+  AND Python_EXECUTABLE
+)
+  # Share nanobind's selected interpreter with tests, examples, and tutorials.
+  set(
+    Python3_EXECUTABLE
+    "${Python_EXECUTABLE}"
+    CACHE FILEPATH
+    "Python interpreter shared with nanobind"
+    FORCE
+  )
+endif()
 if(DART_BUILD_DARTPY)
   find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter Development)
 else()
