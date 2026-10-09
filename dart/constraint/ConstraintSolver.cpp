@@ -710,7 +710,10 @@ std::size_t trimContactsFairly(
 // budget is applied after collide() returns because detectors may drop
 // contacts per pair after their base class's collide() (gz-physics'
 // GzOdeCollisionDetector does), which hides saturation from the base class.
-void collideWithContactBudget(
+// Returns false when the query may have stopped before asking the filter
+// about every candidate pair. ODE and Bullet visit every pair anyway, so this
+// is conservative for them.
+bool collideWithContactBudget(
     collision::CollisionGroup& group,
     const collision::CollisionOption& option,
     collision::CollisionResult& result)
@@ -719,7 +722,7 @@ void collideWithContactBudget(
   if (cap <= 1u || cap == std::numeric_limits<std::size_t>::max()) {
     // Binary checks and unlimited budgets have nothing to share.
     group.collide(option, &result);
-    return;
+    return result.getNumContacts() < cap;
   }
 
   const std::size_t bound = getContactDetectionBound(cap);
@@ -727,7 +730,7 @@ void collideWithContactBudget(
 
   const std::size_t demand = result.getNumContacts();
   if (demand <= cap)
-    return;
+    return true;
 
   const std::size_t numPairs = trimContactsFairly(result, cap);
 
@@ -756,6 +759,7 @@ void collideWithContactBudget(
                 "warning is printed once per process.\n";
     }
   }
+  return demand < bound;
 }
 
 } // namespace
@@ -1351,6 +1355,13 @@ LCPSolver* ConstraintSolver::getLCPSolver() const
 //==============================================================================
 void ConstraintSolver::solve()
 {
+  solveWithQueryFilter(nullptr);
+}
+
+//==============================================================================
+bool ConstraintSolver::solveWithQueryFilter(
+    const std::shared_ptr<collision::CollisionFilter>& queryFilter)
+{
   const bool profileRecording
       = dart::common::profile::isProfileRecordingEnabled();
   DART_PROFILE_SCOPED_IF_N(profileRecording, "ConstraintSolver::solve");
@@ -1410,15 +1421,16 @@ void ConstraintSolver::solve()
   }
 
   // Update constraints and collect active constraints
+  bool contactQueryComplete;
   {
     DART_PROFILE_SCOPED_IF_N(
         profileRecording, "ConstraintSolver::updateConstraints");
-    updateConstraints();
+    contactQueryComplete = updateConstraintsWithQueryFilter(true, queryFilter);
   }
 
   if (mActiveConstraints.empty()) {
     clearInactiveConstrainedGroups();
-    return;
+    return contactQueryComplete;
   }
 
   // Build constrained groups
@@ -1440,6 +1452,7 @@ void ConstraintSolver::solve()
         profileRecording, "ConstraintSolver::solvePositionConstrainedGroups");
     solvePositionConstrainedGroups();
   }
+  return contactQueryComplete;
 }
 
 //==============================================================================
@@ -1664,6 +1677,14 @@ bool ConstraintSolver::checkAndAddConstraint(
 //==============================================================================
 void ConstraintSolver::updateConstraints(bool updateManualConstraints)
 {
+  updateConstraintsWithQueryFilter(updateManualConstraints, nullptr);
+}
+
+//==============================================================================
+bool ConstraintSolver::updateConstraintsWithQueryFilter(
+    bool updateManualConstraints,
+    const std::shared_ptr<collision::CollisionFilter>& queryFilter)
+{
   // Clear previous active constraint list
   mActiveConstraints.clear();
   mActiveConstraintsAllSingleReactiveContacts = true;
@@ -1706,8 +1727,17 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
         mDeactivationActive, hasAwakeMobileSkeleton);
   }
 
-  collideWithContactBudget(
-      *mCollisionGroup, mCollisionOption, mCollisionResult);
+  bool contactQueryComplete;
+  if (queryFilter) {
+    // Keep the user's collision option intact for downstream readers.
+    auto queryOption = mCollisionOption;
+    queryOption.collisionFilter = queryFilter;
+    contactQueryComplete = collideWithContactBudget(
+        *mCollisionGroup, queryOption, mCollisionResult);
+  } else {
+    contactQueryComplete = collideWithContactBudget(
+        *mCollisionGroup, mCollisionOption, mCollisionResult);
+  }
 
   if (restingContactFilter != nullptr)
     restingContactFilter->setSolverRestingContactFilterActive(false, false);
@@ -2681,6 +2711,7 @@ void ConstraintSolver::updateConstraints(bool updateManualConstraints)
       }
     }
   }
+  return contactQueryComplete;
 }
 
 //==============================================================================
