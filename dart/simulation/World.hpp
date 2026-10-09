@@ -276,9 +276,10 @@ public:
   /// that this function does not return the collision checking result of
   /// World::checkCollision().
   ///
-  /// With automatic deactivation, the result also holds the contacts of
-  /// resting bodies as solved in the step that put them to sleep, forces
-  /// included, so it can hold more contacts than
+  /// With automatic deactivation and a custom BodyNodeCollisionFilter that
+  /// supports sleeping, the result also holds the contacts of resting bodies
+  /// as solved in the step that put them to sleep, forces included, so it can
+  /// hold more contacts than
   /// CollisionOption::maxNumContacts.
   /// ConstraintSolver::getLastCollisionResult() holds only the contacts the
   /// solver computed in the last step. The returned reference stays valid until

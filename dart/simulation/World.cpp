@@ -575,6 +575,17 @@ bool isReplayed(
 }
 
 //==============================================================================
+// Custom-filter sleepers report no residual acceleration from their last
+// solve. Joint resets leave acceleration-actuator commands alone.
+void clearRestingAccelerations(
+    dynamics::Skeleton& skeleton, bool updateVelocity = false)
+{
+  for (std::size_t joint = 0; joint < skeleton.getNumJoints(); ++joint)
+    skeleton.getJoint(joint)->resetAccelerations();
+  skeleton.computeForwardKinematics(false, updateVelocity, true);
+}
+
+//==============================================================================
 // Invalidates the previous record and arms the recorder for `filter`.
 CollisionFilterRecorder& armRecorder(
     WorldDeactivationState& state, const collision::CollisionFilter* filter)
@@ -693,14 +704,15 @@ void sortRetainedPairs(WorldDeactivationState& state)
 }
 
 //==============================================================================
-// Runs at the end of every full step with deactivation on. Whenever the set of
-// resting skeletons changes, drops the retained contacts of pairs that are no
-// longer resting and retains this step's contacts of the pairs that froze in
-// it, with the forces of their final solve. A resting pair missing from that
-// solve's result (a one-frame contact miss) waits for the next change.
-// `keep` is false when nothing rests, when the collision group changed during
-// the step (the solver result may name freed objects), or when the collision
-// filter is untracked (its bodies are woken at the next step start).
+// Runs at the end of every full step with deactivation on. Custom body filters
+// retain contacts whenever the set of resting skeletons changes: drop pairs
+// that are no longer resting and retain this step's contacts of the pairs that
+// froze in it, with the forces of their final solve. A resting pair missing
+// from that solve's result (a one-frame contact miss) waits for the next
+// change. `keep` is false when nothing rests, when the collision group changed
+// during the step (the solver result may name freed objects), or when the
+// collision filter cannot preserve sleep (its bodies wake at the next step
+// start).
 void updateRetainedContacts(
     WorldDeactivationState& state,
     const constraint::ConstraintSolver& solver,
@@ -856,12 +868,17 @@ void World::reserveSimulationScratch()
   }
   mLastStepRestingWorldSkeletonStates.reserve(numSkeletons);
 
-  const auto contactCapacity
-      = mConstraintSolver->getLastCollisionResult().getContacts().capacity();
-  mDeactivationState->mRetainedContacts.reserve(contactCapacity);
-  mDeactivationState->mRetainedPairs.reserve(contactCapacity);
-  mDeactivationState->mRestingAtLastUpdate.reserve(numSkeletons);
-  mDeactivationState->mIslandJointDwellReady.reserve(numSkeletons);
+  if (mDeactivationOptions.mEnabled
+      && isCustomBodyNodeFilter(
+          *mDeactivationState,
+          mConstraintSolver->getCollisionOption().collisionFilter.get())) {
+    const auto contactCapacity
+        = mConstraintSolver->getLastCollisionResult().getContacts().capacity();
+    mDeactivationState->mRetainedContacts.reserve(contactCapacity);
+    mDeactivationState->mRetainedPairs.reserve(contactCapacity);
+    mDeactivationState->mRestingAtLastUpdate.reserve(numSkeletons);
+    mDeactivationState->mIslandJointDwellReady.reserve(numSkeletons);
+  }
 }
 
 //==============================================================================
@@ -1455,6 +1472,9 @@ void World::step(bool _resetCommand)
     return;
   }
 
+  const bool customFilterSleeping = isCustomBodyNodeFilter(
+      *mDeactivationState,
+      mConstraintSolver->getCollisionOption().collisionFilter.get());
   const bool lastStepHadNoContacts
       = mConstraintSolver->getLastCollisionResult().getNumContacts() == 0;
   bool allRestingFastPathReady = false;
@@ -1467,6 +1487,12 @@ void World::step(bool _resetCommand)
   }
 
   if (deactivationEnabled && lastStepHadNoContacts && allRestingFastPathReady) {
+    if (customFilterSleeping) {
+      for (const auto& skel : mSkeletons) {
+        if (skel->isMobile() && skel->isResting())
+          clearRestingAccelerations(*skel);
+      }
+    }
     mTime += mTimeStep;
     mFrame++;
     if (!mLastStepRestingWorldStateValid)
@@ -1635,6 +1661,8 @@ void World::step(bool _resetCommand)
                   disturbedThisStep[i] = 1;
               }
             } else {
+              if (customFilterSleeping)
+                clearRestingAccelerations(*skel);
               return;
             }
           }
@@ -1659,10 +1687,10 @@ void World::step(bool _resetCommand)
             // Same per-DOF setter path as setVelocities(), without a vector.
             for (std::size_t dof = 0; dof < skel->getNumDofs(); ++dof)
               skel->setVelocity(dof, 0.0);
-            // The final impulse added acceleration; a frozen body has none.
-            for (std::size_t joint = 0; joint < skel->getNumJoints(); ++joint)
-              skel->getJoint(joint)->resetAccelerations();
-            skel->computeForwardKinematics(false, true, true);
+            if (customFilterSleeping)
+              clearRestingAccelerations(*skel, true);
+            else
+              skel->computeForwardKinematics(false, true, false);
           }
 
           if (_resetCommand) {
@@ -1702,9 +1730,8 @@ void World::step(bool _resetCommand)
       deactivationState,
       *mConstraintSolver,
       mSkeletons,
-      collisionGroupUnchanged && hasRestingMobileSkeleton()
-          && (isCollisionFilterSnapshotTrackable(collisionFilter.get())
-              || isReplayed(deactivationState, collisionFilter.get())));
+      customFilterSleeping && collisionGroupUnchanged
+          && hasRestingMobileSkeleton());
 }
 
 //==============================================================================
@@ -2243,6 +2270,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 
       skel->setIslandIndex(0);
       skel->setResting(true);
+      if (customFilterSleeping)
+        clearRestingAccelerations(*skel);
     };
 
     tryRestOnInactiveSupport(bodyNode1, bodyNode2);
@@ -2266,6 +2295,8 @@ void World::updateRestStates(const std::vector<char>& disturbedThisStep)
 
     skel->setIslandIndex(0);
     skel->setResting(true);
+    if (customFilterSleeping)
+      clearRestingAccelerations(*skel);
   }
 }
 
@@ -3230,6 +3261,8 @@ const collision::CollisionResult& World::getLastCollisionResult() const
   auto& state = *mDeactivationState;
   const auto& solved = mConstraintSolver->getLastCollisionResult();
   if (!mDeactivationOptions.mEnabled
+      || !isCustomBodyNodeFilter(
+          state, mConstraintSolver->getCollisionOption().collisionFilter.get())
       || !isRetentionAlive(state, *mConstraintSolver)) {
     return solved;
   }

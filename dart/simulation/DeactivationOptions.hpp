@@ -56,6 +56,8 @@ namespace simulation {
 /// bodies awake. Set DART_CUSTOM_FILTER_SLEEPING to 0, false, off or no
 /// (case-insensitive) before constructing a World to disable this replay.
 /// This temporary escape hatch for 6.20.x leaves default filters unchanged.
+/// Custom BodyNodeCollisionFilter sleepers report zero acceleration and retain
+/// their last solved contacts through World::getLastCollisionResult().
 struct DeactivationOptions
 {
   /// Whether automatic deactivation is enabled. Defaults to true so resting

@@ -1050,7 +1050,7 @@ ContactStats collectContactStats(const dart::simulation::WorldPtr& world)
   ContactStats stats;
   const double sleepContactPenetrationTolerance = dart::constraint::
       ConstraintSolver::getAutomaticSleepingContactPenetrationTolerance();
-  const auto& result = world->getConstraintSolver()->getLastCollisionResult();
+  const auto& result = world->getLastCollisionResult();
   stats.contacts = result.getNumContacts();
 
   std::unordered_map<ContactPair, std::size_t, ContactPairHash> pairs;
@@ -1192,8 +1192,7 @@ FinalStateDigest collectFinalStateDigest(
   mixDigest(digest, static_cast<std::uint64_t>(contacts.pairs));
   mixDigest(digest, static_cast<std::uint64_t>(contacts.maxPairContacts));
   mixDigest(digest, contacts.maxPenetration);
-  for (const auto& contact :
-       world->getConstraintSolver()->getLastCollisionResult().getContacts()) {
+  for (const auto& contact : world->getLastCollisionResult().getContacts()) {
     for (const auto* vector :
          {&contact.point, &contact.normal, &contact.force}) {
       for (Eigen::Index j = 0; j < vector->size(); ++j)
@@ -1321,8 +1320,7 @@ void printGazeboDiagnostics(
             << world.getConstraintSolver()->getCollisionOption().maxNumContacts
             << " demand_pairs " << demand.pairs << " starved_pairs "
             << contact_scene::countStarvedPairs(
-                   demand,
-                   world.getConstraintSolver()->getLastCollisionResult())
+                   demand, world.getLastCollisionResult())
             << " sunk " << formatSunkCount(world, groundTop)
             << " changed_poses " << changedPoses << "\n";
 }
@@ -2903,8 +2901,7 @@ int runHeadless(
     std::cout << "Final Demand Pairs: " << gazeboDemand.pairs << "\n";
     std::cout << "Final Starved Pairs: "
               << contact_scene::countStarvedPairs(
-                     gazeboDemand,
-                     world->getConstraintSolver()->getLastCollisionResult())
+                     gazeboDemand, world->getLastCollisionResult())
               << "\n";
     std::cout << "Final Sunk Bodies:  " << formatSunkCount(*world, groundTop)
               << " / " << sleep.mobile << " mobile skeletons\n";
