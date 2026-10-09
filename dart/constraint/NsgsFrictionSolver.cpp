@@ -42,14 +42,12 @@
 
 #include <cassert>
 #include <cmath>
-#include <cstring>
 
 namespace dart {
 namespace constraint {
 namespace {
 
 using detail::FrictionConeLaw;
-using detail::FrictionContactRows;
 
 struct NsgsThreadScratch
 {
@@ -63,40 +61,6 @@ NsgsThreadScratch& nsgsThreadScratch()
 {
   static thread_local NsgsThreadScratch scratch;
   return scratch;
-}
-
-double rowVelocity(
-    int row,
-    int n,
-    int stride,
-    const double* A,
-    const double* x,
-    const double* b)
-{
-  double velocity = -b[row];
-  for (int j = 0; j < n; ++j)
-    velocity += A[std::size_t(row) * stride + j] * x[j];
-  return velocity;
-}
-
-double projectRow(
-    int row,
-    double value,
-    const double* x,
-    const double* lo,
-    const double* hi,
-    const int* findex)
-{
-  double lower = lo[row];
-  double upper = hi[row];
-  if (findex[row] >= 0 && findex[row] != row) {
-    upper = hi[row] * x[findex[row]];
-    lower = -upper;
-  }
-  if (std::isnan(lower) || std::isnan(upper))
-    return std::numeric_limits<double>::quiet_NaN();
-  // Preserve PGS's clamp order even for a malformed coupled component.
-  return value > upper ? upper : value < lower ? lower : value;
 }
 
 bool updateRow(
@@ -113,158 +77,12 @@ bool updateRow(
   const double diagonal = A[std::size_t(row) * stride + row];
   const double value
       = diagonal > 0.0
-            ? x[row] - rowVelocity(row, n, stride, A, x, b) / diagonal
+            ? x[row] - detail::rowVelocity(row, n, stride, A, x, b) / diagonal
             : x[row];
   if (!std::isfinite(value))
     return false;
-  x[row] = projectRow(row, value, x, lo, hi, findex);
+  x[row] = detail::projectRow(row, value, x, lo, hi, findex);
   return std::isfinite(x[row]);
-}
-
-Eigen::Vector3d contactImpulse(
-    const FrictionContactRows& contact, const double* x)
-{
-  Eigen::Vector3d impulse = Eigen::Vector3d::Zero();
-  impulse[0] = x[contact.normalRow];
-  for (int axis = 0; axis < 2; ++axis)
-    if (contact.tangentRows[axis] >= 0)
-      impulse[axis + 1] = x[contact.tangentRows[axis]];
-  return impulse;
-}
-
-std::array<int, 3> contactIndices(const FrictionContactRows& contact)
-{
-  return {{contact.normalRow, contact.tangentRows[0], contact.tangentRows[1]}};
-}
-
-bool projectStartingIterate(
-    int n,
-    double* x,
-    const double* lo,
-    const double* hi,
-    const int* findex,
-    const NsgsThreadScratch& scratch,
-    FrictionSolveStats& stats)
-{
-  const auto& classification = scratch.classification;
-  for (int row = 0; row < n; ++row) {
-    const int index = scratch.rowContacts[row];
-    if (index < 0) {
-      x[row] = projectRow(row, x[row], x, lo, hi, findex);
-      if (!std::isfinite(x[row]))
-        return false;
-      continue;
-    }
-    const auto& contact = classification.contacts[index];
-    if (row != classification.contactRows[contact.rowOffset])
-      continue;
-    if (contact.usePgs) {
-      x[contact.normalRow] = projectRow(
-          contact.normalRow, x[contact.normalRow], x, lo, hi, findex);
-      if (!std::isfinite(x[contact.normalRow]))
-        return false;
-      for (std::size_t j = 0; j < contact.rowCount; ++j) {
-        const int tangent = classification.contactRows[contact.rowOffset + j];
-        if (tangent == contact.normalRow)
-          continue;
-        x[tangent] = projectRow(tangent, x[tangent], x, lo, hi, findex);
-        if (!std::isfinite(x[tangent]))
-          return false;
-      }
-    } else {
-      // Cached box impulses may lie outside the newly selected circle. The
-      // initial best iterate must already satisfy the selected cone at a cap.
-      const auto impulse = contactImpulse(contact, x);
-      if (detail::coneViolation(impulse, contact.cone) <= 0.0)
-        continue;
-      const auto result = detail::solveConeQp(
-          Eigen::Matrix3d::Identity(), -impulse, contact.cone);
-      stats.numLocalFallbacks += result.numLocalFallbacks;
-      if (!result.certified || !result.impulse.allFinite())
-        return false;
-      const auto indices = contactIndices(contact);
-      for (int axis = 0; axis < 3; ++axis)
-        if (indices[axis] >= 0)
-          x[indices[axis]] = result.impulse[axis];
-    }
-  }
-  return true;
-}
-
-double scalarViolation(
-    int row,
-    int n,
-    int stride,
-    const double* A,
-    const double* x,
-    const double* b,
-    const double* lo,
-    const double* hi,
-    const int* findex)
-{
-  const double diagonal = A[std::size_t(row) * stride + row];
-  const double velocity = rowVelocity(row, n, stride, A, x, b);
-  if (!std::isfinite(velocity))
-    return std::numeric_limits<double>::infinity();
-  // A zero row still has complementarity conditions; a unit step tests those
-  // without dividing by zero. Positive diagonals use the specified scaling.
-  const double scale = diagonal > 0.0 ? diagonal : 1.0;
-  const double argument = x[row] - velocity / scale;
-  if (!std::isfinite(argument))
-    return std::numeric_limits<double>::infinity();
-  const double violation
-      = scale * std::abs(x[row] - projectRow(row, argument, x, lo, hi, findex));
-  return std::isfinite(violation) ? violation
-                                  : std::numeric_limits<double>::infinity();
-}
-
-double violation(
-    int n,
-    int stride,
-    const double* A,
-    const double* x,
-    const double* b,
-    const double* lo,
-    const double* hi,
-    const int* findex,
-    const detail::FrictionRowClassification& classification,
-    NsgsFrictionSolver::Law law)
-{
-  // Local solves may shift singular blocks; convergence and best-iterate
-  // selection must judge the unregularized LCP assembled by the caller.
-  double largest = 0.0;
-  for (int row : classification.scalarRows)
-    largest = std::max(
-        largest, scalarViolation(row, n, stride, A, x, b, lo, hi, findex));
-  for (const auto& contact : classification.contacts) {
-    if (contact.usePgs) {
-      for (std::size_t j = 0; j < contact.rowCount; ++j) {
-        const int row = classification.contactRows[contact.rowOffset + j];
-        largest = std::max(
-            largest, scalarViolation(row, n, stride, A, x, b, lo, hi, findex));
-      }
-      continue;
-    }
-    Eigen::Vector3d velocity = Eigen::Vector3d::Zero();
-    double maxDiagonal = 0.0;
-    const auto indices = contactIndices(contact);
-    for (int axis = 0; axis < 3; ++axis) {
-      const int row = indices[axis];
-      if (row < 0)
-        continue;
-      velocity[axis] = rowVelocity(row, n, stride, A, x, b);
-      maxDiagonal = std::max(maxDiagonal, A[std::size_t(row) * stride + row]);
-    }
-    largest = std::max(
-        largest,
-        detail::contactViolation(
-            contactImpulse(contact, x),
-            velocity,
-            maxDiagonal > 0.0 ? maxDiagonal : 1.0,
-            contact.cone,
-            law == NsgsFrictionSolver::Law::Associated));
-  }
-  return largest;
 }
 
 bool sweep(
@@ -309,7 +127,8 @@ bool sweep(
           const double value
               = diagonal > 0.0
                     ? x[tangent]
-                          - rowVelocity(tangent, n, stride, A, x, b) / diagonal
+                          - detail::rowVelocity(tangent, n, stride, A, x, b)
+                                / diagonal
                     : x[tangent];
           const double bound = contact.cone.mu[axis] * x[contact.normalRow];
           if (!std::isfinite(value) || !std::isfinite(bound))
@@ -320,15 +139,15 @@ bool sweep(
         }
       }
     } else {
-      const auto indices = contactIndices(contact);
+      const auto indices = detail::contactIndices(contact);
       Eigen::Matrix3d block = Eigen::Matrix3d::Zero();
       Eigen::Vector3d freeVelocity = Eigen::Vector3d::Zero();
-      const Eigen::Vector3d oldImpulse = contactImpulse(contact, x);
+      const Eigen::Vector3d oldImpulse = detail::contactImpulse(contact, x);
       for (int axis = 0; axis < 3; ++axis) {
         const int localRow = indices[axis];
         if (localRow < 0)
           continue;
-        freeVelocity[axis] = rowVelocity(localRow, n, stride, A, x, b);
+        freeVelocity[axis] = detail::rowVelocity(localRow, n, stride, A, x, b);
         for (int column = 0; column < 3; ++column)
           if (indices[column] >= 0)
             block(axis, column)
@@ -358,41 +177,13 @@ bool sweep(
     }
     if (!contact.usePgs) {
       assert(
-          detail::coneViolation(contactImpulse(contact, x), contact.cone)
+          detail::coneViolation(
+              detail::contactImpulse(contact, x), contact.cone)
           <= 1e-9 * (1.0 + std::abs(x[contact.normalRow])));
     }
   }
   return true;
 }
-
-#if DART_BUILD_MODE_DEBUG
-std::uint64_t inputFingerprint(
-    int n,
-    int stride,
-    const double* A,
-    const double* b,
-    const double* lo,
-    const double* hi,
-    const int* findex)
-{
-  std::uint64_t hash = 14695981039346656037ull;
-  const auto append = [&](double value) {
-    std::uint64_t bits;
-    static_assert(sizeof(bits) == sizeof(value));
-    std::memcpy(&bits, &value, sizeof(bits));
-    hash = (hash ^ bits) * 1099511628211ull;
-  };
-  for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < n; ++j)
-      append(A[std::size_t(i) * stride + j]);
-    append(b[i]);
-    append(lo[i]);
-    append(hi[i]);
-    hash = (hash ^ std::uint64_t(findex[i])) * 1099511628211ull;
-  }
-  return hash;
-}
-#endif
 
 } // namespace
 
@@ -460,8 +251,9 @@ bool NsgsFrictionSolver::solve(
       if (!std::isfinite(A[std::size_t(i) * stride + j]))
         return finish(false, false, infinity);
   }
-#if DART_BUILD_MODE_DEBUG
-  const auto fingerprint = inputFingerprint(n, stride, A, b, lo, hi, findex);
+#ifndef NDEBUG
+  const auto fingerprint
+      = detail::lcpFingerprint(n, stride, A, b, lo, hi, findex);
 #endif
   auto& scratch = nsgsThreadScratch();
   auto& classification = scratch.classification;
@@ -483,11 +275,21 @@ bool NsgsFrictionSolver::solve(
           = c;
   }
   scratch.normalShifts.assign(classification.contacts.size(), 0.0);
-  if (!projectStartingIterate(n, x, lo, hi, findex, scratch, stats))
+  if (!detail::projectIterate(
+          x, lo, hi, findex, classification, stats.numLocalFallbacks))
     return finish(false, false, infinity);
   scratch.best.assign(x, x + n);
-  double bestViolation = violation(
-      n, stride, A, x, b, lo, hi, findex, classification, mOptions.law);
+  double bestViolation = detail::lawViolation(
+      n,
+      stride,
+      A,
+      x,
+      b,
+      lo,
+      hi,
+      findex,
+      classification,
+      mOptions.law == Law::Associated);
   const double startingViolation = bestViolation;
   if (!std::isfinite(bestViolation))
     return finish(false, false, infinity);
@@ -505,8 +307,17 @@ bool NsgsFrictionSolver::solve(
     }
     // Use the actual complete iterate, rather than a mixture of pre-update
     // block velocities, for stopping and best-iterate selection.
-    const double currentViolation = violation(
-        n, stride, A, x, b, lo, hi, findex, classification, mOptions.law);
+    const double currentViolation = detail::lawViolation(
+        n,
+        stride,
+        A,
+        x,
+        b,
+        lo,
+        hi,
+        findex,
+        classification,
+        mOptions.law == Law::Associated);
     if (!std::isfinite(currentViolation)) {
       failed = true;
       break;
@@ -522,8 +333,9 @@ bool NsgsFrictionSolver::solve(
     }
   }
   std::copy(scratch.best.begin(), scratch.best.end(), x);
-#if DART_BUILD_MODE_DEBUG
-  assert(fingerprint == inputFingerprint(n, stride, A, b, lo, hi, findex));
+#ifndef NDEBUG
+  assert(
+      fingerprint == detail::lcpFingerprint(n, stride, A, b, lo, hi, findex));
 #endif
   return finish(
       !earlyTermination || (!failed && producedNoWorse),
@@ -567,22 +379,7 @@ void NsgsFrictionSolver::reserve(std::size_t numRows)
 //==============================================================================
 bool NsgsFrictionSolver::canSolve(int n, const double* A)
 {
-  if (n < 0 || n > std::numeric_limits<int>::max() - 3 || (n > 0 && !A))
-    return false;
-  const int stride = lcpsolver::dantzig::padding(n);
-  for (int i = 0; i < n; ++i) {
-    if (A[std::size_t(i) * stride + i] < 0.0)
-      return false;
-    for (int j = 0; j < n; ++j) {
-      const double a = A[std::size_t(i) * stride + j];
-      const double transpose = A[std::size_t(j) * stride + i];
-      if (!std::isfinite(a)
-          || std::abs(a - transpose)
-                 > 1e-10 * std::max({1.0, std::abs(a), std::abs(transpose)}))
-        return false;
-    }
-  }
-  return true;
+  return detail::canSolveFrictionLcp(n, A);
 }
 #endif
 

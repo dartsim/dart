@@ -32,9 +32,12 @@
 
 #include <dart/constraint/detail/FrictionRows.hpp>
 
+#include <dart/lcpsolver/dantzig/DantzigCommon.hpp>
+
 #include <algorithm>
 
 #include <cmath>
+#include <cstring>
 
 namespace dart::constraint::detail {
 
@@ -158,6 +161,179 @@ bool classifyFrictionRows(
     }
     if (contact.cone.law == FrictionConeLaw::Box)
       ++result.numBoxContacts;
+  }
+  return true;
+}
+
+//==============================================================================
+bool projectIterate(
+    double* x,
+    const double* lo,
+    const double* hi,
+    const int* findex,
+    const FrictionRowClassification& classification,
+    std::uint64_t& numLocalFallbacks)
+{
+  for (int row : classification.scalarRows) {
+    x[row] = projectRow(row, x[row], x, lo, hi, findex);
+    if (!std::isfinite(x[row]))
+      return false;
+  }
+  for (const auto& contact : classification.contacts) {
+    if (contact.usePgs) {
+      x[contact.normalRow] = projectRow(
+          contact.normalRow, x[contact.normalRow], x, lo, hi, findex);
+      if (!std::isfinite(x[contact.normalRow]))
+        return false;
+      for (std::size_t j = 0; j < contact.rowCount; ++j) {
+        const int tangent = classification.contactRows[contact.rowOffset + j];
+        if (tangent == contact.normalRow)
+          continue;
+        x[tangent] = projectRow(tangent, x[tangent], x, lo, hi, findex);
+        if (!std::isfinite(x[tangent]))
+          return false;
+      }
+    } else {
+      // Cached box impulses may lie outside the newly selected circle. The
+      // initial best iterate must already satisfy the selected cone at a cap.
+      const auto impulse = contactImpulse(contact, x);
+      if (detail::coneViolation(impulse, contact.cone) <= 0.0)
+        continue;
+      const auto result = detail::solveConeQp(
+          Eigen::Matrix3d::Identity(), -impulse, contact.cone);
+      numLocalFallbacks += result.numLocalFallbacks;
+      if (!result.certified || !result.impulse.allFinite())
+        return false;
+      const auto indices = contactIndices(contact);
+      for (int axis = 0; axis < 3; ++axis)
+        if (indices[axis] >= 0)
+          x[indices[axis]] = result.impulse[axis];
+    }
+  }
+  return true;
+}
+
+//==============================================================================
+double lawViolation(
+    int n,
+    int stride,
+    const double* A,
+    const double* x,
+    const double* b,
+    const double* lo,
+    const double* hi,
+    const int* findex,
+    const FrictionRowClassification& classification,
+    bool associated,
+    double* velocities)
+{
+  // Local solves may shift singular blocks; convergence and best-iterate
+  // selection must judge the unregularized LCP assembled by the caller.
+  double largest = 0.0;
+  for (int row : classification.scalarRows) {
+    const double velocity = rowVelocity(row, n, stride, A, x, b);
+    if (velocities)
+      velocities[row] = velocity;
+    largest = std::max(
+        largest,
+        scalarViolation(
+            row,
+            velocity,
+            A[std::size_t(row) * stride + row],
+            x,
+            lo,
+            hi,
+            findex));
+  }
+  for (const auto& contact : classification.contacts) {
+    if (contact.usePgs) {
+      for (std::size_t j = 0; j < contact.rowCount; ++j) {
+        const int row = classification.contactRows[contact.rowOffset + j];
+        const double velocity = rowVelocity(row, n, stride, A, x, b);
+        if (velocities)
+          velocities[row] = velocity;
+        largest = std::max(
+            largest,
+            scalarViolation(
+                row,
+                velocity,
+                A[std::size_t(row) * stride + row],
+                x,
+                lo,
+                hi,
+                findex));
+      }
+      continue;
+    }
+    Eigen::Vector3d velocity = Eigen::Vector3d::Zero();
+    double maxDiagonal = 0.0;
+    const auto indices = contactIndices(contact);
+    for (int axis = 0; axis < 3; ++axis) {
+      const int row = indices[axis];
+      if (row < 0)
+        continue;
+      velocity[axis] = rowVelocity(row, n, stride, A, x, b);
+      if (velocities)
+        velocities[row] = velocity[axis];
+      maxDiagonal = std::max(maxDiagonal, A[std::size_t(row) * stride + row]);
+    }
+    largest = std::max(
+        largest,
+        detail::contactViolation(
+            contactImpulse(contact, x),
+            velocity,
+            maxDiagonal > 0.0 ? maxDiagonal : 1.0,
+            contact.cone,
+            associated));
+  }
+  return largest;
+}
+
+//==============================================================================
+std::uint64_t lcpFingerprint(
+    int n,
+    int stride,
+    const double* A,
+    const double* b,
+    const double* lo,
+    const double* hi,
+    const int* findex)
+{
+  std::uint64_t hash = 14695981039346656037ull;
+  const auto append = [&](double value) {
+    std::uint64_t bits;
+    static_assert(sizeof(bits) == sizeof(value));
+    std::memcpy(&bits, &value, sizeof(bits));
+    hash = (hash ^ bits) * 1099511628211ull;
+  };
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j)
+      append(A[std::size_t(i) * stride + j]);
+    append(b[i]);
+    append(lo[i]);
+    append(hi[i]);
+    hash = (hash ^ std::uint64_t(findex[i])) * 1099511628211ull;
+  }
+  return hash;
+}
+
+//==============================================================================
+bool canSolveFrictionLcp(int n, const double* A)
+{
+  if (n < 0 || n > std::numeric_limits<int>::max() - 3 || (n > 0 && !A))
+    return false;
+  const int stride = lcpsolver::dantzig::padding(n);
+  for (int i = 0; i < n; ++i) {
+    if (A[std::size_t(i) * stride + i] < 0.0)
+      return false;
+    for (int j = 0; j < n; ++j) {
+      const double a = A[std::size_t(i) * stride + j];
+      const double transpose = A[std::size_t(j) * stride + i];
+      if (!std::isfinite(a)
+          || std::abs(a - transpose)
+                 > 1e-10 * std::max({1.0, std::abs(a), std::abs(transpose)}))
+        return false;
+    }
   }
   return true;
 }

@@ -36,9 +36,12 @@
 #include <dart/constraint/detail/FrictionCone.hpp>
 
 #include <array>
+#include <limits>
 #include <vector>
 
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
 
 namespace dart::constraint::detail {
 
@@ -88,6 +91,124 @@ bool classifyFrictionRows(
     const int* findex,
     FrictionRowClassification& result,
     bool boxForAnisotropic = true);
+
+/// w_row = sum_{j<n} A(row, j) x_j - b_row (row-major, stride padded).
+inline double rowVelocity(
+    int row,
+    int n,
+    int stride,
+    const double* A,
+    const double* x,
+    const double* b)
+{
+  double velocity = -b[row];
+  for (int j = 0; j < n; ++j)
+    velocity += A[std::size_t(row) * stride + j] * x[j];
+  return velocity;
+}
+
+/// PGS bounds, including coupling to the current normal. Keeps PGS's clamp
+/// order; a NaN bound returns NaN.
+inline double projectRow(
+    int row,
+    double value,
+    const double* x,
+    const double* lo,
+    const double* hi,
+    const int* findex)
+{
+  double lower = lo[row];
+  double upper = hi[row];
+  if (findex[row] >= 0 && findex[row] != row) {
+    upper = hi[row] * x[findex[row]];
+    lower = -upper;
+  }
+  if (std::isnan(lower) || std::isnan(upper))
+    return std::numeric_limits<double>::quiet_NaN();
+  // Preserve PGS's clamp order even for a malformed coupled component.
+  return value > upper ? upper : value < lower ? lower : value;
+}
+
+/// Diagonal-scaled natural-map violation; a non-positive diagonal uses 1.
+/// A non-finite velocity or result returns infinity.
+inline double scalarViolation(
+    int row,
+    double velocity,
+    double diagonal,
+    const double* x,
+    const double* lo,
+    const double* hi,
+    const int* findex)
+{
+  if (!std::isfinite(velocity))
+    return std::numeric_limits<double>::infinity();
+  // A zero row still has complementarity conditions; a unit step tests those
+  // without dividing by zero. Positive diagonals use the specified scaling.
+  const double scale = diagonal > 0.0 ? diagonal : 1.0;
+  const double argument = x[row] - velocity / scale;
+  if (!std::isfinite(argument))
+    return std::numeric_limits<double>::infinity();
+  const double violation
+      = scale * std::abs(x[row] - projectRow(row, argument, x, lo, hi, findex));
+  return std::isfinite(violation) ? violation
+                                  : std::numeric_limits<double>::infinity();
+}
+
+inline Eigen::Vector3d contactImpulse(
+    const FrictionContactRows& contact, const double* x)
+{
+  Eigen::Vector3d impulse = Eigen::Vector3d::Zero();
+  impulse[0] = x[contact.normalRow];
+  for (int axis = 0; axis < 2; ++axis)
+    if (contact.tangentRows[axis] >= 0)
+      impulse[axis + 1] = x[contact.tangentRows[axis]];
+  return impulse;
+}
+
+inline std::array<int, 3> contactIndices(const FrictionContactRows& contact)
+{
+  return {{contact.normalRow, contact.tangentRows[0], contact.tangentRows[1]}};
+}
+
+/// Project scalar rows and each contact in place. PGS components project the
+/// normal first; cone contacts use Euclidean projection only when infeasible.
+/// Adds local QP fallbacks; false on non-finite or uncertified results.
+bool projectIterate(
+    double* x,
+    const double* lo,
+    const double* hi,
+    const int* findex,
+    const FrictionRowClassification& classification,
+    std::uint64_t& numLocalFallbacks);
+
+/// Largest law violation on the assembled LCP [m/s]. Cone contacts use their
+/// largest positive diagonal, or 1. If non-null, velocities receives every
+/// row velocity.
+double lawViolation(
+    int n,
+    int stride,
+    const double* A,
+    const double* x,
+    const double* b,
+    const double* lo,
+    const double* hi,
+    const int* findex,
+    const FrictionRowClassification& classification,
+    bool associated,
+    double* velocities = nullptr);
+
+/// FNV-1a hash of the unpadded A entries, b, lo, hi and findex.
+std::uint64_t lcpFingerprint(
+    int n,
+    int stride,
+    const double* A,
+    const double* b,
+    const double* lo,
+    const double* hi,
+    const int* findex);
+
+/// Finite LCP matrix, symmetric within 1e-10 relative, nonnegative diagonal.
+bool canSolveFrictionLcp(int n, const double* A);
 
 } // namespace dart::constraint::detail
 
