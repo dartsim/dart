@@ -1008,6 +1008,13 @@ def check_hooks(root: Path, errors: list[str]) -> None:
             errors.append(
                 f"{path.relative_to(root)}: must invoke the staged agent hook profile"
             )
+    installer_text = installer.read_text(encoding="utf-8") if installer.exists() else ""
+    guard_text = guard.read_text(encoding="utf-8") if guard.exists() else ""
+    version = re.search(r'HOOK_VERSION = "(\d+)"', installer_text)
+    if version and f"DART-MANAGED-HOOK v{version[1]} " not in guard_text:
+        errors.append(
+            f"{guard.relative_to(root)}: managed hook version differs from installer"
+        )
     launcher = root / ".claude" / "hooks" / "pre-commit-guard.ps1"
     launcher_text = launcher.read_text(encoding="utf-8") if launcher.exists() else ""
     for marker in WINDOWS_LAUNCHER_MARKERS:
@@ -1487,6 +1494,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 "tests/test_sync_ai_commands.py",
                 "tests/test_ai_infrastructure.py",
                 "tests/test_install_git_hooks.py",
+                "tests/test_check_local_paths.py",
                 "-q",
             ],
             "depends-on": [],

@@ -3804,6 +3804,37 @@ def test_windows_launcher_does_not_shadow_native_exit_code():
     assert "$nativeExitCode = $global:LASTEXITCODE" in launcher
 
 
+def test_guard_hook_version_matches_installer(tmp_path):
+    for source in (
+        ".codex/hooks.json",
+        ".claude/settings.json",
+        ".claude/hooks/pre-commit-guard.sh",
+        ".claude/hooks/pre-commit-guard.ps1",
+        "scripts/install_git_hooks.py",
+        "scripts/pretool_guard_bridge.py",
+    ):
+        destination = tmp_path / source
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text((ROOT / source).read_text())
+    errors = []
+    infra.check_hooks(tmp_path, errors)
+    assert errors == []
+    guard = tmp_path / ".claude/hooks/pre-commit-guard.sh"
+    version = (
+        (ROOT / "scripts/install_git_hooks.py")
+        .read_text()
+        .split('HOOK_VERSION = "', 1)[1]
+        .split('"', 1)[0]
+    )
+    guard.write_text(
+        guard.read_text().replace(
+            f"DART-MANAGED-HOOK v{version} ", "DART-MANAGED-HOOK v0 "
+        )
+    )
+    infra.check_hooks(tmp_path, errors)
+    assert any("managed hook version differs" in error for error in errors)
+
+
 @pytest.mark.parametrize("input_key", ("command", "cmd"))
 def test_native_pretool_forwards_payload_to_shared_guard(
     tmp_path, monkeypatch, input_key
