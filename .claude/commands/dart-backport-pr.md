@@ -1,5 +1,5 @@
 ---
-description: backport a merged main PR to a maintenance release branch
+description: backport a merged main PR to a stabilization or maintenance release branch
 argument-hint: "<pr-number> [release-branch]"
 agent: build
 ---
@@ -15,8 +15,10 @@ Backport PR or commits: $ARGUMENTS
 
 ## Workflow
 
-There is no maintenance branch right now: new patches land on `main`. Use this
-workflow only for a `release-6.*` branch cut from a release tag.
+New patches land on `main` for DART 6.21. Use this workflow to backport merged
+PRs to `release-6.20` for stabilization, or to another `release-6.*` branch.
+A release branch may be cut from an approved stabilization commit before its
+first release tag, or from a published release tag.
 
 For a source change involving model/scene structure, physics behavior, or OSG
 output, use the release branch's `dart-verify-sim` workflow to preserve the text

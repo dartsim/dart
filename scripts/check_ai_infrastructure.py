@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate and diagnose DART 6.20's repository-local AI infrastructure."""
+"""Validate and diagnose DART 6's repository-local AI infrastructure."""
 
 from __future__ import annotations
 
@@ -3723,7 +3723,7 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
     )
     python_frontmatter = python_skill.split("---", 2)[1]
     if "nanobind" in python_frontmatter or "pybind11" not in python_skill:
-        errors.append("dart-python: DART 6.20 metadata must name pybind11")
+        errors.append("dart-python: DART 6 metadata must name pybind11")
 
     ci_skill_path = root / ".claude" / "skills" / "dart-ci" / "SKILL.md"
     ci_skill = ci_skill_path.read_text(encoding="utf-8")
@@ -4259,7 +4259,7 @@ def exercise_scenarios(
 
         if scenario_id == "model-upgrade":
             expected_prompt = (
-                "audit or update DART 6.20 AI infrastructure for a named model, "
+                "audit or update DART 6 AI infrastructure for a named model, "
                 "reasoning mode, or coding-agent release"
             )
             if scenario.get("prompt_class") != expected_prompt:
@@ -4330,7 +4330,7 @@ def exercise_scenarios(
                 "temporary claim-tied evidence",
             }
             expected_prompt = (
-                "verify claim-dependent DART 6.20 simulation, dynamics, "
+                "verify claim-dependent DART 6 simulation, dynamics, "
                 "collision/contact/constraints, model/scene, GUI, or OSG behavior"
             )
             if scenario.get("prompt_class") != expected_prompt:

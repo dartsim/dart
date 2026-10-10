@@ -4,7 +4,7 @@ argument-hint: "<target-model-or-tool-version> [audit-only|apply]"
 agent: build
 ---
 
-Audit or update DART 6.20's AI infrastructure for: $ARGUMENTS
+Audit or update DART 6's AI infrastructure for: $ARGUMENTS
 
 ## Objective
 

@@ -1,6 +1,6 @@
 # DART Design Docs
 
-This directory holds durable DART 6.20 technical design proposals and decision
+This directory holds durable DART 6 technical design proposals and decision
 rationale. Use it for architecture, API shape, compatibility constraints,
 tradeoffs, and design rules that should outlive a particular roadmap sequence.
 

@@ -1,7 +1,7 @@
 # DART 6 Living Plans
 
-This directory holds DART 6.20's living plan state from the current release
-branch toward the DART 6 AI-native maintenance north star. Use it when deciding
+This directory holds DART 6's living plan state from the current development
+or release branch toward the DART 6 AI-native maintenance north star. Use it when deciding
 what to do next, revising priorities, or turning release-branch direction into
 bounded work.
 
@@ -23,7 +23,7 @@ For cross-bucket placement decisions, use
 
 | File | Purpose |
 | --- | --- |
-| [`dashboard.md`](dashboard.md) | Single source of truth for operating DART 6.20 plan state. |
+| [`dashboard.md`](dashboard.md) | Single source of truth for operating DART 6 plan state. |
 | [`north-star-roadmap.md`](north-star-roadmap.md) | Release-branch sequencing principles and planning constraints. |
 | [`archive.md`](archive.md) | Completed plan entries after their durable output moves elsewhere. |
 | [`AGENTS.md`](AGENTS.md) | Local rules for agents editing plan docs. |

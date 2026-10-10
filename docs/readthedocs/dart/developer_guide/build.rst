@@ -6,7 +6,8 @@ Build
 This page describes the DART 6 LTS source-build paths for the ``main`` development
 branch. The current source version is read from ``package.xml``; until release
 packaging bumps it, this branch can still report a ``6.19.x`` package version
-while collecting changes for DART 6.20.0.
+while collecting changes for DART 6.21.0. DART 6.20.0 is being stabilized on
+``release-6.20``.
 
 Recommended Pixi build
 ----------------------

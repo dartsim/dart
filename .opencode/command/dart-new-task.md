@@ -36,10 +36,13 @@ Read these files first:
    API, release compatibility, numerical correctness, benchmark claims, or
    roadmap scope, record an owner-local `Decision needed` block instead of
    silently choosing.
-3. **Setup** - Choose the target branch before creating a topic branch. For
-   DART 6.20 development, dependency-minimization, docs, and compatibility
-   work, branch from `origin/main` without tracking the development ref:
-   `git switch --no-track -c <type>/<topic> origin/main`.
+3. **Setup** - Choose and fetch the target branch before creating a topic
+   branch. Ordinary DART 6.21 development and new fixes start from
+   `origin/main`. DART 6.20 release-specific packaging, CI, branch guidance,
+   and backport work starts from `origin/release-6.20`; resolve another release's target from
+   live state. Use `dart-backport-pr` for backports of merged `main` fixes.
+   Create the topic branch without tracking its base:
+   `git switch --no-track -c <type>/<topic> origin/<target-branch>`.
 4. **Implement** - Keep commits focused, follow code style
 5. **Verify** - Run `pixi run lint` before committing, then run the focused
    branch gate for the touched surface. Use `pixi run test-all` when

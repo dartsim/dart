@@ -1,4 +1,4 @@
-# Building DART 6.20
+# Building DART 6
 
 Use Pixi tasks from the repository root.
 

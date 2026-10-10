@@ -34,7 +34,7 @@ routing lives in `docs/ai/README.md` § "Updating Models And Coding Agents";
 do not duplicate or pin it here. The three read-only project agents inherit
 the selected parent model: `dart_scout` gathers evidence, `dart_reviewer`
 audits the current diff, and `dart_release_auditor` classifies named
-reference material as apply/adapt/omit against the DART 6.20 compatibility
+reference material as apply/adapt/omit against the DART 6 compatibility
 surface.
 
 **Tested Versions**: Claude Code CLI 2.1.252 (Claude Fable 5), Codex CLI

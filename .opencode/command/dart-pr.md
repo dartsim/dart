@@ -88,11 +88,13 @@ Use these practices:
 
    | Target                    | Milestone                                       |
    | ------------------------- | ----------------------------------------------- |
-   | `main`                    | Next DART 6.x release (currently `DART 6.20.0`) |
-   | Maintenance `release-6.*` | Branch-matching DART 6.x release                |
+   | `main`                    | Next DART 6.x release (currently `DART 6.21.0`) |
+   | `release-6.20`           | `DART 6.20.0`                               |
+   | Other `release-6.*`      | Branch-matching DART 6.x release             |
 
 4. After explicit maintainer/user approval, open bug-fix PRs against `main`;
-   backports to a `release-6.*` branch (none right now) use `dart-backport-pr`.
+   backports to `release-6.20` or another `release-6.*` branch use
+   `dart-backport-pr`.
 5. Before every commit, run:
    ```bash
    pixi run lint
