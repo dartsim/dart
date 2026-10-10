@@ -6,8 +6,9 @@ Select a built `dartpy` with `PYTHONPATH` before running runtime probes.
   --output <output-dir>` snapshots and compares the public API, including `dartpy.gui`: names, overloads, keywords, defaults, and enums.
 - `probe_gui_rss.py` checks 1,000 GUI owner lifecycles without opening a window.
 - `visual_scenes.py` supplies the existing dominoes tutorial to `agent-capture`.
-- `codemod.py --output <new-directory>` generates a mechanical non-GUI port for
-  review. It refuses an existing destination. Review the caster includes,
+- `codemod.py --source <DART-6.20-pybind11-sources> --output <new-directory>`
+  generates a mechanical non-GUI port for review from an explicit historical
+  source tree. It refuses an existing destination. Review the caster includes,
   ownership policies, and constructors before using the generated bindings.
   Select `detail/eigen.hpp`, `detail/array.hpp`, and the needed STL casters,
   then use `check_guards.py` to check the include contract.
@@ -24,6 +25,7 @@ Select a built `dartpy` with `PYTHONPATH` before running runtime probes.
   lifetime, and mutable vector inputs. Its docstring includes NumPy 1.x and 2.x
   Pixi invocations.
 
-The regular regressions live in `python/tests/unit/bindings/` and run with either
-binder. Compile/import measurements and research reports are not part of these
-tools.
+The regular regressions live in `python/tests/unit/bindings/` and run with
+nanobind. The `--pb` API comparison input is a separately built DART 6.20 module;
+this tree no longer contains its binder. Compile/import measurements and
+research reports are not part of these tools.

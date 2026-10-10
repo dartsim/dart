@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -33,22 +37,15 @@
 #include <dart/collision/CollisionDetector.hpp>
 #include <dart/collision/CollisionGroup.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
 #include <string>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void CollisionDetector(py::module& m)
+void CollisionDetector(nb::module_& m)
 {
-  ::py::class_<
-      dart::collision::CollisionDetector,
-      std::shared_ptr<dart::collision::CollisionDetector>>(
-      m, "CollisionDetector")
+  dartnb::dart_class<dart::collision::CollisionDetector>(m, "CollisionDetector")
       .def(
           "cloneWithoutCollisionObjects",
           +[](dart::collision::CollisionDetector* self)
@@ -59,7 +56,7 @@ void CollisionDetector(py::module& m)
           "getType",
           +[](const dart::collision::CollisionDetector* self)
               -> const std::string& { return self->getType(); },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "createCollisionGroup",
           +[](dart::collision::CollisionDetector* self)

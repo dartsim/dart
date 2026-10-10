@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,37 +36,31 @@
 
 #include <dart/constraint/FbfFrictionSolver.hpp>
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void FbfFrictionSolver(py::module& m)
+void FbfFrictionSolver(nb::module_& m)
 {
   using Solver = constraint::FbfFrictionSolver;
 
-  auto solver = ::py::
-      class_<Solver, constraint::BoxedLcpSolver, std::shared_ptr<Solver>>(
-          m, "FbfFrictionSolver");
+  auto solver = dartnb::dart_class<Solver, constraint::BoxedLcpSolver>(
+      m, "FbfFrictionSolver");
 
-  ::py::class_<Solver::Options>(solver, "Options")
-      .def(::py::init<>())
-      .def_readwrite("boxForAnisotropic", &Solver::Options::boxForAnisotropic)
-      .def_readwrite("maxOuterIterations", &Solver::Options::maxOuterIterations)
-      .def_readwrite("tolerance", &Solver::Options::tolerance)
-      .def_readwrite("stepScale", &Solver::Options::stepScale)
-      .def_readwrite("maxInnerSweeps", &Solver::Options::maxInnerSweeps)
-      .def_readwrite(
-          "innerToleranceFactor", &Solver::Options::innerToleranceFactor);
+  dartnb::dart_class<Solver::Options>(solver, "Options")
+      .def(dartnb::init<>())
+      .def_rw("boxForAnisotropic", &Solver::Options::boxForAnisotropic)
+      .def_rw("maxOuterIterations", &Solver::Options::maxOuterIterations)
+      .def_rw("tolerance", &Solver::Options::tolerance)
+      .def_rw("stepScale", &Solver::Options::stepScale)
+      .def_rw("maxInnerSweeps", &Solver::Options::maxInnerSweeps)
+      .def_rw("innerToleranceFactor", &Solver::Options::innerToleranceFactor);
 
-  solver.def(::py::init<>())
-      .def(::py::init<const Solver::Options&>(), ::py::arg("options"))
+  solver.def(dartnb::init<>())
+      .def(dartnb::init<const Solver::Options&>(), nb::arg("options"))
       .def_static("getStaticType", &Solver::getStaticType)
-      .def("setOptions", &Solver::setOptions, ::py::arg("options"))
-      .def("getOptions", &Solver::getOptions, ::py::return_value_policy::copy)
-      .def("reserve", &Solver::reserve, ::py::arg("numRows"))
+      .def("setOptions", &Solver::setOptions, nb::arg("options"))
+      .def("getOptions", &Solver::getOptions, nb::rv_policy::copy)
+      .def("reserve", &Solver::reserve, nb::arg("numRows"))
       .def("getStats", &Solver::getStats)
       .def("resetStats", &Solver::resetStats);
 }

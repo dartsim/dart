@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -41,30 +45,26 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <pybind11/pybind11.h>
 
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void ShapeNode(py::module& m)
+void ShapeNode(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::dynamics::ShapeNode,
       dart::dynamics::JacobianNode,
       dart::dynamics::ShapeFrame,
-      dart::dynamics::Node,
-      std::shared_ptr<dart::dynamics::ShapeNode>>(m, "ShapeNode")
+      dart::dynamics::Node>(m, "ShapeNode")
       .def(
           "setProperties",
           +[](dart::dynamics::ShapeNode* self,
               const dart::dynamics::ShapeNode::Properties& properties) {
             self->setProperties(properties);
           },
-          ::py::arg("properties"))
+          nb::arg("properties"))
       .def(
           "getShapeNodeProperties",
           +[](const dart::dynamics::ShapeNode* self)
@@ -75,21 +75,21 @@ void ShapeNode(py::module& m)
           "copy",
           +[](dart::dynamics::ShapeNode* self,
               const dart::dynamics::ShapeNode* other) { self->copy(other); },
-          ::py::arg("other"))
+          nb::arg("other").none())
       .def(
           "setRelativeTransform",
           +[](dart::dynamics::ShapeNode* self,
               const Eigen::Isometry3d& transform) {
             self->setRelativeTransform(transform);
           },
-          ::py::arg("transform"))
+          nb::arg("transform"))
       .def(
           "setRelativeRotation",
           +[](dart::dynamics::ShapeNode* self,
               const Eigen::Matrix3d& rotation) {
             self->setRelativeRotation(rotation);
           },
-          ::py::arg("rotation"))
+          nb::arg("rotation"))
       .def(
           "getRelativeRotation",
           +[](const dart::dynamics::ShapeNode* self) -> Eigen::Matrix3d {
@@ -101,13 +101,13 @@ void ShapeNode(py::module& m)
               const Eigen::Vector3d& translation) {
             self->setRelativeTranslation(translation);
           },
-          ::py::arg("translation"))
+          nb::arg("translation"))
       .def(
           "setOffset",
           +[](dart::dynamics::ShapeNode* self, const Eigen::Vector3d& offset) {
             self->setOffset(offset);
           },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getRelativeTranslation",
           +[](const dart::dynamics::ShapeNode* self) -> Eigen::Vector3d {
@@ -124,14 +124,14 @@ void ShapeNode(py::module& m)
               double mass) -> dart::dynamics::Inertia {
             return self->computeTransformedInertia(mass);
           },
-          ::py::arg("mass"))
+          nb::arg("mass"))
       .def(
           "computeTransformedInertiaFromDensity",
           +[](const dart::dynamics::ShapeNode* self,
               double density) -> dart::dynamics::Inertia {
             return self->computeTransformedInertiaFromDensity(density);
           },
-          ::py::arg("density"));
+          nb::arg("density"));
 }
 
 } // namespace python

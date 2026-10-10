@@ -120,11 +120,6 @@ RUN git clone --depth 1 https://github.com/gabime/spdlog.git -b v1.15.3 \
     && cmake --build spdlog/build --target install -j${NUM_CORES} \
     && rm -rf spdlog
 
-RUN git clone --depth 1 https://github.com/pybind/pybind11.git -b v3.0.3 \
-    && cmake pybind11 -B pybind11/build -DPYBIND11_TEST=OFF \
-    && cmake --install pybind11/build \
-    && rm -rf pybind11
-
 # Match DART's source-build ODE settings and retain the ODE collision bindings.
 RUN curl -fsSL https://bitbucket.org/odedevs/ode/downloads/ode-0.16.6.tar.gz -o ode.tar.gz \
     && echo "c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8  ode.tar.gz" | sha256sum -c - \

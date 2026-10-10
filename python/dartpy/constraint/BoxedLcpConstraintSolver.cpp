@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -34,59 +38,72 @@
 #include <dart/constraint/BoxedLcpSolver.hpp>
 #include <dart/constraint/ConstraintSolver.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void BoxedLcpConstraintSolver(py::module& m)
+void BoxedLcpConstraintSolver(nb::module_& m)
 {
   using MatrixFreeContactSolverOptions
       = constraint::BoxedLcpConstraintSolver::MatrixFreeContactSolverOptions;
 
-  ::py::class_<MatrixFreeContactSolverOptions>(
+  dartnb::dart_class<MatrixFreeContactSolverOptions>(
       m, "MatrixFreeContactSolverOptions")
-      .def(::py::init<>())
-      .def_readwrite("mEnabled", &MatrixFreeContactSolverOptions::mEnabled)
-      .def_readwrite("mMinRows", &MatrixFreeContactSolverOptions::mMinRows)
-      .def_readwrite(
-          "mMaxIterations", &MatrixFreeContactSolverOptions::mMaxIterations)
-      .def_readwrite("mSor", &MatrixFreeContactSolverOptions::mSor)
-      .def_readwrite(
-          "mDeltaTolerance", &MatrixFreeContactSolverOptions::mDeltaTolerance)
-      .def_readwrite(
+      .def(dartnb::init<>())
+      .def_rw(
+          "mEnabled",
+          &MatrixFreeContactSolverOptions::mEnabled,
+          dartnb::setterArgument(&MatrixFreeContactSolverOptions::mEnabled))
+      .def_rw(
+          "mMinRows",
+          &MatrixFreeContactSolverOptions::mMinRows,
+          dartnb::setterArgument(&MatrixFreeContactSolverOptions::mMinRows))
+      .def_rw(
+          "mMaxIterations",
+          &MatrixFreeContactSolverOptions::mMaxIterations,
+          dartnb::setterArgument(
+              &MatrixFreeContactSolverOptions::mMaxIterations))
+      .def_rw(
+          "mSor",
+          &MatrixFreeContactSolverOptions::mSor,
+          dartnb::setterArgument(&MatrixFreeContactSolverOptions::mSor))
+      .def_rw(
+          "mDeltaTolerance",
+          &MatrixFreeContactSolverOptions::mDeltaTolerance,
+          dartnb::setterArgument(
+              &MatrixFreeContactSolverOptions::mDeltaTolerance))
+      .def_rw(
           "mRelativeDeltaTolerance",
-          &MatrixFreeContactSolverOptions::mRelativeDeltaTolerance)
-      .def_readwrite(
+          &MatrixFreeContactSolverOptions::mRelativeDeltaTolerance,
+          dartnb::setterArgument(
+              &MatrixFreeContactSolverOptions::mRelativeDeltaTolerance))
+      .def_rw(
           "mEpsilonForDivision",
-          &MatrixFreeContactSolverOptions::mEpsilonForDivision);
+          &MatrixFreeContactSolverOptions::mEpsilonForDivision,
+          dartnb::setterArgument(
+              &MatrixFreeContactSolverOptions::mEpsilonForDivision));
 
-  ::py::class_<
+  dartnb::dart_class<
       constraint::BoxedLcpConstraintSolver,
-      constraint::ConstraintSolver,
-      std::shared_ptr<constraint::BoxedLcpConstraintSolver>>(
-      m, "BoxedLcpConstraintSolver")
-      .def(::py::init<>())
+      constraint::ConstraintSolver>(m, "BoxedLcpConstraintSolver")
+      .def(dartnb::init<>())
       .def(
-          ::py::init<constraint::BoxedLcpSolverPtr>(),
-          ::py::arg("boxedLcpSolver"))
+          dartnb::init<constraint::BoxedLcpSolverPtr>(),
+          nb::arg("boxedLcpSolver").none())
       .def(
-          ::py::init<
+          dartnb::init<
               constraint::BoxedLcpSolverPtr,
               constraint::BoxedLcpSolverPtr>(),
-          ::py::arg("boxedLcpSolver"),
-          ::py::arg("secondaryBoxedLcpSolver"))
+          nb::arg("boxedLcpSolver").none(),
+          nb::arg("secondaryBoxedLcpSolver").none())
       .def(
           "setBoxedLcpSolver",
           +[](constraint::BoxedLcpConstraintSolver* self,
               constraint::BoxedLcpSolverPtr lcpSolver) {
             self->setBoxedLcpSolver(lcpSolver);
           },
-          ::py::arg("lcpSolver"))
+          nb::arg("lcpSolver").none())
       .def(
           "getBoxedLcpSolver",
           +[](const constraint::BoxedLcpConstraintSolver* self)
@@ -99,7 +116,7 @@ void BoxedLcpConstraintSolver(py::module& m)
               constraint::BoxedLcpSolverPtr lcpSolver) {
             self->setSecondaryBoxedLcpSolver(lcpSolver);
           },
-          ::py::arg("lcpSolver"))
+          nb::arg("lcpSolver").none())
       .def(
           "getSecondaryBoxedLcpSolver",
           +[](const constraint::BoxedLcpConstraintSolver* self)
@@ -112,7 +129,7 @@ void BoxedLcpConstraintSolver(py::module& m)
               const MatrixFreeContactSolverOptions& options) {
             self->setMatrixFreeContactSolverOptions(options);
           },
-          ::py::arg("options"))
+          nb::arg("options"))
       .def(
           "getMatrixFreeContactSolverOptions",
           +[](const constraint::BoxedLcpConstraintSolver* self)

@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include "detail/eigen.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -34,18 +40,14 @@
 #include <dart/collision/Contact.hpp>
 
 #include <Eigen/Core>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void Contact(py::module& m)
+void Contact(nb::module_& m)
 {
-  ::py::class_<dart::collision::Contact>(m, "Contact")
-      .def(::py::init<>())
+  dartnb::dart_class<dart::collision::Contact>(m, "Contact")
+      .def(dartnb::init<>())
       .def_static(
           "getNormalEpsilon",
           +[]() -> double {
@@ -61,25 +63,49 @@ void Contact(py::module& m)
           +[](const Eigen::Vector3d& normal) -> bool {
             return dart::collision::Contact::isZeroNormal(normal);
           },
-          ::py::arg("normal"))
+          nb::arg("normal"))
       .def_static(
           "isNonZeroNormal",
           +[](const Eigen::Vector3d& normal) -> bool {
             return dart::collision::Contact::isNonZeroNormal(normal);
           },
-          ::py::arg("normal"))
-      .def_readwrite("point", &dart::collision::Contact::point)
-      .def_readwrite("normal", &dart::collision::Contact::normal)
-      .def_readwrite("force", &dart::collision::Contact::force)
-      .def_readwrite(
-          "collisionObject1", &dart::collision::Contact::collisionObject1)
-      .def_readwrite(
-          "collisionObject2", &dart::collision::Contact::collisionObject2)
-      .def_readwrite(
-          "penetrationDepth", &dart::collision::Contact::penetrationDepth)
-      .def_readwrite("triID1", &dart::collision::Contact::triID1)
-      .def_readwrite("triID2", &dart::collision::Contact::triID2)
-      .def_readwrite("userData", &dart::collision::Contact::userData);
+          nb::arg("normal"))
+      .def_rw(
+          "point",
+          &dart::collision::Contact::point,
+          dartnb::setterArgument(&dart::collision::Contact::point))
+      .def_rw(
+          "normal",
+          &dart::collision::Contact::normal,
+          dartnb::setterArgument(&dart::collision::Contact::normal))
+      .def_rw(
+          "force",
+          &dart::collision::Contact::force,
+          dartnb::setterArgument(&dart::collision::Contact::force))
+      .def_rw(
+          "collisionObject1",
+          &dart::collision::Contact::collisionObject1,
+          dartnb::setterArgument(&dart::collision::Contact::collisionObject1))
+      .def_rw(
+          "collisionObject2",
+          &dart::collision::Contact::collisionObject2,
+          dartnb::setterArgument(&dart::collision::Contact::collisionObject2))
+      .def_rw(
+          "penetrationDepth",
+          &dart::collision::Contact::penetrationDepth,
+          dartnb::setterArgument(&dart::collision::Contact::penetrationDepth))
+      .def_rw(
+          "triID1",
+          &dart::collision::Contact::triID1,
+          dartnb::setterArgument(&dart::collision::Contact::triID1))
+      .def_rw(
+          "triID2",
+          &dart::collision::Contact::triID2,
+          dartnb::setterArgument(&dart::collision::Contact::triID2))
+      .def_rw(
+          "userData",
+          &dart::collision::Contact::userData,
+          dartnb::setterArgument(&dart::collision::Contact::userData));
 }
 
 } // namespace python

@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,36 +36,44 @@
 
 #include <dart/simulation/DeactivationOptions.hpp>
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void World(py::module& sm);
-void Recording(py::module& sm);
+void World(nb::module_& sm);
+void Recording(nb::module_& sm);
 
-void dart_simulation(py::module& m)
+void dart_simulation(nb::module_& m)
 {
   auto sm = m.def_submodule("simulation");
 
-  ::py::class_<dart::simulation::DeactivationOptions>(sm, "DeactivationOptions")
-      .def(::py::init<>())
-      .def_readwrite(
-          "mEnabled", &dart::simulation::DeactivationOptions::mEnabled)
-      .def_readwrite(
+  dartnb::dart_class<dart::simulation::DeactivationOptions>(
+      sm, "DeactivationOptions")
+      .def(dartnb::init<>())
+      .def_rw(
+          "mEnabled",
+          &dart::simulation::DeactivationOptions::mEnabled,
+          dartnb::setterArgument(
+              &dart::simulation::DeactivationOptions::mEnabled))
+      .def_rw(
           "mLinearSpeedThreshold",
-          &dart::simulation::DeactivationOptions::mLinearSpeedThreshold)
-      .def_readwrite(
+          &dart::simulation::DeactivationOptions::mLinearSpeedThreshold,
+          dartnb::setterArgument(
+              &dart::simulation::DeactivationOptions::mLinearSpeedThreshold))
+      .def_rw(
           "mAngularSpeedThreshold",
-          &dart::simulation::DeactivationOptions::mAngularSpeedThreshold)
-      .def_readwrite(
+          &dart::simulation::DeactivationOptions::mAngularSpeedThreshold,
+          dartnb::setterArgument(
+              &dart::simulation::DeactivationOptions::mAngularSpeedThreshold))
+      .def_rw(
           "mTimeUntilSleep",
-          &dart::simulation::DeactivationOptions::mTimeUntilSleep)
-      .def_readwrite(
+          &dart::simulation::DeactivationOptions::mTimeUntilSleep,
+          dartnb::setterArgument(
+              &dart::simulation::DeactivationOptions::mTimeUntilSleep))
+      .def_rw(
           "mWakeThresholdScale",
-          &dart::simulation::DeactivationOptions::mWakeThresholdScale);
+          &dart::simulation::DeactivationOptions::mWakeThresholdScale,
+          dartnb::setterArgument(
+              &dart::simulation::DeactivationOptions::mWakeThresholdScale));
 
   Recording(sm);
   World(sm);

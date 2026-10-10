@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -38,60 +44,52 @@
 #include <dart/dynamics/Linkage.hpp>
 #include <dart/dynamics/MetaSkeleton.hpp>
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void Chain(py::module& m)
+void Chain(nb::module_& m)
 {
-  ::py::class_<
-      dart::dynamics::Chain,
-      dart::dynamics::Linkage,
-      std::shared_ptr<dart::dynamics::Chain>>(m, "Chain")
+  dartnb::dart_class<dart::dynamics::Chain, dart::dynamics::Linkage>(m, "Chain")
       .def(
-          ::py::init(
+          dartnb::factory(
               +[](const dart::dynamics::Chain::Criteria& criteria)
                   -> dart::dynamics::ChainPtr {
                 return dart::dynamics::Chain::create(criteria);
               }),
-          ::py::arg("criteria"))
+          nb::arg("criteria"))
       .def(
-          ::py::init(
+          dartnb::factory(
               +[](const dart::dynamics::Chain::Criteria& criteria,
                   const std::string& name) -> dart::dynamics::ChainPtr {
                 return dart::dynamics::Chain::create(criteria, name);
               }),
-          ::py::arg("criteria"),
-          ::py::arg("name"))
+          nb::arg("criteria"),
+          nb::arg("name"))
       .def(
-          ::py::init(
+          dartnb::factory(
               +[](dart::dynamics::BodyNode* start,
                   dart::dynamics::BodyNode* target)
                   -> dart::dynamics::ChainPtr {
                 return dart::dynamics::Chain::create(start, target);
               }),
-          ::py::arg("start"),
-          ::py::arg("target"))
+          nb::arg("start").none(),
+          nb::arg("target").none())
       .def(
-          ::py::init(
+          dartnb::factory(
               +[](dart::dynamics::BodyNode* start,
                   dart::dynamics::BodyNode* target,
                   const std::string& name) -> dart::dynamics::ChainPtr {
                 return dart::dynamics::Chain::create(start, target, name);
               }),
-          ::py::arg("start"),
-          ::py::arg("target"),
-          ::py::arg("name"))
+          nb::arg("start").none(),
+          nb::arg("target").none(),
+          nb::arg("name"))
       .def(
-          ::py::init(
+          dartnb::factory(
               +[](dart::dynamics::BodyNode* start,
                   dart::dynamics::BodyNode* target,
                   bool includeUpstreamParentJoint) -> dart::dynamics::ChainPtr {
@@ -103,11 +101,11 @@ void Chain(py::module& m)
                 else
                   return dart::dynamics::Chain::create(start, target);
               }),
-          ::py::arg("start"),
-          ::py::arg("target"),
-          ::py::arg("includeUpstreamParentJoint"))
+          nb::arg("start").none(),
+          nb::arg("target").none(),
+          nb::arg("includeUpstreamParentJoint"))
       .def(
-          ::py::init(
+          dartnb::factory(
               +[](dart::dynamics::BodyNode* start,
                   dart::dynamics::BodyNode* target,
                   bool includeUpstreamParentJoint,
@@ -121,10 +119,10 @@ void Chain(py::module& m)
                 else
                   return dart::dynamics::Chain::create(start, target, name);
               }),
-          ::py::arg("start"),
-          ::py::arg("target"),
-          ::py::arg("includeUpstreamParentJoint"),
-          ::py::arg("name"))
+          nb::arg("start").none(),
+          nb::arg("target").none(),
+          nb::arg("includeUpstreamParentJoint"),
+          nb::arg("name"))
       .def(
           "cloneChain",
           +[](const dart::dynamics::Chain* self) -> dart::dynamics::ChainPtr {
@@ -136,32 +134,32 @@ void Chain(py::module& m)
               const std::string& cloneName) -> dart::dynamics::ChainPtr {
             return self->cloneChain(cloneName);
           },
-          ::py::arg("cloneName"))
+          nb::arg("cloneName"))
       .def(
           "cloneMetaSkeleton",
           +[](const dart::dynamics::Chain* self,
               const std::string& cloneName) -> dart::dynamics::MetaSkeletonPtr {
             return self->cloneMetaSkeleton(cloneName);
           },
-          ::py::arg("cloneName"))
+          nb::arg("cloneName"))
       .def(
           "isStillChain", +[](const dart::dynamics::Chain* self) -> bool {
             return self->isStillChain();
           });
 
-  ::py::class_<dart::dynamics::Chain::Criteria>(m, "ChainCriteria")
+  dartnb::dart_class<dart::dynamics::Chain::Criteria>(m, "ChainCriteria")
       .def(
-          ::py::init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
-          ::py::arg("start"),
-          ::py::arg("target"))
+          dartnb::init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
+          nb::arg("start").none(),
+          nb::arg("target").none())
       .def(
-          ::py::init<
+          dartnb::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::BodyNode*,
               bool>(),
-          ::py::arg("start"),
-          ::py::arg("target"),
-          ::py::arg("includeBoth"))
+          nb::arg("start").none(),
+          nb::arg("target").none(),
+          nb::arg("includeBoth"))
       .def(
           "satisfy",
           +[](const dart::dynamics::Chain::Criteria* self)
@@ -178,12 +176,20 @@ void Chain(py::module& m)
               -> dart::dynamics::Chain::Criteria {
             return dart::dynamics::Chain::Criteria::convert(criteria);
           },
-          ::py::arg("criteria"))
-      .def_readwrite("mStart", &dart::dynamics::Chain::Criteria::mStart)
-      .def_readwrite("mTarget", &dart::dynamics::Chain::Criteria::mTarget)
-      .def_readwrite(
+          nb::arg("criteria"))
+      .def_rw(
+          "mStart",
+          &dart::dynamics::Chain::Criteria::mStart,
+          dartnb::setterArgument(&dart::dynamics::Chain::Criteria::mStart))
+      .def_rw(
+          "mTarget",
+          &dart::dynamics::Chain::Criteria::mTarget,
+          dartnb::setterArgument(&dart::dynamics::Chain::Criteria::mTarget))
+      .def_rw(
           "mIncludeUpstreamParentJoint",
-          &dart::dynamics::Chain::Criteria::mIncludeUpstreamParentJoint);
+          &dart::dynamics::Chain::Criteria::mIncludeUpstreamParentJoint,
+          dartnb::setterArgument(
+              &dart::dynamics::Chain::Criteria::mIncludeUpstreamParentJoint));
 }
 
 } // namespace python

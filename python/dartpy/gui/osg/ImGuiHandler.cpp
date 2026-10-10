@@ -1,3 +1,5 @@
+#include "detail/dart_nb.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,7 +32,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pointers.hpp"
+#include "gui/osg/ownership.hpp"
 
 #include <dart/gui/osg/ImGuiHandler.hpp>
 #include <dart/gui/osg/ImGuiWidget.hpp>
@@ -41,67 +43,61 @@
 #include <osg/RenderInfo>
 #include <osgGA/GUIActionAdapter>
 #include <osgGA/GUIEventAdapter>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
 
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void ImGuiHandler(py::module& m)
+void ImGuiHandler(nb::module_& m)
 {
-  ::pybind11::class_<
-      dart::gui::osg::ImGuiHandler,
-      osg::ref_ptr<dart::gui::osg::ImGuiHandler>>(m, "ImGuiHandler")
-      .def(::pybind11::init<>())
+  dartnb::dart_class<dart::gui::osg::ImGuiHandler>(m, "ImGuiHandler")
+      .def(dartnb::gui::init<>())
       .def(
           "newFrame",
           +[](dart::gui::osg::ImGuiHandler* self, osg::RenderInfo& renderInfo) {
             self->newFrame(renderInfo);
           },
-          ::pybind11::arg("renderInfo"))
+          nb::arg("renderInfo"))
       .def(
           "render",
           +[](dart::gui::osg::ImGuiHandler* self, osg::RenderInfo& renderInfo) {
             self->render(renderInfo);
           },
-          ::pybind11::arg("renderInfo"))
+          nb::arg("renderInfo"))
       .def(
           "setCameraCallbacks",
           +[](dart::gui::osg::ImGuiHandler* self, osg::Camera* camera) {
             self->setCameraCallbacks(camera);
           },
-          ::pybind11::arg("camera"))
+          nb::arg("camera").none())
       .def(
           "hasWidget",
           +[](const dart::gui::osg::ImGuiHandler* self,
               const std::shared_ptr<dart::gui::osg::ImGuiWidget>& widget)
               -> bool { return self->hasWidget(widget); },
-          ::pybind11::arg("widget"))
+          nb::arg("widget").none())
       .def(
           "addWidget",
           +[](dart::gui::osg::ImGuiHandler* self,
               const std::shared_ptr<dart::gui::osg::ImGuiWidget>& widget) {
             self->addWidget(widget);
           },
-          ::pybind11::arg("widget"))
+          nb::arg("widget").none())
       .def(
           "addWidget",
           +[](dart::gui::osg::ImGuiHandler* self,
               const std::shared_ptr<dart::gui::osg::ImGuiWidget>& widget,
               bool visible) { self->addWidget(widget, visible); },
-          ::pybind11::arg("widget"),
-          ::pybind11::arg("visible"))
+          nb::arg("widget").none(),
+          nb::arg("visible"))
       .def(
           "removeWidget",
           +[](dart::gui::osg::ImGuiHandler* self,
               const std::shared_ptr<dart::gui::osg::ImGuiWidget>& widget) {
             self->removeWidget(widget);
           },
-          ::pybind11::arg("widget"))
+          nb::arg("widget").none())
       .def(
           "removeAllWidget",
           +[](dart::gui::osg::ImGuiHandler* self) { self->removeAllWidget(); })
@@ -115,10 +111,10 @@ void ImGuiHandler(py::module& m)
             return self->handle(
                 eventAdapter, actionAdapter, object, nodeVisitor);
           },
-          ::pybind11::arg("eventAdapter"),
-          ::pybind11::arg("actionAdapter"),
-          ::pybind11::arg("object"),
-          ::pybind11::arg("nodeVisitor"));
+          nb::arg("eventAdapter"),
+          nb::arg("actionAdapter"),
+          nb::arg("object").none(),
+          nb::arg("nodeVisitor").none());
 }
 
 } // namespace python

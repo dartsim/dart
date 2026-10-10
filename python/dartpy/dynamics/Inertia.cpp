@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,47 +34,41 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "eigen_geometry_pybind.h"
+#include "eigen_pybind.h"
+
 #include <dart/dynamics/Inertia.hpp>
 
 #include <dart/math/MathTypes.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <pybind11/pybind11.h>
 
 #include <memory>
-// #include <pybind11/stl.h>
-#include "eigen_geometry_pybind.h"
-#include "eigen_pybind.h"
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void Inertia(py::module& m)
+void Inertia(nb::module_& m)
 {
-  ::py::class_<
-      dart::dynamics::Inertia,
-      std::shared_ptr<dart::dynamics::Inertia>>(m, "Inertia")
+  dartnb::dart_class<dart::dynamics::Inertia>(m, "Inertia")
       .def(
-          ::py::init<double, const Eigen::Vector3d&, const Eigen::Matrix3d&>(),
-          ::py::arg_v("mass", 1),
-          ::py::arg_v(
-              "com", Eigen::Vector3d::Zero(), "Eigen::Vector3d::Zero()"),
-          ::py::arg_v(
-              "momentOfInertia",
-              Eigen::Matrix3d::Identity(),
-              "Eigen::Matrix3d::Identity()"))
+          dartnb::
+              init<double, const Eigen::Vector3d&, const Eigen::Matrix3d&>(),
+          (nb::arg("mass") = 1),
+          (nb::arg("com").sig("Eigen::Vector3d::Zero()")
+           = Eigen::Vector3d::Zero()),
+          (nb::arg("momentOfInertia").sig("Eigen::Matrix3d::Identity()")
+           = Eigen::Matrix3d::Identity()))
       .def(
-          ::py::init<const Eigen::Matrix6d&>(),
-          ::py::arg("spatialInertiaTensor"))
+          dartnb::init<const Eigen::Matrix6d&>(),
+          nb::arg("spatialInertiaTensor"))
       .def(
           "setMass",
           +[](dart::dynamics::Inertia* self, double mass) {
             self->setMass(mass);
           },
-          ::py::arg("mass"))
+          nb::arg("mass"))
       .def(
           "getMass",
           +[](const dart::dynamics::Inertia* self) -> double {
@@ -81,19 +79,19 @@ void Inertia(py::module& m)
           +[](dart::dynamics::Inertia* self, const Eigen::Vector3d& com) {
             self->setLocalCOM(com);
           },
-          ::py::arg("com"))
+          nb::arg("com"))
       .def(
           "getLocalCOM",
           +[](const dart::dynamics::Inertia* self) -> const Eigen::Vector3d& {
             return self->getLocalCOM();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "setMoment",
           +[](dart::dynamics::Inertia* self, const Eigen::Matrix3d& moment) {
             self->setMoment(moment);
           },
-          ::py::arg("moment"))
+          nb::arg("moment"))
       .def(
           "getMoment",
           +[](const dart::dynamics::Inertia* self) -> Eigen::Matrix3d {
@@ -104,28 +102,28 @@ void Inertia(py::module& m)
           +[](dart::dynamics::Inertia* self, const Eigen::Matrix6d& spatial) {
             self->setSpatialTensor(spatial);
           },
-          ::py::arg("spatial"))
+          nb::arg("spatial"))
       .def(
           "getSpatialTensor",
           +[](const dart::dynamics::Inertia* self) -> const Eigen::Matrix6d& {
             return self->getSpatialTensor();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "transformed",
           +[](const dart::dynamics::Inertia* self,
               const Eigen::Isometry3d& transform) {
             return self->transformed(transform);
           },
-          ::py::arg("transform"))
+          nb::arg("transform"))
       .def(
           "transform",
           +[](dart::dynamics::Inertia* self,
               const Eigen::Isometry3d& transform) -> dart::dynamics::Inertia& {
             return self->transform(transform);
           },
-          ::py::arg("transform"),
-          ::py::return_value_policy::reference_internal)
+          nb::arg("transform"),
+          nb::rv_policy::reference_internal)
       .def(
           "verify",
           +[](const dart::dynamics::Inertia* self,
@@ -133,8 +131,8 @@ void Inertia(py::module& m)
               double tolerance) -> bool {
             return self->verify(printWarnings, tolerance);
           },
-          ::py::arg_v("printWarnings", true),
-          ::py::arg_v("tolerance", 1e-8))
+          (nb::arg("printWarnings") = true),
+          (nb::arg("tolerance") = 1e-8))
       .def(
           "__eq__",
           +[](const dart::dynamics::Inertia* self,
@@ -149,9 +147,9 @@ void Inertia(py::module& m)
             return dart::dynamics::Inertia::verifyMoment(
                 moment, printWarnings, tolerance);
           },
-          ::py::arg("moment"),
-          ::py::arg_v("printWarnings", true),
-          ::py::arg_v("tolerance", 1e-8))
+          nb::arg("moment"),
+          (nb::arg("printWarnings") = true),
+          (nb::arg("tolerance") = 1e-8))
       .def_static(
           "verifySpatialTensor",
           +[](const Eigen::Matrix6d& spatial,
@@ -160,9 +158,9 @@ void Inertia(py::module& m)
             return dart::dynamics::Inertia::verifySpatialTensor(
                 spatial, printWarnings, tolerance);
           },
-          ::py::arg("spatial"),
-          ::py::arg_v("printWarnings", true),
-          ::py::arg_v("tolerance", 1e-8));
+          nb::arg("spatial"),
+          (nb::arg("printWarnings") = true),
+          (nb::arg("tolerance") = 1e-8));
 }
 
 } // namespace python

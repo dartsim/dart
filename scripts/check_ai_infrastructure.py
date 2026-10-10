@@ -36,7 +36,6 @@ CONFIG_ONLY_CACHE_VARIABLES = {
     "DART_USE_SYSTEM_GOOGLEBENCHMARK",
     "DART_USE_SYSTEM_GOOGLETEST",
     "DART_USE_SYSTEM_IMGUI",
-    "DART_USE_SYSTEM_PYBIND11",
     "DART_USE_SYSTEM_TRACY",
     "DART_VERBOSE",
 }
@@ -743,8 +742,8 @@ def check_branch_profile(
         "schema_version": 2,
         "profile": "dart6",
         "cpp_standard": "C++17",
-        "python_binding": "pybind11",
-        "optional_python_bindings": ["nanobind"],
+        "python_binding": "nanobind",
+        "optional_python_bindings": [],
         "io_namespace": "dart::utils",
         "gui_backend": "OSG",
     }
@@ -1353,20 +1352,11 @@ def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
         (
             (
                 "add_subdirectory",
-                "dartpy_nanobind",
-                ('if:DART_DARTPY_BINDER STREQUAL "nanobind"',),
+                "dartpy",
+                (),
             ),
             "nanobind_target",
-            "`add_subdirectory(dartpy_nanobind)` must define the nanobind target",
-        ),
-        (
-            (
-                "add_subdirectory",
-                "dartpy",
-                ('else:DART_DARTPY_BINDER STREQUAL "nanobind"',),
-            ),
-            "pybind11_target",
-            "`add_subdirectory(dartpy)` must define the default pybind11 target",
+            "`add_subdirectory(dartpy)` must define the nanobind target",
         ),
         (
             (
@@ -1416,9 +1406,7 @@ def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
         return
     path_positions = (positions["windows_path"], positions["posix_path"])
     if not (
-        max(positions["nanobind_target"], positions["pybind11_target"])
-        < positions["dartpy_output"]
-        < min(path_positions)
+        positions["nanobind_target"] < positions["dartpy_output"] < min(path_positions)
         and max(path_positions) < positions["pytest_target"]
     ):
         errors.append(
@@ -1647,7 +1635,6 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
     required_runtime_config_values = (
         ("BUILD_TESTING", "ON"),
         ("DART_BUILD_DARTPY", "ON"),
-        ("DART_USE_SYSTEM_PYBIND11", "ON"),
     )
     for variable, expected_value in required_runtime_config_values:
         if config_commands and any(
@@ -3210,7 +3197,6 @@ def check_cmake_test_graph(
     for variable in (
         "BUILD_TESTING",
         "DART_BUILD_DARTPY",
-        "DART_USE_SYSTEM_PYBIND11",
     ):
         if cache.get(variable) != "ON":
             errors.append(f"{prefix}: configured `{variable}` must be `ON`")
@@ -4069,10 +4055,9 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
         encoding="utf-8"
     )
     python_frontmatter = python_skill.split("---", 2)[1]
-    for binder in ("pybind11", "nanobind"):
-        if binder not in python_frontmatter:
-            errors.append(f"dart-python: transition metadata must name {binder}")
-    for marker in ("remains the default", "python/dartpy_nanobind/"):
+    if "nanobind" not in python_frontmatter:
+        errors.append("dart-python: metadata must name nanobind")
+    for marker in ("only binder", "python/dartpy/"):
         if marker not in python_skill:
             errors.append(f"dart-python: missing binder contract marker `{marker}`")
 
@@ -4659,9 +4644,8 @@ def exercise_scenarios(
                 "Images are never the",
                 "text/image disagreement",
                 "C++17",
-                "pybind11",
-                "approved DART 6.21 opt-in nanobind binder",
-                "`python/dartpy_nanobind/`",
+                "approved DART 6.21 nanobind binder",
+                "`python/dartpy/`",
                 "`dart::utils`",
                 "OSG",
                 "configured CMake File API result",

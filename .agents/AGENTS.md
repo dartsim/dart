@@ -9,5 +9,5 @@ alongside `.claude/skills/`.
   `pixi run sync-ai-commands` and `pixi run check-ai-commands`.
 - Preserve unrelated skills in this shared directory. The sync tool may remove
   only paths owned by the DART-generated manifest.
-- Keep release-specific C++17, pybind11, `dart::utils`, OSG, and Gazebo
+- Keep release-specific C++17, nanobind, `dart::utils`, OSG, and Gazebo
   assumptions.

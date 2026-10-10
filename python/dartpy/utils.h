@@ -1,3 +1,5 @@
+#include "detail/dart_nb.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -31,8 +33,6 @@
  */
 
 #pragma once
-
-#include <pybind11/pybind11.h>
 
 namespace dart {
 namespace python {

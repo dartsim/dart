@@ -2,7 +2,7 @@
 
 import pytest
 
-from ._support import IS_NANOBIND, run_isolated
+from ._support import run_isolated
 
 
 def test_cpp_owner_retains_python_overrides_with_nanobind():
@@ -23,12 +23,11 @@ def test_cpp_owner_retains_python_overrides_with_nanobind():
         ref = weakref.ref(objective)
         del objective
         gc.collect()
-        assert (ref() is not None) is {IS_NANOBIND!r}
-        if {IS_NANOBIND!r}:
-            solver = dart.optimizer.GradientDescentSolver(problem)
-            assert solver.solve()
-            assert calls
-            del solver
+        assert (ref() is not None) is True
+        solver = dart.optimizer.GradientDescentSolver(problem)
+        assert solver.solve()
+        assert calls
+        del solver
         del problem
         gc.collect()
         assert ref() is None

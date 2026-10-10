@@ -37,8 +37,8 @@ and compatibility detail in the owner docs named by `AGENTS.md`.
 - DART 6 is a compatibility support lane. Preserve existing public headers,
   package components, and downstream Gazebo/gz-physics behavior unless a
   maintainer explicitly accepts a breaking change.
-- DART 6 permits the approved opt-in nanobind binder; pybind11 remains the
-  default during the transition. Binder contracts live in
+- dartpy uses the approved nanobind binder exclusively on `main`; release
+  branches keep the binder they shipped with. Binder contracts live in
   `docs/onboarding/python-bindings.md`.
 - Target `main`, where new patches land; backports to a `release-6.*`
   stabilization or maintenance branch use `dart-backport-pr`. A stabilization
