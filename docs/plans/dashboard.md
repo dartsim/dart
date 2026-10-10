@@ -10,7 +10,7 @@ Priority order is document order. Active implementation handoff remains in
 
 - Owner doc: [performance methodology](../onboarding/profiling.md#performance-methodology)
 - Status: Proposed
-- Horizon: Next (DART 6.21)
+- Horizon: Next
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
 - Predecessor: [PLAN-621: DART 6.20.0 performance closeout](archive.md#plan-621-dart-6200-performance-closeout).
 - Next step: Continuing [#3056](https://github.com/dartsim/dart/issues/3056)
@@ -24,7 +24,7 @@ Priority order is document order. Active implementation handoff remains in
 
 - Owner doc: [deformable body performance](../dev_tasks/dart6_deformable_body_performance/README.md)
 - Status: Active
-- Horizon: Next (DART 6.21)
+- Horizon: Next
 - Dimension: Research feature parity, CPU performance, and compatibility.
 - Scope: Jain/Liu point-mass surface flesh only; do not restart volumetric FEM
   on the DART 6 line. See the
@@ -44,8 +44,10 @@ Priority order is document order. Active implementation handoff remains in
 - Gate: Focused soft-body tests; per-row correctness and same-host CPU evidence;
   one-thread and host-capped multi-thread determinism/scaling; allocation and
   Gazebo gates before any collision, constraint, or backend-default change.
-  Parity rows close only with evidence; dispositions apply only where their
-  acceptance rules permit them.
+  Parity rows close only with evidence that meets the owner doc's
+  [acceptance gates](../dev_tasks/dart6_deformable_body_performance/README.md#acceptance);
+  only multicore scaling and the paired benchmark artifact accept an approved
+  disposition.
 
 ### PLAN-620: Dependency Minimization And Collision Backends
 

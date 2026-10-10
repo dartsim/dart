@@ -8,7 +8,8 @@
 - **2026-07-23 acceptance:** The earlier Jain/Liu deferrals were retracted.
   Require per-row correctness and CPU-performance evidence on DART's in-tree
   configurations plus normalized paper metrics, with zero rigid-body runtime
-  overhead. PLAN-622 owns remaining rows and permitted dispositions.
+  overhead. The task README's [acceptance gates](README.md#acceptance) own
+  the remaining rows and permitted dispositions.
 - **Implementation:** Preserve `SoftBodyNode` as the public API. Activation
   stays opt-in; public matrices exclude retained point-mass acceleration.
   Retained phase mirrors were rejected on measurements; contiguous object
