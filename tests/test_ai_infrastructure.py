@@ -381,6 +381,28 @@ def test_branch_profile_marker_mutations_are_rejected():
 @pytest.mark.parametrize(
     ("field", "value"),
     [
+        ("python_binding", "nanobind"),
+        ("optional_python_bindings", []),
+        ("optional_python_bindings", ["pybind11"]),
+    ],
+)
+def test_branch_profile_preserves_default_and_opt_in_binders(field, value):
+    profile = json.loads((ROOT / "docs" / "ai" / "branch-profile.json").read_text())
+    errors = []
+    infra.check_branch_profile(ROOT, errors, profile)
+    assert errors == []
+    assert "python/dartpy_nanobind" in profile["required_paths"]
+    assert "python/dartpy/nanobind" in profile["forbidden_paths"]
+
+    profile[field] = value
+    infra.check_branch_profile(ROOT, errors, profile)
+
+    assert any(f"`{field}` must be" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
         ("required_markers", 1),
         ("required_paths", [1]),
         ("forbidden_markers", [""]),
@@ -2857,16 +2879,13 @@ def test_test_gate_contract_requires_dartpy_path_before_tests(tmp_path):
     _copy_test_gate_contract(tmp_path)
     cmake = tmp_path / "python/CMakeLists.txt"
     text = cmake.read_text(encoding="utf-8")
-    old = (
-        "add_subdirectory(dartpy)\n"
-        'set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")'
+    output = 'set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")'
+    condition = 'if(DART_DARTPY_BINDER STREQUAL "nanobind")'
+    assert output in text and condition in text
+    text = text.replace(output, "", 1)
+    cmake.write_text(
+        text.replace(condition, f"{output}\n{condition}", 1), encoding="utf-8"
     )
-    new = (
-        'set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")\n'
-        "add_subdirectory(dartpy)"
-    )
-    assert old in text
-    cmake.write_text(text.replace(old, new, 1), encoding="utf-8")
     errors = []
 
     infra.check_test_gate_contract(tmp_path, errors)
@@ -2875,6 +2894,19 @@ def test_test_gate_contract_requires_dartpy_path_before_tests(tmp_path):
         "define `dartpy`, derive its configuration-aware output path" in error
         for error in errors
     )
+
+
+@pytest.mark.parametrize("binder", ("dartpy", "dartpy_nanobind"))
+def test_dartpy_runtime_path_contract_requires_both_binder_branches(tmp_path, binder):
+    _copy_test_gate_contract(tmp_path)
+    cmake = tmp_path / "python/CMakeLists.txt"
+    text = cmake.read_text(encoding="utf-8")
+    cmake.write_text(text.replace(f"add_subdirectory({binder})", "", 1))
+    errors = []
+
+    infra.check_dartpy_runtime_path_contract(tmp_path, errors)
+
+    assert any(f"`add_subdirectory({binder})` must define" in error for error in errors)
 
 
 def test_test_gate_contract_rejects_stale_task_handoff_semantics(tmp_path):
@@ -3214,6 +3246,7 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
         "name": "main",
         "cpp_standard": "C++17",
         "python_binding": "pybind11",
+        "optional_python_bindings": ["nanobind"],
         "io_namespace": "dart::utils",
         "gui_backend": "OSG",
     }

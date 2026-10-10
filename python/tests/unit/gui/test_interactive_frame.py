@@ -2,6 +2,14 @@ import subprocess
 import sys
 import textwrap
 
+import dartpy as dart
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    not hasattr(getattr(dart, "gui", None), "osg"),
+    reason="the opt-in nanobind binder does not yet include gui.osg",
+)
+
 
 def test_interactive_frame_shape_frames_keep_owner_alive():
     script = textwrap.dedent(

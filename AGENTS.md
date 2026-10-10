@@ -5,7 +5,8 @@ This file is the repository pointer board. Start every task with
 
 ## Project Profile
 
-- **WHAT**: C++17 robotics physics engine with pybind11-based dartpy bindings
+- **WHAT**: C++17 robotics physics engine with dartpy bindings (pybind11 by
+  default; opt-in nanobind for DART 6.21)
 - **WHY**: Stable DART 6 LTS compatibility for users and Gazebo/gz-physics
 - **HOW**: Use repository `pixi run ...` tasks; run `pixi run lint` before commits
 
@@ -15,7 +16,7 @@ This file is the repository pointer board. Start every task with
 pixi run config       # Configure the default CMake/Ninja build
 pixi run build        # Build C++ libraries and utilities
 pixi run test         # Build and run C++ tests
-pixi run build-py-dev # Build pybind11 dartpy bindings
+pixi run build-py-dev # Build the selected dartpy binder
 pixi run test-py      # Run dartpy tests
 pixi run test-all     # Build defaults and run C++/Python tests
 pixi run lint         # Format code, docs, TOML, and spelling (auto-fixes)
@@ -52,9 +53,11 @@ the repository root to the working directory.
 
 - Branch from `origin/main` into a non-tracking topic branch; never
   commit directly to `main` or `release-*`.
-- Preserve C++17, pybind11, `dart::utils` parsers, OSG, installed headers,
+- Preserve C++17, the default pybind11 binder, `dart::utils` parsers, OSG, installed headers,
   package components, ABI-sensitive interfaces, default simulation behavior,
   and Gazebo/gz-physics compatibility unless a maintainer approves otherwise.
+- The approved DART 6.21 migration permits an opt-in nanobind binder under
+  `python/dartpy_nanobind/`; follow `docs/onboarding/python-bindings.md`.
 - `main` is the development branch for the next release (currently DART 6.20).
   PRs target `main`, where new patches land; there is no maintenance branch.
   Backports to a `release-6.*` branch cut from a release tag use

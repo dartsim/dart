@@ -9,6 +9,11 @@ import dartpy as dart
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.skipif(
+    not hasattr(getattr(dart, "gui", None), "osg"),
+    reason="the opt-in nanobind binder does not yet include gui.osg",
+)
+
 
 def load_tutorial(name, finished=True):
     filename = "main_finished.py" if finished else "main.py"

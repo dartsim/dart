@@ -35,6 +35,113 @@ dependency records; later unchanged builds should report `no work to do`.
 Run Python tests when dependency, package, or target changes can alter dartpy
 imports, linked components, or installed package behavior.
 
+## Nanobind binder
+
+DART 6.21 adds an opt-in non-GUI binder under `python/dartpy_nanobind/`.
+`DART_DARTPY_BINDER` selects `pybind11` (the default) or `nanobind`; both build
+the `dartpy` module with the same non-GUI namespaces, names, and overloads.
+The existing pybind11 sources stay under `python/dartpy/` during the
+transition. The nanobind binder currently exposes no OSG GUI classes.
+
+Configure the Pixi build, select the binder in its CMake cache, and run the
+regular tests:
+
+```bash
+pixi run config
+# Linux/macOS:
+pixi run cmake -S . -B build/default/cpp/Release -DDART_DARTPY_BINDER=nanobind
+# Windows: use build/default/cpp instead of build/default/cpp/Release.
+pixi run test-py
+```
+
+Use `-DDART_DARTPY_BINDER=pybind11` to switch back. `DART_USE_SYSTEM_NANOBIND`
+defaults to `OFF`, which fetches nanobind v3.1.0 with its `robin_map`
+submodule. With `ON`, CMake locates the package's CMake directory using
+`python -m nanobind --cmake_dir` and requires nanobind 3.1 or newer. The
+binder requires Python 3.10 or newer. The installed location, module name, and
+configured build output `${DART_PYTHON_BUILD_DIR}/dartpy` match the pybind11
+build, preserving the Pixi example runners. The generated target runtime path
+remains authoritative for tests and CMake example targets.
+
+### API differences
+
+- Python recognizes only the primary C++ base for `isinstance`, `issubclass`,
+  and the method resolution order. Secondary-base methods remain callable,
+  and secondary-base arguments still accept the derived objects.
+- Exception types and messages can differ, including unknown C++ exceptions.
+- Boolean parameters accept only Python `True` and `False`. Convert NumPy
+  booleans explicitly, for example `joint.setLimitEnforcement(bool(flag))`.
+- String parameters accept `str`; decode `bytes` explicitly before passing it.
+
+Python overrides and subclass state stay alive while C++ uses the object.
+Wrappers for graph objects, including joints and degrees of freedom, keep
+their skeleton alive. Views of const Eigen data are read-only; code that
+needs a writable independent array should make an explicit copy.
+
+### Binding infrastructure
+
+The cast registry records C++ inheritance edges and computes new paths
+incrementally as classes register. DART casters use these paths to adjust
+secondary and virtual base pointers. Every binding translation unit starts
+with `detail/dart_nb.hpp`, which selects the common pointer casters and checks
+their selection with compile-time assertions. Add `detail/eigen.hpp` for Eigen
+bindings and `detail/array.hpp` to preserve pybind11's `FixedSize` array
+annotations using nanobind's array conversion. Use
+`detail/optimizer_properties.hpp` for optimizer property values and
+`detail/ik_properties.hpp` for inverse-kinematics property values. The property
+headers also assert their caster selection. CMake runs
+`scripts/nanobind/check_guards.py` to enforce the first include and required
+headers and reject conflicting stock Eigen, `shared_ptr`, and `array.h`
+casters. Missing optional STL casters fail compilation. Keep DART headers and
+STL casters limited to the types that a translation unit uses.
+
+Factory-backed Python subclasses create the native object when the base
+initializer receives its arguments, preserving translated initializers and
+Python identity. A small attachment helper in `detail/construction.cpp` uses
+nanobind internals to retain the original factory control block without moving
+the native object. Compile-time ABI/layout checks guard this dependency; audit
+the helper when nanobind changes its internals ABI.
+
+The Eigen caster preserves Eigen dimensions, strides, and ownership. By-value
+results move into a heap owner. At runtime, NumPy 2 uses its C API to export
+the array; NumPy 1 uses nanobind's `numpy.asarray` export with that same owner.
+Both paths keep returned storage alive. The NumPy export cache assumes the
+GIL and a single interpreter; isolated interpreters and free-threaded Python
+need a separate ownership and synchronization design.
+
+Registered owners expose native Python references to cyclic GC through
+traverse and clear slots. Coverage includes objective/solver and constraint
+state, collision options, composite retrievers, IK/error methods and their
+properties, skeleton/body/shape state, contact inverse dynamics, and parser
+options/loaders. Collection stays conservative when native aliases exist
+outside the visible ownership graph or several owners share one Python pin.
+Direct traversal requires exclusive native ownership. Borrowed graph and field
+proxies, including body and shape nodes, cannot prove that exclusivity and
+retain their cycles until Python back-references are cleared explicitly. This
+prevents GC from clearing simulation state still used by a live native owner.
+Directly constructed `InverseKinematics` objects also keep an internal native
+reference and require that cleanup; `getOrCreateIK()` owners can prove
+exclusivity when no other native references remain. An IK cycle whose Python
+child also retains its Skeleton has the body's additional IK reference and
+therefore requires explicit back-reference cleanup too.
+A weak-owner registry alone cannot solve this: native `shared_ptr` aliases
+outside binding setters are invisible, and each shared pin owns only one
+Python reference. Reporting it once per owner would miscount GC references;
+clearing a chosen owner could release a still-used Python override. Supporting
+this case requires tracking the native ownership graph.
+
+Private local-retriever state in `PackageResourceRetriever`, indirect
+`Linkage`/`Chain` graph ownership, and callbacks stored in `RaycastOption.mFilter`
+are outside this enumeration. Clear Python back-references explicitly, for
+example `child.owner = None`, and clear stored callbacks when releasing such
+cycles. Private native owners need public traversal/reset APIs, and callbacks
+need GC-visible ownership before those cases can participate safely.
+
+Reusable porting and API probes live under `scripts/nanobind/`. The regular
+`python/tests/` suite runs against the selected binder and marks accepted
+binder differences explicitly. Linux and macOS CI add a Python-only nanobind
+job; Windows adds a Python matrix row using its existing unity build.
+
 ## Wheels
 
 macOS and Windows wheel packaging is Pixi-managed. `wheel-build-core`,
