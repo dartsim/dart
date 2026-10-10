@@ -54,6 +54,9 @@ foreach(dartpy_library ${dartpy_libraries})
 endforeach()
 
 target_link_libraries(${pybind_module} PUBLIC ${dartpy_libraries})
+if(TARGET dart-utils-assets)
+  target_compile_definitions(${pybind_module} PRIVATE DARTPY_HAS_UTILS_ASSETS)
+endif()
 
 target_compile_definitions(
   ${pybind_module}

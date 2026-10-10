@@ -1,6 +1,6 @@
 # Build System Notes
 
-DART uses CMake through Pixi tasks. Dependency cleanup must preserve
+DART 6 uses CMake through Pixi tasks. Dependency cleanup must preserve
 exported CMake package behavior unless a maintainer explicitly accepts a
 compatibility break.
 
@@ -23,10 +23,16 @@ primary C++ libraries:
 | `io` | `dart-io` | SKEL, SDF, MJCF and URDF loading |
 | `gui` | `dart-gui` | OSG and ImGui integration |
 
-The default pybind11 `dartpy` module includes all three libraries. The opt-in
-nanobind binder currently includes core and IO; its existing GUI limitation
-remains during the binder transition. See [Python bindings](python-bindings.md)
-for the binder contracts and wheel checks.
+Both `dartpy` binders include all three libraries. See
+[Python bindings](python-bindings.md) for the binder contracts and wheel checks.
+
+Legacy library targets also remain buildable through
+`cmake --build <build-directory> --target <legacy-target>`; they build the
+corresponding canonical library.
+
+Gazebo compatibility covers rebuilding released `gz-physics` and `gz-sim`
+without source changes. Existing binary plugins must be rebuilt against the
+new library layout.
 
 ## DART 6.21 Headless Core
 
@@ -59,6 +65,10 @@ The `dart::utils` namespace and `dart/utils/...` header paths are preserved.
 Legacy `utils` / `utils-urdf` components and `dart-utils` / `dart-utils-urdf`
 targets forward to `dart-io`; applications linked to their former shared
 libraries must rebuild.
+
+`DART_BUILD_UTILS_ASSETS=ON` adds the optional online model retriever to
+`dart-io` and requires libcurl and OpenSSL. Its `utils-assets` component and
+`dart-utils-assets` target forward to `dart-io`.
 
 ## DART 6.21 GUI
 

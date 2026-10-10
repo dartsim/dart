@@ -9,18 +9,18 @@ description: "DART Manage PR: manage an open DART pull request through CI, revie
 
 # dart-manage-pr
 
-Use this skill in Codex to run the DART `dart-manage-pr` workflow. The editable
-workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Use this skill to run the DART `dart-manage-pr` workflow. The editable workflow
+source lives in `.claude/commands/`; this generated skill is its entrypoint for
+Codex and for OpenCode's skill loader.
 
 ## Invocation
 
 - Claude Code/OpenCode: `/dart-manage-pr <arguments>`
 - Codex: `$dart-manage-pr <arguments>`
 
-Treat the text after the skill name as `$ARGUMENTS`. When the workflow
-references `$1`, `$2`, etc., map those to the positional values supplied by the
-user.
+Treat the text after the skill name, or the user's request when the skill is
+loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,
+etc., map those to the positional values supplied by the user.
 
 ## Command Body
 
@@ -29,6 +29,7 @@ mutations: $ARGUMENTS
 ## Required Reading
 @AGENTS.md
 @docs/onboarding/contributing.md
+@docs/onboarding/release-management.md
 @docs/onboarding/ci-cd.md
 @docs/onboarding/ai-tools.md
 
@@ -82,11 +83,14 @@ gh pr checks <PR_NUMBER>
 ## Workflow
 
 1. Confirm scope and policy:
-   - Check that the base branch, title, and PR template are correct, and that
-     the branch-matching DART 6.x release milestone is set; if it is missing,
-     set it only after explicit maintainer/user approval.
-   - Confirm the PR targets `main` (or, for a `dart-backport-pr` backport, a
-     maintained `release-6.*` branch; none exists right now).
+   - Check the live base branch, title, and PR template. Fetch that base and
+     read its `docs/onboarding/release-management.md` § "Release target".
+     Verify the exact `DART <Next release>` milestone is open on GitHub;
+     correct stale or missing metadata only after maintainer/user approval.
+     For an explicit rollover, follow the owner's proposed-target rule.
+   - Confirm ordinary changes target `main`. Backports and release-specific
+     packaging, CI, or branch guidance may target a maintained `release-6.*`
+     branch; backports use `dart-backport-pr`.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
    - Check the body against `docs/onboarding/contributing.md` § "PR

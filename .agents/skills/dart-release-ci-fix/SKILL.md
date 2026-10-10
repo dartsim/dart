@@ -1,6 +1,6 @@
 ---
 name: dart-release-ci-fix
-description: "DART Release CI Fix: debug and fix CI failures on the DART 6.20 development branch"
+description: "DART Release CI Fix: debug and fix CI failures on DART 6 development and release branches"
 ---
 <!-- AUTO-GENERATED FILE - DO NOT EDIT MANUALLY -->
 <!-- Source: .claude/commands/dart-release-ci-fix.md -->
@@ -9,18 +9,18 @@ description: "DART Release CI Fix: debug and fix CI failures on the DART 6.20 de
 
 # dart-release-ci-fix
 
-Use this skill in Codex to run the DART `dart-release-ci-fix` workflow. The editable
-workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Use this skill to run the DART `dart-release-ci-fix` workflow. The editable workflow
+source lives in `.claude/commands/`; this generated skill is its entrypoint for
+Codex and for OpenCode's skill loader.
 
 ## Invocation
 
 - Claude Code/OpenCode: `/dart-release-ci-fix <arguments>`
 - Codex: `$dart-release-ci-fix <arguments>`
 
-Treat the text after the skill name as `$ARGUMENTS`. When the workflow
-references `$1`, `$2`, etc., map those to the positional values supplied by the
-user.
+Treat the text after the skill name, or the user's request when the skill is
+loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,
+etc., map those to the positional values supplied by the user.
 
 ## Command Body
 
@@ -44,8 +44,11 @@ applicable.
    gh run view <RUN_ID> --log-failed
    gh run view <RUN_ID> --job <JOB_ID> --log
    ```
-2. Resolve the target from live state. Default to `main`; for a PR,
-   verify its base rather than trusting a stale handoff.
+2. Resolve the target from the live PR base or failing run's branch.
+   Default to `main` when no target is specified. Fetch that target and read its
+   `docs/onboarding/release-management.md` § "Release target"; verify the exact
+   `DART <Next release>` milestone is open on GitHub. Publishing requires
+   explicit maintainer/user approval.
 3. If continuing an existing PR, fetch and checkout that branch. Otherwise
    branch from the resolved target branch without resetting an existing local
    branch:
@@ -67,7 +70,7 @@ applicable.
 6. Run `pixi run lint` and release-relevant build/tests.
 7. Ask for explicit maintainer/user approval before pushing, creating, or
    updating the PR. After approval, push to the existing PR when step 3
-   continued one; otherwise open a new draft PR with the current release
+   continued one; otherwise open a new draft PR with the resolved next-release
    milestone and PR template. Then follow `docs/onboarding/ai-tools.md`
    § "PR Lifecycle".
 8. Monitor CI until green.

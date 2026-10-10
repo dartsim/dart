@@ -169,6 +169,7 @@ else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF)
+dart_option(DART_BUILD_UTILS_ASSETS "Build the versioned robot model retriever" OFF)
 set(
   DART_DARTPY_BINDER
   "pybind11"
@@ -192,15 +193,8 @@ endif()
 if(DART_BUILD_DARTPY AND NOT DART_BUILD_IO)
   message(FATAL_ERROR "dartpy requires DART_BUILD_IO.")
 endif()
-if(
-  DART_BUILD_DARTPY
-  AND DART_DARTPY_BINDER STREQUAL "pybind11"
-  AND NOT DART_BUILD_GUI
-)
-  message(
-    FATAL_ERROR
-    "The all-in-one pybind11 dartpy package requires DART_BUILD_GUI."
-  )
+if(DART_BUILD_DARTPY AND NOT DART_BUILD_GUI)
+  message(FATAL_ERROR "The all-in-one dartpy package requires DART_BUILD_GUI.")
 endif()
 dart_option(DART_ENABLE_GUI_OSG_SMOKE_TESTS "Build the off-screen GUI OSG capture smoke test (needs a DISPLAY or Xvfb)" OFF)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)

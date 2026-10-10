@@ -57,11 +57,12 @@ add_component_targets(${PROJECT_NAME} ${component_name} ${target_name})
 add_component_dependencies(${PROJECT_NAME} ${component_name} dart)
 add_component_dependency_packages(${PROJECT_NAME} ${component_name} tinyxml2 urdfdom)
 
-# Legacy names forward to the complete IO library for rebuilt consumers.
+# Header sources retain legacy --target build commands without another library.
 foreach(legacy_component utils utils-urdf)
   set(legacy_target ${PROJECT_NAME}-${legacy_component})
-  add_library(${legacy_target} INTERFACE)
+  add_library(${legacy_target} INTERFACE ${hdrs})
   target_link_libraries(${legacy_target} INTERFACE ${target_name})
+  add_dependencies(${legacy_target} ${target_name})
   add_component(${PROJECT_NAME} ${legacy_component})
   add_component_targets(${PROJECT_NAME} ${legacy_component} ${legacy_target})
 endforeach()
@@ -88,5 +89,9 @@ install(
   DESTINATION include/dart/utils/detail
   COMPONENT headers
 )
+
+if(DART_BUILD_UTILS_ASSETS)
+  add_subdirectory(assets)
+endif()
 
 dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})

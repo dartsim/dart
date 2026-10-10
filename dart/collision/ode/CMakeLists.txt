@@ -32,8 +32,9 @@ dart_property_add(DART_CORE_LINK_LIBRARIES
   $<BUILD_INTERFACE:${ode_target}> $<INSTALL_INTERFACE:$<1:ODE::ODE>>
 )
 dart_property_add(DART_CORE_DEPENDENCY_PACKAGES ODE)
-add_library(${target_name} INTERFACE)
+add_library(${target_name} INTERFACE ${hdrs})
 target_link_libraries(${target_name} INTERFACE dart)
+add_dependencies(${target_name} dart)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

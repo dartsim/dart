@@ -19,9 +19,18 @@ if(
   io IN_LIST DART_TEST_COMPONENTS
   OR utils IN_LIST DART_TEST_COMPONENTS
   OR utils-urdf IN_LIST DART_TEST_COMPONENTS
+  OR utils-assets IN_LIST DART_TEST_COMPONENTS
 )
   add_executable(package_io io.cpp)
-  target_link_libraries(package_io PRIVATE dart-io)
+  foreach(io_component io utils-assets utils-urdf utils)
+    if(io_component IN_LIST DART_TEST_COMPONENTS)
+      target_link_libraries(package_io PRIVATE dart-${io_component})
+      break()
+    endif()
+  endforeach()
+  if(utils-assets IN_LIST DART_TEST_COMPONENTS)
+    target_compile_definitions(package_io PRIVATE DART_PACKAGE_HAS_UTILS_ASSETS)
+  endif()
   add_test(NAME package_io COMMAND package_io "${DART_DIR}/../../doc/dart/data")
 endif()
 

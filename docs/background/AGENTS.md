@@ -1,6 +1,6 @@
 # docs/background/
 
-Agent rules for DART 6.20 theory and research background.
+Agent rules for DART 6 theory and research background.
 
 ## Purpose
 

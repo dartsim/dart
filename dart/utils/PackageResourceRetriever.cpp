@@ -78,7 +78,7 @@ bool PackageResourceRetriever::exists(const common::Uri& _uri)
 
   for (const std::string& packagePath : getPackagePaths(packageName)) {
     common::Uri fileUri;
-    fileUri.fromPath(packagePath + relativePath);
+    fileUri.fromStringOrPath(packagePath + relativePath);
 
     if (mLocalRetriever->exists(fileUri))
       return true;
@@ -96,7 +96,7 @@ common::ResourcePtr PackageResourceRetriever::retrieve(const common::Uri& _uri)
 
   for (const std::string& packagePath : getPackagePaths(packageName)) {
     common::Uri fileUri;
-    fileUri.fromPath(packagePath + relativePath);
+    fileUri.fromStringOrPath(packagePath + relativePath);
 
     if (const auto resource = mLocalRetriever->retrieve(fileUri))
       return resource;
@@ -113,7 +113,7 @@ std::string PackageResourceRetriever::getFilePath(const common::Uri& uri)
 
   for (const std::string& packagePath : getPackagePaths(packageName)) {
     common::Uri fileUri;
-    fileUri.fromPath(packagePath + relativePath);
+    fileUri.fromStringOrPath(packagePath + relativePath);
 
     const auto path = mLocalRetriever->getFilePath(fileUri);
 

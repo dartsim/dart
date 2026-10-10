@@ -22,11 +22,6 @@ requires_display = pytest.mark.skipif(
     "headless hosts)",
 )
 
-if dart._binder == "nanobind":
-    pytest.skip(
-        "the opt-in nanobind binder does not yet include gui.osg",
-        allow_module_level=True,
-    )
 _osg = dart.gui.osg
 
 

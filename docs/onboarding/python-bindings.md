@@ -2,14 +2,18 @@
 
 DART Python bindings are built through the Pixi/CMake workflow.
 
-For DART 6.21, the default pybind11 `dartpy` remains one all-in-one extension
+For DART 6.21, `dartpy` remains one all-in-one extension with either binder,
 containing core, collision backends enabled in the build, IO parsers and
-OSG/ImGui bindings.
-It links `dart`, `dart-io` and `dart-gui`. Enabling `DART_BUILD_DARTPY` with
-this binder requires both `DART_BUILD_IO=ON` and `DART_BUILD_GUI=ON`; a
-headless C++ installation disables the default Python binder. See
+OSG/ImGui bindings. It links `dart`, `dart-io` and `dart-gui`. Enabling
+`DART_BUILD_DARTPY` requires both `DART_BUILD_IO=ON` and `DART_BUILD_GUI=ON`;
+for a headless C++ installation, set `DART_BUILD_DARTPY=OFF`. See
 [build system notes](build-system.md) for the C++ package layout and legacy
 forwarding targets.
+
+With `DART_BUILD_UTILS_ASSETS=ON`, `dart-io` also includes the optional online
+robot model retriever, exposed as `dartpy.utils.ModelResourceRetriever` by both
+binders. See [IO and model loading](io-parsing.md#online-robot-models) for its
+dependencies and verified-cache workflow.
 
 ```bash
 pixi run build-py-dev
@@ -46,11 +50,11 @@ imports, linked components, or installed package behavior.
 
 ## Nanobind binder
 
-DART 6.21 adds an opt-in non-GUI binder under `python/dartpy_nanobind/`.
+DART 6.21 adds an opt-in binder under `python/dartpy_nanobind/`.
 `DART_DARTPY_BINDER` selects `pybind11` (the default) or `nanobind`; both build
-the `dartpy` module with the same non-GUI namespaces, names, and overloads.
+the `dartpy` module with the same namespaces, names, and overloads.
 The existing pybind11 sources stay under `python/dartpy/` during the
-transition. The nanobind binder currently exposes no OSG GUI classes.
+transition. Both binders include `dartpy.gui.osg` and require the GUI component.
 
 Configure the Pixi build, select the binder in its CMake cache, and run the
 regular tests:
@@ -86,6 +90,33 @@ Python overrides and subclass state stay alive while C++ uses the object.
 Wrappers for graph objects, including joints and degrees of freedom, keep
 their skeleton alive. Views of const Eigen data are read-only; code that
 needs a writable independent array should make an explicit copy.
+
+### GUI ownership
+
+GUI Python ancestry follows the primary base: `Viewer` and `ImGuiViewer`, plus
+`DragAndDrop`, `SimpleFrameDnD`, `SimpleFrameShapeDnD`, `BodyNodeDnD`, and
+`InteractiveFrameDnD`, omit `common.Subject` from Python ancestry.
+`InteractiveTool` and `InteractiveFrame` omit `dynamics.Detachable`, inherited
+through `SimpleFrame`. These secondary bases remain usable through native
+arguments and pointer returns; only `isinstance`, `issubclass`, and MRO differ.
+
+OSG trampoline aliases occupy Python instance storage. Their constructors take
+one OSG reference and their destructors release it without deleting that
+co-located memory. Native viewers use heap factories through the hybrid
+construction helper, preserving custom Python subclass initializers.
+
+Viewer retention registries keep Python overrides alive for native world-node,
+event-handler, and attachment edges. Their GC slots detach native edges before
+clearing Python references. Factory deleters retain the registry until native
+destruction finishes. Removed wrappers remain retained while camera callbacks
+or native callback snapshots still reference them; they can outlive removal
+until viewer destruction. `ref_ptr` returns attach ownership only when creating
+a wrapper, preserving identity and avoiding repeated-getter reference growth.
+
+DragAndDrop wrappers observe native destruction notifications and become invalid
+when native code deletes the object. Calls through invalid wrappers raise a
+Python error instead of accessing freed memory. The pybind11 binder does not
+invalidate these wrappers; using one after native deletion is unsupported.
 
 ### Binding infrastructure
 
@@ -150,6 +181,53 @@ Reusable porting and API probes live under `scripts/nanobind/`. The regular
 `python/tests/` suite runs against the selected binder and marks accepted
 binder differences explicitly. Linux and macOS CI add a Python-only nanobind
 job; Windows adds a Python matrix row using its existing unity build.
+
+### pybind11 extensions
+
+A pybind11 extension cannot see nanobind's type registry, so it cannot pass or
+return DART objects by registering nothing, as it could with the pybind11
+binder. The nanobind binder instead exports the `dartpy._C_API` capsule, and
+the installed header `dartpy/pybind11_interop.hpp` turns it into pybind11
+casters:
+
+```cpp
+#include <dartpy/pybind11_interop.hpp> // before any binding code
+
+PYBIND11_MODULE(my_robot, m)
+{
+  m.def("base", [](const dart::dynamics::SkeletonPtr& skeleton) {
+    return skeleton->getBodyNode(0);
+  }, pybind11::return_value_policy::reference);
+}
+```
+
+The casters return the existing dartpy wrapper when there is one, adjust base
+pointers, keep a returned graph object's skeleton alive, and share ownership
+for `std::shared_ptr` arguments and results. They cover `Entity`, `Frame`,
+`SimpleFrame`, `JacobianNode`, `BodyNode`, `ShapeNode`, `Joint`,
+`DegreeOfFreedom`, `MetaSkeleton`, `Skeleton`, `World`, and copies of
+`Eigen::Isometry3d` (`dartpy.math.Isometry3`, which also accepts 4x4 arrays).
+Add another polymorphic class that dartpy binds with
+`DARTPY_PYBIND11_INTEROP_OBJECT(Type, "dartpy.module.Name")` at global scope.
+
+- Include the header in every translation unit that binds these types, and
+  never register them with `pybind11::class_`.
+- Raw-pointer and reference results need an explicit `reference` or
+  `reference_internal` policy. Other policies, including the default
+  `automatic`, would take, copy, or move the object and raise an error; return
+  a `std::shared_ptr` when ownership moves to Python.
+- Keep stored raw pointers' owners alive yourself, for example with
+  `pybind11::keep_alive`.
+- The table passes `std::type_info` and `std::shared_ptr` across modules: build
+  the extension with the same DART headers and C++ standard library ABI as
+  dartpy, and link the same shared DART libraries that dartpy loads.
+  An extension with a mismatched DART version or standard library raises
+  `ImportError` on its first DART conversion; call
+  `dartpy::pybind11_interop::api()` in the module initializer to fail at
+  import instead.
+
+`python/tests/interop/` builds an example extension that the regular suite
+exercises when pybind11 is available.
 
 ## Wheels
 

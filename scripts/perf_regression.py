@@ -220,7 +220,7 @@ ROWS += [
     for name in ("s3w", "s1p")
 ]
 
-# Canonical guard windows from the generalization baseline, measured natively.
+# Canonical guard windows documented in docs/onboarding/ci-cd.md, measured natively.
 # S3/S4 retain their historical 16-thread cells and add serial/4-thread cells.
 DETECTORS = ("dart", "fcl", "bullet", "ode")
 NIGHTLY_ROWS = [
@@ -2441,9 +2441,9 @@ def guard_table(record: dict, previous: str = "") -> str:
         f"Generated at {run['time']} for `{run['commit']}`.",
         f"Environment fingerprint: `{run['env']['fingerprint']}`.",
         "",
-        "Commands and scene definitions: [baseline evidence](https://github.com/dartsim/dart/blob/main/docs/dev_tasks/dart6_performance_generalization/01-baseline-evidence.md).",
+        "Commands and scene definitions: [canonical guard scenes](https://github.com/dartsim/dart/blob/main/docs/onboarding/ci-cd.md#canonical-guard-scenes).",
         "This table is generated evidence, not a fixed reference. Wall time is advisory.",
-        "S3 and S6 drift belongs to the #3056 / D7 owners.",
+        "S3 and S6 drift belongs to the collision and solver maintainers.",
         "",
         "| Row | Detector | Threads | Warm-up / steps | Status | Hash | Contacts | Pairs | Resting | Finite | Cap hit | Max penetration | Allocs / step |",
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
@@ -2503,7 +2503,7 @@ def guard_table(record: dict, previous: str = "") -> str:
         lines.extend(
             [
                 "",
-                "S3 / S6 drift since the prior nightly (informational; #3056 / D7 owners): "
+                "S3 / S6 drift since the prior nightly (informational; collision and solver maintainers): "
                 + ", ".join(drift)
                 + ".",
             ]

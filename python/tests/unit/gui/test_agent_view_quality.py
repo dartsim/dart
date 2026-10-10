@@ -293,8 +293,6 @@ def test_select_viewpoints_rejects_world_without_bounded_renderables():
 
 def test_default_agent_camera_parity():
     # frame_region's distance law matches dart.gui.osg.defaultAgentCamera.
-    if dart._binder == "nanobind":
-        pytest.skip("the opt-in nanobind binder does not yet include gui.osg")
     eye, center, up = dart.gui.osg.defaultAgentCamera(
         [0.0, 0.0, 0.0], 1.0, fovYDeg=30.0
     )

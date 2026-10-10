@@ -1,26 +1,19 @@
 # DART 6 deformable parity — execution plan
 
-> **Scope change, 2026-07-29.** The Kim/Pollard lane has been removed from
-> DART 6; see the decision record in `decisions.md`.
-> The two papers need different discretizations, and DART 6 should carry one
-> deformable model rather than two parallel subsystems. Everything below that
-> concerns the volumetric FEM backend (PR-2, M2.x) is therefore **not** DART 6
-> work. The Jain/Liu lane (PR-3) remains DART 6 work and is unaffected.
-
-Status: **active for the Jain/Liu lane only.** Part A below is the DART 6 plan.
-Part B is retired: the Kim/Pollard volumetric-FEM lane was removed from DART 6 on
-2026-07-29, and its sections are kept as reference material, **not** as
-instructions. Nothing in Part B is DART 6 work.
+Status: **active for the Jain/Liu lane.** The Kim/Pollard volumetric-FEM lane
+was removed from DART 6 on 2026-07-29 (`decisions.md`). Its design notes and
+implementation remain in [PR #3404](https://github.com/dartsim/dart/pull/3404),
+and what it taught about the per-step seam is in the
+[design doc](../../design/dart6_deformable_body.md#per-step-extension-seam).
 
 PR-3a soft-foot SIMBICON shipped 2026-08-01 (#3408, #3423): the biped
 push-recovery row reproduces and is gate-asserted; its motor-noise clause
-stays open in §5. Goal (maintainer direction, 2026-08-01): fully complete
-Part A for the DART 6.20 release, bundling the remaining rows into as few
-PRs as review quality allows. The competitive-envelope definition is settled
-(`decisions.md` item 2, maintainer-confirmed 2026-07-23); what remains of it
-is the performance-acceptance evidence it defines (§8).
-
-# Part A — active DART 6 plan (Jain/Liu lane)
+stays open in §5. Goal: fully complete this plan, bundling the remaining rows
+into as few PRs as review quality allows. The maintainer's 2026-08-01 goal
+targeted DART 6.20; the 2026-10-10 release closeout retargeted the unmet rows
+to DART 6.21. The competitive-envelope definition is settled (the 2026-07-23
+acceptance decision in `decisions.md`); what remains of it is the
+performance-acceptance evidence it defines (§8).
 
 ## 1. North star & success definition
 
@@ -29,7 +22,7 @@ with (a) a runnable DART scene, (b) deterministic correctness/stability evidence
 (c) CPU performance matching the paper's real-time/near-real-time character on a
 normalized target, and (d) `dart`-versus-FCL parity for collision-dependent rows —
 while adding **zero overhead to pure rigid-body simulation** and preserving
-`release-6.20` public API/ABI (new behavior is opt-in, layout-neutral).
+DART 6 public API/ABI (new behavior is opt-in, layout-neutral).
 
 Done = every **Jain/Liu** row of `02-paper-parity-matrix.md` meets the matrix's
 acceptance rule with at least two clean independent review passes and a durable
@@ -37,7 +30,7 @@ demo artifact, and none relies on a deferral. The Kim/Pollard rows in that matri
 are **not** part of this completion rule: they are out of DART 6 scope and
 marked accordingly in the matrix itself.
 
-## 2. Constraint: additive and ABI-safe on release-6.20
+## 2. Constraint: additive and ABI-safe on DART 6
 
 DART 6 work stays additive and ABI-safe: new behavior is opt-in, and existing
 public class layouts, vtables, and default semantics are unchanged. The Jain/Liu
@@ -73,16 +66,16 @@ machine-readable FAIL.
 
 ## 4. Current state (PR-3a shipped; remaining rows in §5)
 
-The release branch contains adaptive contact activation (WP-DB.05), soft
-face-interior contacts (WP-DB.08), coupled-equation correctness (WP-DB.04),
-stability/CoP/LCP gates (WP-DB.02), CPU cache/data-layout slices (WP-DB.06),
-representative `soft_worm` + `adaptive_soft_contact` demos (WP-DB.09), and the
+DART 6.20 contains adaptive contact activation, soft
+face-interior contacts, coupled-equation correctness,
+stability/CoP/LCP gates, CPU cache/data-layout slices,
+representative `soft_worm` + `adaptive_soft_contact` demos, and the
 `ConstraintSolver` hot-path zero-overhead correction. These satisfy the
 Jain/Liu **adaptive-active-vertices**, **CoP/force-variance**, and
 **LCP-robustness** rows.
 
 No prerequisite integration or removal remains. PR-3a soft-foot SIMBICON
-shipped through #3408/#3423 (`12-pr3a-soft-foot-simbicon.md` records the
+shipped through #3408/#3423 (`decisions.md` records the
 resolved decisions), completing the push/contact portion of the **biped push
 recovery** row — contacts 51.2 soft vs 15.64 rigid and recoverable push
 18000 N soft vs 8000 N rigid, both gate-asserted. The row itself stays open
@@ -107,7 +100,7 @@ keeps runs bit-identical), so that evidence needs its own configuration.
 ## 6. PR structure
 
 - **Landed foundation**: the performance/compatibility slice and the three
-  already-satisfied Jain/Liu rows are part of the release branch.
+  already-satisfied Jain/Liu rows are part of DART 6.20.
 - **Kim/Pollard parity: RETIRED from DART 6.** The volumetric FEM backend was
   removed on 2026-07-29 (`decisions.md`). Do not start it here.
 - **Active Jain/Liu series**: PR-3a shipped; continue with locomotion (3b),
@@ -121,7 +114,7 @@ dynamics. It is the whole of the active DART 6 lane.
 ## 7. Jain/Liu architecture — controllers, models, scenes (grounded)
 
 **Good news: PR-3 is largely assembly of existing parts, not new dynamics.** The
-shipped point-mass SoftBodyNode + adaptive activation (WP-DB.05) is the Jain/Liu
+shipped point-mass SoftBodyNode + adaptive activation is the Jain/Liu
 deformable substrate. What exists to reuse:
 
 - **A full SIMBICON controller** at `examples/demos/scenes/atlas_simbicon/`
@@ -172,13 +165,13 @@ What must be **built/authored** for PR-3:
   keep all new work size-gated/opt-in. Regression-gate with a pure-rigid
   benchmark + the Gazebo plugin-boundary A/B (the pattern already used for the
   registry removal).
-- **Multi-core scaling (WP-DB.07)**: still-open acceptance. The contact-heavy
+- **Multi-core scaling**: still-open acceptance. The contact-heavy
   Jain/Liu scenes — noisy-floor locomotion and the hand/manipulation rows, which
   carry many simultaneous soft contacts — are the DART 6 place to demonstrate a
   real threads>1 speedup.
-- **Competitive envelope**: settled. `decisions.md` item 2 (in-tree backends +
-  normalized paper metrics; external engines out of scope) was confirmed by
-  the maintainer 2026-07-23 as the definition of "beat competing
+- **Competitive envelope**: settled. The 2026-07-23 acceptance decision in
+  `decisions.md` (in-tree backends + normalized paper metrics; external engines
+  out of scope) is the maintainer-confirmed definition of "beat competing
   implementations"; apply it, do not reopen it.
 - **SIMD**: apply the `dart/simd/` contract to the vectorizable point-mass and
   soft-contact kernels; report SIMD-off/on.
@@ -189,10 +182,12 @@ What must be **built/authored** for PR-3:
    belong on a compatibility release branch and was removed from DART 6; DART 6
    carries one deformable model. No longer an open risk here.
 2. **FEM integration seam — no longer a DART 6 question.** What was learned about
-   DART 6's per-step seam is retained in `11-fem-integration-seam.md` because it
-   constrains any future per-step extension, deformable or not.
-3. **Competitive-envelope definition — settled 2026-07-23** (`decisions.md`
-   item 2; see §8). No longer an open decision.
+   DART 6's per-step seam is retained in the design doc's
+   [per-step extension seam](../../design/dart6_deformable_body.md#per-step-extension-seam)
+   section because it constrains any future per-step extension, deformable or
+   not.
+3. **Competitive-envelope definition — settled 2026-07-23** (the acceptance
+   decision in `decisions.md`; see §8). No longer an open decision.
 4. **Model authoring**: the hand/arm assets and the four-link flexible foot must
    be created or sourced, with licensing and provenance confirmed. No tet meshes
    are needed; those belonged to the retired lane.
@@ -202,80 +197,15 @@ What must be **built/authored** for PR-3:
 ## 10. Sequencing (DART 6)
 
 1. **PR-3a soft-foot SIMBICON** — shipped 2026-08-01 via #3408/#3423
-   (`12-pr3a-soft-foot-simbicon.md` records the resolved decisions); the
+   (`decisions.md` records the resolved decisions); the
    motor-noise clause of its row moves to the remaining rows below.
 2. Remaining Jain/Liu rows: noisy-floor biped, soft-contact walk, then the
    hand/arm models that must be authored and their manipulation scenes, then the
    four-link flexible-foot comparison.
-3. Apply the approved competitive envelope (`decisions.md` item 2) at the
-   performance-acceptance stage.
+3. Apply the approved competitive envelope (the 2026-07-23 acceptance
+   decision in `decisions.md`) at the performance-acceptance stage.
 4. Per-row acceptance plus at least two clean independent reviews and a durable
    demo artifact for each behavior-bearing row; promote durable facts to their
    owners; retire the task folder only when every remaining row has one.
 
-The Kim/Pollard sequencing that used to appear here is retired with Part B.
-
-# Part B — retired: Kim/Pollard lane (reference only)
-
-> Removed from DART 6 on 2026-07-29. The sections below record what was
-> learned. They are **not** instructions and nothing here is DART 6 work. The
-> implementation is preserved in the `wp-db-fem-foundation` and
-> `wp-db-fem-elastic` branches and in #3404.
-
-## B.1 Kim/Pollard architecture — FEM backend design (retired)
-
-DART today has **only** the mass-spring `PointMass` model; there is no FEM,
-material model, or reduced basis anywhere in `dart/`. The backend is greenfield.
-Proposed additive design (no existing-layout/vtable change):
-
-- **Geometry/state**: a new `dart::dynamics::Shape` subclass for the tet volume +
-  embedded surface (runtime-string `getType()`, additive per-detector support),
-  and a custom `Node`/`EmbeddedStateAndPropertiesAspect` on the owning BodyNode
-  to hold FEM node positions/velocities, rest state, material, and the reduced
-  modal basis. (Node/Aspect = fully additive, but has **no per-step update
-  virtual** — it stores, it cannot self-integrate.)
-- **Dynamics/integration seam (the hard part)**: because `Skeleton::
-  integratePositions/Velocities` and `computeForwardDynamics` are **non-virtual**
-  and the ABI-safe rule forbids adding a `Skeleton` FEM-registry or a
-  `BodyNode::asFemBodyNode()` virtual, the FEM internal DOFs must be advanced by
-  one of:
-  1. a **custom `BodyNode` subclass** (`FemBodyNode` via
-     `EmbedStateAndPropertiesOnTopOf<…, BodyNode>`) that overrides the existing
-     `BodyNode` update virtuals (`updateBiasForce`/`updateAccelerationFD`/…) to
-     fold FEM element forces into the articulated pass — same mechanism
-     SoftBodyNode uses, minus the two ABI intrusions; and
-  2. a **custom `constraint::ConstraintBase`** (registered via
-     `addConstraint` → `mManualConstraints`, processed every `solve()`) to apply
-     implicit FEM internal forces and FEM↔environment contact coupling in the
-     LCP, and/or
-  3. a **subclassed `ConstraintSolver`** (set via `World::setConstraintSolver`)
-     that adds the global FEM integration pass — the only ABI-safe place for a
-     "system-wide" per-step pass, since `World::step` has no generic hook.
-  On DART 6 this seam question was answered before the lane was retired: the
-  `ConstraintBase` hook worked, `ConstraintSolver::solve()` is not virtual, and
-  the hook is silently skipped once deactivation rests the scene. Those findings
-  are recorded in `11-fem-integration-seam.md`.
-- **Reduced nonlinear FEM math**: corotational or StVK element forces on the tet
-  mesh, modal/subspace reduction, and Kim/Pollard's selective diagonalization
-  (SVD-based, paper reports 1.16×–3.60×). Correctness gated against analytic
-  small-strain cases + energy behavior before scenes.
-- **Skeleton coupling**: one-way (prescribed skeleton drives embedded FEM) →
-  Fatman; two-way (FEM reaction affects skeleton + environment) → starfish/fish/
-  worm, via the coupling constraint from seam #2.
-- **Collision**: FEM surface point-triangle contact through the `dart` detector
-  (extending the WP-DB.08 soft lanes) for the obstacle-escape row.
-
-Zero-rigid-overhead: the FEM work is naturally size-gated (no FEM bodies ⇒ no
-FEM constraints/nodes ⇒ zero iterations), mirroring how the soft loops cost
-nothing when empty. Gate with the existing rigid benchmark + Gazebo
-plugin-boundary A/B.
-
-## B.2 Kim/Pollard gap ledger (retired; what was never built)
-| Row | Needs |
-| --- | --- |
-| Fatman (one-way jiggle, 4,887/60 DOF) | Volumetric FEM body + embedded surface + one-way skeleton drive |
-| Starfish (two-way jump-turn) | Two-way skeleton↔FEM↔env coupling |
-| Fish (two-way actuated jump/landing) | + internal actuation + contact during landing |
-| Worm (two-way actuated roll) at paper scale | + large-deformation-near-joints, ground contact |
-| Obstacle-escape starfish | + contact-heavy point-triangle collision, profiler breakdown |
-| CPU scaling / selective diagonalization | reduced/modal solve + SVD-based speedup, 1/multi-thread, SIMD |
+The Kim/Pollard sequencing is retired with that lane.

@@ -16,6 +16,13 @@ MJCF and URDF sample data. Also request `utils` and `utils-urdf` to check their
 legacy forwarding targets. The data probe uses staged filesystem paths so
 source-tree resource fallback cannot hide missing installed assets.
 
+With `DART_BUILD_UTILS_ASSETS=ON` in the installed build, request
+`io;utils-assets` to also construct an offline model retriever and register
+the installed Atlas manifest. Request only `utils-assets` to exercise the same
+IO probe through its legacy forwarding target. Neither path adds explicit
+CURL or OpenSSL links; shared and static consumers check their dependency
+propagation. The asset probe makes no downloads or cache writes.
+
 Request `gui` to exercise installed OSG and ImGui APIs through `dart-gui`.
 The same probe accepts legacy `gui-osg` and `external-imgui` components. Test
 system and bundled ImGui installations, including a GUI build with IO disabled.

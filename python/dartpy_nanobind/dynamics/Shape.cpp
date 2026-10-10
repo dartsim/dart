@@ -369,6 +369,7 @@ void Shape(nb::module_& m)
                   const aiScene* mesh,
                   const dart::common::Uri& uri,
                   dart::common::ResourceRetrieverPtr resourceRetriever) {
+                nb::gil_scoped_release release;
                 DART_SUPPRESS_DEPRECATED_BEGIN
                 auto shape = std::make_shared<dart::dynamics::MeshShape>(
                     scale, mesh, uri, resourceRetriever);
@@ -416,7 +417,8 @@ void Shape(nb::module_& m)
           },
           nb::arg("mesh").none(),
           nb::arg("path"),
-          nb::arg("resourceRetriever").none())
+          nb::arg("resourceRetriever").none(),
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "setMesh",
           +[](dart::dynamics::MeshShape* self,
@@ -434,7 +436,8 @@ void Shape(nb::module_& m)
           },
           nb::arg("mesh").none(),
           nb::arg("path"),
-          nb::arg("resourceRetriever").none())
+          nb::arg("resourceRetriever").none(),
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "getMeshUri",
           +[](const dart::dynamics::MeshShape* self) -> std::string {

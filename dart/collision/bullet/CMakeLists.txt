@@ -77,8 +77,9 @@ dart_property_add(DART_CORE_DEPENDENCY_PACKAGES Bullet)
 if(BT_USE_DOUBLE_PRECISION)
   dart_property_add(DART_CORE_COMPILE_DEFINITIONS BT_USE_DOUBLE_PRECISION)
 endif()
-add_library(${target_name} INTERFACE)
+add_library(${target_name} INTERFACE ${hdrs})
 target_link_libraries(${target_name} INTERFACE dart)
+add_dependencies(${target_name} dart)
 
 # Component
 add_component(${PROJECT_NAME} ${component_name})

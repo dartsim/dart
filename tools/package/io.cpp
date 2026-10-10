@@ -33,6 +33,10 @@
 #include <dart/utils/urdf/DartLoader.hpp>
 #include <dart/utils/utils.hpp>
 
+#ifdef DART_PACKAGE_HAS_UTILS_ASSETS
+  #include <dart/utils/assets/ModelResourceRetriever.hpp>
+#endif
+
 #include <array>
 #include <string>
 
@@ -43,6 +47,14 @@ int main(int argc, char* argv[])
   if (argc != 2)
     return 1;
   const std::string data = argv[1];
+#ifdef DART_PACKAGE_HAS_UTILS_ASSETS
+  dart::utils::ModelResourceRetriever models(".", true);
+  if (!models.addManifest(dart::common::Uri::createFromPath(
+          data + "/robot_models/atlas-v5.xml"))
+      || models.exists("model://package-smoke/v1/robot.urdf")
+      || models.retrieve("model://package-smoke/v1/robot.urdf"))
+    return 1;
+#endif
   std::array<dart::simulation::WorldPtr, 3> worlds{
       dart::utils::SkelParser::readWorld(
           data + "/skel/test/single_pendulum.skel"),

@@ -119,12 +119,14 @@ void DartLoader(nb::module_& m)
                 },
                 nb::arg("uri"),
                 nb::arg("resourceRetriever").none(),
-                nb::arg("flags") = utils::DartLoader::DEFAULT)
+                nb::arg("flags") = utils::DartLoader::DEFAULT,
+                nb::call_guard<nb::gil_scoped_release>())
             .def(
                 "parseSkeleton",
                 nb::overload_cast<const common::Uri&>(
                     &utils::DartLoader::parseSkeleton),
-                nb::arg("uri"))
+                nb::arg("uri"),
+                nb::call_guard<nb::gil_scoped_release>())
             .def(
                 "parseSkeletonString",
                 +[](utils::DartLoader* self,
@@ -140,13 +142,15 @@ void DartLoader(nb::module_& m)
                 nb::arg("urdfString"),
                 nb::arg("baseUri"),
                 nb::arg("resourceRetriever").none(),
-                nb::arg("flags") = utils::DartLoader::DEFAULT)
+                nb::arg("flags") = utils::DartLoader::DEFAULT,
+                nb::call_guard<nb::gil_scoped_release>())
             .def(
                 "parseSkeletonString",
                 nb::overload_cast<const std::string&, const common::Uri&>(
                     &utils::DartLoader::parseSkeletonString),
                 nb::arg("urdfString"),
-                nb::arg("baseUri"))
+                nb::arg("baseUri"),
+                nb::call_guard<nb::gil_scoped_release>())
             .def(
                 "parseWorld",
                 +[](utils::DartLoader* self,
@@ -159,12 +163,14 @@ void DartLoader(nb::module_& m)
                 },
                 nb::arg("uri"),
                 nb::arg("resourceRetriever").none(),
-                nb::arg("flags") = utils::DartLoader::DEFAULT)
+                nb::arg("flags") = utils::DartLoader::DEFAULT,
+                nb::call_guard<nb::gil_scoped_release>())
             .def(
                 "parseWorld",
                 nb::overload_cast<const common::Uri&>(
                     &utils::DartLoader::parseWorld),
-                nb::arg("uri"))
+                nb::arg("uri"),
+                nb::call_guard<nb::gil_scoped_release>())
             .def(
                 "parseWorldString",
                 +[](utils::DartLoader* self,
@@ -180,13 +186,15 @@ void DartLoader(nb::module_& m)
                 nb::arg("urdfString"),
                 nb::arg("baseUri"),
                 nb::arg("resourceRetriever").none(),
-                nb::arg("flags") = utils::DartLoader::DEFAULT)
+                nb::arg("flags") = utils::DartLoader::DEFAULT,
+                nb::call_guard<nb::gil_scoped_release>())
             .def(
                 "parseWorldString",
                 nb::overload_cast<const std::string&, const common::Uri&>(
                     &utils::DartLoader::parseWorldString),
                 nb::arg("urdfString"),
-                nb::arg("baseUri"));
+                nb::arg("baseUri"),
+                nb::call_guard<nb::gil_scoped_release>());
 
   dartLoader.attr("Flags") = dartLoaderFlags;
   dartLoader.attr("RootJointType") = dartLoaderRootJointType;
