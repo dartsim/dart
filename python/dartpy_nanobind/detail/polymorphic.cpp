@@ -258,7 +258,7 @@ nb::handle wrap(
   // Existing identity retains its original ownership, as in both libraries.
   // Adding reverse parent dependencies here would create BodyNode/ShapeNode
   // cycles.
-  if (existing.is_valid() && !existing.is_none())
+  if (existing.is_valid() && !existing.is_none() && nb::inst_ready(existing))
     return existing.release();
   if (policy == nb::rv_policy::none)
     return {};

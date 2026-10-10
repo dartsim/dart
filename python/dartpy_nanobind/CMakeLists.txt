@@ -15,6 +15,10 @@ set(PYTHON_SITE_PACKAGES "${PYTHON_SITE_PACKAGES}" PARENT_SCOPE)
 
 file(GLOB_RECURSE dartpy_headers CONFIGURE_DEPENDS "*.h" "*.hpp")
 file(GLOB_RECURSE dartpy_sources CONFIGURE_DEPENDS "*.cpp")
+if(NOT DART_BUILD_GUI_OSG)
+  list(FILTER dartpy_sources EXCLUDE REGEX "/gui/")
+  list(FILTER dartpy_headers EXCLUDE REGEX "/gui/")
+endif()
 execute_process(
   COMMAND
     "${Python_EXECUTABLE}"
@@ -47,6 +51,10 @@ target_link_libraries(
   dartpy
   PRIVATE dart dart-utils dart-utils-urdf tsl::robin_map
 )
+if(DART_BUILD_GUI_OSG)
+  target_link_libraries(dartpy PRIVATE dart-gui-osg)
+  target_compile_definitions(dartpy PRIVATE DARTPY_GUI_OSG)
+endif()
 foreach(optional dart-collision-bullet dart-collision-ode)
   if(TARGET ${optional})
     target_link_libraries(dartpy PRIVATE ${optional})

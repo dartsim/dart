@@ -1,6 +1,5 @@
-// clang-format off
 #include "detail/dart_nb.hpp"
-// clang-format on
+#include "detail/eigen.hpp"
 
 /*
  * Copyright (c) 2011, The DART development contributors
@@ -34,52 +33,56 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include "gui/osg/ownership.hpp"
+
+#include <dart/gui/osg/GridVisual.hpp>
+#include <dart/gui/osg/Viewer.hpp>
+
+#include <Eigen/Core>
+
+#include <cstddef>
 
 namespace dart {
 namespace python {
 
-void eigen_geometry(nb::module_& m);
-
-void dart_common(nb::module_& m);
-void dart_math(nb::module_& m);
-void dart_optimizer(nb::module_& m);
-void dart_dynamics(nb::module_& m);
-void dart_collision(nb::module_& m);
-void dart_constraint(nb::module_& m);
-void dart_simulation(nb::module_& m);
-void dart_utils(nb::module_& m);
-void dart_gui(nb::module_& m);
-void bind_gui_probe(nb::module_& m);
-
-NB_MODULE(dartpy, m)
+void GridVisual(nb::module_& m)
 {
-  m.attr("_binder") = "nanobind";
-  dartnb::bindConstructionGuard(m);
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+  dartnb::
+      dart_class<dart::gui::osg::GridVisual, dart::gui::osg::ViewerAttachment>(
+          m, "GridVisual")
+          .def(dartnb::gui::init<>())
+          .def(
+              "setNumCells",
+              +[](dart::gui::osg::GridVisual* self, std::size_t cells) {
+                self->setNumCells(cells);
+              })
+          .def(
+              "setMinorLineStepSize",
+              +[](dart::gui::osg::GridVisual* self, double size) {
+                self->setMinorLineStepSize(size);
+              })
+          .def(
+              "setNumMinorLinesPerMajorLine",
+              +[](dart::gui::osg::GridVisual* self, std::size_t size) {
+                self->setNumMinorLinesPerMajorLine(size);
+              })
+          .def(
+              "setPlaneType",
+              +[](dart::gui::osg::GridVisual* self,
+                  dart::gui::osg::GridVisual::PlaneType type) {
+                self->setPlaneType(type);
+              })
+          .def(
+              "setOffset",
+              +[](dart::gui::osg::GridVisual* self,
+                  const Eigen::Vector3d& offset) { self->setOffset(offset); });
 
-#ifdef DARTPY_VERSION_INFO
-  m.attr("__version__") = DARTPY_VERSION_INFO;
-#else
-  m.attr("__version__") = "dev";
-#endif
-
-  eigen_geometry(m);
-
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_constraint(m);
-  dart_simulation(m);
-  dart_utils(m);
-#ifdef DARTPY_GUI_OSG
-  dart_gui(m);
-  bind_gui_probe(m);
-#else
-  m.def_submodule("gui");
-#endif
+  auto attr = m.attr("GridVisual");
+  nb::enum_<dart::gui::osg::GridVisual::PlaneType>(
+      attr, "PlaneType", nb::is_arithmetic())
+      .value("XY", dart::gui::osg::GridVisual::PlaneType::XY)
+      .value("YZ", dart::gui::osg::GridVisual::PlaneType::YZ)
+      .value("ZX", dart::gui::osg::GridVisual::PlaneType::ZX);
 }
 
 } // namespace python

@@ -1,6 +1,5 @@
-// clang-format off
 #include "detail/dart_nb.hpp"
-// clang-format on
+#include "detail/eigen.hpp"
 
 /*
  * Copyright (c) 2011, The DART development contributors
@@ -34,52 +33,44 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include "gui/osg/ownership.hpp"
+
+#include <dart/gui/osg/ImGuiHandler.hpp>
+#include <dart/gui/osg/ImGuiViewer.hpp>
+#include <dart/gui/osg/Utils.hpp>
+#include <dart/gui/osg/Viewer.hpp>
+
+#include <Eigen/Core>
+#include <osg/Vec4>
 
 namespace dart {
 namespace python {
 
-void eigen_geometry(nb::module_& m);
-
-void dart_common(nb::module_& m);
-void dart_math(nb::module_& m);
-void dart_optimizer(nb::module_& m);
-void dart_dynamics(nb::module_& m);
-void dart_collision(nb::module_& m);
-void dart_constraint(nb::module_& m);
-void dart_simulation(nb::module_& m);
-void dart_utils(nb::module_& m);
-void dart_gui(nb::module_& m);
-void bind_gui_probe(nb::module_& m);
-
-NB_MODULE(dartpy, m)
+void ImGuiViewer(nb::module_& m)
 {
-  m.attr("_binder") = "nanobind";
-  dartnb::bindConstructionGuard(m);
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
-
-#ifdef DARTPY_VERSION_INFO
-  m.attr("__version__") = DARTPY_VERSION_INFO;
-#else
-  m.attr("__version__") = "dev";
-#endif
-
-  eigen_geometry(m);
-
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_constraint(m);
-  dart_simulation(m);
-  dart_utils(m);
-#ifdef DARTPY_GUI_OSG
-  dart_gui(m);
-  bind_gui_probe(m);
-#else
-  m.def_submodule("gui");
-#endif
+  dartnb::dart_class<dart::gui::osg::ImGuiViewer, dart::gui::osg::Viewer>(
+      m, "ImGuiViewer")
+      .def(dartnb::gui::init<>())
+      .def(
+          dartnb::factory([](const Eigen::Vector4d& clearColor) {
+            return dartnb::gui::make<::dart::gui::osg::ImGuiViewer>(
+                gui::osg::eigToOsgVec4f(clearColor));
+          }),
+          nb::arg("clearColor"))
+      .def(dartnb::gui::init<const osg::Vec4&>(), nb::arg("clearColor"))
+      .def(
+          "getImGuiHandler",
+          +[](dart::gui::osg::ImGuiViewer* self)
+              -> ::osg::ref_ptr<dart::gui::osg::ImGuiHandler> {
+            return self->getImGuiHandler();
+          },
+          nb::rv_policy::reference_internal)
+      .def(
+          "showAbout",
+          +[](dart::gui::osg::ImGuiViewer* self) { self->showAbout(); })
+      .def(
+          "hideAbout",
+          +[](dart::gui::osg::ImGuiViewer* self) { self->hideAbout(); });
 }
 
 } // namespace python

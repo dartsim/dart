@@ -71,7 +71,7 @@ jobs:
           ulimit -c 0
           pixi run config
           pixi run cmake -S . -B build/default/cpp/Release \
-            -DDART_DARTPY_BINDER=nanobind -DDART_BUILD_GUI_OSG=OFF
+            -DDART_DARTPY_BINDER=nanobind -DDART_BUILD_GUI_OSG=ON
           pixi run test-py
 
       - name: Save compiler cache

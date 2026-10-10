@@ -96,6 +96,13 @@ BaseEdge base_edge()
       }};
 }
 
+// Cast-only bases need not participate in the Python primary-base chain.
+template <class T>
+std::vector<BaseEdge> extra_base_edges()
+{
+  return {};
+}
+
 // Python has one native base; retain every C++ edge for adjusted conversion.
 template <class T, class... Candidates>
 struct ClassTraits;
@@ -206,7 +213,7 @@ public:
           = std::is_base_of_v<
                 dart::dynamics::Entity,
                 T> || std::is_base_of_v<dart::dynamics::Node, T> || std::is_base_of_v<dart::dynamics::Joint, T> || std::is_same_v<dart::dynamics::DegreeOfFreedom, T>;
-      std::vector<BaseEdge> edges;
+      auto edges = extra_base_edges<T>();
       (add_edge<Bases>(edges), ...);
       register_type(typeid(T), {*this, std::move(edges), graph});
     }

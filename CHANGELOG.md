@@ -31,10 +31,13 @@
     and world-recording access for Python simulation tutorials.
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
-  * Add an opt-in non-GUI nanobind build of `dartpy` with
+  * Add an opt-in nanobind build of `dartpy` with
     `-DDART_DARTPY_BINDER=nanobind`. Python overrides stay alive while C++ uses
     them, graph-object wrappers retain their skeleton, and const Eigen views
-    are read-only. Secondary-base `isinstance`/MRO and exception details differ;
+    are read-only. The binder includes `dartpy.gui`; Python overrides of GUI
+    nodes and handlers stay alive while native code uses them (pybind11 can lose
+    them). Removed GUI wrappers may live until their viewer is destroyed.
+    Secondary-base `isinstance`/MRO and exception details differ;
     bool parameters accept only `True`/`False`, and str parameters reject bytes.
 
   * Reject a null node when constructing inverse kinematics in either binder,

@@ -37,11 +37,11 @@ imports, linked components, or installed package behavior.
 
 ## Nanobind binder
 
-DART 6.21 adds an opt-in non-GUI binder under `python/dartpy_nanobind/`.
+DART 6.21 adds an opt-in binder under `python/dartpy_nanobind/`.
 `DART_DARTPY_BINDER` selects `pybind11` (the default) or `nanobind`; both build
-the `dartpy` module with the same non-GUI namespaces, names, and overloads.
+the `dartpy` module with the same namespaces, names, and overloads.
 The existing pybind11 sources stay under `python/dartpy/` during the
-transition. The nanobind binder currently exposes no OSG GUI classes.
+transition. The nanobind binder includes `dartpy.gui.osg` when `DART_BUILD_GUI_OSG` is enabled.
 
 Configure the Pixi build, select the binder in its CMake cache, and run the
 regular tests:
@@ -77,6 +77,34 @@ Python overrides and subclass state stay alive while C++ uses the object.
 Wrappers for graph objects, including joints and degrees of freedom, keep
 their skeleton alive. Views of const Eigen data are read-only; code that
 needs a writable independent array should make an explicit copy.
+
+### GUI ownership
+
+GUI Python ancestry follows the primary base: `Viewer` and `ImGuiViewer`, plus
+`DragAndDrop`, `SimpleFrameDnD`, `SimpleFrameShapeDnD`, `BodyNodeDnD`, and
+`InteractiveFrameDnD`, omit `common.Subject` from Python ancestry.
+`InteractiveTool` and `InteractiveFrame` omit `dynamics.Detachable`, inherited
+through `SimpleFrame`. These secondary bases remain usable through native
+arguments and pointer returns; only `isinstance`, `issubclass`, and MRO differ.
+
+
+OSG trampoline aliases occupy Python instance storage. Their constructors take
+one OSG reference and their destructors release it without deleting that
+co-located memory. Native viewers use heap factories through the hybrid
+construction helper, preserving custom Python subclass initializers.
+
+Viewer retention registries keep Python overrides alive for native world-node,
+event-handler, and attachment edges. Their GC slots detach native edges before
+clearing Python references. Factory deleters retain the registry until native
+destruction finishes. Removed wrappers remain retained while camera callbacks
+or native callback snapshots still reference them; they can outlive removal
+until viewer destruction. `ref_ptr` returns attach ownership only when creating
+a wrapper, preserving identity and avoiding repeated-getter reference growth.
+
+DragAndDrop wrappers observe native destruction notifications and become invalid
+when native code deletes the object. Calls through invalid wrappers raise a
+Python error instead of accessing freed memory. The pybind11 binder does not
+invalidate these wrappers; using one after native deletion is unsupported.
 
 ### Binding infrastructure
 

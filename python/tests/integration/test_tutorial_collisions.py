@@ -10,9 +10,9 @@ import numpy as np
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    not hasattr(getattr(dart, "gui", None), "osg"),
-    reason="the opt-in nanobind binder does not yet include gui.osg",
+    not hasattr(dart.gui, "osg"), reason="DART_BUILD_GUI_OSG is disabled"
 )
+
 
 
 def load_tutorial(filename="main_finished.py"):
