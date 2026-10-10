@@ -64,9 +64,10 @@ def main(argv: list[str]) -> int:
         f"-DDART_USE_SYSTEM_IMGUI={use_system_imgui}",
         "-DDART_DARTPY_BINDER=nanobind",
     ]
-    # One CPython 3.12+ stable-ABI (abi3) wheel serves every newer interpreter;
-    # setup.py tags the wheel to match.
-    if sys.version_info >= (3, 12):
+    # The CPython 3.12 build is the stable-ABI (abi3) wheel that serves every
+    # newer interpreter; setup.py tags it to match. Other versions build
+    # regular wheels for their own tag.
+    if sys.version_info[:2] == (3, 12):
         cmake_args.append("-DDART_DARTPY_STABLE_ABI=ON")
     cmake_args.extend(cmake_host_linker_flags())
 
