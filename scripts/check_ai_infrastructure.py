@@ -3730,19 +3730,23 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
     changelog = root / "CHANGELOG.md"
     headings = (
         re.findall(
-            rf"^### \[DART {re.escape(version)} \(([^)\n]*)\)\]",
+            r"^### \[DART (6\.[0-9]+\.[0-9]+) \(([^)\n]*)\)\](?:\(([^)\n]*)\))?",
             changelog.read_text(encoding="utf-8"),
             re.MULTILINE,
         )
         if changelog.is_file()
         else []
     )
-    if len(headings) != 1:
+    if (
+        not headings
+        or headings[0][0] != version
+        or sum(heading[0] == version for heading in headings) != 1
+    ):
         errors.append(
-            f"CHANGELOG.md: Release Target `{version}` must have exactly one release heading"
+            f"CHANGELOG.md: Release Target `{version}` must be the leading DART 6 release heading and appear exactly once"
         )
         return
-    state = headings[0]
+    _, state, link = headings[0]
     package_version = ""
     workspace_version = None
     try:
@@ -3750,6 +3754,31 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
             if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", state):
                 raise ValueError("expected YYYY-MM-DD")
             date.fromisoformat(state)
+            milestone_link = re.fullmatch(
+                r"https://github\.com/dartsim/dart/milestone/([1-9][0-9]*)\?closed=1",
+                link,
+            )
+            if not milestone_link:
+                raise ValueError("expected closed DART milestone link")
+            event_path = os.environ.get("GITHUB_EVENT_PATH")
+            if event_path:
+                event = read_json(Path(event_path))
+                if not isinstance(event, dict):
+                    raise ValueError("expected GitHub event object")
+                if "pull_request" in event:
+                    pull_request = event["pull_request"]
+                    milestone = (
+                        pull_request.get("milestone")
+                        if isinstance(pull_request, dict)
+                        else None
+                    )
+                    if (
+                        not isinstance(milestone, dict)
+                        or milestone.get("title") != f"DART {version}"
+                        or type(milestone.get("number")) is not int
+                        or milestone.get("number") != int(milestone_link[1])
+                    ):
+                        raise ValueError("dated heading must match the PR milestone")
         package_version = (
             ET.parse(root / "package.xml").getroot().findtext("version", "").strip()
         )
@@ -3760,19 +3789,40 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
     except (OSError, ET.ParseError, ValueError):
         pass
     if state == "Unreleased":
-        if (
-            package_version
-            and isinstance(workspace_version, str)
-            and workspace_version.strip()
-            and version not in (package_version, workspace_version)
+        target_numbers = tuple(int(number) for number in version.split("."))
+        for relative, source in (
+            ("package.xml", package_version),
+            ("pixi.toml workspace", workspace_version),
         ):
-            return
+            parsed = (
+                re.fullmatch(
+                    r"([0-9]+)\.([0-9]+)\.([0-9]+)(?:\.(dev|alpha|beta|rc)[0-9]+)?",
+                    source,
+                )
+                if isinstance(source, str)
+                else None
+            )
+            if not parsed:
+                errors.append(
+                    f"CHANGELOG.md: Release Target `{version}` cannot compare {relative} version; "
+                    "expected X.Y.Z with an optional .devN/.alphaN/.betaN/.rcN suffix"
+                )
+                return
+            source_numbers = tuple(int(number) for number in parsed.groups()[:3])
+            if source_numbers > target_numbers or (
+                source_numbers == target_numbers and not parsed[4]
+            ):
+                errors.append(
+                    f"CHANGELOG.md: Release Target `{version}` requires {relative} source version to precede it"
+                )
+                return
+        return
     elif package_version == version and workspace_version == version:
         return
     errors.append(
         f"CHANGELOG.md: Release Target `{version}` requires an Unreleased section "
-        "with neither source version set to the target, or a dated packaging heading "
-        "matching package.xml and pixi.toml workspace versions"
+        "with preceding source versions, or a valid dated packaging heading "
+        "with its closed milestone link and matching package.xml and pixi.toml workspace versions"
     )
 
 
@@ -3921,8 +3971,9 @@ def check_release_references(root: Path, errors: list[str]) -> None:
         rf"\bcurrently\s+(?:(?:is|on|at)\s+)?{version}"
         rf"|\b(?:current stable|develops|developing|stabilizes)\b"
         rf".{{0,80}}{version}"
-        rf"|\b(?:next|planned|upcoming)(?:\s+DART)?\s+release(?:\s+version)?"
-        rf"(?:\s+(?:is|will\s+be)|\s*[:=])\s*{next_version}"
+        rf"|\b(?:next|planned|upcoming)(?:\s+DART)?\s+"
+        rf"(?:release(?:\s+version)?|version)[`*]*"
+        rf"(?:\s+(?:is|will\s+be)|\s*[:=]|\s+)[`*]*\s*{next_version}"
         rf"|{version}\s+(?:development|stabilization)\s+branch"
         rf"|\b(?:use|set|select|assign|target)\b.{{0,120}}{version}"
         rf".{{0,80}}\bmilestone\b"

@@ -48,12 +48,18 @@ The version sources serve different purposes:
 At a rollover, update this branch's row and start its changelog section. Leave
 other branches' rows, reusable skills, pointer docs, and translated landing
 text alone. Update package versions only as part of release packaging.
-The target must have exactly one `CHANGELOG.md` release heading marked
-`Unreleased`. Packaging may date that same heading when `package.xml` and the
+The target must be the leading DART 6 release heading in `CHANGELOG.md` and
+appear exactly once. Its `Unreleased` source versions must precede the target;
+an equal version with a `.devN`, `.alphaN`, `.betaN`, or `.rcN` suffix precedes
+the final release. Packaging may date that heading when `package.xml` and the
 `pixi.toml` workspace version both match the target; the row continues to name
 that candidate until the next rollover. Stage both version bumps and the heading
-date together: an `Unreleased` heading requires neither source version to name
-the target. Both metadata files must contain readable, nonempty versions.
+date together. A dated heading must link to
+`https://github.com/dartsim/dart/milestone/<number>?closed=1`; when a GitHub PR
+event is available, the check also verifies that number and the exact target
+title against its milestone. Local checks use no network; the live PR workflow
+verifies milestone identity before publication and release closeout handles
+closing it. Both metadata files must contain readable version strings.
 
 ## Compatibility Policy
 

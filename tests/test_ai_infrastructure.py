@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -123,6 +124,16 @@ def test_release_scenarios_are_exercisable():
         ("docs/ai/README.md", "Planned release = `DART 6.22.0`\n"),
         ("AGENTS.md", "Next release: `6.22.0`\n"),
         ("docs/README.md", "The next release is 6.22.0.\n"),
+        ("AGENTS.md", "Next version: DART 6.22.0\n"),
+        ("AGENTS.md", "The next version is DART 6.22.0.\n"),
+        ("docs/README.md", "Planned version = **DART 6.22.0**\n"),
+        ("docs/plans/dashboard.md", "The upcoming version will be DART 6.22.0.\n"),
+        ("docs/ai/README.md", "Next DART version: `6.22.0`\n"),
+        ("AGENTS.md", "Next version: 6.22.0\n"),
+        ("docs/README.md", "**Next version**: **DART 6.22.0**\n"),
+        ("docs/README.md", "**Next version:** ``6.22.0``\n"),
+        ("docs/README.md", "``Next version`` = ``6.22.0``\n"),
+        ("AGENTS.md", "Next version DART 6.22.0\n"),
         (
             ".codex/agents/dart_reviewer.toml",
             'description = "Review the DART 6.22 development branch."\n',
@@ -212,6 +223,12 @@ def test_release_references_reject_copied_routing(tmp_path, relative, text):
             "Archived decision: `main` develops DART 6.20.\n",
         ),
         ("CHANGELOG.md", "DART 6.21.0 milestone: Python tutorials.\n"),
+        ("docs/ai/README.md", "The next version was DART 6.20.0 in that audit.\n"),
+        ("docs/ai/README.md", "DART 6.20.0 was the next version at that time.\n"),
+        (
+            "docs/onboarding/building.md",
+            "The next version requires C++17, as DART 6.20 did.\n",
+        ),
     ],
 )
 def test_release_references_allow_history_and_dependency_floors(
@@ -268,16 +285,22 @@ def test_release_references_accept_release_metadata_only_rollover(
         )
         version = row.split("|")[3].strip().strip("`")
         history = changelog.read_text(encoding="utf-8")
-        if f"### [DART {version} (" not in history:
-            changelog.write_text(
-                history.replace(
-                    "## DART 6\n",
-                    "## DART 6\n\n"
-                    f"### [DART {version} (Unreleased)](https://github.com/dartsim/dart/milestones)\n",
-                    1,
-                ),
-                encoding="utf-8",
-            )
+        section = re.search(
+            rf"^### \[DART {re.escape(version)} \([^\n]*\n.*?(?=^### \[DART |^## |\Z)",
+            history,
+            re.MULTILINE | re.DOTALL,
+        )
+        heading = (
+            section[0].strip()
+            if section
+            else f"### [DART {version} (Unreleased)](https://github.com/dartsim/dart/milestone/105)"
+        )
+        if section:
+            history = history[: section.start()] + history[section.end() :]
+        changelog.write_text(
+            history.replace("## DART 6\n", f"## DART 6\n\n{heading}\n", 1),
+            encoding="utf-8",
+        )
         errors = []
 
         infra.check_release_target(tmp_path, errors)
@@ -376,6 +399,7 @@ def test_release_translations_reject_malformed_strings(tmp_path, translation):
 def release_target_owner(tmp_path, monkeypatch):
     monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
     monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
+    monkeypatch.delenv("GITHUB_EVENT_PATH", raising=False)
     path = tmp_path / "docs/onboarding/release-management.md"
     path.parent.mkdir(parents=True)
     path.write_text(
@@ -414,11 +438,125 @@ def test_release_target_accepts_valid_rows(release_target_owner, tmp_path, row):
         text + row + "\n\n## History\n\n| main | Development | 6.19.0 |\n",
         encoding="utf-8",
     )
+    version = row.split("|")[3].strip().strip("`")
+    earlier = "6.19.0" if version == "6.20.0" else "6.20.0"
+    (tmp_path / "CHANGELOG.md").write_text(
+        f"### [DART {version} (Unreleased)](https://github.com/dartsim/dart/milestone/105)\n\n"
+        f"### [DART {earlier} (Unreleased)](https://github.com/dartsim/dart/milestone/99)\n\n"
+        "### [DART 6.19.5 (2026-10-04)](https://github.com/dartsim/dart/milestone/104?closed=1)\n",
+        encoding="utf-8",
+    )
     errors = []
 
     infra.check_release_target(tmp_path, errors)
 
     assert errors == []
+
+
+@pytest.mark.parametrize("leading", ["6.23.0", "6.21.0"])
+def test_release_target_rejects_owner_row_without_leading_changelog_update(
+    release_target_owner, tmp_path, leading
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    changelog = tmp_path / "CHANGELOG.md"
+    changelog.write_text(
+        f"### [DART {leading} (Unreleased)](https://github.com/dartsim/dart/milestone/105)\n\n"
+        + changelog.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
+@pytest.mark.parametrize(
+    ("target", "package_version", "workspace_version", "valid"),
+    [
+        ("6.21.0", "6.20.1", "6.19.5", True),
+        ("6.22.0", "6.9.0", "6.9.0", True),
+        ("6.20.0", "6.21.0", "6.19.5", False),
+        ("6.20.0", "6.19.5", "6.21.0", False),
+        ("6.20.0", "6.20.1", "6.20.1", False),
+        ("6.9.0", "6.22.0", "6.8.0", False),
+        ("6.22.0", "6.23.0.rc1", "6.19.5", False),
+    ],
+)
+def test_release_target_orders_unreleased_source_versions_numerically(
+    release_target_owner, tmp_path, target, package_version, workspace_version, valid
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + f"| main | Development | {target} |\n", encoding="utf-8"
+    )
+    (tmp_path / "CHANGELOG.md").write_text(
+        f"### [DART {target} (Unreleased)](https://github.com/dartsim/dart/milestone/105)\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "package.xml").write_text(
+        f"<package><version>{package_version}</version></package>\n", encoding="utf-8"
+    )
+    (tmp_path / "pixi.toml").write_text(
+        f'[workspace]\nversion = "{workspace_version}"\n', encoding="utf-8"
+    )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    if valid:
+        assert errors == []
+    else:
+        assert len(errors) == 1
+        assert errors[0].startswith(f"CHANGELOG.md: Release Target `{target}`")
+
+
+@pytest.mark.parametrize("suffix", ["dev1", "alpha2", "beta3", "rc4"])
+def test_release_target_accepts_same_core_prerelease_source_versions(
+    release_target_owner, tmp_path, suffix
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    (tmp_path / "package.xml").write_text(
+        f"<package><version>6.22.0.{suffix}</version></package>\n", encoding="utf-8"
+    )
+    (tmp_path / "pixi.toml").write_text(
+        f'[workspace]\nversion = "6.22.0.{suffix}"\n', encoding="utf-8"
+    )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize("relative", ["package.xml", "pixi.toml"])
+@pytest.mark.parametrize("version", ["invalid", "6.21", "6.21.0.preview1"])
+def test_release_target_rejects_invalid_unreleased_source_versions(
+    release_target_owner, tmp_path, relative, version
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    content = (
+        f"<package><version>{version}</version></package>\n"
+        if relative == "package.xml"
+        else f'[workspace]\nversion = "{version}"\n'
+    )
+    (tmp_path / relative).write_text(content, encoding="utf-8")
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
 
 
 @pytest.mark.parametrize(
@@ -509,6 +647,134 @@ def test_release_target_accepts_dated_packaging_candidate(
     assert errors == []
 
 
+@pytest.fixture
+def dated_release_target(release_target_owner, tmp_path):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    changelog = tmp_path / "CHANGELOG.md"
+    changelog.write_text(
+        "### [DART 6.22.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/105?closed=1)\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "package.xml").write_text(
+        "<package><version>6.22.0</version></package>\n", encoding="utf-8"
+    )
+    (tmp_path / "pixi.toml").write_text(
+        '[workspace]\nversion = "6.22.0"\n', encoding="utf-8"
+    )
+    return changelog
+
+
+@pytest.mark.parametrize(
+    "link",
+    [
+        "https://github.com/dartsim/dart/milestone/105",
+        "https://github.com/dartsim/dart/milestone/105?closed=0",
+        "https://github.com/dartsim/dart/milestones?closed=1",
+        "https://github.com/other/dart/milestone/105?closed=1",
+        "https://example.com/milestone/105?closed=1",
+        "http://github.com/dartsim/dart/milestone/105?closed=1",
+        "https://github.com/dartsim/dart/milestone/0?closed=1",
+        "https://github.com/dartsim/dart/milestone/not-a-number?closed=1",
+        "",
+    ],
+)
+def test_release_target_requires_closed_milestone_link(
+    dated_release_target, tmp_path, link
+):
+    dated_release_target.write_text(
+        f"### [DART 6.22.0 (2026-10-10)]({link})\n", encoding="utf-8"
+    )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
+@pytest.mark.parametrize(
+    ("event", "valid"),
+    [
+        (
+            json.dumps(
+                {
+                    "pull_request": {
+                        "milestone": {
+                            "title": "DART 6.22.0",
+                            "number": 105,
+                            "state": "open",
+                        }
+                    }
+                }
+            ),
+            True,
+        ),
+        (
+            json.dumps(
+                {"pull_request": {"milestone": {"title": "DART 6.21.0", "number": 105}}}
+            ),
+            False,
+        ),
+        (
+            json.dumps(
+                {"pull_request": {"milestone": {"title": "DART 6.22.0", "number": 99}}}
+            ),
+            False,
+        ),
+        (json.dumps({"pull_request": {"milestone": None}}), False),
+        (json.dumps({"pull_request": {}}), False),
+        (json.dumps({"pull_request": "invalid"}), False),
+        (json.dumps({"ref": "refs/heads/main"}), True),
+        (json.dumps([]), False),
+        ("{", False),
+        (None, False),
+    ],
+)
+def test_release_target_checks_packaging_pr_milestone(
+    dated_release_target, tmp_path, monkeypatch, event, valid
+):
+    event_path = tmp_path / "event.json"
+    if event is not None:
+        event_path.write_text(event, encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    if valid:
+        assert errors == []
+    else:
+        assert len(errors) == 1
+        assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
+@pytest.mark.parametrize("number", [1.0, True])
+def test_release_target_requires_integer_pr_milestone_number(
+    dated_release_target, tmp_path, monkeypatch, number
+):
+    dated_release_target.write_text(
+        "### [DART 6.22.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/1?closed=1)\n",
+        encoding="utf-8",
+    )
+    event_path = tmp_path / "event.json"
+    event_path.write_text(
+        json.dumps(
+            {"pull_request": {"milestone": {"title": "DART 6.22.0", "number": number}}}
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
 @pytest.mark.parametrize(
     "pixi",
     [
@@ -529,7 +795,8 @@ def test_release_target_rejects_inconsistent_packaging_workspace(
         text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
     )
     (tmp_path / "CHANGELOG.md").write_text(
-        "### [DART 6.22.0 (2026-10-10)](milestone)\n", encoding="utf-8"
+        "### [DART 6.22.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/105?closed=1)\n",
+        encoding="utf-8",
     )
     (tmp_path / "package.xml").write_text(
         "<package><version>6.22.0</version></package>\n", encoding="utf-8"
@@ -567,29 +834,35 @@ def test_release_target_rejects_inconsistent_packaging_workspace(
         ),
         (
             "### [DART 6.22.0 (Unreleased)](milestone)\n"
-            "### [DART 6.22.0 (2026-10-10)](milestone)\n",
+            "### [DART 6.22.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/105?closed=1)\n",
             "<package><version>6.22.0</version></package>",
         ),
         (
-            "### [DART 6.22.0 (2026-10-10)](milestone)\n",
+            "### [DART 6.22.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/105?closed=1)\n",
             "<package><version>6.19.5</version></package>",
         ),
-        ("### [DART 6.22.0 (2026-10-10)](milestone)\n", None),
         (
-            "### [DART 6.22.0 (2026-10-10)](milestone)\n",
+            "### [DART 6.22.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/105?closed=1)\n",
+            None,
+        ),
+        (
+            "### [DART 6.22.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/105?closed=1)\n",
             "<package><version>6.22.0</version>",
         ),
-        ("### [DART 6.22.0 (2026-10-10)](milestone)\n", "<package/>"),
         (
-            "### [DART 6.22.0 (2026-02-30)](milestone)\n",
+            "### [DART 6.22.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/105?closed=1)\n",
+            "<package/>",
+        ),
+        (
+            "### [DART 6.22.0 (2026-02-30)](https://github.com/dartsim/dart/milestone/105?closed=1)\n",
             "<package><version>6.22.0</version></package>",
         ),
         (
-            "### [DART 6.22.0 (20261010)](milestone)\n",
+            "### [DART 6.22.0 (20261010)](https://github.com/dartsim/dart/milestone/105?closed=1)\n",
             "<package><version>6.22.0</version></package>",
         ),
         (
-            "### [DART 6.22.0 (Preview)](milestone)\n",
+            "### [DART 6.22.0 (Preview)](https://github.com/dartsim/dart/milestone/105?closed=1)\n",
             "<package><version>6.22.0</version></package>",
         ),
     ],
