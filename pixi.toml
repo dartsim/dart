@@ -300,6 +300,10 @@ build-py-dev = { cmd = """
         --target dartpy
 """, depends-on = ["config-py"], env = { BUILD_TYPE = "Release" } }
 
+dartpy = { cmd = "python", depends-on = [
+  "build-py-dev",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/python/dartpy", PYTHONSTARTUP = "$PIXI_PROJECT_ROOT/scripts/dartpy_startup.py" } }
+
 config-py = { cmd = """
     cmake \
         -G Ninja \
@@ -924,6 +928,10 @@ build-py-dev = { cmd = """
         -j \
         --target dartpy
 """, depends-on = ["config-py"], env = { BUILD_TYPE = "Release" } }
+
+dartpy = { cmd = "python", depends-on = [
+  "build-py-dev",
+], env = { BUILD_TYPE = "Release", PYTHONPATH = "$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/cpp/python/dartpy/$BUILD_TYPE", PYTHONSTARTUP = "$PIXI_PROJECT_ROOT/scripts/dartpy_startup.py" } }
 
 config-py = { cmd = """
     cmake \
