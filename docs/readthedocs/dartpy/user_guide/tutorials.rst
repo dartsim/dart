@@ -1,12 +1,15 @@
 Tutorials
 =========
 
-These four hands-on tutorials introduce DART's simulation and control APIs
+These four hands-on tutorials introduce DART 6's simulation and control APIs
 using Python and NumPy. Each directory in
 `python/tutorials <https://github.com/dartsim/dart/tree/main/python/tutorials>`_
 contains ``main.py`` with numbered exercises and ``main_finished.py`` with
 the answers. The directory names are ``multi_pendulum``, ``biped``,
 ``collisions``, and ``dominoes``.
+
+For a shorter introduction to loading a robot model and running a simulation,
+start with the :doc:`dartpy examples </dartpy/user_guide/examples>`.
 
 Setup and execution
 -------------------
