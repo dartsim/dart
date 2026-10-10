@@ -80,26 +80,23 @@ jobs:
 
           - os: linux
             runner: ubuntu-24.04-arm
-            build: "cp313-manylinux_aarch64"
-            pixi_env: py313-wheel
-            release_only: false
-
-          - os: linux
-            runner: ubuntu-24.04-arm
-            build: "cp312-manylinux_aarch64"
+            build: "cp312-abi3-manylinux_aarch64"
             pixi_env: py312-wheel
-            release_only: true
+            abi3: true
+            release_only: false
 
           - os: linux
             runner: ubuntu-24.04-arm
             build: "cp311-manylinux_aarch64"
             pixi_env: py311-wheel
+            abi3: false
             release_only: true
 
           - os: linux
             runner: ubuntu-24.04-arm
             build: "cp310-manylinux_aarch64"
             pixi_env: py310-wheel
+            abi3: false
             release_only: true
 
           # Pin macOS to macos-15 (not macos-latest): dependency packages are
@@ -219,9 +216,10 @@ jobs:
         if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'linux' }}
         run: pixi run -e ${{ matrix.pixi_env }} wheel-test
 
-      # The cp312-abi3 wheel also serves Python 3.13 and newer.
+      # The cp312-abi3 wheel also serves Python 3.13 and newer; Linux rows run
+      # these checks in scripts/wheel_linux.py.
       - name: Audit and test abi3 wheel on Python 3.13
-        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.abi3 }}
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'linux' && matrix.abi3 }}
         run: |
           pixi exec --spec "abi3audit==0.0.26" -- abi3audit --strict --report dist/dartpy-*-cp312-abi3-*.whl
           pixi install -e py313-wheel

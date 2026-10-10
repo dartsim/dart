@@ -19,22 +19,21 @@ def test_wheel_matrix_and_platform_routing():
     rows = job["strategy"]["matrix"]["include"]
     linux = [row for row in rows if row["os"] == "linux"]
     assert {row["build"] for row in linux} == {
-        f"cp{version}-manylinux_{arch}"
-        for version in (310, 311, 312, 313)
+        f"{tag}-manylinux_{arch}"
+        for tag in ("cp312-abi3", "cp311", "cp310")
         for arch in ("x86_64", "aarch64")
     }
+    for row in rows:
+        abi3 = "-abi3-" in row["build"]
+        assert row["abi3"] == ("true" if abi3 else "false")
+        assert row["release_only"] == ("false" if abi3 else "true")
     for row in linux:
         assert row["runner"] == (
             "ubuntu-24.04-arm" if "aarch64" in row["build"] else "ubuntu-24.04"
         )
-        assert row["release_only"] == (
-            "false" if row["build"].startswith("cp313-") else "true"
-        )
     assert [(row["runner"], row["build"]) for row in rows if row["os"] != "linux"] == [
-        ("macos-15", "cp313-macosx_arm64"),
-        ("macos-15", "cp312-macosx_arm64"),
-        ("windows-2025-vs2026", "cp313-win_amd64"),
-        ("windows-2025-vs2026", "cp312-win_amd64"),
+        ("macos-15", "cp312-abi3-macosx_arm64"),
+        ("windows-2025-vs2026", "cp312-abi3-win_amd64"),
     ]
     steps = {step.get("name"): step for step in job["steps"]}
     assert "matrix.os == 'linux'" in steps["Build and test manylinux wheel"]["if"]
@@ -45,11 +44,15 @@ def test_wheel_matrix_and_platform_routing():
         "Repair wheel",
         "Verify wheel",
         "Test wheel",
+        "Audit and test abi3 wheel on Python 3.13",
     ):
         assert "matrix.os != 'linux'" in steps[name]["if"]
 
 
-def test_linux_driver_repairs_and_tests_in_clean_base(monkeypatch, tmp_path):
+@pytest.mark.parametrize("python_tag", ["cp312", "cp311"])
+def test_linux_driver_repairs_and_tests_in_clean_base(
+    monkeypatch, tmp_path, python_tag
+):
     spec = importlib.util.spec_from_file_location(
         "wheel_linux", ROOT / "scripts/wheel_linux.py"
     )
@@ -58,21 +61,27 @@ def test_linux_driver_repairs_and_tests_in_clean_base(monkeypatch, tmp_path):
     calls = []
     monkeypatch.setattr(module, "__file__", str(tmp_path / "scripts/wheel_linux.py"))
     monkeypatch.setattr(module.platform, "machine", lambda: "aarch64")
-    monkeypatch.setattr("sys.argv", ["wheel_linux.py", "cp312"])
+    monkeypatch.setattr("sys.argv", ["wheel_linux.py", python_tag])
     monkeypatch.setattr(
         module.subprocess, "run", lambda cmd, **kwargs: calls.append((cmd, kwargs))
     )
     module.main()
-    assert len(calls) == 3
-    build, repair, smoke = [cmd for cmd, _ in calls]
+    abi3 = python_tag == "cp312"
+    build, repair, *smokes = [cmd for cmd, _ in calls]
     assert "BASE_IMAGE=quay.io/pypa/manylinux_2_28_aarch64" in build
     assert "--plat manylinux_2_28_aarch64 --only-plat" in repair[-1]
-    assert "/opt/python/cp312-cp312/bin/python" in repair[-1]
+    assert f"/opt/python/{python_tag}-{python_tag}/bin/python" in repair[-1]
     assert "--exclude=build" in repair[-1]
-    assert "quay.io/pypa/manylinux_2_28_aarch64" in smoke
-    assert "dartpy-manylinux-2-28-aarch64" not in smoke
-    assert "LD_LIBRARY_PATH" in smoke
-    assert smoke[-1].endswith("cp312-*-manylinux_2_28_aarch64.whl")
+    assert ("abi3audit --strict" in repair[-1]) == abi3
+    # The abi3 wheel is also tested on a newer interpreter.
+    smoke_tags = [python_tag, "cp313"] if abi3 else [python_tag]
+    assert len(smokes) == len(smoke_tags)
+    for smoke, tag in zip(smokes, smoke_tags):
+        assert "quay.io/pypa/manylinux_2_28_aarch64" in smoke
+        assert "dartpy-manylinux-2-28-aarch64" not in smoke
+        assert "LD_LIBRARY_PATH" in smoke
+        assert f"/opt/python/{tag}-{tag}/bin/python" in smoke
+        assert smoke[-1].endswith(f"{python_tag}-*-manylinux_2_28_aarch64.whl")
     assert all(kwargs == {"check": True} for _, kwargs in calls)
 
 
@@ -101,7 +110,8 @@ def test_native_dependency_image_preserves_collision_backends():
         assert setting in dockerfile
     assert "sha256sum -c -" in dockerfile
     assert "v6.0.5" in dockerfile
-    assert "v3.0.3" in dockerfile
+    # nanobind is fetched by CMake; the image no longer needs pybind11.
+    assert "pybind11" not in dockerfile
 
 
 @pytest.mark.parametrize("wheels, succeeds", [(True, True), (False, False)])

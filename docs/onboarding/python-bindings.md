@@ -261,9 +261,11 @@ Wheels use the nanobind binder. A Python 3.12 build sets
 `DART_DARTPY_STABLE_ABI=ON`, which builds the module for CPython's stable ABI
 and tags the wheel `cp312-abi3`, so one wheel per platform serves Python 3.12
 and every later version; other Python versions build regular wheels. The
-release matrix therefore builds five wheels: `cp312-abi3` for Linux, macOS, and
-Windows, plus Linux `cp310` and `cp311`. Each abi3 row also checks the wheel
-with `abi3audit --strict` and tests it on Python 3.13 through
+release matrix therefore builds eight wheels: `cp312-abi3` for Linux x86_64
+and aarch64, macOS arm64, and Windows x64, plus Linux `cp310` and `cp311` for
+both architectures. Each abi3 row also checks the wheel with
+`abi3audit --strict` and tests it on Python 3.13: the Linux driver below does
+both in its containers, and macOS and Windows run
 `pixi run -e py313-wheel wheel-test-abi3`. Stable-ABI calls cost up to about 5%
 more instructions on NumPy-heavy setters; CMake refuses
 `DART_DARTPY_STABLE_ABI` on Python older than 3.12 or CMake older than 3.26.
