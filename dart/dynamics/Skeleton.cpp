@@ -549,15 +549,11 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
       BodyNode* newBn = skelClone->getBodyNode(originalBn->getName());
       auto* clonedNode = node->cloneNode(newBn);
       clonedNode->attach();
-      const auto* originalSoftBody
-          = dynamic_cast<const SoftBodyNode*>(originalBn);
-      if (originalSoftBody
-          && node == originalSoftBody->mSoftShapeNode.lock().get()) {
-        static_cast<SoftBodyNode*>(newBn)->mSoftShapeNode
-            = static_cast<ShapeNode*>(clonedNode);
-      }
     }
   }
+
+  for (auto* softBody : skelClone->mSoftBodyNodes)
+    softBody->matchSoftShapeNode(getSoftBodyNode(softBody->getName()));
 
   skelClone->setProperties(getAspectProperties());
   skelClone->setName(cloneName);
