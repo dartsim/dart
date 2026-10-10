@@ -11,6 +11,31 @@ counterpart is `pixi run py-demos` (see `python/examples/demos/`).
 The deformable-body flagship scenes are available as
 `--scene adaptive_soft_contact` and `--scene soft_worm`.
 
+## Display scaling
+
+Interactive windows automatically use desktop DPI: for example, X11
+`Xft.dpi: 192` selects 2x scaling. Windows uses the native window's DPI;
+macOS uses Cocoa's logical points. X11 (including XWayland) follows its
+desktop-wide `Xft.dpi` setting. Failed detection starts at 1x and keeps the
+last valid scale after startup.
+
+The default 1600x1000 window grows with the UI scale, fits within 90% of the
+current monitor's usable area, and opens centered. Explicit `--width` and
+`--height` values are exact, unscaled window dimensions (pixels on X11 and
+Windows, logical points on macOS). Later DPI changes preserve the window's
+position and size, while rebuilding the docked panel layout for the new scale.
+
+Use `pixi run demos --gui-scale 1.5` or `DART_GUI_SCALE` for a manual scale
+between 0.5 and 4; the CLI overrides the environment. View > **Automatic DPI
+scaling** restores automatic mode. Adjusting the **GUI scale** slider switches
+to manual mode. These controls change the UI without resizing the window.
+Scene annotations drawn through OSG retain their scale from scene activation.
+
+Headless captures default to 1x regardless of desktop DPI, and retain exact
+requested image dimensions. Numeric scale overrides still apply to their UI.
+macOS keeps OSG's point-sized OpenGL surface; native Retina rendering is not
+enabled by this sizing feature.
+
 ## Architecture
 
 - **Host** (`DemoHost`, `main.cpp`): owns the one window, the ImGui theme
