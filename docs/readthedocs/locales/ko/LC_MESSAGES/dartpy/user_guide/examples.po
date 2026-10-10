@@ -6,10 +6,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
-"7.0.0-alpha0\n"
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit 6.19.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-26 00:00-0800\n"
+"POT-Creation-Date: 2026-10-09 16:20-0700\n"
 "PO-Revision-Date: 2025-01-26 00:00-0800\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
@@ -18,38 +17,94 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.11.0\n"
+"Generated-By: Babel 2.18.0\n"
 
-#: ../../dartpy/user_guide/examples.rst:2
+#: ../../dartpy/user_guide/examples.rst:2 bb828634f1b44b5cadfa7296eb7e2d05
 msgid "Examples"
 msgstr "예제"
 
-#: ../../dartpy/user_guide/examples.rst:4
+#: ../../dartpy/user_guide/examples.rst:4 4156ecc1c2a14ea18b2dc0694d558b52
 msgid ""
-"Once you have installed dartpy using pip install -U dartpy, you can run the "
-"following \"Hello World\" example to simulate a 6-DOF robot using DART."
+"Once you have installed dartpy using pip install -U dartpy, you can run "
+"the following \"Hello World\" example to simulate a 6-DOF robot using "
+"DART."
 msgstr ""
-"pip install -U dartpy를 사용하여 dartpy를 설치한 후, 다음 \"Hello World\" 예제를 "
-"실행하여 DART를 사용한 6-DOF 로봇 시뮬레이션을 할 수 있습니다."
+"pip install -U dartpy를 사용하여 dartpy를 설치한 후, 다음 \"Hello World\" 예제를 실행하여 "
+"DART를 사용한 6-DOF 로봇 시뮬레이션을 할 수 있습니다."
 
-#: ../../dartpy/user_guide/examples.rst:8
+#: ../../dartpy/user_guide/examples.rst:8 c5289f7a95254114abf3fd07f9cecf45
 msgid ""
 "In order to load the URDF, please clone dart repository and set the "
-"`DART_DATA_LOCAL_PATH` environment variable to where the `data` folder is in "
-"the cloned repository (e.g., `C:/ws/dart/data/` if cloned to `C:/ws/dart/`)"
+"`DART_DATA_LOCAL_PATH` environment variable to where the `data` folder is"
+" in the cloned repository (e.g., `C:/ws/dart/data/` if cloned to "
+"`C:/ws/dart/`)"
 msgstr ""
-"URDF를 로드하려면 dart 저장소를 복제하고 `DART_DATA_LOCAL_PATH` 환경 변수를 "
-"복제된 저장소의 `data` 폴더 위치로 설정하세요 (예: `C:/ws/dart/`에 복제한 경우 `C:/ws/dart/data/`)"
+"URDF를 로드하려면 dart 저장소를 복제하고 `DART_DATA_LOCAL_PATH` 환경 변수를 복제된 저장소의 `data` "
+"폴더 위치로 설정하세요 (예: `C:/ws/dart/`에 복제한 경우 `C:/ws/dart/data/`)"
 
-#: ../../dartpy/user_guide/examples.rst:36
+#: ../../dartpy/user_guide/examples.rst:36 ac8279146d204f9f923c9ee02b1b9977
 msgid ""
-"When you run this script, it will perform a forward dynamic simulation of the "
-"6-DOF robot for 100 steps. Joint angles are printed every 10 steps, producing "
-"the following output:"
+"When you run this script, it will perform a forward dynamic simulation of"
+" the 6-DOF robot for 100 steps. Joint angles are printed every 10 steps, "
+"producing the following output:"
 msgstr ""
-"이 스크립트를 실행하면 6-DOF 로봇의 순방향 동역학 시뮬레이션이 100 스텝 동안 수행됩니다. "
-"관절 각도는 10 스텝마다 출력되어 다음과 같은 결과를 생성합니다:"
+"이 스크립트를 실행하면 6-DOF 로봇의 순방향 동역학 시뮬레이션이 100 스텝 동안 수행됩니다. 관절 각도는 10 스텝마다 "
+"출력되어 다음과 같은 결과를 생성합니다:"
 
-#: ../../dartpy/user_guide/examples.rst:52
-msgid "You can find additional example code at https://github.com/dartsim/dart/tree/main/python/examples"
-msgstr "추가 예제 코드는 https://github.com/dartsim/dart/tree/main/python/examples 에서 찾을 수 있습니다"
+#: ../../dartpy/user_guide/examples.rst:52 b66882d499a240778755d32506681286
+msgid ""
+"You can find additional example code at "
+"https://github.com/dartsim/dart/tree/main/python/examples"
+msgstr ""
+"추가 예제 코드는 https://github.com/dartsim/dart/tree/main/python/examples 에서 찾을"
+" 수 있습니다"
+
+#: ../../dartpy/user_guide/examples.rst:55 e028ba1b33524bdba4a02491f31a5005
+msgid "Analytical inverse kinematics with ssik"
+msgstr ""
+
+#: ../../dartpy/user_guide/examples.rst:57 3934d57e1de24433bc5032ab15719b60
+msgid ""
+"dartpy can plug an external Python analytical IK solver into DART's "
+"native ``InverseKinematics::Analytical`` pipeline through "
+"``InverseKinematics.setPythonAnalytical``. The binding is solver-"
+"agnostic: you supply any callable that maps a desired end-effector "
+"transform (a 4x4 NumPy matrix) to a list of joint-space solutions, and "
+"DART keeps its native solution selection, joint-limit handling, and "
+"extra-DOF utilization."
+msgstr ""
+
+#: ../../dartpy/user_guide/examples.rst:64 0332e74f3929473abaeb77bbec4f15df
+msgid ""
+"The `ssik <https://github.com/personalrobotics/ssik>`_ package provides "
+"closed-form analytical IK for many common arms and is a convenient solver"
+" to plug in. ssik is an optional, PyPI-only dependency; it is not "
+"required by DART or dartpy and is only used by the IK examples:"
+msgstr ""
+
+#: ../../dartpy/user_guide/examples.rst:76 f01de0b7245e4f0fa97c84dadf53a320
+msgid ""
+"The sketch below registers an ssik prebuilt solver on an end effector and"
+" solves for a target pose. Build the skeleton so its DOFs match the ssik "
+"chain with the base at the world origin, so the world-frame target equals"
+" the frame ssik expects:"
+msgstr ""
+
+#: ../../dartpy/user_guide/examples.rst:108 218a1da53c9e40128ad1dec630a84cf6
+msgid ""
+"A complete, runnable demo -- which builds the DART skeleton from the "
+"solver's product-of-exponentials chain, drives a draggable "
+"``InteractiveFrame`` target in an ``ImGuiViewer``, and re-solves the IK "
+"live as you drag -- is available at "
+"``python/examples/ssik_analytical_ik/main.py``. It also ships a headless "
+"smoke test over all ssik prebuilt arms:"
+msgstr ""
+
+#: ../../dartpy/user_guide/examples.rst:121 d5ac22e965874fac92ddc53f8dce6d0d
+msgid ""
+"A C++ counterpart embeds a Python interpreter to drive the same solver "
+"from an OSG/ImGui application: the ``ssik_ik_gui`` scene in the "
+"consolidated ``dart-demos`` catalog (``pixi run demos``, then select it "
+"from the catalog, or launch it directly with ``bin/dart-demos --scene "
+"ssik_ik_gui``)."
+msgstr ""
