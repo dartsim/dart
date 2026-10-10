@@ -6,11 +6,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
-"7.0.0-alpha0\n"
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit 6.19.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-26 00:00-0800\n"
-"PO-Revision-Date: 2025-01-26 00:00-0800\n"
+"POT-Creation-Date: 2026-10-09 16:20-0700\n"
+"PO-Revision-Date: 2026-10-09 23:22+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
 "Language-Team: ko <LL@li.org>\n"
@@ -18,32 +17,33 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.11.0\n"
+"Generated-By: Babel 2.18.0\n"
 
-#: ../../dartpy/user_guide/tutorials.rst:2
+#: ../../dartpy/user_guide/tutorials.rst:2 b25d4083a5704fabbff28de3c7c351e2
 msgid "Tutorials"
 msgstr "튜토리얼"
 
-#: ../../dartpy/user_guide/tutorials.rst:4
-msgid "Python-specific tutorials and examples for dartpy."
-msgstr "dartpy를 위한 Python 전용 튜토리얼 및 예제입니다."
+#: ../../dartpy/user_guide/tutorials.rst:5 412c11397baa409eaa7f8144022b8305
+msgid "Learning resources"
+msgstr "학습 자료"
 
-#: ../../dartpy/user_guide/tutorials.rst:6
-msgid "For additional Python examples, you can find the example code at:"
-msgstr "추가 Python 예제는 다음 위치에서 찾을 수 있습니다:"
-
-#: ../../dartpy/user_guide/tutorials.rst:10
-msgid "Coming Soon"
-msgstr "곧 제공 예정"
-
-#: ../../dartpy/user_guide/tutorials.rst:12
+#: ../../dartpy/user_guide/tutorials.rst:7 5e4a64c99161403198d20912061132d4
 msgid ""
-"Python-specific tutorials are under development. In the meantime, please refer to the "
-":doc:`examples </dartpy/user_guide/examples>` page for getting started with dartpy, and "
-"the C++ tutorials in the :doc:`dart (C++) section </dart/user_guide/tutorials>` for "
-"general DART concepts that apply to both C++ and Python APIs."
+"Start with the :doc:`dartpy examples </dartpy/user_guide/examples>` to "
+"load a robot model and run a simulation. Additional runnable Python "
+"examples are in the `source repository "
+"<https://github.com/dartsim/dart/tree/main/python/examples>`_."
 msgstr ""
-"Python 전용 튜토리얼은 현재 개발 중입니다. 그동안 dartpy 시작하기를 위해 "
-":doc:`예제 </dartpy/user_guide/examples>` 페이지를 참조하고, "
-"C++와 Python API 모두에 적용되는 일반적인 DART 개념에 대해서는 "
-":doc:`dart (C++) 섹션 </dart/user_guide/tutorials>`\\ 의 C++ 튜토리얼을 참조하세요."
+"로봇 모델을 불러오고 시뮬레이션을 실행하려면 :doc:`dartpy 예제 </dartpy/user_guide/examples>` "
+"부터 시작하세요. 실행 가능한 추가 Python 예제는 `소스 저장소 "
+"<https://github.com/dartsim/dart/tree/main/python/examples>`_ 에 있습니다."
+
+#: ../../dartpy/user_guide/tutorials.rst:11 a56679f672a547c8af7a94ea0b6cad59
+msgid ""
+"The :doc:`C++ tutorials </dart/user_guide/tutorials>` explain general "
+"DART concepts that apply to both C++ and Python APIs. Their code is "
+"written in C++; use the dartpy examples for Python code."
+msgstr ""
+":doc:`C++ 튜토리얼 </dart/user_guide/tutorials>` 은 C++와 Python API에 모두 적용되는 "
+"DART의 일반적인 개념을 설명합니다. 튜토리얼 코드는 C++로 작성되어 있으므로 Python 코드는 dartpy 예제를 "
+"참고하세요."

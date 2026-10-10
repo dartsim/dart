@@ -4,14 +4,12 @@
 # Animation and Robotics Toolkit package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
-"7.0.0-alpha0\n"
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit 6.19.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-26 00:39-0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"POT-Creation-Date: 2026-10-09 16:20-0700\n"
+"PO-Revision-Date: 2026-10-09 23:22+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
 "Language-Team: ko <LL@li.org>\n"
@@ -19,77 +17,80 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.11.0\n"
+"Generated-By: Babel 2.18.0\n"
 
-#: ../../user_guide/tutorials/multi-pendulum.md:1
-#: 46eb16e45884458fbf226bac709f20f8
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:1
+#: b1b8779decab4466a5261b2c9465a8ee
 msgid "Multi Pendulum"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:3
-#: 14c12d7fe7a94934a6cd69456fd59cb7
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:3
+#: bdfb55e90c8141b09319ff58cf391b1c
 msgid "Overview"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:5
-#: 78d58e7e1afc4abaa87f708fdbc252a8
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:5
+#: 531338531ce54a538c9718ca4954cbc7
 msgid ""
 "This tutorial will demonstrate some basic interaction with DART's "
 "dynamics API during simulation. This will show you how to:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:8
-#: 458e9396a24548f7823c79cd8b1dd5df
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:8
+#: 58d57a2561594a45a9a77379bd9ef395
 msgid "Create a basic program to simulate a dynamic system"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:9
-#: 288518f74997452ab72c41c3a96eddf6
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:9
+#: f0510360a57f409880e10543f1220c56
 msgid "Change the colors of shapes"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:10
-#: 66af8ccf036f4580af00f80c8a1b547f
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:10
+#: 60756b779fd94ddabf28e9a01661a7f4
 msgid "Add/remove shapes from visualization"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:11
-#: 7c1a3787227f4d97ba2130ffe6e331a2
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:11
+#: 068c1c3d205b439a884ae8efc16bd342
 msgid "Apply internal forces in the joints"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:12
-#: 2088cbc2201e41fe9b5f68c33702243a
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:12
+#: dc48c63716ca47f2973aecd3c93f3014
 msgid "Apply external forces to the bodies"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:13
-#: 41d347efdfc241dc97c9e469873dac77
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:13
+#: cbdadbe3e49d4c418df855cd5c7bf075
 msgid "Alter the implicit spring and damping properties of joints"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:14
-#: 4daf47394b2f4fae9df17034b8608f91
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:14
+#: 7e893e27fe574926bc511ab1edae4272
 msgid "Add/remove dynamic constraints"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:16
-#: 780a73b9ebf54b9693d5875f11ec1eef
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:16
+#: c94148431d164d88a29e579801cbf149
 msgid ""
 "Please reference the source code in "
-"[**tutorialMultiPendulum.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum.cpp)"
-" and [**tutorialMultiPendulum-"
-"Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials"
-"/tutorialMultiPendulum-Finished.cpp)."
+"[**tutorial_multi_pendulum/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum/main.cpp)"
+" and "
+"[**tutorial_multi_pendulum_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum_finished/main.cpp)."
 msgstr ""
+"[**tutorial_multi_pendulum/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum/main.cpp)와"
+" "
+"[**tutorial_multi_pendulum_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum_finished/main.cpp)의"
+" 소스 코드를 참고하세요."
 
-#: ../../user_guide/tutorials/multi-pendulum.md:18
-#: 9b834efc9ce04f98a00eefd55b300347
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:18
+#: d0f1b27b8cf849f7a99e60d940dc2b0b
 msgid "Lesson 0: Simulate a passive multi-pendulum"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:20
-#: fd03ce798d164f08b6cd2caf38c48488
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:20
+#: 760811d63d5c4e6f8a813adc5ac230ed
 msgid ""
 "This is a warmup lesson that demonstrates how to set up a simulation "
 "program in DART. The example we will use throughout this tutorial is a "
@@ -99,16 +100,16 @@ msgid ""
 "the later tutorials."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:27
-#: 88562a8fcb5a430e834db39603e031b3
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:27
+#: 404db915966142ab9b62f4f8f7d3af73
 msgid ""
 "In DART, an articulated dynamics model is represented by a ``Skeleton``. "
 "In the ``main`` function, we first create an empty skeleton named "
 "*pendulum*."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:35
-#: 97c1aaf10a8e4b2b8c89e3fac3498fd8
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:35
+#: d9d09132204e4afca37b74acd6f511b2
 msgid ""
 "A Skeleton is a structure that consists of ``BodyNode``s (bodies) which "
 "are  connected by ``Joint``s. Every Joint has a child BodyNode, and every"
@@ -118,8 +119,8 @@ msgid ""
 "currently empty pendulum skeleton."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:47
-#: bfde1ffca96344a3aa14c87d1c10430e
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:47
+#: 343890721d964021a5739658aee697e2
 msgid ""
 "Note that the first parameters is a nullptr, which indicates that this "
 "new BodyNode is the root of the pendulum. If we wish to append the new "
@@ -129,33 +130,32 @@ msgid ""
 "``addBody``:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:58
-#: f442138b3cc44ac8b902bf2403638ee7
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:58
+#: ed42b7d8a19e4bc0ab2c20c51bb0ff95
 msgid ""
-"The simplest way to set up a simulation program in DART is to use "
-"``SimWindow`` class. A SimWindow owns an instance of ``World``  and "
-"simulates all the Skeletons in the World. In this example, we create a "
-"World with the pendulum skeleton in it, and assign the World to an "
-"instance of ``MyWindow``, a subclass derived from SimWindow."
+"These tutorials use the OSG viewer utilities under ``dart::gui::osg``. "
+"After we create the ``World`` and pendulum skeleton, we instantiate a "
+"``Controller`` plus a GUI event handler, wrap the world in a "
+"``RealTimeWorldNode``, and send that node to a ``Viewer``."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:70
-#: eeea1c1b2dd3403890e22b98769488d2
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:77
+#: 3f7b07e21af1462681dae2951bf47fa2
 msgid ""
-"Every single time step, the ``MyWindow::timeStepping`` function will be "
-"called and the state of the World will be simulated. The user can "
-"override the default timeStepping function to customize the simulation "
-"routine. For example, one can incorporate sensors, actuators, or user "
-"interaction in the forward simulation."
+"Every single time step, the ``Viewer`` drives the world through "
+"``CustomWorldNode::customPreStep()``, which we override to call the event"
+" handler's update path and then ``Controller::update()``. For example, "
+"one can incorporate sensors, actuators, or user interaction in the "
+"forward simulation."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:77
-#: 97040db0a9e946f190139f5e5641afab
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:83
+#: cf467639ce8e46c48e87ee2c6edcaeb6
 msgid "Lesson 1: Change shapes and applying forces"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:79
-#: d8b5cb2bd71f4deba2a8f39a170c9677
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:85
+#: c568a4cfc3104383bf1361f54178ed12
 msgid ""
 "We have a pendulum with five bodies, and we want to be able to apply "
 "forces to them during simulation. Additionally, we want to visualize "
@@ -164,54 +164,54 @@ msgid ""
 "same time."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:84
-#: b778cf14c9e443f6ba38ddfa65b2f2e1
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:90
+#: b1747abd85c84ffdbd2ebf161cf1566c
 msgid "Lesson 1a: Reset everything to default appearance"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:86
-#: a1d659a3b15a40838aa81a65d990ac7d
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:92
+#: 511ae2afee364379bb9f5e698a88e2c8
 msgid ""
 "At each step, we'll want to make sure that everything starts out with its"
 " default appearance. The default is for everything to be blue and there "
 "not to be any arrow attached to any body."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:90
-#: 58e1412a011a48e48665c5124b063027
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:96
+#: 0a7d56bf8a134114b01f9d0ed8b23bb8
 msgid ""
-"Find the function named ``timeStepping`` in the ``MyWindow`` class. The "
-"top of this function is where we will want to reset everything to the "
-"default appearance."
+"Find the ``Controller::update`` function. The top of this function is "
+"where we reset everything to the default appearance before advancing the "
+"simulation."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:93
-#: d77eaba2437b418ea55fca002d9a768c
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:99
+#: 35692dcf2325476a9c907633087f4bb7
 msgid ""
 "Each BodyNode contains visualization ``Shape``s that will be rendered "
 "during simulation. In our case, each BodyNode has two shapes:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:96
-#: ea8c8cbcf8be4ea697686ac22d8cef0e
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:102
+#: 6e7e4473191740c5a2357f4915a741e1
 msgid "One shape to visualize the parent joint"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:97
-#: f48bec4f13de48d7ba1490379a9dd76f
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:103
+#: 6856a6f4c4e1498283b504bac87ad848
 msgid "One shape to visualize the body"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:99
-#: d178020ce1ee439a8407e7303a9e3a66
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:105
+#: 8b1f2d96a0c24e7e8266837b4b44ec5a
 msgid ""
 "The default appearance for everything is to be colored blue, so we'll "
 "want to iterate through these two Shapes in each BodyNode, setting their "
 "colors to blue."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:116
-#: fb89ba42ac2d4c428c82ed5769dc9a53
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:122
+#: 2a4c8422e68542499acf538283fe9329
 msgid ""
 "Additionally, there is the possibility that some BodyNodes will have an "
 "arrow shape attached if the user had been applying an external body force"
@@ -219,43 +219,43 @@ msgid ""
 "for-loop, we should check for arrows and remove them:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:128
-#: 46123cdfcc8f4715ba007da033649494
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:134
+#: 095c0d589c67488cb6fd6d3e45d62202
 msgid "Now everything will be reset to the default appearance."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:130
-#: a18342ab364642e6a4eed034cfee9115
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:136
+#: b695c6b1bfbe49f497e1aab25dbe4c3f
 msgid "Lesson 1b: Apply joint torques based on user input"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:132
-#: a987d1fe97124f4eb4b31ec6c798eb58
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:138
+#: 67ed190acb524bc2948c743d49693f17
 msgid ""
-"The ``MyWindow`` class in this tutorial has a variable called "
-"``mForceCountDown`` which is a ``std::vector<int>`` whose entries get set"
-" to a value of ``default_countdown`` each time the user presses a number "
-"key. If an entry in ``mForceCountDown`` is greater than zero, then that "
-"implies that the user wants a force to be applied for that entry."
+"The ``Controller`` class keeps a ``mForceCountDown`` vector whose entries"
+" get set to ``default_countdown`` whenever ``PendulumEventHandler`` sees "
+"a numeric key press. If an entry in ``mForceCountDown`` is greater than "
+"zero, then that implies that the user wants a force to be applied for "
+"that entry."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:138
-#: d2c7409e13794727b230e6b7c974bc8b
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:143
+#: 9be93bcbc83e4a03b0d52740117fb707
 msgid "There are two ways that forces can be applied:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:140
-#: 417b9ab8fde14335b80cbb9c09e61926
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:145
+#: 50a0bd1a85294bddb954ad582a7bb8bd
 msgid "As an internal joint force"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:141
-#: 0f902d0972b343e592089b50b4cf545a
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:146
+#: a5240d25ee034ada950001eecb523741
 msgid "As an external body force"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:143
-#: 068c8cdce82a401491c6725fb0ed2bb6
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:148
+#: 31f4176139b847bd98bf822d3c286cd8
 msgid ""
 "First we'll consider applying a Joint force. Inside the for-loop that "
 "goes through each ``DegreeOfFreedom`` using ``getNumDofs()``, there is an"
@@ -263,37 +263,37 @@ msgid ""
 "the relevant DegreeOfFreedom and set its generalized (joint) force:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:153
-#: 0b9f9c7806b54e25b6881b90a4f1d9f0
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:158
+#: dd650be9f3744396b13612e95f5b51d3
 msgid ""
 "The ``mPositiveSign`` boolean gets toggled when the user presses the "
 "minus sign '-' key. We use this boolean to decide whether the applied "
 "force should be positive or negative."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:157
-#: 8acc3ccb210d40e3a01092fb4c4dcb10
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:162
+#: c00c6db60b344e86b39bbbd6b192483f
 msgid ""
 "Now we'll want to visualize the fact that a Joint force is being applied."
 " We'll do this by highlighting the joint with the color red. First we'll "
 "grab the Shape that corresponds to this Joint:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:166
-#: 598daba15ce148898fa759a020338544
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:171
+#: 3e7a4fd554ef4964b6dce41f0750abde
 msgid ""
 "Because of the way the pendulum bodies were constructed, we trust that "
 "the zeroth indexed visualization shape will be the shape that depicts the"
 " joint. So now we will color it red:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:174
-#: 52c72327e12b451d94f6ff274d67c14f
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:179
+#: 48749a7ae8b9483ba6de629a06dcab74
 msgid "Lesson 1c: Apply body forces based on user input"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:176
-#: 3a97c567e7a94434a092077c57a914d1
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:181
+#: 7cf0383a49174d33a79936627a77e656
 msgid ""
 "If mBodyForce is true, we'll want to apply an external force to the body "
 "instead of an internal force in the joint. First, inside the for-loop "
@@ -302,20 +302,24 @@ msgid ""
 "we'll grab the relevant BodyNode:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:185
-#: ed63872a287a440abbb9f96259cb6850
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:190
+#: ae9f2db94ba34c69a4485c45a59c0e8e
 msgid ""
-"Now we'll create an ``math::Vector3d`` that describes the force and "
+"Now we'll create an ``Eigen::Vector3d`` that describes the force and "
 "another one that describes the location for that force. An "
-"``math::Vector3d`` is the Eigen C++ library's version of a three-"
+"``Eigen::Vector3d`` is the Eigen C++ library's version of a three-"
 "dimensional mathematical vector. Note that the ``d`` at the end of the "
-"name stands for ``double``, not for \"dimension\". An math::Vector3f "
-"would be a three-dimensional vector of floats, and an math::Vector3i "
+"name stands for ``double``, not for \"dimension\". An Eigen::Vector3f "
+"would be a three-dimensional vector of floats, and an Eigen::Vector3i "
 "would be a three-dimensional vector of integers."
 msgstr ""
+"이제 힘을 나타내는 ``Eigen::Vector3d`` 와 힘을 가할 위치를 나타내는 벡터를 만듭니다. "
+"``Eigen::Vector3d`` 는 Eigen C++ 라이브러리의 3차원 수학 벡터입니다. 이름 끝의 ``d`` 는 "
+"\"차원\"이 아닌 ``double`` 을 뜻합니다. Eigen::Vector3f는 float 성분의 3차원 벡터이고, "
+"Eigen::Vector3i는 정수 성분의 3차원 벡터입니다."
 
-#: ../../user_guide/tutorials/multi-pendulum.md:197
-#: b46669ba512242e385883df4776548d1
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:202
+#: 4f04470ef28d4638a59336df6f434f43
 msgid ""
 "The force will have a magnitude of ``default_force`` and it will point in"
 " the positive x-direction. The location of the force will be in the "
@@ -324,33 +328,33 @@ msgid ""
 "account for sign changes:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:210
-#: ad0a30ea91884af7970d90ad45a10711
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:215
+#: 96796e0964804d5da2671f339a8e5252
 msgid "That will flip the signs whenever the user is requesting a negative force."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:212
-#: d57d3f05c8a542099970be2f6279769a
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:217
+#: d52fb75b676248a0b396c9914cea133f
 msgid "Now we can add the external force:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:218
-#: bdf2572fc93a472eae95d671db6d6049
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:223
+#: 7a9bbfe1edf54065bb6876e7e8fc4c59
 msgid ""
 "The two ``true`` booleans at the end are indicating to DART that both the"
 " force and the location vectors are being expressed with respect to the "
 "body frame."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:221
-#: 64e2f94a40194e1780b391a16bc13129
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:226
+#: cbba00bf59f34ab0843148c3a35f603e
 msgid ""
 "Now we'll want to visualize the force being applied to the body. First, "
 "we'll grab the Shape for the body and color it red:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:229
-#: 05114826ddb34bc9a164672ae0ecabd0
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:234
+#: f0f94e10d4a14e0a8a833b2464142a9f
 msgid ""
 "Last time we grabbed the 0-index visualization shape, because we trusted "
 "that it was the shape that represented the parent Joint. This time we're "
@@ -358,21 +362,22 @@ msgid ""
 " shape for the body."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:234
-#: 5e0aad2241284583a2e1813a2497f10b
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:239
+#: ec221c616afe4725a337bfb7d1498c7a
 msgid ""
 "Now we'll want to add an arrow to the visualization shapes of the body to"
-" represent the applied force. The ``MyWindow`` class already provides the"
-" arrow shape; we just need to add it:"
+" represent the applied force. The ``Controller`` already owns an "
+"``ArrowShape`` that visualizes the currently applied body force; we just "
+"need to show it:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:242
-#: db2be6088b114287991ccb8c4f8a7cc1
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:247
+#: b87688bac7344340984b255e3beb6909
 msgid "Lesson 2: Set spring and damping properties for joints"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:244
-#: 1581b921e88c4502bcbb85dd0c3de5e9
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:249
+#: eb3128fa77354b9083bed637d5153369
 msgid ""
 "DART allows Joints to have implicit spring and damping properties. By "
 "default, these properties are zeroed out, so a joint will only exhibit "
@@ -384,28 +389,28 @@ msgid ""
 "stability."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:252
-#: ed42a042d58d48bca54c543cf108b7b1
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:257
+#: b8834e355eb141698541730e704e4dd0
 msgid "Lesson 2a: Set joint spring rest position"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:254
-#: bc8c43942da648cab0009aff2e8f8b86
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:259
+#: 752abf80c6bf40838c0cb24275af7511
 msgid "First let's see how to get and set the rest positions."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:256
-#: 021c9a06d09641a2b18341d471e7efba
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:261
+#: fe5442b5ed1c40d7aa0f1b89b1ed1c70
 msgid ""
-"Find the function named ``changeRestPosition`` in the ``MyWindow`` class."
-" This function will be called whenever the user presses the 'q' or 'a' "
-"button. We want those buttons to curl and uncurl the rest positions for "
-"the pendulum. To start, we'll go through all the generalized coordinates "
-"and change their rest positions by ``delta``:"
+"Find the function named ``Controller::changeRestPosition``. This function"
+" is triggered whenever ``PendulumEventHandler`` sees the 'q' or 'a' key. "
+"We want those buttons to curl and uncurl the rest positions for the "
+"pendulum. To start, we'll go through all the generalized coordinates and "
+"change their rest positions by ``delta``:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:272
-#: 63f22e9bd1e246fa9865d4ba8b29198f
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:277
+#: d586f1d3734e45b88a372dce7fec55ac
 msgid ""
 "However, it's important to note that the system can become somewhat "
 "unstable if we allow it to curl up too much, so let's put a limit on the "
@@ -413,8 +418,8 @@ msgid ""
 "we can put:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:281
-#: 3b554b4f28d3460c9c18509cada557e0
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:286
+#: 3ce8ff342551480a8d32a323b7affe45
 msgid ""
 "And there's one last thing to consider: the first joint of the pendulum "
 "is a BallJoint. BallJoints have three degrees of freedom, which means if "
@@ -425,20 +430,20 @@ msgid ""
 "degrees of freedom:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:293
-#: 7e101389b96f4b30b9f361dce92b1f1a
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:298
+#: 120797c41365403da5755fdd189a0347
 msgid "Lesson 2b: Set joint spring stiffness"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:295
-#: eb86ef9838684d238d12c89963e49f60
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:300
+#: 7cd03c1de8054b3c85f8c768e71161ef
 msgid ""
 "Changing the rest position does not accomplish anything without having "
 "any spring stiffness. We can change the spring stiffness as follows:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:307
-#: 01aa5d5c40e5438c8a7fe24327a27beb
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:312
+#: b87d45c3dd294ba8b89eb1ce99702145
 msgid ""
 "However, it's important to realize that if the spring stiffness were ever"
 " to become negative, we would get some very nasty explosive behavior. "
@@ -447,13 +452,13 @@ msgid ""
 "``dof->setSpringStiffness(stiffness);`` you'll want to put:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:317
-#: 3ae2d3a1bb1d41798871835b1d1340c8
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:322
+#: 2630ceac264a40de9ddd4b67f1443d46
 msgid "Lesson 2c: Set joint damping"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:319
-#: 2cae9d33952a40be8feb7e048ff44c33
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:324
+#: f117d90bbfd74f1c980de630787c6023
 msgid ""
 "Joint damping can be thought of as friction inside the joint actuator. It"
 " applies a resistive force to the joint which is proportional to the "
@@ -461,28 +466,28 @@ msgid ""
 "and generally results in more stable behavior."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:324
-#: 9b6fad5289244fb8805bb434ce1e07a6
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:329
+#: bba0a3b8f7ed472693241b2f56c6ec6e
 msgid ""
 "The API for getting and setting the damping is just like the API for "
 "stiffness:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:337
-#: 06fffed601dc4ac387214db3cb24c429
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:342
+#: b2e6cf30a0a4449c9e9fca260f688663
 msgid ""
 "Again, we want to make sure that the damping coefficient is never "
 "negative. In fact, a negative damping coefficient would be far more "
 "harmful than a negative stiffness coefficient."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:341
-#: 5105b5b141cf4bfb9aa4204be00839f4
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:346
+#: 95ba63bf0c71446fbc07d254ed6f3b7e
 msgid "Lesson 3: Add and remove dynamic constraints"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:343
-#: 1f2ce123d19f46b688ce6f819cbb641e
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:348
+#: 72e3e40615d94a40817df953cd9f88f0
 msgid ""
 "Dynamic constraints in DART allow you to attach two BodyNodes together "
 "according to a selection of a few different Joint-style constraints. This"
@@ -491,48 +496,47 @@ msgid ""
 "attaches a BodyNode to the World instead of to another BodyNode."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:349
-#: 73708b81185a4baeb53a6d6ec42fa16a
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:354
+#: 34f3e65860db4a8da31a2308d99e3458
 msgid ""
 "In our case, we want to attach the last BodyNode to the World with a "
 "BallJoint style constraint whenever the function ``addConstraint()`` gets"
 " called. First, let's grab the last BodyNode in the pendulum:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:357
-#: 4355f11860aa48f49b7240129be7a424
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:362
+#: 6411f1c290d847e0afc3ace4a1517b3e
 msgid ""
 "Now we'll want to compute the location that the constraint should have. "
 "We want to connect the very end of the tip to the world, so the location "
 "would be:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:365
-#: 5ce5273c83dc4e3f87e39ed60aa89455
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:370
+#: 8cfe1027fbdf4a2a9550c9696dab5301
 msgid "Now we can create the BallJointConstraint:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:372
-#: 380abc0c9c1f4b0692d8aaf43dfe5b10
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:377
+#: 5078410957294535ad8582b497736abe
 msgid "And then add it to the world:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:378
-#: d39289430991460992ffeaac0fe52d31
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:383
+#: 9e7253c65f604212a123524fe51c1260
 msgid ""
 "Now we also want to be able to remove this constraint. In the function "
 "``removeConstraint()``, we can put the following code:"
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:386
-#: 323f9b24986b4b568cbf682e2ef15c62
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:391
+#: 9947c92801ae4ea18009b7630d44c7a8
 msgid ""
 "Setting mBallConstraint to a nullptr will allow its smart pointer to "
 "delete it."
 msgstr ""
 
-#: ../../user_guide/tutorials/multi-pendulum.md:388
-#: 1040411d104446068298b2098264ac8f
+#: ../../dart/user_guide/tutorials/multi-pendulum.md:393
+#: 9841cf0c9698403bb273edec30113d3a
 msgid "**Now you are ready to run the demo!**"
 msgstr ""
-
