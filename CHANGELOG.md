@@ -6,47 +6,52 @@
 
 * Breaking Changes
 
+  * The library SONAME becomes `libdart.so.6.20` (major.minor versioning).
+    Rebuild all binaries linked against DART 6.19 for DART 6.20.
+
   * dartpy is now built with pybind11 3.x, whose internals ABI differs from
     the pybind11 2.x used for DART 6.19 wheels. Separately compiled extension
     modules that pass dartpy objects across the Python/C++ boundary must be
     rebuilt against the same pybind11 release as dartpy, since pybind11 only
-    shares bound types between modules built with matching internals.
+    shares bound types between modules built with matching internals:
+    [#3344](https://github.com/dartsim/dart/pull/3344),
+    [#3643](https://github.com/dartsim/dart/pull/3643)
 
-  * Remove the legacy `dart/integration` module (`Integrator`,
-    `EulerIntegrator`, `RK4Integrator`, `SemiImplicitEulerIntegrator`, and
-    `IntegrableSystem`) along with its installed `include/dart/integration`
-    headers. The module was unused within DART itself: time integration
-    happens inside `dart::simulation::World::step()` via the built-in
-    semi-implicit Euler scheme (`Skeleton::integratePositions` /
-    `integrateVelocities`).
+  * Removed components and headers (relative to DART 6.19.4; installed
+    header directories below are relative to `include/`):
 
-  * Remove the previously installed `dart/external/convhull_3d` C headers
-    (`convhull_3d.h` and `safe_convhull_3d.h`) as part of replacing the
-    vendored dependency. Downstream code should include
-    `dart/math/Geometry.hpp` and use `math::computeConvexHull3D` instead:
-    [#3076](https://github.com/dartsim/dart/pull/3076)
+    * `gui`: remove the GLUT-backed library and installed `dart/gui` GLUT
+      headers, including `dart/gui/glut` and the `gui.hpp` umbrella. Use
+      the retained `gui-osg` component and `dart/gui/osg` viewers instead.
+    * `optimizer-ipopt`, `optimizer-nlopt`, and `optimizer-pagmo`: remove
+      their libraries and installed `dart/optimizer/ipopt`,
+      `dart/optimizer/nlopt`, and `dart/optimizer/pagmo` headers, plus the
+      multi-objective API (`MultiObjectiveProblem`, `MultiObjectiveSolver`,
+      `Population`, `GenericMultiObjectiveProblem`) and the
+      `dart.optimizer.NloptSolver` Python binding. Use the separate
+      [dart-optimization](https://github.com/dartsim/dart-optimization)
+      package for external optimizers; the optimizer core used by DART's
+      inverse kinematics remains. The `HAVE_IPOPT`, `HAVE_NLOPT`,
+      `HAVE_PAGMO`, and `HAVE_SNOPT` configuration macros are removed.
+    * `external-lodepng`: remove its library and installed
+      `dart/external/lodepng` headers with the GLUT screenshot support.
+      Use the OSG viewer's capture support instead.
+    * `external-odelcpsolver`: remove its library and installed
+      `dart/external/odelcpsolver` headers. The native Dantzig port replaces
+      the installed ODE-style LCP kernel; `dart/lcpsolver/dantzig/*.h`
+      compatibility forwarders remain.
+    * Header-only removals: `dart/external/convhull_3d` (not an exported
+      CMake component in 6.19.4) and `dart/integration` (including `integration.hpp`). Use `dart/math/Geometry.hpp` and
+      `math::computeConvexHull3D` for convex hulls, and `World::step()` for
+      built-in semi-implicit Euler integration.
 
-  * Remove the deprecated external optimizer backends (IPOPT, NLopt, pagmo,
-    SNOPT) and the pagmo-based multi-objective optimization API
-    (`MultiObjectiveProblem`/`MultiObjectiveSolver`, `Population`,
-    `GenericMultiObjectiveProblem`), which were extracted to the separate
-    [dart-optimization](https://github.com/dartsim/dart-optimization) package.
-    The `optimizer-ipopt` / `optimizer-nlopt` / `optimizer-pagmo` CMake
-    components and their installed headers, the `dart.optimizer.NloptSolver`
-    Python binding, and the `HAVE_IPOPT` / `HAVE_NLOPT` / `HAVE_PAGMO` /
-    `HAVE_SNOPT` macros in the installed `dart/config.hpp` are removed, and the
-    non-Pixi install instructions (apt/brew/vcpkg/Arch), root `Dockerfile`, and
-    `Brewfile` no longer pull these packages. The optimizer core (`Function`,
-    `Problem`, `Solver`, `GradientDescentSolver`) used by DART's
-    `InverseKinematics` is retained:
-    [#3105](https://github.com/dartsim/dart/pull/3105)
-
-  * Remove the deprecated GLUT-backed `dart-gui` component and installed GLUT
-    headers, along with the vendored `lodepng` screenshot dependency. The
-    remaining deprecated GLUT examples and tutorials are available through the
-    `dart-gui-osg` viewer instead, and DART no longer lists GLUT/freeglut as an
-    explicit package dependency:
-    [#3116](https://github.com/dartsim/dart/pull/3116)
+    Remove the six obsolete components from `find_package(DART COMPONENTS
+    ...)` requests and migrate code that includes the removed headers:
+    [#3076](https://github.com/dartsim/dart/pull/3076),
+    [#3088](https://github.com/dartsim/dart/pull/3088),
+    [#3105](https://github.com/dartsim/dart/pull/3105),
+    [#3116](https://github.com/dartsim/dart/pull/3116),
+    [#3122](https://github.com/dartsim/dart/pull/3122)
 
   * Fix a crash when constructing `SimpleFrame` with GCC 16, or with AVX code
     generation on older GCC, by aligning the non-virtual part of the classes
@@ -57,9 +62,8 @@
     [#3447](https://github.com/dartsim/dart/issues/3447)
 
   * `Skeleton` gains a private member that records its last
-    deactivation-state change, which changes its layout. `Skeleton::create()`
-    allocates it inside the library, so only code that subclasses `Skeleton`
-    must be rebuilt against DART 6.20:
+    deactivation-state change, which changes its layout. Rebuild code that
+    uses or subclasses `Skeleton` against DART 6.20:
     [#3552](https://github.com/dartsim/dart/pull/3552)
 
   * `dart/config.hpp` no longer defines `DART_BUILD_MODE_DEBUG` or
@@ -84,7 +88,8 @@
     Ubuntu 22.04 and macOS 13, with Windows Server 2022 as the Windows CI
     baseline. dartpy now requires Python 3.10 and NumPy 1.21.5 or newer; see
     the [build requirements](https://dart.readthedocs.io/en/latest/dart/developer_guide/build.html)
-    for the dependency versions.
+    for the dependency versions:
+    [#3643](https://github.com/dartsim/dart/pull/3643)
 
   * Accept `CMAKE_BUILD_TYPE=None`, which distribution packaging uses to apply
     its own compiler flags, without the unknown-build-type warning:
@@ -100,7 +105,8 @@
     soft-contact push recovery. Rebuild libccd with
     `-DENABLE_DOUBLE_PRECISION=ON` and FCL against it, or configure with
     `-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`:
-    [#3590](https://github.com/dartsim/dart/issues/3590)
+    [#3590](https://github.com/dartsim/dart/issues/3590),
+    [#3630](https://github.com/dartsim/dart/pull/3630)
 
   * Build DART as C++17 regardless of the compiler default, so GCC 16 (which
     defaults to C++20) builds with the default warnings-as-errors setting:
@@ -114,94 +120,15 @@
 
   * Replace the dartpy wheel publishing path with Pixi-managed build,
     repair, verification, and smoke-test tasks, and retire the legacy DART 6
-    Docker dev/wheel images.
-
-  * Harden the release-branch contributor workflow: `pixi run install-hooks`
-    installs a pre-commit hook running a fast staged safety gate (with tracked
-    Codex and Claude commit guards as fallbacks), `check-ai-commands` runs inside
-    `pixi run check-lint` so the AI workflow adapters are CI-enforced, the
-    workflow commands carry the structural metadata validated on `main`, and
-    the `dart-changelog` routine is available for backport changelog
-    decisions.
-
-  * Make DART 6.20 agent workflows discoverable and self-checking in current
-    Codex with manifest-owned skills, bounded read-only reviewers, fast commit
-    hooks, setup diagnostics, deterministic drift/scenario tests, and a
-    text-first plus claim-tied OSG visual-debugging route, while preserving
-    Claude Code and OpenCode adapters.
-
-  * Add a release-tailored model-upgrade audit and strengthen agent visual
-    verification with durable-context diagnostics, viewport-aware assessed OSG
-    framing, deterministic semantic-review targets and bundles, and fail-closed
-    evidence publication. Release evidence is content-addressed, validates the
-    complete selection contract before any GitHub lookup, requires exact remote
-    size/digest/uploaded-state metadata on retry, and records its
-    path/size/digest/URL bindings so later or partially retried publications
-    cannot replace bytes behind earlier PR URLs. The AI checker also validates
-    branch test-task semantics, including the Release-only CMake `ALL` boundary
-    and its graph-owned CTest/pytest coverage, executes controlled sanitization
-    and failure-propagation probes, and requires canonical C++, AI-infra, and
-    visual pytest tasks to execute test bodies despite ambient selector or
-    collection controls. It also validates Pixi commands across every active
-    durable task document. The required
-    consolidated-DART detector smoke uses a semantically inspected orthogonal
-    view that keeps its shape labels, contact markers, and collision bounds
-    readable.
-    ([#3410](https://github.com/dartsim/dart/pull/3410))
-
-  * Extend the task-shaped AI model-routing guidance to the Claude Code lane
-    (Claude Fable 5 and Opus 5): `docs/ai/README.md` keeps one bounded routing
-    entry per validated tool lane, the model-upgrade workflow, scenario
-    contract markers, and gates route through that single owner instead of
-    duplicating per-family tiers, and the simulation image-review guidance
-    names image-capable targets across both lanes.
-    ([#3418](https://github.com/dartsim/dart/pull/3418))
-
-  * Audit and refresh the DART 6.20 AI harness so its guidance matches this
-    branch: document the real Pixi wheel tasks, correct milestone and
-    contributor-template facts, cover `dart/simd` and every CI workflow in
-    the component and CI maps, restore the always-loaded commit-title,
-    milestone, and merge-before-push rules with the `main`-parity merge
-    gates, and converge the shared pre-commit guard (worktree-aware
-    resolution, one managed-hook version, an unknown-capability scan):
-    [#3458](https://github.com/dartsim/dart/pull/3458)
-
-  * Add a release-tailored documentation information architecture owner and
-    route docs-update workflows through it so DART 6.20 agents promote durable
-    task facts by lifecycle before retiring `docs/dev_tasks/` folders.
-
-  * Add release-branch AI-infra buckets for living plans, durable design
-    rationale, theory/reference background, and reusable documentation assets,
-    with `dart-ultrawork` routed through the DART 6.20 plan dashboard and
-    work-packet contract.
-
-  * Expand `dart-ultrawork` into the autonomous-project kickoff path for
-    large or multi-session DART 6 work, with `docs/dev_tasks/<task>/` as the
-    project home, one up-front interview or provided brief, session start/end
-    rules, explicit acceptance evidence, iterative two-pass review, GUI/demo
-    deliverable expectations for behavior-bearing physics work, prompt-level
-    goal shorthands for Claude, and release-branch maintenance hygiene.
-    [#3357](https://github.com/dartsim/dart/pull/3357)
-
-  * Add the release-branch `dart-retro` AI workflow so maintainers and agents
-    can capture durable lessons from completed DART 6.20 work through
-    `/dart-retro` or `$dart-retro`.
-
-  * Clarify release-branch AI workflow backports: compare workflow inventories
-    before cherry-picking, add release-tailored capabilities only when the
-    requested outcome explicitly requires them, and regenerate adapters through
-    the sync task.
-
-  * Add a "surface your unknowns" discipline to the release-branch AI
-    principles (`docs/ai/principles.md`): before a non-trivial fix, convert
-    consequential unknowns into knowns — a reproduction, a focused read of the
-    affected code, or an independent blind-spot review — instead of coding a
-    guess and discovering them mid-change.
+    Docker dev/wheel images:
+    [#3279](https://github.com/dartsim/dart/pull/3279),
+    [#3295](https://github.com/dartsim/dart/pull/3295)
 
   * Enable compiler-cache discovery in DART 6 Pixi builds so repeated CMake
     builds use `sccache` or fall back to `ccache` by default, while retaining
     `DART_DISABLE_COMPILER_CACHE=ON` for uncached comparisons and cache-specific
-    toolchain debugging.
+    toolchain debugging:
+    [#3326](https://github.com/dartsim/dart/pull/3326)
 
   * Centralize MSVC runtime, conformance, warning, and parallel-compile policy
     in CMake helpers so Windows builds use the same long-term toolchain settings
@@ -214,22 +141,14 @@
     rebuild every run and intermittently overran the 300-minute limit; the
     published wheels keep whole-program optimization and are still tested. Add
     the `DART_MSVC_DISABLE_WHOLE_PROGRAM_OPTIMIZATION` CMake option (also honored
-    through the environment) to control it.
+    through the environment) to control it:
+    [#3395](https://github.com/dartsim/dart/pull/3395)
 
   * Keep Pixi DartPy and GUI demo configuration warning-free on CMake 4.3 by
     using the Pixi `pybind11` package with modern Python discovery, updating
     the FetchContent fallback to the same pybind11 release, and resolving GLVND
-    OpenGL libraries from the active Pixi prefix.
-
-  * Add a root-cause discipline to the release-branch AI principles
-    (`docs/ai/principles.md`): fix bugs at the root cause — reproduce the
-    smallest failing case, fix the underlying cause, and add regression
-    coverage — instead of silencing the symptom or widening scope to route
-    around it.
-
-  * Clarify release-branch AI-native guidance so always-loaded agent rules stay
-    compact, consequential decisions use release-wide context and proportionate
-    evidence, and in-scope failures are root-caused instead of hidden.
+    OpenGL libraries from the active Pixi prefix:
+    [#3344](https://github.com/dartsim/dart/pull/3344)
 
   * Replace the vendored `dart/external/convhull_3d` implementation with a
     DART-owned native `dart/math/detail/ConvexHull.hpp` implementation used by
@@ -259,7 +178,8 @@
     [#3198](https://github.com/dartsim/dart/pull/3198)
 
   * Update the math user-defined literal declarations to the C++23 spelling
-    accepted by newer AppleClang warning-as-error builds.
+    accepted by newer AppleClang warning-as-error builds:
+    [#3138](https://github.com/dartsim/dart/pull/3138)
 
   * Stop a deprecation warning from leaking out of DART's header-only logging
     templates when building against fmt 12.2.0 or newer. spdlog's variadic
@@ -268,7 +188,8 @@
     in every downstream that instantiates DART's logging. DART now pre-formats
     messages and hands spdlog a ready-made string, sidestepping the deprecated
     conversion:
-    [gazebosim/gz-physics#1018](https://github.com/gazebosim/gz-physics/issues/1018)
+    [Original bug report](https://github.com/gazebosim/gz-physics/issues/1018),
+    [#3202](https://github.com/dartsim/dart/pull/3202)
 
   * Honor `DART_SKIP_spdlog=ON` on hosts where spdlog is installed: the core
     library now configures with `DART_HAVE_spdlog=0` and no spdlog link, and
@@ -278,6 +199,12 @@
     [#3503](https://github.com/dartsim/dart/issues/3503)
 
 * Collision
+
+  * Known behavior difference: the opt-in DART collision detector reports
+    three contacts for a box resting flat on a box, where DART 6.19 reported
+    four. The asymmetric support can change sliding and friction behavior.
+    The default FCL detector is unaffected; the fix is tracked for DART 6.21:
+    [#3595](https://github.com/dartsim/dart/issues/3595)
 
   * Make collision-object creation for shapes added after
     `World::addSkeleton()` follow subscription order. Trajectories of scenes
@@ -295,7 +222,9 @@
 
   * Fix a crash in the ODE collision backend when replacing or resizing a
     shape already in a collision group, and preserve shape updates when
-    switching collision detectors after skeletons have been added to a world.
+    switching collision detectors after skeletons have been added to a world:
+    [#3576](https://github.com/dartsim/dart/pull/3576),
+    [#3547](https://github.com/dartsim/dart/pull/3547)
 
   * Provide the DART-owned collision backend through the built-in `dart`
     detector, including soft-body, ellipsoid, cone, and capsule coverage. The
@@ -313,13 +242,16 @@
   * Speed up the `dart` collision backend by caching collision-object
     shape metadata and local bounds, refreshing the cache only when the
     associated `ShapeFrame` geometry version changes:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3129](https://github.com/dartsim/dart/pull/3129)
 
   * Speed up contact-heavy plane workloads in the `dart` detector by using
     cached-shape primitive dispatch and deterministic threaded
     finite-shape-vs-plane contact checks when the simulation thread count is
     greater than one:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3123](https://github.com/dartsim/dart/pull/3123),
+    [#3133](https://github.com/dartsim/dart/pull/3133)
 
   * Restore the released `DARTCollisionDetector` ABI layout after its collision
     thread-pool state enlarged the installed, derivable class. The
@@ -330,96 +262,115 @@
   * Speed up broadphase setup in the `dart` detector by computing transformed
     cached local bounds directly from center and half-extents instead of
     visiting all local bounding-box corners:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3139](https://github.com/dartsim/dart/pull/3139)
 
   * Speed up finite-shape broadphase sweeps in the `dart` detector on AVX-width
     builds by screening sorted AABB candidate batches with `dart/simd`, while
     keeping baseline-ISA builds on the scalar sweep path:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3299](https://github.com/dartsim/dart/pull/3299)
 
   * Reduce broadphase setup work in the `dart` detector by caching local bounds
     center/half-extents and using those cached bounds directly when primitive
     collision objects have an identity linear transform:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3172](https://github.com/dartsim/dart/pull/3172)
 
   * Speed up active contact-heavy scenes using the `dart` detector by replacing
     global contact-point duplicate scans with reusable indexed contact
     aggregation and deferring collision-result lookup-set construction until
     queried:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3125](https://github.com/dartsim/dart/pull/3125),
+    [#3171](https://github.com/dartsim/dart/pull/3171)
 
   * Reduce finite-plane collision bookkeeping in the `dart` detector by using
     internal scratch collision results that skip unused lookup caches and a
     direct single-plane pair-index path:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3141](https://github.com/dartsim/dart/pull/3141)
 
   * Add `SoftMeshShape` and `EllipsoidShape` collision support to the built-in
     `dart` detector, with cached soft geometry and a cache-friendly broadphase
     for small dynamic groups:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3307](https://github.com/dartsim/dart/pull/3307)
 
   * Speed up primitive plane collision dispatch in the `dart` detector by
     caching a compact shape kind beside each collision object's cached shape
     metadata, while preserving the existing fallback path for unsupported
     shapes:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3143](https://github.com/dartsim/dart/pull/3143)
 
   * Reduce contact merge overhead in the `dart` detector by probing neighboring
     duplicate-contact grid cells only when a contact point lies near a grid
     boundary, while preserving the exact distance-based duplicate check:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3144](https://github.com/dartsim/dart/pull/3144)
 
   * Speed up finite-shape-vs-plane contact merging in the `dart` detector by
     using plane-projected contact-footprint separation to bypass global
     duplicate-contact grid checks when different finite shapes cannot
     contribute duplicate contact points:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3150](https://github.com/dartsim/dart/pull/3150)
 
   * Reduce default contact-constraint rebuild cost by reusing per-step default
     surface-property checks, skipping zero-velocity fixed-support relative
     velocity work, and avoiding threaded contact allocation on cold starts:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3151](https://github.com/dartsim/dart/pull/3151),
+    [#3153](https://github.com/dartsim/dart/pull/3153),
+    [#3154](https://github.com/dartsim/dart/pull/3154)
 
   * Speed up ODE-backed settled cylinder workloads on `PlaneShape` grounds by
     adding the exact-tangency cylinder-vs-plane support contact that ODE does
     not report:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3203](https://github.com/dartsim/dart/pull/3203)
 
   * Speed up collision transform setup in the `dart` detector for
     identity-relative `ShapeNode` collision objects by reusing the owning
     `BodyNode` world transform while refreshing the fast path when shape-node
     geometry changes:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3148](https://github.com/dartsim/dart/pull/3148)
 
   * Add capsule contacts to the built-in `dart` detector against spheres,
     boxes, cylinders, planes, and other capsules, with primitive-pair
-    regression coverage and benchmark scenes comparing DART and external
-    collision backends:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    regression coverage:
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3126](https://github.com/dartsim/dart/pull/3126),
+    [#3321](https://github.com/dartsim/dart/pull/3321)
 
   * Add opt-in `CollisionDetector::distance()` support to the `dart` detector
     for supported primitive, plane, convex, compound,
     signed-distance-field, exact mesh-mesh, mesh-SDF, and plane-mesh shape rows,
-    with FCL parity coverage for primitive/plane adapter behavior and benchmark
-    rows comparing `dart` and FCL distance queries:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    with primitive/plane adapter regression coverage:
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3343](https://github.com/dartsim/dart/pull/3343),
+    [#3352](https://github.com/dartsim/dart/pull/3352)
 
   * Add opt-in `CollisionDetector::raycast()` support to the `dart` detector
     for supported primitive, plane, convex-backed, and mesh shape
     rows, preserving DART 6 closest-hit, all-hits, sorting, and filter behavior
-    while adding benchmark rows comparing `dart` and Bullet raycast queries:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    with regression coverage:
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3355](https://github.com/dartsim/dart/pull/3355)
 
   * Add opt-in `VoxelGridShape` support to the `dart` detector by converting
     occupied octree leaves into compound-box children, routing compound
-    collision through the DART child-shape dispatcher, and adding benchmark
-    rows comparing `dart` and FCL VoxelGrid collision queries:
+    collision through the DART child-shape dispatcher, with regression coverage:
     [#3358](https://github.com/dartsim/dart/pull/3358)
 
   * Add opt-in persistent contact manifolds and PGS-compatible cached contact
     impulse seeding for `dart` detector contacts, preserving the FCL default
     detector while reducing repeated DART contact reconstruction:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3360](https://github.com/dartsim/dart/pull/3360),
+    [#3364](https://github.com/dartsim/dart/pull/3364)
 
   * Fix FCL primitive contact normal orientation and switch default FCL primitive
     handling to `PRIMITIVE` for `FCLCollisionDetector`, the default constraint
@@ -429,9 +380,10 @@
 
   * Add dependency-free primitive plane contacts and broadphase pruning to the
     DART collision backend for sphere, box, cylinder, and plane workloads,
-    improving the original 3003-body issue scene while preserving close
-    settled-state agreement with Bullet:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    improving contact-heavy scenes:
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3085](https://github.com/dartsim/dart/pull/3085),
+    [#3123](https://github.com/dartsim/dart/pull/3123)
 
   * Add primitive plane collision support and configurable per-pair contact caps
     for contact-heavy scenes, with regression coverage for FCL halfspace
@@ -441,7 +393,8 @@
   * Improve explicit per-pair contact caps in the `dart` detector by selecting
     the deepest contact and spatially distributed support contacts instead of
     truncating backend contact output in iteration order:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3135](https://github.com/dartsim/dart/pull/3135)
 
   * Fix the FCL collision detector adding a default-constructed contact with
     null collision objects when contact generation is disabled
@@ -450,9 +403,10 @@
     `addObjectToCaches` nullptr errors otherwise):
     [#3114](https://github.com/dartsim/dart/pull/3114)
 
-  * Filter Bullet collision contacts with negative penetration depth by default,
-    while adding `CollisionOption::allowNegativePenetrationDepthContacts` for
-    applications that intentionally consume Bullet proximity hits:
+  * Filter collision contacts with negative penetration depth by default in
+    the optional proximity-contact backend, while adding
+    `CollisionOption::allowNegativePenetrationDepthContacts` for applications
+    that intentionally consume proximity hits:
     [#3136](https://github.com/dartsim/dart/pull/3136)
 
   * Refresh both operands of a two-group `CollisionGroup::collide()` /
@@ -542,7 +496,8 @@
     [#2222](https://github.com/dartsim/dart/pull/2222)
 
   * Fix the per-DoF actuator override storage so SDF-loaded worlds can create
-    and destroy joint properties without heap corruption.
+    and destroy joint properties without heap corruption:
+    [#3169](https://github.com/dartsim/dart/pull/3169)
 
   * `dart::utils::SdfParser` now imports SDF `<mimic>` metadata (reference
     joint/DoF, multiplier, and offset) from a joint's `<axis>`/`<axis2>`
@@ -566,7 +521,8 @@
 
   * Fix `ArrowShape`'s generated Assimp mesh metadata so cloned arrows and
     refreshed TriMesh views use valid material indices on all supported
-    platforms.
+    platforms:
+    [#3169](https://github.com/dartsim/dart/pull/3169)
 
   * Fix `TranslationalJoint2D::copy(const TranslationalJoint2D*)` and
     `UniversalJoint::copy(const UniversalJoint*)` so they copy from the provided
@@ -588,6 +544,12 @@
     [#2490](https://github.com/dartsim/dart/pull/2490)
 
 * Simulation
+
+  * Re-entering simulation mode preserves existing sleep state and does not
+    consume the sleep delay of awake bodies. Contact surface handlers run once
+    per contact during preparation, matching ordinary constraint creation:
+    [#3549](https://github.com/dartsim/dart/pull/3549),
+    [#3563](https://github.com/dartsim/dart/pull/3563)
 
   * Reuse converged rigid-contact impulses across steps with the opt-in NSGS
     friction solver for contact groups with one reactive body, on every
@@ -617,11 +579,15 @@
     inner-cap counters. The default Dantzig/PGS solver configuration is
     unchanged: [#3631](https://github.com/dartsim/dart/pull/3631)
 
-  * Fix split-impulse position correction failures for contacts between multiple reactive skeletons: [#3582](https://github.com/dartsim/dart/pull/3582)
+  * Preserve velocity-phase impulses during split-impulse position correction
+    and fix correction failures for contacts between multiple reactive skeletons:
+    [#3567](https://github.com/dartsim/dart/pull/3567),
+    [#3582](https://github.com/dartsim/dart/pull/3582)
 
   * Preserve built-in solver backends and their options, split impulse,
     matrix-free solver options, and collision contact settings when cloning a
-    `World`. Custom boxed LCP backends retain the clone's default with a warning.
+    `World`. Custom boxed LCP backends retain the clone's default with a warning:
+    [#3568](https://github.com/dartsim/dart/pull/3568)
 
   * Improve MJCF loading fidelity by supporting stacked hinge/slide joint
     compositions, enforcing `contype`/`conaffinity` collision filtering, and
@@ -632,14 +598,17 @@
     `World::enterSimulationMode()` preparation so same-shape simulation steps
     using the `dart` detector can run without steady-state heap allocations
     after explicit preparation or the implicit first step. The default
-    construction path remains unchanged, and Bullet/ODE backend-internal
-    allocations stay outside the strict DART detector allocation gate.
+    construction path remains unchanged; allocations inside optional collision
+    backends are outside the DART detector allocation guarantee:
+    [#3297](https://github.com/dartsim/dart/pull/3297),
+    [#3587](https://github.com/dartsim/dart/pull/3587),
+    [#3615](https://github.com/dartsim/dart/pull/3615)
 
   * Added `dart::simulation::WorldConfig`, the `CollisionDetectorType` enum,
     `World::setCollisionDetector(CollisionDetectorType)` /
     `World::setCollisionDetector(CollisionDetectorPtr)` /
     `World::getCollisionDetector()`, and corresponding dartpy bindings so users
-    can switch collision detectors (FCL, Bullet, ODE, DART) without reaching
+    can switch collision detectors without reaching
     into the constraint solver internals. The additions are opt-in: the default
     `World` construction path keeps the existing default detector (FCL with
     `PRIMITIVE` shapes) unchanged, and the pre-existing
@@ -655,7 +624,7 @@
     contact from a mesh or collision backend) from crashing `ContactConstraint`
     on a `mSpatialNormalA` assertion or corrupting the LCP solve with NaN/Inf:
     [#3132](https://github.com/dartsim/dart/pull/3132),
-    [gazebosim/gz-physics#1010](https://github.com/gazebosim/gz-physics/issues/1010)
+    [Original bug report](https://github.com/gazebosim/gz-physics/issues/1010)
 
   * Enable resting-world deactivation by default with wake-aware invalidation
     and fidelity coverage against the always-active path, improving resting
@@ -665,7 +634,7 @@
     A free rigid body that was in an island one step earlier and, apart from
     one step of falling, still moves inside the wake band may be ignored for
     its first step outside every island, so a resting contact that the
-    collision detector misses for one step, as Bullet does for resting spheres
+    collision detector misses for one step, for resting spheres
     and cylinders, does not keep other islands awake. Such a body cannot be
     told from one that has just started to fall, for example because its
     support was removed, so an island that becomes eligible at that step can
@@ -674,16 +643,7 @@
     [#3086](https://github.com/dartsim/dart/pull/3086),
     [#3273](https://github.com/dartsim/dart/pull/3273),
     [#3353](https://github.com/dartsim/dart/pull/3353),
-    [#3056](https://github.com/dartsim/dart/issues/3056)
-
-  * Complete the 3003-body resting-scene performance target from issue #3056:
-    the maintained `contact_benchmark` path for `3k_shapes.sdf` with
-    the `dart` detector records RTF `81.0689` in the final
-    anti-overfitting matrix, final hash `0x131b6af79a44ff90`, zero final
-    contacts, and `3003 / 3003` mobile skeletons resting. Completion reruns
-    preserve the same final state and remain far above the original RTF `1.0`
-    target. Active no-deactivation scenes remain covered by the benchmark
-    guardrails rather than this settled-scene completion claim:
+    [#3566](https://github.com/dartsim/dart/pull/3566),
     [#3056](https://github.com/dartsim/dart/issues/3056)
 
   * Share the constraint solver's contact cap
@@ -705,7 +665,8 @@
     `DeactivationOptions` thresholds for scenes with a higher contact-solver
     jitter floor actually enables sleeping. Default-threshold behavior is
     unchanged:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3226](https://github.com/dartsim/dart/pull/3226)
 
   * Add a parameterized `contact_benchmark --generate-container` scene with
     GUI scaling and live rebuild controls, plus a matching
@@ -718,7 +679,9 @@
     shares `dart::gui::osg::applyDefaultCameraPose` and
     `RealTimeWorldNode::getSmoothedRealTimeFactor` as reusable GUI
     components:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3209](https://github.com/dartsim/dart/pull/3209),
+    [#3327](https://github.com/dartsim/dart/pull/3327)
 
   * Keep opt-in parallel constraint-island solving on the serial path for
     manual constraints, custom contact constraints, custom LCP solvers, and
@@ -729,7 +692,10 @@
     independent contact sets by constructing safe contact pairs in parallel
     while keeping custom contact handlers and shared reactive bodies on the
     existing serial path:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3149](https://github.com/dartsim/dart/pull/3149),
+    [#3183](https://github.com/dartsim/dart/pull/3183),
+    [#3194](https://github.com/dartsim/dart/pull/3194)
 
   * Make mimic motor constraints robust by using ERP-scaled position
     correction, clamped force-mixing and ERP parameters, and finite fallback
@@ -757,34 +723,45 @@
     into its support, or starts to roll, slide, drop, or tip (its speed growing
     at more than 1e-6 g), and a model whose links are joined by a movable
     joint, keep the normal sleep delay:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3112](https://github.com/dartsim/dart/pull/3112),
+    [#3565](https://github.com/dartsim/dart/pull/3565)
 
   * Speed up cached all-resting steps by tracking explicit joint-velocity edits
     with a generation counter instead of rescanning every resting mobile DOF on
     each cached step:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3146](https://github.com/dartsim/dart/pull/3146),
+    [#3152](https://github.com/dartsim/dart/pull/3152)
 
   * Reuse built-in default contact constraint objects across simulation steps
     so contact-heavy scenes reduce contact-constraint setup work after the
     first frame. Consecutive contacts from the same collision pair also skip
     repeated scratch-table probes while preserving custom contact-surface
     handler behavior and final-state hashes on the measured issue scene:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3147](https://github.com/dartsim/dart/pull/3147),
+    [#3188](https://github.com/dartsim/dart/pull/3188),
+    [#3190](https://github.com/dartsim/dart/pull/3190),
+    [#3192](https://github.com/dartsim/dart/pull/3192)
 
   * Speed up single-free-body contact groups by using direct LCP assembly for
     exact built-in contact constraints, while preserving the legacy assembly
     path for custom contact constraints and manual constraints:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3140](https://github.com/dartsim/dart/pull/3140)
 
   * Speed up large single-reactive contact scenes by skipping redundant
     parallel-safety scans once the active contact set and built constrained
     groups prove they are exact built-in fixed-support contact groups:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3142](https://github.com/dartsim/dart/pull/3142)
 
   * Reduce finite-plane contact merge overhead in the `dart` detector by
     directly appending single-contact pair results once the disjoint
     contact-bound proof has already disabled cross-pair duplicate checks:
-    [#3056](https://github.com/dartsim/dart/issues/3056)
+    [#3056](https://github.com/dartsim/dart/issues/3056),
+    [#3150](https://github.com/dartsim/dart/pull/3150)
 
   * Fix `World::getIndex()` returning stale cumulative DOF boundaries after
     `World::removeSkeleton()` (the terminal total kept the removed skeleton's
@@ -850,6 +827,12 @@
     [#3574](https://github.com/dartsim/dart/pull/3574)
 
 * Python
+
+  * TODO (release packaging): after the backport of PR #3661 lands and its
+    wheel builds pass, confirm that Linux dartpy wheels target
+    `manylinux_2_28` on x86_64 and, newly in DART 6.20, aarch64. Replace this
+    TODO with the confirmed platform statement and the merged backport PR
+    link before release.
 
   * Fix dartpy DOF-list accessors so `Skeleton.getDofs()` and related chain
     DOF helpers return wrappers for DART-owned `DegreeOfFreedom` objects
@@ -961,7 +944,8 @@
   * Extend `contact_benchmark --profile` and DART's text profiler with
     opt-in constraint-solver island census counters and LCP stage timings, so
     performance investigations can compare solver shape, row counts, and stage
-    cost without adding allocations to ordinary `World::step()` calls.
+    cost without adding allocations to ordinary `World::step()` calls:
+    [#3339](https://github.com/dartsim/dart/pull/3339)
 
   * Polish the `dart-demos` workspace with a more compact toolbar, tabbed
     scene/inspector/tool panes, a status-and-log bottom panel, clearer
@@ -1032,30 +1016,6 @@
     own save/restore did not cover, so bracket it with a full attribute
     save/restore and re-dirty `osg::State`:
     [#3092](https://github.com/dartsim/dart/pull/3092)
-
-* Tests
-
-  * Force the ASan and required assertions-enabled builds to run without
-    OpenSceneGraph, and require exact-candidate optional-dependency and
-    downstream integration evidence before DART 6 releases:
-    [#3393](https://github.com/dartsim/dart/pull/3393)
-
-  * Preserve every protected `release-*` post-merge CI run by giving
-    release-branch workflow runs a run-specific concurrency group instead of
-    relying on GitHub's single-pending default concurrency queue:
-    [#3233](https://github.com/dartsim/dart/pull/3233)
-
-  * Add a DART 6 performance dashboard workflow, local preview tasks, and
-    readable benchmark labels for the latest release-branch Google Benchmark
-    slice, with optional publication of the contact-container benchmark from
-    [#3209](https://github.com/dartsim/dart/pull/3209) once that target lands
-    on DART 6.
-
-  * Stop the coverage CI job from running the full test suite twice (the
-    `coverage-report` Pixi task re-ran `build-coverage` through `depends-on`) and
-    raise the coverage CTest timeout above the 1500s default, fixing spurious
-    `test_Issue1193` timeouts under Debug coverage instrumentation:
-    [#3120](https://github.com/dartsim/dart/pull/3120)
 
 ### [DART 6.19.5 (2026-10-04)](https://github.com/dartsim/dart/milestone/104?closed=1)
 
