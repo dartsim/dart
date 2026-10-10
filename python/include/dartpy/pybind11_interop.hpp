@@ -41,6 +41,11 @@
 // those types with pybind11::class_. Add other polymorphic DART classes that
 // dartpy binds with DARTPY_PYBIND11_INTEROP_OBJECT at global scope.
 
+// clang-format off
+// First: c_api.hpp includes Python.h, which must precede standard headers.
+#include <dartpy/c_api.hpp>
+// clang-format on
+
 #include <dart/simulation/World.hpp>
 
 #include <dart/dynamics/BodyNode.hpp>
@@ -51,7 +56,6 @@
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <Eigen/Geometry>
-#include <dartpy/c_api.hpp>
 #include <pybind11/pybind11.h>
 
 #include <memory>
