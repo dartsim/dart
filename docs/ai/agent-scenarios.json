@@ -165,7 +165,7 @@
     {
       "id": "component-work",
       "prompt_class": "Change a DART 6 dartpy binding while preserving the DART 6.21 nanobind API",
-      "start_dir": "python/dartpy_nanobind",
+      "start_dir": "python/dartpy",
       "instruction_chain": ["AGENTS.md"],
       "expected_route": {
         "kind": "domain_skill",
@@ -177,7 +177,7 @@
         "docs/onboarding/python-bindings.md",
         "docs/ai/branch-profile.json"
       ],
-      "permitted_scopes": ["python/dartpy_nanobind", "python/tests", "python/examples", "scripts/nanobind"],
+      "permitted_scopes": ["python/dartpy", "python/tests", "python/examples", "scripts/nanobind"],
       "focused_gates": ["pixi run build-py-dev", "pixi run test-py"],
       "full_gates": ["pixi run lint", "pixi run test-all"],
       "recovery": "docs/onboarding/python-bindings.md",

@@ -391,7 +391,7 @@ def test_branch_profile_requires_nanobind_only(field, value):
     errors = []
     infra.check_branch_profile(ROOT, errors, profile)
     assert errors == []
-    assert "python/dartpy_nanobind" in profile["required_paths"]
+    assert "python/dartpy" in profile["required_paths"]
     assert "python/dartpy/nanobind" in profile["forbidden_paths"]
 
     profile[field] = value
@@ -2876,7 +2876,7 @@ def test_test_gate_contract_requires_dartpy_path_before_tests(tmp_path):
     cmake = tmp_path / "python/CMakeLists.txt"
     text = cmake.read_text(encoding="utf-8")
     output = 'set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")'
-    condition = "add_subdirectory(dartpy_nanobind)"
+    condition = "add_subdirectory(dartpy)"
     assert output in text and condition in text
     text = text.replace(output, "", 1)
     cmake.write_text(
@@ -2893,7 +2893,7 @@ def test_test_gate_contract_requires_dartpy_path_before_tests(tmp_path):
 
 
 def test_dartpy_runtime_path_contract_requires_nanobind_target(tmp_path):
-    binder = "dartpy_nanobind"
+    binder = "dartpy"
     _copy_test_gate_contract(tmp_path)
     cmake = tmp_path / "python/CMakeLists.txt"
     text = cmake.read_text(encoding="utf-8")

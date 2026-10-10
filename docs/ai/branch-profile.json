@@ -23,7 +23,7 @@
     "dart/gui/osg",
     "dart/gui/osg/DebugOverlay.hpp",
     "docs/onboarding/architecture.md",
-    "python/dartpy_nanobind",
+    "python/dartpy",
     "scripts/agent_capture.py"
   ],
   "forbidden_markers": [

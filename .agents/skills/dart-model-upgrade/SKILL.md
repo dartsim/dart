@@ -128,7 +128,7 @@ simulation state with text-first and OSG visual/debug evidence.
    Preserve C++17, the nanobind binder, `dart::utils`, OSG,
    public/ABI/package behavior, and Gazebo/gz-physics compatibility. The
    approved DART 6.21 nanobind binder is permitted under
-   `python/dartpy_nanobind/`. Follow the branch profile for other surfaces,
+   `python/dartpy/`. Follow the branch profile for other surfaces,
    including the forbidden historical `python/dartpy/nanobind` path. Keep
    outcome, constraints, permissions, evidence, routing, and stopping
    conditions explicit. Edit `.claude/` sources and run

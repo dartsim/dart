@@ -57,7 +57,7 @@ them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
 
 ## Key Patterns
 
-- nanobind is the only binder for DART 6.21, under `python/dartpy_nanobind/`.
+- nanobind is the only binder for DART 6.21, under `python/dartpy/`.
   Use the compatibility and pybind11-extension interop notes in the owner guide.
 - Follow the existing DART 6 camelCase binding names used in `python/examples`
   and `python/tests`.
@@ -68,4 +68,4 @@ them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
 
 - Package config: `pyproject.toml`
 - Binding dependencies: `python/CMakeLists.txt`
-- Binding build system: `python/dartpy_nanobind/CMakeLists.txt`
+- Binding build system: `python/dartpy/CMakeLists.txt`

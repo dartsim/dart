@@ -38,7 +38,7 @@ imports, linked components, or installed package behavior.
 ## Nanobind binder
 
 DART 6.21 uses nanobind as the only dartpy binder. Sources live directly under
-`python/dartpy_nanobind/`. The module keeps the DART namespaces, camelCase names,
+`python/dartpy/`. The module keeps the DART namespaces, camelCase names,
 and overloads, including `dartpy.gui.osg` when `DART_BUILD_GUI_OSG` is enabled.
 
 Python 3.10 or newer and nanobind 3.1 or newer are required.

@@ -1338,11 +1338,11 @@ def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
         (
             (
                 "add_subdirectory",
-                "dartpy_nanobind",
+                "dartpy",
                 (),
             ),
             "nanobind_target",
-            "`add_subdirectory(dartpy_nanobind)` must define the nanobind target",
+            "`add_subdirectory(dartpy)` must define the nanobind target",
         ),
         (
             (
@@ -3727,7 +3727,7 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
     python_frontmatter = python_skill.split("---", 2)[1]
     if "nanobind" not in python_frontmatter:
         errors.append("dart-python: metadata must name nanobind")
-    for marker in ("only binder", "python/dartpy_nanobind/"):
+    for marker in ("only binder", "python/dartpy/"):
         if marker not in python_skill:
             errors.append(f"dart-python: missing binder contract marker `{marker}`")
 
@@ -4310,7 +4310,7 @@ def exercise_scenarios(
                 "text/image disagreement",
                 "C++17",
                 "approved DART 6.21 nanobind binder",
-                "`python/dartpy_nanobind/`",
+                "`python/dartpy/`",
                 "`dart::utils`",
                 "OSG",
                 "configured CMake File API result",

@@ -39,7 +39,7 @@ else()
   )
   FetchContent_MakeAvailable(nanobind)
 endif()
-add_subdirectory(dartpy_nanobind)
+add_subdirectory(dartpy)
 set(DART_DARTPY_BUILD_DIR "$<TARGET_FILE_DIR:dartpy>")
 if(WIN32)
   # Use an escaped separator so the full value is passed as a single argument

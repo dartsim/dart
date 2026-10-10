@@ -147,6 +147,6 @@ taxonomy.
 `main` develops the next release (currently DART 6.21) and preserves C++17,
 the nanobind binder, `dart::utils`, OSG, and Gazebo/gz-physics
 compatibility. The approved DART 6.21 migration uses only the
-nanobind binder under `python/dartpy_nanobind/`; see
+nanobind binder under `python/dartpy/`; see
 [`python-bindings.md`](../onboarding/python-bindings.md). The DART 6 component
 map is [`architecture.md`](../onboarding/architecture.md).

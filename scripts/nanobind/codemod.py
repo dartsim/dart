@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "python/dartpy"
-DEST = ROOT / "python/dartpy_nanobind"
+DEST = ROOT / "python/dartpy"
 
 
 def mask(text):

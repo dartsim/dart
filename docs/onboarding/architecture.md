@@ -18,7 +18,7 @@ and downstream Gazebo/gz-physics behavior unless explicitly approved.
 | Simulation | `dart/simulation/` | `World` ownership, stepping, time integration, and orchestration of collision and constraints |
 | Model loading | `dart/utils/` | DART 6 loaders and URDF/SDF/SKEL/MJCF parsing; public loading remains under `dart::utils` |
 | GUI | `dart/gui/osg/` | OSG viewers, world nodes, ImGui integration, and offscreen capture |
-| Python | `python/dartpy_nanobind/` | nanobind bindings that expose the supported DART 6 API to `dartpy` |
+| Python | `python/dartpy/` | nanobind bindings that expose the supported DART 6 API to `dartpy` |
 | Downstream integration | package exports and Gazebo Pixi environment | Installed headers/targets and pinned gz-physics/gz-sim compatibility gates |
 
 The usual runtime flow is: a `dart::utils` loader creates `Skeleton` objects;
