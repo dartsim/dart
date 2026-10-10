@@ -33,6 +33,8 @@
 #include "dart/dynamics/ShapeNode.hpp"
 
 #include "dart/dynamics/BodyNode.hpp"
+#include "dart/dynamics/SoftBodyNode.hpp"
+#include "dart/dynamics/SoftMeshShape.hpp"
 #include "dart/math/Geometry.hpp"
 
 namespace dart {
@@ -201,8 +203,13 @@ Node* ShapeNode::cloneNode(BodyNode* parent) const
   shapeNode->duplicateAspects(this);
 
   shapeNode->copy(this);
-  if (const auto& shape = getShape())
-    shapeNode->setShape(shape->clone());
+  if (const auto& shape = getShape()) {
+    auto* softBody = dynamic_cast<SoftBodyNode*>(parent);
+    if (softBody && dynamic_cast<const SoftMeshShape*>(shape.get()))
+      shapeNode->setShape(std::make_shared<SoftMeshShape>(softBody));
+    else
+      shapeNode->setShape(shape->clone());
+  }
 
   if (mIK)
     shapeNode->mIK = mIK->clone(shapeNode);

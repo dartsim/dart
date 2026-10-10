@@ -481,6 +481,13 @@
 
 * Dynamics
 
+  * Fix `Skeleton::cloneSkeleton()` for soft bodies so cloned skeletons retain
+    their generated soft mesh and shape-node properties:
+    [#3644](https://github.com/dartsim/dart/pull/3644)
+
+  * Keep soft-body skin meshes resizable after `BodyNode::copyTo()` and
+    `BodyNode::copyAs()`, preventing invalid mesh updates.
+
   * Compute the `SoftBodyNodeHelper` ellipsoid and cylinder point-mass rest
     positions in double instead of float precision, so they move by the
     rounding error of the old float math, and the `HeightmapShape<float>`
