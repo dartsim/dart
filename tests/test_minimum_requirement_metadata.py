@@ -81,7 +81,13 @@ def test_linux_matrix_covers_baseline_and_forward_compilers():
     build = next(
         step for step in job["steps"] if "pixi run build-tests" in step.get("run", "")
     )
-    assert build["env"] == {"CC": "${{ matrix.cc }}", "CXX": "${{ matrix.cxx }}"}
+    assert build["env"] == {
+        "CC": "${{ matrix.cc }}",
+        "CXX": "${{ matrix.cxx }}",
+        "SCCACHE_DIR": "${{ runner.temp }}/sccache-${{ matrix.runner }}-${{ matrix.cc }}",
+    }
+    # GitHub rejects the workflow if job-level env uses the runner context.
+    assert "runner." not in str(job.get("env", {}))
     assert "pixi run test-build-requirements" in build["run"]
 
 
