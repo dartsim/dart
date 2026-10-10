@@ -3,7 +3,7 @@
 
 Different AI coding tools read from different directories:
 - Claude Code: .claude/commands/, .claude/skills/
-- OpenCode: .opencode/command/
+- OpenCode: .opencode/command/, plus skills from .claude/skills/ and .agents/skills/
 - Codex: .agents/skills/ (domain skills plus command-derived workflow skills)
 
 This script keeps them in sync using .claude/ as the current editable source
@@ -1541,18 +1541,18 @@ description: {json.dumps(skill_description)}
 
 # {command_name}
 
-Use this skill in Codex to run the DART `{command_name}` workflow. The editable
-workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Use this skill to run the DART `{command_name}` workflow. The editable workflow
+source lives in `.claude/commands/`; this generated skill is its entrypoint for
+Codex and for OpenCode's skill loader.
 
 ## Invocation
 
 - Claude Code/OpenCode: `/{command_name} <arguments>`
 - Codex: `${command_name} <arguments>`
 
-Treat the text after the skill name as `$ARGUMENTS`. When the workflow
-references `$1`, `$2`, etc., map those to the positional values supplied by the
-user.
+Treat the text after the skill name, or the user's request when the skill is
+loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,
+etc., map those to the positional values supplied by the user.
 
 ## Command Body
 

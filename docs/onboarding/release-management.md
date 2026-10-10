@@ -143,6 +143,14 @@ The DART 6.20 stabilization branch was cut at
 so its first minor release retains the C++ tutorials. This records the cut;
 the table above owns the next release target.
 
+### ABI window
+
+DART uses `MAJOR.MINOR` for `SOVERSION` (`cmake/DARTMacros.cmake`). Additive
+private members are permitted only before 6.20.0 is first packaged; 6.20.x
+patches must preserve class layouts. Downstream-subclassed vtables remain
+frozen throughout that window. Prefer implementation-private or function-local
+storage for new scratch state.
+
 ## Verifying DART 6 Changes
 
 Verify before merging: `pixi run test-all` for the complete default CMake graph.
