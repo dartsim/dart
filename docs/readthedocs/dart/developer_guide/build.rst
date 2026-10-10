@@ -157,7 +157,6 @@ environment as the dependency prefix. Then configure and build:
        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
        -DDART_USE_SYSTEM_GOOGLETEST=ON \
        -DDART_USE_SYSTEM_IMGUI=ON \
-       -DDART_USE_SYSTEM_NANOBIND=ON \
        -DDART_USE_SYSTEM_TRACY=ON
    cmake --build build/default/cpp/Release -j
 
@@ -208,7 +207,8 @@ include:
      - Use a system ImGui package instead of the bundled compatibility target.
    * - ``DART_USE_SYSTEM_NANOBIND``
      - ``OFF``
-     - Use a system nanobind package.
+     - Use an installed nanobind 3.1 or newer, located with
+       ``python -m nanobind --cmake_dir``, instead of fetching nanobind 3.1.0.
 
 Build targets
 -------------
