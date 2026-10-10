@@ -199,14 +199,20 @@ PyObject* wrap(
     if (policy == c_api::kReferenceInternal)
       rvPolicy = nb::rv_policy::reference_internal;
     const auto* dynamic = dartnb::find_registered(dynamicType.name());
-    return dartnb::wrap(
-               registeredKey(type),
-               dynamic ? *dynamic : dartnb::Key(typeid(void)),
-               complete,
-               pointer,
-               rvPolicy,
-               nb::handle(parent))
-        .ptr();
+    bool isNew = false;
+    auto result = nb::steal(dartnb::wrap(
+        registeredKey(type),
+        dynamic ? *dynamic : dartnb::Key(typeid(void)),
+        complete,
+        pointer,
+        rvPolicy,
+        nb::handle(parent),
+        &isNew));
+    // A reused wrapper must keep the parent alive too; nanobind records each
+    // wrapper/parent pair once.
+    if (!isNew && rvPolicy == nb::rv_policy::reference_internal)
+      nb::keep_alive_obj(result, nb::handle(parent));
+    return result.release().ptr();
   } catch (...) {
     setPythonError();
   }
