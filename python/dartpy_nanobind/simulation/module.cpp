@@ -40,6 +40,7 @@ namespace dart {
 namespace python {
 
 void World(nb::module_& sm);
+void Recording(nb::module_& sm);
 
 void dart_simulation(nb::module_& m)
 {
@@ -74,6 +75,7 @@ void dart_simulation(nb::module_& m)
           dartnb::setterArgument(
               &dart::simulation::DeactivationOptions::mWakeThresholdScale));
 
+  Recording(sm);
   World(sm);
 }
 

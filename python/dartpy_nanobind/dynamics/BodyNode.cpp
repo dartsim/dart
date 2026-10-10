@@ -822,6 +822,21 @@ void BodyNode(nb::module_& m)
           nb::arg("newSkeleton").none(),
           nb::arg("newParent").none())
       .def(
+          "moveToEulerJoint",
+          [](dart::dynamics::BodyNode* self,
+             dart::dynamics::BodyNode* newParent,
+             const dart::dynamics::EulerJoint::Properties& jointProperties)
+              -> nb::object {
+            auto* joint = self->moveTo<dart::dynamics::EulerJoint>(
+                newParent, jointProperties);
+            return nb::cast(
+                joint,
+                nb::rv_policy::reference_internal,
+                nb::cast(self->getSkeleton()));
+          },
+          nb::arg("newParent").none(),
+          nb::arg("jointProperties"))
+      .def(
           "split",
           +[](dart::dynamics::BodyNode* self,
               const std::string& _skeletonName) -> dart::dynamics::SkeletonPtr {

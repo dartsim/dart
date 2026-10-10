@@ -376,6 +376,21 @@ void Skeleton(nb::module_& m)
       DARTPY_DEFINE_CREATE_JOINT_AND_BODY_NODE_PAIR(BallJoint)
       DARTPY_DEFINE_CREATE_JOINT_AND_BODY_NODE_PAIR(TranslationalJoint)
       DARTPY_DEFINE_CREATE_JOINT_AND_BODY_NODE_PAIR(FreeJoint)
+      .def(
+          "createFreeJointAndSoftBodyNodePair",
+          [](dart::dynamics::Skeleton* self,
+             dart::dynamics::BodyNode* parent,
+             const dart::dynamics::FreeJoint::Properties& jointProperties,
+             const dart::dynamics::SoftBodyNode::Properties& bodyProperties) {
+            return self->createJointAndBodyNodePair<
+                dart::dynamics::FreeJoint,
+                dart::dynamics::SoftBodyNode>(
+                parent, jointProperties, bodyProperties);
+          },
+          nb::rv_policy::reference_internal,
+          nb::arg("parent").none(),
+          nb::arg("jointProperties"),
+          nb::arg("bodyProperties"))
       // clang-format on
       .def(
           "getNumBodyNodes",

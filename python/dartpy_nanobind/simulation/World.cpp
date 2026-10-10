@@ -39,6 +39,7 @@
  */
 
 #include <dart/simulation/DeactivationOptions.hpp>
+#include <dart/simulation/Recording.hpp>
 #include <dart/simulation/World.hpp>
 
 #include <dart/constraint/ConstraintSolver.hpp>
@@ -333,6 +334,10 @@ void World(nb::module_& m)
       .def(
           "bake",
           +[](dart::simulation::World* self) -> void { return self->bake(); })
+      .def(
+          "getRecording",
+          &dart::simulation::World::getRecording,
+          nb::rv_policy::reference_internal)
       .def_ro("onNameChanged", &dart::simulation::World::onNameChanged);
 }
 
