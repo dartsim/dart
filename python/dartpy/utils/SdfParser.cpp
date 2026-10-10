@@ -78,13 +78,15 @@ void SdfParser(py::module& m)
         DART_SUPPRESS_DEPRECATED_END
       },
       ::py::arg("uri"),
-      ::py::arg("retriever"));
+      ::py::arg("retriever"),
+      ::py::call_guard<::py::gil_scoped_release>());
   sm.def(
       "readWorld",
       ::py::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
           &utils::SdfParser::readWorld),
       ::py::arg("uri"),
-      ::py::arg("options") = utils::SdfParser::Options());
+      ::py::arg("options") = utils::SdfParser::Options(),
+      ::py::call_guard<::py::gil_scoped_release>());
   sm.def(
       "readSkeleton",
       +[](const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
@@ -94,13 +96,15 @@ void SdfParser(py::module& m)
         DART_SUPPRESS_DEPRECATED_END
       },
       ::py::arg("uri"),
-      ::py::arg("retriever"));
+      ::py::arg("retriever"),
+      ::py::call_guard<::py::gil_scoped_release>());
   sm.def(
       "readSkeleton",
       ::py::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
           &utils::SdfParser::readSkeleton),
       ::py::arg("uri"),
-      ::py::arg("options") = utils::SdfParser::Options());
+      ::py::arg("options") = utils::SdfParser::Options(),
+      ::py::call_guard<::py::gil_scoped_release>());
 }
 
 } // namespace python

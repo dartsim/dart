@@ -50,6 +50,10 @@ target_link_libraries(
   dartpy
   PRIVATE dart dart-utils dart-utils-urdf tsl::robin_map
 )
+if(TARGET dart-utils-assets)
+  target_link_libraries(dartpy PRIVATE dart-utils-assets)
+  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_UTILS_ASSETS)
+endif()
 foreach(optional dart-collision-bullet dart-collision-ode)
   if(TARGET ${optional})
     target_link_libraries(dartpy PRIVATE ${optional})

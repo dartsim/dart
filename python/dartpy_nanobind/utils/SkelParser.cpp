@@ -47,18 +47,21 @@ void SkelParser(nb::module_& m)
       "readWorld",
       &utils::SkelParser::readWorld,
       nb::arg("uri"),
-      nb::arg("retriever").none() = nullptr);
+      nb::arg("retriever").none() = nullptr,
+      nb::call_guard<nb::gil_scoped_release>());
   sm.def(
       "readWorldXML",
       &utils::SkelParser::readWorldXML,
       nb::arg("xmlString"),
       nb::arg("baseUri") = "",
-      nb::arg("retriever").none() = nullptr);
+      nb::arg("retriever").none() = nullptr,
+      nb::call_guard<nb::gil_scoped_release>());
   sm.def(
       "readSkeleton",
       &utils::SkelParser::readSkeleton,
       nb::arg("uri"),
-      nb::arg("retriever").none() = nullptr);
+      nb::arg("retriever").none() = nullptr,
+      nb::call_guard<nb::gil_scoped_release>());
 }
 
 } // namespace python

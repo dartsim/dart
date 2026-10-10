@@ -51,6 +51,76 @@ When you run this script, it will perform a forward dynamic simulation of the 6-
 
 You can find additional example code at https://github.com/dartsim/dart/tree/main/python/examples
 
+Versioned humanoid models
+-------------------------
+
+The optional ``utils-assets`` component provides
+``dart.utils.ModelResourceRetriever`` for Atlas v5 and Unitree G1. Pixi source
+builds enable it. Native builds require ``-DDART_BUILD_UTILS_ASSETS=ON``,
+libcurl 7.85 or newer, and OpenSSL Crypto 1.1.1 or newer; published wheels may
+omit this optional component.
+
+From a DART checkout, download the pinned catalog once and open a model demo:
+
+.. code-block:: shell
+
+   pixi run fetch-robot-assets
+   pixi run py-demos -- --scene unitree_g1
+   pixi run py-demos -- --scene atlas_v5
+   pixi run test-robot-assets -- --offline
+
+The demos inspect joint poses with a fixed base. Atlas v5 is the historical
+hydraulic robot without its head. These examples do not supply walking
+controllers or establish hardware fidelity.
+
+Applications can explicitly retrieve models online on first use:
+
+.. code-block:: python
+
+   import dartpy as dart
+
+   models = dart.utils.ModelResourceRetriever()
+   uri = (
+       "model://unitree-g1/"
+       "5994d4faef0a9cadd3287f8de0199a67eeb2a259/"
+       "g1_29dof_mode_15.urdf"
+   )
+   options = dart.utils.DartLoader.Options(
+       models, dart.utils.DartLoader.RootJointType.FIXED
+   )
+   loader = dart.utils.DartLoader()
+   loader.setOptions(options)
+   robot = loader.parseSkeleton(uri)
+   if robot is None:
+       raise RuntimeError("Model retrieval or parsing failed; see DART diagnostics")
+   print(robot.getNumDofs())  # 29
+
+The default cache lives under the platform's user-cache directory. Pass
+``cacheDirectory="/chosen/cache"`` to select a location or ``offline=True``
+to forbid downloads. The complete model directory is fetched and verified
+against the installed manifest's SHA-256 hashes and sizes before use. Revisions
+coexist in separate directories; downloaded assets are outside DART's
+installed sample-data tree.
+
+``models.addManifest("/path/to/model.xml")`` registers a caller-supplied local
+manifest. It must enumerate all referenced model, mesh, texture, and metadata
+files with pinned HTTPS URLs, checksums, and byte counts. The schema and full
+examples live in ``data/robot_models``. For URDF package references, compose a
+``PackageResourceRetriever`` with this retriever and map package roots to the
+corresponding versioned ``model://`` directory.
+
+Missing offline files and corrupt caches fail with a diagnostic. Remove only
+the reported corrupt bundle directory and prefetch it again. Keep the cache
+unchanged while a scene is loaded, because the renderer reads some textures
+directly from local paths.
+
+Retrieval and model parsing release Python's GIL. Synchronize changes to loader
+options or package mappings while a retrieval or parse call is active.
+
+The historical ``hubo_puppet`` and ``fetch`` demo selectors have been retired.
+Hubo's installed ``dart://sample/urdf/drchubo/`` assets were removed. Fetch and
+the older Atlas models used by parser and controller examples remain available.
+
 Analytical inverse kinematics with ssik
 ---------------------------------------
 
