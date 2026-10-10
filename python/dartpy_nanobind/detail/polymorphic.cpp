@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <string>
 
 namespace dartnb {
 namespace {
@@ -111,38 +112,84 @@ void forget_owner(void* complete, const void* token) noexcept
     owners.erase(found);
 }
 
-void hold_body(nb::handle wrapper, Key type, void* pointer)
+void hold_native_owner(
+    nb::handle wrapper, std::shared_ptr<void> owner, void* complete)
+{
+  struct Payload
+  {
+    std::shared_ptr<void> owner;
+    void* complete;
+  };
+  auto holder = std::make_unique<Payload>(Payload{std::move(owner), complete});
+  remember_owner(complete, holder->owner, holder.get());
+  nb::keep_alive_cb(wrapper, holder.get(), [](void* q) noexcept {
+    auto* payload = static_cast<Payload*>(q);
+    forget_owner(payload->complete, payload);
+    delete payload;
+  });
+  holder.release();
+}
+
+void retain_shared_owner(
+    nb::handle wrapper,
+    bool is_new,
+    std::shared_ptr<void> owner,
+    void* complete)
+{
+  if (is_new || (!nb::inst_state(wrapper).second && !native_owner(complete)))
+    hold_native_owner(wrapper, std::move(owner), complete);
+}
+
+namespace {
+// The BodyNode whose skeleton owns a graph object, or null for other types.
+dart::dynamics::BodyNode* owning_body(Key type, void* pointer)
 {
   namespace d = dart::dynamics;
-  d::BodyNodePtr* holder = nullptr;
   if (auto* body
       = static_cast<d::BodyNode*>(upcast(type, typeid(d::BodyNode), pointer)))
-    holder = new d::BodyNodePtr(body);
-  else if (
-      auto* node
+    return body;
+  if (auto* node
       = static_cast<d::Node*>(upcast(type, typeid(d::Node), pointer)))
-    holder = new d::BodyNodePtr(node->getBodyNodePtr());
-  else if (
-      auto* joint
+    return node->getBodyNodePtr();
+  if (auto* joint
       = static_cast<d::Joint*>(upcast(type, typeid(d::Joint), pointer)))
-    holder = new d::BodyNodePtr(joint->getChildBodyNode());
-  else if (
-      auto* dof = static_cast<d::DegreeOfFreedom*>(
+    return joint->getChildBodyNode();
+  if (auto* dof = static_cast<d::DegreeOfFreedom*>(
           upcast(type, typeid(d::DegreeOfFreedom), pointer)))
-    holder = new d::BodyNodePtr(dof->getJoint()->getChildBodyNode());
-  else if (
-      auto* subject = static_cast<dart::common::Subject*>(
+    return dof->getJoint()->getChildBodyNode();
+  if (auto* subject = static_cast<dart::common::Subject*>(
           upcast(type, typeid(dart::common::Subject), pointer))) {
     // A registered Frame/Entity can wrap an unregistered native graph type.
     if (auto* body = dynamic_cast<d::BodyNode*>(subject))
-      holder = new d::BodyNodePtr(body);
-    else if (auto* node = dynamic_cast<d::Node*>(subject))
-      holder = new d::BodyNodePtr(node->getBodyNodePtr());
+      return body;
+    if (auto* node = dynamic_cast<d::Node*>(subject))
+      return node->getBodyNodePtr();
   }
-  if (holder)
-    nb::keep_alive_cb(wrapper, holder, [](void* p) noexcept {
+  return nullptr;
+}
+} // namespace
+
+void hold_body(nb::handle wrapper, Key type, void* pointer)
+{
+  namespace d = dart::dynamics;
+  if (auto* body = owning_body(type, pointer)) {
+    nb::keep_alive_cb(wrapper, new d::BodyNodePtr(body), [](void* p) noexcept {
       delete static_cast<d::BodyNodePtr*>(p);
     });
+  }
+}
+
+std::shared_ptr<void> graph_owner(Key type, void* pointer, void* complete)
+{
+  auto* body = owning_body(type, pointer);
+  if (!body)
+    return {};
+  // The deleter's BodyNodePtr keeps the owning skeleton alive and follows the
+  // body if it moves to another skeleton.
+  return std::shared_ptr<void>(
+      complete, [holder = dart::dynamics::BodyNodePtr(body)](void*) mutable {
+        holder = nullptr;
+      });
 }
 
 void remember_wrapper(Key exact, void* complete, nb::handle wrapper)
@@ -205,6 +252,22 @@ void rebind_methods(Key key, nb::handle cls)
     found->second.rebind_methods(cls);
 }
 
+const Key* find_registered(const char* name)
+{
+  // Types register at import, so rebuild the index only when the count grows.
+  static std::unordered_map<std::string, Key> by_name;
+  static std::size_t indexed = 0;
+  const auto& entries = registry().entries;
+  if (indexed != entries.size()) {
+    by_name.clear();
+    for (const auto& entry : entries)
+      by_name.emplace(entry.first.name(), entry.first);
+    indexed = entries.size();
+  }
+  const auto found = by_name.find(name);
+  return found == by_name.end() ? nullptr : &found->second;
+}
+
 void* upcast(Key source, Key target, void* pointer)
 {
   auto source_it = registry().paths.find(source);
@@ -218,7 +281,7 @@ void* upcast(Key source, Key target, void* pointer)
 
 nb::handle wrap(
     Key source,
-    const std::type_info& dynamic_type,
+    Key dynamic_type,
     void* complete,
     void* pointer,
     nb::rv_policy policy,

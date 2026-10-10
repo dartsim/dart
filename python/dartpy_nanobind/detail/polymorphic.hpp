@@ -48,9 +48,12 @@ void remember_owner(
 void forget_owner(void* complete, const void* token) noexcept;
 void remember_wrapper(Key exact, void* complete, nb::handle wrapper);
 void* upcast(Key source, Key target, void* pointer);
+// type_info objects can differ between modules for the same type (libc++ with
+// hidden visibility), so other modules' types are matched by mangled name.
+const Key* find_registered(const char* name);
 nb::handle wrap(
     Key source,
-    const std::type_info& dynamic_type,
+    Key dynamic_type,
     void* complete,
     void* pointer,
     nb::rv_policy policy,
@@ -58,28 +61,33 @@ nb::handle wrap(
     bool* is_new = nullptr);
 
 void hold_body(nb::handle wrapper, Key type, void* pointer);
+// Shared ownership of a graph object (body, node, joint or DOF) that keeps its
+// skeleton alive; empty for other types. `complete` is the stored pointer.
+std::shared_ptr<void> graph_owner(Key type, void* pointer, void* complete);
+
+// `complete` is the most-derived address of the object that `owner` owns.
+void hold_native_owner(
+    nb::handle wrapper, std::shared_ptr<void> owner, void* complete);
+
+// Keep a shared_ptr result's owner on its wrapper. A reused wrapper also takes
+// it when it neither owns its object nor has a native owner, so transferring
+// the last owner to Python cannot free a borrowed wrapper's object.
+// Python-owned wrappers already keep their object; their owner would be a
+// pin on themselves.
+void retain_shared_owner(
+    nb::handle wrapper,
+    bool is_new,
+    std::shared_ptr<void> owner,
+    void* complete);
 
 template <class T>
 void hold_native_owner(nb::handle wrapper, const std::shared_ptr<T>& owner)
 {
   using Mutable = std::remove_const_t<T>;
-  struct Payload
-  {
-    std::shared_ptr<T> owner;
-    void* complete;
-  };
-  void* complete = complete_address(owner.get());
-  auto holder = std::make_unique<Payload>(Payload{owner, complete});
-  remember_owner(
-      complete,
-      std::static_pointer_cast<void>(std::const_pointer_cast<Mutable>(owner)),
-      holder.get());
-  nb::keep_alive_cb(wrapper, holder.get(), [](void* q) noexcept {
-    auto* payload = static_cast<Payload*>(q);
-    forget_owner(payload->complete, payload);
-    delete payload;
-  });
-  holder.release();
+  hold_native_owner(
+      wrapper,
+      std::const_pointer_cast<Mutable>(owner),
+      complete_address(owner.get()));
 }
 
 template <class T, class Base>
@@ -440,8 +448,11 @@ struct shared_caster
                 p, nb::rv_policy::reference, cleanup));
         is_new = true;
       }
-      if (is_new)
-        hold_native_owner(result, value);
+      retain_shared_owner(
+          result,
+          is_new,
+          std::const_pointer_cast<Mutable>(value),
+          complete_address(p));
       (void)cleanup;
       return result.release();
     } catch (...) {
