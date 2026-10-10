@@ -6090,10 +6090,7 @@ def test_nightly_latest_identity_dedup_and_guard_drift(tmp_path):
     module.write_publication(tmp_path, record)
     table = (tmp_path / "performance/guards/main.md").read_text()
     assert "0.123" in table and "2400" in table and "0/71" in table
-    assert (
-        "docs/dev_tasks/dart6_performance_generalization/01-baseline-evidence.md"
-        in table
-    )
+    assert "docs/onboarding/ci-cd.md#canonical-guard-scenes" in table
     record["run"]["time"] = "2026-10-08T09:00:00+00:00"
     record["results"][0]["head"]["guards"]["resting"] = "71/71"
     record["results"][0]["head"]["checkpoints"][0]["max_penetration"] = 0.1

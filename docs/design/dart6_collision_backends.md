@@ -13,10 +13,10 @@ linked pull requests.
 | DART-owned detector | `dart::collision::DARTCollisionDetector` |
 | DART-owned factory key | `"dart"` |
 | DART-owned source home | `dart/collision/dart/` |
-| External implementations | FCL, Bullet, and ODE remain real backends |
-| Supported factory keys | `"dart"`, `"fcl"`, `"bullet"`, and `"ode"` |
+| External implementations | FCL, ODE, and other optional backends remain real backends |
+| Supported factory keys | Existing registered detector names |
 | Installed collision components | Unchanged |
-| External collision dependencies | FCL remains core-required; Bullet and ODE remain optional |
+| External collision dependencies | FCL remains core-required; other backends remain optional |
 | Released `DARTCollide` API | Preserved through thin adapters |
 | Detector/group/object layouts | Preserved |
 | C++ and Python floor | C++17 and pybind11 |
@@ -53,10 +53,10 @@ surface as one compatibility decision.
 
 gz-physics and gz-sim constrain later backend work:
 
-- `find_package(DART COMPONENTS collision-bullet collision-ode ...)` must
+- Installed collision-component package requests must
   remain valid unless a coordinated downstream migration changes that
   contract.
-- Factory keys `"fcl"`, `"bullet"`, `"ode"`, and `"dart"` must continue to
+- Existing factory keys must continue to
   resolve.
 - `GzOdeCollisionDetector` subclasses `OdeCollisionDetector` and overrides
   collision methods. Any ODE compatibility facade must remain subclassable,
@@ -67,6 +67,11 @@ gz-physics and gz-sim constrain later backend work:
   behavior require direct downstream tests rather than source-shape
   inference.
 
+The plugin swaps detectors by factory-name string and reads
+`World::getLastCollisionResult()`. Preserve those names and result lifetime,
+alongside the frozen subclass vtables described in
+[architecture](../onboarding/architecture.md#performance-compatibility).
+
 ## Later backend lifecycle
 
 A future release may move from real external backends to compatibility facades
@@ -76,7 +81,7 @@ over `DARTCollisionDetector`, but only in this order:
    with current correctness, determinism, performance, package, ABI, visual,
    and gz evidence.
 2. Provide a functional deprecation period with migration messages while the
-   FCL, Bullet, and ODE backends and components remain real.
+   FCL, ODE, and other optional backends and components remain real.
 3. Decouple FCL from core and remove external packages only after installed
    headers no longer expose their types and all compatibility components pass
    without those packages present.
@@ -88,7 +93,7 @@ Performance alone is insufficient evidence for any stage.
 ## Non-goals
 
 - DART 6.20 does not flip the default detector.
-- DART 6.20 does not deprecate or remove FCL, Bullet, or ODE.
+- DART 6.20 does not deprecate or remove existing collision backends.
 
 ## Evidence owners
 

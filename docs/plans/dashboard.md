@@ -6,52 +6,46 @@ the owner documents that hold detailed packet boards and evidence.
 Priority order is document order. Active implementation handoff remains in
 `docs/dev_tasks/`; this dashboard only records the release-branch roadmap view.
 
-### PLAN-621: Active Contact Performance Generalization
+### PLAN-623: Active Contact Performance Generalization
 
-- Owner doc: [performance generalization](../dev_tasks/dart6_performance_generalization/README.md)
-- Status: Active
-- Horizon: Now
+- Owner doc: [performance methodology](../onboarding/profiling.md#performance-methodology)
+- Status: Proposed
+- Horizon: Next (DART 6.21)
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
-- Next step: Refresh representative DART workload and `dart` detector rows
-  against parent/base revisions on the same host, then use that evidence to
-  select one consolidated implementation gap or the closeout route. Keep the
-  task active while #3056 remains open.
-- Gate: `pixi run lint`; capped C++ build; detector-specific final-state
-  hash guards; benchmark evidence in the task-required report shape;
-  `pixi run -e gazebo test-gz` for collision, solver, or `World::step`
-  changes.
+- Predecessor: [PLAN-621: DART 6.20.0 performance closeout](archive.md#plan-621-dart-6200-performance-closeout).
+- Next step: Continuing [#3056](https://github.com/dartsim/dart/issues/3056)
+  performance work targets 6.21, including representative same-host workload
+  evidence, small-scene overhead, and time outside `World::step`. Open a new
+  task home only when bounded follow-up needs multi-session tracking.
+- Gate: Same-host DART revision comparisons, detector-specific behavior guards,
+  and Gazebo-path compatibility evidence under the performance methodology.
 
 ### PLAN-622: DART 6 Deformable Body Feature And Performance
 
 - Owner doc: [deformable body performance](../dev_tasks/dart6_deformable_body_performance/README.md)
 - Status: Active
-- Horizon: Next
+- Horizon: Next (DART 6.21)
 - Dimension: Research feature parity, CPU performance, and compatibility.
-- Scope (2026-07-29): DART 6 carries **one** deformable model, the Jain/Liu
-  point-mass surface flesh that `SoftBodyNode` implements. The Kim/Pollard
-  volumetric-FEM lane was removed from DART 6, because the two papers need
-  different discretizations and a compatibility release branch should not carry
-  two parallel deformable architectures. Durable owner:
-  [deformable-body design](../design/dart6_deformable_body.md); working record:
-  [`decisions.md`](../dev_tasks/dart6_deformable_body_performance/decisions.md);
-  scope note in
-  [`10-full-parity-execution-plan.md`](../dev_tasks/dart6_deformable_body_performance/10-full-parity-execution-plan.md).
-- Next step: PR-3a soft-foot SIMBICON shipped (#3408, #3423): both Jain/Liu
-  biped claims reproduce and are gate-asserted — contacts 51.2 soft vs 15.64
-  rigid, recoverable push 18000 N soft vs 8000 N rigid
-  (`12-pr3a-soft-foot-simbicon.md`, resolved decisions). Goal (maintainer
-  direction, 2026-08-01): fully complete this task for the DART 6.20
-  release, bundled into as few PRs as review quality allows — parity rows
-  close only with gate evidence, and dispositions apply only to the
-  acceptance items whose own text offers one. The ordered inventory of
-  remaining items and the suggested PR bundles live in the task `RESUME.md`
-  (single owner); this dashboard deliberately does not duplicate that list.
-  **Do not restart the volumetric FEM subsystem on the DART 6 line (`main`).** New GUI
+- Scope: Jain/Liu point-mass surface flesh only; do not restart volumetric FEM
+  on the DART 6 line. See the
+  [deformable-body design](../design/dart6_deformable_body.md).
+- Evidence: Adaptive active vertices, CoP/force variance, and the LCP
+  initial-point reset proxy have representative gates. Reduced demos do not
+  establish full paper parity.
+- Next step: The unmet full-parity 6.20 goal is retargeted to 6.21 by maintainer
+  decision. Remaining rows are motor-noise push recovery, noisy-floor biped,
+  soft-contact walking, four-link flexible-foot comparison, and hand/arm
+  scenes (finger flick, arm fold, pinch grasp). Push recovery remains partial:
+  single-trajectory thresholds do not establish robust parity (see #3431).
+  Also complete normalized performance acceptance, multicore scaling evidence
+  or an approved negative disposition, pre-default detector coverage gates,
+  and a complete paired benchmark artifact or approved disposition. New GUI
   examples belong in `dart-demos`.
-- Gate: `pixi run lint`; focused soft-body integration tests; headless
-  soft-body benchmarks with exact commands/raw rows; one-thread and host-capped
-  multi-thread determinism/scaling evidence; allocation gates and Gazebo
-  coverage before any collision, constraint, or backend-default change.
+- Gate: Focused soft-body tests; per-row correctness and same-host CPU evidence;
+  one-thread and host-capped multi-thread determinism/scaling; allocation and
+  Gazebo gates before any collision, constraint, or backend-default change.
+  Parity rows close only with evidence; dispositions apply only where their
+  acceptance rules permit them.
 
 ### PLAN-620: Dependency Minimization And Collision Backends
 
