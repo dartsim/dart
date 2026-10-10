@@ -147,8 +147,10 @@ taxonomy.
 
 ## Development Profile
 
-Development and release branches preserve C++17, pybind11, `dart::utils`, OSG,
-and Gazebo/gz-physics compatibility. The DART 6 component map is
-[`architecture.md`](../onboarding/architecture.md). Release and backport
+Development and release branches preserve C++17, the default pybind11 binder,
+`dart::utils`, OSG, and Gazebo/gz-physics compatibility. The approved opt-in
+nanobind binder lives under `python/dartpy_nanobind/`; see
+[`python-bindings.md`](../onboarding/python-bindings.md). The DART 6 component
+map is [`architecture.md`](../onboarding/architecture.md). Release and backport
 policy and the branch-local next release live in
 [`release-management.md`](../onboarding/release-management.md).

@@ -220,6 +220,7 @@ test-build-requirements = { cmd = [
   "tests/test_compiler_requirements.py",
   "tests/test_dependency_requirements.py",
   "tests/test_minimum_requirement_metadata.py",
+  "tests/test_wheel_linux.py",
   "-q",
 ] }
 
@@ -271,7 +272,7 @@ wheel-build-core = { cmd = "python scripts/wheel_build.py {{ use_system_imgui }}
 ] }
 
 wheel-repair-linux-core = { cmd = """
-    auditwheel repair dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl -w dist/ &&
+    auditwheel repair --plat manylinux_2_28_x86_64 dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl -w dist/ &&
     rm dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl
 """, args = [
   { arg = "python_tag" },

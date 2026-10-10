@@ -3,11 +3,13 @@
   "profile": "dart6",
   "cpp_standard": "C++17",
   "python_binding": "pybind11",
+  "optional_python_bindings": ["nanobind"],
   "io_namespace": "dart::utils",
   "gui_backend": "OSG",
   "required_markers": [
     "C++17",
     "pybind11",
+    "nanobind",
     "dart::utils",
     "OSG",
     "Gazebo/gz-physics"
@@ -22,6 +24,7 @@
     "dart/gui/osg/DebugOverlay.hpp",
     "docs/onboarding/architecture.md",
     "python/dartpy",
+    "python/dartpy_nanobind",
     "scripts/agent_capture.py"
   ],
   "forbidden_markers": [

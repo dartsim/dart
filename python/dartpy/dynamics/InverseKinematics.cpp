@@ -688,6 +688,8 @@ void InverseKinematics(py::module& m)
           ::py::init(
               +[](dart::dynamics::JacobianNode* node)
                   -> dart::dynamics::InverseKinematicsPtr {
+                if (!node)
+                  throw ::py::type_error("InverseKinematics requires a node");
                 return dart::dynamics::InverseKinematics::create(node);
               }),
           ::py::arg("node"))
