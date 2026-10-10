@@ -5,7 +5,7 @@ description: "DART Verify Sim: text-first and OSG visual debugging for DART 6 sc
 
 # DART 6 Simulation Verification
 
-Load this skill whenever a DART 6.20 claim depends on 3D structure or
+Load this skill whenever a DART 6 claim depends on 3D structure or
 behavior: model/scene loading, dynamics, collision/contact/constraints,
 simulation stepping, OSG rendering, or a visual example.
 

@@ -1,6 +1,6 @@
 # .agents/
 
-Current Codex skill discovery surface for DART 6.20.
+Current Codex skill discovery surface for DART 6.
 
 - Treat only paths listed by `skills/.dart-generated.json`, plus the manifest
   itself, as DART-generated output.

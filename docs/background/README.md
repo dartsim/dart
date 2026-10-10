@@ -1,7 +1,7 @@
 # DART Background Theory
 
 This directory is the release-branch home for durable theory and research
-background used by DART 6.20 maintainers and agents.
+background used by DART 6 maintainers and agents.
 
 DART 6 already carries the original source PDFs:
 

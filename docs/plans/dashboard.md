@@ -1,10 +1,10 @@
-# DART 6.20 Plan Dashboard
+# DART 6 Plan Dashboard
 
-This dashboard is the operating view for release-branch planning. It points to
+This dashboard is the operating view for DART 6 development and release planning. It points to
 the owner documents that hold detailed packet boards and evidence.
 
 Priority order is document order. Active implementation handoff remains in
-`docs/dev_tasks/`; this dashboard only records the release-branch roadmap view.
+`docs/dev_tasks/`; this dashboard only records the DART 6 roadmap view.
 
 ### PLAN-621: Active Contact Performance Generalization
 
@@ -12,10 +12,10 @@ Priority order is document order. Active implementation handoff remains in
 - Status: Active
 - Horizon: Now
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
-- Next step: Refresh representative DART workload and `dart` detector rows
-  against parent/base revisions on the same host, then use that evidence to
-  select one consolidated implementation gap or the closeout route. Keep the
-  task active while #3056 remains open.
+- Next step: Re-baseline the DART workload matrix and `dart` detector
+  rows on the current merged base, then use that evidence to select one
+  consolidated implementation gap or the closeout route. Keep the task active
+  while #3056 remains open.
 - Gate: `pixi run lint`; capped C++ build; detector-specific final-state
   hash guards; benchmark evidence in the task-required report shape;
   `pixi run -e gazebo test-gz` for collision, solver, or `World::step`

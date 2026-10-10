@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate and diagnose DART 6.20's repository-local AI infrastructure."""
+"""Validate and diagnose DART 6's repository-local AI infrastructure."""
 
 from __future__ import annotations
 
@@ -3717,13 +3717,58 @@ def check_instruction_budget(root: Path, errors: list[str]) -> None:
             )
 
 
+def check_release_references(root: Path, errors: list[str]) -> None:
+    """Keep reusable guidance independent of the branch's next release."""
+    paths = set(source_paths(root))
+    paths.update(
+        root / relative
+        for relative in (
+            "CLAUDE.md",
+            "GEMINI.md",
+            ".github/PULL_REQUEST_TEMPLATE.md",
+            "docs/readthedocs/index.rst",
+            "docs/readthedocs/dart/developer_guide/build.rst",
+        )
+    )
+    paths.discard(root / "docs/onboarding/release-management.md")
+    version = r"`?DART\s+6\.\d+(?:\.\d+)?`?"
+    current_target = re.compile(
+        rf"\b(?:currently|current stable|develops|developing|stabilizes)\b"
+        rf".{{0,80}}{version}"
+        rf"|{version}\s+(?:development|stabilization)\s+branch"
+        rf"|\b(?:use|set|select|assign|target)\b.{{0,120}}{version}"
+        rf".{{0,80}}\bmilestone\b"
+        rf"|(?:\b(?:use|set|select|assign)\b.{{0,80}}\bmilestone\b"
+        rf"|--milestone|\bmilestone\s*(?:set|[:=])).{{0,80}}{version}"
+        r"|\|\s*`?(?:main|release-6\.\d+)`?\s*\|"
+        r"[^|]*\bDART\s+6\.\d+\.\d+[^|]*\|"
+        r"|\|\s*`?(?:main|release-6\.\d+)`?\s*\|\s*"
+        r"(?:Development|Stabilization|Maintenance)\s*\|\s*`?6\.\d+\.\d+`?\s*\|"
+        r"|\btarget(?:s)?\s+`?(?:origin/)?release-6\.\d+\b",
+        re.IGNORECASE,
+    )
+    for path in sorted(paths):
+        if not path.is_file():
+            continue
+        line_number = 1
+        for paragraph in path.read_text(encoding="utf-8").split("\n\n"):
+            if current_target.search(" ".join(paragraph.split())):
+                errors.append(
+                    f"{path.relative_to(root)}:{line_number}: resolve the release "
+                    "target and milestone from the base branch's "
+                    "`docs/onboarding/release-management.md`, not copied version values"
+                )
+            line_number += paragraph.count("\n") + 2
+
+
 def check_release_guidance(root: Path, errors: list[str]) -> None:
+    check_release_references(root, errors)
     python_skill = (root / ".claude" / "skills" / "dart-python" / "SKILL.md").read_text(
         encoding="utf-8"
     )
     python_frontmatter = python_skill.split("---", 2)[1]
     if "nanobind" in python_frontmatter or "pybind11" not in python_skill:
-        errors.append("dart-python: DART 6.20 metadata must name pybind11")
+        errors.append("dart-python: DART 6 metadata must name pybind11")
 
     ci_skill_path = root / ".claude" / "skills" / "dart-ci" / "SKILL.md"
     ci_skill = ci_skill_path.read_text(encoding="utf-8")
@@ -3738,7 +3783,7 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
     release_fix = (root / ".claude" / "commands" / "dart-release-ci-fix.md").read_text(
         encoding="utf-8"
     )
-    if "Default to `main`" not in release_fix or "release-6.19" in release_fix:
+    if "Default to `main`" not in release_fix:
         errors.append("dart-release-ci-fix: development default must be main")
 
     for path in source_paths(root):
@@ -4259,7 +4304,7 @@ def exercise_scenarios(
 
         if scenario_id == "model-upgrade":
             expected_prompt = (
-                "audit or update DART 6.20 AI infrastructure for a named model, "
+                "audit or update DART 6 AI infrastructure for a named model, "
                 "reasoning mode, or coding-agent release"
             )
             if scenario.get("prompt_class") != expected_prompt:
@@ -4330,7 +4375,7 @@ def exercise_scenarios(
                 "temporary claim-tied evidence",
             }
             expected_prompt = (
-                "verify claim-dependent DART 6.20 simulation, dynamics, "
+                "verify claim-dependent DART 6 simulation, dynamics, "
                 "collision/contact/constraints, model/scene, GUI, or OSG behavior"
             )
             if scenario.get("prompt_class") != expected_prompt:
