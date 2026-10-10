@@ -58,6 +58,9 @@ the repository root to the working directory.
   and Gazebo/gz-physics compatibility unless a maintainer approves otherwise.
 - The approved DART 6.21 migration permits an opt-in nanobind binder under
   `python/dartpy_nanobind/`; follow `docs/onboarding/python-bindings.md`.
+  The maintainer also approved building the published `dartpy` wheels with it
+  (`cp312-abi3` plus Linux `cp310`/`cp311`); the source default stays pybind11
+  until the binder switch.
 - `main` is the development branch for the next release (currently DART 6.20).
   PRs target `main`, where new patches land; there is no maintenance branch.
   Backports to a `release-6.*` branch cut from a release tag use

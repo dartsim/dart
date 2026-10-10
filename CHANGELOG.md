@@ -43,6 +43,11 @@
   * Reject a null node when constructing inverse kinematics in either binder,
     preventing an invalid-input crash.
 
+  * Build `dartpy` wheels with the nanobind binder. Python 3.12 and newer use
+    one `cp312-abi3` wheel per platform (new `DART_DARTPY_STABLE_ABI` CMake
+    option), and Linux keeps `cp310` and `cp311` wheels, so each release
+    publishes five wheels instead of eight.
+
 * Examples
 
   * Replace the four C++ tutorials with Python exercises and solutions in

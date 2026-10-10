@@ -35,15 +35,43 @@ if(NOT dartpy_guard_result EQUAL 0)
   )
 endif()
 
-nanobind_add_module(dartpy NB_STATIC PROTECT_STACK ${dartpy_headers} ${dartpy_sources})
+set(dartpy_abi)
+if(DART_DARTPY_STABLE_ABI)
+  set(dartpy_abi STABLE_ABI)
+endif()
+nanobind_add_module(
+  dartpy
+  NB_STATIC
+  PROTECT_STACK
+  ${dartpy_abi}
+  ${dartpy_headers}
+  ${dartpy_sources}
+)
 set_target_properties(
   dartpy
-  PROPERTIES
-    OUTPUT_NAME dartpy
-    DEBUG_POSTFIX ""
-    EXCLUDE_FROM_ALL TRUE
-    LIBRARY_OUTPUT_DIRECTORY "${DART_PYTHON_BUILD_DIR}/dartpy"
+  PROPERTIES OUTPUT_NAME dartpy DEBUG_POSTFIX "" EXCLUDE_FROM_ALL TRUE
 )
+# nanobind builds its library with -mtls-dialect=gnu2. Wheels link DART
+# statically, which makes dartpy's TLS block too large for static TLS, and
+# glibc 2.39 and older corrupt registers on the dynamic TLS-descriptor path
+# (glibc bug 31372); Python overrides then silently stop dispatching. Use the
+# traditional dialect, which every glibc handles.
+if(NB_HAS_MTLS_GNU2)
+  get_target_property(dartpy_link_libraries dartpy LINK_LIBRARIES)
+  foreach(library IN LISTS dartpy_link_libraries)
+    if(library MATCHES "^nanobind" AND TARGET ${library})
+      target_compile_options(${library} PRIVATE -mtls-dialect=gnu)
+    endif()
+  endforeach()
+endif()
+
+# Wheel builds set CMAKE_LIBRARY_OUTPUT_DIRECTORY to setuptools' directory.
+if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  set_target_properties(
+    dartpy
+    PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${DART_PYTHON_BUILD_DIR}/dartpy"
+  )
+endif()
 target_compile_features(dartpy PRIVATE cxx_std_17)
 target_include_directories(dartpy PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(dartpy SYSTEM PRIVATE "${NB_DIR}/src")

@@ -29,6 +29,30 @@ assert -1.0 <= value <= 1.0
 loader = DartLoader()
 assert loader.parseSkeleton("missing-file-for-wheel-smoke.urdf") is None
 
+# C++ must dispatch to Python overrides; a broken wheel silently skips them.
+skeletons = [dart.dynamics.Skeleton("a"), dart.dynamics.Skeleton("b")]
+for skeleton in skeletons:
+    body = skeleton.createFreeJointAndBodyNodePair()[1]
+    body.createShapeNode(dart.dynamics.BoxShape([1, 1, 1])).createCollisionAspect()
+skeletons[1].getJoint(0).setPosition(3, 0.5)
+group = dart.collision.FCLCollisionDetector().createCollisionGroup()
+for skeleton in skeletons:
+    group.addShapeFramesOf(skeleton)
+
+
+class IgnoreAll(dart.collision.CompositeCollisionFilter):
+    def ignoresCollision(self, object1, object2):
+        self.calls += 1
+        return True
+
+
+option = dart.collision.CollisionOption(True, 100, None)
+assert group.collide(option)
+option.collisionFilter = IgnoreAll()
+option.collisionFilter.calls = 0
+assert not group.collide(option)
+assert option.collisionFilter.calls > 0
+
 print("dartpy wheel smoke test passed")
 """
 

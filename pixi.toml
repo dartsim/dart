@@ -1517,6 +1517,12 @@ wheel-verify = { depends-on = [
   ] },
 ] }
 wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp313"] }] }
+# Release wheels for Python 3.12+ are cp312-abi3; test one on Python 3.13.
+wheel-test-abi3 = { depends-on = [
+  { task = "wheel-test-core", args = [
+    "cp312",
+  ] },
+] }
 
 #==============
 # Environments

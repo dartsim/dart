@@ -10,7 +10,20 @@ if(DART_DARTPY_BINDER STREQUAL "nanobind")
   if(NOT Python_EXECUTABLE AND Python3_EXECUTABLE)
     set(Python_EXECUTABLE "${Python3_EXECUTABLE}")
   endif()
-  find_package(Python 3.10 REQUIRED COMPONENTS Interpreter Development.Module)
+  if(DART_DARTPY_STABLE_ABI)
+    if(CMAKE_VERSION VERSION_LESS 3.26)
+      message(FATAL_ERROR "DART_DARTPY_STABLE_ABI requires CMake 3.26 or newer")
+    endif()
+    # nanobind silently builds a regular module on older interpreters.
+    find_package(
+      Python
+      3.12
+      REQUIRED
+      COMPONENTS Interpreter Development.Module Development.SABIModule
+    )
+  else()
+    find_package(Python 3.10 REQUIRED COMPONENTS Interpreter Development.Module)
+  endif()
   if(DART_USE_SYSTEM_NANOBIND)
     execute_process(
       COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
@@ -32,6 +45,12 @@ if(DART_DARTPY_BINDER STREQUAL "nanobind")
   endif()
   add_subdirectory(dartpy_nanobind)
 else()
+  if(DART_DARTPY_STABLE_ABI)
+    message(
+      FATAL_ERROR
+      "DART_DARTPY_STABLE_ABI requires -DDART_DARTPY_BINDER=nanobind"
+    )
+  endif()
   # Set up pybind11
   set(
     PYBIND11_FINDPYTHON
