@@ -162,7 +162,7 @@ void Solver(nb::module_& m)
   {
   public:
     // Inherit the constructors
-    NB_TRAMPOLINE(Solver, 3);
+    NB_TRAMPOLINE(Solver);
 
     // Trampoline for virtual function
     bool solve() override

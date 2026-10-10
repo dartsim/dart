@@ -54,7 +54,7 @@ class PyFunction : public dart::optimizer::Function
 {
 public:
   // Inherit the constructors
-  NB_TRAMPOLINE(Function, 3);
+  NB_TRAMPOLINE(Function);
 
   // Trampoline for virtual function
   double eval(const Eigen::VectorXd& x) override
