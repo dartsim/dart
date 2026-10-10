@@ -79,6 +79,8 @@ struct FrameHolder
 
 std::weak_ptr<SimpleFrame> releasedFrame;
 
+std::shared_ptr<BodyNode> keptBody;
+
 } // namespace
 
 PYBIND11_MODULE(dartpy_pybind11_interop_test, m)
@@ -180,6 +182,16 @@ PYBIND11_MODULE(dartpy_pybind11_interop_test, m)
         return std::move(holder.frame);
       });
   m.def("released_frame_alive", [] { return !releasedFrame.expired(); });
+  m.def("shared_body_name", [](const std::shared_ptr<BodyNode>& body) {
+    return body->getName();
+  });
+  m.def("keep_body", [](std::shared_ptr<BodyNode> body) {
+    keptBody = std::move(body);
+  });
+  m.def("kept_body_skeleton_name", [] {
+    return keptBody ? keptBody->getSkeleton()->getName() : std::string();
+  });
+  m.def("release_body", [] { keptBody.reset(); });
   py::class_<FrameOwner>(m, "FrameOwner")
       .def(py::init<>())
       .def(

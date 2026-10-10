@@ -167,6 +167,9 @@ int share(PyObject* object, void* complete, std::shared_ptr<void>* owner)
     }
     if ((*owner = dartnb::native_owner(complete)))
       return 0;
+    // Graph objects live as long as their skeleton.
+    if ((*owner = dartnb::graph_owner(*exact, pointer, complete)))
+      return 0;
     if (!nb::inst_state(handle).second) {
       throw nb::type_error(
           "dartpy C API: a wrapper that borrows its object cannot share "

@@ -205,3 +205,19 @@ def test_reused_wrapper_keeps_reference_internal_parent_alive(interop):
         assert owner_ref() is None
         """
     )
+
+
+def test_shared_graph_arguments_keep_their_skeleton_alive(interop):
+    run_isolated(
+        """
+        import dartpy_pybind11_interop_test as interop
+        skeleton = dart.dynamics.Skeleton("held")
+        body = skeleton.createFreeJointAndBodyNodePair()[1]
+        assert interop.shared_body_name(body) == body.getName()
+        interop.keep_body(body)
+        del skeleton, body
+        gc.collect()
+        assert interop.kept_body_skeleton_name() == "held"
+        interop.release_body()
+        """
+    )

@@ -140,38 +140,56 @@ void retain_shared_owner(
     hold_native_owner(wrapper, std::move(owner), complete);
 }
 
-void hold_body(nb::handle wrapper, Key type, void* pointer)
+namespace {
+// The BodyNode whose skeleton owns a graph object, or null for other types.
+dart::dynamics::BodyNode* owning_body(Key type, void* pointer)
 {
   namespace d = dart::dynamics;
-  d::BodyNodePtr* holder = nullptr;
   if (auto* body
       = static_cast<d::BodyNode*>(upcast(type, typeid(d::BodyNode), pointer)))
-    holder = new d::BodyNodePtr(body);
-  else if (
-      auto* node
+    return body;
+  if (auto* node
       = static_cast<d::Node*>(upcast(type, typeid(d::Node), pointer)))
-    holder = new d::BodyNodePtr(node->getBodyNodePtr());
-  else if (
-      auto* joint
+    return node->getBodyNodePtr();
+  if (auto* joint
       = static_cast<d::Joint*>(upcast(type, typeid(d::Joint), pointer)))
-    holder = new d::BodyNodePtr(joint->getChildBodyNode());
-  else if (
-      auto* dof = static_cast<d::DegreeOfFreedom*>(
+    return joint->getChildBodyNode();
+  if (auto* dof = static_cast<d::DegreeOfFreedom*>(
           upcast(type, typeid(d::DegreeOfFreedom), pointer)))
-    holder = new d::BodyNodePtr(dof->getJoint()->getChildBodyNode());
-  else if (
-      auto* subject = static_cast<dart::common::Subject*>(
+    return dof->getJoint()->getChildBodyNode();
+  if (auto* subject = static_cast<dart::common::Subject*>(
           upcast(type, typeid(dart::common::Subject), pointer))) {
     // A registered Frame/Entity can wrap an unregistered native graph type.
     if (auto* body = dynamic_cast<d::BodyNode*>(subject))
-      holder = new d::BodyNodePtr(body);
-    else if (auto* node = dynamic_cast<d::Node*>(subject))
-      holder = new d::BodyNodePtr(node->getBodyNodePtr());
+      return body;
+    if (auto* node = dynamic_cast<d::Node*>(subject))
+      return node->getBodyNodePtr();
   }
-  if (holder)
-    nb::keep_alive_cb(wrapper, holder, [](void* p) noexcept {
+  return nullptr;
+}
+} // namespace
+
+void hold_body(nb::handle wrapper, Key type, void* pointer)
+{
+  namespace d = dart::dynamics;
+  if (auto* body = owning_body(type, pointer)) {
+    nb::keep_alive_cb(wrapper, new d::BodyNodePtr(body), [](void* p) noexcept {
       delete static_cast<d::BodyNodePtr*>(p);
     });
+  }
+}
+
+std::shared_ptr<void> graph_owner(Key type, void* pointer, void* complete)
+{
+  auto* body = owning_body(type, pointer);
+  if (!body)
+    return {};
+  // The deleter's BodyNodePtr keeps the owning skeleton alive and follows the
+  // body if it moves to another skeleton.
+  return std::shared_ptr<void>(
+      complete, [holder = dart::dynamics::BodyNodePtr(body)](void*) mutable {
+        holder = nullptr;
+      });
 }
 
 void remember_wrapper(Key exact, void* complete, nb::handle wrapper)

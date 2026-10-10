@@ -69,6 +69,7 @@ set(
 install(
   FILES ${dartpy_public_headers}
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/dartpy"
+  COMPONENT headers
 )
 list(
   REMOVE_ITEM dartpy_headers
