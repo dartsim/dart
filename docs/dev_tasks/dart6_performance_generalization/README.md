@@ -12,6 +12,9 @@
 > Baseline branch point: `origin/release-6.20` @ `70b92010311` (includes
 > #3209 benchmark, #3229 dart/simd, #3230 dashboard, #3226 deactivation gate).
 
+Historical artifact names in this folder are identifiers, not repository paths.
+Local artifact locations are omitted; rerun the recorded gates for fresh evidence.
+
 ## North-star completion gate
 
 This task is not complete merely because the current packet queue becomes
