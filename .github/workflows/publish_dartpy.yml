@@ -61,26 +61,23 @@ jobs:
           # manylinux tag from the bundled dependency ABI.
           - os: linux
             runner: ubuntu-24.04
-            build: "cp313-manylinux_x86_64"
-            pixi_env: py313-wheel
-            release_only: false
-
-          - os: linux
-            runner: ubuntu-24.04
-            build: "cp312-manylinux_x86_64"
+            build: "cp312-abi3-manylinux_x86_64"
             pixi_env: py312-wheel
-            release_only: true
+            abi3: true
+            release_only: false
 
           - os: linux
             runner: ubuntu-24.04
             build: "cp311-manylinux_x86_64"
             pixi_env: py311-wheel
+            abi3: false
             release_only: true
 
           - os: linux
             runner: ubuntu-24.04
             build: "cp310-manylinux_x86_64"
             pixi_env: py310-wheel
+            abi3: false
             release_only: true
 
           # Pin macOS to macos-15 (not macos-latest): dependency packages are
@@ -88,27 +85,17 @@ jobs:
           # the Pixi environment instead of Homebrew.
           - os: macos
             runner: macos-15
-            build: "cp313-macosx_arm64"
-            pixi_env: py313-wheel
-            release_only: false
-
-          - os: macos
-            runner: macos-15
-            build: "cp312-macosx_arm64"
+            build: "cp312-abi3-macosx_arm64"
             pixi_env: py312-wheel
-            release_only: true
-
-          - os: windows
-            runner: windows-2025-vs2026
-            build: "cp313-win_amd64"
-            pixi_env: py313-wheel
+            abi3: true
             release_only: false
 
           - os: windows
             runner: windows-2025-vs2026
-            build: "cp312-win_amd64"
+            build: "cp312-abi3-win_amd64"
             pixi_env: py312-wheel
-            release_only: true
+            abi3: true
+            release_only: false
 
     env:
       CMAKE_BUILD_PARALLEL_LEVEL: 8
@@ -201,6 +188,14 @@ jobs:
       - name: Test wheel
         if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
         run: pixi run -e ${{ matrix.pixi_env }} wheel-test
+
+      # The cp312-abi3 wheel also serves Python 3.13 and newer.
+      - name: Audit and test abi3 wheel on Python 3.13
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.abi3 }}
+        run: |
+          pixi exec --spec "abi3audit==0.0.26" -- abi3audit --strict --report dist/dartpy-*-cp312-abi3-*.whl
+          pixi install -e py313-wheel
+          pixi run -e py313-wheel wheel-test-abi3
 
       - uses: actions/upload-artifact@v7
         if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}

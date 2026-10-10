@@ -226,8 +226,16 @@ def get_version_from_package_xml(package_xml_path: str) -> str:
         ) from exc
 
 
+# A stable-ABI (abi3) module needs a matching wheel tag.
+_bdist_wheel_options = (
+    {"bdist_wheel": {"py_limited_api": "cp312"}}
+    if "-DDART_DARTPY_STABLE_ABI=ON" in _cmake_args_from_env()
+    else {}
+)
+
 # Set up the python package wrapping this extension.
 setup(
+    options=_bdist_wheel_options,
     name="dartpy",
     version=get_version_from_package_xml(os.path.join(dart_root, "package.xml")),
     description=description,

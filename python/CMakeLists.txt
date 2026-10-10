@@ -10,7 +10,22 @@ if(DART_DARTPY_BINDER STREQUAL "nanobind")
   if(NOT Python_EXECUTABLE AND Python3_EXECUTABLE)
     set(Python_EXECUTABLE "${Python3_EXECUTABLE}")
   endif()
-  find_package(Python 3.10 REQUIRED COMPONENTS Interpreter Development.Module)
+  if(DART_DARTPY_STABLE_ABI)
+    # nanobind silently builds a regular module on older interpreters.
+    find_package(
+      Python
+      3.12
+      REQUIRED
+      COMPONENTS Interpreter Development.Module Development.SABIModule
+    )
+  else()
+    find_package(
+      Python
+      3.10
+      REQUIRED
+      COMPONENTS Interpreter Development.Module
+    )
+  endif()
   if(DART_USE_SYSTEM_NANOBIND)
     execute_process(
       COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir

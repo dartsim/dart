@@ -62,8 +62,12 @@ def main(argv: list[str]) -> int:
         "-DDART_TREAT_WARNINGS_AS_ERRORS=OFF",
         "-DBUILD_SHARED_LIBS=OFF",
         f"-DDART_USE_SYSTEM_IMGUI={use_system_imgui}",
-        "-DDART_USE_SYSTEM_PYBIND11=ON",
+        "-DDART_DARTPY_BINDER=nanobind",
     ]
+    # One CPython 3.12+ stable-ABI (abi3) wheel serves every newer interpreter;
+    # setup.py tags the wheel to match.
+    if sys.version_info >= (3, 12):
+        cmake_args.append("-DDART_DARTPY_STABLE_ABI=ON")
     cmake_args.extend(cmake_host_linker_flags())
 
     os.environ["DARTPY_CMAKE_ARGS_JSON"] = json.dumps(cmake_args)

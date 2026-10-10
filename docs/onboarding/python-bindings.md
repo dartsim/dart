@@ -179,3 +179,13 @@ expose `wheel-build` / `wheel-repair` / `wheel-verify` / `wheel-test` per
 Python version. `.github/workflows/publish_dartpy.yml` runs the same tasks
 for released wheels; reproduce a CI wheel step locally with
 `pixi run -e <pyXY-wheel> wheel-build` and friends.
+
+Wheels use the nanobind binder. On Python 3.12 and newer, `wheel-build` sets
+`DART_DARTPY_STABLE_ABI=ON`, which builds the module for CPython's stable ABI
+and tags the wheel `cp312-abi3`, so one wheel per platform serves Python 3.12
+and every later version. The release matrix therefore builds five wheels:
+`cp312-abi3` for Linux, macOS, and Windows, plus Linux `cp310` and `cp311`. Each
+abi3 row also checks the wheel with `abi3audit --strict` and tests it on
+Python 3.13 through `pixi run -e py313-wheel wheel-test-abi3`. Stable-ABI calls
+cost up to about 5% more instructions on NumPy-heavy setters; CMake refuses
+`DART_DARTPY_STABLE_ABI` on Python older than 3.12.

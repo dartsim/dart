@@ -25,7 +25,7 @@ inline int numpy2_export() noexcept {
     Py_DECREF(module);
     if (!version)
         return -1;
-    const char *text = PyUnicode_AsUTF8(version);
+    const char *text = PyUnicode_AsUTF8AndSize(version, nullptr);
     if (text)
         selected = uses_numpy2_capi(text);
     Py_DECREF(version);
