@@ -95,6 +95,141 @@ def test_release_scenarios_are_exercisable():
     assert infra.exercise_scenarios(ROOT) == []
 
 
+@pytest.mark.parametrize(
+    ("relative", "text"),
+    [
+        ("AGENTS.md", "`main` develops DART 6.22.\n"),
+        ("CLAUDE.md", "`main`, the DART 6.22 development branch.\n"),
+        ("GEMINI.md", "The next release is currently DART 6.22.\n"),
+        ("docs/ai/principles.md", "`main`, developing\nDART 6.22.\n"),
+        ("docs/README.md", "`release-6.21` stabilizes DART 6.21.\n"),
+        (
+            "docs/onboarding/contributing.md",
+            "Use the `DART 6.22.0`\nmilestone.\n",
+        ),
+        (
+            ".claude/commands/dart-pr.md",
+            "| `main` | `DART 6.22.0` |\n",
+        ),
+        ("AGENTS.md", "| `main` | Development | `6.22.0` |\n"),
+        (
+            ".claude/commands/dart-new-task.md",
+            "| `release-6.21` | Stabilization | `6.21.0` |\n",
+        ),
+        (
+            ".claude/skills/dart-contribute/SKILL.md",
+            "| release-6.21 | Maintenance | 6.21.1 |\n",
+        ),
+        (
+            ".claude/skills/dart-contribute/SKILL.md",
+            'gh pr edit <PR#> --milestone "DART 6.22.0"\n',
+        ),
+        (
+            ".claude/commands/dart-manage-pr.md",
+            "Release packaging may target `release-6.21` directly.\n",
+        ),
+        (
+            ".github/PULL_REQUEST_TEMPLATE.md",
+            "- [ ] Milestone set (`DART 6.22.0` for `main`)\n",
+        ),
+        ("docs/onboarding/contributing.md", "Milestone: `DART 6.22.0`\n"),
+        (
+            "docs/readthedocs/index.rst",
+            "The current stable release is DART 6.21.0.\n",
+        ),
+    ],
+)
+def test_release_references_reject_copied_routing(tmp_path, relative, text):
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_release_references(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith(f"{relative}:1: resolve the release target")
+
+
+@pytest.mark.parametrize(
+    ("relative", "text"),
+    [
+        ("docs/readthedocs/index.rst", "DART 6.19.5 was released on 2026-10-04.\n"),
+        (
+            "docs/readthedocs/dart/developer_guide/build.rst",
+            "DART 6.20 requires C++17 and the following dependency baselines.\n",
+        ),
+        (
+            "docs/ai/README.md",
+            "Python tutorials were introduced in DART 6.21.\n",
+        ),
+        ("docs/ai/README.md", "| Python tutorials | DART 6.21.0 |\n"),
+        ("docs/ai/README.md", "| C++17 baseline | DART 6.20.0 |\n"),
+        (
+            "docs/onboarding/contributing.md",
+            "The historical milestone was `DART 6.20.0`.\n",
+        ),
+        ("CHANGELOG.md", "DART 6.21.0 milestone: Python tutorials.\n"),
+    ],
+)
+def test_release_references_allow_history_and_dependency_floors(
+    tmp_path, relative, text
+):
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_release_references(tmp_path, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        (
+            "| `main` | Development | `6.21.0` |",
+            "| `main` | Development | `6.22.0` |",
+        ),
+        (
+            "| `release-6.20` | Stabilization | `6.20.0` |",
+            "| `release-6.20` | Maintenance | `6.20.1` |",
+        ),
+    ],
+)
+def test_release_references_accept_owner_only_rollover(tmp_path, rows):
+    sources = set(infra.source_paths(ROOT))
+    sources.update(
+        ROOT / relative
+        for relative in (
+            "CLAUDE.md",
+            "GEMINI.md",
+            ".github/PULL_REQUEST_TEMPLATE.md",
+            "docs/readthedocs/index.rst",
+            "docs/readthedocs/dart/developer_guide/build.rst",
+        )
+    )
+    for source in sources:
+        if source.is_file():
+            target = tmp_path / source.relative_to(ROOT)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    owner = tmp_path / "docs/onboarding/release-management.md"
+    text = owner.read_text(encoding="utf-8")
+    target_row = next(line for line in text.splitlines() if line.startswith("| `"))
+    for row in rows:
+        owner.write_text(
+            text.replace(target_row, row, 1),
+            encoding="utf-8",
+        )
+        errors = []
+
+        infra.check_release_references(tmp_path, errors)
+
+        assert errors == []
+
+
 def test_release_scenarios_reject_structural_only_ai_completion_gate():
     data = copy.deepcopy(_scenario_data())
     orientation = next(
