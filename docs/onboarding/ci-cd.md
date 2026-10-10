@@ -141,7 +141,7 @@ with `git show origin/gh-pages:performance/records/main/<yyyy>/<file>.json`.
 
 `scripts/perf_regression.py` owns the exact `NIGHTLY_ROWS` arguments and
 measurement windows. Current values are published in
-[the generated guard table](https://dartsim.github.io/performance/guards/main.md).
+[the generated guard table](https://dartsim.github.io/dart/performance/guards/main.md).
 
 | Scene | Purpose |
 | --- | --- |

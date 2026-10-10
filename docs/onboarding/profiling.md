@@ -258,10 +258,11 @@ and `soft_open_chain` at one and sixteen simulation threads. Use
 useful diagnostics, but they are not the apples-to-apples soft-body performance
 baseline unless the row proves equivalent soft-shape coverage.
 
-`pixi run bm-soft-body-paired` runs the balanced same-host FCL/`dart`
-protocol: 20 alternating pairs per row at one and sixteen threads, retaining
-raw CPU-time rows and host-state history. A verdict is valid only when
-`COMPLETE.json` exists and all required rows are present. An interrupted run
+`pixi run bm-soft-body-paired --output-dir build/soft-body-paired` runs the
+balanced same-host FCL/`dart` protocol: 20 alternating pairs per row at one and
+sixteen threads, retaining raw CPU-time rows and host-state history. A verdict
+is valid only when `COMPLETE.json` exists and all required rows are present.
+An interrupted run
 or manual timing disposition is not a passing artifact.
 
 ## Soft-Body Headless Profiles

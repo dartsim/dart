@@ -6,12 +6,13 @@ the owner documents that hold detailed packet boards and evidence.
 Priority order is document order. Active implementation handoff remains in
 `docs/dev_tasks/`; this dashboard only records the release-branch roadmap view.
 
-### PLAN-621: Active Contact Performance Generalization
+### PLAN-623: Active Contact Performance Generalization
 
 - Owner doc: [performance methodology](../onboarding/profiling.md#performance-methodology)
 - Status: Proposed
 - Horizon: Next (DART 6.21)
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
+- Predecessor: [PLAN-621: DART 6.20.0 performance closeout](archive.md#plan-621-dart-6200-performance-closeout).
 - Next step: Continuing [#3056](https://github.com/dartsim/dart/issues/3056)
   performance work targets 6.21, including representative same-host workload
   evidence, small-scene overhead, and time outside `World::step`. Open a new

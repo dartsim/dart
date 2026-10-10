@@ -17,7 +17,9 @@ This is three repeats on one host over a three-second window, not a claim
 about dense piles, sustained motion, sensors, rendering, or wake events.
 This retires its task folder independently of issue closure; it does not claim
 full real-time Gazebo performance or completion of broader workload evidence.
-Continuing work targets 6.21 in the dashboard. Compatibility guidance lives in
+Continuing work targets 6.21 under
+[PLAN-623](dashboard.md#plan-623-active-contact-performance-generalization).
+Compatibility guidance lives in
 [architecture](../onboarding/architecture.md#performance-compatibility),
 [collision-backend design](../design/dart6_collision_backends.md),
 [release management](../onboarding/release-management.md#abi-window), and
