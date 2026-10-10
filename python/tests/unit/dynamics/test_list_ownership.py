@@ -83,6 +83,84 @@ def test_getchildframes_does_not_take_ownership():
     )
 
 
+def test_soft_body_pair_keeps_native_owners_alive():
+    run_isolated(
+        """
+        import gc
+        import dartpy as dart
+
+        skeleton = dart.dynamics.Skeleton()
+        props = dart.dynamics.SoftBodyNodeHelper.makeEllipsoidProperties(
+            [0.2, 0.2, 0.2], 6, 6, 0.5)
+        joint, body = skeleton.createFreeJointAndSoftBodyNodePair(
+            None, dart.dynamics.FreeJointProperties(),
+            dart.dynamics.SoftBodyNodeProperties(
+                dart.dynamics.BodyNodeProperties(), props))
+        del skeleton
+        gc.collect()
+        assert body.getNumPointMasses() == 32
+        assert joint.getNumDofs() == 6
+        del body
+        gc.collect()
+        assert joint.getNumDofs() == 6
+        print("done")
+        """
+    )
+
+
+def test_euler_move_joint_keeps_destination_alive():
+    run_isolated(
+        """
+        import gc
+        import dartpy as dart
+
+        source = dart.dynamics.Skeleton("source")
+        body = source.createFreeJointAndBodyNodePair()[1]
+        destination = dart.dynamics.Skeleton("destination")
+        parent = destination.createWeldJointAndBodyNodePair()[1]
+        joint = body.moveToEulerJoint(parent, dart.dynamics.EulerJointProperties())
+        assert isinstance(joint, dart.dynamics.EulerJoint)
+        assert source.getNumBodyNodes() == 0
+        assert destination.getNumBodyNodes() == 2
+        joint.setName("moved")
+        del body, parent, source, destination
+        gc.collect()
+        replacements = []
+        for _ in range(200):
+            other = dart.dynamics.Skeleton()
+            other.createFreeJointAndBodyNodePair()[0].setName("replacement")
+            replacements.append(other)
+        assert joint.getName() == "moved"
+        joint.setPosition(0, 0.2)
+        assert joint.getPosition(0) == 0.2
+        print("done")
+        """
+    )
+
+
+def test_recording_keeps_world_alive():
+    run_isolated(
+        """
+        import gc
+        import dartpy as dart
+
+        world = dart.simulation.World()
+        skeleton = dart.dynamics.Skeleton()
+        skeleton.createFreeJointAndBodyNodePair()
+        world.addSkeleton(skeleton)
+        world.bake()
+        recording = world.getRecording()
+        del world, skeleton
+        gc.collect()
+        assert recording.getNumFrames() == 1
+        assert len(recording.getConfig(0, 0)) == 6
+        recording.clear()
+        assert recording.getNumFrames() == 0
+        print("done")
+        """
+    )
+
+
 @pytest.mark.parametrize("overload", range(4))
 def test_copyto_does_not_take_ownership(overload):
     run_isolated(

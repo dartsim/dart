@@ -12,7 +12,6 @@ paths:
   - "python/**"
   - "tests/**"
   - "examples/**"
-  - "tutorials/**"
   - "docs/**"
 
 paths-ignore:

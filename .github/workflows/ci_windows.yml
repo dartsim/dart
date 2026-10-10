@@ -33,7 +33,7 @@ jobs:
   build:
     # The two halves of `pixi run test-all` on modern parallel runners, each ~2/3 of
     # the cold build. On MSVC, target ALL is exactly tests_and_run + pytest:
-    # CMakeLists.txt adds examples and tutorials to ALL only for other
+    # CMakeLists.txt adds examples to ALL only for other
     # compilers. Branch protection requires both checks.
     # Keep the modern check names used by branch protection.
     name: ${{ matrix.name }}

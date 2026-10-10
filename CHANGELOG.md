@@ -2,6 +2,28 @@
 
 ## DART 6
 
+### [DART 6.21.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
+
+* Dynamics
+
+  * Preserve the generated soft mesh and shape-node properties when cloning
+    soft-body skeletons, avoiding duplicate null meshes during collision checks.
+    [#3644](https://github.com/dartsim/dart/pull/3644)
+
+* Python
+
+  * Add dartpy soft-body construction, typed Euler-joint skeleton editing,
+    and world-recording access for Python simulation tutorials.
+    [#3644](https://github.com/dartsim/dart/pull/3644)
+
+* Examples
+
+  * Replace the four C++ tutorials with Python exercises and solutions in
+    `python/tutorials/{multi_pendulum,biped,collisions,dominoes}`. Existing
+    `tu-*` Pixi commands now launch Python; the C++ tutorial executables and
+    aggregate build target are removed.
+    [#3644](https://github.com/dartsim/dart/pull/3644)
+
 ### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)
 
 * Breaking Changes

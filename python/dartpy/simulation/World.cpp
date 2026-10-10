@@ -31,6 +31,7 @@
  */
 
 #include <dart/simulation/DeactivationOptions.hpp>
+#include <dart/simulation/Recording.hpp>
 #include <dart/simulation/World.hpp>
 
 #include <dart/constraint/ConstraintSolver.hpp>
@@ -328,6 +329,10 @@ void World(py::module& m)
       .def(
           "bake",
           +[](dart::simulation::World* self) -> void { return self->bake(); })
+      .def(
+          "getRecording",
+          &dart::simulation::World::getRecording,
+          py::return_value_policy::reference_internal)
       .def_readonly("onNameChanged", &dart::simulation::World::onNameChanged);
 }
 

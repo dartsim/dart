@@ -532,13 +532,30 @@ SkeletonPtr Skeleton::cloneSkeleton(const std::string& cloneName) const
     skelClone->registerBodyNode(newBody);
   }
 
+  // Replace constructor-generated skins with cloned nodes in their original
+  // slots, retaining the detached skins until their references are remapped.
+  std::vector<ShapeNodePtr> softShapeNodes;
+  for (auto* softBody : skelClone->mSoftBodyNodes) {
+    auto skin = softBody->mSoftShapeNode.lock();
+    skin->stageForRemoval();
+    softShapeNodes.push_back(skin);
+  }
+
   // Clone over the nodes in such a way that their indexing will match up with
   // the original
   for (const auto& nodeType : mNodeMap) {
     for (const auto& node : nodeType.second) {
       const BodyNode* originalBn = node->getBodyNodePtr();
       BodyNode* newBn = skelClone->getBodyNode(originalBn->getName());
-      node->cloneNode(newBn)->attach();
+      auto* clonedNode = node->cloneNode(newBn);
+      clonedNode->attach();
+      const auto* originalSoftBody
+          = dynamic_cast<const SoftBodyNode*>(originalBn);
+      if (originalSoftBody
+          && node == originalSoftBody->mSoftShapeNode.lock().get()) {
+        static_cast<SoftBodyNode*>(newBn)->mSoftShapeNode
+            = static_cast<ShapeNode*>(clonedNode);
+      }
     }
   }
 
