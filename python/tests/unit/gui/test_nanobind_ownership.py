@@ -6,6 +6,10 @@ import weakref
 import dartpy as dart
 import pytest
 
+
+if not hasattr(dart.gui, "osg"):
+    pytest.skip("DART_BUILD_GUI_OSG is disabled", allow_module_level=True)
+
 from ._gui_probe import probe
 
 osg = dart.gui.osg

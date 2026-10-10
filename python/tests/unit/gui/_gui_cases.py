@@ -4,7 +4,6 @@ import gc
 import json
 import math
 import os
-import resource
 import sys
 import time
 import weakref
@@ -64,6 +63,8 @@ def recording_handler(events, expected_viewer=None):
 
 
 def rss_bytes():
+    if sys.platform != "linux":
+        return None
     # Current resident pages avoid ru_maxrss's monotonic high-water mark.
     return int(Path("/proc/self/statm").read_text().split()[1]) * os.sysconf(
         "SC_PAGE_SIZE"
@@ -159,9 +160,9 @@ def lifetime(case, kind):
             viewer.addWorldNode(node)
             viewer.removeWorldNode(node)
         gc.collect()
-        growth = rss_bytes() - before_rss
+        growth = None if before_rss is None else rss_bytes() - before_rss
         assert sys.getrefcount(node) == before_refs
-        assert growth < 8 * 1024 * 1024, growth
+        assert growth is None or growth < 8 * 1024 * 1024, growth
         reference = weakref.ref(node)
         del node, viewer
         gc.collect()
@@ -185,7 +186,7 @@ def lifetime(case, kind):
             viewer.removeWorldNode(node)
             del node
         gc.collect()
-        growth = rss_bytes() - before_rss
+        growth = None if before_rss is None else rss_bytes() - before_rss
         retained = sum(ref() is not None for ref in references)
         # A camera can retain its latest/pending node after scene removal.
         assert retained <= 2, retained
@@ -355,7 +356,10 @@ def handler_lifetime(case):
 
 
 if __name__ == "__main__":
-    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+    if os.name != "nt":
+        import resource
+
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     os.environ["DISPLAY"] = ""
     case = sys.argv[1]
     if case.startswith("handler_"):

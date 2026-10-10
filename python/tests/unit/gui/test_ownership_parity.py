@@ -6,9 +6,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from ._gui_probe import probe
 import dartpy as dart
 import pytest
+
+if not hasattr(dart.gui, "osg"):
+    pytest.skip("DART_BUILD_GUI_OSG is disabled", allow_module_level=True)
+
+from ._gui_probe import probe
 from ._gui_cases import NODE_TYPES, dispatch, recording_handler, recording_node
 
 osg = dart.gui.osg
@@ -240,3 +244,12 @@ def test_node_lifetime_subprocess(case, kind):
 )
 def test_handler_lifetime_subprocess(case):
     run_child(case)
+
+
+@pytest.mark.parametrize("platform", ["win32", "darwin"])
+def test_rss_oracle_is_optional_outside_linux(platform, monkeypatch):
+    from types import SimpleNamespace
+    from . import _gui_cases
+
+    monkeypatch.setattr(_gui_cases, "sys", SimpleNamespace(platform=platform))
+    assert _gui_cases.rss_bytes() is None

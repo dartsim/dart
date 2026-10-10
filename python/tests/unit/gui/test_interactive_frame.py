@@ -5,6 +5,10 @@ import textwrap
 import dartpy as dart
 import pytest
 
+pytestmark = pytest.mark.skipif(
+    not hasattr(dart.gui, "osg"), reason="DART_BUILD_GUI_OSG is disabled"
+)
+
 
 
 def test_interactive_frame_shape_frames_keep_owner_alive():

@@ -7,6 +7,10 @@ import dartpy as dart
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.skipif(
+    not hasattr(dart.gui, "osg"), reason="DART_BUILD_GUI_OSG is disabled"
+)
+
 
 
 def load_tutorial(finished=True):
