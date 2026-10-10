@@ -15,9 +15,9 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 
 | Workflow file                     | Workflow name                | Runs                            | Purpose |
 | --------------------------------- | ---------------------------- | ------------------------------- | ------- |
-| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, no-OSG assertions build + test; nightly adds install, ASan, coverage (the Debug build), Eigen 64-byte alignment, and a unity name-clash check |
-| `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test; nightly adds install |
-| `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release build + test |
+| `ci_ubuntu.yml`                   | CI Linux                     | PR, push, nightly               | AI checks, lint, Release build + test, nanobind Python tests, no-OSG assertions build + test; nightly adds install, ASan, coverage (the Debug build), Eigen 64-byte alignment, and a unity name-clash check |
+| `ci_macos.yml`                    | CI macOS                     | PR, push, nightly               | arm64 Release build + test and nanobind Python tests; nightly adds install |
+| `ci_windows.yml`                  | CI Windows                   | PR, push, nightly               | MSVC Release C++ tests and Python tests with both binders; unity builds |
 | `ci_gz_physics.yml`               | CI gz-physics                | PR, push, nightly               | Gazebo/gz-physics downstream integration |
 | `api_doc.yml`                     | API Documentation            | PR, push, nightly               | Doxygen API docs build (validation only; not published) |
 | `ci_simd.yml`                     | CI SIMD Multi-Arch           | PR/push touching SIMD, nightly  | SIMD instruction-level matrix (scalar/SSE4.2/AVX/AVX2) on x86_64; NEON is covered by `ci_macos.yml` arm64 jobs |
@@ -30,6 +30,7 @@ via the run's workflow name shown here (`gh pr checks` exposes it in the
 | `perf.yml`                        | Performance regression       | PR/push to main touching perf paths, nightly, dispatch | Advisory `Perf A/B` counts and guards; merge records and Ir/allocation chart; nightly absolute values and generated S1–S6 guards; release records per tag |
 | `update_lockfiles.yml`            | Update Lock Files            | weekly                          | Pixi lockfile refresh PRs against `main`; an update removes their `maintainer-approved` label |
 | `maintainer_approval.yml`         | Maintainer Approval          | PR pushes, retargets, reopens   | Removes the `maintainer-approved` label when a PR changes after approval; pushes of conflict-free base merges keep it ([PR Lifecycle](ai-tools.md#pr-lifecycle)) |
+| `pr_text.yml`                     | PR Text                      | PR opens, edits, reopens, pushes | Checks PR title, body, messages, file names and added lines of every PR commit with only the base branch's local-path checker; fetches PR git objects without checking out or executing PR code; skips with a notice until the checker exists on the base |
 
 To acknowledge an intended regression, add `Perf-Regression-Rationale: <rows>: <reason>` (or `Rebaseline-Rationale: <rows>: <reason>` for changed guards, including a signed Ir percentage when above +1%) to the PR body and run `gh run rerun <run-id> --failed`; editing the body alone does not trigger a run.
 
@@ -39,6 +40,10 @@ Required checks on `main`: `Release` and
 `ubuntu-latest` (CI gz-physics),
 `API Documentation`, and the two Read the Docs builds. Never require a
 nightly-only job: it never reports on PRs, so it would block every merge.
+
+Once the PR Text workflow is on `main`, the maintainer should add
+`No local paths in PR text` to the `main` ruleset's required checks. The
+repository ruleset is configured by the maintainer, not in code.
 
 ## Performance Records And Guards
 
@@ -318,9 +323,10 @@ gate does.
 ## Nightly
 
 `nightly.yml` runs every workflow in the index except the wall-time performance
-dashboard, lockfile refresh, and maintainer approval against `main` each night
-at 08:17 UTC, including the nightly-only jobs. It is scheduled directly on
-`main`, the default branch, with no dispatcher. Run it on demand with
+dashboard, lockfile refresh, maintainer approval, and PR text against `main`
+each night at 08:17 UTC, including the nightly-only jobs. It is scheduled
+directly on `main`, the default branch, with no dispatcher. Run it on demand
+with
 `gh workflow run nightly.yml --ref main`.
 
 Its `report` job (`scripts/nightly_ci_report.py`) groups jobs by their
@@ -349,9 +355,12 @@ testing and configures it once, so gz-physics' contact-callback test
 expectations are not compiled in. The unpatched Gazebo lanes
 (`pixi run gz-compat-ionic`, `gz-compat-jetty`, `gz-compat-harmonic`; see
 `tools/gazebo/README.md`) are not in CI yet: each builds DART, gz-physics, and
-gz-sim from source and runs a serial suite, and on release-6.20 they
-currently report the known DART 6.20 Gazebo regressions from issue #3056. Run
-them locally for downstream-sensitive changes and before releases.
+gz-sim from source and runs a serial suite. Release verification of DART
+6.20 at `48eb618bb81` passed all three unpatched gz-physics and gz-sim
+compatibility gates, with results equal to or better than DART 6.19.5.
+The only gz-physics failure is the accepted ray-intersection expectation.
+Run the lanes locally for downstream-sensitive changes and before releases;
+[testing guidance](testing.md) covers the sleep oracle and raycast probe.
 
 For failing CI, inspect the exact run and job logs before changing code. Prefer
 reproducing locally, but document when a hosted-platform failure cannot be

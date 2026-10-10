@@ -235,7 +235,7 @@ bool GradientDescentSolver::solve()
         *mProperties.mOutStream
             << "[GradientDescentSolver] Progress (attempt #" << attemptCount
             << " | iteration #" << stepCount << ")\n"
-            << "cost: " << problem->getObjective()->eval(x) << " | "
+            << "cost: " << (objective ? objective->eval(x) : 0.0) << " | "
             << (minimized ? "minimized | " : "not minimized | ")
             << (satisfied ? "constraints satisfied | "
                           : "constraints unsatisfied | ")

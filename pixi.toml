@@ -189,7 +189,7 @@ check-lint = { depends-on = [
 # Fast compatibility alias retained for older local workflows.
 check-lint-quick = { depends-on = ["check-agent-hook"] }
 
-# One-time setup: install the pre-commit git hook that runs check-agent-hook.
+# One-time setup: install the staged-file, commit-message and pre-push git hooks.
 install-hooks = { cmd = "python scripts/install_git_hooks.py" }
 
 sync-ai-commands = { cmd = "python scripts/sync_ai_commands.py" }
@@ -208,6 +208,7 @@ test-ai-infra = { cmd = [
   "tests/test_sync_ai_commands.py",
   "tests/test_ai_infrastructure.py",
   "tests/test_install_git_hooks.py",
+  "tests/test_check_local_paths.py",
   "-q",
 ] }
 
@@ -219,6 +220,7 @@ test-build-requirements = { cmd = [
   "tests/test_compiler_requirements.py",
   "tests/test_dependency_requirements.py",
   "tests/test_minimum_requirement_metadata.py",
+  "tests/test_wheel_linux.py",
   "-q",
 ] }
 
@@ -270,7 +272,7 @@ wheel-build-core = { cmd = "python scripts/wheel_build.py {{ use_system_imgui }}
 ] }
 
 wheel-repair-linux-core = { cmd = """
-    auditwheel repair dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl -w dist/ &&
+    auditwheel repair --plat manylinux_2_28_x86_64 dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl -w dist/ &&
     rm dist/dartpy-*-{{ python_tag }}-*-linux_x86_64.whl
 """, args = [
   { arg = "python_tag" },
@@ -1214,9 +1216,6 @@ gz-compat-jetty = { cmd = "bash tools/gazebo/compat/lane.sh jetty" }
 [feature.assimp6.dependencies]
 assimp = ">=6.0.4,<7"
 
-# Profiling: the Tracy client (linked only when -DDART_PROFILE_TRACY=ON) plus the
-# standalone Tracy viewer. Kept out of the default environment because Tracy is
-# off by default; opt in with `pixi run -e profile <task>`.
 [feature.profile.dependencies]
 tracy-profiler-client = ">=0.11.1,<0.12"
 tracy-profiler-gui = ">=0.11.1,<0.12"

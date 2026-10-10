@@ -37,9 +37,19 @@ and compatibility detail in the owner docs named by `AGENTS.md`.
 - DART 6.20 is a compatibility support lane. Preserve existing public headers,
   package components, and downstream Gazebo/gz-physics behavior unless a
   maintainer explicitly accepts a breaking change.
+- DART 6.21 permits the approved opt-in nanobind binder; pybind11 remains the
+  default during the transition. Binder contracts live in
+  `docs/onboarding/python-bindings.md`.
 - Target `main`, where new patches land; backports to a `release-6.*` branch
   cut from a release tag use `dart-backport-pr` (see
   `docs/onboarding/contributing.md`).
+
+## Public Text
+
+- Published text is permanent and public; private plans and machine layouts
+  are not. Describe private planning in prose or link public PRs/issues, and
+  check files, commit messages, and PR text with `scripts/check_local_paths.py`
+  before publication.
 
 ## Approval Boundaries
 

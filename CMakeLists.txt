@@ -169,6 +169,19 @@ else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF)
+set(
+  DART_DARTPY_BINDER
+  "pybind11"
+  CACHE STRING
+  "dartpy binder (pybind11 or nanobind)"
+)
+set_property(CACHE DART_DARTPY_BINDER PROPERTY STRINGS pybind11 nanobind)
+if(
+  NOT DART_DARTPY_BINDER STREQUAL "pybind11"
+  AND NOT DART_DARTPY_BINDER STREQUAL "nanobind"
+)
+  message(FATAL_ERROR "DART_DARTPY_BINDER must be pybind11 or nanobind")
+endif()
 dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 dart_option(DART_ENABLE_GUI_OSG_SMOKE_TESTS "Build the off-screen GUI OSG capture smoke test (needs a DISPLAY or Xvfb)" OFF)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
@@ -226,6 +239,7 @@ dart_option(
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
 dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)
+dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind >= 3.1" OFF)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF)
 dart_option(
   DART_ALLOW_SINGLE_PRECISION_LIBCCD

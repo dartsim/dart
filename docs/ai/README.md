@@ -40,7 +40,7 @@ Start with:
 Editable workflow and domain-skill sources live in `.claude/`. The sync tool
 generates current Codex skills under `.agents/skills/` and OpenCode commands
 under `.opencode/command/`. `.codex/` owns maintained Codex config, bounded
-read-only subagents, and the advisory PreToolUse hook. The installed git hook is
+read-only subagents, and the advisory PreToolUse hook. The installed git hooks are
 the cross-tool commit safety path.
 
 ```bash
@@ -145,5 +145,8 @@ taxonomy.
 ## Development Profile
 
 `main` develops the next release (currently DART 6.20) and preserves C++17,
-pybind11, `dart::utils`, OSG, and Gazebo/gz-physics compatibility. The DART 6
-component map is [`architecture.md`](../onboarding/architecture.md).
+the default pybind11 binder, `dart::utils`, OSG, and Gazebo/gz-physics
+compatibility. The approved DART 6.21 transition also permits an opt-in
+nanobind binder under `python/dartpy_nanobind/`; see
+[`python-bindings.md`](../onboarding/python-bindings.md). The DART 6 component
+map is [`architecture.md`](../onboarding/architecture.md).

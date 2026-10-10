@@ -63,6 +63,7 @@ BRANCH_PROFILE_KEYS = {
     "base_ref",
     "cpp_standard",
     "python_binding",
+    "optional_python_bindings",
     "io_namespace",
     "gui_backend",
     "required_markers",
@@ -736,6 +737,7 @@ def check_branch_profile(
         "base_ref": "origin/main",
         "cpp_standard": "C++17",
         "python_binding": "pybind11",
+        "optional_python_bindings": ["nanobind"],
         "io_namespace": "dart::utils",
         "gui_backend": "OSG",
     }
@@ -1008,6 +1010,13 @@ def check_hooks(root: Path, errors: list[str]) -> None:
             errors.append(
                 f"{path.relative_to(root)}: must invoke the staged agent hook profile"
             )
+    installer_text = installer.read_text(encoding="utf-8") if installer.exists() else ""
+    guard_text = guard.read_text(encoding="utf-8") if guard.exists() else ""
+    version = re.search(r'HOOK_VERSION = "(\d+)"', installer_text)
+    if version and f"DART-MANAGED-HOOK v{version[1]} " not in guard_text:
+        errors.append(
+            f"{guard.relative_to(root)}: managed hook version differs from installer"
+        )
     launcher = root / ".claude" / "hooks" / "pre-commit-guard.ps1"
     launcher_text = launcher.read_text(encoding="utf-8") if launcher.exists() else ""
     for marker in WINDOWS_LAUNCHER_MARKERS:
@@ -1335,9 +1344,22 @@ def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
     records = cmake_scoped_commands(text)
     requirements = (
         (
-            ("add_subdirectory", "dartpy", ()),
-            "dartpy_target",
-            "`add_subdirectory(dartpy)` must define the binding target",
+            (
+                "add_subdirectory",
+                "dartpy_nanobind",
+                ('if:DART_DARTPY_BINDER STREQUAL "nanobind"',),
+            ),
+            "nanobind_target",
+            "`add_subdirectory(dartpy_nanobind)` must define the nanobind target",
+        ),
+        (
+            (
+                "add_subdirectory",
+                "dartpy",
+                ('else:DART_DARTPY_BINDER STREQUAL "nanobind"',),
+            ),
+            "pybind11_target",
+            "`add_subdirectory(dartpy)` must define the default pybind11 target",
         ),
         (
             (
@@ -1387,7 +1409,9 @@ def check_dartpy_runtime_path_contract(root: Path, errors: list[str]) -> None:
         return
     path_positions = (positions["windows_path"], positions["posix_path"])
     if not (
-        positions["dartpy_target"] < positions["dartpy_output"] < min(path_positions)
+        max(positions["nanobind_target"], positions["pybind11_target"])
+        < positions["dartpy_output"]
+        < min(path_positions)
         and max(path_positions) < positions["pytest_target"]
     ):
         errors.append(
@@ -1487,6 +1511,7 @@ def check_test_gate_contract(root: Path, errors: list[str]) -> None:
                 "tests/test_sync_ai_commands.py",
                 "tests/test_ai_infrastructure.py",
                 "tests/test_install_git_hooks.py",
+                "tests/test_check_local_paths.py",
                 "-q",
             ],
             "depends-on": [],
@@ -3722,8 +3747,12 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
         encoding="utf-8"
     )
     python_frontmatter = python_skill.split("---", 2)[1]
-    if "nanobind" in python_frontmatter or "pybind11" not in python_skill:
-        errors.append("dart-python: DART 6.20 metadata must name pybind11")
+    for binder in ("pybind11", "nanobind"):
+        if binder not in python_frontmatter:
+            errors.append(f"dart-python: transition metadata must name {binder}")
+    for marker in ("remains the default", "python/dartpy_nanobind/"):
+        if marker not in python_skill:
+            errors.append(f"dart-python: missing binder contract marker `{marker}`")
 
     ci_skill_path = root / ".claude" / "skills" / "dart-ci" / "SKILL.md"
     ci_skill = ci_skill_path.read_text(encoding="utf-8")
@@ -4304,6 +4333,8 @@ def exercise_scenarios(
                 "text/image disagreement",
                 "C++17",
                 "pybind11",
+                "approved DART 6.21 opt-in nanobind binder",
+                "`python/dartpy_nanobind/`",
                 "`dart::utils`",
                 "OSG",
                 "configured CMake File API result",
@@ -4852,6 +4883,7 @@ def doctor_report(root: Path) -> dict[str, Any]:
             "name": "main",
             "cpp_standard": "C++17",
             "python_binding": "pybind11",
+            "optional_python_bindings": ["nanobind"],
             "io_namespace": "dart::utils",
             "gui_backend": "OSG",
         },
