@@ -215,6 +215,12 @@ FunctionPtr Problem::getObjective() const
 }
 
 //==============================================================================
+void Problem::clearObjective()
+{
+  mObjective.reset();
+}
+
+//==============================================================================
 void Problem::addEqConstraint(FunctionPtr _eqConst)
 {
   DART_ASSERT(_eqConst);

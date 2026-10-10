@@ -309,3 +309,30 @@ TEST(Optimizer, OutStream)
 
   std::remove(outputFile.c_str());
 }
+
+TEST(Optimizer, ClearObjective)
+{
+  dart::optimizer::Problem owner(1);
+  owner.setObjective(std::make_shared<dart::optimizer::ModularFunction>());
+  std::weak_ptr<dart::optimizer::Function> weak = owner.getObjective();
+  EXPECT_FALSE(weak.expired());
+  owner.clearObjective();
+  EXPECT_EQ(owner.getObjective(), nullptr);
+  EXPECT_TRUE(weak.expired());
+}
+
+TEST(Optimizer, ClearObjectiveWithProgressOutput)
+{
+  auto problem = std::make_shared<Problem>(1);
+  problem->setObjective(std::make_shared<ModularFunction>());
+  problem->clearObjective();
+
+  std::stringstream output;
+  GradientDescentSolver solver(problem);
+  solver.setIterationsPerPrint(1);
+  solver.setOutStream(&output);
+
+  EXPECT_TRUE(solver.solve());
+  EXPECT_DOUBLE_EQ(problem->getOptimumValue(), 0.0);
+  EXPECT_NE(output.str().find("cost: 0 | "), std::string::npos);
+}

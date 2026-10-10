@@ -183,7 +183,10 @@ InverseKinematicsPtr InverseKinematics::clone(JacobianNode* _newNode) const
   newIK->setSolver(mSolver->clone());
 
   const std::shared_ptr<optimizer::Problem>& newProblem = newIK->getProblem();
-  newProblem->setObjective(cloneIkFunc(mProblem->getObjective(), newIK.get()));
+  if (const auto objective = mProblem->getObjective())
+    newProblem->setObjective(cloneIkFunc(objective, newIK.get()));
+  else
+    newProblem->clearObjective();
 
   newProblem->removeAllEqConstraints();
   for (std::size_t i = 0; i < mProblem->getNumEqConstraints(); ++i)

@@ -69,6 +69,17 @@ public:
       const std::string& _schema,
       const common::ResourceRetrieverPtr& _resourceRetriever);
 
+  /// Returns the retrievers tried for every schema, in registration order.
+  const std::vector<common::ResourceRetrieverPtr>& getDefaultRetrievers() const;
+
+  /// Returns all schema-specific retrievers, in registration order per schema.
+  const std::
+      unordered_map<std::string, std::vector<common::ResourceRetrieverPtr>>&
+      getSchemaRetrievers() const;
+
+  /// Removes all default and schema-specific retrievers.
+  void removeAllRetrievers();
+
   // Documentation inherited.
   bool exists(const common::Uri& _uri) override;
 

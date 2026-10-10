@@ -71,6 +71,28 @@ bool CompositeResourceRetriever::addSchemaRetriever(
 }
 
 //==============================================================================
+const std::vector<common::ResourceRetrieverPtr>&
+CompositeResourceRetriever::getDefaultRetrievers() const
+{
+  return mDefaultResourceRetrievers;
+}
+
+//==============================================================================
+const std::
+    unordered_map<std::string, std::vector<common::ResourceRetrieverPtr>>&
+    CompositeResourceRetriever::getSchemaRetrievers() const
+{
+  return mResourceRetrievers;
+}
+
+//==============================================================================
+void CompositeResourceRetriever::removeAllRetrievers()
+{
+  mDefaultResourceRetrievers.clear();
+  mResourceRetrievers.clear();
+}
+
+//==============================================================================
 bool CompositeResourceRetriever::exists(const common::Uri& _uri)
 {
   for (const common::ResourceRetrieverPtr& resourceRetriever :

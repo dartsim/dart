@@ -299,3 +299,20 @@ TEST(
   EXPECT_TRUE(retriever3->mExists.empty());
   EXPECT_TRUE(retriever3->mRetrieve.empty());
 }
+
+TEST(CompositeResourceRetriever, EnumerateAndRemoveAllRetrievers)
+{
+  CompositeResourceRetriever owner;
+  auto child = std::make_shared<AbsentResourceRetriever>();
+  std::weak_ptr<ResourceRetriever> weak = child;
+  owner.addDefaultRetriever(child);
+  EXPECT_TRUE(owner.addSchemaRetriever("package", child));
+  EXPECT_EQ(owner.getDefaultRetrievers().front(), child);
+  EXPECT_EQ(owner.getSchemaRetrievers().at("package").front(), child);
+  child.reset();
+  EXPECT_FALSE(weak.expired());
+  owner.removeAllRetrievers();
+  EXPECT_TRUE(owner.getDefaultRetrievers().empty());
+  EXPECT_TRUE(owner.getSchemaRetrievers().empty());
+  EXPECT_TRUE(weak.expired());
+}

@@ -79,6 +79,7 @@
 #include <memory>
 #include <ostream>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -108,6 +109,17 @@ using namespace simulation;
 using namespace utils;
 
 namespace {
+
+static_assert(!std::is_copy_constructible_v<DARTCollisionGroup>);
+static_assert(!std::is_move_constructible_v<DARTCollisionGroup>);
+static_assert(!std::is_copy_assignable_v<DARTCollisionGroup>);
+static_assert(!std::is_move_assignable_v<DARTCollisionGroup>);
+#if HAVE_ODE
+static_assert(!std::is_copy_constructible_v<OdeCollisionGroup>);
+static_assert(!std::is_move_constructible_v<OdeCollisionGroup>);
+static_assert(!std::is_copy_assignable_v<OdeCollisionGroup>);
+static_assert(!std::is_move_assignable_v<OdeCollisionGroup>);
+#endif
 
 class TestCollisionObject final : public CollisionObject
 {

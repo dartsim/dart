@@ -20,6 +20,43 @@ def test_modular_function_accepts_callable():
     assert function.eval([3, 4]) == pytest.approx(11)
 
 
+def test_function_without_gradient_uses_native_fallback():
+    class EvalOnlyFunction(dart.optimizer.Function):
+        def eval(self, x):
+            return float(x[0] ** 2)
+
+    problem = dart.optimizer.Problem(1)
+    problem.setInitialGuess([0.0])
+    objective = EvalOnlyFunction()
+    problem.setObjective(objective)
+    solver = dart.optimizer.GradientDescentSolver(problem)
+    solver.setNumMaxIterations(1)
+
+    assert solver.solve() is True
+
+
+def test_function_gradient_override_is_called():
+    calls = []
+
+    class GradientFunction(dart.optimizer.Function):
+        def eval(self, x):
+            return float(x[0] ** 2)
+
+        def evalGradient(self, x, grad):
+            calls.append("gradient")
+            grad[:] = 2 * x
+
+    problem = dart.optimizer.Problem(1)
+    problem.setInitialGuess([0.0])
+    objective = GradientFunction()
+    problem.setObjective(objective)
+    solver = dart.optimizer.GradientDescentSolver(problem)
+    solver.setNumMaxIterations(1)
+
+    assert solver.solve() is True
+    assert calls == ["gradient"]
+
+
 def test_gradient_descent_solver():
     prob = dart.optimizer.Problem(2)
     assert prob.getDimension() == 2

@@ -31,8 +31,8 @@ concurrency:
 
 jobs:
   build:
-    # The two halves of `pixi run test-all` on modern parallel runners, each ~2/3 of
-    # the cold build. On MSVC, target ALL is exactly tests_and_run + pytest:
+    # The two halves of `pixi run test-all` on modern parallel runners, plus
+    # the opt-in nanobind Python suite. On MSVC, target ALL is exactly tests_and_run + pytest:
     # CMakeLists.txt adds examples to ALL only for other
     # compilers. Branch protection requires both checks.
     # Keep the modern check names used by branch protection.
@@ -82,16 +82,25 @@ jobs:
           - name: windows-Release-cpp
             runner: windows-2025-vs2026
             part: cpp
+            binder: pybind11
             task: test # builds the C++ tests and runs ctest
             vsversion: ""
           - name: windows-Release-python
             runner: windows-2025-vs2026
             part: python
+            binder: pybind11
             task: test-py # builds dartpy and runs pytest
+            vsversion: ""
+          - name: windows-Release-nanobind
+            runner: windows-2025-vs2026
+            part: nanobind
+            binder: nanobind
+            task: test-py
             vsversion: ""
           - name: windows-2022-Release-cpp
             runner: windows-2022
             part: cpp
+            binder: pybind11
             task: test
             # VS 2022 selects the v143 toolset family on this runner.
             vsversion: "2022"
@@ -206,11 +215,13 @@ jobs:
         # spends ~70% of each compile parsing headers such as dart/dart.hpp,
         # and batching shares that work: same-VM benchmark, dartpy objects
         # 4.5x and core objects 2.4x faster.
-        run: >-
-          pixi run config --
-          -DDART_MSVC_DEFAULT_OPTIONS=ON
-          -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
-          -DCMAKE_UNITY_BUILD=ON
+        run: |
+          pixi run config
+          pixi run cmake -S . -B build/default/cpp `
+            -DDART_MSVC_DEFAULT_OPTIONS=ON `
+            -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF `
+            -DCMAKE_UNITY_BUILD=ON `
+            -DDART_DARTPY_BINDER=${{ matrix.binder }}
 
       - name: Check build requirements
         if: matrix.part == 'cpp'

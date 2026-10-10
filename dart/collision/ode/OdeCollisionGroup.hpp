@@ -52,6 +52,11 @@ public:
   /// Constructor
   OdeCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
+  OdeCollisionGroup(const OdeCollisionGroup&) = delete;
+  OdeCollisionGroup(OdeCollisionGroup&&) = delete;
+  OdeCollisionGroup& operator=(const OdeCollisionGroup&) = delete;
+  OdeCollisionGroup& operator=(OdeCollisionGroup&&) = delete;
+
   /// Destructor
   virtual ~OdeCollisionGroup();
 

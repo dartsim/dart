@@ -55,10 +55,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Linux wheels no longer use a dedicated Docker image. The Pixi wheel
-          # environments provide conda-forge compiler wrappers and a
-          # sysroot_linux-64 2.28 baseline; auditwheel derives the final
-          # manylinux tag from the bundled dependency ABI.
+          # Native dependencies and dartpy must share the manylinux toolchain;
+          # a Conda sysroot pin does not constrain dependency C++ symbol versions.
           - os: linux
             runner: ubuntu-24.04
             build: "cp313-manylinux_x86_64"
@@ -80,6 +78,30 @@ jobs:
           - os: linux
             runner: ubuntu-24.04
             build: "cp310-manylinux_x86_64"
+            pixi_env: py310-wheel
+            release_only: true
+
+          - os: linux
+            runner: ubuntu-24.04-arm
+            build: "cp313-manylinux_aarch64"
+            pixi_env: py313-wheel
+            release_only: false
+
+          - os: linux
+            runner: ubuntu-24.04-arm
+            build: "cp312-manylinux_aarch64"
+            pixi_env: py312-wheel
+            release_only: true
+
+          - os: linux
+            runner: ubuntu-24.04-arm
+            build: "cp311-manylinux_aarch64"
+            pixi_env: py311-wheel
+            release_only: true
+
+          - os: linux
+            runner: ubuntu-24.04-arm
+            build: "cp310-manylinux_aarch64"
             pixi_env: py310-wheel
             release_only: true
 
@@ -167,7 +189,7 @@ jobs:
           echo "enabled=${enabled}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up pixi
-        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'windows' }}
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os == 'macos' }}
         uses: prefix-dev/setup-pixi@v0.10.2
         with:
           cache: false
@@ -182,24 +204,32 @@ jobs:
           pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi.exe
           run-install: false
 
+      - name: Build and test manylinux wheel
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os == 'linux' }}
+        env:
+          PYTHON_TAG: ${{ matrix.pixi_env }}
+        run: |
+          tag="${PYTHON_TAG#py}"
+          python3 scripts/wheel_linux.py "cp${tag%-wheel}"
+
       - name: Install Pixi wheel environment
-        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'linux' }}
         run: pixi install -e ${{ matrix.pixi_env }}
 
       - name: Build wheel
-        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'linux' }}
         run: pixi run -e ${{ matrix.pixi_env }} wheel-build
 
       - name: Repair wheel
-        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'linux' }}
         run: pixi run -e ${{ matrix.pixi_env }} wheel-repair
 
       - name: Verify wheel
-        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'linux' }}
         run: pixi run -e ${{ matrix.pixi_env }} wheel-verify
 
       - name: Test wheel
-        if: ${{ steps.wheel_gate.outputs.enabled == 'true' }}
+        if: ${{ steps.wheel_gate.outputs.enabled == 'true' && matrix.os != 'linux' }}
         run: pixi run -e ${{ matrix.pixi_env }} wheel-test
 
       - uses: actions/upload-artifact@v7

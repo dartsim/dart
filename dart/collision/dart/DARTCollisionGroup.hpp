@@ -52,6 +52,11 @@ public:
 
   DARTCollisionGroup(const CollisionDetectorPtr& collisionDetector);
 
+  DARTCollisionGroup(const DARTCollisionGroup&) = delete;
+  DARTCollisionGroup(DARTCollisionGroup&&) = delete;
+  DARTCollisionGroup& operator=(const DARTCollisionGroup&) = delete;
+  DARTCollisionGroup& operator=(DARTCollisionGroup&&) = delete;
+
   /// Destructor
   virtual ~DARTCollisionGroup() = default;
 
