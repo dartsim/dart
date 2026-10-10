@@ -3,8 +3,10 @@
 Select a built `dartpy` with `PYTHONPATH` before running runtime probes.
 
 - `api_surface.py --pb <pybind11-module-dir> --nb <nanobind-module-dir>
-  --output <output-dir>` snapshots and compares the public non-GUI API, including
+  --output <output-dir>` snapshots and compares the public API, including `dartpy.gui`, including
   names, overloads, keywords, defaults, and enums.
+- `probe_gui_rss.py` checks 1,000 GUI owner lifecycles without opening a window.
+- `visual_scenes.py` supplies the existing dominoes tutorial to `agent-capture`.
 - `codemod.py --output <new-directory>` generates a mechanical non-GUI port for
   review. It refuses an existing destination. Review the caster includes,
   ownership policies, and constructors before using the generated bindings.

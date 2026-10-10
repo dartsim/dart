@@ -83,3 +83,16 @@ foreach(dartpy_test_file ${dartpy_test_files})
   get_filename_component(dartpy_test_name ${dartpy_test_file} NAME_WE)
   dartpy_add_test(py_${dartpy_test_name} ${dartpy_test_file})
 endforeach()
+
+if(DART_BUILD_GUI_OSG AND DART_DARTPY_BINDER STREQUAL "pybind11")
+  pybind11_add_module(_dartpy_gui_probe MODULE EXCLUDE_FROM_ALL gui_probe/module.cpp)
+  target_link_libraries(_dartpy_gui_probe PRIVATE dart-gui-osg)
+  set_target_properties(
+    _dartpy_gui_probe
+    PROPERTIES
+      LIBRARY_OUTPUT_DIRECTORY "${DART_PYTHON_BUILD_DIR}/dartpy"
+      RUNTIME_OUTPUT_DIRECTORY "${DART_PYTHON_BUILD_DIR}/dartpy"
+      DEBUG_POSTFIX ""
+  )
+  add_dependencies(dartpy _dartpy_gui_probe)
+endif()

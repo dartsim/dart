@@ -1,6 +1,4 @@
-// clang-format off
 #include "detail/dart_nb.hpp"
-// clang-format on
 
 /*
  * Copyright (c) 2011, The DART development contributors
@@ -34,52 +32,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
-
 namespace dart {
 namespace python {
 
-void eigen_geometry(nb::module_& m);
+void dart_gui_osg(nb::module_& m);
 
-void dart_common(nb::module_& m);
-void dart_math(nb::module_& m);
-void dart_optimizer(nb::module_& m);
-void dart_dynamics(nb::module_& m);
-void dart_collision(nb::module_& m);
-void dart_constraint(nb::module_& m);
-void dart_simulation(nb::module_& m);
-void dart_utils(nb::module_& m);
-void dart_gui(nb::module_& m);
-void bind_gui_probe(nb::module_& m);
-
-NB_MODULE(dartpy, m)
+void dart_gui(nb::module_& m)
 {
-  m.attr("_binder") = "nanobind";
-  dartnb::bindConstructionGuard(m);
-  m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
+  auto sm = m.def_submodule("gui");
 
-#ifdef DARTPY_VERSION_INFO
-  m.attr("__version__") = DARTPY_VERSION_INFO;
-#else
-  m.attr("__version__") = "dev";
-#endif
-
-  eigen_geometry(m);
-
-  dart_common(m);
-  dart_math(m);
-  dart_optimizer(m);
-  dart_dynamics(m);
-  dart_collision(m);
-  dart_constraint(m);
-  dart_simulation(m);
-  dart_utils(m);
-#ifdef DARTPY_GUI_OSG
-  dart_gui(m);
-  bind_gui_probe(m);
-#else
-  m.def_submodule("gui");
-#endif
+  dart_gui_osg(sm);
 }
 
 } // namespace python
