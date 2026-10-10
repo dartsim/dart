@@ -154,3 +154,29 @@ def test_interop_objects_survive_interpreter_shutdown(interop):
         assert world.getSkeleton(0) is body.getSkeleton()
         """
     )
+
+
+def test_mismatched_c_api_version_raises_import_error(interop):
+    # The fake table holds only the stable version/size prefix, so reading any
+    # later field would go out of bounds.
+    run_isolated(
+        """
+        import ctypes
+
+        class Prefix(ctypes.Structure):
+            _fields_ = [("version", ctypes.c_uint32), ("size", ctypes.c_uint32)]
+
+        prefix = Prefix(999, ctypes.sizeof(Prefix))
+        name = ctypes.create_string_buffer(b"dartpy._C_API")
+        capsule_new = ctypes.pythonapi.PyCapsule_New
+        capsule_new.restype = ctypes.py_object
+        capsule_new.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_void_p]
+        dart._C_API = capsule_new(ctypes.addressof(prefix), name, None)
+        try:
+            import dartpy_pybind11_interop_test  # noqa: F401
+        except ImportError as error:
+            assert "version 999" in str(error), error
+        else:
+            raise AssertionError("a mismatched C API version was accepted")
+        """
+    )
