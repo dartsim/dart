@@ -3747,47 +3747,58 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         )
         return
     _, state, link = headings[0]
-    package_version = ""
-    workspace_version = None
+    milestone_link = re.fullmatch(
+        r"https://github\.com/dartsim/dart/milestone/([1-9][0-9]*)(?:\?closed=[01])?",
+        link,
+    )
     try:
         if state != "Unreleased":
             if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", state):
                 raise ValueError("expected YYYY-MM-DD")
             date.fromisoformat(state)
-            milestone_link = re.fullmatch(
-                r"https://github\.com/dartsim/dart/milestone/([1-9][0-9]*)\?closed=1",
-                link,
-            )
-            if not milestone_link:
+            if not milestone_link or not link.endswith("?closed=1"):
                 raise ValueError("expected closed DART milestone link")
-            event_path = os.environ.get("GITHUB_EVENT_PATH")
-            if event_path:
-                event = read_json(Path(event_path))
-                if not isinstance(event, dict):
-                    raise ValueError("expected GitHub event object")
-                if "pull_request" in event:
-                    pull_request = event["pull_request"]
-                    milestone = (
-                        pull_request.get("milestone")
-                        if isinstance(pull_request, dict)
-                        else None
+        event_path = os.environ.get("GITHUB_EVENT_PATH")
+        if event_path:
+            event = read_json(Path(event_path))
+            if not isinstance(event, dict):
+                raise ValueError("expected GitHub event object")
+            if "pull_request" in event:
+                pull_request = event["pull_request"]
+                milestone = (
+                    pull_request.get("milestone")
+                    if isinstance(pull_request, dict)
+                    else None
+                )
+                if (
+                    not isinstance(milestone, dict)
+                    or milestone.get("title") != f"DART {version}"
+                    or type(milestone.get("number")) is not int
+                    or milestone["number"] <= 0
+                    or (
+                        milestone_link and milestone["number"] != int(milestone_link[1])
                     )
-                    if (
-                        not isinstance(milestone, dict)
-                        or milestone.get("title") != f"DART {version}"
-                        or type(milestone.get("number")) is not int
-                        or milestone.get("number") != int(milestone_link[1])
-                    ):
-                        raise ValueError("dated heading must match the PR milestone")
-        package_version = (
-            ET.parse(root / "package.xml").getroot().findtext("version", "").strip()
+                    or (state == "Unreleased" and milestone.get("state") != "open")
+                ):
+                    raise ValueError(
+                        "release heading must match the PR milestone and its release state"
+                    )
+        package_text = (root / "package.xml").read_text(encoding="utf-8")
+        package_version = ET.fromstring(package_text).findtext("version", "")
+        build_version = re.search(
+            r"<version>([0-9]+\.[0-9]+\.[0-9]+)</version>", package_text
         )
+        if not build_version or build_version[1] != package_version:
+            raise ValueError("package.xml version must match the numeric CMake grammar")
         workspace = read_toml(root / "pixi.toml").get("workspace", {})
         workspace_version = (
             workspace.get("version") if isinstance(workspace, dict) else None
         )
-    except (OSError, ET.ParseError, ValueError):
-        pass
+    except (OSError, ET.ParseError, ValueError) as error:
+        errors.append(
+            f"CHANGELOG.md: Release Target `{version}` has invalid metadata: {error}"
+        )
+        return
     if state == "Unreleased":
         target_numbers = tuple(int(number) for number in version.split("."))
         for relative, source in (
@@ -3796,7 +3807,7 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         ):
             parsed = (
                 re.fullmatch(
-                    r"([0-9]+)\.([0-9]+)\.([0-9]+)(?:\.(dev|alpha|beta|rc)[0-9]+)?",
+                    r"(6)\.([0-9]+)\.([0-9]+)(?:\.(dev|alpha|beta|rc)[0-9]+)?",
                     source,
                 )
                 if isinstance(source, str)
@@ -3805,7 +3816,8 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
             if not parsed:
                 errors.append(
                     f"CHANGELOG.md: Release Target `{version}` cannot compare {relative} version; "
-                    "expected X.Y.Z with an optional .devN/.alphaN/.betaN/.rcN suffix"
+                    "expected a DART 6 version (numeric for package.xml; "
+                    "optional .devN/.alphaN/.betaN/.rcN suffix for Pixi)"
                 )
                 return
             source_numbers = tuple(int(number) for number in parsed.groups()[:3])
@@ -4263,6 +4275,7 @@ def run_checks(root: Path) -> list[str]:
     check_instruction_budget(root, errors)
     check_release_guidance(root, errors)
     check_ci_wiring(root, errors)
+    errors.extend(exercise_scenarios(root, emit=False))
     return errors
 
 
@@ -4465,6 +4478,10 @@ def exercise_scenarios(
         prompt_class = scenario.get("prompt_class")
         if not isinstance(prompt_class, str) or not prompt_class.strip():
             local_errors.append("prompt_class must be a non-empty string")
+        elif re.search(
+            r"\b(?:DART\s*|v)?6\.\d+(?:\.\d+)?\b", prompt_class, re.IGNORECASE
+        ):
+            local_errors.append("prompt_class must be release-neutral; use DART 6")
         start_dir = scenario.get("start_dir")
         start_relative = repository_relative_path(root, start_dir)
         if start_relative is None:

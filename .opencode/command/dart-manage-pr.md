@@ -70,6 +70,7 @@ gh pr checks <PR_NUMBER>
      read its `docs/onboarding/release-management.md` § "Release target".
      Verify the exact `DART <Next release>` milestone is open on GitHub;
      correct stale or missing metadata only after maintainer/user approval.
+     For an explicit rollover, follow the owner's proposed-target rule.
    - Confirm ordinary changes target `main`. Backports and release-specific
      packaging, CI, or branch guidance may target a maintained `release-6.*`
      branch; backports use `dart-backport-pr`.

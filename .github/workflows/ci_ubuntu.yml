@@ -10,6 +10,7 @@ on:
       - "main"
       - "release-*"
   pull_request:
+    types: [opened, synchronize, reopened, milestoned, demilestoned]
     branches:
       - "**"
   workflow_dispatch:

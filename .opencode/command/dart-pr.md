@@ -90,7 +90,8 @@ Use these practices:
 3. Resolve the target from the live PR base, or use `main` for new development.
    Fetch that base and read its `docs/onboarding/release-management.md`
    § "Release target". Use `DART <Next release>` as the milestone and verify
-   that exact title is open on GitHub. Publishing or updating the PR requires
+   that exact title is open on GitHub. For an explicit rollover, follow the
+   owner's proposed-target rule. Publishing or updating the PR requires
    explicit maintainer/user approval.
 4. New fixes target `main`; backports to a maintained `release-6.*` branch use
    `dart-backport-pr`. Release-specific packaging, CI, and branch guidance may

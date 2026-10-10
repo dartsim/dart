@@ -262,6 +262,7 @@ def test_release_references_accept_release_metadata_only_rollover(
 ):
     monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
     monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
+    monkeypatch.delenv("GITHUB_EVENT_PATH", raising=False)
     sources = [
         *infra.release_reference_paths(ROOT),
         ROOT / "docs/onboarding/release-management.md",
@@ -484,7 +485,7 @@ def test_release_target_rejects_owner_row_without_leading_changelog_update(
         ("6.20.0", "6.19.5", "6.21.0", False),
         ("6.20.0", "6.20.1", "6.20.1", False),
         ("6.9.0", "6.22.0", "6.8.0", False),
-        ("6.22.0", "6.23.0.rc1", "6.19.5", False),
+        ("6.22.0", "6.19.5", "6.23.0.rc1", False),
     ],
 )
 def test_release_target_orders_unreleased_source_versions_numerically(
@@ -516,7 +517,7 @@ def test_release_target_orders_unreleased_source_versions_numerically(
 
 
 @pytest.mark.parametrize("suffix", ["dev1", "alpha2", "beta3", "rc4"])
-def test_release_target_accepts_same_core_prerelease_source_versions(
+def test_release_target_accepts_same_core_prerelease_workspace_versions(
     release_target_owner, tmp_path, suffix
 ):
     text = release_target_owner.read_text(encoding="utf-8")
@@ -524,7 +525,7 @@ def test_release_target_accepts_same_core_prerelease_source_versions(
         text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
     )
     (tmp_path / "package.xml").write_text(
-        f"<package><version>6.22.0.{suffix}</version></package>\n", encoding="utf-8"
+        "<package><version>6.19.5</version></package>\n", encoding="utf-8"
     )
     (tmp_path / "pixi.toml").write_text(
         f'[workspace]\nversion = "6.22.0.{suffix}"\n', encoding="utf-8"
@@ -536,8 +537,54 @@ def test_release_target_accepts_same_core_prerelease_source_versions(
     assert errors == []
 
 
+@pytest.mark.parametrize("suffix", ["dev1", "alpha2", "beta3", "rc4"])
+def test_release_target_rejects_prerelease_package_versions(
+    release_target_owner, tmp_path, suffix
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    (tmp_path / "package.xml").write_text(
+        f"<package><version>6.22.0.{suffix}</version></package>\n", encoding="utf-8"
+    )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
+@pytest.mark.parametrize(
+    "package",
+    [
+        '<package><version format="semver">6.19.5</version></package>',
+        "<package><version> 6.19.5</version></package>",
+        "<package><version>6.19.5 </version></package>",
+        "<package><version>\n6.19.5\n</version></package>",
+    ],
+)
+def test_release_target_rejects_package_versions_outside_cmake_grammar(
+    release_target_owner, tmp_path, package
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    (tmp_path / "package.xml").write_text(package, encoding="utf-8")
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
 @pytest.mark.parametrize("relative", ["package.xml", "pixi.toml"])
-@pytest.mark.parametrize("version", ["invalid", "6.21", "6.21.0.preview1"])
+@pytest.mark.parametrize(
+    "version", ["invalid", "6.21", "6.21.0.preview1", "5.19.5", "7.0.0"]
+)
 def test_release_target_rejects_invalid_unreleased_source_versions(
     release_target_owner, tmp_path, relative, version
 ):
@@ -667,6 +714,184 @@ def dated_release_target(release_target_owner, tmp_path):
     return changelog
 
 
+@pytest.fixture
+def unreleased_release_target(release_target_owner, tmp_path):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    changelog = tmp_path / "CHANGELOG.md"
+    changelog.write_text(
+        "### [DART 6.22.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)\n",
+        encoding="utf-8",
+    )
+    return changelog
+
+
+@pytest.mark.parametrize(
+    ("event", "valid"),
+    [
+        (
+            {
+                "pull_request": {
+                    "milestone": {
+                        "title": "DART 6.22.0",
+                        "number": 105,
+                        "state": "open",
+                    }
+                }
+            },
+            True,
+        ),
+        (
+            {
+                "pull_request": {
+                    "milestone": {
+                        "title": "DART 6.21.0",
+                        "number": 105,
+                        "state": "open",
+                    }
+                }
+            },
+            False,
+        ),
+        (
+            {
+                "pull_request": {
+                    "milestone": {"title": "DART 6.22.0", "number": 99, "state": "open"}
+                }
+            },
+            False,
+        ),
+        (
+            {
+                "pull_request": {
+                    "milestone": {
+                        "title": "DART 6.22.0",
+                        "number": 105,
+                        "state": "closed",
+                    }
+                }
+            },
+            False,
+        ),
+        (
+            {"pull_request": {"milestone": {"title": "DART 6.22.0", "number": 105}}},
+            False,
+        ),
+        ({"pull_request": {"milestone": None}}, False),
+        ({"pull_request": {}}, False),
+        ({"pull_request": None}, False),
+        ({"ref": "refs/heads/main"}, True),
+        ([], False),
+    ],
+)
+def test_release_target_checks_unreleased_pr_milestone(
+    unreleased_release_target, tmp_path, monkeypatch, event, valid
+):
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps(event), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    if valid:
+        assert errors == []
+    else:
+        assert len(errors) == 1
+        assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
+@pytest.mark.parametrize("number", [0, -1, 1.0, True, "105", None])
+def test_release_target_requires_positive_integer_unreleased_milestone_number(
+    unreleased_release_target, tmp_path, monkeypatch, number
+):
+    unreleased_release_target.write_text(
+        "### [DART 6.22.0 (Unreleased)](https://github.com/dartsim/dart/milestones)\n",
+        encoding="utf-8",
+    )
+    event_path = tmp_path / "event.json"
+    event_path.write_text(
+        json.dumps(
+            {
+                "pull_request": {
+                    "milestone": {
+                        "title": "DART 6.22.0",
+                        "number": number,
+                        "state": "open",
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
+@pytest.mark.parametrize("event", [None, {"ref": "refs/heads/main"}])
+def test_release_target_accepts_unreleased_without_pr_event(
+    unreleased_release_target, tmp_path, monkeypatch, event
+):
+    if event is not None:
+        event_path = tmp_path / "event.json"
+        event_path.write_text(json.dumps(event), encoding="utf-8")
+        monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize("event", [None, "{"])
+def test_release_target_rejects_unreadable_unreleased_event(
+    unreleased_release_target, tmp_path, monkeypatch, event
+):
+    event_path = tmp_path / "event.json"
+    if event is not None:
+        event_path.write_text(event, encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
+def test_release_target_accepts_unreleased_pr_without_specific_changelog_link(
+    unreleased_release_target, tmp_path, monkeypatch
+):
+    unreleased_release_target.write_text(
+        "### [DART 6.22.0 (Unreleased)](https://github.com/dartsim/dart/milestones)\n",
+        encoding="utf-8",
+    )
+    event_path = tmp_path / "event.json"
+    event_path.write_text(
+        json.dumps(
+            {
+                "pull_request": {
+                    "milestone": {"title": "DART 6.22.0", "number": 99, "state": "open"}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert errors == []
+
+
 @pytest.mark.parametrize(
     "link",
     [
@@ -773,6 +998,29 @@ def test_release_target_requires_integer_pr_milestone_number(
 
     assert len(errors) == 1
     assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
+@pytest.mark.parametrize("state", ["open", "closed"])
+def test_release_target_accepts_packaging_pr_before_or_after_milestone_closure(
+    dated_release_target, tmp_path, monkeypatch, state
+):
+    event_path = tmp_path / "event.json"
+    event_path.write_text(
+        json.dumps(
+            {
+                "pull_request": {
+                    "milestone": {"title": "DART 6.22.0", "number": 105, "state": state}
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert errors == []
 
 
 @pytest.mark.parametrize(
@@ -5090,3 +5338,95 @@ def test_unstaged_rename_out_of_ai_scope_blocks_other_staged_ai_work(tmp_path):
     first.rename(tmp_path / "misc" / "first.md")
 
     assert hook.run_staged(tmp_path) == 2
+
+
+@pytest.mark.parametrize("filename", ["ci_ubuntu.yml", "ci_windows.yml"])
+def test_lint_workflows_refresh_pr_milestone_payload(filename):
+    import yaml
+
+    workflow = yaml.load(
+        (ROOT / ".github/workflows" / filename).read_text(encoding="utf-8"),
+        Loader=yaml.BaseLoader,
+    )
+    assert set(workflow["on"]["pull_request"]["types"]) == {
+        "opened",
+        "synchronize",
+        "reopened",
+        "milestoned",
+        "demilestoned",
+    }
+    assert workflow["on"]["pull_request"]["branches"] == ["**"]
+    build = workflow["jobs"]["build"]
+    assert "if" not in build
+    lint = next(step for step in build["steps"] if step.get("name") == "Check Lint")
+    assert "pixi run check-lint" in lint["run"]
+    assert lint.get("if", "") in {"", "matrix.part == 'cpp'"}
+
+
+@pytest.fixture
+def scenario_data():
+    return _scenario_data()
+
+
+@pytest.mark.parametrize(
+    "scenario_id",
+    [item["id"] for item in _scenario_data()["scenarios"]],
+)
+def test_every_scenario_rejects_pinned_prompt(scenario_data, scenario_id):
+    scenario = next(
+        item for item in scenario_data["scenarios"] if item["id"] == scenario_id
+    )
+    scenario["prompt_class"] = "DART 6.22"
+
+    errors = infra.exercise_scenarios(ROOT, scenario_data, emit=False)
+
+    assert (
+        f"scenario `{scenario_id}`: prompt_class must be release-neutral; use DART 6"
+        in errors
+    )
+
+
+@pytest.mark.parametrize(
+    "version",
+    ["6.22.0", "**DART 6.22.0**", "release-6.22", "v6.22.0", "DART6.22", "DART\n6.22"],
+)
+def test_scenario_rejects_concrete_version_tokens(scenario_data, version):
+    scenario_data["scenarios"][0]["prompt_class"] = f"Inspect {version} checkout"
+
+    errors = infra.exercise_scenarios(ROOT, scenario_data, emit=False)
+
+    assert (
+        "scenario `orientation`: prompt_class must be release-neutral; use DART 6"
+        in errors
+    )
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    ["Orient to the current DART 6 checkout", "Inspect DART 6 compatibility"],
+)
+def test_scenario_accepts_release_neutral_prompt(scenario_data, prompt):
+    scenario_data["scenarios"][0]["prompt_class"] = prompt
+
+    assert infra.exercise_scenarios(ROOT, scenario_data, emit=False) == []
+
+
+def test_full_infrastructure_check_rejects_pinned_scenario_prompt(
+    scenario_data, monkeypatch
+):
+    scenario_data["scenarios"][0]["prompt_class"] = "DART 6.22"
+    original_read_json = infra.read_json
+
+    def read_json(path):
+        if path == ROOT / "docs/ai/agent-scenarios.json":
+            return scenario_data
+        return original_read_json(path)
+
+    monkeypatch.setattr(infra, "read_json", read_json)
+
+    errors = infra.run_checks(ROOT)
+
+    assert (
+        "scenario `orientation`: prompt_class must be release-neutral; use DART 6"
+        in errors
+    )
