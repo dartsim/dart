@@ -917,6 +917,59 @@ TEST_F(Collision, BoxBox)
 }
 
 //==============================================================================
+TEST_F(Collision, DartRestingBoxPreservesFourFaceCorners)
+{
+  // #3595: a complete face manifold gives the resting box symmetric support.
+  auto world = World::create();
+  world->setTimeStep(0.001);
+  world->setGravity(Eigen::Vector3d(0.0, 0.0, -9.81));
+  auto deactivation = world->getDeactivationOptions();
+  deactivation.mEnabled = false;
+  world->setDeactivationOptions(deactivation);
+  world->getConstraintSolver()->setCollisionDetector(
+      DARTCollisionDetector::create());
+
+  auto ground = Skeleton::create("ground");
+  auto* groundBody = ground->createJointAndBodyNodePair<WeldJoint>().second;
+  groundBody->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(10.0, 10.0, 1.0)));
+  world->addSkeleton(ground);
+
+  auto box = Skeleton::create("box");
+  auto [joint, body] = box->createJointAndBodyNodePair<FreeJoint>();
+  body->createShapeNodeWith<CollisionAspect, DynamicsAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+  Eigen::Isometry3d transform = Eigen::Isometry3d::Identity();
+  transform.translation().z() = 1.01;
+  joint->setPositions(FreeJoint::convertToPositions(transform));
+  world->addSkeleton(box);
+
+  for (int step = 0; step < 2000; ++step)
+    world->step();
+  ASSERT_LT(box->getVelocities().norm(), 1e-6);
+
+  const auto& result = world->getLastCollisionResult();
+  ASSERT_EQ(result.getNumContacts(), 4u);
+  const auto normal = result.getContact(0).normal;
+  EXPECT_NEAR(std::abs(normal.dot(Eigen::Vector3d::UnitZ())), 1.0, 1e-6);
+  for (const double x : {-0.5, 0.5}) {
+    for (const double y : {-0.5, 0.5}) {
+      const Eigen::Vector3d corner(x, y, 0.5);
+      EXPECT_EQ(
+          std::count_if(
+              result.getContacts().begin(),
+              result.getContacts().end(),
+              [&](const Contact& contact) {
+                return (contact.point - corner).norm() < 1e-4;
+              }),
+          1);
+    }
+  }
+  for (const auto& contact : result.getContacts())
+    EXPECT_TRUE(contact.normal.isApprox(normal, 1e-6));
+}
+
+//==============================================================================
 TEST_F(Collision, DartPlanePrimitiveContacts)
 {
   auto cd = DARTCollisionDetector::create();
@@ -1489,7 +1542,7 @@ TEST_F(Collision, DartParallelFinitePlaneFilterPublishesForFinitePairs)
 // DartPerPairContactCapSelectsDeepSpreadContacts was removed with the legacy
 // detector: the deep+spread per-pair cap backfill it probed belonged to the
 // deleted legacy pipeline; the consolidated engine reduces each pair manifold
-// upstream (ContactReduction, solver-facing target 3), covered by
+// upstream (ContactReduction, solver-facing target 4), covered by
 // UNIT_collision_dart_box_box and DartPerPairContactCapCoalescesNear-
 // DuplicatePairContacts.
 
@@ -3050,8 +3103,8 @@ TEST_F(Collision, Options)
 
   auto dart = DARTCollisionDetector::create();
   // The dart detector reduces the face-face manifold to its solver-facing
-  // target of 3 contacts.
-  testOptions(dart, 3u);
+  // target of 4 contacts.
+  testOptions(dart, 4u);
 }
 
 //==============================================================================
