@@ -62,6 +62,47 @@ gate is intentionally fast and staged-file aware. It runs
 it never configures, builds, prompts, or uses the network. It does not replace
 `pixi run lint` before a commit.
 
+The local-path checks catch accidental publication by contributors and agents.
+Local hooks can be skipped. The PR Text workflow is the backstop for commits
+that use `--no-verify` or otherwise skip local hooks: it checks the title, body
+and every PR commit's messages, names and added lines using the base branch's
+checker before merge.
+The pre-push hook scans committed history even when aliases, imports,
+sequencer operations or alternate `GIT_INDEX_FILE` indexes bypass commit hooks.
+GitHub may omit this workflow for SHA-like branch names; those PRs rely on CI's
+tracked-file scan and review.
+
+`pixi run install-hooks` installs managed `pre-commit`, `commit-msg` and
+`pre-push` hooks. The pre-commit hook also runs
+`scripts/check_local_paths.py --staged` to scan staged names and added lines.
+The commit-msg hook runs
+`scripts/check_local_paths.py --commit-msg-file "$1" --git-pid "$PPID"`.
+The parent Git command, cleanup options and configuration determine which
+comments, scissors and verbose diffs Git removes before publication. When
+that invocation cannot be read or parsed, the checker falls back to Git's
+editor-template instructions. Without invocation or template evidence, it
+scans every line. Comments and literal scissors that Git retains are scanned.
+Each hook selects a compatible interpreter: Python 3.9+ for commit-msg and
+pre-push, and Python with `tomllib` (3.11+) for pre-commit. All share
+foreign-hook chaining, `DART_SKIP_HOOKS=1`, and `DART_HOOK_DRY_RUN=1`. Older
+worktrees without the checker or a compatible interpreter print a notice and
+skip the message and pre-push scans; the pre-commit hook retains its staged
+whitespace fallback.
+When a checker exists in HEAD or the push base but was removed or renamed in
+the worktree, hooks run its tracked version from a temporary file instead;
+recovery errors block the commit or push.
+
+The pre-push hook reads Git's `<local ref> <local sha> <remote ref> <remote sha>`
+stdin and runs `scripts/check_local_paths.py --commit-range <base>..<local sha>`
+for each updated ref. It scans every commit's message, names and added lines,
+including cherry-picked, rebased, reverted and imported commits. Existing refs
+use the remote SHA; new refs use the merge base with the remote's default
+branch. Missing base objects are fetched without changing refs or `FETCH_HEAD`.
+An empty remote or unrelated history scans all local history. Deletions skip
+scanning. Foreign pre-push hooks receive the same stdin and their failures block
+the push. Older branches without checkers and unavailable interpreters print a
+notice and skip scanning; findings and lookup or scan errors block the push.
+
 ## Simulation Verification Route
 
 Use `dart-verify-sim` whenever a claim depends on model/scene structure,

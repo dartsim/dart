@@ -216,6 +216,11 @@ public:
     // Do nothing
   }
 
+  EmbedProperties(const EmbedProperties&) = delete;
+  EmbedProperties(EmbedProperties&&) = delete;
+  EmbedProperties& operator=(const EmbedProperties&) = delete;
+  EmbedProperties& operator=(EmbedProperties&&) = delete;
+
   virtual ~EmbedProperties() = default;
 
   const AspectProperties& getAspectProperties() const
@@ -397,6 +402,11 @@ public:
   {
     // Do nothing
   }
+
+  EmbedStateAndProperties(const EmbedStateAndProperties&) = delete;
+  EmbedStateAndProperties(EmbedStateAndProperties&&) = delete;
+  EmbedStateAndProperties& operator=(const EmbedStateAndProperties&) = delete;
+  EmbedStateAndProperties& operator=(EmbedStateAndProperties&&) = delete;
 
   virtual ~EmbedStateAndProperties() = default;
 

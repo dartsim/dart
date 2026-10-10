@@ -801,8 +801,8 @@ def test_local_workload_probe_counts_sibling_benchmark_binary(monkeypatch):
     workspace = runner.matrix.local_dart_workspace_root(ROOT)
     output = "\n".join(
         [
-            f"BM_INTEGRATIO {workspace}/fake-benchmark/build/bin/BM_INTEGRATION_soft_body",
-            f"python {workspace}/fake-runner/scripts/compare_soft_body_detector_pairs.py",
+            f"BM_INTEGRATIO {workspace}/benchmark-checkout/build/bin/BM_INTEGRATION_soft_body",
+            f"python {workspace}/script-checkout/scripts/compare_soft_body_detector_pairs.py",
         ]
     )
     monkeypatch.setattr(

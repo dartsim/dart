@@ -4,6 +4,21 @@
 
 ### [DART 6.21.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
 
+* Breaking Changes
+
+  * Explicitly delete copy and move construction and assignment for
+    `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
+    `EmbedStateAndProperties`. These operations could not be instantiated
+    previously; type traits such as `std::is_copy_constructible` now correctly
+    report `false`. Class layouts remain unchanged.
+
+* API
+
+  * Add `optimizer::Problem::clearObjective()` and
+    `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
+    `getSchemaRetrievers()`, and `removeAllRetrievers()` to inspect and release
+    owned objective functions and resource retrievers.
+
 * Dynamics
 
   * Preserve the generated soft mesh and shape-node properties when cloning
