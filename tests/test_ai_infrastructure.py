@@ -5341,7 +5341,7 @@ def test_unstaged_rename_out_of_ai_scope_blocks_other_staged_ai_work(tmp_path):
 
 
 @pytest.mark.parametrize("filename", ["ci_ubuntu.yml", "ci_windows.yml"])
-def test_lint_workflows_refresh_pr_milestone_payload(filename):
+def test_lint_workflows_refresh_pr_release_payload(filename):
     import yaml
 
     workflow = yaml.load(
@@ -5352,6 +5352,7 @@ def test_lint_workflows_refresh_pr_milestone_payload(filename):
         "opened",
         "synchronize",
         "reopened",
+        "edited",
         "milestoned",
         "demilestoned",
     }

@@ -36,8 +36,9 @@ the newest milestone determines it.
 A PR that explicitly rolls the branch forward updates the owner row and leading
 changelog section together and uses the proposed target's open milestone.
 Ordinary PRs continue to use the fetched base's target. CI validates the PR's
-resulting row against its event milestone; assigning or removing a milestone
-starts a fresh check with the new event payload.
+resulting row against its event milestone. Changing the base or assigning or
+removing a milestone starts a fresh check with the new event payload. Title and
+body edits also restart Linux and Windows CI under these event triggers.
 
 The version sources serve different purposes:
 
