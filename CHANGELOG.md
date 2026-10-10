@@ -10,6 +10,9 @@
     soft-body skeletons, avoiding duplicate null meshes during collision checks.
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
+  * Keep soft-body skin meshes resizable after `BodyNode::copyTo()` and
+    `BodyNode::copyAs()`, preventing invalid mesh updates.
+
 * Python
 
   * Add dartpy soft-body construction, typed Euler-joint skeleton editing,
