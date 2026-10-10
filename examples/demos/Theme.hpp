@@ -33,6 +33,12 @@
 #ifndef DART_EXAMPLES_DEMOS_THEME_HPP_
 #define DART_EXAMPLES_DEMOS_THEME_HPP_
 
+#include <dart/gui/osg/IncludeImGui.hpp>
+
+namespace dart::gui::osg {
+class ImGuiHandler;
+}
+
 namespace dart_demos {
 
 //==============================================================================
@@ -51,6 +57,23 @@ void applyModernDarkColors();
 /// by the GUI scale. Call once before the first frame, after
 /// applyModernDarkColors().
 void applyModernDarkMetrics();
+
+/// Restore this demo's themed metrics before each newly scaled frame.
+class GuiScaleTheme
+{
+public:
+  explicit GuiScaleTheme(const dart::gui::osg::ImGuiHandler& handler);
+  ~GuiScaleTheme();
+  GuiScaleTheme(const GuiScaleTheme&) = delete;
+  GuiScaleTheme& operator=(const GuiScaleTheme&) = delete;
+
+private:
+  const dart::gui::osg::ImGuiHandler& mHandler;
+  ImGuiContext* mContext;
+  ImGuiStyle mBaseStyle;
+  ImGuiID mHookId;
+  double mAppliedScale = 0.0;
+};
 
 } // namespace dart_demos
 

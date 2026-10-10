@@ -17,6 +17,10 @@ Build and run it:
 
     $ pixi run demos
 
+The UI and initial window automatically follow desktop DPI. Use View >
+**GUI scale** or `--gui-scale 1.5` for a manual override; see
+[display scaling](demos/README.md#display-scaling) for platform behavior.
+
 The flagship deformable-body scenes can be opened directly:
 
     $ pixi run demos --scene adaptive_soft_contact
