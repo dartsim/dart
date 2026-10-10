@@ -1,6 +1,6 @@
 # Dependency checks
 dart_find_package(tinyxml2)
-dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "1.0.1")
+dart_check_optional_package(TINYXML2 "dart-utils" "tinyxml2" "9.0.0")
 
 # Search all header and source files
 file(GLOB hdrs "*.hpp")

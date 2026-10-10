@@ -253,9 +253,9 @@ setup(
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     extras_require={"test": ["pytest>=6.0"]},
-    python_requires=">=3.7",
+    python_requires=">=3.10",
     install_requires=[
-        "numpy",
+        "numpy>=1.21.5",
     ],
     packages=find_packages(where="python", exclude=["__pycache__"]),
     package_dir={"": "python"},

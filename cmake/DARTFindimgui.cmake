@@ -61,11 +61,32 @@ if(
   unset(_dart_vulkan_search_prefixes)
 endif()
 
+include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
 find_package(imgui CONFIG)
-
-if(NOT imgui_FOUND)
-  find_package(imgui REQUIRED MODULE)
+set(_dart_imgui_config_found ${imgui_FOUND})
+if(imgui_FOUND)
+  if(NOT imgui_VERSION)
+    set(_dart_imgui_include_dirs ${imgui_INCLUDE_DIRS})
+    if(TARGET imgui::imgui)
+      get_target_property(
+        _dart_imgui_target_includes
+        imgui::imgui
+        INTERFACE_INCLUDE_DIRECTORIES
+      )
+      list(APPEND _dart_imgui_include_dirs ${_dart_imgui_target_includes})
+    endif()
+    dart_read_header_version(imgui_VERSION imgui.h IMGUI_VERSION ${_dart_imgui_include_dirs})
+  endif()
+  dart_check_package_version(imgui 1.91.9)
+  if(NOT imgui_FOUND)
+    message(FATAL_ERROR "ImGui >= 1.91.9 with version information is required")
+  endif()
 endif()
+
+if(NOT _dart_imgui_config_found)
+  find_package(imgui 1.91.9 REQUIRED MODULE)
+endif()
+unset(_dart_imgui_config_found)
 
 if(imgui_FOUND AND NOT TARGET imgui::imgui)
   add_library(imgui::imgui INTERFACE IMPORTED)

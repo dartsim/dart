@@ -177,7 +177,7 @@ add_subdirectory(scenes/wam_ikfast/ikfast)
 # which links osgText the same way -- dart-gui-osg only links the core
 # osg::osg component, not osgText). Mirrors that example's own CMake pattern
 # for locating/wrapping the osgText library as an imported target.
-find_package(OpenSceneGraph 3.0.0 REQUIRED COMPONENTS osgText)
+find_package(OpenSceneGraph 3.6.5 REQUIRED COMPONENTS osgText)
 set(dart_demos_osg_text_library ${OSGTEXT_LIBRARY})
 if(NOT dart_demos_osg_text_library)
   set(dart_demos_osg_text_library ${OSGTEXT_LIBRARY_RELEASE})
@@ -267,7 +267,7 @@ endif()
 # entirely and the registry (behind the same DART_DEMOS_HAVE_PYTHON
 # definition) omits the row rather than showing a broken one -- the same
 # pattern used above for TinyDNN.
-find_package(Python3 COMPONENTS Interpreter Development QUIET)
+find_package(Python3 3.10 COMPONENTS Interpreter Development QUIET)
 set(DART_DEMOS_HAVE_PYTHON FALSE)
 if(Python3_FOUND)
   set(DART_DEMOS_HAVE_PYTHON TRUE)

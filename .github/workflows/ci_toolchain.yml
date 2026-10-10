@@ -10,7 +10,8 @@
 # + testing through the existing pixi tasks.
 #
 # To add a toolchain (e.g. an oldest-supported gcc, or a pinned compiler), add a
-# row to the matrix below: { name, family (gcc|clang), version, cc, cxx }.
+# row to the matrix below: { name, runner, family (gcc|clang), version, cc, cxx,
+# distribution (true for Ubuntu-packaged compilers) }.
 
 name: CI Toolchain (Linux)
 
@@ -36,7 +37,7 @@ concurrency:
 jobs:
   toolchain:
     name: ${{ matrix.name }}
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
     # A brand-new compiler can surface breakage; as a nightly-only job it never
     # blocks merges, and a failure opens a nightly-failure issue instead.
     timeout-minutes: 120
@@ -44,19 +45,39 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - name: gcc 11 (Ubuntu 22.04 baseline)
+            runner: ubuntu-22.04
+            family: gcc
+            version: "11"
+            cc: gcc-11
+            cxx: g++-11
+            distribution: true
+          - name: clang 13 (Ubuntu 22.04 baseline)
+            runner: ubuntu-22.04
+            family: clang
+            version: "13"
+            cc: clang-13
+            cxx: clang++-13
+            distribution: true
           # GCC 16 is not in Ubuntu 24.04; it comes from the Ubuntu toolchain
           # PPA. It is the compiler that exposed dartsim/dart#3447 (aligned
           # vector stores in base-object constructors of Frame-derived classes).
           - name: gcc 16
+            runner: ubuntu-24.04
             family: gcc
             version: "16"
             cc: gcc-16
             cxx: g++-16
+            distribution: false
           - name: clang 19
+            runner: ubuntu-24.04
             family: clang
             version: "19"
             cc: clang-19
             cxx: clang++-19
+            distribution: false
+    env:
+      SCCACHE_DIR: ${{ runner.temp }}/sccache-${{ matrix.runner }}-${{ matrix.cc }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -65,9 +86,17 @@ jobs:
         env:
           FAMILY: ${{ matrix.family }}
           VERSION: ${{ matrix.version }}
+          DISTRIBUTION: ${{ matrix.distribution }}
         run: |
           set -euo pipefail
-          if [ "${FAMILY}" = "gcc" ]; then
+          if [ "${DISTRIBUTION}" = "true" ]; then
+            sudo apt-get update
+            if [ "${FAMILY}" = "gcc" ]; then
+              sudo apt-get install -y "gcc-${VERSION}" "g++-${VERSION}"
+            else
+              sudo apt-get install -y "clang-${VERSION}"
+            fi
+          elif [ "${FAMILY}" = "gcc" ]; then
             sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
             sudo apt-get update
             sudo apt-get install -y "gcc-${VERSION}" "g++-${VERSION}"
@@ -93,6 +122,7 @@ jobs:
         run: |
           set -euo pipefail
           "${CC}" --version
+          pixi run test-build-requirements
           # CC/CXX are honored by the `config` task that `build-tests` runs
           # first (it does not pin a compiler), so the whole tree is compiled
           # with the selected toolchain.

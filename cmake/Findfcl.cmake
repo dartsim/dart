@@ -14,10 +14,13 @@
 #   FCL_LIBRARIES
 #   FCL_VERSION
 
-find_package(PkgConfig QUIET)
+include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
+find_package(PkgConfig 0.29.2 QUIET)
 
 # Check to see if pkgconfig is installed.
-pkg_check_modules(PC_FCL fcl QUIET)
+if(PkgConfig_FOUND)
+  pkg_check_modules(PC_FCL fcl QUIET)
+endif()
 
 # Include directories
 find_path(
@@ -53,12 +56,18 @@ endif()
 if(PC_FCL_VERSION)
   set(FCL_VERSION ${PC_FCL_VERSION})
 endif()
+if(NOT FCL_VERSION AND fcl_VERSION)
+  set(FCL_VERSION "${fcl_VERSION}")
+endif()
+if(NOT FCL_VERSION)
+  dart_read_header_version(FCL_VERSION fcl/config.h FCL_VERSION ${FCL_INCLUDE_DIRS})
+endif()
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
   fcl
   FAIL_MESSAGE DEFAULT_MSG
-  REQUIRED_VARS FCL_INCLUDE_DIRS FCL_LIBRARIES
+  REQUIRED_VARS FCL_INCLUDE_DIRS FCL_LIBRARIES FCL_VERSION
   VERSION_VAR FCL_VERSION
 )
