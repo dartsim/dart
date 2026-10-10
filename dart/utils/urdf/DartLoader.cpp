@@ -182,17 +182,15 @@ dynamics::SkeletonPtr DartLoader::parseSkeleton(
     const common::ResourceRetrieverPtr& _resourceRetriever,
     unsigned int flags)
 {
-  const auto oldOptions = mOptions;
-  auto options = mOptions;
+  // Per-call overrides must not mutate options shared by concurrent parsers.
+  DartLoader loader(*this);
+  auto& options = loader.mOptions;
   options.mResourceRetriever = _resourceRetriever;
   if (flags & DartLoader::Flags::FIXED_BASE_LINK)
     options.mDefaultRootJointType = RootJointType::FIXED;
   else
     options.mDefaultRootJointType = RootJointType::FLOATING;
-  mOptions = options;
-  auto out = parseSkeleton(_uri);
-  mOptions = oldOptions;
-  return out;
+  return loader.parseSkeleton(_uri);
 }
 
 //==============================================================================
@@ -229,17 +227,14 @@ dynamics::SkeletonPtr DartLoader::parseSkeletonString(
     const common::ResourceRetrieverPtr& _resourceRetriever,
     unsigned int flags)
 {
-  const auto oldOptions = mOptions;
-  auto options = mOptions;
+  DartLoader loader(*this);
+  auto& options = loader.mOptions;
   options.mResourceRetriever = _resourceRetriever;
   if (flags & DartLoader::Flags::FIXED_BASE_LINK)
     options.mDefaultRootJointType = RootJointType::FIXED;
   else
     options.mDefaultRootJointType = RootJointType::FLOATING;
-  mOptions = options;
-  auto out = parseSkeletonString(_urdfString, _baseUri);
-  mOptions = oldOptions;
-  return out;
+  return loader.parseSkeletonString(_urdfString, _baseUri);
 }
 
 //==============================================================================
@@ -274,17 +269,14 @@ simulation::WorldPtr DartLoader::parseWorld(
     const common::ResourceRetrieverPtr& _resourceRetriever,
     unsigned int flags)
 {
-  const auto oldOptions = mOptions;
-  auto options = mOptions;
+  DartLoader loader(*this);
+  auto& options = loader.mOptions;
   options.mResourceRetriever = _resourceRetriever;
   if (flags & DartLoader::Flags::FIXED_BASE_LINK)
     options.mDefaultRootJointType = RootJointType::FIXED;
   else
     options.mDefaultRootJointType = RootJointType::FLOATING;
-  mOptions = options;
-  auto out = parseWorld(_uri);
-  mOptions = oldOptions;
-  return out;
+  return loader.parseWorld(_uri);
 }
 
 //==============================================================================
@@ -307,17 +299,14 @@ simulation::WorldPtr DartLoader::parseWorldString(
     const common::ResourceRetrieverPtr& _resourceRetriever,
     unsigned int flags)
 {
-  const auto oldOptions = mOptions;
-  auto options = mOptions;
+  DartLoader loader(*this);
+  auto& options = loader.mOptions;
   options.mResourceRetriever = _resourceRetriever;
   if (flags & DartLoader::Flags::FIXED_BASE_LINK)
     options.mDefaultRootJointType = RootJointType::FIXED;
   else
     options.mDefaultRootJointType = RootJointType::FLOATING;
-  mOptions = options;
-  auto out = parseWorldString(_urdfString, _baseUri);
-  mOptions = oldOptions;
-  return out;
+  return loader.parseWorldString(_urdfString, _baseUri);
 }
 
 //==============================================================================

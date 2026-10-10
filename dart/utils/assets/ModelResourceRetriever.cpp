@@ -381,7 +381,7 @@ void downloadFile(const fs::path& root, const File& file)
   setOption(CURLOPT_FAILONERROR, 1L);
   setOption(CURLOPT_NOSIGNAL, 1L);
   setOption(CURLOPT_CONNECTTIMEOUT, 5L);
-  setOption(CURLOPT_TIMEOUT, 60L);
+  // Bound stalled transfers without rejecting large files on slow connections.
   setOption(CURLOPT_LOW_SPEED_LIMIT, 1024L);
   setOption(CURLOPT_LOW_SPEED_TIME, 30L);
   setOption(CURLOPT_MAXFILESIZE_LARGE, static_cast<curl_off_t>(file.size));

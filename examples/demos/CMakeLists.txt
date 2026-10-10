@@ -132,6 +132,15 @@ if(NOT DART_IN_SOURCE_BUILD)
   )
 endif()
 
+# Installed targets can exist even when their optional dependencies are missing.
+set(DART_DEMOS_HAVE_MODEL_ASSETS FALSE)
+if(
+  TARGET dart-utils-assets
+  AND (DART_IN_SOURCE_BUILD OR DART_utils-assets_FOUND)
+)
+  set(DART_DEMOS_HAVE_MODEL_ASSETS TRUE)
+endif()
+
 # Exact allocator-region capture is available in the in-source DART 6.20
 # build. For standalone examples, inspect only the selected `dart` target's
 # include directory so another DART installation later on the compiler search
@@ -285,7 +294,7 @@ endif()
 # both the in-source and standalone build paths below.
 function(dart_demos_collect_scene_srcs out_var)
   file(GLOB _srcs "scenes/*.cpp" "scenes/*.hpp")
-  if(NOT TARGET dart-utils-assets)
+  if(NOT DART_DEMOS_HAVE_MODEL_ASSETS)
     list(FILTER _srcs EXCLUDE REGEX "ModernHumanoidsScene\\.cpp$")
   endif()
   file(GLOB _tinkertoy_srcs "scenes/tinkertoy/*.cpp" "scenes/tinkertoy/*.hpp")
@@ -331,7 +340,7 @@ endfunction()
 # DART_DEMOS_HAVE_TINY_DNN / DART_DEMOS_HAVE_PYTHON when found. Shared by both
 # build paths below.
 function(dart_demos_configure_scenes_target target)
-  if(TARGET dart-utils-assets)
+  if(DART_DEMOS_HAVE_MODEL_ASSETS)
     target_link_libraries(${target} PUBLIC dart-utils-assets)
     target_compile_definitions(${target} PUBLIC DART_DEMOS_HAVE_MODEL_ASSETS)
   endif()

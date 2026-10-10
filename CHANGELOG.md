@@ -23,6 +23,10 @@
     `getSchemaRetrievers()`, and `removeAllRetrievers()` to inspect and release
     owned objective functions and resource retrievers.
 
+  * Prevent concurrent legacy URDF parsing calls from overriding each other's
+    resource retriever and root-joint options.
+    [#3653](https://github.com/dartsim/dart/pull/3653)
+
 * Dynamics
 
   * Preserve the generated soft mesh and shape-node properties when cloning

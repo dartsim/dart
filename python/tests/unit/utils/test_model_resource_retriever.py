@@ -6,6 +6,7 @@ import multiprocessing
 import socket
 import ssl
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from pathlib import Path
@@ -57,7 +58,7 @@ MODEL_URI = "model://testbot/v1/robot.urdf"
 
 
 @contextmanager
-def local_https_server(before_response=None):
+def local_https_server(before_response=None, stream_response=None):
     responses = dict(FILES)
     requests = []
     failures = set()
@@ -81,7 +82,10 @@ def local_https_server(before_response=None):
                 self.wfile.flush()
                 self.connection.shutdown(socket.SHUT_RDWR)
                 return
-            self.wfile.write(body)
+            if stream_response:
+                stream_response(path, self.wfile, body)
+            else:
+                self.wfile.write(body)
 
         def log_message(self, *_args):
             pass
@@ -165,14 +169,27 @@ def bundle_path(cache, manifest, revision="v1"):
 def cold_access_worker(connection, directory, operation):
     started = threading.Event()
     response_allowed = threading.Event()
+    second_started = threading.Event()
+    second_allowed = threading.Event()
 
     def before_response():
+        if operation == "legacy_loader_concurrent":
+            count = len(server["requests"])
+            if count == 1:
+                started.set()
+                assert response_allowed.wait(timeout=15)
+            elif count == 2:
+                second_started.set()
+                assert second_allowed.wait(timeout=15)
+            return
         started.set()
         assert response_allowed.wait(timeout=15)
 
     try:
         with local_https_server(
-            before_response if operation == "register" else None
+            before_response
+            if operation in ("register", "legacy_loader_concurrent")
+            else None
         ) as server, pytest.MonkeyPatch.context() as monkeypatch:
             trust_test_server(monkeypatch, server)
             directory = Path(directory)
@@ -180,7 +197,39 @@ def cold_access_worker(connection, directory, operation):
             cache = directory / "cache"
             retriever = make_retriever(cache, manifest)
             connection.send("ready")
-            if operation == "package":
+            if operation == "legacy_loader_concurrent":
+                other = make_retriever(directory / "other-cache", manifest)
+                loader = dart.utils.DartLoader()
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    first = executor.submit(
+                        loader.parseSkeleton,
+                        MODEL_URI,
+                        retriever,
+                        dart.utils.DartLoader.Flags.FIXED_BASE_LINK,
+                    )
+                    try:
+                        assert started.wait(timeout=5)
+                        second = executor.submit(loader.parseSkeleton, MODEL_URI, other)
+                        assert second_started.wait(timeout=5)
+                        response_allowed.set()
+                        fixed = first.result(timeout=5)
+                        assert fixed is not None
+                        assert fixed.getNumDofs() == 0, (
+                            f"Concurrent fixed parse used {fixed.getNumDofs()} DOFs"
+                        )
+                        second_allowed.set()
+                        floating = second.result(timeout=5)
+                        assert floating is not None and floating.getNumDofs() == 6
+                        options = loader.getOptions()
+                        assert options.mResourceRetriever is None
+                        assert (
+                            options.mDefaultRootJointType
+                            == dart.utils.DartLoader.RootJointType.FLOATING
+                        )
+                    finally:
+                        response_allowed.set()
+                        second_allowed.set()
+            elif operation == "package":
                 packages = dart.utils.PackageResourceRetriever(retriever)
                 packages.addPackageDirectory(
                     "testbot_description", "model://testbot/v1"
@@ -256,7 +305,8 @@ def cold_access_worker(connection, directory, operation):
                         robot = loader.parseSkeleton(MODEL_URI)
                     assert robot is not None
                     assert robot.getNumBodyNodes() == 1
-            assert sorted(server["requests"]) == sorted(FILES)
+            expected = list(FILES) * (2 if operation == "legacy_loader_concurrent" else 1)
+            assert sorted(server["requests"]) == sorted(expected)
         connection.send(None)
     except Exception as error:
         connection.send(f"{type(error).__name__}: {error}")
@@ -271,6 +321,7 @@ def cold_access_worker(connection, directory, operation):
         "composite",
         "loader",
         "legacy_loader",
+        "legacy_loader_concurrent",
         "register",
         "skel_world",
         "skel_xml",
@@ -446,3 +497,69 @@ def test_python_package_resolution_uses_pinned_model_uri(tmp_path, https_server)
     packages.addPackageDirectory("testbot_description", "model://testbot/v1")
     path = packages.getFilePath("package://testbot_description/meshes/link.obj")
     assert Path(path) == bundle_path(cache, manifest) / "meshes/link.obj"
+
+
+def slow_download_worker(connection, directory):
+    texture_path = "meshes/textures/body.png"
+    texture = b"verified texture" * 256 * 63
+    chunk_size = len(texture) // 63
+
+    def stream_response(path, output, body):
+        if path != texture_path:
+            output.write(body)
+            return
+        for offset in range(0, len(body), chunk_size):
+            if offset:
+                time.sleep(1)
+            output.write(body[offset : offset + chunk_size])
+            output.flush()
+
+    try:
+        with local_https_server(
+            stream_response=stream_response
+        ) as server, pytest.MonkeyPatch.context() as monkeypatch:
+            trust_test_server(monkeypatch, server)
+            directory = Path(directory)
+            server["responses"][texture_path] = texture
+            manifest = write_manifest(
+                directory,
+                server["url"],
+                override=(
+                    texture_path,
+                    {"size": str(len(texture)), "sha256": hashlib.sha256(texture).hexdigest()},
+                ),
+            )
+            cache = directory / "cache"
+            retriever = make_retriever(cache, manifest)
+            connection.send("ready")
+            started = time.monotonic()
+            assert retriever.exists(MODEL_URI)
+            assert time.monotonic() - started > 60
+            assert (bundle_path(cache, manifest) / texture_path).read_bytes() == texture
+        connection.send(None)
+    except Exception as error:
+        connection.send(f"{type(error).__name__}: {error}")
+    finally:
+        connection.close()
+
+
+def test_healthy_slow_transfer_survives_one_minute(tmp_path):
+    # Bound the real transfer regression even if native download timeout handling fails.
+    context = multiprocessing.get_context("spawn")
+    parent, child = context.Pipe(duplex=False)
+    worker = context.Process(target=slow_download_worker, args=(child, str(tmp_path)))
+    worker.start()
+    child.close()
+    try:
+        assert parent.poll(30), "Slow HTTPS test worker did not initialize"
+        assert parent.recv() == "ready"
+        worker.join(timeout=90)
+        assert not worker.is_alive(), "Slow HTTPS transfer exceeded its watchdog"
+        assert worker.exitcode == 0
+        assert parent.poll(), "Slow HTTPS test worker did not report its result"
+        assert parent.recv() is None
+    finally:
+        if worker.is_alive():
+            worker.terminate()
+            worker.join(timeout=5)
+        parent.close()
