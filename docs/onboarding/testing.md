@@ -120,13 +120,22 @@ pixi run gz-compat-harmonic    # gz-physics 7.8.0, gz-sim 8.10.0
 
 A first run of a lane builds DART, gz-physics, and gz-sim (about 15 minutes
 with 12 build jobs on a 32-core workstation) and then runs the gz-sim suite
-serially (13 to 16 minutes); later runs rebuild incrementally. On
-release-6.20 the lanes report the known DART 6.20 Gazebo regressions from
-issue #3056, so build the change's base as a second variant and set
-`GZ_COMPAT_BASE_VARIANT`: failures the base also has are then reported
-without failing the lane. Changes that can let bodies sleep in Gazebo worlds
-must also run `pixi run gz-compat-ionic sleep-oracle` (it also fails when a
-scenario puts nothing to sleep) and explain every mismatch; ODE or
+serially (13 to 16 minutes); later runs rebuild incrementally. Release
+verification of DART 6.20 at `48eb618bb81` passed all three unpatched
+gz-physics and gz-sim compatibility gates, with results equal to or better
+than DART 6.19.5. The only gz-physics failure is the accepted
+ray-intersection expectation described in the expected-failure files.
+The 3,000-shape world settles and all bodies sleep with gz-physics' custom
+collision filter since [#3632](https://github.com/dartsim/dart/pull/3632).
+
+To distinguish inherited failures from new ones, build the change's base as
+a second variant and set `GZ_COMPAT_BASE_VARIANT`; explain inherited failures
+as well. Sleeping changes must also run
+`pixi run gz-compat-ionic sleep-oracle` without `--allow-unexercised` and
+explain every mismatch. Release verification matched 33 of 35 scenarios;
+the two differences concern a detector-private contact-cap edit without
+notification and attachment sensitivity to the prior resting pose. DART
+6.19.5 had 6 mismatches and 27 unexercised scenarios. ODE or
 collision-group changes run
 `pixi run gz-compat-jetty raycast-probe`. `tools/gazebo/README.md` covers the
 steps, the comparison, the expected-failure files, and the benchmark drivers;
