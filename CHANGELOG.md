@@ -858,6 +858,10 @@
 
 * Python
 
+  * Build dartpy Linux wheels for glibc 2.28 and newer (`manylinux_2_28`) on
+    x86_64 and, new in this release, aarch64:
+    [#3661](https://github.com/dartsim/dart/pull/3661)
+
   * Fix dartpy DOF-list accessors so `Skeleton.getDofs()` and related chain
     DOF helpers return wrappers for DART-owned `DegreeOfFreedom` objects
     without transferring ownership or requiring movable/copyable DOF values:
