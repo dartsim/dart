@@ -57,7 +57,7 @@ the same versions/dirty flags the scalar path does, or sleeping breaks.
   shallow-support state after topology/mobile-state changes.
 - Scope: `dart/simulation/World.*` helper and step-path call sites.
 - Acceptance evidence: current-base A/B artifact
-  `/tmp/wp_pg31_ab_20260707T184319` on base `3964108a675` vs branch
+  `wp_pg31_ab_20260707T184319` on base `3964108a675` vs branch
   `21f691311df`: `double_pendulum.world` hashes identical
   (`0x1db838038acbd960`) with median step time 0.002106 -> 0.001836 ms
   (DART) and 0.001903 -> 0.001644 ms (ODE); generated 120-object DART/ODE

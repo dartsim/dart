@@ -300,7 +300,7 @@ other S2–S5 row matches the new column above.
 
 ### WP-PG.15 D7 default-remediation A/B (candidate)
 
-Artifact: `/tmp/wp_pg15_ab_plane_fallback_20260709T023141Z/summary.tsv` on
+Artifact: `wp_pg15_ab_plane_fallback_20260709T023141Z/summary.tsv` on
 `docs/close-dart6-performance-generalization`, using
 `build/default/cpp/Release/bin/contact_benchmark`. The old-default row uses
 CLI overrides to reproduce the baseline contact ERV (`0.001`) and
@@ -322,27 +322,27 @@ The explicit evaluator row remains a rejected fully global ERV/tolerance
 comparison; its final outcome stays healthy and is faster in this run, but the
 policy is not promoted because simple support-contact guards regressed under
 that broader setting. The S4/S5 DART/FCL/Bullet/ODE guard rows in
-`/tmp/wp_pg15_ab_review_20260708T235540Z/summary.tsv` stayed finite, and every
+`wp_pg15_ab_review_20260708T235540Z/summary.tsv` stayed finite, and every
 new-default row matched the old-default hash/contact/resting state.
 
 Additional current-candidate examples:
 
 - S2 3k-shapes DART headless guard:
-  `/tmp/wp_pg15_examples_20260708T223506Z/S2_dart_3k_shapes.log`
+  `wp_pg15_examples_20260708T223506Z/S2_dart_3k_shapes.log`
   (`RTF 29.7321`, `3003/3003` resting, zero contacts, hash
   `0x8ddc9a81f2d28a7f`).
 - S6 final-scene dump:
-  `/tmp/wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl` (78 records)
-  with log `/tmp/wp_pg15_visual_20260708T223506Z/S6_dump_final_scene.log`
+  `wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl` (78 records)
+  with log `wp_pg15_visual_20260708T223506Z/S6_dump_final_scene.log`
   (`71/71` resting, zero contacts, hash `0xec80f734df6d5e74`).
 - S6 GUI capture:
-  `/tmp/wp_pg15_gui_20260708T223653Z/S6_gui.png`; GUI log reports
+  `wp_pg15_gui_20260708T223653Z/S6_gui.png`; GUI log reports
   `20000 / 20000` capture frames, `71/71` resting, zero contacts, and
   `pixi run image-verdict` passed the non-blank verdict.
 
 ### WP-PG.14 D3 matrix-free opt-in A/B (landed as #3361)
 
-Artifact: `/tmp/wp_pg14_matrix_free_ab_20260709T040443Z` on
+Artifact: `wp_pg14_matrix_free_ab_20260709T040443Z` on
 `wp-pg-14-matrix-free-lcp`, using
 `build/default/cpp/Release/bin/contact_benchmark`. The matrix-free rows enable
 the new solver option explicitly; default settings remain dense Dantzig.
@@ -374,7 +374,7 @@ focused/full `test_ConstraintSolver`, dartpy constraint pytest, capped
 
 PR #3361 merged as `91c158fc3e5` after review hardening on head
 `5751c7ed84c`. Final current-head smoke artifact:
-`/tmp/wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`;
+`wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`;
 S1 120 DART dense option-off median avg step `7.93478` ms, hash
 `0x123ee9779bccacfb`; option-on 30-iteration matrix-free median avg step
 `1.38782` ms, finite, hash `0xa5548e1abe05b52`. The post-review changes
