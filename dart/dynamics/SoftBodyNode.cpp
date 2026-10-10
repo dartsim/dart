@@ -606,10 +606,22 @@ BodyNode* SoftBodyNode::clone(
   clonedActivation.mPositionTolerance = activation.mPositionTolerance;
   clonedActivation.resetTransientState();
 
-  if (cloneNodes)
-    clonedBn->matchNodes(this);
+  if (cloneNodes) {
+    // The constructor skin cannot be locked until this body is registered.
+    clonedBn->getShapeNode(0)->remove();
+    clonedBn->duplicateNodes(this);
+    clonedBn->matchSoftShapeNode(this);
+  }
 
   return clonedBn;
+}
+
+//==============================================================================
+void SoftBodyNode::matchSoftShapeNode(const SoftBodyNode* original)
+{
+  const auto skin = original->mSoftShapeNode.lock();
+  if (skin && !skin->isRemoved())
+    mSoftShapeNode = getShapeNode(skin->getIndexInBodyNode());
 }
 
 //==============================================================================
