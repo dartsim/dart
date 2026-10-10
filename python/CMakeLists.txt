@@ -11,6 +11,9 @@ if(DART_DARTPY_BINDER STREQUAL "nanobind")
     set(Python_EXECUTABLE "${Python3_EXECUTABLE}")
   endif()
   if(DART_DARTPY_STABLE_ABI)
+    if(CMAKE_VERSION VERSION_LESS 3.26)
+      message(FATAL_ERROR "DART_DARTPY_STABLE_ABI requires CMake 3.26 or newer")
+    endif()
     # nanobind silently builds a regular module on older interpreters.
     find_package(
       Python
@@ -42,6 +45,12 @@ if(DART_DARTPY_BINDER STREQUAL "nanobind")
   endif()
   add_subdirectory(dartpy_nanobind)
 else()
+  if(DART_DARTPY_STABLE_ABI)
+    message(
+      FATAL_ERROR
+      "DART_DARTPY_STABLE_ABI requires -DDART_DARTPY_BINDER=nanobind"
+    )
+  endif()
   # Set up pybind11
   set(
     PYBIND11_FINDPYTHON
