@@ -316,7 +316,11 @@ endfunction()
 # )
 function(dart_build_example_in_source target)
   dart_build_target_in_source(${target} ${ARGN})
-  dart_add_example(${target})
+  # Examples with missing dependencies are skipped; keep them out of the
+  # aggregate examples target.
+  if(TARGET ${target})
+    dart_add_example(${target})
+  endif()
 endfunction()
 
 # ==============================================================================
