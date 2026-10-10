@@ -181,6 +181,10 @@ protected:
 private:
   using TangentBasisMatrix = Eigen::Matrix<double, 3, 2>;
 
+  /// Whether the assembled detector seed contains valid normal and friction
+  /// impulses in the current tangent basis.
+  bool hasCompleteNativeWarmStart() const;
+
   /// Reinitialize this constraint for a new per-step collision contact.
   void reset(
       collision::Contact& contact,

@@ -33,6 +33,16 @@ stability, which are achieved through the use of generalized coordinates to
 represent articulated rigid body systems and the application of Featherstone's
 Articulated Body Algorithm to compute motion dynamics.
 
+Getting started
+---------------
+
+* **C++:** Follow the :doc:`installation guide <dart/user_guide/installation>`
+  and :doc:`source build guide <dart/developer_guide/build>`.
+* **Python:** Install dartpy using the
+  :doc:`installation guide <dartpy/user_guide/installation>`, run the
+  :doc:`examples <dartpy/user_guide/examples>`, and work through the
+  :doc:`tutorials <dartpy/user_guide/tutorials>`.
+
 Updates
 -------
 
@@ -59,26 +69,6 @@ Social Media
 Stay updated with the latest news and developments about DART by following us
 on `Twitter <https://twitter.com/dartsim_org>`_ and subscribing to our
 `YouTube channel <https://www.youtube.com/@dartyoutube3531>`_.
-
-Vision for the next version of DART
------------------------------------
-
-* Elevate the Python binding to a first-class component, ensuring full support
-  and equivalent functionality to the C++ APIs, rather than remaining in an
-  experimental stage.
-* Modularize the library so that users can select specific components to use
-  with minimal required dependencies, rather than having to use the entire
-  library, including unnecessary parts.
-* Utilize hardware accelerations, such as SIMD, multi-core CPUs, and GPUs,
-  whenever available and enabled by the user, to maximize overall performance.
-* Support both single and double precision, with options to compile the library
-  for required scalar types or leave the template code uncompiled.
-* Minimize dependencies to make the library usable without bringing in all
-  transitive dependencies.
-* Modernize implementation and public APIs to enable users to work with more
-  intuitive and user-friendly APIs.
-* Provide various resources, such as a quick start guide, examples, and
-  tutorials, to lower the initial learning curve for users.
 
 Citation
 --------
@@ -118,7 +108,6 @@ If you use DART in an academic publication, please consider citing this
    :caption: dart (C++)
 
    dart/user_guide/installation
-   dart/user_guide/tutorials
    dart/developer_guide/build
    dart/developer_guide/contribution
    dart/developer_guide/code_style_guide
@@ -142,3 +131,8 @@ If you use DART in an academic publication, please consider citing this
    community/who_uses_dart
    community/performance_dashboard
    license
+
+.. toctree::
+   :hidden:
+
+   dart/user_guide/tutorials

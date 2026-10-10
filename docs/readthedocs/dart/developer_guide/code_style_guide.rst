@@ -9,20 +9,17 @@ C++ Style Guide
 Macro Definitions
 ~~~~~~~~~~~~~~~~~
 
-In DART, we use macros to define compile-time constants and control code flow.
-All macros in our codebase are prefixed with ``DART_`` to distinguish them from
-other identifiers. Macros that control optional dependencies and features
-follow a consistent naming convention:
+DART 6 uses all-caps macro names. The generated ``dart/config.hpp`` defines
+optional dependency flags such as ``HAVE_BULLET``, ``HAVE_ODE``, and
+``HAVE_OCTOMAP``, and feature flags such as ``DART_ENABLE_SIMD``. These flags
+have values of 0 or 1. Follow the existing names when checking build features.
 
-* ``DART_HAS_<optional_dep>``: A boolean value that is set to true when an
-  optional dependency is detected in the system.
-* ``DART_ENABLE_<optional_feature>``: A boolean value that is set to true if
-  the optional feature should be enabled when the requirements are met.
-* ``DART_ENABLED_<optional_feature>``: A boolean value that is set to true if
-  the optional feature is enabled.
+Naming Conventions
+~~~~~~~~~~~~~~~~~~
 
-We use all-caps for all macro names to ensure consistency and to visually
-distinguish macros from other types of variables.
+C++ functions use camelCase and member variables generally use an ``m`` prefix
+(for example, ``mTimeStep``). Follow the naming conventions in nearby code for
+local variables.
 
 Python Style Guide
 ------------------
@@ -30,54 +27,32 @@ Python Style Guide
 Naming Conventions
 ~~~~~~~~~~~~~~~~~~
 
-This project uses different naming conventions for the C++ code and the Python
-bindings. In the C++ code, function names are in camelCase and variables and
-member variables use snake_case, whereas in the Python bindings, both function
-names and variables use snake_case.
+DART 6's dartpy bindings generally retain the C++ method names, including
+camelCase. C++ namespaces are exposed as Python modules, such as
+``dartpy.simulation`` and ``dartpy.utils``.
 
-Here are the naming conventions used in the Python bindings:
-
-* Function names are in snake_case, with words separated by underscores (e.g.
-  `calculate_average`).
-* Class names are in CamelCase, with the first letter of each word in uppercase
-  (e.g. `MyClass`).
-* Variables and member variables are in snake_case, with words separated by
-  underscores (e.g. `my_variable`).
-* Constants are in ALL_CAPS, with words separated by underscores (e.g.
-  `MY_CONSTANT`).
-* Namespaces are represented by modules, and are in lowercase, with words
-  separated by underscores (e.g. `my_module.my_namespace`).
-
-For example, the identity member function is called isIdentity in C++:
+For example, these C++ methods keep the same names in Python:
 
 .. code-block:: cpp
 
-   auto so3 = SO3();
-   bool is_identity = so3.isIdentity();
+   dart::simulation::World world;
+   world.setTimeStep(0.002);
+   double timeStep = world.getTimeStep();
 
-while it is called is_identity in Python:
+The equivalent dartpy code is:
 
 .. code-block:: python
 
-   so3 = SO3()
-   is_identity = so3.is_identity()
+   import dartpy as dart
 
-Motivations for Different Naming Conventions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   world = dart.simulation.World()
+   world.setTimeStep(0.002)
+   time_step = world.getTimeStep()
 
-The reason for using different naming conventions in the C++ code and the
-Python bindings is to follow the conventions that are most commonly used in
-each language. The camelCase convention is more common for function names in
-the C++ community, while the snake_case convention is more common for function
-names in the Python community.
-
-By using the standard naming conventions in each language, we can make the code
-more readable and easier to understand for developers who are familiar with
-each language. Consistency within each language is important, but it's also
-crucial to document the conventions clearly so that other developers can
-understand how to use the code and what the naming conventions mean in each
-context. Additionally, following the naming conventions of each language can
-help with integration with other Python modules or projects.
+Some Eigen adapters use snake_case methods, such as
+``dartpy.math.Isometry3.set_rotation`` and ``set_translation``. Use the method
+names exposed by each binding; there is no general camelCase-to-snake_case
+conversion.
 
 CMake Style Guide
 -----------------

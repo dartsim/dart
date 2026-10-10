@@ -110,7 +110,10 @@ set(
 )
 
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
-set(DART_PKG_EXTERNAL_DEPS "assimp, ccd, eigen3, fcl, octomap")
+set(
+  DART_PKG_EXTERNAL_DEPS
+  "assimp >= 5.2.2, ccd, eigen3 >= 3.4.0, fcl >= 0.7.0, octomap >= 1.9.7"
+)
 
 #===============================================================================
 # Build options
@@ -359,12 +362,14 @@ endif()
 
 option(DART_BUILD_WHEELS "Indicate building dartpy for wheels" OFF)
 
+dart_check_compiler_version()
+
 # Configure MSVC compile policy before dependency discovery so any dependency
 # targets created during configure inherit the same directory options.
 if(MSVC)
   dart_configure_msvc_toolchain(
-    REQUIRED_VERSION 1920
-    REQUIRED_LABEL "Visual Studio 2019"
+    REQUIRED_VERSION 1930
+    REQUIRED_LABEL "Visual Studio 2022 v143"
   )
 endif()
 
@@ -417,22 +422,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     add_compile_options(-Werror)
   endif()
-  execute_process(
-    COMMAND ${CMAKE_CXX_COMPILER} -dumpfullversion -dumpversion
-    OUTPUT_VARIABLE GCC_VERSION
-  )
-  if(DART_BUILD_WHEELS)
-    set(gcc_required_version 10.2.1) # Lowered from 11.2.0 to support building in manylinux2014
-  else()
-    set(gcc_required_version 11.2.0)
-  endif()
-  if(GCC_VERSION VERSION_LESS ${gcc_required_version})
-    message(
-      FATAL_ERROR
-      "The installed g++ version is ${GCC_VERSION}. ${PROJECT_NAME} requires g++ ${gcc_required_version} or greater."
-    )
-  endif()
-  if(GCC_VERSION VERSION_GREATER_EQUAL 13.2.0)
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13.2.0)
     # TODO: These warnings should be properly addressed and these compiler options removed
     add_compile_options(
       $<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual>
@@ -463,16 +453,6 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   add_compile_options(-Wall -Wextra -fPIC)
   if(DART_TREAT_WARNINGS_AS_ERRORS)
     add_compile_options(-Werror)
-  endif()
-  execute_process(
-    COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
-    OUTPUT_VARIABLE CLANG_VERSION
-  )
-  if(CLANG_VERSION VERSION_LESS 6.0)
-    message(
-      FATAL_ERROR
-      "The installed Clang version is ${CLANG_VERSION}. ${PROJECT_NAME} requires clang 6.0 or greater."
-    )
   endif()
   if("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
@@ -567,26 +547,6 @@ if(TARGET dart)
     list(LENGTH examples examples_length)
     message(STATUS "Adding ${examples_length} examples")
   endif(DART_VERBOSE)
-
-  # Add a "tutorials" target to build tutorials.
-  if(MSVC)
-    add_subdirectory(tutorials)
-  else()
-    add_subdirectory(tutorials EXCLUDE_FROM_ALL)
-    get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
-    add_custom_target(tutorials DEPENDS ${tutorials})
-  endif()
-
-  if(DART_VERBOSE)
-    message(STATUS "")
-    message(STATUS "[ Tutorials ]")
-    foreach(tutorial ${tutorials})
-      message(STATUS "Adding tutorial: ${tutorial}")
-    endforeach(tutorial ${tutorials})
-  else(DART_VERBOSE)
-    list(LENGTH tutorials tutorials_length)
-    message(STATUS "Adding ${tutorials_length} tutorials")
-  endif(DART_VERBOSE)
 endif()
 
 add_subdirectory(python)
@@ -602,11 +562,6 @@ foreach(target_candidate ${all_target_candidates})
   endif()
 endforeach()
 foreach(target_candidate ${examples})
-  if(TARGET ${target_candidate})
-    list(APPEND all_targets ${target_candidate})
-  endif()
-endforeach()
-foreach(target_candidate ${tutorials})
   if(TARGET ${target_candidate})
     list(APPEND all_targets ${target_candidate})
   endif()
@@ -670,7 +625,10 @@ write_basic_config_version_file(
   COMPATIBILITY SameMajorVersion
 )
 install(
-  FILES ${DART_CONFIG_OUT} ${DART_VERSION_OUT}
+  FILES
+    ${DART_CONFIG_OUT}
+    ${DART_VERSION_OUT}
+    "${DART_SOURCE_DIR}/cmake/DARTFindPackageVersion.cmake"
   DESTINATION "${CONFIG_INSTALL_DIR}"
 )
 
@@ -737,8 +695,9 @@ endif()
 
 # Tutorials source
 install(
-  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorials"
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/python/tutorials"
   DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
+  PATTERN "__pycache__" EXCLUDE
 )
 
 #===============================================================================
@@ -921,7 +880,6 @@ if(BUILD_TESTING)
   message(STATUS "Run 'make tests' to build all the tests")
 endif()
 message(STATUS "Run 'make examples' to build all the examples")
-message(STATUS "Run 'make tutorials' to build all the tutorials")
 message(STATUS "Run 'make view_docs' to see the API documentation")
 message(STATUS "Run 'make install' to install all the C++ components")
 if(TARGET dartpy)

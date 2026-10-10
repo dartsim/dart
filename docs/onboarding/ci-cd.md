@@ -294,9 +294,9 @@ PRs may not save caches). A PR restores the newest main snapshot plus its own,
 so it rebuilds only what changed since its last push. Cache keys include the
 MSVC version. Each MSVC
 compile spends most of its time parsing headers, so Windows CI builds each
-target as unity translation units (`CMAKE_UNITY_BUILD`). The Linux assertions
-gate does too, so a collision also fails on Linux. Keep file-local names
-unique within a target for this ([Code Style](code-style.md)).
+target as unity translation units (`CMAKE_UNITY_BUILD`). The Linux Release and
+assertions jobs do too, so a collision also fails on Linux. Keep file-local
+names unique within a target for this ([Code Style](code-style.md)).
 CTest runs in parallel (`CTEST_PARALLEL_LEVEL`). Nightly-only configurations
 never save, so they build cold. Pixi build tasks pin `BUILD_TYPE=Release`, so
 a job that needs another build type configures CMake itself, as the assertions

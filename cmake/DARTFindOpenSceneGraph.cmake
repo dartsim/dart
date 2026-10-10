@@ -8,7 +8,7 @@
 
 find_package(
   OpenSceneGraph
-  3.0.0
+  3.6.5
   QUIET
   COMPONENTS osg osgViewer osgManipulator osgGA osgDB osgShadow osgText osgUtil
 )

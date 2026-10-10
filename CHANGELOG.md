@@ -2,6 +2,28 @@
 
 ## DART 6
 
+### [DART 6.21.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
+
+* Dynamics
+
+  * Preserve the generated soft mesh and shape-node properties when cloning
+    soft-body skeletons, avoiding duplicate null meshes during collision checks.
+    [#3644](https://github.com/dartsim/dart/pull/3644)
+
+* Python
+
+  * Add dartpy soft-body construction, typed Euler-joint skeleton editing,
+    and world-recording access for Python simulation tutorials.
+    [#3644](https://github.com/dartsim/dart/pull/3644)
+
+* Examples
+
+  * Replace the four C++ tutorials with Python exercises and solutions in
+    `python/tutorials/{multi_pendulum,biped,collisions,dominoes}`. Existing
+    `tu-*` Pixi commands now launch Python; the C++ tutorial executables and
+    aggregate build target are removed.
+    [#3644](https://github.com/dartsim/dart/pull/3644)
+
 ### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)
 
 * Breaking Changes
@@ -77,6 +99,14 @@
     [#3627](https://github.com/dartsim/dart/pull/3627)
 
 * Build
+
+  * Raise the DART 6.20 source-build requirements to GCC 11.2, Clang 13,
+    Apple Clang 14 (Xcode 14.1), or Visual Studio 2022 v143, and update the
+    minimum library dependencies. Supported source-build platforms start at
+    Ubuntu 22.04 and macOS 13, with Windows Server 2022 as the Windows CI
+    baseline. dartpy now requires Python 3.10 and NumPy 1.21.5 or newer; see
+    the [build requirements](https://dart.readthedocs.io/en/latest/dart/developer_guide/build.html)
+    for the dependency versions.
 
   * Accept `CMAKE_BUILD_TYPE=None`, which distribution packaging uses to apply
     its own compiler flags, without the unknown-build-type warning:
@@ -581,6 +611,13 @@
 
 * Simulation
 
+  * Reuse converged rigid-contact impulses across steps with the opt-in NSGS
+    friction solver for contact groups with one reactive body, on every
+    collision detector. Refine cached guesses before accepting them, preserve
+    compatible detector seeds, and reset impulse history after capped or
+    failed solves and changes to timestep, collision geometry, or solver:
+    [#3636](https://github.com/dartsim/dart/pull/3636)
+
   * Allow resting islands that use a custom `BodyNodeCollisionFilter` to sleep
     while their collision decisions stay unchanged, and keep reporting their
     last solved contacts and forces. Such islands stay awake while the
@@ -862,6 +899,13 @@
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * Examples
+
+  * Automatically scale the `dart-demos` UI and initial window to desktop
+    DPI, with live updates and manual overrides in the View menu or through
+    `--gui-scale` / `DART_GUI_SCALE`. Fit the default window to its monitor
+    and honor explicit interactive `--width` / `--height` values. Headless
+    captures retain their default 1x scale and exact requested dimensions:
+    [#3640](https://github.com/dartsim/dart/pull/3640)
 
   * Add `contact_benchmark --gz-preset`, which loads an SDF world with SDF
     planes as 2100 m boxes, a 10000-contact cap, the ODE detector with a

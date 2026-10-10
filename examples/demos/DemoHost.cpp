@@ -32,6 +32,7 @@
 
 #include "DemoHost.hpp"
 
+#include "DisplaySettings.hpp"
 #include "Theme.hpp"
 
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
@@ -471,7 +472,7 @@ void DemoWorldNode::endStepTiming()
 //==============================================================================
 DemoHost::DemoHost(
     std::vector<DemoScene> scenes,
-    double guiScale,
+    std::optional<double> guiScale,
     std::string collisionDetectorName,
     std::size_t simulationThreads)
   : mScenes(std::move(scenes)),
@@ -486,7 +487,8 @@ DemoHost::DemoHost(
     mSimulationThreads(static_cast<int>(std::min<std::size_t>(
         simulationThreads,
         static_cast<std::size_t>(std::numeric_limits<int>::max())))),
-    mGuiScale(dart::gui::osg::sanitizeGuiScale(guiScale))
+    mGuiScale(dart::gui::osg::sanitizeGuiScale(guiScale.value_or(1.0))),
+    mAutomaticGuiScale(!guiScale.has_value())
 {
 #if DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   const char* memoryDiagnosticsEnv
@@ -519,6 +521,7 @@ DemoHost::DemoHost(
 //==============================================================================
 DemoHost::~DemoHost()
 {
+  mGuiScaleTheme.reset();
   // See the header comment: without this, whichever scene is still active at
   // process exit leaks its DnD/attachment/event-handler teardowns into the
   // viewer's own destruction instead of running them first.
@@ -702,6 +705,7 @@ void DemoHost::ensureViewerConfigured()
 
   applyModernDarkColors();
   applyModernDarkMetrics();
+  mGuiScaleTheme = std::make_unique<GuiScaleTheme>(*mViewer->getImGuiHandler());
   mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
 
   mViewer->getCamera()->setClearColor(::osg::Vec4(0.58f, 0.62f, 0.65f, 1.0f));
@@ -1232,15 +1236,39 @@ int DemoHost::runHeadlessShot(
 }
 
 //==============================================================================
-int DemoHost::run()
+int DemoHost::run(std::optional<int> width, std::optional<int> height)
 {
   ensureViewerConfigured();
 
   mViewer->setUpViewInWindow(
       0,
       0,
-      dart::gui::osg::scaleWindowExtent(kDefaultWindowWidth, mGuiScale),
-      dart::gui::osg::scaleWindowExtent(kDefaultWindowHeight, mGuiScale));
+      width.value_or(kDefaultWindowWidth),
+      height.value_or(kDefaultWindowHeight));
+
+  if (!mViewer->isRealized())
+    mViewer->realize();
+
+  if (!mViewer->isRealized()) {
+    std::cerr << "Failed to create the demos window.\n";
+    return 1;
+  }
+
+  auto* window = dynamic_cast<::osgViewer::GraphicsWindow*>(
+      mViewer->getCamera()->getGraphicsContext());
+  if (window) {
+    const auto metrics = queryDisplayMetrics(*window);
+    if (mAutomaticGuiScale && metrics.guiScale)
+      setGuiScale(*metrics.guiScale);
+    WindowRectangle current;
+    window->getWindowRectangle(
+        current.x, current.y, current.width, current.height);
+    const auto fitted
+        = fitInitialWindow(current, metrics, mGuiScale, width, height);
+    window->setWindowRectangle(fitted.x, fitted.y, fitted.width, fitted.height);
+  }
+  mNextDpiCheck
+      = std::chrono::steady_clock::now() + std::chrono::milliseconds(250);
 
   const std::string initial = !mInitialSceneId.empty() ? mInitialSceneId
                               : !mScenes.empty()       ? mScenes.front().id
@@ -1250,12 +1278,14 @@ int DemoHost::run()
     processPendingSwitch();
   }
 
-  if (!mViewer->isRealized())
-    mViewer->realize();
-
   mViewer->simulate(true);
 
   while (!mViewer->done()) {
+    const auto now = std::chrono::steady_clock::now();
+    if (mAutomaticGuiScale && now >= mNextDpiCheck) {
+      updateAutomaticGuiScale();
+      mNextDpiCheck = now + std::chrono::milliseconds(250);
+    }
     // Scene switches are queued (requestSceneSwitch) and only ever executed
     // here, between frames -- never from inside ImGui rendering.
     processPendingSwitch();
@@ -1263,6 +1293,31 @@ int DemoHost::run()
   }
 
   return 0;
+}
+
+//==============================================================================
+void DemoHost::setGuiScale(double scale)
+{
+  const double sanitized = dart::gui::osg::sanitizeGuiScale(scale);
+  if (std::abs(mGuiScale - sanitized) <= 1e-6)
+    return;
+  mGuiScale = sanitized;
+  mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
+  mDockLayoutResetRequested = true;
+  mMeasuredToolbarHeight = 0.0f;
+  mMeasuredBottomHeight = 0.0f;
+}
+
+//==============================================================================
+void DemoHost::updateAutomaticGuiScale()
+{
+  auto* window = dynamic_cast<::osgViewer::GraphicsWindow*>(
+      mViewer->getCamera()->getGraphicsContext());
+  if (window) {
+    const auto metrics = queryDisplayMetrics(*window);
+    if (metrics.guiScale)
+      setGuiScale(*metrics.guiScale);
+  }
 }
 
 //==============================================================================
@@ -1675,6 +1730,10 @@ void DemoHost::renderViewMenu()
     mViewer->switchHeadlights(headlights);
 
   ImGui::Separator();
+  if (ImGui::Checkbox("Automatic DPI scaling", &mAutomaticGuiScale)
+      && mAutomaticGuiScale) {
+    updateAutomaticGuiScale();
+  }
   float guiScale = static_cast<float>(mGuiScale);
   const float minGuiScale
       = static_cast<float>(dart::gui::osg::getMinGuiScale());
@@ -1689,20 +1748,8 @@ void DemoHost::renderViewMenu()
           "%.2fx",
           ImGuiSliderFlags_AlwaysClamp)
       && std::isfinite(guiScale)) {
-    mGuiScale = dart::gui::osg::sanitizeGuiScale(guiScale);
-    mViewer->getImGuiHandler()->setGuiScale(mGuiScale);
-#ifdef IMGUI_HAS_DOCK
-    // The default dock fractions depend on the scale; rebuild the layout so
-    // the toolbar and side panels resize with the new content instead of
-    // clipping until a manual "Reset layout".
-    mDockLayoutResetRequested = true;
-#endif
-    // The fixed-layout chrome measurements also depend on the scale, and the
-    // Diagnostics measurement echoes the previously assigned height (its log
-    // child fills the remaining space), so a stale value would ratchet.
-    // Re-seed both from the scale-based estimate next frame.
-    mMeasuredToolbarHeight = 0.0f;
-    mMeasuredBottomHeight = 0.0f;
+    mAutomaticGuiScale = false;
+    setGuiScale(guiScale);
   }
 
 #ifdef IMGUI_HAS_DOCK

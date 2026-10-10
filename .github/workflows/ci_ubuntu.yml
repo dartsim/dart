@@ -212,6 +212,8 @@ jobs:
       - name: Test DART and dartpy
         id: build
         run: |
+          # Later config/config-py tasks preserve unity in the CMake cache.
+          pixi run config -- -DCMAKE_UNITY_BUILD=ON
           DART_VERBOSE=ON \
           pixi run test-all
 

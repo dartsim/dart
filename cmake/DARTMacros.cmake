@@ -66,10 +66,19 @@ endmacro()
 #   dart_generate_include_header_file(file_path target_dir [headers...])
 #===============================================================================
 macro(dart_generate_include_header_file file_path target_dir)
-  file(WRITE ${file_path} "// Automatically generated file by cmake\n\n")
+  set(include_header_content "// Automatically generated file by cmake\n\n")
   foreach(header ${ARGN})
-    file(APPEND ${file_path} "#include \"${target_dir}${header}\"\n")
+    string(
+      APPEND include_header_content
+      "#include \"${target_dir}${header}\"\n"
+    )
   endforeach()
+  file(
+    CONFIGURE
+    OUTPUT "${file_path}"
+    CONTENT "${include_header_content}"
+    @ONLY
+  )
 endmacro()
 
 #===============================================================================
@@ -212,11 +221,6 @@ function(dart_add_example)
 endfunction(dart_add_example)
 
 #===============================================================================
-function(dart_add_tutorial)
-  dart_property_add(DART_TUTORIALS ${ARGN})
-endfunction(dart_add_tutorial)
-
-#===============================================================================
 function(dart_format_add)
   foreach(source ${ARGN})
     if(IS_ABSOLUTE "${source}")
@@ -313,17 +317,6 @@ endfunction()
 function(dart_build_example_in_source target)
   dart_build_target_in_source(${target} ${ARGN})
   dart_add_example(${target})
-endfunction()
-
-#===============================================================================
-# dart_build_tutorial_in_source(target
-#   [LINK_LIBRARIES library1 ...])
-#   [COMPILE_FEATURES feature1 ...]
-#   [COMPILE_OPTIONS option1 ...]
-# )
-function(dart_build_tutorial_in_source target)
-  dart_build_target_in_source(${target} ${ARGN})
-  dart_add_tutorial(${target})
 endfunction()
 
 # ==============================================================================

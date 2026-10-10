@@ -14,10 +14,12 @@
 # ASSIMP_LIBRARIES
 # ASSIMP_VERSION
 
-find_package(PkgConfig QUIET)
+find_package(PkgConfig 0.29.2 QUIET)
 
 # Check to see if pkgconfig is installed.
-pkg_check_modules(PC_ASSIMP assimp QUIET)
+if(PkgConfig_FOUND)
+  pkg_check_modules(PC_ASSIMP assimp QUIET)
+endif()
 
 # Include directories
 find_path(
@@ -56,7 +58,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
   assimp
   FAIL_MESSAGE DEFAULT_MSG
-  REQUIRED_VARS ASSIMP_INCLUDE_DIRS ASSIMP_LIBRARIES
+  REQUIRED_VARS ASSIMP_INCLUDE_DIRS ASSIMP_LIBRARIES ASSIMP_VERSION
   VERSION_VAR ASSIMP_VERSION
 )
 

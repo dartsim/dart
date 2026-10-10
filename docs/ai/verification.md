@@ -114,14 +114,25 @@ review is unavailable, record that limitation. Name the replacement evidence;
 never use a screenshot as the sole correctness oracle.
 
 PRs fixing or changing dynamics, collision/contact, constraint, simulation,
-or rendering behavior include a before/after visual pair by default beside
-the text oracle. Capture the base revision and PR head using the same scene,
+or rendering behavior include a before/after visual pair by default, supported
+by the text oracle. Capture the base revision and PR head using the same scene,
 camera, steps, dimensions, and renderer, compose side by side with
 `pixi run image-compose`, and publish with `pixi run evidence-publish` after
 explicit maintainer approval for uploads. Magnify small effects with a closer
 camera, side view, contrasting colors, or contact/debug layers; interpenetration
 and penetration depth need a close side view because a distant still hides
-them. Skip only with a stated reason, such as a headless-only or invisible change.
+them. If the pair looks identical, check the text oracle on both revisions and
+reframe until any visible effect shows. Skip only with a stated reason, such as
+a headless-only or invisible change.
+
+When an improvement is visible in motion, contact, settling, stability, or
+rendering, select the 3D simulation highlights as images or a short GIF/video.
+Use the same camera for before and after, and place the key comparison in the
+PR's Effect section beside its claim; keep the text oracle and reproduction
+details later in the body. For compute-only wins with unchanged motion, show
+plots of the measured work or time instead of identical simulation captures.
+Use the capture, composition, selection, and publication flow below; transient
+media stays out of the repository and uploads require explicit approval.
 
 ## Visual Verification (Headless Capture)
 

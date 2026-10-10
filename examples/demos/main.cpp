@@ -38,7 +38,9 @@
 
 #include <dart/gui/osg/osg.hpp>
 
+#include <charconv>
 #include <iostream>
+#include <optional>
 #include <string>
 
 #include <cstdlib>
@@ -64,7 +66,7 @@ enum class ParseResult
 //==============================================================================
 struct Options
 {
-  double guiScale = 1.0;
+  std::optional<double> guiScale;
   bool listScenes = false;
   bool cycleScenes = false;
   int cycleFrames = 30;
@@ -72,8 +74,8 @@ struct Options
   std::string shotPath = "dart-demos.png";
   int steps = 150;
   std::string sceneId = DART_DEMOS_DEFAULT_SCENE;
-  int width = kDefaultWindowWidth;
-  int height = kDefaultWindowHeight;
+  std::optional<int> width;
+  std::optional<int> height;
   std::string collisionDetectorName;
   std::size_t simulationThreads = 1u;
 
@@ -108,18 +110,35 @@ void printUsage(const char* prog)
       << "  --steps <n>     Sim steps to settle before the --headless shot "
          "(default 150).\n"
       << "  --width <w> --height <h>  Render/window size (default "
-      << kDefaultWindowWidth << "x" << kDefaultWindowHeight << ").\n"
+      << kDefaultWindowWidth << "x" << kDefaultWindowHeight
+      << "; interactive defaults scale and fit the monitor).\n"
       << "  --gui-scale <f> Scale the ImGui panels and initial window size "
-         "(default 1.0;\n"
-         "                  also --gui-scale=<f>; DART_GUI_SCALE seeds the "
-         "same scale;\n"
-         "                  supported range 0.5-4, out-of-range values are "
+         "(default: automatic DPI;\n"
+         "                  headless default: 1.0; also --gui-scale=<f>; "
+         "DART_GUI_SCALE seeds\n"
+         "                  the same manual scale; supported range 0.5-4, "
+         "out-of-range values are "
          "clamped).\n"
       << "  --collision-detector <name>  Initial collision backend "
          "(e.g. fcl, dart, bullet, ode when available).\n"
       << "  --threads <n>   Initial simulation worker threads (0 selects "
          "hardware concurrency).\n"
       << "  -h, --help      Show this help.\n";
+}
+
+//==============================================================================
+bool parseWindowExtent(const char* value, std::optional<int>& extent)
+{
+  int parsed = 0;
+  const auto* end = value + std::strlen(value);
+  const auto result = std::from_chars(value, end, parsed);
+  if (result.ec != std::errc() || result.ptr != end || parsed <= 0) {
+    std::cerr << "Invalid window dimension '" << value
+              << "'. Expected a positive integer.\n";
+    return false;
+  }
+  extent = parsed;
+  return true;
 }
 
 //==============================================================================
@@ -148,8 +167,7 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
   // --gui-scale flag below overrides it.
   if (const char* guiScaleEnv = std::getenv("DART_GUI_SCALE");
       guiScaleEnv != nullptr && guiScaleEnv[0] != '\0') {
-    opt.guiScale
-        = dart::gui::osg::parseGuiScale(guiScaleEnv, opt.guiScale, &std::cerr);
+    opt.guiScale = dart::gui::osg::parseGuiScale(guiScaleEnv, 1.0, &std::cerr);
   }
 
   auto needsValue = [&](int i) {
@@ -187,19 +205,21 @@ ParseResult parseArgs(int argc, char** argv, Options& opt)
     } else if (std::strcmp(a, "--width") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
-      opt.width = std::stoi(argv[++i]);
+      if (!parseWindowExtent(argv[++i], opt.width))
+        return ParseResult::Error;
     } else if (std::strcmp(a, "--height") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
-      opt.height = std::stoi(argv[++i]);
+      if (!parseWindowExtent(argv[++i], opt.height))
+        return ParseResult::Error;
     } else if (std::strcmp(a, "--gui-scale") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
-      opt.guiScale
-          = dart::gui::osg::parseGuiScale(argv[++i], opt.guiScale, &std::cerr);
+      opt.guiScale = dart::gui::osg::parseGuiScale(
+          argv[++i], opt.guiScale.value_or(1.0), &std::cerr);
     } else if (std::strncmp(a, "--gui-scale=", 12) == 0) {
-      opt.guiScale
-          = dart::gui::osg::parseGuiScale(a + 12, opt.guiScale, &std::cerr);
+      opt.guiScale = dart::gui::osg::parseGuiScale(
+          a + 12, opt.guiScale.value_or(1.0), &std::cerr);
     } else if (std::strcmp(a, "--collision-detector") == 0) {
       if (needsValue(i) == ParseResult::Error)
         return ParseResult::Error;
@@ -247,7 +267,8 @@ int main(int argc, char** argv)
 
   dart_demos::DemoHost host(
       dart_demos::makeDemoScenes(),
-      opt.guiScale,
+      opt.headless ? std::optional<double>(opt.guiScale.value_or(1.0))
+                   : opt.guiScale,
       opt.collisionDetectorName,
       opt.simulationThreads);
   if (!opt.sceneId.empty())
@@ -269,8 +290,12 @@ int main(int argc, char** argv)
 
   if (opt.headless) {
     return host.runHeadlessShot(
-        opt.shotPath, opt.steps, opt.sceneId, opt.width, opt.height);
+        opt.shotPath,
+        opt.steps,
+        opt.sceneId,
+        opt.width.value_or(kDefaultWindowWidth),
+        opt.height.value_or(kDefaultWindowHeight));
   }
 
-  return host.run();
+  return host.run(opt.width, opt.height);
 }

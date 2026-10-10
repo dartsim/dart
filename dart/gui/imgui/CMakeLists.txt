@@ -191,7 +191,15 @@ function(dart_patch_imgui_opengl2_backend out_var source_path)
   endif()
 
   set(patched_source "${CMAKE_CURRENT_BINARY_DIR}/imgui_impl_opengl2_dart.cpp")
-  file(WRITE "${patched_source}" "${imgui_opengl2_contents}")
+  # Rewrite only on change, so a reconfigure doesn't rebuild ImGui. Not
+  # file(CONFIGURE): it would substitute @VAR@ in this third-party source.
+  set(previous_contents "")
+  if(EXISTS "${patched_source}")
+    file(READ "${patched_source}" previous_contents)
+  endif()
+  if(NOT "${previous_contents}" STREQUAL "${imgui_opengl2_contents}")
+    file(WRITE "${patched_source}" "${imgui_opengl2_contents}")
+  endif()
   set(${out_var} "${patched_source}" PARENT_SCOPE)
 endfunction()
 
@@ -217,14 +225,15 @@ function(dart_configure_imgui_compat_headers out_var)
 endfunction()
 
 macro(dart_try_find_system_imgui)
+  include("${DART_SOURCE_DIR}/cmake/DARTFindPackageVersion.cmake")
   if(CMAKE_DISABLE_FIND_PACKAGE_imgui)
     set(imgui_FOUND FALSE)
   else()
-    find_package(imgui QUIET CONFIG)
+    find_package(imgui 1.91.9 QUIET CONFIG)
   endif()
 
   if(NOT imgui_FOUND AND NOT CMAKE_DISABLE_FIND_PACKAGE_imgui)
-    find_package(PkgConfig QUIET)
+    find_package(PkgConfig 0.29.2 QUIET)
     if(PkgConfig_FOUND AND COMMAND pkg_check_modules)
       pkg_check_modules(PC_imgui imgui QUIET)
     endif()
@@ -259,6 +268,8 @@ macro(dart_try_find_system_imgui)
       )
       set(imgui_LIBRARIES ${_dart_imgui_library})
       set(imgui_FOUND TRUE)
+      dart_read_header_version(imgui_VERSION imgui.h IMGUI_VERSION ${imgui_INCLUDE_DIRS})
+      dart_check_package_version(imgui 1.91.9)
     endif()
   endif()
 
@@ -339,8 +350,10 @@ if(DART_USE_SYSTEM_IMGUI)
     "${CMAKE_CURRENT_BINARY_DIR}/external_imgui_compat.cpp"
   )
   file(
-    WRITE "${imgui_compat_source}"
-    "namespace dart_external_imgui { void keep_component() {} }\n"
+    CONFIGURE
+    OUTPUT "${imgui_compat_source}"
+    CONTENT "namespace dart_external_imgui { void keep_component() {} }\n"
+    @ONLY
   )
 
   set(imgui_compat_sources ${imgui_compat_source})

@@ -1,8 +1,8 @@
-## Summary
+## Effect
 
 -
 
-<!-- Describe this pull request. Link to relevant GitHub issues, if any. -->
+<!-- Follow docs/onboarding/contributing.md#pr-descriptions: user effect or risk removed, headline measurement (or why none applies), and key plot/visual when applicable; readable in about a minute. -->
 
 ## Motivation / Problem
 

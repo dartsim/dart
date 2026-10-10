@@ -2,12 +2,12 @@
 dart_find_package(urdfdom)
 if(urdfdom_FOUND)
   if(DART_VERBOSE)
-    message(STATUS "Looking for urdfdom - ${urdfdom_headers_VERSION} found")
+    message(STATUS "Looking for urdfdom - ${urdfdom_VERSION} found")
   endif()
 else()
   message(
     WARNING
-    "Looking for urdfdom - NOT found, to use dart-utils-urdf, please install liburdfdom-dev"
+    "Looking for urdfdom >= 3.0.1 - NOT found, to use dart-utils-urdf, please install liburdfdom-dev"
   )
   return()
 endif()

@@ -810,6 +810,21 @@ void BodyNode(py::module& m)
           ::py::arg("newSkeleton"),
           ::py::arg("newParent"))
       .def(
+          "moveToEulerJoint",
+          [](dart::dynamics::BodyNode* self,
+             dart::dynamics::BodyNode* newParent,
+             const dart::dynamics::EulerJoint::Properties& jointProperties)
+              -> py::object {
+            auto* joint = self->moveTo<dart::dynamics::EulerJoint>(
+                newParent, jointProperties);
+            return py::cast(
+                joint,
+                py::return_value_policy::reference_internal,
+                py::cast(self->getSkeleton()));
+          },
+          py::arg("newParent").none(true),
+          py::arg("jointProperties"))
+      .def(
           "split",
           +[](dart::dynamics::BodyNode* self,
               const std::string& _skeletonName) -> dart::dynamics::SkeletonPtr {
