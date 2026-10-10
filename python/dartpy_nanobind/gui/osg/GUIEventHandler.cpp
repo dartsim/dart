@@ -62,6 +62,8 @@ nb::object actionObject(osgGA::GUIActionAdapter& action)
 class GUIEventHandlerNoRef : public osgGA::GUIEventHandler
 {
 public:
+  using osgGA::GUIEventHandler::handle;
+
   virtual bool handle(const ::osg::ref_ptr<osgGA::GUIEventAdapter>&, nb::object)
   {
     return true;
