@@ -42,6 +42,13 @@ and compatibility detail in the owner docs named by `AGENTS.md`.
   branch may be cut before the release tag (see
   `docs/onboarding/release-management.md`).
 
+## Public Text
+
+- Published text is permanent and public; private plans and machine layouts
+  are not. Describe private planning in prose or link public PRs/issues, and
+  check files, commit messages, and PR text with `scripts/check_local_paths.py`
+  before publication.
+
 ## Approval Boundaries
 
 - GitHub mutations, pushes, PR creation or updates, branch deletion, CI reruns,

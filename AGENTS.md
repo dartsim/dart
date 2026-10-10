@@ -63,6 +63,8 @@ the repository root to the working directory.
   on PRs.
 - Do not prefix commit messages or PR titles with agent tags like `[codex]`;
   use plain descriptive titles.
+- Keep private, local, and machine-specific paths out of published files,
+  commit messages, and PR text; validate with `scripts/check_local_paths.py`.
 - Before every approved push to a published PR branch, first merge the latest
   base branch into it — merge, never rebase a published PR branch.
 - GitHub mutations, pushes, PR changes, CI reruns, review-thread mutations, and
