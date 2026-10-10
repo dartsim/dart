@@ -183,3 +183,25 @@ def test_mismatched_c_api_version_raises_import_error(interop):
             raise AssertionError("a mismatched C API version was accepted")
         """
     )
+
+
+def test_reused_wrapper_keeps_reference_internal_parent_alive(interop):
+    # Without the parent, the frame dies with its owner: run in a subprocess.
+    run_isolated(
+        """
+        import weakref
+        import dartpy_pybind11_interop_test as interop
+        owner = interop.FrameOwner()
+        borrowed = owner.borrow()
+        internal = owner.internal()
+        assert internal is borrowed
+        owner_ref = weakref.ref(owner)
+        del owner
+        gc.collect()
+        assert owner_ref() is not None
+        assert internal.getName() == "owned"
+        del borrowed, internal
+        gc.collect()
+        assert owner_ref() is None
+        """
+    )

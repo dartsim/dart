@@ -63,6 +63,13 @@ struct Attachment
   BodyNode* body = nullptr;
 };
 
+// Owns a frame that Python can borrow with either reference policy.
+struct FrameOwner
+{
+  std::shared_ptr<SimpleFrame> frame
+      = SimpleFrame::createShared(Frame::World(), "owned");
+};
+
 // Owns a frame until release() hands its last owner to Python.
 struct FrameHolder
 {
@@ -173,4 +180,14 @@ PYBIND11_MODULE(dartpy_pybind11_interop_test, m)
         return std::move(holder.frame);
       });
   m.def("released_frame_alive", [] { return !releasedFrame.expired(); });
+  py::class_<FrameOwner>(m, "FrameOwner")
+      .def(py::init<>())
+      .def(
+          "borrow",
+          [](FrameOwner& owner) { return owner.frame.get(); },
+          py::return_value_policy::reference)
+      .def(
+          "internal",
+          [](FrameOwner& owner) { return owner.frame.get(); },
+          py::return_value_policy::reference_internal);
 }
