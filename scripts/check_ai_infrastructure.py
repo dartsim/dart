@@ -60,7 +60,6 @@ MAX_AGENT_INSTRUCTION_BYTES = 32 * 1024
 BRANCH_PROFILE_KEYS = {
     "schema_version",
     "profile",
-    "base_ref",
     "cpp_standard",
     "python_binding",
     "io_namespace",
@@ -731,9 +730,8 @@ def check_branch_profile(
         profile = profile_data
 
     expected = {
-        "schema_version": 1,
-        "profile": "main",
-        "base_ref": "origin/main",
+        "schema_version": 2,
+        "profile": "dart6",
         "cpp_standard": "C++17",
         "python_binding": "pybind11",
         "io_namespace": "dart::utils",
@@ -3717,8 +3715,8 @@ def check_instruction_budget(root: Path, errors: list[str]) -> None:
             )
 
 
-def check_release_references(root: Path, errors: list[str]) -> None:
-    """Keep reusable guidance independent of the branch's next release."""
+def release_reference_paths(root: Path) -> list[Path]:
+    """Return reusable guidance, excluding the release owner and plan archive."""
     paths = set(source_paths(root))
     paths.update(
         root / relative
@@ -3730,10 +3728,23 @@ def check_release_references(root: Path, errors: list[str]) -> None:
             "docs/readthedocs/dart/developer_guide/build.rst",
         )
     )
+    for pattern in (
+        ".codex/agents/*.toml",
+        "docs/onboarding/*.md",
+        "docs/plans/*.md",
+    ):
+        paths.update(root.glob(pattern))
     paths.discard(root / "docs/onboarding/release-management.md")
+    paths.discard(root / "docs/plans/archive.md")
+    return sorted(paths)
+
+
+def check_release_references(root: Path, errors: list[str]) -> None:
+    """Keep reusable guidance independent of the branch's next release."""
     version = r"`?DART\s+6\.\d+(?:\.\d+)?`?"
     current_target = re.compile(
-        rf"\b(?:currently|current stable|develops|developing|stabilizes)\b"
+        rf"\bcurrently\s+(?:(?:is|on|at)\s+)?{version}"
+        rf"|\b(?:current stable|develops|developing|stabilizes)\b"
         rf".{{0,80}}{version}"
         rf"|{version}\s+(?:development|stabilization)\s+branch"
         rf"|\b(?:use|set|select|assign|target)\b.{{0,120}}{version}"
@@ -3747,7 +3758,7 @@ def check_release_references(root: Path, errors: list[str]) -> None:
         r"|\btarget(?:s)?\s+`?(?:origin/)?release-6\.\d+\b",
         re.IGNORECASE,
     )
-    for path in sorted(paths):
+    for path in release_reference_paths(root):
         if not path.is_file():
             continue
         line_number = 1
@@ -4885,6 +4896,26 @@ def doctor_report(root: Path) -> dict[str, Any]:
         text=True,
     ).stdout.strip()
     errors = run_checks(root)
+    profile_path = root / "docs" / "ai" / "branch-profile.json"
+    profile_errors: list[str] = []
+    profile_report = None
+    try:
+        profile = read_json(profile_path)
+    except (OSError, json.JSONDecodeError) as error:
+        profile_errors.append(
+            f"{profile_path.relative_to(root)}: invalid JSON: {error}"
+        )
+    else:
+        check_branch_profile(root, profile_errors, profile)
+        if not profile_errors:
+            profile_report = {
+                "name": profile["profile"],
+                "cpp_standard": profile["cpp_standard"],
+                "python_binding": profile["python_binding"],
+                "io_namespace": profile["io_namespace"],
+                "gui_backend": profile["gui_backend"],
+            }
+    errors.extend(error for error in profile_errors if error not in errors)
     commands = sorted((root / ".claude" / "commands").glob("*.md"))
     skills = sorted((root / ".claude" / "skills").glob("*/SKILL.md"))
     generated = sorted((root / ".agents" / "skills").glob("*/SKILL.md"))
@@ -4893,13 +4924,7 @@ def doctor_report(root: Path) -> dict[str, Any]:
         "schema_version": 1,
         "root": str(root),
         "branch": branch or "(detached)",
-        "profile": {
-            "name": "main",
-            "cpp_standard": "C++17",
-            "python_binding": "pybind11",
-            "io_namespace": "dart::utils",
-            "gui_backend": "OSG",
-        },
+        "profile": profile_report,
         "working_tree": _working_tree_state(root),
         "tools": {
             "python": sys.version.split()[0],
@@ -4933,12 +4958,15 @@ def print_doctor(data: dict[str, Any]) -> None:
     print(f"DART 6 AI doctor: {state}")
     print(f"  repository: {data['root']}")
     print(f"  branch: {data['branch']}")
-    print(
-        "  profile: "
-        f"{profile['name']} ({profile['cpp_standard']}, "
-        f"{profile['python_binding']}, {profile['io_namespace']}, "
-        f"{profile['gui_backend']})"
-    )
+    if profile is None:
+        print("  profile: unavailable (invalid or missing compatibility profile)")
+    else:
+        print(
+            "  profile: "
+            f"{profile['name']} ({profile['cpp_standard']}, "
+            f"{profile['python_binding']}, {profile['io_namespace']}, "
+            f"{profile['gui_backend']})"
+        )
     print(f"  working tree: {data['working_tree']}")
     print(
         "  inventory: "

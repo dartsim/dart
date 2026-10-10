@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "profile": "main",
+  "profile": "dart6",
   "scenarios": [
     {
       "id": "orientation",

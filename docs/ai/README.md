@@ -30,7 +30,10 @@ Start with:
 - [`components.md`](components.md)
 - [`capabilities.json`](capabilities.json)
 - [`branch-profile.json`](branch-profile.json): machine-readable DART 6
-  facts, required surfaces, and forbidden markers and paths.
+  compatibility facts, required surfaces, and forbidden markers and paths.
+  The shared `dart6` profile applies to development and release branches;
+  [Release Management](../onboarding/release-management.md#release-target)
+  owns each base branch's target.
 - [`agent-scenarios.json`](agent-scenarios.json): the eight deterministic agent
   contracts, including model upgrades and simulation verification, from
   orientation through release maintenance.
