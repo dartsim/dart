@@ -27,7 +27,7 @@ matching version tags.
 
    * - Platform
      - CPython wheels built by this branch
-   * - Linux x86_64
+   * - Linux x86_64 and aarch64
      - One ``cp312-abi3`` wheel for 3.12 and newer on every wheel run; 3.10
        and 3.11 on release branch and tag builds
    * - macOS arm64
@@ -41,8 +41,8 @@ matching version tags.
 The source-build platform requirements in the
 :doc:`DART build guide </dart/developer_guide/build>` differ from the wheel
 runtime requirements. Current macOS arm64 wheels target macOS 15.0. Linux
-wheel builds use a glibc 2.28 sysroot; the repaired wheel's manylinux tag
-records its final runtime requirement, including bundled dependencies. The
+wheels, including their bundled dependencies, are built with the manylinux
+2.28 toolchain and tagged ``manylinux_2_28``. The
 ``abi3`` wheels use CPython's stable ABI, so pip installs the same wheel on
 Python 3.12, 3.13, and later releases.
 
