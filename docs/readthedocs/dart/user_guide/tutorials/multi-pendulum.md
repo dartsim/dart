@@ -13,7 +13,7 @@ API during simulation. This will show you how to:
 - Alter the implicit spring and damping properties of joints
 - Add/remove dynamic constraints
 
-Please reference the source code in [**tutorialMultiPendulum.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum.cpp) and [**tutorialMultiPendulum-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialMultiPendulum-Finished.cpp).
+Please reference the source code in [**tutorial_multi_pendulum/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum/main.cpp) and [**tutorial_multi_pendulum_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_multi_pendulum_finished/main.cpp).
 
 ## Lesson 0: Simulate a passive multi-pendulum
 
@@ -187,16 +187,16 @@ for ``mForceCountDown``. In that if-statement, we'll grab the relevant BodyNode:
 BodyNode* bn = mPendulum->getBodyNode(i);
 ```
 
-Now we'll create an ``math::Vector3d`` that describes the force and another one
-that describes the location for that force. An ``math::Vector3d`` is the Eigen
+Now we'll create an ``Eigen::Vector3d`` that describes the force and another one
+that describes the location for that force. An ``Eigen::Vector3d`` is the Eigen
 C++ library's version of a three-dimensional mathematical vector. Note that the
 ``d`` at the end of the name stands for ``double``, not for "dimension". An
-math::Vector3f would be a three-dimensional vector of floats, and an
-math::Vector3i would be a three-dimensional vector of integers.
+Eigen::Vector3f would be a three-dimensional vector of floats, and an
+Eigen::Vector3i would be a three-dimensional vector of integers.
 
 ```cpp
-math::Vector3d force = default_force * math::Vector3d::UnitX();
-math::Vector3d location(-default_width / 2.0, 0.0, default_height / 2.0);
+Eigen::Vector3d force = default_force * Eigen::Vector3d::UnitX();
+Eigen::Vector3d location(-default_width / 2.0, 0.0, default_height / 2.0);
 ```
 
 The force will have a magnitude of ``default_force`` and it will point in the
@@ -363,15 +363,15 @@ Now we'll want to compute the location that the constraint should have. We want
 to connect the very end of the tip to the world, so the location would be:
 
 ```cpp
-math::Vector3d location =
-    tip->getTransform() * math::Vector3d(0.0, 0.0, default_height);
+Eigen::Vector3d location =
+    tip->getTransform() * Eigen::Vector3d(0.0, 0.0, default_height);
 ```
 
 Now we can create the BallJointConstraint:
 
 ```cpp
 mBallConstraint =
-    std::make_shared<dart::dynamics::BallJointConstraint>(tip, location);
+    std::make_shared<dart::constraint::BallJointConstraint>(tip, location);
 ```
 
 And then add it to the world:

@@ -11,7 +11,7 @@ dynamic systems, such as robotic manipulators. We will show you how to:
 - Write a stable PD controller w/ gravity and coriolis compensation
 - Write an operational space controller
 
-Please reference the source code in [**tutorialDominoes.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes.cpp) and [**tutorialDominoes-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialDominoes-Finished.cpp).
+Please reference the source code in [**tutorial_dominoes/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_dominoes/main.cpp) and [**tutorial_dominoes_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_dominoes_finished/main.cpp).
 
 ## Lesson 1: Cloning Skeletons
 
@@ -52,7 +52,7 @@ turned so far. We'll use that to figure out what translational offset the new
 domino should have from the last domino:
 
 ```cpp
-math::Vector3d dx = default_distance * math::Vector3d(
+Eigen::Vector3d dx = default_distance * Eigen::Vector3d(
       cos(mTotalAngle), sin(mTotalAngle), 0.0);
 ```
 
@@ -60,7 +60,7 @@ And now we can compute the total position of the new domino. First, we'll copy
 the positions of the last domino:
 
 ```cpp
-math::Vector6d x = lastDomino->getPositions();
+Eigen::Vector6d x = lastDomino->getPositions();
 ```
 
 And then we'll add the translational offset to it:
@@ -89,72 +89,49 @@ newDomino->setPositions(x);
 The root FreeJoint is the only joint in the domino's Skeleton, so we can just
 use the ``Skeleton::setPositions`` function to set it.
 
-Now we'll add the Skeleton to the world:
-
-```cpp
-mWorld->addSkeleton(newDomino);
-```
+Before adding the Skeleton to the world, we'll check its placement for collisions.
 
 ### Lesson 1b: Make sure no dominoes are in collision
 
 Similar to **Lesson 3** of the **Collisions** tutorial, we'll want to make sure
-that the newly inserted Skeleton is not starting out in collision with anything,
-because this could make for a very ugly (perhaps even broken) simulation. 
-
-First, we'll tell the world to compute collisions:
+that the new Skeleton is not starting out in collision with anything before
+adding it to the world. Check a collision group containing only the new domino
+against the world's collision group:
 
 ```cpp
-dart::collision::CollisionDetector* detector =
-    mWorld->getConstraintSolver()->getCollisionDetector();
-detector->detectCollision(true, true);
+auto collisionGroup = mWorld->getConstraintSolver()->getCollisionGroup();
+auto collisionEngine
+    = mWorld->getConstraintSolver()->getCollisionDetector();
+auto newGroup = collisionEngine->createCollisionGroup(newDomino.get());
 ```
 
-Now we'll look through and see if any dominoes are in collision with anything
-besides the floor. We ignore collisions with the floor because, mathemetically
-speaking, if they are in contact with the floor then they register as being in
-collision. But we want the dominoes to be in contact with the floor, so this is
-okay.
+The domino should rest on the floor, so temporarily exclude the floor's shape
+frames from the world's collision group. Restore them immediately after the
+check so that the floor still participates in the simulation:
 
 ```cpp
-bool dominoCollision = false;
-size_t collisionCount = detector->getNumContacts();
-for(size_t i = 0; i < collisionCount; ++i)
-{
-  // If neither of the colliding BodyNodes belongs to the floor, then we
-  // know the new domino is in contact with something it shouldn't be
-  const dart::collision::Contact& contact = detector->getContact(i);
-  if(contact.bodyNode1.lock()->getSkeleton() != mFloor
-     && contact.bodyNode2.lock()->getSkeleton() != mFloor)
-  {
-    dominoCollision = true;
-    break;
-  }
-}
+collisionGroup->removeShapeFramesOf(mFloor.get());
+bool dominoCollision = collisionGroup->collide(newGroup.get());
+collisionGroup->addShapeFramesOf(mFloor.get());
 ```
 
-The only object that could possibly have collided with something else is the
-new domino, because we don't allow the application to create new things except
-for the dominoes. So if this registered as true, then we should take the new
-domino out of the world:
+If the new domino is collision-free, add it to the world and record it in the
+history. Otherwise, leave it out and explain how to try another placement:
 
 ```cpp
-if(dominoCollision)
+if (!dominoCollision)
 {
-  // Remove the new domino, because it is penetrating an existing one
-  mWorld->removeSkeleton(newDomino);
-}
-```
-
-Otherwise, if the new domino is in an okay position, we should add it to the
-history:
-
-```cpp
-else
-{
-  // Record the latest domino addition
+  mWorld->addSkeleton(newDomino);
   mAngles.push_back(angle);
   mDominoes.push_back(newDomino);
   mTotalAngle += angle;
+}
+else
+{
+  std::cout << "The new domino would penetrate something. I will not add"
+            << std::endl;
+  std::cout << "it to the world. Remove some dominos with 'd' and try again"
+            << std::endl;
 }
 ```
 
@@ -203,9 +180,9 @@ label for **Lesson 1d**. ``CustomWorldNode`` calls this method each tick, so
 whenever the user presses 'f' we apply an external force to the first domino:
 
 ```cpp
-math::Vector3d force = default_push_force * math::Vector3d::UnitX();
-math::Vector3d location =
-    default_domino_height / 2.0 * math::Vector3d::UnitZ();
+Eigen::Vector3d force = default_push_force * Eigen::Vector3d::UnitX();
+Eigen::Vector3d location =
+    default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
 mFirstDomino->getBodyNode(0)->addExtForce(force, location);
 ```
 
@@ -217,11 +194,10 @@ Instead, let's load a robotic manipulator and have it push over the first domino
 ### Lesson 2a: Load a URDF file
 
 Our manipulator is going to be loaded from a URDF file. URDF files are loaded
-by the ``dart::io::DartLoader`` class (pending upcoming changes to DART's
-loading system). First, create a loader:
+by the ``dart::utils::DartLoader`` class. First, create a loader:
 
 ```cpp
-dart::io::DartLoader loader;
+dart::utils::DartLoader loader;
 ```
 
 Note that many URDF files use ROS's ``package:`` scheme to specify the locations
@@ -248,8 +224,8 @@ Experimentation has demonstrated that the following setup is good for our purpos
 
 ```cpp
 // Position its base in a reasonable way
-math::Isometry3d tf = math::Isometry3d::Identity();
-tf.translation() = math::Vector3d(-0.65, 0.0, 0.0);
+Eigen::Isometry3d tf = Eigen::Isometry3d::Identity();
+tf.translation() = Eigen::Vector3d(-0.65, 0.0, 0.0);
 manipulator->getJoint(0)->setTransformFromParentBodyNode(tf);
 
 // Get it into a useful configuration
@@ -292,8 +268,8 @@ in the ``Controller`` class.
 First, we'll grab the current positions and velocities:
 
 ```cpp
-math::VectorXd q = mManipulator->getPositions();
-math::VectorXd dq = mManipulator->getVelocities();
+Eigen::VectorXd q = mManipulator->getPositions();
+Eigen::VectorXd dq = mManipulator->getVelocities();
 ```
 
 Additionally, we'll integrate the position forward by one timestep:
@@ -310,19 +286,19 @@ without this line to see what effect it has on the stability.
 Now we'll compute our joint position error:
 
 ```cpp
-math::VectorXd q_err = mQDesired - q;
+Eigen::VectorXd q_err = mQDesired - q;
 ```
 
 And our joint velocity error, assuming our desired joint velocity is zero:
 
 ```cpp
-math::VectorXd dq_err = -dq;
+Eigen::VectorXd dq_err = -dq;
 ```
 
 Now we can grab our mass matrix, which we will use to scale our force terms:
 
 ```cpp
-const math::MatrixXd& M = mManipulator->getMassMatrix();
+const Eigen::MatrixXd& M = mManipulator->getMassMatrix();
 ```
 
 And then combine all this into a PD controller that computes forces to minimize
@@ -347,7 +323,7 @@ Coriolis forces, allowing you to write much higher quality controllers than you
 would be able to otherwise. This is easily done like so:
 
 ```cpp
-const math::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
+const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
 ```
 
 And now we can update our control law by just slapping this term onto the end
@@ -385,7 +361,7 @@ Operational Space controller; instead we want to use a slight offset, to get to
 the tool area of the last BodyNode:
 
 ```cpp
-mOffset = default_endeffector_offset * math::Vector3d::UnitX();
+mOffset = default_endeffector_offset * Eigen::Vector3d::UnitX();
 ```
 
 Also, our target will be the spot on top of the first domino, so we'll create a
@@ -399,9 +375,9 @@ Then compute the transform needed to get from the center of the domino to the
 top of the domino:
 
 ```cpp
-math::Isometry3d target_offset(math::Isometry3d::Identity());
+Eigen::Isometry3d target_offset(Eigen::Isometry3d::Identity());
 target_offset.translation() =
-    default_domino_height / 2.0 * math::Vector3d::UnitZ();
+    default_domino_height / 2.0 * Eigen::Vector3d::UnitZ();
 ```
 
 And then we should rotate the target's coordinate frame to make sure that lines
@@ -432,7 +408,7 @@ One of the key ingredients in an operational space controller is the mass matrix
 We can get this easily, just like we did for the PD controller:
 
 ```cpp
-const math::MatrixXd& M = mManipulator->getMassMatrix();
+const Eigen::MatrixXd& M = mManipulator->getMassMatrix();
 ```
 
 Next we'll want the Jacobian of the tool offset in the end effector. We can get
@@ -447,8 +423,8 @@ of the Jacobian rather than the Jacobian itself. There are many ways to compute
 the pseudoinverse of the Jacobian, but a simple way is like this:
 
 ```cpp
-math::MatrixXd pinv_J = J.transpose() * (J * J.transpose()
-                       + 0.0025 * math::Matrix6d::Identity()).inverse();
+Eigen::MatrixXd pinv_J = J.transpose() * (J * J.transpose()
+                       + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
 ```
 
 Note that this pseudoinverse is also damped so that it behaves better around
@@ -464,8 +440,8 @@ Next we'll want the time derivative of the Jacobian, as well as its pseudoinvers
 Jacobian dJ = mEndEffector->getJacobianClassicDeriv(mOffset);
 
 // Compute the pseudo-inverse of the Jacobian time derivative
-math::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose()
-                        + 0.0025 * math::Matrix6d::Identity()).inverse();
+Eigen::MatrixXd pinv_dJ = dJ.transpose() * (dJ * dJ.transpose()
+                        + 0.0025 * Eigen::Matrix6d::Identity()).inverse();
 ```
 
 Notice that here we're compute the **classic** derivative, which means the
@@ -476,7 +452,7 @@ to use ``BodyNode::getJacobianSpatialDeriv`` instead.
 Now we can compute the linear components of error:
 
 ```cpp
-math::Vector6d e;
+Eigen::Vector6d e;
 e.tail<3>() = mTarget->getWorldTransform().translation()
             - mEndEffector->getWorldTransform() * mOffset;
 ```
@@ -484,14 +460,14 @@ e.tail<3>() = mTarget->getWorldTransform().translation()
 And then the angular components of error:
 
 ```cpp
-math::AngleAxisd aa(mTarget->getTransform(mEndEffector).linear());
+Eigen::AngleAxisd aa(mTarget->getTransform(mEndEffector).linear());
 e.head<3>() = aa.angle() * aa.axis();
 ```
 
 Then the time derivative of error, assuming our desired velocity is zero:
 
 ```cpp
-math::Vector6d de = -mEndEffector->getSpatialVelocity(
+Eigen::Vector6d de = -mEndEffector->getSpatialVelocity(
       mOffset, mTarget.get(), Frame::World());
 ```
 
@@ -499,32 +475,32 @@ Like with the PD controller, we can mix in terms to compensate for gravity and
 Coriolis forces:
 
 ```cpp
-const math::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
+const Eigen::VectorXd& Cg = mManipulator->getCoriolisAndGravityForces();
 ```
 
 The gains for the operational space controller need to be in matrix form, but
 we're storing the gains as scalars, so we'll need to convert them:
 
 ```cpp
-math::Matrix6d Kp = mKpOS * math::Matrix6d::Identity();
+Eigen::Matrix6d Kp = mKpOS * Eigen::Matrix6d::Identity();
 
 size_t dofs = mManipulator->getNumDofs();
-math::MatrixXd Kd = mKdOS * math::MatrixXd::Identity(dofs, dofs);
+Eigen::MatrixXd Kd = mKdOS * Eigen::MatrixXd::Identity(dofs, dofs);
 ```
 
 And we'll need to compute the joint forces needed to achieve our desired end
 effector force. This is easily done using the Jacobian transpose:
 
 ```cpp
-math::Vector6d fDesired = math::Vector6d::Zero();
+Eigen::Vector6d fDesired = Eigen::Vector6d::Zero();
 fDesired[3] = default_push_force;
-math::VectorXd f = J.transpose() * fDesired;
+Eigen::VectorXd f = J.transpose() * fDesired;
 ```
 
 And now we can mix everything together into the single control law:
 
 ```cpp
-math::VectorXd dq = mManipulator->getVelocities();
+Eigen::VectorXd dq = mManipulator->getVelocities();
 mForces = M * (pinv_J * Kp * de + pinv_dJ * Kp * e)
           - Kd * dq + Kd * pinv_J * Kp * e + Cg + f;
 ```

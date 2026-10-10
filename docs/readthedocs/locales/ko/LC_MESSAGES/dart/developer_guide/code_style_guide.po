@@ -4,14 +4,12 @@
 # Animation and Robotics Toolkit package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit "
-"7.0.0-alpha0\n"
+"Project-Id-Version: DART: Dynamic Animation and Robotics Toolkit 6.19.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-02-26 00:39-0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"POT-Creation-Date: 2026-10-09 16:20-0700\n"
+"PO-Revision-Date: 2026-10-09 23:22+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ko\n"
 "Language-Team: ko <LL@li.org>\n"
@@ -19,169 +17,139 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.11.0\n"
+"Generated-By: Babel 2.18.0\n"
 
-#: ../../developer_guide/code_style_guide.rst:2
-#: ba70b575711343ada58a990ac83a8b83
+#: ../../dart/developer_guide/code_style_guide.rst:2
+#: d2d265fde99d4bbf9c70a855f2a515ef
 msgid "Code Style Guide"
 msgstr ""
 
-#: ../../developer_guide/code_style_guide.rst:4
-#: 2d3c3489c11743f6938bb8a3394daa09
+#: ../../dart/developer_guide/code_style_guide.rst:4
+#: ff222bbd277f48df81f36f1f3b2c3606
 msgid "This section describes the code style used in DART project."
 msgstr ""
 
-#: ../../developer_guide/code_style_guide.rst:7
-#: ce4165e8c1cf43a2bb34824b70130748
+#: ../../dart/developer_guide/code_style_guide.rst:7
+#: 363697bdac4343e187dc806a56c99c34
 msgid "C++ Style Guide"
 msgstr ""
 
-#: ../../developer_guide/code_style_guide.rst:10
-#: 8f00cb5b4dfa4b03b0d1d54f9eaab507
+#: ../../dart/developer_guide/code_style_guide.rst:10
+#: 1a069473bf3f4a78b45123eaf12559dd
 msgid "Macro Definitions"
 msgstr ""
 
-#: ../../developer_guide/code_style_guide.rst:12
-#: a83b4db981604427a2732193d94c9a72
+#: ../../dart/developer_guide/code_style_guide.rst:12
+#: 2a0e8509b9da40f290b4b3dfcf7b63f4
 msgid ""
-"In DART, we use macros to define compile-time constants and control code "
-"flow. All macros in our codebase are prefixed with ``DART_`` to "
-"distinguish them from other identifiers. Macros that control optional "
-"dependencies and features follow a consistent naming convention:"
+"DART 6 uses all-caps macro names. The generated ``dart/config.hpp`` "
+"defines optional dependency flags such as ``HAVE_BULLET``, ``HAVE_ODE``, "
+"and ``HAVE_OCTOMAP``, and feature flags such as ``DART_ENABLE_SIMD``. "
+"These flags have values of 0 or 1. Follow the existing names when "
+"checking build features."
 msgstr ""
+"DART 6는 모두 대문자인 매크로 이름을 사용합니다. 생성된 ``dart/config.hpp`` 에는 "
+"``HAVE_BULLET``, ``HAVE_ODE``, ``HAVE_OCTOMAP`` 같은 선택적 의존성 플래그와 "
+"``DART_ENABLE_SIMD`` 같은 기능 플래그가 정의됩니다. 플래그의 값은 0 또는 1입니다. 빌드 기능을 확인할 때는 "
+"기존 이름을 사용하세요."
 
-#: ../../developer_guide/code_style_guide.rst:17
-#: 87f47ab6d173432e90c37a674269b4fd
-msgid ""
-"``DART_HAS_<optional_dep>``: A boolean value that is set to true when an "
-"optional dependency is detected in the system."
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:19
-#: 55460728a14045b091fd3d8811d388a5
-msgid ""
-"``DART_ENABLE_<optional_feature>``: A boolean value that is set to true "
-"if the optional feature should be enabled when the requirements are met."
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:21
-#: b2e2de5f040c4df38ec3f0d596c8fa3c
-msgid ""
-"``DART_ENABLED_<optional_feature>``: A boolean value that is set to true "
-"if the optional feature is enabled."
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:24
-#: ef95079701cd492db9ebb6d9132467c7
-msgid ""
-"We use all-caps for all macro names to ensure consistency and to visually"
-" distinguish macros from other types of variables."
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:28
-#: 787725e9643847b79d363ee87f06a6b4
-msgid "Python Style Guide"
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:31
-#: 5046a99eaf2049e093fdaf74b497516d
+#: ../../dart/developer_guide/code_style_guide.rst:18
+#: ../../dart/developer_guide/code_style_guide.rst:28
+#: 5e10f7fd36f348b39ec2fec1b109c5e3 7ba4724bf1724b9bbe7cf5b72a74446d
 msgid "Naming Conventions"
 msgstr ""
 
-#: ../../developer_guide/code_style_guide.rst:33
-#: 52f1fadd2eab4132af16f38c747813e0
+#: ../../dart/developer_guide/code_style_guide.rst:20
+#: 0aef2c49d04a43499bb94e5d5849ed87
 msgid ""
-"This project uses different naming conventions for the C++ code and the "
-"Python bindings. In the C++ code, function names are in camelCase and "
-"variables and member variables use snake_case, whereas in the Python "
-"bindings, both function names and variables use snake_case."
+"C++ functions use camelCase and member variables generally use an ``m`` "
+"prefix (for example, ``mTimeStep``). Follow the naming conventions in "
+"nearby code for local variables."
+msgstr ""
+"C++ 함수는 camelCase를 사용하며, 멤버 변수는 일반적으로 ``m`` 접두사를 사용합니다(예: ``mTimeStep``)."
+" 지역 변수는 주변 코드의 명명 규칙을 따르세요."
+
+#: ../../dart/developer_guide/code_style_guide.rst:25
+#: 9c2acc5e69664cc99188ecf03efaf809
+msgid "Python Style Guide"
 msgstr ""
 
-#: ../../developer_guide/code_style_guide.rst:38
-#: 8b6f33987aba49b4a7e025b551fa2112
-msgid "Here are the naming conventions used in the Python bindings:"
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:40
-#: 7a6a75f95dfd4f728c7c90e5e69e9b16
+#: ../../dart/developer_guide/code_style_guide.rst:30
+#: 9221ce67949b49839ed4f7562d4d39bc
 msgid ""
-"Function names are in snake_case, with words separated by underscores "
-"(e.g. `calculate_average`)."
+"DART 6's dartpy bindings generally retain the C++ method names, including"
+" camelCase. C++ namespaces are exposed as Python modules, such as "
+"``dartpy.simulation`` and ``dartpy.utils``."
 msgstr ""
+"DART 6의 dartpy 바인딩은 일반적으로 camelCase를 포함한 C++ 메서드 이름을 그대로 유지합니다. C++ "
+"네임스페이스는 ``dartpy.simulation`` 과 ``dartpy.utils`` 같은 Python 모듈로 노출됩니다."
 
-#: ../../developer_guide/code_style_guide.rst:42
-#: 4a03afd06140460e87872bd2e779bd0f
+#: ../../dart/developer_guide/code_style_guide.rst:34
+#: f8d94010d34e4beb9bbeb8774ce9f000
+msgid "For example, these C++ methods keep the same names in Python:"
+msgstr "예를 들어 다음 C++ 메서드는 Python에서도 같은 이름을 사용합니다:"
+
+#: ../../dart/developer_guide/code_style_guide.rst:42
+#: 261755b44c8549ad81fbdd10134418c5
+msgid "The equivalent dartpy code is:"
+msgstr "이에 대응하는 dartpy 코드는 다음과 같습니다:"
+
+#: ../../dart/developer_guide/code_style_guide.rst:52
+#: ec6f282052d748b4bd59ed220d769c12
 msgid ""
-"Class names are in CamelCase, with the first letter of each word in "
-"uppercase (e.g. `MyClass`)."
+"Some Eigen adapters use snake_case methods, such as "
+"``dartpy.math.Isometry3.set_rotation`` and ``set_translation``. Use the "
+"method names exposed by each binding; there is no general camelCase-to-"
+"snake_case conversion."
 msgstr ""
+"일부 Eigen 어댑터는 ``dartpy.math.Isometry3.set_rotation`` 과 "
+"``set_translation`` 처럼 snake_case 메서드를 사용합니다. 각 바인딩이 제공하는 메서드 이름을 사용하세요. "
+"camelCase를 snake_case로 일괄 변환하는 규칙은 없습니다."
 
-#: ../../developer_guide/code_style_guide.rst:44
-#: 69b2e13c48af4956af50b66ea88da97a
-msgid ""
-"Variables and member variables are in snake_case, with words separated by"
-" underscores (e.g. `my_variable`)."
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:46
-#: 4f0805136656441f9e1dfae673391733
-msgid ""
-"Constants are in ALL_CAPS, with words separated by underscores (e.g. "
-"`MY_CONSTANT`)."
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:48
-#: 6a4d2dec618142f5ab2aa4b9f04e1df0
-msgid ""
-"Namespaces are represented by modules, and are in lowercase, with words "
-"separated by underscores (e.g. `my_module.my_namespace`)."
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:51
-#: 0675040824004761b0485ddcefcd8fa7
-msgid "For example, the identity member function is called isIdentity in C++:"
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:58
-#: b0ce99e2b60c4316b35fee38c229762b
-msgid "while it is called is_identity in Python:"
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:66
-#: 7f5c5911f1cd41688a782997c7bf6cc0
-msgid "Motivations for Different Naming Conventions"
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:68
-#: fc895976d525421ca4915f23369eaad1
-msgid ""
-"The reason for using different naming conventions in the C++ code and the"
-" Python bindings is to follow the conventions that are most commonly used"
-" in each language. The camelCase convention is more common for function "
-"names in the C++ community, while the snake_case convention is more "
-"common for function names in the Python community."
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:74
-#: c68636c6245d4c7a841d111e2646ee9b
-msgid ""
-"By using the standard naming conventions in each language, we can make "
-"the code more readable and easier to understand for developers who are "
-"familiar with each language. Consistency within each language is "
-"important, but it's also crucial to document the conventions clearly so "
-"that other developers can understand how to use the code and what the "
-"naming conventions mean in each context. Additionally, following the "
-"naming conventions of each language can help with integration with other "
-"Python modules or projects."
-msgstr ""
-
-#: ../../developer_guide/code_style_guide.rst:83
-#: 68e97a6dde60446c8cffcec6fe04cf3a
+#: ../../dart/developer_guide/code_style_guide.rst:58
+#: 669f39c55ec349f1893b643cc159a642
 msgid "CMake Style Guide"
 msgstr ""
 
-#: ../../developer_guide/code_style_guide.rst:85
-#: 6c062e857e59461594ebfe1473b9de14
-msgid "TODO"
+#: ../../dart/developer_guide/code_style_guide.rst:60
+#: c678fa5c70204279969e1f416eec345f
+msgid ""
+"Follow the CMake style in ``CONTRIBUTING.md`` and nearby "
+"``CMakeLists.txt`` or ``*.cmake`` files:"
 msgstr ""
+"``CONTRIBUTING.md`` 와 주변 ``CMakeLists.txt`` 또는 ``*.cmake`` 파일의 CMake 스타일을"
+" 따르세요:"
 
+#: ../../dart/developer_guide/code_style_guide.rst:63
+#: 0088d57e6958415a96ee3ede7f92d537
+msgid "Use two-space indentation."
+msgstr "들여쓰기는 공백 두 칸을 사용하세요."
+
+#: ../../dart/developer_guide/code_style_guide.rst:64
+#: 2dc597c2ef4f4e7dadadc9830e002a12
+msgid "Quote singleton variable expansions, especially paths."
+msgstr "단일 변수 확장은 따옴표로 감싸세요. 특히 경로에 적용하세요."
+
+#: ../../dart/developer_guide/code_style_guide.rst:65
+#: 3ff3868cd5ac438d9a4adea86f2e7578
+msgid ""
+"Split complex commands across semantic groups instead of making one long "
+"line."
+msgstr "복잡한 명령은 긴 한 줄로 작성하지 말고 의미 단위로 나누세요."
+
+#: ../../dart/developer_guide/code_style_guide.rst:67
+#: c8c710933ba244f78be2483c6d725c7a
+msgid ""
+"Keep configure templates (``*.cmake.in``) conservative because they "
+"contain substitution tokens that are expanded by CMake."
+msgstr "설정 템플릿(``*.cmake.in``)에는 CMake가 확장하는 치환 토큰이 있으므로 보수적으로 작성하세요."
+
+#: ../../dart/developer_guide/code_style_guide.rst:70
+#: ec0e3ce848ac4afbb81a28cb281a1418
+msgid ""
+"The branch formats CMake sources with gersemi through "
+"``scripts/lint_cmake.py``. Run ``pixi run lint-cmake`` for CMake-only "
+"edits, or ``pixi run lint`` before committing."
+msgstr ""
+"이 브랜치는 ``scripts/lint_cmake.py`` 를 통해 gersemi로 CMake 소스를 포맷합니다. CMake만 "
+"수정했다면 ``pixi run lint-cmake`` 를 실행하고, 커밋 전에는 ``pixi run lint`` 를 실행하세요."

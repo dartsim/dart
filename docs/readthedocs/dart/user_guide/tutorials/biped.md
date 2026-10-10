@@ -11,14 +11,14 @@ consists of seven Lessons covering the following topics:
 - APIs for dynamic quantities.
 - Skeleton editing.
 
-Please reference the source code in [**tutorialBiped.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped.cpp) and [**tutorialBiped-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialBiped-Finished.cpp).
+Please reference the source code in [**tutorial_biped/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_biped/main.cpp) and [**tutorial_biped_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_biped_finished/main.cpp).
 
 ## Lesson 1: Joint limits and self-collision
-Let's start by locating the ``main`` function in tutorialBiped.cpp. We first create a floor
+Let's start by locating the ``main`` function in tutorial_biped/main.cpp. We first create a floor
 and call ``loadBiped`` to load a bipedal figure described in SKEL
 format, which is an XML format representing a robot model. A SKEL file
 describes a ``World`` with one or more ``Skeleton``s in it. Here we
-load in a World from [**biped.skel**](https://github.com/dartsim/dart/blob/release-5.1/data/skel/biped.skel) and assign the bipedal figure to a
+load in a World from [**biped.skel**](https://github.com/dartsim/dart/blob/main/data/skel/biped.skel) and assign the bipedal figure to a
 ``Skeleton`` pointer called *biped*.
 
 ```cpp
@@ -59,7 +59,7 @@ in the code using
 ``setPositionUpperLimit`` and ``setPositionLowerLimit``.
 
 In either case, the joint limits on the biped will not be activated
-until you call ``setPositionLimited``:
+until you call ``setLimitEnforcement``:
 
 ```cpp
 SkeletonPtr loadBiped()
@@ -175,11 +175,11 @@ controller and add them to the internal forces of biped using ``setForces``:
 ```cpp
 void addPDForces()
 {
-    math::VectorXd q = mBiped->getPositions();
-    math::VectorXd dq = mBiped->getVelocities();
+    Eigen::VectorXd q = mBiped->getPositions();
+    Eigen::VectorXd dq = mBiped->getVelocities();
     
-    math::VectorXd p = -mKp * (q - mTargetPositions);
-    math::VectorXd d = -mKd * dq;
+    Eigen::VectorXd p = -mKp * (q - mTargetPositions);
+    Eigen::VectorXd d = -mKd * dq;
     
     mForces += p + d;
     mBiped->setForces(mForces);
@@ -222,13 +222,13 @@ implementation of SPD simple and concise:
 ```cpp
 void addSPDForces()
 {
-    math::VectorXd q = mBiped->getPositions();
-    math::VectorXd dq = mBiped->getVelocities();
+    Eigen::VectorXd q = mBiped->getPositions();
+    Eigen::VectorXd dq = mBiped->getVelocities();
 
-    math::MatrixXd invM = (mBiped->getMassMatrix() + mKd * mBiped->getTimeStep()).inverse();
-    math::VectorXd p = -mKp * (q + dq * mBiped->getTimeStep() - mTargetPositions);
-    math::VectorXd d = -mKd * dq;
-    math::VectorXd qddot = invM * (-mBiped->getCoriolisAndGravityForces() + p + d + mBiped->getConstraintForces());
+    Eigen::MatrixXd invM = (mBiped->getMassMatrix() + mKd * mBiped->getTimeStep()).inverse();
+    Eigen::VectorXd p = -mKp * (q + dq * mBiped->getTimeStep() - mTargetPositions);
+    Eigen::VectorXd d = -mKd * dq;
+    Eigen::VectorXd qddot = invM * (-mBiped->getCoriolisAndGravityForces() + p + d + mBiped->getConstraintForces());
 
     mForces += p + d - mKd * qddot * mBiped->getTimeStep();
     mBiped->setForces(mForces);
@@ -274,9 +274,9 @@ anterior-posterior axis:
 ```cpp
 void addAnkleStrategyForces()
 {
-    math::Vector3d COM = mBiped->getCOM();
-    math::Vector3d offset(0.05, 0, 0);
-    math::Vector3d COP = mBiped->getBodyNode("h_heel_left")->getTransform() * offset;
+    Eigen::Vector3d COM = mBiped->getCOM();
+    Eigen::Vector3d offset(0.05, 0, 0);
+    Eigen::Vector3d COP = mBiped->getBodyNode("h_heel_left")->getTransform() * offset;
     double diff = COM[0] - COP[0];
 ...
 }
@@ -293,8 +293,8 @@ computing the derivative term,  -k<sub>d</sub> (x&#775; - p&#775;):
 void addAnkleStrategyForces()
 {
 ...
-    math::Vector3d dCOM = mBiped->getCOMLinearVelocity();
-    math::Vector3d dCOP =  mBiped->getBodyNode("h_heel_left")->getLinearVelocity(offset);
+    Eigen::Vector3d dCOM = mBiped->getCOMLinearVelocity();
+    Eigen::Vector3d dCOP =  mBiped->getBodyNode("h_heel_left")->getLinearVelocity(offset);
     double dDiff = dCOM[0] - dCOP[0];
 ...
 }
@@ -347,7 +347,7 @@ void modifyBipedWithSkateboard(SkeletonPtr biped)
 {
 ...
     EulerJoint::Properties properties = EulerJoint::Properties();
-    properties.mT_ChildBodyToJoint.translation() = math::Vector3d(0, 0.1, 0);
+    properties.mT_ChildBodyToJoint.translation() = Eigen::Vector3d(0, 0.1, 0);
 ...
 }
 ```
@@ -475,10 +475,10 @@ center of mass of the Skeleton, as well as the Jacobian of the center
 of mass of a BodyNode:
 
 ```cpp
-math::VectorXd solveIK(SkeletonPtr biped)
+Eigen::VectorXd solveIK(SkeletonPtr biped)
 {
 ...
-    math::Vector3d localCOM = leftHeel->getCOM(leftHeel);
+    Eigen::Vector3d localCOM = leftHeel->getCOM(leftHeel);
     LinearJacobian jacobian = biped->getCOMLinearJacobian() - biped->getLinearJacobian(leftHeel, localCOM);
 ...
 }
@@ -495,10 +495,10 @@ reference. We use ``getLinearJacobian`` again to compute the
 gradient of the second term of the objective function:
 
 ```cpp
-math::VectorXd solveIK(SkeletonPtr biped)
+Eigen::VectorXd solveIK(SkeletonPtr biped)
 {
 ...
-    math::Vector3d offset(0.0, -0.04, -0.03);
+    Eigen::Vector3d offset(0.0, -0.04, -0.03);
     gradient = biped->getLinearJacobian(leftHeel, offset).row(1);
 ...
 }
