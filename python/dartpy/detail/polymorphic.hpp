@@ -48,9 +48,12 @@ void remember_owner(
 void forget_owner(void* complete, const void* token) noexcept;
 void remember_wrapper(Key exact, void* complete, nb::handle wrapper);
 void* upcast(Key source, Key target, void* pointer);
+// type_info objects can differ between modules for the same type (libc++ with
+// hidden visibility), so other modules' types are matched by mangled name.
+const Key* find_registered(const char* name);
 nb::handle wrap(
     Key source,
-    const std::type_info& dynamic_type,
+    Key dynamic_type,
     void* complete,
     void* pointer,
     nb::rv_policy policy,

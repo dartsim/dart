@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <string>
 
 namespace dartnb {
 namespace {
@@ -233,6 +234,22 @@ void rebind_methods(Key key, nb::handle cls)
     found->second.rebind_methods(cls);
 }
 
+const Key* find_registered(const char* name)
+{
+  // Types register at import, so rebuild the index only when the count grows.
+  static std::unordered_map<std::string, Key> by_name;
+  static std::size_t indexed = 0;
+  const auto& entries = registry().entries;
+  if (indexed != entries.size()) {
+    by_name.clear();
+    for (const auto& entry : entries)
+      by_name.emplace(entry.first.name(), entry.first);
+    indexed = entries.size();
+  }
+  const auto found = by_name.find(name);
+  return found == by_name.end() ? nullptr : &found->second;
+}
+
 void* upcast(Key source, Key target, void* pointer)
 {
   auto source_it = registry().paths.find(source);
@@ -246,7 +263,7 @@ void* upcast(Key source, Key target, void* pointer)
 
 nb::handle wrap(
     Key source,
-    const std::type_info& dynamic_type,
+    Key dynamic_type,
     void* complete,
     void* pointer,
     nb::rv_policy policy,
