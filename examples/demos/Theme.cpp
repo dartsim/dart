@@ -34,6 +34,10 @@
 
 #include <dart/gui/osg/osg.hpp>
 
+#include <dart/external/imgui/imgui_internal.h>
+
+#include <cmath>
+
 namespace dart_demos {
 
 namespace {
@@ -181,6 +185,35 @@ void applyModernDarkMetrics()
   // Hairline splitters between docked panels (docking branch only).
   style.DockingSeparatorSize = 1.0f;
 #endif
+}
+
+//==============================================================================
+GuiScaleTheme::GuiScaleTheme(const dart::gui::osg::ImGuiHandler& handler)
+  : mHandler(handler),
+    mContext(ImGui::GetCurrentContext()),
+    mBaseStyle(ImGui::GetStyle())
+{
+  ImGuiContextHook hook;
+  hook.Type = ImGuiContextHookType_NewFramePre;
+  hook.UserData = this;
+  hook.Callback = [](ImGuiContext*, ImGuiContextHook* currentHook) {
+    auto& theme = *static_cast<GuiScaleTheme*>(currentHook->UserData);
+    const double scale = theme.mHandler.getGuiScale();
+    if (std::abs(scale - theme.mAppliedScale) <= 1e-6)
+      return;
+
+    // Scaling previous rounded metrics repeatedly shrinks fractional sizes.
+    ImGui::GetStyle() = theme.mBaseStyle;
+    dart::gui::osg::applyImGuiScale(scale);
+    theme.mAppliedScale = scale;
+  };
+  mHookId = ImGui::AddContextHook(mContext, &hook);
+}
+
+//==============================================================================
+GuiScaleTheme::~GuiScaleTheme()
+{
+  ImGui::RemoveContextHook(mContext, mHookId);
 }
 
 } // namespace dart_demos
