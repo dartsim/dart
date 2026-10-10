@@ -42,8 +42,9 @@
 
 #include <stdexcept>
 #include <string>
-#include <typeindex>
 #include <unordered_map>
+
+#include <cstring>
 
 namespace dart {
 namespace python {
@@ -110,12 +111,13 @@ ValueOps valueOps()
 
 const ValueOps& valueOps(const std::type_info& type)
 {
-  static const std::unordered_map<std::type_index, ValueOps> table{
-      {typeid(Eigen::Isometry3d), valueOps<Eigen::Isometry3d>()},
-      {typeid(Eigen::Quaterniond), valueOps<Eigen::Quaterniond>()},
-      {typeid(Eigen::AngleAxisd), valueOps<Eigen::AngleAxisd>()},
+  // Keyed by mangled name: other modules can have their own type_info.
+  static const std::unordered_map<std::string, ValueOps> table{
+      {typeid(Eigen::Isometry3d).name(), valueOps<Eigen::Isometry3d>()},
+      {typeid(Eigen::Quaterniond).name(), valueOps<Eigen::Quaterniond>()},
+      {typeid(Eigen::AngleAxisd).name(), valueOps<Eigen::AngleAxisd>()},
   };
-  const auto found = table.find(type);
+  const auto found = table.find(type.name());
   if (found == table.end()) {
     throw std::invalid_argument(
         std::string("dartpy C API: unsupported value type ") + type.name());
@@ -123,15 +125,28 @@ const ValueOps& valueOps(const std::type_info& type)
   return found->second;
 }
 
+// Returns dartpy's key for another module's type_info.
+dartnb::Key registeredKey(const std::type_info& type)
+{
+  if (const auto* key = dartnb::find_registered(type.name()))
+    return *key;
+  throw nb::type_error(
+      (std::string("dartpy C API: dartpy does not bind C++ type ")
+       + type.name())
+          .c_str());
+}
+
 void* unwrap(PyObject* object, const std::type_info& type)
 {
   try {
     const nb::handle handle(object);
     const auto [exact, pointer] = instance(handle);
-    if (*exact == type)
+    if (std::strcmp(exact->name(), type.name()) == 0)
       return pointer;
-    if (void* adjusted = dartnb::upcast(*exact, type, pointer))
-      return adjusted;
+    if (const auto* target = dartnb::find_registered(type.name())) {
+      if (void* adjusted = dartnb::upcast(*exact, *target, pointer))
+        return adjusted;
+    }
     throwTypeError(handle, type);
   } catch (...) {
     setPythonError();
@@ -183,9 +198,10 @@ PyObject* wrap(
     nb::rv_policy rvPolicy = nb::rv_policy::reference;
     if (policy == c_api::kReferenceInternal)
       rvPolicy = nb::rv_policy::reference_internal;
+    const auto* dynamic = dartnb::find_registered(dynamicType.name());
     return dartnb::wrap(
-               type,
-               dynamicType,
+               registeredKey(type),
+               dynamic ? *dynamic : dartnb::Key(typeid(void)),
                complete,
                pointer,
                rvPolicy,
@@ -206,9 +222,10 @@ PyObject* wrapShared(
 {
   try {
     bool isNew = false;
+    const auto* dynamic = dartnb::find_registered(dynamicType.name());
     auto result = nb::steal(dartnb::wrap(
-        type,
-        dynamicType,
+        registeredKey(type),
+        dynamic ? *dynamic : dartnb::Key(typeid(void)),
         complete,
         pointer,
         nb::rv_policy::reference,
