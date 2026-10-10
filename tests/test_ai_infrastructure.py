@@ -262,6 +262,86 @@ def test_release_references_accept_owner_only_rollover(tmp_path, rows, monkeypat
         assert errors == []
 
 
+@pytest.mark.parametrize(
+    ("catalog", "line_number"),
+    [
+        ('msgid "Neutral source"\nmsgstr "현재 DART 6.22"\n', 2),
+        ('msgid "Neutral source"\nmsgstr "현재 안정 버전은 DART 6.22.0"\n', 2),
+        (
+            'msgid "Neutral source"\nmsgstr "현재 안정 버전은 **DART 6.22.0** 입니다."\n',
+            2,
+        ),
+        ('msgid "Neutral source"\nmsgstr "현재 ``DART 6.22`` 입니다."\n', 2),
+        ('msgid "Neutral source"\nmsgstr "DART 6.22 개발 브랜치"\n', 2),
+        ('msgid "Neutral source"\nmsgstr "main 브랜치는 DART 6.22를 개발합니다"\n', 2),
+        ('msgid "Neutral source"\nmsgstr "DART 6.22.0 마일스톤을 사용하세요"\n', 2),
+        ('msgid "Neutral source"\nmsgstr "마일스톤을 DART 6.22.0으로 설정하세요"\n', 2),
+        ('msgid "Neutral source"\nmsgstr "currently DART 6.22"\n', 2),
+        ('msgid "Neutral source"\nmsgstr "main develops DART 6.22"\n', 2),
+        ('msgid "Neutral source"\nmsgstr ""\n"현재 "\n"DART 6."\n"22"\n', 2),
+        ('msgid "Neutral source"\nmsgstr "현재\\nDART 6.22"\n', 2),
+        ('msgid "Neutral source"\nmsgstr "\\"currently DART 6.22\\""\n', 2),
+        (
+            'msgid "one"\nmsgid_plural "many"\n'
+            'msgstr[0] "Neutral"\nmsgstr[1] "현재 DART 6.22"\n',
+            4,
+        ),
+    ],
+)
+def test_release_translations_reject_copied_routing(tmp_path, catalog, line_number):
+    relative = "docs/readthedocs/locales/ko/LC_MESSAGES/index.po"
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True)
+    path.write_text(catalog, encoding="utf-8")
+    errors = []
+
+    infra.check_release_references(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith(f"{relative}:{line_number}: resolve the release target")
+
+
+@pytest.mark.parametrize(
+    "catalog",
+    [
+        'msgid "currently DART 6.22"\nmsgstr "현재 DART 6 호환성 계열"\n',
+        'msgid ""\n"현재 DART 6.22"\nmsgstr "호환성 계열"\n',
+        '# currently DART 6.22\nmsgid "Neutral"\nmsgstr "호환성 계열"\n',
+        '#~ msgid "Neutral"\n#~ msgstr "현재 DART 6.22"\n',
+        '#~ msgid "Neutral"\n#~ msgstr ""\n#~ "현재 DART "\n#~ "6.22"\n',
+        'msgid "Neutral"\nmsgstr "2026-10-04: DART 버전 6.19.5 출시."\n',
+        'msgid "Neutral"\nmsgstr "과거 마일스톤은 DART 6.20.0이었습니다."\n',
+        'msgid "Neutral"\nmsgstr "DART 6.20에는 C++17이 필요합니다."\n',
+        'msgid "currently DART 6.22"\nmsgstr ""\n',
+    ],
+)
+def test_release_translations_allow_source_history_and_obsolete(tmp_path, catalog):
+    path = tmp_path / "docs/readthedocs/locales/ko/LC_MESSAGES/index.po"
+    path.parent.mkdir(parents=True)
+    path.write_text(catalog, encoding="utf-8")
+    errors = []
+
+    infra.check_release_references(tmp_path, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    "translation",
+    ['msgstr "unclosed', 'msgstr ""\n"unclosed', "msgstr invalid"],
+)
+def test_release_translations_reject_malformed_strings(tmp_path, translation):
+    path = tmp_path / "docs/readthedocs/locales/ko/LC_MESSAGES/index.po"
+    path.parent.mkdir(parents=True)
+    path.write_text(f'msgid "Neutral"\n{translation}\n', encoding="utf-8")
+    errors = []
+
+    infra.check_release_references(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert "invalid PO translation string" in errors[0]
+
+
 @pytest.fixture
 def release_target_owner(tmp_path, monkeypatch):
     monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
@@ -308,6 +388,8 @@ def test_release_target_accepts_valid_rows(release_target_owner, tmp_path, row):
         "| main | Maintenance | 6.22.0 |",
         "| release-6.20 | Development | 6.20.0 |",
         "| release-6.20 | Preview | 6.20.0 |",
+        "| release-6.20 | Stabilization | 6.20.1 |",
+        "| release-6.20 | Maintenance | 6.20.0 |",
         "| main | Development | 6.22 |",
         "| main | Development | 7.0.0 |",
         "| release-6.20 | Maintenance | 6.21.1 |",

@@ -14,6 +14,9 @@ its next release. Reusable skills and docs link here instead of copying values.
 | -------------- | ------------- | ------------ |
 | `main`         | Development   | `6.21.0`     |
 
+Use `Development` on `main`. Release branches use `Stabilization` for their
+initial `.0` target and `Maintenance` for later patch targets.
+
 Before creating or updating a PR, resolve its target from the live PR base
 (`main` by default for new work), fetch that branch, and read this file from
 the fetched base rather than the topic checkout:

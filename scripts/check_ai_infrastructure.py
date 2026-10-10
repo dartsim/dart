@@ -3751,13 +3751,18 @@ def check_release_target(root: Path, errors: list[str]) -> None:
         return
     branch, phase, version = [cell.strip().strip("`") for cell in cells[2]]
     branch_match = re.fullmatch(r"main|release-6\.(\d+)", branch)
-    version_match = re.fullmatch(r"6\.(\d+)\.\d+", version)
+    version_match = re.fullmatch(r"6\.(\d+)\.(\d+)", version)
     if (
         not branch_match
         or not version_match
         or (branch == "main" and phase != "Development")
         or (branch != "main" and phase not in {"Stabilization", "Maintenance"})
         or (branch != "main" and branch_match[1] != version_match[1])
+        or (
+            branch != "main"
+            and phase
+            != ("Stabilization" if int(version_match[2]) == 0 else "Maintenance")
+        )
     ):
         errors.append(
             f"{relative}: Release Target has an invalid branch, phase, or full DART 6 version"
@@ -3783,6 +3788,41 @@ def check_release_target(root: Path, errors: list[str]) -> None:
         )
 
 
+def po_translations(path: Path, errors: list[str]) -> list[tuple[int, str]]:
+    """Read active PO translations without scanning source or obsolete messages."""
+    translations = []
+    line_number = 0
+    fragments = []
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        line = line.strip()
+        start = re.fullmatch(r'msgstr(?:\[\d+\])?\s+(".*")', line)
+        if start or (not line.startswith(('"', "#")) and line_number):
+            if line_number:
+                translations.append((line_number, "".join(fragments)))
+            line_number = 0
+            fragments = []
+        if start:
+            line_number = number
+            literal = start[1]
+        elif line.startswith('"') and line_number:
+            literal = line
+        elif line.startswith("msgstr"):
+            errors.append(f"{path}:{number}: invalid PO translation string")
+            continue
+        else:
+            continue
+        try:
+            fragment = ast.literal_eval(literal)
+            if not isinstance(fragment, str):
+                raise ValueError("expected a string")
+            fragments.append(fragment)
+        except (SyntaxError, ValueError):
+            errors.append(f"{path}:{number}: invalid PO translation string")
+    if line_number:
+        translations.append((line_number, "".join(fragments)))
+    return translations
+
+
 def release_reference_paths(root: Path) -> list[Path]:
     """Return reusable guidance, excluding the release owner and plan archive."""
     paths = set(source_paths(root))
@@ -3802,6 +3842,7 @@ def release_reference_paths(root: Path) -> list[Path]:
         ".codex/agents/*.toml",
         "docs/onboarding/*.md",
         "docs/plans/*.md",
+        "docs/readthedocs/locales/*/LC_MESSAGES/index.po",
     ):
         paths.update(root.glob(pattern))
     paths.discard(root / "docs/onboarding/release-management.md")
@@ -3811,7 +3852,7 @@ def release_reference_paths(root: Path) -> list[Path]:
 
 def check_release_references(root: Path, errors: list[str]) -> None:
     """Keep reusable guidance independent of the branch's next release."""
-    version = r"`?DART\s+6\.\d+(?:\.\d+)?`?"
+    version = r"[`*]*DART\s+6\.\d+(?:\.\d+)?[`*]*"
     current_target = re.compile(
         rf"\bcurrently\s+(?:(?:is|on|at)\s+)?{version}"
         rf"|\b(?:current stable|develops|developing|stabilizes)\b"
@@ -3828,18 +3869,34 @@ def check_release_references(root: Path, errors: list[str]) -> None:
         r"|\btarget(?:s)?\s+`?(?:origin/)?release-6\.\d+\b",
         re.IGNORECASE,
     )
+    translated_target = re.compile(
+        rf"현재\s+(?:안정\s+버전(?:은|이)?\s+)?{version}"
+        rf"|{version}\s*(?:개발|안정화)\s*브랜치"
+        rf"|(?:main|release-6\.\d+).{{0,80}}{version}.{{0,40}}(?:개발|안정화)"
+        rf"|{version}.{{0,80}}마일스톤.{{0,40}}(?:사용|설정|선택|지정)"
+        rf"|마일스톤.{{0,80}}{version}.{{0,40}}(?:사용|설정|선택|지정)",
+        re.IGNORECASE,
+    )
     for path in release_reference_paths(root):
         if not path.is_file():
             continue
-        line_number = 1
-        for paragraph in path.read_text(encoding="utf-8").split("\n\n"):
-            if current_target.search(" ".join(paragraph.split())):
-                errors.append(
-                    f"{path.relative_to(root)}:{line_number}: resolve the release "
-                    "target and milestone from the base branch's "
-                    "`docs/onboarding/release-management.md`, not copied version values"
-                )
-            line_number += paragraph.count("\n") + 2
+        texts = (
+            po_translations(path, errors)
+            if path.suffix == ".po"
+            else [(1, path.read_text(encoding="utf-8"))]
+        )
+        for line_number, text in texts:
+            for paragraph in text.split("\n\n"):
+                normalized = " ".join(paragraph.split())
+                if current_target.search(normalized) or translated_target.search(
+                    normalized
+                ):
+                    errors.append(
+                        f"{path.relative_to(root)}:{line_number}: resolve the release "
+                        "target and milestone from the base branch's "
+                        "`docs/onboarding/release-management.md`, not copied version values"
+                    )
+                line_number += paragraph.count("\n") + 2
 
 
 def check_release_guidance(root: Path, errors: list[str]) -> None:
