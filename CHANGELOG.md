@@ -4,6 +4,20 @@
 
 ### [DART 6.21.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
 
+* Breaking Changes
+
+  * Remove the `hubo_puppet` demo and installed
+    `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
+    retired; its model remains available for parser regression coverage.
+
+* Build
+
+  * Add the optional `utils-assets` component for C++ and dartpy online model
+    retrieval, with pinned sources, verified versioned caches, and offline
+    reuse. Native builds opt in with `DART_BUILD_UTILS_ASSETS=ON` and require
+    libcurl and OpenSSL; Pixi builds enable it by default. The catalog includes
+    Atlas v5 and Unitree G1 model-viewing demos.
+
 * Dynamics
 
   * Preserve the generated soft mesh and shape-node properties when cloning

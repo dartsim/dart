@@ -370,7 +370,8 @@ void Shape(py::module& m)
           ::py::arg("scale"),
           ::py::arg("mesh"),
           ::py::arg("uri"),
-          ::py::arg("resourceRetriever"))
+          ::py::arg("resourceRetriever"),
+          ::py::call_guard<::py::gil_scoped_release>())
       .def(
           "getType",
           +[](const dart::dynamics::MeshShape* self) -> const std::string& {
@@ -408,7 +409,8 @@ void Shape(py::module& m)
           },
           ::py::arg("mesh"),
           ::py::arg("path"),
-          ::py::arg("resourceRetriever"))
+          ::py::arg("resourceRetriever"),
+          ::py::call_guard<::py::gil_scoped_release>())
       .def(
           "setMesh",
           +[](dart::dynamics::MeshShape* self,
@@ -426,7 +428,8 @@ void Shape(py::module& m)
           },
           ::py::arg("mesh"),
           ::py::arg("path"),
-          ::py::arg("resourceRetriever"))
+          ::py::arg("resourceRetriever"),
+          ::py::call_guard<::py::gil_scoped_release>())
       .def(
           "getMeshUri",
           +[](const dart::dynamics::MeshShape* self) -> std::string {

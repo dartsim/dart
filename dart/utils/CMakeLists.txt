@@ -63,5 +63,8 @@ install(
 
 # Add subdirectories (components)
 add_subdirectory(urdf)
+if(DART_BUILD_UTILS_ASSETS)
+  add_subdirectory(assets)
+endif()
 
 dart_format_add(${hdrs} ${srcs} ${detail_hdrs} ${detail_srcs} ${dart_utils_headers} ${dart_utils_sources})

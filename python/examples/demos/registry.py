@@ -102,7 +102,7 @@ def make_demo_scenes() -> List[PyDemoScene]:
         rigid_loop,
     )
 
-    return [
+    scenes = [
         PyDemoScene(
             id="hello_world_gui",
             title="Hello World (GUI)",
@@ -195,3 +195,27 @@ def make_demo_scenes() -> List[PyDemoScene]:
             build=atlas_puppet.build,
         ),
     ]
+    import dartpy as dart
+
+    if hasattr(dart.utils, "ModelResourceRetriever"):
+        from .scenes import modern_humanoids
+
+        scenes.extend(
+            [
+                PyDemoScene(
+                    id="atlas_v5",
+                    title="Atlas v5 (No Head)",
+                    category="Robots",
+                    summary="Inspect the verified cached Atlas v5 and pose its joints.",
+                    build=modern_humanoids.build_atlas,
+                ),
+                PyDemoScene(
+                    id="unitree_g1",
+                    title="Unitree G1 (29 DOF)",
+                    category="Robots",
+                    summary="Inspect the verified cached Unitree G1 and pose its joints.",
+                    build=modern_humanoids.build_g1,
+                ),
+            ]
+        )
+    return scenes

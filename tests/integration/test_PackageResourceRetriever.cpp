@@ -47,6 +47,27 @@ using dart::common::ResourceRetriever;
 using dart::common::Uri;
 using dart::utils::PackageResourceRetriever;
 
+TEST(PackageResourceRetriever, UriPackageRootsPreserveSchemeAndRevision)
+{
+  auto delegate = std::make_shared<PresentResourceRetriever>();
+  PackageResourceRetriever retriever(delegate);
+  retriever.addPackageDirectory("robot", "model://testbot/v1/description/");
+
+  EXPECT_TRUE(retriever.exists("package://robot/meshes/link.obj"));
+  ASSERT_EQ(delegate->mExists.size(), 1u);
+  EXPECT_EQ(
+      delegate->mExists.front(),
+      "model://testbot/v1/description/meshes/link.obj");
+  EXPECT_EQ(
+      retriever.getFilePath("package://robot/meshes/link.obj"),
+      "model://testbot/v1/description/meshes/link.obj");
+  EXPECT_NE(retriever.retrieve("package://robot/meshes/link.obj"), nullptr);
+  ASSERT_EQ(delegate->mRetrieve.size(), 1u);
+  EXPECT_EQ(
+      delegate->mRetrieve.front(),
+      "model://testbot/v1/description/meshes/link.obj");
+}
+
 TEST(PackageResourceRetriever, exists_UnableToResolve_ReturnsFalse)
 {
   auto mockRetriever = std::make_shared<PresentResourceRetriever>();

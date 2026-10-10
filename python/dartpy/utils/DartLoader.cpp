@@ -110,12 +110,14 @@ void DartLoader(py::module& m)
                 },
                 ::py::arg("uri"),
                 ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+                ::py::arg("flags") = utils::DartLoader::DEFAULT,
+                ::py::call_guard<::py::gil_scoped_release>())
             .def(
                 "parseSkeleton",
                 ::py::overload_cast<const common::Uri&>(
                     &utils::DartLoader::parseSkeleton),
-                ::py::arg("uri"))
+                ::py::arg("uri"),
+                ::py::call_guard<::py::gil_scoped_release>())
             .def(
                 "parseSkeletonString",
                 +[](utils::DartLoader* self,
@@ -131,13 +133,15 @@ void DartLoader(py::module& m)
                 ::py::arg("urdfString"),
                 ::py::arg("baseUri"),
                 ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+                ::py::arg("flags") = utils::DartLoader::DEFAULT,
+                ::py::call_guard<::py::gil_scoped_release>())
             .def(
                 "parseSkeletonString",
                 ::py::overload_cast<const std::string&, const common::Uri&>(
                     &utils::DartLoader::parseSkeletonString),
                 ::py::arg("urdfString"),
-                ::py::arg("baseUri"))
+                ::py::arg("baseUri"),
+                ::py::call_guard<::py::gil_scoped_release>())
             .def(
                 "parseWorld",
                 +[](utils::DartLoader* self,
@@ -150,12 +154,14 @@ void DartLoader(py::module& m)
                 },
                 ::py::arg("uri"),
                 ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+                ::py::arg("flags") = utils::DartLoader::DEFAULT,
+                ::py::call_guard<::py::gil_scoped_release>())
             .def(
                 "parseWorld",
                 ::py::overload_cast<const common::Uri&>(
                     &utils::DartLoader::parseWorld),
-                ::py::arg("uri"))
+                ::py::arg("uri"),
+                ::py::call_guard<::py::gil_scoped_release>())
             .def(
                 "parseWorldString",
                 +[](utils::DartLoader* self,
@@ -171,13 +177,15 @@ void DartLoader(py::module& m)
                 ::py::arg("urdfString"),
                 ::py::arg("baseUri"),
                 ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+                ::py::arg("flags") = utils::DartLoader::DEFAULT,
+                ::py::call_guard<::py::gil_scoped_release>())
             .def(
                 "parseWorldString",
                 ::py::overload_cast<const std::string&, const common::Uri&>(
                     &utils::DartLoader::parseWorldString),
                 ::py::arg("urdfString"),
-                ::py::arg("baseUri"));
+                ::py::arg("baseUri"),
+                ::py::call_guard<::py::gil_scoped_release>());
 
   dartLoader.attr("Flags") = dartLoaderFlags;
   dartLoader.attr("RootJointType") = dartLoaderRootJointType;
