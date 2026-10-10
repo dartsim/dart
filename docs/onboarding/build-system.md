@@ -67,8 +67,8 @@ targets forward to `dart-io`; applications linked to their former shared
 libraries must rebuild.
 
 `DART_BUILD_UTILS_ASSETS=ON` adds the optional online model retriever to
-`dart-io` and requires libcurl and OpenSSL. Its `utils-assets` component and
-`dart-utils-assets` target forward to `dart-io`.
+`dart-io` and requires `DART_BUILD_IO=ON`, libcurl and OpenSSL. Its
+`utils-assets` component and `dart-utils-assets` target forward to `dart-io`.
 
 ## DART 6.21 GUI
 

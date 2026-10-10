@@ -16,14 +16,32 @@ dart_build_tests(
     test_InverseKinematics.cpp
     test_NameManagement.cpp
     test_Signal.cpp
-    test_StepAllocation.cpp
 )
-target_sources(INTEGRATION_StepAllocation PRIVATE AllocationCounting.cpp)
-target_link_libraries(INTEGRATION_StepAllocation PRIVATE dart-utils)
-if(DART_CODECOV)
-  # Coverage instrumentation allocates; keep the allocation counters inert so
-  # coverage runs do not report gcov-runtime allocations as DART allocations.
-  target_compile_definitions(INTEGRATION_StepAllocation PRIVATE DART_CODECOV=1)
+# The step-allocation scenes load SKEL worlds.
+if(TARGET dart-utils)
+  dart_build_tests(
+    TYPE integration
+    TARGET_PREFIX INTEGRATION
+    LINK_LIBRARIES dart dart-utils
+    SOURCES test_StepAllocation.cpp
+  )
+  target_sources(INTEGRATION_StepAllocation PRIVATE AllocationCounting.cpp)
+  foreach(collision_engine dart-collision-bullet dart-collision-ode)
+    if(TARGET ${collision_engine})
+      target_link_libraries(
+        INTEGRATION_StepAllocation
+        PRIVATE ${collision_engine}
+      )
+    endif()
+  endforeach()
+  if(DART_CODECOV)
+    # Coverage instrumentation allocates; keep the allocation counters inert so
+    # coverage runs do not report gcov-runtime allocations as DART allocations.
+    target_compile_definitions(
+      INTEGRATION_StepAllocation
+      PRIVATE DART_CODECOV=1
+    )
+  endif()
 endif()
 dart_format_add(AllocationCounting.cpp AllocationCounting.hpp)
 
@@ -50,13 +68,6 @@ if(TARGET dart-collision-ode)
 endif()
 if(TARGET dart-collision-bullet)
   target_link_libraries(test_SplitImpulse dart-collision-bullet)
-  target_link_libraries(
-    INTEGRATION_StepAllocation
-    PRIVATE dart-collision-bullet
-  )
-endif()
-if(TARGET dart-collision-ode)
-  target_link_libraries(INTEGRATION_StepAllocation PRIVATE dart-collision-ode)
 endif()
 # T0 of the friction-solver evaluation. Its scenes are shared with the
 # standalone harness in tools/friction_eval, formatted with this tree.
