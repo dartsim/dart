@@ -1,7 +1,7 @@
 # Gemini Instructions
 
 **Read [`AGENTS.md`](AGENTS.md) first.** It is the source of truth for agents
-working on `main`, the DART 6.20 development branch.
+working on DART 6 development and release branches.
 
 Also load [`docs/ai/principles.md`](docs/ai/principles.md); it owns the
 AI working principles (compatibility first, PRs targeting `main`, approval

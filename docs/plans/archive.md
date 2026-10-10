@@ -1,6 +1,6 @@
 # DART 6 Plan Archive
 
-Completed DART 6.20 plan entries move here after their durable output has moved
+Completed DART 6 plan entries move here after their durable output has moved
 to `docs/onboarding/`, `docs/design/`, `docs/background/`, `docs/readthedocs/`,
 code, tests, examples, or release docs.
 
