@@ -52,7 +52,7 @@
     viewer is destroyed.
 
   * Let pybind11 extension modules exchange skeletons, worlds, graph objects,
-    and `Isometry3d` values with the nanobind build of `dartpy` through the
+    and `Isometry3d` values with `dartpy` through the
     `dartpy._C_API` capsule and the installed `dartpy/pybind11_interop.hpp`
     header, preserving wrapper identity and ownership.
 

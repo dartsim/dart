@@ -1,8 +1,6 @@
 ﻿# Copyright (c) 2011, The DART development contributors
 # All rights reserved.
 
-# References:
-
 import distutils.log
 import json
 import os
