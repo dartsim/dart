@@ -64,8 +64,10 @@ gh pr checks <PR_NUMBER>
    - Check that the base branch, title, and PR template are correct, and that
      the branch-matching DART 6.x release milestone is set; if it is missing,
      set it only after explicit maintainer/user approval.
-   - Confirm the PR targets `main` (or, for a `dart-backport-pr` backport, a
-     maintained `release-6.*` branch; none exists right now).
+   - Confirm ordinary changes target `main`. Backports and release-specific
+     packaging, CI, or branch guidance may target `release-6.20` or another
+     maintained `release-6.*` branch with its branch-matching milestone; backports use
+     `dart-backport-pr`.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
    - Check the body against `docs/onboarding/contributing.md` § "PR

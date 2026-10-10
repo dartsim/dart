@@ -1,4 +1,4 @@
-"""Tests for DART 6.20's deterministic AI infrastructure checks."""
+"""Tests for DART 6's deterministic AI infrastructure checks."""
 
 import copy
 import importlib.util
@@ -367,7 +367,7 @@ def test_branch_profile_marker_mutations_are_rejected():
     missing = copy.deepcopy(profile)
     missing["required_markers"].append("definitely missing release marker")
     forbidden = copy.deepcopy(profile)
-    forbidden["forbidden_markers"].append("# Agent Guidelines for DART 6.20")
+    forbidden["forbidden_markers"].append("C++17")
     missing_errors = []
     forbidden_errors = []
 

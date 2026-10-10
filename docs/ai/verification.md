@@ -110,7 +110,7 @@ is set.
   pixi run capture ssik_ik_gui arm.png
   ```
 
-- Or capture from dartpy (DART 6.20 offscreen bindings):
+- Or capture from dartpy (DART 6 offscreen bindings):
 
   ```python
   import dartpy as dart

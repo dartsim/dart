@@ -1,6 +1,6 @@
 # AI Workflow Map
 
-DART 6.20 exposes a subset of the DART AI workflows across
+DART 6 exposes a subset of the DART AI workflows across
 supported AI tools.
 
 - Claude Code and OpenCode use `/dart-*` commands.
@@ -8,7 +8,7 @@ supported AI tools.
 - `.claude/commands/` and `.claude/skills/` are the editable source.
 - `.opencode/command/` and `.agents/skills/` are generated.
 
-`branch-profile.json` owns machine-readable DART 6.20 facts and forbidden
+`branch-profile.json` owns machine-readable DART 6 facts and forbidden
 surfaces. `agent-scenarios.json` owns the eight deterministic orientation,
 small-change, failure-diagnosis, documentation-update, model-upgrade,
 component-work, simulation-verification, and release-maintenance contracts

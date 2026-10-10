@@ -27,7 +27,7 @@ For code style: `docs/onboarding/code-style.md`
 ## PR Workflow
 
 ```bash
-# DART 6.20 development and bug fixes start from main without tracking it
+# DART 6.21 development and bug fixes start from main without tracking it
 git fetch origin main
 git switch --no-track -c <type>/<topic> origin/main
 
@@ -46,7 +46,8 @@ gh pr create --draft --base <target-branch> --milestone "<milestone>"
 Then follow `docs/onboarding/ai-tools.md` § "PR Lifecycle" from draft to merge.
 
 Use the next DART 6.x release milestone for `main` PRs (currently
-`DART 6.20.0`) and the branch-matching milestone for maintenance PRs.
+`DART 6.21.0`) and the branch-matching milestone for stabilization and
+maintenance PRs.
 
 Rule of thumb: run `pixi run lint` before committing so auto-fixes are included.
 
@@ -70,12 +71,13 @@ approval:
 
 | Target Branch                    | Milestone                                       |
 | -------------------------------- | ----------------------------------------------- |
-| `main`                           | Next DART 6.x release (currently `DART 6.20.0`) |
-| Maintenance `release-6.*` branch | Branch-matching DART 6.x release                |
+| `main`                           | Next DART 6.x release (currently `DART 6.21.0`) |
+| `release-6.20`           | `DART 6.20.0`                               |
+| Other `release-6.*`      | Branch-matching DART 6.x release             |
 
 ```bash
 # After explicit maintainer/user approval, set milestone on existing PR
-gh pr edit <PR#> --milestone "DART 6.20.0"
+gh pr edit <PR#> --milestone "DART 6.21.0"
 
 # List available milestones
 gh api repos/dartsim/dart/milestones --jq '.[] | .title'
@@ -84,9 +86,10 @@ gh api repos/dartsim/dart/milestones --jq '.[] | .title'
 ## Bug Fixes
 
 After explicit maintainer/user approval, open bug-fix PRs against `main`, the
-development branch for the next release (currently DART 6.20). There is no
-maintenance branch right now; backports to a `release-6.*` branch cut from a
-release tag use `dart-backport-pr`.
+development branch for the next release (currently DART 6.21). Backports to
+`release-6.20` for stabilization, or another `release-6.*` branch, use
+`dart-backport-pr`. Release branches may be cut from approved stabilization
+commits before the first release tag or from published release tags.
 
 ## CHANGELOG (After Approved PR Exists)
 

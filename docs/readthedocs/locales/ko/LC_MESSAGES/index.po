@@ -46,13 +46,13 @@ msgstr "DART 6 LTS 문서를 보고 계십니다"
 #: ../../index.rst:12 6cad3fa9078941028cf1f733bfb74a90
 msgid ""
 "This site documents the **DART 6** compatibility line. The current stable"
-" release is **DART 6.19.5**; ``main`` is the development branch for the "
-"next release, currently DART 6.20, and receives all new patches. The "
+" release is **DART 6.19.5**; ``main`` develops DART 6.21, while "
+"``release-6.20`` stabilizes DART 6.20. The "
 "source version is read from ``package.xml``, and release notes are "
 "tracked in ``CHANGELOG.md``."
 msgstr ""
 "이 사이트는 **DART 6** 호환성 계열을 설명합니다. 현재 안정 버전은 **DART 6.19.5** 입니다. ``main`` "
-"은 다음 릴리스(현재 DART 6.20)의 개발 브랜치이며, 모든 새 패치는 이 브랜치에 반영됩니다. 소스 버전은 "
+"에서는 DART 6.21을 개발하고, ``release-6.20`` 에서는 DART 6.20을 안정화합니다. 소스 버전은 "
 "``package.xml`` 에서 읽으며, 릴리스 노트는 ``CHANGELOG.md`` 에 기록됩니다."
 
 #: ../../index.rst:19 ec09eccd75204784a40fdfbb861a0529
@@ -118,11 +118,13 @@ msgstr ""
 
 #: ../../index.rst:50 05567f0679f643878beb91d4663472eb
 msgid ""
-"DART 6.20.0 is in progress on the `main branch "
-"<https://github.com/dartsim/dart/tree/main>`_."
+"DART 6.21.0 is in development on the `main branch "
+"<https://github.com/dartsim/dart/tree/main>`_; DART 6.20.0 is stabilizing on the "
+"`release-6.20 branch <https://github.com/dartsim/dart/tree/release-6.20>`_."
 msgstr ""
-"DART 6.20.0은 `main 브랜치 <https://github.com/dartsim/dart/tree/main>`_ 에서 "
-"개발 중입니다."
+"DART 6.21.0은 `main 브랜치 <https://github.com/dartsim/dart/tree/main>`_ 에서 "
+"개발 중이며, DART 6.20.0은 `release-6.20 브랜치 "
+"<https://github.com/dartsim/dart/tree/release-6.20>`_ 에서 안정화 중입니다."
 
 #: ../../index.rst:52 f5f20202ba7d433bbce9fb65a80d471e
 msgid "2022-12-31: DART version 6.13.0 released."

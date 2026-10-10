@@ -1,16 +1,19 @@
 # Release Management
 
-`main` is the development branch for the next release, currently DART 6.20.
-PRs target `main` and the matching DART 6.x release milestone (currently
-`DART 6.20.0`). There is no maintenance branch: new patches land on `main`,
-and `dart-backport-pr` applies only to a `release-6.x` branch cut as described
-below.
+`main` develops DART 6.21; new features and fixes target `main` with the
+`DART 6.21.0` milestone. `release-6.20` stabilizes DART 6.20 with the
+`DART 6.20.0` milestone. It was cut at
+`a4404d367858562a8f9719f04dabfbc20490a92d`, before the Python tutorial migration,
+so the C++ tutorials remain in 6.20. Backport merged fixes from `main` using
+`dart-backport-pr`; release-specific packaging, CI, and branch guidance may
+target the stabilization branch directly.
 
-Version note: `package.xml` on this branch carries the latest published
-DART 6.19.x point release forward (so a configured build can report a
-6.19.x version) and is bumped to `6.20.0` only by the release packaging
-change. The `CHANGELOG.md` section "DART 6.20.0 (Unreleased)" is the
-authoritative statement of what this branch is becoming.
+Version note: `package.xml` and the Pixi workspace retain the latest published
+version until the release packaging change. A configured development build can
+therefore still report 6.19.x. Packaging on `release-6.20` bumps them to
+`6.20.0`; the next minor release developed on `main` is `6.21.0`.
+Keep the accumulated 6.20 changelog entries in their release section and place
+new `main` work under DART 6.21.0.
 
 DART 6 PRs should:
 
@@ -22,10 +25,11 @@ DART 6 PRs should:
 
 ## DART 6 Release Closeout
 
-A DART 6.x.y patch release is packaged by one "Packaging 6.x.y" PR on its
-`release-6.x` branch. It bumps `package.xml` and the `pixi.toml` workspace
-version, dates the release's `CHANGELOG.md` heading, links that heading to the
-closed milestone (`?closed=1`), and adds a short release summary under it. Its
+A DART 6.x.y release on a stabilization or maintenance branch is packaged by
+one "Packaging 6.x.y" PR on its `release-6.x` branch, including the first
+`6.20.0` release on `release-6.20`. It bumps `package.xml` and the `pixi.toml`
+workspace version, dates the release's `CHANGELOG.md` heading, links that
+heading to the closed milestone (`?closed=1`), and adds a short release summary under it. Its
 squash commit is the release candidate: once the gates below pass, tag it
 `v6.x.y` (annotated, message `DART 6.x.y`) and publish the GitHub release
 `DART 6.x.y`.
@@ -37,7 +41,7 @@ the exact candidate SHA for the forced optional-dependency-off gate and
 activating a new `release-6.x` branch, confirm its branch protection requires
 uniquely named contexts for both gates.
 
-`main` enforces these gates through the required
+`main` and `release-6.20` enforce these gates through the required
 `Asserts enabled (no -DNDEBUG)` context, owned only by CI Linux and
 configuring/building with OpenSceneGraph forcibly disabled, and the required
 `ubuntu-latest` context, owned only by CI gz-physics and running both Gazebo
@@ -51,7 +55,7 @@ with the previous `v6` tag on the rows both can run (`-f base=v6.x.y` selects
 another baseline), and publishes `performance/releases/v6.x.y.json`, `.md` and
 `index.md` on `gh-pages`. Only `main` candidates list merged changes since that
 tag that moved a gated row, broke a row or carried a rationale line;
-`release-6.x` patch candidates carry the tag comparison only. Read it before
+`release-6.x` candidates carry the tag comparison only. Read it before
 tagging; a FAIL does not block by itself but needs an explanation. After
 publishing the GitHub release, check that the record names the tagged commit,
 then attach both files as `dart-perf-v6.x.y.json` and `dart-perf-v6.x.y.md`
@@ -61,11 +65,16 @@ Hosted records take precedence over local records. Within the same producer,
 the tagged commit's record replaces any stored candidate, including a newer
 or diverged one.
 
-At a new minor release (for example 6.20.0), tag `main`. Cut a `release-6.x`
-branch from the tag only when patch releases must diverge from `main`; a patch
-release then tags its packaging squash commit on that branch, as above, never
-`main`. The `Nightly` workflow is scheduled directly on `main`; its
-`nightly-failure` issues track `main`.
+A maintainer may cut `release-6.x` before the first minor-release tag to
+stabilize that release while `main` develops the next minor version. In that
+case, package and tag the first `6.x.0` release on the stabilization branch,
+as for later patch releases. `release-6.20` uses this early-cut policy.
+Without a stabilization cut, package and tag the minor release on `main`,
+then cut a maintenance branch from the tag when patch releases must diverge.
+Protect each new release branch and verify that its required check contexts,
+including both Read the Docs builds, are emitted by release-target PRs before
+relying on the merge gate. The `Nightly` workflow remains scheduled on `main`;
+its `nightly-failure` issues track `main`.
 
 ## Verifying DART 6 Changes
 
