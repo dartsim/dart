@@ -119,6 +119,9 @@ public:
   /// \brief Get objective function
   FunctionPtr getObjective() const;
 
+  /// Removes the objective function.
+  void clearObjective();
+
   /// \brief Add equality constraint
   void addEqConstraint(FunctionPtr _eqConst);
 

@@ -4,6 +4,21 @@
 
 ### [DART 6.21.0 (Unreleased)](https://github.com/dartsim/dart/milestone/105)
 
+* Breaking Changes
+
+  * Explicitly delete copy and move construction and assignment for
+    `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
+    `EmbedStateAndProperties`. These operations could not be instantiated
+    previously; type traits such as `std::is_copy_constructible` now correctly
+    report `false`. Class layouts remain unchanged.
+
+* API
+
+  * Add `optimizer::Problem::clearObjective()` and
+    `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
+    `getSchemaRetrievers()`, and `removeAllRetrievers()` to inspect and release
+    owned objective functions and resource retrievers.
+
 * Dynamics
 
   * Preserve the generated soft mesh and shape-node properties when cloning
@@ -16,6 +31,20 @@
     and world-recording access for Python simulation tutorials.
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
+  * Add an opt-in non-GUI nanobind build of `dartpy` with
+    `-DDART_DARTPY_BINDER=nanobind`. Python overrides stay alive while C++ uses
+    them, graph-object wrappers retain their skeleton, and const Eigen views
+    are read-only. Secondary-base `isinstance`/MRO and exception details differ;
+    bool parameters accept only `True`/`False`, and str parameters reject bytes.
+
+  * Let pybind11 extension modules exchange skeletons, worlds, graph objects,
+    and `Isometry3d` values with the nanobind build of `dartpy` through the
+    `dartpy._C_API` capsule and the installed `dartpy/pybind11_interop.hpp`
+    header, preserving wrapper identity and ownership.
+
+  * Reject a null node when constructing inverse kinematics in either binder,
+    preventing an invalid-input crash.
+
 * Examples
 
   * Replace the four C++ tutorials with Python exercises and solutions in
@@ -23,6 +52,13 @@
     `tu-*` Pixi commands now launch Python; the C++ tutorial executables and
     aggregate build target are removed.
     [#3644](https://github.com/dartsim/dart/pull/3644)
+
+* Build
+
+  * Add `DART_DARTPY_BINDER` (default `pybind11`) and
+    `DART_USE_SYSTEM_NANOBIND` (default `OFF`). The nanobind binder requires
+    Python 3.10 or newer and nanobind 3.1 or newer; the bundled build fetches
+    nanobind 3.1.0 and its robin_map submodule.
 
 ### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)
 

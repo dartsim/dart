@@ -45,15 +45,18 @@
 #include "dart/common/SpecializedForAspect.hpp"
 #include "dart/common/Subject.hpp"
 #include "dart/common/sub_ptr.hpp"
+#include "dart/dynamics/BallJoint.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/BoxShape.hpp"
 #include "dart/dynamics/EulerJoint.hpp"
+#include "dart/dynamics/FreeJoint.hpp"
 #include "dart/dynamics/PlanarJoint.hpp"
 #include "dart/dynamics/PrismaticJoint.hpp"
 #include "dart/dynamics/RevoluteJoint.hpp"
 #include "dart/dynamics/ScrewJoint.hpp"
 #include "dart/dynamics/ShapeFrame.hpp"
 #include "dart/dynamics/Skeleton.hpp"
+#include "dart/dynamics/TranslationalJoint2D.hpp"
 #include "dart/dynamics/UniversalJoint.hpp"
 #include "dart/math/Random.hpp"
 
@@ -61,11 +64,63 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 #include <cstddef>
 
 using namespace dart::common;
+
+namespace {
+
+template <class T>
+constexpr bool embeddedAspectHostIsImmobile
+    = !std::is_copy_constructible_v<
+          T> && !std::is_move_constructible_v<T> && !std::is_copy_assignable_v<T> && !std::is_move_assignable_v<T>;
+
+template <class Space>
+using EmbeddedAspectGenericJointHost = EmbedStateAndProperties<
+    dart::dynamics::GenericJoint<Space>,
+    dart::dynamics::detail::GenericJointState<Space>,
+    dart::dynamics::detail::GenericJointUniqueProperties<Space>>;
+
+static_assert(embeddedAspectHostIsImmobile<EmbedProperties<
+                  dart::dynamics::Joint,
+                  dart::dynamics::detail::JointProperties>>);
+static_assert(embeddedAspectHostIsImmobile<EmbedProperties<
+                  dart::dynamics::EulerJoint,
+                  dart::dynamics::detail::EulerJointUniqueProperties>>);
+static_assert(embeddedAspectHostIsImmobile<EmbedProperties<
+                  dart::dynamics::PlanarJoint,
+                  dart::dynamics::detail::PlanarJointUniqueProperties>>);
+static_assert(embeddedAspectHostIsImmobile<EmbedProperties<
+                  dart::dynamics::PrismaticJoint,
+                  dart::dynamics::detail::PrismaticJointUniqueProperties>>);
+static_assert(embeddedAspectHostIsImmobile<EmbedProperties<
+                  dart::dynamics::RevoluteJoint,
+                  dart::dynamics::detail::RevoluteJointUniqueProperties>>);
+static_assert(embeddedAspectHostIsImmobile<EmbedProperties<
+                  dart::dynamics::ScrewJoint,
+                  dart::dynamics::detail::ScrewJointUniqueProperties>>);
+static_assert(
+    embeddedAspectHostIsImmobile<EmbedProperties<
+        dart::dynamics::TranslationalJoint2D,
+        dart::dynamics::detail::TranslationalJoint2DUniqueProperties>>);
+static_assert(embeddedAspectHostIsImmobile<EmbedProperties<
+                  dart::dynamics::UniversalJoint,
+                  dart::dynamics::detail::UniversalJointUniqueProperties>>);
+static_assert(embeddedAspectHostIsImmobile<
+              EmbeddedAspectGenericJointHost<dart::math::RealVectorSpace<1>>>);
+static_assert(embeddedAspectHostIsImmobile<
+              EmbeddedAspectGenericJointHost<dart::math::RealVectorSpace<2>>>);
+static_assert(embeddedAspectHostIsImmobile<
+              EmbeddedAspectGenericJointHost<dart::math::RealVectorSpace<3>>>);
+static_assert(embeddedAspectHostIsImmobile<
+              EmbeddedAspectGenericJointHost<dart::math::SO3Space>>);
+static_assert(embeddedAspectHostIsImmobile<
+              EmbeddedAspectGenericJointHost<dart::math::SE3Space>>);
+
+} // namespace
 
 struct EmbeddedStateData
 {

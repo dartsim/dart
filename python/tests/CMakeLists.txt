@@ -83,3 +83,7 @@ foreach(dartpy_test_file ${dartpy_test_files})
   get_filename_component(dartpy_test_name ${dartpy_test_file} NAME_WE)
   dartpy_add_test(py_${dartpy_test_name} ${dartpy_test_file})
 endforeach()
+
+if(DART_DARTPY_BINDER STREQUAL "nanobind")
+  add_subdirectory(interop)
+endif()
