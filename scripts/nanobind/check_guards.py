@@ -31,6 +31,8 @@ def violations(source: str, name: str) -> list[str]:
             "nanobind/stl/array.h",
         }:
             errors.append(f"stock caster conflicts with DART caster: {header}")
+    if "osg::ref_ptr<" in source and "gui/osg/ownership.hpp" not in includes:
+        errors.append("OSG ref_ptr bindings require gui/osg/ownership.hpp")
     property_headers = set(PROPERTY_HEADERS.get(name, ()))
     if re.search(
         r"(?:Solver|GradientDescentSolver)::\s*(?:Properties|UniqueProperties)", source
@@ -74,6 +76,11 @@ def self_test() -> None:
     assert not violations(valid, "collision/RaycastResult.cpp")
     assert violations('#include "detail/dart_nb.hpp"', "collision/DistanceResult.cpp")
     assert not violations(valid, "collision/DistanceResult.cpp")
+    assert violations(valid + "osg::ref_ptr<T>;", "gui/osg/probe.cpp")
+    assert not violations(
+        valid + '\n#include "gui/osg/ownership.hpp"\nosg::ref_ptr<T>;',
+        "gui/osg/probe.cpp",
+    )
     assert violations(valid, "optimizer/Solver.cpp")
     assert violations(valid + "Solver::Properties;", "new_binding.cpp")
     assert violations(valid + "IK::ErrorMethod::Properties;", "new_binding.cpp")
