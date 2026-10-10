@@ -13,11 +13,11 @@ The tutorial consists of five Lessons covering the following topics:
 - Setting joint spring and damping properties
 - Creating a closed kinematic chain
 
-Please reference the source code in [**tutorialCollisions.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp) and [**tutorialCollisions-Finished.cpp**](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions-Finished.cpp).
+Please reference the source code in [**tutorial_collisions/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_collisions/main.cpp) and [**tutorial_collisions_finished/main.cpp**](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_collisions_finished/main.cpp).
 
 ## Lesson 1: Creating a rigid body
 
-Start by going opening the Skeleton code [tutorialCollisions.cpp](https://github.com/dartsim/dart/blob/release-5.1/tutorials/tutorialCollisions.cpp).
+Start by going opening the Skeleton code [tutorial_collisions/main.cpp](https://github.com/dartsim/dart/blob/main/tutorials/tutorial_collisions/main.cpp).
 Find the function named ``addRigidBody``. You will notice that this is a templated
 function. If you're not familiar with templates, that's okay; we won't be doing
 anything too complicated with them. Different Joint types in DART are managed by
@@ -87,20 +87,20 @@ if(parent)
 Inside the brackets, we'll want to create the offset between bodies:
 
 ```cpp
-math::Isometry3d tf(math::Isometry3d::Identity());
+Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
 ```
 
-An ``math::Isometry3d`` is the Eigen library's version of a homogeneous
+An ``Eigen::Isometry3d`` is the Eigen library's version of a homogeneous
 transformation matrix. Here we are initializing it to an Identity matrix to
 start out. This is almost always something you should do when creating an
-math::Isometry3d, because otherwise its contents will be completely arbitrary
+Eigen::Isometry3d, because otherwise its contents will be completely arbitrary
 trash.
 
 We can easily compute the center point between the origins of the two bodies
 using our default height value:
 
 ```cpp
-tf.translation() = math::Vector3d(0, 0, default_shape_height / 2.0);
+tf.translation() = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
 ```
 
 We can then offset the parent and child BodyNodes of this Joint using this
@@ -188,7 +188,7 @@ else if(Shape::CYLINDER == type)
 {
   // TODO: Make a cylinder
 }
-else if(SHAPE::ELLIPSOID == type)
+else if(Shape::ELLIPSOID == type)
 {
   // TODO: Make an ellipsoid
 }
@@ -201,10 +201,10 @@ used very often.
 Now we want to construct each of the Shape types within their conditional
 statements. Each constructor is a bit different.
 
-For box we pass in an math::Vector3d that contains the three dimensions of the box:
+For box we pass in an Eigen::Vector3d that contains the three dimensions of the box:
 
 ```cpp
-shape = std::make_shared<BoxShape>(math::Vector3d(
+shape = std::make_shared<BoxShape>(Eigen::Vector3d(
                                      default_shape_width,
                                      default_shape_width,
                                      default_shape_height));
@@ -217,15 +217,15 @@ shape = std::make_shared<CylinderShape>(default_shape_width/2.0,
                                         default_shape_height);
 ```
 
-For ellipsoid we pass in an math::Vector3d that contains the lengths of the three axes:
+For ellipsoid we pass in an Eigen::Vector3d that contains the lengths of the three axes:
 
 ```cpp
 shape = std::make_shared<EllipsoidShape>(
-      default_shape_height*math::Vector3d::Ones());
+      default_shape_height*Eigen::Vector3d::Ones());
 ```
 
 Since we actually want a sphere, all three axis lengths will be equal, so we can
-create an math::Vector3d filled with ones by using ``math::Vector3d::Ones()``
+create an Eigen::Vector3d filled with ones by using ``Eigen::Vector3d::Ones()``
 and then multiply it by the length that we actually want for the three components.
 
 Finally, we want to add this shape as a visualization **and** collision shape for
@@ -331,12 +331,12 @@ For the SOFT_BOX:
 ```cpp
 // Make a wide and short box
 double width = default_shape_height, height = 2*default_shape_width;
-math::Vector3d dims(width, width, height);
+Eigen::Vector3d dims(width, width, height);
 
 double mass = 2*dims[0]*dims[1] + 2*dims[0]*dims[2] + 2*dims[1]*dims[2];
 mass *= default_shape_density * default_skin_thickness;
 soft_properties = SoftBodyNodeHelper::makeBoxProperties(
-      dims, math::Isometry3d::Identity(), math::Vector3i(4,4,4), mass);
+      dims, Eigen::Isometry3d::Identity(), Eigen::Vector3i(4,4,4), mass);
 ```
 
 For the SOFT_CYLINDER:
@@ -357,7 +357,7 @@ soft_properties = SoftBodyNodeHelper::makeCylinderProperties(
 And for the SOFT_ELLIPSOID:
 ```cpp
 double radius = default_shape_height/2.0;
-math::Vector3d dims = 2*radius*math::Vector3d::Ones();
+Eigen::Vector3d dims = 2*radius*Eigen::Vector3d::Ones();
 double mass = default_shape_density * 4.0*M_PI*pow(radius, 2)
               * default_skin_thickness;
 soft_properties = SoftBodyNodeHelper::makeEllipsoidProperties(
@@ -412,7 +412,7 @@ simulation:
 
 ```cpp
 Inertia inertia;
-inertia.setMoment(1e-8*math::Matrix3d::Identity());
+inertia.setMoment(1e-8*Eigen::Matrix3d::Identity());
 inertia.setMass(1e-8);
 bn->setInertia(inertia);
 ```
@@ -426,7 +426,7 @@ grab that shape and reduce the value of its alpha channel:
 
 ```
 auto shape = bn->getShapeNodesWith<VisualAspect>()[0];
-math::Vector4d color = shape->getVisualAspect()->getRGBA();
+Eigen::Vector4d color = shape->getVisualAspect()->getRGBA();
 color[3] = 0.4;
 shape->getVisualAspect()->setRGBA(color);
 ```
@@ -444,7 +444,7 @@ down:
 
 ```cpp
 double width = default_shape_height, height = 2*default_shape_width;
-math::Vector3d dims(width, width, height);
+Eigen::Vector3d dims(width, width, height);
 dims *= 0.6;
 std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(dims);
 ```
@@ -486,7 +486,7 @@ Now we can give the new rigid BodyNode a regular box shape:
 ```cpp
 double box_shape_height = default_shape_height;
 std::shared_ptr<BoxShape> box = std::make_shared<BoxShape>(
-      box_shape_height*math::Vector3d::Ones());
+      box_shape_height*Eigen::Vector3d::Ones());
 
 bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 ```
@@ -494,8 +494,8 @@ bn->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(box);
 To make the box protrude, we'll shift it away from the center of its parent:
 
 ```cpp
-math::Isometry3d tf(math::Isometry3d::Identity());
-tf.translation() = math::Vector3d(box_shape_height/2.0, 0, 0);
+Eigen::Isometry3d tf(Eigen::Isometry3d::Identity());
+tf.translation() = Eigen::Vector3d(box_shape_height/2.0, 0, 0);
 bn->getParentJoint()->setTransformFromParentBodyNode(tf);
 ```
 
@@ -510,7 +510,7 @@ bn->setInertia(inertia);
 
 ## Lesson 3: Setting initial conditions and taking advantage of Frames
 
-Find the ``addObject`` function in the ``MyWorld`` class. This function will
+Find the ``addObject`` function in the ``CollisionsEventHandler`` class. This function will
 be called whenever the user requests for an object to be added to the world.
 In this function, we want to set up the initial conditions for the object so
 that it gets thrown at the wall. We also want to make sure that it's not in
@@ -524,11 +524,11 @@ wall. We also want to have the ability to randomize its location along the y-axi
 
 First, let's create a zero vector for the position:
 ```cpp
-math::Vector6d positions(math::Vector6d::Zero());
+Eigen::Vector6d positions(Eigen::Vector6d::Zero());
 ```
 
-You'll notice that this is an math::Vector**6**d rather than the usual
-math::Vector**3**d. This vector has six components because the root BodyNode
+You'll notice that this is an Eigen::Vector**6**d rather than the usual
+Eigen::Vector**3**d. This vector has six components because the root BodyNode
 has 6 degrees of freedom: three for orientation and three for translation.
 Because we follow Roy Featherstone's Spatial Vector convention, the **first**
 three components are for **orientation** using a logmap (also known as angle-axis)
@@ -640,7 +640,7 @@ velocity properties that we want the Skeleton to have. First, we'll place a
 SimpleFrame at the Skeleton's center of mass:
 
 ```cpp
-math::Isometry3d centerTf(math::Isometry3d::Identity());
+Eigen::Isometry3d centerTf(Eigen::Isometry3d::Identity());
 centerTf.translation() = object->getCOM();
 SimpleFrame center(Frame::World(), "center", centerTf);
 ```
@@ -673,8 +673,8 @@ We just use the default values unless randomization is turned on.
 Now we'll convert those speeds into directional velocities:
 
 ```cpp
-math::Vector3d v = speed * math::Vector3d(cos(angle), 0.0, sin(angle));
-math::Vector3d w = angular_speed * math::Vector3d::UnitY();
+Eigen::Vector3d v = speed * Eigen::Vector3d(cos(angle), 0.0, sin(angle));
+Eigen::Vector3d w = angular_speed * Eigen::Vector3d::UnitY();
 ```
 
 And now we'll use those vectors to set the velocity properties of the SimpleFrame:
@@ -747,7 +747,7 @@ edge of a polygon like so:
 
 ```cpp
 size_t numEdges = ring->getNumBodyNodes();
-double angle = 2 * dart::math::pi() / numEdges;
+double angle = 2 * dart::math::constantsd::pi() / numEdges;
 ```
 
 Now it's important to remember that the joints we have between the BodyNodes are
@@ -760,9 +760,9 @@ EulerJoint and FreeJoint.
 for(size_t i=1; i < ring->getNumJoints(); ++i)
 {
   Joint* joint = ring->getJoint(i);
-  math::AngleAxisd rotation(angle, math::Vector3d(0, 1, 0));
-  math::Vector3d restPos = BallJoint::convertToPositions(
-        math::Matrix3d(rotation));
+  Eigen::AngleAxisd rotation(angle, Eigen::Vector3d(0, 1, 0));
+  Eigen::Vector3d restPos = BallJoint::convertToPositions(
+        Eigen::Matrix3d(rotation));
 
   // TODO: Set the rest position
 }
@@ -804,7 +804,7 @@ BodyNode* tail = ring->getBodyNode(ring->getNumBodyNodes()-1);
 Now we want to compute the offset where the BallJoint constraint should be located:
 
 ```cpp
-math::Vector3d offset = math::Vector3d(0, 0, default_shape_height / 2.0);
+Eigen::Vector3d offset = Eigen::Vector3d(0, 0, default_shape_height / 2.0);
 offset = tail->getWorldTransform() * offset;
 ```
 
@@ -814,7 +814,7 @@ tail BodyNode.
 Now we have everything we need to construct the constraint:
 
 ```cpp
-auto constraint = std::make_shared<dart::dynamics::BallJointConstraint>(
+auto constraint = std::make_shared<dart::constraint::BallJointConstraint>(
       head, tail, offset);
 ```
 
@@ -832,7 +832,7 @@ want to add it to our list of constraints:
 mJointConstraints.push_back(constraint);
 ```
 
-And that's it! You're ready to run the full tutorialCollisions application!
+And that's it! You're ready to run the full tutorial_collisions application!
 
 **When running the application, keep in mind that the dynamics of collisions are
 finnicky, so you may see some unstable and even completely non-physical behavior.
