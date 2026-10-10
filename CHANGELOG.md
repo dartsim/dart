@@ -25,6 +25,9 @@
     soft-body skeletons, avoiding duplicate null meshes during collision checks.
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
+  * Keep soft-body skin meshes resizable after `BodyNode::copyTo()` and
+    `BodyNode::copyAs()`, preventing invalid mesh updates.
+
 * Python
 
   * Add dartpy soft-body construction, typed Euler-joint skeleton editing,
@@ -39,6 +42,11 @@
     them). Removed GUI wrappers may live until their viewer is destroyed.
     Secondary-base `isinstance`/MRO and exception details differ;
     bool parameters accept only `True`/`False`, and str parameters reject bytes.
+
+  * Let pybind11 extension modules exchange skeletons, worlds, graph objects,
+    and `Isometry3d` values with the nanobind build of `dartpy` through the
+    `dartpy._C_API` capsule and the installed `dartpy/pybind11_interop.hpp`
+    header, preserving wrapper identity and ownership.
 
   * Reject a null node when constructing inverse kinematics in either binder,
     preventing an invalid-input crash.

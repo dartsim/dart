@@ -15,6 +15,7 @@ $ARGUMENTS
 
 @AGENTS.md
 @docs/onboarding/contributing.md
+@docs/onboarding/release-management.md
 @docs/onboarding/ai-tools.md
 @docs/onboarding/changelog.md
 @.github/PULL_REQUEST_TEMPLATE.md
@@ -86,15 +87,15 @@ Use these practices:
    git diff --check
    ```
 2. Exclude unrelated dirty files unless the user explicitly includes them.
-3. Choose the target branch and milestone:
-
-   | Target                    | Milestone                                       |
-   | ------------------------- | ----------------------------------------------- |
-   | `main`                    | Next DART 6.x release (currently `DART 6.20.0`) |
-   | Maintenance `release-6.*` | Branch-matching DART 6.x release                |
-
-4. After explicit maintainer/user approval, open bug-fix PRs against `main`;
-   backports to a `release-6.*` branch (none right now) use `dart-backport-pr`.
+3. Resolve the target from the live PR base, or use `main` for new development.
+   Fetch that base and read its `docs/onboarding/release-management.md`
+   § "Release target". Use `DART <Next release>` as the milestone and verify
+   that exact title is open on GitHub. For an explicit rollover, follow the
+   owner's proposed-target rule. Publishing or updating the PR requires
+   explicit maintainer/user approval.
+4. New fixes target `main`; backports to a maintained `release-6.*` branch use
+   `dart-backport-pr`. Release-specific packaging, CI, and branch guidance may
+   target the resolved release branch directly.
 5. Before every commit, run:
    ```bash
    pixi run lint

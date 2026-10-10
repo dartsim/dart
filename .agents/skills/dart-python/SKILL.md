@@ -57,8 +57,8 @@ them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
 
 ## Key Patterns
 
-- pybind11 under `python/dartpy/` remains the default during the DART 6.21
-  migration. The opt-in nanobind binder lives under `python/dartpy_nanobind/`;
+- pybind11 under `python/dartpy/` remains the default during the transition.
+  The opt-in nanobind binder lives under `python/dartpy_nanobind/`;
   use the binder selection and compatibility notes in the owner guide.
 - Follow the existing DART 6 camelCase binding names used in `python/examples`
   and `python/tests`.

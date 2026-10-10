@@ -188,11 +188,8 @@ Swap only the two ODE files between arms:
 
 **Always assert `[ -x "$GB" ]` before running** and classify failures by
 rc/message (127=missing-binary, 134+`free(): invalid size`=real,
-137/`bad_alloc`=environmental, 124=timeout). A ready harness with these guards
-is in the scratchpad as `groundtruth.sh`; the older gate logic is in
-`wppg20_gates.sh` (has the determinism refs above) — note that harness predated
-the commit and used the now-wrong `stash` approach; use the `checkout`-based
-swap above instead.
+137/`bad_alloc`=environmental, 124=timeout). Use the file-swap commands above
+with these guards; the historical local harnesses are not tracked.
 
 PR #3329 is merged. Use the evidence table there as the reference format for
 future performance PRs that change runtime behavior.
