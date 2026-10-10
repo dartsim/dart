@@ -272,6 +272,31 @@ def test_world_retains_native_simple_frame_without_pinning_python_wrapper():
     )
 
 
+def test_released_last_owner_keeps_borrowed_wrapper_alive():
+    run_isolated(
+        """
+        world = dart.simulation.World()
+        frame = dart.dynamics.SimpleFrame()
+        frame.setName("released")
+        observer = dart.dynamics.SimpleFrame(refFrame=frame, name="observer")
+        world.addSimpleFrame(frame=frame)
+        del frame
+        gc.collect()
+        borrowed = observer.getParentFrame()
+        (released,) = world.removeAllSimpleFrames()
+        assert released is borrowed
+        del world, released
+        gc.collect()
+        # Freeing the frame would reparent the observer to the world frame.
+        assert observer.getParentFrame() is borrowed
+        assert borrowed.getName() == "released"
+        del borrowed
+        gc.collect()
+        assert observer.getParentFrame().getName() == "World"
+        """
+    )
+
+
 def test_reentrant_wrapper_replacement_retains_native_owner():
     run_isolated(
         """

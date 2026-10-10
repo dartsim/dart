@@ -242,8 +242,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -318,8 +316,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -514,8 +510,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -709,8 +703,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyhc8003f9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -1252,8 +1244,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/poppler-data-0.4.12-hd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -1329,8 +1319,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/poppler-data-0.4.12-hd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -1694,8 +1682,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/poppler-data-0.4.12-hd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -2058,8 +2044,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/poppler-data-0.4.12-hd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyhc8003f9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -3207,8 +3191,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -3283,8 +3265,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -3484,8 +3464,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -3684,8 +3662,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyhc8003f9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -4057,8 +4033,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.14.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.11.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pyelftools-0.33-pyh8f84b5b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
@@ -4135,8 +4109,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.14.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.11.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -4331,8 +4303,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.14.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.11.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -4525,8 +4495,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.14.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.11.5-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyhc8003f9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -4896,8 +4864,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pyelftools-0.33-pyh8f84b5b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
@@ -4976,8 +4942,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -5175,8 +5139,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -5372,8 +5334,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyhc8003f9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -5745,8 +5705,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pyelftools-0.33-pyh8f84b5b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
@@ -5825,8 +5783,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -6024,8 +5980,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -6221,8 +6175,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyhc8003f9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -6594,8 +6546,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pyelftools-0.33-pyh8f84b5b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
@@ -6674,8 +6624,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -6874,8 +6822,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyha55dd90_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -7072,8 +7018,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/pipx-1.17.12-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.12.4-pyh5ded981_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyhc8003f9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pygments-2.21.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pysocks-1.7.1-pyh09c184e_7.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pytest-8.4.2-pyhcf101f3_1.conda
@@ -17770,48 +17714,6 @@ packages:
   run_exports: {}
   size: 2348171
   timestamp: 1675353652214
-- conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-3.1.0-pyh293190f_0.conda
-  sha256: 54ea7a186ccf7ef2c98d3cc29c1c68ddffff0d74bc3321ebb22a56e91e1c3aa9
-  md5: 5aa0ad32112cbfc1cf0f2b3c600be4a5
-  depends:
-  - python >=3.9
-  - pybind11-global ==3.1.0 *_0
-  - python
-  constrains:
-  - pybind11-abi ==12
-  license: BSD-3-Clause
-  license_family: BSD
-  run_exports: {}
-  size: 254992
-  timestamp: 1786200320545
-- conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyh648e204_0.conda
-  sha256: 684d30c86f505916b44f205b8f5a153b1779df462233ce380b39f777d82126aa
-  md5: 534548c7e6102ae9a408957380937b52
-  depends:
-  - python >=3.9
-  - __unix
-  - python
-  constrains:
-  - pybind11-abi ==12
-  license: BSD-3-Clause
-  license_family: BSD
-  run_exports: {}
-  size: 247376
-  timestamp: 1786200320545
-- conda: https://conda.anaconda.org/conda-forge/noarch/pybind11-global-3.1.0-pyhc8003f9_0.conda
-  sha256: c2c9ae8665c7273a68920ac4245e98bc0ed60bf632093076d48d9b519e5a8275
-  md5: 03c5c8e879d0da779cba5e8d18dccad2
-  depends:
-  - python >=3.9
-  - __win
-  - python
-  constrains:
-  - pybind11-abi ==12
-  license: BSD-3-Clause
-  license_family: BSD
-  run_exports: {}
-  size: 246559
-  timestamp: 1786200319978
 - conda: https://conda.anaconda.org/conda-forge/noarch/pyelftools-0.33-pyh8f84b5b_0.conda
   sha256: 6f18a3609c93321d37bd4059c255da736b95afdf6180382854a48c48c6a8b823
   md5: b0e199724ac880c3593df23944b53e93

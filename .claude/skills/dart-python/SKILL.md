@@ -1,6 +1,6 @@
 ---
 name: dart-python
-description: "DART Python: dartpy bindings, nanobind, pybind11-extension interop, wheels, and API patterns"
+description: "DART Python: dartpy bindings, nanobind, wheels, and API patterns"
 ---
 
 # DART Python Bindings (dartpy)
@@ -54,7 +54,7 @@ them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
 ## Key Patterns
 
 - nanobind is dartpy's only binder on `main`, under `python/dartpy/`.
-  Use the compatibility and pybind11-extension interop notes in the owner guide.
+  Use the DART 6.20 compatibility notes in the owner guide.
 - Follow the existing DART 6 camelCase binding names used in `python/examples`
   and `python/tests`.
 - NumPy arrays auto-convert to Eigen types
