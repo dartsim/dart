@@ -47,13 +47,26 @@ void ResourceRetriever(py::module& m)
   ::py::class_<
       dart::common::ResourceRetriever,
       std::shared_ptr<dart::common::ResourceRetriever>>(m, "ResourceRetriever")
-      .def("exists", &common::ResourceRetriever::exists, ::py::arg("uri"))
-      .def("retrieve", &common::ResourceRetriever::retrieve, ::py::arg("uri"))
-      .def("readAll", &common::ResourceRetriever::readAll, ::py::arg("uri"))
+      .def(
+          "exists",
+          &common::ResourceRetriever::exists,
+          ::py::arg("uri"),
+          ::py::call_guard<::py::gil_scoped_release>())
+      .def(
+          "retrieve",
+          &common::ResourceRetriever::retrieve,
+          ::py::arg("uri"),
+          ::py::call_guard<::py::gil_scoped_release>())
+      .def(
+          "readAll",
+          &common::ResourceRetriever::readAll,
+          ::py::arg("uri"),
+          ::py::call_guard<::py::gil_scoped_release>())
       .def(
           "getFilePath",
           &common::ResourceRetriever::getFilePath,
-          ::py::arg("uri"));
+          ::py::arg("uri"),
+          ::py::call_guard<::py::gil_scoped_release>());
 
   ::py::class_<
       dart::common::LocalResourceRetriever,

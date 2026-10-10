@@ -45,13 +45,26 @@ namespace python {
 void ResourceRetriever(nb::module_& m)
 {
   dartnb::dart_class<dart::common::ResourceRetriever>(m, "ResourceRetriever")
-      .def("exists", &common::ResourceRetriever::exists, nb::arg("uri"))
-      .def("retrieve", &common::ResourceRetriever::retrieve, nb::arg("uri"))
-      .def("readAll", &common::ResourceRetriever::readAll, nb::arg("uri"))
+      .def(
+          "exists",
+          &common::ResourceRetriever::exists,
+          nb::arg("uri"),
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "retrieve",
+          &common::ResourceRetriever::retrieve,
+          nb::arg("uri"),
+          nb::call_guard<nb::gil_scoped_release>())
+      .def(
+          "readAll",
+          &common::ResourceRetriever::readAll,
+          nb::arg("uri"),
+          nb::call_guard<nb::gil_scoped_release>())
       .def(
           "getFilePath",
           &common::ResourceRetriever::getFilePath,
-          nb::arg("uri"));
+          nb::arg("uri"),
+          nb::call_guard<nb::gil_scoped_release>());
 
   dartnb::dart_class<
       dart::common::LocalResourceRetriever,

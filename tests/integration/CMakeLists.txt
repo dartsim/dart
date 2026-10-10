@@ -284,6 +284,16 @@ if(TARGET dart-utils)
   endif()
 endif()
 
+if(TARGET dart-utils-assets)
+  find_package(OpenSSL 1.1.1 REQUIRED COMPONENTS Crypto)
+  dart_add_test("integration" test_ModelResourceRetriever)
+  target_link_libraries(
+    test_ModelResourceRetriever
+    dart-utils-assets
+    OpenSSL::Crypto
+  )
+endif()
+
 if(TARGET dart-utils-urdf)
   if(NOT MSVC)
     dart_add_test("integration" test_DartLoader)

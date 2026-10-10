@@ -6,6 +6,10 @@
 
 * Breaking Changes
 
+  * Remove the `hubo_puppet` demo and installed
+    `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
+    retired; its model remains available for parser regression coverage.
+
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
     `EmbedStateAndProperties`. These operations could not be instantiated
@@ -18,6 +22,10 @@
     `utils::CompositeResourceRetriever::getDefaultRetrievers()`,
     `getSchemaRetrievers()`, and `removeAllRetrievers()` to inspect and release
     owned objective functions and resource retrievers.
+
+  * Prevent concurrent legacy URDF parsing calls from overriding each other's
+    resource retriever and root-joint options.
+    [#3653](https://github.com/dartsim/dart/pull/3653)
 
 * Dynamics
 
@@ -60,6 +68,12 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * Add the optional `utils-assets` component for C++ and dartpy online model
+    retrieval, with pinned sources, verified versioned caches, and offline
+    reuse. Native builds opt in with `DART_BUILD_UTILS_ASSETS=ON` and require
+    libcurl and OpenSSL; Pixi builds enable it by default. The catalog includes
+    Atlas v5 and Unitree G1 model-viewing demos.
 
   * Add `DART_DARTPY_BINDER` (default `pybind11`) and
     `DART_USE_SYSTEM_NANOBIND` (default `OFF`). The nanobind binder requires
