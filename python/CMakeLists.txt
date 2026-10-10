@@ -10,6 +10,9 @@ if(NOT Python_EXECUTABLE AND Python3_EXECUTABLE)
   set(Python_EXECUTABLE "${Python3_EXECUTABLE}")
 endif()
 if(DART_DARTPY_STABLE_ABI)
+  if(CMAKE_VERSION VERSION_LESS 3.26)
+    message(FATAL_ERROR "DART_DARTPY_STABLE_ABI requires CMake 3.26 or newer")
+  endif()
   # nanobind silently builds a regular module on older interpreters.
   find_package(
     Python
