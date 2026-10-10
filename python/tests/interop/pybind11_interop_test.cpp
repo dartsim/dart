@@ -33,6 +33,7 @@
 
 // A pybind11 extension that registers no DART classes; every DART value
 // crosses through dartpy's C API (see dartpy/pybind11_interop.hpp).
+#include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
 
 #include <dartpy/pybind11_interop.hpp>
@@ -42,11 +43,17 @@
 
 namespace py = pybind11;
 using dart::dynamics::BodyNode;
+using dart::dynamics::BoxShape;
 using dart::dynamics::Entity;
 using dart::dynamics::Frame;
 using dart::dynamics::FreeJoint;
+using dart::dynamics::JacobianNode;
+using dart::dynamics::MetaSkeleton;
+using dart::dynamics::ShapeNode;
+using dart::dynamics::SimpleFrame;
 using dart::dynamics::Skeleton;
 using dart::dynamics::SkeletonPtr;
+using dart::dynamics::VisualAspect;
 using dart::simulation::World;
 
 namespace {
@@ -55,6 +62,15 @@ struct Attachment
 {
   BodyNode* body = nullptr;
 };
+
+// Owns a frame until release() hands its last owner to Python.
+struct FrameHolder
+{
+  std::shared_ptr<SimpleFrame> frame
+      = SimpleFrame::createShared(Frame::World(), "held");
+};
+
+std::weak_ptr<SimpleFrame> releasedFrame;
 
 } // namespace
 
@@ -94,6 +110,30 @@ PYBIND11_MODULE(dartpy_pybind11_interop_test, m)
       "owned_body",
       [](const SkeletonPtr& skeleton) { return skeleton->getBodyNode(0); },
       py::return_value_policy::take_ownership);
+  m.def("automatic_body", [](const SkeletonPtr& skeleton) {
+    return skeleton->getBodyNode(0);
+  });
+  m.def(
+      "copied_body",
+      [](const SkeletonPtr& skeleton) -> const BodyNode& {
+        return *skeleton->getBodyNode(0);
+      },
+      py::return_value_policy::copy);
+  m.def(
+      "add_shape_node",
+      [](BodyNode* body) {
+        return body->createShapeNodeWith<VisualAspect>(
+            std::make_shared<BoxShape>(Eigen::Vector3d::Ones()));
+      },
+      py::return_value_policy::reference);
+  m.def("jacobian_node_name", [](const JacobianNode* node) {
+    return node->getName();
+  });
+  m.def(
+      "shape_node_name", [](const ShapeNode& node) { return node.getName(); });
+  m.def("meta_skeleton_dofs", [](const std::shared_ptr<MetaSkeleton>& meta) {
+    return meta->getNumDofs();
+  });
   m.def("frame_name", [](const Frame* frame) {
     return frame ? frame->getName() : std::string();
   });
@@ -119,4 +159,15 @@ PYBIND11_MODULE(dartpy_pybind11_interop_test, m)
   py::class_<Attachment>(m, "Attachment")
       .def(py::init<>())
       .def_readwrite("body", &Attachment::body);
+  py::class_<FrameHolder>(m, "FrameHolder")
+      .def(py::init<>())
+      .def(
+          "borrow",
+          [](FrameHolder& holder) { return holder.frame.get(); },
+          py::return_value_policy::reference)
+      .def("release", [](FrameHolder& holder) {
+        releasedFrame = holder.frame;
+        return std::move(holder.frame);
+      });
+  m.def("released_frame_alive", [] { return !releasedFrame.expired(); });
 }

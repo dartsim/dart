@@ -214,8 +214,7 @@ PyObject* wrapShared(
         nb::rv_policy::reference,
         {},
         &isNew));
-    if (isNew)
-      dartnb::hold_native_owner(result, *owner, complete);
+    dartnb::retain_shared_owner(result, isNew, *owner, complete);
     return result.release().ptr();
   } catch (...) {
     setPythonError();

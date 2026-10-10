@@ -129,6 +129,16 @@ void hold_native_owner(
   holder.release();
 }
 
+void retain_shared_owner(
+    nb::handle wrapper,
+    bool is_new,
+    std::shared_ptr<void> owner,
+    void* complete)
+{
+  if (is_new || (!nb::inst_state(wrapper).second && !native_owner(complete)))
+    hold_native_owner(wrapper, std::move(owner), complete);
+}
+
 void hold_body(nb::handle wrapper, Key type, void* pointer)
 {
   namespace d = dart::dynamics;

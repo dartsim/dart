@@ -150,12 +150,17 @@ public:
       pybind11::return_value_policy policy,
       pybind11::handle parent)
   {
+    using Policy = pybind11::return_value_policy;
     if (!pointer)
       return pybind11::none().release();
-    if (policy == pybind11::return_value_policy::take_ownership) {
+    // dartpy cannot take, copy, or move these objects, which is what the
+    // other policies, including the default `automatic`, would request.
+    if (policy != Policy::reference && policy != Policy::reference_internal
+        && policy != Policy::automatic_reference) {
       throw pybind11::cast_error(
-          "dartpy interop cannot take ownership of a raw DART pointer; "
-          "return a std::shared_ptr instead");
+          "dartpy interop returns raw DART pointers and references only with "
+          "return_value_policy::reference or reference_internal; return a "
+          "std::shared_ptr to transfer ownership");
     }
     auto* object = const_cast<T*>(pointer);
     return checked(api().wrap(
@@ -163,9 +168,8 @@ public:
         typeid(*object),
         dynamic_cast<void*>(object),
         object,
-        policy == pybind11::return_value_policy::reference_internal
-            ? c_api::kReferenceInternal
-            : c_api::kReference,
+        policy == Policy::reference_internal ? c_api::kReferenceInternal
+                                             : c_api::kReference,
         parent.ptr()));
   }
 

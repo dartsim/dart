@@ -172,9 +172,10 @@ Add another polymorphic class that dartpy binds with
 
 - Include the header in every translation unit that binds these types, and
   never register them with `pybind11::class_`.
-- Raw-pointer results need `reference` or `reference_internal`; a
-  `take_ownership` result raises an error, so return a `std::shared_ptr` when
-  ownership moves to Python.
+- Raw-pointer and reference results need an explicit `reference` or
+  `reference_internal` policy. Other policies, including the default
+  `automatic`, would take, copy, or move the object and raise an error; return
+  a `std::shared_ptr` when ownership moves to Python.
 - Keep stored raw pointers' owners alive yourself, for example with
   `pybind11::keep_alive`.
 - The table passes `std::type_info` and `std::shared_ptr` across modules: build

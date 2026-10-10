@@ -56,9 +56,12 @@ def test_borrowed_body_keeps_its_skeleton_alive(interop):
 
 
 def test_base_class_arguments_are_adjusted(interop):
-    body = make_skeleton().getBodyNode(0)
+    skeleton = make_skeleton()
+    body = skeleton.getBodyNode(0)
     assert interop.frame_name(body) == body.getName()
     assert interop.entity_name(body) == body.getName()
+    assert interop.jacobian_node_name(body) == body.getName()
+    assert interop.meta_skeleton_dofs(skeleton) == skeleton.getNumDofs()
     assert interop.frame_name(dart.dynamics.Frame.World()) == "World"
     assert interop.frame_name(None) == ""
 
@@ -104,9 +107,32 @@ def test_wrong_types_raise_type_error(interop):
         interop.translate("not a transform", [0.0, 0.0, 0.0])
 
 
-def test_raw_pointer_ownership_transfer_is_rejected(interop):
-    with pytest.raises(RuntimeError, match="ownership"):
-        interop.owned_body(make_skeleton())
+def test_shape_nodes_cross_both_ways(interop):
+    body = make_skeleton().getBodyNode(0)
+    shape_node = interop.add_shape_node(body)
+    assert isinstance(shape_node, dart.dynamics.ShapeNode)
+    assert shape_node is body.getShapeNode(0)
+    assert interop.shape_node_name(shape_node) == shape_node.getName()
+
+
+@pytest.mark.parametrize("name", ["owned_body", "automatic_body", "copied_body"])
+def test_owning_and_copying_return_policies_are_rejected(interop, name):
+    with pytest.raises(RuntimeError, match="return_value_policy::reference"):
+        getattr(interop, name)(make_skeleton())
+
+
+def test_released_last_owner_keeps_borrowed_wrapper_alive(interop):
+    holder = interop.FrameHolder()
+    borrowed = holder.borrow()
+    released = holder.release()
+    assert released is borrowed
+    del holder
+    gc.collect()
+    assert interop.released_frame_alive()
+    assert borrowed.getName() == "held"
+    del borrowed, released
+    gc.collect()
+    assert not interop.released_frame_alive()
 
 
 def test_pointer_members_keep_identity(interop):

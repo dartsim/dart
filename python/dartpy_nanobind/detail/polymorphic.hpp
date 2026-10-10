@@ -63,6 +63,17 @@ void hold_body(nb::handle wrapper, Key type, void* pointer);
 void hold_native_owner(
     nb::handle wrapper, std::shared_ptr<void> owner, void* complete);
 
+// Keep a shared_ptr result's owner on its wrapper. A reused wrapper also takes
+// it when it neither owns its object nor has a native owner, so transferring
+// the last owner to Python cannot free a borrowed wrapper's object.
+// Python-owned wrappers already keep their object; their owner would be a
+// pin on themselves.
+void retain_shared_owner(
+    nb::handle wrapper,
+    bool is_new,
+    std::shared_ptr<void> owner,
+    void* complete);
+
 template <class T>
 void hold_native_owner(nb::handle wrapper, const std::shared_ptr<T>& owner)
 {
@@ -431,8 +442,11 @@ struct shared_caster
                 p, nb::rv_policy::reference, cleanup));
         is_new = true;
       }
-      if (is_new)
-        hold_native_owner(result, value);
+      retain_shared_owner(
+          result,
+          is_new,
+          std::const_pointer_cast<Mutable>(value),
+          complete_address(p));
       (void)cleanup;
       return result.release();
     } catch (...) {
