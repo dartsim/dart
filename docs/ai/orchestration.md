@@ -1,6 +1,6 @@
 # Orchestrator / Executor Operating Model
 
-This file owns the DART 6.20 AI work-packet contract. The development branch
+This file owns the DART 6 AI work-packet contract. The development branch
 keeps a small workflow surface and a strict compatibility envelope.
 
 ## Roles

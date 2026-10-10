@@ -9,11 +9,11 @@ Welcome to DART documentation!
 .. admonition:: You are reading the DART 6 LTS documentation
    :class: important
 
-   This site documents the **DART 6** compatibility line. The current stable
-   release is **DART 6.19.5**; ``main`` is the development branch for the next
-   release, currently DART 6.20, and receives all new patches.
-   The source version is read from ``package.xml``, and release notes are tracked
-   in ``CHANGELOG.md``.
+   This site documents the **DART 6** compatibility line. New development
+   happens on ``main``; release branches provide stabilization and maintenance.
+   Find published versions in `GitHub Releases
+   <https://github.com/dartsim/dart/releases>`_ and release notes in the
+   `CHANGELOG <https://github.com/dartsim/dart/blob/main/CHANGELOG.md>`_.
 
 Introduction
 ------------
@@ -47,8 +47,9 @@ Updates
 
 * 2026-10-04: DART version 6.19.5 released. See the
   `CHANGELOG <https://github.com/dartsim/dart/blob/main/CHANGELOG.md>`_.
-* DART 6.20.0 is in progress on the
-  `main branch <https://github.com/dartsim/dart/tree/main>`_.
+* Planned releases and branch policy are documented in
+  `Release Management
+  <https://github.com/dartsim/dart/blob/main/docs/onboarding/release-management.md>`_.
 * 2022-12-31: DART version 6.13.0 released.
 
 Project Stats

@@ -1,4 +1,4 @@
-# DART 6.20 AI Workflows
+# DART 6 AI Workflows
 
 This directory contains the DART 6 AI operating model used by Codex,
 Claude Code, and OpenCode. It focuses on the workflows needed to maintain the
@@ -29,7 +29,7 @@ Start with:
 - [`sessions.md`](sessions.md)
 - [`components.md`](components.md)
 - [`capabilities.json`](capabilities.json)
-- [`branch-profile.json`](branch-profile.json): machine-readable DART 6.20
+- [`branch-profile.json`](branch-profile.json): machine-readable DART 6
   facts, required surfaces, and forbidden markers and paths.
 - [`agent-scenarios.json`](agent-scenarios.json): the eight deterministic agent
   contracts, including model upgrades and simulation verification, from
@@ -144,6 +144,8 @@ taxonomy.
 
 ## Development Profile
 
-`main` develops the next release (currently DART 6.20) and preserves C++17,
-pybind11, `dart::utils`, OSG, and Gazebo/gz-physics compatibility. The DART 6
-component map is [`architecture.md`](../onboarding/architecture.md).
+Development and release branches preserve C++17, pybind11, `dart::utils`, OSG,
+and Gazebo/gz-physics compatibility. The DART 6 component map is
+[`architecture.md`](../onboarding/architecture.md). Release and backport
+policy and the branch-local next release live in
+[`release-management.md`](../onboarding/release-management.md).
