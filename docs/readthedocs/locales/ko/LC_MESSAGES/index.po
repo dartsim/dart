@@ -121,12 +121,11 @@ msgstr ""
 
 #: ../../index.rst:50 05567f0679f643878beb91d4663472eb
 msgid ""
-"Planned releases and branch policy are documented in `Release Management "
-"<https://github.com/dartsim/dart/blob/main/docs/onboarding/release-management.md>`_."
+"Track planned releases in `GitHub Milestones "
+"<https://github.com/dartsim/dart/milestones>`_."
 msgstr ""
-"예정된 릴리스와 브랜치 정책은 `릴리스 관리 "
-"<https://github.com/dartsim/dart/blob/main/docs/onboarding/release-management.md>`_ "
-"문서에서 확인하세요."
+"예정된 릴리스는 `GitHub Milestones "
+"<https://github.com/dartsim/dart/milestones>`_ 에서 확인하세요."
 
 #: ../../index.rst:52 f5f20202ba7d433bbce9fb65a80d471e
 msgid "2022-12-31: DART version 6.13.0 released."

@@ -101,6 +101,15 @@ def test_release_scenarios_are_exercisable():
         ("AGENTS.md", "`main` develops DART 6.22.\n"),
         ("CLAUDE.md", "`main`, the DART 6.22 development branch.\n"),
         ("GEMINI.md", "The next release is currently DART 6.22.\n"),
+        (
+            ".codex/agents/dart_reviewer.toml",
+            'description = "Review the DART 6.22 development branch."\n',
+        ),
+        (
+            "docs/onboarding/building.md",
+            "The current stable release is DART 6.21.0.\n",
+        ),
+        ("docs/plans/dashboard.md", "`main` develops DART 6.22.\n"),
         ("docs/ai/principles.md", "`main`, developing\nDART 6.22.\n"),
         ("docs/README.md", "`release-6.21` stabilizes DART 6.21.\n"),
         (
@@ -169,6 +178,15 @@ def test_release_references_reject_copied_routing(tmp_path, relative, text):
             "docs/onboarding/contributing.md",
             "The historical milestone was `DART 6.20.0`.\n",
         ),
+        (
+            "docs/onboarding/ci-cd.md",
+            "On release-6.20 these lanes currently report the known DART 6.20 "
+            "Gazebo regressions from issue #3056.\n",
+        ),
+        (
+            "docs/plans/archive.md",
+            "Archived decision: `main` develops DART 6.20.\n",
+        ),
         ("CHANGELOG.md", "DART 6.21.0 milestone: Python tutorials.\n"),
     ],
 )
@@ -199,17 +217,10 @@ def test_release_references_allow_history_and_dependency_floors(
     ],
 )
 def test_release_references_accept_owner_only_rollover(tmp_path, rows):
-    sources = set(infra.source_paths(ROOT))
-    sources.update(
-        ROOT / relative
-        for relative in (
-            "CLAUDE.md",
-            "GEMINI.md",
-            ".github/PULL_REQUEST_TEMPLATE.md",
-            "docs/readthedocs/index.rst",
-            "docs/readthedocs/dart/developer_guide/build.rst",
-        )
-    )
+    sources = [
+        *infra.release_reference_paths(ROOT),
+        ROOT / "docs/onboarding/release-management.md",
+    ]
     for source in sources:
         if source.is_file():
             target = tmp_path / source.relative_to(ROOT)
@@ -308,6 +319,15 @@ def test_branch_profile_and_scenario_keys_match_shared_schema():
         assert infra.SCENARIO_KEYS.issubset(scenario)
         assert set(scenario) - infra.SCENARIO_KEYS <= infra.SCENARIO_OPTIONAL_KEYS
         assert set(scenario["expected_route"]) == infra.ROUTE_KEYS
+
+
+def test_scenario_profile_must_match_compatibility_profile():
+    data = copy.deepcopy(_scenario_data())
+    data["profile"] = "main"
+
+    errors = infra.exercise_scenarios(ROOT, data, emit=False)
+
+    assert "scenario inventory: profile does not match branch profile" in errors
 
 
 @pytest.mark.parametrize(
@@ -495,6 +515,24 @@ def test_boolean_schema_versions_are_rejected():
 
     assert any("schema_version" in error for error in profile_errors)
     assert scenario_errors == ["docs/ai/agent-scenarios.json: invalid schema"]
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "expected"),
+    [
+        ("schema_version", 1, "`schema_version` must be 2"),
+        ("profile", "main", "`profile` must be 'dart6'"),
+        ("base_ref", "origin/main", "keys must be"),
+    ],
+)
+def test_branch_profile_rejects_old_branch_identity(field, value, expected):
+    profile = json.loads((ROOT / "docs" / "ai" / "branch-profile.json").read_text())
+    profile[field] = value
+    errors = []
+
+    infra.check_branch_profile(ROOT, errors, profile)
+
+    assert any(expected in error for error in errors)
 
 
 def test_branch_profile_marker_mutations_are_rejected():
@@ -3346,7 +3384,7 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
 
     assert report["schema_version"] == 1
     assert report["profile"] == {
-        "name": "main",
+        "name": "dart6",
         "cpp_standard": "C++17",
         "python_binding": "pybind11",
         "io_namespace": "dart::utils",
@@ -3365,6 +3403,37 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
     assert "image-verdict" in visual["tasks"]
     assert "verification-bundle" in visual["tasks"]
     json.dumps(report)
+
+
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        (None, "invalid JSON"),
+        ("{", "invalid JSON"),
+        ("null", "top level must be an object"),
+        ("[]", "top level must be an object"),
+        ('{"profile": "main"}', "`profile` must be 'dart6'"),
+    ],
+)
+def test_doctor_does_not_claim_a_profile_when_invalid(
+    monkeypatch, tmp_path, capsys, content, expected
+):
+    path = tmp_path / "docs" / "ai" / "branch-profile.json"
+    if content is not None:
+        path.parent.mkdir(parents=True)
+        path.write_text(content)
+    monkeypatch.setattr(infra, "run_checks", lambda root: [])
+
+    report = infra.doctor_report(tmp_path)
+    infra.print_doctor(report)
+
+    assert report["profile"] is None
+    assert report["ok"] is False
+    assert any(expected in error for error in report["errors"])
+    output = capsys.readouterr().out
+    assert "DART 6 AI doctor: FAIL" in output
+    assert "profile: unavailable" in output
+    assert "profile: main" not in output
 
 
 def test_malformed_hook_json_returns_errors_instead_of_tracebacks(tmp_path):

@@ -28,8 +28,9 @@ The DART 6 development branch uses a small cross-agent workflow surface:
   pytest controls, disables local configuration/plugins, and rejects successful
   zero-body runs.
 - `docs/ai/capabilities.json`: machine-readable workflow inventory.
-- `docs/ai/branch-profile.json`: machine-readable DART 6 facts, required
-  surfaces, and forbidden markers and paths.
+- `docs/ai/branch-profile.json`: shared `dart6` compatibility facts, required
+  surfaces, and forbidden markers and paths. The base branch's release target
+  lives in `docs/onboarding/release-management.md`.
 - `docs/ai/agent-scenarios.json`: eight deterministic contracts covering
   orientation, small changes, failure diagnosis, docs, model upgrades,
   components, simulation verification, and release maintenance. The simulation

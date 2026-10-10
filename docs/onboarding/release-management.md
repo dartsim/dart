@@ -111,7 +111,7 @@ relying on the merge gate. The `Nightly` workflow remains scheduled on `main`;
 its `nightly-failure` issues track `main`.
 
 The DART 6.20 stabilization branch was cut at
-`a4404d367858562a8f9719f04dabfbc20490a92d`, before the Python tutorial migration,
+`5179ee945ada735c49eab772476cd7981ce239ad`, before the Python tutorial migration,
 so its first minor release retains the C++ tutorials. This records the cut;
 the table above owns the next release target.
 
