@@ -2,7 +2,7 @@
 
 ## DART 6
 
-### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)
+### [DART 6.20.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/99?closed=1)
 
 DART 6.20.0 is a minor release on the DART 6 line focused on contact-heavy
 performance. The 3,000-shape scene from
