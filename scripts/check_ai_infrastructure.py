@@ -28,6 +28,7 @@ CONFIG_ONLY_CACHE_VARIABLES = {
     "CMAKE_PREFIX_PATH",
     "DART_BUILD_DARTPY",
     "DART_BUILD_PROFILE",
+    "DART_BUILD_UTILS_ASSETS",
     "DART_DISABLE_COMPILER_CACHE",
     "DART_MSVC_FORCE_RELEASE_RUNTIME",
     "DART_USE_SYSTEM_GOOGLEBENCHMARK",
@@ -89,6 +90,12 @@ SCENARIO_KEYS = {
 SCENARIO_OPTIONAL_KEYS = {"evidence_policy", "semantic_review_policy"}
 ROUTE_KEYS = {"kind", "name", "path"}
 APPROVED_INACTIVE_CPP_TESTS = {
+    "tests/integration/test_ModelResourceRetriever.cpp": {
+        "owner": "tests/integration/CMakeLists.txt",
+        "command": "dart_add_test",
+        "scopes": ("if:TARGET dart-utils-assets",),
+        "cache": {"DART_BUILD_UTILS_ASSETS": "OFF"},
+    },
     "tests/regression/test_Issue2516.cpp": {
         "owner": "tests/regression/CMakeLists.txt",
         "command": "dart_add_test",

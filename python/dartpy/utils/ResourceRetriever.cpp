@@ -34,6 +34,10 @@
 #include <dart/utils/DartResourceRetriever.hpp>
 #include <dart/utils/PackageResourceRetriever.hpp>
 
+#ifdef DARTPY_HAS_UTILS_ASSETS
+  #include <dart/utils/assets/ModelResourceRetriever.hpp>
+#endif
+
 #include <dart/common/ResourceRetriever.hpp>
 
 #include <pybind11/pybind11.h>
@@ -82,6 +86,23 @@ void UtilsResourceRetriever(py::module& m)
           &utils::PackageResourceRetriever::addPackageDirectory,
           ::py::arg("packageName"),
           ::py::arg("packageDirectory"));
+
+#ifdef DARTPY_HAS_UTILS_ASSETS
+  ::py::class_<
+      utils::ModelResourceRetriever,
+      common::ResourceRetriever,
+      std::shared_ptr<utils::ModelResourceRetriever>>(
+      m, "ModelResourceRetriever")
+      .def(
+          ::py::init<const std::string&, bool>(),
+          ::py::arg("cacheDirectory") = "",
+          ::py::arg("offline") = false)
+      .def(
+          "addManifest",
+          &utils::ModelResourceRetriever::addManifest,
+          ::py::arg("localManifestUri"),
+          ::py::call_guard<::py::gil_scoped_release>());
+#endif
 }
 
 } // namespace python

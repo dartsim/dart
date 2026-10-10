@@ -123,7 +123,13 @@ endif()
 
 if(NOT DART_IN_SOURCE_BUILD)
   find_package(DART 6.20 REQUIRED COMPONENTS ${required_components} CONFIG)
-  find_package(DART 6.20 QUIET COMPONENTS collision-bullet collision-ode CONFIG)
+  find_package(
+    DART
+    6.20
+    QUIET
+    COMPONENTS collision-bullet collision-ode utils-assets
+    CONFIG
+  )
 endif()
 
 # Exact allocator-region capture is available in the in-source DART 6.20
@@ -279,6 +285,9 @@ endif()
 # both the in-source and standalone build paths below.
 function(dart_demos_collect_scene_srcs out_var)
   file(GLOB _srcs "scenes/*.cpp" "scenes/*.hpp")
+  if(NOT TARGET dart-utils-assets)
+    list(FILTER _srcs EXCLUDE REGEX "ModernHumanoidsScene\\.cpp$")
+  endif()
   file(GLOB _tinkertoy_srcs "scenes/tinkertoy/*.cpp" "scenes/tinkertoy/*.hpp")
   list(APPEND _srcs ${_tinkertoy_srcs})
   file(
@@ -322,6 +331,10 @@ endfunction()
 # DART_DEMOS_HAVE_TINY_DNN / DART_DEMOS_HAVE_PYTHON when found. Shared by both
 # build paths below.
 function(dart_demos_configure_scenes_target target)
+  if(TARGET dart-utils-assets)
+    target_link_libraries(${target} PUBLIC dart-utils-assets)
+    target_compile_definitions(${target} PUBLIC DART_DEMOS_HAVE_MODEL_ASSETS)
+  endif()
   if(DART_DEMOS_HAVE_TINY_DNN)
     target_link_libraries(
       ${target}

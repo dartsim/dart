@@ -655,6 +655,14 @@ def test_single_cmake_target_build_contract(command, target, expected):
             "cmake -G Ninja -S . -B build/default -DCMAKE_BUILD_TYPE=Release",
             True,
         ),
+        (
+            "cmake -S . -B build/default -DDART_BUILD_UTILS_ASSETS=ON",
+            True,
+        ),
+        (
+            "cmake -S . -B build/default -DDART_BUILD_UTILS_ASSETS=ON --build build/default",
+            False,
+        ),
         ("cmake -S . -B build/default\nninja test", False),
         ('cmake -S "$(python -m unittest)" -B build/default', False),
         (
