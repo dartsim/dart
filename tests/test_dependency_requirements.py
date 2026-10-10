@@ -15,8 +15,8 @@ def configure(tmp_path, content):
     (source / "CMakeLists.txt").write_text(
         "cmake_minimum_required(VERSION 3.22.1)\n"
         "project(DependencyRequirements NONE)\n"
-        f'set(CMAKE_MODULE_PATH "{tmp_path / "modules"}" "{ROOT / "cmake"}")\n'
-        f'set(CMAKE_PREFIX_PATH "{tmp_path / "prefix"}")\n'
+        f'set(CMAKE_MODULE_PATH "{(tmp_path / "modules").as_posix()}" "{(ROOT / "cmake").as_posix()}")\n'
+        f'set(CMAKE_PREFIX_PATH "{(tmp_path / "prefix").as_posix()}")\n'
         "set(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH FALSE)\n"
         "set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH FALSE)\n"
         "set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH FALSE)\n"
@@ -129,13 +129,13 @@ def test_bullet_header_floor(tmp_path, bundled, version):
     modules.mkdir()
     (modules / "FindBullet.cmake").write_text(
         "set(BULLET_FOUND TRUE)\nset(Bullet_FOUND TRUE)\n"
-        f'set(BULLET_INCLUDE_DIRS "{include}")\n'
+        f'set(BULLET_INCLUDE_DIRS "{include.as_posix()}")\n'
     )
     content = f"set(DART_USE_SYSTEM_BULLET {'OFF' if bundled else 'ON'})\n"
     if bundled:
         content += (
             "add_library(BulletCollision INTERFACE)\nadd_library(LinearMath INTERFACE)\n"
-            f'set(DART_BULLET_SOURCE_DIR "{include.parent}")\n'
+            f'set(DART_BULLET_SOURCE_DIR "{include.parent.as_posix()}")\n'
         )
     content += "include(DARTFindBullet)\n"
     if version and version >= 306:
@@ -179,7 +179,7 @@ def test_config_header_version_fallback(
     path = include / header
     path.parent.mkdir(parents=True)
     path.write_text(defines)
-    extra = f'set_target_properties({target} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "{include}")\n'
+    extra = f'set_target_properties({target} PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "{include.as_posix()}")\n'
     if package == "ODE":
         extra += "set_target_properties(ODE::ODE PROPERTIES INTERFACE_COMPILE_DEFINITIONS dLIBCCD_BOX_CYL)\n"
     config_package(tmp_path, package, None, target, extra)
@@ -229,13 +229,13 @@ def test_module_floors(
     library = tmp_path / "library"
     library.touch()
     variables = (
-        f'set({prefix}_INCLUDE_DIRS "{include}")\n'
-        f'set({prefix}_LIBRARIES "{library}")\n'
+        f'set({prefix}_INCLUDE_DIRS "{include.as_posix()}")\n'
+        f'set({prefix}_LIBRARIES "{library.as_posix()}")\n'
     )
     if package == "assimp" and version_kind != "unknown":
         variables += f"set(assimp_VERSION {version})\n"
     if package == "imgui":
-        variables += f'set(imgui_INCLUDE_DIR "{include}")\nset(imgui_backends_INCLUDE_DIR "{include}")\n'
+        variables += f'set(imgui_INCLUDE_DIR "{include.as_posix()}")\nset(imgui_backends_INCLUDE_DIR "{include.as_posix()}")\n'
     accepted = version_kind == "minimum"
     result = configure(
         tmp_path,
@@ -258,7 +258,7 @@ def test_bundled_ode_version(tmp_path):
     result = configure(
         tmp_path,
         "set(DART_USE_SYSTEM_ODE OFF)\n"
-        f'set(DART_ODE_SOURCE_DIR "{source}")\n'
+        f'set(DART_ODE_SOURCE_DIR "{source.as_posix()}")\n'
         "add_library(ODE INTERFACE)\n"
         "set_target_properties(ODE PROPERTIES INTERFACE_COMPILE_DEFINITIONS dLIBCCD_BOX_CYL)\n"
         "include(DARTFindODE)\n"
@@ -280,7 +280,7 @@ def test_parent_ode_target_version(tmp_path, version, use_version_metadata):
     )
     content = (
         "add_library(ODE INTERFACE)\n"
-        f'set_target_properties(ODE PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "{include}" '
+        f'set_target_properties(ODE PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "{include.as_posix()}" '
         "INTERFACE_COMPILE_DEFINITIONS dLIBCCD_BOX_CYL)\n"
     )
     if version and use_version_metadata:
@@ -312,9 +312,9 @@ def test_parent_fmt_target_version(tmp_path, version, version_source):
             f"#define FMT_VERSION {major * 10000 + minor * 100 + patch}\n"
         )
     include_path = (
-        f"$<BUILD_INTERFACE:{include}>"
+        f"$<BUILD_INTERFACE:{include.as_posix()}>"
         if version_source == "build-interface"
-        else str(include)
+        else include.as_posix()
     )
     content = (
         "set(DART_USE_SYSTEM_FMT OFF)\n"
