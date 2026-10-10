@@ -6,6 +6,10 @@
 
 * Breaking Changes
 
+  * Remove the `hubo_puppet` demo and installed
+    `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
+    retired; its model remains available for parser regression coverage.
+
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
     `EmbedStateAndProperties`. These operations could not be instantiated
@@ -19,11 +23,18 @@
     `getSchemaRetrievers()`, and `removeAllRetrievers()` to inspect and release
     owned objective functions and resource retrievers.
 
+  * Prevent concurrent legacy URDF parsing calls from overriding each other's
+    resource retriever and root-joint options.
+    [#3653](https://github.com/dartsim/dart/pull/3653)
+
 * Dynamics
 
   * Preserve the generated soft mesh and shape-node properties when cloning
     soft-body skeletons, avoiding duplicate null meshes during collision checks.
     [#3644](https://github.com/dartsim/dart/pull/3644)
+
+  * Keep soft-body skin meshes resizable after `BodyNode::copyTo()` and
+    `BodyNode::copyAs()`, preventing invalid mesh updates.
 
 * Python
 
@@ -37,6 +48,11 @@
     are read-only. Secondary-base `isinstance`/MRO and exception details differ;
     bool parameters accept only `True`/`False`, and str parameters reject bytes.
 
+  * Let pybind11 extension modules exchange skeletons, worlds, graph objects,
+    and `Isometry3d` values with the nanobind build of `dartpy` through the
+    `dartpy._C_API` capsule and the installed `dartpy/pybind11_interop.hpp`
+    header, preserving wrapper identity and ownership.
+
   * Reject a null node when constructing inverse kinematics in either binder,
     preventing an invalid-input crash.
 
@@ -49,6 +65,12 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * Add the optional `utils-assets` component for C++ and dartpy online model
+    retrieval, with pinned sources, verified versioned caches, and offline
+    reuse. Native builds opt in with `DART_BUILD_UTILS_ASSETS=ON` and require
+    libcurl and OpenSSL; Pixi builds enable it by default. The catalog includes
+    Atlas v5 and Unitree G1 model-viewing demos.
 
   * Add `DART_DARTPY_BINDER` (default `pybind11`) and
     `DART_USE_SYSTEM_NANOBIND` (default `OFF`). The nanobind binder requires

@@ -1,10 +1,10 @@
-# DART 6.20 Plan Dashboard
+# DART 6 Plan Dashboard
 
-This dashboard is the operating view for release-branch planning. It points to
+This dashboard is the operating view for DART 6 development and release planning. It points to
 the owner documents that hold detailed packet boards and evidence.
 
 Priority order is document order. Active implementation handoff remains in
-`docs/dev_tasks/`; this dashboard only records the release-branch roadmap view.
+`docs/dev_tasks/`; this dashboard only records the DART 6 roadmap view.
 
 ### PLAN-623: Active Contact Performance Generalization
 

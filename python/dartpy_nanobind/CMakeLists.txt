@@ -41,12 +41,19 @@ set_target_properties(
     LIBRARY_OUTPUT_DIRECTORY "${DART_PYTHON_BUILD_DIR}/dartpy"
 )
 target_compile_features(dartpy PRIVATE cxx_std_17)
-target_include_directories(dartpy PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(
+  dartpy
+  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/python/include"
+)
 target_include_directories(dartpy SYSTEM PRIVATE "${NB_DIR}/src")
 target_link_libraries(
   dartpy
   PRIVATE dart dart-utils dart-utils-urdf tsl::robin_map
 )
+if(TARGET dart-utils-assets)
+  target_link_libraries(dartpy PRIVATE dart-utils-assets)
+  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_UTILS_ASSETS)
+endif()
 foreach(optional dart-collision-bullet dart-collision-ode)
   if(TARGET ${optional})
     target_link_libraries(dartpy PRIVATE ${optional})
@@ -57,9 +64,20 @@ target_compile_definitions(
   PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
 )
 install(TARGETS dartpy LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}")
+# Headers for extension modules that exchange DART objects with dartpy.
+set(
+  dartpy_public_headers
+  "${PROJECT_SOURCE_DIR}/python/include/dartpy/c_api.hpp"
+  "${PROJECT_SOURCE_DIR}/python/include/dartpy/pybind11_interop.hpp"
+)
+install(
+  FILES ${dartpy_public_headers}
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/dartpy"
+  COMPONENT headers
+)
 list(
   REMOVE_ITEM dartpy_headers
   "${CMAKE_CURRENT_SOURCE_DIR}/detail/dart_eigen_dense.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/detail/dart_numpy_capi.h"
 )
-dart_format_add(${dartpy_headers} ${dartpy_sources})
+dart_format_add(${dartpy_headers} ${dartpy_sources} ${dartpy_public_headers})

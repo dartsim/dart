@@ -8,7 +8,7 @@ agent: build
 <!-- Sync script: scripts/sync_ai_commands.py -->
 <!-- Run `pixi run sync-ai-commands` to update -->
 
-Audit or update DART 6.20's AI infrastructure for: $ARGUMENTS
+Audit or update DART 6's AI infrastructure for: $ARGUMENTS
 
 ## Objective
 

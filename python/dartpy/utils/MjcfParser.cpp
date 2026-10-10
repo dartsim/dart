@@ -69,7 +69,8 @@ void MjcfParser(py::module& m)
       "readWorld",
       &utils::MjcfParser::readWorld,
       ::py::arg("uri"),
-      ::py::arg("options") = utils::MjcfParser::Options());
+      ::py::arg("options") = utils::MjcfParser::Options(),
+      ::py::call_guard<::py::gil_scoped_release>());
 }
 
 } // namespace python

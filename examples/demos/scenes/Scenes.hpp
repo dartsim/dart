@@ -184,14 +184,11 @@ namespace dart_demos {
 /// (multi-file subsystem in scenes/atlas_simbicon/).
 [[nodiscard]] DemoScene makeAtlasSimbiconScene();
 
-/// Control & IK > hubo_puppet: a purely kinematic DRC-Hubo whole-body IK
-/// puppet driven by analytical arm/leg IK, ported from examples/hubo_puppet.
-[[nodiscard]] DemoScene makeHuboPuppetScene();
-
-/// Robots > fetch: a Fetch robot's end effector follows a draggable
-/// interactive target via a welded mocap body, ported from examples/fetch
-/// (MJCF asset).
-[[nodiscard]] DemoScene makeFetchScene();
+#ifdef DART_DEMOS_HAVE_MODEL_ASSETS
+/// Robots > atlas_v5 and unitree_g1: verified cached model inspection.
+[[nodiscard]] DemoScene makeAtlasV5Scene();
+[[nodiscard]] DemoScene makeUnitreeG1Scene();
+#endif
 
 /// Robots > vehicle: a steerable car driven with servo-controlled steering
 /// and wheel-spin dofs, ported from examples/vehicle.
