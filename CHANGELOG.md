@@ -904,6 +904,9 @@
 
 * Python
 
+  * Restore dartpy Linux wheels for glibc 2.28 and newer, including native
+    x86_64 and aarch64 builds.
+
   * Fix dartpy DOF-list accessors so `Skeleton.getDofs()` and related chain
     DOF helpers return wrappers for DART-owned `DegreeOfFreedom` objects
     without transferring ownership or requiring movable/copyable DOF values:
