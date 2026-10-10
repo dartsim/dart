@@ -403,10 +403,9 @@
     `addObjectToCaches` nullptr errors otherwise):
     [#3114](https://github.com/dartsim/dart/pull/3114)
 
-  * Filter collision contacts with negative penetration depth by default in
-    the optional proximity-contact backend, while adding
-    `CollisionOption::allowNegativePenetrationDepthContacts` for applications
-    that intentionally consume proximity hits:
+  * Filter Bullet collision contacts with negative penetration depth by default,
+    while adding `CollisionOption::allowNegativePenetrationDepthContacts` for
+    applications that intentionally consume Bullet proximity hits:
     [#3136](https://github.com/dartsim/dart/pull/3136)
 
   * Refresh both operands of a two-group `CollisionGroup::collide()` /
@@ -598,7 +597,7 @@
     `World::enterSimulationMode()` preparation so same-shape simulation steps
     using the `dart` detector can run without steady-state heap allocations
     after explicit preparation or the implicit first step. The default
-    construction path remains unchanged; allocations inside optional collision
+    construction path remains unchanged; allocations inside the Bullet and ODE
     backends are outside the DART detector allocation guarantee:
     [#3297](https://github.com/dartsim/dart/pull/3297),
     [#3587](https://github.com/dartsim/dart/pull/3587),
@@ -608,7 +607,7 @@
     `World::setCollisionDetector(CollisionDetectorType)` /
     `World::setCollisionDetector(CollisionDetectorPtr)` /
     `World::getCollisionDetector()`, and corresponding dartpy bindings so users
-    can switch collision detectors without reaching
+    can switch collision detectors (FCL, Bullet, ODE, DART) without reaching
     into the constraint solver internals. The additions are opt-in: the default
     `World` construction path keeps the existing default detector (FCL with
     `PRIMITIVE` shapes) unchanged, and the pre-existing
@@ -634,7 +633,7 @@
     A free rigid body that was in an island one step earlier and, apart from
     one step of falling, still moves inside the wake band may be ignored for
     its first step outside every island, so a resting contact that the
-    collision detector misses for one step, for resting spheres
+    collision detector misses for one step, as Bullet does for resting spheres
     and cylinders, does not keep other islands awake. Such a body cannot be
     told from one that has just started to fall, for example because its
     support was removed, so an island that becomes eligible at that step can
@@ -827,12 +826,6 @@
     [#3574](https://github.com/dartsim/dart/pull/3574)
 
 * Python
-
-  * TODO (release packaging): after the backport of PR #3661 lands and its
-    wheel builds pass, confirm that Linux dartpy wheels target
-    `manylinux_2_28` on x86_64 and, newly in DART 6.20, aarch64. Replace this
-    TODO with the confirmed platform statement and the merged backport PR
-    link before release.
 
   * Fix dartpy DOF-list accessors so `Skeleton.getDofs()` and related chain
     DOF helpers return wrappers for DART-owned `DegreeOfFreedom` objects
