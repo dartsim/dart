@@ -32,7 +32,7 @@ if(DART_USE_SYSTEM_PYBIND11)
       FORCE
     )
   endif()
-  find_package(pybind11 CONFIG REQUIRED)
+  find_package(pybind11 3.0.3 CONFIG REQUIRED)
 else()
   include(FetchContent)
   FetchContent_Declare(
@@ -44,7 +44,7 @@ else()
 endif()
 
 if(NOT pybind11_FOUND)
-  message(WARNING "Disabling [dartpy] due to missing pybind11 >= 2.2.0.")
+  message(WARNING "Disabling [dartpy] due to missing pybind11 >= 3.0.3.")
   return()
 endif()
 

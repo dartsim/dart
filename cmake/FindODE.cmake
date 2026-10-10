@@ -17,10 +17,13 @@
 # and the following targets:
 #   ODE::ODE
 
-find_package(PkgConfig QUIET)
+include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
+find_package(PkgConfig 0.29.2 QUIET)
 
 # Check to see if pkgconfig is installed.
-pkg_check_modules(PC_ODE ode QUIET)
+if(PkgConfig_FOUND)
+  pkg_check_modules(PC_ODE ode QUIET)
+endif()
 
 # Include directories
 find_path(
@@ -39,12 +42,15 @@ endif()
 
 # Version
 set(ODE_VERSION ${PC_ODE_VERSION})
+if(NOT ODE_VERSION)
+  dart_read_header_version(ODE_VERSION ode/version.h dODE_VERSION ${ODE_INCLUDE_DIRS})
+endif()
 
 # Set (NAME)_FOUND if all the variables and the version are satisfied.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
   ODE
   FAIL_MESSAGE DEFAULT_MSG
-  REQUIRED_VARS ODE_INCLUDE_DIRS ODE_LIBRARIES
+  REQUIRED_VARS ODE_INCLUDE_DIRS ODE_LIBRARIES ODE_VERSION
   VERSION_VAR ODE_VERSION
 )

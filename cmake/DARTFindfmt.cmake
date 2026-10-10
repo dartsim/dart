@@ -16,8 +16,9 @@ if(NOT DEFINED DART_USE_SYSTEM_FMT)
 endif()
 
 if(DART_USE_SYSTEM_FMT)
-  find_package(fmt)
+  find_package(fmt 8.1.1)
 else()
+  include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
   # System fmt is unavailable or its packaged CMake config is broken (e.g. the
   # Alt Linux Docker repro, whose rolling libfmt-devel has shipped faulty
   # fmt-targets exports). Build fmt from source instead. Pin the same version
@@ -42,8 +43,28 @@ else()
     set(FMT_FUZZ OFF CACHE BOOL "" FORCE)
 
     FetchContent_MakeAvailable(fmt)
+    set(fmt_VERSION 11.1.4 CACHE STRING "fmt version" FORCE)
+  elseif(NOT fmt_VERSION)
+    get_target_property(
+      _fmt_include_dirs
+      fmt::fmt
+      INTERFACE_INCLUDE_DIRECTORIES
+    )
+    dart_read_header_version(_fmt_header_version fmt/base.h FMT_VERSION ${_fmt_include_dirs})
+    if(NOT _fmt_header_version)
+      dart_read_header_version(_fmt_header_version fmt/core.h FMT_VERSION ${_fmt_include_dirs})
+    endif()
+    if(_fmt_header_version MATCHES "^[0-9]+$")
+      math(EXPR _fmt_major "${_fmt_header_version} / 10000")
+      math(EXPR _fmt_minor "${_fmt_header_version} / 100 % 100")
+      math(EXPR _fmt_patch "${_fmt_header_version} % 100")
+      set(fmt_VERSION "${_fmt_major}.${_fmt_minor}.${_fmt_patch}")
+    endif()
   endif()
 
-  set(fmt_VERSION 11.1.4 CACHE STRING "fmt version" FORCE)
   set(fmt_FOUND TRUE CACHE BOOL "fmt found via FetchContent" FORCE)
+  dart_check_package_version(fmt 8.1.1)
+  if(NOT fmt_FOUND)
+    message(FATAL_ERROR "fmt >= 8.1.1 with version information is required")
+  endif()
 endif()

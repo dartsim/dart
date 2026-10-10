@@ -211,6 +211,17 @@ test-ai-infra = { cmd = [
   "-q",
 ] }
 
+# Source-build compiler and dependency version boundaries.
+test-build-requirements = { cmd = [
+  "python",
+  "-I",
+  "scripts/run_pytest.py",
+  "tests/test_compiler_requirements.py",
+  "tests/test_dependency_requirements.py",
+  "tests/test_minimum_requirement_metadata.py",
+  "-q",
+] }
+
 # The Gazebo compatibility lanes' failure comparison and benchmark world
 # generator (tools/gazebo); run after changing either.
 test-gz-compat-tools = { cmd = [
@@ -1306,6 +1317,9 @@ gz-compat-jetty = { cmd = "bash tools/gazebo/compat/lane.sh jetty" }
 [feature.assimp6.dependencies]
 assimp = ">=6.0.4,<7"
 
+# Profiling: the Tracy client (linked only when -DDART_PROFILE_TRACY=ON) plus the
+# standalone Tracy viewer. Kept out of the default environment because Tracy is
+# off by default; opt in with `pixi run -e profile <task>`.
 [feature.profile.dependencies]
 tracy-profiler-client = ">=0.11.1,<0.12"
 tracy-profiler-gui = ">=0.11.1,<0.12"

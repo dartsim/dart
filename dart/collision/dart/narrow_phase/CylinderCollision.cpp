@@ -703,8 +703,6 @@ bool collideCylinderBox(
     const double axialPen = cylHalfHeight - std::abs(cornerInCyl.z());
 
     if (lateralPen > 0.0 && axialPen > 0.0) {
-      foundCollision = true;
-
       double penetration;
       Eigen::Vector3d normalLocal;
 
@@ -727,6 +725,7 @@ bool collideCylinderBox(
         maxPenetration = penetration;
         bestContactPoint = cornerInCyl;
         bestNormal = normalLocal;
+        foundCollision = true;
       }
     }
   }

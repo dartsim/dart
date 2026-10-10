@@ -6,9 +6,13 @@
 #
 # This file is provided under the "BSD-style" License
 
-find_package(urdfdom QUIET CONFIG)
+include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
 
-if(MSVC)
+# Discover without a version so config files for newer major releases work.
+find_package(urdfdom QUIET CONFIG)
+dart_check_package_version(urdfdom 3.0.1)
+
+if(urdfdom_FOUND AND MSVC)
   # Remove invalid path (i.e., /include) from urdfdom_INCLUDE_DIRS. This happens
   # when it's installed by vcpkg on Windows. See:
   # - https://github.com/dartsim/dart/issues/1365
