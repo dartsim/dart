@@ -331,9 +331,12 @@ testing and configures it once, so gz-physics' contact-callback test
 expectations are not compiled in. The unpatched Gazebo lanes
 (`pixi run gz-compat-ionic`, `gz-compat-jetty`, `gz-compat-harmonic`; see
 `tools/gazebo/README.md`) are not in CI yet: each builds DART, gz-physics, and
-gz-sim from source and runs a serial suite, and on release-6.20 they
-currently report the known DART 6.20 Gazebo regressions from issue #3056. Run
-them locally for downstream-sensitive changes and before releases.
+gz-sim from source and runs a serial suite. Release verification of DART
+6.20 at `48eb618bb81` passed all three unpatched gz-physics and gz-sim
+compatibility gates, with results equal to or better than DART 6.19.5.
+The only gz-physics failure is the accepted ray-intersection expectation.
+Run the lanes locally for downstream-sensitive changes and before releases;
+[testing guidance](testing.md) covers the sleep oracle and raycast probe.
 
 For failing CI, inspect the exact run and job logs before changing code. Prefer
 reproducing locally, but document when a hosted-platform failure cannot be

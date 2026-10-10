@@ -23,6 +23,14 @@ configure twice and run them.
 | Ionic | `gz-compat-ionic` (`gazebo`) | `gz-physics8_8.4.0` | `gz-sim9_9.5.0` | 15 |
 | Jetty | `gz-compat-jetty` (`gazebo-jetty`) | `gz-physics9_9.5.2` | `gz-sim10_10.5.0` | 16 |
 
+Release verification of DART 6.20 at `48eb618bb81` passed the unpatched
+Harmonic, Ionic and Jetty gz-physics and gz-sim compatibility gates, with
+results equal to or better than DART 6.19.5. The only gz-physics failure is
+the accepted `UnsupportedRayIntersections` expectation: the `dart` detector
+supports raycasts, while the upstream test still expects them to be
+unsupported. The stored gate baselines remain DART 6.19.4; the release
+comparison with DART 6.19.5 does not replace them.
+
 The other Gazebo libraries come from conda-forge. Ionic uses gz-sim 9.5.0
 because 9.6.0 needs a newer gz-common6 than conda-forge ships. Harmonic and
 Jetty pin newer urdfdom, fmt and spdlog than DART's default environment, so
@@ -150,16 +158,20 @@ otherwise pass and skip that coverage. Extra tests in the results are allowed.
 `lane.sh` itself clears GoogleTest's `GTEST_*` variables, so an
 inherited `GTEST_FILTER` or sharding cannot run only part of the suites.
 
-On release-6.20 the lanes fail until the issue #3056 fixes land,
-so a change on release-6.20 is judged against its base. Build and test the
-base once per lane as its own variant, then compare the change with it:
+To distinguish failures inherited from a change's base from new failures,
+build and test the base once per lane as its own variant, then compare the
+change with it. Use the target branch as the base:
 
 ```bash
-git worktree add --detach /tmp/dart-base origin/release-6.20
-GZ_COMPAT_VARIANT=base GZ_COMPAT_DART_SOURCE=/tmp/dart-base \
-  pixi run gz-compat-ionic test    # its own compare fails; that is expected
+git worktree add --detach .deps/gz-compat-base origin/main
+GZ_COMPAT_VARIANT=base GZ_COMPAT_DART_SOURCE=.deps/gz-compat-base \
+  pixi run gz-compat-ionic test
 GZ_COMPAT_BASE_VARIANT=base pixi run gz-compat-ionic
 ```
+
+For a backport, use `origin/release-6.20` instead of `origin/main`. Explain
+any `BASE` or `REGRESSED` results; a base comparison does not make them
+expected release behavior.
 
 ### Expected failures
 
@@ -272,15 +284,22 @@ gz-sim.
   alone; `joint_friction_added` and `joint_limits_tightened` apply friction
   and a limit to a sleeping joint instead. The run fails on any mismatch and
   on any unexercised row; `--allow-unexercised` accepts the latter, for
-  builds that rarely sleep under gz-physics' filter (DART 6.19.4, and
-  release-6.20 until Gazebo worlds can sleep). Changes that let bodies sleep in Gazebo worlds must run it
-  without that flag and explain every mismatch. (`detach_joint` gives the
+  older builds that rarely sleep under gz-physics' filter. DART 6.20 sleeping
+  changes must run it without that flag and explain every mismatch.
+  Release verification at `48eb618bb81` matched 33 of 35 Ionic scenarios.
+  The two differences are a detector-private contact-cap edit without
+  notification and attachment sensitivity to the prior resting pose;
+  DART 6.19.5 had 6 mismatches and 27 unexercised scenarios. These explanations
+  do not suppress oracle failures. (`detach_joint` gives the
   welded model a second link: `AttachFixedJoint` on a one-link model, as
   gz-sim's `DetachableJoint` does, leaves an empty skeleton that DART counts
   as an awake body, which keeps every island awake.)
 
   gz-physics installs its own `BodyNodeCollisionFilter` subclass, under which
-  DART 6.20 wakes resting bodies within a few steps. `--default-filter` swaps
+  DART 6.20 lets resting islands sleep since
+  [#3632](https://github.com/dartsim/dart/pull/3632): the 3,000-shape world
+  settles and all bodies sleep. Verify sleeping changes with that custom
+  filter in place. `--default-filter` swaps
   in DART's `BodyNodeCollisionFilter`, which shows how sleeping behaves for
   DART users, and skips the scenarios that need gz-physics' filter (masks,
   spawning and removal update it).
@@ -292,6 +311,7 @@ gz-sim.
   Bullet world of its `BulletCollisionGroup` subclass, so a DART change to
   those groups or to how ODE cylinders are built (native or mesh) changes
   what Gazebo's rays hit; the gz-physics suite only casts rays at spheres.
+  Release verification at `48eb618bb81` matched all 26 Jetty ODE rays.
   With `--detector bullet` only batched against single rays is gated:
   Bullet's convex raycasts are approximate (also with DART 6.19.4), so compare
   those rows with another DART build. `--detector` takes only `ode` (the
