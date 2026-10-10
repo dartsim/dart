@@ -15,7 +15,7 @@ This file is the repository pointer board. Start every task with
 pixi run config       # Configure the default CMake/Ninja build
 pixi run build        # Build C++ libraries and utilities
 pixi run test         # Build and run C++ tests
-pixi run build-py-dev # Build the selected dartpy binder
+pixi run build-py-dev # Build dartpy
 pixi run test-py      # Run dartpy tests
 pixi run test-all     # Build defaults and run C++/Python tests
 pixi run lint         # Format code, docs, TOML, and spelling (auto-fixes)
