@@ -35,7 +35,7 @@ function(add_osg_text_target)
   endif()
 endfunction()
 
-find_package(OpenSceneGraph 3.0.0 QUIET COMPONENTS osgText)
+find_package(OpenSceneGraph 3.6.5 QUIET COMPONENTS osgText)
 add_osg_text_target()
 list(APPEND required_libraries osgText::osgText)
 
@@ -46,7 +46,7 @@ endif()
 
 find_package(DART 6.19 REQUIRED COMPONENTS ${required_components} CONFIG)
 if(NOT TARGET osgText::osgText)
-  find_package(OpenSceneGraph 3.0.0 REQUIRED COMPONENTS osgText)
+  find_package(OpenSceneGraph 3.6.5 REQUIRED COMPONENTS osgText)
   add_osg_text_target()
 endif()
 if(NOT TARGET osgText::osgText)

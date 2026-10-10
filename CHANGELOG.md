@@ -100,6 +100,14 @@
 
 * Build
 
+  * Raise the DART 6.20 source-build requirements to GCC 11.2, Clang 13,
+    Apple Clang 14 (Xcode 14.1), or Visual Studio 2022 v143, and update the
+    minimum library dependencies. Supported source-build platforms start at
+    Ubuntu 22.04 and macOS 13, with Windows Server 2022 as the Windows CI
+    baseline. dartpy now requires Python 3.10 and NumPy 1.21.5 or newer; see
+    the [build requirements](https://dart.readthedocs.io/en/latest/dart/developer_guide/build.html)
+    for the dependency versions.
+
   * Accept `CMAKE_BUILD_TYPE=None`, which distribution packaging uses to apply
     its own compiler flags, without the unknown-build-type warning:
     [#3633](https://github.com/dartsim/dart/pull/3633)

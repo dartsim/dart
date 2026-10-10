@@ -31,12 +31,13 @@ concurrency:
 
 jobs:
   build:
-    # The two halves of `pixi run test-all` on parallel runners, each ~2/3 of
+    # The two halves of `pixi run test-all` on modern parallel runners, each ~2/3 of
     # the cold build. On MSVC, target ALL is exactly tests_and_run + pytest:
     # CMakeLists.txt adds examples to ALL only for other
     # compilers. Branch protection requires both checks.
-    name: windows-Release-${{ matrix.part }}
-    runs-on: windows-2025-vs2026
+    # Keep the modern check names used by branch protection.
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
     permissions:
       actions: write # The last step prunes superseded compiler caches.
       contents: read
@@ -78,10 +79,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - part: cpp
+          - name: windows-Release-cpp
+            runner: windows-2025-vs2026
+            part: cpp
             task: test # builds the C++ tests and runs ctest
-          - part: python
+            vsversion: ""
+          - name: windows-Release-python
+            runner: windows-2025-vs2026
+            part: python
             task: test-py # builds dartpy and runs pytest
+            vsversion: ""
+          - name: windows-2022-Release-cpp
+            runner: windows-2022
+            part: cpp
+            task: test
+            # VS 2022 selects the v143 toolset family on this runner.
+            vsversion: "2022"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -90,6 +103,7 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1.13.0
         with:
           arch: x64
+          vsversion: ${{ matrix.vsversion }}
 
       - name: Setup pixi
         uses: prefix-dev/setup-pixi@v0.10.2
@@ -103,7 +117,7 @@ jobs:
         run: |
           "SCCACHE_DIR=$(Join-Path $env:RUNNER_TEMP 'sccache')" >> $env:GITHUB_ENV
           "SCCACHE_PR_DIR=$(Join-Path $env:RUNNER_TEMP 'sccache-pr')" >> $env:GITHUB_ENV
-          "prefix=sccache-v2-win-${{ matrix.part }}-$env:VCToolsVersion" >> $env:GITHUB_OUTPUT
+          "prefix=sccache-v2-win-${{ matrix.part }}${{ matrix.vsversion }}-$env:VCToolsVersion" >> $env:GITHUB_OUTPUT
 
       # PRs restore the newest main snapshot, then their own newest snapshot on
       # top, so a PR pays only for what it changed since its previous push.
@@ -197,6 +211,10 @@ jobs:
           -DDART_MSVC_DEFAULT_OPTIONS=ON
           -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
           -DCMAKE_UNITY_BUILD=ON
+
+      - name: Check build requirements
+        if: matrix.part == 'cpp'
+        run: pixi run test-build-requirements
 
       - name: Check Lint
         if: matrix.part == 'cpp'

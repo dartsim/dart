@@ -388,6 +388,40 @@ function(dart_configure_msvc_runtime_library)
 endfunction()
 
 #-------------------------------------------------------------------------------
+# Check DART's source-build compiler floor independently of compiler flags.
+#-------------------------------------------------------------------------------
+function(dart_check_compiler_version)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(required_version 11.2.0)
+    set(compiler_label "GCC")
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    if(DEFINED XCODE_VERSION AND XCODE_VERSION VERSION_LESS 14.1)
+      message(
+        FATAL_ERROR
+        "DART requires Xcode 14.1 or greater; detected '${XCODE_VERSION}'."
+      )
+    endif()
+    set(required_version 14.0.0)
+    set(compiler_label "Apple Clang")
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(required_version 13.0.0)
+    set(compiler_label "LLVM Clang")
+  else()
+    return()
+  endif()
+
+  if(
+    NOT CMAKE_CXX_COMPILER_VERSION
+    OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS required_version
+  )
+    message(
+      FATAL_ERROR
+      "DART requires ${compiler_label} ${required_version} or greater; detected '${CMAKE_CXX_COMPILER_VERSION}'."
+    )
+  endif()
+endfunction()
+
+#-------------------------------------------------------------------------------
 # Configure MSVC-specific compiler and linker policy.
 #-------------------------------------------------------------------------------
 function(dart_configure_msvc_toolchain)

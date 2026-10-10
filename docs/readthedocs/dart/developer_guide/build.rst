@@ -35,21 +35,112 @@ configuration enables testing, so that aggregate also runs CTest and the
 Python tests through the CMake graph. Run lint separately, and use the focused
 test tasks when you need clearer failure output.
 
-Core requirements
------------------
+Platform and tool requirements
+------------------------------
 
-For manual builds, use the versions and dependency set in the source tree as
-the authority:
+DART 6.20 requires C++17 and the following source-build baselines:
 
-* CMake minimum: ``3.22.1`` from ``CMakeLists.txt``.
-* Language level: C++17 from the DART CMake targets.
-* Build system: Ninja is the Pixi default; other CMake generators can work.
-* Core package dependencies: Assimp, Eigen, FCL, fmt, Bullet, ODE, OctoMap,
-  spdlog, tinyxml2, urdfdom, and OpenSceneGraph.
-* FCL's libccd dependency must be built in double precision
-  (``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the
-  build stops. ``-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`` builds anyway.
-* dartpy dependencies: Python, NumPy, and pybind11.
+.. list-table::
+   :header-rows: 1
+   :widths: 20 30 50
+
+   * - Platform
+     - OS baseline
+     - Compiler minimum
+   * - Ubuntu
+     - 22.04 LTS; also tested on 24.04 LTS
+     - GCC 11.2 or upstream LLVM Clang 13
+   * - macOS
+     - 13 Ventura
+     - Apple Clang 14 from Xcode 14.1
+   * - Windows
+     - Windows Server 2022 CI baseline
+     - Visual Studio 2022, v143 toolset (``MSVC_VERSION >= 1930``)
+
+Apple Clang and upstream LLVM Clang use different version numbers. The
+upstream Clang minimum also applies to clang-cl. The Windows CI runner
+baseline does not establish a minimum supported Windows desktop version.
+CMake checks the Xcode version when the Xcode generator reports it; other
+generators check the Apple Clang version. Use Xcode 14.1 or newer for the
+macOS source-build baseline.
+Hosted CI uses newer macOS runners because macOS 13 runners have been retired;
+the macOS 13/Xcode 14.1 source baseline has no current native CI lane.
+
+Manual builds require CMake 3.22.1 or newer and pkg-config 0.29.2 or newer.
+Ninja is the Pixi default; other CMake generators can work. Pixi supplies
+newer tool and dependency versions than these minimum source requirements.
+Isolated Python package builds use ``setuptools >= 84.0.0``,
+``wheel >= 0.45.1``, ``ninja >= 1.12.1``, and the existing CMake
+``>= 4.4.4, < 4.4.5`` constraint from ``pyproject.toml``.
+
+Library requirements
+--------------------
+
+The minimum versions below apply when the corresponding component is enabled.
+Optional components remain optional.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 20 45
+
+   * - Dependency
+     - Minimum version
+     - Used by
+   * - Assimp
+     - 5.2.2
+     - Core mesh loading
+   * - Eigen
+     - 3.4.0
+     - Core mathematics
+   * - FCL
+     - 0.7.0
+     - Core collision detection
+   * - fmt
+     - 8.1.1
+     - Core formatting
+   * - Bullet
+     - 3.06
+     - Bullet collision backend
+   * - OctoMap
+     - 1.9.7
+     - Occupancy maps
+   * - ODE
+     - 0.16.2
+     - ODE collision backend
+   * - tinyxml2
+     - 9.0.0
+     - XML parsers
+   * - urdfdom
+     - 3.0.1
+     - URDF parser
+   * - spdlog
+     - 1.9.2
+     - Logging support
+   * - OpenSceneGraph
+     - 3.6.5
+     - OSG GUI
+   * - ImGui
+     - 1.91.9
+     - OSG GUI controls
+   * - Python
+     - 3.10
+     - dartpy
+   * - NumPy
+     - 1.21.5
+     - dartpy
+   * - pybind11
+     - 3.0.3
+     - dartpy (bundled by default)
+   * - Tracy
+     - 0.11.1
+     - Optional profiling backend
+
+FCL's libccd dependency must be built in double precision
+(``-DENABLE_DOUBLE_PRECISION=ON``), with FCL built against it; otherwise the
+build stops. ``-DDART_ALLOW_SINGLE_PRECISION_LIBCCD=ON`` builds anyway.
+
+These source-build requirements differ from the runtime requirements of
+published :doc:`dartpy wheels </dartpy/user_guide/installation>`.
 
 Manual CMake build
 ------------------

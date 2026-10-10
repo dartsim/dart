@@ -137,7 +137,7 @@ endif()
 
 if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
   if(DART_USE_SYSTEM_TRACY)
-    find_package(Tracy CONFIG REQUIRED)
+    find_package(Tracy 0.11.1 CONFIG REQUIRED)
   else()
     include(FetchContent)
     FetchContent_Declare(
@@ -156,7 +156,11 @@ if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
   endif()
 endif()
 
-find_package(Python3 COMPONENTS Interpreter Development)
+if(DART_BUILD_DARTPY)
+  find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter Development)
+else()
+  find_package(Python3 3.10 COMPONENTS Interpreter Development)
+endif()
 
 option(DART_SKIP_spdlog "If ON, do not use spdlog even if it is found." OFF)
 mark_as_advanced(DART_SKIP_spdlog)
@@ -190,6 +194,7 @@ if(NOT DART_USE_SYSTEM_ODE)
       SHA256=c91a28c6ff2650284784a79c726a380d6afec87ecf7a35c32a6be0c5b74513e8
   )
   FetchContent_MakeAvailable(ode)
+  set(ODE_VERSION 0.16.6)
   set(DART_ODE_SOURCE_DIR "${ode_SOURCE_DIR}" CACHE INTERNAL "ODE source dir.")
   set(DART_ODE_BINARY_DIR "${ode_BINARY_DIR}" CACHE INTERNAL "ODE binary dir.")
 
