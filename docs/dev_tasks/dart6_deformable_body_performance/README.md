@@ -24,27 +24,16 @@ Promote any new durable findings before deleting this folder at completion.
 
 ## Acceptance
 
-Each remaining Jain/Liu row closes only with evidence; deferral is not an
-outcome. A row needs a runnable DART 6 scene or benchmark; correctness or
-stability evidence with deterministic state or metric thresholds;
-`dart`-versus-FCL contact and performance evidence when it depends on
-deformable collision; single-thread and host-capped multi-thread CPU rows; a
-SIMD-off and SIMD-on result when it touches vectorizable kernels; and a
-comparison against the paper number or an approved normalized target.
+Rows close only with evidence; deferral is not an outcome. The
+[parity matrix](02-paper-parity-matrix.md) holds each Jain/Liu row's paper
+target, current evidence, and acceptance gate, plus the acceptance rule every
+row must meet. The [execution plan](10-full-parity-execution-plan.md) holds
+the Done rule (at least two clean independent reviews and a durable demo
+artifact per behavior-bearing row), the performance-parity semantics, and what
+each remaining row still needs.
 
-| Row | Row-specific gate |
-| --- | --- |
-| Push recovery with motor noise | The push comparison reproduces (#3408, #3423); add the motor-noise variant plus `dart`-versus-FCL and multi-thread evidence. Single-trajectory thresholds are not ensemble evidence (#3431). |
-| Noisy-floor biped | Seeded floor of 5 x 5 cm tiles whose vertices move by uniform 0-2 cm vertical and horizontal offsets; rigid-versus-soft outcome, contact count, and CoP trace. |
-| Soft-contact walking | A soft-foot SIMBICON gait that walks rather than stepping in place, at the paper's cadence of one LCP solve per eight 0.5 ms controller steps, with contact counts, solver-time share, and a deterministic controller outcome. |
-| Four-link flexible foot | Add the four-link flexible-rigid foot to the existing soft-foot comparison: three-way, same controller and seeded perturbations, with stability and contact metrics. |
-| Finger flick | Hand contact scene with adaptive DOF and contact counts, LCP and collision profiler rows, and a launch-direction or CoP correctness gate. |
-| Arm fold | Upper-body self-contact scene with `dart`-versus-FCL contact parity and a solver-time breakdown. |
-| Pinch grasp | Manipulation scene with contact-count stability and an object-state checksum. |
-
-Beyond the rows, apply the competitive envelope (in-tree backends plus
-normalized paper metrics) to the performance evidence, and complete the
-pre-default `dart` detector gates: coverage, allocation, determinism, and
-same-host performance. Only two items accept an approved disposition instead
-of evidence: multicore scaling (a negative disposition) and a complete
-`pixi run bm-soft-body-paired` artifact.
+Beyond the rows, apply the competitive envelope to the performance evidence
+and complete the pre-default `dart` detector gates: coverage, allocation,
+determinism, and same-host performance. Only two items accept an approved
+disposition instead of evidence: multicore scaling (a negative disposition)
+and a complete `pixi run bm-soft-body-paired` artifact.
