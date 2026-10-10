@@ -37,33 +37,20 @@ imports, linked components, or installed package behavior.
 
 ## Nanobind binder
 
-DART 6.21 adds an opt-in binder under `python/dartpy_nanobind/`.
-`DART_DARTPY_BINDER` selects `pybind11` (the default) or `nanobind`; both build
-the `dartpy` module with the same namespaces, names, and overloads.
-The existing pybind11 sources stay under `python/dartpy/` during the
-transition. The nanobind binder includes `dartpy.gui.osg` when `DART_BUILD_GUI_OSG` is enabled.
+DART 6.21 uses nanobind as the only dartpy binder. Sources live directly under
+`python/dartpy_nanobind/`. The module keeps the DART namespaces, camelCase names,
+and overloads, including `dartpy.gui.osg` when `DART_BUILD_GUI_OSG` is enabled.
 
-Configure the Pixi build, select the binder in its CMake cache, and run the
-regular tests:
+Python 3.10 or newer and nanobind 3.1 or newer are required.
+`DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching nanobind v3.1.0 with its
+`robin_map` submodule. With `ON`, CMake locates its CMake directory using
+`python -m nanobind --cmake_dir`. The build output remains
+`${DART_PYTHON_BUILD_DIR}/dartpy`; tests and examples use the generated target
+runtime path. The `DART_DARTPY_BINDER` and `DART_USE_SYSTEM_PYBIND11` options
+are removed. Passing the legacy binder value `pybind11` fails configure;
+`nanobind` is accepted for compatibility and removed from the cache.
 
-```bash
-pixi run config
-# Linux/macOS:
-pixi run cmake -S . -B build/default/cpp/Release -DDART_DARTPY_BINDER=nanobind
-# Windows: use build/default/cpp instead of build/default/cpp/Release.
-pixi run test-py
-```
-
-Use `-DDART_DARTPY_BINDER=pybind11` to switch back. `DART_USE_SYSTEM_NANOBIND`
-defaults to `OFF`, which fetches nanobind v3.1.0 with its `robin_map`
-submodule. With `ON`, CMake locates the package's CMake directory using
-`python -m nanobind --cmake_dir` and requires nanobind 3.1 or newer. The
-binder requires Python 3.10 or newer. The installed location, module name, and
-configured build output `${DART_PYTHON_BUILD_DIR}/dartpy` match the pybind11
-build, preserving the Pixi example runners. The generated target runtime path
-remains authoritative for tests and CMake example targets.
-
-### API differences
+### Changes from DART 6.20 (pybind11)
 
 - Python recognizes only the primary C++ base for `isinstance`, `issubclass`,
   and the method resolution order. Secondary-base methods remain callable,
@@ -103,8 +90,7 @@ a wrapper, preserving identity and avoiding repeated-getter reference growth.
 
 DragAndDrop wrappers observe native destruction notifications and become invalid
 when native code deletes the object. Calls through invalid wrappers raise a
-Python error instead of accessing freed memory. The pybind11 binder does not
-invalidate these wrappers; using one after native deletion is unsupported.
+Python error instead of accessing freed memory.
 
 ### Binding infrastructure
 
@@ -166,9 +152,9 @@ cycles. Private native owners need public traversal/reset APIs, and callbacks
 need GC-visible ownership before those cases can participate safely.
 
 Reusable porting and API probes live under `scripts/nanobind/`. The regular
-`python/tests/` suite runs against the selected binder and marks accepted
-binder differences explicitly. Linux and macOS CI add a Python-only nanobind
-job; Windows adds a Python matrix row using its existing unity build.
+`python/tests/` suite tests the nanobind behavior, including ownership and the accepted
+changes from DART 6.20. Regular Python CI jobs include GUI coverage; Windows
+uses its existing unity build.
 
 ### pybind11 extensions
 

@@ -32,8 +32,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "../../../tests/gui_probe/probe.hpp"
 #include "gui/osg/ownership.hpp"
+#include "gui/osg/probe.hpp"
 
 namespace dart::python {
 void bind_gui_probe(nb::module_& m)

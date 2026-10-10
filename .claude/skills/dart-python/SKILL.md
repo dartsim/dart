@@ -1,6 +1,6 @@
 ---
 name: dart-python
-description: "DART Python: dartpy bindings, pybind11, opt-in nanobind, wheels, and API patterns"
+description: "DART Python: dartpy bindings, nanobind, pybind11-extension interop, wheels, and API patterns"
 ---
 
 # DART Python Bindings (dartpy)
@@ -53,18 +53,15 @@ them. CI runs them in `.github/workflows/publish_dartpy.yml` (for example
 
 ## Key Patterns
 
-- pybind11 under `python/dartpy/` remains the default during the DART 6.21
-  migration. The opt-in nanobind binder lives under `python/dartpy_nanobind/`;
-  use the binder selection and compatibility notes in the owner guide.
+- nanobind is the only binder for DART 6.21, under `python/dartpy_nanobind/`.
+  Use the compatibility and pybind11-extension interop notes in the owner guide.
 - Follow the existing DART 6 camelCase binding names used in `python/examples`
   and `python/tests`.
 - NumPy arrays auto-convert to Eigen types
-- The pybind11 GUI module uses OSG. The opt-in nanobind binder currently covers
-  the non-GUI API.
+- The GUI module uses OSG when `DART_BUILD_GUI_OSG` is enabled.
 
 ## Key Files
 
 - Package config: `pyproject.toml`
-- Binder selection: `python/CMakeLists.txt`
-- Binding build systems: `python/dartpy/CMakeLists.txt`,
-  `python/dartpy_nanobind/CMakeLists.txt`
+- Binding dependencies: `python/CMakeLists.txt`
+- Binding build system: `python/dartpy_nanobind/CMakeLists.txt`

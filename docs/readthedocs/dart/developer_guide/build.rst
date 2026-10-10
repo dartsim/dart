@@ -128,8 +128,8 @@ Optional components remain optional.
    * - NumPy
      - 1.21.5
      - dartpy
-   * - pybind11
-     - 3.0.3
+   * - nanobind
+     - 3.1
      - dartpy (bundled by default)
    * - Tracy
      - 0.11.1
@@ -157,7 +157,7 @@ environment as the dependency prefix. Then configure and build:
        -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
        -DDART_USE_SYSTEM_GOOGLETEST=ON \
        -DDART_USE_SYSTEM_IMGUI=ON \
-       -DDART_USE_SYSTEM_PYBIND11=ON \
+       -DDART_USE_SYSTEM_NANOBIND=ON \
        -DDART_USE_SYSTEM_TRACY=ON
    cmake --build build/default/cpp/Release -j
 
@@ -206,9 +206,9 @@ include:
    * - ``DART_USE_SYSTEM_IMGUI``
      - ``OFF``
      - Use a system ImGui package instead of the bundled compatibility target.
-   * - ``DART_USE_SYSTEM_PYBIND11``
+   * - ``DART_USE_SYSTEM_NANOBIND``
      - ``OFF``
-     - Use a system pybind11 package.
+     - Use a system nanobind package.
 
 Build targets
 -------------

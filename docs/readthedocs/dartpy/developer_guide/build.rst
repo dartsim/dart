@@ -12,7 +12,7 @@ Before building dartpy from source, ensure you have:
 
 * Python 3.10 or higher
 * NumPy 1.21.5 or higher
-* pybind11 3.0.3 or higher (bundled by default)
+* nanobind 3.1 or higher (bundled by default)
 * pip
 * The dependencies required to build DART (see the C++ build guide)
 

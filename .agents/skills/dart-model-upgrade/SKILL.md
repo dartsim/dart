@@ -125,9 +125,9 @@ simulation state with text-first and OSG visual/debug evidence.
    per-family entry in the owner doc; do not clone the workflow or append an
    ever-growing model taxonomy.
 7. **Implement only in apply mode.** Apply the smallest supported delta.
-   Preserve C++17, the default pybind11 binder, `dart::utils`, OSG,
+   Preserve C++17, the nanobind binder, `dart::utils`, OSG,
    public/ABI/package behavior, and Gazebo/gz-physics compatibility. The
-   approved DART 6.21 opt-in nanobind binder is permitted under
+   approved DART 6.21 nanobind binder is permitted under
    `python/dartpy_nanobind/`. Follow the branch profile for other surfaces,
    including the forbidden historical `python/dartpy/nanobind` path. Keep
    outcome, constraints, permissions, evidence, routing, and stopping

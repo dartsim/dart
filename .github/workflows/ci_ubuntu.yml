@@ -39,82 +39,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'schedule' && !(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-')) }}
 
 jobs:
-  python-nanobind:
-    name: Python nanobind
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    env:
-      SCCACHE_CACHE_SIZE: "900M"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.10.2
-        with:
-          cache: true
-          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
-
-      - name: Restore compiler cache
-        uses: ./.github/actions/sccache
-        with:
-          phase: restore
-          os: linux
-          part: nanobind
-
-      - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@v1.6.3
-        with:
-          packages: libgl1-mesa-dev libglu1-mesa-dev
-          version: "2"
-
-      - name: Test nanobind dartpy
-        id: build
-        run: |
-          ulimit -c 0
-          pixi run config
-          pixi run cmake -S . -B build/default/cpp/Release \
-            -DDART_DARTPY_BINDER=nanobind -DDART_BUILD_GUI_OSG=ON
-          pixi run test-py
-
-      - name: Agent visual verification smoke
-        run: |
-          rm -rf /tmp/dart-agent-visual-smoke
-          xvfb-run -a -s '-screen 0 640x480x24' \
-            bash -eu -o pipefail <<'VISUAL_SMOKE'
-          pixi run agent-capture -- \
-              --scene box_on_ground --steps 250 --focus box --auto-views 1 \
-              --layers contacts collision_bounds labels \
-              --width 320 --height 240 \
-              --out /tmp/dart-agent-visual-smoke --prefix smoke
-          pixi run image-verdict -- \
-            /tmp/dart-agent-visual-smoke/smoke_auto0.png
-          pixi run agent-capture -- \
-              --scene dart_shape_contacts --steps 500 \
-              --camera-azimuth 1.5708 --camera-elevation 0.35 \
-              --camera-distance 4.5 --camera-target 0 0 0.2 \
-              --layers contacts collision_bounds labels \
-              --width 640 --height 480 \
-              --out /tmp/dart-agent-visual-smoke --prefix dart
-          pixi run image-verdict -- \
-            /tmp/dart-agent-visual-smoke/dart_main.png
-          VISUAL_SMOKE
-          xvfb-run -a -s '-screen 0 640x480x24' \
-            pixi run test-agent-debug-overlay
-
-      - name: Save compiler cache
-        if: >-
-          always()
-          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
-        uses: ./.github/actions/sccache
-        with:
-          phase: save
-          os: linux
-          part: nanobind
-
   ai-infrastructure:
     name: AI infrastructure
     runs-on: ubuntu-latest
@@ -221,7 +145,7 @@ jobs:
             -DDART_DISABLE_COMPILER_CACHE=ON -DDART_BUILD_DARTPY=ON \
             -DDART_BUILD_PROFILE=ON -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
             -DDART_USE_SYSTEM_GOOGLETEST=ON -DDART_USE_SYSTEM_IMGUI=ON \
-            -DDART_USE_SYSTEM_PYBIND11=ON -DDART_USE_SYSTEM_TRACY=ON'
+            -DDART_USE_SYSTEM_TRACY=ON'
           cd build/unity-clashes
           find . -path '*/Unity/unity_*_cxx.cxx' -exec grep -c -H '^#include' {} + |
             awk -F: '$2 > 1 { sub(/^\.\//, "", $1); print $1 ".o" }' > unity-objects.txt
@@ -273,7 +197,8 @@ jobs:
         id: build
         run: |
           # Later config/config-py tasks preserve unity in the CMake cache.
-          pixi run config -- -DCMAKE_UNITY_BUILD=ON
+          ulimit -c 0
+          pixi run config -- -DCMAKE_UNITY_BUILD=ON -DDART_BUILD_GUI_OSG=ON
           DART_VERBOSE=ON \
           pixi run test-all
 
