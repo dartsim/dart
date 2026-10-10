@@ -473,6 +473,9 @@
 
 * Dynamics
 
+  * Preserve the generated soft mesh and shape-node properties when cloning
+    soft-body skeletons, avoiding duplicate null meshes during collision checks.
+
   * Compute the `SoftBodyNodeHelper` ellipsoid and cylinder point-mass rest
     positions in double instead of float precision, so they move by the
     rounding error of the old float math, and the `HeightmapShape<float>`
@@ -843,6 +846,9 @@
 
 * Python
 
+  * Add dartpy soft-body construction, typed Euler-joint skeleton editing,
+    and world-recording access for Python simulation tutorials.
+
   * Add an opt-in, split-process DART-vs-MuJoCo comparison harness with
     deterministic generated contact scenes, selectable DART collision
     detectors, and a pinned MuJoCo Pixi environment:
@@ -874,6 +880,11 @@
     [#3092](https://github.com/dartsim/dart/pull/3092)
 
 * Examples
+
+  * Replace the four C++ tutorials with Python exercises and solutions in
+    `python/tutorials/{multi_pendulum,biped,collisions,dominoes}`. Existing
+    `tu-*` Pixi commands now launch Python; the C++ tutorial executables and
+    aggregate build target are removed.
 
   * Add `contact_benchmark --gz-preset`, which loads an SDF world with SDF
     planes as 2100 m boxes, a 10000-contact cap, the ODE detector with a

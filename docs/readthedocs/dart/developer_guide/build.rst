@@ -128,7 +128,6 @@ Useful CMake targets include:
 * ``tests``: build the C++ tests.
 * ``test``: run CTest after tests are built.
 * ``examples``: build examples.
-* ``tutorials``: build tutorials.
 * ``dartpy``: build the Python bindings.
 * ``pytest``: run Python tests through the CMake target.
 * ``install``: install the configured components.
@@ -137,3 +136,7 @@ Useful CMake targets include:
 For most development work, prefer the Pixi task names above because they encode
 the branch's expected build directory, dependency prefix, and platform-specific
 settings.
+
+The hands-on tutorials are Python scripts. Build ``dartpy`` and run the
+:doc:`Python tutorials </dartpy/user_guide/tutorials>`; the former C++
+``tutorials`` build target has been retired.

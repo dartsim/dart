@@ -118,7 +118,6 @@ If you use DART in an academic publication, please consider citing this
    :caption: dart (C++)
 
    dart/user_guide/installation
-   dart/user_guide/tutorials
    dart/developer_guide/build
    dart/developer_guide/contribution
    dart/developer_guide/code_style_guide
@@ -142,3 +141,8 @@ If you use DART in an academic publication, please consider citing this
    community/who_uses_dart
    community/performance_dashboard
    license
+
+.. toctree::
+   :hidden:
+
+   dart/user_guide/tutorials

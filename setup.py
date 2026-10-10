@@ -211,7 +211,6 @@ sources.extend(glob("python/**/*", recursive=True))
 sources.extend(glob("docs/doxygen/**/*", recursive=True))
 sources.extend(glob("examples/**/*", recursive=True))
 sources.extend(glob("scripts/**/*", recursive=True))
-sources.extend(glob("tutorials/**/*", recursive=True))
 
 
 def get_version_from_package_xml(package_xml_path: str) -> str:

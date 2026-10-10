@@ -643,79 +643,39 @@ bm-dashboard-preview = { cmd = """
       --output-dir build/performance-dashboard
 """ }
 
-tu-biped = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target tutorial_biped \
-        --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_biped
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-tu-biped-fi = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target tutorial_biped_finished \
-        --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_biped_finished
+py-tu = { cmd = """
+    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
+        --target py_tutorial_{{ tutorial }}
 """, depends-on = [
-  "config",
+  "build-py-dev",
+], args = [
+  { arg = "tutorial" },
 ], env = { BUILD_TYPE = "Release" } }
 
-tu-collisions = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target tutorial_collisions \
-        --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_collisions
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-tu-collisions-fi = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target tutorial_collisions_finished \
-        --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_collisions_finished
-""", depends-on = [
-  "config",
-], env = { BUILD_TYPE = "Release" } }
-
-tu-dominoes = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target tutorial_dominoes \
-        --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_dominoes
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-tu-dominoes-fi = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target tutorial_dominoes_finished \
-        --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_dominoes_finished
-""", depends-on = [
-  "config",
-], env = { BUILD_TYPE = "Release" } }
-
-tu-multi-pendulum = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target tutorial_multi_pendulum \
-        --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_multi_pendulum
-""", depends-on = [
-  "config",
-], env = { BUILD_TYPE = "Release" } }
-
-tu-multi-pendulum-fi = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE \
-        --target tutorial_multi_pendulum_finished \
-        --parallel \
-    && ./build/$PIXI_ENVIRONMENT_NAME/cpp/$BUILD_TYPE/bin/tutorial_multi_pendulum_finished
-""", depends-on = [
-  "config",
-], env = { BUILD_TYPE = "Release" } }
+tu-biped = { depends-on = [{ task = "py-tu", args = ["biped"] }] }
+tu-biped-fi = { depends-on = [{ task = "py-tu", args = ["biped_finished"] }] }
+tu-collisions = { depends-on = [{ task = "py-tu", args = ["collisions"] }] }
+tu-collisions-fi = { depends-on = [
+  { task = "py-tu", args = [
+    "collisions_finished",
+  ] },
+] }
+tu-dominoes = { depends-on = [{ task = "py-tu", args = ["dominoes"] }] }
+tu-dominoes-fi = { depends-on = [
+  { task = "py-tu", args = [
+    "dominoes_finished",
+  ] },
+] }
+tu-multi-pendulum = { depends-on = [
+  { task = "py-tu", args = [
+    "multi_pendulum",
+  ] },
+] }
+tu-multi-pendulum-fi = { depends-on = [
+  { task = "py-tu", args = [
+    "multi_pendulum_finished",
+  ] },
+] }
 
 install = { cmd = """
     cmake \
@@ -966,77 +926,14 @@ test-all = { cmd = """
         --target ALL
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-tu-biped = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target tutorial_biped \
-        --parallel \
-    && build/$BUILD_TYPE/tutorial_biped.exe
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-tu-biped-fi = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target tutorial_biped_finished \
-        --parallel \
-    && build/$BUILD_TYPE/tutorial_biped.exe
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-tu-collisions = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target tutorial_collisions \
-        --parallel \
-    && build/$BUILD_TYPE/tutorial_collisions.exe
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-tu-collisions-fi = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target tutorial_collisions_finished \
-        --parallel \
-    && build/$BUILD_TYPE/tutorial_collisions.exe
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-tu-dominoes = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target tutorial_dominoes \
-        --parallel \
-    && build/$BUILD_TYPE/tutorial_dominoes.exe
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-tu-dominoes-fi = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target tutorial_dominoes_finished \
-        --parallel \
-    && build/$BUILD_TYPE/tutorial_dominoes.exe
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-tu-multi-pendulum = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target tutorial_multi_pendulum \
-        --parallel \
-    && build/$BUILD_TYPE/tutorial_multi_pendulum.exe
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
-
-tu-multi-pendulum-fi = { cmd = """
-    cmake \
-        --build build/$PIXI_ENVIRONMENT_NAME/cpp \
-        --config $BUILD_TYPE \
-        --target tutorial_multi_pendulum_finished \
-        --parallel \
-    && build/$BUILD_TYPE/tutorial_multi_pendulum.exe
-""", depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
+py-tu = { cmd = """
+    cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp \
+        --config $BUILD_TYPE --target py_tutorial_{{ tutorial }}
+""", depends-on = [
+  "build-py-dev",
+], args = [
+  { arg = "tutorial" },
+], env = { BUILD_TYPE = "Release" } }
 
 install = { cmd = """
     cmake \
