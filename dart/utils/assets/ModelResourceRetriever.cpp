@@ -33,6 +33,7 @@
 #include "dart/utils/assets/ModelResourceRetriever.hpp"
 
 #include "dart/common/Console.hpp"
+#include "dart/common/IncludeWindows.hpp"
 #include "dart/common/LocalResourceRetriever.hpp"
 #include "dart/utils/DartResourceRetriever.hpp"
 
