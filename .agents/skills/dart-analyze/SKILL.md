@@ -9,18 +9,18 @@ description: "DART Analyze: analyze repository evidence without editing"
 
 # dart-analyze
 
-Use this skill in Codex to run the DART `dart-analyze` workflow. The editable
-workflow source currently lives in `.claude/commands/`, and this generated
-Codex skill is a first-class Codex entrypoint.
+Use this skill to run the DART `dart-analyze` workflow. The editable workflow
+source lives in `.claude/commands/`; this generated skill is its entrypoint for
+Codex and for OpenCode's skill loader.
 
 ## Invocation
 
 - Claude Code/OpenCode: `/dart-analyze <arguments>`
 - Codex: `$dart-analyze <arguments>`
 
-Treat the text after the skill name as `$ARGUMENTS`. When the workflow
-references `$1`, `$2`, etc., map those to the positional values supplied by the
-user.
+Treat the text after the skill name, or the user's request when the skill is
+loaded on demand, as `$ARGUMENTS`. When the workflow references `$1`, `$2`,
+etc., map those to the positional values supplied by the user.
 
 ## Command Body
 

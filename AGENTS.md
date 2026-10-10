@@ -33,7 +33,7 @@ See `docs/onboarding/ci-cd.md` when a gate fails.
 | Any task                             | `docs/ai/principles.md`                                                                               |
 | Architecture or component boundaries | `docs/onboarding/architecture.md`                                                                     |
 | Building or dependencies             | `docs/onboarding/building.md`, `docs/onboarding/build-system.md`                                      |
-| Testing or simulation evidence       | `docs/onboarding/testing.md`, `docs/ai/verification.md`; use `/dart-verify-sim` (Claude Code) or `$dart-verify-sim` (Codex); OpenCode has no domain-skill adapters  |
+| Testing or simulation evidence       | `docs/onboarding/testing.md`, `docs/ai/verification.md`; use `dart-verify-sim`                        |
 | Performance investigations or claims | `docs/onboarding/profiling.md` § "Performance Methodology"; use `dart-perf` |
 | Contribution, branches, or style     | `docs/onboarding/contributing.md`, `docs/onboarding/code-style.md`, `CONTRIBUTING.md`                 |
 | Documentation placement              | `docs/README.md`, `docs/information-architecture.md`, `docs/AGENTS.md`                                |

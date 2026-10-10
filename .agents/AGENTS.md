@@ -1,6 +1,7 @@
 # .agents/
 
-Current Codex skill discovery surface for DART 6.20.
+Shared skill discovery surface: Codex reads it, and OpenCode scans it
+alongside `.claude/skills/`.
 
 - Treat only paths listed by `skills/.dart-generated.json`, plus the manifest
   itself, as DART-generated output.
