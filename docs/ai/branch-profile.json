@@ -2,13 +2,12 @@
   "schema_version": 2,
   "profile": "dart6",
   "cpp_standard": "C++17",
-  "python_binding": "pybind11",
-  "optional_python_bindings": ["nanobind"],
+  "python_binding": "nanobind",
+  "optional_python_bindings": [],
   "io_namespace": "dart::utils",
   "gui_backend": "OSG",
   "required_markers": [
     "C++17",
-    "pybind11",
     "nanobind",
     "dart::utils",
     "OSG",
@@ -24,19 +23,20 @@
     "dart/gui/osg/DebugOverlay.hpp",
     "docs/onboarding/architecture.md",
     "python/dartpy",
-    "python/dartpy_nanobind",
     "scripts/agent_capture.py"
   ],
   "forbidden_markers": [
     "C++23 as the release default",
-    "nanobind as the release binding",
     "dart::io as the release loader namespace"
   ],
   "forbidden_paths": [
     ".codex/skills",
     "dart/io",
     "python/dartpy/nanobind",
+    "python/dartpy_nanobind",
     "docs/design/simulation_solver_architecture.md"
   ],
-  "downstream_gates": ["pixi run -e gazebo test-gz"]
+  "downstream_gates": [
+    "pixi run -e gazebo test-gz"
+  ]
 }

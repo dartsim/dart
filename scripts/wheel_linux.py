@@ -37,6 +37,8 @@ def main() -> None:
         check=True,
     )
     python = f"/opt/python/{args.python_tag}-{args.python_tag}/bin/python"
+    # wheel_build.py builds the CPython 3.12 wheel for the stable ABI (abi3).
+    abi3 = args.python_tag == "cp312"
     # Keep builds out of the checkout, including stale host CMake caches.
     command = f"""
 set -euo pipefail
@@ -52,6 +54,10 @@ auditwheel show dist/dartpy-*-linux_{arch}.whl
 auditwheel repair --plat manylinux_2_28_{arch} --only-plat \\
     dist/dartpy-*-linux_{arch}.whl -w /output
 {python} scripts/verify_wheel.py /output/dartpy-*-{args.python_tag}-*.whl
+"""
+    if abi3:
+        command += f"""{python} -m pip install abi3audit==0.0.26
+abi3audit --strict --report /output/dartpy-*-cp312-abi3-*.whl
 """
     subprocess.run(
         [
@@ -70,25 +76,27 @@ auditwheel repair --plat manylinux_2_28_{arch} --only-plat \\
         check=True,
     )
     # A fresh base image has none of our source-built dependencies installed.
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "--rm",
-            "-v",
-            f"{root}:/io:ro",
-            base,
-            "env",
-            "-u",
-            "LD_LIBRARY_PATH",
-            "-u",
-            "PYTHONPATH",
-            python,
-            "/io/scripts/test_wheel.py",
-            f"/io/dist/dartpy-*-{args.python_tag}-*-manylinux_2_28_{arch}.whl",
-        ],
-        check=True,
-    )
+    # The abi3 wheel also serves newer interpreters.
+    for tag in (args.python_tag, "cp313") if abi3 else (args.python_tag,):
+        subprocess.run(
+            [
+                "docker",
+                "run",
+                "--rm",
+                "-v",
+                f"{root}:/io:ro",
+                base,
+                "env",
+                "-u",
+                "LD_LIBRARY_PATH",
+                "-u",
+                "PYTHONPATH",
+                f"/opt/python/{tag}-{tag}/bin/python",
+                "/io/scripts/test_wheel.py",
+                f"/io/dist/dartpy-*-{args.python_tag}-*-manylinux_2_28_{arch}.whl",
+            ],
+            check=True,
+        )
 
 
 if __name__ == "__main__":

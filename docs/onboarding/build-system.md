@@ -23,7 +23,7 @@ primary C++ libraries:
 | `io` | `dart-io` | SKEL, SDF, MJCF and URDF loading |
 | `gui` | `dart-gui` | OSG and ImGui integration |
 
-Both `dartpy` binders include all three libraries. See
+The nanobind `dartpy` module includes all three libraries. See
 [Python bindings](python-bindings.md) for the binder contracts and wheel checks.
 
 Legacy library targets also remain buildable through

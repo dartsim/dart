@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,37 +38,32 @@
 
 #include <dart/common/String.hpp>
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-namespace py = pybind11;
-
 namespace dart::python {
 
-void String(py::module& m)
+void String(nb::module_& m)
 {
-  m.def("toUpper", &common::toUpper, py::arg("str"));
-  m.def("toLower", &common::toLower, py::arg("str"));
+  m.def("toUpper", &common::toUpper, nb::arg("str"));
+  m.def("toLower", &common::toLower, nb::arg("str"));
   m.def(
       "trim",
       &common::trim,
-      py::arg("str"),
-      py::arg("whitespaces") = " \n\r\t");
+      nb::arg("str"),
+      nb::arg("whitespaces") = " \n\r\t");
   m.def(
       "trimLeft",
       &common::trimLeft,
-      py::arg("str"),
-      py::arg("whitespaces") = " \n\r\t");
+      nb::arg("str"),
+      nb::arg("whitespaces") = " \n\r\t");
   m.def(
       "trimRight",
       &common::trimRight,
-      py::arg("str"),
-      py::arg("whitespaces") = " \n\r\t");
+      nb::arg("str"),
+      nb::arg("whitespaces") = " \n\r\t");
   m.def(
       "split",
       &common::split,
-      py::arg("str"),
-      py::arg("delimiters") = " \n\r\t");
+      nb::arg("str"),
+      nb::arg("delimiters") = " \n\r\t");
 }
 
 } // namespace dart::python

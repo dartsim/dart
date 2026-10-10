@@ -1,3 +1,10 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+#include "detail/optimizer_properties.hpp"
+// clang-format on
+
+#include <nanobind/trampoline.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -35,76 +42,72 @@
 #include <dart/optimizer/Problem.hpp>
 #include <dart/optimizer/Solver.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
 #include <ostream>
 #include <string>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void Solver(py::module& m)
+void Solver(nb::module_& m)
 {
-  ::py::class_<dart::optimizer::Solver::Properties>(m, "SolverProperties")
-      .def(::py::init<>())
+  dartnb::dart_class<dart::optimizer::Solver::Properties>(m, "SolverProperties")
+      .def(dartnb::init<>())
       .def(
-          ::py::init<std::shared_ptr<dart::optimizer::Problem>>(),
-          ::py::arg("problem"))
+          dartnb::init<std::shared_ptr<dart::optimizer::Problem>>(),
+          nb::arg("problem").none())
       .def(
-          ::py::init<std::shared_ptr<dart::optimizer::Problem>, double>(),
-          ::py::arg("problem"),
-          ::py::arg("tolerance"))
+          dartnb::init<std::shared_ptr<dart::optimizer::Problem>, double>(),
+          nb::arg("problem").none(),
+          nb::arg("tolerance"))
       .def(
-          ::py::init<
+          dartnb::init<
               std::shared_ptr<dart::optimizer::Problem>,
               double,
               std::size_t>(),
-          ::py::arg("problem"),
-          ::py::arg("tolerance"),
-          ::py::arg("numMaxIterations"))
+          nb::arg("problem").none(),
+          nb::arg("tolerance"),
+          nb::arg("numMaxIterations"))
       .def(
-          ::py::init<
+          dartnb::init<
               std::shared_ptr<dart::optimizer::Problem>,
               double,
               std::size_t,
               std::size_t>(),
-          ::py::arg("problem"),
-          ::py::arg("tolerance"),
-          ::py::arg("numMaxIterations"),
-          ::py::arg("iterationsPerPrint"))
+          nb::arg("problem").none(),
+          nb::arg("tolerance"),
+          nb::arg("numMaxIterations"),
+          nb::arg("iterationsPerPrint"))
       .def(
-          ::py::init<
+          dartnb::init<
               std::shared_ptr<dart::optimizer::Problem>,
               double,
               std::size_t,
               std::size_t,
               std::ostream*>(),
-          ::py::arg("problem"),
-          ::py::arg("tolerance"),
-          ::py::arg("numMaxIterations"),
-          ::py::arg("iterationsPerPrint"),
-          ::py::arg("ostream"))
+          nb::arg("problem").none(),
+          nb::arg("tolerance"),
+          nb::arg("numMaxIterations"),
+          nb::arg("iterationsPerPrint"),
+          nb::arg("ostream").none())
       .def(
-          ::py::init<
+          dartnb::init<
               std::shared_ptr<dart::optimizer::Problem>,
               double,
               std::size_t,
               std::size_t,
               std::ostream*,
               bool>(),
-          ::py::arg("problem"),
-          ::py::arg("tolerance"),
-          ::py::arg("numMaxIterations"),
-          ::py::arg("iterationsPerPrint"),
-          ::py::arg("ostream"),
-          ::py::arg("printFinalResult"))
+          nb::arg("problem").none(),
+          nb::arg("tolerance"),
+          nb::arg("numMaxIterations"),
+          nb::arg("iterationsPerPrint"),
+          nb::arg("ostream").none(),
+          nb::arg("printFinalResult"))
       .def(
-          ::py::init<
+          dartnb::init<
               std::shared_ptr<dart::optimizer::Problem>,
               double,
               std::size_t,
@@ -112,78 +115,82 @@ void Solver(py::module& m)
               std::ostream*,
               bool,
               const std::string&>(),
-          ::py::arg("problem"),
-          ::py::arg("tolerance"),
-          ::py::arg("numMaxIterations"),
-          ::py::arg("iterationsPerPrint"),
-          ::py::arg("ostream"),
-          ::py::arg("printFinalResult"),
-          ::py::arg("resultFile"))
-      .def_readwrite("mProblem", &dart::optimizer::Solver::Properties::mProblem)
-      .def_readwrite(
-          "mTolerance", &dart::optimizer::Solver::Properties::mTolerance)
-      .def_readwrite(
+          nb::arg("problem").none(),
+          nb::arg("tolerance"),
+          nb::arg("numMaxIterations"),
+          nb::arg("iterationsPerPrint"),
+          nb::arg("ostream").none(),
+          nb::arg("printFinalResult"),
+          nb::arg("resultFile"))
+      .def_rw(
+          "mProblem",
+          &dart::optimizer::Solver::Properties::mProblem,
+          dartnb::setterArgument(
+              &dart::optimizer::Solver::Properties::mProblem))
+      .def_rw(
+          "mTolerance",
+          &dart::optimizer::Solver::Properties::mTolerance,
+          dartnb::setterArgument(
+              &dart::optimizer::Solver::Properties::mTolerance))
+      .def_rw(
           "mNumMaxIterations",
-          &dart::optimizer::Solver::Properties::mNumMaxIterations)
-      .def_readwrite(
+          &dart::optimizer::Solver::Properties::mNumMaxIterations,
+          dartnb::setterArgument(
+              &dart::optimizer::Solver::Properties::mNumMaxIterations))
+      .def_rw(
           "mIterationsPerPrint",
-          &dart::optimizer::Solver::Properties::mIterationsPerPrint)
-      .def_readwrite(
-          "mOutStream", &dart::optimizer::Solver::Properties::mOutStream)
-      .def_readwrite(
+          &dart::optimizer::Solver::Properties::mIterationsPerPrint,
+          dartnb::setterArgument(
+              &dart::optimizer::Solver::Properties::mIterationsPerPrint))
+      .def_rw(
+          "mOutStream",
+          &dart::optimizer::Solver::Properties::mOutStream,
+          dartnb::setterArgument(
+              &dart::optimizer::Solver::Properties::mOutStream))
+      .def_rw(
           "mPrintFinalResult",
-          &dart::optimizer::Solver::Properties::mPrintFinalResult)
-      .def_readwrite(
-          "mResultFile", &dart::optimizer::Solver::Properties::mResultFile);
+          &dart::optimizer::Solver::Properties::mPrintFinalResult,
+          dartnb::setterArgument(
+              &dart::optimizer::Solver::Properties::mPrintFinalResult))
+      .def_rw(
+          "mResultFile",
+          &dart::optimizer::Solver::Properties::mResultFile,
+          dartnb::setterArgument(
+              &dart::optimizer::Solver::Properties::mResultFile));
 
   class PySolver : public dart::optimizer::Solver
   {
   public:
     // Inherit the constructors
-    using Solver::Solver;
+    NB_TRAMPOLINE(Solver);
 
     // Trampoline for virtual function
     bool solve() override
     {
-      PYBIND11_OVERLOAD_PURE(
-          bool,   // Return type
-          Solver, // Parent class
-          solve,  // Name of function in C++ (must match Python name)
-      );
+      NB_OVERRIDE_PURE(solve);
     }
 
     // Trampoline for virtual function
     std::string getType() const override
     {
-      PYBIND11_OVERLOAD_PURE(
-          std::string, // Return type
-          Solver,      // Parent class
-          getType,     // Name of function in C++ (must match Python name)
-      );
+      NB_OVERRIDE_PURE(getType);
     }
 
     // Trampoline for virtual function
     std::shared_ptr<Solver> clone() const override
     {
-      PYBIND11_OVERLOAD_PURE(
-          std::shared_ptr<Solver>, // Return type
-          Solver,                  // Parent class
-          clone, // Name of function in C++ (must match Python name)
-      );
+      NB_OVERRIDE_PURE(clone);
     }
   };
 
-  ::py::class_<
-      dart::optimizer::Solver,
-      PySolver,
-      std::shared_ptr<dart::optimizer::Solver>>(m, "Solver")
-      .def(py::init<>())
+  dartnb::dart_class<dart::optimizer::Solver, PySolver>(m, "Solver")
+      .def(dartnb::init<>())
       .def(
-          py::init<dart::optimizer::Solver::Properties>(),
-          ::py::arg("properties"))
+          dartnb::init<dart::optimizer::Solver::Properties>(),
+          nb::arg("properties"))
       .def(
-          py::init<std::shared_ptr<dart::optimizer::Problem>>(),
-          ::py::arg("problem"))
+          dartnb::init<std::shared_ptr<dart::optimizer::Problem>>(),
+          nb::arg("problem").none())
       .def(
           "solve",
           +[](dart::optimizer::Solver* self) -> bool { return self->solve(); })
@@ -204,14 +211,14 @@ void Solver(py::module& m)
               const dart::optimizer::Solver::Properties& _properties) {
             self->setProperties(_properties);
           },
-          ::py::arg("properties"))
+          nb::arg("properties"))
       .def(
           "setProblem",
           +[](dart::optimizer::Solver* self,
               std::shared_ptr<dart::optimizer::Problem> _newProblem) {
             self->setProblem(_newProblem);
           },
-          ::py::arg("newProblem"))
+          nb::arg("newProblem").none())
       .def(
           "getProblem",
           +[](const dart::optimizer::Solver* self)
@@ -223,7 +230,7 @@ void Solver(py::module& m)
           +[](dart::optimizer::Solver* self, double _newTolerance) {
             self->setTolerance(_newTolerance);
           },
-          ::py::arg("newTolerance"))
+          nb::arg("newTolerance"))
       .def(
           "getTolerance",
           +[](const dart::optimizer::Solver* self) -> double {
@@ -234,7 +241,7 @@ void Solver(py::module& m)
           +[](dart::optimizer::Solver* self, std::size_t _newMax) {
             self->setNumMaxIterations(_newMax);
           },
-          ::py::arg("newMax"))
+          nb::arg("newMax"))
       .def(
           "getNumMaxIterations",
           +[](const dart::optimizer::Solver* self) -> std::size_t {
@@ -245,7 +252,7 @@ void Solver(py::module& m)
           +[](dart::optimizer::Solver* self, std::size_t _newRatio) {
             self->setIterationsPerPrint(_newRatio);
           },
-          ::py::arg("newRatio"))
+          nb::arg("newRatio"))
       .def(
           "getIterationsPerPrint",
           +[](const dart::optimizer::Solver* self) -> std::size_t {
@@ -256,13 +263,13 @@ void Solver(py::module& m)
           +[](dart::optimizer::Solver* self, std::ostream* _os) {
             self->setOutStream(_os);
           },
-          ::py::arg("os"))
+          nb::arg("os").none())
       .def(
           "setPrintFinalResult",
           +[](dart::optimizer::Solver* self, bool _print) {
             self->setPrintFinalResult(_print);
           },
-          ::py::arg("print"))
+          nb::arg("print"))
       .def(
           "getPrintFinalResult",
           +[](const dart::optimizer::Solver* self) -> bool {
@@ -273,13 +280,13 @@ void Solver(py::module& m)
           +[](dart::optimizer::Solver* self, const std::string& _resultFile) {
             self->setResultFileName(_resultFile);
           },
-          ::py::arg("resultFile"))
+          nb::arg("resultFile"))
       .def(
           "getResultFileName",
           +[](const dart::optimizer::Solver* self) -> const std::string& {
             return self->getResultFileName();
           },
-          ::py::return_value_policy::reference_internal);
+          nb::rv_policy::reference_internal);
 }
 
 } // namespace python

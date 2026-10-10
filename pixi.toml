@@ -46,6 +46,7 @@ numpy = ">=2.2.5,<3"
 octomap = ">=1.10.0,<2"
 openscenegraph = ">=3.6.5,<4"
 openssl = ">=1.1.1,<4"
+# Optional test-only dependency for python/tests/interop.
 pybind11 = ">=3.0.3,<4"
 spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
@@ -96,7 +97,6 @@ config = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
@@ -124,7 +124,6 @@ config-demos = { cmd = """
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=OFF \
         -DDART_IMGUI_DOCKING=ON \
-        -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
@@ -292,7 +291,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_PYBIND11=ON -DDART_BUILD_UTILS_ASSETS=ON" }
+build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON -DDART_BUILD_UTILS_ASSETS=ON" }
 
 wheel-build-core = { cmd = "python scripts/wheel_build.py {{ use_system_imgui }}", args = [
   { arg = "use_system_imgui", default = "ON" },
@@ -367,7 +366,6 @@ config-py = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
@@ -890,7 +888,6 @@ config = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE="$DART_VERBOSE"
 """, env = { DART_VERBOSE = "OFF" } }
@@ -932,7 +929,7 @@ build-tests = { cmd = """
         --target tests
 """, depends-on = ["config"], env = { BUILD_TYPE = "Release" } }
 
-build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON -DDART_USE_SYSTEM_PYBIND11=ON -DDART_BUILD_UTILS_ASSETS=ON" }
+build-py = { cmd = "python scripts/pixi_build_py.py -DDART_USE_SYSTEM_IMGUI=ON -DDART_BUILD_UTILS_ASSETS=ON" }
 
 build-py-dev = { cmd = """
     cmake \
@@ -967,7 +964,6 @@ config-py = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF" } }
@@ -1288,7 +1284,6 @@ config-tracy = { cmd = """
         -DDART_USE_SYSTEM_GOOGLEBENCHMARK=ON \
         -DDART_USE_SYSTEM_GOOGLETEST=ON \
         -DDART_USE_SYSTEM_IMGUI=ON \
-        -DDART_USE_SYSTEM_PYBIND11=ON \
         -DDART_USE_SYSTEM_TRACY=ON \
         -DDART_VERBOSE=$DART_VERBOSE
 """, env = { DART_VERBOSE = "OFF", BUILD_TYPE = "Release" } }
@@ -1567,6 +1562,12 @@ wheel-verify = { depends-on = [
   ] },
 ] }
 wheel-test = { depends-on = [{ task = "wheel-test-core", args = ["cp313"] }] }
+# Release wheels for Python 3.12+ are cp312-abi3; test one on Python 3.13.
+wheel-test-abi3 = { depends-on = [
+  { task = "wheel-test-core", args = [
+    "cp312",
+  ] },
+] }
 
 #==============
 # Environments

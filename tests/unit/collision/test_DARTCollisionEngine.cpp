@@ -603,7 +603,7 @@ TEST(DARTCollisionDetector, CapsSolverFacingManifoldContacts)
 
   collision::CollisionResult wideResult;
   ASSERT_TRUE(group->collide(wideOption, &wideResult));
-  EXPECT_EQ(3u, wideResult.getNumContacts());
+  EXPECT_EQ(4u, wideResult.getNumContacts());
 
   collision::CollisionOption strictOption(true, 10u);
   strictOption.maxNumContactsPerPair = 2u;

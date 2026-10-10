@@ -156,11 +156,7 @@ if(DART_BUILD_PROFILE AND DART_PROFILE_TRACY)
   endif()
 endif()
 
-if(
-  DART_BUILD_DARTPY
-  AND DART_DARTPY_BINDER STREQUAL "nanobind"
-  AND Python_EXECUTABLE
-)
+if(DART_BUILD_DARTPY AND Python_EXECUTABLE)
   # Share nanobind's selected interpreter with tests, examples, and tutorials.
   set(
     Python3_EXECUTABLE

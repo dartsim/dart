@@ -1,9 +1,6 @@
 ﻿# Copyright (c) 2011, The DART development contributors
 # All rights reserved.
 
-# References:
-# - https://pybind11.readthedocs.io/en/stable/compiling.html
-
 import distutils.log
 import json
 import os
@@ -96,7 +93,7 @@ class CMakeBuild(build_ext):
         # Can be set with Conda-Build, for example.
         cmake_generator = os.environ.get("CMAKE_GENERATOR", "")
 
-        # Keep legacy and modern CMake/Pybind Python discovery paths on the
+        # Keep legacy and modern CMake Python discovery paths on the
         # interpreter that is running the wheel build.
         # DARTPY_VERSION_INFO shows you how to pass a value into the C++ code
         # from Python.
@@ -226,8 +223,31 @@ def get_version_from_package_xml(package_xml_path: str) -> str:
         ) from exc
 
 
+def _cmake_bool_enabled(cmake_args: List[str], name: str) -> bool:
+    """Return whether the last -D<name>[:TYPE]=<value> is a CMake true value."""
+    value = ""
+    for arg in cmake_args:
+        match = re.fullmatch(rf"-D{name}(?::\w+)?=(.*)", arg)
+        if match:
+            value = match.group(1)
+    if value.upper() in {"ON", "YES", "TRUE", "Y"}:
+        return True
+    try:
+        return float(value) != 0
+    except ValueError:
+        return False
+
+
+# A stable-ABI (abi3) module needs a matching wheel tag.
+_bdist_wheel_options = (
+    {"bdist_wheel": {"py_limited_api": "cp312"}}
+    if _cmake_bool_enabled(_cmake_args_from_env(), "DART_DARTPY_STABLE_ABI")
+    else {}
+)
+
 # Set up the python package wrapping this extension.
 setup(
+    options=_bdist_wheel_options,
     name="dartpy",
     version=get_version_from_package_xml(os.path.join(dart_root, "package.xml")),
     description=description,

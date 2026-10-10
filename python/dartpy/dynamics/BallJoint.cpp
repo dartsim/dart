@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -38,46 +42,41 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <eigen_geometry_pybind.h>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
 
 #include <memory>
 #include <string>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void BallJoint(py::module& m)
+void BallJoint(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::dynamics::BallJoint::Properties,
       dart::dynamics::detail::GenericJointProperties<dart::math::SO3Space>>(
       m, "BallJointProperties")
-      .def(::py::init<>())
+      .def(dartnb::init<>())
       .def(
-          ::py::init<const dart::dynamics::GenericJoint<
+          dartnb::init<const dart::dynamics::GenericJoint<
               dart::math::SO3Space>::Properties&>(),
-          ::py::arg("properties"));
+          nb::arg("properties"));
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::dynamics::BallJoint,
-      dart::dynamics::GenericJoint<dart::math::SO3Space>,
-      std::shared_ptr<dart::dynamics::BallJoint>>(m, "BallJoint")
+      dart::dynamics::GenericJoint<dart::math::SO3Space>>(m, "BallJoint")
       .def(
           "getType",
           +[](const dart::dynamics::BallJoint* self) -> const std::string& {
             return self->getType();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::BallJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::py::arg("index"))
+          nb::arg("index"))
       .def(
           "getBallJointProperties",
           +[](const dart::dynamics::BallJoint* self)
@@ -91,7 +90,7 @@ void BallJoint(py::module& m)
               -> Eigen::Matrix<double, 6, 3> {
             return self->getRelativeJacobianStatic(_positions);
           },
-          ::py::arg("positions"))
+          nb::arg("positions"))
       .def(
           "getPositionDifferencesStatic",
           +[](const dart::dynamics::BallJoint* self,
@@ -99,32 +98,32 @@ void BallJoint(py::module& m)
               const Eigen::Vector3d& _q1) -> Eigen::Vector3d {
             return self->getPositionDifferencesStatic(_q2, _q1);
           },
-          ::py::arg("q2"),
-          ::py::arg("q1"))
+          nb::arg("q2"),
+          nb::arg("q1"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::dynamics::BallJoint::getStaticType();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def_static(
           "convertToPositions",
           +[](const Eigen::Matrix3d& _tf) -> Eigen::Vector3d {
             return dart::dynamics::BallJoint::convertToPositions(_tf);
           },
-          ::py::arg("tf"))
+          nb::arg("tf"))
       .def_static(
           "convertToTransform",
           +[](const Eigen::Vector3d& _positions) -> Eigen::Isometry3d {
             return dart::dynamics::BallJoint::convertToTransform(_positions);
           },
-          ::py::arg("positions"))
+          nb::arg("positions"))
       .def_static(
           "convertToRotation",
           +[](const Eigen::Vector3d& _positions) -> Eigen::Matrix3d {
             return dart::dynamics::BallJoint::convertToRotation(_positions);
           },
-          ::py::arg("positions"));
+          nb::arg("positions"));
 }
 
 } // namespace python

@@ -1,6 +1,4 @@
-// clang-format off
 #include "detail/dart_nb.hpp"
-// clang-format on
 
 /*
  * Copyright (c) 2011, The DART development contributors
@@ -34,77 +32,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dart/config.hpp>
+#include "gui/osg/ownership.hpp"
+#include "gui/osg/probe.hpp"
 
-namespace dart {
-namespace python {
-
-void Contact(nb::module_& sm);
-
-void CollisionFilter(nb::module_& sm);
-void CollisionObject(nb::module_& sm);
-void CollisionOption(nb::module_& sm);
-void CollisionResult(nb::module_& sm);
-
-void DistanceOption(nb::module_& sm);
-void DistanceResult(nb::module_& sm);
-
-void RaycastOption(nb::module_& sm);
-void RaycastResult(nb::module_& sm);
-
-void CollisionDetector(nb::module_& sm);
-void FCLCollisionDetector(nb::module_& sm);
-void DARTCollisionDetector(nb::module_& sm);
-
-void CollisionGroup(nb::module_& sm);
-void FCLCollisionGroup(nb::module_& sm);
-void DARTCollisionGroup(nb::module_& sm);
-
-#if HAVE_BULLET
-void BulletCollisionDetector(nb::module_& sm);
-void BulletCollisionGroup(nb::module_& sm);
-#endif // HAVE_BULLET
-
-#if HAVE_ODE
-void OdeCollisionDetector(nb::module_& sm);
-void OdeCollisionGroup(nb::module_& sm);
-#endif // HAVE_ODE
-
-void dart_collision(nb::module_& m)
+namespace dart::python {
+void bind_gui_probe(nb::module_& m)
 {
-  auto sm = m.def_submodule("collision");
-
-  Contact(sm);
-
-  CollisionFilter(sm);
-  CollisionObject(sm);
-  CollisionOption(sm);
-  CollisionResult(sm);
-
-  DistanceOption(sm);
-  DistanceResult(sm);
-
-  RaycastOption(sm);
-  RaycastResult(sm);
-
-  CollisionDetector(sm);
-  FCLCollisionDetector(sm);
-  DARTCollisionDetector(sm);
-
-  CollisionGroup(sm);
-  FCLCollisionGroup(sm);
-  DARTCollisionGroup(sm);
-
-#if HAVE_BULLET
-  BulletCollisionDetector(sm);
-  BulletCollisionGroup(sm);
-#endif // HAVE_BULLET
-
-#if HAVE_ODE
-  OdeCollisionDetector(sm);
-  OdeCollisionGroup(sm);
-#endif // HAVE_ODE
+  namespace probe = dart::python::gui_probe;
+  auto sm = m.def_submodule("_probe");
+  sm.def("accept_action_adapter", [](osgGA::GUIActionAdapter* action) {
+    return dynamic_cast<dart::gui::osg::Viewer*>(action) != nullptr;
+  });
+  sm.def("base_view", [](dart::gui::osg::Viewer* viewer) -> osgViewer::View* {
+    return viewer;
+  });
+  sm.def(
+      "base_subject",
+      [](dart::gui::osg::Viewer* viewer) -> dart::common::Subject* {
+        return viewer;
+      });
+  sm.def("refresh", &probe::refresh);
+  sm.def("refresh_viewer", [](dart::gui::osg::Viewer* viewer) {
+    probe::refreshViewer(viewer);
+    dartnb::gui::ownership(viewer)->prune();
+  });
+  sm.def("shadow_ref_count", [](osgShadow::ShadowTechnique* value) {
+    return value->referenceCount();
+  });
+  sm.def(
+      "handle",
+      &probe::handle,
+      nb::arg("handler"),
+      nb::arg("viewer"),
+      nb::arg("key") = 65);
+  sm.def(
+      "dispatch_viewer_handlers",
+      [](osgViewer::View* viewer, int key) {
+        auto result = probe::dispatchViewerHandlers(viewer, key);
+        dartnb::gui::ownership(viewer)->prune();
+        return result;
+      },
+      nb::arg("viewer"),
+      nb::arg("key") = 65);
+  sm.def(
+      "remove_handler",
+      [](osgViewer::View* viewer, osgGA::GUIEventHandler* handler) {
+        viewer->removeEventHandler(handler);
+        dartnb::gui::retire(viewer, handler);
+      });
 }
-
-} // namespace python
-} // namespace dart
+} // namespace dart::python

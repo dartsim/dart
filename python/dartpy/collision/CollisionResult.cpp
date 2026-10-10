@@ -1,3 +1,10 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include <nanobind/stl/unordered_set.h>
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -35,32 +42,26 @@
 
 #include <dart/dynamics/BodyNode.hpp>
 #include <dart/dynamics/ShapeFrame.hpp>
-#include <dart/dynamics/ShapeNode.hpp>
-
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include <unordered_set>
 #include <vector>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void CollisionResult(py::module& m)
+void CollisionResult(nb::module_& m)
 {
-  ::py::class_<dart::collision::CollisionResult>(m, "CollisionResult")
-      .def(::py::init<>())
+  dartnb::dart_class<dart::collision::CollisionResult>(m, "CollisionResult")
+      .def(dartnb::init<>())
       .def(
           "addContact",
           +[](dart::collision::CollisionResult* self,
               const dart::collision::Contact& contact) {
             self->addContact(contact);
           },
-          ::py::arg("contact"),
+          nb::arg("contact"),
           "Add one contact.")
       .def(
           "getNumContacts",
@@ -72,8 +73,8 @@ void CollisionResult(py::module& m)
           "getContact",
           +[](dart::collision::CollisionResult* self, std::size_t index)
               -> dart::collision::Contact& { return self->getContact(index); },
-          ::py::arg("index"),
-          ::py::return_value_policy::reference_internal,
+          nb::arg("index"),
+          nb::rv_policy::reference_internal,
           "Return the index-th contact.")
       .def(
           "getContact",
@@ -81,8 +82,8 @@ void CollisionResult(py::module& m)
               std::size_t index) -> const dart::collision::Contact& {
             return self->getContact(index);
           },
-          ::py::arg("index"),
-          ::py::return_value_policy::reference_internal,
+          nb::arg("index"),
+          nb::rv_policy::reference_internal,
           "Return (const) the index-th contact.")
       .def(
           "getContacts",
@@ -90,7 +91,7 @@ void CollisionResult(py::module& m)
               -> const std::vector<dart::collision::Contact>& {
             return self->getContacts();
           },
-          ::py::return_value_policy::reference_internal,
+          nb::rv_policy::reference_internal,
           "Return contacts.")
       .def(
           "getCollidingBodyNodes",
@@ -98,29 +99,17 @@ void CollisionResult(py::module& m)
               -> const std::unordered_set<const dynamics::BodyNode*>& {
             return self->getCollidingBodyNodes();
           },
-          ::py::return_value_policy::reference_internal,
+          nb::rv_policy::reference_internal,
           "Return the set of BodyNodes that are in collision.")
       .def(
           "getCollidingShapeFrames",
-          +[](const dart::collision::CollisionResult* self) -> py::set {
-            py::set frames;
-            for (const auto* frame : self->getCollidingShapeFrames()) {
-              py::object owner
-                  = py::cast(self, py::return_value_policy::reference);
-              // CollisionResult stores raw frames; keep their bodies alive too.
-              if (const auto* node = frame->asShapeNode()) {
-                owner = py::make_tuple(
-                    owner,
-                    py::cast(
-                        node->getBodyNode(),
-                        py::return_value_policy::reference));
-              }
-              frames.add(py::cast(
-                  frame, py::return_value_policy::reference_internal, owner));
-            }
-            return frames;
+          +[](const dart::collision::CollisionResult* self) -> nb::set {
+            return nb::cast<nb::set>(nb::cast(
+                self->getCollidingShapeFrames(),
+                nb::rv_policy::reference_internal,
+                nb::cast(self, nb::rv_policy::reference)));
           },
-          ::py::return_value_policy::reference_internal,
+          nb::rv_policy::reference_internal,
           "Return the set of ShapeFrames that are in collision.")
       .def(
           "inCollision",
@@ -128,7 +117,7 @@ void CollisionResult(py::module& m)
               const dart::dynamics::BodyNode* bn) -> bool {
             return self->inCollision(bn);
           },
-          ::py::arg("bn"),
+          nb::arg("bn").none(),
           "Returns true if the given BodyNode is in collision.")
       .def(
           "inCollision",
@@ -136,7 +125,7 @@ void CollisionResult(py::module& m)
               const dart::dynamics::ShapeFrame* frame) -> bool {
             return self->inCollision(frame);
           },
-          ::py::arg("frame"),
+          nb::arg("frame").none(),
           "Returns true if the given ShapeFrame is in collision.")
       .def(
           "isCollision",

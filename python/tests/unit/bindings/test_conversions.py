@@ -1,4 +1,4 @@
-"""Shared regressions for the full non-GUI migration, using each backend."""
+"""Shared regressions for the full non-GUI migration, using nanobind."""
 
 import gc
 
@@ -6,7 +6,7 @@ import dartpy as dart
 import numpy as np
 import pytest
 
-from ._support import IS_NANOBIND, run_isolated
+from ._support import run_isolated
 
 
 def test_inverse_kinematics_constructor_rejects_null_node():
@@ -31,25 +31,14 @@ def test_bool_parameters_accept_true_and_false(value):
 @pytest.mark.parametrize("value", [0, 1, None, np.bool_(True), np.bool_(False)])
 def test_bool_conversion_difference(value):
     skeleton = dart.dynamics.Skeleton()
-    if IS_NANOBIND:
-        with pytest.raises(TypeError):
-            skeleton.setMobile(value)
-    else:
+    with pytest.raises(TypeError):
         skeleton.setMobile(value)
-        assert skeleton.isMobile() is bool(value)
-
-
 def test_bytes_are_not_strings_with_nanobind():
     skeleton = dart.dynamics.Skeleton()
     skeleton.setName("unicode_name")
     assert skeleton.getName() == "unicode_name"
-    if IS_NANOBIND:
-        with pytest.raises(TypeError):
-            skeleton.setName(b"bytes_name")
-    else:
-        assert skeleton.setName(b"bytes_name") == "bytes_name"
-
-
+    with pytest.raises(TypeError):
+        skeleton.setName(b"bytes_name")
 @pytest.mark.parametrize("kind", ["BoxShape", "BoundingBox"])
 def test_const_eigen_view_keeps_its_owner_alive(kind):
     run_isolated(

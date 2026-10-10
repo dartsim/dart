@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -37,31 +41,25 @@
 #include <dart/optimizer/Problem.hpp>
 
 #include <Eigen/Core>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
 
 #include <memory>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void Problem(py::module& m)
+void Problem(nb::module_& m)
 {
-  ::py::class_<
-      dart::optimizer::Problem,
-      std::shared_ptr<dart::optimizer::Problem>>(m, "Problem")
-      .def(::py::init<>())
-      .def(::py::init<std::size_t>(), ::py::arg("dim"))
+  dartnb::dart_class<dart::optimizer::Problem>(m, "Problem")
+      .def(dartnb::init<>())
+      .def(dartnb::init<std::size_t>(), nb::arg("dim"))
       .def(
           "setDimension",
           +[](dart::optimizer::Problem* self, std::size_t _dim) {
             self->setDimension(_dim);
           },
-          ::py::arg("dim"))
+          nb::arg("dim"))
       .def(
           "getDimension",
           +[](const dart::optimizer::Problem* self) -> std::size_t {
@@ -73,7 +71,7 @@ void Problem(py::module& m)
               const Eigen::VectorXd& _initGuess) {
             self->setInitialGuess(_initGuess);
           },
-          ::py::arg("initGuess"))
+          nb::arg("initGuess"))
       .def(
           "getInitialGuess",
           +[](dart::optimizer::Problem* self) -> const Eigen::VectorXd& {
@@ -84,7 +82,7 @@ void Problem(py::module& m)
           +[](dart::optimizer::Problem* self, const Eigen::VectorXd& _seed) {
             self->addSeed(_seed);
           },
-          ::py::arg("seed"))
+          nb::arg("seed"))
       .def(
           "clearAllSeeds",
           +[](dart::optimizer::Problem* self) { self->clearAllSeeds(); })
@@ -93,18 +91,18 @@ void Problem(py::module& m)
           +[](dart::optimizer::Problem* self, const Eigen::VectorXd& _lb) {
             self->setLowerBounds(_lb);
           },
-          ::py::arg("lb"))
+          nb::arg("lb"))
       .def(
           "setUpperBounds",
           +[](dart::optimizer::Problem* self, const Eigen::VectorXd& _ub) {
             self->setUpperBounds(_ub);
           },
-          ::py::arg("ub"))
+          nb::arg("ub"))
       .def(
           "setObjective",
           +[](dart::optimizer::Problem* self,
               dart::optimizer::FunctionPtr _obj) { self->setObjective(_obj); },
-          ::py::arg("obj"))
+          nb::arg("obj").none())
       .def(
           "getObjective",
           +[](const dart::optimizer::Problem* self)
@@ -115,14 +113,14 @@ void Problem(py::module& m)
               dart::optimizer::FunctionPtr _eqConst) {
             self->addEqConstraint(_eqConst);
           },
-          ::py::arg("eqConst"))
+          nb::arg("eqConst").none())
       .def(
           "addIneqConstraint",
           +[](dart::optimizer::Problem* self,
               dart::optimizer::FunctionPtr _ineqConst) {
             self->addIneqConstraint(_ineqConst);
           },
-          ::py::arg("ineqConst"))
+          nb::arg("ineqConst").none())
       .def(
           "getNumEqConstraints",
           +[](const dart::optimizer::Problem* self) -> std::size_t {
@@ -139,28 +137,28 @@ void Problem(py::module& m)
               std::size_t _idx) -> dart::optimizer::FunctionPtr {
             return self->getEqConstraint(_idx);
           },
-          ::py::arg("idx"))
+          nb::arg("idx"))
       .def(
           "getIneqConstraint",
           +[](const dart::optimizer::Problem* self,
               std::size_t _idx) -> dart::optimizer::FunctionPtr {
             return self->getIneqConstraint(_idx);
           },
-          ::py::arg("idx"))
+          nb::arg("idx"))
       .def(
           "removeEqConstraint",
           +[](dart::optimizer::Problem* self,
               dart::optimizer::FunctionPtr _eqConst) {
             self->removeEqConstraint(_eqConst);
           },
-          ::py::arg("eqConst"))
+          nb::arg("eqConst").none())
       .def(
           "removeIneqConstraint",
           +[](dart::optimizer::Problem* self,
               dart::optimizer::FunctionPtr _ineqConst) {
             self->removeIneqConstraint(_ineqConst);
           },
-          ::py::arg("ineqConst"))
+          nb::arg("ineqConst").none())
       .def(
           "removeAllEqConstraints",
           +[](dart::optimizer::Problem* self) {
@@ -176,7 +174,7 @@ void Problem(py::module& m)
           +[](dart::optimizer::Problem* self, double _val) {
             self->setOptimumValue(_val);
           },
-          ::py::arg("val"))
+          nb::arg("val"))
       .def(
           "getOptimumValue",
           +[](const dart::optimizer::Problem* self) -> double {
@@ -188,7 +186,7 @@ void Problem(py::module& m)
               const Eigen::VectorXd& _optParam) {
             self->setOptimalSolution(_optParam);
           },
-          ::py::arg("optParam"))
+          nb::arg("optParam"))
       .def(
           "getOptimalSolution",
           +[](dart::optimizer::Problem* self) -> const Eigen::VectorXd& {

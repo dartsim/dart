@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include "detail/secondary_methods.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -38,48 +44,41 @@
 
 #include <dart/common/Subject.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
 #include <string>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void Entity(py::module& m)
+template <class Cls>
+void defEntityMethods(Cls& cls)
 {
-  ::py::class_<
-      dart::dynamics::Entity,
-      dart::common::Subject,
-      std::shared_ptr<dart::dynamics::Entity>>(m, "Entity")
-      .def(
-          "setName",
-          +[](dart::dynamics::Entity* self, const std::string& name)
-              -> const std::string& { return self->setName(name); },
-          ::py::return_value_policy::reference_internal,
-          ::py::arg("name"))
+  cls.def(
+         "setName",
+         +[](dart::dynamics::Entity* self, const std::string& name)
+             -> const std::string& { return self->setName(name); },
+         nb::rv_policy::reference_internal,
+         nb::arg("name"))
       .def(
           "getName",
           +[](const dart::dynamics::Entity* self) -> const std::string& {
             return self->getName();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getParentFrame",
           +[](const dart::dynamics::Entity* self)
               -> const dart::dynamics::Frame* {
             return self->getParentFrame();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "descendsFrom",
           +[](const dart::dynamics::Entity* self,
               const dart::dynamics::Frame* someFrame) -> bool {
             return self->descendsFrom(someFrame);
           },
-          ::py::arg("someFrame"))
+          nb::arg("someFrame").none())
       .def(
           "isFrame",
           +[](const dart::dynamics::Entity* self) -> bool {
@@ -114,18 +113,28 @@ void Entity(py::module& m)
           +[](const dart::dynamics::Entity* self) -> bool {
             return self->needsAccelerationUpdate();
           });
+}
 
-  ::py::class_<
-      dart::dynamics::Detachable,
-      dart::dynamics::Entity,
-      std::shared_ptr<dart::dynamics::Detachable>>(m, "Detachable")
+void Entity(nb::module_& m)
+{
+  auto cls = dartnb::dart_class<dart::dynamics::Entity, dart::common::Subject>(
+      m, "Entity");
+  defEntityMethods(cls);
+  dartnb::register_methods(
+      typeid(dart::dynamics::Entity), [](nb::handle target) {
+        dartnb::SecondaryMethods<dart::dynamics::Entity> rebound(target);
+        defEntityMethods(rebound);
+      });
+
+  dartnb::dart_class<dart::dynamics::Detachable, dart::dynamics::Entity>(
+      m, "Detachable")
       .def(
           "setParentFrame",
           +[](dart::dynamics::Detachable* self,
               dart::dynamics::Frame* _newParentFrame) {
             self->setParentFrame(_newParentFrame);
           },
-          ::py::arg("newParentFrame"));
+          nb::arg("newParentFrame").none());
 }
 
 } // namespace python

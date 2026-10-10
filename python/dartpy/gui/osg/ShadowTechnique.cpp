@@ -1,3 +1,5 @@
+#include "detail/dart_nb.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,28 +32,21 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pointers.hpp"
+#include "gui/osg/ownership.hpp"
 
 #include <osgShadow/ShadowMap>
 #include <osgShadow/ShadowTechnique>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void ShadowTechnique(py::module& m)
+void ShadowTechnique(nb::module_& m)
 {
-  ::py::class_<
-      ::osgShadow::ShadowTechnique,
-      ::osg::ref_ptr<::osgShadow::ShadowTechnique>>(m, "ShadowTechnique");
+  dartnb::dart_class<::osgShadow::ShadowTechnique>(m, "ShadowTechnique");
 
-  ::py::class_<
-      ::osgShadow::ShadowMap,
-      ::osgShadow::ShadowTechnique,
-      ::osg::ref_ptr<::osgShadow::ShadowMap>>(m, "ShadowMap")
-      .def(::py::init<>());
+  dartnb::dart_class<::osgShadow::ShadowMap, ::osgShadow::ShadowTechnique>(
+      m, "ShadowMap")
+      .def(dartnb::gui::init<>());
 }
 
 } // namespace python

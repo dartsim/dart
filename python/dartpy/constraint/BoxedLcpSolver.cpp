@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,26 +36,20 @@
 
 #include <dart/constraint/BoxedLcpSolver.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
 #include <string>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void BoxedLcpSolver(py::module& m)
+void BoxedLcpSolver(nb::module_& m)
 {
-  ::py::class_<
-      dart::constraint::BoxedLcpSolver,
-      std::shared_ptr<dart::constraint::BoxedLcpSolver>>(m, "BoxedLcpSolver")
+  dartnb::dart_class<dart::constraint::BoxedLcpSolver>(m, "BoxedLcpSolver")
       .def(
           "getType",
           +[](const dart::constraint::BoxedLcpSolver* self)
               -> const std::string& { return self->getType(); },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "solve",
           +[](dart::constraint::BoxedLcpSolver* self,
@@ -63,14 +61,14 @@ void BoxedLcpSolver(py::module& m)
               double* lo,
               double* hi,
               int* findex) { self->solve(n, A, x, b, nub, lo, hi, findex); },
-          ::py::arg("n"),
-          ::py::arg("A"),
-          ::py::arg("x"),
-          ::py::arg("b"),
-          ::py::arg("nub"),
-          ::py::arg("lo"),
-          ::py::arg("hi"),
-          ::py::arg("findex"));
+          nb::arg("n"),
+          nb::arg("A").none(),
+          nb::arg("x").none(),
+          nb::arg("b").none(),
+          nb::arg("nub"),
+          nb::arg("lo").none(),
+          nb::arg("hi").none(),
+          nb::arg("findex").none());
 }
 
 } // namespace python

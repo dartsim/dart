@@ -1,3 +1,6 @@
+#include "detail/dart_nb.hpp"
+#include "detail/eigen.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,7 +33,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pointers.hpp"
+#include "gui/osg/ownership.hpp"
 
 #include <dart/gui/osg/ImGuiHandler.hpp>
 #include <dart/gui/osg/ImGuiViewer.hpp>
@@ -39,35 +42,29 @@
 
 #include <Eigen/Core>
 #include <osg/Vec4>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void ImGuiViewer(py::module& m)
+void ImGuiViewer(nb::module_& m)
 {
-  ::py::class_<
-      dart::gui::osg::ImGuiViewer,
-      dart::gui::osg::Viewer,
-      osg::ref_ptr<dart::gui::osg::ImGuiViewer>>(m, "ImGuiViewer")
-      .def(::py::init<>())
+  dartnb::dart_class<dart::gui::osg::ImGuiViewer, dart::gui::osg::Viewer>(
+      m, "ImGuiViewer")
+      .def(dartnb::gui::init<>())
       .def(
-          ::py::init([](const Eigen::Vector4d& clearColor) {
-            return new ::dart::gui::osg::ImGuiViewer(
+          dartnb::factory([](const Eigen::Vector4d& clearColor) {
+            return dartnb::gui::make<::dart::gui::osg::ImGuiViewer>(
                 gui::osg::eigToOsgVec4f(clearColor));
           }),
-          ::py::arg("clearColor"))
-      .def(::py::init<const osg::Vec4&>(), ::py::arg("clearColor"))
+          nb::arg("clearColor"))
+      .def(dartnb::gui::init<const osg::Vec4&>(), nb::arg("clearColor"))
       .def(
           "getImGuiHandler",
           +[](dart::gui::osg::ImGuiViewer* self)
-              -> dart::gui::osg::ImGuiHandler* {
+              -> ::osg::ref_ptr<dart::gui::osg::ImGuiHandler> {
             return self->getImGuiHandler();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "showAbout",
           +[](dart::gui::osg::ImGuiViewer* self) { self->showAbout(); })

@@ -2,7 +2,7 @@
 
 DART Python bindings are built through the Pixi/CMake workflow.
 
-For DART 6.21, `dartpy` remains one all-in-one extension with either binder,
+For DART 6.21, `dartpy` is one all-in-one nanobind extension,
 containing core, collision backends enabled in the build, IO parsers and
 OSG/ImGui bindings. It links `dart`, `dart-io` and `dart-gui`. Enabling
 `DART_BUILD_DARTPY` requires both `DART_BUILD_IO=ON` and `DART_BUILD_GUI=ON`;
@@ -11,8 +11,8 @@ for a headless C++ installation, set `DART_BUILD_DARTPY=OFF`. See
 forwarding targets.
 
 With `DART_BUILD_UTILS_ASSETS=ON`, `dart-io` also includes the optional online
-robot model retriever, exposed as `dartpy.utils.ModelResourceRetriever` by both
-binders. See [IO and model loading](io-parsing.md#online-robot-models) for its
+robot model retriever, exposed as `dartpy.utils.ModelResourceRetriever`.
+See [IO and model loading](io-parsing.md#online-robot-models) for its
 dependencies and verified-cache workflow.
 
 ```bash
@@ -50,33 +50,20 @@ imports, linked components, or installed package behavior.
 
 ## Nanobind binder
 
-DART 6.21 adds an opt-in binder under `python/dartpy_nanobind/`.
-`DART_DARTPY_BINDER` selects `pybind11` (the default) or `nanobind`; both build
-the `dartpy` module with the same namespaces, names, and overloads.
-The existing pybind11 sources stay under `python/dartpy/` during the
-transition. Both binders include `dartpy.gui.osg` and require the GUI component.
+DART 6.21 uses nanobind as the only dartpy binder. Sources live directly under
+`python/dartpy/`. The module keeps the DART namespaces, camelCase names,
+and overloads, including `dartpy.gui.osg` in the all-in-one module.
 
-Configure the Pixi build, select the binder in its CMake cache, and run the
-regular tests:
+Python 3.10 or newer and nanobind 3.1 or newer are required.
+`DART_USE_SYSTEM_NANOBIND` defaults to `OFF`, fetching nanobind v3.1.0 with its
+`robin_map` submodule. With `ON`, CMake locates its CMake directory using
+`python -m nanobind --cmake_dir`. The build output remains
+`${DART_PYTHON_BUILD_DIR}/dartpy`; tests and examples use the generated target
+runtime path. The `DART_DARTPY_BINDER` and `DART_USE_SYSTEM_PYBIND11` options
+are removed. Passing the legacy binder value `pybind11` fails configure;
+`nanobind` is accepted for compatibility and removed from the cache.
 
-```bash
-pixi run config
-# Linux/macOS:
-pixi run cmake -S . -B build/default/cpp/Release -DDART_DARTPY_BINDER=nanobind
-# Windows: use build/default/cpp instead of build/default/cpp/Release.
-pixi run test-py
-```
-
-Use `-DDART_DARTPY_BINDER=pybind11` to switch back. `DART_USE_SYSTEM_NANOBIND`
-defaults to `OFF`, which fetches nanobind v3.1.0 with its `robin_map`
-submodule. With `ON`, CMake locates the package's CMake directory using
-`python -m nanobind --cmake_dir` and requires nanobind 3.1 or newer. The
-binder requires Python 3.10 or newer. The installed location, module name, and
-configured build output `${DART_PYTHON_BUILD_DIR}/dartpy` match the pybind11
-build, preserving the Pixi example runners. The generated target runtime path
-remains authoritative for tests and CMake example targets.
-
-### API differences
+### Changes from DART 6.20 (pybind11)
 
 - Python recognizes only the primary C++ base for `isinstance`, `issubclass`,
   and the method resolution order. Secondary-base methods remain callable,
@@ -115,8 +102,7 @@ a wrapper, preserving identity and avoiding repeated-getter reference growth.
 
 DragAndDrop wrappers observe native destruction notifications and become invalid
 when native code deletes the object. Calls through invalid wrappers raise a
-Python error instead of accessing freed memory. The pybind11 binder does not
-invalidate these wrappers; using one after native deletion is unsupported.
+Python error instead of accessing freed memory.
 
 ### Binding infrastructure
 
@@ -178,9 +164,9 @@ cycles. Private native owners need public traversal/reset APIs, and callbacks
 need GC-visible ownership before those cases can participate safely.
 
 Reusable porting and API probes live under `scripts/nanobind/`. The regular
-`python/tests/` suite runs against the selected binder and marks accepted
-binder differences explicitly. Linux and macOS CI add a Python-only nanobind
-job; Windows adds a Python matrix row using its existing unity build.
+`python/tests/` suite tests the nanobind behavior, including ownership and the accepted
+changes from DART 6.20. Regular Python CI jobs include GUI coverage; Windows
+uses its existing unity build.
 
 ### pybind11 extensions
 
@@ -236,8 +222,21 @@ macOS and Windows wheel packaging is Pixi-managed. `wheel-build-core`,
 implement the pipeline, and the `py310-wheel`..`py313-wheel` environments
 expose the corresponding tasks.
 
-Linux release wheels use `python3 scripts/wheel_linux.py cp313` (also
-`cp310`, `cp311`, `cp312`) on native x86_64 or aarch64 hosts with Docker.
+Wheels use the nanobind binder. A Python 3.12 build sets
+`DART_DARTPY_STABLE_ABI=ON`, which builds the module for CPython's stable ABI
+and tags the wheel `cp312-abi3`, so one wheel per platform serves Python 3.12
+and every later version; other Python versions build regular wheels. The
+release matrix therefore builds eight wheels: `cp312-abi3` for Linux x86_64
+and aarch64, macOS arm64, and Windows x64, plus Linux `cp310` and `cp311` for
+both architectures. Each abi3 row also checks the wheel with
+`abi3audit --strict` and tests it on Python 3.13: the Linux driver below does
+both in its containers, and macOS and Windows run
+`pixi run -e py313-wheel wheel-test-abi3`. Stable-ABI calls cost up to about 5%
+more instructions on NumPy-heavy setters; CMake refuses
+`DART_DARTPY_STABLE_ABI` on Python older than 3.12 or CMake older than 3.26.
+
+Linux release wheels use `python3 scripts/wheel_linux.py cp312` (also
+`cp310` and `cp311`) on native x86_64 or aarch64 hosts with Docker.
 The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, compiles native
 dependencies and dartpy with the manylinux toolchain, requires
 `auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke

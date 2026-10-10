@@ -1,48 +1,79 @@
 # Copyright (c) 2011, The DART development contributors
 # All rights reserved.
-#
-# The list of contributors can be found at:
-#   https://github.com/dartsim/dart/blob/main/LICENSE
-#
-# This file is provided under the "BSD-style" License
 
 execute_process(
   COMMAND
-    ${Python3_EXECUTABLE} -c
-    "from distutils.sysconfig import get_python_lib;\
-  print(get_python_lib(plat_specific=True))"
+    "${Python_EXECUTABLE}" -c
+    "import sysconfig; print(sysconfig.get_path('platlib'))"
   OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-if(NOT IS_ABSOLUTE ${PYTHON_SITE_PACKAGES})
+if(NOT IS_ABSOLUTE "${PYTHON_SITE_PACKAGES}")
   set(PYTHON_SITE_PACKAGES "${CMAKE_INSTALL_PREFIX}/${PYTHON_SITE_PACKAGES}")
 endif()
-set(PYTHON_SITE_PACKAGES ${PYTHON_SITE_PACKAGES} PARENT_SCOPE)
+set(PYTHON_SITE_PACKAGES "${PYTHON_SITE_PACKAGES}" PARENT_SCOPE)
 
-file(GLOB_RECURSE dartpy_headers "*.h" "*.hpp")
-file(GLOB_RECURSE dartpy_sources "*.cpp")
+file(GLOB_RECURSE dartpy_headers CONFIGURE_DEPENDS "*.h" "*.hpp")
+file(GLOB_RECURSE dartpy_sources CONFIGURE_DEPENDS "*.cpp")
+execute_process(
+  COMMAND
+    "${Python_EXECUTABLE}"
+    "${PROJECT_SOURCE_DIR}/scripts/nanobind/check_guards.py"
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+  RESULT_VARIABLE dartpy_guard_result
+  OUTPUT_VARIABLE dartpy_guard_output
+  ERROR_VARIABLE dartpy_guard_error
+)
+if(NOT dartpy_guard_result EQUAL 0)
+  message(
+    FATAL_ERROR
+    "Invalid dartpy caster selection:\n${dartpy_guard_output}${dartpy_guard_error}"
+  )
+endif()
 
-# Python binding module name
-set(pybind_module dartpy)
-
-# Build a Python extension module:
-# pybind11_add_module(<name> [MODULE | SHARED] [EXCLUDE_FROM_ALL]
-#                     [NO_EXTRAS] [SYSTEM] [THIN_LTO] source1 [source2 ...])
-#
-pybind11_add_module(${pybind_module}
-  MODULE
-  EXCLUDE_FROM_ALL
+set(dartpy_abi)
+if(DART_DARTPY_STABLE_ABI)
+  set(dartpy_abi STABLE_ABI)
+endif()
+nanobind_add_module(
+  dartpy
+  NB_STATIC
+  PROTECT_STACK
+  ${dartpy_abi}
   ${dartpy_headers}
   ${dartpy_sources}
 )
-
-target_include_directories(
-  ${pybind_module}
-  SYSTEM
-  PUBLIC ${PYTHON_INCLUDE_DIRS} ${pybind11_INCLUDE_DIRS}
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+set_target_properties(
+  dartpy
+  PROPERTIES OUTPUT_NAME dartpy DEBUG_POSTFIX "" EXCLUDE_FROM_ALL TRUE
 )
+# nanobind builds its library with -mtls-dialect=gnu2. Wheels link DART
+# statically, which makes dartpy's TLS block too large for static TLS, and
+# glibc 2.39 and older corrupt registers on the dynamic TLS-descriptor path
+# (glibc bug 31372); Python overrides then silently stop dispatching. Use the
+# traditional dialect, which every glibc handles.
+if(NB_HAS_MTLS_GNU2)
+  get_target_property(dartpy_link_libraries dartpy LINK_LIBRARIES)
+  foreach(library IN LISTS dartpy_link_libraries)
+    if(library MATCHES "^nanobind" AND TARGET ${library})
+      target_compile_options(${library} PRIVATE -mtls-dialect=gnu)
+    endif()
+  endforeach()
+endif()
 
+# Wheel builds set CMAKE_LIBRARY_OUTPUT_DIRECTORY to setuptools' directory.
+if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  set_target_properties(
+    dartpy
+    PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${DART_PYTHON_BUILD_DIR}/dartpy"
+  )
+endif()
+target_compile_features(dartpy PRIVATE cxx_std_17)
+target_include_directories(
+  dartpy
+  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/python/include"
+)
+target_include_directories(dartpy SYSTEM PRIVATE "${NB_DIR}/src")
 set(dartpy_libraries dart dart-io dart-gui)
 foreach(dartpy_library ${dartpy_libraries})
   if(NOT TARGET ${dartpy_library})
@@ -52,46 +83,29 @@ foreach(dartpy_library ${dartpy_libraries})
     )
   endif()
 endforeach()
-
-target_link_libraries(${pybind_module} PUBLIC ${dartpy_libraries})
+target_link_libraries(dartpy PRIVATE ${dartpy_libraries} tsl::robin_map)
 if(TARGET dart-utils-assets)
-  target_compile_definitions(${pybind_module} PRIVATE DARTPY_HAS_UTILS_ASSETS)
+  target_compile_definitions(dartpy PRIVATE DARTPY_HAS_UTILS_ASSETS)
 endif()
-
 target_compile_definitions(
-  ${pybind_module}
-  PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}"
+  dartpy
+  PRIVATE DARTPY_VERSION_INFO="${DARTPY_VERSION_INFO}" DARTPY_GUI_OSG
 )
-
-# Remove debug postfix for dartpy
-set_target_properties(${pybind_module} PROPERTIES DEBUG_POSTFIX "")
-
-# Get the path to the bind module
-set(PYBIND_MODULE $<TARGET_FILE:${pybind_module}>)
-
-# Custom target to install (copy) the bind module. This target may require
-# `sudo` if the destination is a system directory.
-set(install_comment "Installing ${pybind_module}...")
-if(BUILD_SHARED_LIBS)
-  string(
-    CONCAT install_comment
-    "${install_comment}\n"
-    "NOTE: ${pybind_module} is built against the DART's shared libraries. "
-    "Install the shared libraries to be able to import ${pybind_module}."
-  )
-endif()
-
-# TODO: Fix installing dartpy to site-packages directory
-# Install the pybind module to site-packages directory
-install(TARGETS ${pybind_module} LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}")
-
+install(TARGETS dartpy LIBRARY DESTINATION "${PYTHON_SITE_PACKAGES}")
+# Headers for extension modules that exchange DART objects with dartpy.
+set(
+  dartpy_public_headers
+  "${PROJECT_SOURCE_DIR}/python/include/dartpy/c_api.hpp"
+  "${PROJECT_SOURCE_DIR}/python/include/dartpy/pybind11_interop.hpp"
+)
+install(
+  FILES ${dartpy_public_headers}
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/dartpy"
+  COMPONENT headers
+)
 list(
   REMOVE_ITEM dartpy_headers
-  ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.h
-  ${CMAKE_CURRENT_LIST_DIR}/eigen_pybind.h
+  "${CMAKE_CURRENT_SOURCE_DIR}/detail/dart_eigen_dense.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/detail/dart_numpy_capi.h"
 )
-list(
-  REMOVE_ITEM dartpy_sources
-  ${CMAKE_CURRENT_LIST_DIR}/eigen_geometry_pybind.cpp
-)
-dart_format_add(${dartpy_headers} ${dartpy_sources})
+dart_format_add(${dartpy_headers} ${dartpy_sources} ${dartpy_public_headers})

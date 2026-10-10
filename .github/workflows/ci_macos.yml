@@ -39,51 +39,6 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'schedule' && !(github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release-')) }}
 
 jobs:
-  python-nanobind:
-    name: arm64-Python-nanobind
-    runs-on: macos-latest
-    permissions:
-      actions: write
-      contents: read
-    env:
-      SCCACHE_CACHE_SIZE: "512M"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup pixi
-        uses: prefix-dev/setup-pixi@v0.10.2
-        with:
-          cache: true
-          cache-write: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          pixi-bin-path: ${{ runner.temp }}/pixi/bin/pixi
-
-      - name: Restore compiler cache
-        uses: ./.github/actions/sccache
-        with:
-          phase: restore
-          os: macos
-          part: nanobind
-
-      - name: Test nanobind dartpy
-        id: build
-        run: |
-          ulimit -c 0
-          pixi run config
-          pixi run cmake -S . -B build/default/cpp/Release \
-            -DDART_DARTPY_BINDER=nanobind -DDART_BUILD_GUI_OSG=ON
-          pixi run test-py
-
-      - name: Save compiler cache
-        if: >-
-          always()
-          && contains(fromJSON('["success", "failure", "cancelled"]'), steps.build.outcome)
-        uses: ./.github/actions/sccache
-        with:
-          phase: save
-          os: macos
-          part: nanobind
-
   build:
     name: arm64-${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
@@ -123,6 +78,8 @@ jobs:
       - name: Test DART and dartpy
         id: build
         run: |
+          ulimit -c 0
+          pixi run config -- -DDART_BUILD_GUI_OSG=ON
           DART_VERBOSE=ON \
           BUILD_TYPE=${{ matrix.build_type }} \
           pixi run test-all

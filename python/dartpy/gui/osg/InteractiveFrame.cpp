@@ -1,3 +1,9 @@
+#include "detail/dart_nb.hpp"
+#include "detail/eigen.hpp"
+#include "gui/osg/ownership.hpp"
+
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -36,40 +42,34 @@
 #include <dart/dynamics/SimpleFrame.hpp>
 
 #include <Eigen/Geometry>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void InteractiveFrame(py::module& m)
+void InteractiveFrame(nb::module_& m)
 {
   auto it
-      = ::py::class_<
+      = dartnb::dart_class<
             dart::gui::osg::InteractiveTool,
-            dart::dynamics::SimpleFrame,
-            std::shared_ptr<dart::gui::osg::InteractiveTool>>(
-            m, "InteractiveTool")
+            dart::dynamics::SimpleFrame>(m, "InteractiveTool")
             .def(
-                ::py::init<
+                dartnb::init<
                     dart::gui::osg::InteractiveFrame*,
                     double,
                     const std::string&>(),
-                ::py::arg("frame"),
-                ::py::arg("defaultAlpha"),
-                ::py::arg("name"))
+                nb::arg("frame").none(),
+                nb::arg("defaultAlpha"),
+                nb::arg("name"))
             .def(
                 "setEnabled",
                 +[](dart::gui::osg::InteractiveTool* self, bool enabled) {
                   self->setEnabled(enabled);
                 },
-                ::py::arg("enabled"))
+                nb::arg("enabled"))
             .def(
                 "getEnabled",
                 +[](const dart::gui::osg::InteractiveTool* self) -> bool {
@@ -80,7 +80,7 @@ void InteractiveFrame(py::module& m)
                 +[](dart::gui::osg::InteractiveTool* self, double alpha) {
                   self->setAlpha(alpha);
                 },
-                ::py::arg("alpha"))
+                nb::arg("alpha"))
             .def(
                 "resetAlpha",
                 +[](dart::gui::osg::InteractiveTool* self) {
@@ -91,14 +91,14 @@ void InteractiveFrame(py::module& m)
                 +[](dart::gui::osg::InteractiveTool* self, double alpha) {
                   self->setDefaultAlpha(alpha);
                 },
-                ::py::arg("alpha"))
+                nb::arg("alpha"))
             .def(
                 "setDefaultAlpha",
                 +[](dart::gui::osg::InteractiveTool* self,
                     double alpha,
                     bool reset) { self->setDefaultAlpha(alpha, reset); },
-                ::py::arg("alpha"),
-                ::py::arg("reset"))
+                nb::arg("alpha"),
+                nb::arg("reset"))
             .def(
                 "getDefaultAlpha",
                 +[](const dart::gui::osg::InteractiveTool* self) -> double {
@@ -110,104 +110,107 @@ void InteractiveFrame(py::module& m)
                     -> const std::vector<dart::dynamics::SimpleFrame*> {
                   return self->getShapeFrames();
                 },
-                ::py::return_value_policy::reference_internal)
+                nb::rv_policy::reference_internal)
             .def(
                 "getShapeFrames",
                 +[](const dart::gui::osg::InteractiveTool* self)
                     -> const std::vector<const dart::dynamics::SimpleFrame*> {
                   return self->getShapeFrames();
                 },
-                ::py::return_value_policy::reference_internal)
+                nb::rv_policy::reference_internal)
             .def(
                 "removeAllShapeFrames",
                 +[](dart::gui::osg::InteractiveTool* self) {
                   self->removeAllShapeFrames();
                 });
 
-  ::py::enum_<dart::gui::osg::InteractiveTool::Type>(it, "Type")
+  nb::enum_<dart::gui::osg::InteractiveTool::Type>(
+      it, "Type", nb::is_arithmetic())
       .value("LINEAR", dart::gui::osg::InteractiveTool::Type::LINEAR)
       .value("ANGULAR", dart::gui::osg::InteractiveTool::Type::ANGULAR)
       .value("PLANAR", dart::gui::osg::InteractiveTool::Type::PLANAR)
       .value("NUM_TYPES", dart::gui::osg::InteractiveTool::Type::NUM_TYPES)
       .export_values();
 
-  ::py::class_<
-      dart::gui::osg::InteractiveFrame,
-      dart::dynamics::SimpleFrame,
-      std::shared_ptr<dart::gui::osg::InteractiveFrame>>(m, "InteractiveFrame")
-      .def(::py::init<dart::dynamics::Frame*>(), ::py::arg("referenceFrame"))
-      .def(
-          ::py::init<dart::dynamics::Frame*, const std::string&>(),
-          ::py::arg("referenceFrame"),
-          ::py::arg("name"))
-      .def(
-          ::py::init<
-              dart::dynamics::Frame*,
-              const std::string&,
-              const Eigen::Isometry3d&>(),
-          ::py::arg("referenceFrame"),
-          ::py::arg("name"),
-          ::py::arg("relativeTransform"))
-      .def(
-          ::py::init<
-              dart::dynamics::Frame*,
-              const std::string&,
-              const Eigen::Isometry3d&,
-              double>(),
-          ::py::arg("referenceFrame"),
-          ::py::arg("name"),
-          ::py::arg("relativeTransform"),
-          ::py::arg("sizeScale"))
-      .def(
-          ::py::init<
-              dart::dynamics::Frame*,
-              const std::string&,
-              const Eigen::Isometry3d&,
-              double,
-              double>(),
-          ::py::arg("referenceFrame"),
-          ::py::arg("name"),
-          ::py::arg("relativeTransform"),
-          ::py::arg("sizeScale"),
-          ::py::arg("thicknessScale"))
-      .def(
-          "resizeStandardVisuals",
-          +[](dart::gui::osg::InteractiveFrame* self) {
-            self->resizeStandardVisuals();
-          })
-      .def(
-          "resizeStandardVisuals",
-          +[](dart::gui::osg::InteractiveFrame* self, double size_scale) {
-            self->resizeStandardVisuals(size_scale);
-          },
-          ::py::arg("sizeScale"))
-      .def(
-          "resizeStandardVisuals",
-          +[](dart::gui::osg::InteractiveFrame* self,
-              double size_scale,
-              double thickness_scale) {
-            self->resizeStandardVisuals(size_scale, thickness_scale);
-          },
-          ::py::arg("sizeScale"),
-          ::py::arg("thicknessScale"))
-      .def(
-          "getShapeFrames",
-          +[](dart::gui::osg::InteractiveFrame* self)
-              -> const std::vector<dart::dynamics::SimpleFrame*> {
-            return self->getShapeFrames();
-          },
-          ::py::return_value_policy::reference_internal)
-      .def(
-          "getShapeFrames",
-          +[](const dart::gui::osg::InteractiveFrame* self)
-              -> const std::vector<const dart::dynamics::SimpleFrame*> {
-            return self->getShapeFrames();
-          },
-          ::py::return_value_policy::reference_internal)
-      .def(
-          "removeAllShapeFrames", +[](dart::gui::osg::InteractiveFrame* self) {
-            self->removeAllShapeFrames();
-          });
+  dartnb::
+      dart_class<dart::gui::osg::InteractiveFrame, dart::dynamics::SimpleFrame>(
+          m, "InteractiveFrame")
+          .def(
+              dartnb::init<dart::dynamics::Frame*>(),
+              nb::arg("referenceFrame").none())
+          .def(
+              dartnb::init<dart::dynamics::Frame*, const std::string&>(),
+              nb::arg("referenceFrame").none(),
+              nb::arg("name"))
+          .def(
+              dartnb::init<
+                  dart::dynamics::Frame*,
+                  const std::string&,
+                  const Eigen::Isometry3d&>(),
+              nb::arg("referenceFrame").none(),
+              nb::arg("name"),
+              nb::arg("relativeTransform"))
+          .def(
+              dartnb::init<
+                  dart::dynamics::Frame*,
+                  const std::string&,
+                  const Eigen::Isometry3d&,
+                  double>(),
+              nb::arg("referenceFrame").none(),
+              nb::arg("name"),
+              nb::arg("relativeTransform"),
+              nb::arg("sizeScale"))
+          .def(
+              dartnb::init<
+                  dart::dynamics::Frame*,
+                  const std::string&,
+                  const Eigen::Isometry3d&,
+                  double,
+                  double>(),
+              nb::arg("referenceFrame").none(),
+              nb::arg("name"),
+              nb::arg("relativeTransform"),
+              nb::arg("sizeScale"),
+              nb::arg("thicknessScale"))
+          .def(
+              "resizeStandardVisuals",
+              +[](dart::gui::osg::InteractiveFrame* self) {
+                self->resizeStandardVisuals();
+              })
+          .def(
+              "resizeStandardVisuals",
+              +[](dart::gui::osg::InteractiveFrame* self, double size_scale) {
+                self->resizeStandardVisuals(size_scale);
+              },
+              nb::arg("sizeScale"))
+          .def(
+              "resizeStandardVisuals",
+              +[](dart::gui::osg::InteractiveFrame* self,
+                  double size_scale,
+                  double thickness_scale) {
+                self->resizeStandardVisuals(size_scale, thickness_scale);
+              },
+              nb::arg("sizeScale"),
+              nb::arg("thicknessScale"))
+          .def(
+              "getShapeFrames",
+              +[](dart::gui::osg::InteractiveFrame* self)
+                  -> const std::vector<dart::dynamics::SimpleFrame*> {
+                return self->getShapeFrames();
+              },
+              nb::rv_policy::reference_internal)
+          .def(
+              "getShapeFrames",
+              +[](const dart::gui::osg::InteractiveFrame* self)
+                  -> const std::vector<const dart::dynamics::SimpleFrame*> {
+                return self->getShapeFrames();
+              },
+              nb::rv_policy::reference_internal)
+          .def(
+              "removeAllShapeFrames",
+              +[](dart::gui::osg::InteractiveFrame* self) {
+                self->removeAllShapeFrames();
+              });
 }
 
 } // namespace python

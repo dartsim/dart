@@ -1,3 +1,11 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include "detail/secondary_methods.hpp"
+
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -42,39 +50,31 @@
 #include <dart/math/MathTypes.hpp>
 
 #include <Eigen/Core>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include <memory>
 #include <vector>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void JacobianNode(py::module& m)
+template <class Cls>
+void defJacobianNodeMethods(Cls& cls)
 {
-  ::py::class_<
-      dart::dynamics::JacobianNode,
-      dart::dynamics::Frame,
-      dart::dynamics::Node,
-      std::shared_ptr<dart::dynamics::JacobianNode>>(m, "JacobianNode")
-      .def(
-          "getIK",
-          +[](dart::dynamics::JacobianNode* self)
-              -> std::shared_ptr<dart::dynamics::InverseKinematics> {
-            return self->getIK();
-          })
+  cls.def(
+         "getIK",
+         +[](dart::dynamics::JacobianNode* self)
+             -> std::shared_ptr<dart::dynamics::InverseKinematics> {
+           return self->getIK();
+         })
       .def(
           "getIK",
           +[](dart::dynamics::JacobianNode* self, bool createIfNull)
               -> std::shared_ptr<dart::dynamics::InverseKinematics> {
             return self->getIK(createIfNull);
           },
-          ::py::arg("createIfNull"))
+          nb::arg("createIfNull"))
       .def(
           "getOrCreateIK",
           +[](dart::dynamics::JacobianNode* self)
@@ -90,7 +90,7 @@ void JacobianNode(py::module& m)
               std::size_t _genCoordIndex) -> bool {
             return self->dependsOn(_genCoordIndex);
           },
-          ::py::arg("genCoordIndex"))
+          nb::arg("genCoordIndex"))
       .def(
           "getNumDependentGenCoords",
           +[](const dart::dynamics::JacobianNode* self) -> std::size_t {
@@ -102,7 +102,7 @@ void JacobianNode(py::module& m)
               std::size_t _arrayIndex) -> std::size_t {
             return self->getDependentGenCoordIndex(_arrayIndex);
           },
-          ::py::arg("arrayIndex"))
+          nb::arg("arrayIndex"))
       .def(
           "getNumDependentDofs",
           +[](const dart::dynamics::JacobianNode* self) -> std::size_t {
@@ -117,7 +117,7 @@ void JacobianNode(py::module& m)
               dofs.push_back(const_cast<dart::dynamics::DegreeOfFreedom*>(dof));
             return dofs;
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getJacobian",
           +[](const dart::dynamics::JacobianNode* self,
@@ -125,14 +125,14 @@ void JacobianNode(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobian(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getJacobian",
           +[](const dart::dynamics::JacobianNode* self,
               const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getJacobian(_offset);
           },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getJacobian",
           +[](const dart::dynamics::JacobianNode* self,
@@ -141,15 +141,15 @@ void JacobianNode(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobian(_offset, _inCoordinatesOf);
           },
-          ::py::arg("offset"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("offset"),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getWorldJacobian",
           +[](const dart::dynamics::JacobianNode* self,
               const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getWorldJacobian(_offset);
           },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::JacobianNode* self)
@@ -163,14 +163,14 @@ void JacobianNode(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::JacobianNode* self,
               const Eigen::Vector3d& _offset) -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_offset);
           },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::JacobianNode* self,
@@ -179,8 +179,8 @@ void JacobianNode(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_offset, _inCoordinatesOf);
           },
-          ::py::arg("offset"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("offset"),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getAngularJacobian",
           +[](const dart::dynamics::JacobianNode* self)
@@ -194,7 +194,7 @@ void JacobianNode(py::module& m)
               -> dart::math::AngularJacobian {
             return self->getAngularJacobian(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::JacobianNode* self,
@@ -202,14 +202,14 @@ void JacobianNode(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::JacobianNode* self,
               const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_offset);
           },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::JacobianNode* self,
@@ -218,8 +218,8 @@ void JacobianNode(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_offset, _inCoordinatesOf);
           },
-          ::py::arg("offset"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("offset"),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::JacobianNode* self,
@@ -227,14 +227,14 @@ void JacobianNode(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::JacobianNode* self,
               const Eigen::Vector3d& _offset) -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_offset);
           },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::JacobianNode* self,
@@ -243,8 +243,8 @@ void JacobianNode(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_offset, _inCoordinatesOf);
           },
-          ::py::arg("offset"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("offset"),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::JacobianNode* self)
@@ -258,14 +258,14 @@ void JacobianNode(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::JacobianNode* self,
               const Eigen::Vector3d& _offset) -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_offset);
           },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::JacobianNode* self,
@@ -274,8 +274,8 @@ void JacobianNode(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_offset, _inCoordinatesOf);
           },
-          ::py::arg("offset"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("offset"),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getAngularJacobianDeriv",
           +[](const dart::dynamics::JacobianNode* self)
@@ -289,7 +289,7 @@ void JacobianNode(py::module& m)
               -> dart::math::AngularJacobian {
             return self->getAngularJacobianDeriv(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("inCoordinatesOf").none())
       .def(
           "dirtyJacobian",
           +[](dart::dynamics::JacobianNode* self) { self->dirtyJacobian(); })
@@ -297,6 +297,20 @@ void JacobianNode(py::module& m)
           "dirtyJacobianDeriv", +[](dart::dynamics::JacobianNode* self) {
             self->dirtyJacobianDeriv();
           });
+}
+
+void JacobianNode(nb::module_& m)
+{
+  auto cls = dartnb::dart_class<
+      dart::dynamics::JacobianNode,
+      dart::dynamics::Frame,
+      dart::dynamics::Node>(m, "JacobianNode");
+  defJacobianNodeMethods(cls);
+  dartnb::register_methods(
+      typeid(dart::dynamics::JacobianNode), [](nb::handle target) {
+        dartnb::SecondaryMethods<dart::dynamics::JacobianNode> rebound(target);
+        defJacobianNodeMethods(rebound);
+      });
 }
 
 } // namespace python

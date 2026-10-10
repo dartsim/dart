@@ -1,4 +1,4 @@
-"""Production GUI ownership regressions, shared by both binders."""
+"""Production GUI ownership regressions, for nanobind."""
 
 import gc
 import weakref
@@ -13,7 +13,6 @@ if not hasattr(dart.gui, "osg"):
 from ._gui_probe import probe
 
 osg = dart.gui.osg
-NANOBIND = getattr(dart, "_binder", None) == "nanobind"
 
 
 @pytest.mark.parametrize("base", [osg.Viewer, osg.ImGuiViewer])
@@ -33,17 +32,13 @@ def test_factory_subclass_custom_initializer(base):
 
 def test_viewer_primary_and_secondary_bases():
     viewer = osg.Viewer()
-    if NANOBIND:
-        assert probe.accept_action_adapter(viewer)
-    else:
-        with pytest.raises(TypeError):
-            probe.accept_action_adapter(viewer)
+    assert probe.accept_action_adapter(viewer)
     assert probe.base_view(viewer) is viewer
     assert probe.base_subject(viewer) is viewer
     assert isinstance(viewer, osg.osgViewer)
-    assert isinstance(viewer, dart.common.Subject) is (not NANOBIND)
+    assert isinstance(viewer, dart.common.Subject) is False
     assert osg.osgViewer in type(viewer).__mro__
-    assert (dart.common.Subject in type(viewer).__mro__) is (not NANOBIND)
+    assert (dart.common.Subject in type(viewer).__mro__) is False
 
 
 def test_drag_and_drop_invalidation():
@@ -53,10 +48,8 @@ def test_drag_and_drop_invalidation():
     dnd.setObstructable(False)
     assert dnd.isObstructable() is False
     assert viewer.disableDragAndDrop(dnd) is True
-    if NANOBIND:
-        with pytest.raises((TypeError, RuntimeError)):
-            dnd.isObstructable()
-    # pybind11 use-after-disable is unsupported; do not dereference freed memory.
+    with pytest.raises((TypeError, RuntimeError)):
+        dnd.isObstructable()
 
 
 def test_raw_imgui_getter_identity_and_ownership():
@@ -107,15 +100,11 @@ def test_direct_drag_and_drop_constructor_handles_viewer_deletion(kind):
              else dart.dynamics.SimpleFrame(dart.dynamics.Frame.World()))
     dnd = getattr(osg, kind)(viewer, frame)
     assert dnd.isMoving() is False
-    if NANOBIND:
-        del viewer
-        gc.collect()
-        with pytest.raises((TypeError, RuntimeError)):
-            dnd.isMoving()
-        del dnd
-    else:
-        # Direct pybind11 constructors must release their holder before native deletion.
-        del dnd, viewer
+    del viewer
+    gc.collect()
+    with pytest.raises((TypeError, RuntimeError)):
+        dnd.isMoving()
+    del dnd
     gc.collect()
 
 
@@ -128,10 +117,9 @@ def test_drag_and_drop_reenable_preserves_new_wrapper_identity():
         assert dnd.isMoving() is False
         assert viewer.enableDragAndDrop(frame) is dnd
         assert viewer.disableDragAndDrop(dnd)
-        if NANOBIND:
-            retired.append(dnd)
-            with pytest.raises((TypeError, RuntimeError)):
-                dnd.isMoving()
+        retired.append(dnd)
+        with pytest.raises((TypeError, RuntimeError)):
+            dnd.isMoving()
         del dnd
 
 
@@ -163,8 +151,8 @@ def test_exported_key_aliases_preserve_canonical_names():
 ])
 def test_secondary_ancestry_is_explicit(name, secondary):
     cls = getattr(osg, name)
-    assert issubclass(cls, secondary) is (not NANOBIND)
-    assert (secondary in cls.__mro__) is (not NANOBIND)
+    assert issubclass(cls, secondary) is False
+    assert (secondary in cls.__mro__) is False
 
 
 def test_attachment_viewer_cycle_is_collected():

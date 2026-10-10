@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -33,40 +37,43 @@
 #include <dart/collision/DistanceFilter.hpp>
 #include <dart/collision/DistanceOption.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void DistanceOption(py::module& m)
+void DistanceOption(nb::module_& m)
 {
-  ::py::class_<dart::collision::DistanceOption>(m, "DistanceOption")
-      .def(::py::init<>())
-      .def(::py::init<bool>(), ::py::arg("enableNearestPoints"))
+  dartnb::dart_class<dart::collision::DistanceOption>(m, "DistanceOption")
+      .def(dartnb::init<>())
+      .def(dartnb::init<bool>(), nb::arg("enableNearestPoints"))
       .def(
-          ::py::init<bool, double>(),
-          ::py::arg("enableNearestPoints"),
-          ::py::arg("distanceLowerBound"))
+          dartnb::init<bool, double>(),
+          nb::arg("enableNearestPoints"),
+          nb::arg("distanceLowerBound"))
       .def(
-          ::py::init<
+          dartnb::init<
               bool,
               double,
               const std::shared_ptr<dart::collision::DistanceFilter>&>(),
-          ::py::arg("enableNearestPoints"),
-          ::py::arg("distanceLowerBound"),
-          ::py::arg("distanceFilter"))
-      .def_readwrite(
+          nb::arg("enableNearestPoints"),
+          nb::arg("distanceLowerBound"),
+          nb::arg("distanceFilter").none())
+      .def_rw(
           "enableNearestPoints",
-          &dart::collision::DistanceOption::enableNearestPoints)
-      .def_readwrite(
+          &dart::collision::DistanceOption::enableNearestPoints,
+          dartnb::setterArgument(
+              &dart::collision::DistanceOption::enableNearestPoints))
+      .def_rw(
           "distanceLowerBound",
-          &dart::collision::DistanceOption::distanceLowerBound)
-      .def_readwrite(
-          "distanceFilter", &dart::collision::DistanceOption::distanceFilter);
+          &dart::collision::DistanceOption::distanceLowerBound,
+          dartnb::setterArgument(
+              &dart::collision::DistanceOption::distanceLowerBound))
+      .def_rw(
+          "distanceFilter",
+          &dart::collision::DistanceOption::distanceFilter,
+          dartnb::setterArgument(
+              &dart::collision::DistanceOption::distanceFilter));
 }
 
 } // namespace python

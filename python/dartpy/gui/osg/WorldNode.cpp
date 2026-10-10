@@ -1,3 +1,9 @@
+#include "detail/dart_nb.hpp"
+
+#include <dart/gui/osg/RealTimeWorldNode.hpp>
+
+#include <nanobind/trampoline.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pointers.hpp"
+#include "gui/osg/ownership.hpp"
 
 #include <dart/gui/osg/Viewer.hpp>
 #include <dart/gui/osg/WorldNode.hpp>
@@ -38,98 +44,81 @@
 #include <dart/simulation/World.hpp>
 
 #include <osgShadow/ShadowTechnique>
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
 
 #include <memory>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-class PyWorldNode : public dart::gui::osg::WorldNode
+namespace gui_trampolines {
+using WorldNode = dart::gui::osg::WorldNode;
+using RealTimeWorldNode = dart::gui::osg::RealTimeWorldNode;
+using World = dart::simulation::World;
+using Viewer = dart::gui::osg::Viewer;
+class PyWorldNode : public WorldNode
 {
 public:
-  // Inherit the constructors
-  using WorldNode::WorldNode;
+  NB_TRAMPOLINE(WorldNode);
 
-  // Trampoline for virtual function
+  PyWorldNode(
+      std::shared_ptr<World> world = nullptr,
+      ::osg::ref_ptr<osgShadow::ShadowTechnique> shadow = nullptr)
+    : WorldNode(std::move(world), std::move(shadow))
+  {
+    ref();
+  }
+
+  ~PyWorldNode() override
+  {
+    unref_nodelete();
+  }
   void refresh() override
   {
-    PYBIND11_OVERLOAD(
-        void,      // Return type
-        WorldNode, // Parent class
-        refresh,   // Name of function in C++ (must match Python name)
-    );
+    NB_OVERRIDE(refresh);
   }
-
-  // Trampoline for virtual function
   void customPreRefresh() override
   {
-    PYBIND11_OVERLOAD(
-        void,             // Return type
-        WorldNode,        // Parent class
-        customPreRefresh, // Name of function in C++ (must match Python name)
-    );
+    NB_OVERRIDE(customPreRefresh);
   }
-
-  // Trampoline for virtual function
   void customPostRefresh() override
   {
-    PYBIND11_OVERLOAD(
-        void,              // Return type
-        WorldNode,         // Parent class
-        customPostRefresh, // Name of function in C++ (must match Python name)
-    );
+    NB_OVERRIDE(customPostRefresh);
   }
-
-  // Trampoline for virtual function
   void customPreStep() override
   {
-    PYBIND11_OVERLOAD(
-        void,          // Return type
-        WorldNode,     // Parent class
-        customPreStep, // Name of function in C++ (must match Python name)
-    );
+    NB_OVERRIDE(customPreStep);
   }
-
-  // Trampoline for virtual function
   void customPostStep() override
   {
-    PYBIND11_OVERLOAD(
-        void,           // Return type
-        WorldNode,      // Parent class
-        customPostStep, // Name of function in C++ (must match Python name)
-    );
+    NB_OVERRIDE(customPostStep);
   }
 };
 
-void WorldNode(py::module& m)
+} // namespace gui_trampolines
+
+void bindWorldNode(nb::module_& m)
 {
-  ::py::class_<
-      dart::gui::osg::WorldNode,
-      PyWorldNode,
-      ::osg::ref_ptr<dart::gui::osg::WorldNode>>(m, "WorldNode")
-      .def(::py::init<>())
+  dartnb::dart_class<dart::gui::osg::WorldNode, gui_trampolines::PyWorldNode>(
+      m, "WorldNode")
+      .def(dartnb::gui::init<>())
       .def(
-          ::py::init<std::shared_ptr<dart::simulation::World>>(),
-          ::py::arg("world"))
+          dartnb::gui::init<std::shared_ptr<dart::simulation::World>>(),
+          nb::arg("world").none())
       .def(
-          ::py::init<
+          dartnb::gui::init<
               std::shared_ptr<dart::simulation::World>,
               osg::ref_ptr<osgShadow::ShadowTechnique>>(),
-          ::py::arg("world"),
-          ::py::arg("shadowTechnique"))
+          nb::arg("world").none(),
+          nb::arg("shadowTechnique"))
       .def(
           "setWorld",
           +[](dart::gui::osg::WorldNode* self,
               std::shared_ptr<dart::simulation::World> newWorld) {
             self->setWorld(newWorld);
           },
-          ::py::arg("newWorld"))
+          nb::arg("newWorld").none())
       .def(
           "getWorld",
           +[](const dart::gui::osg::WorldNode* self)
@@ -158,13 +147,13 @@ void WorldNode(py::module& m)
       .def(
           "simulate",
           +[](dart::gui::osg::WorldNode* self, bool on) { self->simulate(on); },
-          ::py::arg("on"))
+          nb::arg("on"))
       .def(
           "setNumStepsPerCycle",
           +[](dart::gui::osg::WorldNode* self, std::size_t steps) {
             self->setNumStepsPerCycle(steps);
           },
-          ::py::arg("steps"))
+          nb::arg("steps"))
       .def(
           "getNumStepsPerCycle",
           +[](const dart::gui::osg::WorldNode* self) -> std::size_t {
@@ -184,7 +173,7 @@ void WorldNode(py::module& m)
               osg::ref_ptr<osgShadow::ShadowTechnique> shadowTechnique) {
             self->setShadowTechnique(shadowTechnique);
           },
-          ::py::arg("shadowTechnique"))
+          nb::arg("shadowTechnique"))
       .def(
           "getShadowTechnique",
           +[](const dart::gui::osg::WorldNode* self)
@@ -198,7 +187,7 @@ void WorldNode(py::module& m)
             return dart::gui::osg::WorldNode::createDefaultShadowTechnique(
                 viewer);
           },
-          ::py::arg("viewer"));
+          nb::arg("viewer").none());
 }
 
 } // namespace python

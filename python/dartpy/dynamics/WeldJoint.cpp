@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -38,25 +42,19 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <eigen_geometry_pybind.h>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
 
 #include <memory>
 #include <string>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void WeldJoint(py::module& m)
+void WeldJoint(nb::module_& m)
 {
-  ::py::class_<
-      dart::dynamics::WeldJoint,
-      dart::dynamics::ZeroDofJoint,
-      std::shared_ptr<dart::dynamics::WeldJoint>>(m, "WeldJoint")
+  dartnb::dart_class<dart::dynamics::WeldJoint, dart::dynamics::ZeroDofJoint>(
+      m, "WeldJoint")
       .def(
           "getWeldJointProperties",
           +[](const dart::dynamics::WeldJoint* self)
@@ -68,30 +66,30 @@ void WeldJoint(py::module& m)
           +[](const dart::dynamics::WeldJoint* self) -> const std::string& {
             return self->getType();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::WeldJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::py::arg("index"))
+          nb::arg("index"))
       .def(
           "setTransformFromParentBodyNode",
           +[](dart::dynamics::WeldJoint* self, const Eigen::Isometry3d& _T) {
             self->setTransformFromParentBodyNode(_T);
           },
-          ::py::arg("T"))
+          nb::arg("T"))
       .def(
           "setTransformFromChildBodyNode",
           +[](dart::dynamics::WeldJoint* self, const Eigen::Isometry3d& _T) {
             self->setTransformFromChildBodyNode(_T);
           },
-          ::py::arg("T"))
+          nb::arg("T"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::dynamics::WeldJoint::getStaticType();
           },
-          ::py::return_value_policy::reference_internal);
+          nb::rv_policy::reference_internal);
 }
 
 } // namespace python

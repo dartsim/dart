@@ -170,18 +170,15 @@ else()
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF)
 dart_option(DART_BUILD_UTILS_ASSETS "Build the versioned robot model retriever" OFF)
-set(
-  DART_DARTPY_BINDER
-  "pybind11"
-  CACHE STRING
-  "dartpy binder (pybind11 or nanobind)"
-)
-set_property(CACHE DART_DARTPY_BINDER PROPERTY STRINGS pybind11 nanobind)
-if(
-  NOT DART_DARTPY_BINDER STREQUAL "pybind11"
-  AND NOT DART_DARTPY_BINDER STREQUAL "nanobind"
-)
-  message(FATAL_ERROR "DART_DARTPY_BINDER must be pybind11 or nanobind")
+if(DEFINED DART_DARTPY_BINDER)
+  if(NOT DART_DARTPY_BINDER STREQUAL "nanobind")
+    message(
+      FATAL_ERROR
+      "DART 6.21 removed the pybind11 binder. dartpy now uses nanobind; remove DART_DARTPY_BINDER from your configuration."
+    )
+  endif()
+  unset(DART_DARTPY_BINDER CACHE)
+  unset(DART_DARTPY_BINDER)
 endif()
 dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
 dart_option(DART_BUILD_IO "Build model loading and file parsers" ON)
@@ -251,8 +248,12 @@ dart_option(
 )
 dart_option(DART_USE_SYSTEM_GOOGLEBENCHMARK "Use system GoogleBenchmark" OFF)
 dart_option(DART_USE_SYSTEM_GOOGLETEST "Use system GoogleTest" OFF)
-dart_option(DART_USE_SYSTEM_PYBIND11 "Use system pybind11" OFF)
 dart_option(DART_USE_SYSTEM_NANOBIND "Use system nanobind >= 3.1" OFF)
+dart_option(
+  DART_DARTPY_STABLE_ABI
+  "Build the nanobind dartpy for the CPython 3.12+ stable ABI (abi3)"
+  OFF
+)
 dart_option(DART_USE_SYSTEM_TRACY "Use system Tracy" OFF)
 dart_option(
   DART_ALLOW_SINGLE_PRECISION_LIBCCD

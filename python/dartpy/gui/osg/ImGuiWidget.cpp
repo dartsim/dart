@@ -1,3 +1,5 @@
+#include "detail/dart_nb.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,21 +32,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pointers.hpp"
+#include "gui/osg/ownership.hpp"
 
 #include <dart/gui/osg/ImGuiWidget.hpp>
-
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void ImGuiWidget(py::module& m)
+void ImGuiWidget(nb::module_& m)
 {
-  ::pybind11::class_<dart::gui::osg::ImGuiWidget>(m, "ImGuiWidget")
+  dartnb::dart_class<dart::gui::osg::ImGuiWidget>(m, "ImGuiWidget")
       .def(
           "render", +[](dart::gui::osg::ImGuiWidget* self) { self->render(); })
       .def(
@@ -52,7 +49,7 @@ void ImGuiWidget(py::module& m)
           +[](dart::gui::osg::ImGuiWidget* self, bool visible) {
             self->setVisible(visible);
           },
-          ::pybind11::arg("visible"))
+          nb::arg("visible"))
       .def(
           "toggleVisible",
           +[](dart::gui::osg::ImGuiWidget* self) { self->toggleVisible(); })

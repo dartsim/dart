@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,36 +36,32 @@
 
 #include <dart/utils/SkelParser.hpp>
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void SkelParser(py::module& m)
+void SkelParser(nb::module_& m)
 {
   auto sm = m.def_submodule("SkelParser");
 
   sm.def(
       "readWorld",
       &utils::SkelParser::readWorld,
-      ::py::arg("uri"),
-      ::py::arg("retriever") = nullptr,
-      ::py::call_guard<::py::gil_scoped_release>());
+      nb::arg("uri"),
+      nb::arg("retriever").none() = nullptr,
+      nb::call_guard<nb::gil_scoped_release>());
   sm.def(
       "readWorldXML",
       &utils::SkelParser::readWorldXML,
-      ::py::arg("xmlString"),
-      ::py::arg("baseUri") = "",
-      ::py::arg("retriever") = nullptr,
-      ::py::call_guard<::py::gil_scoped_release>());
+      nb::arg("xmlString"),
+      nb::arg("baseUri") = "",
+      nb::arg("retriever").none() = nullptr,
+      nb::call_guard<nb::gil_scoped_release>());
   sm.def(
       "readSkeleton",
       &utils::SkelParser::readSkeleton,
-      ::py::arg("uri"),
-      ::py::arg("retriever") = nullptr,
-      ::py::call_guard<::py::gil_scoped_release>());
+      nb::arg("uri"),
+      nb::arg("retriever").none() = nullptr,
+      nb::call_guard<nb::gil_scoped_release>());
 }
 
 } // namespace python
