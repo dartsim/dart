@@ -5364,14 +5364,14 @@ TEST(ConstraintSolver, ContactCapAppliesAfterDetectorPostFilter)
       contactsByPair(solver->getLastCollisionResult()).size(), kCapTestBoxes)
       << "a colliding pair was starved";
 
-  // A supported box stays near its rest height of 0.5 m; a starved one falls
-  // about 0.2 m in these 0.2 s.
+  // With one retained corner a supported box can rock below its 0.5 m rest
+  // height; a starved one falls about 0.2 m in these 0.2 s, below 0.4 m.
   for (int i = 0; i < 200; ++i)
     world->step();
   for (std::size_t i = 1u; i <= kCapTestBoxes; ++i) {
     EXPECT_GT(
         world->getSkeleton(i)->getBodyNode(0)->getTransform().translation().z(),
-        0.45)
+        0.4)
         << "box " << i << " fell through the ground";
   }
 }
@@ -5564,11 +5564,11 @@ TEST(ConstraintSolver, ContactCapDetectionOptionKeepsDetectorSemantics)
       EXPECT_GE(
           seen.getEffectiveMaxNumContactsPerPair(),
           option.getEffectiveMaxNumContactsPerPair());
-      // The dart detector's solver-facing manifold target.
+      // The dart detector's four-contact solver-facing manifold target.
       EXPECT_EQ(
-          std::min<std::size_t>(seen.getEffectiveMaxNumContactsPerPair(), 3u),
+          std::min<std::size_t>(seen.getEffectiveMaxNumContactsPerPair(), 4u),
           std::min<std::size_t>(
-              option.getEffectiveMaxNumContactsPerPair(), 3u));
+              option.getEffectiveMaxNumContactsPerPair(), 4u));
     }
     EXPECT_EQ(option.maxNumContacts, c.cap);
     EXPECT_EQ(option.maxNumContactsPerPair, c.perPair);
