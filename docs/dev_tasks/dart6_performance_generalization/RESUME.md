@@ -24,7 +24,7 @@ instead of one. Judge each packet against its base with
 
 **2026-07-10: completion audit RAN at the then-current head** (release-6.20 @
 `db255a08e8e`, 2026-07-09 — dozens of commits behind the branch tip by late
-August 2026; re-run before treating these numbers as current; artifacts `/tmp/audit_head_20260710T011207Z`):
+August 2026; re-run before treating these numbers as current; artifacts `audit_head_20260710T011207Z`):
 
 - Criterion 1 (S1 primary fixture 3x): **MET** — 120/dart/1 RTF 0.126447
   (3.51x the 0.036 round-2 baseline), avg step 7.908 ms, hash
@@ -73,12 +73,12 @@ prepared scratch reuse, cached-impulse residual seeding, dense fallback on
 matrix-free non-convergence, mixed per-DoF FreeJoint actuator rejection,
 `contact_benchmark` flags, dartpy options, and profiler counters. Final
 current-head smoke artifact:
-`/tmp/wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`
+`wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`
 (`5751c7ed84c`): S1 120 DART dense option-off median avg step `7.93478` ms,
 hash `0x123ee9779bccacfb`; option-on 30-iteration matrix-free median avg step
 `1.38782` ms, finite, hash `0xa5548e1abe05b52` (~5.7x on that run). The
 original fuller artifact remains
-`/tmp/wp_pg14_matrix_free_ab_20260709T040443Z` with S3 active-3k option-on
+`wp_pg14_matrix_free_ab_20260709T040443Z` with S3 active-3k option-on
 fallback preserving hash `0xcf0ba6eaa97be038`.
 
 Recommended next session plan (items 1-2 are DONE for the 2026-07-10 cycle;
@@ -195,7 +195,7 @@ option-off/option-on evidence.
   S4 ODE (0.98x). FCL and active S1 ODE improved, but the required
   general-performance bar was not met; all compared rows had identical
   contacts, pairs, resting counts, and final hashes. Artifacts:
-  `/tmp/wp_pg11_ab/current_2e119_repeat`. Work moved to WP-PG.02 to
+  `wp_pg11_ab/current_2e119_repeat`. Work moved to WP-PG.02 to
   strengthen benchmark coverage before more optimization packets.
 - 2026-07-06: WP-PG.02 claimed on
   `wp-pg-02-contact-container-matrix`. Active contact-container rows now
@@ -204,8 +204,8 @@ option-off/option-on evidence.
   included in the dashboard filter; dense 900-object contact-container
   rows are registered for manual filters but kept out of the default
   dashboard slice after local smoke runs exceeded the runtime budget.
-  Artifacts: `/tmp/wp_pg02_contact_container_deactivation_rows.json`,
-  `/tmp/wp_pg02_contact_container_active_fcl_bullet_smoke.json`.
+  Artifacts: `wp_pg02_contact_container_deactivation_rows.json`,
+  `wp_pg02_contact_container_active_fcl_bullet_smoke.json`.
 - 2026-07-07: WP-PG.02 merged as #3327. WP-PG.03 claimed on
   `wp-pg-03-profiling-doc` to promote the DART 6.20 profiling workflow into
   `docs/onboarding/profiling.md` and add the profile-env Tracy configure task.
@@ -223,13 +223,13 @@ option-off/option-on evidence.
   0.0644 ms/step (+12.6%), `S3_ode` 22.28 -> 19.74 ms/step (-11.4%),
   `S4_ode` 0.208 -> 0.248 ms/step (+19.2%), and contact-container 120-object
   ODE rows regressed 6.8-9.4%. Artifact:
-  `/tmp/wp_pg21_gate_20260707T130843`; WP-PG.21 remains evidence-gated.
+  `wp_pg21_gate_20260707T130843`; WP-PG.21 remains evidence-gated.
 - 2026-07-07: WP-PG.10 claimed on `wp-pg-10-lcp-profile-census`. The branch
   adds text-profiler counters and scopes for constrained-group island census
   and boxed-LCP stage split, plus runtime-gated solver recording for
   allocation-sensitive non-profile runs. Local profile artifact:
-  `/tmp/wp_pg10_profile_20260707T132241`; local guard artifact:
-  `/tmp/wp_pg10_guard_20260707T132321`. DART S1-S5 hashes matched the guard
+  `wp_pg10_profile_20260707T132241`; local guard artifact:
+  `wp_pg10_guard_20260707T132321`. DART S1-S5 hashes matched the guard
   references; S1 120-object dart/ode rows and S2-S5 all-detector rows matched
   current-base parent. The old S4/S5 FCL guard hashes had already drifted on
   unmodified `origin/release-6.20` (`S4_fcl = 0xea9b68f8b062600d`,
@@ -243,7 +243,7 @@ option-off/option-on evidence.
 - 2026-07-08: WP-PG.31 implemented as the no-candidate shallow-support skip on
   current base `3964108a675` (branch `21f691311df`), because current
   `World.cpp` already retained the scratch buffers from the old preserved
-  patch. A/B artifact `/tmp/wp_pg31_ab_20260707T184319`: no-root-FreeJoint
+  patch. A/B artifact `wp_pg31_ab_20260707T184319`: no-root-FreeJoint
   `double_pendulum.world` hashes stayed `0x1db838038acbd960` with median step
   time 0.002106 -> 0.001836 ms (DART) and 0.001903 -> 0.001644 ms (ODE);
   generated 120-object DART/ODE guard hashes stayed
@@ -282,7 +282,7 @@ option-off/option-on evidence.
   tolerance under the default policy, plus dense-contact-island sleep candidacy
   for sub-wake jitter. `contact_benchmark` now reports island and
   dwell/velocity diagnostics. A/B artifact
-  `/tmp/wp_pg15_ab_plane_fallback_20260709T023141Z`: S6 old-default override
+  `wp_pg15_ab_plane_fallback_20260709T023141Z`: S6 old-default override
   (`--contact-max-erv 0.001 --sleep-contact-penetration-tolerance 0.00001`)
   took 212.08 s, RTF 0.0943043, 162 contacts / 141 pairs, max penetration
   0.364241, 0/71 resting, hash `0x159825257114c5d5`; current defaults took
@@ -290,13 +290,13 @@ option-off/option-on evidence.
   hash `0xec80f734df6d5e74`; the explicit global evaluator row (`ERV=0.1`,
   tol `0.005`) took 75.487 s, RTF 0.264946, zero contacts, 71/71 resting,
   hash `0x877687e64e1011b9`. S4/S5 DART/FCL/Bullet/ODE new-default rows in
-  `/tmp/wp_pg15_ab_review_20260708T235540Z` matched old-default hashes,
+  `wp_pg15_ab_review_20260708T235540Z` matched old-default hashes,
   contacts, and resting states. Extra evidence:
   S2 DART 3k-shapes guard
-  `/tmp/wp_pg15_examples_20260708T223506Z/S2_dart_3k_shapes.log`
+  `wp_pg15_examples_20260708T223506Z/S2_dart_3k_shapes.log`
   (`3003/3003` resting, hash `0x8ddc9a81f2d28a7f`), S6 final-scene dump
-  `/tmp/wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl`, and S6 GUI
-  capture `/tmp/wp_pg15_gui_20260708T223653Z/S6_gui.png` with a passing
+  `wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl`, and S6 GUI
+  capture `wp_pg15_gui_20260708T223653Z/S6_gui.png` with a passing
   non-blank `image-verdict`.
   Focused tests passed: `INTEGRATION_StepAllocation` DART allocation gates,
   `test_SplitImpulse` shallow-support guards, `test_Issue1445`, full
@@ -306,7 +306,7 @@ option-off/option-on evidence.
   that test-only fix landed through the refreshed base.
 - 2026-07-08: An attempted overhead trim for the dense-island World sleep
   candidacy path was rejected and reverted after an A/B rerun
-  (`/tmp/wp_pg15_ab_candidate_20260708T224930Z`) changed the S6 final hashes
+  (`wp_pg15_ab_candidate_20260708T224930Z`) changed the S6 final hashes
   and made the explicit evaluator row slower (82.9871 s vs the prior
   38.9195 s) without a clear S4/S5 guard-row timing win. Keep the
   island-atomic candidate path from the accepted candidate unless a future
@@ -343,14 +343,14 @@ option-off/option-on evidence.
   mobile body is still awake. Added
   `IslandDeactivation.UngroupedAwakeBodyVetoesNewContactIslandResting` and
   reran the S6 A/B rows in
-  `/tmp/wp_pg15_ab_awake_veto_20260709T005203Z`; accepted-default and
+  `wp_pg15_ab_awake_veto_20260709T005203Z`; accepted-default and
   strict-old hashes stayed unchanged.
 - 2026-07-08 Codex review fix: temporary contact ERV overrides can now return
   to the adaptive default policy with `resetMaxErrorReductionVelocity()`, while
   explicit default-valued setter calls remain idempotent broad overrides. Added
   `IslandDeactivation.DefaultContactErvRestoresAdaptivePolicy`; reran the
   current-head S6 A/B rows in
-  `/tmp/wp_pg15_ab_idempotent_20260709T015150Z`; accepted-default,
+  `wp_pg15_ab_idempotent_20260709T015150Z`; accepted-default,
   strict-old, and explicit-evaluator hashes stayed unchanged.
 - 2026-07-08 Codex review fix: the contact-miss sleep fallback now applies the
   same default adaptive `PlaneShape` tolerance as the constrained-group rest
@@ -358,7 +358,7 @@ option-off/option-on evidence.
   candidates. Added
   `IslandDeactivation.PlaneContactMissFallbackUsesAdaptiveDefaultTolerance`;
   reran the S6 A/B rows in
-  `/tmp/wp_pg15_ab_plane_fallback_20260709T023141Z`; accepted-default,
+  `wp_pg15_ab_plane_fallback_20260709T023141Z`; accepted-default,
   strict-old, and explicit-evaluator hashes stayed unchanged.
 - 2026-07-09: #3353 merged after Codex review reported no major issues on
   `9ab3e05332`. Post-merge current-base checks on `origin/release-6.20` showed
@@ -366,7 +366,7 @@ option-off/option-on evidence.
   `0xec80f734df6d5e74`, and S1 120-object DART/ODE rows now exceed the
   original primary-fixture 3x target under default settings. WP-PG.14 was
   claimed on `wp-pg-14-matrix-free-lcp`. Local A/B artifact
-  `/tmp/wp_pg14_matrix_free_ab_20260709T040443Z`: option-off S1 120 DART
+  `wp_pg14_matrix_free_ab_20260709T040443Z`: option-off S1 120 DART
   median avg-step `7.40446` ms, hash `0x123ee9779bccacfb`; option-on 30-iter
   matrix-free median avg-step `0.663138` ms, finite, hash
   `0xbf538ac9d35f145e`; S3 active-3k option-on fallback preserved hash
@@ -385,7 +385,7 @@ option-off/option-on evidence.
   `MatrixFreeContactSolverFallsBackWhenNotConverged`, and
   `MatrixFreeContactSolverRejectsMixedFreeJointActuators`. Final current-head
   smoke artifact:
-  `/tmp/wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`;
+  `wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`;
   S1 120 DART dense option-off median avg step `7.93478` ms, hash
   `0x123ee9779bccacfb`; option-on 30-iteration matrix-free median avg step
   `1.38782` ms, finite, hash `0xa5548e1abe05b52`. Final local validation:
