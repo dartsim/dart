@@ -51,7 +51,6 @@ void dart_simulation(nb::module_& m);
 void dart_utils(nb::module_& m);
 void dart_gui(nb::module_& m);
 void bind_gui_probe(nb::module_& m);
-void dart_c_api(nb::module_& m);
 
 NB_MODULE(dartpy, m)
 {
@@ -80,8 +79,6 @@ NB_MODULE(dartpy, m)
 #else
   m.def_submodule("gui");
 #endif
-
-  dart_c_api(m);
 }
 
 } // namespace python

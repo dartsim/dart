@@ -48,9 +48,6 @@ void remember_owner(
 void forget_owner(void* complete, const void* token) noexcept;
 void remember_wrapper(Key exact, void* complete, nb::handle wrapper);
 void* upcast(Key source, Key target, void* pointer);
-// type_info objects can differ between modules for the same type (libc++ with
-// hidden visibility), so other modules' types are matched by mangled name.
-const Key* find_registered(const char* name);
 nb::handle wrap(
     Key source,
     Key dynamic_type,
@@ -61,9 +58,6 @@ nb::handle wrap(
     bool* is_new = nullptr);
 
 void hold_body(nb::handle wrapper, Key type, void* pointer);
-// Shared ownership of a graph object (body, node, joint or DOF) that keeps its
-// skeleton alive; empty for other types. `complete` is the stored pointer.
-std::shared_ptr<void> graph_owner(Key type, void* pointer, void* complete);
 
 // `complete` is the most-derived address of the object that `owner` owns.
 void hold_native_owner(

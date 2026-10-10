@@ -13,9 +13,10 @@
     and const Eigen views are read-only. Convert inputs explicitly and copy
     const views when writable arrays are needed.
 
-  * pybind11 extension modules must include `dartpy/pybind11_interop.hpp`
-    to exchange DART objects with dartpy. Rebuild extensions against the same
-    DART headers and C++ standard library ABI as dartpy.
+  * pybind11 extension modules can no longer pass DART objects to dartpy or
+    receive them from it, because nanobind does not share pybind11's type
+    registry. Extensions that rely on this can stay on DART 6.20, which keeps
+    the pybind11 binder.
 
   * Remove the `DART_DARTPY_BINDER` and `DART_USE_SYSTEM_PYBIND11` CMake
     options and the pybind11 binder. Remove these options from configurations;
@@ -61,11 +62,6 @@
     retain their skeleton, and GUI nodes and handlers retain Python overrides
     while native code uses them. Removed GUI wrappers may live until their
     viewer is destroyed.
-
-  * Let pybind11 extension modules exchange skeletons, worlds, graph objects,
-    and `Isometry3d` values with `dartpy` through the
-    `dartpy._C_API` capsule and the installed `dartpy/pybind11_interop.hpp`
-    header, preserving wrapper identity and ownership.
 
   * Reject a null node when constructing inverse kinematics in dartpy,
     preventing an invalid-input crash.
