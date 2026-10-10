@@ -107,6 +107,7 @@ def test_config_floors(tmp_path, package, minimum, target, required, version_kin
     if required and not accepted:
         assert result.returncode != 0, result.stdout + result.stderr
         assert "Accepted unsupported version" not in result.stderr
+        assert minimum in result.stdout + result.stderr
     else:
         assert result.returncode == 0, result.stdout + result.stderr
 
@@ -116,6 +117,8 @@ def test_imgui_release_suffix_floor(tmp_path, version, accepted):
     config_package(tmp_path, "imgui", version, "imgui::imgui")
     result = configure(tmp_path, "include(DARTFindimgui)\n")
     assert (result.returncode == 0) == accepted, result.stdout + result.stderr
+    if not accepted:
+        assert "ImGui >= 1.91.9" in result.stderr
 
 
 @pytest.mark.parametrize("bundled", [False, True])
