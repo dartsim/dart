@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import glob
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -15,6 +14,9 @@ SMOKE_TEST = r"""
 import dartpy as dart
 from dartpy.math import Random
 from dartpy.utils import DartLoader
+
+assert dart.collision.BulletCollisionDetector() is not None
+assert dart.collision.OdeCollisionDetector() is not None
 
 world = dart.simulation.World("wheel smoke")
 assert world.getNumSkeletons() == 0
@@ -108,10 +110,6 @@ def main(argv: list[str]) -> int:
 
     if not wheels:
         print("ERROR: No wheels found.")
-        return 1
-
-    if shutil.which("python") is None:
-        print("ERROR: python is not available on PATH.")
         return 1
 
     for wheel_path in wheels:
