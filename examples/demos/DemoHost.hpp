@@ -57,6 +57,8 @@
 
 namespace dart_demos {
 
+class GuiScaleTheme;
+
 //==============================================================================
 /// Per-scene WorldNode. Forwards the active scene's preStep/postStep hooks,
 /// wrapping each call so a throwing (or otherwise misbehaving) callback is
@@ -157,7 +159,7 @@ class DemoHost
 public:
   DemoHost(
       std::vector<DemoScene> scenes,
-      double guiScale,
+      std::optional<double> guiScale,
       std::string collisionDetectorName = {},
       std::size_t simulationThreads = 1u);
 
@@ -172,7 +174,7 @@ public:
 
   /// Runs interactively: opens a window and blocks until it is closed.
   /// Returns a process exit code.
-  int run();
+  int run(std::optional<int> width = {}, std::optional<int> height = {});
 
   /// Prints the catalog grouped by category (first-appearance order) and
   /// returns 0.
@@ -297,6 +299,8 @@ private:
   void applyCameraHome(const CameraHome& home, bool viaManipulator);
 
   void ensureViewerConfigured();
+  void setGuiScale(double scale);
+  void updateAutomaticGuiScale();
   bool prepareOffscreenContext(int width, int height, const CameraHome& home);
 
   void renderToolbar();
@@ -376,6 +380,9 @@ private:
   ::osg::ref_ptr<dart::gui::osg::GridVisual> mGridVisual;
 
   double mGuiScale;
+  bool mAutomaticGuiScale;
+  std::unique_ptr<GuiScaleTheme> mGuiScaleTheme;
+  std::chrono::steady_clock::time_point mNextDpiCheck;
   bool mViewerConfigured = false;
   std::string mInitialSceneId;
 

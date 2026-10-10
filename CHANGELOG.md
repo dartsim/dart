@@ -886,6 +886,13 @@
     `tu-*` Pixi commands now launch Python; the C++ tutorial executables and
     aggregate build target are removed.
 
+  * Automatically scale the `dart-demos` UI and initial window to desktop
+    DPI, with live updates and manual overrides in the View menu or through
+    `--gui-scale` / `DART_GUI_SCALE`. Fit the default window to its monitor
+    and honor explicit interactive `--width` / `--height` values. Headless
+    captures retain their default 1x scale and exact requested dimensions:
+    [#3640](https://github.com/dartsim/dart/pull/3640)
+
   * Add `contact_benchmark --gz-preset`, which loads an SDF world with SDF
     planes as 2100 m boxes, a 10000-contact cap, the ODE detector with a
     per-pair contact limit, and a `BodyNodeCollisionFilter` subclass, and
