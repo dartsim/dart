@@ -37,8 +37,8 @@ audits the current diff, and `dart_release_auditor` classifies named
 reference material as apply/adapt/omit against the DART 6.20 compatibility
 surface.
 
-**Tested Versions**: Claude Code CLI 2.1.252 (Claude Fable 5), Codex CLI
-0.151.0, OpenCode 1.18.21, 2026-08-31 — discovery, config, and hook checks
+**Tested Versions**: Claude Code CLI 2.1.296 (Claude Opus 5.5), Codex CLI
+0.162.0, OpenCode 1.18.35, 2026-10-10 — discovery, config, and hook checks
 exercised locally on this branch.
 
 Use `dart-model-upgrade` for future model or coding-agent changes; its audit
@@ -64,13 +64,20 @@ commits.
 
 ## Other Clients And Manual Fallback
 
-Claude Code uses the editable `.claude/` commands and skills. OpenCode uses the
-generated `.opencode/command/` adapters. Codex uses `.agents/skills/` plus the
-trusted `.codex/` runtime layer. Gemini and other clients that read
-`AGENTS.md` can follow the same owner docs and `pixi run ...` gates without a
-tool-specific command surface. Never make correctness depend only on a project
-hook or one client's private state; the public docs, direct commands, and
-installed git hooks remain the fallback contract.
+Claude Code uses the editable `.claude/` commands and skills. `CLAUDE.md` and
+`GEMINI.md` import `AGENTS.md` and `docs/ai/principles.md` with `@` lines
+because, by default, Claude Code reads `AGENTS.md` natively only when no
+`CLAUDE.md` exists and Gemini CLI reads only `GEMINI.md`; a prose "read
+`AGENTS.md`" redirect leaves both files unloaded. OpenCode runs the generated
+`.opencode/command/` adapters as `/dart-*` commands and discovers skills in both
+`.claude/skills/` and `.agents/skills/`. The generated domain-skill copies are
+identical to their sources, so OpenCode's duplicate-skill-name warnings for them
+are expected. Codex uses `.agents/skills/` plus the trusted `.codex/` runtime
+layer. Other clients that read `AGENTS.md` can follow the same owner docs and
+`pixi run ...` gates without a tool-specific command surface. Never make
+correctness depend only on a project hook or one client's private state; the
+public docs, direct commands, and installed git hooks remain the fallback
+contract.
 
 ## Approval Boundaries
 
