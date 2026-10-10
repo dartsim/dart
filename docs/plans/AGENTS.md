@@ -1,10 +1,10 @@
 # docs/plans/
 
-Agent rules for DART 6.20 living plan documents.
+Agent rules for DART 6 living plan documents.
 
 ## Purpose
 
-`docs/plans/` connects the DART 6.20 north star to executable roadmap choices.
+`docs/plans/` connects the DART 6 north star to executable roadmap choices.
 These files are living planning docs, not archival status dumps and not
 implementation trackers.
 
