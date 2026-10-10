@@ -190,12 +190,13 @@ function(add_component_targets package_name component)
         (
           "${dependency_type}" STREQUAL STATIC_LIBRARY
           OR "${dependency_type}" STREQUAL SHARED_LIBRARY
+          OR "${dependency_type}" STREQUAL INTERFACE_LIBRARY
         )
     )
       message(
         FATAL_ERROR
         "Target '${dependency_target}' has unsupported type"
-        " '${dependency_type}'. Only 'STATIC_LIBRARY' and 'SHARED_LIBRARY'"
+        " '${dependency_type}'. Only static, shared and interface libraries"
         " are supported."
       )
     endif()

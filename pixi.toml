@@ -50,6 +50,29 @@ tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
 
 [tasks]
+config-core = { cmd = """
+    cmake -G Ninja -S . -B "build/$PIXI_ENVIRONMENT_NAME/cpp/core" \
+        -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+        -DCMAKE_INSTALL_RPATH="$CONDA_PREFIX/lib" \
+        -DCMAKE_INSTALL_PREFIX="$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/package-core" \
+        -DBUILD_TESTING=OFF -DDART_BUILD_IO=OFF -DDART_BUILD_GUI=OFF -DDART_BUILD_DARTPY=OFF \
+        -DCMAKE_DISABLE_FIND_PACKAGE_OpenSceneGraph=ON -DCMAKE_DISABLE_FIND_PACKAGE_OpenGL=ON \
+        -DCMAKE_DISABLE_FIND_PACKAGE_imgui=ON -DCMAKE_DISABLE_FIND_PACKAGE_tinyxml2=ON \
+        -DCMAKE_DISABLE_FIND_PACKAGE_urdfdom=ON
+""" }
+build-core = { cmd = "cmake --build build/$PIXI_ENVIRONMENT_NAME/cpp/core --target dart --parallel 8", depends-on = [
+  "config-core",
+] }
+test-package-core = { cmd = """
+    cmake --install "build/$PIXI_ENVIRONMENT_NAME/cpp/core" &&
+    cmake -G Ninja -S tools/package -B "build/$PIXI_ENVIRONMENT_NAME/package-consumer-core" \
+        -DDART_DIR="$PIXI_PROJECT_ROOT/build/$PIXI_ENVIRONMENT_NAME/package-core/share/dart/cmake" \
+        -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" &&
+    cmake --build "build/$PIXI_ENVIRONMENT_NAME/package-consumer-core" --parallel 2 &&
+    ctest --test-dir "build/$PIXI_ENVIRONMENT_NAME/package-consumer-core" --output-on-failure
+""", depends-on = [
+  "build-core",
+] }
 perf-compare = { cmd = "python scripts/perf_regression.py local" }
 perf-backfill = { cmd = "python scripts/perf_regression.py backfill" }
 

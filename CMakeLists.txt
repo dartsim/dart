@@ -112,7 +112,7 @@ set(
 set(DART_PKG_DESC "Dynamic Animation and Robotics Toolkit.")
 set(
   DART_PKG_EXTERNAL_DEPS
-  "assimp >= 5.2.2, ccd, eigen3 >= 3.4.0, fcl >= 0.7.0, octomap >= 1.9.7"
+  "assimp >= 5.2.2, ccd, eigen3 >= 3.4.0, fcl >= 0.7.0, fmt >= 8.1.1"
 )
 
 #===============================================================================
@@ -183,6 +183,25 @@ if(
   message(FATAL_ERROR "DART_DARTPY_BINDER must be pybind11 or nanobind")
 endif()
 dart_option(DART_BUILD_GUI_OSG "Build osgDart library" ON)
+dart_option(DART_BUILD_IO "Build model loading and file parsers" ON)
+dart_option(DART_BUILD_GUI "Build OpenSceneGraph and ImGui support" ON)
+if(NOT DART_BUILD_GUI OR NOT DART_BUILD_GUI_OSG)
+  set(DART_BUILD_GUI OFF)
+  set(DART_BUILD_GUI_OSG OFF)
+endif()
+if(DART_BUILD_DARTPY AND NOT DART_BUILD_IO)
+  message(FATAL_ERROR "dartpy requires DART_BUILD_IO.")
+endif()
+if(
+  DART_BUILD_DARTPY
+  AND DART_DARTPY_BINDER STREQUAL "pybind11"
+  AND NOT DART_BUILD_GUI
+)
+  message(
+    FATAL_ERROR
+    "The all-in-one pybind11 dartpy package requires DART_BUILD_GUI."
+  )
+endif()
 dart_option(DART_ENABLE_GUI_OSG_SMOKE_TESTS "Build the off-screen GUI OSG capture smoke test (needs a DISPLAY or Xvfb)" OFF)
 dart_option(DART_BUILD_PROFILE "Build DART with profiling options" OFF)
 dart_option(DART_PROFILE_BUILTIN "Enable the built-in text profiling backend" ON)
@@ -647,6 +666,34 @@ install(
 )
 
 # Generate the DART pkg-config
+set(DART_PKG_CFLAGS "${CMAKE_CXX_FLAGS}")
+set(DART_PKG_PRIVATE_LIBS)
+foreach(library ${CMAKE_DL_LIBS})
+  string(APPEND DART_PKG_PRIVATE_LIBS " -l${library}")
+endforeach()
+if(HAVE_OCTOMAP)
+  string(APPEND DART_PKG_EXTERNAL_DEPS ", octomap >= 1.9.7")
+endif()
+if(spdlog_FOUND)
+  string(APPEND DART_PKG_EXTERNAL_DEPS ", spdlog >= 1.9.2")
+endif()
+if(HAVE_BULLET)
+  set(bullet_pc bullet)
+  if(BT_USE_DOUBLE_PRECISION)
+    string(APPEND DART_PKG_CFLAGS " -DBT_USE_DOUBLE_PRECISION")
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+      pkg_check_modules(BULLET_FLOAT64 QUIET bullet-float64)
+      if(BULLET_FLOAT64_FOUND)
+        set(bullet_pc bullet-float64)
+      endif()
+    endif()
+  endif()
+  string(APPEND DART_PKG_EXTERNAL_DEPS ", ${bullet_pc} >= 3.06")
+endif()
+if(HAVE_ODE)
+  string(APPEND DART_PKG_EXTERNAL_DEPS ", ode >= 0.16.2")
+endif()
 set(PC_CONFIG_IN ${DART_SOURCE_DIR}/cmake/dart.pc.in)
 set(PC_CONFIG_OUT ${DART_BINARY_DIR}/cmake/dart.pc)
 cmake_path(IS_ABSOLUTE CMAKE_INSTALL_LIBDIR ABSOLUTE_CMAKE_INSTALL_LIBDIR)

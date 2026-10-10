@@ -12,9 +12,8 @@ import os
 import struct
 import zlib
 
-import pytest
-
 import dartpy as dart
+import pytest
 
 # The off-screen pbuffer path requires an X server.
 requires_display = pytest.mark.skipif(
@@ -23,11 +22,12 @@ requires_display = pytest.mark.skipif(
     "headless hosts)",
 )
 
-# Skip the whole module if dartpy was built without the OSG GUI.
-try:
-    _osg = dart.gui.osg
-except AttributeError:  # pragma: no cover - depends on build config
-    pytest.skip("dartpy built without gui.osg", allow_module_level=True)
+if dart._binder == "nanobind":
+    pytest.skip(
+        "the opt-in nanobind binder does not yet include gui.osg",
+        allow_module_level=True,
+    )
+_osg = dart.gui.osg
 
 
 def _read_png_luminance(path):

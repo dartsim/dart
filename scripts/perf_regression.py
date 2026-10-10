@@ -3801,9 +3801,8 @@ def _build_arm(
         build=True,
     )
     workload_sources = workload_hashes(source, drivers, build, prefix)
-    targets = ["dart-utils-urdf", *drivers]
     # Historical libraries share one install component, including optional ones.
-    targets = sorted(set(targets) | set(install_targets(build)))
+    targets = sorted(set(drivers) | set(install_targets(build)))
     execute(
         [
             "cmake",

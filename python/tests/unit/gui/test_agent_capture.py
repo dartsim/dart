@@ -26,10 +26,12 @@ requires_display = pytest.mark.skipif(
     "headless hosts)",
 )
 
-try:
-    _osg = dart.gui.osg
-except AttributeError:  # pragma: no cover - depends on build config
-    pytest.skip("dartpy built without gui.osg", allow_module_level=True)
+if dart._binder == "nanobind":
+    pytest.skip(
+        "the opt-in nanobind binder does not yet include gui.osg",
+        allow_module_level=True,
+    )
+_osg = dart.gui.osg
 
 
 def _args(**overrides) -> argparse.Namespace:
@@ -286,18 +288,14 @@ def test_dart_box_on_ground_selects_dart_detector():
     world = agent_capture._BUILTIN_SCENES["dart_box_on_ground"](
         agent_capture._import_dartpy()
     )
-    assert (
-        world.getConstraintSolver().getCollisionDetector().getType() == "dart"
-    )
+    assert world.getConstraintSolver().getCollisionDetector().getType() == "dart"
 
 
 def test_dart_shape_contacts_exercises_supported_shape_adapters():
     world = agent_capture._BUILTIN_SCENES["dart_shape_contacts"](
         agent_capture._import_dartpy()
     )
-    assert (
-        world.getConstraintSolver().getCollisionDetector().getType() == "dart"
-    )
+    assert world.getConstraintSolver().getCollisionDetector().getType() == "dart"
     assert [world.getSkeleton(index).getName() for index in range(4)] == [
         "ground",
         "ellipsoid",

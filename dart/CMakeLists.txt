@@ -33,21 +33,25 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${DART_BINARY_DIR}/lib")
 # Targets - {dependency targets}, source directories, [external dependency libs]
 #===============================================================================
 # dart - common, math, lcpsolver, optimizer, dynamics, collision,
-#        collision/dart, collision/fcl, constraint, simulation, [assimp, eigen3,
-#        fcl, fmt]
-# dart-collision-bullet - {dart}, collision/bullet, [bullet]
-# dart-utils - {dart}, utils, utils/sdf, [tinyxml2]
-# dart-utils-urdf - {dart-utils}, utils/urdf, [urdfdom]
-# dart-gui-osg - {dart-utils}, gui/osg, gui/osg/render, [openscenegraph]
+#        collision/dart, collision/fcl, optional collision/bullet and
+#        collision/ode, constraint, simulation, [assimp, eigen3, fcl, fmt]
+# dart-collision-bullet, dart-collision-ode - forwarding interfaces to dart
+# dart-io - {dart}, utils, utils/mjcf, utils/sdf, utils/urdf, [tinyxml2, urdfdom]
+# dart-utils, dart-utils-urdf - forwarding interfaces to dart-io
+# dart-gui - {dart}, gui/osg, gui/osg/render, gui/imgui, [openscenegraph, OpenGL]
+# dart-gui-osg, dart-external-imgui - forwarding interfaces to dart-gui
 
 #===============================================================================
 # Components - (dependency component), {dependency targets}
 #===============================================================================
 # dart - {dart}
 # collision-bullet - (dart), {dart-collision-bullet}
-# utils - (collision-bullet), {dart-utils}
+# io - (dart), {dart-io}
+# utils - (io), {dart-utils}
 # utils-urdf - (utils), {dart-utils-urdf}
-# gui-osg - (utils), {dart-gui-osg}
+# gui - (dart), {dart-gui}
+# external-imgui - (gui), {dart-external-imgui}
+# gui-osg - (external-imgui), {dart-gui-osg}
 
 # Component. This should be called before adding subdirectories.
 add_component(${PROJECT_NAME} dart)
@@ -69,9 +73,26 @@ add_subdirectory(dynamics)
 add_subdirectory(collision)
 add_subdirectory(constraint)
 add_subdirectory(simulation)
-add_subdirectory(utils) # tinyxml2, bullet
-add_subdirectory(gui) # osg
+if(DART_BUILD_IO)
+  add_subdirectory(utils) # tinyxml2, urdfdom
+endif()
+if(DART_BUILD_GUI)
+  add_subdirectory(gui) # osg
+endif()
 add_subdirectory(simd) # header-only SIMD module
+
+get_property(
+  dart_core_compile_definitions
+  GLOBAL
+  PROPERTY DART_CORE_COMPILE_DEFINITIONS
+)
+set(BT_USE_DOUBLE_PRECISION FALSE)
+if("BT_USE_DOUBLE_PRECISION" IN_LIST dart_core_compile_definitions)
+  set(BT_USE_DOUBLE_PRECISION TRUE)
+endif()
+if(NOT TARGET dart-collision-ode)
+  set(DART_ODE_HAS_LIBCCD_BOX_CYL FALSE)
+endif()
 
 set(DART_CONFIG_HPP_IN ${DART_SOURCE_DIR}/dart/config.hpp.in)
 set(DART_CONFIG_HPP_OUT ${DART_BINARY_DIR}/dart/config.hpp)
@@ -110,6 +131,7 @@ dart_add_library(dart ${dart_core_headers} ${dart_core_sources})
 # include guard lets the first inclusion decide. Define it for every source so a
 # unity batch whose other files include the header first still gets it.
 target_compile_definitions(dart PRIVATE dLCP_FAST)
+target_compile_definitions(dart PUBLIC ${dart_core_compile_definitions})
 target_include_directories(
   dart
   BEFORE
@@ -118,7 +140,11 @@ target_include_directories(
     $<BUILD_INTERFACE:${DART_BINARY_DIR}>
     $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(dart PUBLIC ${CMAKE_DL_LIBS} Eigen3::Eigen fcl assimp)
+get_property(dart_core_link_libraries GLOBAL PROPERTY DART_CORE_LINK_LIBRARIES)
+target_link_libraries(
+  dart
+  PUBLIC ${CMAKE_DL_LIBS} Eigen3::Eigen fcl assimp ${dart_core_link_libraries}
+)
 
 # assimp version detection for conditional compilation
 if(ASSIMP_VERSION_MAJOR)
@@ -217,8 +243,13 @@ endif()
 
 # Default component
 add_component_targets(${PROJECT_NAME} dart dart)
+get_property(
+  dart_core_dependency_packages
+  GLOBAL
+  PROPERTY DART_CORE_DEPENDENCY_PACKAGES
+)
 add_component_dependency_packages(${PROJECT_NAME} dart
-  assimp Eigen3 fcl fmt
+  assimp Eigen3 fcl fmt ${dart_core_dependency_packages}
 )
 if(TARGET octomap)
   add_component_dependency_packages(${PROJECT_NAME} dart octomap)

@@ -265,12 +265,8 @@ def test_frame_region_margin_scales_distance():
 
 
 def test_frame_region_fits_portrait_viewport_horizontal_fov():
-    landscape = avq.frame_region(
-        [0.0, 0.0, 0.0], 1.0, margin=1.0, size=(640, 480)
-    )
-    portrait = avq.frame_region(
-        [0.0, 0.0, 0.0], 1.0, margin=1.0, size=(240, 640)
-    )
+    landscape = avq.frame_region([0.0, 0.0, 0.0], 1.0, margin=1.0, size=(640, 480))
+    portrait = avq.frame_region([0.0, 0.0, 0.0], 1.0, margin=1.0, size=(240, 640))
 
     landscape_distance = float(np.linalg.norm(landscape.eye - landscape.center))
     portrait_distance = float(np.linalg.norm(portrait.eye - portrait.center))
@@ -297,8 +293,8 @@ def test_select_viewpoints_rejects_world_without_bounded_renderables():
 
 def test_default_agent_camera_parity():
     # frame_region's distance law matches dart.gui.osg.defaultAgentCamera.
-    if not hasattr(getattr(dart, "gui", None), "osg"):
-        pytest.skip("dartpy built without gui.osg")
+    if dart._binder == "nanobind":
+        pytest.skip("the opt-in nanobind binder does not yet include gui.osg")
     eye, center, up = dart.gui.osg.defaultAgentCamera(
         [0.0, 0.0, 0.0], 1.0, fovYDeg=30.0
     )

@@ -43,7 +43,7 @@ target_include_directories(
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set(dartpy_libraries dart dart-utils dart-utils-urdf dart-gui-osg)
+set(dartpy_libraries dart dart-io dart-gui)
 foreach(dartpy_library ${dartpy_libraries})
   if(NOT TARGET ${dartpy_library})
     message(
@@ -54,12 +54,6 @@ foreach(dartpy_library ${dartpy_libraries})
 endforeach()
 
 target_link_libraries(${pybind_module} PUBLIC ${dartpy_libraries})
-if(TARGET dart-collision-bullet)
-  target_link_libraries(${pybind_module} PUBLIC dart-collision-bullet)
-endif()
-if(TARGET dart-collision-ode)
-  target_link_libraries(${pybind_module} PUBLIC dart-collision-ode)
-endif()
 
 target_compile_definitions(
   ${pybind_module}

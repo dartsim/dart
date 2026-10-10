@@ -2,6 +2,15 @@
 
 DART Python bindings are built through the Pixi/CMake workflow.
 
+For DART 6.21, the default pybind11 `dartpy` remains one all-in-one extension
+containing core, collision backends enabled in the build, IO parsers and
+OSG/ImGui bindings.
+It links `dart`, `dart-io` and `dart-gui`. Enabling `DART_BUILD_DARTPY` with
+this binder requires both `DART_BUILD_IO=ON` and `DART_BUILD_GUI=ON`; a
+headless C++ installation disables the default Python binder. See
+[build system notes](build-system.md) for the C++ package layout and legacy
+forwarding targets.
+
 ```bash
 pixi run build-py-dev
 pixi run test-py
@@ -179,3 +188,8 @@ Use the candidate branch for the workflow definition and the exact candidate
 SHA for the checkout. `ref=main` enables the release-only Python rows without
 requesting publication. Inspect both architectures' repaired tags and fresh
 container smoke tests before release.
+
+The repaired-wheel smoke test requires all four parser APIs and constructs an
+OSG interactive frame without opening a display. It also parses an inline
+URDF model, so missing IO or GUI support fails acceptance. Linux release
+wheels run this check in the fresh manylinux container without a display.
