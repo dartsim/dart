@@ -147,20 +147,21 @@ def test_viewer_keyword_arguments_and_world_removal_overload():
     node = recording_node("WorldNode", world, events)
     viewer = osg.Viewer()
     expected = ["refresh", "pre_refresh", "post_refresh"]
+
+    def refresh_events():
+        # Native refresh callbacks append to events.
+        events.clear()
+        probe.refresh_viewer(viewer)
+        return list(events)
+
     viewer.addWorldNode(newWorldNode=node)
-    probe.refresh_viewer(viewer)
-    assert events == expected, events
-    events.clear()
+    assert refresh_events() == expected
     viewer.removeWorldNode(oldWorldNode=node)
-    probe.refresh_viewer(viewer)
-    assert events == [], events
+    assert refresh_events() == []
     viewer.addWorldNode(newWorldNode=node, active=True)
-    probe.refresh_viewer(viewer)
-    assert events == expected, events
-    events.clear()
+    assert refresh_events() == expected
     viewer.removeWorldNode(oldWorld=world)
-    probe.refresh_viewer(viewer)
-    assert events == [], events
+    assert refresh_events() == []
 
 
 def test_ref_ptr_return_and_parameter_survive_original_owner():
