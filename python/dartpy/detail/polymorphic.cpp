@@ -179,19 +179,6 @@ void hold_body(nb::handle wrapper, Key type, void* pointer)
   }
 }
 
-std::shared_ptr<void> graph_owner(Key type, void* pointer, void* complete)
-{
-  auto* body = owning_body(type, pointer);
-  if (!body)
-    return {};
-  // The deleter's BodyNodePtr keeps the owning skeleton alive and follows the
-  // body if it moves to another skeleton.
-  return std::shared_ptr<void>(
-      complete, [holder = dart::dynamics::BodyNodePtr(body)](void*) mutable {
-        holder = nullptr;
-      });
-}
-
 void remember_wrapper(Key exact, void* complete, nb::handle wrapper)
 {
   // The payload owns the weakref; the static registry owns no Python
@@ -250,22 +237,6 @@ void rebind_methods(Key key, nb::handle cls)
   auto found = registry().entries.find(key);
   if (found != registry().entries.end() && found->second.rebind_methods)
     found->second.rebind_methods(cls);
-}
-
-const Key* find_registered(const char* name)
-{
-  // Types register at import, so rebuild the index only when the count grows.
-  static std::unordered_map<std::string, Key> by_name;
-  static std::size_t indexed = 0;
-  const auto& entries = registry().entries;
-  if (indexed != entries.size()) {
-    by_name.clear();
-    for (const auto& entry : entries)
-      by_name.emplace(entry.first.name(), entry.first);
-    indexed = entries.size();
-  }
-  const auto found = by_name.find(name);
-  return found == by_name.end() ? nullptr : &found->second;
 }
 
 void* upcast(Key source, Key target, void* pointer)

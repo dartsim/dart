@@ -46,8 +46,6 @@ numpy = ">=2.2.5,<3"
 octomap = ">=1.10.0,<2"
 openscenegraph = ">=3.6.5,<4"
 openssl = ">=1.1.1,<4"
-# Optional test-only dependency for python/tests/interop.
-pybind11 = ">=3.0.3,<4"
 spdlog = ">=1.15.3,<2"
 tinyxml2 = ">=11.0.0,<12"
 urdfdom = ">=4.0.1,<5"
