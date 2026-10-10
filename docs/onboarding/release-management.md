@@ -67,6 +67,14 @@ release then tags its packaging squash commit on that branch, as above, never
 `main`. The `Nightly` workflow is scheduled directly on `main`; its
 `nightly-failure` issues track `main`.
 
+### ABI window
+
+DART uses `MAJOR.MINOR` for `SOVERSION` (`cmake/DARTMacros.cmake`). Additive
+private members are permitted only before 6.20.0 is first packaged; 6.20.x
+patches must preserve class layouts. Downstream-subclassed vtables remain
+frozen throughout that window. Prefer implementation-private or function-local
+storage for new scratch state.
+
 ## Verifying DART 6 Changes
 
 Verify before merging: `pixi run test-all` for the complete default CMake graph.

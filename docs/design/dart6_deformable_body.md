@@ -36,6 +36,40 @@ neighborhood; points leave that neighborhood only after the configured
 rest/linger policy. The feature remains opt-in so existing applications keep
 the all-active path.
 
+Adaptive activation lags by one step: first contact on a frozen point acts as
+rigid contact on the parent body. State restoration resets points to active
+before reseeding. Public mass and inverse matrices describe the all-active
+model. Soft-soft results merge in indexed pair order for thread invariance.
+Calling `getArticulatedInertia()` between steps can advance activation
+bookkeeping; callers must account for that side effect.
+
+`Skeleton::updateTotalMass()` sums the non-virtual `BodyNode::getMass()`;
+`SoftBodyNode::getMass()` shadows it. Skeleton mass totals therefore exclude
+flesh mass. This remains unchanged for compatibility; soft-foot SIMBICON uses
+a point-mass-aware COM sensor instead (#3423).
+
+### Per-step extension seam
+
+A public `ConstraintBase` registered through `addConstraint()` receives
+`update()` once per `ConstraintSolver::solve()`. The solver's `solve()` is
+non-virtual, and `World::step()` can return through the all-resting fast path
+before calling it. Forces introduced during solving are cleared before the
+next step's dynamics. A constraint callback is therefore not an unconditional
+world-step hook.
+
+### Soft-foot comparison decisions
+
+PRs #3408 and #3423 use a rigid control defined as the soft foot with
+deformation frozen, matching rest tessellation, total mass, and inertia.
+The approved asset damping changed from 1000 to 4000, rather than being
+silently overridden in the scene. The comparison is pinned to FCL because
+the `dart` detector dispatches rigid and soft meshes to different kernels.
+The controller COM sensor includes point masses. Contact-spreading evidence
+is separate from push-recovery evidence: the historical single-trajectory
+push thresholds are not robust ensemble proof. The unmerged
+[PR #3431](https://github.com/dartsim/dart/pull/3431) reports counter-evidence;
+full push-recovery parity needs phase/noise-aware verification.
+
 ## Data layout and performance evidence
 
 Retained per-phase structure-of-arrays mirrors are not the DART 6 direction:
@@ -50,6 +84,17 @@ rows, detector eligibility, and enough host state to interpret noise. A manual
 timing disposition does not turn a machine-readable evaluator `FAIL` into a
 reproducible pass. Use a balanced or paired order when comparing backends that
 share most of their kernels.
+
+The accepted performance envelope is DART's in-tree detector configurations
+on identical scenes plus normalized paper metrics (maintainer decision,
+2026-07-23). Soft-body work must impose zero runtime overhead on rigid-body
+simulation. Each paper row needs its own correctness and CPU-performance
+proof; reduced demonstrations cannot close an unmeasured row. Each active
+Jain/Liu row requires a runnable scene or benchmark, deterministic
+correctness/stability thresholds, `dart`/FCL contact and timing evidence for
+collision-dependent rows, single-core and host-capped multi-core CPU rows,
+explicit SIMD-off/on results when vectorizable kernels change, and comparison
+to the paper metric or an approved normalized target.
 
 Normalized paper comparisons record model size, step size, simulated duration,
 contact counts, deterministic final-state metrics, and same-host CPU results at
@@ -134,7 +179,7 @@ carry two deformable architectures, and the subsystem that briefly existed here
 needed uninstalled headers, absence from the generated aggregate, and a Doxygen
 exclusion purely to avoid freezing an unfinished API into 6.20 — symptoms of
 being in the wrong place. The implementation is preserved in the
-`wp-db-fem-foundation` and `wp-db-fem-elastic` branches and in #3404. Do not
+[PR #3404](https://github.com/dartsim/dart/pull/3404). Do not
 restart it on the DART 6 line (`main`).
 
 **The Jain/Liu deferrals were retracted (2026-07-23).** The SIMBICON/controller

@@ -104,6 +104,14 @@ Refactors are acceptable when these behavior and compatibility checks hold;
 explain inherited failures and report new regressions rather than trading
 physics correctness for speed.
 
+For ODE, collision, contact-budget, or sleeping changes, run
+`contact_benchmark --gz-preset` on affected scenes, including `3k_shapes.sdf`
+with ODE. Report contact demand/cap, starved pairs, sunk bodies, changed poses,
+resting count, and hash. Settings such as `--max-contacts-per-pair 4`, raised
+contact caps, or analytic plane ground are guard rows only: Gazebo does not
+use them, and they can hide contact starvation. Use the driver benchmarks and
+sleep/raycast oracles described in `tools/gazebo/README.md` as applicable.
+
 ## Built-in Text Profiler
 
 DART 6.20 has the `dart/common/Profile.hpp` front end. The default Pixi
@@ -250,6 +258,12 @@ and `soft_open_chain` at one and sixteen simulation threads. Use
 useful diagnostics, but they are not the apples-to-apples soft-body performance
 baseline unless the row proves equivalent soft-shape coverage.
 
+`pixi run bm-soft-body-paired` runs the balanced same-host FCL/`dart`
+protocol: 20 alternating pairs per row at one and sixteen threads, retaining
+raw CPU-time rows and host-state history. A verdict is valid only when
+`COMPLETE.json` exists and all required rows are present. An interrupted run
+or manual timing disposition is not a passing artifact.
+
 ## Soft-Body Headless Profiles
 
 `soft_body_headless` is the repeatable soft-body checksum and text-profiler
@@ -286,9 +300,9 @@ Each run repeats every row under seven heap-layout perturbations, and a row
 gates only when its guards and allocation counts stay identical under all of
 them in that run; `--no-perturb` skips the checks and leaves every row
 diagnostic. The report names each row's qualification and thread count.
-All tiers stage each arm at `/tmp/dart-perf/arm`, including binaries, libraries,
+All tiers stage each arm in the harness-owned staging slot, including binaries, libraries,
 revision inputs, shims, dependency paths and measurement outputs. Measurements
-run from `/tmp/dart-perf` with a fixed minimal environment: system `PATH`,
+run from the staging root with a fixed minimal environment: system `PATH`,
 `LC_ALL=C`, the existing FMA mask in `GLIBC_TUNABLES`, and staged library paths;
 the harness preloads a small shim that disables OSG's implicit platform plugin
 discovery before its static initializers run. These headless workloads need no
@@ -301,12 +315,12 @@ must finish before a later run can replace the slot. The staging root must be
 private, owned by the current user, and on its parent's filesystem; mount points
 are refused.
 Set `DART_PERF_STAGING_ROOT` to an absolute directory on an executable
-filesystem when another account owns the default root or `/tmp` is mounted
+filesystem when another account owns the default root or temporary storage is mounted
 `noexec`. Its value is recorded in the environment fingerprint and backfill
 run identity; comparisons and resumes across staging roots are refused.
 Records expose the generic default root as `default` and a custom root as
 `sha256:<digest>`; the actual value remains in the fingerprint input. The
-publisher also normalizes older records containing the default `/tmp/dart-perf`
+publisher also normalizes older records containing the default staging path
 or a custom root in `run.env` or a row's `head_env`, without allowing paths
 elsewhere in the record.
 Installs also record their build staging root and must be rebuilt when it
@@ -551,31 +565,32 @@ question.
 Follow [Performance Methodology](#performance-methodology) for measurement,
 behavior guards, attribution, and Effect-first evidence.
 
-For `contact_benchmark` rows using ODE, keep `--max-contacts-per-pair 4`; larger
-caps measure a different detector behavior on this branch.
+For Gazebo-path claims, use `--gz-preset` as described in
+[Preserve Downstream Compatibility](#preserve-downstream-compatibility).
 
 ## Remaining Deformable Gates
 
-Do not treat the built-in `dart` detector as the default deformable collision backend
-until same-host evidence shows representative soft scenes are correct and at
-least as fast as FCL in apples-to-apples rows. The remaining DART 6.20
-deformable-body gates are:
+The unmet full-parity goal targets DART 6.21 in
+[PLAN-622](../plans/dashboard.md#plan-622-dart-6-deformable-body-feature-and-performance).
+The [deformable-body design](../design/dart6_deformable_body.md) owns the
+model scope, measured layout decisions, and pre-default collision contract.
+The representative equation, energy, and CoP gates already exist in
+`tests/integration/test_SoftDynamics.cpp`; they do not establish full paper parity.
 
-- re-enable or replace the disabled soft-body equations-of-motion comparison
-  after matrix and vector aggregation paths are complete; the current point-mass
-  mass-matrix, augmented-mass, gravity, and combined-vector sub-gate is not full
-  equation parity;
-- broaden the current one-thread versus multi-thread final-state check with
-  energy, contact-force, CoP, historical-golden, or other invariant checks that
-  catch divergent soft-body state;
-- complete paper-parity scenes or approved representative substitutes for the
-  Kim/Pollard and Jain/Liu soft-body references;
-- extend DART soft collision beyond the current primitive and retained
-  soft-face lanes to fuller triangle/contact-neighborhood coverage;
-- continue measured point-mass data-layout work toward contiguous,
-  allocation-free, SIMD-eligible phase data before adding `dart/simd/` kernels;
-- require one-thread and multi-thread CPU rows for each detector comparison,
-  with checksum or equivalence evidence beside timing rows.
+## Measured dead ends
+
+The #3056 investigations rejected single-reactive commit shortcuts, a
+map/generation-pruning variant of ODE pair bookkeeping, and a pose-write gate
+that regressed settled rows. The accepted ODE route uses per-call pair-indexed
+lookup (#3574). The pose gate also encountered protected
+`Skeleton::getKinematicVersion()` access; a source-only shortcut cannot bypass
+that boundary.
+
+Other rejected experiments skipped the `FreeJoint` force-update no-op,
+activation or colliding-flag checks, cached joint-constraint revisions or the
+previous single-reactive skeleton, or removed threaded-reset duplicate checks.
+Do not retry these without new attribution and same-host guard evidence.
+Detailed rejected measurements remain in Git history.
 
 ## Troubleshooting
 
@@ -589,3 +604,11 @@ deformable-body gates are:
 - Reconfigure when switching between default and Tracy builds. They use separate
   Pixi environment build directories, so stale binaries are easy to spot by
   path.
+
+Before counting a benchmark failure, assert that its binary exists. Exit 127
+means a missing command; 124 means timeout; 134 with a heap-corruption message
+is a crash. Exit 137 or `bad_alloc` can reflect resource pressure and needs
+environmental investigation rather than an automatic physics-regression verdict.
+For parallel-path stress reproduction, the historical harness used 30 CPU
+stressors and 30 runs of `BM_ContactContainerActive/120/[01]/16`; record the
+actual host load and resource limits when adapting it.

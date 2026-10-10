@@ -89,7 +89,7 @@ ctest -R '(Profile|StepAllocation)' --output-on-failure
 ```
 
 The strict global `operator new` and raw malloc-family counters are meaningful
-for scenes using the `dart` detector. Bullet, ODE, and other external collision
+for scenes using the `dart` detector. External collision
 backends may allocate internally, so their allocation coverage should be scoped
 to the World-owned base allocator surface instead of global heap counters.
 
@@ -120,9 +120,7 @@ pixi run gz-compat-harmonic    # gz-physics 7.8.0, gz-sim 8.10.0
 
 A first run of a lane builds DART, gz-physics, and gz-sim (about 15 minutes
 with 12 build jobs on a 32-core workstation) and then runs the gz-sim suite
-serially (13 to 16 minutes); later runs rebuild incrementally. On
-release-6.20 the lanes report the known DART 6.20 Gazebo regressions from
-issue #3056, so build the change's base as a second variant and set
+serially (13 to 16 minutes); later runs rebuild incrementally. To distinguish inherited failures from new regressions, build the change's base as a second variant and set
 `GZ_COMPAT_BASE_VARIANT`: failures the base also has are then reported
 without failing the lane. Changes that can let bodies sleep in Gazebo worlds
 must also run `pixi run gz-compat-ionic sleep-oracle` (it also fails when a
