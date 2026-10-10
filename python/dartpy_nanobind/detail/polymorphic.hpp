@@ -59,27 +59,18 @@ nb::handle wrap(
 
 void hold_body(nb::handle wrapper, Key type, void* pointer);
 
+// `complete` is the most-derived address of the object that `owner` owns.
+void hold_native_owner(
+    nb::handle wrapper, std::shared_ptr<void> owner, void* complete);
+
 template <class T>
 void hold_native_owner(nb::handle wrapper, const std::shared_ptr<T>& owner)
 {
   using Mutable = std::remove_const_t<T>;
-  struct Payload
-  {
-    std::shared_ptr<T> owner;
-    void* complete;
-  };
-  void* complete = complete_address(owner.get());
-  auto holder = std::make_unique<Payload>(Payload{owner, complete});
-  remember_owner(
-      complete,
-      std::static_pointer_cast<void>(std::const_pointer_cast<Mutable>(owner)),
-      holder.get());
-  nb::keep_alive_cb(wrapper, holder.get(), [](void* q) noexcept {
-    auto* payload = static_cast<Payload*>(q);
-    forget_owner(payload->complete, payload);
-    delete payload;
-  });
-  holder.release();
+  hold_native_owner(
+      wrapper,
+      std::const_pointer_cast<Mutable>(owner),
+      complete_address(owner.get()));
 }
 
 template <class T, class Base>

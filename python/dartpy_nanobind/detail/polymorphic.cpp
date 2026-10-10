@@ -111,6 +111,24 @@ void forget_owner(void* complete, const void* token) noexcept
     owners.erase(found);
 }
 
+void hold_native_owner(
+    nb::handle wrapper, std::shared_ptr<void> owner, void* complete)
+{
+  struct Payload
+  {
+    std::shared_ptr<void> owner;
+    void* complete;
+  };
+  auto holder = std::make_unique<Payload>(Payload{std::move(owner), complete});
+  remember_owner(complete, holder->owner, holder.get());
+  nb::keep_alive_cb(wrapper, holder.get(), [](void* q) noexcept {
+    auto* payload = static_cast<Payload*>(q);
+    forget_owner(payload->complete, payload);
+    delete payload;
+  });
+  holder.release();
+}
+
 void hold_body(nb::handle wrapper, Key type, void* pointer)
 {
   namespace d = dart::dynamics;
