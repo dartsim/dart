@@ -117,6 +117,12 @@ def test_release_scenarios_are_exercisable():
         ("AGENTS.md", "`main` develops DART 6.22.\n"),
         ("CLAUDE.md", "`main`, the DART 6.22 development branch.\n"),
         ("GEMINI.md", "The next release is currently DART 6.22.\n"),
+        ("AGENTS.md", "The next release is DART 6.22.0.\n"),
+        ("docs/README.md", "Next release: **DART 6.22.0**\n"),
+        ("docs/plans/dashboard.md", "The upcoming release will be DART 6.22.0.\n"),
+        ("docs/ai/README.md", "Planned release = `DART 6.22.0`\n"),
+        ("AGENTS.md", "Next release: `6.22.0`\n"),
+        ("docs/README.md", "The next release is 6.22.0.\n"),
         (
             ".codex/agents/dart_reviewer.toml",
             'description = "Review the DART 6.22 development branch."\n',
@@ -234,12 +240,15 @@ def test_release_references_allow_history_and_dependency_floors(
         ),
     ],
 )
-def test_release_references_accept_owner_only_rollover(tmp_path, rows, monkeypatch):
+def test_release_references_accept_release_metadata_only_rollover(
+    tmp_path, rows, monkeypatch
+):
     monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
     monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
     sources = [
         *infra.release_reference_paths(ROOT),
         ROOT / "docs/onboarding/release-management.md",
+        ROOT / "CHANGELOG.md",
     ]
     for source in sources:
         if source.is_file():
@@ -249,11 +258,24 @@ def test_release_references_accept_owner_only_rollover(tmp_path, rows, monkeypat
     owner = tmp_path / "docs/onboarding/release-management.md"
     text = owner.read_text(encoding="utf-8")
     target_row = next(line for line in text.splitlines() if line.startswith("| `"))
+    changelog = tmp_path / "CHANGELOG.md"
     for row in rows:
         owner.write_text(
             text.replace(target_row, row, 1),
             encoding="utf-8",
         )
+        version = row.split("|")[3].strip().strip("`")
+        history = changelog.read_text(encoding="utf-8")
+        if f"### [DART {version} (" not in history:
+            changelog.write_text(
+                history.replace(
+                    "## DART 6\n",
+                    "## DART 6\n\n"
+                    f"### [DART {version} (Unreleased)](https://github.com/dartsim/dart/milestones)\n",
+                    1,
+                ),
+                encoding="utf-8",
+            )
         errors = []
 
         infra.check_release_target(tmp_path, errors)
@@ -266,6 +288,12 @@ def test_release_references_accept_owner_only_rollover(tmp_path, rows, monkeypat
     ("catalog", "line_number"),
     [
         ('msgid "Neutral source"\nmsgstr "현재 DART 6.22"\n', 2),
+        ('msgid "Neutral source"\nmsgstr "다음 릴리스는 DART 6.22.0입니다."\n', 2),
+        ('msgid "Neutral source"\nmsgstr "차기 버전은 **DART 6.22**입니다."\n', 2),
+        ('msgid "Neutral source"\nmsgstr "다음 릴리스: ``DART 6.22.0``"\n', 2),
+        ('msgid "Neutral source"\nmsgstr "예정된 릴리스는 DART 6.22.0입니다."\n', 2),
+        ('msgid "Neutral source"\nmsgstr "다음 릴리스는 ``6.22.0``입니다."\n', 2),
+        ('msgid "Neutral source"\nmsgstr "차기 버전은 6.22.0입니다."\n', 2),
         ('msgid "Neutral source"\nmsgstr "현재 안정 버전은 DART 6.22.0"\n', 2),
         (
             'msgid "Neutral source"\nmsgstr "현재 안정 버전은 **DART 6.22.0** 입니다."\n',
@@ -354,6 +382,16 @@ def release_target_owner(tmp_path, monkeypatch):
         "| ------ | ----- | ------------ |\n",
         encoding="utf-8",
     )
+    (tmp_path / "CHANGELOG.md").write_text(
+        "### [DART 6.22.0 (Unreleased)](https://github.com/dartsim/dart/milestones)\n\n"
+        "### [DART 6.20.1 (Unreleased)](https://github.com/dartsim/dart/milestones)\n\n"
+        "### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestones)\n\n"
+        "### [DART 6.19.5 (2026-10-04)](https://github.com/dartsim/dart/milestones)\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "package.xml").write_text(
+        "<package><version>6.19.5</version></package>\n", encoding="utf-8"
+    )
     return path
 
 
@@ -376,6 +414,104 @@ def test_release_target_accepts_valid_rows(release_target_owner, tmp_path, row):
     infra.check_release_target(tmp_path, errors)
 
     assert errors == []
+
+
+@pytest.mark.parametrize(
+    ("branch", "phase", "version"),
+    [
+        ("main", "Development", "6.22.0"),
+        ("release-6.20", "Stabilization", "6.20.0"),
+        ("release-6.20", "Maintenance", "6.20.1"),
+    ],
+)
+def test_release_target_accepts_dated_packaging_candidate(
+    release_target_owner, tmp_path, branch, phase, version
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + f"| {branch} | {phase} | {version} |\n", encoding="utf-8"
+    )
+    (tmp_path / "CHANGELOG.md").write_text(
+        f"### [DART {version} (2026-10-10)](https://github.com/dartsim/dart/milestone/105?closed=1)\n\n"
+        "### [DART 6.19.5 (2026-10-04)](https://github.com/dartsim/dart/milestone/104?closed=1)\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "package.xml").write_text(
+        f"<package><version>{version}</version></package>\n", encoding="utf-8"
+    )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    ("changelog", "package"),
+    [
+        (None, "<package><version>6.19.5</version></package>"),
+        ("", "<package><version>6.19.5</version></package>"),
+        (
+            "### [DART 6.21.0 (Unreleased)](milestone)\n",
+            "<package><version>6.19.5</version></package>",
+        ),
+        (
+            "DART 6.22.0 (Unreleased) appears only in prose.\n",
+            "<package><version>6.19.5</version></package>",
+        ),
+        (
+            "### [DART 6.22.0 (Unreleased)](milestone)\n"
+            "### [DART 6.22.0 (Unreleased)](milestone)\n",
+            "<package><version>6.19.5</version></package>",
+        ),
+        (
+            "### [DART 6.22.0 (Unreleased)](milestone)\n"
+            "### [DART 6.22.0 (2026-10-10)](milestone)\n",
+            "<package><version>6.22.0</version></package>",
+        ),
+        (
+            "### [DART 6.22.0 (2026-10-10)](milestone)\n",
+            "<package><version>6.19.5</version></package>",
+        ),
+        ("### [DART 6.22.0 (2026-10-10)](milestone)\n", None),
+        (
+            "### [DART 6.22.0 (2026-10-10)](milestone)\n",
+            "<package><version>6.22.0</version>",
+        ),
+        ("### [DART 6.22.0 (2026-10-10)](milestone)\n", "<package/>"),
+        (
+            "### [DART 6.22.0 (2026-02-30)](milestone)\n",
+            "<package><version>6.22.0</version></package>",
+        ),
+        (
+            "### [DART 6.22.0 (20261010)](milestone)\n",
+            "<package><version>6.22.0</version></package>",
+        ),
+        (
+            "### [DART 6.22.0 (Preview)](milestone)\n",
+            "<package><version>6.22.0</version></package>",
+        ),
+    ],
+)
+def test_release_target_rejects_invalid_changelog(
+    release_target_owner, tmp_path, changelog, package
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    for relative, content in (("CHANGELOG.md", changelog), ("package.xml", package)):
+        path = tmp_path / relative
+        if content is None:
+            path.unlink()
+        else:
+            path.write_text(content, encoding="utf-8")
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
 
 
 @pytest.mark.parametrize(
@@ -3392,6 +3528,8 @@ def test_agent_hook_path_routing_is_bounded():
     assert hook.is_ai_infrastructure_path("pixi.toml")
     assert hook.is_ai_infrastructure_path("dart/new_module/AGENTS.md")
     for path in (
+        "CHANGELOG.md",
+        "package.xml",
         "CMakeLists.txt",
         "cmake/DARTRunCTest.cmake",
         "python/CMakeLists.txt",

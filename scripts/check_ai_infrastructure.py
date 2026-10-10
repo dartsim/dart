@@ -14,6 +14,8 @@ import subprocess
 import sys
 import tempfile
 import tomllib
+import xml.etree.ElementTree as ET
+from datetime import date
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
@@ -3715,6 +3717,43 @@ def check_instruction_budget(root: Path, errors: list[str]) -> None:
             )
 
 
+def check_release_changelog(root: Path, version: str, errors: list[str]) -> None:
+    """Require the planned release section, including a dated packaging candidate."""
+    changelog = root / "CHANGELOG.md"
+    headings = (
+        re.findall(
+            rf"^### \[DART {re.escape(version)} \(([^)\n]*)\)\]",
+            changelog.read_text(encoding="utf-8"),
+            re.MULTILINE,
+        )
+        if changelog.is_file()
+        else []
+    )
+    if len(headings) != 1:
+        errors.append(
+            f"CHANGELOG.md: Release Target `{version}` must have exactly one release heading"
+        )
+        return
+    state = headings[0]
+    if state == "Unreleased":
+        return
+    package_version = ""
+    try:
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", state):
+            raise ValueError("expected YYYY-MM-DD")
+        date.fromisoformat(state)
+        package_version = (
+            ET.parse(root / "package.xml").getroot().findtext("version", "").strip()
+        )
+    except (OSError, ET.ParseError, ValueError):
+        pass
+    if package_version != version:
+        errors.append(
+            f"CHANGELOG.md: Release Target `{version}` requires an Unreleased section "
+            "or a dated packaging heading matching package.xml"
+        )
+
+
 def check_release_target(root: Path, errors: list[str]) -> None:
     """Validate the branch-local owner, using CI/base checkout identity if known."""
     relative = "docs/onboarding/release-management.md"
@@ -3768,6 +3807,8 @@ def check_release_target(root: Path, errors: list[str]) -> None:
             f"{relative}: Release Target has an invalid branch, phase, or full DART 6 version"
         )
         return
+
+    check_release_changelog(root, version, errors)
 
     expected_branch = os.environ.get("GITHUB_BASE_REF")
     if not expected_branch:
@@ -3853,10 +3894,13 @@ def release_reference_paths(root: Path) -> list[Path]:
 def check_release_references(root: Path, errors: list[str]) -> None:
     """Keep reusable guidance independent of the branch's next release."""
     version = r"[`*]*DART\s+6\.\d+(?:\.\d+)?[`*]*"
+    next_version = r"[`*]*(?:DART\s+)?6\.\d+(?:\.\d+)?[`*]*"
     current_target = re.compile(
         rf"\bcurrently\s+(?:(?:is|on|at)\s+)?{version}"
         rf"|\b(?:current stable|develops|developing|stabilizes)\b"
         rf".{{0,80}}{version}"
+        rf"|\b(?:next|planned|upcoming)(?:\s+DART)?\s+release(?:\s+version)?"
+        rf"(?:\s+(?:is|will\s+be)|\s*[:=])\s*{next_version}"
         rf"|{version}\s+(?:development|stabilization)\s+branch"
         rf"|\b(?:use|set|select|assign|target)\b.{{0,120}}{version}"
         rf".{{0,80}}\bmilestone\b"
@@ -3871,6 +3915,8 @@ def check_release_references(root: Path, errors: list[str]) -> None:
     )
     translated_target = re.compile(
         rf"현재\s+(?:안정\s+버전(?:은|이)?\s+)?{version}"
+        rf"|(?:다음|차기|예정된)\s+(?:DART\s+)?(?:릴리스|버전)(?:는|은)?"
+        rf"\s*(?:[:=]\s*)?{next_version}"
         rf"|{version}\s*(?:개발|안정화)\s*브랜치"
         rf"|(?:main|release-6\.\d+).{{0,80}}{version}.{{0,40}}(?:개발|안정화)"
         rf"|{version}.{{0,80}}마일스톤.{{0,40}}(?:사용|설정|선택|지정)"
