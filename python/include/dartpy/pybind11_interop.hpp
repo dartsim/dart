@@ -76,14 +76,21 @@ inline const c_api::CApi& api()
         PyCapsule_Import(c_api::kCapsuleName, 0));
     if (!candidate)
       throw pybind11::error_already_set();
+    // Only version and size are stable across versions; check them before
+    // reading any other field.
     if (candidate->version != c_api::kVersion
-        || candidate->size < sizeof(c_api::CApi)
-        || std::strcmp(candidate->abiTag, c_api::kAbiTag) != 0) {
+        || candidate->size < sizeof(c_api::CApi)) {
       throw pybind11::import_error(
-          std::string("dartpy C API mismatch: dartpy provides ")
-          + candidate->abiTag + " version " + std::to_string(candidate->version)
-          + ", this extension expects " + c_api::kAbiTag + " version "
+          "dartpy C API mismatch: dartpy provides version "
+          + std::to_string(candidate->version)
+          + ", this extension expects version "
           + std::to_string(c_api::kVersion)
+          + "; rebuild the extension against the DART that dartpy uses");
+    }
+    if (std::strcmp(candidate->abiTag, c_api::kAbiTag) != 0) {
+      throw pybind11::import_error(
+          std::string("dartpy C API mismatch: dartpy was built for ")
+          + candidate->abiTag + ", this extension for " + c_api::kAbiTag
           + "; rebuild the extension against the DART that dartpy uses");
     }
     table = candidate;

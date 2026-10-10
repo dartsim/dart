@@ -95,6 +95,7 @@ enum Policy : int
 /// exception set on failure; a TypeError means the object has the wrong type.
 struct CApi
 {
+  // version and size come first in every version of the table.
   std::uint32_t version;
   std::uint32_t size;
   const char* abiTag;
