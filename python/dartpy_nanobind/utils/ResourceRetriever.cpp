@@ -38,6 +38,10 @@
 #include <dart/utils/DartResourceRetriever.hpp>
 #include <dart/utils/PackageResourceRetriever.hpp>
 
+#ifdef DARTPY_HAS_UTILS_ASSETS
+  #include <dart/utils/assets/ModelResourceRetriever.hpp>
+#endif
+
 #include <dart/common/ResourceRetriever.hpp>
 
 #include <memory>
@@ -76,6 +80,20 @@ void UtilsResourceRetriever(nb::module_& m)
               &utils::PackageResourceRetriever::addPackageDirectory,
               nb::arg("packageName"),
               nb::arg("packageDirectory"));
+
+#ifdef DARTPY_HAS_UTILS_ASSETS
+  dartnb::dart_class<utils::ModelResourceRetriever, common::ResourceRetriever>(
+      m, "ModelResourceRetriever")
+      .def(
+          dartnb::init<const std::string&, bool>(),
+          nb::arg("cacheDirectory") = "",
+          nb::arg("offline") = false)
+      .def(
+          "addManifest",
+          &utils::ModelResourceRetriever::addManifest,
+          nb::arg("localManifestUri"),
+          nb::call_guard<nb::gil_scoped_release>());
+#endif
 }
 
 } // namespace python

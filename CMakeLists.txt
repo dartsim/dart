@@ -169,6 +169,7 @@ else()
   dart_option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif()
 dart_option(DART_BUILD_DARTPY "Build dartpy" OFF)
+dart_option(DART_BUILD_UTILS_ASSETS "Build the versioned robot model retriever" OFF)
 set(
   DART_DARTPY_BINDER
   "pybind11"
