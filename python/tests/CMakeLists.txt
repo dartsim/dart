@@ -96,3 +96,7 @@ if(DART_BUILD_GUI_OSG AND DART_DARTPY_BINDER STREQUAL "pybind11")
   )
   add_dependencies(dartpy _dartpy_gui_probe)
 endif()
+
+if(DART_DARTPY_BINDER STREQUAL "nanobind")
+  add_subdirectory(interop)
+endif()

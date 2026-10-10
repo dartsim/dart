@@ -170,6 +170,51 @@ Reusable porting and API probes live under `scripts/nanobind/`. The regular
 binder differences explicitly. Linux and macOS CI add a Python-only nanobind
 job; Windows adds a Python matrix row using its existing unity build.
 
+### pybind11 extensions
+
+A pybind11 extension cannot see nanobind's type registry, so it cannot pass or
+return DART objects by registering nothing, as it could with the pybind11
+binder. The nanobind binder instead exports the `dartpy._C_API` capsule, and
+the installed header `dartpy/pybind11_interop.hpp` turns it into pybind11
+casters:
+
+```cpp
+#include <dartpy/pybind11_interop.hpp> // before any binding code
+
+PYBIND11_MODULE(my_robot, m)
+{
+  m.def("base", [](const dart::dynamics::SkeletonPtr& skeleton) {
+    return skeleton->getBodyNode(0);
+  }, pybind11::return_value_policy::reference);
+}
+```
+
+The casters return the existing dartpy wrapper when there is one, adjust base
+pointers, keep a returned graph object's skeleton alive, and share ownership
+for `std::shared_ptr` arguments and results. They cover `Entity`, `Frame`,
+`SimpleFrame`, `JacobianNode`, `BodyNode`, `ShapeNode`, `Joint`,
+`DegreeOfFreedom`, `MetaSkeleton`, `Skeleton`, `World`, and copies of
+`Eigen::Isometry3d` (`dartpy.math.Isometry3`, which also accepts 4x4 arrays).
+Add another polymorphic class that dartpy binds with
+`DARTPY_PYBIND11_INTEROP_OBJECT(Type, "dartpy.module.Name")` at global scope.
+
+- Include the header in every translation unit that binds these types, and
+  never register them with `pybind11::class_`.
+- Raw-pointer and reference results need an explicit `reference` or
+  `reference_internal` policy. Other policies, including the default
+  `automatic`, would take, copy, or move the object and raise an error; return
+  a `std::shared_ptr` when ownership moves to Python.
+- Keep stored raw pointers' owners alive yourself, for example with
+  `pybind11::keep_alive`.
+- The table passes `std::type_info` and `std::shared_ptr` across modules: build
+  the extension with the same DART headers and C++ standard library ABI as
+  dartpy, and link the same shared DART libraries that dartpy loads.
+  Importing an extension with a mismatched DART version or standard library
+  raises `ImportError`.
+
+`python/tests/interop/` builds an example extension that the regular suite
+exercises when pybind11 is available.
+
 ## Wheels
 
 Wheel packaging is Pixi-managed on this branch. `wheel-build-core`,
