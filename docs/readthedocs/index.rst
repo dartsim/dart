@@ -11,9 +11,8 @@ Welcome to DART documentation!
 
    This site documents the **DART 6** compatibility line. New development
    happens on ``main``; release branches provide stabilization and maintenance.
-   Find published versions in `GitHub Releases
-   <https://github.com/dartsim/dart/releases>`_ and release notes in the
-   `CHANGELOG <https://github.com/dartsim/dart/blob/main/CHANGELOG.md>`_.
+   Find published versions and release notes in `GitHub Releases
+   <https://github.com/dartsim/dart/releases>`_.
 
 Introduction
 ------------

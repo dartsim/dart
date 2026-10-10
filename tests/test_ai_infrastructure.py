@@ -33,6 +33,22 @@ def test_repository_ai_infrastructure_is_valid():
     assert infra.run_checks(ROOT) == []
 
 
+def test_repository_rejects_missing_release_target_row(monkeypatch):
+    owner = ROOT / "docs/onboarding/release-management.md"
+    text = owner.read_text(encoding="utf-8")
+    row = next(line for line in text.splitlines() if line.startswith("| `"))
+    original_read_text = Path.read_text
+
+    def read_text(path, *args, **kwargs):
+        if path == owner:
+            return text.replace(row, "", 1)
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+
+    assert any("Release Target" in error for error in infra.run_checks(ROOT))
+
+
 def test_inactive_cpp_test_policies_name_tracked_sources_and_owners():
     for relative, policy in infra.APPROVED_INACTIVE_CPP_TESTS.items():
         assert (ROOT / relative).is_file()
@@ -110,6 +126,8 @@ def test_release_scenarios_are_exercisable():
             "The current stable release is DART 6.21.0.\n",
         ),
         ("docs/plans/dashboard.md", "`main` develops DART 6.22.\n"),
+        ("docs/background/README.md", "`main` develops DART 6.22.\n"),
+        ("docs/design/README.md", "`main` develops DART 6.22.\n"),
         ("docs/ai/principles.md", "`main`, developing\nDART 6.22.\n"),
         ("docs/README.md", "`release-6.21` stabilizes DART 6.21.\n"),
         (
@@ -216,7 +234,9 @@ def test_release_references_allow_history_and_dependency_floors(
         ),
     ],
 )
-def test_release_references_accept_owner_only_rollover(tmp_path, rows):
+def test_release_references_accept_owner_only_rollover(tmp_path, rows, monkeypatch):
+    monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
+    monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
     sources = [
         *infra.release_reference_paths(ROOT),
         ROOT / "docs/onboarding/release-management.md",
@@ -236,9 +256,138 @@ def test_release_references_accept_owner_only_rollover(tmp_path, rows):
         )
         errors = []
 
+        infra.check_release_target(tmp_path, errors)
         infra.check_release_references(tmp_path, errors)
 
         assert errors == []
+
+
+@pytest.fixture
+def release_target_owner(tmp_path, monkeypatch):
+    monkeypatch.delenv("GITHUB_BASE_REF", raising=False)
+    monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
+    path = tmp_path / "docs/onboarding/release-management.md"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        "## Release Target\n\n"
+        "| Branch | Phase | Next release |\n"
+        "| ------ | ----- | ------------ |\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        "| `main` | Development | `6.22.0` |",
+        "| `release-6.20` | Stabilization | `6.20.0` |",
+        "| `release-6.20` | Maintenance | `6.20.1` |",
+    ],
+)
+def test_release_target_accepts_valid_rows(release_target_owner, tmp_path, row):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + row + "\n\n## History\n\n| main | Development | 6.19.0 |\n",
+        encoding="utf-8",
+    )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        "",
+        "| main | Development | 6.22.0 |\n| main | Development | 6.23.0 |",
+        "| main | Development | 6.22.0 |\n| release-6.20 | Maintenance | 6.20.1 |",
+        "| feature | Development | 6.22.0 |",
+        "| main | Maintenance | 6.22.0 |",
+        "| release-6.20 | Development | 6.20.0 |",
+        "| release-6.20 | Preview | 6.20.0 |",
+        "| main | Development | 6.22 |",
+        "| main | Development | 7.0.0 |",
+        "| release-6.20 | Maintenance | 6.21.1 |",
+        "| main | Development | 6.22.0 | extra |",
+        "| main | Development | 6.22.0 ||",
+    ],
+)
+def test_release_target_rejects_invalid_rows(release_target_owner, tmp_path, rows):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(text + rows + "\n", encoding="utf-8")
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert "Release Target" in errors[0]
+
+
+@pytest.mark.parametrize("mutation", ["missing", "duplicate", "header", "separator"])
+def test_release_target_rejects_invalid_tables(
+    release_target_owner, tmp_path, mutation
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    text += "| main | Development | 6.22.0 |\n"
+    if mutation == "missing":
+        text = text.replace("## Release Target", "## History")
+    elif mutation == "duplicate":
+        text += "\n" + text
+    elif mutation == "header":
+        text = text.replace("Next release", "Package version")
+    else:
+        text = text.replace("| ------ |", "| invalid |")
+    release_target_owner.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert "Release Target" in errors[0]
+
+
+@pytest.mark.parametrize(
+    ("checkout", "base", "ref", "valid"),
+    [
+        ("docs/topic", "main", "123/merge", True),
+        ("docs/topic", "release-6.20", "123/merge", False),
+        ("main", "", "", True),
+        ("release-6.20", "", "", False),
+        ("", "", "main", True),
+        ("", "", "release-6.20", False),
+        ("docs/topic", "", "docs/topic", True),
+        ("", "", "", True),
+        ("release-6.20", "main", "", True),
+    ],
+)
+def test_release_target_checks_known_base_branch(
+    release_target_owner, tmp_path, monkeypatch, checkout, base, ref, valid
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("GITHUB_BASE_REF", base)
+    monkeypatch.setenv("GITHUB_REF_NAME", ref)
+    monkeypatch.setattr(
+        infra.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            args[0], 0, stdout=checkout
+        ),
+    )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    if valid:
+        assert errors == []
+    else:
+        assert len(errors) == 1
+        assert "but the base branch is `release-6.20`" in errors[0]
 
 
 def test_release_scenarios_reject_structural_only_ai_completion_gate():

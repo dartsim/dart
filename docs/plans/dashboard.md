@@ -13,9 +13,9 @@ Priority order is document order. Active implementation handoff remains in
 - Horizon: Now
 - Dimension: Performance, determinism, and Gazebo/gz-sim compatibility.
 - Next step: Re-baseline the DART workload matrix and `dart` detector
-  rows on the current merged base, then use that evidence to select one
-  consolidated implementation gap or the closeout route. Keep the task active
-  while #3056 remains open.
+  rows on the current merged base against named parent/base revisions, then
+  use that comparison evidence to select one consolidated implementation gap
+  or the closeout route. Keep the task active while #3056 remains open.
 - Gate: `pixi run lint`; capped C++ build; detector-specific final-state
   hash guards; benchmark evidence in the task-required report shape;
   `pixi run -e gazebo test-gz` for collision, solver, or `World::step`

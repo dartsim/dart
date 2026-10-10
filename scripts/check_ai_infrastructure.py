@@ -3715,6 +3715,74 @@ def check_instruction_budget(root: Path, errors: list[str]) -> None:
             )
 
 
+def check_release_target(root: Path, errors: list[str]) -> None:
+    """Validate the branch-local owner, using CI/base checkout identity if known."""
+    relative = "docs/onboarding/release-management.md"
+    path = root / relative
+    if not path.is_file():
+        errors.append(f"{relative}: missing Release Target owner")
+        return
+    sections = re.findall(
+        r"^## Release Target\s*\n(.*?)(?=^## |\Z)",
+        path.read_text(encoding="utf-8"),
+        re.MULTILINE | re.DOTALL,
+    )
+    tables = (
+        [
+            line.strip()
+            for line in sections[0].splitlines()
+            if line.lstrip().startswith("|")
+        ]
+        if len(sections) == 1
+        else []
+    )
+    cells = [line[1:-1].split("|") for line in tables]
+    if (
+        len(cells) != 3
+        or not all(line.endswith("|") for line in tables)
+        or [cell.strip() for cell in cells[0]] != ["Branch", "Phase", "Next release"]
+        or len(cells[1]) != 3
+        or not all(re.fullmatch(r":?-{3,}:?", cell.strip()) for cell in cells[1])
+        or len(cells[2]) != 3
+    ):
+        errors.append(
+            f"{relative}: Release Target must have exactly one three-column table row"
+        )
+        return
+    branch, phase, version = [cell.strip().strip("`") for cell in cells[2]]
+    branch_match = re.fullmatch(r"main|release-6\.(\d+)", branch)
+    version_match = re.fullmatch(r"6\.(\d+)\.\d+", version)
+    if (
+        not branch_match
+        or not version_match
+        or (branch == "main" and phase != "Development")
+        or (branch != "main" and phase not in {"Stabilization", "Maintenance"})
+        or (branch != "main" and branch_match[1] != version_match[1])
+    ):
+        errors.append(
+            f"{relative}: Release Target has an invalid branch, phase, or full DART 6 version"
+        )
+        return
+
+    expected_branch = os.environ.get("GITHUB_BASE_REF")
+    if not expected_branch:
+        checkout = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        for candidate in (checkout, os.environ.get("GITHUB_REF_NAME", "")):
+            if re.fullmatch(r"main|release-6\.\d+", candidate):
+                expected_branch = candidate
+                break
+    if expected_branch and branch != expected_branch:
+        errors.append(
+            f"{relative}: Release Target names `{branch}`, "
+            f"but the base branch is `{expected_branch}`"
+        )
+
+
 def release_reference_paths(root: Path) -> list[Path]:
     """Return reusable guidance, excluding the release owner and plan archive."""
     paths = set(source_paths(root))
@@ -3726,6 +3794,8 @@ def release_reference_paths(root: Path) -> list[Path]:
             ".github/PULL_REQUEST_TEMPLATE.md",
             "docs/readthedocs/index.rst",
             "docs/readthedocs/dart/developer_guide/build.rst",
+            "docs/background/README.md",
+            "docs/design/README.md",
         )
     )
     for pattern in (
@@ -3773,6 +3843,7 @@ def check_release_references(root: Path, errors: list[str]) -> None:
 
 
 def check_release_guidance(root: Path, errors: list[str]) -> None:
+    check_release_target(root, errors)
     check_release_references(root, errors)
     python_skill = (root / ".claude" / "skills" / "dart-python" / "SKILL.md").read_text(
         encoding="utf-8"

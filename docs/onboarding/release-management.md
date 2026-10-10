@@ -7,7 +7,7 @@ guidance may target that branch directly.
 ## Release Target
 
 This table owns the planned release for this base branch. Each development or
-release branch maintains its own row; update it when that branch advances to
+release branch maintains exactly one row; update it when that branch advances to
 its next release. Reusable skills and docs link here instead of copying values.
 
 | Branch         | Phase         | Next release |
