@@ -1919,6 +1919,18 @@ TEST(ConstraintSolver, LegacyPrimariesDoNotUseOrRetainContactWarmStart)
 }
 
 //==============================================================================
+// Thread counts for the bit-identical determinism checks below. Coverage builds
+// keep one threaded configuration: gcov's shared counters make oversubscribed
+// threads crawl (the NSGS check alone took 23 minutes at up to 12 threads on a
+// 4-core runner), while 2 threads still exercise the parallel path.
+#if defined(DART_CODECOV)
+constexpr std::array<std::size_t, 2> kDeterminismThreadCounts{1u, 2u};
+#else
+constexpr std::array<std::size_t, 5> kDeterminismThreadCounts{
+    1u, 2u, 4u, 8u, 12u};
+#endif
+
+//==============================================================================
 TEST(ConstraintSolver, NsgsFrictionLawsHaveBitIdenticalThreadCountResults)
 {
   using Nsgs = constraint::NsgsFrictionSolver;
@@ -1930,7 +1942,7 @@ TEST(ConstraintSolver, NsgsFrictionLawsHaveBitIdenticalThreadCountResults)
 #endif
   for (const auto& detector : detectors) {
     SCOPED_TRACE(detector->getType());
-    for (const std::size_t threads : {1u, 2u, 4u, 8u, 12u}) {
+    for (const std::size_t threads : kDeterminismThreadCounts) {
       SCOPED_TRACE(threads);
       for (const auto law :
            {Nsgs::Law::Coulomb, Nsgs::Law::Associated, Nsgs::Law::Box}) {
@@ -1999,7 +2011,7 @@ TEST(ConstraintSolver, FbfHasBitIdenticalThreadCountResults)
 #endif
   for (const auto& detector : detectors) {
     SCOPED_TRACE(detector->getType());
-    for (const std::size_t threads : {1u, 2u, 4u, 8u, 12u}) {
+    for (const std::size_t threads : kDeterminismThreadCounts) {
       SCOPED_TRACE(threads);
       for (const bool useNonDefaultSurfaceParams : {false, true}) {
         SCOPED_TRACE(useNonDefaultSurfaceParams);
