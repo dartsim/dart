@@ -4,6 +4,40 @@ set(example_name dart-demos)
 
 project(${example_name})
 
+if(APPLE)
+  enable_language(OBJCXX)
+elseif(UNIX)
+  find_package(X11 QUIET)
+endif()
+
+function(dart_demos_configure_display target)
+  if(APPLE)
+    target_sources(${target} PRIVATE DisplaySettingsCocoa.mm)
+    set_target_properties(${target} PROPERTIES OBJCXX_STANDARD 17)
+    target_link_libraries(${target} "-framework Cocoa")
+  elseif(WIN32)
+    target_link_libraries(${target} user32)
+  elseif(X11_FOUND)
+    target_compile_definitions(${target} PRIVATE DART_DEMOS_HAVE_X11=1)
+    target_link_libraries(${target} X11::X11)
+    if(TARGET X11::Xrandr)
+      target_compile_definitions(${target} PRIVATE DART_DEMOS_HAVE_XRANDR=1)
+      target_link_libraries(${target} X11::Xrandr)
+    endif()
+  endif()
+endfunction()
+
+# Native X11/Windows headers define macros that must not enter unity files.
+set_source_files_properties(
+  DisplaySettings.cpp
+  tests/test_display_settings.cpp
+  PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON
+)
+
+if(DART_IN_SOURCE_BUILD AND COMMAND dart_format_add)
+  dart_format_add(DisplaySettingsCocoa.mm)
+endif()
+
 option(
   DART_BUILD_DEMOS_MEMORY_DIAGNOSTICS
   "Build memory diagnostics into the consolidated GUI demos"
@@ -385,6 +419,38 @@ if(BUILD_TESTING)
   endif()
 endif()
 
+if(BUILD_TESTING AND COMMAND dart_add_test)
+  if(NOT TARGET GTest::gtest)
+    find_package(GTest MODULE REQUIRED)
+  endif()
+  dart_add_test(
+    "unit"
+    UNIT_examples_demos_DisplaySettings
+    tests/test_display_settings.cpp
+    tests/test_gui_scaling.cpp
+    DisplaySettings.cpp
+    Theme.cpp
+  )
+  target_include_directories(
+    UNIT_examples_demos_DisplaySettings
+    PRIVATE "${CMAKE_CURRENT_LIST_DIR}"
+  )
+  target_link_libraries(UNIT_examples_demos_DisplaySettings dart-gui-osg)
+  dart_demos_configure_display(UNIT_examples_demos_DisplaySettings)
+  set_tests_properties(
+    UNIT_examples_demos_DisplaySettings
+    PROPERTIES
+      LABELS "examples;gui;dpi"
+      FAIL_REGULAR_EXPRESSION "(^|[^0-9])0 tests"
+  )
+  if(TARGET tests)
+    add_dependencies(tests UNIT_examples_demos_DisplaySettings)
+  endif()
+  if(TARGET tests_and_run)
+    add_dependencies(tests_and_run UNIT_examples_demos_DisplaySettings)
+  endif()
+endif()
+
 # The scene ports (examples/demos/scenes/*.cpp) live in a subdirectory, so they
 # cannot be picked up by dart_build_target_in_source()'s non-recursive
 # `file(GLOB srcs "*.cpp" "*.hpp")`. Compile them into a small static library
@@ -416,6 +482,7 @@ if(DART_IN_SOURCE_BUILD)
   )
 
   if(TARGET ${example_name})
+    dart_demos_configure_display(${example_name})
     dart_demos_link_optional_collision_backends(${example_name})
     dart_demos_configure_memory_diagnostics(${example_name})
   endif()
@@ -436,6 +503,7 @@ if(DART_IN_SOURCE_BUILD)
       dart-demos-scenes
     )
     dart_demos_link_optional_collision_backends(${alias_scene})
+    dart_demos_configure_display(${alias_scene})
     dart_demos_configure_memory_diagnostics(${alias_scene})
   endforeach()
 
@@ -452,6 +520,7 @@ dart_demos_configure_scenes_target(dart-demos-scenes)
 
 add_executable(${example_name} ${srcs})
 target_link_libraries(${example_name} ${required_libraries} dart-demos-scenes)
+dart_demos_configure_display(${example_name})
 dart_demos_link_optional_collision_backends(${example_name})
 dart_demos_configure_memory_diagnostics(${example_name})
 
@@ -467,5 +536,6 @@ foreach(alias_scene soft_bodies soft_cubes soft_open_chain)
   )
   target_link_libraries(${alias_scene} ${required_libraries} dart-demos-scenes)
   dart_demos_link_optional_collision_backends(${alias_scene})
+  dart_demos_configure_display(${alias_scene})
   dart_demos_configure_memory_diagnostics(${alias_scene})
 endforeach()
