@@ -1,6 +1,6 @@
 # Build System Notes
 
-DART 6.20 uses CMake through Pixi tasks. Dependency cleanup must preserve
+DART 6 uses CMake through Pixi tasks. Dependency cleanup must preserve
 exported CMake package behavior unless a maintainer explicitly accepts a
 compatibility break.
 

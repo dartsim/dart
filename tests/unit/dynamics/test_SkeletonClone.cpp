@@ -47,6 +47,74 @@
 
 using namespace dart::dynamics;
 
+class SoftBodyCopy : public ::testing::TestWithParam<bool>
+{
+};
+
+//==============================================================================
+TEST_P(SoftBodyCopy, SkinMeshTracksResizedPointMasses)
+{
+  auto original = Skeleton::create("soft_original");
+  const auto softProperties = SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d(0.2, 0.2, 0.1), Eigen::Isometry3d::Identity(), 0.5);
+  const SoftBodyNode::Properties properties(
+      BodyNode::Properties(BodyNode::AspectProperties("skin_body")),
+      softProperties);
+  auto* soft = original
+                   ->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+                       nullptr, FreeJoint::Properties(), properties)
+                   .second;
+  auto* skin = soft->getShapeNode(0);
+  skin->setName("deformable_skin");
+  const Eigen::Vector4d color(0.2, 0.4, 0.6, 0.35);
+  skin->getVisualAspect()->setColor(color);
+  soft->createShapeNodeWith<VisualAspect>(
+      std::make_shared<BoxShape>(Eigen::Vector3d(0.1, 0.1, 0.05)));
+
+  SkeletonPtr destination;
+  if (GetParam()) {
+    destination = soft->copyAs("copy_as");
+  } else {
+    destination = Skeleton::create("copy_to");
+    soft->copyTo(destination, nullptr);
+  }
+  auto* copiedSoft = destination->getSoftBodyNode(0);
+  ASSERT_NE(copiedSoft, nullptr);
+  ASSERT_EQ(copiedSoft->getNumShapeNodes(), soft->getNumShapeNodes());
+  auto* copiedSkin = copiedSoft->getShapeNode(0);
+  EXPECT_EQ(copiedSkin->getName(), skin->getName());
+  EXPECT_TRUE(copiedSkin->getVisualAspect()->getRGBA().isApprox(color));
+  const auto mesh
+      = std::dynamic_pointer_cast<SoftMeshShape>(copiedSkin->getShape());
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_EQ(mesh->getSoftBodyNode(), copiedSoft);
+  EXPECT_NE(mesh, skin->getShape());
+  original.reset();
+
+  const auto largerProperties = SoftBodyNodeHelper::makeEllipsoidProperties(
+      Eigen::Vector3d(0.2, 0.2, 0.2), 6, 6, 0.5);
+  ASSERT_GT(
+      largerProperties.mPointProps.size(), softProperties.mPointProps.size());
+  for (const auto& resizedProperties : {largerProperties, softProperties}) {
+    copiedSoft->setProperties(resizedProperties);
+    ASSERT_EQ(
+        copiedSoft->getNumPointMasses(), resizedProperties.mPointProps.size());
+    ASSERT_NE(mesh->getAssimpMesh(), nullptr);
+    // Check allocation before update() would write past a stale vertex buffer.
+    ASSERT_EQ(
+        mesh->getAssimpMesh()->mNumVertices, copiedSoft->getNumPointMasses());
+    copiedSoft->getPointMass(0)->setPositions(
+        Eigen::Vector3d(0.01, 0.02, 0.03));
+    mesh->update();
+    const auto& vertex = mesh->getAssimpMesh()->mVertices[0];
+    EXPECT_TRUE(
+        Eigen::Vector3d(vertex.x, vertex.y, vertex.z)
+            .isApprox(copiedSoft->getPointMass(0)->getLocalPosition(), 1e-6));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(CopyToAndCopyAs, SoftBodyCopy, ::testing::Bool());
+
 //==============================================================================
 TEST(Issue896, SkeletonCloneDeepCopiesShapes)
 {

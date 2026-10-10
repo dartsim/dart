@@ -75,7 +75,7 @@ scenes, plus the gz gate.
   and `S4_ode` regressed 0.208 -> 0.248 ms/step (+19.2%). Contact-container
   ODE rows were also mixed: 60-object rows improved 13-14%, but 120-object
   rows regressed 6.8-9.4%. Artifact:
-  `/tmp/wp_pg21_gate_20260707T130843`.
+  `wp_pg21_gate_20260707T130843`.
 
 #### WP-PG.22 — Version-gated ODE pose push
 

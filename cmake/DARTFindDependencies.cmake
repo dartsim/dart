@@ -166,7 +166,10 @@ if(DART_BUILD_DARTPY AND Python_EXECUTABLE)
     FORCE
   )
 endif()
-if(DART_BUILD_DARTPY)
+if(DART_BUILD_DARTPY AND DART_BUILD_WHEELS)
+  # manylinux provides extension headers, but deliberately omits libpython.
+  find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter Development.Module)
+elseif(DART_BUILD_DARTPY)
   find_package(Python3 3.10 REQUIRED COMPONENTS Interpreter Development)
 else()
   find_package(Python3 3.10 COMPONENTS Interpreter Development)

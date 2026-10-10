@@ -1,6 +1,6 @@
 # Development Task Tracking
 
-Use `docs/dev_tasks/<task>/` for multi-session DART 6.20 work that needs
+Use `docs/dev_tasks/<task>/` for multi-session DART 6 work that needs
 handoff state, sequencing, or evidence beyond a single commit.
 
 Create a task folder when work is multi-phase, spans more than one session, or

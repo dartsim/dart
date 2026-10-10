@@ -21,6 +21,10 @@
     options and the pybind11 binder. Remove these options from configurations;
     a legacy `DART_DARTPY_BINDER=pybind11` value fails configure.
 
+  * Remove the `hubo_puppet` demo and installed
+    `dart://sample/urdf/drchubo/` sample resources. The `fetch` demo is also
+    retired; its model remains available for parser regression coverage.
+
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
     `EmbedStateAndProperties`. These operations could not be instantiated
@@ -34,11 +38,18 @@
     `getSchemaRetrievers()`, and `removeAllRetrievers()` to inspect and release
     owned objective functions and resource retrievers.
 
+  * Prevent concurrent legacy URDF parsing calls from overriding each other's
+    resource retriever and root-joint options.
+    [#3653](https://github.com/dartsim/dart/pull/3653)
+
 * Dynamics
 
   * Preserve the generated soft mesh and shape-node properties when cloning
     soft-body skeletons, avoiding duplicate null meshes during collision checks.
     [#3644](https://github.com/dartsim/dart/pull/3644)
+
+  * Keep soft-body skin meshes resizable after `BodyNode::copyTo()` and
+    `BodyNode::copyAs()`, preventing invalid mesh updates.
 
 * Python
 
@@ -73,6 +84,12 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
 * Build
+
+  * Add the optional `utils-assets` component for C++ and dartpy online model
+    retrieval, with pinned sources, verified versioned caches, and offline
+    reuse. Native builds opt in with `DART_BUILD_UTILS_ASSETS=ON` and require
+    libcurl and OpenSSL; Pixi builds enable it by default. The catalog includes
+    Atlas v5 and Unitree G1 model-viewing demos.
 
   * Add `DART_USE_SYSTEM_NANOBIND` (default `OFF`); the bundled build fetches
     nanobind 3.1.0 and its robin_map submodule.
@@ -925,6 +942,9 @@
     [#3574](https://github.com/dartsim/dart/pull/3574)
 
 * Python
+
+  * Restore dartpy Linux wheels for glibc 2.28 and newer, including native
+    x86_64 and aarch64 builds.
 
   * Fix dartpy DOF-list accessors so `Skeleton.getDofs()` and related chain
     DOF helpers return wrappers for DART-owned `DegreeOfFreedom` objects

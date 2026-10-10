@@ -1,11 +1,11 @@
-# Agent Guidelines for DART 6.21
+# Agent Guidelines for DART 6
 
 This file is the repository pointer board. Start every task with
 `docs/ai/principles.md`, then load only the owner docs needed for the work.
 
 ## Project Profile
 
-- **WHAT**: C++17 robotics physics engine with dartpy bindings (nanobind for DART 6.21)
+- **WHAT**: C++17 robotics physics engine with dartpy bindings (nanobind)
 - **WHY**: Stable DART 6 LTS compatibility for users and Gazebo/gz-physics
 - **HOW**: Use repository `pixi run ...` tasks; run `pixi run lint` before commits
 
@@ -50,21 +50,24 @@ the repository root to the working directory.
 
 ## DART 6 Compatibility Rules
 
-- Branch from `origin/main` into a non-tracking topic branch; never
-  commit directly to `main` or `release-*`.
-- Preserve C++17, the nanobind binder, `dart::utils` parsers, OSG, installed headers,
-  package components, ABI-sensitive interfaces, default simulation behavior,
-  and Gazebo/gz-physics compatibility unless a maintainer approves otherwise.
-- The approved DART 6.21 migration uses nanobind as the only binder under
-  `python/dartpy/`; follow `docs/onboarding/python-bindings.md`.
-- `main` is the development branch for the next release (currently DART 6.21).
-  PRs target `main`, where new patches land; there is no maintenance branch.
-  Backports to a `release-6.*` branch cut from a release tag use
-  `dart-backport-pr`.
-- Use `.github/PULL_REQUEST_TEMPLATE.md` and set the branch-matching DART 6.x
-  release milestone (currently `DART 6.21.0`) on PRs.
+- Branch from the resolved target into a non-tracking topic branch
+  (`origin/main` by default); never commit directly to `main` or `release-*`.
+- Preserve C++17, the nanobind binder, `dart::utils` parsers, OSG, installed
+  headers, package components, ABI-sensitive interfaces, default simulation
+  behavior, and Gazebo/gz-physics compatibility unless a maintainer approves
+  otherwise.
+- dartpy uses nanobind as its only binder, under `python/dartpy/`; follow
+  `docs/onboarding/python-bindings.md`.
+- New fixes land on `main`; backports to a `release-6.*` branch use
+  `dart-backport-pr`. Target the release branch for release-specific packaging,
+  CI, and branch guidance. Resolve the next release and milestone from the
+  fetched target's `docs/onboarding/release-management.md`.
+- Use `.github/PULL_REQUEST_TEMPLATE.md` and set the resolved release milestone
+  on PRs.
 - Do not prefix commit messages or PR titles with agent tags like `[codex]`;
   use plain descriptive titles.
+- Keep private, local, and machine-specific paths out of published files,
+  commit messages, and PR text; validate with `scripts/check_local_paths.py`.
 - Before every approved push to a published PR branch, first merge the latest
   base branch into it — merge, never rebase a published PR branch.
 - GitHub mutations, pushes, PR changes, CI reruns, review-thread mutations, and

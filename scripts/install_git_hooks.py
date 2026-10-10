@@ -1,16 +1,33 @@
 #!/usr/bin/env python3
-"""Install DART's git ``pre-commit`` hook (the fast staged-file gate).
+"""Install DART's managed ``pre-commit``, ``commit-msg`` and ``pre-push`` hooks.
 
-Idempotently writes ``<git-hooks-dir>/pre-commit`` so every ``git commit`` runs
-``scripts/check_agent_hook.py --profile staged`` with a compatible Python
-interpreter first. Behaviour:
+Idempotently writes hooks so every ``git commit`` runs the fast staged
+gate (``scripts/check_agent_hook.py --profile staged``), scans staged changes
+(``scripts/check_local_paths.py --staged``), and scans its message
+(``scripts/check_local_paths.py --commit-msg-file "$1"``) with compatible
+Python interpreter selection for each gate. The message scan derives cleanup
+from the parent Git command, independent of the editor template's language.
+Strip cleanup skips configured comments; whitespace cleanup scans every line.
+Scissors cleanup or verbose mode excludes text after Git's scissors line. No
+``pre-merge-commit`` hook is installed: a conflicted merge ends with
+``git commit``, and ``pre-push`` checks commits created by merges, cherry-picks,
+rebases, reverts, imports and sequencer operations before publication. It reads
+Git's ref updates from stdin, skips deletions, and scans messages and changes
+using ``check_local_paths.py --commit-range``. Existing refs use the remote SHA;
+new refs use the merge base with the remote's default branch. Missing base
+objects are fetched without changing refs or FETCH_HEAD. An empty remote or
+unrelated history scans the whole local history; lookup or scan errors block
+the push. Older branches without a checker or compatible Python skip the scan
+with a notice. A checker removed from the worktree is recovered from HEAD or
+the push base; recovery errors block the operation. Foreign pre-push hooks
+receive the same stdin. Behaviour:
 
-* The managed hook carries a sentinel line (``DART-MANAGED-HOOK``); re-running
+* Each managed hook carries a sentinel line (``DART-MANAGED-HOOK``); re-running
   this installer detects it and rewrites the hook in place, so the command is
   safe to run any number of times.
-* If a *foreign* (non-DART) ``pre-commit`` hook already exists it is preserved,
-  not clobbered: it is moved to ``pre-commit.local`` with its mode unchanged
-  and chained from the managed hook when executable. If a ``pre-commit.local``
+* If a *foreign* (non-DART) hook already exists it is preserved,
+  not clobbered: it is moved to ``<hook>.local`` with its mode unchanged
+  and chained from the managed hook when executable. If a ``<hook>.local``
   is already present the installer refuses with a clear message rather than
   lose an existing local hook.
 * Worktrees are handled via ``git rev-parse --git-path hooks``, which resolves
@@ -19,8 +36,9 @@ interpreter first. Behaviour:
 * A repository or user with ``core.hooksPath`` set manages hooks elsewhere;
   the installer refuses rather than write into a shared personal hooks
   directory.
-* Emergency bypass at commit time: ``DART_SKIP_HOOKS=1 git commit ...``.
-* Verification aid: ``DART_HOOK_DRY_RUN=1`` makes the installed hook print the
+* Emergency bypass: ``DART_SKIP_HOOKS=1 git commit ...`` or
+  ``DART_SKIP_HOOKS=1 git push ...``.
+* Verification aid: ``DART_HOOK_DRY_RUN=1`` makes each installed hook print the
   command it *would* run instead of running it, so tests and manual checks can
   confirm wiring without invoking the full lint (see
   ``tests/test_install_git_hooks.py``).
@@ -37,21 +55,172 @@ import sys
 from pathlib import Path
 
 SENTINEL = "DART-MANAGED-HOOK"
-HOOK_VERSION = "7"
+HOOK_VERSION = "13"
 
-# POSIX sh hook body. Kept dependency-free. It prefers the repository Pixi
-# interpreter, then a compatible PATH python3. In an older linked worktree or
-# without Python 3.11+, it safely falls back to Git's staged whitespace check.
-HOOK_TEMPLATE = f"""\
+CHECKER_SELECTION = """\
+# Recover removed/renamed checkers without trusting the post-change worktree.
+select_checker() {
+    checker_path=$2
+    [ ! -f "$checker_path" ] || return 0
+    checker_path=
+    [ -n "$1" ] || return 0
+    tracked_checker=$(git ls-tree --name-only "$1" -- "$2") || return 1
+    [ -n "$tracked_checker" ] || return 0
+    [ -n "$python_cmd" ] || return 1
+    if [ -z "${checker_temp:-}" ]; then
+        checker_temp=$(mktemp -d) || return 1
+        trap 'rm -rf "$checker_temp"' 0
+    fi
+    checker_path="$checker_temp/${2##*/}"
+    git show "$1:$2" > "$checker_path" || return 1
+    echo "DART hook: using tracked $2 from $1." >&2
+}
+"""
+
+PRE_PUSH_SCAN = """\
+if [ -z "$python_cmd" ] && [ -f scripts/check_local_paths.py ]; then
+    echo "DART pre-push: local-path gate unavailable in this checkout; skipping scan." >&2
+    exit 0
+fi
+
+printf '%s\\n' "$push_updates" | while read -r local_ref local_sha remote_ref remote_sha; do
+    # A zero local SHA denotes deletion; no commit is being published.
+    case "$local_sha" in
+        *[!0]*) ;;
+        *) continue ;;
+    esac
+    base_sha=$remote_sha
+    new_ref=0
+    case "$remote_sha" in
+        *[!0]*) ;;
+        *)
+            new_ref=1
+            remote_head=$(git ls-remote --symref "$2" HEAD) || exit 1
+            base_sha=$(printf '%s\\n' "$remote_head" | awk '$2 == "HEAD" && $1 != "ref:" {print $1}')
+            ;;
+    esac
+    if [ -n "$base_sha" ]; then
+        if ! git cat-file -e "$base_sha^{commit}" 2>/dev/null; then
+            git fetch --no-tags --no-write-fetch-head "$2" "$base_sha" || exit 1
+        fi
+        if [ "$new_ref" = 1 ]; then
+            base_sha=$(git merge-base "$base_sha" "$local_sha")
+            status=$?
+            # Status 1 means unrelated histories; other errors must block.
+            [ "$status" -le 1 ] || exit "$status"
+        fi
+    fi
+    commit_range=$local_sha
+    [ -z "$base_sha" ] || commit_range="$base_sha..$local_sha"
+    if ! select_checker "${base_sha:-$local_sha}" scripts/check_local_paths.py; then
+        echo "DART pre-push: cannot recover tracked checker — push blocked." >&2
+        exit 1
+    fi
+    if [ -z "$checker_path" ]; then
+        echo "DART pre-push: local-path gate unavailable in this checkout; skipping scan." >&2
+        continue
+    fi
+    echo "DART pre-push: scanning $local_ref ($commit_range)..." >&2
+    if ! "$python_cmd" "$checker_path" --commit-range "$commit_range"; then
+        echo "DART pre-push: local-path hook FAILED — push blocked." >&2
+        echo "  Fix: remove local paths from pushed commits." >&2
+        echo "  Emergency bypass: DART_SKIP_HOOKS=1 git push ..." >&2
+        exit 1
+    fi
+done
+"""
+
+
+def hook_template(name: str) -> str:
+    script = "check_agent_hook.py" if name == "pre-commit" else "check_local_paths.py"
+    arguments = (
+        "--profile staged"
+        if name == "pre-commit"
+        else (
+            '--commit-range "$commit_range"'
+            if name == "pre-push"
+            else '--commit-msg-file "$1" --git-pid "$PPID"'
+        )
+    )
+    command = f"scripts/{script} {arguments}"
+    display_command = command.replace('"', '\\"')
+    gate = "agent" if name == "pre-commit" else "local-path"
+    compatibility_check = (
+        "import tomllib"
+        if name == "pre-commit"
+        else "import sys; sys.exit(sys.version_info < (3, 9))"
+    )
+    fix = (
+        "pixi run lint   (then re-stage and commit)"
+        if name == "pre-commit"
+        else "remove local paths from the commit message"
+    )
+    if name == "pre-commit":
+        fallback = """\
+    echo "DART pre-commit: full agent gate unavailable in this worktree; running staged diff fallback..." >&2
+    if ! git -c core.whitespace=cr-at-eol diff --cached --check; then
+        echo "DART pre-commit: staged diff check FAILED — commit blocked." >&2
+        exit 1
+    fi
+"""
+    else:
+        fallback = '    echo "DART commit-msg: local-path gate unavailable in this worktree; skipping message scan." >&2\n'
+    operation = "push" if name == "pre-push" else "commit"
+    capture = ""
+    chain = f'    "$hooks_dir/{name}.local" "$@" || exit $?'
+    staged_scan = ""
+    if name == "pre-commit":
+        staged_scan = """\
+if ! select_checker "$checker_revision" scripts/check_local_paths.py; then
+    echo "DART pre-commit: cannot recover tracked checker — commit blocked." >&2
+    exit 1
+fi
+if [ -n "$checker_path" ] && [ -n "$python_cmd" ]; then
+    if ! "$python_cmd" "$checker_path" --staged; then
+        echo "DART pre-commit: local-path hook FAILED — commit blocked." >&2
+        exit 1
+    fi
+else
+    echo "DART pre-commit: local-path gate unavailable in this worktree; skipping staged scan." >&2
+fi
+"""
+    run_gate = f"""\
+checker_revision=$(git rev-parse --verify --quiet HEAD)
+revision_status=$?
+[ "$revision_status" -le 1 ] || exit "$revision_status"
+{staged_scan}if ! select_checker "$checker_revision" scripts/{script}; then
+    echo "DART {name}: cannot recover tracked checker — commit blocked." >&2
+    exit 1
+fi
+if [ -z "$checker_path" ] \
+    || [ -z "$python_cmd" ]; then
+{fallback}    exit 0
+fi
+
+echo "DART {name}: running fast {gate} gate ($python_cmd {display_command})..." >&2
+if ! "$python_cmd" "$checker_path" {arguments}; then
+    echo "" >&2
+    echo "DART {name}: {gate} hook FAILED — commit blocked." >&2
+    echo "  Fix with: {fix}" >&2
+    echo "  Emergency bypass: DART_SKIP_HOOKS=1 git commit ..." >&2
+    exit 1
+fi
+"""
+    if name == "pre-push":
+        capture = "push_updates=$(cat) || exit 1\n"
+        chain = '    printf \'%s\\n\' "$push_updates" | "$hooks_dir/pre-push.local" "$@" || exit $?'
+        run_gate = PRE_PUSH_SCAN
+    # All hooks prefer Pixi Python, then a compatible PATH python3.
+    return f"""\
 #!/bin/sh
-# DART pre-commit hook — installed by scripts/install_git_hooks.py
+# DART {name} hook — installed by scripts/install_git_hooks.py
 # {SENTINEL} v{HOOK_VERSION}  (sentinel line: do not edit; the installer keys on it)
 #
-# Runs the fast staged-file gate (`scripts/check_agent_hook.py --profile staged`) before every commit.
-# Emergency bypass: DART_SKIP_HOOKS=1 git commit ...
+# Runs `{command}` before every {operation}.
+# Emergency bypass: DART_SKIP_HOOKS=1 git {operation} ...
 
 if [ "${{DART_SKIP_HOOKS:-0}}" = "1" ]; then
-    echo "DART pre-commit: skipped (DART_SKIP_HOOKS=1)" >&2
+    echo "DART {name}: skipped (DART_SKIP_HOOKS=1)" >&2
     exit 0
 fi
 
@@ -66,7 +235,7 @@ select_hook_python() {{
     do
         [ -n "$candidate" ] || continue
         if [ -x "$candidate" ] || command -v "$candidate" >/dev/null 2>&1; then
-            if "$candidate" -c 'import tomllib' >/dev/null 2>&1; then
+            if "$candidate" -c '{compatibility_check}' >/dev/null 2>&1; then
                 printf '%s\n' "$candidate"
                 return 0
             fi
@@ -78,36 +247,20 @@ select_hook_python() {{
 python_cmd=$(select_hook_python) || python_cmd=
 
 if [ -n "${{DART_HOOK_DRY_RUN:-}}" ]; then
-    echo "DART pre-commit (dry run): would run selected Python: scripts/check_agent_hook.py --profile staged" >&2
+    echo "DART {name} (dry run): would run selected Python: {display_command}" >&2
     exit 0
 fi
 
 # Chain to a foreign hook preserved at install time, if any.
-hooks_dir=$(git rev-parse --git-path hooks)
-if [ -x "$hooks_dir/pre-commit.local" ]; then
-    "$hooks_dir/pre-commit.local" "$@" || exit $?
+{capture}hooks_dir=$(git rev-parse --git-path hooks)
+if [ -x "$hooks_dir/{name}.local" ]; then
+{chain}
 fi
 
 cd "$repo_root" || exit 1
 
-if [ ! -f scripts/check_agent_hook.py ] \
-    || [ -z "$python_cmd" ]; then
-    echo "DART pre-commit: full agent gate unavailable in this worktree; running staged diff fallback..." >&2
-    if ! git -c core.whitespace=cr-at-eol diff --cached --check; then
-        echo "DART pre-commit: staged diff check FAILED — commit blocked." >&2
-        exit 1
-    fi
-    exit 0
-fi
-
-echo "DART pre-commit: running fast agent gate ($python_cmd scripts/check_agent_hook.py --profile staged)..." >&2
-if ! "$python_cmd" scripts/check_agent_hook.py --profile staged; then
-    echo "" >&2
-    echo "DART pre-commit: agent hook FAILED — commit blocked." >&2
-    echo "  Fix with: pixi run lint   (then re-stage and commit)" >&2
-    echo "  Emergency bypass: DART_SKIP_HOOKS=1 git commit ..." >&2
-    exit 1
-fi
+{CHECKER_SELECTION}
+{run_gate}
 """
 
 
@@ -138,17 +291,19 @@ def resolve_hooks_dir() -> Path:
         ["git", "config", "--get", "core.hooksPath"],
         capture_output=True,
         text=True,
-    ).stdout.strip()
-    if hooks_path:
+    )
+    if hooks_path.returncode == 0:
         sys.exit(
             "error: core.hooksPath is set "
-            f"({hooks_path}); refusing to install into a custom hooks\n"
+            f"({hooks_path.stdout.strip()!r}); refusing to install into a custom hooks\n"
             "  directory that may be shared across repositories. Add the gate "
             "to your own\n"
-            "  hook manager (run `python3 scripts/check_agent_hook.py --profile staged` from pre-commit), "
-            "or unset\n"
+            '  hook manager (run `python3 scripts/check_agent_hook.py --profile staged` from pre-commit and `python3 scripts/check_local_paths.py --commit-msg-file "$1"` from commit-msg), '
+            "include the pre-push ref-range scan too, or unset\n"
             "  core.hooksPath and re-run `pixi run install-hooks`."
         )
+    if hooks_path.returncode != 1:
+        sys.exit(f"error: cannot read core.hooksPath: {hooks_path.stderr.strip()}")
     raw = Path(run_git(["rev-parse", "--git-path", "hooks"]))
     if not raw.is_absolute():
         raw = (Path.cwd() / raw).resolve()
@@ -156,7 +311,7 @@ def resolve_hooks_dir() -> Path:
 
 
 def write_hook(path: Path) -> None:
-    path.write_text(HOOK_TEMPLATE)
+    path.write_text(hook_template(path.name))
     mode = path.stat().st_mode
     path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
@@ -165,38 +320,38 @@ def main() -> int:
     hooks_dir = resolve_hooks_dir()
     hooks_dir.mkdir(parents=True, exist_ok=True)
 
-    pre_commit = hooks_dir / "pre-commit"
-    local = hooks_dir / "pre-commit.local"
-
-    if pre_commit.exists():
-        existing = pre_commit.read_text(errors="replace")
-        if SENTINEL in existing:
-            write_hook(pre_commit)
-            print(
-                f"DART pre-commit hook already installed; refreshed in place: {pre_commit}"
-            )
-            return 0
-
-        # A foreign hook is present — preserve it rather than clobber.
-        if local.exists():
+    hooks = [hooks_dir / name for name in ("pre-commit", "commit-msg", "pre-push")]
+    # Check all backups before changing any hook.
+    for hook in hooks:
+        local = hook.with_name(f"{hook.name}.local")
+        if (
+            hook.is_symlink()
+            or hook.exists()
+            and SENTINEL not in hook.read_text(errors="replace")
+        ) and (local.exists() or local.is_symlink()):
             sys.exit(
-                "error: refusing to overwrite an existing pre-commit hook.\n"
-                f"  A foreign hook exists at {pre_commit} AND {local} is already\n"
+                f"error: refusing to overwrite an existing {hook.name} hook.\n"
+                f"  A foreign hook exists at {hook} AND {local} is already\n"
                 "  present, so the foreign hook cannot be backed up without loss.\n"
-                "  Resolve manually: fold your hook logic into pre-commit.local,\n"
-                "  remove pre-commit, then re-run `pixi run install-hooks`."
+                f"  Resolve manually: fold your hook logic into {hook.name}.local,\n"
+                f"  remove {hook.name}, then re-run `pixi run install-hooks`."
             )
-        shutil.move(str(pre_commit), str(local))
-        print(
-            f"Preserved existing pre-commit hook as {local} (chained from the DART hook)."
-        )
 
-    write_hook(pre_commit)
-    print(f"Installed DART pre-commit hook: {pre_commit}")
-    print(
-        "  Runs `scripts/check_agent_hook.py --profile staged` with the repository Pixi Python when available."
-    )
-    print("  Emergency bypass: DART_SKIP_HOOKS=1 git commit ...")
+    for hook in hooks:
+        if (
+            hook.is_symlink()
+            or hook.exists()
+            and SENTINEL not in hook.read_text(errors="replace")
+        ):
+            local = hook.with_name(f"{hook.name}.local")
+            shutil.move(str(hook), str(local))
+            print(
+                f"Preserved existing {hook.name} hook as {local} (chained from the DART hook)."
+            )
+        write_hook(hook)
+        print(f"Installed/refreshed DART {hook.name} hook: {hook}")
+    print("  All gates use the repository Pixi Python when available.")
+    print("  Emergency bypass: DART_SKIP_HOOKS=1 git commit/push ...")
     return 0
 
 

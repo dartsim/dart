@@ -213,6 +213,9 @@ protected:
       Joint* _parentJoint,
       bool cloneNodes) const override;
 
+  /// Rebind the deformable skin after cloning nodes in their original order.
+  void matchSoftShapeNode(const SoftBodyNode* original);
+
   /// Used by SoftBodyAspect to have this SoftBodyNode reconstruct its
   /// SoftMeshShape
   void configurePointMasses(ShapeNode* softNode);

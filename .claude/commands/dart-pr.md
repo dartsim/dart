@@ -11,6 +11,7 @@ $ARGUMENTS
 
 @AGENTS.md
 @docs/onboarding/contributing.md
+@docs/onboarding/release-management.md
 @docs/onboarding/ai-tools.md
 @docs/onboarding/changelog.md
 @.github/PULL_REQUEST_TEMPLATE.md
@@ -28,6 +29,8 @@ gh pr list --repo dartsim/dart --state merged --base <target-branch> --limit 10 
 Use these practices:
 
 - Keep titles plain, scoped, and outcome-focused. Do not add agent prefixes.
+- Describe private plans in prose or link public PRs/issues. Keep private,
+  local, and machine-specific paths out of the title and body.
 - Follow `docs/onboarding/contributing.md` § "PR Descriptions" for the
   Effect-first template order, comparisons, plots, collapsed raw tables, and
   Testing content. This is the PR-description owner for agents and contributors.
@@ -80,15 +83,15 @@ Use these practices:
    git diff --check
    ```
 2. Exclude unrelated dirty files unless the user explicitly includes them.
-3. Choose the target branch and milestone:
-
-   | Target                    | Milestone                                       |
-   | ------------------------- | ----------------------------------------------- |
-   | `main`                    | Next DART 6.x release (currently `DART 6.20.0`) |
-   | Maintenance `release-6.*` | Branch-matching DART 6.x release                |
-
-4. After explicit maintainer/user approval, open bug-fix PRs against `main`;
-   backports to a `release-6.*` branch (none right now) use `dart-backport-pr`.
+3. Resolve the target from the live PR base, or use `main` for new development.
+   Fetch that base and read its `docs/onboarding/release-management.md`
+   § "Release target". Use `DART <Next release>` as the milestone and verify
+   that exact title is open on GitHub. For an explicit rollover, follow the
+   owner's proposed-target rule. Publishing or updating the PR requires
+   explicit maintainer/user approval.
+4. New fixes target `main`; backports to a maintained `release-6.*` branch use
+   `dart-backport-pr`. Release-specific packaging, CI, and branch guidance may
+   target the resolved release branch directly.
 5. Before every commit, run:
    ```bash
    pixi run lint
@@ -100,21 +103,25 @@ Use these practices:
    git switch --no-track -c <type>/<topic> origin/<target-branch>
    ```
 7. Commit only intended files with a plain descriptive commit title.
-8. Ask for explicit maintainer/user approval before pushing or opening the draft
-   PR. Never push directly to `main` or `release-*`. If approved:
+8. Before every `gh pr create` or `gh pr edit`, require both checks below to
+   exit 0 on the exact proposed title and body, including retained text:
+   ```bash
+   printf '%s\n' "$pr_title" | pixi run python scripts/check_local_paths.py --stdin
+   pixi run python scripts/check_local_paths.py --text-file "$pr_body_file"
+   ```
+   Ask for explicit maintainer/user approval before pushing or opening the
+   draft PR. Never push directly to `main` or `release-*`. If approved:
    ```bash
    branch=$(git branch --show-current)
    git push -u origin "HEAD:${branch}"
    gh pr create --draft --base <target-branch> --milestone "<milestone>" \
-     --title "<plain title>" --body-file <filled-template-file>
+     --title "$pr_title" --body-file "$pr_body_file"
    ```
-   For fast feedback on a draft PR, also request Codex review after publication
-   when approval covers PR comments:
+   Request Codex review after publication when approval covers PR comments:
    ```bash
    gh pr comment <PR_NUMBER> --body "@codex review"
    ```
-   If Codex already shows an activity signal or submitted review, do not post a
-   duplicate trigger.
+   Skip the trigger if Codex already shows activity or a submitted review.
 9. After a PR is published, prefer additive follow-up commits for updates so
    reviewers can inspect each review round. Amend or force-push only after
    explicit maintainer/user approval and only when the user explicitly requests
@@ -134,10 +141,9 @@ Use these practices:
     branch by default because it invalidates existing CI runs and makes PR
     review/comment history harder to follow. Rebase or force-push only when the
     maintainer explicitly requests it.
-11. Use `docs/onboarding/changelog.md` for the changelog decision. If
-    `CHANGELOG.md` needs the PR number, keep the follow-up changelog commit
-    local until explicit maintainer/user approval is given for the additional
-    push or PR update.
+11. Use `docs/onboarding/changelog.md` for the changelog decision. Keep any
+    follow-up entry needing a PR number local until explicit maintainer/user
+    approval covers the additional push or PR update.
 12. Monitor CI:
     ```bash
     gh pr checks <PR_NUMBER>
@@ -154,7 +160,5 @@ explicit maintainer/user approval.
 
 ## Output
 
-- Branch, target base, and milestone used
-- Commit titles and files included
-- Verification commands run and their results
-- PR URL after approved creation, and the changelog decision
+- Branch, target base, milestone, commit titles, and files included
+- Verification results, PR URL after approved creation, and changelog decision

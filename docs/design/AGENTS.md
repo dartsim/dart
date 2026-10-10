@@ -1,6 +1,6 @@
 # docs/design/
 
-Agent rules for durable DART 6.20 design documents.
+Agent rules for durable DART 6 design documents.
 
 ## Purpose
 

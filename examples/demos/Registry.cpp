@@ -73,7 +73,6 @@ std::vector<DemoScene> makeDemoScenes()
   scenes.push_back(makeWamIkFastScene());
   scenes.push_back(makeAtlasPuppetScene());
   scenes.push_back(makeAtlasSimbiconScene());
-  scenes.push_back(makeHuboPuppetScene());
 
   // Soft Bodies (new category; first appearance here).
   scenes.push_back(makeMixedChainScene());
@@ -85,7 +84,10 @@ std::vector<DemoScene> makeDemoScenes()
   scenes.push_back(makeSoftOpenChainScene());
 
   // Robots (new category; first appearance here).
-  scenes.push_back(makeFetchScene());
+#ifdef DART_DEMOS_HAVE_MODEL_ASSETS
+  scenes.push_back(makeAtlasV5Scene());
+  scenes.push_back(makeUnitreeG1Scene());
+#endif
   scenes.push_back(makeVehicleScene());
 
   // Visualization (existing category, first introduced by simple_frames).

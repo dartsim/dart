@@ -345,8 +345,10 @@ def handler_lifetime(case):
         probe.dispatch_viewer_handlers(viewer, key=int(osg.GUIEventAdapter.KEY_A))
         assert events == expected, events
         gc.collect()
+        # The handler removed itself, so another dispatch must not reach it.
+        handled = list(events)
         probe.dispatch_viewer_handlers(viewer, key=int(osg.GUIEventAdapter.KEY_A))
-        assert events == expected, events
+        assert events == handled, events
         del viewer
         gc.collect()
         assert reference() is None

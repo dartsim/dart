@@ -24,7 +24,7 @@ user.
 
 ## Command Body
 
-Audit or update DART 6.20's AI infrastructure for: $ARGUMENTS
+Audit or update DART 6's AI infrastructure for: $ARGUMENTS
 
 ## Objective
 

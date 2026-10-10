@@ -34,7 +34,7 @@ routing lives in `docs/ai/README.md` § "Updating Models And Coding Agents";
 do not duplicate or pin it here. The three read-only project agents inherit
 the selected parent model: `dart_scout` gathers evidence, `dart_reviewer`
 audits the current diff, and `dart_release_auditor` classifies named
-reference material as apply/adapt/omit against the DART 6.20 compatibility
+reference material as apply/adapt/omit against the DART 6 compatibility
 surface.
 
 **Tested Versions**: Claude Code CLI 2.1.252 (Claude Fable 5), Codex CLI
@@ -48,7 +48,7 @@ visual-debug investigation.
 
 Inspect project hooks with `/hooks`. Project hooks are advisory and may be
 skipped in an untrusted repository. `pixi run install-hooks` installs the
-cross-tool git hook.
+cross-tool `pre-commit`, `commit-msg` and `pre-push` git hooks.
 
 On native Windows, `.claude/hooks/pre-commit-guard.ps1` launches
 `scripts/pretool_guard_bridge.py`, which forwards the unchanged hook payload to
@@ -70,7 +70,7 @@ trusted `.codex/` runtime layer. Gemini and other clients that read
 `AGENTS.md` can follow the same owner docs and `pixi run ...` gates without a
 tool-specific command surface. Never make correctness depend only on a project
 hook or one client's private state; the public docs, direct commands, and
-installed git hook remain the fallback contract.
+installed git hooks remain the fallback contract.
 
 ## Approval Boundaries
 

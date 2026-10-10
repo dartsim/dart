@@ -203,23 +203,98 @@ Add another polymorphic class that dartpy binds with
 `python/tests/interop/` builds an example extension that the regular suite
 exercises when pybind11 is available.
 
+### pybind11 extensions
+
+A pybind11 extension cannot see nanobind's type registry, so it cannot pass or
+return DART objects by registering nothing, as it could with the pybind11
+binder. The nanobind binder instead exports the `dartpy._C_API` capsule, and
+the installed header `dartpy/pybind11_interop.hpp` turns it into pybind11
+casters:
+
+```cpp
+#include <dartpy/pybind11_interop.hpp> // before any binding code
+
+PYBIND11_MODULE(my_robot, m)
+{
+  m.def("base", [](const dart::dynamics::SkeletonPtr& skeleton) {
+    return skeleton->getBodyNode(0);
+  }, pybind11::return_value_policy::reference);
+}
+```
+
+The casters return the existing dartpy wrapper when there is one, adjust base
+pointers, keep a returned graph object's skeleton alive, and share ownership
+for `std::shared_ptr` arguments and results. They cover `Entity`, `Frame`,
+`SimpleFrame`, `JacobianNode`, `BodyNode`, `ShapeNode`, `Joint`,
+`DegreeOfFreedom`, `MetaSkeleton`, `Skeleton`, `World`, and copies of
+`Eigen::Isometry3d` (`dartpy.math.Isometry3`, which also accepts 4x4 arrays).
+Add another polymorphic class that dartpy binds with
+`DARTPY_PYBIND11_INTEROP_OBJECT(Type, "dartpy.module.Name")` at global scope.
+
+- Include the header in every translation unit that binds these types, and
+  never register them with `pybind11::class_`.
+- Raw-pointer and reference results need an explicit `reference` or
+  `reference_internal` policy. Other policies, including the default
+  `automatic`, would take, copy, or move the object and raise an error; return
+  a `std::shared_ptr` when ownership moves to Python.
+- Keep stored raw pointers' owners alive yourself, for example with
+  `pybind11::keep_alive`.
+- The table passes `std::type_info` and `std::shared_ptr` across modules: build
+  the extension with the same DART headers and C++ standard library ABI as
+  dartpy, and link the same shared DART libraries that dartpy loads.
+  An extension with a mismatched DART version or standard library raises
+  `ImportError` on its first DART conversion; call
+  `dartpy::pybind11_interop::api()` in the module initializer to fail at
+  import instead.
+
+`python/tests/interop/` builds an example extension that the regular suite
+exercises when pybind11 is available.
+
 ## Wheels
 
-Wheel packaging is Pixi-managed on this branch. `wheel-build-core`,
+macOS and Windows wheel packaging is Pixi-managed. `wheel-build-core`,
 `wheel-repair-<platform>-core`, `wheel-verify-core`, and `wheel-test-core`
 implement the pipeline, and the `py310-wheel`..`py313-wheel` environments
-expose `wheel-build` / `wheel-repair` / `wheel-verify` / `wheel-test` per
-Python version. `.github/workflows/publish_dartpy.yml` runs the same tasks
-for released wheels; reproduce a CI wheel step locally with
-`pixi run -e <pyXY-wheel> wheel-build` and friends.
+expose the corresponding tasks.
 
-Wheels use the nanobind binder. In the `py312-wheel` environment,
-`wheel-build` sets `DART_DARTPY_STABLE_ABI=ON`, which builds the module for
-CPython's stable ABI and tags the wheel `cp312-abi3`, so one wheel per platform
-serves Python 3.12 and every later version. Other environments build regular
-wheels for their own Python version. The release matrix therefore builds five wheels:
-`cp312-abi3` for Linux, macOS, and Windows, plus Linux `cp310` and `cp311`. Each
-abi3 row also checks the wheel with `abi3audit --strict` and tests it on
-Python 3.13 through `pixi run -e py313-wheel wheel-test-abi3`. Stable-ABI calls
-cost up to about 5% more instructions on NumPy-heavy setters; CMake refuses
-`DART_DARTPY_STABLE_ABI` on Python older than 3.12.
+Wheels use the nanobind binder. A Python 3.12 build sets
+`DART_DARTPY_STABLE_ABI=ON`, which builds the module for CPython's stable ABI
+and tags the wheel `cp312-abi3`, so one wheel per platform serves Python 3.12
+and every later version; other Python versions build regular wheels. The
+release matrix therefore builds five wheels: `cp312-abi3` for Linux, macOS, and
+Windows, plus Linux `cp310` and `cp311`. Each abi3 row also checks the wheel
+with `abi3audit --strict` and tests it on Python 3.13 through
+`pixi run -e py313-wheel wheel-test-abi3`. Stable-ABI calls cost up to about 5%
+more instructions on NumPy-heavy setters; CMake refuses
+`DART_DARTPY_STABLE_ABI` on Python older than 3.12 or CMake older than 3.26.
+
+Linux release wheels use `python3 scripts/wheel_linux.py cp312` (also
+`cp310` and `cp311`) on native x86_64 or aarch64 hosts with Docker.
+The driver builds `docker/wheels/Dockerfile.manylinux_2_28`, compiles native
+dependencies and dartpy with the manylinux toolchain, requires
+`auditwheel repair --plat manylinux_2_28_<arch>`, and runs the wheel smoke
+test in a fresh manylinux 2.28 base container. Outputs are in `dist/`.
+The source checkout is mounted read-only; temporary container builds avoid
+reusing host CMake caches.
+Wheel configurations request Python's `Development.Module` component rather
+than its embedding library, which manylinux deliberately omits.
+
+A Conda compiler sysroot pin alone does not establish manylinux compatibility:
+prebuilt dependencies can require newer `GLIBCXX` or `CXXABI` symbols even
+when their glibc floor is 2.28. The manylinux toolchain supplies newer compiler
+features while retaining the platform's C++ runtime ABI. The local Linux
+Pixi wheel tasks remain useful for diagnostics; their repair now requires
+2.28 and rejects incompatible dependencies.
+
+`.github/workflows/publish_dartpy.yml` runs these platform pipelines. For a
+non-publishing validation of every row after an approved push, dispatch:
+
+```bash
+gh workflow run publish_dartpy.yml --ref <branch> \
+  -f ref=main -f checkout_ref=<candidate-sha> -f publish=false
+```
+
+Use the candidate branch for the workflow definition and the exact candidate
+SHA for the checkout. `ref=main` enables the release-only Python rows without
+requesting publication. Inspect both architectures' repaired tags and fresh
+container smoke tests before release.
