@@ -122,6 +122,7 @@ self.mFirstDomino.getBodyNode(0).addExtForce(
     [default_push_force, 0.0, 0.0],
     [0.0, 0.0, default_domino_height / 2.0],
 )
+self.mForceCountDown -= 1
 ```
 
 With the default `addExtForce` arguments, the force is expressed in world

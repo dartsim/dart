@@ -146,7 +146,6 @@ class DominoEventHandler(dart.gui.osg.GUIEventHandler):
         if self.mForceCountDown > 0:
             # TODO Lesson 1d: apply an external force at the top of the first domino.
             raise NotImplementedError("Lesson 1d: apply the external domino push.")
-            self.mForceCountDown -= 1
         if self.mPushCountDown > 0:
             self.mController.setOperationalSpaceForces()
             self.mPushCountDown -= 1

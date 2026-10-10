@@ -34,7 +34,6 @@ import math
 import random
 
 import dartpy as dart
-import numpy as np
 
 default_shape_density = 1000.0  # kg/m^3
 default_shape_height = 0.1  # m
@@ -183,20 +182,16 @@ def create_rigid_ring():
 
 def create_soft_body():
     soft = dart.dynamics.Skeleton("soft")
-    body = add_soft_body(soft, "soft box", SOFT_BOX)
+    add_soft_body(soft, "soft box", SOFT_BOX)
     # Lesson 2f: add a rigid core, with collision geometry and inertia.
     raise NotImplementedError("Lesson 2f: add the soft body's rigid core")
-    soft.setColor([1, 0, 1])
-    return soft
 
 
 def create_hybrid_body():
     hybrid = dart.dynamics.Skeleton("hybrid")
-    body = add_soft_body(hybrid, "soft sphere", SOFT_ELLIPSOID)
+    add_soft_body(hybrid, "soft sphere", SOFT_ELLIPSOID)
     # Lesson 2g: attach a rigid box using a WeldJoint and give it inertia.
     raise NotImplementedError("Lesson 2g: attach a rigid body to the soft body")
-    hybrid.setColor([0, 1, 0])
-    return hybrid
 
 
 def create_ground():

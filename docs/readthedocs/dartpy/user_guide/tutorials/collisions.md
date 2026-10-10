@@ -11,8 +11,8 @@ and compare it with
 [main_finished.py](https://github.com/dartsim/dart/blob/main/python/tutorials/collisions/main_finished.py).
 Follow the [setup instructions](../tutorials.rst) and run
 `pixi run tu-collisions-fi` for the solution. This scene uses Z as the upward
-axis. The snippets use `import dartpy as dart`, `import numpy as np`, and
-`import math`.
+axis. The snippets use `import dartpy as dart` and `import math`. Add
+`import numpy as np` as you implement the exercises.
 
 | Key | Action |
 | --- | --- |
@@ -282,6 +282,7 @@ alpha to 0.4 distinguishes the soft skin from its rigid core.
 In `create_soft_body()`, add a box scaled to 60% of the skin dimensions:
 
 ```python
+body = soft.getBodyNode(0)
 dims = 0.6 * np.array(
     [default_shape_height, default_shape_height, 2 * default_shape_width]
 )
@@ -294,6 +295,8 @@ inertia = dart.dynamics.Inertia()
 inertia.setMass(default_shape_density * box.getVolume())
 inertia.setMoment(box.computeInertia(inertia.getMass()))
 body.setInertia(inertia)
+soft.setColor([1, 0, 1])
+return soft
 ```
 
 This supplies the rigid bone's inertia. It remains independent of the skin's
@@ -304,6 +307,7 @@ point-mass inertia.
 In `create_hybrid_body()`, attach a rigid box to a soft ellipsoid:
 
 ```python
+soft_body = hybrid.getBodyNode(0)
 joint, rigid_body = hybrid.createWeldJointAndBodyNodePair(soft_body)
 rigid_body.setName("rigid box")
 box = dart.dynamics.BoxShape(default_shape_height * np.ones(3))
@@ -317,7 +321,13 @@ joint.setTransformFromParentBodyNode(tf)
 ```
 
 The offset makes the box protrude. Assign its mass and moment of inertia
-from `box.getVolume()` and `box.computeInertia(mass)` as in Lesson 1d.
+from `box.getVolume()` and `box.computeInertia(mass)` as in Lesson 1d, then
+finish the function:
+
+```python
+hybrid.setColor([0, 1, 0])
+return hybrid
+```
 
 ## Lesson 3: Setting initial conditions and taking advantage of Frames
 
