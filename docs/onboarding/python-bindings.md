@@ -195,8 +195,10 @@ Add another polymorphic class that dartpy binds with
 - The table passes `std::type_info` and `std::shared_ptr` across modules: build
   the extension with the same DART headers and C++ standard library ABI as
   dartpy, and link the same shared DART libraries that dartpy loads.
-  Importing an extension with a mismatched DART version or standard library
-  raises `ImportError`.
+  An extension with a mismatched DART version or standard library raises
+  `ImportError` on its first DART conversion; call
+  `dartpy::pybind11_interop::api()` in the module initializer to fail at
+  import instead.
 
 `python/tests/interop/` builds an example extension that the regular suite
 exercises when pybind11 is available.

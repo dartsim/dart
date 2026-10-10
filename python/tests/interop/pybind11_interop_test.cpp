@@ -76,6 +76,9 @@ std::weak_ptr<SimpleFrame> releasedFrame;
 
 PYBIND11_MODULE(dartpy_pybind11_interop_test, m)
 {
+  // Validate the C API at import rather than on the first conversion.
+  dartpy::pybind11_interop::api();
+
   m.def("skeleton_name", [](const SkeletonPtr& skeleton) {
     return skeleton->getName();
   });
