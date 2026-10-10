@@ -10,6 +10,11 @@ dart_add_test("unit" test_FbfFrictionSolver test_FbfFrictionSolver.cpp)
 dart_add_test("unit" test_FrictionCone test_FrictionCone.cpp)
 dart_add_test("unit" test_ContactWarmStartCache test_ContactWarmStartCache.cpp)
 dart_add_test("unit" test_ThreadLocalStorage test_ThreadLocalStorage.cpp)
+# The Debug postfix renames libdart, so pass the linked file name.
+target_compile_definitions(
+  test_ThreadLocalStorage
+  PRIVATE DART_LIBRARY_FILE_NAME="$<TARGET_LINKER_FILE_NAME:dart>"
+)
 target_sources(
   test_ContactWarmStartCache
   PRIVATE ../../integration/AllocationCounting.cpp

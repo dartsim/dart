@@ -66,10 +66,12 @@ int collectTlsSizes(dl_phdr_info* info, std::size_t, void* data)
   if (const auto slash = name.rfind('/'); slash != std::string_view::npos)
     name.remove_prefix(slash + 1u);
 
-  // The main program comes first.
+  // The main program comes first. A shared libdart is loaded by its soname,
+  // which extends the linker file name with the version.
+  constexpr std::string_view dartFileName = DART_LIBRARY_FILE_NAME;
   if (!sizes.executable)
     sizes.executable = getTlsSize(*info);
-  else if (name.substr(0u, 10u) == "libdart.so")
+  else if (name.substr(0u, dartFileName.size()) == dartFileName)
     sizes.dart = getTlsSize(*info);
   return 0;
 }
