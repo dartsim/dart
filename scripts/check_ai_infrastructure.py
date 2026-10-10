@@ -3743,14 +3743,13 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         )
         return
     state = headings[0]
-    if state == "Unreleased":
-        return
     package_version = ""
-    workspace_version = ""
+    workspace_version = None
     try:
-        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", state):
-            raise ValueError("expected YYYY-MM-DD")
-        date.fromisoformat(state)
+        if state != "Unreleased":
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", state):
+                raise ValueError("expected YYYY-MM-DD")
+            date.fromisoformat(state)
         package_version = (
             ET.parse(root / "package.xml").getroot().findtext("version", "").strip()
         )
@@ -3760,11 +3759,21 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         )
     except (OSError, ET.ParseError, ValueError):
         pass
-    if package_version != version or workspace_version != version:
-        errors.append(
-            f"CHANGELOG.md: Release Target `{version}` requires an Unreleased section "
-            "or a dated packaging heading matching package.xml and pixi.toml workspace versions"
-        )
+    if state == "Unreleased":
+        if (
+            package_version
+            and isinstance(workspace_version, str)
+            and workspace_version.strip()
+            and version not in (package_version, workspace_version)
+        ):
+            return
+    elif package_version == version and workspace_version == version:
+        return
+    errors.append(
+        f"CHANGELOG.md: Release Target `{version}` requires an Unreleased section "
+        "with neither source version set to the target, or a dated packaging heading "
+        "matching package.xml and pixi.toml workspace versions"
+    )
 
 
 def check_release_target(root: Path, errors: list[str]) -> None:

@@ -51,7 +51,9 @@ text alone. Update package versions only as part of release packaging.
 The target must have exactly one `CHANGELOG.md` release heading marked
 `Unreleased`. Packaging may date that same heading when `package.xml` and the
 `pixi.toml` workspace version both match the target; the row continues to name
-that candidate until the next rollover.
+that candidate until the next rollover. Stage both version bumps and the heading
+date together: an `Unreleased` heading requires neither source version to name
+the target. Both metadata files must contain readable, nonempty versions.
 
 ## Compatibility Policy
 

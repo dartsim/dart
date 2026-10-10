@@ -249,6 +249,8 @@ def test_release_references_accept_release_metadata_only_rollover(
         *infra.release_reference_paths(ROOT),
         ROOT / "docs/onboarding/release-management.md",
         ROOT / "CHANGELOG.md",
+        ROOT / "package.xml",
+        ROOT / "pixi.toml",
     ]
     for source in sources:
         if source.is_file():
@@ -417,6 +419,61 @@ def test_release_target_accepts_valid_rows(release_target_owner, tmp_path, row):
     infra.check_release_target(tmp_path, errors)
 
     assert errors == []
+
+
+@pytest.mark.parametrize(
+    ("package_version", "workspace_version"),
+    [("6.22.0", "6.22.0"), ("6.22.0", "6.19.5"), ("6.19.5", "6.22.0")],
+)
+def test_release_target_rejects_undated_packaging(
+    release_target_owner, tmp_path, package_version, workspace_version
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    (tmp_path / "package.xml").write_text(
+        f"<package><version>{package_version}</version></package>\n", encoding="utf-8"
+    )
+    (tmp_path / "pixi.toml").write_text(
+        f'[workspace]\nversion = "{workspace_version}"\n', encoding="utf-8"
+    )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
+@pytest.mark.parametrize(
+    ("relative", "content"),
+    [
+        ("package.xml", None),
+        ("package.xml", "<package/>"),
+        ("pixi.toml", None),
+        ("pixi.toml", "workspace = 6220\n"),
+        ("pixi.toml", '[workspace]\nversion = "   "\n'),
+    ],
+)
+def test_release_target_requires_unreleased_source_metadata(
+    release_target_owner, tmp_path, relative, content
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    path = tmp_path / relative
+    if content is None:
+        path.unlink()
+    else:
+        path.write_text(content, encoding="utf-8")
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
 
 
 @pytest.mark.parametrize(
