@@ -17,6 +17,38 @@ checker = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(checker)
 
 
+@pytest.fixture(autouse=True)
+def isolated_git_config(tmp_path, monkeypatch):
+    config = tmp_path / "global.gitconfig"
+    config.write_text("")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(config))
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    monkeypatch.delenv("GIT_CONFIG_COUNT", raising=False)
+    monkeypatch.delenv("GIT_CONFIG_PARAMETERS", raising=False)
+
+
+def test_commit_cleanup_defaults_to_non_verbose(repo, monkeypatch):
+    monkeypatch.chdir(repo)
+    assert checker.commit_cleanup(["git", "commit"]) == ("strip", False)
+
+
+@pytest.mark.parametrize("comment_char", ["#", ";"])
+@pytest.mark.parametrize("instruction_char", [None, "#", ";"])
+def test_auto_comment_char_recovers_only_paired_scissors_instruction(
+    repo, monkeypatch, comment_char, instruction_char
+):
+    monkeypatch.chdir(repo)
+    _git(repo, "config", "core.commentChar", "auto")
+    private_path = "/home/" + "example/private.md"
+    message = f"Public summary\n{comment_char} ------------------------ >8 ------------------------\n"
+    if instruction_char:
+        message += f"{instruction_char} Do not modify or remove the line above.\n"
+    message += f"diff --git a/notes.md b/notes.md\n+{private_path}\n"
+    assert checker.scan_commit_message(
+        message, ["git", "commit", "--cleanup=scissors", "-v"]
+    ) == (instruction_char != comment_char)
+
+
 @pytest.mark.parametrize(
     "path",
     (

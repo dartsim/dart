@@ -398,6 +398,14 @@ def scan_commit_message(
 ) -> bool:
     lines = text.splitlines()
     instruction = GIT_TEMPLATE_INSTRUCTION.search(text)
+    strip_comments = instruction is not None
+    if instruction is None:
+        for line, following in zip(lines, lines[1:]):
+            candidate = GIT_SCISSORS_INSTRUCTION.match(following)
+            scissors = SCISSORS.fullmatch(line)
+            if scissors and candidate and scissors["char"] == candidate["char"]:
+                instruction = candidate
+                break
     cleanup = commit_cleanup(git_command) if git_command else None
     if cleanup is not None:
         mode, verbose = cleanup
@@ -410,7 +418,7 @@ def scan_commit_message(
                     comment_string = result.stdout.rstrip("\n")
                     break
             if comment_string == "auto":
-                # Git selects this before editing; edited text cannot recover it.
+                # Git's template instructions identify its selected character.
                 comment_string = instruction["char"] if instruction else None
             elif not comment_string:
                 comment_string = "#"
@@ -418,14 +426,6 @@ def scan_commit_message(
         cut_at_scissors = mode == "scissors" or verbose
     else:
         # Unreadable or unparsable commands fall back to English-template evidence.
-        strip_comments = instruction is not None
-        if instruction is None:
-            for line, following in zip(lines, lines[1:]):
-                candidate = GIT_SCISSORS_INSTRUCTION.match(following)
-                scissors = SCISSORS.fullmatch(line)
-                if scissors and candidate and scissors["char"] == candidate["char"]:
-                    instruction = candidate
-                    break
         comment_string = instruction["char"] if instruction else None
         cut_at_scissors = instruction is not None
     found = False

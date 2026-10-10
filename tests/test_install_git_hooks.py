@@ -856,8 +856,14 @@ def test_commit_msg_hook_auto_comment_without_instructions_fails_closed(tmp_path
     assert f"# {private_path}" in published.stdout
 
 
-@pytest.mark.parametrize("arguments", [[], ["--no-verbose"], ["--no-verbose", "-v"]])
-def test_commit_msg_hook_configured_verbose_ignores_fixture_diff(tmp_path, arguments):
+@pytest.mark.parametrize("comment_char", ["#", "auto"])
+@pytest.mark.parametrize(
+    "arguments",
+    [[], ["--no-verbose"], ["--no-verbose", "-v"], ["--cleanup=scissors", "-v"]],
+)
+def test_commit_msg_hook_configured_verbose_ignores_fixture_diff(
+    tmp_path, arguments, comment_char
+):
     repo, env = _init_repo(tmp_path)
     _write_gate(repo)
     (repo / "scripts/check_local_paths.py").write_bytes(
@@ -887,6 +893,12 @@ def test_commit_msg_hook_configured_verbose_ignores_fixture_diff(tmp_path, argum
     subprocess.run(
         ["git", "config", "commit.verbose", "true"], cwd=repo, env=env, check=True
     )
+    subprocess.run(
+        ["git", "config", "core.commentChar", comment_char],
+        cwd=repo,
+        env=env,
+        check=True,
+    )
     assert _install(repo, env).returncode == 0
     editor = repo / "editor.sh"
     editor.write_text(
@@ -901,6 +913,15 @@ def test_commit_msg_hook_configured_verbose_ignores_fixture_diff(tmp_path, argum
         text=True,
     )
     assert result.returncode == 0, result.stderr
+    published = subprocess.run(
+        ["git", "show", "-s", "--format=%B", "HEAD"],
+        cwd=repo,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert published.stdout == "Public summary\n\n"
 
 
 def test_pre_push_blocks_gitlink_hidden_by_diff_config(tmp_path):
