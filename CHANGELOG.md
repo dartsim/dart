@@ -879,7 +879,8 @@
     DPI, with live updates and manual overrides in the View menu or through
     `--gui-scale` / `DART_GUI_SCALE`. Fit the default window to its monitor
     and honor explicit interactive `--width` / `--height` values. Headless
-    captures retain their default 1x scale and exact requested dimensions.
+    captures retain their default 1x scale and exact requested dimensions:
+    [#3640](https://github.com/dartsim/dart/pull/3640)
 
   * Add `contact_benchmark --gz-preset`, which loads an SDF world with SDF
     planes as 2100 m boxes, a 10000-contact cap, the ODE detector with a
