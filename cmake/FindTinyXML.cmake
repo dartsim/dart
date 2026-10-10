@@ -14,10 +14,12 @@
 # TinyXML_LIBRARIES
 # TinyXML_VERSION
 
-find_package(PkgConfig QUIET)
+find_package(PkgConfig 0.29.2 QUIET)
 
 # Check to see if pkgconfig is installed.
-pkg_check_modules(PC_TinyXML tinyxml QUIET)
+if(PkgConfig_FOUND)
+  pkg_check_modules(PC_TinyXML tinyxml QUIET)
+endif()
 
 # Include directories
 find_path(

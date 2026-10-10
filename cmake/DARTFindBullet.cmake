@@ -9,6 +9,8 @@
 # Bullet. Force MODULE mode to use the FindBullet.cmake file distributed with
 # CMake. Otherwise, we may end up using the BulletConfig.cmake file distributed
 # with Bullet, which uses relative paths and may break transitive dependencies.
+include("${CMAKE_CURRENT_LIST_DIR}/DARTFindPackageVersion.cmake")
+
 if(NOT DART_USE_SYSTEM_BULLET)
   if(TARGET BulletCollision AND TARGET LinearMath)
     if(DEFINED DART_BULLET_SOURCE_DIR)
@@ -22,19 +24,29 @@ if(NOT DART_USE_SYSTEM_BULLET)
     set(BULLET_LIBRARIES BulletCollision LinearMath)
     set(BULLET_FOUND TRUE)
     set(Bullet_FOUND TRUE)
-    if(NOT TARGET Bullet)
-      add_library(Bullet INTERFACE IMPORTED)
-      if(BULLET_INCLUDE_DIRS)
-        target_include_directories(Bullet INTERFACE ${BULLET_INCLUDE_DIRS})
-      endif()
-      target_link_libraries(Bullet INTERFACE ${BULLET_LIBRARIES})
-    endif()
     unset(_bullet_include_dir)
-    return()
   endif()
 endif()
 
-find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
+if(DART_USE_SYSTEM_BULLET OR NOT BULLET_FOUND)
+  find_package(Bullet COMPONENTS BulletMath BulletCollision MODULE QUIET)
+endif()
+
+if(BULLET_FOUND OR Bullet_FOUND)
+  unset(BULLET_VERSION)
+  dart_read_header_version(_bullet_header_version
+    LinearMath/btScalar.h BT_BULLET_VERSION ${BULLET_INCLUDE_DIRS}
+  )
+  if(_bullet_header_version MATCHES "^[0-9]+$")
+    math(EXPR _bullet_major "${_bullet_header_version} / 100")
+    math(EXPR _bullet_minor "${_bullet_header_version} % 100")
+    set(BULLET_VERSION "${_bullet_major}.${_bullet_minor}")
+  endif()
+  dart_check_package_version(Bullet 3.06)
+  unset(_bullet_header_version)
+  unset(_bullet_major)
+  unset(_bullet_minor)
+endif()
 
 if((BULLET_FOUND OR Bullet_FOUND) AND NOT TARGET Bullet)
   add_library(Bullet INTERFACE IMPORTED)

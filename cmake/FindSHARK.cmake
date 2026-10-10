@@ -15,10 +15,12 @@
 # SHARK_DEFINITIONS
 # SHARK_VERSION
 
-find_package(PkgConfig QUIET)
+find_package(PkgConfig 0.29.2 QUIET)
 
 # Check to see if pkgconfig is installed.
-pkg_check_modules(PC_SHARK Shark QUIET)
+if(PkgConfig_FOUND)
+  pkg_check_modules(PC_SHARK Shark QUIET)
+endif()
 
 # Definitions
 set(SHARK_DEFINITIONS ${PC_SHARK_CFLAGS_OTHER})
