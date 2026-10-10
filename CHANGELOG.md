@@ -2,7 +2,17 @@
 
 ## DART 6
 
-### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)
+### [DART 6.20.0 (2026-10-10)](https://github.com/dartsim/dart/milestone/99?closed=1)
+
+DART 6.20.0 is a minor release on the DART 6 line focused on contact-heavy
+performance. The 3,000-shape scene from
+[#3056](https://github.com/dartsim/dart/issues/3056) runs 18.9x faster than
+with DART 6.19.4, and every body comes to rest and sleeps instead of sinking
+through the ground. The release is not ABI compatible with 6.19: rebuild code
+linked against DART (the SONAME is now `libdart.so.6.20`) and extension
+modules that share dartpy types, and migrate from the removed components
+listed under Breaking Changes. Linux dartpy wheels now cover aarch64 as well
+as x86_64.
 
 * Breaking Changes
 
@@ -486,7 +496,8 @@
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
   * Keep soft-body skin meshes resizable after `BodyNode::copyTo()` and
-    `BodyNode::copyAs()`, preventing invalid mesh updates.
+    `BodyNode::copyAs()`, preventing invalid mesh updates:
+    [#3662](https://github.com/dartsim/dart/pull/3662)
 
   * Compute the `SoftBodyNodeHelper` ellipsoid and cylinder point-mass rest
     positions in double instead of float precision, so they move by the
