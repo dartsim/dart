@@ -1,3 +1,6 @@
+#include "detail/dart_nb.hpp"
+#include "detail/eigen.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,38 +33,32 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pointers.hpp"
+#include "gui/osg/ownership.hpp"
 
 #include <dart/gui/osg/DebugOverlay.hpp>
 #include <dart/gui/osg/Viewer.hpp>
 
 #include <Eigen/Core>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include <string>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void DebugOverlay(py::module& m)
+void DebugOverlay(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::gui::osg::DebugOverlay,
-      dart::gui::osg::ViewerAttachment,
-      ::osg::ref_ptr<dart::gui::osg::DebugOverlay>>(m, "DebugOverlay")
-      .def(py::init<>())
+      dart::gui::osg::ViewerAttachment>(m, "DebugOverlay")
+      .def(dartnb::gui::init<>())
       .def(
           "setFont",
           +[](dart::gui::osg::DebugOverlay* self, const std::string& fontPath) {
             self->setFont(fontPath);
           },
-          ::py::arg("fontPath"))
+          nb::arg("fontPath"))
       .def(
           "getFont",
           +[](const dart::gui::osg::DebugOverlay* self) -> std::string {
@@ -72,7 +69,7 @@ void DebugOverlay(py::module& m)
           +[](dart::gui::osg::DebugOverlay* self, float width) {
             self->setLineWidth(width);
           },
-          ::py::arg("width"))
+          nb::arg("width"))
       .def(
           "getLineWidth",
           +[](const dart::gui::osg::DebugOverlay* self) -> float {
@@ -83,7 +80,7 @@ void DebugOverlay(py::module& m)
           +[](dart::gui::osg::DebugOverlay* self, double size) {
             self->setCharacterSize(size);
           },
-          ::py::arg("size"))
+          nb::arg("size"))
       .def(
           "getCharacterSize",
           +[](const dart::gui::osg::DebugOverlay* self) -> double {
@@ -97,9 +94,9 @@ void DebugOverlay(py::module& m)
               const Eigen::Vector4d& color) -> std::size_t {
             return self->addLine(start, end, color);
           },
-          ::py::arg("start"),
-          ::py::arg("end"),
-          ::py::arg("color"))
+          nb::arg("start"),
+          nb::arg("end"),
+          nb::arg("color"))
       .def(
           "addLabel",
           +[](dart::gui::osg::DebugOverlay* self,
@@ -108,9 +105,9 @@ void DebugOverlay(py::module& m)
               const Eigen::Vector4d& color) -> std::size_t {
             return self->addLabel(position, text, color);
           },
-          ::py::arg("position"),
-          ::py::arg("text"),
-          ::py::arg("color"))
+          nb::arg("position"),
+          nb::arg("text"),
+          nb::arg("color"))
       .def(
           "addLabel",
           +[](dart::gui::osg::DebugOverlay* self,
@@ -120,10 +117,10 @@ void DebugOverlay(py::module& m)
               double characterSize) -> std::size_t {
             return self->addLabel(position, text, color, characterSize);
           },
-          ::py::arg("position"),
-          ::py::arg("text"),
-          ::py::arg("color"),
-          ::py::arg("characterSize"))
+          nb::arg("position"),
+          nb::arg("text"),
+          nb::arg("color"),
+          nb::arg("characterSize"))
       .def(
           "clear", +[](dart::gui::osg::DebugOverlay* self) { self->clear(); })
       .def(

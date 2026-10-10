@@ -1,3 +1,11 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include "detail/eigen.hpp"
+
+#include <nanobind/stl/set.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -44,9 +52,6 @@
 #include <dart/dynamics/Skeleton.hpp>
 
 #include <Eigen/Core>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include <memory>
 #include <set>
@@ -54,35 +59,35 @@
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void World(py::module& m)
+void World(nb::module_& m)
 {
-  ::py::enum_<dart::simulation::CollisionDetectorType>(
-      m, "CollisionDetectorType")
+  nb::enum_<dart::simulation::CollisionDetectorType>(
+      m, "CollisionDetectorType", nb::is_arithmetic())
       .value("DART", dart::simulation::CollisionDetectorType::Dart)
       .value("FCL", dart::simulation::CollisionDetectorType::Fcl)
       .value("BULLET", dart::simulation::CollisionDetectorType::Bullet)
       .value("ODE", dart::simulation::CollisionDetectorType::Ode)
       .export_values();
 
-  ::py::class_<
-      dart::simulation::World,
-      std::shared_ptr<dart::simulation::World>>(m, "World")
-      .def(::py::init<>())
-      .def(::py::init<const std::string&>(), ::py::arg("name"))
-      .def(::py::init(+[]() -> dart::simulation::WorldPtr {
+  dartnb::dart_class<dart::simulation::World>(m, "World")
+      .def(dartnb::factory(+[]() { return dart::simulation::World::create(); }))
+      .def(
+          dartnb::factory(+[](const std::string& name) {
+            return dart::simulation::World::create(name);
+          }),
+          nb::arg("name"))
+      .def(dartnb::factory(+[]() -> dart::simulation::WorldPtr {
         return dart::simulation::World::create();
       }))
       .def(
-          ::py::init(
+          dartnb::factory(
               +[](const std::string& name) -> dart::simulation::WorldPtr {
                 return dart::simulation::World::create(name);
               }),
-          ::py::arg("name"))
+          nb::arg("name"))
       .def(
           "clone",
           +[](const dart::simulation::World* self)
@@ -93,38 +98,38 @@ void World(py::module& m)
           "setName",
           +[](dart::simulation::World* self, const std::string& _newName)
               -> const std::string& { return self->setName(_newName); },
-          ::py::return_value_policy::reference_internal,
-          ::py::arg("newName"))
+          nb::rv_policy::reference_internal,
+          nb::arg("newName"))
       .def(
           "getName",
           +[](const dart::simulation::World* self) -> const std::string& {
             return self->getName();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "setGravity",
-          ::py::overload_cast<const Eigen::Vector3d&>(
+          nb::overload_cast<const Eigen::Vector3d&>(
               &dart::simulation::World::setGravity),
-          ::py::arg("gravity"))
+          nb::arg("gravity"))
       .def(
           "setGravity",
-          ::py::overload_cast<double, double, double>(
+          nb::overload_cast<double, double, double>(
               &dart::simulation::World::setGravity),
-          ::py::arg("x"),
-          ::py::arg("y"),
-          ::py::arg("z"))
+          nb::arg("x"),
+          nb::arg("y"),
+          nb::arg("z"))
       .def(
           "getGravity",
           +[](const dart::simulation::World* self) -> const Eigen::Vector3d& {
             return self->getGravity();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "setTimeStep",
           +[](dart::simulation::World* self, double _timeStep) -> void {
             return self->setTimeStep(_timeStep);
           },
-          ::py::arg("timeStep"))
+          nb::arg("timeStep"))
       .def(
           "getTimeStep",
           +[](const dart::simulation::World* self) -> double {
@@ -135,7 +140,7 @@ void World(py::module& m)
           +[](dart::simulation::World* self, std::size_t numThreads) -> void {
             self->setNumSimulationThreads(numThreads);
           },
-          ::py::arg("numThreads"))
+          nb::arg("numThreads"))
       .def(
           "getNumSimulationThreads",
           +[](const dart::simulation::World* self) -> std::size_t {
@@ -147,14 +152,14 @@ void World(py::module& m)
               std::size_t _index) -> dart::dynamics::SkeletonPtr {
             return self->getSkeleton(_index);
           },
-          ::py::arg("index"))
+          nb::arg("index"))
       .def(
           "getSkeleton",
           +[](const dart::simulation::World* self,
               const std::string& _name) -> dart::dynamics::SkeletonPtr {
             return self->getSkeleton(_name);
           },
-          ::py::arg("name"))
+          nb::arg("name"))
       .def(
           "getNumSkeletons",
           +[](const dart::simulation::World* self) -> std::size_t {
@@ -166,14 +171,14 @@ void World(py::module& m)
               const dart::dynamics::SkeletonPtr& _skeleton) -> std::string {
             return self->addSkeleton(_skeleton);
           },
-          ::py::arg("skeleton"))
+          nb::arg("skeleton").none())
       .def(
           "removeSkeleton",
           +[](dart::simulation::World* self,
               const dart::dynamics::SkeletonPtr& _skeleton) -> void {
             return self->removeSkeleton(_skeleton);
           },
-          ::py::arg("skeleton"))
+          nb::arg("skeleton").none())
       .def(
           "removeAllSkeletons",
           +[](dart::simulation::World* self)
@@ -186,27 +191,27 @@ void World(py::module& m)
               const dart::dynamics::ConstSkeletonPtr& skeleton) -> bool {
             return self->hasSkeleton(skeleton);
           },
-          ::py::arg("skeleton"))
+          nb::arg("skeleton").none())
       .def(
           "getIndex",
           +[](const dart::simulation::World* self, int _index) -> int {
             return self->getIndex(_index);
           },
-          ::py::arg("index"))
+          nb::arg("index"))
       .def(
           "getSimpleFrame",
           +[](const dart::simulation::World* self,
               std::size_t _index) -> dart::dynamics::SimpleFramePtr {
             return self->getSimpleFrame(_index);
           },
-          ::py::arg("index"))
+          nb::arg("index"))
       .def(
           "getSimpleFrame",
           +[](const dart::simulation::World* self,
               const std::string& _name) -> dart::dynamics::SimpleFramePtr {
             return self->getSimpleFrame(_name);
           },
-          ::py::arg("name"))
+          nb::arg("name"))
       .def(
           "getNumSimpleFrames",
           +[](const dart::simulation::World* self) -> std::size_t {
@@ -218,14 +223,14 @@ void World(py::module& m)
               const dart::dynamics::SimpleFramePtr& _frame) -> std::string {
             return self->addSimpleFrame(_frame);
           },
-          ::py::arg("frame"))
+          nb::arg("frame").none())
       .def(
           "removeSimpleFrame",
           +[](dart::simulation::World* self,
               const dart::dynamics::SimpleFramePtr& _frame) -> void {
             return self->removeSimpleFrame(_frame);
           },
-          ::py::arg("frame"))
+          nb::arg("frame").none())
       .def(
           "removeAllSimpleFrames",
           +[](dart::simulation::World* self)
@@ -243,7 +248,7 @@ void World(py::module& m)
               const dart::collision::CollisionOption& option) -> bool {
             return self->checkCollision(option);
           },
-          ::py::arg("option"))
+          nb::arg("option"))
       .def(
           "checkCollision",
           +[](dart::simulation::World* self,
@@ -251,8 +256,8 @@ void World(py::module& m)
               dart::collision::CollisionResult* result) -> bool {
             return self->checkCollision(option, result);
           },
-          ::py::arg("option"),
-          ::py::arg("result"))
+          nb::arg("option"),
+          nb::arg("result").none())
       .def(
           "getLastCollisionResult",
           +[](dart::simulation::World* self)
@@ -265,14 +270,14 @@ void World(py::module& m)
               const collision::CollisionDetectorPtr& detector) {
             self->setCollisionDetector(detector);
           },
-          ::py::arg("collisionDetector"))
+          nb::arg("collisionDetector").none())
       .def(
           "setCollisionDetector",
           +[](dart::simulation::World* self,
               dart::simulation::CollisionDetectorType type) {
             self->setCollisionDetector(type);
           },
-          ::py::arg("collisionDetectorType"))
+          nb::arg("collisionDetectorType"))
       .def(
           "getCollisionDetector",
           +[](dart::simulation::World* self)
@@ -290,14 +295,14 @@ void World(py::module& m)
           +[](dart::simulation::World* self, bool _resetCommand) -> void {
             return self->step(_resetCommand);
           },
-          ::py::arg("resetCommand"))
+          nb::arg("resetCommand"))
       .def(
           "setDeactivationOptions",
           +[](dart::simulation::World* self,
               const dart::simulation::DeactivationOptions& options) -> void {
             self->setDeactivationOptions(options);
           },
-          ::py::arg("options"))
+          nb::arg("options"))
       .def(
           "getDeactivationOptions",
           +[](const dart::simulation::World* self)
@@ -309,7 +314,7 @@ void World(py::module& m)
           +[](dart::simulation::World* self, double _time) -> void {
             return self->setTime(_time);
           },
-          ::py::arg("time"))
+          nb::arg("time"))
       .def(
           "getTime",
           +[](const dart::simulation::World* self) -> double {
@@ -325,15 +330,15 @@ void World(py::module& m)
           +[](dart::simulation::World* self) -> constraint::ConstraintSolver* {
             return self->getConstraintSolver();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "bake",
           +[](dart::simulation::World* self) -> void { return self->bake(); })
       .def(
           "getRecording",
           &dart::simulation::World::getRecording,
-          py::return_value_policy::reference_internal)
-      .def_readonly("onNameChanged", &dart::simulation::World::onNameChanged);
+          nb::rv_policy::reference_internal)
+      .def_ro("onNameChanged", &dart::simulation::World::onNameChanged);
 }
 
 } // namespace python

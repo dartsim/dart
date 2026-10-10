@@ -1,3 +1,9 @@
+#include "detail/dart_nb.hpp"
+
+#include <dart/gui/osg/RealTimeWorldNode.hpp>
+
+#include <nanobind/trampoline.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,7 +36,7 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pointers.hpp"
+#include "gui/osg/ownership.hpp"
 
 #include <dart/gui/osg/RealTimeWorldNode.hpp>
 #include <dart/gui/osg/WorldNode.hpp>
@@ -38,113 +44,100 @@
 #include <dart/simulation/World.hpp>
 
 #include <osgShadow/ShadowTechnique>
-#include <pybind11/pybind11.h>
 
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-class PyRealTimeWorldNodeNode : public dart::gui::osg::RealTimeWorldNode
+namespace gui_trampolines {
+using WorldNode = dart::gui::osg::WorldNode;
+using RealTimeWorldNode = dart::gui::osg::RealTimeWorldNode;
+using World = dart::simulation::World;
+using Viewer = dart::gui::osg::Viewer;
+class PyRealTimeWorldNode : public RealTimeWorldNode
 {
 public:
-  // Inherit the constructors
-  using RealTimeWorldNode::RealTimeWorldNode;
+  NB_TRAMPOLINE(RealTimeWorldNode);
 
-  // Trampoline for virtual function
+  PyRealTimeWorldNode(
+      const std::shared_ptr<World>& world = nullptr,
+      const ::osg::ref_ptr<osgShadow::ShadowTechnique>& shadow = nullptr,
+      double frequency = 60.0,
+      double factor = 1.0)
+    : RealTimeWorldNode(world, shadow, frequency, factor)
+  {
+    ref();
+  }
+
+  ~PyRealTimeWorldNode() override
+  {
+    unref_nodelete();
+  }
   void refresh() override
   {
-    PYBIND11_OVERLOAD(
-        void,              // Return type
-        RealTimeWorldNode, // Parent class
-        refresh,           // Name of function in C++ (must match Python name)
-    );
+    NB_OVERRIDE(refresh);
   }
-
-  // Trampoline for virtual function
   void customPreRefresh() override
   {
-    PYBIND11_OVERLOAD(
-        void,              // Return type
-        RealTimeWorldNode, // Parent class
-        customPreRefresh,  // Name of function in C++ (must match Python name)
-    );
+    NB_OVERRIDE(customPreRefresh);
   }
-
-  // Trampoline for virtual function
   void customPostRefresh() override
   {
-    PYBIND11_OVERLOAD(
-        void,              // Return type
-        RealTimeWorldNode, // Parent class
-        customPostRefresh, // Name of function in C++ (must match Python name)
-    );
+    NB_OVERRIDE(customPostRefresh);
   }
-
-  // Trampoline for virtual function
   void customPreStep() override
   {
-    PYBIND11_OVERLOAD(
-        void,              // Return type
-        RealTimeWorldNode, // Parent class
-        customPreStep,     // Name of function in C++ (must match Python name)
-    );
+    NB_OVERRIDE(customPreStep);
   }
-
-  // Trampoline for virtual function
   void customPostStep() override
   {
-    PYBIND11_OVERLOAD(
-        void,              // Return type
-        RealTimeWorldNode, // Parent class
-        customPostStep,    // Name of function in C++ (must match Python name)
-    );
+    NB_OVERRIDE(customPostStep);
   }
 };
 
-void RealTimeWorldNode(py::module& m)
+} // namespace gui_trampolines
+
+void bindRealTimeWorldNode(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::gui::osg::RealTimeWorldNode,
       dart::gui::osg::WorldNode,
-      PyRealTimeWorldNodeNode,
-      ::osg::ref_ptr<dart::gui::osg::RealTimeWorldNode>>(m, "RealTimeWorldNode")
-      .def(::py::init<>())
+      gui_trampolines::PyRealTimeWorldNode>(m, "RealTimeWorldNode")
+      .def(dartnb::gui::init<>())
       .def(
-          ::py::init<const std::shared_ptr<dart::simulation::World>&>(),
-          ::py::arg("world"))
+          dartnb::gui::init<const std::shared_ptr<dart::simulation::World>&>(),
+          nb::arg("world").none())
       .def(
-          ::py::init<
+          dartnb::gui::init<
               const std::shared_ptr<dart::simulation::World>&,
               const osg::ref_ptr<osgShadow::ShadowTechnique>&>(),
-          ::py::arg("world"),
-          ::py::arg("shadower"))
+          nb::arg("world").none(),
+          nb::arg("shadower"))
       .def(
-          ::py::init<
+          dartnb::gui::init<
               const std::shared_ptr<dart::simulation::World>&,
               const osg::ref_ptr<osgShadow::ShadowTechnique>&,
               double>(),
-          ::py::arg("world"),
-          ::py::arg("shadower"),
-          ::py::arg("targetFrequency"))
+          nb::arg("world").none(),
+          nb::arg("shadower"),
+          nb::arg("targetFrequency"))
       .def(
-          ::py::init<
+          dartnb::gui::init<
               const std::shared_ptr<dart::simulation::World>&,
               const osg::ref_ptr<osgShadow::ShadowTechnique>&,
               double,
               double>(),
-          ::py::arg("world"),
-          ::py::arg("shadower"),
-          ::py::arg("targetFrequency"),
-          ::py::arg("targetRealTimeFactor"))
+          nb::arg("world").none(),
+          nb::arg("shadower"),
+          nb::arg("targetFrequency"),
+          nb::arg("targetRealTimeFactor"))
       .def(
           "setTargetFrequency",
           +[](dart::gui::osg::RealTimeWorldNode* self, double targetFrequency) {
             self->setTargetFrequency(targetFrequency);
           },
-          ::py::arg("targetFrequency"))
+          nb::arg("targetFrequency"))
       .def(
           "getTargetFrequency",
           +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {
@@ -155,7 +148,7 @@ void RealTimeWorldNode(py::module& m)
           +[](dart::gui::osg::RealTimeWorldNode* self, double targetRTF) {
             self->setTargetRealTimeFactor(targetRTF);
           },
-          ::py::arg("targetRTF"))
+          nb::arg("targetRTF"))
       .def(
           "getTargetRealTimeFactor",
           +[](const dart::gui::osg::RealTimeWorldNode* self) -> double {

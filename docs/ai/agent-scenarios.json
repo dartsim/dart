@@ -30,7 +30,7 @@
         "pixi run check-ai-infra"
       ],
       "recovery": "docs/onboarding/ai-tools.md",
-      "forbidden_paths": ["dart/io", "python/dartpy/nanobind"]
+      "forbidden_paths": ["dart/io", "python/dartpy/nanobind", "python/dartpy_nanobind"]
     },
     {
       "id": "small-change",
@@ -81,7 +81,7 @@
       ],
       "full_gates": ["pixi run lint", "pixi run test-all"],
       "recovery": "docs/onboarding/ci-cd.md",
-      "forbidden_paths": ["dart/io", "python/dartpy/nanobind"]
+      "forbidden_paths": ["dart/io", "python/dartpy/nanobind", "python/dartpy_nanobind"]
     },
     {
       "id": "documentation-update",
@@ -158,13 +158,13 @@
       "recovery": ".claude/commands/dart-model-upgrade.md",
       "forbidden_paths": [
         "dart/io",
-        "python/dartpy/nanobind",
+        "python/dartpy/nanobind", "python/dartpy_nanobind",
         "docs/design/simulation_solver_architecture.md"
       ]
     },
     {
       "id": "component-work",
-      "prompt_class": "Change a DART 6 dartpy binding while preserving the default pybind11 binder and the opt-in DART 6.21 nanobind API",
+      "prompt_class": "Change a DART 6 dartpy binding while preserving the DART 6.21 nanobind API",
       "start_dir": "python/dartpy",
       "instruction_chain": ["AGENTS.md"],
       "expected_route": {
@@ -177,11 +177,11 @@
         "docs/onboarding/python-bindings.md",
         "docs/ai/branch-profile.json"
       ],
-      "permitted_scopes": ["python/dartpy", "python/dartpy_nanobind", "python/tests", "python/examples", "scripts/nanobind"],
+      "permitted_scopes": ["python/dartpy", "python/tests", "python/examples", "scripts/nanobind"],
       "focused_gates": ["pixi run build-py-dev", "pixi run test-py"],
       "full_gates": ["pixi run lint", "pixi run test-all"],
       "recovery": "docs/onboarding/python-bindings.md",
-      "forbidden_paths": ["python/dartpy/nanobind", "dart/io"]
+      "forbidden_paths": ["python/dartpy/nanobind", "python/dartpy_nanobind", "dart/io"]
     },
     {
       "id": "simulation-verification",
@@ -218,7 +218,7 @@
       "recovery": "docs/ai/verification.md",
       "forbidden_paths": [
         "dart/io",
-        "python/dartpy/nanobind",
+        "python/dartpy/nanobind", "python/dartpy_nanobind",
         "docs/design/simulation_solver_architecture.md"
       ]
     },
@@ -256,7 +256,7 @@
       "recovery": "docs/onboarding/release-management.md",
       "forbidden_paths": [
         "dart/io",
-        "python/dartpy/nanobind",
+        "python/dartpy/nanobind", "python/dartpy_nanobind",
         "docs/design/simulation_solver_architecture.md"
       ]
     }

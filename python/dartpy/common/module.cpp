@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,24 +34,20 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void Logging(py::module& sm);
-void Observer(py::module& sm);
-void Subject(py::module& sm);
-void Uri(py::module& sm);
-void Composite(py::module& sm);
-void Resource(py::module& sm);
-void ResourceRetriever(py::module& sm);
-void Stopwatch(py::module& sm);
-void String(py::module& sm);
+void Logging(nb::module_& sm);
+void Observer(nb::module_& sm);
+void Subject(nb::module_& sm);
+void Uri(nb::module_& sm);
+void Composite(nb::module_& sm);
+void Resource(nb::module_& sm);
+void ResourceRetriever(nb::module_& sm);
+void Stopwatch(nb::module_& sm);
+void String(nb::module_& sm);
 
-void dart_common(py::module& m)
+void dart_common(nb::module_& m)
 {
   auto sm = m.def_submodule("common");
 

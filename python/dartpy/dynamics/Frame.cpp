@@ -1,3 +1,11 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include "detail/secondary_methods.hpp"
+
+#include <nanobind/stl/set.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -40,30 +48,23 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include <memory>
 #include <set>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void Frame(py::module& m)
+template <class Cls>
+void defFrameMethods(Cls& cls)
 {
-  ::py::class_<
-      dart::dynamics::Frame,
-      dart::dynamics::Entity,
-      std::shared_ptr<dart::dynamics::Frame>>(m, "Frame")
-      .def(
-          "getRelativeTransform",
-          +[](const dart::dynamics::Frame* self) -> Eigen::Isometry3d {
-            return self->getRelativeTransform();
-          })
+  cls.def(
+         "getRelativeTransform",
+         +[](const dart::dynamics::Frame* self) -> Eigen::Isometry3d {
+           return self->getRelativeTransform();
+         })
       .def(
           "getWorldTransform",
           +[](const dart::dynamics::Frame* self) -> Eigen::Isometry3d {
@@ -80,7 +81,7 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* withRespectTo) -> Eigen::Isometry3d {
             return self->getTransform(withRespectTo);
           },
-          ::py::arg("withRespectTo"))
+          nb::arg("withRespectTo").none())
       .def(
           "getTransform",
           +[](const dart::dynamics::Frame* self,
@@ -89,8 +90,8 @@ void Frame(py::module& m)
               -> Eigen::Isometry3d {
             return self->getTransform(withRespectTo, inCoordinatesOf);
           },
-          ::py::arg("withRespectTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("withRespectTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getSpatialVelocity",
           +[](const dart::dynamics::Frame* self) -> Eigen::Vector6d {
@@ -103,13 +104,13 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector6d {
             return self->getSpatialVelocity(relativeTo, inCoordinatesOf);
           },
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getSpatialVelocity",
           +[](const dart::dynamics::Frame* self, const Eigen::Vector3d& offset)
               -> Eigen::Vector6d { return self->getSpatialVelocity(offset); },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getSpatialVelocity",
           +[](const dart::dynamics::Frame* self,
@@ -119,9 +120,9 @@ void Frame(py::module& m)
             return self->getSpatialVelocity(
                 offset, relativeTo, inCoordinatesOf);
           },
-          ::py::arg("offset"),
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("offset"),
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearVelocity",
           +[](const dart::dynamics::Frame* self) -> Eigen::Vector3d {
@@ -133,7 +134,7 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
             return self->getLinearVelocity(relativeTo);
           },
-          ::py::arg("relativeTo"))
+          nb::arg("relativeTo").none())
       .def(
           "getLinearVelocity",
           +[](const dart::dynamics::Frame* self,
@@ -141,13 +142,13 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector3d {
             return self->getLinearVelocity(relativeTo, inCoordinatesOf);
           },
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearVelocity",
           +[](const dart::dynamics::Frame* self, const Eigen::Vector3d& offset)
               -> Eigen::Vector3d { return self->getLinearVelocity(offset); },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getLinearVelocity",
           +[](const dart::dynamics::Frame* self,
@@ -155,8 +156,8 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
             return self->getLinearVelocity(offset, relativeTo);
           },
-          ::py::arg("offset"),
-          ::py::arg("relativeTo"))
+          nb::arg("offset"),
+          nb::arg("relativeTo").none())
       .def(
           "getLinearVelocity",
           +[](const dart::dynamics::Frame* self,
@@ -165,9 +166,9 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector3d {
             return self->getLinearVelocity(offset, relativeTo, inCoordinatesOf);
           },
-          ::py::arg("offset"),
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("offset"),
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getAngularVelocity",
           +[](const dart::dynamics::Frame* self) -> Eigen::Vector3d {
@@ -179,7 +180,7 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
             return self->getAngularVelocity(relativeTo);
           },
-          ::py::arg("relativeTo"))
+          nb::arg("relativeTo").none())
       .def(
           "getAngularVelocity",
           +[](const dart::dynamics::Frame* self,
@@ -187,8 +188,8 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector3d {
             return self->getAngularVelocity(relativeTo, inCoordinatesOf);
           },
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getSpatialAcceleration",
           +[](const dart::dynamics::Frame* self) -> Eigen::Vector6d {
@@ -201,15 +202,15 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector6d {
             return self->getSpatialAcceleration(relativeTo, inCoordinatesOf);
           },
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getSpatialAcceleration",
           +[](const dart::dynamics::Frame* self,
               const Eigen::Vector3d& offset) -> Eigen::Vector6d {
             return self->getSpatialAcceleration(offset);
           },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getSpatialAcceleration",
           +[](const dart::dynamics::Frame* self,
@@ -219,9 +220,9 @@ void Frame(py::module& m)
             return self->getSpatialAcceleration(
                 offset, relativeTo, inCoordinatesOf);
           },
-          ::py::arg("offset"),
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("offset"),
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearAcceleration",
           +[](const dart::dynamics::Frame* self) -> Eigen::Vector3d {
@@ -233,7 +234,7 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
             return self->getLinearAcceleration(relativeTo);
           },
-          ::py::arg("relativeTo"))
+          nb::arg("relativeTo").none())
       .def(
           "getLinearAcceleration",
           +[](const dart::dynamics::Frame* self,
@@ -241,15 +242,15 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector3d {
             return self->getLinearAcceleration(relativeTo, inCoordinatesOf);
           },
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearAcceleration",
           +[](const dart::dynamics::Frame* self,
               const Eigen::Vector3d& offset) -> Eigen::Vector3d {
             return self->getLinearAcceleration(offset);
           },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getLinearAcceleration",
           +[](const dart::dynamics::Frame* self,
@@ -257,8 +258,8 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
             return self->getLinearAcceleration(offset, relativeTo);
           },
-          ::py::arg("offset"),
-          ::py::arg("relativeTo"))
+          nb::arg("offset"),
+          nb::arg("relativeTo").none())
       .def(
           "getLinearAcceleration",
           +[](const dart::dynamics::Frame* self,
@@ -268,9 +269,9 @@ void Frame(py::module& m)
             return self->getLinearAcceleration(
                 offset, relativeTo, inCoordinatesOf);
           },
-          ::py::arg("offset"),
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("offset"),
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getAngularAcceleration",
           +[](const dart::dynamics::Frame* self) -> Eigen::Vector3d {
@@ -282,7 +283,7 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* relativeTo) -> Eigen::Vector3d {
             return self->getAngularAcceleration(relativeTo);
           },
-          ::py::arg("relativeTo"))
+          nb::arg("relativeTo").none())
       .def(
           "getAngularAcceleration",
           +[](const dart::dynamics::Frame* self,
@@ -290,15 +291,15 @@ void Frame(py::module& m)
               const dart::dynamics::Frame* inCoordinatesOf) -> Eigen::Vector3d {
             return self->getAngularAcceleration(relativeTo, inCoordinatesOf);
           },
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getChildEntities",
           +[](const dart::dynamics::Frame* self)
               -> const std::set<const dart::dynamics::Entity*> {
             return self->getChildEntities();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getNumChildEntities",
           +[](const dart::dynamics::Frame* self) -> std::size_t {
@@ -310,7 +311,7 @@ void Frame(py::module& m)
               -> std::set<const dart::dynamics::Frame*> {
             return self->getChildFrames();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getNumChildFrames",
           +[](const dart::dynamics::Frame* self) -> std::size_t {
@@ -339,6 +340,18 @@ void Frame(py::module& m)
           "World", +[]() -> std::shared_ptr<dart::dynamics::Frame> {
             return dart::dynamics::Frame::WorldShared();
           });
+}
+
+void Frame(nb::module_& m)
+{
+  auto cls = dartnb::dart_class<dart::dynamics::Frame, dart::dynamics::Entity>(
+      m, "Frame");
+  defFrameMethods(cls);
+  dartnb::register_methods(
+      typeid(dart::dynamics::Frame), [](nb::handle target) {
+        dartnb::SecondaryMethods<dart::dynamics::Frame> rebound(target);
+        defFrameMethods(rebound);
+      });
 }
 
 } // namespace python

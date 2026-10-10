@@ -18,4 +18,5 @@ brew 'urdfdom'
 
 # dartpy dependencies
 brew 'python3'
+# Optional test-only dependency for python/tests/interop.
 brew 'pybind11'

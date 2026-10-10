@@ -206,20 +206,14 @@ def test_repeated_ref_ptr_returns_do_not_accumulate_native_references():
 @pytest.mark.parametrize(
     "case",
     (
-        pytest.param("drop_node", marks=pytest.mark.xfail(
-            getattr(dart, "_binder", None) != "nanobind", strict=True,
-            reason="pybind11 loses node overrides retained only by OSG")),
+        "drop_node",
         "delete_viewer",
         "remove_readd",
         "distinct_node_cycles",
         "remove_drop",
-        pytest.param("two_viewers", marks=pytest.mark.xfail(
-            getattr(dart, "_binder", None) != "nanobind", strict=True,
-            reason="pybind11 loses node overrides shared by native viewers")),
+        "two_viewers",
         "two_viewers_remove",
-        pytest.param("node_self_remove", marks=pytest.mark.xfail(
-            getattr(dart, "_binder", None) != "nanobind", strict=True,
-            reason="pybind11 loses overrides during self-removing native callbacks")),
+        "node_self_remove",
         "exit_live",
         "direct_base",
         "node_viewer_cycle",
@@ -232,14 +226,10 @@ def test_node_lifetime_subprocess(case, kind):
 @pytest.mark.parametrize(
     "case",
     (
-        pytest.param("handler_drop", marks=pytest.mark.xfail(
-            getattr(dart, "_binder", None) != "nanobind", strict=True,
-            reason="pybind11 loses handler overrides retained only by native callbacks")),
+        "handler_drop",
         "handler_delete_viewer",
         "handler_viewer_cycle",
-        pytest.param("handler_self_remove", marks=pytest.mark.xfail(
-            getattr(dart, "_binder", None) != "nanobind", strict=True,
-            reason="pybind11 loses handler overrides retained only by native callbacks")),
+        "handler_self_remove",
     ),
 )
 def test_handler_lifetime_subprocess(case):

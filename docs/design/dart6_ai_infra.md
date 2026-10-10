@@ -78,7 +78,7 @@ cannot be averaged into a pass. The capture sidecar identifies deterministic
 static or start/middle/end inspection targets so future image-capable models can
 exercise the same contract without prompt-specific frame selection.
 
-The DART 6 implementation stays on its existing C++17, pybind11, OSG
+The DART 6 implementation stays on its existing C++17, nanobind, OSG
 `OffscreenViewer`, core `DebugOverlay`, and release camera-assessment path.
 
 ### Capability Lineage And Release Verdicts
@@ -91,7 +91,7 @@ The release workflow is the cumulative result of these merged changes:
   `dart-demos`.
 - [#3314](https://github.com/dartsim/dart/pull/3314) added the GLX-pbuffer
   `OffscreenViewer`, default camera, dartpy bindings, and initial
-  verdict/golden/sheet tools. Preserve the C++17/pybind11 API and adapt its
+  verdict/golden/sheet tools. Preserve the C++17/nanobind API and adapt its
   agent harness around viewport-aware framing and explicit missing-bounds
   failures.
 - [#3374](https://github.com/dartsim/dart/pull/3374) added assessed viewpoints,
@@ -110,7 +110,7 @@ SHA-256 digest plus claim coverage and pass state before any GitHub call, then
 uses content-addressed assets and records path/size/digest/URL bindings without
 cross-content clobber.
 
-The visual evidence contract runs on the established DART 6 C++17, pybind11,
+The visual evidence contract runs on the established DART 6 C++17, nanobind,
 OSG `OffscreenViewer`, `agent_capture.py`, `agent_view_quality.py`, and core
 `DebugOverlay` path. The visual fixtures and raycast fallback use the
 consolidated `DARTCollisionDetector`; the owned contact snapshots and

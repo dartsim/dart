@@ -1,3 +1,5 @@
+#include "detail/dart_nb.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,16 +32,12 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void dart_gui_osg(py::module& m);
+void dart_gui_osg(nb::module_& m);
 
-void dart_gui(py::module& m)
+void dart_gui(nb::module_& m)
 {
   auto sm = m.def_submodule("gui");
 

@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,15 +36,11 @@
 
 #include <dart/common/Logging.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <string>
-
-namespace py = pybind11;
 
 namespace dart::python {
 
-void Logging(py::module& m)
+void Logging(nb::module_& m)
 {
   m.def("trace", [](const std::string& log) { common::trace(log); });
   m.def("debug", [](const std::string& log) { common::debug(log); });

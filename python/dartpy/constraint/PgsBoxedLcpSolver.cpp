@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -33,72 +37,76 @@
 #include <dart/constraint/BoxedLcpSolver.hpp>
 #include <dart/constraint/PgsBoxedLcpSolver.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
 #include <string>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void PgsBoxedLcpSolver(py::module& m)
+void PgsBoxedLcpSolver(nb::module_& m)
 {
-  ::py::class_<dart::constraint::PgsBoxedLcpSolver::Option>(
+  dartnb::dart_class<dart::constraint::PgsBoxedLcpSolver::Option>(
       m, "PgsBoxedLcpSolverOption")
-      .def(::py::init<>())
-      .def(::py::init<int>(), ::py::arg("maxIteration"))
+      .def(dartnb::init<>())
+      .def(dartnb::init<int>(), nb::arg("maxIteration"))
       .def(
-          ::py::init<int, double>(),
-          ::py::arg("maxIteration"),
-          ::py::arg("deltaXTolerance"))
+          dartnb::init<int, double>(),
+          nb::arg("maxIteration"),
+          nb::arg("deltaXTolerance"))
       .def(
-          ::py::init<int, double, double>(),
-          ::py::arg("maxIteration"),
-          ::py::arg("deltaXTolerance"),
-          ::py::arg("relativeDeltaXTolerance"))
+          dartnb::init<int, double, double>(),
+          nb::arg("maxIteration"),
+          nb::arg("deltaXTolerance"),
+          nb::arg("relativeDeltaXTolerance"))
       .def(
-          ::py::init<int, double, double, double>(),
-          ::py::arg("maxIteration"),
-          ::py::arg("deltaXTolerance"),
-          ::py::arg("relativeDeltaXTolerance"),
-          ::py::arg("epsilonForDivision"))
+          dartnb::init<int, double, double, double>(),
+          nb::arg("maxIteration"),
+          nb::arg("deltaXTolerance"),
+          nb::arg("relativeDeltaXTolerance"),
+          nb::arg("epsilonForDivision"))
       .def(
-          ::py::init<int, double, double, double, bool>(),
-          ::py::arg("maxIteration"),
-          ::py::arg("deltaXTolerance"),
-          ::py::arg("relativeDeltaXTolerance"),
-          ::py::arg("epsilonForDivision"),
-          ::py::arg("randomizeConstraintOrder"))
-      .def_readwrite(
+          dartnb::init<int, double, double, double, bool>(),
+          nb::arg("maxIteration"),
+          nb::arg("deltaXTolerance"),
+          nb::arg("relativeDeltaXTolerance"),
+          nb::arg("epsilonForDivision"),
+          nb::arg("randomizeConstraintOrder"))
+      .def_rw(
           "mMaxIteration",
-          &dart::constraint::PgsBoxedLcpSolver::Option::mMaxIteration)
-      .def_readwrite(
+          &dart::constraint::PgsBoxedLcpSolver::Option::mMaxIteration,
+          dartnb::setterArgument(
+              &dart::constraint::PgsBoxedLcpSolver::Option::mMaxIteration))
+      .def_rw(
           "mDeltaXThreshold",
-          &dart::constraint::PgsBoxedLcpSolver::Option::mDeltaXThreshold)
-      .def_readwrite(
+          &dart::constraint::PgsBoxedLcpSolver::Option::mDeltaXThreshold,
+          dartnb::setterArgument(
+              &dart::constraint::PgsBoxedLcpSolver::Option::mDeltaXThreshold))
+      .def_rw(
           "mRelativeDeltaXTolerance",
           &dart::constraint::PgsBoxedLcpSolver::Option::
-              mRelativeDeltaXTolerance)
-      .def_readwrite(
+              mRelativeDeltaXTolerance,
+          dartnb::setterArgument(&dart::constraint::PgsBoxedLcpSolver::Option::
+                                     mRelativeDeltaXTolerance))
+      .def_rw(
           "mEpsilonForDivision",
-          &dart::constraint::PgsBoxedLcpSolver::Option::mEpsilonForDivision)
-      .def_readwrite(
+          &dart::constraint::PgsBoxedLcpSolver::Option::mEpsilonForDivision,
+          dartnb::setterArgument(&dart::constraint::PgsBoxedLcpSolver::Option::
+                                     mEpsilonForDivision))
+      .def_rw(
           "mRandomizeConstraintOrder",
           &dart::constraint::PgsBoxedLcpSolver::Option::
-              mRandomizeConstraintOrder);
+              mRandomizeConstraintOrder,
+          dartnb::setterArgument(&dart::constraint::PgsBoxedLcpSolver::Option::
+                                     mRandomizeConstraintOrder));
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::constraint::PgsBoxedLcpSolver,
-      dart::constraint::BoxedLcpSolver,
-      std::shared_ptr<dart::constraint::PgsBoxedLcpSolver>>(
-      m, "PgsBoxedLcpSolver")
+      dart::constraint::BoxedLcpSolver>(m, "PgsBoxedLcpSolver")
       .def(
           "getType",
           +[](const dart::constraint::PgsBoxedLcpSolver* self)
               -> const std::string& { return self->getType(); },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "solve",
           +[](dart::constraint::PgsBoxedLcpSolver* self,
@@ -114,28 +122,28 @@ void PgsBoxedLcpSolver(py::module& m)
             return self->solve(
                 n, A, x, b, nub, lo, hi, findex, earlyTermination);
           },
-          ::py::arg("n"),
-          ::py::arg("A"),
-          ::py::arg("x"),
-          ::py::arg("b"),
-          ::py::arg("nub"),
-          ::py::arg("lo"),
-          ::py::arg("hi"),
-          ::py::arg("findex"),
-          ::py::arg("earlyTermination"))
+          nb::arg("n"),
+          nb::arg("A").none(),
+          nb::arg("x").none(),
+          nb::arg("b").none(),
+          nb::arg("nub"),
+          nb::arg("lo").none(),
+          nb::arg("hi").none(),
+          nb::arg("findex").none(),
+          nb::arg("earlyTermination"))
       .def(
           "setOption",
           +[](dart::constraint::PgsBoxedLcpSolver* self,
               const dart::constraint::PgsBoxedLcpSolver::Option& option) {
             self->setOption(option);
           },
-          ::py::arg("option"))
+          nb::arg("option"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::constraint::PgsBoxedLcpSolver::getStaticType();
           },
-          ::py::return_value_policy::reference_internal);
+          nb::rv_policy::reference_internal);
 }
 
 } // namespace python

@@ -1,4 +1,4 @@
-"""One parity oracle for the pybind11 module and the nanobind binder."""
+"""Inheritance and conversion contracts for dartpy."""
 
 import gc
 import math
@@ -8,7 +8,6 @@ import dartpy as dart
 import numpy as np
 import pytest
 
-from ._support import IS_NANOBIND
 
 D = dart.dynamics
 
@@ -209,9 +208,9 @@ def test_accepted_difference_secondary_python_membership():
         (D.SimpleFrame(), (D.Detachable,)),
     ):
         for base in bases:
-            assert isinstance(value, base) is (not IS_NANOBIND)
-            assert issubclass(type(value), base) is (not IS_NANOBIND)
-            assert (base in type(value).__mro__) is (not IS_NANOBIND)
+            assert isinstance(value, base) is False
+            assert issubclass(type(value), base) is False
+            assert (base in type(value).__mro__) is False
 
 
 def test_weak_references_and_dof_roundtrip():

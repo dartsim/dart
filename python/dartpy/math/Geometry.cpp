@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -38,7 +42,6 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <pybind11/pybind11.h>
 
 // TODO(JS): For some reason, passing const reference causes segfault errors.
 // Use "pass-by-value" for now.
@@ -48,7 +51,7 @@
       +[](Eigen::Vector3d angle) -> Eigen::Matrix3d {                          \
         return dart::math::euler##order##ToMatrix(angle);                      \
       },                                                                       \
-      ::py::arg("angle"));
+      nb::arg("angle"));
 
 #define DARTPY_DEFINE_MATRIXTOEULAER(order)                                    \
   m.def(                                                                       \
@@ -56,14 +59,12 @@
       +[](const Eigen::Matrix3d& R) -> Eigen::Vector3d {                       \
         return dart::math::matrixToEuler##order(R);                            \
       },                                                                       \
-      ::py::arg("R"));
-
-namespace py = pybind11;
+      nb::arg("R"));
 
 namespace dart {
 namespace python {
 
-void Geometry(py::module& m)
+void Geometry(nb::module_& m)
 {
   DARTPY_DEFINE_EULAERTOMATRIX(XYX);
   DARTPY_DEFINE_EULAERTOMATRIX(XYZ);
@@ -96,87 +97,87 @@ void Geometry(py::module& m)
       +[](const Eigen::Vector6d& _S) -> Eigen::Isometry3d {
         return dart::math::expMap(_S);
       },
-      ::py::arg("S"));
+      nb::arg("S"));
 
   m.def(
       "expMapJac",
       +[](const Eigen::Vector3d& _expmap) -> Eigen::Matrix3d {
         return dart::math::expMapJac(_expmap);
       },
-      ::py::arg("expmap"));
+      nb::arg("expmap"));
 
   m.def(
       "expMapRot",
       +[](const Eigen::Vector3d& _expmap) -> Eigen::Matrix3d {
         return dart::math::expMapRot(_expmap);
       },
-      ::py::arg("expmap"));
+      nb::arg("expmap"));
 
   m.def(
       "expToQuat",
       +[](const Eigen::Vector3d& _v) -> Eigen::Quaterniond {
         return dart::math::expToQuat(_v);
       },
-      ::py::arg("v"));
+      nb::arg("v"));
 
   m.def(
       "quatToExp",
       +[](const Eigen::Quaterniond& _q) -> Eigen::Vector3d {
         return dart::math::quatToExp(_q);
       },
-      ::py::arg("q"));
+      nb::arg("q"));
 
   m.def(
       "expAngular",
       +[](const Eigen::Vector3d& _s) -> Eigen::Isometry3d {
         return dart::math::expAngular(_s);
       },
-      ::py::arg("s"));
+      nb::arg("s"));
 
   m.def(
       "verifyRotation",
       +[](const Eigen::Matrix3d& _R) -> bool {
         return dart::math::verifyRotation(_R);
       },
-      ::py::arg("R"));
+      nb::arg("R"));
 
   m.def(
       "verifyTransform",
       +[](const Eigen::Isometry3d& _T) -> bool {
         return dart::math::verifyTransform(_T);
       },
-      ::py::arg("T"));
+      nb::arg("T"));
 
-  ::py::class_<dart::math::BoundingBox>(m, "BoundingBox")
-      .def(::py::init<>())
+  dartnb::dart_class<dart::math::BoundingBox>(m, "BoundingBox")
+      .def(dartnb::init<>())
       .def(
-          ::py::init<const Eigen::Vector3d&, const Eigen::Vector3d&>(),
-          ::py::arg("min"),
-          ::py::arg("max"))
+          dartnb::init<const Eigen::Vector3d&, const Eigen::Vector3d&>(),
+          nb::arg("min"),
+          nb::arg("max"))
       .def(
           "getMin",
           +[](const dart::math::BoundingBox* self) -> const Eigen::Vector3d& {
             return self->getMin();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getMax",
           +[](const dart::math::BoundingBox* self) -> const Eigen::Vector3d& {
             return self->getMax();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "setMin",
           +[](dart::math::BoundingBox* self, const Eigen::Vector3d& min) {
             self->setMin(min);
           },
-          ::py::arg("min"))
+          nb::arg("min"))
       .def(
           "setMax",
           +[](dart::math::BoundingBox* self, const Eigen::Vector3d& max) {
             self->setMax(max);
           },
-          ::py::arg("max"))
+          nb::arg("max"))
       .def(
           "computeCenter",
           +[](const dart::math::BoundingBox* self) -> Eigen::Vector3d {
@@ -196,3 +197,6 @@ void Geometry(py::module& m)
 
 } // namespace python
 } // namespace dart
+
+#undef DARTPY_DEFINE_EULAERTOMATRIX
+#undef DARTPY_DEFINE_MATRIXTOEULAER

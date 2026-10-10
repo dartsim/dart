@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,19 +36,14 @@
 
 #include <dart/common/Observer.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void Observer(py::module& m)
+void Observer(nb::module_& m)
 {
-  ::py::class_<dart::common::Observer, std::shared_ptr<dart::common::Observer>>(
-      m, "Observer");
+  dartnb::dart_class<dart::common::Observer>(m, "Observer");
 }
 
 } // namespace python

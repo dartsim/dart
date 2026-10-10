@@ -1,3 +1,11 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include "detail/secondary_methods.hpp"
+
+#include <nanobind/stl/unique_ptr.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -40,42 +48,34 @@
 
 #include <dart/common/Subject.hpp>
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 #include <memory>
 #include <string>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void Node(py::module& m)
+template <class Cls>
+void defNodeMethods(Cls& cls)
 {
-  ::py::class_<
-      dart::dynamics::Node,
-      /*dart::common::VersionCounter,*/ dart::common::Subject,
-      std::shared_ptr<dart::dynamics::Node>>(m, "Node")
-      .def(
-          "setName",
-          +[](dart::dynamics::Node* self, const std::string& newName)
-              -> const std::string& { return self->setName(newName); },
-          ::py::return_value_policy::reference_internal,
-          ::py::arg("newName"))
+  cls.def(
+         "setName",
+         +[](dart::dynamics::Node* self, const std::string& newName)
+             -> const std::string& { return self->setName(newName); },
+         nb::rv_policy::reference_internal,
+         nb::arg("newName"))
       .def(
           "getName",
           +[](const dart::dynamics::Node* self) -> const std::string& {
             return self->getName();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "setNodeState",
           +[](dart::dynamics::Node* self,
               const dart::dynamics::Node::State& otherState) {
             self->setNodeState(otherState);
           },
-          ::py::arg("otherState"))
+          nb::arg("otherState"))
       .def(
           "getNodeState",
           +[](const dart::dynamics::Node* self)
@@ -88,7 +88,7 @@ void Node(py::module& m)
               const dart::dynamics::Node::Properties& properties) {
             self->setNodeProperties(properties);
           },
-          ::py::arg("properties"))
+          nb::arg("properties"))
       .def(
           "getNodeProperties",
           +[](const dart::dynamics::Node* self)
@@ -128,6 +128,18 @@ void Node(py::module& m)
               -> std::shared_ptr<const dart::dynamics::Skeleton> {
             return self->getSkeleton();
           });
+}
+
+void Node(nb::module_& m)
+{
+  auto cls = dartnb::dart_class<
+      dart::dynamics::Node,
+      /*dart::common::VersionCounter,*/ dart::common::Subject>(m, "Node");
+  defNodeMethods(cls);
+  dartnb::register_methods(typeid(dart::dynamics::Node), [](nb::handle target) {
+    dartnb::SecondaryMethods<dart::dynamics::Node> rebound(target);
+    defNodeMethods(rebound);
+  });
 }
 
 } // namespace python

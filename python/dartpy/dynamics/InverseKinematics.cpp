@@ -1,3 +1,13 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+#include "detail/ik_properties.hpp"
+#include "detail/optimizer_properties.hpp"
+// clang-format on
+
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/unique_ptr.h>
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -49,9 +59,6 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include <memory>
 #include <string>
@@ -59,8 +66,6 @@
 #include <vector>
 
 #include <cstddef>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
@@ -77,15 +82,15 @@ public:
   PythonAnalyticalIk(
       IK* ik,
       std::vector<std::size_t> dofs,
-      py::object solve,
+      nb::object solve,
       const std::string& methodName,
       const Properties& properties = Properties())
     : Analytical(ik, methodName, properties),
       mDofs(std::move(dofs)),
-      mSolve(new py::object(std::move(solve)))
+      mSolve(new nb::object(std::move(solve)))
   {
     if (mSolve->is_none() || !PyCallable_Check(mSolve->ptr()))
-      throw py::value_error("solve must be a callable Python object");
+      throw nb::value_error("solve must be a callable Python object");
 
     // Note: constructDofMap() is intentionally not called here. Both
     // construction paths invoke it after the object is registered as the IK's
@@ -97,14 +102,14 @@ public:
   ~PythonAnalyticalIk() override
   {
     if (mSolve) {
-      py::gil_scoped_acquire gil;
+      nb::gil_scoped_acquire gil;
       mSolve.reset();
     }
   }
 
   std::unique_ptr<GradientMethod> clone(IK* newIK) const override
   {
-    py::gil_scoped_acquire gil;
+    nb::gil_scoped_acquire gil;
     return std::unique_ptr<GradientMethod>(new PythonAnalyticalIk(
         newIK, mDofs, *mSolve, mMethodName, getAnalyticalProperties()));
   }
@@ -114,15 +119,15 @@ public:
   {
     mSolutions.clear();
 
-    py::gil_scoped_acquire gil;
-    py::object rawSolutions = (*mSolve)(desiredBodyTf.matrix());
+    nb::gil_scoped_acquire gil;
+    nb::object rawSolutions = (*mSolve)(desiredBodyTf.matrix());
 
     if (rawSolutions.is_none()) {
       checkSolutionJointLimits();
       return mSolutions;
     }
 
-    for (py::handle rawSolution : rawSolutions)
+    for (nb::handle rawSolution : rawSolutions)
       mSolutions.push_back(castSolution(rawSolution));
 
     checkSolutionJointLimits();
@@ -137,124 +142,151 @@ public:
 private:
   // True if the handle is a sequence/array (so it can be a configuration
   // vector), false for a scalar such as a Python or numpy number.
-  static bool isArrayLike(py::handle value)
+  static bool isArrayLike(nb::handle value)
   {
-    return py::isinstance<py::list>(value) || py::isinstance<py::tuple>(value)
-           || py::hasattr(value, "__len__");
+    return nb::isinstance<nb::list>(value) || nb::isinstance<nb::tuple>(value)
+           || nb::hasattr(value, "__len__");
   }
 
   // True if the handle is an integer scalar (Python int or numpy integer), but
   // not an array, so it can be a validity flag.
-  static bool isIntLike(py::handle value)
+  static bool isIntLike(nb::handle value)
   {
     return !isArrayLike(value)
-           && (py::isinstance<py::int_>(value) || PyIndex_Check(value.ptr()));
+           && (nb::isinstance<nb::int_>(value) || PyIndex_Check(value.ptr()));
   }
 
   // Reads an integer validity flag, defaulting to VALID when the value is
   // missing or not integer-convertible instead of throwing an opaque cast error
   // back across the Python boundary.
-  static int extractValidity(py::handle value)
+  static int extractValidity(nb::handle value)
   {
     try {
-      return value.cast<int>();
-    } catch (const py::cast_error&) {
+      return nb::cast<int>(value);
+    } catch (const nb::cast_error&) {
       return VALID;
     }
   }
 
-  Solution castSolution(py::handle rawSolution) const
+  Solution castSolution(nb::handle rawSolution) const
   {
-    if (py::isinstance<Solution>(rawSolution))
-      return rawSolution.cast<Solution>();
+    if (nb::isinstance<Solution>(rawSolution))
+      return nb::cast<Solution>(rawSolution);
 
-    py::object config = py::reinterpret_borrow<py::object>(rawSolution);
+    nb::object config = nb::borrow<nb::object>(rawSolution);
     int validity = VALID;
 
-    if (py::hasattr(rawSolution, "mConfig")) {
+    if (nb::hasattr(rawSolution, "mConfig")) {
       config = rawSolution.attr("mConfig");
-      if (py::hasattr(rawSolution, "mValidity"))
+      if (nb::hasattr(rawSolution, "mValidity"))
         validity = extractValidity(rawSolution.attr("mValidity"));
-    } else if (py::hasattr(rawSolution, "q")) {
+    } else if (nb::hasattr(rawSolution, "q")) {
       config = rawSolution.attr("q");
-      if (py::hasattr(rawSolution, "validity"))
+      if (nb::hasattr(rawSolution, "validity"))
         validity = extractValidity(rawSolution.attr("validity"));
     } else if (
-        py::isinstance<py::tuple>(rawSolution)
-        || py::isinstance<py::list>(rawSolution)) {
+        nb::isinstance<nb::tuple>(rawSolution)
+        || nb::isinstance<nb::list>(rawSolution)) {
       // Treat a 2-element sequence as (config, validity) only when it is
       // unambiguously that shape: the first element is itself array-like and
       // the second is an integer scalar. Otherwise the whole sequence is the
       // configuration, so a bare 2-DOF config such as [a, b] is not misread as
       // a (config, validity) pair.
-      py::sequence sequence = py::reinterpret_borrow<py::sequence>(rawSolution);
-      if (sequence.size() == 2 && isArrayLike(sequence[0])
+      nb::sequence sequence = nb::borrow<nb::sequence>(rawSolution);
+      if (nb::len(sequence) == 2 && isArrayLike(sequence[0])
           && isIntLike(sequence[1])) {
-        config = py::reinterpret_borrow<py::object>(sequence[0]);
+        config = nb::borrow<nb::object>(sequence[0]);
         validity = extractValidity(sequence[1]);
       }
     }
 
     Eigen::VectorXd q;
     try {
-      q = config.cast<Eigen::VectorXd>();
-    } catch (const py::cast_error&) {
-      throw py::value_error(
-          "Python analytical IK solution could not be converted to a 1-D float "
-          "vector of length "
-          + std::to_string(mDofs.size()));
+      q = nb::cast<Eigen::VectorXd>(config);
+    } catch (const nb::cast_error&) {
+      throw nb::value_error(("Python analytical IK solution could not be "
+                             "converted to a 1-D float "
+                             "vector of length "
+                             + std::to_string(mDofs.size()))
+                                .c_str());
     }
 
     if (q.size() != static_cast<int>(mDofs.size())) {
-      throw py::value_error(
-          "Python analytical IK solution has " + std::to_string(q.size())
-          + " values, but " + std::to_string(mDofs.size())
-          + " DOFs were registered");
+      throw nb::value_error(("Python analytical IK solution has "
+                             + std::to_string(q.size()) + " values, but "
+                             + std::to_string(mDofs.size())
+                             + " DOFs were registered")
+                                .c_str());
     }
 
     return Solution(q, validity);
   }
 
   std::vector<std::size_t> mDofs;
-  std::unique_ptr<py::object> mSolve;
+  std::unique_ptr<nb::object> mSolve;
 };
 
 } // namespace
 
-void InverseKinematics(py::module& m)
+template <class Cls>
+void defTaskSpaceRegionUniquePropertyMethods(Cls& cls)
 {
-  ::py::class_<dart::dynamics::InverseKinematics::ErrorMethod::Properties>(
+  cls.def_rw(
+         "mComputeErrorFromCenter",
+         &dart::dynamics::InverseKinematics::TaskSpaceRegion::UniqueProperties::
+             mComputeErrorFromCenter,
+         dartnb::setterArgument(
+             &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+                 UniqueProperties::mComputeErrorFromCenter))
+      .def_rw(
+          "mReferenceFrame",
+          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+              UniqueProperties::mReferenceFrame,
+          dartnb::setterArgument(
+              &dart::dynamics::InverseKinematics::TaskSpaceRegion::
+                  UniqueProperties::mReferenceFrame));
+}
+
+void InverseKinematics(nb::module_& m)
+{
+  dartnb::dart_class<
+      dart::dynamics::InverseKinematics::ErrorMethod::Properties>(
       m, "InverseKinematicsErrorMethodProperties")
       .def(
-          ::py::init<
+          dartnb::init<
               const dart::dynamics::InverseKinematics::ErrorMethod::Bounds&,
               double,
               const Eigen::Vector6d&>(),
-          ::py::arg("bounds")
+          nb::arg("bounds")
           = dart::dynamics::InverseKinematics::ErrorMethod::Bounds(
               Eigen::Vector6d::Constant(-dart::dynamics::DefaultIKTolerance),
               Eigen::Vector6d::Constant(dart::dynamics::DefaultIKTolerance)),
-          ::py::arg("errorClamp") = dart::dynamics::DefaultIKErrorClamp,
-          ::py::arg("errorWeights") = Eigen::compose(
+          nb::arg("errorClamp") = dart::dynamics::DefaultIKErrorClamp,
+          nb::arg("errorWeights") = Eigen::compose(
               Eigen::Vector3d::Constant(dart::dynamics::DefaultIKAngularWeight),
               Eigen::Vector3d::Constant(dart::dynamics::DefaultIKLinearWeight)))
-      .def_readwrite(
+      .def_rw(
           "mBounds",
-          &dart::dynamics::InverseKinematics::ErrorMethod::Properties::mBounds)
-      .def_readwrite(
+          &dart::dynamics::InverseKinematics::ErrorMethod::Properties::mBounds,
+          dartnb::setterArgument(&dart::dynamics::InverseKinematics::
+                                     ErrorMethod::Properties::mBounds))
+      .def_rw(
           "mErrorLengthClamp",
           &dart::dynamics::InverseKinematics::ErrorMethod::Properties::
-              mErrorLengthClamp)
-      .def_readwrite(
+              mErrorLengthClamp,
+          dartnb::setterArgument(
+              &dart::dynamics::InverseKinematics::ErrorMethod::Properties::
+                  mErrorLengthClamp))
+      .def_rw(
           "mErrorWeights",
           &dart::dynamics::InverseKinematics::ErrorMethod::Properties::
-              mErrorWeights);
+              mErrorWeights,
+          dartnb::setterArgument(&dart::dynamics::InverseKinematics::
+                                     ErrorMethod::Properties::mErrorWeights));
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::dynamics::InverseKinematics::ErrorMethod,
-      dart::common::Subject,
-      std::shared_ptr<dart::dynamics::InverseKinematics::ErrorMethod>>(
-      m, "InverseKinematicsErrorMethod")
+      dart::common::Subject>(m, "InverseKinematicsErrorMethod")
       .def(
           "clone",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self,
@@ -263,7 +295,7 @@ void InverseKinematics(py::module& m)
                   dart::dynamics::InverseKinematics::ErrorMethod> {
             return self->clone(_newIK);
           },
-          ::py::arg("newIK"))
+          nb::arg("newIK").none())
       .def(
           "computeError",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -275,13 +307,13 @@ void InverseKinematics(py::module& m)
               const Eigen::Vector6d& _error) -> Eigen::Isometry3d {
             return self->computeDesiredTransform(_currentTf, _error);
           },
-          ::py::arg("currentTf"),
-          ::py::arg("error"))
+          nb::arg("currentTf"),
+          nb::arg("error"))
       .def(
           "getMethodName",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
               -> const std::string& { return self->getMethodName(); },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "setBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self) {
@@ -291,7 +323,7 @@ void InverseKinematics(py::module& m)
           "setBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               const Eigen::Vector6d& _lower) { self->setBounds(_lower); },
-          ::py::arg("lower"))
+          nb::arg("lower"))
       .def(
           "setBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
@@ -299,15 +331,15 @@ void InverseKinematics(py::module& m)
               const Eigen::Vector6d& _upper) {
             self->setBounds(_lower, _upper);
           },
-          ::py::arg("lower"),
-          ::py::arg("upper"))
+          nb::arg("lower"),
+          nb::arg("upper"))
       .def(
           "setBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               const std::pair<Eigen::Vector6d, Eigen::Vector6d>& _bounds) {
             self->setBounds(_bounds);
           },
-          ::py::arg("bounds"))
+          nb::arg("bounds"))
       .def(
           "getBounds",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -325,7 +357,7 @@ void InverseKinematics(py::module& m)
               const Eigen::Vector3d& _lower) {
             self->setAngularBounds(_lower);
           },
-          ::py::arg("lower"))
+          nb::arg("lower"))
       .def(
           "setAngularBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
@@ -333,15 +365,15 @@ void InverseKinematics(py::module& m)
               const Eigen::Vector3d& _upper) {
             self->setAngularBounds(_lower, _upper);
           },
-          ::py::arg("lower"),
-          ::py::arg("upper"))
+          nb::arg("lower"),
+          nb::arg("upper"))
       .def(
           "setAngularBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds) {
             self->setAngularBounds(_bounds);
           },
-          ::py::arg("bounds"))
+          nb::arg("bounds"))
       .def(
           "getAngularBounds",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -357,7 +389,7 @@ void InverseKinematics(py::module& m)
           "setLinearBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               const Eigen::Vector3d& _lower) { self->setLinearBounds(_lower); },
-          ::py::arg("lower"))
+          nb::arg("lower"))
       .def(
           "setLinearBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
@@ -365,15 +397,15 @@ void InverseKinematics(py::module& m)
               const Eigen::Vector3d& _upper) {
             self->setLinearBounds(_lower, _upper);
           },
-          ::py::arg("lower"),
-          ::py::arg("upper"))
+          nb::arg("lower"),
+          nb::arg("upper"))
       .def(
           "setLinearBounds",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               const std::pair<Eigen::Vector3d, Eigen::Vector3d>& _bounds) {
             self->setLinearBounds(_bounds);
           },
-          ::py::arg("bounds"))
+          nb::arg("bounds"))
       .def(
           "getLinearBounds",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -389,7 +421,7 @@ void InverseKinematics(py::module& m)
           "setErrorLengthClamp",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self,
               double _clampSize) { self->setErrorLengthClamp(_clampSize); },
-          ::py::arg("clampSize"))
+          nb::arg("clampSize"))
       .def(
           "getErrorLengthClamp",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -400,7 +432,7 @@ void InverseKinematics(py::module& m)
               const Eigen::Vector6d& _weights) {
             self->setErrorWeights(_weights);
           },
-          ::py::arg("weights"))
+          nb::arg("weights"))
       .def(
           "setAngularErrorWeights",
           +[](dart::dynamics::InverseKinematics::ErrorMethod* self) {
@@ -412,7 +444,7 @@ void InverseKinematics(py::module& m)
               const Eigen::Vector3d& _weights) {
             self->setAngularErrorWeights(_weights);
           },
-          ::py::arg("weights"))
+          nb::arg("weights"))
       .def(
           "getAngularErrorWeights",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -428,7 +460,7 @@ void InverseKinematics(py::module& m)
               const Eigen::Vector3d& _weights) {
             self->setLinearErrorWeights(_weights);
           },
-          ::py::arg("weights"))
+          nb::arg("weights"))
       .def(
           "getLinearErrorWeights",
           +[](const dart::dynamics::InverseKinematics::ErrorMethod* self)
@@ -445,54 +477,51 @@ void InverseKinematics(py::module& m)
             self->clearCache();
           });
 
-  ::py::class_<
-      dart::dynamics::InverseKinematics::TaskSpaceRegion::UniqueProperties>(
-      m, "InverseKinematicsTaskSpaceRegionUniqueProperties")
-      .def(
-          ::py::init<bool, dart::dynamics::SimpleFramePtr>(),
-          ::py::arg("computeErrorFromCenter") = true,
-          ::py::arg("referenceFrame") = nullptr)
-      .def_readwrite(
-          "mComputeErrorFromCenter",
-          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
-              UniqueProperties::mComputeErrorFromCenter)
-      .def_readwrite(
-          "mReferenceFrame",
-          &dart::dynamics::InverseKinematics::TaskSpaceRegion::
-              UniqueProperties::mReferenceFrame);
+  auto uniqueProperties
+      = dartnb::dart_class<dart::dynamics::InverseKinematics::TaskSpaceRegion::
+                               UniqueProperties>(
+            m, "InverseKinematicsTaskSpaceRegionUniqueProperties")
+            .def(
+                dartnb::init<bool, dart::dynamics::SimpleFramePtr>(),
+                nb::arg("computeErrorFromCenter") = true,
+                nb::arg("referenceFrame").none() = nullptr);
+  defTaskSpaceRegionUniquePropertyMethods(uniqueProperties);
 
-  ::py::class_<
-      dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties,
-      dart::dynamics::InverseKinematics::ErrorMethod::Properties,
-      dart::dynamics::InverseKinematics::TaskSpaceRegion::UniqueProperties>(
-      m, "InverseKinematicsTaskSpaceRegionProperties")
-      .def(
-          ::py::init<
-              const dart::dynamics::InverseKinematics::ErrorMethod::Properties&,
-              const dart::dynamics::InverseKinematics::TaskSpaceRegion::
-                  UniqueProperties&>(),
-          ::py::arg("errorProperties")
-          = dart::dynamics::InverseKinematics::ErrorMethod::Properties(),
-          ::py::arg("taskSpaceProperties") = dart::dynamics::InverseKinematics::
-              TaskSpaceRegion::UniqueProperties());
+  auto properties
+      = dartnb::dart_class<
+            dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties,
+            dart::dynamics::InverseKinematics::ErrorMethod::Properties,
+            dart::dynamics::InverseKinematics::TaskSpaceRegion::
+                UniqueProperties>(
+            m, "InverseKinematicsTaskSpaceRegionProperties")
+            .def(
+                dartnb::init<
+                    const dart::dynamics::InverseKinematics::ErrorMethod::
+                        Properties&,
+                    const dart::dynamics::InverseKinematics::TaskSpaceRegion::
+                        UniqueProperties&>(),
+                nb::arg("errorProperties")
+                = dart::dynamics::InverseKinematics::ErrorMethod::Properties(),
+                nb::arg("taskSpaceProperties") = dart::dynamics::
+                    InverseKinematics::TaskSpaceRegion::UniqueProperties());
+  defTaskSpaceRegionUniquePropertyMethods(properties);
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::dynamics::InverseKinematics::TaskSpaceRegion,
-      dart::dynamics::InverseKinematics::ErrorMethod,
-      std::shared_ptr<dart::dynamics::InverseKinematics::TaskSpaceRegion>>(
+      dart::dynamics::InverseKinematics::ErrorMethod>(
       m, "InverseKinematicsTaskSpaceRegion")
       .def(
-          ::py::init<
+          dartnb::init<
               dart::dynamics::InverseKinematics*,
               dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties>(),
-          ::py::arg("ik"),
-          ::py::arg("properties")
+          nb::arg("ik").none(),
+          nb::arg("properties")
           = dart::dynamics::InverseKinematics::TaskSpaceRegion::Properties())
       .def(
           "setComputeFromCenter",
           &dart::dynamics::InverseKinematics::TaskSpaceRegion::
               setComputeFromCenter,
-          ::py::arg("computeFromCenter"),
+          nb::arg("computeFromCenter"),
           "Set whether this TaskSpaceRegion should compute its error vector "
           "from the center of the region.")
       .def(
@@ -505,7 +534,7 @@ void InverseKinematics(py::module& m)
           "setReferenceFrame",
           &dart::dynamics::InverseKinematics::TaskSpaceRegion::
               setReferenceFrame,
-          ::py::arg("referenceFrame"),
+          nb::arg("referenceFrame").none(),
           "Set the reference frame that the task space region is expressed. "
           "Pass None to use the parent frame of the target frame instead.")
       .def(
@@ -519,31 +548,36 @@ void InverseKinematics(py::module& m)
               getTaskSpaceRegionProperties,
           "Get the Properties of this TaskSpaceRegion.");
 
-  ::py::class_<dart::dynamics::InverseKinematics::GradientMethod::Properties>(
+  dartnb::dart_class<
+      dart::dynamics::InverseKinematics::GradientMethod::Properties>(
       m, "InverseKinematicsGradientMethodProperties")
       .def(
-          ::py::init<double, const Eigen::VectorXd&>(),
-          ::py::arg("clamp") = dart::dynamics::DefaultIKGradientComponentClamp,
-          ::py::arg("weights") = Eigen::VectorXd())
-      .def_readwrite(
+          dartnb::init<double, const Eigen::VectorXd&>(),
+          nb::arg("clamp") = dart::dynamics::DefaultIKGradientComponentClamp,
+          nb::arg("weights") = Eigen::VectorXd())
+      .def_rw(
           "mComponentWiseClamp",
           &dart::dynamics::InverseKinematics::GradientMethod::Properties::
-              mComponentWiseClamp)
-      .def_readwrite(
+              mComponentWiseClamp,
+          dartnb::setterArgument(
+              &dart::dynamics::InverseKinematics::GradientMethod::Properties::
+                  mComponentWiseClamp))
+      .def_rw(
           "mComponentWeights",
           &dart::dynamics::InverseKinematics::GradientMethod::Properties::
-              mComponentWeights);
+              mComponentWeights,
+          dartnb::setterArgument(
+              &dart::dynamics::InverseKinematics::GradientMethod::Properties::
+                  mComponentWeights));
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::dynamics::InverseKinematics::GradientMethod,
-      dart::common::Subject,
-      std::shared_ptr<dart::dynamics::InverseKinematics::GradientMethod>>(
-      m, "InverseKinematicsGradientMethod")
+      dart::common::Subject>(m, "InverseKinematicsGradientMethod")
       .def(
           "getMethodName",
           +[](const dart::dynamics::InverseKinematics::GradientMethod* self)
               -> const std::string& { return self->getMethodName(); },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "setComponentWiseClamp",
           +[](dart::dynamics::InverseKinematics::GradientMethod* self) {
@@ -553,7 +587,7 @@ void InverseKinematics(py::module& m)
           "setComponentWiseClamp",
           +[](dart::dynamics::InverseKinematics::GradientMethod* self,
               double _clamp) { self->setComponentWiseClamp(_clamp); },
-          ::py::arg("clamp"))
+          nb::arg("clamp"))
       .def(
           "getComponentWiseClamp",
           +[](const dart::dynamics::InverseKinematics::GradientMethod* self)
@@ -564,12 +598,12 @@ void InverseKinematics(py::module& m)
               const Eigen::VectorXd& _weights) {
             self->setComponentWeights(_weights);
           },
-          ::py::arg("weights"))
+          nb::arg("weights"))
       .def(
           "getComponentWeights",
           +[](const dart::dynamics::InverseKinematics::GradientMethod* self)
               -> const Eigen::VectorXd& { return self->getComponentWeights(); },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getGradientMethodProperties",
           +[](const dart::dynamics::InverseKinematics::GradientMethod* self)
@@ -585,27 +619,30 @@ void InverseKinematics(py::module& m)
           "getIK",
           +[](dart::dynamics::InverseKinematics::GradientMethod* self)
               -> dart::dynamics::InverseKinematics* { return self->getIK(); },
-          ::py::return_value_policy::reference_internal);
+          nb::rv_policy::reference_internal);
 
-  ::py::class_<dart::dynamics::InverseKinematics::Analytical::Solution>(
+  dartnb::dart_class<dart::dynamics::InverseKinematics::Analytical::Solution>(
       m, "InverseKinematicsAnalyticalSolution")
       .def(
-          ::py::init<const Eigen::VectorXd&, int>(),
-          ::py::arg("config") = Eigen::VectorXd(),
-          ::py::arg("validity") = static_cast<int>(
+          dartnb::init<const Eigen::VectorXd&, int>(),
+          nb::arg("config") = Eigen::VectorXd(),
+          nb::arg("validity") = static_cast<int>(
               dart::dynamics::InverseKinematics::Analytical::VALID))
-      .def_readwrite(
+      .def_rw(
           "mConfig",
-          &dart::dynamics::InverseKinematics::Analytical::Solution::mConfig)
-      .def_readwrite(
+          &dart::dynamics::InverseKinematics::Analytical::Solution::mConfig,
+          dartnb::setterArgument(&dart::dynamics::InverseKinematics::
+                                     Analytical::Solution::mConfig))
+      .def_rw(
           "mValidity",
-          &dart::dynamics::InverseKinematics::Analytical::Solution::mValidity);
+          &dart::dynamics::InverseKinematics::Analytical::Solution::mValidity,
+          dartnb::setterArgument(&dart::dynamics::InverseKinematics::
+                                     Analytical::Solution::mValidity));
 
   auto analytical
-      = ::py::class_<
+      = dartnb::dart_class<
             dart::dynamics::InverseKinematics::Analytical,
-            dart::dynamics::InverseKinematics::GradientMethod,
-            std::shared_ptr<dart::dynamics::InverseKinematics::Analytical>>(
+            dart::dynamics::InverseKinematics::GradientMethod>(
             m, "InverseKinematicsAnalytical")
             .def(
                 "getSolutions",
@@ -622,7 +659,7 @@ void InverseKinematics(py::module& m)
                                        Analytical::Solution> {
                   return self->getSolutions(_desiredTf);
                 },
-                ::py::arg("desiredTf"))
+                nb::arg("desiredTf"))
             .def(
                 "getDofs",
                 +[](const dart::dynamics::InverseKinematics::Analytical* self)
@@ -633,7 +670,7 @@ void InverseKinematics(py::module& m)
                     const Eigen::VectorXd& _config) {
                   self->setPositions(_config);
                 },
-                ::py::arg("config"))
+                nb::arg("config"))
             .def(
                 "getPositions",
                 +[](const dart::dynamics::InverseKinematics::Analytical* self)
@@ -647,7 +684,7 @@ void InverseKinematics(py::module& m)
                                       Analytical::ExtraDofUtilization>(
                           _utilization));
                 },
-                ::py::arg("utilization"))
+                nb::arg("utilization"))
             .def(
                 "getExtraDofUtilization",
                 +[](const dart::dynamics::InverseKinematics::Analytical* self)
@@ -658,48 +695,43 @@ void InverseKinematics(py::module& m)
                 "setExtraErrorLengthClamp",
                 +[](dart::dynamics::InverseKinematics::Analytical* self,
                     double _clamp) { self->setExtraErrorLengthClamp(_clamp); },
-                ::py::arg("clamp"))
+                nb::arg("clamp"))
             .def(
                 "getExtraErrorLengthClamp",
                 +[](const dart::dynamics::InverseKinematics::Analytical* self)
                     -> double { return self->getExtraErrorLengthClamp(); });
 
-  analytical.attr("VALID") = ::py::int_(
+  analytical.attr("VALID") = nb::int_(
       static_cast<int>(dart::dynamics::InverseKinematics::Analytical::VALID));
-  analytical.attr("OUT_OF_REACH") = ::py::int_(static_cast<int>(
+  analytical.attr("OUT_OF_REACH") = nb::int_(static_cast<int>(
       dart::dynamics::InverseKinematics::Analytical::OUT_OF_REACH));
-  analytical.attr("LIMIT_VIOLATED") = ::py::int_(static_cast<int>(
+  analytical.attr("LIMIT_VIOLATED") = nb::int_(static_cast<int>(
       dart::dynamics::InverseKinematics::Analytical::LIMIT_VIOLATED));
-  analytical.attr("UNUSED") = ::py::int_(
+  analytical.attr("UNUSED") = nb::int_(
       static_cast<int>(dart::dynamics::InverseKinematics::Analytical::UNUSED));
-  analytical.attr("PRE_ANALYTICAL") = ::py::int_(static_cast<int>(
+  analytical.attr("PRE_ANALYTICAL") = nb::int_(static_cast<int>(
       dart::dynamics::InverseKinematics::Analytical::PRE_ANALYTICAL));
-  analytical.attr("POST_ANALYTICAL") = ::py::int_(static_cast<int>(
+  analytical.attr("POST_ANALYTICAL") = nb::int_(static_cast<int>(
       dart::dynamics::InverseKinematics::Analytical::POST_ANALYTICAL));
-  analytical.attr("PRE_AND_POST_ANALYTICAL") = ::py::int_(static_cast<int>(
+  analytical.attr("PRE_AND_POST_ANALYTICAL") = nb::int_(static_cast<int>(
       dart::dynamics::InverseKinematics::Analytical::PRE_AND_POST_ANALYTICAL));
 
-  ::py::class_<
-      dart::dynamics::InverseKinematics,
-      dart::common::Subject,
-      std::shared_ptr<dart::dynamics::InverseKinematics>>(
+  dartnb::dart_class<dart::dynamics::InverseKinematics, dart::common::Subject>(
       m, "InverseKinematics")
       .def(
-          ::py::init(
+          dartnb::factory(
               +[](dart::dynamics::JacobianNode* node)
                   -> dart::dynamics::InverseKinematicsPtr {
-                if (!node)
-                  throw ::py::type_error("InverseKinematics requires a node");
                 return dart::dynamics::InverseKinematics::create(node);
               }),
-          ::py::arg("node"))
+          nb::arg("node"))
       .def(
           "findSolution",
           +[](dart::dynamics::InverseKinematics* self,
               Eigen::VectorXd& positions) -> bool {
             return self->findSolution(positions);
           },
-          py::arg("positions"))
+          nb::arg("positions"))
       .def(
           "solveAndApply",
           +[](dart::dynamics::InverseKinematics* self) -> bool {
@@ -711,7 +743,7 @@ void InverseKinematics(py::module& m)
               bool allowIncompleteResult) -> bool {
             return self->solveAndApply(allowIncompleteResult);
           },
-          py::arg("allowIncompleteResult"))
+          nb::arg("allowIncompleteResult"))
       .def(
           "solveAndApply",
           +[](dart::dynamics::InverseKinematics* self,
@@ -719,8 +751,8 @@ void InverseKinematics(py::module& m)
               bool allowIncompleteResult) -> bool {
             return self->solveAndApply(positions, allowIncompleteResult);
           },
-          py::arg("positions"),
-          py::arg("allowIncompleteResult"))
+          nb::arg("positions"),
+          nb::arg("allowIncompleteResult"))
       .def(
           "clone",
           +[](const dart::dynamics::InverseKinematics* self,
@@ -728,7 +760,7 @@ void InverseKinematics(py::module& m)
               -> dart::dynamics::InverseKinematicsPtr {
             return self->clone(_newNode);
           },
-          ::py::arg("newNode"))
+          nb::arg("newNode").none())
       .def(
           "setActive",
           +[](dart::dynamics::InverseKinematics* self) { self->setActive(); })
@@ -737,7 +769,7 @@ void InverseKinematics(py::module& m)
           +[](dart::dynamics::InverseKinematics* self, bool _active) {
             self->setActive(_active);
           },
-          ::py::arg("active"))
+          nb::arg("active"))
       .def(
           "setInactive",
           +[](dart::dynamics::InverseKinematics* self) { self->setInactive(); })
@@ -751,7 +783,7 @@ void InverseKinematics(py::module& m)
           +[](dart::dynamics::InverseKinematics* self, std::size_t _level) {
             self->setHierarchyLevel(_level);
           },
-          ::py::arg("level"))
+          nb::arg("level"))
       .def(
           "getHierarchyLevel",
           +[](const dart::dynamics::InverseKinematics* self) -> std::size_t {
@@ -769,7 +801,7 @@ void InverseKinematics(py::module& m)
           "setDofs",
           +[](dart::dynamics::InverseKinematics* self,
               const std::vector<std::size_t>& _dofs) { self->setDofs(_dofs); },
-          ::py::arg("dofs"))
+          nb::arg("dofs"))
       .def(
           "getDofs",
           +[](const dart::dynamics::InverseKinematics* self)
@@ -777,15 +809,15 @@ void InverseKinematics(py::module& m)
       .def(
           "setPythonAnalytical",
           +[](dart::dynamics::InverseKinematics* self,
-              py::object solve,
-              py::object dofs,
+              nb::object solve,
+              nb::object dofs,
               const std::string& methodName)
               -> dart::dynamics::InverseKinematics::Analytical& {
             std::vector<std::size_t> resolvedDofs;
             if (dofs.is_none())
               resolvedDofs = self->getDofs();
             else
-              resolvedDofs = dofs.cast<std::vector<std::size_t>>();
+              resolvedDofs = nb::cast<std::vector<std::size_t>>(dofs);
 
             // Validate the registered DOF indices against the skeleton up
             // front. Otherwise a stale/incorrect index only warns in
@@ -797,10 +829,11 @@ void InverseKinematics(py::module& m)
             const std::size_t numDofs = skeleton ? skeleton->getNumDofs() : 0u;
             for (std::size_t dof : resolvedDofs) {
               if (dof >= numDofs) {
-                throw py::value_error(
-                    "setPythonAnalytical: DOF index " + std::to_string(dof)
-                    + " is out of range for the skeleton with "
-                    + std::to_string(numDofs) + " DOF(s)");
+                throw nb::value_error(
+                    ("setPythonAnalytical: DOF index " + std::to_string(dof)
+                     + " is out of range for the skeleton with "
+                     + std::to_string(numDofs) + " DOF(s)")
+                        .c_str());
               }
             }
 
@@ -826,10 +859,10 @@ void InverseKinematics(py::module& m)
           "\n"
           "The returned handle is owned by this InverseKinematics and is "
           "invalidated by a later setPythonAnalytical/setGradientMethod call.",
-          ::py::arg("solve"),
-          ::py::arg("dofs") = ::py::none(),
-          ::py::arg("methodName") = "PythonAnalyticalIk",
-          ::py::return_value_policy::reference_internal)
+          nb::arg("solve"),
+          nb::arg("dofs") = nb::none(),
+          nb::arg("methodName") = "PythonAnalyticalIk",
+          nb::rv_policy::reference_internal)
       .def(
           "getGradientMethod",
           +[](dart::dynamics::InverseKinematics* self)
@@ -838,7 +871,7 @@ void InverseKinematics(py::module& m)
           },
           "Returns the active gradient method. The reference is invalidated by "
           "a later setGradientMethod/setPythonAnalytical call.",
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getAnalytical",
           +[](dart::dynamics::InverseKinematics* self)
@@ -848,14 +881,14 @@ void InverseKinematics(py::module& m)
           "Returns the active analytical method, or None if the gradient "
           "method "
           "is not analytical. Invalidated by a later setGradientMethod call.",
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "setObjective",
           +[](dart::dynamics::InverseKinematics* self,
               const std::shared_ptr<dart::optimizer::Function>& _objective) {
             self->setObjective(_objective);
           },
-          ::py::arg("objective"))
+          nb::arg("objective").none())
       .def(
           "getObjective",
           +[](const dart::dynamics::InverseKinematics* self)
@@ -868,7 +901,7 @@ void InverseKinematics(py::module& m)
               const std::shared_ptr<dart::optimizer::Function>& _nsObjective) {
             self->setNullSpaceObjective(_nsObjective);
           },
-          ::py::arg("nsObjective"))
+          nb::arg("nsObjective").none())
       .def(
           "getNullSpaceObjective",
           +[](const dart::dynamics::InverseKinematics* self)
@@ -886,7 +919,7 @@ void InverseKinematics(py::module& m)
               -> dart::dynamics::InverseKinematics::ErrorMethod& {
             return self->getErrorMethod();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getProblem",
           +[](const dart::dynamics::InverseKinematics* self)
@@ -903,14 +936,14 @@ void InverseKinematics(py::module& m)
           +[](dart::dynamics::InverseKinematics* self, bool _clearSeeds) {
             self->resetProblem(_clearSeeds);
           },
-          ::py::arg("clearSeeds"))
+          nb::arg("clearSeeds"))
       .def(
           "setSolver",
           +[](dart::dynamics::InverseKinematics* self,
               const std::shared_ptr<dart::optimizer::Solver>& _newSolver) {
             self->setSolver(_newSolver);
           },
-          ::py::arg("newSolver"))
+          nb::arg("newSolver").none())
       .def(
           "getSolver",
           +[](dart::dynamics::InverseKinematics* self)
@@ -924,12 +957,12 @@ void InverseKinematics(py::module& m)
           "setOffset",
           +[](dart::dynamics::InverseKinematics* self,
               const Eigen::Vector3d& _offset) { self->setOffset(_offset); },
-          ::py::arg("offset"))
+          nb::arg("offset"))
       .def(
           "getOffset",
           +[](const dart::dynamics::InverseKinematics* self)
               -> const Eigen::Vector3d& { return self->getOffset(); },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "hasOffset",
           +[](const dart::dynamics::InverseKinematics* self) -> bool {
@@ -941,7 +974,7 @@ void InverseKinematics(py::module& m)
               std::shared_ptr<dart::dynamics::SimpleFrame> _newTarget) {
             self->setTarget(_newTarget);
           },
-          ::py::arg("newTarget"))
+          nb::arg("newTarget").none())
       .def(
           "getTarget",
           +[](dart::dynamics::InverseKinematics* self)
@@ -962,7 +995,7 @@ void InverseKinematics(py::module& m)
           "setPositions",
           +[](dart::dynamics::InverseKinematics* self,
               const Eigen::VectorXd& _q) { self->setPositions(_q); },
-          ::py::arg("q"))
+          nb::arg("q"))
       .def(
           "clearCaches", +[](dart::dynamics::InverseKinematics* self) {
             self->clearCaches();

@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,19 +36,14 @@
 
 #include <dart/common/Subject.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void Subject(py::module& m)
+void Subject(nb::module_& m)
 {
-  ::py::class_<dart::common::Subject, std::shared_ptr<dart::common::Subject>>(
-      m, "Subject");
+  dartnb::dart_class<dart::common::Subject>(m, "Subject");
 }
 
 } // namespace python

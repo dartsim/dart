@@ -1,3 +1,10 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include <nanobind/stl/function.h>
+#include <nanobind/trampoline.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -36,14 +43,9 @@
 #include <dart/optimizer/Function.hpp>
 
 #include <Eigen/Core>
-#include <pybind11/eigen.h>
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
 
 #include <memory>
 #include <string>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
@@ -52,90 +54,77 @@ class PyFunction : public dart::optimizer::Function
 {
 public:
   // Inherit the constructors
-  using Function::Function;
+  NB_TRAMPOLINE(Function);
 
   // Trampoline for virtual function
   double eval(const Eigen::VectorXd& x) override
   {
-    PYBIND11_OVERLOAD_PURE(
-        double,   // Return type
-        Function, // Parent class
-        eval,     // Name of function in C++ (must match Python name)
-        x);
+    NB_OVERRIDE_PURE(eval, x);
   }
 
   // Trampoline for virtual function
   void evalGradient(
       const Eigen::VectorXd& x, Eigen::Map<Eigen::VectorXd> grad) override
   {
-    PYBIND11_OVERLOAD(
-        void,         // Return type
-        Function,     // Parent class
-        evalGradient, // Name of function in C++ (must match Python name)
-        x,
-        grad);
+    nb::gil_scoped_acquire guard;
+    // Function has no public Python evalGradient method.
+    if (!nb::hasattr(nb_trampoline.base(), "evalGradient"))
+      return Function::evalGradient(x, grad);
+    NB_OVERRIDE(evalGradient, x, grad);
   }
 };
 
-void Function(py::module& m)
+void Function(nb::module_& m)
 {
-  ::py::class_<
-      dart::optimizer::Function,
-      PyFunction,
-      std::shared_ptr<dart::optimizer::Function>>(m, "Function")
-      .def(::py::init<>())
-      .def(::py::init<const std::string&>(), ::py::arg("name"))
+  dartnb::dart_class<dart::optimizer::Function, PyFunction>(m, "Function")
+      .def(dartnb::init<>())
+      .def(dartnb::init<const std::string&>(), nb::arg("name"))
       .def(
           "setName",
           +[](dart::optimizer::Function* self, const std::string& newName) {
             self->setName(newName);
           },
-          ::py::arg("newName"))
+          nb::arg("newName"))
       .def(
           "getName",
           +[](const dart::optimizer::Function* self) -> const std::string& {
             return self->getName();
           },
-          ::py::return_value_policy::reference_internal);
+          nb::rv_policy::reference_internal);
 
-  ::py::class_<
-      dart::optimizer::NullFunction,
-      dart::optimizer::Function,
-      std::shared_ptr<dart::optimizer::NullFunction>>(m, "NullFunction")
-      //      .def(::py::init<>())
-      //      .def(::py::init<const std::string &>(),
-      //      ::py::arg("name"))
+  dartnb::dart_class<dart::optimizer::NullFunction, dart::optimizer::Function>(
+      m, "NullFunction")
+      //      .def(dartnb::init<>())
+      //      .def(dartnb::init<const std::string &>(),
+      //      nb::arg("name"))
       .def(
           "eval",
           +[](dart::optimizer::NullFunction* self,
               const Eigen::VectorXd& _arg0_) -> double {
             return self->eval(_arg0_);
           },
-          ::py::arg("arg0_"));
+          nb::arg("arg0_"));
 
-  ::py::class_<
-      dart::optimizer::MultiFunction,
-      std::shared_ptr<dart::optimizer::MultiFunction>>(m, "MultiFunction");
+  dartnb::dart_class<dart::optimizer::MultiFunction>(m, "MultiFunction");
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::optimizer::ModularFunction,
-      dart::optimizer::Function,
-      std::shared_ptr<dart::optimizer::ModularFunction>>(m, "ModularFunction")
-      .def(::py::init<>())
-      //      .def(::py::init<const std::string &>(),
-      //      ::py::arg("name"))
+      dart::optimizer::Function>(m, "ModularFunction")
+      .def(dartnb::init<>())
+      //      .def(dartnb::init<const std::string &>(),
+      //      nb::arg("name"))
       .def(
           "eval",
           +[](dart::optimizer::ModularFunction* self,
               const Eigen::VectorXd& _x) -> double { return self->eval(_x); },
-          ::py::arg("x"))
+          nb::arg("x"))
       .def(
           "setCostFunction",
           +[](dart::optimizer::ModularFunction* self,
               dart::optimizer::CostFunction _cost) {
             self->setCostFunction(_cost);
           },
-          ::py::arg("cost"))
+          nb::arg("cost"))
       .def(
           "clearCostFunction",
           +[](dart::optimizer::ModularFunction* self) {
@@ -146,14 +135,14 @@ void Function(py::module& m)
           +[](dart::optimizer::ModularFunction* self, bool _printWarning) {
             self->clearCostFunction(_printWarning);
           },
-          ::py::arg("printWarning"))
+          nb::arg("printWarning"))
       .def(
           "setGradientFunction",
           +[](dart::optimizer::ModularFunction* self,
               dart::optimizer::GradientFunction _gradient) {
             self->setGradientFunction(_gradient);
           },
-          ::py::arg("gradient"))
+          nb::arg("gradient"))
       .def(
           "clearGradientFunction",
           +[](dart::optimizer::ModularFunction* self) {
@@ -165,7 +154,7 @@ void Function(py::module& m)
               dart::optimizer::HessianFunction _hessian) {
             self->setHessianFunction(_hessian);
           },
-          ::py::arg("hessian"))
+          nb::arg("hessian"))
       .def(
           "clearHessianFunction", +[](dart::optimizer::ModularFunction* self) {
             self->clearHessianFunction();

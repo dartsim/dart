@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -40,34 +44,37 @@
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void SdfParser(py::module& m)
+void SdfParser(nb::module_& m)
 {
+  static_assert(dartnb::GcOwner<utils::SdfParser::Options>::value);
   auto sm = m.def_submodule("SdfParser");
 
-  ::py::enum_<utils::SdfParser::RootJointType>(sm, "RootJointType")
+  nb::enum_<utils::SdfParser::RootJointType>(
+      sm, "RootJointType", nb::is_arithmetic())
       .value("FLOATING", utils::SdfParser::RootJointType::FLOATING)
       .value("FIXED", utils::SdfParser::RootJointType::FIXED);
 
-  ::py::class_<utils::SdfParser::Options>(sm, "Options")
+  dartnb::dart_class<utils::SdfParser::Options>(sm, "Options")
       .def(
-          ::py::init<
+          dartnb::init<
               common::ResourceRetrieverPtr,
               utils::SdfParser::RootJointType>(),
-          ::py::arg("resourceRetriever") = nullptr,
-          ::py::arg("defaultRootJointType")
+          nb::arg("resourceRetriever").none() = nullptr,
+          nb::arg("defaultRootJointType")
           = utils::SdfParser::RootJointType::FLOATING)
-      .def_readwrite(
-          "mResourceRetriever", &utils::SdfParser::Options::mResourceRetriever)
-      .def_readwrite(
+      .def_rw(
+          "mResourceRetriever",
+          &utils::SdfParser::Options::mResourceRetriever,
+          dartnb::setterArgument(
+              &utils::SdfParser::Options::mResourceRetriever))
+      .def_rw(
           "mDefaultRootJointType",
-          &utils::SdfParser::Options::mDefaultRootJointType);
+          &utils::SdfParser::Options::mDefaultRootJointType,
+          dartnb::setterArgument(
+              &utils::SdfParser::Options::mDefaultRootJointType));
 
   sm.def(
       "readWorld",
@@ -77,14 +84,14 @@ void SdfParser(py::module& m)
         return utils::SdfParser::readWorld(uri, retriever);
         DART_SUPPRESS_DEPRECATED_END
       },
-      ::py::arg("uri"),
-      ::py::arg("retriever"));
+      nb::arg("uri"),
+      nb::arg("retriever").none());
   sm.def(
       "readWorld",
-      ::py::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
+      nb::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
           &utils::SdfParser::readWorld),
-      ::py::arg("uri"),
-      ::py::arg("options") = utils::SdfParser::Options());
+      nb::arg("uri"),
+      nb::arg("options") = utils::SdfParser::Options());
   sm.def(
       "readSkeleton",
       +[](const common::Uri& uri, const common::ResourceRetrieverPtr& retriever)
@@ -93,14 +100,14 @@ void SdfParser(py::module& m)
         return utils::SdfParser::readSkeleton(uri, retriever);
         DART_SUPPRESS_DEPRECATED_END
       },
-      ::py::arg("uri"),
-      ::py::arg("retriever"));
+      nb::arg("uri"),
+      nb::arg("retriever").none());
   sm.def(
       "readSkeleton",
-      ::py::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
+      nb::overload_cast<const common::Uri&, const utils::SdfParser::Options&>(
           &utils::SdfParser::readSkeleton),
-      ::py::arg("uri"),
-      ::py::arg("options") = utils::SdfParser::Options());
+      nb::arg("uri"),
+      nb::arg("options") = utils::SdfParser::Options());
 }
 
 } // namespace python

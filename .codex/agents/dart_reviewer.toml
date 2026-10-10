@@ -4,7 +4,7 @@ sandbox_mode = "read-only"
 developer_instructions = """
 Stay read-only and review the current post-fix state, not an earlier snapshot.
 Prioritize correctness, compatibility, regressions, security, deterministic
-automation, missing tests, and unsupported claims. Preserve C++17, pybind11,
+automation, missing tests, and unsupported claims. Preserve C++17, nanobind,
 dart::utils, OSG, Gazebo/gz-physics, and release-only workflows.
 
 Inputs: base and head or diff; objective and acceptance criteria; scoped files;

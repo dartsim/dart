@@ -35,6 +35,7 @@
 #include "dart/config.hpp"
 #include "dart/dynamics/BodyNode.hpp"
 #include "dart/dynamics/FreeJoint.hpp"
+#include "dart/dynamics/HierarchicalIK.hpp"
 #include "dart/dynamics/InverseKinematics.hpp"
 #include "dart/dynamics/Skeleton.hpp"
 #include "dart/math/Constants.hpp"
@@ -151,4 +152,21 @@ TEST(InverseKinematics, DoNotApplySolutionOnFailure)
   EXPECT_FALSE(ik->solveAndApply(true));
   EXPECT_FALSE(
       equals(skel->getPositions(), Eigen::VectorXd::Zero(dofs).eval()));
+}
+
+//==============================================================================
+TEST(InverseKinematics, CloneWithoutProblemObjective)
+{
+  SkeletonPtr skel = Skeleton::create();
+  skel->createJointAndBodyNodePair<FreeJoint>();
+
+  auto ik = skel->getBodyNode(0)->getIK(true);
+  ik->getProblem()->clearObjective();
+  auto ikClone = ik->clone(skel->getBodyNode(0));
+  EXPECT_EQ(ikClone->getProblem()->getObjective(), nullptr);
+
+  auto wholeBodyIk = skel->getIK(true);
+  wholeBodyIk->getProblem()->clearObjective();
+  auto wholeBodyClone = wholeBodyIk->clone(skel);
+  EXPECT_EQ(wholeBodyClone->getProblem()->getObjective(), nullptr);
 }

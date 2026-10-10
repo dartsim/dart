@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -38,39 +44,33 @@
 #include <dart/dynamics/MetaSkeleton.hpp>
 #include <dart/dynamics/ReferentialSkeleton.hpp>
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void Linkage(py::module& m)
+void Linkage(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::dynamics::Linkage,
-      dart::dynamics::ReferentialSkeleton,
-      std::shared_ptr<dart::dynamics::Linkage>>(m, "Linkage")
+      dart::dynamics::ReferentialSkeleton>(m, "Linkage")
       .def(
-          ::py::init(
+          dartnb::factory(
               +[](const dart::dynamics::Linkage::Criteria& criteria)
                   -> dart::dynamics::LinkagePtr {
                 return dart::dynamics::Linkage::create(criteria);
               }),
-          ::py::arg("criteria"))
+          nb::arg("criteria"))
       .def(
-          ::py::init(
+          dartnb::factory(
               +[](const dart::dynamics::Linkage::Criteria& criteria,
                   const std::string& name) -> dart::dynamics::LinkagePtr {
                 return dart::dynamics::Linkage::create(criteria, name);
               }),
-          ::py::arg("criteria"),
-          ::py::arg("name"))
+          nb::arg("criteria"),
+          nb::arg("name"))
       .def(
           "cloneLinkage",
           +[](const dart::dynamics::Linkage* self)
@@ -81,14 +81,14 @@ void Linkage(py::module& m)
               const std::string& cloneName) -> dart::dynamics::LinkagePtr {
             return self->cloneLinkage(cloneName);
           },
-          ::py::arg("cloneName"))
+          nb::arg("cloneName"))
       .def(
           "cloneMetaSkeleton",
           +[](const dart::dynamics::Linkage* self,
               const std::string& cloneName) -> dart::dynamics::MetaSkeletonPtr {
             return self->cloneMetaSkeleton(cloneName);
           },
-          ::py::arg("cloneName"))
+          nb::arg("cloneName"))
       .def(
           "isAssembled",
           +[](const dart::dynamics::Linkage* self) -> bool {
@@ -101,20 +101,29 @@ void Linkage(py::module& m)
           "satisfyCriteria",
           +[](dart::dynamics::Linkage* self) { self->satisfyCriteria(); });
 
-  ::py::class_<dart::dynamics::Linkage::Criteria>(m, "LinkageCriteria")
+  dartnb::dart_class<dart::dynamics::Linkage::Criteria>(m, "LinkageCriteria")
       .def(
           "satisfy",
           +[](const dart::dynamics::Linkage::Criteria* self)
               -> std::vector<dart::dynamics::BodyNode*> {
             return self->satisfy();
           })
-      .def_readwrite("mStart", &dart::dynamics::Linkage::Criteria::mStart)
-      .def_readwrite("mTargets", &dart::dynamics::Linkage::Criteria::mTargets)
-      .def_readwrite(
-          "mTerminals", &dart::dynamics::Linkage::Criteria::mTerminals);
+      .def_rw(
+          "mStart",
+          &dart::dynamics::Linkage::Criteria::mStart,
+          dartnb::setterArgument(&dart::dynamics::Linkage::Criteria::mStart))
+      .def_rw(
+          "mTargets",
+          &dart::dynamics::Linkage::Criteria::mTargets,
+          dartnb::setterArgument(&dart::dynamics::Linkage::Criteria::mTargets))
+      .def_rw(
+          "mTerminals",
+          &dart::dynamics::Linkage::Criteria::mTerminals,
+          dartnb::setterArgument(
+              &dart::dynamics::Linkage::Criteria::mTerminals));
 
-  ::py::enum_<dart::dynamics::Linkage::Criteria::ExpansionPolicy>(
-      m.attr("LinkageCriteria"), "ExpansionPolicy")
+  nb::enum_<dart::dynamics::Linkage::Criteria::ExpansionPolicy>(
+      m.attr("LinkageCriteria"), "ExpansionPolicy", nb::is_arithmetic())
       .value(
           "INCLUDE",
           dart::dynamics::Linkage::Criteria::ExpansionPolicy::INCLUDE)
@@ -129,43 +138,59 @@ void Linkage(py::module& m)
           dart::dynamics::Linkage::Criteria::ExpansionPolicy::UPSTREAM)
       .export_values();
 
-  ::py::class_<dart::dynamics::Linkage::Criteria::Terminal>(
+  dartnb::dart_class<dart::dynamics::Linkage::Criteria::Terminal>(
       m.attr("LinkageCriteria"), "Terminal")
-      .def(::py::init<>())
-      .def(::py::init<dart::dynamics::BodyNode*>(), ::py::arg("terminal"))
+      .def(dartnb::init<>())
       .def(
-          ::py::init<dart::dynamics::BodyNode*, bool>(),
-          ::py::arg("terminal"),
-          ::py::arg("inclusive"))
-      .def_readwrite(
-          "mTerminal", &dart::dynamics::Linkage::Criteria::Terminal::mTerminal)
-      .def_readwrite(
+          dartnb::init<dart::dynamics::BodyNode*>(), nb::arg("terminal").none())
+      .def(
+          dartnb::init<dart::dynamics::BodyNode*, bool>(),
+          nb::arg("terminal").none(),
+          nb::arg("inclusive"))
+      .def_rw(
+          "mTerminal",
+          &dart::dynamics::Linkage::Criteria::Terminal::mTerminal,
+          dartnb::setterArgument(
+              &dart::dynamics::Linkage::Criteria::Terminal::mTerminal))
+      .def_rw(
           "mInclusive",
-          &dart::dynamics::Linkage::Criteria::Terminal::mInclusive);
+          &dart::dynamics::Linkage::Criteria::Terminal::mInclusive,
+          dartnb::setterArgument(
+              &dart::dynamics::Linkage::Criteria::Terminal::mInclusive));
 
-  ::py::class_<dart::dynamics::Linkage::Criteria::Target>(
+  dartnb::dart_class<dart::dynamics::Linkage::Criteria::Target>(
       m.attr("LinkageCriteria"), "Target")
-      .def(::py::init<>())
-      .def(::py::init<dart::dynamics::BodyNode*>(), ::py::arg("target"))
+      .def(dartnb::init<>())
+      .def(dartnb::init<dart::dynamics::BodyNode*>(), nb::arg("target").none())
       .def(
-          ::py::init<
+          dartnb::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::Linkage::Criteria::ExpansionPolicy>(),
-          ::py::arg("target"),
-          ::py::arg("policy"))
+          nb::arg("target").none(),
+          nb::arg("policy"))
       .def(
-          ::py::init<
+          dartnb::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::Linkage::Criteria::ExpansionPolicy,
               bool>(),
-          ::py::arg("target"),
-          ::py::arg("policy"),
-          ::py::arg("chain"))
-      .def_readwrite("mNode", &dart::dynamics::Linkage::Criteria::Target::mNode)
-      .def_readwrite(
-          "mPolicy", &dart::dynamics::Linkage::Criteria::Target::mPolicy)
-      .def_readwrite(
-          "mChain", &dart::dynamics::Linkage::Criteria::Target::mChain);
+          nb::arg("target").none(),
+          nb::arg("policy"),
+          nb::arg("chain"))
+      .def_rw(
+          "mNode",
+          &dart::dynamics::Linkage::Criteria::Target::mNode,
+          dartnb::setterArgument(
+              &dart::dynamics::Linkage::Criteria::Target::mNode))
+      .def_rw(
+          "mPolicy",
+          &dart::dynamics::Linkage::Criteria::Target::mPolicy,
+          dartnb::setterArgument(
+              &dart::dynamics::Linkage::Criteria::Target::mPolicy))
+      .def_rw(
+          "mChain",
+          &dart::dynamics::Linkage::Criteria::Target::mChain,
+          dartnb::setterArgument(
+              &dart::dynamics::Linkage::Criteria::Target::mChain));
 }
 
 } // namespace python

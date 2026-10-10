@@ -1,3 +1,7 @@
+#pragma once
+
+#include "detail/dart_nb.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -39,8 +43,6 @@
 #include <dart/common/SpecializedForAspect.hpp>
 
 #include <eigen_geometry_pybind.h>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
 
 #include <memory>
 
@@ -48,51 +50,37 @@ namespace dart {
 namespace python {
 
 #define DARTPY_DEFINE_JOINT_COMMON_BASE(type, space)                           \
-  ::pybind11::class_<                                                          \
+  dartnb::dart_class<                                                          \
       dart::common::SpecializedForAspect<                                      \
           dart::common::EmbeddedPropertiesAspect<                              \
               dart::dynamics::type,                                            \
               dart::dynamics::detail::type##UniqueProperties>>,                \
-      dart::common::Composite,                                                 \
-      std::shared_ptr<dart::common::SpecializedForAspect<                      \
-          dart::common::EmbeddedPropertiesAspect<                              \
-              dart::dynamics::type,                                            \
-              dart::dynamics::detail::type##UniqueProperties>>>>(              \
+      dart::common::Composite>(                                                \
       m,                                                                       \
       "SpecializedForAspect_EmbeddedPropertiesAspect_" #type "_" #type         \
       "UniqueProperties")                                                      \
-      .def(::pybind11::init<>());                                              \
-                                                                               \
-  ::pybind11::class_<                                                          \
+      .def(dartnb::init<>());                                                  \
+  dartnb::dart_class<                                                          \
       dart::common::RequiresAspect<dart::common::EmbeddedPropertiesAspect<     \
           dart::dynamics::type,                                                \
           dart::dynamics::detail::type##UniqueProperties>>,                    \
       dart::common::SpecializedForAspect<                                      \
           dart::common::EmbeddedPropertiesAspect<                              \
               dart::dynamics::type,                                            \
-              dart::dynamics::detail::type##UniqueProperties>>,                \
-      std::shared_ptr<                                                         \
-          dart::common::RequiresAspect<dart::common::EmbeddedPropertiesAspect< \
-              dart::dynamics::type,                                            \
-              dart::dynamics::detail::type##UniqueProperties>>>>(              \
+              dart::dynamics::detail::type##UniqueProperties>>>(               \
       m,                                                                       \
       "RequiresAspect_EmbeddedPropertiesAspect_" #type "_" #type               \
       "UniqueProperties")                                                      \
-      .def(::pybind11::init<>());                                              \
-                                                                               \
-  ::pybind11::class_<                                                          \
+      .def(dartnb::init<>());                                                  \
+  dartnb::dart_class<                                                          \
       dart::common::EmbedProperties<                                           \
           dart::dynamics::type,                                                \
           dart::dynamics::detail::type##UniqueProperties>,                     \
       dart::common::RequiresAspect<dart::common::EmbeddedPropertiesAspect<     \
           dart::dynamics::type,                                                \
-          dart::dynamics::detail::type##UniqueProperties>>,                    \
-      std::shared_ptr<dart::common::EmbedProperties<                           \
-          dart::dynamics::type,                                                \
           dart::dynamics::detail::type##UniqueProperties>>>(                   \
       m, "EmbedProperties_" #type "_" #type "UniqueProperties");               \
-                                                                               \
-  ::pybind11::class_<                                                          \
+  dartnb::dart_class<                                                          \
       dart::common::CompositeJoiner<                                           \
           dart::common::EmbedProperties<                                       \
               dart::dynamics::type,                                            \
@@ -101,17 +89,11 @@ namespace python {
       dart::common::EmbedProperties<                                           \
           dart::dynamics::type,                                                \
           dart::dynamics::detail::type##UniqueProperties>,                     \
-      dart::dynamics::GenericJoint<dart::math::space>,                         \
-      std::shared_ptr<dart::common::CompositeJoiner<                           \
-          dart::common::EmbedProperties<                                       \
-              dart::dynamics::type,                                            \
-              dart::dynamics::detail::type##UniqueProperties>,                 \
-          dart::dynamics::GenericJoint<dart::math::space>>>>(                  \
+      dart::dynamics::GenericJoint<dart::math::space>>(                        \
       m,                                                                       \
       "CompositeJoiner_EmbedProperties_" #type "_" #type                       \
       "UniqueProperties_GenericJoint_" #space);                                \
-                                                                               \
-  ::pybind11::class_<                                                          \
+  dartnb::dart_class<                                                          \
       dart::common::EmbedPropertiesOnTopOf<                                    \
           dart::dynamics::type,                                                \
           dart::dynamics::detail::type##UniqueProperties,                      \
@@ -120,11 +102,7 @@ namespace python {
           dart::common::EmbedProperties<                                       \
               dart::dynamics::type,                                            \
               dart::dynamics::detail::type##UniqueProperties>,                 \
-          dart::dynamics::GenericJoint<dart::math::space>>,                    \
-      std::shared_ptr<dart::common::EmbedPropertiesOnTopOf<                    \
-          dart::dynamics::type,                                                \
-          dart::dynamics::detail::type##UniqueProperties,                      \
-          dart::dynamics::GenericJoint<dart::math::space>>>>(                  \
+          dart::dynamics::GenericJoint<dart::math::space>>>(                   \
       m,                                                                       \
       "EmbedPropertiesOnTopOf_" #type "_" #type                                \
       "UniqueProperties_GenericJoint_" #space);

@@ -65,7 +65,7 @@ ordered item list and takeover detail. Completed packet specs such as
 
 ## Guardrails
 
-- Preserve C++17, pybind11, installed DART 6 APIs, ABI-sensitive layouts,
+- Preserve C++17, nanobind, installed DART 6 APIs, ABI-sensitive layouts,
   default simulation behavior, and Gazebo/gz-physics compatibility.
 - Keep adaptive contact activation and soft face-interior coverage opt-in
   unless a separately approved packet changes their defaults.

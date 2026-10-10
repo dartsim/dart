@@ -1,3 +1,6 @@
+#include "detail/dart_nb.hpp"
+#include "detail/eigen.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,58 +33,53 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pointers.hpp"
+#include "gui/osg/ownership.hpp"
 
 #include <dart/gui/osg/GridVisual.hpp>
 #include <dart/gui/osg/Viewer.hpp>
 
 #include <Eigen/Core>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
 
 #include <cstddef>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void GridVisual(py::module& m)
+void GridVisual(nb::module_& m)
 {
-  ::py::class_<
-      dart::gui::osg::GridVisual,
-      dart::gui::osg::ViewerAttachment,
-      ::osg::ref_ptr<dart::gui::osg::GridVisual>>(m, "GridVisual")
-      .def(py::init<>())
-      .def(
-          "setNumCells",
-          +[](dart::gui::osg::GridVisual* self, std::size_t cells) {
-            self->setNumCells(cells);
-          })
-      .def(
-          "setMinorLineStepSize",
-          +[](dart::gui::osg::GridVisual* self, double size) {
-            self->setMinorLineStepSize(size);
-          })
-      .def(
-          "setNumMinorLinesPerMajorLine",
-          +[](dart::gui::osg::GridVisual* self, std::size_t size) {
-            self->setNumMinorLinesPerMajorLine(size);
-          })
-      .def(
-          "setPlaneType",
-          +[](dart::gui::osg::GridVisual* self,
-              dart::gui::osg::GridVisual::PlaneType type) {
-            self->setPlaneType(type);
-          })
-      .def(
-          "setOffset",
-          +[](dart::gui::osg::GridVisual* self, const Eigen::Vector3d& offset) {
-            self->setOffset(offset);
-          });
+  dartnb::
+      dart_class<dart::gui::osg::GridVisual, dart::gui::osg::ViewerAttachment>(
+          m, "GridVisual")
+          .def(dartnb::gui::init<>())
+          .def(
+              "setNumCells",
+              +[](dart::gui::osg::GridVisual* self, std::size_t cells) {
+                self->setNumCells(cells);
+              })
+          .def(
+              "setMinorLineStepSize",
+              +[](dart::gui::osg::GridVisual* self, double size) {
+                self->setMinorLineStepSize(size);
+              })
+          .def(
+              "setNumMinorLinesPerMajorLine",
+              +[](dart::gui::osg::GridVisual* self, std::size_t size) {
+                self->setNumMinorLinesPerMajorLine(size);
+              })
+          .def(
+              "setPlaneType",
+              +[](dart::gui::osg::GridVisual* self,
+                  dart::gui::osg::GridVisual::PlaneType type) {
+                self->setPlaneType(type);
+              })
+          .def(
+              "setOffset",
+              +[](dart::gui::osg::GridVisual* self,
+                  const Eigen::Vector3d& offset) { self->setOffset(offset); });
 
   auto attr = m.attr("GridVisual");
-  ::py::enum_<dart::gui::osg::GridVisual::PlaneType>(attr, "PlaneType")
+  nb::enum_<dart::gui::osg::GridVisual::PlaneType>(
+      attr, "PlaneType", nb::is_arithmetic())
       .value("XY", dart::gui::osg::GridVisual::PlaneType::XY)
       .value("YZ", dart::gui::osg::GridVisual::PlaneType::YZ)
       .value("ZX", dart::gui::osg::GridVisual::PlaneType::ZX);

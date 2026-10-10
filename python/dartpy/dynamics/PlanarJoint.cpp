@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include <nanobind/stl/unique_ptr.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -42,63 +48,67 @@
 
 #include <Eigen/Core>
 #include <eigen_geometry_pybind.h>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
 
 #include <memory>
 #include <string>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void PlanarJoint(py::module& m)
+void PlanarJoint(nb::module_& m)
 {
-  ::py::class_<dart::dynamics::PlanarJoint::UniqueProperties>(
+  dartnb::dart_class<dart::dynamics::PlanarJoint::UniqueProperties>(
       m, "PlanarJointUniqueProperties")
-      .def(::py::init<>());
+      .def(dartnb::init<>());
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::dynamics::PlanarJoint::Properties,
       dart::dynamics::GenericJoint<math::R3Space>::Properties,
       dart::dynamics::PlanarJoint::UniqueProperties>(m, "PlanarJointProperties")
-      .def(::py::init<>())
+      .def(dartnb::init<>())
       .def(
-          ::py::init<const dart::dynamics::GenericJoint<
+          dartnb::init<const dart::dynamics::GenericJoint<
               dart::math::R3Space>::Properties&>(),
-          ::py::arg("genericJointProperties"))
+          nb::arg("genericJointProperties"))
       .def(
-          ::py::init<
+          dartnb::init<
               const dart::dynamics::GenericJoint<
                   dart::math::R3Space>::Properties&,
               const dart::dynamics::PlanarJoint::UniqueProperties&>(),
-          ::py::arg("genericJointProperties"),
-          ::py::arg("uniqueProperties"))
-      .def_readwrite(
+          nb::arg("genericJointProperties"),
+          nb::arg("uniqueProperties"))
+      .def_rw(
           "mPlaneType",
-          &dart::dynamics::detail::PlanarJointUniqueProperties::mPlaneType)
-      .def_readwrite(
+          &dart::dynamics::detail::PlanarJointUniqueProperties::mPlaneType,
+          dartnb::setterArgument(
+              &dart::dynamics::detail::PlanarJointUniqueProperties::mPlaneType))
+      .def_rw(
           "mTransAxis1",
-          &dart::dynamics::detail::PlanarJointUniqueProperties::mTransAxis1)
-      .def_readwrite(
+          &dart::dynamics::detail::PlanarJointUniqueProperties::mTransAxis1,
+          dartnb::setterArgument(&dart::dynamics::detail::
+                                     PlanarJointUniqueProperties::mTransAxis1))
+      .def_rw(
           "mTransAxis2",
-          &dart::dynamics::detail::PlanarJointUniqueProperties::mTransAxis2)
-      .def_readwrite(
+          &dart::dynamics::detail::PlanarJointUniqueProperties::mTransAxis2,
+          dartnb::setterArgument(&dart::dynamics::detail::
+                                     PlanarJointUniqueProperties::mTransAxis2))
+      .def_rw(
           "mRotAxis",
-          &dart::dynamics::detail::PlanarJointUniqueProperties::mRotAxis);
+          &dart::dynamics::detail::PlanarJointUniqueProperties::mRotAxis,
+          dartnb::setterArgument(
+              &dart::dynamics::detail::PlanarJointUniqueProperties::mRotAxis));
 
   DARTPY_DEFINE_JOINT_COMMON_BASE(PlanarJoint, R3Space)
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::dynamics::PlanarJoint,
       dart::common::EmbedPropertiesOnTopOf<
           dart::dynamics::PlanarJoint,
           dart::dynamics::detail::PlanarJointUniqueProperties,
-          dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3>>>,
-      std::shared_ptr<dart::dynamics::PlanarJoint>>(m, "PlanarJoint")
+          dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3>>>>(
+      m, "PlanarJoint")
       .def(
           "hasPlanarJointAspect",
           +[](const dart::dynamics::PlanarJoint* self) -> bool {
@@ -114,7 +124,7 @@ void PlanarJoint(py::module& m)
                       dart::math::RealVectorSpace<3>>>::Aspect* aspect) {
             self->setPlanarJointAspect(aspect);
           },
-          ::py::arg("aspect"))
+          nb::arg("aspect").none())
       .def(
           "removePlanarJointAspect",
           +[](dart::dynamics::PlanarJoint* self) {
@@ -136,13 +146,13 @@ void PlanarJoint(py::module& m)
               const dart::dynamics::PlanarJoint::Properties& _properties) {
             self->setProperties(_properties);
           },
-          ::py::arg("properties"))
+          nb::arg("properties"))
       .def(
           "setProperties",
           +[](dart::dynamics::PlanarJoint* self,
               const dart::dynamics::PlanarJoint::UniqueProperties&
                   _properties) { self->setProperties(_properties); },
-          ::py::arg("properties"))
+          nb::arg("properties"))
       .def(
           "setAspectProperties",
           +[](dart::dynamics::PlanarJoint* self,
@@ -152,7 +162,7 @@ void PlanarJoint(py::module& m)
                   dart::dynamics::GenericJoint<
                       dart::math::RealVectorSpace<3>>>::AspectProperties&
                   properties) { self->setAspectProperties(properties); },
-          ::py::arg("properties"))
+          nb::arg("properties"))
       .def(
           "getPlanarJointProperties",
           +[](const dart::dynamics::PlanarJoint* self)
@@ -165,18 +175,18 @@ void PlanarJoint(py::module& m)
               const dart::dynamics::PlanarJoint* _otherJoint) {
             self->copy(_otherJoint);
           },
-          ::py::arg("otherJoint"))
+          nb::arg("otherJoint").none())
       .def(
           "getType",
           +[](const dart::dynamics::PlanarJoint* self) -> const std::string& {
             return self->getType();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::PlanarJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::py::arg("index"))
+          nb::arg("index"))
       .def(
           "setXYPlane",
           +[](dart::dynamics::PlanarJoint* self) { self->setXYPlane(); })
@@ -185,7 +195,7 @@ void PlanarJoint(py::module& m)
           +[](dart::dynamics::PlanarJoint* self, bool _renameDofs) {
             self->setXYPlane(_renameDofs);
           },
-          ::py::arg("renameDofs"))
+          nb::arg("renameDofs"))
       .def(
           "setYZPlane",
           +[](dart::dynamics::PlanarJoint* self) { self->setYZPlane(); })
@@ -194,7 +204,7 @@ void PlanarJoint(py::module& m)
           +[](dart::dynamics::PlanarJoint* self, bool _renameDofs) {
             self->setYZPlane(_renameDofs);
           },
-          ::py::arg("renameDofs"))
+          nb::arg("renameDofs"))
       .def(
           "setZXPlane",
           +[](dart::dynamics::PlanarJoint* self) { self->setZXPlane(); })
@@ -203,7 +213,7 @@ void PlanarJoint(py::module& m)
           +[](dart::dynamics::PlanarJoint* self, bool _renameDofs) {
             self->setZXPlane(_renameDofs);
           },
-          ::py::arg("renameDofs"))
+          nb::arg("renameDofs"))
       .def(
           "setArbitraryPlane",
           +[](dart::dynamics::PlanarJoint* self,
@@ -211,8 +221,8 @@ void PlanarJoint(py::module& m)
               const Eigen::Vector3d& _transAxis2) {
             self->setArbitraryPlane(_transAxis1, _transAxis2);
           },
-          ::py::arg("transAxis1"),
-          ::py::arg("transAxis2"))
+          nb::arg("transAxis1"),
+          nb::arg("transAxis2"))
       .def(
           "setArbitraryPlane",
           +[](dart::dynamics::PlanarJoint* self,
@@ -221,9 +231,9 @@ void PlanarJoint(py::module& m)
               bool _renameDofs) {
             self->setArbitraryPlane(_transAxis1, _transAxis2, _renameDofs);
           },
-          ::py::arg("transAxis1"),
-          ::py::arg("transAxis2"),
-          ::py::arg("renameDofs"))
+          nb::arg("transAxis1"),
+          nb::arg("transAxis2"),
+          nb::arg("renameDofs"))
       .def(
           "getPlaneType",
           +[](const dart::dynamics::PlanarJoint* self)
@@ -234,21 +244,21 @@ void PlanarJoint(py::module& m)
           "getRotationalAxis",
           +[](const dart::dynamics::PlanarJoint* self)
               -> const Eigen::Vector3d& { return self->getRotationalAxis(); },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getTranslationalAxis1",
           +[](const dart::dynamics::PlanarJoint* self)
               -> const Eigen::Vector3d& {
             return self->getTranslationalAxis1();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getTranslationalAxis2",
           +[](const dart::dynamics::PlanarJoint* self)
               -> const Eigen::Vector3d& {
             return self->getTranslationalAxis2();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getRelativeJacobianStatic",
           +[](const dart::dynamics::PlanarJoint* self,
@@ -256,26 +266,25 @@ void PlanarJoint(py::module& m)
               -> Eigen::Matrix<double, 6, 3> {
             return self->getRelativeJacobianStatic(_positions);
           },
-          ::py::arg("positions"))
+          nb::arg("positions"))
       .def_static(
           "convertToPositions",
           +[](const Eigen::Isometry2d& tf) {
             return dart::dynamics::PlanarJoint::convertToPositions(tf);
           },
-          ::py::arg("transform"))
+          nb::arg("transform"))
       .def_static(
           "convertToTransform",
           +[](const Eigen::Vector3d& positions) {
             return dart::dynamics::PlanarJoint::convertToTransform(positions);
           },
-          ::py::arg("positions"))
+          nb::arg("positions"))
       .def_static(
           "getStaticType",
-          +[]() -> const std::
-                    string& {
-                      return dart::dynamics::PlanarJoint::getStaticType();
-                    },
-          ::py::return_value_policy::reference_internal);
+          +[]() -> const std::string& {
+            return dart::dynamics::PlanarJoint::getStaticType();
+          },
+          nb::rv_policy::reference_internal);
 }
 
 } // namespace python

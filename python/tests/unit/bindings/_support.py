@@ -8,9 +8,6 @@ from pathlib import Path
 
 import dartpy as dart
 
-IS_NANOBIND = (
-    getattr(dart, "_binder", type(dart.dynamics.Skeleton).__module__) == "nanobind"
-)
 
 
 def run_isolated(script):

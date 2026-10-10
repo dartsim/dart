@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,21 +36,17 @@
 
 #include <dart/config.hpp>
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void Solver(py::module& sm);
-void GradientDescentSolver(py::module& sm);
+void Solver(nb::module_& sm);
+void GradientDescentSolver(nb::module_& sm);
 
-void Function(py::module& sm);
+void Function(nb::module_& sm);
 
-void Problem(py::module& sm);
+void Problem(nb::module_& sm);
 
-void dart_optimizer(py::module& m)
+void dart_optimizer(nb::module_& m)
 {
   auto sm = m.def_submodule("optimizer");
 

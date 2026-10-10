@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include <nanobind/stl/function.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -33,34 +39,38 @@
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/RaycastOption.hpp>
 
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void RaycastOption(py::module& m)
+void RaycastOption(nb::module_& m)
 {
-  ::py::class_<dart::collision::RaycastOption>(m, "RaycastOption")
-      .def(::py::init<>())
-      .def(::py::init<bool>(), ::py::arg("enableAllHits"))
+  dartnb::dart_class<dart::collision::RaycastOption>(m, "RaycastOption")
+      .def(dartnb::init<>())
+      .def(dartnb::init<bool>(), nb::arg("enableAllHits"))
       .def(
-          ::py::init<bool, bool>(),
-          ::py::arg("enableAllHits"),
-          ::py::arg("sortByClosest"))
+          dartnb::init<bool, bool>(),
+          nb::arg("enableAllHits"),
+          nb::arg("sortByClosest"))
       .def(
-          ::py::
+          dartnb::
               init<bool, bool, dart::collision::RaycastOption::RaycastFilter>(),
-          ::py::arg("enableAllHits"),
-          ::py::arg("sortByClosest"),
-          ::py::arg("filter") = nullptr)
-      .def_readwrite(
-          "mEnableAllHits", &dart::collision::RaycastOption::mEnableAllHits)
-      .def_readwrite(
-          "mSortByClosest", &dart::collision::RaycastOption::mSortByClosest)
-      .def_readwrite("mFilter", &dart::collision::RaycastOption::mFilter);
+          nb::arg("enableAllHits"),
+          nb::arg("sortByClosest"),
+          nb::arg("filter") = nullptr)
+      .def_rw(
+          "mEnableAllHits",
+          &dart::collision::RaycastOption::mEnableAllHits,
+          dartnb::setterArgument(
+              &dart::collision::RaycastOption::mEnableAllHits))
+      .def_rw(
+          "mSortByClosest",
+          &dart::collision::RaycastOption::mSortByClosest,
+          dartnb::setterArgument(
+              &dart::collision::RaycastOption::mSortByClosest))
+      .def_rw(
+          "mFilter",
+          &dart::collision::RaycastOption::mFilter,
+          dartnb::setterArgument(&dart::collision::RaycastOption::mFilter));
 }
 
 } // namespace python

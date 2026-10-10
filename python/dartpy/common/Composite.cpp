@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,75 +36,69 @@
 
 #include <dart/common/Composite.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void Composite(py::module& m)
+void Composite(nb::module_& m)
 {
-  ::py::
-      class_<dart::common::Composite, std::shared_ptr<dart::common::Composite>>(
-          m, "Composite")
-          .def(::py::init<>())
-          .def(
-              "setCompositeState",
-              +[](dart::common::Composite* self,
-                  const dart::common::Composite::State& newStates) {
-                self->setCompositeState(newStates);
-              },
-              ::py::arg("newStates"))
-          .def(
-              "getCompositeState",
-              +[](const dart::common::Composite* self)
-                  -> dart::common::Composite::State {
-                return self->getCompositeState();
-              })
-          .def(
-              "copyCompositeStateTo",
-              +[](const dart::common::Composite* self,
-                  dart::common::Composite::State& outgoingStates) {
-                self->copyCompositeStateTo(outgoingStates);
-              },
-              ::py::arg("outgoingStates"))
-          .def(
-              "setCompositeProperties",
-              +[](dart::common::Composite* self,
-                  const dart::common::Composite::Properties& newProperties) {
-                self->setCompositeProperties(newProperties);
-              },
-              ::py::arg("newProperties"))
-          .def(
-              "getCompositeProperties",
-              +[](const dart::common::Composite* self)
-                  -> dart::common::Composite::Properties {
-                return self->getCompositeProperties();
-              })
-          .def(
-              "copyCompositePropertiesTo",
-              +[](const dart::common::Composite* self,
-                  dart::common::Composite::Properties& outgoingProperties) {
-                self->copyCompositePropertiesTo(outgoingProperties);
-              },
-              ::py::arg("outgoingProperties"))
-          .def(
-              "duplicateAspects",
-              +[](dart::common::Composite* self,
-                  const dart::common::Composite* fromComposite) {
-                self->duplicateAspects(fromComposite);
-              },
-              ::py::arg("fromComposite"))
-          .def(
-              "matchAspects",
-              +[](dart::common::Composite* self,
-                  const dart::common::Composite* otherComposite) {
-                self->matchAspects(otherComposite);
-              },
-              ::py::arg("otherComposite"));
+  dartnb::dart_class<dart::common::Composite>(m, "Composite")
+      .def(dartnb::init<>())
+      .def(
+          "setCompositeState",
+          +[](dart::common::Composite* self,
+              const dart::common::Composite::State& newStates) {
+            self->setCompositeState(newStates);
+          },
+          nb::arg("newStates"))
+      .def(
+          "getCompositeState",
+          +[](const dart::common::Composite* self)
+              -> dart::common::Composite::State {
+            return self->getCompositeState();
+          })
+      .def(
+          "copyCompositeStateTo",
+          +[](const dart::common::Composite* self,
+              dart::common::Composite::State& outgoingStates) {
+            self->copyCompositeStateTo(outgoingStates);
+          },
+          nb::arg("outgoingStates"))
+      .def(
+          "setCompositeProperties",
+          +[](dart::common::Composite* self,
+              const dart::common::Composite::Properties& newProperties) {
+            self->setCompositeProperties(newProperties);
+          },
+          nb::arg("newProperties"))
+      .def(
+          "getCompositeProperties",
+          +[](const dart::common::Composite* self)
+              -> dart::common::Composite::Properties {
+            return self->getCompositeProperties();
+          })
+      .def(
+          "copyCompositePropertiesTo",
+          +[](const dart::common::Composite* self,
+              dart::common::Composite::Properties& outgoingProperties) {
+            self->copyCompositePropertiesTo(outgoingProperties);
+          },
+          nb::arg("outgoingProperties"))
+      .def(
+          "duplicateAspects",
+          +[](dart::common::Composite* self,
+              const dart::common::Composite* fromComposite) {
+            self->duplicateAspects(fromComposite);
+          },
+          nb::arg("fromComposite").none())
+      .def(
+          "matchAspects",
+          +[](dart::common::Composite* self,
+              const dart::common::Composite* otherComposite) {
+            self->matchAspects(otherComposite);
+          },
+          nb::arg("otherComposite").none());
 }
 
 } // namespace python

@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -41,63 +45,68 @@
 #include <dart/common/ResourceRetriever.hpp>
 #include <dart/common/Uri.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <string>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void DartLoader(py::module& m)
+void DartLoader(nb::module_& m)
 {
+  static_assert(dartnb::GcOwner<utils::DartLoader::Options>::value);
+  static_assert(dartnb::GcOwner<utils::DartLoader>::value);
   auto dartLoaderFlags
-      = ::py::enum_<utils::DartLoader::Flags>(m, "DartLoaderFlags")
+      = nb::enum_<utils::DartLoader::Flags>(
+            m, "DartLoaderFlags", nb::is_arithmetic(), nb::is_flag())
             .value("NONE", utils::DartLoader::Flags::NONE)
             .value("FIXED_BASE_LINK", utils::DartLoader::Flags::FIXED_BASE_LINK)
             .value("DEFAULT", utils::DartLoader::Flags::DEFAULT);
 
   auto dartLoaderRootJointType
-      = ::py::enum_<utils::DartLoader::RootJointType>(
-            m, "DartLoaderRootJointType")
+      = nb::enum_<utils::DartLoader::RootJointType>(
+            m, "DartLoaderRootJointType", nb::is_arithmetic())
             .value("FLOATING", utils::DartLoader::RootJointType::FLOATING)
             .value("FIXED", utils::DartLoader::RootJointType::FIXED);
 
   auto dartLoaderOptions
-      = ::py::class_<utils::DartLoader::Options>(m, "DartLoaderOptions")
+      = dartnb::dart_class<utils::DartLoader::Options>(m, "DartLoaderOptions")
             .def(
-                ::py::init<
+                dartnb::init<
                     common::ResourceRetrieverPtr,
                     utils::DartLoader::RootJointType,
                     const dynamics::Inertia&>(),
-                ::py::arg("resourceRetriever") = nullptr,
-                ::py::arg("defaultRootJointType")
+                nb::arg("resourceRetriever").none() = nullptr,
+                nb::arg("defaultRootJointType")
                 = utils::DartLoader::RootJointType::FLOATING,
-                ::py::arg("defaultInertia") = dynamics::Inertia())
-            .def_readwrite(
+                nb::arg("defaultInertia") = dynamics::Inertia())
+            .def_rw(
                 "mResourceRetriever",
-                &utils::DartLoader::Options::mResourceRetriever)
-            .def_readwrite(
+                &utils::DartLoader::Options::mResourceRetriever,
+                dartnb::setterArgument(
+                    &utils::DartLoader::Options::mResourceRetriever))
+            .def_rw(
                 "mDefaultRootJointType",
-                &utils::DartLoader::Options::mDefaultRootJointType)
-            .def_readwrite(
+                &utils::DartLoader::Options::mDefaultRootJointType,
+                dartnb::setterArgument(
+                    &utils::DartLoader::Options::mDefaultRootJointType))
+            .def_rw(
                 "mDefaultInertia",
-                &utils::DartLoader::Options::mDefaultInertia);
+                &utils::DartLoader::Options::mDefaultInertia,
+                dartnb::setterArgument(
+                    &utils::DartLoader::Options::mDefaultInertia));
 
   auto dartLoader
-      = ::py::class_<utils::DartLoader>(m, "DartLoader")
-            .def(::py::init<>())
+      = dartnb::dart_class<utils::DartLoader>(m, "DartLoader")
+            .def(dartnb::init<>())
             .def(
                 "setOptions",
                 &utils::DartLoader::setOptions,
-                ::py::arg("options") = utils::DartLoader::Options())
+                nb::arg("options") = utils::DartLoader::Options())
             .def("getOptions", &utils::DartLoader::getOptions)
             .def(
                 "addPackageDirectory",
                 &utils::DartLoader::addPackageDirectory,
-                ::py::arg("packageName"),
-                ::py::arg("packageDirectory"))
+                nb::arg("packageName"),
+                nb::arg("packageDirectory"))
             .def(
                 "parseSkeleton",
                 +[](dart::utils::DartLoader* self,
@@ -108,14 +117,14 @@ void DartLoader(py::module& m)
                   return self->parseSkeleton(uri, resourceRetriever, flags);
                   DART_SUPPRESS_DEPRECATED_END
                 },
-                ::py::arg("uri"),
-                ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+                nb::arg("uri"),
+                nb::arg("resourceRetriever").none(),
+                nb::arg("flags") = utils::DartLoader::DEFAULT)
             .def(
                 "parseSkeleton",
-                ::py::overload_cast<const common::Uri&>(
+                nb::overload_cast<const common::Uri&>(
                     &utils::DartLoader::parseSkeleton),
-                ::py::arg("uri"))
+                nb::arg("uri"))
             .def(
                 "parseSkeletonString",
                 +[](utils::DartLoader* self,
@@ -128,16 +137,16 @@ void DartLoader(py::module& m)
                       urdfString, baseUri, resourceRetriever, flags);
                   DART_SUPPRESS_DEPRECATED_END
                 },
-                ::py::arg("urdfString"),
-                ::py::arg("baseUri"),
-                ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+                nb::arg("urdfString"),
+                nb::arg("baseUri"),
+                nb::arg("resourceRetriever").none(),
+                nb::arg("flags") = utils::DartLoader::DEFAULT)
             .def(
                 "parseSkeletonString",
-                ::py::overload_cast<const std::string&, const common::Uri&>(
+                nb::overload_cast<const std::string&, const common::Uri&>(
                     &utils::DartLoader::parseSkeletonString),
-                ::py::arg("urdfString"),
-                ::py::arg("baseUri"))
+                nb::arg("urdfString"),
+                nb::arg("baseUri"))
             .def(
                 "parseWorld",
                 +[](utils::DartLoader* self,
@@ -148,14 +157,14 @@ void DartLoader(py::module& m)
                   return self->parseWorld(_uri, resourceRetriever, flags);
                   DART_SUPPRESS_DEPRECATED_END
                 },
-                ::py::arg("uri"),
-                ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+                nb::arg("uri"),
+                nb::arg("resourceRetriever").none(),
+                nb::arg("flags") = utils::DartLoader::DEFAULT)
             .def(
                 "parseWorld",
-                ::py::overload_cast<const common::Uri&>(
+                nb::overload_cast<const common::Uri&>(
                     &utils::DartLoader::parseWorld),
-                ::py::arg("uri"))
+                nb::arg("uri"))
             .def(
                 "parseWorldString",
                 +[](utils::DartLoader* self,
@@ -168,16 +177,16 @@ void DartLoader(py::module& m)
                       urdfString, baseUri, resourceRetriever, flags);
                   DART_SUPPRESS_DEPRECATED_END
                 },
-                ::py::arg("urdfString"),
-                ::py::arg("baseUri"),
-                ::py::arg("resourceRetriever"),
-                ::py::arg("flags") = utils::DartLoader::DEFAULT)
+                nb::arg("urdfString"),
+                nb::arg("baseUri"),
+                nb::arg("resourceRetriever").none(),
+                nb::arg("flags") = utils::DartLoader::DEFAULT)
             .def(
                 "parseWorldString",
-                ::py::overload_cast<const std::string&, const common::Uri&>(
+                nb::overload_cast<const std::string&, const common::Uri&>(
                     &utils::DartLoader::parseWorldString),
-                ::py::arg("urdfString"),
-                ::py::arg("baseUri"));
+                nb::arg("urdfString"),
+                nb::arg("baseUri"));
 
   dartLoader.attr("Flags") = dartLoaderFlags;
   dartLoader.attr("RootJointType") = dartLoaderRootJointType;

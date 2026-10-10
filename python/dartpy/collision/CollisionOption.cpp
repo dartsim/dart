@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -33,61 +37,69 @@
 #include <dart/collision/CollisionFilter.hpp>
 #include <dart/collision/CollisionOption.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void CollisionOption(py::module& m)
+void CollisionOption(nb::module_& m)
 {
-  ::py::class_<dart::collision::CollisionOption>(m, "CollisionOption")
-      .def(::py::init<>())
-      .def(::py::init<bool>(), ::py::arg("enableContact"))
+  dartnb::dart_class<dart::collision::CollisionOption>(m, "CollisionOption")
+      .def(dartnb::init<>())
+      .def(dartnb::init<bool>(), nb::arg("enableContact"))
       .def(
-          ::py::init<bool, std::size_t>(),
-          ::py::arg("enableContact"),
-          ::py::arg("maxNumContacts"))
+          dartnb::init<bool, std::size_t>(),
+          nb::arg("enableContact"),
+          nb::arg("maxNumContacts"))
       .def(
-          ::py::init<
+          dartnb::init<
               bool,
               std::size_t,
               const std::shared_ptr<dart::collision::CollisionFilter>&>(),
-          ::py::arg("enableContact"),
-          ::py::arg("maxNumContacts"),
-          ::py::arg("collisionFilter"))
+          nb::arg("enableContact"),
+          nb::arg("maxNumContacts"),
+          nb::arg("collisionFilter").none())
       .def(
-          ::py::init<
+          dartnb::init<
               bool,
               std::size_t,
               const std::shared_ptr<dart::collision::CollisionFilter>&,
               bool>(),
-          ::py::arg("enableContact"),
-          ::py::arg("maxNumContacts"),
-          ::py::arg("collisionFilter"),
-          ::py::arg("allowNegativePenetrationDepthContacts"))
-      .def_readwrite(
-          "enableContact", &dart::collision::CollisionOption::enableContact)
-      .def_readwrite(
-          "maxNumContacts", &dart::collision::CollisionOption::maxNumContacts)
-      .def_readwrite(
+          nb::arg("enableContact"),
+          nb::arg("maxNumContacts"),
+          nb::arg("collisionFilter").none(),
+          nb::arg("allowNegativePenetrationDepthContacts"))
+      .def_rw(
+          "enableContact",
+          &dart::collision::CollisionOption::enableContact,
+          dartnb::setterArgument(
+              &dart::collision::CollisionOption::enableContact))
+      .def_rw(
+          "maxNumContacts",
+          &dart::collision::CollisionOption::maxNumContacts,
+          dartnb::setterArgument(
+              &dart::collision::CollisionOption::maxNumContacts))
+      .def_rw(
           "maxNumContactsPerPair",
-          &dart::collision::CollisionOption::maxNumContactsPerPair)
-      .def_readwrite(
+          &dart::collision::CollisionOption::maxNumContactsPerPair,
+          dartnb::setterArgument(
+              &dart::collision::CollisionOption::maxNumContactsPerPair))
+      .def_rw(
           "allowNegativePenetrationDepthContacts",
           &dart::collision::CollisionOption::
-              allowNegativePenetrationDepthContacts)
+              allowNegativePenetrationDepthContacts,
+          dartnb::setterArgument(&dart::collision::CollisionOption::
+                                     allowNegativePenetrationDepthContacts))
       .def(
           "getEffectiveMaxNumContactsPerPair",
           &dart::collision::CollisionOption::getEffectiveMaxNumContactsPerPair)
-      .def_readwrite(
+      .def_rw(
           "collisionFilter",
-          &dart::collision::CollisionOption::collisionFilter);
+          &dart::collision::CollisionOption::collisionFilter,
+          dartnb::setterArgument(
+              &dart::collision::CollisionOption::collisionFilter));
 }
 
 } // namespace python

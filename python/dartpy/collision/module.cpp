@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,45 +36,41 @@
 
 #include <dart/config.hpp>
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void Contact(py::module& sm);
+void Contact(nb::module_& sm);
 
-void CollisionFilter(py::module& sm);
-void CollisionObject(py::module& sm);
-void CollisionOption(py::module& sm);
-void CollisionResult(py::module& sm);
+void CollisionFilter(nb::module_& sm);
+void CollisionObject(nb::module_& sm);
+void CollisionOption(nb::module_& sm);
+void CollisionResult(nb::module_& sm);
 
-void DistanceOption(py::module& sm);
-void DistanceResult(py::module& sm);
+void DistanceOption(nb::module_& sm);
+void DistanceResult(nb::module_& sm);
 
-void RaycastOption(py::module& sm);
-void RaycastResult(py::module& sm);
+void RaycastOption(nb::module_& sm);
+void RaycastResult(nb::module_& sm);
 
-void CollisionDetector(py::module& sm);
-void FCLCollisionDetector(py::module& sm);
-void DARTCollisionDetector(py::module& sm);
+void CollisionDetector(nb::module_& sm);
+void FCLCollisionDetector(nb::module_& sm);
+void DARTCollisionDetector(nb::module_& sm);
 
-void CollisionGroup(py::module& sm);
-void FCLCollisionGroup(py::module& sm);
-void DARTCollisionGroup(py::module& sm);
+void CollisionGroup(nb::module_& sm);
+void FCLCollisionGroup(nb::module_& sm);
+void DARTCollisionGroup(nb::module_& sm);
 
 #if HAVE_BULLET
-void BulletCollisionDetector(py::module& sm);
-void BulletCollisionGroup(py::module& sm);
+void BulletCollisionDetector(nb::module_& sm);
+void BulletCollisionGroup(nb::module_& sm);
 #endif // HAVE_BULLET
 
 #if HAVE_ODE
-void OdeCollisionDetector(py::module& sm);
-void OdeCollisionGroup(py::module& sm);
+void OdeCollisionDetector(nb::module_& sm);
+void OdeCollisionGroup(nb::module_& sm);
 #endif // HAVE_ODE
 
-void dart_collision(py::module& m)
+void dart_collision(nb::module_& m)
 {
   auto sm = m.def_submodule("collision");
 

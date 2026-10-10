@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -34,23 +38,17 @@
 
 #include <dart/dynamics/Skeleton.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
 #include <string>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void ConstraintBase(py::module& m)
+void ConstraintBase(nb::module_& m)
 {
-  ::py::class_<
-      dart::constraint::ConstraintBase,
-      std::shared_ptr<dart::constraint::ConstraintBase>>(m, "ConstraintBase")
+  dartnb::dart_class<dart::constraint::ConstraintBase>(m, "ConstraintBase")
       .def(
           "getType",
           +[](const dart::constraint::ConstraintBase* self) -> std::string {
@@ -70,20 +68,20 @@ void ConstraintBase(py::module& m)
               dart::constraint::ConstraintInfo* info) {
             self->getInformation(info);
           },
-          ::py::arg("info"))
+          nb::arg("info").none())
       .def(
           "applyUnitImpulse",
           +[](dart::constraint::ConstraintBase* self, std::size_t index) {
             self->applyUnitImpulse(index);
           },
-          ::py::arg("index"))
+          nb::arg("index"))
       .def(
           "getVelocityChange",
           +[](dart::constraint::ConstraintBase* self,
               double* vel,
               bool withCfm) { self->getVelocityChange(vel, withCfm); },
-          ::py::arg("vel"),
-          ::py::arg("withCfm"))
+          nb::arg("vel").none(),
+          nb::arg("withCfm"))
       .def(
           "excite",
           +[](dart::constraint::ConstraintBase* self) { self->excite(); })
@@ -95,7 +93,7 @@ void ConstraintBase(py::module& m)
           +[](dart::constraint::ConstraintBase* self, double* lambda) {
             self->applyImpulse(lambda);
           },
-          ::py::arg("lambda"))
+          nb::arg("lambda").none())
       .def(
           "isActive",
           +[](const dart::constraint::ConstraintBase* self) -> bool {
@@ -118,14 +116,14 @@ void ConstraintBase(py::module& m)
               -> dart::dynamics::SkeletonPtr {
             return dart::constraint::ConstraintBase::compressPath(skeleton);
           },
-          ::py::arg("skeleton"))
+          nb::arg("skeleton").none())
       .def_static(
           "getRootSkeletonOf",
           +[](dart::dynamics::SkeletonPtr skeleton)
               -> dart::dynamics::SkeletonPtr {
             return dart::constraint::ConstraintBase::getRootSkeleton(skeleton);
           },
-          ::py::arg("skeleton"));
+          nb::arg("skeleton").none());
 }
 
 } // namespace python

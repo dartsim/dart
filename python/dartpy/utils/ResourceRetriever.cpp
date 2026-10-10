@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -36,52 +40,42 @@
 
 #include <dart/common/ResourceRetriever.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void UtilsResourceRetriever(py::module& m)
+void UtilsResourceRetriever(nb::module_& m)
 {
-  ::py::class_<
-      utils::CompositeResourceRetriever,
-      common::ResourceRetriever,
-      std::shared_ptr<utils::CompositeResourceRetriever>>(
-      m, "CompositeResourceRetriever")
-      .def(::py::init<>())
-      .def(
-          "addDefaultRetriever",
-          &utils::CompositeResourceRetriever::addDefaultRetriever,
-          ::py::arg("resourceRetriever"))
-      .def(
-          "addSchemaRetriever",
-          &utils::CompositeResourceRetriever::addSchemaRetriever,
-          ::py::arg("schema"),
-          ::py::arg("resourceRetriever"));
+  dartnb::
+      dart_class<utils::CompositeResourceRetriever, common::ResourceRetriever>(
+          m, "CompositeResourceRetriever")
+          .def(dartnb::init<>())
+          .def(
+              "addDefaultRetriever",
+              &utils::CompositeResourceRetriever::addDefaultRetriever,
+              nb::arg("resourceRetriever").none())
+          .def(
+              "addSchemaRetriever",
+              &utils::CompositeResourceRetriever::addSchemaRetriever,
+              nb::arg("schema"),
+              nb::arg("resourceRetriever").none());
 
-  ::py::class_<
-      utils::DartResourceRetriever,
-      common::ResourceRetriever,
-      std::shared_ptr<utils::DartResourceRetriever>>(m, "DartResourceRetriever")
-      .def(::py::init<>());
+  dartnb::dart_class<utils::DartResourceRetriever, common::ResourceRetriever>(
+      m, "DartResourceRetriever")
+      .def(dartnb::init<>());
 
-  ::py::class_<
-      utils::PackageResourceRetriever,
-      common::ResourceRetriever,
-      std::shared_ptr<utils::PackageResourceRetriever>>(
-      m, "PackageResourceRetriever")
-      .def(
-          ::py::init<const common::ResourceRetrieverPtr&>(),
-          ::py::arg("localRetriever"))
-      .def(
-          "addPackageDirectory",
-          &utils::PackageResourceRetriever::addPackageDirectory,
-          ::py::arg("packageName"),
-          ::py::arg("packageDirectory"));
+  dartnb::
+      dart_class<utils::PackageResourceRetriever, common::ResourceRetriever>(
+          m, "PackageResourceRetriever")
+          .def(
+              dartnb::init<const common::ResourceRetrieverPtr&>(),
+              nb::arg("localRetriever").none())
+          .def(
+              "addPackageDirectory",
+              &utils::PackageResourceRetriever::addPackageDirectory,
+              nb::arg("packageName"),
+              nb::arg("packageDirectory"));
 }
 
 } // namespace python

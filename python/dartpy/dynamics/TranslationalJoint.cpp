@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -39,33 +43,28 @@
 
 #include <Eigen/Core>
 #include <eigen_geometry_pybind.h>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
 
 #include <memory>
 #include <string>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void TranslationalJoint(py::module& m)
+void TranslationalJoint(nb::module_& m)
 {
-  ::py::class_<dart::dynamics::TranslationalJoint::Properties>(
+  dartnb::dart_class<dart::dynamics::TranslationalJoint::Properties>(
       m, "TranslationalJointProperties")
-      .def(::py::init<>())
+      .def(dartnb::init<>())
       .def(
-          ::py::init<const dart::dynamics::GenericJoint<
+          dartnb::init<const dart::dynamics::GenericJoint<
               dart::math::RealVectorSpace<3>>::Properties&>(),
-          ::py::arg("properties"));
+          nb::arg("properties"));
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::dynamics::TranslationalJoint,
-      dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3>>,
-      std::shared_ptr<dart::dynamics::TranslationalJoint>>(
+      dart::dynamics::GenericJoint<dart::math::RealVectorSpace<3>>>(
       m, "TranslationalJoint")
       .def(
           "getTranslationalJointProperties",
@@ -77,12 +76,12 @@ void TranslationalJoint(py::module& m)
           "getType",
           +[](const dart::dynamics::TranslationalJoint* self)
               -> const std::string& { return self->getType(); },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "isCyclic",
           +[](const dart::dynamics::TranslationalJoint* self,
               std::size_t _index) -> bool { return self->isCyclic(_index); },
-          ::py::arg("index"))
+          nb::arg("index"))
       .def(
           "getRelativeJacobianStatic",
           +[](const dart::dynamics::TranslationalJoint* self,
@@ -90,13 +89,13 @@ void TranslationalJoint(py::module& m)
               -> Eigen::Matrix<double, 6, 3> {
             return self->getRelativeJacobianStatic(_positions);
           },
-          ::py::arg("positions"))
+          nb::arg("positions"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::dynamics::TranslationalJoint::getStaticType();
           },
-          ::py::return_value_policy::reference_internal);
+          nb::rv_policy::reference_internal);
 }
 
 } // namespace python

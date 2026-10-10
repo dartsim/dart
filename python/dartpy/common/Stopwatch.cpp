@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include <sstream>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,19 +38,14 @@
 
 #include <dart/common/Stopwatch.hpp>
 
-#include <pybind11/iostream.h>
-#include <pybind11/pybind11.h>
-
 #include <iostream>
-
-namespace py = pybind11;
 
 namespace dart::python {
 
-void Stopwatch(py::module& m)
+void Stopwatch(nb::module_& m)
 {
-  py::class_<common::StopwatchNS>(m, "Stopwatch")
-      .def(py::init<bool>(), py::arg("start") = true)
+  dartnb::dart_class<common::StopwatchNS>(m, "Stopwatch")
+      .def(dartnb::init<bool>(), nb::arg("start") = true)
       .def("isStarted", &common::StopwatchNS::isStarted)
       .def("start", &common::StopwatchNS::start)
       .def("stop", &common::StopwatchNS::stop)
@@ -54,17 +55,17 @@ void Stopwatch(py::module& m)
       .def("elapsedUS", &common::StopwatchNS::elapsedUS)
       .def("elapsedNS", &common::StopwatchNS::elapsedNS)
       .def("print", [](const common::StopwatchNS* self) {
-        py::scoped_ostream_redirect stream(
-            std::cout, py::module::import("sys").attr("stdout"));
-        std::cout << *self;
+        std::ostringstream stream;
+        stream << *self;
+        nb::module_::import_("sys").attr("stdout").attr("write")(stream.str());
       });
 
   m.def("tic", &common::tic);
-  m.def("toc", &common::toc, py::arg("print") = false);
-  m.def("tocS", &common::tocS, py::arg("print") = false);
-  m.def("tocMS", &common::tocMS, py::arg("print") = false);
-  m.def("tocUS", &common::tocUS, py::arg("print") = false);
-  m.def("tocNS", &common::tocNS, py::arg("print") = false);
+  m.def("toc", &common::toc, nb::arg("print") = false);
+  m.def("tocS", &common::tocS, nb::arg("print") = false);
+  m.def("tocMS", &common::tocMS, nb::arg("print") = false);
+  m.def("tocUS", &common::tocUS, nb::arg("print") = false);
+  m.def("tocNS", &common::tocNS, nb::arg("print") = false);
 }
 
 } // namespace dart::python

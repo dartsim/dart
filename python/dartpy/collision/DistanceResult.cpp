@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include "detail/eigen.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -34,18 +40,13 @@
 
 #include <dart/dynamics/ShapeFrame.hpp>
 
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void DistanceResult(py::module& m)
+void DistanceResult(nb::module_& m)
 {
-  ::py::class_<dart::collision::DistanceResult>(m, "DistanceResult")
-      .def(::py::init<>())
+  dartnb::dart_class<dart::collision::DistanceResult>(m, "DistanceResult")
+      .def(dartnb::init<>())
       .def(
           "clear",
           +[](dart::collision::DistanceResult* self) { self->clear(); })
@@ -59,19 +60,33 @@ void DistanceResult(py::module& m)
           +[](const dart::collision::DistanceResult* self) -> bool {
             return self->isMinDistanceClamped();
           })
-      .def_readwrite(
-          "minDistance", &dart::collision::DistanceResult::minDistance)
-      .def_readwrite(
+      .def_rw(
+          "minDistance",
+          &dart::collision::DistanceResult::minDistance,
+          dartnb::setterArgument(&dart::collision::DistanceResult::minDistance))
+      .def_rw(
           "unclampedMinDistance",
-          &dart::collision::DistanceResult::unclampedMinDistance)
-      .def_readwrite(
-          "shapeFrame1", &dart::collision::DistanceResult::shapeFrame1)
-      .def_readwrite(
-          "shapeFrame2", &dart::collision::DistanceResult::shapeFrame2)
-      .def_readwrite(
-          "nearestPoint1", &dart::collision::DistanceResult::nearestPoint1)
-      .def_readwrite(
-          "nearestPoint2", &dart::collision::DistanceResult::nearestPoint2);
+          &dart::collision::DistanceResult::unclampedMinDistance,
+          dartnb::setterArgument(
+              &dart::collision::DistanceResult::unclampedMinDistance))
+      .def_rw(
+          "shapeFrame1",
+          &dart::collision::DistanceResult::shapeFrame1,
+          dartnb::setterArgument(&dart::collision::DistanceResult::shapeFrame1))
+      .def_rw(
+          "shapeFrame2",
+          &dart::collision::DistanceResult::shapeFrame2,
+          dartnb::setterArgument(&dart::collision::DistanceResult::shapeFrame2))
+      .def_rw(
+          "nearestPoint1",
+          &dart::collision::DistanceResult::nearestPoint1,
+          dartnb::setterArgument(
+              &dart::collision::DistanceResult::nearestPoint1))
+      .def_rw(
+          "nearestPoint2",
+          &dart::collision::DistanceResult::nearestPoint2,
+          dartnb::setterArgument(
+              &dart::collision::DistanceResult::nearestPoint2));
 }
 
 } // namespace python

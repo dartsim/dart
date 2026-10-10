@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,17 +34,13 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void Random(py::module& sm);
-void Geometry(py::module& sm);
+void Random(nb::module_& sm);
+void Geometry(nb::module_& sm);
 
-void dart_math(py::module& m)
+void dart_math(nb::module_& m)
 {
   auto sm = m.def_submodule("math");
 

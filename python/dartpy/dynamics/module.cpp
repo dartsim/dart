@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,55 +34,51 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void Shape(py::module& sm);
+void Shape(nb::module_& sm);
 
-void Entity(py::module& sm);
-void Frame(py::module& sm);
-void ShapeFrame(py::module& sm);
-void SimpleFrame(py::module& sm);
+void Entity(nb::module_& sm);
+void Frame(nb::module_& sm);
+void ShapeFrame(nb::module_& sm);
+void SimpleFrame(nb::module_& sm);
 
-void Node(py::module& sm);
-void JacobianNode(py::module& sm);
-void ShapeNode(py::module& sm);
+void Node(nb::module_& sm);
+void JacobianNode(nb::module_& sm);
+void ShapeNode(nb::module_& sm);
 
-void DegreeOfFreedom(py::module& sm);
+void DegreeOfFreedom(nb::module_& sm);
 
-void BodyNode(py::module& sm);
-void SoftBodyNode(py::module& sm);
+void BodyNode(nb::module_& sm);
+void SoftBodyNode(nb::module_& sm);
 
-void Joint(py::module& sm);
-void ZeroDofJoint(py::module& sm);
-void WeldJoint(py::module& sm);
-void GenericJoint(py::module& sm);
-void RevoluteJoint(py::module& sm);
-void PrismaticJoint(py::module& sm);
-void ScrewJoint(py::module& sm);
-void UniversalJoint(py::module& sm);
-void TranslationalJoint2D(py::module& sm);
-void PlanarJoint(py::module& sm);
-void EulerJoint(py::module& sm);
-void BallJoint(py::module& sm);
-void TranslationalJoint(py::module& sm);
-void FreeJoint(py::module& sm);
+void Joint(nb::module_& sm);
+void ZeroDofJoint(nb::module_& sm);
+void WeldJoint(nb::module_& sm);
+void GenericJoint(nb::module_& sm);
+void RevoluteJoint(nb::module_& sm);
+void PrismaticJoint(nb::module_& sm);
+void ScrewJoint(nb::module_& sm);
+void UniversalJoint(nb::module_& sm);
+void TranslationalJoint2D(nb::module_& sm);
+void PlanarJoint(nb::module_& sm);
+void EulerJoint(nb::module_& sm);
+void BallJoint(nb::module_& sm);
+void TranslationalJoint(nb::module_& sm);
+void FreeJoint(nb::module_& sm);
 
-void MetaSkeleton(py::module& sm);
-void ReferentialSkeleton(py::module& sm);
-void Linkage(py::module& sm);
-void Chain(py::module& sm);
-void Skeleton(py::module& sm);
+void MetaSkeleton(nb::module_& sm);
+void ReferentialSkeleton(nb::module_& sm);
+void Linkage(nb::module_& sm);
+void Chain(nb::module_& sm);
+void Skeleton(nb::module_& sm);
 
-void InverseKinematics(py::module& sm);
-void ContactInverseDynamics(py::module& sm);
-void Inertia(py::module& sm);
+void InverseKinematics(nb::module_& sm);
+void ContactInverseDynamics(nb::module_& sm);
+void Inertia(nb::module_& sm);
 
-void dart_dynamics(py::module& m)
+void dart_dynamics(nb::module_& m)
 {
   auto sm = m.def_submodule("dynamics");
 

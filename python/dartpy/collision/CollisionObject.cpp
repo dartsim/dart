@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include "detail/eigen.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -38,23 +44,20 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void CollisionObject(py::module& m)
+void CollisionObject(nb::module_& m)
 {
-  ::py::class_<dart::collision::CollisionObject>(m, "CollisionObject")
+  dartnb::dart_class<dart::collision::CollisionObject>(m, "CollisionObject")
       .def(
           "getCollisionDetector",
           +[](dart::collision::CollisionObject* self)
               -> dart::collision::CollisionDetector* {
             return self->getCollisionDetector();
           },
-          ::py::return_value_policy::reference_internal,
+          nb::rv_policy::reference_internal,
           "Return collision detection engine associated with this "
           "CollisionObject.")
       .def(
@@ -63,14 +66,14 @@ void CollisionObject(py::module& m)
               -> const dart::collision::CollisionDetector* {
             return self->getCollisionDetector();
           },
-          ::py::return_value_policy::reference_internal,
+          nb::rv_policy::reference_internal,
           "Return collision detection engine associated with this "
           "CollisionObject.")
       .def(
           "getShapeFrame",
           +[](const dart::collision::CollisionObject* self)
               -> const dynamics::ShapeFrame* { return self->getShapeFrame(); },
-          ::py::return_value_policy::reference_internal,
+          nb::rv_policy::reference_internal,
           "Return the associated ShapeFrame.")
       .def(
           "getShape",
@@ -81,7 +84,7 @@ void CollisionObject(py::module& m)
           "getTransform",
           +[](const dart::collision::CollisionObject* self)
               -> const Eigen::Isometry3d& { return self->getTransform(); },
-          ::py::return_value_policy::reference_internal,
+          nb::rv_policy::reference_internal,
           "Return the transformation of this CollisionObject in world "
           "coordinates.");
 }

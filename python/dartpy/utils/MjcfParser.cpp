@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -34,42 +38,46 @@
 
 #include <dart/common/ResourceRetriever.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <string>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void MjcfParser(py::module& m)
+void MjcfParser(nb::module_& m)
 {
+  static_assert(dartnb::GcOwner<utils::MjcfParser::Options>::value);
   auto sm = m.def_submodule("MjcfParser");
 
-  ::py::class_<utils::MjcfParser::Options>(sm, "Options")
+  dartnb::dart_class<utils::MjcfParser::Options>(sm, "Options")
       .def(
-          ::py::init<
+          dartnb::init<
               const common::ResourceRetrieverPtr&,
               const std::string&,
               const std::string&>(),
-          ::py::arg("resourceRetretrieverOrNullptrriever") = nullptr,
-          ::py::arg("geomSkeletonNamePrefix") = "__geom_skel__",
-          ::py::arg("siteSkeletonNamePrefix") = "__site_skel__")
-      .def_readwrite("mRetriever", &utils::MjcfParser::Options::mRetriever)
-      .def_readwrite(
+          nb::arg("resourceRetretrieverOrNullptrriever").none() = nullptr,
+          nb::arg("geomSkeletonNamePrefix") = "__geom_skel__",
+          nb::arg("siteSkeletonNamePrefix") = "__site_skel__")
+      .def_rw(
+          "mRetriever",
+          &utils::MjcfParser::Options::mRetriever,
+          dartnb::setterArgument(&utils::MjcfParser::Options::mRetriever))
+      .def_rw(
           "mGeomSkeletonNamePrefix",
-          &utils::MjcfParser::Options::mGeomSkeletonNamePrefix)
-      .def_readwrite(
+          &utils::MjcfParser::Options::mGeomSkeletonNamePrefix,
+          dartnb::setterArgument(
+              &utils::MjcfParser::Options::mGeomSkeletonNamePrefix))
+      .def_rw(
           "mSiteSkeletonNamePrefix",
-          &utils::MjcfParser::Options::mSiteSkeletonNamePrefix);
+          &utils::MjcfParser::Options::mSiteSkeletonNamePrefix,
+          dartnb::setterArgument(
+              &utils::MjcfParser::Options::mSiteSkeletonNamePrefix));
 
   // resource retriever APIs
   sm.def(
       "readWorld",
       &utils::MjcfParser::readWorld,
-      ::py::arg("uri"),
-      ::py::arg("options") = utils::MjcfParser::Options());
+      nb::arg("uri"),
+      nb::arg("options") = utils::MjcfParser::Options());
 }
 
 } // namespace python

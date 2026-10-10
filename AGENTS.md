@@ -1,12 +1,11 @@
-# Agent Guidelines for DART 6.20
+# Agent Guidelines for DART 6.21
 
 This file is the repository pointer board. Start every task with
 `docs/ai/principles.md`, then load only the owner docs needed for the work.
 
 ## Project Profile
 
-- **WHAT**: C++17 robotics physics engine with dartpy bindings (pybind11 by
-  default; opt-in nanobind for DART 6.21)
+- **WHAT**: C++17 robotics physics engine with dartpy bindings (nanobind for DART 6.21)
 - **WHY**: Stable DART 6 LTS compatibility for users and Gazebo/gz-physics
 - **HOW**: Use repository `pixi run ...` tasks; run `pixi run lint` before commits
 
@@ -49,24 +48,21 @@ See `docs/onboarding/ci-cd.md` when a gate fails.
 Subdirectories may provide a closer `AGENTS.md`; instructions accumulate from
 the repository root to the working directory.
 
-## DART 6.20 Compatibility Rules
+## DART 6 Compatibility Rules
 
 - Branch from `origin/main` into a non-tracking topic branch; never
   commit directly to `main` or `release-*`.
-- Preserve C++17, the default pybind11 binder, `dart::utils` parsers, OSG, installed headers,
+- Preserve C++17, the nanobind binder, `dart::utils` parsers, OSG, installed headers,
   package components, ABI-sensitive interfaces, default simulation behavior,
   and Gazebo/gz-physics compatibility unless a maintainer approves otherwise.
-- The approved DART 6.21 migration permits an opt-in nanobind binder under
-  `python/dartpy_nanobind/`; follow `docs/onboarding/python-bindings.md`.
-  The maintainer also approved building the published `dartpy` wheels with it
-  (`cp312-abi3` plus Linux `cp310`/`cp311`); the source default stays pybind11
-  until the binder switch.
-- `main` is the development branch for the next release (currently DART 6.20).
+- The approved DART 6.21 migration uses nanobind as the only binder under
+  `python/dartpy/`; follow `docs/onboarding/python-bindings.md`.
+- `main` is the development branch for the next release (currently DART 6.21).
   PRs target `main`, where new patches land; there is no maintenance branch.
   Backports to a `release-6.*` branch cut from a release tag use
   `dart-backport-pr`.
 - Use `.github/PULL_REQUEST_TEMPLATE.md` and set the branch-matching DART 6.x
-  release milestone (currently `DART 6.20.0`) on PRs.
+  release milestone (currently `DART 6.21.0`) on PRs.
 - Do not prefix commit messages or PR titles with agent tags like `[codex]`;
   use plain descriptive titles.
 - Before every approved push to a published PR branch, first merge the latest

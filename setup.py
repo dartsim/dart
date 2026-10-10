@@ -1,9 +1,6 @@
 ﻿# Copyright (c) 2011, The DART development contributors
 # All rights reserved.
 
-# References:
-# - https://pybind11.readthedocs.io/en/stable/compiling.html
-
 import distutils.log
 import json
 import os
@@ -96,7 +93,7 @@ class CMakeBuild(build_ext):
         # Can be set with Conda-Build, for example.
         cmake_generator = os.environ.get("CMAKE_GENERATOR", "")
 
-        # Keep legacy and modern CMake/Pybind Python discovery paths on the
+        # Keep legacy and modern CMake Python discovery paths on the
         # interpreter that is running the wheel build.
         # DARTPY_VERSION_INFO shows you how to pass a value into the C++ code
         # from Python.

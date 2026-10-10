@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -32,39 +36,62 @@
 
 #include <dart/constraint/NsgsFrictionSolver.hpp>
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void NsgsFrictionSolver(py::module& m)
+void NsgsFrictionSolver(nb::module_& m)
 {
   using Solver = constraint::NsgsFrictionSolver;
+  using Stats = constraint::FrictionSolveStats;
 
-  auto solver = ::py::
-      class_<Solver, constraint::BoxedLcpSolver, std::shared_ptr<Solver>>(
-          m, "NsgsFrictionSolver");
+  dartnb::dart_class<Stats>(m, "FrictionSolveStats")
+      .def(dartnb::init<>())
+      .def_ro("numSolves", &Stats::numSolves)
+      .def_ro("numConverged", &Stats::numConverged)
+      .def_ro("numAcceptedAtCap", &Stats::numAcceptedAtCap)
+      .def_ro("numFailed", &Stats::numFailed)
+      .def_ro("numContacts", &Stats::numContacts)
+      .def_ro("numBoxContacts", &Stats::numBoxContacts)
+      .def_ro("numLocalFallbacks", &Stats::numLocalFallbacks)
+      .def_ro("numIterations", &Stats::numIterations)
+      .def_ro("numInnerIterations", &Stats::numInnerIterations)
+      .def_ro("numStepShrinks", &Stats::numStepShrinks)
+      .def_ro("numInnerCaps", &Stats::numInnerCaps)
+      .def_ro("maxViolation", &Stats::maxViolation);
 
-  ::py::enum_<Solver::Law>(solver, "Law")
+  auto solver = dartnb::dart_class<Solver, constraint::BoxedLcpSolver>(
+      m, "NsgsFrictionSolver");
+
+  nb::enum_<Solver::Law>(solver, "Law", nb::is_arithmetic())
       .value("Coulomb", Solver::Law::Coulomb)
       .value("Associated", Solver::Law::Associated)
       .value("Box", Solver::Law::Box);
 
-  ::py::class_<Solver::Options>(solver, "Options")
-      .def(::py::init<>())
-      .def_readwrite("law", &Solver::Options::law)
-      .def_readwrite("boxForAnisotropic", &Solver::Options::boxForAnisotropic)
-      .def_readwrite("maxSweeps", &Solver::Options::maxSweeps)
-      .def_readwrite("tolerance", &Solver::Options::tolerance);
+  dartnb::dart_class<Solver::Options>(solver, "Options")
+      .def(dartnb::init<>())
+      .def_rw(
+          "law",
+          &Solver::Options::law,
+          dartnb::setterArgument(&Solver::Options::law))
+      .def_rw(
+          "boxForAnisotropic",
+          &Solver::Options::boxForAnisotropic,
+          dartnb::setterArgument(&Solver::Options::boxForAnisotropic))
+      .def_rw(
+          "maxSweeps",
+          &Solver::Options::maxSweeps,
+          dartnb::setterArgument(&Solver::Options::maxSweeps))
+      .def_rw(
+          "tolerance",
+          &Solver::Options::tolerance,
+          dartnb::setterArgument(&Solver::Options::tolerance));
 
-  solver.def(::py::init<>())
-      .def(::py::init<const Solver::Options&>(), ::py::arg("options"))
+  solver.def(dartnb::init<>())
+      .def(dartnb::init<const Solver::Options&>(), nb::arg("options"))
       .def_static("getStaticType", &Solver::getStaticType)
-      .def("setOptions", &Solver::setOptions, ::py::arg("options"))
-      .def("getOptions", &Solver::getOptions, ::py::return_value_policy::copy)
-      .def("reserve", &Solver::reserve, ::py::arg("numRows"))
+      .def("setOptions", &Solver::setOptions, nb::arg("options"))
+      .def("getOptions", &Solver::getOptions, nb::rv_policy::copy)
+      .def("reserve", &Solver::reserve, nb::arg("numRows"))
       .def("getStats", &Solver::getStats)
       .def("resetStats", &Solver::resetStats);
 }

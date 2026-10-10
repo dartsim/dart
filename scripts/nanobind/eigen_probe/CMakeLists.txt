@@ -21,7 +21,7 @@ nanobind_add_module(numpy_export_probe NB_STATIC PROTECT_STACK probe.cpp)
 target_compile_features(numpy_export_probe PRIVATE cxx_std_17)
 target_include_directories(
   numpy_export_probe
-  PRIVATE "${DART_SOURCE_ROOT}/python/dartpy_nanobind"
+  PRIVATE "${DART_SOURCE_ROOT}/python/dartpy"
 )
 target_link_libraries(numpy_export_probe PRIVATE Eigen3::Eigen)
 if(MSVC)

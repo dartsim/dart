@@ -1,3 +1,9 @@
+#include "detail/dart_nb.hpp"
+
+#include <dart/gui/osg/RealTimeWorldNode.hpp>
+
+#include <nanobind/trampoline.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,63 +36,82 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pointers.hpp"
+#include "gui/osg/ownership.hpp"
 
 #include <osgGA/GUIActionAdapter>
 #include <osgGA/GUIEventAdapter>
 #include <osgGA/GUIEventHandler>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
+namespace gui_trampolines {
+using WorldNode = dart::gui::osg::WorldNode;
+using RealTimeWorldNode = dart::gui::osg::RealTimeWorldNode;
+using World = dart::simulation::World;
+using Viewer = dart::gui::osg::Viewer;
+nb::object actionObject(osgGA::GUIActionAdapter& action)
+{
+  if (auto* viewer = dynamic_cast<Viewer*>(&action))
+    return nb::cast(viewer, nb::rv_policy::reference);
+  if (auto* view = dynamic_cast<osgViewer::View*>(&action))
+    return nb::cast(view, nb::rv_policy::reference);
+  return nb::inst_reference(nb::type<osgGA::GUIActionAdapter>(), &action);
+}
+
 class GUIEventHandlerNoRef : public osgGA::GUIEventHandler
 {
 public:
-  using GUIEventHandler::handle;
+  using osgGA::GUIEventHandler::handle;
 
-  virtual bool handle(
-      const osgGA::GUIEventAdapter* /*ea*/, osgGA::GUIActionAdapter* /*aa*/)
+  virtual bool handle(const ::osg::ref_ptr<osgGA::GUIEventAdapter>&, nb::object)
   {
     return true;
   }
 
 protected:
   bool handle(
-      const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) override
+      const osgGA::GUIEventAdapter& event,
+      osgGA::GUIActionAdapter& action) override
   {
-    return handle(&ea, &aa);
+    nb::gil_scoped_acquire gil;
+    return handle(
+        ::osg::ref_ptr<osgGA::GUIEventAdapter>(
+            const_cast<osgGA::GUIEventAdapter*>(&event)),
+        actionObject(action));
   }
 };
 
-class PyGUIEventHandler final : public GUIEventHandlerNoRef
+class PyGUIEventHandler : public GUIEventHandlerNoRef
 {
 public:
-  // Inherit the constructors
-  using GUIEventHandlerNoRef::GUIEventHandlerNoRef;
-
-  // Trampoline for virtual function
-  bool handle(
-      const osgGA::GUIEventAdapter* ea, osgGA::GUIActionAdapter* aa) override
+  NB_TRAMPOLINE(GUIEventHandlerNoRef);
+  PyGUIEventHandler()
   {
-    PYBIND11_OVERLOAD(
-        bool,                 // Return type
-        GUIEventHandlerNoRef, // Parent class
-        handle, // Name of function in C++ (must match Python name)
-        ea,
-        aa);
+    ref();
+  }
+  ~PyGUIEventHandler() override
+  {
+    unref_nodelete();
+  }
+  bool handle(
+      const ::osg::ref_ptr<osgGA::GUIEventAdapter>& event,
+      nb::object action) override
+  {
+    // Unlike WorldNode's hooks, pybind11 never exposed the base handle method.
+    nb::gil_scoped_acquire acquire;
+    if (!nb::hasattr(nb_trampoline.base(), "handle"))
+      return GUIEventHandlerNoRef::handle(event, std::move(action));
+    NB_OVERRIDE(handle, event, action);
   }
 };
 
-void GUIEventHandler(py::module& m)
+} // namespace gui_trampolines
+
+void GUIEventHandler(nb::module_& m)
 {
-  auto ea = ::py::class_<
-                osgGA::GUIEventAdapter,
-                ::osg::ref_ptr<osgGA::GUIEventAdapter>>(m, "GUIEventAdapter")
-                .def(py::init<>())
+  auto ea = dartnb::dart_class<osgGA::GUIEventAdapter>(m, "GUIEventAdapter")
+                .def(dartnb::gui::init<>())
                 .def(
                     "getEventType",
                     +[](const osgGA::GUIEventAdapter* self)
@@ -102,7 +127,7 @@ void GUIEventHandler(py::module& m)
   .value(#val, osgGA::GUIEventAdapter::MouseButtonMask::val)
 
   // clang-format off
-  ::py::enum_<osgGA::GUIEventAdapter::MouseButtonMask>(ea, "MouseButtonMask")
+  nb::enum_<osgGA::GUIEventAdapter::MouseButtonMask>(ea, "MouseButtonMask", nb::is_arithmetic(), nb::is_flag())
       DARTPY_DEFINE_ENUM_MOUSE_BUTTON_MASK(LEFT_MOUSE_BUTTON)
       DARTPY_DEFINE_ENUM_MOUSE_BUTTON_MASK(MIDDLE_MOUSE_BUTTON)
       DARTPY_DEFINE_ENUM_MOUSE_BUTTON_MASK(RIGHT_MOUSE_BUTTON)
@@ -113,7 +138,7 @@ void GUIEventHandler(py::module& m)
   .value(#val, osgGA::GUIEventAdapter::EventType::val)
 
   // clang-format off
-  ::py::enum_<osgGA::GUIEventAdapter::EventType>(ea, "EventType")
+  nb::enum_<osgGA::GUIEventAdapter::EventType>(ea, "EventType", nb::is_arithmetic())
       DARTPY_DEFINE_ENUM_EVENT_TYPE(NONE)
       DARTPY_DEFINE_ENUM_EVENT_TYPE(PUSH)
       DARTPY_DEFINE_ENUM_EVENT_TYPE(RELEASE)
@@ -139,7 +164,7 @@ void GUIEventHandler(py::module& m)
   .value(#val, osgGA::GUIEventAdapter::KeySymbol::val)
 
   // clang-format off
-  ::py::enum_<osgGA::GUIEventAdapter::KeySymbol>(ea, "KeySymbol")
+  nb::enum_<osgGA::GUIEventAdapter::KeySymbol>(ea, "KeySymbol", nb::is_arithmetic())
       DARTPY_DEFINE_ENUM_KEY_SYMBOL(KEY_Space)
 
       DARTPY_DEFINE_ENUM_KEY_SYMBOL(KEY_0)
@@ -352,7 +377,7 @@ void GUIEventHandler(py::module& m)
   .value(#val, osgGA::GUIEventAdapter::ModKeyMask::val)
 
   // clang-format off
-  ::py::enum_<osgGA::GUIEventAdapter::ModKeyMask>(ea, "ModKeyMask")
+  nb::enum_<osgGA::GUIEventAdapter::ModKeyMask>(ea, "ModKeyMask", nb::is_arithmetic(), nb::is_flag())
       DARTPY_DEFINE_ENUM_MOD_KEY_MASK(MODKEY_LEFT_SHIFT)
       DARTPY_DEFINE_ENUM_MOD_KEY_MASK(MODKEY_RIGHT_SHIFT)
       DARTPY_DEFINE_ENUM_MOD_KEY_MASK(MODKEY_LEFT_CTRL  )
@@ -380,8 +405,8 @@ void GUIEventHandler(py::module& m)
   .value(#val, osgGA::GUIEventAdapter::MouseYOrientation::val)
 
   // clang-format off
-  ::py::enum_<osgGA::GUIEventAdapter::MouseYOrientation>(
-      ea, "MouseYOrientation")
+  nb::enum_<osgGA::GUIEventAdapter::MouseYOrientation>(
+      ea, "MouseYOrientation", nb::is_arithmetic())
       DARTPY_DEFINE_ENUM_MOUSE_Y_ORIENTATION(Y_INCREASING_UPWARDS)
       DARTPY_DEFINE_ENUM_MOUSE_Y_ORIENTATION(Y_INCREASING_DOWNWARDS)
       .export_values();
@@ -391,7 +416,7 @@ void GUIEventHandler(py::module& m)
   .value(#val, osgGA::GUIEventAdapter::ScrollingMotion::val)
 
   // clang-format off
-  ::py::enum_<osgGA::GUIEventAdapter::ScrollingMotion>(ea, "ScrollingMotion")
+  nb::enum_<osgGA::GUIEventAdapter::ScrollingMotion>(ea, "ScrollingMotion", nb::is_arithmetic())
       DARTPY_DEFINE_ENUM_SCROLLING_MOTION(SCROLL_NONE)
       DARTPY_DEFINE_ENUM_SCROLLING_MOTION(SCROLL_LEFT)
       DARTPY_DEFINE_ENUM_SCROLLING_MOTION(SCROLL_RIGHT)
@@ -405,8 +430,8 @@ void GUIEventHandler(py::module& m)
   .value(#val, osgGA::GUIEventAdapter::TabletPointerType::val)
 
   // clang-format off
-  ::py::enum_<osgGA::GUIEventAdapter::TabletPointerType>(
-      ea, "TabletPointerType") DARTPY_DEFINE_ENUM_TABLET_POINTER_TYPE(UNKNOWN)
+  nb::enum_<osgGA::GUIEventAdapter::TabletPointerType>(
+      ea, "TabletPointerType", nb::is_arithmetic()) DARTPY_DEFINE_ENUM_TABLET_POINTER_TYPE(UNKNOWN)
       DARTPY_DEFINE_ENUM_TABLET_POINTER_TYPE(PEN)
       DARTPY_DEFINE_ENUM_TABLET_POINTER_TYPE(PUCK)
       DARTPY_DEFINE_ENUM_TABLET_POINTER_TYPE(ERASER)
@@ -417,7 +442,7 @@ void GUIEventHandler(py::module& m)
   .value(#val, osgGA::GUIEventAdapter::TouchPhase::val)
 
   // clang-format off
-  ::py::enum_<osgGA::GUIEventAdapter::TouchPhase>(ea, "TouchPhase")
+  nb::enum_<osgGA::GUIEventAdapter::TouchPhase>(ea, "TouchPhase", nb::is_arithmetic())
       DARTPY_DEFINE_ENUM_TOUCH_PHASE(TOUCH_UNKNOWN)
       DARTPY_DEFINE_ENUM_TOUCH_PHASE(TOUCH_BEGAN)
       DARTPY_DEFINE_ENUM_TOUCH_PHASE(TOUCH_MOVED)
@@ -426,19 +451,26 @@ void GUIEventHandler(py::module& m)
       .export_values();
   // clang-format on
 
-  ::py::class_<osgGA::GUIActionAdapter>(m, "GUIActionAdapter");
+  dartnb::dart_class<osgGA::GUIActionAdapter>(m, "GUIActionAdapter");
 
-  ::py::class_<osgGA::GUIEventHandler, ::osg::ref_ptr<osgGA::GUIEventHandler>>(
-      m, "__GUIEventHandler__")
-      .def(py::init<>());
+  dartnb::dart_class<osgGA::GUIEventHandler>(m, "__GUIEventHandler__")
+      .def(dartnb::gui::init<>());
 
-  ::py::class_<
-      GUIEventHandlerNoRef,
+  dartnb::dart_class<
+      gui_trampolines::GUIEventHandlerNoRef,
       osgGA::GUIEventHandler,
-      PyGUIEventHandler,
-      ::osg::ref_ptr<GUIEventHandlerNoRef>>(m, "GUIEventHandler")
-      .def(py::init<>());
+      gui_trampolines::PyGUIEventHandler>(m, "GUIEventHandler")
+      .def(dartnb::gui::init<>());
 }
+
+#undef DARTPY_DEFINE_ENUM_MOUSE_BUTTON_MASK
+#undef DARTPY_DEFINE_ENUM_EVENT_TYPE
+#undef DARTPY_DEFINE_ENUM_KEY_SYMBOL
+#undef DARTPY_DEFINE_ENUM_MOD_KEY_MASK
+#undef DARTPY_DEFINE_ENUM_MOUSE_Y_ORIENTATION
+#undef DARTPY_DEFINE_ENUM_SCROLLING_MOTION
+#undef DARTPY_DEFINE_ENUM_TABLET_POINTER_TYPE
+#undef DARTPY_DEFINE_ENUM_TOUCH_PHASE
 
 } // namespace python
 } // namespace dart

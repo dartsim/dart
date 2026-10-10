@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -35,30 +39,24 @@
 
 #include <dart/dynamics/Joint.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void JointCoulombFrictionConstraint(py::module& m)
+void JointCoulombFrictionConstraint(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::constraint::JointCoulombFrictionConstraint,
-      dart::constraint::ConstraintBase,
-      std::shared_ptr<dart::constraint::JointCoulombFrictionConstraint>>(
-      m, "JointCoulombFrictionConstraint")
-      .def(::py::init<dart::dynamics::Joint*>(), ::py::arg("joint"))
+      dart::constraint::ConstraintBase>(m, "JointCoulombFrictionConstraint")
+      .def(dartnb::init<dart::dynamics::Joint*>(), nb::arg("joint").none())
       .def_static(
           "setConstraintForceMixing",
           +[](double _cfm) {
             dart::constraint::JointCoulombFrictionConstraint::
                 setConstraintForceMixing(_cfm);
           },
-          ::py::arg("cfm"))
+          nb::arg("cfm"))
       .def_static(
           "getConstraintForceMixing", +[]() -> double {
             return dart::constraint::JointCoulombFrictionConstraint::

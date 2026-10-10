@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011-2026, The DART development contributors
  * All rights reserved.
@@ -38,51 +44,60 @@
 #include <dart/dynamics/ContactInverseDynamics.hpp>
 #include <dart/dynamics/Skeleton.hpp>
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 #include <vector>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void ContactInverseDynamics(py::module& m)
+void ContactInverseDynamics(nb::module_& m)
 {
   using CID = dart::dynamics::ContactInverseDynamics;
 
-  ::py::class_<CID> cid(m, "ContactInverseDynamics");
+  dartnb::dart_class<CID> cid(m, "ContactInverseDynamics");
 
-  ::py::class_<CID::Contact>(cid, "Contact")
-      .def(::py::init<>())
-      .def_property(
+  dartnb::dart_class<CID::Contact>(cid, "Contact")
+      .def(dartnb::init<>())
+      .def_prop_rw(
           "bodyNode",
           +[](const CID::Contact& self) -> dart::dynamics::BodyNodePtr {
             return dart::dynamics::BodyNodePtr(self.bodyNode);
           },
           // keep_alive ties the Python BodyNode (and hence its Skeleton) to
           // the Contact so the stored raw pointer cannot dangle.
-          ::py::cpp_function(
-              +[](CID::Contact& self, dart::dynamics::BodyNode* bodyNode) {
-                self.bodyNode = bodyNode;
-              },
-              ::py::keep_alive<1, 2>()))
-      .def_readwrite("localOffset", &CID::Contact::localOffset)
-      .def_readwrite("normal", &CID::Contact::normal)
-      .def_readwrite("frictionCoeff", &CID::Contact::frictionCoeff)
-      .def_readwrite("numBasis", &CID::Contact::numBasis);
+          +[](CID::Contact& self, dart::dynamics::BodyNode* bodyNode) {
+            self.bodyNode = bodyNode;
+          },
+          nb::for_setter(nb::keep_alive<1, 2>()),
+          nb::for_setter(nb::arg("value").none()))
+      .def_rw(
+          "localOffset",
+          &CID::Contact::localOffset,
+          dartnb::setterArgument(&CID::Contact::localOffset))
+      .def_rw(
+          "normal",
+          &CID::Contact::normal,
+          dartnb::setterArgument(&CID::Contact::normal))
+      .def_rw(
+          "frictionCoeff",
+          &CID::Contact::frictionCoeff,
+          dartnb::setterArgument(&CID::Contact::frictionCoeff))
+      .def_rw(
+          "numBasis",
+          &CID::Contact::numBasis,
+          dartnb::setterArgument(&CID::Contact::numBasis));
 
-  ::py::class_<CID::Result>(cid, "Result")
-      .def(::py::init<>())
-      .def_readonly("jointForces", &CID::Result::jointForces)
-      .def_readonly("contactForces", &CID::Result::contactForces)
-      .def_readonly("unactuatedResidual", &CID::Result::unactuatedResidual)
-      .def_readonly("feasible", &CID::Result::feasible);
+  dartnb::dart_class<CID::Result>(cid, "Result")
+      .def(dartnb::init<>())
+      .def_ro("jointForces", &CID::Result::jointForces)
+      .def_ro("contactForces", &CID::Result::contactForces)
+      .def_ro("unactuatedResidual", &CID::Result::unactuatedResidual)
+      .def_ro("feasible", &CID::Result::feasible);
 
-  cid.def(::py::init<dart::dynamics::SkeletonPtr>(), ::py::arg("skeleton"))
+  cid.def(
+         dartnb::init<dart::dynamics::SkeletonPtr>(),
+         nb::arg("skeleton").none())
       .def(
           "getSkeleton",
           +[](const CID* self) -> dart::dynamics::SkeletonPtr {
@@ -93,7 +108,7 @@ void ContactInverseDynamics(py::module& m)
           +[](CID* self, const std::vector<CID::Contact>& contacts) {
             self->setContacts(contacts);
           },
-          ::py::arg("contacts"))
+          nb::arg("contacts"))
       .def(
           "getContacts",
           +[](const CID* self) -> std::vector<CID::Contact> {
@@ -104,7 +119,7 @@ void ContactInverseDynamics(py::module& m)
           +[](CID* self, double regularization) {
             self->setRegularization(regularization);
           },
-          ::py::arg("regularization"))
+          nb::arg("regularization"))
       .def(
           "getRegularization",
           +[](const CID* self) -> double { return self->getRegularization(); })
@@ -113,7 +128,7 @@ void ContactInverseDynamics(py::module& m)
           +[](CID* self, double tolerance) {
             self->setResidualTolerance(tolerance);
           },
-          ::py::arg("tolerance"))
+          nb::arg("tolerance"))
       .def(
           "getResidualTolerance",
           +[](const CID* self) -> double {
@@ -124,7 +139,7 @@ void ContactInverseDynamics(py::module& m)
           +[](CID* self, const std::vector<std::size_t>& indices) {
             self->setUnactuatedDofs(indices);
           },
-          ::py::arg("indices"))
+          nb::arg("indices"))
       .def(
           "getUnactuatedDofs",
           +[](const CID* self) -> std::vector<std::size_t> {
@@ -139,9 +154,9 @@ void ContactInverseDynamics(py::module& m)
             return self->compute(
                 withExternalForces, withDampingForces, withSpringForces);
           },
-          ::py::arg("withExternalForces") = false,
-          ::py::arg("withDampingForces") = false,
-          ::py::arg("withSpringForces") = false);
+          nb::arg("withExternalForces") = false,
+          nb::arg("withDampingForces") = false,
+          nb::arg("withSpringForces") = false);
 }
 
 } // namespace python
