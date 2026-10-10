@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate and diagnose DART 6.20's repository-local AI infrastructure."""
+"""Validate and diagnose DART 6's repository-local AI infrastructure."""
 
 from __future__ import annotations
 
@@ -60,7 +60,6 @@ MAX_AGENT_INSTRUCTION_BYTES = 32 * 1024
 BRANCH_PROFILE_KEYS = {
     "schema_version",
     "profile",
-    "base_ref",
     "cpp_standard",
     "python_binding",
     "io_namespace",
@@ -731,9 +730,8 @@ def check_branch_profile(
         profile = profile_data
 
     expected = {
-        "schema_version": 1,
-        "profile": "main",
-        "base_ref": "origin/main",
+        "schema_version": 2,
+        "profile": "dart6",
         "cpp_standard": "C++17",
         "python_binding": "pybind11",
         "io_namespace": "dart::utils",
@@ -3717,13 +3715,71 @@ def check_instruction_budget(root: Path, errors: list[str]) -> None:
             )
 
 
+def release_reference_paths(root: Path) -> list[Path]:
+    """Return reusable guidance, excluding the release owner and plan archive."""
+    paths = set(source_paths(root))
+    paths.update(
+        root / relative
+        for relative in (
+            "CLAUDE.md",
+            "GEMINI.md",
+            ".github/PULL_REQUEST_TEMPLATE.md",
+            "docs/readthedocs/index.rst",
+            "docs/readthedocs/dart/developer_guide/build.rst",
+        )
+    )
+    for pattern in (
+        ".codex/agents/*.toml",
+        "docs/onboarding/*.md",
+        "docs/plans/*.md",
+    ):
+        paths.update(root.glob(pattern))
+    paths.discard(root / "docs/onboarding/release-management.md")
+    paths.discard(root / "docs/plans/archive.md")
+    return sorted(paths)
+
+
+def check_release_references(root: Path, errors: list[str]) -> None:
+    """Keep reusable guidance independent of the branch's next release."""
+    version = r"`?DART\s+6\.\d+(?:\.\d+)?`?"
+    current_target = re.compile(
+        rf"\bcurrently\s+(?:(?:is|on|at)\s+)?{version}"
+        rf"|\b(?:current stable|develops|developing|stabilizes)\b"
+        rf".{{0,80}}{version}"
+        rf"|{version}\s+(?:development|stabilization)\s+branch"
+        rf"|\b(?:use|set|select|assign|target)\b.{{0,120}}{version}"
+        rf".{{0,80}}\bmilestone\b"
+        rf"|(?:\b(?:use|set|select|assign)\b.{{0,80}}\bmilestone\b"
+        rf"|--milestone|\bmilestone\s*(?:set|[:=])).{{0,80}}{version}"
+        r"|\|\s*`?(?:main|release-6\.\d+)`?\s*\|"
+        r"[^|]*\bDART\s+6\.\d+\.\d+[^|]*\|"
+        r"|\|\s*`?(?:main|release-6\.\d+)`?\s*\|\s*"
+        r"(?:Development|Stabilization|Maintenance)\s*\|\s*`?6\.\d+\.\d+`?\s*\|"
+        r"|\btarget(?:s)?\s+`?(?:origin/)?release-6\.\d+\b",
+        re.IGNORECASE,
+    )
+    for path in release_reference_paths(root):
+        if not path.is_file():
+            continue
+        line_number = 1
+        for paragraph in path.read_text(encoding="utf-8").split("\n\n"):
+            if current_target.search(" ".join(paragraph.split())):
+                errors.append(
+                    f"{path.relative_to(root)}:{line_number}: resolve the release "
+                    "target and milestone from the base branch's "
+                    "`docs/onboarding/release-management.md`, not copied version values"
+                )
+            line_number += paragraph.count("\n") + 2
+
+
 def check_release_guidance(root: Path, errors: list[str]) -> None:
+    check_release_references(root, errors)
     python_skill = (root / ".claude" / "skills" / "dart-python" / "SKILL.md").read_text(
         encoding="utf-8"
     )
     python_frontmatter = python_skill.split("---", 2)[1]
     if "nanobind" in python_frontmatter or "pybind11" not in python_skill:
-        errors.append("dart-python: DART 6.20 metadata must name pybind11")
+        errors.append("dart-python: DART 6 metadata must name pybind11")
 
     ci_skill_path = root / ".claude" / "skills" / "dart-ci" / "SKILL.md"
     ci_skill = ci_skill_path.read_text(encoding="utf-8")
@@ -3738,7 +3794,7 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
     release_fix = (root / ".claude" / "commands" / "dart-release-ci-fix.md").read_text(
         encoding="utf-8"
     )
-    if "Default to `main`" not in release_fix or "release-6.19" in release_fix:
+    if "Default to `main`" not in release_fix:
         errors.append("dart-release-ci-fix: development default must be main")
 
     for path in source_paths(root):
@@ -4259,7 +4315,7 @@ def exercise_scenarios(
 
         if scenario_id == "model-upgrade":
             expected_prompt = (
-                "audit or update DART 6.20 AI infrastructure for a named model, "
+                "audit or update DART 6 AI infrastructure for a named model, "
                 "reasoning mode, or coding-agent release"
             )
             if scenario.get("prompt_class") != expected_prompt:
@@ -4330,7 +4386,7 @@ def exercise_scenarios(
                 "temporary claim-tied evidence",
             }
             expected_prompt = (
-                "verify claim-dependent DART 6.20 simulation, dynamics, "
+                "verify claim-dependent DART 6 simulation, dynamics, "
                 "collision/contact/constraints, model/scene, GUI, or OSG behavior"
             )
             if scenario.get("prompt_class") != expected_prompt:
@@ -4840,6 +4896,26 @@ def doctor_report(root: Path) -> dict[str, Any]:
         text=True,
     ).stdout.strip()
     errors = run_checks(root)
+    profile_path = root / "docs" / "ai" / "branch-profile.json"
+    profile_errors: list[str] = []
+    profile_report = None
+    try:
+        profile = read_json(profile_path)
+    except (OSError, json.JSONDecodeError) as error:
+        profile_errors.append(
+            f"{profile_path.relative_to(root)}: invalid JSON: {error}"
+        )
+    else:
+        check_branch_profile(root, profile_errors, profile)
+        if not profile_errors:
+            profile_report = {
+                "name": profile["profile"],
+                "cpp_standard": profile["cpp_standard"],
+                "python_binding": profile["python_binding"],
+                "io_namespace": profile["io_namespace"],
+                "gui_backend": profile["gui_backend"],
+            }
+    errors.extend(error for error in profile_errors if error not in errors)
     commands = sorted((root / ".claude" / "commands").glob("*.md"))
     skills = sorted((root / ".claude" / "skills").glob("*/SKILL.md"))
     generated = sorted((root / ".agents" / "skills").glob("*/SKILL.md"))
@@ -4848,13 +4924,7 @@ def doctor_report(root: Path) -> dict[str, Any]:
         "schema_version": 1,
         "root": str(root),
         "branch": branch or "(detached)",
-        "profile": {
-            "name": "main",
-            "cpp_standard": "C++17",
-            "python_binding": "pybind11",
-            "io_namespace": "dart::utils",
-            "gui_backend": "OSG",
-        },
+        "profile": profile_report,
         "working_tree": _working_tree_state(root),
         "tools": {
             "python": sys.version.split()[0],
@@ -4888,12 +4958,15 @@ def print_doctor(data: dict[str, Any]) -> None:
     print(f"DART 6 AI doctor: {state}")
     print(f"  repository: {data['root']}")
     print(f"  branch: {data['branch']}")
-    print(
-        "  profile: "
-        f"{profile['name']} ({profile['cpp_standard']}, "
-        f"{profile['python_binding']}, {profile['io_namespace']}, "
-        f"{profile['gui_backend']})"
-    )
+    if profile is None:
+        print("  profile: unavailable (invalid or missing compatibility profile)")
+    else:
+        print(
+            "  profile: "
+            f"{profile['name']} ({profile['cpp_standard']}, "
+            f"{profile['python_binding']}, {profile['io_namespace']}, "
+            f"{profile['gui_backend']})"
+        )
     print(f"  working tree: {data['working_tree']}")
     print(
         "  inventory: "

@@ -1,4 +1,4 @@
-"""Tests for DART 6.20's deterministic AI infrastructure checks."""
+"""Tests for DART 6's deterministic AI infrastructure checks."""
 
 import copy
 import importlib.util
@@ -95,6 +95,152 @@ def test_release_scenarios_are_exercisable():
     assert infra.exercise_scenarios(ROOT) == []
 
 
+@pytest.mark.parametrize(
+    ("relative", "text"),
+    [
+        ("AGENTS.md", "`main` develops DART 6.22.\n"),
+        ("CLAUDE.md", "`main`, the DART 6.22 development branch.\n"),
+        ("GEMINI.md", "The next release is currently DART 6.22.\n"),
+        (
+            ".codex/agents/dart_reviewer.toml",
+            'description = "Review the DART 6.22 development branch."\n',
+        ),
+        (
+            "docs/onboarding/building.md",
+            "The current stable release is DART 6.21.0.\n",
+        ),
+        ("docs/plans/dashboard.md", "`main` develops DART 6.22.\n"),
+        ("docs/ai/principles.md", "`main`, developing\nDART 6.22.\n"),
+        ("docs/README.md", "`release-6.21` stabilizes DART 6.21.\n"),
+        (
+            "docs/onboarding/contributing.md",
+            "Use the `DART 6.22.0`\nmilestone.\n",
+        ),
+        (
+            ".claude/commands/dart-pr.md",
+            "| `main` | `DART 6.22.0` |\n",
+        ),
+        ("AGENTS.md", "| `main` | Development | `6.22.0` |\n"),
+        (
+            ".claude/commands/dart-new-task.md",
+            "| `release-6.21` | Stabilization | `6.21.0` |\n",
+        ),
+        (
+            ".claude/skills/dart-contribute/SKILL.md",
+            "| release-6.21 | Maintenance | 6.21.1 |\n",
+        ),
+        (
+            ".claude/skills/dart-contribute/SKILL.md",
+            'gh pr edit <PR#> --milestone "DART 6.22.0"\n',
+        ),
+        (
+            ".claude/commands/dart-manage-pr.md",
+            "Release packaging may target `release-6.21` directly.\n",
+        ),
+        (
+            ".github/PULL_REQUEST_TEMPLATE.md",
+            "- [ ] Milestone set (`DART 6.22.0` for `main`)\n",
+        ),
+        ("docs/onboarding/contributing.md", "Milestone: `DART 6.22.0`\n"),
+        (
+            "docs/readthedocs/index.rst",
+            "The current stable release is DART 6.21.0.\n",
+        ),
+    ],
+)
+def test_release_references_reject_copied_routing(tmp_path, relative, text):
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_release_references(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith(f"{relative}:1: resolve the release target")
+
+
+@pytest.mark.parametrize(
+    ("relative", "text"),
+    [
+        ("docs/readthedocs/index.rst", "DART 6.19.5 was released on 2026-10-04.\n"),
+        (
+            "docs/readthedocs/dart/developer_guide/build.rst",
+            "DART 6.20 requires C++17 and the following dependency baselines.\n",
+        ),
+        (
+            "docs/ai/README.md",
+            "Python tutorials were introduced in DART 6.21.\n",
+        ),
+        ("docs/ai/README.md", "| Python tutorials | DART 6.21.0 |\n"),
+        ("docs/ai/README.md", "| C++17 baseline | DART 6.20.0 |\n"),
+        (
+            "docs/onboarding/contributing.md",
+            "The historical milestone was `DART 6.20.0`.\n",
+        ),
+        (
+            "docs/onboarding/ci-cd.md",
+            "On release-6.20 these lanes currently report the known DART 6.20 "
+            "Gazebo regressions from issue #3056.\n",
+        ),
+        (
+            "docs/plans/archive.md",
+            "Archived decision: `main` develops DART 6.20.\n",
+        ),
+        ("CHANGELOG.md", "DART 6.21.0 milestone: Python tutorials.\n"),
+    ],
+)
+def test_release_references_allow_history_and_dependency_floors(
+    tmp_path, relative, text
+):
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    errors = []
+
+    infra.check_release_references(tmp_path, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        (
+            "| `main` | Development | `6.21.0` |",
+            "| `main` | Development | `6.22.0` |",
+        ),
+        (
+            "| `release-6.20` | Stabilization | `6.20.0` |",
+            "| `release-6.20` | Maintenance | `6.20.1` |",
+        ),
+    ],
+)
+def test_release_references_accept_owner_only_rollover(tmp_path, rows):
+    sources = [
+        *infra.release_reference_paths(ROOT),
+        ROOT / "docs/onboarding/release-management.md",
+    ]
+    for source in sources:
+        if source.is_file():
+            target = tmp_path / source.relative_to(ROOT)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    owner = tmp_path / "docs/onboarding/release-management.md"
+    text = owner.read_text(encoding="utf-8")
+    target_row = next(line for line in text.splitlines() if line.startswith("| `"))
+    for row in rows:
+        owner.write_text(
+            text.replace(target_row, row, 1),
+            encoding="utf-8",
+        )
+        errors = []
+
+        infra.check_release_references(tmp_path, errors)
+
+        assert errors == []
+
+
 def test_release_scenarios_reject_structural_only_ai_completion_gate():
     data = copy.deepcopy(_scenario_data())
     orientation = next(
@@ -173,6 +319,15 @@ def test_branch_profile_and_scenario_keys_match_shared_schema():
         assert infra.SCENARIO_KEYS.issubset(scenario)
         assert set(scenario) - infra.SCENARIO_KEYS <= infra.SCENARIO_OPTIONAL_KEYS
         assert set(scenario["expected_route"]) == infra.ROUTE_KEYS
+
+
+def test_scenario_profile_must_match_compatibility_profile():
+    data = copy.deepcopy(_scenario_data())
+    data["profile"] = "main"
+
+    errors = infra.exercise_scenarios(ROOT, data, emit=False)
+
+    assert "scenario inventory: profile does not match branch profile" in errors
 
 
 @pytest.mark.parametrize(
@@ -362,12 +517,30 @@ def test_boolean_schema_versions_are_rejected():
     assert scenario_errors == ["docs/ai/agent-scenarios.json: invalid schema"]
 
 
+@pytest.mark.parametrize(
+    ("field", "value", "expected"),
+    [
+        ("schema_version", 1, "`schema_version` must be 2"),
+        ("profile", "main", "`profile` must be 'dart6'"),
+        ("base_ref", "origin/main", "keys must be"),
+    ],
+)
+def test_branch_profile_rejects_old_branch_identity(field, value, expected):
+    profile = json.loads((ROOT / "docs" / "ai" / "branch-profile.json").read_text())
+    profile[field] = value
+    errors = []
+
+    infra.check_branch_profile(ROOT, errors, profile)
+
+    assert any(expected in error for error in errors)
+
+
 def test_branch_profile_marker_mutations_are_rejected():
     profile = json.loads((ROOT / "docs" / "ai" / "branch-profile.json").read_text())
     missing = copy.deepcopy(profile)
     missing["required_markers"].append("definitely missing release marker")
     forbidden = copy.deepcopy(profile)
-    forbidden["forbidden_markers"].append("# Agent Guidelines for DART 6.20")
+    forbidden["forbidden_markers"].append("C++17")
     missing_errors = []
     forbidden_errors = []
 
@@ -3211,7 +3384,7 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
 
     assert report["schema_version"] == 1
     assert report["profile"] == {
-        "name": "main",
+        "name": "dart6",
         "cpp_standard": "C++17",
         "python_binding": "pybind11",
         "io_namespace": "dart::utils",
@@ -3230,6 +3403,37 @@ def test_doctor_report_inventories_model_context_and_visual_harness():
     assert "image-verdict" in visual["tasks"]
     assert "verification-bundle" in visual["tasks"]
     json.dumps(report)
+
+
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        (None, "invalid JSON"),
+        ("{", "invalid JSON"),
+        ("null", "top level must be an object"),
+        ("[]", "top level must be an object"),
+        ('{"profile": "main"}', "`profile` must be 'dart6'"),
+    ],
+)
+def test_doctor_does_not_claim_a_profile_when_invalid(
+    monkeypatch, tmp_path, capsys, content, expected
+):
+    path = tmp_path / "docs" / "ai" / "branch-profile.json"
+    if content is not None:
+        path.parent.mkdir(parents=True)
+        path.write_text(content)
+    monkeypatch.setattr(infra, "run_checks", lambda root: [])
+
+    report = infra.doctor_report(tmp_path)
+    infra.print_doctor(report)
+
+    assert report["profile"] is None
+    assert report["ok"] is False
+    assert any(expected in error for error in report["errors"])
+    output = capsys.readouterr().out
+    assert "DART 6 AI doctor: FAIL" in output
+    assert "profile: unavailable" in output
+    assert "profile: main" not in output
 
 
 def test_malformed_hook_json_returns_errors_instead_of_tracebacks(tmp_path):

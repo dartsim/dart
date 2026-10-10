@@ -1,6 +1,6 @@
 # DART 6 North-Star Roadmap
 
-DART 6.20 is the compatibility support lane. Its AI-native roadmap is to make
+DART 6 is the compatibility support lane. Its AI-native roadmap is to make
 maintenance work discoverable, bounded, verifiable, and safe for downstream
 users.
 

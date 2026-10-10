@@ -1,6 +1,6 @@
 # AI Components
 
-The DART 6.20 development branch uses a small cross-agent workflow surface:
+The DART 6 development branch uses a small cross-agent workflow surface:
 
 - `.claude/commands/`: editable workflow command sources.
 - `.claude/skills/`: editable domain-skill sources.
@@ -28,8 +28,9 @@ The DART 6.20 development branch uses a small cross-agent workflow surface:
   pytest controls, disables local configuration/plugins, and rejects successful
   zero-body runs.
 - `docs/ai/capabilities.json`: machine-readable workflow inventory.
-- `docs/ai/branch-profile.json`: machine-readable DART 6.20 facts, required
-  surfaces, and forbidden markers and paths.
+- `docs/ai/branch-profile.json`: shared `dart6` compatibility facts, required
+  surfaces, and forbidden markers and paths. The base branch's release target
+  lives in `docs/onboarding/release-management.md`.
 - `docs/ai/agent-scenarios.json`: eight deterministic contracts covering
   orientation, small changes, failure diagnosis, docs, model upgrades,
   components, simulation verification, and release maintenance. The simulation
@@ -63,5 +64,5 @@ Use `.claude/` as the editable source. Do not hand-edit generated `.agents/` or
 runtime configuration, not generated adapter output.
 
 Use `dart-retro` after a completed DART 6 session only when the
-learning is general enough to improve future DART 6.20 maintenance work. Skip
+learning is general enough to improve future DART 6 maintenance work. Skip
 routine work, one-off local choices, and review-only narrative.
