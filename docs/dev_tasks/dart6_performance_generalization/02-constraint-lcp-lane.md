@@ -36,7 +36,7 @@ final-state hashes on all guard scenes for default-on packets.
   counters for constrained-group island census plus solver scopes for
   clear/update/build/solve, boxed-LCP term construction, primary solve,
   fallback solve, and impulse application. Profile artifacts:
-  `/tmp/wp_pg10_profile_20260707T132241`.
+  `wp_pg10_profile_20260707T132241`.
 
   | Row | Groups | LCP rows | Max rows | Build share | Group-solve share | Construct share | Primary-solve share | Hash |
   | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -50,11 +50,11 @@ final-state hashes on all guard scenes for default-on packets.
   `World::step()` execution stays allocation-neutral even when DART is built
   with `DART_BUILD_PROFILE=ON`; `contact_benchmark --profile` enables the gate
   around the measured run. Final profile smoke:
-  `/tmp/wp_pg10_profile_smoke_final.txt` (`--generate-objects 30`, 20 steps,
+  `wp_pg10_profile_smoke_final.txt` (`--generate-objects 30`, 20 steps,
   DART collision) printed the solver construct scope and island counters with
   final hash `0x31cf9caf33b82e3c`.
 
-  Guard artifact `/tmp/wp_pg10_guard_20260707T132321` matched current-base
+  Guard artifact `wp_pg10_guard_20260707T132321` matched current-base
   parent and WP-PG.10 for S1 120-object dart/ode rows and S2-S5 all-detector
   rows. The old baseline table's S4/S5 FCL hashes had already drifted on the
   unmodified parent (`S4_fcl = 0xea9b68f8b062600d`, `S5_fcl =
@@ -94,7 +94,7 @@ final-state hashes on all guard scenes for default-on packets.
   regressed the median on S2 ODE 3k settled (0.87x), S4 generated-900
   DART (0.93x), S4 Bullet (0.99x), and S4 ODE (0.98x). FCL and active S1
   ODE improved, but not enough for the general-performance bar; all guards
-  were identical. Artifacts: `/tmp/wp_pg11_ab/current_2e119_repeat`.
+  were identical. Artifacts: `wp_pg11_ab/current_2e119_repeat`.
 - Scope: `dart/constraint/*` cpp + minimal additive header changes
   (virtual additions only on classes gz does not subclass — verify
   `ConstraintBase` is not part of the frozen-vtable set before landing;
@@ -197,7 +197,7 @@ final-state hashes on all guard scenes for default-on packets.
   thread-scratch body lookup storage, cached-impulse residual seeding before
   the first sweep, dense fallback when matrix-free PGS does not converge, and
   mixed per-DoF FreeJoint actuator rejection. Original full artifact:
-  `/tmp/wp_pg14_matrix_free_ab_20260709T040443Z`.
+  `wp_pg14_matrix_free_ab_20260709T040443Z`.
 
   | Row | Median RTF | Median avg step | Contacts / pairs | Finite | Hash |
   | --- | ---: | ---: | ---: | --- | --- |
@@ -218,7 +218,7 @@ final-state hashes on all guard scenes for default-on packets.
   `test_ConstraintSolver`, dartpy constraint pytest, capped `ALL`, and
   `DART_PARALLEL_JOBS=8 pixi run -e gazebo test-gz`.
   Final current-head smoke after review hardening:
-  `/tmp/wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`;
+  `wp_pg14_matrix_free_review_5751c7ed84c_repeat_20260709T223525Z`;
   dense option-off S1 120 DART median avg step `7.93478` ms, hash
   `0x123ee9779bccacfb`; option-on 30-iteration matrix-free median avg step
   `1.38782` ms, finite, hash `0xa5548e1abe05b52`.
@@ -268,7 +268,7 @@ final-state hashes on all guard scenes for default-on packets.
 - Local D7 evaluator evidence (2026-07-08, branch
   `docs/close-dart6-performance-generalization`, binary
   `build/default/cpp/Release/bin/contact_benchmark`; full logs:
-  `/tmp/wp_pg15_ab_plane_fallback_20260709T023141Z/summary.tsv`):
+  `wp_pg15_ab_plane_fallback_20260709T023141Z/summary.tsv`):
 
   | Row | Wall time | RTF | Contacts / pairs | Over sleep tol | Max penetration | Resting | Hash |
   | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -281,17 +281,17 @@ final-state hashes on all guard scenes for default-on packets.
   explicit evaluator row is retained as a rejected broad-policy comparison even
   though this run is faster; the broader global policy was rejected after
   `Issue1445` and split-impulse guards exposed simple-contact regressions.
-  S4/S5 detector guard rows in `/tmp/wp_pg15_ab_review_20260708T235540Z`
+  S4/S5 detector guard rows in `wp_pg15_ab_review_20260708T235540Z`
   stayed finite across DART, FCL, Bullet, and ODE, and every new-default S4/S5
   row matched the old-default hash/contact/resting state.
 
   Headless and visual closeout artifacts:
   S2 DART 3k-shapes guard
-  `/tmp/wp_pg15_examples_20260708T223506Z/S2_dart_3k_shapes.log`
+  `wp_pg15_examples_20260708T223506Z/S2_dart_3k_shapes.log`
   (`RTF 29.7321`, `3003/3003` resting, hash
   `0x8ddc9a81f2d28a7f`); S6 final-scene dump
-  `/tmp/wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl`; S6 GUI capture
-  `/tmp/wp_pg15_gui_20260708T223653Z/S6_gui.png` with a passing non-blank
+  `wp_pg15_visual_20260708T223506Z/S6_final_scene.jsonl`; S6 GUI capture
+  `wp_pg15_gui_20260708T223653Z/S6_gui.png` with a passing non-blank
   `image-verdict`.
 - Non-goals: solver algorithm swaps (that is WP-PG.14); changing gz-visible
   default semantics beyond the approved D7 envelope.
