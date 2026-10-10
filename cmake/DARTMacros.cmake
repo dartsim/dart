@@ -221,11 +221,6 @@ function(dart_add_example)
 endfunction(dart_add_example)
 
 #===============================================================================
-function(dart_add_tutorial)
-  dart_property_add(DART_TUTORIALS ${ARGN})
-endfunction(dart_add_tutorial)
-
-#===============================================================================
 function(dart_format_add)
   foreach(source ${ARGN})
     if(IS_ABSOLUTE "${source}")
@@ -322,17 +317,6 @@ endfunction()
 function(dart_build_example_in_source target)
   dart_build_target_in_source(${target} ${ARGN})
   dart_add_example(${target})
-endfunction()
-
-#===============================================================================
-# dart_build_tutorial_in_source(target
-#   [LINK_LIBRARIES library1 ...])
-#   [COMPILE_FEATURES feature1 ...]
-#   [COMPILE_OPTIONS option1 ...]
-# )
-function(dart_build_tutorial_in_source target)
-  dart_build_target_in_source(${target} ${ARGN})
-  dart_add_tutorial(${target})
 endfunction()
 
 # ==============================================================================

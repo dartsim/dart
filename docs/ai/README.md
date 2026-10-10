@@ -144,9 +144,8 @@ taxonomy.
 
 ## Development Profile
 
-`main` develops DART 6.21 with the `DART 6.21.0` milestone;
-`release-6.20` stabilizes DART 6.20 with the `DART 6.20.0` milestone.
-Both preserve C++17, pybind11, `dart::utils`, OSG, and Gazebo/gz-physics
-compatibility. The DART 6 component map is
+Development and release branches preserve C++17, pybind11, `dart::utils`, OSG,
+and Gazebo/gz-physics compatibility. The DART 6 component map is
 [`architecture.md`](../onboarding/architecture.md). Release and backport
-policy lives in [`release-management.md`](../onboarding/release-management.md).
+policy and the branch-local next release live in
+[`release-management.md`](../onboarding/release-management.md).

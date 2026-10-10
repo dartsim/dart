@@ -4,8 +4,7 @@ The DART 6 line keeps public user documentation under `docs/readthedocs/`
 and agent/developer workflow guidance under the folders below. DART 6 is an
 AI-native maintenance lane, so it has the lifecycle buckets needed for plans,
 durable decisions, theory references, and reusable documentation assets while
-preserving its compatibility-first scope. `main` develops DART 6.21;
-`release-6.20` stabilizes DART 6.20. See
+preserving its compatibility-first scope. See
 [`Release Management`](onboarding/release-management.md) for branch and
 milestone routing.
 

@@ -1,7 +1,7 @@
 # AI Principles
 
-These principles apply to AI-assisted DART 6 work on `main`, developing
-DART 6.21, and on stabilization or maintenance release branches.
+These principles apply to AI-assisted DART 6 work on development,
+stabilization, and maintenance branches.
 Keep this file short: it spends always-loaded agent context, so put procedures
 and compatibility detail in the owner docs named by `AGENTS.md`.
 

@@ -19,8 +19,8 @@ Backport PR or commits: $ARGUMENTS
 
 ## Workflow
 
-New patches land on `main` for DART 6.21. Use this workflow to backport merged
-PRs to `release-6.20` for stabilization, or to another `release-6.*` branch.
+New patches land on `main`. Use this workflow to backport merged PRs to a
+selected `release-6.*` stabilization or maintenance branch.
 A release branch may be cut from an approved stabilization commit before its
 first release tag, or from a published release tag.
 
@@ -33,7 +33,11 @@ release branch cannot render the claim.
    ```bash
    gh pr view <SOURCE_PR> --json state,mergedAt,baseRefName,mergeCommit
    ```
-2. Check whether an equivalent change already exists on the release branch:
+2. Resolve the target from the live backport PR base or the selected release
+   branch. Fetch it and read its `docs/onboarding/release-management.md`
+   § "Release target"; verify the exact `DART <Next release>` milestone is open
+   on GitHub. Publishing requires explicit maintainer/user approval. Check
+   whether an equivalent change already exists on that branch:
    ```bash
    git fetch origin <RELEASE_BRANCH> main
    git cherry -v --abbrev=40 origin/<RELEASE_BRANCH> origin/main | grep <COMMIT_HASH>
@@ -63,7 +67,7 @@ release branch cannot render the claim.
 7. Run `pixi run lint` and the smallest relevant release-branch checks.
 8. Ask for explicit maintainer/user approval before pushing or opening the PR.
    After approval, open it as a draft against the release branch with the
-   milestone matching that release branch and the PR template, then follow
+   resolved next-release milestone and the PR template, then follow
    `docs/onboarding/ai-tools.md` § "PR Lifecycle". If the changelog
    decision was deferred for the PR number, run `/dart-changelog finalize` or
    `$dart-changelog finalize` and push the follow-up only after explicit

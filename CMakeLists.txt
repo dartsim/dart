@@ -547,26 +547,6 @@ if(TARGET dart)
     list(LENGTH examples examples_length)
     message(STATUS "Adding ${examples_length} examples")
   endif(DART_VERBOSE)
-
-  # Add a "tutorials" target to build tutorials.
-  if(MSVC)
-    add_subdirectory(tutorials)
-  else()
-    add_subdirectory(tutorials EXCLUDE_FROM_ALL)
-    get_property(tutorials GLOBAL PROPERTY DART_TUTORIALS)
-    add_custom_target(tutorials DEPENDS ${tutorials})
-  endif()
-
-  if(DART_VERBOSE)
-    message(STATUS "")
-    message(STATUS "[ Tutorials ]")
-    foreach(tutorial ${tutorials})
-      message(STATUS "Adding tutorial: ${tutorial}")
-    endforeach(tutorial ${tutorials})
-  else(DART_VERBOSE)
-    list(LENGTH tutorials tutorials_length)
-    message(STATUS "Adding ${tutorials_length} tutorials")
-  endif(DART_VERBOSE)
 endif()
 
 add_subdirectory(python)
@@ -582,11 +562,6 @@ foreach(target_candidate ${all_target_candidates})
   endif()
 endforeach()
 foreach(target_candidate ${examples})
-  if(TARGET ${target_candidate})
-    list(APPEND all_targets ${target_candidate})
-  endif()
-endforeach()
-foreach(target_candidate ${tutorials})
   if(TARGET ${target_candidate})
     list(APPEND all_targets ${target_candidate})
   endif()
@@ -720,8 +695,9 @@ endif()
 
 # Tutorials source
 install(
-  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorials"
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/python/tutorials"
   DESTINATION ${DART_ADDITIONAL_DOCUMENTATION_INSTALL_PATH}
+  PATTERN "__pycache__" EXCLUDE
 )
 
 #===============================================================================
@@ -904,7 +880,6 @@ if(BUILD_TESTING)
   message(STATUS "Run 'make tests' to build all the tests")
 endif()
 message(STATUS "Run 'make examples' to build all the examples")
-message(STATUS "Run 'make tutorials' to build all the tutorials")
 message(STATUS "Run 'make view_docs' to see the API documentation")
 message(STATUS "Run 'make install' to install all the C++ components")
 if(TARGET dartpy)

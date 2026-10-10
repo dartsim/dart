@@ -9,11 +9,11 @@ Welcome to DART documentation!
 .. admonition:: You are reading the DART 6 LTS documentation
    :class: important
 
-   This site documents the **DART 6** compatibility line. The current stable
-   release is **DART 6.19.5**; ``main`` develops DART 6.21, while
-   ``release-6.20`` stabilizes DART 6.20.
-   The source version is read from ``package.xml``, and release notes are tracked
-   in ``CHANGELOG.md``.
+   This site documents the **DART 6** compatibility line. New development
+   happens on ``main``; release branches provide stabilization and maintenance.
+   Find published versions in `GitHub Releases
+   <https://github.com/dartsim/dart/releases>`_ and release notes in the
+   `CHANGELOG <https://github.com/dartsim/dart/blob/main/CHANGELOG.md>`_.
 
 Introduction
 ------------
@@ -37,20 +37,20 @@ Getting started
 ---------------
 
 * **C++:** Follow the :doc:`installation guide <dart/user_guide/installation>`
-  and work through the :doc:`tutorials <dart/user_guide/tutorials>`.
+  and :doc:`source build guide <dart/developer_guide/build>`.
 * **Python:** Install dartpy using the
-  :doc:`installation guide <dartpy/user_guide/installation>` and run the
-  :doc:`examples <dartpy/user_guide/examples>`.
+  :doc:`installation guide <dartpy/user_guide/installation>`, run the
+  :doc:`examples <dartpy/user_guide/examples>`, and work through the
+  :doc:`tutorials <dartpy/user_guide/tutorials>`.
 
 Updates
 -------
 
 * 2026-10-04: DART version 6.19.5 released. See the
   `CHANGELOG <https://github.com/dartsim/dart/blob/main/CHANGELOG.md>`_.
-* DART 6.21.0 is in development on the
-  `main branch <https://github.com/dartsim/dart/tree/main>`_; DART 6.20.0 is
-  stabilizing on the
-  `release-6.20 branch <https://github.com/dartsim/dart/tree/release-6.20>`_.
+* Planned releases and branch policy are documented in
+  `Release Management
+  <https://github.com/dartsim/dart/blob/main/docs/onboarding/release-management.md>`_.
 * 2022-12-31: DART version 6.13.0 released.
 
 Project Stats
@@ -109,7 +109,6 @@ If you use DART in an academic publication, please consider citing this
    :caption: dart (C++)
 
    dart/user_guide/installation
-   dart/user_guide/tutorials
    dart/developer_guide/build
    dart/developer_guide/contribution
    dart/developer_guide/code_style_guide
@@ -133,3 +132,8 @@ If you use DART in an academic publication, please consider citing this
    community/who_uses_dart
    community/performance_dashboard
    license
+
+.. toctree::
+   :hidden:
+
+   dart/user_guide/tutorials

@@ -55,13 +55,12 @@ the repository root to the working directory.
 - Preserve C++17, pybind11, `dart::utils` parsers, OSG, installed headers,
   package components, ABI-sensitive interfaces, default simulation behavior,
   and Gazebo/gz-physics compatibility unless a maintainer approves otherwise.
-- `main` develops DART 6.21; `release-6.20` stabilizes DART 6.20.
-  New fixes land on `main`; backports to the stabilization branch use
+- New fixes land on `main`; backports to a `release-6.*` branch use
   `dart-backport-pr`. Target the release branch for release-specific packaging,
-  CI, and branch guidance. See `docs/onboarding/release-management.md`.
-- Use `.github/PULL_REQUEST_TEMPLATE.md` and set the branch-matching DART 6.x
-  release milestone (`DART 6.21.0` for `main`, `DART 6.20.0` for
-  `release-6.20`) on PRs.
+  CI, and branch guidance. Resolve the next release and milestone from the
+  fetched target's `docs/onboarding/release-management.md`.
+- Use `.github/PULL_REQUEST_TEMPLATE.md` and set the resolved release milestone
+  on PRs.
 - Do not prefix commit messages or PR titles with agent tags like `[codex]`;
   use plain descriptive titles.
 - Before every approved push to a published PR branch, first merge the latest

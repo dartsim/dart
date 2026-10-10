@@ -11,18 +11,17 @@ function(dartpy_add_tutorial tutorial_name) # ARGN for source file
   endif()
   add_custom_target(
     ${tutorial_name}
-    COMMAND
-      ${CMAKE_COMMAND} -E echo
-      "Running pytest by: PYTHONPATH=${DART_PYTHONPATH} ${Python3_EXECUTABLE} ${source}"
+    COMMAND ${CMAKE_COMMAND} -E echo "Running Python tutorial: ${source}"
     COMMAND
       ${CMAKE_COMMAND} -E env "PYTHONPATH=${DART_PYTHONPATH}"
       ${Python3_EXECUTABLE} ${source}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCES ${source}
+    DEPENDS dartpy
   )
 endfunction()
 
-# Automatically identify all directories in the apps folder
+# Automatically identify all tutorial directories
 file(GLOB children RELATIVE ${CMAKE_CURRENT_LIST_DIR} "*")
 foreach(child ${children})
   if(IS_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${child}")

@@ -37,7 +37,7 @@
 
 #### Checklist
 
-- [ ] Milestone set (`DART 6.21.0` for `main`, `DART 6.20.0` for `release-6.20`)
+- [ ] Milestone set (resolve the next release from the target branch's `docs/onboarding/release-management.md`)
 - [ ] CHANGELOG.md updated if required
 - [ ] Add unit tests for new functionality
 - [ ] Document new methods and classes
