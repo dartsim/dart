@@ -80,7 +80,8 @@ jobs:
             -DDART_DARTPY_BINDER=nanobind -DDART_BUILD_GUI_OSG=ON
           pixi run test-py
 
-      - name: Agent visual verification smoke
+      # Named apart from the Release job's step, which AI-infra checks inspect.
+      - name: Agent visual smoke (nanobind binder)
         run: |
           rm -rf /tmp/dart-agent-visual-smoke
           xvfb-run -a -s '-screen 0 640x480x24' \
