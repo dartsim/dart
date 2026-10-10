@@ -30,12 +30,19 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <dart/simulation/World.hpp>
+
 #include <dart/dynamics/BoxShape.hpp>
 #include <dart/dynamics/FreeJoint.hpp>
+#include <dart/dynamics/InverseKinematics.hpp>
+#include <dart/dynamics/PointMass.hpp>
 #include <dart/dynamics/ShapeNode.hpp>
 #include <dart/dynamics/Skeleton.hpp>
+#include <dart/dynamics/SoftBodyNode.hpp>
+#include <dart/dynamics/SoftMeshShape.hpp>
 
 #include <Eigen/Core>
+#include <assimp/mesh.h>
 #include <gtest/gtest.h>
 
 using namespace dart::dynamics;
@@ -73,4 +80,84 @@ TEST(Issue896, SkeletonCloneDeepCopiesShapes)
   clonedBox->setSize(clonedSize);
   EXPECT_EQ(originalBox->getSize(), originalSize);
   EXPECT_EQ(clonedBox->getSize(), clonedSize);
+}
+
+//==============================================================================
+TEST(SkeletonClone, SoftMeshRetainsDestinationOwnerAndShapeProperties)
+{
+  auto original = Skeleton::create("soft_original");
+  const auto softProperties = SoftBodyNodeHelper::makeBoxProperties(
+      Eigen::Vector3d(0.2, 0.2, 0.1),
+      Eigen::Isometry3d::Identity(),
+      Eigen::Vector3i(4, 4, 4),
+      0.5);
+  const SoftBodyNode::Properties properties(
+      BodyNode::Properties(BodyNode::AspectProperties("skin_body")),
+      softProperties);
+  auto* soft = original
+                   ->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+                       nullptr, FreeJoint::Properties(), properties)
+                   .second;
+  auto* skin = soft->getShapeNode(0);
+  skin->setName("deformable_skin");
+  const Eigen::Vector4d color(0.2, 0.4, 0.6, 0.35);
+  skin->getVisualAspect()->setColor(color);
+  skin->getDynamicsAspect()->setRestitutionCoeff(0.6);
+  Eigen::Isometry3d offset = Eigen::Isometry3d::Identity();
+  offset.translation() = Eigen::Vector3d(0.01, 0.02, 0.03);
+  skin->setRelativeTransform(offset);
+  skin->createIK()->setOffset(Eigen::Vector3d(0.02, 0.01, 0.03));
+
+  const auto core = std::make_shared<BoxShape>(Eigen::Vector3d(0.1, 0.1, 0.05));
+  soft->createShapeNodeWith<VisualAspect, CollisionAspect, DynamicsAspect>(
+      core);
+  original->createJointAndBodyNodePair<FreeJoint, SoftBodyNode>(
+      nullptr, FreeJoint::Properties(), properties);
+  ASSERT_EQ(original->getNumShapeNodes(), 3u);
+
+  auto clone = original->cloneSkeleton();
+  ASSERT_EQ(clone->getNumShapeNodes(), original->getNumShapeNodes());
+  auto* clonedSoft = clone->getSoftBodyNode(0);
+  ASSERT_EQ(clonedSoft->getNumShapeNodes(), soft->getNumShapeNodes());
+  auto* clonedSkin = clonedSoft->getShapeNode(0);
+  ASSERT_NE(clonedSkin, nullptr);
+  const auto clonedMesh
+      = std::dynamic_pointer_cast<SoftMeshShape>(clonedSkin->getShape());
+  ASSERT_NE(clonedMesh, nullptr);
+  EXPECT_EQ(clonedMesh->getSoftBodyNode(), clonedSoft);
+  EXPECT_NE(clonedSkin->getShape(), skin->getShape());
+  EXPECT_EQ(clonedSkin->getName(), skin->getName());
+  EXPECT_TRUE(clonedSkin->getRelativeTransform().isApprox(offset));
+  EXPECT_TRUE(clonedSkin->getVisualAspect()->getRGBA().isApprox(color));
+  EXPECT_DOUBLE_EQ(clonedSkin->getDynamicsAspect()->getRestitutionCoeff(), 0.6);
+  EXPECT_TRUE(clonedSkin->hasCollisionAspect());
+  ASSERT_NE(clonedSkin->getIK(), nullptr);
+  EXPECT_EQ(clonedSkin->getIK()->getNode(), clonedSkin);
+  EXPECT_NE(clonedSkin->getIK(), skin->getIK());
+  EXPECT_EQ(clonedSkin->getIK()->getOffset(), skin->getIK()->getOffset());
+  EXPECT_NE(clonedSoft->getShapeNode(1)->getShape(), core);
+  for (std::size_t i = 0; i < original->getNumShapeNodes(); ++i) {
+    EXPECT_EQ(
+        clone->getShapeNode(i)->getName(),
+        original->getShapeNode(i)->getName());
+    EXPECT_EQ(clone->getShapeNode(i)->getIndexInSkeleton(), i);
+  }
+
+  original.reset();
+  clonedSoft->setProperties(SoftBodyNodeHelper::makeEllipsoidProperties(
+      Eigen::Vector3d(0.2, 0.2, 0.2), 6, 6, 0.5));
+  EXPECT_EQ(clonedSoft->getNumPointMasses(), 32u);
+  ASSERT_NE(clonedMesh->getAssimpMesh(), nullptr);
+  EXPECT_EQ(clonedMesh->getAssimpMesh()->mNumVertices, 32u);
+  dart::simulation::World world;
+  world.addSkeleton(clone);
+  for (std::size_t step = 0; step < 5; ++step)
+    world.step();
+  for (std::size_t i = 0; i < clone->getNumSoftBodyNodes(); ++i) {
+    const auto* body = clone->getSoftBodyNode(i);
+    for (std::size_t j = 0; j < body->getNumPointMasses(); ++j) {
+      EXPECT_TRUE(body->getPointMass(j)->getPositions().allFinite());
+      EXPECT_TRUE(body->getPointMass(j)->getWorldVelocity().allFinite());
+    }
+  }
 }
