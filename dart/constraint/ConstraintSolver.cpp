@@ -66,7 +66,6 @@
 #include "dart/dynamics/SoftBodyNode.hpp"
 
 #include <algorithm>
-#include <array>
 #include <atomic>
 #include <condition_variable>
 #include <limits>
@@ -2114,8 +2113,13 @@ bool ConstraintSolver::updateConstraintsWithQueryFilter(
         std::size_t updateEpoch{0u};
         bool hasDefaultProperties{false};
       };
-      static thread_local std::array<DefaultSurfaceCacheEntry, 8192u>
-          defaultSurfaceCache{};
+      // Heap storage: a 256 KiB thread_local array would enlarge the TLS of
+      // every thread in a process that loads DART.
+      constexpr std::size_t kDefaultSurfaceCacheSize = 8192u;
+      static thread_local std::vector<DefaultSurfaceCacheEntry>
+          defaultSurfaceCache;
+      if (defaultSurfaceCache.empty())
+        defaultSurfaceCache.resize(kDefaultSurfaceCacheSize);
       static thread_local std::size_t defaultSurfaceCacheEpoch = 0u;
       ++defaultSurfaceCacheEpoch;
       // LCOV_EXCL_START: requires wrapping size_t solver-update epochs.
@@ -2161,7 +2165,7 @@ bool ConstraintSolver::updateConstraintsWithQueryFilter(
             shapeNodeKey ^= shapeNodeKey >> 33u;
             auto& entry = defaultSurfaceCache
                 [static_cast<std::size_t>(shapeNodeKey)
-                 % defaultSurfaceCache.size()];
+                 % kDefaultSurfaceCacheSize];
             if (entry.updateEpoch == defaultSurfaceCacheEpoch
                 && entry.shapeNode == shapeNode
                 && entry.shapeNodeVersion == shapeNodeVersion) {
