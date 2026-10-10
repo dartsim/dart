@@ -126,5 +126,14 @@ jobs:
           # CC/CXX are honored by the `config` task that `build-tests` runs
           # first (it does not pin a compiler), so the whole tree is compiled
           # with the selected toolchain.
-          pixi run build-tests
-          pixi run -- bash -c 'ctest --test-dir "build/${PIXI_ENVIRONMENT_NAME}/cpp/Release" --output-on-failure -j2'
+          pixi run -- bash -euc '
+            case "${CC}" in
+              gcc-11|clang-13)
+                # Pixi dependencies need a newer runtime than Ubuntu 22.04 ships.
+                export LDFLAGS="-L${CONDA_PREFIX}/lib${LDFLAGS:+ ${LDFLAGS}}"
+                export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+                ;;
+            esac
+            pixi run build-tests
+            ctest --test-dir "build/${PIXI_ENVIRONMENT_NAME}/cpp/Release" --output-on-failure -j2
+          '
