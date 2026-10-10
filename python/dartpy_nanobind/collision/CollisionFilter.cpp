@@ -50,7 +50,7 @@ template <class CollisionFilterBase = dart::collision::CollisionFilter>
 class PyCollisionFilter : public CollisionFilterBase
 {
 public:
-  NB_TRAMPOLINE(CollisionFilterBase, 1); // Inherit constructors
+  NB_TRAMPOLINE(CollisionFilterBase); // Inherit constructors
 
   bool ignoresCollision(
       const dart::collision::CollisionObject* object1,
