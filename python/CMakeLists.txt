@@ -19,12 +19,7 @@ if(DART_DARTPY_BINDER STREQUAL "nanobind")
       COMPONENTS Interpreter Development.Module Development.SABIModule
     )
   else()
-    find_package(
-      Python
-      3.10
-      REQUIRED
-      COMPONENTS Interpreter Development.Module
-    )
+    find_package(Python 3.10 REQUIRED COMPONENTS Interpreter Development.Module)
   endif()
   if(DART_USE_SYSTEM_NANOBIND)
     execute_process(
