@@ -1,4 +1,4 @@
-"""Strict collection and value-input regressions shared with the pybind11 oracle."""
+"""Collection and value-input regressions for nanobind."""
 
 import gc
 import weakref
@@ -7,7 +7,7 @@ from pathlib import Path
 import dartpy as dart
 import pytest
 
-from ._support import IS_NANOBIND, run_isolated
+from ._support import run_isolated
 
 
 def _task_space_owner(kind, frame):
@@ -86,7 +86,7 @@ def test_task_space_reference_frame_cycle_collects(kind):
             del frame
             gc.collect()
             # Nanobind pins Python state; pybind11 retains only the native frame.
-            assert (refs[0]() is not None) is {IS_NANOBIND!r}
+            assert (refs[0]() is not None) is True
             assert _reference_frame(owner, {kind!r}).getName() == 'cycle_frame'
             del owner, native_aliases
             gc.collect()
@@ -121,11 +121,10 @@ def test_direct_ik_factory_cycle_requires_explicit_cleanup():
         gc.collect()
         # Nanobind keeps both native factory ownership and node affiliation.
         # Their shared references cannot prove that clearing native edges is safe.
-        assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
-        if {IS_NANOBIND!r}:
-            assert refs[1]().getErrorMethod().getReferenceFrame() is refs[0]()
-            assert refs[0]().getName() == 'factory_cycle_frame'
-            refs[0]().owner = None
+        assert tuple(ref() is not None for ref in refs) == (True, True)
+        assert refs[1]().getErrorMethod().getReferenceFrame() is refs[0]()
+        assert refs[0]().getName() == 'factory_cycle_frame'
+        refs[0]().owner = None
         gc.collect()
         assert all(ref() is None for ref in refs)
         """
@@ -154,14 +153,13 @@ def test_task_space_live_native_alias_preserves_reference_frame(kind):
         refs = weakref.ref(frame), weakref.ref(owner)
         del frame, owner, native_aliases
         gc.collect()
-        assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
+        assert tuple(ref() is not None for ref in refs) == (True, True)
         fetched = live.mReferenceFrame
         assert fetched.getName() == 'retained_frame'
-        if {IS_NANOBIND!r}:
-            assert fetched is refs[0]()
-            assert fetched.owner is refs[1]()
-            # A live external native alias must keep the shared Python pin.
-            fetched.owner = None
+        assert fetched is refs[0]()
+        assert fetched.owner is refs[1]()
+        # A live external native alias must keep the shared Python pin.
+        fetched.owner = None
         del fetched, live
         gc.collect()
         assert all(ref() is None for ref in refs)
@@ -186,8 +184,7 @@ def test_parser_retriever_cycle_collects(kind):
             refs = weakref.ref(child), weakref.ref(owner)
             del child
             gc.collect()
-            # Pybind11 preserves the C++ retriever without pinning its subclass.
-            assert (refs[0]() is not None) is {IS_NANOBIND!r}
+            assert (refs[0]() is not None) is True
             assert _retriever(owner, {kind!r}).exists(
                 dart.common.Uri('unsupported://gc-regression')) is False
             del owner
@@ -219,13 +216,12 @@ def test_parser_live_native_alias_preserves_retriever(kind):
         refs = weakref.ref(child), weakref.ref(owner)
         del child, owner
         gc.collect()
-        assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
+        assert tuple(ref() is not None for ref in refs) == (True, True)
         fetched = _retriever(live, {kind!r})
         assert fetched.exists(dart.common.Uri('unsupported://gc-regression')) is False
-        if {IS_NANOBIND!r}:
-            assert fetched is refs[0]()
-            assert fetched.owner is refs[1]()
-            fetched.owner = None
+        assert fetched is refs[0]()
+        assert fetched.owner is refs[1]()
+        fetched.owner = None
         del fetched, live
         gc.collect()
         assert all(ref() is None for ref in refs)
@@ -246,7 +242,7 @@ def test_private_package_retriever_cycle_requires_explicit_cleanup():
         refs = weakref.ref(child), weakref.ref(owner)
         del child, owner
         gc.collect()
-        assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
+        assert tuple(ref() is not None for ref in refs) == (True, True)
         if refs[0]() is not None:
             # Nanobind conservatively retains the private native owner.
             refs[0]().owner = None
@@ -263,13 +259,6 @@ def test_mesh_retriever_cycle_collects():
         class Retriever(dart.common.LocalResourceRetriever):
             pass
         child = Retriever()
-        if not {IS_NANOBIND!r}:
-            # Pybind11's unbound legacy aiScene argument rejects None.
-            try:
-                dart.dynamics.MeshShape([1, 1, 1], None, dart.common.Uri(), child)
-            except TypeError:
-                return
-            raise AssertionError('legacy aiScene constructor unexpectedly accepted None')
         owner = dart.dynamics.MeshShape([1, 1, 1], None, dart.common.Uri(), child)
         child.owner = owner
         refs = weakref.ref(child), weakref.ref(owner)
@@ -292,12 +281,6 @@ def test_mesh_live_native_shape_alias_preserves_retriever():
         class Retriever(dart.common.LocalResourceRetriever):
             pass
         child = Retriever()
-        if not {IS_NANOBIND!r}:
-            try:
-                dart.dynamics.MeshShape([1, 1, 1], None, dart.common.Uri(), child)
-            except TypeError:
-                return
-            raise AssertionError('legacy aiScene constructor unexpectedly accepted None')
         owner = dart.dynamics.MeshShape([1, 1, 1], None, dart.common.Uri(), child)
         child.owner = owner
         live = dart.dynamics.SimpleFrame()
@@ -341,12 +324,11 @@ def test_contact_inverse_dynamics_native_skeleton_shape_cycle(native_alias):
         del skeleton, shape, owner
         gc.collect()
         if {native_alias!r}:
-            assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
+            assert tuple(ref() is not None for ref in refs) == (True, True)
             fetched = live.getSkeleton(0).getBodyNode(0).getShapeNode(0).getShape()
             assert fetched.getVolume() == 6
-            if {IS_NANOBIND!r}:
-                assert fetched is refs[0]()
-                fetched.owner = None
+            assert fetched is refs[0]()
+            fetched.owner = None
             del fetched, live
             gc.collect()
         collected = all(ref() is None for ref in refs)
@@ -386,13 +368,12 @@ def test_boxed_lcp_python_solver_cycle_and_native_alias(kind, native_alias):
         del child, owner
         gc.collect()
         if {native_alias!r}:
-            assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
+            assert tuple(ref() is not None for ref in refs) == (True, True)
             fetched = (live.getBoxedLcpSolver() if {kind!r} != 'secondary'
                        else live.getSecondaryBoxedLcpSolver())
             assert fetched.getStats().numSolves == 0
-            if {IS_NANOBIND!r}:
-                assert fetched is refs[0]()
-                fetched.owner = None
+            assert fetched is refs[0]()
+            fetched.owner = None
             del fetched, live
             gc.collect()
         collected = all(ref() is None for ref in refs)
@@ -430,25 +411,20 @@ def test_body_owned_ik_solver_cycle_requires_explicit_cleanup():
             refs = weakref.ref(child), weakref.ref(owner)
             del child, owner
             gc.collect()
-            assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
-            if {IS_NANOBIND!r}:
-                assert refs[1]().getSolver() is refs[0]()
-                assert refs[0]().owner is refs[1]()
-                assert refs[0]().skeleton.getBodyNode(0).getIK(False) is refs[1]()
-                # Release the native graph's extra IK owner, then disconnect
-                # the Python backedge before destroying the affiliated node.
-                refs[0]().skeleton.getBodyNode(0).clearIK()
-                refs[0]().owner = None
+            assert tuple(ref() is not None for ref in refs) == (True, True)
+            assert refs[1]().getSolver() is refs[0]()
+            assert refs[0]().owner is refs[1]()
+            assert refs[0]().skeleton.getBodyNode(0).getIK(False) is refs[1]()
+            # Release the native graph's extra IK owner, then disconnect
+            # the Python backedge before destroying the affiliated node.
+            refs[0]().skeleton.getBodyNode(0).clearIK()
+            refs[0]().owner = None
             gc.collect()
             assert all(ref() is None for ref in refs)
         """
     )
 
 
-@pytest.mark.skipif(
-    not IS_NANOBIND,
-    reason="native-owner tp_clear slots are implemented by the nanobind binder",
-)
 def test_native_owner_clear_slots_are_order_independent_and_idempotent():
     tools = Path(__file__).resolve().parents[4] / "scripts/nanobind"
     run_isolated(
@@ -592,17 +568,14 @@ def test_live_world_preserves_shape_with_direct_graph_wrapper_backref(owner_kind
             fetched = live.getSkeleton(0).getBodyNode(0).getShapeNode(0).getShape()
         assert fetched is not None, 'GC cleared a shape still owned by a live World'
         assert dart.dynamics.Shape.getVolume(fetched) == 6
-        assert tuple(ref() is not None for ref in (shape_ref, owner_ref)) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
-        if {IS_NANOBIND!r}:
-            assert fetched is shape_ref()
-            assert fetched.owner is owner_ref()
-            assert fetched.label == 'retained_python_state'
-            assert fetched.getVolume() == 23
-            # Shared native graph roots may retain the Python backedge
-            # conservatively. Disconnect it before destroying the live graph.
-            fetched.owner = None
-        else:
-            assert fetched.getVolume() == 6
+        assert tuple(ref() is not None for ref in (shape_ref, owner_ref)) == (True, True)
+        assert fetched is shape_ref()
+        assert fetched.owner is owner_ref()
+        assert fetched.label == 'retained_python_state'
+        assert fetched.getVolume() == 23
+        # Shared native graph roots may retain the Python backedge
+        # conservatively. Disconnect it before destroying the live graph.
+        fetched.owner = None
         del fetched, live
         gc.collect()
         assert shape_ref() is None and owner_ref() is None
@@ -634,12 +607,11 @@ def test_live_world_preserves_constraint_with_borrowed_solver_backref():
         assert live.getConstraintSolver().getNumConstraints() == 1
         fetched = live.getConstraintSolver().getConstraint(0)
         assert fetched.getDimension() == 3
-        assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
-        if {IS_NANOBIND!r}:
-            assert fetched is refs[0]()
-            assert fetched.owner is refs[1]()
-            assert fetched.label == 'retained_constraint_state'
-            fetched.owner = None
+        assert tuple(ref() is not None for ref in refs) == (True, True)
+        assert fetched is refs[0]()
+        assert fetched.owner is refs[1]()
+        assert fetched.label == 'retained_constraint_state'
+        fetched.owner = None
         del fetched, live
         gc.collect()
         assert all(ref() is None for ref in refs)
@@ -667,12 +639,11 @@ def test_live_solver_preserves_objective_with_native_problem_backref():
         assert live.getProblem().getDimension() == 1
         fetched = live.getProblem().getObjective()
         assert fetched is not None, 'GC cleared the live solver objective'
-        assert tuple(ref() is not None for ref in refs) == ({IS_NANOBIND!r}, {IS_NANOBIND!r})
-        if {IS_NANOBIND!r}:
-            assert fetched is refs[0]()
-            assert fetched.owner is refs[1]()
-            assert fetched.eval([2.0]) == 9
-            fetched.owner = None
+        assert tuple(ref() is not None for ref in refs) == (True, True)
+        assert fetched is refs[0]()
+        assert fetched.owner is refs[1]()
+        assert fetched.eval([2.0]) == 9
+        fetched.owner = None
         del fetched, live
         gc.collect()
         assert all(ref() is None for ref in refs)
@@ -696,7 +667,7 @@ def test_multiple_cpp_owners_preserve_a_shared_python_pin_until_cleanup():
             ref = weakref.ref(child)
             del child, solver, properties
             gc.collect()
-            assert (ref() is not None) is {IS_NANOBIND!r}
+            assert (ref() is not None) is True
             if ref() is not None:
                 assert ref().getDimension() == 1
                 ref().owner = None

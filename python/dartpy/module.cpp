@@ -55,7 +55,6 @@ void dart_c_api(nb::module_& m);
 
 NB_MODULE(dartpy, m)
 {
-  m.attr("_binder") = "nanobind";
   dartnb::bindConstructionGuard(m);
   m.doc() = "dartpy: Python API of Dynamic Animation and Robotics Toolkit";
 

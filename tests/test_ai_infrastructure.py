@@ -393,6 +393,7 @@ def test_branch_profile_requires_nanobind_only(field, value):
     assert errors == []
     assert "python/dartpy" in profile["required_paths"]
     assert "python/dartpy/nanobind" in profile["forbidden_paths"]
+    assert "python/dartpy_nanobind" in profile["forbidden_paths"]
 
     profile[field] = value
     infra.check_branch_profile(ROOT, errors, profile)

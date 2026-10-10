@@ -6,11 +6,8 @@ import dartpy as dart
 import numpy as np
 import pytest
 
-from ._support import IS_NANOBIND, run_isolated
+from ._support import run_isolated
 
-pytestmark = pytest.mark.skipif(
-    not IS_NANOBIND, reason="the nanobind binder exports dartpy._C_API"
-)
 
 
 @pytest.fixture(scope="module")

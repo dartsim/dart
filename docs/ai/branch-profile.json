@@ -34,6 +34,7 @@
     ".codex/skills",
     "dart/io",
     "python/dartpy/nanobind",
+    "python/dartpy_nanobind",
     "docs/design/simulation_solver_architecture.md"
   ],
   "downstream_gates": [

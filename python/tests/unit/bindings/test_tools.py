@@ -39,3 +39,16 @@ def test_codemod_preserves_an_existing_destination(tmp_path):
     assert result.returncode == 2
     assert "destination must not exist" in result.stderr
     assert sentinel.read_text() == "existing binding\n"
+
+
+def test_codemod_requires_historical_sources(tmp_path):
+    destination = tmp_path / "port"
+    result = subprocess.run(
+        [sys.executable, str(TOOLS / "codemod.py"), "--output", str(destination)],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 2
+    assert "--source must name an existing pybind11 source directory" in result.stderr
+    assert not destination.exists()
