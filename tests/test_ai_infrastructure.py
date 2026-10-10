@@ -279,6 +279,16 @@ def test_release_references_accept_release_metadata_only_rollover(
     text = owner.read_text(encoding="utf-8")
     target_row = next(line for line in text.splitlines() if line.startswith("| `"))
     changelog = tmp_path / "CHANGELOG.md"
+    initial_version = rows[0].split("|")[3].strip().strip("`")
+    history = changelog.read_text(encoding="utf-8")
+    initial_heading = re.search(
+        rf"^### \[DART {re.escape(initial_version)} ", history, re.MULTILINE
+    )
+    assert initial_heading is not None
+    changelog.write_text(
+        history.split("### [DART ", 1)[0] + history[initial_heading.start() :],
+        encoding="utf-8",
+    )
     for row in rows:
         owner.write_text(
             text.replace(target_row, row, 1),
@@ -474,6 +484,52 @@ def test_release_target_rejects_owner_row_without_leading_changelog_update(
 
     assert len(errors) == 1
     assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
+
+
+@pytest.mark.parametrize("state", ["Unreleased", "2026-10-10"])
+@pytest.mark.parametrize(
+    ("target", "retained", "valid"),
+    [
+        ("6.21.0", "6.22.0", False),
+        ("6.21.0", "6.100.0", False),
+        ("6.100.0", "6.21.0", True),
+        ("6.21.9", "6.21.10", False),
+        ("6.21.10", "6.21.9", True),
+        ("6.21.0", "6.19.5", True),
+    ],
+)
+def test_release_target_orders_retained_changelog_versions_numerically(
+    release_target_owner, tmp_path, state, target, retained, valid
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + f"| main | Development | {target} |\n", encoding="utf-8"
+    )
+    link_suffix = "" if state == "Unreleased" else "?closed=1"
+    retained_state = "Unreleased" if state == "Unreleased" else "2026-10-04"
+    (tmp_path / "CHANGELOG.md").write_text(
+        f"### [DART {target} ({state})](https://github.com/dartsim/dart/milestone/105{link_suffix})\n\n"
+        "### [DART 6.20.0 (2026-10-03)](https://github.com/dartsim/dart/milestone/98?closed=1)\n\n"
+        f"### [DART {retained} ({retained_state})](https://github.com/dartsim/dart/milestone/99{link_suffix})\n",
+        encoding="utf-8",
+    )
+    if state != "Unreleased":
+        (tmp_path / "package.xml").write_text(
+            f"<package><version>{target}</version></package>\n", encoding="utf-8"
+        )
+        (tmp_path / "pixi.toml").write_text(
+            f'[workspace]\nversion = "{target}"\n', encoding="utf-8"
+        )
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    if valid:
+        assert errors == []
+    else:
+        assert len(errors) == 1
+        assert errors[0].startswith(f"CHANGELOG.md: Release Target `{target}`")
+        assert "newer retained" in errors[0]
 
 
 @pytest.mark.parametrize(

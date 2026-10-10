@@ -3763,6 +3763,15 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
             f"CHANGELOG.md: Release Target `{version}` must be the leading DART 6 release heading and appear exactly once"
         )
         return
+    target_numbers = tuple(int(number) for number in version.split("."))
+    if any(
+        tuple(int(number) for number in heading[0].split(".")) > target_numbers
+        for heading in headings[1:]
+    ):
+        errors.append(
+            f"CHANGELOG.md: Release Target `{version}` cannot precede a newer retained DART 6 release heading"
+        )
+        return
     _, state, link = headings[0]
     milestone_link = re.fullmatch(
         r"https://github\.com/dartsim/dart/milestone/([1-9][0-9]*)(?:\?closed=[01])?",
@@ -3817,7 +3826,6 @@ def check_release_changelog(root: Path, version: str, errors: list[str]) -> None
         )
         return
     if state == "Unreleased":
-        target_numbers = tuple(int(number) for number in version.split("."))
         for relative, source in (
             ("package.xml", package_version),
             ("pixi.toml workspace", workspace_version),

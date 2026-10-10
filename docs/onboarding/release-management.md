@@ -56,7 +56,8 @@ At a rollover, update this branch's row and start its changelog section. Leave
 other branches' rows, reusable skills, pointer docs, and translated landing
 text alone. Update package versions only as part of release packaging.
 The target must be the leading DART 6 release heading in `CHANGELOG.md` and
-appear exactly once. Its `Unreleased` source versions must precede the target.
+appear exactly once. No retained DART 6 heading may be newer than the target.
+Its `Unreleased` source versions must precede the target.
 `package.xml` uses the literal numeric `<version>6.x.y</version>` format consumed
 by CMake. The Pixi workspace may also use `.devN`, `.alphaN`, `.betaN`, or `.rcN`
 suffixes; an equal numeric version with one of these suffixes precedes the final
