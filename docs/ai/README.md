@@ -40,7 +40,7 @@ Start with:
 Editable workflow and domain-skill sources live in `.claude/`. The sync tool
 generates current Codex skills under `.agents/skills/` and OpenCode commands
 under `.opencode/command/`. `.codex/` owns maintained Codex config, bounded
-read-only subagents, and the advisory PreToolUse hook. The installed git hook is
+read-only subagents, and the advisory PreToolUse hook. The installed git hooks are
 the cross-tool commit safety path.
 
 ```bash
