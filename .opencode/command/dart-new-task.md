@@ -16,6 +16,7 @@ Read these files first:
 @AGENTS.md
 @docs/onboarding/building.md
 @docs/onboarding/contributing.md
+@docs/onboarding/release-management.md
 @docs/onboarding/code-style.md
 @docs/dev_tasks/README.md
 @docs/ai/sessions.md
@@ -36,10 +37,15 @@ Read these files first:
    API, release compatibility, numerical correctness, benchmark claims, or
    roadmap scope, record an owner-local `Decision needed` block instead of
    silently choosing.
-3. **Setup** - Choose the target branch before creating a topic branch. For
-   DART 6.20 development, dependency-minimization, docs, and compatibility
-   work, branch from `origin/main` without tracking the development ref:
-   `git switch --no-track -c <type>/<topic> origin/main`.
+3. **Setup** - Resolve the target from the live PR base, or use `main` for
+   new development and fixes. Release-specific packaging, CI, branch guidance,
+   and backports use the selected maintained `release-6.*` branch; backports
+   of merged `main` fixes use `dart-backport-pr`. Fetch the target and read its
+   `docs/onboarding/release-management.md` § "Release target" before creating
+   a topic branch. Verify the exact `DART <Next release>` milestone is open on
+   GitHub. Publishing requires explicit maintainer/user approval.
+   Create the topic branch without tracking its base:
+   `git switch --no-track -c <type>/<topic> origin/<target-branch>`.
 4. **Implement** - Keep commits focused, follow code style
 5. **Verify** - Run `pixi run lint` before committing, then run the focused
    branch gate for the touched surface. Use `pixi run test-all` when
@@ -52,8 +58,9 @@ Read these files first:
 6. **PR** - After explicit maintainer/user approval, push with the same local
    and remote topic-branch name:
    `branch=$(git branch --show-current); git push -u origin "HEAD:${branch}"`.
-   Then create the draft PR against `<target-branch>` with the branch-matching
-   DART 6.x release milestone and `.github/PULL_REQUEST_TEMPLATE.md`.
+   Then create the draft PR against `<target-branch>` using
+   `.github/PULL_REQUEST_TEMPLATE.md` and the exact open GitHub milestone
+   `DART <Next release>` resolved from the fetched base's release-target table.
 7. **Cleanup** - Before PR: if task used `docs/dev_tasks/<task>/`, first
    promote durable dashboards, evidence matrices, API inventories, migration
    maps, or long-lived decisions into release/onboarding/AI docs.

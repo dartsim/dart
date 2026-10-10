@@ -1,6 +1,6 @@
 # AI Terminology
 
-This file owns DART 6.20's canonical language for AI-facing repository
+This file owns DART 6's canonical language for AI-facing repository
 surfaces. Use it when editing `AGENTS.md`, `docs/ai/`,
 `docs/onboarding/ai-tools.md`, `.claude/commands/`, `.claude/skills/`, or
 generated adapter docs.
@@ -38,7 +38,7 @@ generated adapter docs.
 
 ## Compatibility Contract
 
-DART 6.20 keeps `.claude/commands/` as the editable workflow source and
+DART 6 keeps `.claude/commands/` as the editable workflow source and
 `.claude/skills/` as the editable domain-skill source. Generated
 `.agents/skills/` and `.opencode/command/` files are entrypoints, not sources of
 truth. `.codex/` contains maintained runtime configuration. Change the editable

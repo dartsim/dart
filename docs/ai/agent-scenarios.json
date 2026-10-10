@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "profile": "main",
+  "profile": "dart6",
   "scenarios": [
     {
       "id": "orientation",
-      "prompt_class": "Orient to an unfamiliar DART 6.20 checkout without edits",
+      "prompt_class": "Orient to an unfamiliar DART 6 checkout without edits",
       "start_dir": ".",
       "instruction_chain": ["AGENTS.md"],
       "expected_route": {
@@ -34,7 +34,7 @@
     },
     {
       "id": "small-change",
-      "prompt_class": "Implement one localized DART 6.20 fix with regression evidence",
+      "prompt_class": "Implement one localized DART 6 fix with regression evidence",
       "start_dir": "dart/dynamics",
       "instruction_chain": ["AGENTS.md"],
       "expected_route": {
@@ -122,7 +122,7 @@
     },
     {
       "id": "model-upgrade",
-      "prompt_class": "audit or update DART 6.20 AI infrastructure for a named model, reasoning mode, or coding-agent release",
+      "prompt_class": "audit or update DART 6 AI infrastructure for a named model, reasoning mode, or coding-agent release",
       "start_dir": "docs/ai",
       "instruction_chain": ["AGENTS.md", "docs/AGENTS.md"],
       "expected_route": {
@@ -164,7 +164,7 @@
     },
     {
       "id": "component-work",
-      "prompt_class": "Change a DART 6 dartpy binding while preserving the default pybind11 binder and the opt-in DART 6.21 nanobind API",
+      "prompt_class": "Change a DART 6 dartpy binding while preserving the default pybind11 binder and the opt-in nanobind API",
       "start_dir": "python/dartpy",
       "instruction_chain": ["AGENTS.md"],
       "expected_route": {
@@ -185,7 +185,7 @@
     },
     {
       "id": "simulation-verification",
-      "prompt_class": "verify claim-dependent DART 6.20 simulation, dynamics, collision/contact/constraints, model/scene, GUI, or OSG behavior",
+      "prompt_class": "verify claim-dependent DART 6 simulation, dynamics, collision/contact/constraints, model/scene, GUI, or OSG behavior",
       "start_dir": "dart/dynamics",
       "instruction_chain": ["AGENTS.md"],
       "expected_route": {

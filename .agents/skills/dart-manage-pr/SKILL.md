@@ -29,6 +29,7 @@ mutations: $ARGUMENTS
 ## Required Reading
 @AGENTS.md
 @docs/onboarding/contributing.md
+@docs/onboarding/release-management.md
 @docs/onboarding/ci-cd.md
 @docs/onboarding/ai-tools.md
 
@@ -82,11 +83,14 @@ gh pr checks <PR_NUMBER>
 ## Workflow
 
 1. Confirm scope and policy:
-   - Check that the base branch, title, and PR template are correct, and that
-     the branch-matching DART 6.x release milestone is set; if it is missing,
-     set it only after explicit maintainer/user approval.
-   - Confirm the PR targets `main` (or, for a `dart-backport-pr` backport, a
-     maintained `release-6.*` branch; none exists right now).
+   - Check the live base branch, title, and PR template. Fetch that base and
+     read its `docs/onboarding/release-management.md` § "Release target".
+     Verify the exact `DART <Next release>` milestone is open on GitHub;
+     correct stale or missing metadata only after maintainer/user approval.
+     For an explicit rollover, follow the owner's proposed-target rule.
+   - Confirm ordinary changes target `main`. Backports and release-specific
+     packaging, CI, or branch guidance may target a maintained `release-6.*`
+     branch; backports use `dart-backport-pr`.
    - Confirm the PR body's testing/status section matches the current head and
      does not point reviewers to deleted dev-task evidence as still pending.
    - Check the body against `docs/onboarding/contributing.md` § "PR

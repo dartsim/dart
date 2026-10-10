@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate and diagnose DART 6.20's repository-local AI infrastructure."""
+"""Validate and diagnose DART 6's repository-local AI infrastructure."""
 
 from __future__ import annotations
 
@@ -14,6 +14,8 @@ import subprocess
 import sys
 import tempfile
 import tomllib
+import xml.etree.ElementTree as ET
+from datetime import date
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
@@ -60,7 +62,6 @@ MAX_AGENT_INSTRUCTION_BYTES = 32 * 1024
 BRANCH_PROFILE_KEYS = {
     "schema_version",
     "profile",
-    "base_ref",
     "cpp_standard",
     "python_binding",
     "optional_python_bindings",
@@ -732,9 +733,8 @@ def check_branch_profile(
         profile = profile_data
 
     expected = {
-        "schema_version": 1,
-        "profile": "main",
-        "base_ref": "origin/main",
+        "schema_version": 2,
+        "profile": "dart6",
         "cpp_standard": "C++17",
         "python_binding": "pybind11",
         "optional_python_bindings": ["nanobind"],
@@ -3742,7 +3742,314 @@ def check_instruction_budget(root: Path, errors: list[str]) -> None:
             )
 
 
+def check_release_changelog(root: Path, version: str, errors: list[str]) -> None:
+    """Require the planned release section, including a dated packaging candidate."""
+    changelog = root / "CHANGELOG.md"
+    headings = (
+        re.findall(
+            r"^### \[DART (6\.[0-9]+\.[0-9]+) \(([^)\n]*)\)\](?:\(([^)\n]*)\))?",
+            changelog.read_text(encoding="utf-8"),
+            re.MULTILINE,
+        )
+        if changelog.is_file()
+        else []
+    )
+    if (
+        not headings
+        or headings[0][0] != version
+        or sum(heading[0] == version for heading in headings) != 1
+    ):
+        errors.append(
+            f"CHANGELOG.md: Release Target `{version}` must be the leading DART 6 release heading and appear exactly once"
+        )
+        return
+    _, state, link = headings[0]
+    milestone_link = re.fullmatch(
+        r"https://github\.com/dartsim/dart/milestone/([1-9][0-9]*)(?:\?closed=[01])?",
+        link,
+    )
+    try:
+        if state != "Unreleased":
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", state):
+                raise ValueError("expected YYYY-MM-DD")
+            date.fromisoformat(state)
+            if not milestone_link or not link.endswith("?closed=1"):
+                raise ValueError("expected closed DART milestone link")
+        event_path = os.environ.get("GITHUB_EVENT_PATH")
+        if event_path:
+            event = read_json(Path(event_path))
+            if not isinstance(event, dict):
+                raise ValueError("expected GitHub event object")
+            if "pull_request" in event:
+                pull_request = event["pull_request"]
+                milestone = (
+                    pull_request.get("milestone")
+                    if isinstance(pull_request, dict)
+                    else None
+                )
+                if (
+                    not isinstance(milestone, dict)
+                    or milestone.get("title") != f"DART {version}"
+                    or type(milestone.get("number")) is not int
+                    or milestone["number"] <= 0
+                    or (
+                        milestone_link and milestone["number"] != int(milestone_link[1])
+                    )
+                    or (state == "Unreleased" and milestone.get("state") != "open")
+                ):
+                    raise ValueError(
+                        "release heading must match the PR milestone and its release state"
+                    )
+        package_text = (root / "package.xml").read_text(encoding="utf-8")
+        package_version = ET.fromstring(package_text).findtext("version", "")
+        build_version = re.search(
+            r"<version>([0-9]+\.[0-9]+\.[0-9]+)</version>", package_text
+        )
+        if not build_version or build_version[1] != package_version:
+            raise ValueError("package.xml version must match the numeric CMake grammar")
+        workspace = read_toml(root / "pixi.toml").get("workspace", {})
+        workspace_version = (
+            workspace.get("version") if isinstance(workspace, dict) else None
+        )
+    except (OSError, ET.ParseError, ValueError) as error:
+        errors.append(
+            f"CHANGELOG.md: Release Target `{version}` has invalid metadata: {error}"
+        )
+        return
+    if state == "Unreleased":
+        target_numbers = tuple(int(number) for number in version.split("."))
+        for relative, source in (
+            ("package.xml", package_version),
+            ("pixi.toml workspace", workspace_version),
+        ):
+            parsed = (
+                re.fullmatch(
+                    r"(6)\.([0-9]+)\.([0-9]+)(?:\.(dev|alpha|beta|rc)[0-9]+)?",
+                    source,
+                )
+                if isinstance(source, str)
+                else None
+            )
+            if not parsed:
+                errors.append(
+                    f"CHANGELOG.md: Release Target `{version}` cannot compare {relative} version; "
+                    "expected a DART 6 version (numeric for package.xml; "
+                    "optional .devN/.alphaN/.betaN/.rcN suffix for Pixi)"
+                )
+                return
+            source_numbers = tuple(int(number) for number in parsed.groups()[:3])
+            if source_numbers > target_numbers or (
+                source_numbers == target_numbers and not parsed[4]
+            ):
+                errors.append(
+                    f"CHANGELOG.md: Release Target `{version}` requires {relative} source version to precede it"
+                )
+                return
+        return
+    elif package_version == version and workspace_version == version:
+        return
+    errors.append(
+        f"CHANGELOG.md: Release Target `{version}` requires an Unreleased section "
+        "with preceding source versions, or a valid dated packaging heading "
+        "with its closed milestone link and matching package.xml and pixi.toml workspace versions"
+    )
+
+
+def check_release_target(root: Path, errors: list[str]) -> None:
+    """Validate the branch-local owner, using CI/base checkout identity if known."""
+    relative = "docs/onboarding/release-management.md"
+    path = root / relative
+    if not path.is_file():
+        errors.append(f"{relative}: missing Release Target owner")
+        return
+    sections = re.findall(
+        r"^## Release Target\s*\n(.*?)(?=^## |\Z)",
+        path.read_text(encoding="utf-8"),
+        re.MULTILINE | re.DOTALL,
+    )
+    tables = (
+        [
+            line.strip()
+            for line in sections[0].splitlines()
+            if line.lstrip().startswith("|")
+        ]
+        if len(sections) == 1
+        else []
+    )
+    cells = [line[1:-1].split("|") for line in tables]
+    if (
+        len(cells) != 3
+        or not all(line.endswith("|") for line in tables)
+        or [cell.strip() for cell in cells[0]] != ["Branch", "Phase", "Next release"]
+        or len(cells[1]) != 3
+        or not all(re.fullmatch(r":?-{3,}:?", cell.strip()) for cell in cells[1])
+        or len(cells[2]) != 3
+    ):
+        errors.append(
+            f"{relative}: Release Target must have exactly one three-column table row"
+        )
+        return
+    branch, phase, version = [cell.strip().strip("`") for cell in cells[2]]
+    branch_match = re.fullmatch(r"main|release-6\.(\d+)", branch)
+    version_match = re.fullmatch(r"6\.(\d+)\.(\d+)", version)
+    if (
+        not branch_match
+        or not version_match
+        or (branch == "main" and phase != "Development")
+        or (branch != "main" and phase not in {"Stabilization", "Maintenance"})
+        or (branch != "main" and branch_match[1] != version_match[1])
+        or (
+            branch != "main"
+            and phase
+            != ("Stabilization" if int(version_match[2]) == 0 else "Maintenance")
+        )
+    ):
+        errors.append(
+            f"{relative}: Release Target has an invalid branch, phase, or full DART 6 version"
+        )
+        return
+
+    check_release_changelog(root, version, errors)
+
+    expected_branch = os.environ.get("GITHUB_BASE_REF")
+    if not expected_branch:
+        checkout = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        for candidate in (checkout, os.environ.get("GITHUB_REF_NAME", "")):
+            if re.fullmatch(r"main|release-6\.\d+", candidate):
+                expected_branch = candidate
+                break
+    if expected_branch and branch != expected_branch:
+        errors.append(
+            f"{relative}: Release Target names `{branch}`, "
+            f"but the base branch is `{expected_branch}`"
+        )
+
+
+def po_translations(path: Path, errors: list[str]) -> list[tuple[int, str]]:
+    """Read active PO translations without scanning source or obsolete messages."""
+    translations = []
+    line_number = 0
+    fragments = []
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        line = line.strip()
+        start = re.fullmatch(r'msgstr(?:\[\d+\])?\s+(".*")', line)
+        if start or (not line.startswith(('"', "#")) and line_number):
+            if line_number:
+                translations.append((line_number, "".join(fragments)))
+            line_number = 0
+            fragments = []
+        if start:
+            line_number = number
+            literal = start[1]
+        elif line.startswith('"') and line_number:
+            literal = line
+        elif line.startswith("msgstr"):
+            errors.append(f"{path}:{number}: invalid PO translation string")
+            continue
+        else:
+            continue
+        try:
+            fragment = ast.literal_eval(literal)
+            if not isinstance(fragment, str):
+                raise ValueError("expected a string")
+            fragments.append(fragment)
+        except (SyntaxError, ValueError):
+            errors.append(f"{path}:{number}: invalid PO translation string")
+    if line_number:
+        translations.append((line_number, "".join(fragments)))
+    return translations
+
+
+def release_reference_paths(root: Path) -> list[Path]:
+    """Return reusable guidance, excluding the release owner and plan archive."""
+    paths = set(source_paths(root))
+    paths.update(
+        root / relative
+        for relative in (
+            "CLAUDE.md",
+            "GEMINI.md",
+            ".github/PULL_REQUEST_TEMPLATE.md",
+            "docs/readthedocs/index.rst",
+            "docs/readthedocs/dart/developer_guide/build.rst",
+            "docs/background/README.md",
+            "docs/design/README.md",
+        )
+    )
+    for pattern in (
+        ".codex/agents/*.toml",
+        "docs/onboarding/*.md",
+        "docs/plans/*.md",
+        "docs/readthedocs/locales/*/LC_MESSAGES/index.po",
+    ):
+        paths.update(root.glob(pattern))
+    paths.discard(root / "docs/onboarding/release-management.md")
+    paths.discard(root / "docs/plans/archive.md")
+    return sorted(paths)
+
+
+def check_release_references(root: Path, errors: list[str]) -> None:
+    """Keep reusable guidance independent of the branch's next release."""
+    version = r"[`*]*DART\s+6\.\d+(?:\.\d+)?[`*]*"
+    next_version = r"[`*]*(?:DART\s+)?6\.\d+(?:\.\d+)?[`*]*"
+    current_target = re.compile(
+        rf"\bcurrently\s+(?:(?:is|on|at)\s+)?{version}"
+        rf"|\b(?:current stable|develops|developing|stabilizes)\b"
+        rf".{{0,80}}{version}"
+        rf"|\b(?:next|planned|upcoming)(?:\s+DART)?\s+"
+        rf"(?:release(?:\s+version)?|version)[`*]*"
+        rf"(?:\s+(?:is|will\s+be)|\s*[:=]|\s+)[`*]*\s*{next_version}"
+        rf"|{version}\s+(?:development|stabilization)\s+branch"
+        rf"|\b(?:use|set|select|assign|target)\b.{{0,120}}{version}"
+        rf".{{0,80}}\bmilestone\b"
+        rf"|(?:\b(?:use|set|select|assign)\b.{{0,80}}\bmilestone\b"
+        rf"|--milestone|\bmilestone\s*(?:set|[:=])).{{0,80}}{version}"
+        r"|\|\s*`?(?:main|release-6\.\d+)`?\s*\|"
+        r"[^|]*\bDART\s+6\.\d+\.\d+[^|]*\|"
+        r"|\|\s*`?(?:main|release-6\.\d+)`?\s*\|\s*"
+        r"(?:Development|Stabilization|Maintenance)\s*\|\s*`?6\.\d+\.\d+`?\s*\|"
+        r"|\btarget(?:s)?\s+`?(?:origin/)?release-6\.\d+\b",
+        re.IGNORECASE,
+    )
+    translated_target = re.compile(
+        rf"현재\s+(?:안정\s+버전(?:은|이)?\s+)?{version}"
+        rf"|(?:다음|차기|예정된)\s+(?:DART\s+)?(?:릴리스|버전)(?:는|은)?"
+        rf"\s*(?:[:=]\s*)?{next_version}"
+        rf"|{version}\s*(?:개발|안정화)\s*브랜치"
+        rf"|(?:main|release-6\.\d+).{{0,80}}{version}.{{0,40}}(?:개발|안정화)"
+        rf"|{version}.{{0,80}}마일스톤.{{0,40}}(?:사용|설정|선택|지정)"
+        rf"|마일스톤.{{0,80}}{version}.{{0,40}}(?:사용|설정|선택|지정)",
+        re.IGNORECASE,
+    )
+    for path in release_reference_paths(root):
+        if not path.is_file():
+            continue
+        texts = (
+            po_translations(path, errors)
+            if path.suffix == ".po"
+            else [(1, path.read_text(encoding="utf-8"))]
+        )
+        for line_number, text in texts:
+            for paragraph in text.split("\n\n"):
+                normalized = " ".join(paragraph.split())
+                if current_target.search(normalized) or translated_target.search(
+                    normalized
+                ):
+                    errors.append(
+                        f"{path.relative_to(root)}:{line_number}: resolve the release "
+                        "target and milestone from the base branch's "
+                        "`docs/onboarding/release-management.md`, not copied version values"
+                    )
+                line_number += paragraph.count("\n") + 2
+
+
 def check_release_guidance(root: Path, errors: list[str]) -> None:
+    check_release_target(root, errors)
+    check_release_references(root, errors)
     python_skill = (root / ".claude" / "skills" / "dart-python" / "SKILL.md").read_text(
         encoding="utf-8"
     )
@@ -3767,7 +4074,7 @@ def check_release_guidance(root: Path, errors: list[str]) -> None:
     release_fix = (root / ".claude" / "commands" / "dart-release-ci-fix.md").read_text(
         encoding="utf-8"
     )
-    if "Default to `main`" not in release_fix or "release-6.19" in release_fix:
+    if "Default to `main`" not in release_fix:
         errors.append("dart-release-ci-fix: development default must be main")
 
     for path in source_paths(root):
@@ -3989,6 +4296,7 @@ def run_checks(root: Path) -> list[str]:
     check_instruction_budget(root, errors)
     check_release_guidance(root, errors)
     check_ci_wiring(root, errors)
+    errors.extend(exercise_scenarios(root, emit=False))
     return errors
 
 
@@ -4191,6 +4499,10 @@ def exercise_scenarios(
         prompt_class = scenario.get("prompt_class")
         if not isinstance(prompt_class, str) or not prompt_class.strip():
             local_errors.append("prompt_class must be a non-empty string")
+        elif re.search(
+            r"\b(?:DART\s*|v)?6\.\d+(?:\.\d+)?\b", prompt_class, re.IGNORECASE
+        ):
+            local_errors.append("prompt_class must be release-neutral; use DART 6")
         start_dir = scenario.get("start_dir")
         start_relative = repository_relative_path(root, start_dir)
         if start_relative is None:
@@ -4288,7 +4600,7 @@ def exercise_scenarios(
 
         if scenario_id == "model-upgrade":
             expected_prompt = (
-                "audit or update DART 6.20 AI infrastructure for a named model, "
+                "audit or update DART 6 AI infrastructure for a named model, "
                 "reasoning mode, or coding-agent release"
             )
             if scenario.get("prompt_class") != expected_prompt:
@@ -4361,7 +4673,7 @@ def exercise_scenarios(
                 "temporary claim-tied evidence",
             }
             expected_prompt = (
-                "verify claim-dependent DART 6.20 simulation, dynamics, "
+                "verify claim-dependent DART 6 simulation, dynamics, "
                 "collision/contact/constraints, model/scene, GUI, or OSG behavior"
             )
             if scenario.get("prompt_class") != expected_prompt:
@@ -4871,6 +5183,27 @@ def doctor_report(root: Path) -> dict[str, Any]:
         text=True,
     ).stdout.strip()
     errors = run_checks(root)
+    profile_path = root / "docs" / "ai" / "branch-profile.json"
+    profile_errors: list[str] = []
+    profile_report = None
+    try:
+        profile = read_json(profile_path)
+    except (OSError, json.JSONDecodeError) as error:
+        profile_errors.append(
+            f"{profile_path.relative_to(root)}: invalid JSON: {error}"
+        )
+    else:
+        check_branch_profile(root, profile_errors, profile)
+        if not profile_errors:
+            profile_report = {
+                "name": profile["profile"],
+                "cpp_standard": profile["cpp_standard"],
+                "python_binding": profile["python_binding"],
+                "optional_python_bindings": profile["optional_python_bindings"],
+                "io_namespace": profile["io_namespace"],
+                "gui_backend": profile["gui_backend"],
+            }
+    errors.extend(error for error in profile_errors if error not in errors)
     commands = sorted((root / ".claude" / "commands").glob("*.md"))
     skills = sorted((root / ".claude" / "skills").glob("*/SKILL.md"))
     generated = sorted((root / ".agents" / "skills").glob("*/SKILL.md"))
@@ -4879,14 +5212,7 @@ def doctor_report(root: Path) -> dict[str, Any]:
         "schema_version": 1,
         "root": str(root),
         "branch": branch or "(detached)",
-        "profile": {
-            "name": "main",
-            "cpp_standard": "C++17",
-            "python_binding": "pybind11",
-            "optional_python_bindings": ["nanobind"],
-            "io_namespace": "dart::utils",
-            "gui_backend": "OSG",
-        },
+        "profile": profile_report,
         "working_tree": _working_tree_state(root),
         "tools": {
             "python": sys.version.split()[0],
@@ -4920,12 +5246,15 @@ def print_doctor(data: dict[str, Any]) -> None:
     print(f"DART 6 AI doctor: {state}")
     print(f"  repository: {data['root']}")
     print(f"  branch: {data['branch']}")
-    print(
-        "  profile: "
-        f"{profile['name']} ({profile['cpp_standard']}, "
-        f"{profile['python_binding']}, {profile['io_namespace']}, "
-        f"{profile['gui_backend']})"
-    )
+    if profile is None:
+        print("  profile: unavailable (invalid or missing compatibility profile)")
+    else:
+        print(
+            "  profile: "
+            f"{profile['name']} ({profile['cpp_standard']}, "
+            f"{profile['python_binding']}, {profile['io_namespace']}, "
+            f"{profile['gui_backend']})"
+        )
     print(f"  working tree: {data['working_tree']}")
     print(
         "  inventory: "
