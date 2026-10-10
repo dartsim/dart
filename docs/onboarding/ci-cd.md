@@ -142,8 +142,26 @@ not remove the connecting line, so annotated transitions are incomparable.
 The fingerprint includes valgrind and its guest CPU,
 compiler, glibc, `pixi.lock`, preset and harness identity. Read records directly
 with `git show origin/gh-pages:performance/records/main/<yyyy>/<file>.json`.
-The canonical commands and historical baseline evidence remain in
-[`01-baseline-evidence.md`](../dev_tasks/dart6_performance_generalization/01-baseline-evidence.md).
+### Canonical guard scenes
+
+`scripts/perf_regression.py` owns the exact `NIGHTLY_ROWS` arguments and
+measurement windows. Current values are published in
+[the generated guard table](https://dartsim.github.io/dart/performance/guards/main.md).
+
+| Scene | Purpose |
+| --- | --- |
+| S1 | Active container; primary fixture, 60 and 120 objects at 1 and 16 threads |
+| S2 | Settled 3k shapes; sleeping regime |
+| S3 | Active 3k shapes; deactivation disabled |
+| S4 | 900 generated objects |
+| S5 | 90 generated objects, serial |
+| S6 | Penetration-creep and pile-sleep reproducer |
+
+Read hash, contacts, pairs, resting, finite-state, cap-hit, and maximum
+penetration columns together. Hashes compare only within one detector.
+These guard settings do not substitute for
+[Gazebo-path measurements](profiling.md#preserve-downstream-compatibility).
+Historical baseline rows remain in Git history.
 
 This compact merge-record example uses illustrative values and one row:
 

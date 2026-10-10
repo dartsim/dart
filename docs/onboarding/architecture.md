@@ -12,7 +12,7 @@ and downstream Gazebo/gz-physics behavior unless explicitly approved.
 | Foundations | `dart/common/`, `dart/math/` | Shared utilities, resources, logging, memory, geometry, and math used by higher layers |
 | SIMD | `dart/simd/` | Header-only SIMD abstraction (compile-time backend selection via `config.hpp` macros — scalar/SSE/AVX/AVX2/AVX-512/NEON — plus dynamically sized matrix/vector types, Eigen bridges, and geometry/math kernels) used by performance-sensitive layers; validated by the `CI SIMD Multi-Arch` workflow |
 | Multibody model | `dart/dynamics/` | Skeletons, bodies, joints, shapes, aspects, kinematics, and dynamics state |
-| Collision | `dart/collision/` | Collision detector abstraction plus the DART-owned `dart`, FCL, Bullet, and ODE implementations selected through existing components |
+| Collision | `dart/collision/` | Collision detector abstraction plus the DART-owned `dart`, FCL, ODE, and other optional implementations selected through existing components |
 | Constraints | `dart/constraint/`, `dart/lcpsolver/` | Contact and joint constraints, LCP-based solving (Lemke/Dantzig in `dart/lcpsolver/`), and solver-owned per-step state |
 | Optimization | `dart/optimizer/` | The retained gradient-based optimizer interfaces used by dynamics and IK |
 | Simulation | `dart/simulation/` | `World` ownership, stepping, time integration, and orchestration of collision and constraints |
@@ -38,6 +38,25 @@ boundaries instead of adding task-local bypasses.
 - Python changes use pybind11 and the existing camelCase DART 6 surface.
 - GUI changes use the OSG path and require artifact inspection when rendering,
   interaction, or capture behavior changes.
+
+### Performance compatibility
+
+The gz-physics dartsim plugin subclasses `OdeCollisionDetector` and
+`ContactSurfaceHandler`, casts the solver to `BoxedLcpConstraintSolver`, and
+uses `BodyNode::moveTo` detach/reattach flows. Preserve the vtables of
+`CollisionDetector`, `OdeCollisionDetector`, `ContactSurfaceHandler`, and
+`BoxedLcpConstraintSolver`. Detector selection and collision-result access are
+covered by the [downstream contract](../design/dart6_collision_backends.md#downstream-contract).
+
+Simulation threads remain opt-in through `World::setNumSimulationThreads`,
+with a default of one; do not assume Gazebo enables them. Behavior-preserving
+optimizations retain each detector's final-state hash and contact, pair, and
+resting counts on the guard scenes. Behavior-changing work needs a separate
+PR with old/new guard rows, tolerance rationale, and approved rebaselining.
+
+Keep structure-of-arrays or aligned scratch behind implementation-private
+storage or in function-local state. Run `pixi run test-eigen-overalignment`
+when alignment changes. Do not add `-march` flags to exported targets.
 
 ## Change Routing And Gates
 
