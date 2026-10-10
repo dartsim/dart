@@ -1,3 +1,10 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include <nanobind/stl/unique_ptr.h>
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -47,8 +54,6 @@
 #include <dart/common/LockableReference.hpp>
 
 #include <Eigen/Core>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include <memory>
 #include <string>
@@ -56,18 +61,14 @@
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void ReferentialSkeleton(py::module& m)
+void ReferentialSkeleton(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::dynamics::ReferentialSkeleton,
-      dart::dynamics::MetaSkeleton,
-      std::shared_ptr<dart::dynamics::ReferentialSkeleton>>(
-      m, "ReferentialSkeleton")
+      dart::dynamics::MetaSkeleton>(m, "ReferentialSkeleton")
       .def(
           "getLockableReference",
           +[](const dart::dynamics::ReferentialSkeleton* self)
@@ -80,13 +81,13 @@ void ReferentialSkeleton(py::module& m)
               const std::string& _name) -> const std::string& {
             return self->setName(_name);
           },
-          ::py::return_value_policy::reference_internal,
-          ::py::arg("name"))
+          nb::rv_policy::reference_internal,
+          nb::arg("name"))
       .def(
           "getName",
           +[](const dart::dynamics::ReferentialSkeleton* self)
               -> const std::string& { return self->getName(); },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getNumSkeletons",
           +[](const dart::dynamics::ReferentialSkeleton* self) -> std::size_t {
@@ -98,7 +99,7 @@ void ReferentialSkeleton(py::module& m)
               const dart::dynamics::Skeleton* skel) -> bool {
             return self->hasSkeleton(skel);
           },
-          ::py::arg("skel"))
+          nb::arg("skel").none())
       .def(
           "getNumBodyNodes",
           +[](const dart::dynamics::ReferentialSkeleton* self) -> std::size_t {
@@ -117,7 +118,7 @@ void ReferentialSkeleton(py::module& m)
               -> std::vector<dart::dynamics::BodyNode*> {
             return self->getBodyNodes(name);
           },
-          ::py::arg("name"))
+          nb::arg("name"))
       .def(
           "getBodyNodes",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -125,21 +126,21 @@ void ReferentialSkeleton(py::module& m)
               -> std::vector<const dart::dynamics::BodyNode*> {
             return self->getBodyNodes(name);
           },
-          ::py::arg("name"))
+          nb::arg("name"))
       .def(
           "hasBodyNode",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::BodyNode* bodyNode) -> bool {
             return self->hasBodyNode(bodyNode);
           },
-          ::py::arg("bodyNode"))
+          nb::arg("bodyNode").none())
       .def(
           "getIndexOf",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::BodyNode* _bn) -> std::size_t {
             return self->getIndexOf(_bn);
           },
-          ::py::arg("bn"))
+          nb::arg("bn").none())
       .def(
           "getIndexOf",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -147,8 +148,8 @@ void ReferentialSkeleton(py::module& m)
               bool _warning) -> std::size_t {
             return self->getIndexOf(_bn, _warning);
           },
-          ::py::arg("bn"),
-          ::py::arg("warning"))
+          nb::arg("bn").none(),
+          nb::arg("warning"))
       .def(
           "getNumJoints",
           +[](const dart::dynamics::ReferentialSkeleton* self) -> std::size_t {
@@ -160,22 +161,22 @@ void ReferentialSkeleton(py::module& m)
               -> std::vector<dart::dynamics::Joint*> {
             return self->getJoints();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getJoints",
           +[](const dart::dynamics::ReferentialSkeleton* self)
               -> std::vector<const dart::dynamics::Joint*> {
             return self->getJoints();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getJoints",
           +[](dart::dynamics::ReferentialSkeleton* self,
               const std::string& name) -> std::vector<dart::dynamics::Joint*> {
             return self->getJoints(name);
           },
-          ::py::arg("name"),
-          ::py::return_value_policy::reference_internal)
+          nb::arg("name"),
+          nb::rv_policy::reference_internal)
       .def(
           "getJoints",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -183,22 +184,22 @@ void ReferentialSkeleton(py::module& m)
               -> std::vector<const dart::dynamics::Joint*> {
             return self->getJoints(name);
           },
-          ::py::arg("name"),
-          ::py::return_value_policy::reference_internal)
+          nb::arg("name"),
+          nb::rv_policy::reference_internal)
       .def(
           "hasJoint",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::Joint* joint) -> bool {
             return self->hasJoint(joint);
           },
-          ::py::arg("joint"))
+          nb::arg("joint").none())
       .def(
           "getIndexOf",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::Joint* _joint) -> std::size_t {
             return self->getIndexOf(_joint);
           },
-          ::py::arg("joint"))
+          nb::arg("joint").none())
       .def(
           "getIndexOf",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -206,8 +207,8 @@ void ReferentialSkeleton(py::module& m)
               bool _warning) -> std::size_t {
             return self->getIndexOf(_joint, _warning);
           },
-          ::py::arg("joint"),
-          ::py::arg("warning"))
+          nb::arg("joint").none(),
+          nb::arg("warning"))
       .def(
           "getNumDofs",
           +[](const dart::dynamics::ReferentialSkeleton* self) -> std::size_t {
@@ -219,14 +220,14 @@ void ReferentialSkeleton(py::module& m)
               -> std::vector<dart::dynamics::DegreeOfFreedom*> {
             return self->getDofs();
           },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "getIndexOf",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::DegreeOfFreedom* _dof) -> std::size_t {
             return self->getIndexOf(_dof);
           },
-          ::py::arg("dof"))
+          nb::arg("dof").none())
       .def(
           "getIndexOf",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -234,14 +235,14 @@ void ReferentialSkeleton(py::module& m)
               bool _warning) -> std::size_t {
             return self->getIndexOf(_dof, _warning);
           },
-          ::py::arg("dof"),
-          ::py::arg("warning"))
+          nb::arg("dof").none(),
+          nb::arg("warning"))
       .def(
           "getJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node)
               -> dart::math::Jacobian { return self->getJacobian(_node); },
-          ::py::arg("node"))
+          nb::arg("node").none())
       .def(
           "getJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -250,8 +251,8 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobian(_node, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -259,8 +260,8 @@ void ReferentialSkeleton(py::module& m)
               const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobian(_node, _localOffset);
           },
-          ::py::arg("node"),
-          ::py::arg("localOffset"))
+          nb::arg("node").none(),
+          nb::arg("localOffset"))
       .def(
           "getJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -270,15 +271,15 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobian(_node, _localOffset, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("localOffset"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("localOffset"),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getWorldJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
               const dart::dynamics::JacobianNode* _node)
               -> dart::math::Jacobian { return self->getWorldJacobian(_node); },
-          ::py::arg("node"))
+          nb::arg("node").none())
       .def(
           "getWorldJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -286,8 +287,8 @@ void ReferentialSkeleton(py::module& m)
               const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getWorldJacobian(_node, _localOffset);
           },
-          ::py::arg("node"),
-          ::py::arg("localOffset"))
+          nb::arg("node").none(),
+          nb::arg("localOffset"))
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -295,7 +296,7 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_node);
           },
-          ::py::arg("node"))
+          nb::arg("node").none())
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -304,8 +305,8 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_node, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -314,8 +315,8 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobian(_node, _localOffset);
           },
-          ::py::arg("node"),
-          ::py::arg("localOffset"))
+          nb::arg("node").none(),
+          nb::arg("localOffset"))
       .def(
           "getLinearJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -326,9 +327,9 @@ void ReferentialSkeleton(py::module& m)
             return self->getLinearJacobian(
                 _node, _localOffset, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("localOffset"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("localOffset"),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getAngularJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -336,7 +337,7 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::AngularJacobian {
             return self->getAngularJacobian(_node);
           },
-          ::py::arg("node"))
+          nb::arg("node").none())
       .def(
           "getAngularJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -345,8 +346,8 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::AngularJacobian {
             return self->getAngularJacobian(_node, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -354,7 +355,7 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_node);
           },
-          ::py::arg("node"))
+          nb::arg("node").none())
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -363,8 +364,8 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_node, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -372,8 +373,8 @@ void ReferentialSkeleton(py::module& m)
               const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobianSpatialDeriv(_node, _localOffset);
           },
-          ::py::arg("node"),
-          ::py::arg("localOffset"))
+          nb::arg("node").none(),
+          nb::arg("localOffset"))
       .def(
           "getJacobianSpatialDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -384,9 +385,9 @@ void ReferentialSkeleton(py::module& m)
             return self->getJacobianSpatialDeriv(
                 _node, _localOffset, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("localOffset"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("localOffset"),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -394,7 +395,7 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_node);
           },
-          ::py::arg("node"))
+          nb::arg("node").none())
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -403,8 +404,8 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_node, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -412,8 +413,8 @@ void ReferentialSkeleton(py::module& m)
               const Eigen::Vector3d& _localOffset) -> dart::math::Jacobian {
             return self->getJacobianClassicDeriv(_node, _localOffset);
           },
-          ::py::arg("node"),
-          ::py::arg("localOffset"))
+          nb::arg("node").none(),
+          nb::arg("localOffset"))
       .def(
           "getJacobianClassicDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -424,9 +425,9 @@ void ReferentialSkeleton(py::module& m)
             return self->getJacobianClassicDeriv(
                 _node, _localOffset, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("localOffset"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("localOffset"),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -434,7 +435,7 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_node);
           },
-          ::py::arg("node"))
+          nb::arg("node").none())
       .def(
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -443,8 +444,8 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_node, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -453,8 +454,8 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getLinearJacobianDeriv(_node, _localOffset);
           },
-          ::py::arg("node"),
-          ::py::arg("localOffset"))
+          nb::arg("node").none(),
+          nb::arg("localOffset"))
       .def(
           "getLinearJacobianDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -465,9 +466,9 @@ void ReferentialSkeleton(py::module& m)
             return self->getLinearJacobianDeriv(
                 _node, _localOffset, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("localOffset"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("localOffset"),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getAngularJacobianDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -475,7 +476,7 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::AngularJacobian {
             return self->getAngularJacobianDeriv(_node);
           },
-          ::py::arg("node"))
+          nb::arg("node").none())
       .def(
           "getAngularJacobianDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -484,8 +485,8 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::AngularJacobian {
             return self->getAngularJacobianDeriv(_node, _inCoordinatesOf);
           },
-          ::py::arg("node"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("node").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getMass",
           +[](const dart::dynamics::ReferentialSkeleton* self) -> double {
@@ -526,7 +527,7 @@ void ReferentialSkeleton(py::module& m)
               const dart::dynamics::Frame* _withRespectTo) -> Eigen::Vector3d {
             return self->getCOM(_withRespectTo);
           },
-          ::py::arg("withRespectTo"))
+          nb::arg("withRespectTo").none())
       .def(
           "getCOMSpatialVelocity",
           +[](const dart::dynamics::ReferentialSkeleton* self)
@@ -537,7 +538,7 @@ void ReferentialSkeleton(py::module& m)
               const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector6d {
             return self->getCOMSpatialVelocity(_relativeTo);
           },
-          ::py::arg("relativeTo"))
+          nb::arg("relativeTo").none())
       .def(
           "getCOMSpatialVelocity",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -546,8 +547,8 @@ void ReferentialSkeleton(py::module& m)
               -> Eigen::Vector6d {
             return self->getCOMSpatialVelocity(_relativeTo, _inCoordinatesOf);
           },
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getCOMLinearVelocity",
           +[](const dart::dynamics::ReferentialSkeleton* self)
@@ -558,7 +559,7 @@ void ReferentialSkeleton(py::module& m)
               const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
             return self->getCOMLinearVelocity(_relativeTo);
           },
-          ::py::arg("relativeTo"))
+          nb::arg("relativeTo").none())
       .def(
           "getCOMLinearVelocity",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -567,8 +568,8 @@ void ReferentialSkeleton(py::module& m)
               -> Eigen::Vector3d {
             return self->getCOMLinearVelocity(_relativeTo, _inCoordinatesOf);
           },
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getCOMSpatialAcceleration",
           +[](const dart::dynamics::ReferentialSkeleton* self)
@@ -579,7 +580,7 @@ void ReferentialSkeleton(py::module& m)
               const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector6d {
             return self->getCOMSpatialAcceleration(_relativeTo);
           },
-          ::py::arg("relativeTo"))
+          nb::arg("relativeTo").none())
       .def(
           "getCOMSpatialAcceleration",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -589,8 +590,8 @@ void ReferentialSkeleton(py::module& m)
             return self->getCOMSpatialAcceleration(
                 _relativeTo, _inCoordinatesOf);
           },
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::ReferentialSkeleton* self)
@@ -601,7 +602,7 @@ void ReferentialSkeleton(py::module& m)
               const dart::dynamics::Frame* _relativeTo) -> Eigen::Vector3d {
             return self->getCOMLinearAcceleration(_relativeTo);
           },
-          ::py::arg("relativeTo"))
+          nb::arg("relativeTo").none())
       .def(
           "getCOMLinearAcceleration",
           +[](const dart::dynamics::ReferentialSkeleton* self,
@@ -611,8 +612,8 @@ void ReferentialSkeleton(py::module& m)
             return self->getCOMLinearAcceleration(
                 _relativeTo, _inCoordinatesOf);
           },
-          ::py::arg("relativeTo"),
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("relativeTo").none(),
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getCOMJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self)
@@ -624,7 +625,7 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::Jacobian {
             return self->getCOMJacobian(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getCOMLinearJacobian",
           +[](const dart::dynamics::ReferentialSkeleton* self)
@@ -638,7 +639,7 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getCOMLinearJacobian(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getCOMJacobianSpatialDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self)
@@ -652,7 +653,7 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::Jacobian {
             return self->getCOMJacobianSpatialDeriv(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"))
+          nb::arg("inCoordinatesOf").none())
       .def(
           "getCOMLinearJacobianDeriv",
           +[](const dart::dynamics::ReferentialSkeleton* self)
@@ -666,7 +667,7 @@ void ReferentialSkeleton(py::module& m)
               -> dart::math::LinearJacobian {
             return self->getCOMLinearJacobianDeriv(_inCoordinatesOf);
           },
-          ::py::arg("inCoordinatesOf"));
+          nb::arg("inCoordinatesOf").none());
 }
 
 } // namespace python

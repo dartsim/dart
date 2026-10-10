@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -33,40 +37,30 @@
 #include <dart/common/LocalResource.hpp>
 #include <dart/common/Resource.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
 #include <string>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void Resource(py::module& m)
+void Resource(nb::module_& m)
 {
-  ::py::class_<dart::common::Resource, std::shared_ptr<dart::common::Resource>>(
-      m, "Resource")
+  dartnb::dart_class<dart::common::Resource>(m, "Resource")
       .def("getSize", &common::Resource::getSize)
       .def("tell", &common::Resource::tell)
       .def(
-          "seek",
-          &common::Resource::seek,
-          ::py::arg("offset"),
-          ::py::arg("origin"))
+          "seek", &common::Resource::seek, nb::arg("offset"), nb::arg("origin"))
       .def(
           "read",
           &common::Resource::read,
-          ::py::arg("buffer"),
-          ::py::arg("size"),
-          ::py::arg("count"))
+          nb::arg("buffer").none(),
+          nb::arg("size"),
+          nb::arg("count"))
       .def("readAll", &common::Resource::readAll);
 
-  ::py::class_<
-      dart::common::LocalResource,
-      dart::common::Resource,
-      std::shared_ptr<dart::common::LocalResource>>(m, "LocalResource")
-      .def(::py::init<const std::string&>(), ::py::arg("path"))
+  dartnb::dart_class<dart::common::LocalResource, dart::common::Resource>(
+      m, "LocalResource")
+      .def(dartnb::init<const std::string&>(), nb::arg("path"))
       .def("isGood", &common::LocalResource::isGood);
 }
 

@@ -1,7 +1,7 @@
 # AI Principles
 
 These principles apply to AI-assisted work on `main`, the development branch
-for the next release (currently DART 6.20).
+for the next release (currently DART 6.21).
 Keep this file short: it spends always-loaded agent context, so put procedures
 and compatibility detail in the owner docs named by `AGENTS.md`.
 
@@ -34,11 +34,10 @@ and compatibility detail in the owner docs named by `AGENTS.md`.
 
 ## Compatibility First
 
-- DART 6.20 is a compatibility support lane. Preserve existing public headers,
+- DART 6 preserves its C++ compatibility surface. Preserve existing public headers,
   package components, and downstream Gazebo/gz-physics behavior unless a
   maintainer explicitly accepts a breaking change.
-- DART 6.21 permits the approved opt-in nanobind binder; pybind11 remains the
-  default during the transition. Binder contracts live in
+- DART 6.21 uses the approved nanobind binder exclusively. Binder contracts live in
   `docs/onboarding/python-bindings.md`.
 - Target `main`, where new patches land; backports to a `release-6.*` branch
   cut from a release tag use `dart-backport-pr` (see

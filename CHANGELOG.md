@@ -6,6 +6,21 @@
 
 * Breaking Changes
 
+  * dartpy now uses nanobind 3.1 or newer and requires Python 3.10 or newer.
+    Compared with DART 6.20 (pybind11), secondary C++ bases are absent from
+    Python `isinstance` checks and MRO; exception types and messages can differ;
+    bool parameters accept only `True`/`False`; str parameters reject bytes;
+    and const Eigen views are read-only. Convert inputs explicitly and copy
+    const views when writable arrays are needed.
+
+  * pybind11 extension modules must include `dartpy/pybind11_interop.hpp`
+    to exchange DART objects with dartpy. Rebuild extensions against the same
+    DART headers and C++ standard library ABI as dartpy.
+
+  * Remove the `DART_DARTPY_BINDER` and `DART_USE_SYSTEM_PYBIND11` CMake
+    options and the pybind11 binder. Remove these options from configurations;
+    a legacy `DART_DARTPY_BINDER=pybind11` value fails configure.
+
   * Explicitly delete copy and move construction and assignment for
     `DARTCollisionGroup`, `OdeCollisionGroup`, `EmbedProperties`, and
     `EmbedStateAndProperties`. These operations could not be instantiated
@@ -31,16 +46,17 @@
     and world-recording access for Python simulation tutorials.
     [#3644](https://github.com/dartsim/dart/pull/3644)
 
-  * Add an opt-in nanobind build of `dartpy` with
-    `-DDART_DARTPY_BINDER=nanobind`. Python overrides stay alive while C++ uses
-    them, graph-object wrappers retain their skeleton, and const Eigen views
-    are read-only. The binder includes `dartpy.gui`; Python overrides of GUI
-    nodes and handlers stay alive while native code uses them (pybind11 can lose
-    them). Removed GUI wrappers may live until their viewer is destroyed.
-    Secondary-base `isinstance`/MRO and exception details differ;
-    bool parameters accept only `True`/`False`, and str parameters reject bytes.
+  * Python overrides stay alive while C++ uses them, graph-object wrappers
+    retain their skeleton, and GUI nodes and handlers retain Python overrides
+    while native code uses them. Removed GUI wrappers may live until their
+    viewer is destroyed.
 
-  * Reject a null node when constructing inverse kinematics in either binder,
+  * Let pybind11 extension modules exchange skeletons, worlds, graph objects,
+    and `Isometry3d` values with `dartpy` through the
+    `dartpy._C_API` capsule and the installed `dartpy/pybind11_interop.hpp`
+    header, preserving wrapper identity and ownership.
+
+  * Reject a null node when constructing inverse kinematics in dartpy,
     preventing an invalid-input crash.
 
   * Build `dartpy` wheels with the nanobind binder. Python 3.12 and newer use
@@ -58,9 +74,7 @@
 
 * Build
 
-  * Add `DART_DARTPY_BINDER` (default `pybind11`) and
-    `DART_USE_SYSTEM_NANOBIND` (default `OFF`). The nanobind binder requires
-    Python 3.10 or newer and nanobind 3.1 or newer; the bundled build fetches
+  * Add `DART_USE_SYSTEM_NANOBIND` (default `OFF`); the bundled build fetches
     nanobind 3.1.0 and its robin_map submodule.
 
 ### [DART 6.20.0 (Unreleased)](https://github.com/dartsim/dart/milestone/99)

@@ -1,3 +1,5 @@
+#include "detail/dart_nb.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,23 +32,16 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "pointers.hpp"
+#include "gui/osg/ownership.hpp"
 
 #include <dart/gui/osg/Viewer.hpp>
-
-#include <pybind11/functional.h>
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void ViewerAttachment(py::module& m)
+void ViewerAttachment(nb::module_& m)
 {
-  ::py::class_<
-      dart::gui::osg::ViewerAttachment,
-      ::osg::ref_ptr<dart::gui::osg::ViewerAttachment>>(m, "ViewerAttachment")
+  dartnb::dart_class<dart::gui::osg::ViewerAttachment>(m, "ViewerAttachment")
       .def(
           "refresh",
           +[](dart::gui::osg::ViewerAttachment* self) { self->refresh(); });

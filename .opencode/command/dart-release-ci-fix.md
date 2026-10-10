@@ -44,7 +44,7 @@ applicable.
    fi
    ```
 4. If a proven fix exists in a named reference, adapt it only when its
-   assumptions exist here. Preserve C++17, pybind11, `dart::utils`, OSG, and
+   assumptions exist here. Preserve C++17, nanobind, `dart::utils`, OSG, and
    downstream Gazebo/gz-physics behavior; otherwise make the smallest
    release-scoped fix.
 5. Explain why the failure was not caught earlier and whether workflow coverage should change.

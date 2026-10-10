@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -34,25 +38,19 @@
 #include <dart/collision/CollisionGroup.hpp>
 #include <dart/collision/fcl/FCLCollisionGroup.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void FCLCollisionGroup(py::module& m)
+void FCLCollisionGroup(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::collision::FCLCollisionGroup,
-      dart::collision::CollisionGroup,
-      std::shared_ptr<dart::collision::FCLCollisionGroup>>(
-      m, "FCLCollisionGroup")
+      dart::collision::CollisionGroup>(m, "FCLCollisionGroup")
       .def(
-          ::py::init<const dart::collision::CollisionDetectorPtr&>(),
-          ::py::arg("collisionDetector"));
+          dartnb::init<const dart::collision::CollisionDetectorPtr&>(),
+          nb::arg("collisionDetector").none());
 }
 
 } // namespace python

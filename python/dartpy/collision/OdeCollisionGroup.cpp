@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -36,23 +40,17 @@
 
   #include <dart/collision/ode/ode.hpp>
 
-  #include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void OdeCollisionGroup(py::module& m)
+void OdeCollisionGroup(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::collision::OdeCollisionGroup,
-      dart::collision::CollisionGroup,
-      std::shared_ptr<dart::collision::OdeCollisionGroup>>(
-      m, "OdeCollisionGroup")
+      dart::collision::CollisionGroup>(m, "OdeCollisionGroup")
       .def(
-          ::py::init<const dart::collision::CollisionDetectorPtr&>(),
-          ::py::arg("collisionDetector"));
+          dartnb::init<const dart::collision::CollisionDetectorPtr&>(),
+          nb::arg("collisionDetector").none());
 }
 
 } // namespace python

@@ -19,7 +19,7 @@ linked pull requests.
 | External collision dependencies | FCL remains core-required; Bullet and ODE remain optional |
 | Released `DARTCollide` API | Preserved through thin adapters |
 | Detector/group/object layouts | Preserved |
-| C++ and Python floor | C++17 and pybind11 |
+| C++ and Python floor | C++17 and nanobind |
 
 PR #3381 established this architecture on DART 6.20. Its squash merge is
 `46719bfbd75e1f70e69b2c76fb34a3fa2b78edd5`.

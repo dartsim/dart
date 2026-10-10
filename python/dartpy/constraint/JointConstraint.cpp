@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -35,28 +39,23 @@
 
 #include <dart/dynamics/Joint.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void JointConstraint(py::module& m)
+void JointConstraint(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::constraint::JointConstraint,
-      dart::constraint::ConstraintBase,
-      std::shared_ptr<dart::constraint::JointConstraint>>(m, "JointConstraint")
-      .def(::py::init<dart::dynamics::Joint*>(), ::py::arg("joint"))
+      dart::constraint::ConstraintBase>(m, "JointConstraint")
+      .def(dartnb::init<dart::dynamics::Joint*>(), nb::arg("joint").none())
       .def_static(
           "setErrorAllowance",
           +[](double allowance) {
             dart::constraint::JointConstraint::setErrorAllowance(allowance);
           },
-          ::py::arg("allowance"))
+          nb::arg("allowance"))
       .def_static(
           "getErrorAllowance",
           +[]() -> double {
@@ -67,7 +66,7 @@ void JointConstraint(py::module& m)
           +[](double _erp) {
             dart::constraint::JointConstraint::setErrorReductionParameter(_erp);
           },
-          ::py::arg("erp"))
+          nb::arg("erp"))
       .def_static(
           "getErrorReductionParameter",
           +[]() -> double {
@@ -80,7 +79,7 @@ void JointConstraint(py::module& m)
             dart::constraint::JointConstraint::setMaxErrorReductionVelocity(
                 erv);
           },
-          ::py::arg("erv"))
+          nb::arg("erv"))
       .def_static(
           "getMaxErrorReductionVelocity",
           +[]() -> double {
@@ -92,7 +91,7 @@ void JointConstraint(py::module& m)
           +[](double cfm) {
             dart::constraint::JointConstraint::setConstraintForceMixing(cfm);
           },
-          ::py::arg("cfm"))
+          nb::arg("cfm"))
       .def_static(
           "getConstraintForceMixing", +[]() -> double {
             return dart::constraint::JointConstraint::

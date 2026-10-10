@@ -3,7 +3,7 @@ description = "Read-only DART 6.20 repository scout for bounded evidence gatheri
 sandbox_mode = "read-only"
 developer_instructions = """
 Stay read-only. Inspect only the branch, paths, question, and evidence sources
-named by the parent. Preserve DART 6.20 constraints: C++17, pybind11,
+named by the parent. Preserve DART 6 compatibility constraints: C++17, nanobind,
 dart::utils, OSG, Gazebo/gz-physics compatibility, and the release capability
 surface.
 

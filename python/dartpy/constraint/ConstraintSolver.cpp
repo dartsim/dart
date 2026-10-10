@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -38,53 +44,45 @@
 
 #include <dart/dynamics/Skeleton.hpp>
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 #include <memory>
 #include <vector>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void ConstraintSolver(py::module& m)
+void ConstraintSolver(nb::module_& m)
 {
-  ::py::class_<
-      dart::constraint::ConstraintSolver,
-      std::shared_ptr<dart::constraint::ConstraintSolver>>(
-      m, "ConstraintSolver")
+  dartnb::dart_class<dart::constraint::ConstraintSolver>(m, "ConstraintSolver")
       .def(
           "addSkeleton",
           +[](dart::constraint::ConstraintSolver* self,
               const dart::dynamics::SkeletonPtr& skeleton) {
             self->addSkeleton(skeleton);
           },
-          ::py::arg("skeleton"))
+          nb::arg("skeleton").none())
       .def(
           "addSkeletons",
           +[](dart::constraint::ConstraintSolver* self,
               const std::vector<dart::dynamics::SkeletonPtr>& skeletons) {
             self->addSkeletons(skeletons);
           },
-          ::py::arg("skeletons"))
+          nb::arg("skeletons"))
       .def(
           "removeSkeleton",
           +[](dart::constraint::ConstraintSolver* self,
               const dart::dynamics::SkeletonPtr& skeleton) {
             self->removeSkeleton(skeleton);
           },
-          ::py::arg("skeleton"))
+          nb::arg("skeleton").none())
       .def(
           "removeSkeletons",
           +[](dart::constraint::ConstraintSolver* self,
               const std::vector<dart::dynamics::SkeletonPtr>& skeletons) {
             self->removeSkeletons(skeletons);
           },
-          ::py::arg("skeletons"))
+          nb::arg("skeletons"))
       .def(
           "removeAllSkeletons",
           +[](dart::constraint::ConstraintSolver* self) {
@@ -96,14 +94,14 @@ void ConstraintSolver(py::module& m)
               const dart::constraint::ConstraintBasePtr& constraint) {
             self->addConstraint(constraint);
           },
-          ::py::arg("constraint"))
+          nb::arg("constraint").none())
       .def(
           "removeConstraint",
           +[](dart::constraint::ConstraintSolver* self,
               const dart::constraint::ConstraintBasePtr& constraint) {
             self->removeConstraint(constraint);
           },
-          ::py::arg("constraint"))
+          nb::arg("constraint").none())
       .def(
           "removeAllConstraints",
           +[](dart::constraint::ConstraintSolver* self) {
@@ -120,7 +118,7 @@ void ConstraintSolver(py::module& m)
               std::size_t index) -> constraint::ConstraintBasePtr {
             return self->getConstraint(index);
           },
-          ::py::arg("index"))
+          nb::arg("index"))
       .def(
           "clearLastCollisionResult",
           +[](dart::constraint::ConstraintSolver* self) {
@@ -131,7 +129,7 @@ void ConstraintSolver(py::module& m)
           +[](dart::constraint::ConstraintSolver* self, double _timeStep) {
             self->setTimeStep(_timeStep);
           },
-          ::py::arg("timeStep"))
+          nb::arg("timeStep"))
       .def(
           "getTimeStep",
           +[](const dart::constraint::ConstraintSolver* self) -> double {
@@ -143,7 +141,7 @@ void ConstraintSolver(py::module& m)
               std::size_t numThreads) {
             self->setNumSimulationThreads(numThreads);
           },
-          ::py::arg("numThreads"))
+          nb::arg("numThreads"))
       .def(
           "getNumSimulationThreads",
           +[](const dart::constraint::ConstraintSolver* self) -> std::size_t {
@@ -154,7 +152,7 @@ void ConstraintSolver(py::module& m)
           +[](dart::constraint::ConstraintSolver* self, bool enabled) {
             self->setSplitImpulseEnabled(enabled);
           },
-          ::py::arg("enabled"))
+          nb::arg("enabled"))
       .def(
           "isSplitImpulseEnabled",
           +[](const dart::constraint::ConstraintSolver* self) -> bool {
@@ -167,7 +165,7 @@ void ConstraintSolver(py::module& m)
                   collisionDetector) {
             self->setCollisionDetector(collisionDetector);
           },
-          ::py::arg("collisionDetector"))
+          nb::arg("collisionDetector").none())
       .def(
           "getCollisionDetector",
           +[](dart::constraint::ConstraintSolver* self)

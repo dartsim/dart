@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -35,21 +39,17 @@
 
 #include <dart/math/Random.hpp>
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void Random(py::module& m)
+void Random(nb::module_& m)
 {
-  ::py::class_<dart::math::Random>(m, "Random")
-      .def(::py::init<>())
+  dartnb::dart_class<dart::math::Random>(m, "Random")
+      .def(dartnb::init<>())
       .def_static(
           "setSeed",
           +[](unsigned int seed) { dart::math::Random::setSeed(seed); },
-          ::py::arg("seed"))
+          nb::arg("seed"))
       .def_static(
           "getSeed",
           +[]() -> unsigned int { return dart::math::Random::getSeed(); })
@@ -58,8 +58,8 @@ void Random(py::module& m)
           +[](double min, double max) -> double {
             return dart::math::Random::uniform(min, max);
           },
-          ::py::arg("min"),
-          ::py::arg("max"));
+          nb::arg("min"),
+          nb::arg("max"));
 }
 
 } // namespace python

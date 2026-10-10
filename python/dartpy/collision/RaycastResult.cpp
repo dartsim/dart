@@ -1,3 +1,11 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include "detail/eigen.hpp"
+
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -33,27 +41,32 @@
 #include <dart/collision/CollisionObject.hpp>
 #include <dart/collision/RaycastResult.hpp>
 
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void RaycastResult(py::module& m)
+void RaycastResult(nb::module_& m)
 {
-  ::py::class_<dart::collision::RayHit>(m, "RayHit")
-      .def(::py::init<>())
-      .def_readwrite(
-          "mCollisionObject", &dart::collision::RayHit::mCollisionObject)
-      .def_readwrite("mNormal", &dart::collision::RayHit::mNormal)
-      .def_readwrite("mPoint", &dart::collision::RayHit::mPoint)
-      .def_readwrite("mFraction", &dart::collision::RayHit::mFraction);
+  dartnb::dart_class<dart::collision::RayHit>(m, "RayHit")
+      .def(dartnb::init<>())
+      .def_rw(
+          "mCollisionObject",
+          &dart::collision::RayHit::mCollisionObject,
+          dartnb::setterArgument(&dart::collision::RayHit::mCollisionObject))
+      .def_rw(
+          "mNormal",
+          &dart::collision::RayHit::mNormal,
+          dartnb::setterArgument(&dart::collision::RayHit::mNormal))
+      .def_rw(
+          "mPoint",
+          &dart::collision::RayHit::mPoint,
+          dartnb::setterArgument(&dart::collision::RayHit::mPoint))
+      .def_rw(
+          "mFraction",
+          &dart::collision::RayHit::mFraction,
+          dartnb::setterArgument(&dart::collision::RayHit::mFraction));
 
-  ::py::class_<dart::collision::RaycastResult>(m, "RaycastResult")
-      .def(::py::init<>())
+  dartnb::dart_class<dart::collision::RaycastResult>(m, "RaycastResult")
+      .def(dartnb::init<>())
       .def(
           "clear", +[](dart::collision::RaycastResult* self) { self->clear(); })
       .def(
@@ -61,7 +74,10 @@ void RaycastResult(py::module& m)
           +[](const dart::collision::RaycastResult* self) -> bool {
             return self->hasHit();
           })
-      .def_readwrite("mRayHits", &dart::collision::RaycastResult::mRayHits);
+      .def_rw(
+          "mRayHits",
+          &dart::collision::RaycastResult::mRayHits,
+          dartnb::setterArgument(&dart::collision::RaycastResult::mRayHits));
 }
 
 } // namespace python

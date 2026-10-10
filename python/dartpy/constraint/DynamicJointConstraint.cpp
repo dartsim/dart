@@ -1,3 +1,9 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include "detail/eigen.hpp"
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -41,31 +47,25 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
 
 #include <memory>
 #include <string>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void DynamicJointConstraint(py::module& m)
+void DynamicJointConstraint(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::constraint::DynamicJointConstraint,
-      dart::constraint::ConstraintBase,
-      std::shared_ptr<dart::constraint::DynamicJointConstraint>>(
-      m, "DynamicJointConstraint")
+      dart::constraint::ConstraintBase>(m, "DynamicJointConstraint")
       .def_static(
           "setErrorAllowance",
           +[](double allowance) {
             dart::constraint::DynamicJointConstraint::setErrorAllowance(
                 allowance);
           },
-          ::py::arg("allowance"))
+          nb::arg("allowance"))
       .def_static(
           "getErrorAllowance",
           +[]() -> double {
@@ -78,7 +78,7 @@ void DynamicJointConstraint(py::module& m)
             dart::constraint::DynamicJointConstraint::
                 setErrorReductionParameter(erp);
           },
-          ::py::arg("erp"))
+          nb::arg("erp"))
       .def_static(
           "getErrorReductionParameter",
           +[]() -> double {
@@ -91,7 +91,7 @@ void DynamicJointConstraint(py::module& m)
             dart::constraint::DynamicJointConstraint::
                 setMaxErrorReductionVelocity(erv);
           },
-          ::py::arg("erv"))
+          nb::arg("erv"))
       .def_static(
           "getMaxErrorReductionVelocity",
           +[]() -> double {
@@ -104,106 +104,98 @@ void DynamicJointConstraint(py::module& m)
             dart::constraint::DynamicJointConstraint::setConstraintForceMixing(
                 cfm);
           },
-          ::py::arg("cfm"))
+          nb::arg("cfm"))
       .def_static(
           "getConstraintForceMixing", +[]() -> double {
             return dart::constraint::DynamicJointConstraint::
                 getConstraintForceMixing();
           });
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::constraint::BallJointConstraint,
-      dart::constraint::DynamicJointConstraint,
-      std::shared_ptr<dart::constraint::BallJointConstraint>>(
-      m, "BallJointConstraint")
+      dart::constraint::DynamicJointConstraint>(m, "BallJointConstraint")
       .def(
-          ::py::init<dart::dynamics::BodyNode*, const Eigen::Vector3d&>(),
-          ::py::arg("body"),
-          ::py::arg("jointPos"))
+          dartnb::init<dart::dynamics::BodyNode*, const Eigen::Vector3d&>(),
+          nb::arg("body").none(),
+          nb::arg("jointPos"))
       .def(
-          ::py::init<
+          dartnb::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::BodyNode*,
               const Eigen::Vector3d&>(),
-          ::py::arg("body1"),
-          ::py::arg("body2"),
-          ::py::arg("jointPos"))
+          nb::arg("body1").none(),
+          nb::arg("body2").none(),
+          nb::arg("jointPos"))
       .def_static(
           "getStaticType", +[]() -> std::string {
             return dart::constraint::BallJointConstraint::getStaticType();
           });
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::constraint::CylindricalJointConstraint,
-      dart::constraint::DynamicJointConstraint,
-      std::shared_ptr<dart::constraint::CylindricalJointConstraint>>(
-      m, "CylindricalJointConstraint")
+      dart::constraint::DynamicJointConstraint>(m, "CylindricalJointConstraint")
       .def(
-          ::py::init<
+          dartnb::init<
               dart::dynamics::BodyNode*,
               const Eigen::Vector3d&,
               const Eigen::Vector3d&>(),
-          ::py::arg("body"),
-          ::py::arg("jointPos"),
-          ::py::arg("axis"))
+          nb::arg("body").none(),
+          nb::arg("jointPos"),
+          nb::arg("axis"))
       .def(
-          ::py::init<
+          dartnb::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::BodyNode*,
               const Eigen::Vector3d&,
               const Eigen::Vector3d&,
               const Eigen::Vector3d&>(),
-          ::py::arg("body1"),
-          ::py::arg("body2"),
-          ::py::arg("jointPos"),
-          ::py::arg("axis1"),
-          ::py::arg("axis2"))
+          nb::arg("body1").none(),
+          nb::arg("body2").none(),
+          nb::arg("jointPos"),
+          nb::arg("axis1"),
+          nb::arg("axis2"))
       .def_static(
           "getStaticType", +[]() -> std::string {
             return dart::constraint::CylindricalJointConstraint::
                 getStaticType();
           });
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::constraint::RevoluteJointConstraint,
-      dart::constraint::DynamicJointConstraint,
-      std::shared_ptr<dart::constraint::RevoluteJointConstraint>>(
-      m, "RevoluteJointConstraint")
+      dart::constraint::DynamicJointConstraint>(m, "RevoluteJointConstraint")
       .def(
-          ::py::init<
+          dartnb::init<
               dart::dynamics::BodyNode*,
               const Eigen::Vector3d&,
               const Eigen::Vector3d&>(),
-          ::py::arg("body"),
-          ::py::arg("jointPos"),
-          ::py::arg("axis"))
+          nb::arg("body").none(),
+          nb::arg("jointPos"),
+          nb::arg("axis"))
       .def(
-          ::py::init<
+          dartnb::init<
               dart::dynamics::BodyNode*,
               dart::dynamics::BodyNode*,
               const Eigen::Vector3d&,
               const Eigen::Vector3d&,
               const Eigen::Vector3d&>(),
-          ::py::arg("body1"),
-          ::py::arg("body2"),
-          ::py::arg("jointPos"),
-          ::py::arg("axis1"),
-          ::py::arg("axis2"))
+          nb::arg("body1").none(),
+          nb::arg("body2").none(),
+          nb::arg("jointPos"),
+          nb::arg("axis1"),
+          nb::arg("axis2"))
       .def_static(
           "getStaticType", +[]() -> std::string {
             return dart::constraint::RevoluteJointConstraint::getStaticType();
           });
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::constraint::WeldJointConstraint,
-      dart::constraint::DynamicJointConstraint,
-      std::shared_ptr<dart::constraint::WeldJointConstraint>>(
-      m, "WeldJointConstraint")
-      .def(::py::init<dart::dynamics::BodyNode*>(), ::py::arg("body"))
+      dart::constraint::DynamicJointConstraint>(m, "WeldJointConstraint")
+      .def(dartnb::init<dart::dynamics::BodyNode*>(), nb::arg("body").none())
       .def(
-          ::py::init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
-          ::py::arg("body1"),
-          ::py::arg("body2"))
+          dartnb::init<dart::dynamics::BodyNode*, dart::dynamics::BodyNode*>(),
+          nb::arg("body1").none(),
+          nb::arg("body2").none())
       .def_static(
           "getStaticType",
           +[]() -> std::string {
@@ -213,7 +205,7 @@ void DynamicJointConstraint(py::module& m)
           "setRelativeTransform",
           +[](dart::constraint::WeldJointConstraint* self,
               const Eigen::Isometry3d& tf) { self->setRelativeTransform(tf); },
-          ::py::arg("tf"));
+          nb::arg("tf"));
 }
 
 } // namespace python

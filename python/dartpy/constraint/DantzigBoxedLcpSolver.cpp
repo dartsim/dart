@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -33,28 +37,22 @@
 #include <dart/constraint/BoxedLcpSolver.hpp>
 #include <dart/constraint/DantzigBoxedLcpSolver.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
 #include <string>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void DantzigBoxedLcpSolver(py::module& m)
+void DantzigBoxedLcpSolver(nb::module_& m)
 {
-  ::py::class_<
+  dartnb::dart_class<
       dart::constraint::DantzigBoxedLcpSolver,
-      dart::constraint::BoxedLcpSolver,
-      std::shared_ptr<dart::constraint::DantzigBoxedLcpSolver>>(
-      m, "DantzigBoxedLcpSolver")
+      dart::constraint::BoxedLcpSolver>(m, "DantzigBoxedLcpSolver")
       .def(
           "getType",
           +[](const dart::constraint::DantzigBoxedLcpSolver* self)
               -> const std::string& { return self->getType(); },
-          ::py::return_value_policy::reference_internal)
+          nb::rv_policy::reference_internal)
       .def(
           "solve",
           +[](dart::constraint::DantzigBoxedLcpSolver* self,
@@ -70,21 +68,21 @@ void DantzigBoxedLcpSolver(py::module& m)
             return self->solve(
                 n, A, x, b, nub, lo, hi, findex, earlyTermination);
           },
-          ::py::arg("n"),
-          ::py::arg("A"),
-          ::py::arg("x"),
-          ::py::arg("b"),
-          ::py::arg("nub"),
-          ::py::arg("lo"),
-          ::py::arg("hi"),
-          ::py::arg("findex"),
-          ::py::arg("earlyTermination"))
+          nb::arg("n"),
+          nb::arg("A").none(),
+          nb::arg("x").none(),
+          nb::arg("b").none(),
+          nb::arg("nub"),
+          nb::arg("lo").none(),
+          nb::arg("hi").none(),
+          nb::arg("findex").none(),
+          nb::arg("earlyTermination"))
       .def_static(
           "getStaticType",
           +[]() -> const std::string& {
             return dart::constraint::DantzigBoxedLcpSolver::getStaticType();
           },
-          ::py::return_value_policy::reference_internal);
+          nb::rv_policy::reference_internal);
 }
 
 } // namespace python

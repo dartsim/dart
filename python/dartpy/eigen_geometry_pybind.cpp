@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 //
 // All components of Drake are licensed under the BSD 3-Clause License
 // shown below. Where noted in the source code, some portions may
@@ -35,7 +39,6 @@
 #include "eigen_geometry_pybind.h"
 
 #include "dart/common/Macros.hpp"
-#include "pybind11/pybind11.h"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -119,8 +122,8 @@ void CheckAngleAxis(const Eigen::AngleAxis<T>& value)
 
 } // namespace
 
-// PYBIND11_MODULE(eigen_geometry, m) {
-void eigen_geometry(pybind11::module& parent_m)
+// NB_MODULE(eigen_geometry, m) {
+void eigen_geometry(nb::module_& parent_m)
 {
   auto m = parent_m.def_submodule("math");
 
@@ -135,44 +138,44 @@ void eigen_geometry(pybind11::module& parent_m)
   // @note `linear` implies rotation, and `affine` implies translation.
   {
     using Class = Eigen::Transform<T, 3, Eigen::Isometry>;
-    ::pybind11::class_<Class> py_class(m, "Isometry3");
-    py_class.def(::pybind11::init([]() { return Class::Identity(); }))
+    dartnb::dart_class<Class> py_class(m, "Isometry3");
+    py_class.def(dartnb::factory([]() { return Class::Identity(); }))
         .def_static("Identity", []() { return Class::Identity(); })
         .def(
-            ::pybind11::init([](const Eigen::Matrix<T, 4, 4>& matrix) {
+            dartnb::factory([](const Eigen::Matrix<T, 4, 4>& matrix) {
               Class out(matrix);
               CheckIsometry(out);
               return out;
             }),
-            ::pybind11::arg("matrix"))
+            nb::arg("matrix"))
         .def(
-            ::pybind11::init([](const Eigen::Matrix<T, 3, 3>& rotation,
-                                const Eigen::Matrix<T, 3, 1>& translation) {
+            dartnb::factory([](const Eigen::Matrix<T, 3, 3>& rotation,
+                               const Eigen::Matrix<T, 3, 1>& translation) {
               CheckRotMat(rotation);
               Class out = Class::Identity();
               out.linear() = rotation;
               out.translation() = translation;
               return out;
             }),
-            ::pybind11::arg("rotation"),
-            ::pybind11::arg("translation"))
+            nb::arg("rotation"),
+            nb::arg("translation"))
         .def(
-            ::pybind11::init([](const Eigen::Quaternion<T>& q,
-                                const Eigen::Matrix<T, 3, 1>& translation) {
+            dartnb::factory([](const Eigen::Quaternion<T>& q,
+                               const Eigen::Matrix<T, 3, 1>& translation) {
               CheckQuaternion(q);
               Class out = Class::Identity();
               out.linear() = q.toRotationMatrix();
               out.translation() = translation;
               return out;
             }),
-            ::pybind11::arg("quaternion"),
-            ::pybind11::arg("translation"))
+            nb::arg("quaternion"),
+            nb::arg("translation"))
         .def(
-            ::pybind11::init([](const Class& other) {
+            dartnb::factory([](const Class& other) {
               CheckIsometry(other);
               return other;
             }),
-            ::pybind11::arg("other"))
+            nb::arg("other"))
         .def(
             "matrix",
             [](const Class* self) -> Eigen::Matrix<T, 4, 4> {
@@ -220,21 +223,19 @@ void eigen_geometry(pybind11::module& parent_m)
             })
         .def(
             "__str__",
-            [](::pybind11::object self) {
-              return ::pybind11::str(self.attr("matrix")());
-            })
+            [](nb::object self) { return nb::str(self.attr("matrix")()); })
         // Do not define operator `__mul__` until we have the Python3 `@`
         // operator so that operations are similar to those of arrays.
         .def(
             "multiply",
             [](const Class& self, const Class& other) { return self * other; },
-            ::pybind11::arg("other"))
+            nb::arg("other"))
         .def(
             "multiply",
             [](const Class& self, const Eigen::Matrix<T, 3, 1>& position) {
               return self * position;
             },
-            ::pybind11::arg("position"))
+            nb::arg("position"))
         .def("inverse", [](const Class* self) { return self->inverse(); })
         //========================
         // Begin: added by dartpy
@@ -244,18 +245,18 @@ void eigen_geometry(pybind11::module& parent_m)
             [](Class* self, const Eigen::Matrix<T, 3, 1>& other) {
               self->translate(other);
             },
-            ::pybind11::arg("other"))
+            nb::arg("other"))
         .def(
             "pretranslate",
             [](Class* self, const Eigen::Matrix<T, 3, 1>& other) {
               self->pretranslate(other);
             },
-            ::pybind11::arg("other"))
+            nb::arg("other"))
         //========================
         // End: added by dartpy
         //========================
         ;
-    ::pybind11::implicitly_convertible<Eigen::Matrix<T, 4, 4>, Class>();
+    nb::implicitly_convertible<Eigen::Matrix<T, 4, 4>, Class>();
   }
 
   // Quaternion.
@@ -264,42 +265,42 @@ void eigen_geometry(pybind11::module& parent_m)
   // TODO(eric.cousineau): Should this not be restricted to a unit quaternion?
   {
     using Class = Eigen::Quaternion<T>;
-    ::pybind11::class_<Class> py_class(m, "Quaternion");
+    dartnb::dart_class<Class> py_class(m, "Quaternion");
     py_class.attr("__doc__")
         = "Provides a unit quaternion binding of Eigen::Quaternion<>.";
-    ::pybind11::object py_class_obj = py_class;
-    py_class.def(::pybind11::init([]() { return Class::Identity(); }))
+    nb::object py_class_obj = py_class;
+    py_class.def(dartnb::factory([]() { return Class::Identity(); }))
         .def_static("Identity", []() { return Class::Identity(); })
         .def(
-            ::pybind11::init([](const Eigen::Matrix<T, 4, 1>& wxyz) {
+            dartnb::factory([](const Eigen::Matrix<T, 4, 1>& wxyz) {
               Class out(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
               CheckQuaternion(out);
               return out;
             }),
-            ::pybind11::arg("wxyz"))
+            nb::arg("wxyz"))
         .def(
-            ::pybind11::init([](T w, T x, T y, T z) {
+            dartnb::factory([](T w, T x, T y, T z) {
               Class out(w, x, y, z);
               CheckQuaternion(out);
               return out;
             }),
-            ::pybind11::arg("w"),
-            ::pybind11::arg("x"),
-            ::pybind11::arg("y"),
-            ::pybind11::arg("z"))
+            nb::arg("w"),
+            nb::arg("x"),
+            nb::arg("y"),
+            nb::arg("z"))
         .def(
-            ::pybind11::init([](const Eigen::Matrix<T, 3, 3>& rotation) {
+            dartnb::factory([](const Eigen::Matrix<T, 3, 3>& rotation) {
               Class out(rotation);
               CheckQuaternion(out);
               return out;
             }),
-            ::pybind11::arg("rotation"))
+            nb::arg("rotation"))
         .def(
-            ::pybind11::init([](const Class& other) {
+            dartnb::factory([](const Class& other) {
               CheckQuaternion(other);
               return other;
             }),
-            ::pybind11::arg("other"))
+            nb::arg("other"))
         .def("w", [](const Class* self) { return self->w(); })
         .def("x", [](const Class* self) { return self->x(); })
         .def("y", [](const Class* self) { return self->y(); })
@@ -321,7 +322,7 @@ void eigen_geometry(pybind11::module& parent_m)
               CheckQuaternion(update);
               *self = update;
             },
-            ::pybind11::arg("wxyz"))
+            nb::arg("wxyz"))
         .def(
             "set_wxyz",
             [](Class* self, T w, T x, T y, T z) {
@@ -329,10 +330,10 @@ void eigen_geometry(pybind11::module& parent_m)
               CheckQuaternion(update);
               *self = update;
             },
-            ::pybind11::arg("w"),
-            ::pybind11::arg("x"),
-            ::pybind11::arg("y"),
-            ::pybind11::arg("z"))
+            nb::arg("w"),
+            nb::arg("x"),
+            nb::arg("y"),
+            nb::arg("z"))
         .def(
             "rotation",
             [](const Class* self) { return self->toRotationMatrix(); })
@@ -346,7 +347,7 @@ void eigen_geometry(pybind11::module& parent_m)
         .def(
             "__str__",
             [py_class_obj](const Class* self) {
-              return ::pybind11::str("{}(w={}, x={}, y={}, z={})")
+              return nb::str("{}(w={}, x={}, y={}, z={})")
                   .format(
                       py_class_obj.attr("__name__"),
                       self->w(),
@@ -364,7 +365,7 @@ void eigen_geometry(pybind11::module& parent_m)
             [](const Class& self, const Eigen::Matrix<T, 3, 1>& position) {
               return self * position;
             },
-            ::pybind11::arg("position"))
+            nb::arg("position"))
         .def("inverse", [](const Class* self) { return self->inverse(); })
         .def("conjugate", [](const Class* self) { return self->conjugate(); })
         //========================
@@ -384,40 +385,40 @@ void eigen_geometry(pybind11::module& parent_m)
   // Angle-axis.
   {
     using Class = Eigen::AngleAxis<T>;
-    ::pybind11::class_<Class> py_class(m, "AngleAxis");
+    dartnb::dart_class<Class> py_class(m, "AngleAxis");
     py_class.attr("__doc__") = "Bindings for Eigen::AngleAxis<>.";
-    ::pybind11::object py_class_obj = py_class;
-    py_class.def(::pybind11::init([]() { return Class::Identity(); }))
+    nb::object py_class_obj = py_class;
+    py_class.def(dartnb::factory([]() { return Class::Identity(); }))
         .def_static("Identity", []() { return Class::Identity(); })
         .def(
-            ::pybind11::init(
+            dartnb::factory(
                 [](const T& angle, const Eigen::Matrix<T, 3, 1>& axis) {
                   Class out(angle, axis);
                   CheckAngleAxis(out);
                   return out;
                 }),
-            ::pybind11::arg("angle"),
-            ::pybind11::arg("axis"))
+            nb::arg("angle"),
+            nb::arg("axis"))
         .def(
-            ::pybind11::init([](const Eigen::Quaternion<T>& q) {
+            dartnb::factory([](const Eigen::Quaternion<T>& q) {
               Class out(q);
               CheckAngleAxis(out);
               return out;
             }),
-            ::pybind11::arg("quaternion"))
+            nb::arg("quaternion"))
         .def(
-            ::pybind11::init([](const Eigen::Matrix<T, 3, 3>& rotation) {
+            dartnb::factory([](const Eigen::Matrix<T, 3, 3>& rotation) {
               Class out(rotation);
               CheckAngleAxis(out);
               return out;
             }),
-            ::pybind11::arg("rotation"))
+            nb::arg("rotation"))
         .def(
-            ::pybind11::init([](const Class& other) {
+            dartnb::factory([](const Class& other) {
               CheckAngleAxis(other);
               return other;
             }),
-            ::pybind11::arg("other"))
+            nb::arg("other"))
         .def("angle", [](const Class* self) { return self->angle(); })
         .def("axis", [](const Class* self) { return self->axis(); })
         .def(
@@ -427,7 +428,7 @@ void eigen_geometry(pybind11::module& parent_m)
               // check.
               self->angle() = angle;
             },
-            ::pybind11::arg("angle"))
+            nb::arg("angle"))
         .def(
             "set_axis",
             [](Class* self, const Eigen::Matrix<T, 3, 1>& axis) {
@@ -435,7 +436,7 @@ void eigen_geometry(pybind11::module& parent_m)
               CheckAngleAxis(update);
               *self = update;
             },
-            ::pybind11::arg("axis"))
+            nb::arg("axis"))
         .def(
             "rotation",
             [](const Class* self) { return self->toRotationMatrix(); })
@@ -460,7 +461,7 @@ void eigen_geometry(pybind11::module& parent_m)
         .def(
             "__str__",
             [py_class_obj](const Class* self) {
-              return ::pybind11::str("{}(angle={}, axis={})")
+              return nb::str("{}(angle={}, axis={})")
                   .format(
                       py_class_obj.attr("__name__"),
                       self->angle(),

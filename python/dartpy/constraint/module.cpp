@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,29 +34,24 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void ConstraintBase(py::module& sm);
-void JointConstraint(py::module& sm);
-void JointCoulombFrictionConstraint(py::module& sm);
-void DynamicJointConstraint(py::module& sm);
+void ConstraintBase(nb::module_& sm);
+void JointConstraint(nb::module_& sm);
+void JointCoulombFrictionConstraint(nb::module_& sm);
+void DynamicJointConstraint(nb::module_& sm);
 
-void BoxedLcpSolver(py::module& sm);
-void DantzigBoxedLcpSolver(py::module& sm);
-void PgsBoxedLcpSolver(py::module& sm);
-void FrictionSolveStats(py::module& sm);
-void NsgsFrictionSolver(py::module& sm);
-void FbfFrictionSolver(py::module& sm);
+void BoxedLcpSolver(nb::module_& sm);
+void DantzigBoxedLcpSolver(nb::module_& sm);
+void PgsBoxedLcpSolver(nb::module_& sm);
+void NsgsFrictionSolver(nb::module_& sm);
+void FbfFrictionSolver(nb::module_& sm);
 
-void ConstraintSolver(py::module& sm);
-void BoxedLcpConstraintSolver(py::module& sm);
+void ConstraintSolver(nb::module_& sm);
+void BoxedLcpConstraintSolver(nb::module_& sm);
 
-void dart_constraint(py::module& m)
+void dart_constraint(nb::module_& m)
 {
   auto sm = m.def_submodule("constraint");
 
@@ -64,7 +63,6 @@ void dart_constraint(py::module& m)
   BoxedLcpSolver(sm);
   DantzigBoxedLcpSolver(sm);
   PgsBoxedLcpSolver(sm);
-  FrictionSolveStats(sm);
   NsgsFrictionSolver(sm);
   FbfFrictionSolver(sm);
 

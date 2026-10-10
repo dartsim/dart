@@ -585,7 +585,10 @@ void HierarchicalIK::copyOverSetup(
 
   const std::shared_ptr<optimizer::Problem>& newProblem
       = _otherIK->getProblem();
-  newProblem->setObjective(cloneIkFunc(mProblem->getObjective(), _otherIK));
+  if (const auto objective = mProblem->getObjective())
+    newProblem->setObjective(cloneIkFunc(objective, _otherIK));
+  else
+    newProblem->clearObjective();
 
   newProblem->removeAllEqConstraints();
   for (std::size_t i = 0; i < mProblem->getNumEqConstraints(); ++i)

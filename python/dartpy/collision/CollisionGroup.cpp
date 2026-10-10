@@ -1,3 +1,11 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
+#include "detail/eigen.hpp"
+
+#include <nanobind/stl/vector.h>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -44,25 +52,18 @@
 #include <dart/dynamics/ShapeFrame.hpp>
 
 #include <Eigen/Core>
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 
 #include <memory>
 #include <vector>
 
 #include <cstddef>
 
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void CollisionGroup(py::module& m)
+void CollisionGroup(nb::module_& m)
 {
-  ::py::class_<
-      dart::collision::CollisionGroup,
-      std::shared_ptr<dart::collision::CollisionGroup>>(m, "CollisionGroup")
+  dartnb::dart_class<dart::collision::CollisionGroup>(m, "CollisionGroup")
       .def(
           "getCollisionDetector",
           +[](dart::collision::CollisionGroup* self)
@@ -81,27 +82,27 @@ void CollisionGroup(py::module& m)
               const dart::dynamics::ShapeFrame* shapeFrame) {
             self->addShapeFrame(shapeFrame);
           },
-          ::py::arg("shapeFrame"))
+          nb::arg("shapeFrame").none())
       .def(
           "addShapeFrames",
           +[](dart::collision::CollisionGroup* self,
               const std::vector<const dart::dynamics::ShapeFrame*>&
                   shapeFrames) { self->addShapeFrames(shapeFrames); },
-          ::py::arg("shapeFrames"))
+          nb::arg("shapeFrames"))
       .def(
           "addShapeFramesOf",
           +[](dart::collision::CollisionGroup* self,
               const dynamics::ShapeFrame* shapeFrame) {
             self->addShapeFramesOf(shapeFrame);
           },
-          ::py::arg("shapeFrame"),
+          nb::arg("shapeFrame").none(),
           "Adds a ShapeFrame")
       .def(
           "addShapeFramesOf",
           +[](dart::collision::CollisionGroup* self,
               const std::vector<const dart::dynamics::ShapeFrame*>&
                   shapeFrames) { self->addShapeFramesOf(shapeFrames); },
-          ::py::arg("shapeFrames"),
+          nb::arg("shapeFrames"),
           "Adds ShapeFrames")
       .def(
           "addShapeFramesOf",
@@ -109,7 +110,7 @@ void CollisionGroup(py::module& m)
               const dart::collision::CollisionGroup* otherGroup) {
             self->addShapeFramesOf(otherGroup);
           },
-          ::py::arg("otherGroup"),
+          nb::arg("otherGroup").none(),
           "Adds ShapeFrames of other CollisionGroup")
       .def(
           "addShapeFramesOf",
@@ -117,7 +118,7 @@ void CollisionGroup(py::module& m)
               const dart::dynamics::BodyNode* body) {
             self->addShapeFramesOf(body);
           },
-          ::py::arg("body"),
+          nb::arg("body").none(),
           "Adds ShapeFrames of BodyNode")
       .def(
           "addShapeFramesOf",
@@ -125,7 +126,7 @@ void CollisionGroup(py::module& m)
               const dart::dynamics::MetaSkeleton* skeleton) {
             self->addShapeFramesOf(skeleton);
           },
-          ::py::arg("skeleton"),
+          nb::arg("skeleton").none(),
           "Adds ShapeFrames of MetaSkeleton")
       .def(
           "subscribeTo",
@@ -136,27 +137,27 @@ void CollisionGroup(py::module& m)
               const dart::dynamics::ShapeFrame* shapeFrame) {
             self->removeShapeFrame(shapeFrame);
           },
-          ::py::arg("shapeFrame"))
+          nb::arg("shapeFrame").none())
       .def(
           "removeShapeFrames",
           +[](dart::collision::CollisionGroup* self,
               const std::vector<const dart::dynamics::ShapeFrame*>&
                   shapeFrames) { self->removeShapeFrames(shapeFrames); },
-          ::py::arg("shapeFrames"))
+          nb::arg("shapeFrames"))
       .def(
           "removeShapeFramesOf",
           +[](dart::collision::CollisionGroup* self,
               const dynamics::ShapeFrame* shapeFrame) {
             self->removeShapeFramesOf(shapeFrame);
           },
-          ::py::arg("shapeFrame"),
+          nb::arg("shapeFrame").none(),
           "Removes a ShapeFrame")
       .def(
           "removeShapeFramesOf",
           +[](dart::collision::CollisionGroup* self,
               const std::vector<const dart::dynamics::ShapeFrame*>&
                   shapeFrames) { self->removeShapeFramesOf(shapeFrames); },
-          ::py::arg("shapeFrames"),
+          nb::arg("shapeFrames"),
           "Removes ShapeFrames")
       .def(
           "removeShapeFramesOf",
@@ -164,7 +165,7 @@ void CollisionGroup(py::module& m)
               const dart::collision::CollisionGroup* otherGroup) {
             self->removeShapeFramesOf(otherGroup);
           },
-          ::py::arg("otherGroup"),
+          nb::arg("otherGroup").none(),
           "Removes ShapeFrames of other CollisionGroup")
       .def(
           "removeShapeFramesOf",
@@ -172,7 +173,7 @@ void CollisionGroup(py::module& m)
               const dart::dynamics::BodyNode* body) {
             self->removeShapeFramesOf(body);
           },
-          ::py::arg("body"),
+          nb::arg("body").none(),
           "Removes ShapeFrames of BodyNode")
       .def(
           "removeShapeFramesOf",
@@ -180,7 +181,7 @@ void CollisionGroup(py::module& m)
               const dart::dynamics::MetaSkeleton* skeleton) {
             self->removeShapeFramesOf(skeleton);
           },
-          ::py::arg("skeleton"),
+          nb::arg("skeleton").none(),
           "Removes ShapeFrames of MetaSkeleton")
       .def(
           "removeAllShapeFrames",
@@ -193,7 +194,7 @@ void CollisionGroup(py::module& m)
               const dart::dynamics::ShapeFrame* shapeFrame) -> bool {
             return self->hasShapeFrame(shapeFrame);
           },
-          ::py::arg("shapeFrame"))
+          nb::arg("shapeFrame").none())
       .def(
           "getNumShapeFrames",
           +[](const dart::collision::CollisionGroup* self) -> std::size_t {
@@ -206,9 +207,9 @@ void CollisionGroup(py::module& m)
               dart::collision::CollisionResult* result) -> bool {
             return self->collide(option, result);
           },
-          ::py::arg("option")
+          nb::arg("option")
           = dart::collision::CollisionOption(false, 1u, nullptr),
-          ::py::arg("result") = nullptr,
+          nb::arg("result").none() = nullptr,
           "Performs collision check within this CollisionGroup")
       .def(
           "collide",
@@ -218,10 +219,10 @@ void CollisionGroup(py::module& m)
               dart::collision::CollisionResult* result) -> bool {
             return self->collide(otherGroup, option, result);
           },
-          ::py::arg("otherGroup"),
-          ::py::arg("option")
+          nb::arg("otherGroup").none(),
+          nb::arg("option")
           = dart::collision::CollisionOption(false, 1u, nullptr),
-          ::py::arg("result") = nullptr,
+          nb::arg("result").none() = nullptr,
           "Perform collision check against other CollisionGroup")
       .def(
           "distance",
@@ -230,9 +231,9 @@ void CollisionGroup(py::module& m)
               dart::collision::DistanceResult* result) -> double {
             return self->distance(option, result);
           },
-          ::py::arg("option")
+          nb::arg("option")
           = dart::collision::DistanceOption(false, 0.0, nullptr),
-          ::py::arg("result") = nullptr)
+          nb::arg("result").none() = nullptr)
       .def(
           "raycast",
           +[](dart::collision::CollisionGroup* self,
@@ -240,8 +241,8 @@ void CollisionGroup(py::module& m)
               const Eigen::Vector3d& to) -> bool {
             return self->raycast(from, to);
           },
-          ::py::arg("from"),
-          ::py::arg("to"))
+          nb::arg("from"),
+          nb::arg("to"))
       .def(
           "raycast",
           +[](dart::collision::CollisionGroup* self,
@@ -250,9 +251,9 @@ void CollisionGroup(py::module& m)
               const dart::collision::RaycastOption& option) -> bool {
             return self->raycast(from, to, option);
           },
-          ::py::arg("from"),
-          ::py::arg("to"),
-          ::py::arg("option"))
+          nb::arg("from"),
+          nb::arg("to"),
+          nb::arg("option"))
       .def(
           "raycast",
           +[](dart::collision::CollisionGroup* self,
@@ -262,10 +263,10 @@ void CollisionGroup(py::module& m)
               dart::collision::RaycastResult* result) -> bool {
             return self->raycast(from, to, option, result);
           },
-          ::py::arg("from"),
-          ::py::arg("to"),
-          ::py::arg("option"),
-          ::py::arg("result"))
+          nb::arg("from"),
+          nb::arg("to"),
+          nb::arg("option"),
+          nb::arg("result").none())
       .def(
           "setAutomaticUpdate",
           +[](dart::collision::CollisionGroup* self) {
@@ -276,7 +277,7 @@ void CollisionGroup(py::module& m)
           +[](dart::collision::CollisionGroup* self, bool automatic) {
             self->setAutomaticUpdate(automatic);
           },
-          ::py::arg("automatic"))
+          nb::arg("automatic"))
       .def(
           "getAutomaticUpdate",
           +[](const dart::collision::CollisionGroup* self) -> bool {

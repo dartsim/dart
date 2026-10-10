@@ -8,8 +8,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "python/dartpy"
-DEST = ROOT / "python/dartpy_nanobind"
+DEST = ROOT / "python/dartpy"
 
 
 def mask(text):
@@ -171,6 +170,7 @@ def self_check():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--self-check", action="store_true")
+    parser.add_argument("--source", type=Path, help="pybind11 sources from DART 6.20")
     parser.add_argument("--output", type=Path, default=DEST)
     args = parser.parse_args()
     self_check()
@@ -180,8 +180,10 @@ def main():
     if destination.exists():
         parser.error("the destination must not exist; use --output for a scratch port")
     generated = 0
-    for source in sorted(SOURCE.rglob("*")):
-        relative = source.relative_to(SOURCE)
+    if args.source is None or not args.source.is_dir():
+        parser.error("--source must name an existing pybind11 source directory")
+    for source in sorted(args.source.rglob("*")):
+        relative = source.relative_to(args.source)
         if "gui" in relative.parts or source.suffix not in {".cpp", ".hpp", ".h"}:
             continue
         if source.name in {"eigen_geometry_pybind.h", "pointers.hpp"}:

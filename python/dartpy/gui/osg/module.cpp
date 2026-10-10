@@ -1,3 +1,8 @@
+#include "detail/dart_nb.hpp"
+#include "gui/osg/ownership.hpp"
+
+#include <osgGA/GUIActionAdapter>
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -30,39 +35,35 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <pybind11/pybind11.h>
-
-namespace py = pybind11;
-
 namespace dart {
 namespace python {
 
-void WorldNode(py::module& sm);
-void RealTimeWorldNode(py::module& sm);
+void bindWorldNode(nb::module_& sm);
+void bindRealTimeWorldNode(nb::module_& sm);
 
-void GUIEventHandler(py::module& sm);
+void GUIEventHandler(nb::module_& sm);
 
-void InteractiveFrame(py::module& sm);
+void InteractiveFrame(nb::module_& sm);
 
-void ImGuiHandler(py::module& sm);
-void ImGuiWidget(py::module& sm);
+void ImGuiHandler(nb::module_& sm);
+void ImGuiWidget(nb::module_& sm);
 
-void Viewer(py::module& sm);
-void ImGuiViewer(py::module& sm);
-void ViewerAttachment(py::module& sm);
-void GridVisual(py::module& sm);
-void DebugOverlay(py::module& sm);
+void Viewer(nb::module_& sm);
+void ImGuiViewer(nb::module_& sm);
+void ViewerAttachment(nb::module_& sm);
+void GridVisual(nb::module_& sm);
+void DebugOverlay(nb::module_& sm);
 
-void DragAndDrop(py::module& sm);
+void DragAndDrop(nb::module_& sm);
 
-void ShadowTechnique(py::module& sm);
+void ShadowTechnique(nb::module_& sm);
 
-void dart_gui_osg(py::module& m)
+void dart_gui_osg(nb::module_& m)
 {
   auto sm = m.def_submodule("osg");
 
-  WorldNode(sm);
-  RealTimeWorldNode(sm);
+  bindWorldNode(sm);
+  bindRealTimeWorldNode(sm);
 
   GUIEventHandler(sm);
 
@@ -80,6 +81,49 @@ void dart_gui_osg(py::module& m)
   DragAndDrop(sm);
 
   ShadowTechnique(sm);
+  sm.attr("__dict__")["__builtins__"]
+      = nb::module_::import_("builtins").attr("__dict__");
+  nb::exec(
+      R"(
+import enum as _enum
+import operator as _operator
+
+def _mask_missing(cls, value):
+    try:
+        value = _operator.index(value)
+    except TypeError:
+        return None
+    result = int.__new__(cls, value)
+    result._name_ = '???'
+    result._value_ = value
+    return result
+
+def _enum_str(self):
+    return type(self).__name__ + '.' + self.name
+
+def _enum_repr(self):
+    return '<' + str(self) + ': ' + str(int(self)) + '>'
+
+_seen_enums = set()
+for _owner in [GUIEventAdapter, Viewer, DragAndDrop, InteractiveTool, GridVisual, globals()]:
+    for _value in (list(_owner.values()) if isinstance(_owner, dict)
+                   else list(vars(_owner).values())):
+        if (isinstance(_value, type) and issubclass(_value, _enum.Enum)
+                and _value not in _seen_enums):
+            _seen_enums.add(_value)
+            _canonical_names = {}
+            for _name, _member in _value.__members__.items():
+                _member._name_ = _canonical_names.setdefault(int(_member), _name)
+            _value.__str__ = _enum_str
+            _value.__repr__ = _enum_repr
+for _enum_class in list(vars(GUIEventAdapter).values()):
+    if isinstance(_enum_class, type) and issubclass(_enum_class, _enum.Enum):
+        for _name, _member in _enum_class.__members__.items():
+            setattr(GUIEventAdapter, _name, _member)
+for _mask in [GUIEventAdapter.MouseButtonMask, GUIEventAdapter.ModKeyMask]:
+    _mask._missing_ = classmethod(_mask_missing)
+)",
+      sm.attr("__dict__"));
 }
 
 } // namespace python

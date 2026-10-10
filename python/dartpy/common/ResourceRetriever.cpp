@@ -1,3 +1,7 @@
+// clang-format off
+#include "detail/dart_nb.hpp"
+// clang-format on
+
 /*
  * Copyright (c) 2011, The DART development contributors
  * All rights reserved.
@@ -33,34 +37,26 @@
 #include <dart/common/LocalResourceRetriever.hpp>
 #include <dart/common/ResourceRetriever.hpp>
 
-#include <pybind11/pybind11.h>
-
 #include <memory>
-
-namespace py = pybind11;
 
 namespace dart {
 namespace python {
 
-void ResourceRetriever(py::module& m)
+void ResourceRetriever(nb::module_& m)
 {
-  ::py::class_<
-      dart::common::ResourceRetriever,
-      std::shared_ptr<dart::common::ResourceRetriever>>(m, "ResourceRetriever")
-      .def("exists", &common::ResourceRetriever::exists, ::py::arg("uri"))
-      .def("retrieve", &common::ResourceRetriever::retrieve, ::py::arg("uri"))
-      .def("readAll", &common::ResourceRetriever::readAll, ::py::arg("uri"))
+  dartnb::dart_class<dart::common::ResourceRetriever>(m, "ResourceRetriever")
+      .def("exists", &common::ResourceRetriever::exists, nb::arg("uri"))
+      .def("retrieve", &common::ResourceRetriever::retrieve, nb::arg("uri"))
+      .def("readAll", &common::ResourceRetriever::readAll, nb::arg("uri"))
       .def(
           "getFilePath",
           &common::ResourceRetriever::getFilePath,
-          ::py::arg("uri"));
+          nb::arg("uri"));
 
-  ::py::class_<
+  dartnb::dart_class<
       dart::common::LocalResourceRetriever,
-      dart::common::ResourceRetriever,
-      std::shared_ptr<dart::common::LocalResourceRetriever>>(
-      m, "LocalResourceRetriever")
-      .def(::py::init<>());
+      dart::common::ResourceRetriever>(m, "LocalResourceRetriever")
+      .def(dartnb::init<>());
 }
 
 } // namespace python
