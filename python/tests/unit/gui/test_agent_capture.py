@@ -7,7 +7,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import dartpy as dart
 import numpy as np
 import pytest
 
@@ -25,8 +24,6 @@ requires_display = pytest.mark.skipif(
     reason="off-screen GLX capture needs a DISPLAY (run under xvfb-run on "
     "headless hosts)",
 )
-
-_osg = dart.gui.osg
 
 
 def _args(**overrides) -> argparse.Namespace:

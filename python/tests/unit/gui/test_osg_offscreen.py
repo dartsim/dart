@@ -22,8 +22,6 @@ requires_display = pytest.mark.skipif(
     "headless hosts)",
 )
 
-_osg = dart.gui.osg
-
 
 def _read_png_luminance(path):
     """Minimal stdlib PNG reader for 8-bit gray/RGB/RGBA. Returns

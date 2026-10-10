@@ -14,6 +14,13 @@ set(target_name ${PROJECT_NAME}-utils-assets)
 set(component_name utils-assets)
 
 target_sources(dart-io PRIVATE ${hdrs} ${srcs})
+# Other dart-io unity sources leave Windows' far macro undefined, which breaks
+# the winsock headers that curl includes.
+set_source_files_properties(
+  ${srcs}
+  TARGET_DIRECTORY dart-io
+  PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON
+)
 target_link_libraries(dart-io PRIVATE CURL::libcurl OpenSSL::Crypto)
 add_component_dependency_packages(${PROJECT_NAME} io CURL OpenSSL)
 

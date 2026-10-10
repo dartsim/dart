@@ -22,8 +22,6 @@ requires_display = pytest.mark.skipif(
     "headless hosts)",
 )
 
-_osg = dart.gui.osg
-
 
 def _settled_world():
     world = dart.simulation.World()
