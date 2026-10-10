@@ -392,6 +392,9 @@ def release_target_owner(tmp_path, monkeypatch):
     (tmp_path / "package.xml").write_text(
         "<package><version>6.19.5</version></package>\n", encoding="utf-8"
     )
+    (tmp_path / "pixi.toml").write_text(
+        '[workspace]\nversion = "6.19.5"\n', encoding="utf-8"
+    )
     return path
 
 
@@ -439,11 +442,52 @@ def test_release_target_accepts_dated_packaging_candidate(
     (tmp_path / "package.xml").write_text(
         f"<package><version>{version}</version></package>\n", encoding="utf-8"
     )
+    (tmp_path / "pixi.toml").write_text(
+        f'[workspace]\nversion = "{version}"\n', encoding="utf-8"
+    )
     errors = []
 
     infra.check_release_target(tmp_path, errors)
 
     assert errors == []
+
+
+@pytest.mark.parametrize(
+    "pixi",
+    [
+        '[workspace]\nversion = "6.19.5"\n',
+        None,
+        '[workspace]\nversion = "6.22.0\n',
+        "",
+        "[workspace]\n",
+        'workspace = "invalid"\n',
+        "[workspace]\nversion = 6220\n",
+    ],
+)
+def test_release_target_rejects_inconsistent_packaging_workspace(
+    release_target_owner, tmp_path, pixi
+):
+    text = release_target_owner.read_text(encoding="utf-8")
+    release_target_owner.write_text(
+        text + "| main | Development | 6.22.0 |\n", encoding="utf-8"
+    )
+    (tmp_path / "CHANGELOG.md").write_text(
+        "### [DART 6.22.0 (2026-10-10)](milestone)\n", encoding="utf-8"
+    )
+    (tmp_path / "package.xml").write_text(
+        "<package><version>6.22.0</version></package>\n", encoding="utf-8"
+    )
+    path = tmp_path / "pixi.toml"
+    if pixi is None:
+        path.unlink()
+    else:
+        path.write_text(pixi, encoding="utf-8")
+    errors = []
+
+    infra.check_release_target(tmp_path, errors)
+
+    assert len(errors) == 1
+    assert errors[0].startswith("CHANGELOG.md: Release Target `6.22.0`")
 
 
 @pytest.mark.parametrize(
@@ -496,6 +540,9 @@ def test_release_target_accepts_dated_packaging_candidate(
 def test_release_target_rejects_invalid_changelog(
     release_target_owner, tmp_path, changelog, package
 ):
+    (tmp_path / "pixi.toml").write_text(
+        '[workspace]\nversion = "6.22.0"\n', encoding="utf-8"
+    )
     text = release_target_owner.read_text(encoding="utf-8")
     release_target_owner.write_text(
         text + "| main | Development | 6.22.0 |\n", encoding="utf-8"

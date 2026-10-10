@@ -49,8 +49,9 @@ At a rollover, update this branch's row and start its changelog section. Leave
 other branches' rows, reusable skills, pointer docs, and translated landing
 text alone. Update package versions only as part of release packaging.
 The target must have exactly one `CHANGELOG.md` release heading marked
-`Unreleased`. Packaging may date that same heading when `package.xml` matches
-the target; the row continues to name that candidate until the next rollover.
+`Unreleased`. Packaging may date that same heading when `package.xml` and the
+`pixi.toml` workspace version both match the target; the row continues to name
+that candidate until the next rollover.
 
 ## Compatibility Policy
 
