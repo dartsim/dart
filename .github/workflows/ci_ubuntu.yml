@@ -132,6 +132,22 @@ jobs:
 
       # check-ai-commands and check-ai-infra run in the Release job's
       # check-lint; test-ai-infra also exercises the agent scenarios.
+      - name: Check tracked files for local paths
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          checker=scripts/check_local_paths.py
+          # A PR cannot weaken the checker that judges it.
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA"
+            if git show "$BASE_SHA:scripts/check_local_paths.py" > "$RUNNER_TEMP/check_local_paths.py"; then
+              checker="$RUNNER_TEMP/check_local_paths.py"
+            else
+              echo "::notice::Base commit has no local-path checker yet; using the tree's checker."
+            fi
+          fi
+          python3 "$checker" --all-tracked
+
       - name: Test AI infrastructure
         run: pixi run test-ai-infra
 
